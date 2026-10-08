@@ -138,6 +138,7 @@ export function createAdminServerMock(
     assignCustomerCategory: vi.fn(),
     setAdminRole: vi.fn(),
     setCustomerBan: vi.fn(),
+    deleteCustomer: vi.fn(),
     updateCustomerContacts: vi.fn(),
     findCustomers: vi.fn(),
     listCustomers: vi.fn(),

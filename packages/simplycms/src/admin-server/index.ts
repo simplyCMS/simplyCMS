@@ -101,6 +101,8 @@ import {
   setAdminRoleOp,
   setCustomerBanInput,
   setCustomerBanOp,
+  deleteCustomerInput,
+  deleteCustomerOp,
   updateCustomerContactsInput,
   updateCustomerContactsOp,
   findCustomersInput,
@@ -624,6 +626,10 @@ export const setAdminRole = createServerFn({ method: 'POST' })
 export const setCustomerBan = createServerFn({ method: 'POST' })
   .validator(adminInput(setCustomerBanInput))
   .handler(setCustomerBanOp);
+
+export const deleteCustomer = createServerFn({ method: 'POST' })
+  .validator(adminInput(deleteCustomerInput))
+  .handler(deleteCustomerOp);
 
 export const updateCustomerContacts = createServerFn({ method: 'POST' })
   .validator(adminInput(updateCustomerContactsInput))

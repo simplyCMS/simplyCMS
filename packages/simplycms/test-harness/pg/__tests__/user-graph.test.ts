@@ -129,6 +129,29 @@ describe('граф користувача: видалення users', () => {
     expect(await count('orders', `user_id is null`)).toBe(2);
   });
 
+  it('структура: кожна колонка user_id/changed_by/uploaded_by має FK на users', async () => {
+    // Перевірка сиріт залежить від даних сіду; цей асерт — від схеми: нова
+    // колонка без FK червонить тест, а не тихо лишає сиріт після видалення.
+    const missing = (await q(
+      `select c.table_name || '.' || c.column_name as col
+         from information_schema.columns c
+        where c.table_schema = 'public'
+          and c.column_name in ('user_id', 'changed_by', 'uploaded_by')
+          and not exists (
+            select 1 from pg_constraint k
+             where k.contype = 'f'
+               and k.conrelid = format('public.%I', c.table_name)::regclass
+               and k.confrelid = 'public.users'::regclass
+               and k.conkey = array[(
+                 select a.attnum from pg_attribute a
+                  where a.attrelid = k.conrelid and a.attname = c.column_name
+               )]
+          )
+        order by 1`,
+    )) as { col: string }[];
+    expect(missing).toEqual([]);
+  });
+
   it('сиріт немає: кожне посилання на users існує в users', async () => {
     expect(await orphans()).toEqual({});
   });

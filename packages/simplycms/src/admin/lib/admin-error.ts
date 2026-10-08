@@ -87,6 +87,11 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.adminRoleLast]: 'admin.errors.adminRoleLast',
   [ADMIN_STATE_CONSTRAINT.adminRoleBanned]: 'admin.errors.adminRoleBanned',
   [ADMIN_STATE_CONSTRAINT.customerIsAdmin]: 'admin.errors.customerIsAdmin',
+  // Е6г-15/16: видалення акаунта.
+  [ADMIN_STATE_CONSTRAINT.customerNotFound]: 'admin.errors.customerNotFound',
+  [ADMIN_STATE_CONSTRAINT.customerSelf]: 'admin.errors.customerSelf',
+  [ADMIN_STATE_CONSTRAINT.orderPersonalDataErased]:
+    'admin.errors.orderPersonalDataErased',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

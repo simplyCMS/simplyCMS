@@ -184,6 +184,7 @@ export { getCustomerCardInput, getCustomerCardOp } from './customers/card';
 export { dashboardSummaryOp } from './dashboard/summary';
 export { setAdminRoleInput, setAdminRoleOp } from './customers/roles';
 export { setCustomerBanInput, setCustomerBanOp } from './customers/ban';
+export { deleteCustomerInput, deleteCustomerOp } from './customers/delete';
 export {
   updateCustomerContactsInput,
   updateCustomerContactsOp,

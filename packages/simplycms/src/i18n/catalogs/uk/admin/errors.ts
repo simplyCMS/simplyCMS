@@ -54,5 +54,9 @@ export const messages = {
     'Це останній адміністратор — роль зняти не можна',
   'admin.errors.adminRoleBanned': 'Спершу розблокуйте покупця',
   'admin.errors.customerIsAdmin': 'Спершу зніміть роль адміністратора',
+  'admin.errors.customerNotFound': 'Покупця не знайдено',
+  'admin.errors.customerSelf': 'Не можна видалити власний акаунт',
+  'admin.errors.orderPersonalDataErased':
+    'Покупця видалено — позиції замовлення змінити не можна',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;
