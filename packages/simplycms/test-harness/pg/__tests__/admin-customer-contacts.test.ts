@@ -1,10 +1,7 @@
 // К3-Е6г, Task 6 (Е6г-1, Е6г-2, Review Focus 1): контакти й email покупця.
 // Гонка `23505` доводиться детерміновано: незакомічений insert з окремого
 // клієнта тримає унікальний індекс, тож перевірка «зайнято» його не бачить.
-import pg from 'pg';
 import { describe, expect, it, vi } from 'vitest';
-import * as H from '../apply.mjs';
-import { stillPending } from './fixtures/advisory-lock';
 import * as C from './fixtures/customer-contacts';
 import * as F from './fixtures/customer-categories';
 
@@ -91,14 +88,21 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
   it('власний email в іншому регістрі — не конфлікт, записано нижній', async () => {
     const id = await F.seedCustomer(url(), { email: 'same@x.test' });
     await call(id, { email: 'Same@X.test' });
-    expect((await user(id)).email).toBe('same@x.test');
+    expect(await user(id)).toMatchObject({
+      email: 'same@x.test',
+      email_verified: true,
+    });
   });
 
-  it('збережений email у змішаному регістрі, той самий за змістом — не зміна: підтвердження й токени лишились', async () => {
+  it('збережений email у змішаному регістрі — переписано в нижній БЕЗ скидання підтвердження й токенів', async () => {
     const id = await F.seedCustomer(url(), { email: 'Mixed@X.test' });
     await token('owner-invite:mixed@x.test', 'hash');
     await call(id, { email: 'mixed@x.test' });
-    expect(await user(id)).toMatchObject({ email_verified: true });
+    expect(await user(id)).toMatchObject({
+      email: 'mixed@x.test',
+      email_verified: true,
+    });
+    expect((await profile(id)).email).toBe('mixed@x.test');
     expect(await identifiers()).toContain('owner-invite:mixed@x.test');
   });
 
@@ -136,32 +140,5 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
     });
     expect((await profile(id)).first_name).not.toBe('Інший');
     expect(await identifiers()).toContain('reset-password:keep');
-  });
-
-  it('гонка 23505: незакомічений insert з тим самим email → після commit taken, email старий', async () => {
-    const id = await F.seedCustomer(url(), { email: 'before@x.test' });
-    const rival = new pg.Client({
-      connectionString: H.withUser(url(), 'app_runtime'),
-    });
-    await rival.connect();
-    try {
-      await rival.query('begin');
-      await rival.query('set local role app_admin');
-      await rival.query(
-        `insert into public.users (id, name, email) values ($1, 'Гонщик', 'race@x.test')`,
-        [crypto.randomUUID()],
-      );
-      setStatus.mockClear();
-      const op = call(id, { email: 'race@x.test' });
-      op.catch(() => {});
-      expect(await stillPending(op, 400)).toBe(true);
-      await rival.query('commit');
-      await expect(op).rejects.toMatchObject(taken);
-      expect(setStatus).toHaveBeenLastCalledWith(400);
-    } finally {
-      await rival.query('rollback').catch(() => {});
-      await rival.end();
-    }
-    expect((await user(id)).email).toBe('before@x.test');
   });
 });

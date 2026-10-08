@@ -96,4 +96,27 @@ describe('admin: бан покупця (Е6г-4/13)', () => {
       await lock.cleanup();
     }
   });
+
+  it('неіснуючий покупець: і бан, і розбан → customer_not_found', async () => {
+    const ghost = '00000000-0000-4000-8000-0000000000aa';
+    for (const banned of [true, false])
+      await expect(call(ghost, banned)).rejects.toMatchObject(
+        F.conflict('state', 'customer_not_found'),
+      );
+  });
+
+  it('стоїть, поки зовнішній тримає customer-category:<id> (Е6г-22)', async () => {
+    const id = await F.seedCustomer(url());
+    const lock = await holdAdvisoryLock(url(), `customer-category:${id}`);
+    try {
+      const op = call(id, true);
+      op.catch(() => {});
+      expect(await stillPending(op, 300)).toBe(true);
+      expect((await userRow(id)).banned_at).toBeNull();
+      await lock.release();
+      await expect(op).resolves.toMatchObject({ bannedAt: expect.any(Date) });
+    } finally {
+      await lock.cleanup();
+    }
+  });
 });

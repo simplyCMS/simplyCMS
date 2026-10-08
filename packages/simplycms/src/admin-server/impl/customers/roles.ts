@@ -39,7 +39,8 @@ export const setAdminRoleOp = async ({
         .from(users)
         .where(eq(users.id, input.userId))
         .for('share');
-      if (user?.bannedAt) stateConflict(ADMIN_STATE_CONSTRAINT.adminRoleBanned);
+      if (!user) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
+      if (user.bannedAt) stateConflict(ADMIN_STATE_CONSTRAINT.adminRoleBanned);
       await db
         .insert(userRoles)
         .values({ id: randomUUID(), userId: input.userId, role: 'admin' })

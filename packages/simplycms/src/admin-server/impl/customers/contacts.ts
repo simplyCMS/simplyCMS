@@ -1,7 +1,10 @@
 import { eq, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { profiles, users } from 'simplycms/schema';
-import { AdminConflictError } from '../errors';
+import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import { advisoryXactLock } from 'simplycms/db';
+import { customerCategoryLock } from 'simplycms/commerce';
+import { AdminConflictError, stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { revokeUserVerifications } from './verifications';
@@ -18,8 +21,14 @@ export const updateCustomerContactsInput = z.object({
 /**
  * Контакти й email покупця з картки (Е6г-1, Е6г-2), `customer.manage`.
  *
- * Одна транзакція: `users … FOR UPDATE` → email нормалізується (нижній
- * регістр). Змінився → зайнятість по `lower(email)` серед ІНШИХ користувачів
+ * Одна транзакція. ПЕРШИМ запитом — `customer-category:<userId>` (як у
+ * `deleteCustomer`): конкурент (автоправило чи ручна категорія) тримає
+ * `profiles FOR UPDATE` і вставляє `user_category_history`, а FK історії на
+ * `users` бере `FOR KEY SHARE`, що конфліктує з нашим `users FOR UPDATE`
+ * (`40P01`). Далі `users … FOR UPDATE` → email нормалізується (нижній
+ * регістр). Відрізняється лише регістром збереженого — його переписано в
+ * нижній регістр без скидання підтвердження й токенів (адреса та сама).
+ * Змінився → зайнятість по `lower(email)` серед ІНШИХ користувачів
  * дає помилку поля `taken` ДО будь-якого запису; далі `email_verified =
  * false` і відкликання токенів зі СТАРИМ email. Гонку з вставкою, якої
  * перевірка не бачить (READ COMMITTED), ловить унікальний індекс
@@ -34,13 +43,13 @@ export const updateCustomerContactsOp = async ({
   const email = input.email.toLowerCase();
   try {
     await runAdmin('customer.manage', async (db) => {
+      await advisoryXactLock(db, customerCategoryLock(input.userId));
       const [current] = await db
         .select({ email: users.email })
         .from(users)
         .where(eq(users.id, input.userId))
         .for('update');
-      if (!current)
-        throw new Error(`[admin-server] покупця ${input.userId} не існує`);
+      if (!current) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
       const name = [input.firstName, input.lastName].filter(Boolean).join(' ');
       if (current.email.toLowerCase() !== email) {
         const [clash] = await db
@@ -60,7 +69,11 @@ export const updateCustomerContactsOp = async ({
           email: current.email,
         });
       } else {
-        await db.update(users).set({ name }).where(eq(users.id, input.userId));
+        // Той самий email за змістом: регістр вирівнюється, `email_verified` ні.
+        await db
+          .update(users)
+          .set({ name, email })
+          .where(eq(users.id, input.userId));
       }
       const contacts = {
         firstName: input.firstName,

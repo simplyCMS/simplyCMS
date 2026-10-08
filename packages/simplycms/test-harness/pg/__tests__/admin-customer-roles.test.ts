@@ -147,4 +147,11 @@ describe('admin: роль адміна (Е6г-4/11)', () => {
       await lock.cleanup();
     }
   });
+
+  it('видача неіснуючому → customer_not_found, а не reference', async () => {
+    const actor = await makeAdmin();
+    await expect(
+      call(actor, '00000000-0000-4000-8000-0000000000aa', true),
+    ).rejects.toMatchObject(F.conflict('state', 'customer_not_found'));
+  });
 });
