@@ -75,6 +75,11 @@ export default definePlugin({
 - Результат **структурно задовольняє** старий `PluginModule`
   (`register`/`unregister` згенеровані з декларацій) — тому
   `bootstrapPlugins`/`PluginLoader` не знають про SDK.
+- **Слот дашборду `admin.dashboard.stats`** (К3-Е6г): `props.context.stats` має
+  рівно форму `AdminDashboardStats` (`simplycms/contracts`) —
+  `{ newOrders: number; revenue7dCents: number; revenue30dCents: number }`, гроші в
+  центах. Слот рендериться лише коли зведення вже завантажене, тож плагін не обробляє
+  `stats: undefined`; список останніх замовлень у контекст НЕ входить.
 - Помилки контракту `definePlugin` кидає при імпорті модуля — автор бачить їх
   першим рендером, а магазин не падає (catch у bootstrap).
 - `validatePluginModule` (живе в `simplycms/plugins`, SDK реекспортує; ідіом
