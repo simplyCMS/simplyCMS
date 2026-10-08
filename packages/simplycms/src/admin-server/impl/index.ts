@@ -168,9 +168,11 @@ export {
   runCategoryRulesOp,
 } from './category-rules/run-all';
 export {
+  assignCustomerCategory,
   assignCustomerCategoryInput,
   assignCustomerCategoryOp,
 } from './customers/assign-category';
+export type { AssignCustomerCategoryInput } from './customers/assign-category';
 export { findCustomersInput, findCustomersOp } from './customers/find';
 export type { CustomerHit } from './customers/find';
 export { AdminConflictError, ValidationError } from './errors';
@@ -195,8 +197,18 @@ export {
 } from './customers/card';
 export { dashboardSummaryOp } from './dashboard/summary';
 export { setAdminRoleInput, setAdminRoleOp } from './customers/roles';
-export { setCustomerBanInput, setCustomerBanOp } from './customers/ban';
-export { deleteCustomerInput, deleteCustomerOp } from './customers/delete';
+export {
+  setCustomerBan,
+  setCustomerBanInput,
+  setCustomerBanOp,
+} from './customers/ban';
+export type { SetCustomerBanInput } from './customers/ban';
+export {
+  deleteCustomer,
+  deleteCustomerInput,
+  deleteCustomerOp,
+} from './customers/delete';
+export type { DeleteCustomerInput } from './customers/delete';
 export {
   updateCustomerContactsInput,
   updateCustomerContactsOp,

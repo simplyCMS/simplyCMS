@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { customerCategoryLock } from 'simplycms/commerce';
-import { advisoryXactLock } from 'simplycms/db';
+import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import { sessions, users } from 'simplycms/schema';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
@@ -16,6 +16,8 @@ export const setCustomerBanInput = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 
+export type SetCustomerBanInput = z.output<typeof setCustomerBanInput>;
+
 /**
  * Бан/розбан покупця з картки (Е6г-4, Е6г-13), `customer.manage`.
  *
@@ -25,35 +27,44 @@ export const setCustomerBanInput = z.object({
  * Бан, видалення сесій і `banned_at` — ОДНА транзакція: між ними не лишається
  * вікна, де забанений має живу сесію. Вставку нової сесії, що змагається з
  * баном, відсікає тригер БД `sessions_refuse_banned` (Е6г-14).
+ *
+ * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний. Актора немає:
+ * операція його не читала (автора бану схема не зберігає).
  */
+export async function setCustomerBan(
+  db: ActorDb,
+  input: SetCustomerBanInput,
+): Promise<{ bannedAt: Date | null }> {
+  await advisoryXactLock(db, customerCategoryLock(input.userId));
+  await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+  if (!input.banned) {
+    const unbanned = await db
+      .update(users)
+      .set({ bannedAt: null, banReason: null })
+      .where(eq(users.id, input.userId))
+      .returning({ id: users.id });
+    if (unbanned.length === 0)
+      stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
+    return { bannedAt: null };
+  }
+  if (await isAdminUser(db, input.userId))
+    stateConflict(ADMIN_STATE_CONSTRAINT.customerIsAdmin);
+  const [row] = await db
+    .update(users)
+    .set({ bannedAt: sql`now()`, banReason: input.reason || null })
+    .where(eq(users.id, input.userId))
+    .returning({ bannedAt: users.bannedAt });
+  if (!row) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
+  await db.delete(sessions).where(eq(sessions.userId, input.userId));
+  return { bannedAt: row.bannedAt };
+}
+
+/** Операція: розбір входу ДО гранта, далі ядро в транзакції гранта. */
 export const setCustomerBanOp = async ({
   data,
 }: {
   data: z.input<typeof setCustomerBanInput>;
 }): Promise<{ bannedAt: Date | null }> => {
   const input = parseAdminInput(setCustomerBanInput, data);
-  return runAdmin('customer.manage', async (db) => {
-    await advisoryXactLock(db, customerCategoryLock(input.userId));
-    await advisoryXactLock(db, ADMIN_ROLES_LOCK);
-    if (!input.banned) {
-      const unbanned = await db
-        .update(users)
-        .set({ bannedAt: null, banReason: null })
-        .where(eq(users.id, input.userId))
-        .returning({ id: users.id });
-      if (unbanned.length === 0)
-        stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
-      return { bannedAt: null };
-    }
-    if (await isAdminUser(db, input.userId))
-      stateConflict(ADMIN_STATE_CONSTRAINT.customerIsAdmin);
-    const [row] = await db
-      .update(users)
-      .set({ bannedAt: sql`now()`, banReason: input.reason || null })
-      .where(eq(users.id, input.userId))
-      .returning({ bannedAt: users.bannedAt });
-    if (!row) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
-    await db.delete(sessions).where(eq(sessions.userId, input.userId));
-    return { bannedAt: row.bannedAt };
-  });
+  return runAdmin('customer.manage', (db) => setCustomerBan(db, input));
 };
