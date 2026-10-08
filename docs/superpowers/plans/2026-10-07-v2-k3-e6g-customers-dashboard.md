@@ -35,10 +35,12 @@
 | Е6г-15 | *(архітектор, аудит Codex №2)* **Аватар стирається в ГОЛОВНІЙ транзакції.** Порядок `deleteCustomer` *(уточнено, раунд 2)*: `customer-category:<id>` → `admin-roles` → `profiles … FOR UPDATE` → перевірки → прочитати ref аватара → знеособлення → відгуки → `revokeUserVerifications` → `DELETE users` → `eraseMedia(tx, ref)` ОСТАННІМ кроком перед COMMIT. Рядок `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Окремої транзакції для аватара немає; операція йде через `runAdmin`, а не `runAdminTransactions` | Інакше роль, видана між перевіркою й аватаром, змусила б видалення відмовити, але аватар нового адміна вже було б стерто. Канон К3-Е2 лишається: усередині `eraseMedia` — DELETE рядка `media` → видалення файла → COMMIT викликача (`storage/record.ts:133-169`). Останнім кроком — бо файл тоді губиться лише при збої самого COMMIT (повтор лікує: `local-fs` вважає `ENOENT` успіхом) |
 | Е6г-16 | *(архітектор, аудит Codex №3)* **Позиції стертого замовлення не редагуються:** 409 `order_personal_data_erased` у `lockEditableOrder` (`order-items/editable.ts`), поруч із `order_cancelled_final`. Зміна статусу й скасування дозволені. UI картки замовлення блокує редагування позицій за `personalDataErasedAt` (`useOrderLocked`). Гілку знімка в `totals.ts` Е6г не чіпає й не тестує як живу | `recomputeOrderTotals` кличе `validateShippingChoice` з `orders.delivery_city`. Для адресної доставки `null` дає `shipping_unavailable` (`commerce/shipping-providers.ts:64`) |
 | Е6г-17 | *(архітектор, аудит Codex №6)* **`loadOrderDetail` без фільтра стертих.** Канонічний коментар (`storefront/loaders/orders.ts:60-68`: доступ вирішує RLS-роль, а не предикат) лишається. Guard на null-ПД лишається. Харнес доводить, що після видалення замовлення не читається старим токеном | Стерте замовлення недосяжне за побудовою: `user_id NULL` і `access_token NULL` |
+| Е6г-18 | *(архітектор, аудит Codex р4 №1)* **Guard у `sendResetPassword`** (`auth/instance.ts`). BA вставляє `reset-password:<token>` окремим запитом ПЕРЕД викликом колбека (`password.mjs:64-86`). Колбек відкриває транзакцію `app_admin` і БЕЗУМОВНО робить `select email from users where id = $1 for share` (урок р2: умова в `WHERE` ламає `FOR SHARE`). Якщо рядка немає або `lower(email) ≠ lower(user.email)` (знімок BA), колбек видаляє `reset-password:<token>` і листа не шле. Назовні винятку немає: BA і так відповідає однаково. Цей guard закриває й видалення акаунта | Інакше зміна email між `findUserByEmail(старий)` і вставкою токена лишає чинний токен, і лист іде на стару адресу. Той самий клас, що Е6г-14: «рішення BA окремими транзакціями» |
+| Е6г-19 | *(архітектор, аудит Codex р4 №2)* **Invite власника під `admin-roles`.** `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (`auth/admin-roles-lock.ts`); `admin-server` імпортує його звідти. Store invite має ОДИН метод `issueAdminInvite({ userId, identifier, valueHash, expiresAt })` в одній транзакції `app_admin`: `advisoryXactLock(ADMIN_ROLES_LOCK)` → `select banned_at from users where id = $1 for share` → на бані типізована відмова `banned`, нічого не записано → `insert user_roles … on conflict do nothing` → upsert токена (`delete` + `insert` за `identifier`). `storeToken` і `grantAdminRole` прибираються (інших споживачів, крім двох тестових фейків, немає). CLI друкує «спершу розблокуйте покупця». Invite бере лише `admin-roles`, тож канон порядку локів не порушено | Сьогодні `grantAdminRole` — безумовний `INSERT` без лока й бану, і повторний invite робить забаненого адміна. Окрема перевірка перед `storeToken` лишала б щілину «токен є, ролі немає» |
 
 ## Ступінь обовʼязковості — читати ПЕРШИМ
 
-- **КАНОН** (розбіжність → зупинка і звернення до архітектора): рішення Е6г-1…Е6г-17, Global Constraints, імена операцій, serverFn, типів і state-кодів у блоках Interfaces, склад гейтів, асерти Review Focus, рядки i18n, позначені як КАНОН.
+- **КАНОН** (розбіжність → зупинка і звернення до архітектора): рішення Е6г-1…Е6г-19, Global Constraints, імена операцій, serverFn, типів і state-кодів у блоках Interfaces, склад гейтів, асерти Review Focus, рядки i18n, позначені як КАНОН.
 - **ОРІЄНТИР** (виконавець адаптує сам і пише про це у звіті): якорі `файл:рядок`, імена внутрішніх компонентів і хуків, розкладка JSX, розбиття UI-файлів, текст SQL.
 - 🔴 Звіт «гейт зелений» — не доказ. Доказ — вивід команди у звіті задачі. На К3-Е2 двоє виконавців відрапортували повний ланцюг зеленим, а вісім файлів були без `prettier --write`.
 - 🔴 Крок «має бути ЗЕЛЕНИМ одразу» перевіряє припущення плану. Червоний — знахідка: зупинка, а не «полагодити тест».
@@ -99,8 +101,9 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 
 **Створюються:**
 - `src/commerce/order-privacy.ts` (реєстр ПД і `eraseOrderPersonalData`);
+- `src/auth/{admin-roles-lock,reset-guard}.ts` (Е6г-18, Е6г-19);
 - `src/auth/ban.ts` (`createSessionBanHook`, `isUserBannedInDb`);
-- `src/admin-server/impl/admin-roles-lock.ts`, `src/admin-server/impl/customers/{list,card,roles,ban,contacts,verifications,delete,guards}.ts`, `src/admin-server/impl/dashboard/summary.ts`;
+- `src/admin-server/impl/customers/{list,card,roles,ban,contacts,verifications,delete,guards}.ts`, `src/admin-server/impl/dashboard/summary.ts`;
 - `src/contracts/objects/admin-dashboard.ts`, `src/contracts/objects/admin-customer.ts`;
 - `src/admin/features/dashboard/**`, `src/admin/features/customers/{list,card}/**`;
 - харнес: `test-harness/pg/__tests__/{user-graph,order-privacy-registry,admin-customers-read,admin-dashboard,admin-customer-roles,admin-customer-ban,auth-ban,admin-customer-contacts,admin-customer-delete}.test.ts`;
@@ -120,7 +123,7 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 
 **Interfaces:** немає нових.
 
-- [ ] **Step 1: Червоний.** У `baseline.test.ts` прибрати `services`/`service_requests` з очікуваного переліку таблиць і додати асерт «колонки `order_items.service_id` немає» (`information_schema.columns`). Run: `pnpm exec vitest run --config vitest.schema.config.ts baseline` → FAIL саме на цих асертах.
+- [ ] **Step 1: Червоний.** У `baseline.test.ts`: точне число таблиць `44 → 42` (`:120`, з коментарем «Е6г прибрала `services` і `service_requests`»); з переліку RLS-таблиць (`:146-168`) прибрати `service_requests`; число політик, якщо тест його асертить, — мінус три політики `service_requests` (виміряти, не вгадувати); новий асерт «колонки `order_items.service_id` немає» (`information_schema.columns`). Run: `pnpm exec vitest run --config vitest.schema.config.ts baseline` → FAIL саме на цих асертах.
 - [ ] **Step 2: Знос** за Files. Порядок у SQL: політики → індекси → FK → таблиці, `order_items.service_id`. `pnpm template:sync`.
 - [ ] **Step 3: Зелене.** Run: `cd packages/simplycms && pnpm exec drizzle-kit generate --config ./drizzle.config.ts` → «No schema changes»; `pnpm exec vitest run --config vitest.schema.config.ts baseline grants-parity rls-behaviour rls-parity id-defaults explicit-ids demo-seed seed-determinism` → PASS; `pnpm lint && pnpm build && pnpm typecheck && pnpm test` → PASS (`build` регенерує `routeTree.gen.ts` без двох роутів).
 - [ ] **Step 4: Гейт-греп** Е6г-9 → рівно два рядки allowlist (вивід у звіт). Негативний контроль: тимчасово повернути `'serviceId'` у `order-items/resource.ts` → греп дає третій рядок; відкотити.
@@ -184,14 +187,15 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 
 ---
 
-## Task 4: Роль адміна (Г-3, Е6г-3, Е6г-4, Е6г-11)
+## Task 4: Роль адміна (Г-3, Е6г-3, Е6г-4, Е6г-11, Е6г-19)
 
 **Files:**
-- Create: `admin-server/impl/admin-roles-lock.ts`, `admin-server/impl/customers/{roles,guards}.ts`, харнес `admin-customer-roles.test.ts`
-- Modify: `auth/authz.ts` (+`customer.delete`), `contracts/domain-errors.ts`, `admin/lib/admin-error.ts`, i18n `admin/errors.ts`, `admin-server/{index,impl/index}.ts`, мок
+- Create: `auth/admin-roles-lock.ts` (експорт з `simplycms/auth`), `admin-server/impl/customers/{roles,guards}.ts`, харнес `admin-customer-roles.test.ts`, `owner-invite-ban.test.ts`
+- Modify: `auth/{invite,invite-store}.ts` (Е6г-19), `auth/__tests__/invite.test.ts`, `tests/owner-invite.test.ts` (фейки store), CLI-команда `owner:invite` (повідомлення `banned`), `auth/authz.ts` (+`customer.delete`), `contracts/domain-errors.ts`, `admin/lib/admin-error.ts`, i18n `admin/errors.ts`, `admin-server/{index,impl/index}.ts`, мок
 
 **Interfaces:**
-- `ADMIN_ROLES_LOCK = 'admin-roles'`.
+- `ADMIN_ROLES_LOCK = 'admin-roles'` у `auth/admin-roles-lock.ts` (Е6г-19).
+- `OwnerInviteStore.issueAdminInvite(input: { userId: string; identifier: string; valueHash: string; expiresAt: Date }): Promise<'issued' | 'banned'>` замість `storeToken` + `grantAdminRole`; `issueOwnerInvite` на `'banned'` кидає `OwnerInviteError` з кодом `banned` і URL не повертає.
 - `customer.delete` у `Operation` і `AUTHZ_MATRIX` як `{ admin: 'any' }` (споживає Task 7).
 - `guards.ts`: `isAdminUser(db: ActorDb, userId: string): Promise<boolean>`, `countAdmins(db: ActorDb): Promise<number>` — спільні для Task 4, 5 і 7.
 - `setAdminRoleInput = z.object({ userId: z.uuid(), admin: z.boolean() })`; `setAdminRoleOp → Promise<{ isAdmin: boolean }>` під `runAdmin('user.role.assign')`. `advisoryXactLock(db, ADMIN_ROLES_LOCK)` — першим запитом. Далі:
@@ -202,9 +206,9 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 - Нові state-коди (КАНОН): `admin_role_self`, `admin_role_last`, `admin_role_banned`. Тексти: `admin.errors.adminRoleSelf` — «Не можна зняти роль адміністратора із себе»; `admin.errors.adminRoleLast` — «Це останній адміністратор — роль зняти не можна»; `admin.errors.adminRoleBanned` — «Спершу розблокуйте покупця».
 - serverFn (POST): `setAdminRole`.
 
-- [ ] **Step 1: Харнес (червоний).** Видача → рядок `admin`; повтор → без помилки й без дубля. Зняття з себе → `admin_role_self`, роль на місці. Єдиний адмін знімає роль з іншого не-адміна → no-op; два адміни, A знімає роль з B → OK, B знімає з A → `admin_role_last`. Видача забаненому → `admin_role_banned`. **Лок:** зовнішнє зʼєднання тримає `holdAdvisoryLock(url, 'admin-roles')` → `setAdminRoleOp` `stillPending` → `release` → завершилась. **Гонка без лока (Review Focus «додатково»):** A і B — адміни; зовнішнє зʼєднання тримає лок; запустити `A знімає B` і `B знімає A` → обидві `stillPending` → `release` → рівно одна OK, друга `admin_role_last`, адмінів 1. **Наступний запит (Е6г-3):** після зняття ролі `readSessionSubject` для сесії B (реальна сесія з `auth-integration`-фікстур) повертає `roles` без `admin`, а `requireGrant('admin.access')` → `AuthzError`. Run → FAIL.
+- [ ] **Step 1: Харнес (червоний).** Видача → рядок `admin`; повтор → без помилки й без дубля. Зняття з себе → `admin_role_self`, роль на місці. Єдиний адмін знімає роль з іншого не-адміна → no-op; два адміни, A знімає роль з B → OK, B знімає з A → `admin_role_last`. Видача забаненому → `admin_role_banned`. **Лок:** зовнішнє зʼєднання тримає `holdAdvisoryLock(url, 'admin-roles')` → `setAdminRoleOp` `stillPending` → `release` → завершилась. **Гонка без лока (Review Focus «додатково»):** A і B — адміни; зовнішнє зʼєднання тримає лок; запустити `A знімає B` і `B знімає A` → обидві `stillPending` → `release` → рівно одна OK, друга `admin_role_last`, адмінів 1. **Наступний запит (Е6г-3):** після зняття ролі `readSessionSubject` для сесії B (реальна сесія з `auth-integration`-фікстур) повертає `roles` без `admin`, а `requireGrant('admin.access')` → `AuthzError`. **Invite (Е6г-19), харнес `owner-invite-ban.test.ts`:** повторний invite на email забаненого → відмова `banned`, ролі `admin` і рядка `owner-invite:<email>` немає; незабаненому → роль і токен є; зовнішній клієнт тримає `admin-roles` → `issueAdminInvite` `stillPending` → `release` → завершився; бан ↔ invite: окремий клієнт (`app_runtime` + `set local role app_admin`) бере `admin-roles` і ставить `banned_at` без коміту → invite `stillPending` → commit → invite повертає `banned`, ролі немає. Юніти `invite.test.ts`/`owner-invite.test.ts` — на новий метод store. Run → FAIL.
 - [ ] **Step 2: Реалізація** за Interfaces.
-- [ ] **Step 3: Зелене** + негативний контроль: прибрати `advisoryXactLock` → кейс «гонка» червоніє (обидва зняття проходять, адмінів 0); відкотити. Вивід у звіт.
+- [ ] **Step 3: Зелене** + негативні контроли: прибрати лок з `issueAdminInvite` → червоніє кейс «зовнішній клієнт тримає `admin-roles` → `stillPending`» (кейс «бан ↔ invite» для цієї мутації не годиться: конкурентний `UPDATE users` сам блокує `FOR SHARE`, аудит Codex р5). 🔴 Коментар у тесті (КАНОН): лок потрібен для ЗВОРОТНОГО порядку «invite першим». Invite взяв `FOR SHARE` і вставив роль без коміту; бан без лока не бачить незакоміченої ролі, чекає на рядку `users`, а після коміту забанює вже адміна. `FOR SHARE` цього не закриває, тож лок не «зайвий»; прибрати `advisoryXactLock` у `setAdminRoleOp` → кейс «гонка» червоніє (обидва зняття проходять, адмінів 0); відкотити. Вивід у звіт.
 - [ ] **Step 4: Коміт** — `feat(k3-e6g): роль адміна з картки покупця`.
 
 ---
@@ -237,11 +241,11 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 
 ---
 
-## Task 6: Контакти й email (Г-4, Г-8, Е6г-1, Е6г-2)
+## Task 6: Контакти й email (Г-4, Г-8, Е6г-1, Е6г-2, Е6г-18)
 
 **Files:**
 - Create: `admin-server/impl/customers/{contacts,verifications}.ts`, харнес `admin-customer-contacts.test.ts`
-- Modify: `contracts/domain-errors.ts` (`'taken'` у `VALIDATION_ISSUE_CODES`), `admin/lib/apply-server-validation.ts` (`taken` у `KEYS`, який `satisfies Record<ValidationIssueCode, MessageKey>` — без запису червоніє `typecheck`), `admin-server/impl/validation.ts`, i18n `admin/validation`, `admin-server/{index,impl/index}.ts`, мок
+- Modify: `auth/instance.ts` (guard Е6г-18 у `sendResetPassword`, винесений у `auth/reset-guard.ts`: `isResetStillValid(userId: string, emailSnapshot: string, token: string): Promise<boolean>`, який сам видаляє токен на `false`; підміна — `AuthDeps.resetGuard?`), `contracts/domain-errors.ts` (`'taken'` у `VALIDATION_ISSUE_CODES`), `admin/lib/apply-server-validation.ts` (`taken` у `KEYS`, який `satisfies Record<ValidationIssueCode, MessageKey>` — без запису червоніє `typecheck`), `admin-server/impl/validation.ts`, i18n `admin/validation`, `admin-server/{index,impl/index}.ts`, мок
 
 **Interfaces:**
 - `fieldIssue(path: readonly (string | number)[], code: ValidationIssueCode): never` у `impl/validation.ts` — `setResponseStatus(400)` + `throw new ValidationError([{ path, code }])`.
@@ -256,10 +260,10 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 - i18n (КАНОН): `admin.validation.taken` — «Таке значення вже використовується» / «This value is already in use».
 - serverFn (POST): `updateCustomerContacts`.
 
-- [ ] **Step 1: Харнес (червоний).** Зміна контактів → `profiles` і `users.name`. Зміна email → `users.email` у нижньому регістрі, `email_verified = false`, сесії на місці. `reset-password:<t>` з `value = userId` і `owner-invite:<старий>` видалені, а чужий `reset-password` — ні. Зайнятий `Buyer@Shop.test` при наявному `buyer@shop.test` → `ValidationError`, `issues = [{ path: ['email'], code: 'taken' }]`, статус 400, у БД нічого не змінилось (Review Focus 1). Власний email в іншому регістрі → OK, записано нижній. Вхід ` Buyer@X.test ` (пробіли) → записано `buyer@x.test`. **Гонка `23505` (детерміновано):** окремий `pg.Client` робить `begin; insert into users (…, email) values (…, 'race@x.test')` і НЕ комітить → операція зміни email на `race@x.test` проходить перевірку (READ COMMITTED не бачить чужої вставки) і блокується на унікальному індексі: `stillPending` = true → клієнт робить `commit` → операція завершується `ValidationError` `taken` на `email` (саме гілка `users_email_key`, не перевірка), у покупця старий email. **Наскрізний доказ Е6г-2:** покупець просить скидання (`requestPasswordReset`), адмін змінює email, `resetPassword` зі старим токеном → `INVALID_TOKEN`. Run → FAIL.
+- [ ] **Step 1: Харнес (червоний).** Зміна контактів → `profiles` і `users.name`. Зміна email → `users.email` у нижньому регістрі, `email_verified = false`, сесії на місці. `reset-password:<t>` з `value = userId` і `owner-invite:<старий>` видалені, а чужий `reset-password` — ні. Зайнятий `Buyer@Shop.test` при наявному `buyer@shop.test` → `ValidationError`, `issues = [{ path: ['email'], code: 'taken' }]`, статус 400, у БД нічого не змінилось (Review Focus 1). Власний email в іншому регістрі → OK, записано нижній. Вхід ` Buyer@X.test ` (пробіли) → записано `buyer@x.test`. **Гонка `23505` (детерміновано):** окремий `pg.Client` робить `begin; insert into users (…, email) values (…, 'race@x.test')` і НЕ комітить → операція зміни email на `race@x.test` проходить перевірку (READ COMMITTED не бачить чужої вставки) і блокується на унікальному індексі: `stillPending` = true → клієнт робить `commit` → операція завершується `ValidationError` `taken` на `email` (саме гілка `users_email_key`, не перевірка), у покупця старий email. **Наскрізний доказ Е6г-2:** покупець просить скидання (`requestPasswordReset`), адмін змінює email, `resetPassword` зі старим токеном → `INVALID_TOKEN`. **Guard скидання (Е6г-18), харнес на реальному `auth.handler`:** (1) окремий клієнт тримає незакомічений `update users set email = 'new@x.test'` → `requestPasswordReset('old@x.test')`: `stillPending`, і `pg_blocking_pids` доводить, що чекає саме guard на `users` (а не інший запит BA) → commit → рядка `reset-password:*` з `value = userId` немає, `sendEmail` не викликано; (2) те саме з незакоміченим `delete from users` → токена немає, листа немає; (3) без конкурента → токен є, лист пішов. Run → FAIL.
 - [ ] **Step 2: Юніт** `domain-errors.test.ts`: `sanitizeValidationIssues` пропускає `taken`; повнота `admin.validation.<code>` (наявний тест) червоніє без ключа.
 - [ ] **Step 3: Реалізація** за Interfaces.
-- [ ] **Step 4: Зелене** + негативний контроль: прибрати виклик `revokeUserVerifications` → наскрізний кейс червоніє (скидання старим токеном проходить); відкотити.
+- [ ] **Step 4: Зелене** + негативні контроли: прибрати виклик `revokeUserVerifications` → наскрізний кейс червоніє (скидання старим токеном проходить); прибрати guard Е6г-18 → кейс (1) червоніє (токен живий, лист пішов); прибрати `for share` з guard-а, лишивши порівняння email → кейс (1) червоніє (guard читає стару закомічену версію й пропускає токен). Відкотити.
 - [ ] **Step 5: Коміт** — `feat(k3-e6g): контакти й email покупця`.
 
 ---
@@ -271,7 +275,7 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 - Modify: `admin-server/impl/order-items/editable.ts` (гвард Е6г-16 у `lockEditableOrder`), `admin/features/orders/detail/useOrderLocked.ts` (+ `personalDataErasedAt`, і виклики), `contracts/domain-errors.ts`, `admin/lib/admin-error.ts`, i18n, `admin-server/{index,impl/index}.ts`, мок
 
 **Interfaces:**
-- Споживає: `eraseOrderPersonalData` (Task 2), `isAdminUser`, `ADMIN_ROLES_LOCK` (Task 4), state-код `customer_is_admin` (Task 5), `revokeUserVerifications`, `fieldIssue` (Task 6), `customerCategoryLock` (`simplycms/commerce`), `eraseMedia(db, ref, driver?)` (`simplycms/storage`).
+- Споживає: `eraseOrderPersonalData` (Task 2), `isAdminUser` (Task 4), `ADMIN_ROLES_LOCK` (`simplycms/auth`, Task 4), state-код `customer_is_admin` (Task 5), `revokeUserVerifications`, `fieldIssue` (Task 6), `customerCategoryLock` (`simplycms/commerce`), `eraseMedia(db, ref, driver?)` (`simplycms/storage`).
 - `deleteCustomerInput = z.object({ userId: z.uuid(), confirmEmail: z.string().trim() })`; `deleteCustomerOp → Promise<{ erasedOrders: number; anonymizedReviews: number }>` під `runAdmin('customer.delete', …)`, ОДНА транзакція в порядку Е6г-15:
   1. `advisoryXactLock(customerCategoryLock(userId))` → `advisoryXactLock(ADMIN_ROLES_LOCK)`;
   2. `users` і `profiles … FOR UPDATE`;
@@ -345,7 +349,7 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 - Категорія: селект категорій + перемикач «Закріпити вручну» + причина → `assignCustomerCategory({ userId, categoryId, reason, locked })` (закриває К3-Е6в-4).
 - Контакти: форма RHF + Zod → `updateCustomerContacts`; помилка через `applyServerValidation` (поле email показує `admin.validation.taken`).
 - Останні замовлення: наявна `ordersCollection` з `eq(o.userId, userId)`, 10 рядків, посилання на картку замовлення.
-- Аватар — лише перегляд, ref → URL тим самим резолвером, що й решта адмінки (ОРІЄНТИР: `simplycms/storage` client).
+- Аватар — лише перегляд, ref → URL через `resolveMediaUrl` з `simplycms/domain/media` (як `admin/features/catalog-dictionaries/MediaThumb.tsx`). `simplycms/storage` — server-only, з клієнта його не імпортувати. Рендер-тест перевіряє `src` аватара.
 
 - [ ] **Step 1: Рендер-тести (червоні):** картка з моком `getCustomerCard` (провайдери, UTM, історія з «правило»/email адміна); `stats: null` → «—»; `null` картка → «не знайдено»; збереження контактів з `ValidationError taken` → повідомлення під email, тосту немає; закріплення категорії викликає `assignCustomerCategory` з `locked: true` і інвалідовує `[profiles]`.
 - [ ] **Step 2: Реалізація.** `wc -l` у звіт.
@@ -376,7 +380,7 @@ Task 4, 5, 7, 10 ─► Task 11 (картка: роль, бан, видален�
 
 **Files:**
 - Create: `scripts/live-smoke/admin-customers{,-setup,-owner,-roles,-ban,-delete,-sql,-cleanup}.mjs` (`runAdminCustomersStep({ context, buyerPage, base, dbUrl, check })`)
-- Modify: `scripts/live-smoke/owner-steps.mjs` (крок після знижок, ПЕРЕД «системою»), `scripts/live-smoke/register.mjs` (експорт пароля); доки: `docs/architecture/data-layer.md` (§10 — прецедент `taken`, Е6г-1; §13 — `admin-roles` і порядок `customer-category:<userId>` → `admin-roles`, Е6г-4; новий §14 «Покупці: роль, бан, видалення» — бан у хуку, тригер `sessions_refuse_banned` (Е6г-14) і видалення сесій, порядок `deleteCustomer` (Е6г-15), стерте замовлення не редагується (Е6г-16), реєстр ПД `orders`, `revokeUserVerifications`, FK-граф, межі «гостьове замовлення — не акаунт» і «бан блокує обліковий запис, а не особу: гостьове оформлення він не зупиняє»), `docs/architecture/plugins.md` (форма `context.stats`), `docs/tasks/v2-state-map.md` (легасі 6), `docs/tasks/platform-roadmap.md` (статус; борги: стирання гостьових замовлень за email, тимчасовий бан, ролі й запрошення персоналу, самостійне видалення й зміна email у кабінеті, модерація відгуків з `user_id IS NULL` — Е6д), `CHANGELOG.md`
+- Modify: `scripts/live-smoke/owner-steps.mjs` (крок після знижок, ПЕРЕД «системою»), `scripts/live-smoke/register.mjs` (експорт пароля); доки: `docs/architecture/data-layer.md` (§10 — прецедент `taken`, Е6г-1; §13 — `admin-roles` (живе в `simplycms/auth`, його беруть і операції адмінки, і invite власника — Е6г-19) і порядок `customer-category:<userId>` → `admin-roles`, Е6г-4; поруч — клас «рішення BA окремими транзакціями» і два його закриття: тригер `sessions_refuse_banned` (Е6г-14) і guard `sendResetPassword` (Е6г-18); рядок про invite: лок `admin-roles` в `issueAdminInvite` закриває порядок «invite першим» (роль без коміту невидима для бану), а `FOR SHARE` — лише «бан першим», тож одне не заміняє другого; новий §14 «Покупці: роль, бан, видалення» — бан у хуку, тригер `sessions_refuse_banned` (Е6г-14) і видалення сесій, порядок `deleteCustomer` (Е6г-15), стерте замовлення не редагується (Е6г-16), реєстр ПД `orders`, `revokeUserVerifications`, FK-граф, межі «гостьове замовлення — не акаунт» і «бан блокує обліковий запис, а не особу: гостьове оформлення він не зупиняє»), `docs/architecture/plugins.md` (форма `context.stats`), `docs/tasks/v2-state-map.md` (легасі 6), `docs/tasks/platform-roadmap.md` (статус; борги: стирання гостьових замовлень за email, тимчасовий бан, ролі й запрошення персоналу, самостійне видалення й зміна email у кабінеті, модерація відгуків з `user_id IS NULL` — Е6д), `CHANGELOG.md`
 
 **Interfaces:**
 - Крок створює все сам і прибирає в `finally`. Покупці реєструються через `register(page, base)`, у кожного свій `browser.newContext()`.
