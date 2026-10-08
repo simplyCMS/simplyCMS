@@ -53,6 +53,9 @@ export function useDeleteCustomer(userId: string) {
     navigate({ to: adminPath('users') }).catch(() => {});
     await Promise.allSettled([
       qc.invalidateQueries({ queryKey: [ENTITY.profiles] }),
+      // Дашборд (`[orders, 'admin-dashboard']`) показує імʼя клієнта в
+      // останніх замовленнях — знеособлене не має лишитись у кеші.
+      qc.invalidateQueries({ queryKey: [ENTITY.orders] }),
       orders.utils.refetch(),
     ]);
     return { ok: true };
