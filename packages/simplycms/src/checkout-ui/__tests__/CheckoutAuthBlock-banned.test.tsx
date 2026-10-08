@@ -25,30 +25,44 @@ import { CheckoutAuthBlock } from '../CheckoutAuthBlock';
 
 const CONTACTS = { phone: '+380671234567', email: null };
 
+async function attemptBannedLogin(contacts: {
+  phone: string | null;
+  email: string | null;
+}) {
+  signInEmail.mockResolvedValue({
+    data: null,
+    error: { code: 'BANNED', message: 'Account is banned' },
+  });
+  render(
+    <I18nProvider locale="uk">
+      <CheckoutAuthBlock defaultTab="login" storeContacts={contacts} />
+    </I18nProvider>,
+  );
+  fireEvent.change(screen.getByLabelText('Email'), {
+    target: { value: 'a@b.test' },
+  });
+  fireEvent.change(document.getElementById('checkout-auth-password')!, {
+    target: { value: 'secret123' },
+  });
+  fireEvent.click(screen.getAllByRole('button', { name: 'Увійти' }).at(-1)!);
+  await waitFor(() =>
+    expect(document.body.textContent).toContain('Акаунт заблоковано'),
+  );
+  return document.body.textContent ?? '';
+}
+
 describe('CheckoutAuthBlock: вхід забаненого', () => {
   afterEach(() => cleanup());
 
   it('показує переклад із телефоном магазину, без сирого тексту', async () => {
-    signInEmail.mockResolvedValue({
-      data: null,
-      error: { code: 'BANNED', message: 'Account is banned' },
-    });
-    render(
-      <I18nProvider locale="uk">
-        <CheckoutAuthBlock defaultTab="login" storeContacts={CONTACTS} />
-      </I18nProvider>,
-    );
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'a@b.test' },
-    });
-    fireEvent.change(document.getElementById('checkout-auth-password')!, {
-      target: { value: 'secret123' },
-    });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Увійти' }).at(-1)!);
-    await waitFor(() =>
-      expect(document.body.textContent).toContain('Акаунт заблоковано'),
-    );
-    expect(document.body.textContent).toContain('+380671234567');
-    expect(document.body.textContent).not.toContain('Account is banned');
+    const text = await attemptBannedLogin(CONTACTS);
+    expect(text).toContain('+380671234567');
+    expect(text).not.toContain('Account is banned');
+  });
+
+  it('без жодного контакту — базова фраза без двокрапки', async () => {
+    const text = await attemptBannedLogin({ phone: null, email: null });
+    expect(text).toContain('Акаунт заблоковано. Звʼяжіться з магазином');
+    expect(text).not.toContain('магазином:');
   });
 });

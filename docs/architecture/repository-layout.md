@@ -102,7 +102,7 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: baseline 0000_prelude → 0003_seed;
+│   │   ├── migrations/           # КАНОН core-міграцій: baseline 0000_prelude → 0004_functions;
 │   │   │                         #    джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг

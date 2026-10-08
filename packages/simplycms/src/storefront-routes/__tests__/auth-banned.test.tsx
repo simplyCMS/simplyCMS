@@ -42,32 +42,45 @@ const PROFILE: StorefrontProfile = {
   socials: [],
 };
 
+async function attemptBannedLogin(profile: StorefrontProfile) {
+  signInEmail.mockResolvedValue({
+    data: null,
+    error: { code: 'BANNED', message: 'Account is banned' },
+  });
+  toast.mockClear();
+  render(
+    <I18nProvider locale="uk">
+      <StoreProfileProvider profile={profile}>
+        <Auth />
+      </StoreProfileProvider>
+    </I18nProvider>,
+  );
+  fireEvent.change(screen.getByLabelText('Email'), {
+    target: { value: 'a@b.test' },
+  });
+  fireEvent.change(document.getElementById('login-password')!, {
+    target: { value: 'secret123' },
+  });
+  fireEvent.submit(document.getElementById('login-email')!.closest('form')!);
+  await waitFor(() => expect(toast).toHaveBeenCalled());
+  return (toast.mock.calls[0]![0] as { description: string }).description;
+}
+
 describe('Auth: вхід забаненого', () => {
   afterEach(() => cleanup());
 
   it('показує переклад із телефоном магазину, без сирого тексту', async () => {
-    signInEmail.mockResolvedValue({
-      data: null,
-      error: { code: 'BANNED', message: 'Account is banned' },
-    });
-    render(
-      <I18nProvider locale="uk">
-        <StoreProfileProvider profile={PROFILE}>
-          <Auth />
-        </StoreProfileProvider>
-      </I18nProvider>,
-    );
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'a@b.test' },
-    });
-    fireEvent.change(document.getElementById('login-password')!, {
-      target: { value: 'secret123' },
-    });
-    fireEvent.submit(document.getElementById('login-email')!.closest('form')!);
-    await waitFor(() => expect(toast).toHaveBeenCalled());
-    const { description } = toast.mock.calls[0]![0] as { description: string };
+    const description = await attemptBannedLogin(PROFILE);
     expect(description).toContain('Акаунт заблоковано');
     expect(description).toContain('+380671234567');
     expect(description).not.toContain('Account is banned');
+  });
+
+  it('без жодного контакту — базова фраза без двокрапки', async () => {
+    const description = await attemptBannedLogin({
+      ...PROFILE,
+      contacts: { ...PROFILE.contacts, phone: null, email: null },
+    });
+    expect(description).toBe('Акаунт заблоковано. Звʼяжіться з магазином');
   });
 });

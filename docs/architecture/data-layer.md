@@ -203,8 +203,12 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 ```
 
 - Канон застосовного SQL — `packages/simplycms/migrations/`: baseline
-  (`0000_prelude` → `0003_seed`) плюс усе, що додав `db:diff`. Порядок накату — за
+  (`0000_prelude` → `0004_functions`) плюс усе, що додав `db:diff`. Порядок накату — за
   числовим префіксом імені. Теки `supabase/migrations/` немає.
+- 🔴 Ручні функції/тригери — лише в ручних файлах канону (`0000_prelude`,
+  `0004_functions`), `0001_init` — чистий генерат (парність із drizzle-kit повна,
+  без винятків за маркером); множину функцій і тригерів стереже гейт
+  `functions-allowlist.test.ts`.
 - 🔴 Ревʼю SQL обовʼязкове: drizzle-kit не бачить перейменувань (генерує
   `DROP`+`ADD`) і не діфить ролі, гранти й функції.
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/` (подвійна

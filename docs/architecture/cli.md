@@ -237,7 +237,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | `packages/simplycms/migrations/` | `template/supabase/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
-собі джерело правди — baseline `0000_prelude` → `0003_seed`, який пишуть
+собі джерело правди — baseline `0000_prelude` → `0004_functions`, який пишуть
 рука і `pnpm db:diff`. Раніше джерелом були кореневі `supabase/migrations/`,
 а канон — їхнім дзеркалом; тієї теки більше немає. `template:sync` тепер
 несе потік у зворотний бік: канон → копія в шаблоні.

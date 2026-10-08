@@ -68,18 +68,6 @@ const ALLOWLIST_MIGRATION_ONLY_LINES = [
 ];
 
 /**
- * Рукописний хвіст канону (Е6г-14): функції й тригери drizzle-kit не емітить,
- * тож усе від цього маркера до кінця файла порівнянню не підлягає. Тест
- * «хвіст існує» нижче не дає винятку стати мертвим.
- */
-const HAND_WRITTEN_TAIL_MARKER = '-- ── РУКОПИСНИЙ ХВІСТ';
-
-function stripHandWrittenTail(sql: string): string {
-  const at = sql.indexOf(HAND_WRITTEN_TAIL_MARKER);
-  return at === -1 ? sql : sql.slice(0, at);
-}
-
-/**
  * Прибирає `--> statement-breakpoint` (роздільник drizzle-kit, не частина
  * SQL — присутній ОБОМА джерелами однаково) і порожні рядки, вирівнює
  * кінцеві пробіли — щоб різниця у форматуванні (кінцевий `\n`, останній
@@ -151,7 +139,7 @@ describe('парність джерел схеми: drizzle/0000_init.sql ↔ mi
       readFileSync(resolve(REAL_DRIZZLE_DIR, '0000_init.sql'), 'utf8'),
     );
     const migrationLines = normalizeLines(
-      stripHandWrittenTail(readFileSync(REAL_MIGRATIONS_FILE, 'utf8')),
+      readFileSync(REAL_MIGRATIONS_FILE, 'utf8'),
     );
     const migrationLinesWithoutAllowlist = migrationLines.filter(
       (line) => !ALLOWLIST_MIGRATION_ONLY_LINES.includes(line),
@@ -167,14 +155,5 @@ describe('парність джерел схеми: drizzle/0000_init.sql ↔ mi
       expect(migrationLines, `рядок відсутній у каноні: ${line}`).toContain(
         line,
       );
-  });
-});
-
-describe('парність джерел схеми: рукописний хвіст', () => {
-  it('хвіст канону існує й містить тригер sessions_refuse_banned', () => {
-    const sql = readFileSync(REAL_MIGRATIONS_FILE, 'utf8');
-    const tail = sql.slice(sql.indexOf(HAND_WRITTEN_TAIL_MARKER));
-    expect(sql).toContain(HAND_WRITTEN_TAIL_MARKER);
-    expect(tail).toContain('CREATE TRIGGER sessions_refuse_banned');
   });
 });

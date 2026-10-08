@@ -2,7 +2,7 @@
 
 /**
  * Підняти демо-БД однією командою: канон `packages/simplycms/migrations/`
- * (0000 → 0003) + `demo/demo-seed.sql` на СВІЖІЙ named-БД того самого
+ * (0000 → 0004) + `demo/demo-seed.sql` на СВІЖІЙ named-БД того самого
  * кластера — щоб магазин було ВИДНО (непорожній каталог), а не доводити
  * це порожнім чистим сідом (рішення B13, `0003_seed.sql`).
  *
@@ -132,7 +132,7 @@ async function main() {
   await recreateDatabase(args.url, args.name);
 
   const dbUrl = withDbName(args.url, args.name);
-  console.log('[demo-db] накат канону (0000→0003) + demo/demo-seed.sql…');
+  console.log('[demo-db] накат канону (0000→0004) + demo/demo-seed.sql…');
   await applyFiles(dbUrl, migrationFiles());
 
   const stats = await summarize(dbUrl);
