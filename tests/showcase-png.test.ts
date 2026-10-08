@@ -1,20 +1,26 @@
 // PNG сіду вітрини (С-5): згенерований кодом файл мусить пройти той самий
 // снифер магічних байтів, що й завантаження в адмінці, — інакше сховище чи
 // браузер його не приймуть.
-import { inflateSync } from 'node:zlib';
+import { crc32, inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { sniffImageMime } from 'simplycms/storage';
 import { pngBytes } from '../scripts/showcase/png.mts';
 
-/** Чанки PNG: тип + дані (після 8-байтової сигнатури). */
-function chunks(bytes: Uint8Array): { type: string; data: Buffer }[] {
+/** Чанки PNG: тип + дані + чи збігся crc32 (після 8-байтової сигнатури). */
+function chunks(
+  bytes: Uint8Array,
+): { type: string; data: Buffer; crcOk: boolean }[] {
   const buf = Buffer.from(bytes);
-  const out: { type: string; data: Buffer }[] = [];
+  const out: { type: string; data: Buffer; crcOk: boolean }[] = [];
   for (let at = 8; at < buf.length;) {
     const length = buf.readUInt32BE(at);
     out.push({
       type: buf.toString('latin1', at + 4, at + 8),
       data: buf.subarray(at + 8, at + 8 + length),
+      // CRC рахується по типу + даних: битий CRC браузер не покаже.
+      crcOk:
+        crc32(buf.subarray(at + 4, at + 8 + length)) ===
+        buf.readUInt32BE(at + 8 + length),
     });
     at += length + 12;
   }
@@ -34,6 +40,7 @@ describe('pngBytes', () => {
   it('IHDR → IDAT → IEND, розміри й обсяг пікселів збігаються', () => {
     const list = chunks(png);
     expect(list.map((c) => c.type)).toEqual(['IHDR', 'IDAT', 'IEND']);
+    expect(list.every((c) => c.crcOk)).toBe(true);
     const ihdr = list[0]!.data;
     expect([ihdr.readUInt32BE(0), ihdr.readUInt32BE(4)]).toEqual([40, 24]);
     // Рядок = байт фільтра + 3 байти RGB на піксель.
