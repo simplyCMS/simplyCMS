@@ -111,7 +111,11 @@ describe('сід вітрини: гейт С-8', () => {
     expect(summary.revenue30dCents).toBe(sql.r30);
     // Скасовані справді є у вікні — інакше «поза виручкою» нічого не доводить.
     expect(sql.cancelled30).toBeGreaterThan(0);
-    expect(sql.r30WithCancelled).toBe(sql.r30 + sql.cancelled30);
+    // Дашборд справді виключив їх: інакше його виручка = усім замовленням вікна.
+    expect(summary.revenue30dCents).toBe(
+      sql.r30WithCancelled - sql.cancelled30,
+    );
+    expect(summary.revenue30dCents).not.toBe(sql.r30WithCancelled);
     // 🔴 Незалежні від SQL асерти дат (аудит Codex): без зсуву часу
     // порівняння вище зелене, а ці — ні.
     expect(sql.olderThan7d).toBeGreaterThan(0);
