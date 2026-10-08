@@ -16,6 +16,8 @@ export const changeOrderStatusInput = z.object({
   statusId: z.uuid(),
 });
 
+export type ChangeOrderStatusInput = z.output<typeof changeOrderStatusInput>;
+
 /** Проєкція SELECT/RETURNING — та сама, що в `ordersOps` (без `omit`). */
 const projection = pickColumns(orders, ORDERS_OMIT);
 
@@ -41,43 +43,51 @@ export const statusCode = async (db: ActorDb, id: string | null) => {
  * 4. Скасування → `releaseOrderStock` (Е5-4′) ПЕРЕД зміною статусу: облік
  *    по позиціях, повертає рівно списане й обнуляє лічильник.
  * 5. `update … returning` — без `access_token` (Е5-7).
+ *
+ * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний — без гранта
+ * й статусу відповіді (`stateConflict` лише кидає, 409 ставить межа операції).
+ * Скасування сідом іде тим самим шляхом, тож залишок повертається так само.
  */
+export async function changeOrderStatus(
+  db: ActorDb,
+  { orderId, statusId }: ChangeOrderStatusInput,
+): Promise<{ order: OrderRow }> {
+  // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
+  // та сама проєкція, що й у фабриці.
+  const [current] = (await db
+    .select(projection as never)
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .for('update')) as OrderRow[];
+  if (!current)
+    throw new Error(`[admin-server] замовлення ${orderId} не існує`);
+
+  if ((await statusCode(db, current.statusId)) === ORDER_STATUS_CODE.cancelled)
+    stateConflict(ADMIN_STATE_CONSTRAINT.orderCancelledFinal);
+
+  const target = await statusCode(db, statusId);
+  if (target === null)
+    throw new Error(`[admin-server] статусу ${statusId} не існує`);
+  if (current.statusId === statusId) return { order: current };
+
+  if (target === ORDER_STATUS_CODE.cancelled)
+    await releaseOrderStock(db, orderId);
+
+  const [order] = (await db
+    .update(orders)
+    .set({ statusId, updatedAt: new Date() })
+    .where(eq(orders.id, orderId))
+    // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md
+    .returning(projection as never)) as OrderRow[];
+  return { order: order! };
+}
+
+/** Операція: парс ДО гранта (400 до `requireGrant`) → ядро в транзакції гранта. */
 export const changeOrderStatusOp = async ({
   data,
 }: {
-  data: z.infer<typeof changeOrderStatusInput>;
+  data: ChangeOrderStatusInput;
 }): Promise<{ order: OrderRow }> => {
-  const { orderId, statusId } = parseAdminInput(changeOrderStatusInput, data);
-  return runAdmin('order.manage', async (db) => {
-    // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
-    // та сама проєкція, що й у фабриці.
-    const [current] = (await db
-      .select(projection as never)
-      .from(orders)
-      .where(eq(orders.id, orderId))
-      .for('update')) as OrderRow[];
-    if (!current)
-      throw new Error(`[admin-server] замовлення ${orderId} не існує`);
-
-    if (
-      (await statusCode(db, current.statusId)) === ORDER_STATUS_CODE.cancelled
-    )
-      stateConflict(ADMIN_STATE_CONSTRAINT.orderCancelledFinal);
-
-    const target = await statusCode(db, statusId);
-    if (target === null)
-      throw new Error(`[admin-server] статусу ${statusId} не існує`);
-    if (current.statusId === statusId) return { order: current };
-
-    if (target === ORDER_STATUS_CODE.cancelled)
-      await releaseOrderStock(db, orderId);
-
-    const [order] = (await db
-      .update(orders)
-      .set({ statusId, updatedAt: new Date() })
-      .where(eq(orders.id, orderId))
-      // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md
-      .returning(projection as never)) as OrderRow[];
-    return { order: order! };
-  });
+  const input = parseAdminInput(changeOrderStatusInput, data);
+  return runAdmin('order.manage', (db) => changeOrderStatus(db, input));
 };
