@@ -28,4 +28,5 @@ export const messages = {
     'Введіть число: до {precision} цифр, із них {scale} після коми',
   'admin.validation.invalid_decimal_plain': 'Введіть число',
   'admin.validation.custom': 'Некоректне значення',
+  'admin.validation.taken': 'Таке значення вже використовується',
 } as const;

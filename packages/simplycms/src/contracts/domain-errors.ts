@@ -124,6 +124,7 @@ export const VALIDATION_ISSUE_CODES = [
   'unrecognized_keys',
   'invalid_decimal',
   'custom',
+  'taken',
 ] as const;
 
 export type ValidationIssueCode = (typeof VALIDATION_ISSUE_CODES)[number];

@@ -24,4 +24,5 @@ export const messages: Catalog = {
     'Enter a number: up to {precision} digits, {scale} after the decimal point',
   'admin.validation.invalid_decimal_plain': 'Enter a number',
   'admin.validation.custom': 'Invalid value',
+  'admin.validation.taken': 'This value is already in use',
 };

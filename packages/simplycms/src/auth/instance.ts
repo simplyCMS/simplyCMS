@@ -11,6 +11,7 @@ import { resolveAuthBaseUrl, resolveAuthSecret } from './env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
 import { renderResetPasswordEmail } from './invite-email';
 import { provisionUserInDb } from './provision';
+import { isResetStillValid, type ResetGuard } from './reset-guard';
 import { stubSendAuthEmail, type SendAuthEmail } from './send-email';
 
 /**
@@ -39,6 +40,8 @@ export interface AuthDeps {
   readonly provisionUser?: ProvisionUser;
   /** Чи забанений користувач (Е6г-13). За замовчуванням — читання `users.banned_at`. */
   readonly isUserBanned?: IsUserBanned;
+  /** Guard скидання пароля (Е6г-18). За замовчуванням — `FOR SHARE` по `users`. */
+  readonly resetGuard?: ResetGuard;
   readonly secret?: string;
   readonly baseURL?: string;
   /**
@@ -56,6 +59,7 @@ export interface AuthDeps {
 export function createAuth(deps: AuthDeps = {}) {
   const sendEmail = deps.sendEmail ?? stubSendAuthEmail;
   const storeName = deps.storeName ?? 'SimplyCMS';
+  const resetGuard = deps.resetGuard ?? isResetStillValid;
 
   return betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
@@ -76,7 +80,10 @@ export function createAuth(deps: AuthDeps = {}) {
       // Інакше `requestPasswordReset` мовчки повертав би 200 без жодного
       // сліду, і «лист не прийшов» неможливо було б відрізнити від
       // «магазин не налаштував пошту».
-      sendResetPassword: async ({ user, url }) => {
+      sendResetPassword: async ({ user, url, token }) => {
+        // Токен BA уже вставив окремим запитом: якщо email змінився або
+        // акаунт видалено між пошуком і вставкою, guard його прибирає (Е6г-18).
+        if (!(await resetGuard(user.id, user.email, token))) return;
         await sendEmail(
           renderResetPasswordEmail({ to: user.email, url, storeName }),
         );
