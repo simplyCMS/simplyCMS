@@ -19,9 +19,27 @@ export function parseAdminInput<S extends z.ZodType>(
   schema: S,
   data: unknown,
 ): z.output<S> {
+  try {
+    return validateAdminInput(schema, data);
+  } catch (error) {
+    setResponseStatus(400);
+    throw error;
+  }
+}
+
+/**
+ * Те саме перетворення Zod-відмови в `ValidationError`, але БЕЗ статусу
+ * відповіді — для ядер, які кличуть поза HTTP-запитом (db-варіанти фабрики
+ * `insertIn`/`updateIn`/`removeIn`, сід): справжній `setResponseStatus` поза
+ * запитом кидає власний виняток і підмінив би доменну помилку (С-10). Усередині
+ * операції 400 поставить межа `runAdminTransactions`.
+ */
+export function validateAdminInput<S extends z.ZodType>(
+  schema: S,
+  data: unknown,
+): z.output<S> {
   const result = schema.safeParse(data);
   if (result.success) return result.data;
-  setResponseStatus(400);
   throw new ValidationError(sanitizeValidationIssues(result.error.issues));
 }
 
