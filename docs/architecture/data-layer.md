@@ -313,7 +313,7 @@ Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущ
 `createStart` стереже `tests/domain-error-adapter-registered.test.ts`.
 
 **Де сервер перетворює.** ОДНЕ місце — `admin-server/impl/validation.ts`:
-`parseAdminInput(schema, data)` (Zod → `ValidationError` + `setResponseStatus(400)`)
+`parseAdminInput(schema, data)` (Zod → `ValidationError` + `setResponseStatus(400)`, вхід serverFn)
 і `adminInput(schema)` — валідатор serverFn: `.validator(adminInput(schema))`
 замість `.validator(schema)` (так у кожному serverFn `admin-server/index.ts`).
 Повторні парси `defineAdminResource` та іменованих операцій викликають
@@ -357,6 +357,24 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 `prices.<i>.price`) редактор мапить назад у склад/вид ціни через `fieldFor`.
 `adminErrorKey(ValidationError)` → `admin.validation.failed` для місць без полів
 (видалення, миттєві контроли, порядок статусів).
+
+**Хто ставить статус відповіді (С-10).** Статус ставить МЕЖА, а не ядро. Межі дві:
+(1) вхід serverFn — `adminInput`/`parseAdminInput` (`validation.ts`) виконуються ДО
+операції й самі ставлять 400 при Zod-відмові; (2) межа операції — catch у
+`runAdminTransactions` (`admin-server/impl/run.ts`; `runAdmin` іде крізь неї): доменна
+помилка, що вилетіла зсередини операції (з транзакції чи з коду між транзакціями),
+отримує `AdminConflictError` → 409, `ValidationError` → 400 ДО повторного `throw`
+(К3-13 тримається: сервер бере статус із відповіді в момент catch, а catch межі ще в
+handler). `stateConflict`, `fieldIssue` і `toAdminConflict` лише кидають/повертають
+помилку без побічного ефекту — тож ядро можна кликати поза HTTP-запитом (сід, порти,
+MCP-сервер магазину), де справжній `setResponseStatus` сам кидає «No StartEvent
+found». Наслідок для операцій: перетворення однієї доменної помилки в іншу (23505
+`users_email_key` → `taken`) робиться ВСЕРЕДИНІ межі (`updateCustomerContacts` —
+через `runAdminTransactions`), інакше лишився б статус першої. Гейт —
+`__tests__/set-response-status-scan.test.ts`: ідентифікатор `setResponseStatus` у коді
+`admin-server/**` — лише в `run.ts` і `validation.ts` (allowlist із причинами);
+поведінку «ядро поза запитом» пінує `__tests__/core-status-boundary.test.ts`.
+`auth/authz-request.ts` (403) і `plugin-sdk/server/config-db.ts` — поза зоною гейта.
 
 **Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного

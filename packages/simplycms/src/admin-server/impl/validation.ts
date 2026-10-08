@@ -11,8 +11,9 @@ import { ValidationError } from './errors';
  * для адмін-поверхні: і валідатор serverFn (`adminInput`), і повторний
  * парс у `defineAdminResource` йдуть сюди. Сире повідомлення/вхід Zod
  * далі за межу не потрапляють — лише білий список
- * (`sanitizeValidationIssues`). Статус ставиться ДО throw (як у
- * `toAdminConflict`: сервер бере його з відповіді в момент catch).
+ * (`sanitizeValidationIssues`). Статус ставиться ДО throw (сервер бере
+ * його з відповіді в момент catch, К3-13): це вхід serverFn — окрема межа,
+ * що виконується ДО `runAdminTransactions` (С-10).
  */
 export function parseAdminInput<S extends z.ZodType>(
   schema: S,
@@ -48,12 +49,12 @@ export function adminInput<S extends z.ZodType>(
 /**
  * Помилка ОДНОГО поля, яку знає лише операція (не схема): зайнятий email
  * (Е6г-1). Той самий канал, що й Zod-відмова, — клієнт покаже її під
- * полем (`applyServerValidation`). Статус — ДО throw (К3-13).
+ * полем (`applyServerValidation`). 🔴 Лише throw: її кидає ядро зсередини
+ * операції, і 400 ставить межа (`runAdminTransactions`, С-10), а не вона.
  */
 export function fieldIssue(
   path: readonly (string | number)[],
   code: ValidationIssueCode,
 ): never {
-  setResponseStatus(400);
   throw new ValidationError([{ path, code }]);
 }

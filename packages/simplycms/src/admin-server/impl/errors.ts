@@ -1,4 +1,3 @@
-import { setResponseStatus } from '@tanstack/react-start/server';
 import {
   DOMAIN_ERROR_NAME,
   type AdminConflictKind,
@@ -29,7 +28,7 @@ export class ValidationError extends Error {
  * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль
  * унікального значення, посилання, що тримає рядок, або (Е5-9, `state`)
  * заборонений перехід доменного стану — його кидає іменована операція
- * сама, разом із `setResponseStatus(409)`. Окремий клас — щоб
+ * сама (409 ставить межа операції, С-10). Окремий клас — щоб
  * клієнт показав зрозумілий тост за `error.name`. `name` і поля
  * (`kind`/`constraint`) — за T0-переліком `contracts/domain-errors`: його
  * читає й клієнтський `domainErrorAdapter` (Е3-20), що зберігає instanceof
@@ -49,11 +48,12 @@ export class AdminConflictError extends Error {
 }
 
 /**
- * 409 правила стану (Е5б-10, Е6а-12): статус — ДО throw (К3-13). Спільний
- * для іменованих операцій і guard-хуків фабрики (Е6а-16).
+ * Конфлікт правила стану (Е5б-10, Е6а-12). Спільний для іменованих операцій
+ * і guard-хуків фабрики (Е6а-16). 🔴 Лише throw: статус 409 ставить межа
+ * операції (`runAdminTransactions`, С-10), бо ядро кличуть і поза
+ * HTTP-запитом (сід, порти), де `setResponseStatus` сам кидає виняток.
  */
 export function stateConflict(constraint: AdminStateConstraint): never {
-  setResponseStatus(409);
   throw new AdminConflictError('state', constraint);
 }
 
@@ -65,8 +65,7 @@ const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {
 /**
  * Drizzle перезагортає помилку драйвера (борг К1а-5): код Postgres — у
  * `.cause`. Повертає конфлікт або null (тоді помилка летить як є, 500).
- * 🔴 Статус ставиться ДО throw — сервер бере його з getResponse().status
- * у момент catch, не з полів Error (К3-13).
+ * Без побічного ефекту: 409 ставить межа операції (С-10).
  * UPSTREAM:DRZ-1 — docs/architecture/upstream-workarounds.md
  */
 export function toAdminConflict(error: unknown): AdminConflictError | null {
@@ -77,6 +76,5 @@ export function toAdminConflict(error: unknown): AdminConflictError | null {
   };
   const kind = code ? KIND_BY_CODE[code] : undefined;
   if (!kind) return null;
-  setResponseStatus(409);
   return new AdminConflictError(kind, constraint ?? null);
 }

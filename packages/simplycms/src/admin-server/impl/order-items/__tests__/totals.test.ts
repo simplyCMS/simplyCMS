@@ -67,6 +67,7 @@ describe('гроші в центах (Е5б-13)', () => {
         constraint: 'order_amount_out_of_range',
       }),
     );
-    expect(setResponseStatus).toHaveBeenCalledWith(409);
+    // С-10: ядро статус не ставить — 409 ставить межа операції (run.ts).
+    expect(setResponseStatus).not.toHaveBeenCalled();
   });
 });
