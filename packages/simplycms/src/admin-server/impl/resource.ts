@@ -121,7 +121,7 @@ export function defineAdminResource<
     insert: write.insert,
     update: write.update,
     remove: write.remove,
-    // Showcase (С-2, С-15): ті самі запис/інваріанти в транзакції викликача.
+    // Ядра без HTTP (С-2, С-15): ті самі запис/інваріанти в транзакції викликача.
     insertIn: write.insertIn,
     updateIn: write.updateIn,
     removeIn: write.removeIn,
