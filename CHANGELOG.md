@@ -18,7 +18,7 @@
 
 ---
 
-## [Unreleased]
+## [0.12.0] — 2026-10-08
 
 К3-Е6г: покупці й дашборд на серверному шарі (спека
 [`2026-10-07-customers-dashboard-design.md`](docs/superpowers/specs/2026-10-07-customers-dashboard-design.md);
