@@ -69,7 +69,7 @@ describe('видалення', () => {
   const confirmBtn = () =>
     screen.getByRole('button', { name: t('admin.users.card.deleteConfirm') });
 
-  it('успіх → [profiles], refetch замовлень, перехід на список, тост', async () => {
+  it('успіх → інвалідація [profiles] і [orders] (колекція замовлень перечитується), перехід, тост', async () => {
     mocks.deleteCustomer.mockResolvedValue({});
     renderCard();
     const input = await open();
@@ -90,7 +90,8 @@ describe('видалення', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
-    // Дашборд тримає імʼя клієнта в `[orders, 'admin-dashboard']`.
+    // Префікс [orders] накриває і дашборд (`[orders, 'admin-dashboard']`), і
+    // колекцію замовлень (`[orders, 'list']`) — окремого refetch немає.
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['orders'] }),
     );
