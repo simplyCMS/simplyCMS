@@ -43,6 +43,21 @@ export const messages = {
   'admin.users.orderNumber': 'Номер',
   'admin.users.priceType': 'Вид ціни',
 
+  // Картка покупця
+  'admin.users.card.loadError': 'Не вдалося завантажити картку покупця',
+  'admin.users.card.retry': 'Повторити',
+  'admin.users.card.emailVerified': 'Email підтверджено',
+  'admin.users.card.emailUnverified': 'Email не підтверджено',
+  'admin.users.card.historyRule': 'Правило',
+  'admin.users.card.lockCategory': 'Закріпити вручну',
+  'admin.users.card.lockHint': 'Закріплену категорію автоправила не змінюють.',
+  'admin.users.card.reason': 'Причина',
+  'admin.users.card.reasonRequired': 'Вкажіть причину',
+  'admin.users.card.assign': 'Призначити',
+  'admin.users.card.email': 'Email',
+  'admin.users.card.emailHint': 'Зміна email скидає його підтвердження.',
+  'admin.users.card.contactsSaved': 'Контакти збережено',
+
   // Категорії користувачів
   'admin.users.categories.subtitle':
     'Управління категоріями та правилами переходу',
