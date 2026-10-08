@@ -26,7 +26,8 @@ describe('автоправила: статистика покупця з БД (�
       `update public.profiles set email = 'buyer@profile-domain.test' where user_id = $1`,
       [customer],
     );
-    for (const provider of ['credential', 'google'])
+    // Сід у зворотному порядку: результат має бути відсортований за providerId.
+    for (const provider of ['google', 'github', 'credential', 'apple'])
       await F.rows(
         url(),
         `insert into public.accounts (id, account_id, provider_id, user_id)
@@ -50,7 +51,12 @@ describe('автоправила: статистика покупця з БД (�
       totalPurchases: 1500.5,
       ordersCount: 1,
     });
-    expect([...stats!.authProviders].sort()).toEqual(['credential', 'google']);
+    expect(stats!.authProviders).toEqual([
+      'apple',
+      'credential',
+      'github',
+      'google',
+    ]);
 
     const rule = (field: string, operator: string, value: string) => ({
       field,

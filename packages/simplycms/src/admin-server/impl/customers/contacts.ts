@@ -42,7 +42,7 @@ export const updateCustomerContactsOp = async ({
       if (!current)
         throw new Error(`[admin-server] покупця ${input.userId} не існує`);
       const name = [input.firstName, input.lastName].filter(Boolean).join(' ');
-      if (current.email !== email) {
+      if (current.email.toLowerCase() !== email) {
         const [clash] = await db
           .select({ id: users.id })
           .from(users)

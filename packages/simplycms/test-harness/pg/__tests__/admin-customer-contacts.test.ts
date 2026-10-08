@@ -94,6 +94,33 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
     expect((await user(id)).email).toBe('same@x.test');
   });
 
+  it('збережений email у змішаному регістрі, той самий за змістом — не зміна: підтвердження й токени лишились', async () => {
+    const id = await F.seedCustomer(url(), { email: 'Mixed@X.test' });
+    await token('owner-invite:mixed@x.test', 'hash');
+    await call(id, { email: 'mixed@x.test' });
+    expect(await user(id)).toMatchObject({ email_verified: true });
+    expect(await identifiers()).toContain('owner-invite:mixed@x.test');
+  });
+
+  it('профілю немає → створюється з контактами й непорожнім id', async () => {
+    const id = await F.seedCustomer(url(), { email: 'noprof@x.test' });
+    await F.rows(url(), `delete from public.profiles where user_id = $1`, [id]);
+    await call(id, { email: 'noprof@x.test' });
+    const rows = await F.rows(
+      url(),
+      `select id, first_name, last_name, phone, email from public.profiles where user_id = $1`,
+      [id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      first_name: 'Іван',
+      last_name: 'Петренко',
+      phone: '+380501112233',
+      email: 'noprof@x.test',
+    });
+    expect(rows[0]!.id).toBeTruthy();
+  });
+
   it('зайнятий Buyer@Shop.test при buyer@shop.test → taken/400, у БД нічого не змінилось', async () => {
     await F.seedCustomer(url(), { email: 'buyer@shop.test' });
     const id = await F.seedCustomer(url(), { email: 'mine@x.test' });
@@ -124,11 +151,13 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
         `insert into public.users (id, name, email) values ($1, 'Гонщик', 'race@x.test')`,
         [crypto.randomUUID()],
       );
+      setStatus.mockClear();
       const op = call(id, { email: 'race@x.test' });
       op.catch(() => {});
       expect(await stillPending(op, 400)).toBe(true);
       await rival.query('commit');
       await expect(op).rejects.toMatchObject(taken);
+      expect(setStatus).toHaveBeenLastCalledWith(400);
     } finally {
       await rival.query('rollback').catch(() => {});
       await rival.end();
