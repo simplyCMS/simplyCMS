@@ -39,11 +39,13 @@ export async function runReviewXssStep({ page, base, dbUrl, check }) {
     [PRODUCT_SLUG],
   );
 
-  // Старий сирий відгук (рубіж 2): кладемо в БД повз застосунок.
+  // Старий сирий відгук (рубіж 2): кладемо в БД повз застосунок. `user_id`
+  // NULL (відгук видаленого покупця, Е6г): випадковий uuid порушив би FK
+  // `product_reviews_user_id_fkey` на `users`, а рубіж 2 від автора не залежить.
   await sql(
     dbUrl,
     `insert into public.product_reviews (id, product_id, user_id, rating, content, status)
-     values (gen_random_uuid(), $1, gen_random_uuid(), 4, $2, 'approved')`,
+     values (gen_random_uuid(), $1, null, 4, $2, 'approved')`,
     [productId, '<p>Старий відгук</p>' + PAYLOAD],
   );
 

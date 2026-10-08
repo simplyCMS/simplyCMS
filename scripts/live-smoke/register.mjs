@@ -11,7 +11,8 @@
  */
 import { randomUUID } from 'node:crypto';
 
-const PASSWORD = 'live-smoke-2026';
+/** Пароль покупців прогону — експортується для кроків, що входять повторно. */
+export const PASSWORD = 'live-smoke-2026';
 
 /** @returns {Promise<string>} email нового покупця (для читабельності логів). */
 export async function register(page, base) {
