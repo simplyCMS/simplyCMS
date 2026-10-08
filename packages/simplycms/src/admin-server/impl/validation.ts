@@ -22,7 +22,8 @@ export function parseAdminInput<S extends z.ZodType>(
   try {
     return validateAdminInput(schema, data);
   } catch (error) {
-    setResponseStatus(400);
+    // Лише Zod-відмова — 400; інший виняток (зламаний transform) — як був.
+    if (error instanceof ValidationError) setResponseStatus(400);
     throw error;
   }
 }
