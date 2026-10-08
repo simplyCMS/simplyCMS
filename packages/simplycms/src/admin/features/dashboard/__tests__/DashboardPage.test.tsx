@@ -6,6 +6,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -183,5 +184,44 @@ describe('DashboardPage', () => {
     await screen.findByText('N-1');
     expect(dashboardSummary).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('успішне нульове зведення → справжні 0 і 0,00, а не «—»', async () => {
+    dashboardSummary.mockResolvedValue(
+      summary({
+        newOrders: 0,
+        revenue7dCents: 0,
+        revenue30dCents: 0,
+        recentOrders: [],
+      }),
+    );
+    renderPage();
+    await screen.findByText('0');
+    expect(screen.getAllByText(fmt(0))).toHaveLength(2);
+    expect(screen.queryByText('—')).toBeNull();
+  });
+
+  it('невдалий фоновий refetch не ховає вже наявні дані', async () => {
+    dashboardSummary
+      .mockResolvedValueOnce(summary())
+      .mockRejectedValueOnce(new Error('boom'));
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <EngineProvider value={ENGINE}>
+          <I18nProvider locale="uk">
+            <DashboardPage />
+          </I18nProvider>
+        </EngineProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByText('N-1');
+    await client.refetchQueries();
+    await waitFor(() => expect(dashboardSummary).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('N-1')).toBeTruthy();
+    expect(screen.getByText('7')).toBeTruthy();
   });
 });

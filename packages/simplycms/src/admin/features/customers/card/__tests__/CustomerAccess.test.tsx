@@ -261,10 +261,15 @@ describe('видалення', () => {
     mocks.deleteCustomer.mockResolvedValue({});
     renderCard();
     const input = await open();
-    ui.navigate.mockRejectedValueOnce(new Error('nav'));
+    // vitest не доставляє `unhandledRejection` у слухач тесту, тож доводимо
+    // контракт напряму: на проміс навігації чіпляють обробник відхилення.
+    const nav = Promise.reject(new Error('nav'));
+    const handled = vi.spyOn(nav, 'catch');
+    ui.navigate.mockReturnValueOnce(nav);
     fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
     fireEvent.click(confirmBtn());
     await waitFor(() => expect(ui.toastSuccess).toHaveBeenCalled());
+    expect(handled).toHaveBeenCalledTimes(1);
     expect(ui.toastError).not.toHaveBeenCalled();
   });
 
