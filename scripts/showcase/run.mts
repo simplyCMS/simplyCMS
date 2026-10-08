@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { closeDbPool } from '../../packages/simplycms/src/db/index.ts';
 import { showcaseEnv } from './env.mts';
 import { resetShowcaseMediaDir } from './media-dir.mts';
-import { pg } from './pg.mts';
+import pg from 'pg';
 import { printReport } from './report.mts';
 import { seedShowcase } from './seed.mts';
 import {

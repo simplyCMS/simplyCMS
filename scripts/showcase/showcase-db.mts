@@ -13,7 +13,7 @@
  */
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
-import type { PgTypes as pg } from './pg.mts';
+import type pg from 'pg';
 
 /** Фіксоване імʼя бази команди: ні параметра, ні env (С-16а). */
 export const SHOWCASE_DB_NAME = 'simplycms_showcase';
