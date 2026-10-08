@@ -49,6 +49,8 @@ export async function runOwnerInvite({
       throw Object.assign(
         new Error(
           `Користувача ${email} заблоковано — спершу розблокуйте покупця.`,
+          // Первинна помилка не губиться для діагностики.
+          { cause: error },
         ),
         { code: error.code },
       );

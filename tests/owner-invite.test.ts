@@ -123,7 +123,10 @@ describe('owner-invite (скрипт шаблону)', () => {
     tokens.clear();
     banned.add([...users.values()][0]!);
 
-    await expect(run(store)).rejects.toMatchObject({ code: 'banned' });
+    await expect(run(store)).rejects.toMatchObject({
+      code: 'banned',
+      cause: { code: 'banned' },
+    });
     await expect(run(store)).rejects.toThrow(/розблокуйте покупця/);
     expect(roles).toHaveLength(0);
     expect(tokens.size).toBe(0);
