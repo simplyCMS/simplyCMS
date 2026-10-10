@@ -2,6 +2,7 @@
 // `MEDIA_ROOT`) + знімок медіатеки й стану для асертів «нічого не лишилось».
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { blockCommitOn } from './commit-block';
 import { useReviewsDb } from './reviews';
 
 const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3];
@@ -58,18 +59,8 @@ export function useReviewPhotosDb(prefix: string) {
     )[0];
 
   /** Відкладений тригер: падає на COMMIT, коли ядро вже відпрацювало. */
-  const blockCommit = async (table: 'product_reviews' | 'users') => {
-    await f.rows(
-      `create or replace function public.e6d_commit_block() returns trigger
-         language plpgsql as $$ begin raise exception 'commit blocked'; end $$`,
-    );
-    await f.rows(
-      `create constraint trigger e6d_commit_block after delete on public.${table}
-         deferrable initially deferred for each row
-         execute function public.e6d_commit_block()`,
-    );
-    return () => f.rows(`drop trigger e6d_commit_block on public.${table}`);
-  };
+  const blockCommit = (table: 'product_reviews' | 'users') =>
+    blockCommitOn((sql) => f.rows(sql), table);
 
   return { ...d, diskKeys, reviewMedia, mediaCount, reviewRow, blockCommit };
 }
