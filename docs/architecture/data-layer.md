@@ -383,10 +383,29 @@ parsed))`; ядро приймає вже розібраний вхід і `Acto
 валідує сам через `validateAdminInput` без статусу; `removeIn` — без `prepare`, як і `remove`, захищене
 видалення лишається за іменованими операціями), ядра `saveProductPrices`, `saveStock`,
 `saveDiscount`, `changeOrderStatus`, `assignCustomerCategory`, `setCustomerBan`,
-`deleteCustomer`. Ядро, якому потрібен актор, отримує `CoreActor`
+`deleteCustomer`, `setReviewsStatus` (масова модерація, Е6д-7: без актора, як
+`setCustomerBan`; неіснуючий id у наборі → 409 `review_not_found` без часткового запису;
+сід кличе його під `withActor(app_admin)`) і `deleteReview` (повертає `discard` для
+двофазного стирання, Е6д-14). Ядро, якому потрібен актор, отримує `CoreActor`
 (`admin-server/impl/core-actor.ts`) — дискримінант `{ kind: 'admin', userId } | { kind:
 'system' }`, а не `string | null`: для `system` автора дії (`changed_by`) немає і перевірки
 «не я» теж, як в автоправил. Операція передає актора з гранта (`actorOfGrant`).
+
+**Опція `media` фабрики (Е6д-1).** `defineAdminResource({ …, media: { entityType,
+columns } })` (`admin-server/impl/resource-media.ts`, `resource-write-media.ts`) робить
+медіа-колонки ресурсу частиною його інваріантів, а не кодом у кожному ресурсі. Порядок у
+транзакції insert/update/remove: лок → знімок старих рядків (`SELECT … WHERE id = ANY($ids)
+ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) → guard (бачить знімок; у банерів
+зливає знімок із патчем, Е6д-2) → перевірка НОВИХ референсів → запис → `eraseMediaRows`
+заміненого чи видаленого (лише рядки `media`) → після COMMIT `discardMedia` (Е6д-14,
+`storage.md`). Новий референс перевіряється, лише якщо він непорожній і відрізняється від
+знімка: це рядок `media` з `entity_type = cfg.entityType AND entity_id = <id рядка>` під
+`FOR SHARE`, інакше 409 `media_ref_invalid`. Стирається лише референс, що задовольняє ту саму
+умову — чужий файл фабрика не стирає ніколи; незмінений `data:`/`https:` референс (демо) не
+перевіряється. Форма картки передає `ImageUpload` `eraseOnRemove={false}`, а `id` нового рядка
+генерує НАПЕРЕД: «прибрав картинку → скасував форму» лишає старий файл живим, новий — орфаном
+`media` з `entity_id` рядка (sweep — К4). В Е6д опцію має лише ресурс банерів;
+`sections`/`products`/`property_option` — борг roadmap.
 
 **Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
@@ -615,13 +634,15 @@ email в іншому регістрі — не конфлікт, записує
   `users`/`profiles` `FOR UPDATE` → перевірки (існує, не я, не адмін, введений email
   збігається без регістру) → ref аватара читається ДО знеособлення → знеособлення
   замовлень → відгуки анонімні (`user_id NULL`, рейтинг і текст лишаються) →
-  `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMedia(tx, ref)`
-  ОСТАННІМ кроком перед COMMIT. Рядок `media` переживає каскад, бо `uploaded_by` має
-  `SET NULL`. Збій `driver.delete` відкочує все (покупець, замовлення з ПД, відгук і
-  `media` на місці), повтор завершує видалення; збій самого COMMIT лишає лише «файл
-  зник, рядок є», що лікується повтором (`local-fs` вважає `ENOENT` успіхом).
-  Окремої транзакції для аватара немає: інакше роль, видана між перевіркою й стиранням,
-  стерла б аватар нового адміна при відмові видалення.
+  `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMediaRows`
+  аватара (власник `avatar/<userId>`) і фото кожного відгуку покупця (власник
+  `review/<id>`) — лише рядки `media`; ядро повертає `discard`, а операція стирає файли
+  ПІСЛЯ COMMIT (`discardMedia`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
+  `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
+  місці й файлів не чіпає; збій `driver.delete` після COMMIT видалення НЕ відкочує —
+  лишається орфан-файл без рядка, битих референсів нуль (роздачу орфана — обмеження
+  Е6д-18 — див. `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
+  видана між перевіркою й стиранням, стерла б аватар нового адміна при відмові видалення.
 - 🔴 **Реєстр ПД `orders` (Е6г-7)** — `commerce/order-privacy.ts`:
   `ORDER_COLUMN_PRIVACY: { readonly [K in keyof Order]: 'personal' | 'operational' }`.
   Нова drizzle-колонка без запису червонить `typecheck`; харнес звіряє реєстр з

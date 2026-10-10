@@ -18,6 +18,71 @@
 
 ---
 
+## [Unreleased]
+
+К3-Е6д: контент — банери й відгуки на серверному шарі (спека
+[`2026-10-10-content-banners-reviews-design.md`](docs/superpowers/specs/2026-10-10-content-banners-reviews-design.md);
+план
+[`2026-10-10-v2-k3-e6d-content.md`](docs/superpowers/plans/2026-10-10-v2-k3-e6d-content.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Канон міграцій змінено точковою правкою baseline (Е6д-8)**: базу магазину
+  перестворити (`pnpm db:demo`). `product_reviews` отримала CHECK-и
+  `product_reviews_status_check` (`pending`/`approved`/`rejected`) і
+  `product_reviews_rating_check` (1…5) у `0001_init.sql`; нової міграції немає.
+  `0002_grants.sql`: `app_user` на `product_reviews` — `SELECT, INSERT, DELETE` +
+  колонковий `UPDATE (rating, title, content, updated_at)` замість табличного
+  (Е6д-16 б).
+- **Канон сховища: двофазне стирання (Е6д-14).** Транзакція видаляє лише рядки
+  `media`; файли стираються ПІСЛЯ COMMIT (`discardMedia`). Новий
+  `eraseMediaRows(db, refs, owner)` у `simplycms/storage` з обовʼязковим власником
+  (Е6д-16 а). `deleteCustomer` повертає `discard` (аватар разом із фото відгуків), тож
+  обрив `driver.delete` більше не відкочує видалення акаунта (переписує Е6г-15).
+- **Відгук із фото — одним запитом (Е6д-6):** `submitProductReview` — FormData-serverFn
+  (текст + до 5 файлів по 5 МБ); проп `renderImageUpload` у `reviews-ui` — на `File[]`
+  (`{ files, onFilesChange, maxFiles, accept, maxBytes }`), штатний пікер
+  `ReviewImagePicker` увімкнено за замовчуванням.
+- `simplycms/storage`: тип `AvatarStorageOptions` (вітрина) замінено нейтральним
+  `MediaStorageOptions` (`{ driver?, discardWith? }`), спільним для аватара й відгуків.
+- Адмінка: `getAdminReviewContent` знесено — його поглинає `getReviewCard` (Е6д-11).
+
+### Додано
+
+- Адмінка: `/admin/banners*` — ресурс фабрики з опцією `media` (Е6д-1), перехресні
+  правила на злитому рядку (Е6д-2, Е6д-12), безпечні кнопки (`/шлях` або `http(s)://`,
+  Е6д-13) і `overlay_color` за `isSafeCssValue` (Е6д-4); право `banner.manage`.
+- Адмінка: `/admin/reviews*` — список з keyset і масовою модерацією (`setReviewsStatus`,
+  409 `review_not_found` без часткового запису, Е6д-7), картка з фото й внутрішньою
+  приміткою (не їде на вітрину, Д-1), бейдж «очікують» у сайдбарі (Д-4); відгуки
+  видаленого покупця — «Колишній покупець».
+- `defineAdminResource({ media: { entityType, columns } })` — референси медіа-колонок
+  перевіряються на власника рядка (409 `media_ref_invalid`), замінене й видалене
+  стирається двофазно.
+- `simplycms/domain`: предикати банера (`isBannerButton`, межі тривалостей,
+  `BANNER_MAX_BUTTONS`), `isSafeCssValue`, `normalizeMediaRefs`; константи фото відгуку
+  (`REVIEW_MEDIA_ENTITY`, `MAX_REVIEW_IMAGES`, `MAX_REVIEW_IMAGE_BYTES`, Е6д-5).
+- Вітрина: автор бачить свій несхвалений відгук разом із фото й бейджем
+  «На модерації»; `getProductReviews` відповідає `cache-control: private, no-store`
+  (Е6д-17).
+- `live:smoke`: крок контенту (`admin-content.mjs`) — банери, відгук із фото, ізоляція
+  `pending` від гостя, масова модерація.
+
+### Змінено
+
+- Легасі `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail` знесено; легасі на
+  `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом).
+- Сід `db:showcase` схвалює відгуки ядром `setReviewsStatus` замість сирого `UPDATE`.
+
+### Відомі обмеження
+
+- Роздача стертих файлів (Е6д-18): `serveMedia` не перевіряє рядок `media`, а
+  `immutable`-кеш живе рік — орфан після невдалого discard і копія в кеші після
+  успішного стирання лишаються доступними. Борг треку «Готовність пілоту»
+  (`docs/architecture/storage.md`, «Обмеження»).
+- Аватар і логотип лишились на однофазному `eraseMedia` (відомий виняток Е6д-14).
+
 ## [0.13.0] — 2026-10-10
 
 Вітринний стенд `pnpm db:showcase` (план

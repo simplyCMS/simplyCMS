@@ -439,7 +439,7 @@ export const searchProductsForOrder = createServerFn({ method: 'GET' })
   .handler(searchProductsForOrderOp);
 
 // К3-Е6д, Task 6: модерація відгуків (`review.moderate`). Картка поглинає
-// колишній `getAdminReviewContent` (розмітка очищена на сервері, Е6д-11).
+// колишній легасі-запит вмісту відгуку (розмітка очищена на сервері, Е6д-11).
 export const listReviews = createServerFn({ method: 'GET' })
   .validator(adminInput(listReviewsInput))
   .handler(listReviewsOp);
