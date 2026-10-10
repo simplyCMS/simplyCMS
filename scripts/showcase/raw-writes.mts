@@ -91,16 +91,30 @@ export async function shiftTime(
   await shiftRegistrations(db, registrations);
 }
 
-/** Реєстрація: `users.created_at/updated_at` — з перевіркою кількості рядків. */
+/**
+ * Реєстрація: `users` (картка й список покупців) і `profiles` (від неї
+ * `registrationDays` автоправил, `customer-stats.ts`) — на той самий зсув,
+ * інакше правило «днів від реєстрації» розходиться з карткою. Профіль мають
+ * лише покупці (адміни — через invite), тож строгий лічильник — по `users`,
+ * а збіг профілів стереже гейт хронології.
+ */
 async function shiftRegistrations(
   db: ActorDb,
   shifts: readonly DayShift[],
 ): Promise<void> {
+  const payload = JSON.stringify(shifts);
+  await db.execute(sql`
+    update public.profiles p
+       set created_at = p.created_at - make_interval(days => s.days),
+           updated_at = p.updated_at - make_interval(days => s.days)
+      from jsonb_to_recordset(${payload}::jsonb) as s(id uuid, days int)
+     where p.user_id = s.id
+  `);
   const result = await db.execute(sql`
     update public.users u
        set created_at = u.created_at - make_interval(days => s.days),
            updated_at = u.updated_at - make_interval(days => s.days)
-      from jsonb_to_recordset(${JSON.stringify(shifts)}::jsonb) as s(id uuid, days int)
+      from jsonb_to_recordset(${payload}::jsonb) as s(id uuid, days int)
      where u.id = s.id
   `);
   if (result.rowCount !== shifts.length) {

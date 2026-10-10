@@ -33,6 +33,8 @@ describe('сід вітрини: хронологія після зсуву ча
       historyBeforeRegistration: 0,
       bannedBeforeRegistration: 0,
       updatedBeforeCreated: 0,
+      profileRegistrationMismatch: 0,
+      malformedNumbers: 0,
       numberDateMismatch: 0,
     });
     // Реєстрація справді зсунута за межі вікна замовлень, а не лишилась «сьогодні».

@@ -6,6 +6,8 @@ export type Chronology = {
   historyBeforeRegistration: number;
   bannedBeforeRegistration: number;
   updatedBeforeCreated: number;
+  profileRegistrationMismatch: number;
+  malformedNumbers: number;
   numberDateMismatch: number;
   minRegistrationDay: number;
   maxOrderDay: number;
@@ -28,6 +30,13 @@ export const CHRONOLOGY = `
       where updated_at < created_at) +
     (select count(*)::int from public.orders
       where updated_at < created_at) as "updatedBeforeCreated",
+    -- Профіль (registrationDays автоправил) — та сама реєстрація, що й users.
+    (select count(*)::int from public.profiles p
+       join public.users u on u.id = p.user_id
+      where abs(extract(epoch from p.created_at - u.created_at)) > 86400)
+      as "profileRegistrationMismatch",
+    (select count(*)::int from public.orders
+      where order_number !~ '^[0-9]{6}-[0-9A-F]{6}$') as "malformedNumbers",
     -- Префікс як у generateOrderNumber: UTC-дата YYMMDD.
     (select count(*)::int from public.orders
       where left(order_number, 6)
