@@ -6,12 +6,23 @@ describe('isSafeCssValue (Е6д-4)', () => {
     expect(isSafeCssValue(v)).toBe(true);
   });
 
-  it.each(['red; background:url(x)', 'a{', '/* x', '', '   ', '<b>'])(
-    'відхиляє %j',
-    (v) => {
-      expect(isSafeCssValue(v)).toBe(false);
-    },
-  );
+  it.each(['red; background:url(x)', '', '   '])('відхиляє %j', (v) => {
+    expect(isSafeCssValue(v)).toBe(false);
+  });
+
+  // Кожен символ deny-листа — окремим кейсом (м3 фінального рев'ю): у спільному
+  // наборі зняття одного символу з регулярки лишало тест зеленим.
+  it.each([
+    ['<', 'red<'],
+    ['>', 'red>'],
+    ['{', 'red{'],
+    ['}', 'red}'],
+    [';', 'red;'],
+    ['/*', 'red/*'],
+    ['</style>', 'red</style>'],
+  ])('відхиляє символ %s', (_char, v) => {
+    expect(isSafeCssValue(v)).toBe(false);
+  });
 
   it('ліміт довжини: 100 так, 101 ні; Infinity знімає ліміт', () => {
     expect(isSafeCssValue('a'.repeat(100))).toBe(true);
