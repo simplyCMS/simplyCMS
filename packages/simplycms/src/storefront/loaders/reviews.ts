@@ -1,5 +1,5 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
-import type { SanitizedHtml } from 'simplycms/contracts';
+import type { ReviewStatus, SanitizedHtml } from 'simplycms/contracts';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews, profiles } from 'simplycms/schema';
@@ -24,8 +24,7 @@ export interface ProductReviewRow {
   /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */
   content: SanitizedHtml | null;
   images: string[];
-  status: string;
-  admin_comment: string | null;
+  status: ReviewStatus;
   created_at: Date;
   updated_at: Date;
   profile?: ReviewAuthor | null;
@@ -49,8 +48,22 @@ export async function loadProductReviews(
   db: ActorDb,
   productId: string,
 ): Promise<ProductReviewRow[]> {
+  // 🔴 Явний список колонок, а не `select()`: `admin_comment` — внутрішня
+  // примітка модератора (Д-1), яка не має навіть потрапити в обʼєкт рядка,
+  // не те що у відповідь серверної функції.
   const rows = await db
-    .select()
+    .select({
+      id: productReviews.id,
+      productId: productReviews.productId,
+      userId: productReviews.userId,
+      rating: productReviews.rating,
+      title: productReviews.title,
+      content: productReviews.content,
+      images: productReviews.images,
+      status: productReviews.status,
+      createdAt: productReviews.createdAt,
+      updatedAt: productReviews.updatedAt,
+    })
     .from(productReviews)
     .where(eq(productReviews.productId, productId))
     .orderBy(desc(productReviews.createdAt));
@@ -66,8 +79,8 @@ export async function loadProductReviews(
     // Через спільну функцію, а не власним кастом: інакше зображення відгуку
     // лишилось би єдиною медіа-колонкою без резолву.
     images: toImageList(row.images),
-    status: row.status,
-    admin_comment: row.adminComment,
+    // CHECK `product_reviews_status_check` гарантує домен; тип колонки — text.
+    status: row.status as ReviewStatus,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   }));

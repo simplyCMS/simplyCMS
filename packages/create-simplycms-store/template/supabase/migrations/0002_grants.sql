@@ -92,11 +92,19 @@ to app_user;
 -- ── 4. app_user: власні рядки (звуження до своїх — робота RLS) ─────────────
 grant select, insert, update, delete on table
   public.comparisons,
-  public.product_reviews,
   public.user_addresses,
   public.user_recipients,
   public.wishlists
 to app_user;
+
+-- Е6д-16 б: відгук покупець змінює лише колонковим UPDATE. Табличного немає
+-- навмисно: `images` мають довіряти лише через media-порт (інакше автор вписав
+-- би ключ чужого файла, а ескалація `app_admin` при видаленні стерла б його),
+-- а `status`/`admin_comment`/`user_id` змінює лише модератор. Жоден шлях
+-- вітрини `product_reviews` не оновлює (виміряно), тож грант лише звужує.
+grant select, insert, delete on table public.product_reviews to app_user;
+grant update (rating, title, content, updated_at)
+  on table public.product_reviews to app_user;
 
 -- Замовлення не редагуються покупцем: скасування чи зміна — серверна
 -- операція під `app_admin` (політик UPDATE/DELETE для `app_user` немає).

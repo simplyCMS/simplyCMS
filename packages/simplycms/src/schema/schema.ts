@@ -1046,6 +1046,9 @@ export const productReviews = pgTable("product_reviews", {
 	pgPolicy("product_reviews_update_own_pending", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id()) and status = 'pending'`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
 	pgPolicy("product_reviews_delete_own", { as: "permissive", for: "delete", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("product_reviews_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
+	// Е6д-8: домен статусу й рейтингу тримає БД, а не лише zod (масив — REVIEW_STATUSES у T0).
+	check("product_reviews_status_check", sql`status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])`),
+	check("product_reviews_rating_check", sql`rating >= 1 AND rating <= 5`),
 ]);
 
 export const banners = pgTable("banners", {

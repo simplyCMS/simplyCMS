@@ -22,7 +22,6 @@ const review = (over: Partial<ProductReview>): ProductReview => ({
   content: null,
   images: [],
   status: 'approved',
-  admin_comment: null,
   created_at: new Date('2026-10-01T10:00:00Z'),
   updated_at: new Date('2026-10-01T10:00:00Z'),
   profile: null,

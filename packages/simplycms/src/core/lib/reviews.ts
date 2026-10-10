@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
+import { getRequest, setResponseHeader } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { readSessionSubject } from 'simplycms/auth';
 import {
@@ -31,6 +31,9 @@ export const getProductReviews = createServerFn({ method: 'GET' })
   .validator(z.object({ productId: z.string().uuid() }))
   .handler(async ({ data }): Promise<ProductReviewRow[]> => {
     const { productId } = data as { productId: string };
+    // Відповідь залежить від сесії (автор бачить свій `pending`), тож жоден
+    // спільний кеш (CDN, проксі) не має віддати її іншому відвідувачу.
+    setResponseHeader('cache-control', 'private, no-store');
     const subject = await readSessionSubject(getRequest().headers);
 
     const reviews = subject

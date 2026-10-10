@@ -64,7 +64,11 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Повне володіння своїми рядками.
   comparisons: { app_user: CRUD },
   wishlists: { app_user: CRUD },
-  product_reviews: { app_user: CRUD, app_admin: CRUD },
+  // UPDATE покупця — лише колонковий (`COLUMN_GRANTS`, Е6д-16 б).
+  product_reviews: {
+    app_user: ['SELECT', 'INSERT', 'DELETE'],
+    app_admin: CRUD,
+  },
   // Адрес і отримувачів адмін лише читає (потрібно для обробки замовлення).
   user_addresses: { app_user: CRUD, app_admin: ['SELECT'] },
   user_recipients: { app_user: CRUD, app_admin: ['SELECT'] },
@@ -102,6 +106,11 @@ export const COLUMN_GRANTS: Record<
     app_user: {
       UPDATE: ['avatar_url', 'first_name', 'last_name', 'phone', 'updated_at'],
     },
+  },
+  // Е6д-16 б: автор правлять текст власного pending-відгуку; `images`,
+  // `status`, `admin_comment`, `user_id` — ні.
+  product_reviews: {
+    app_user: { UPDATE: ['content', 'rating', 'title', 'updated_at'] },
   },
 };
 

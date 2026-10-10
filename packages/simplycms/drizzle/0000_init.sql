@@ -287,7 +287,9 @@ CREATE TABLE "product_reviews" (
 	"admin_comment" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "product_reviews_product_id_user_id_key" UNIQUE("product_id","user_id")
+	CONSTRAINT "product_reviews_product_id_user_id_key" UNIQUE("product_id","user_id"),
+	CONSTRAINT "product_reviews_status_check" CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+	CONSTRAINT "product_reviews_rating_check" CHECK (rating >= 1 AND rating <= 5)
 );
 --> statement-breakpoint
 ALTER TABLE "product_reviews" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

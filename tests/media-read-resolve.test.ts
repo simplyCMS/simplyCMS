@@ -73,6 +73,8 @@ function loaderFiles(dir: string): string[] {
 const RESOLVED_BY: Record<string, string> = {
   'profile.ts#avatar_url': 'resolveMediaUrl',
   'reviews.ts#avatar_url': 'resolveMediaUrl',
+  // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
+  'reviews.ts#images': 'toImageList',
   'products.ts#images': 'toImageList',
   'entities/home-product.ts#images': 'toImageList',
   'entities/modification.ts#images': 'toImageList',
