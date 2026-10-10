@@ -43,6 +43,7 @@ import {
 import {
   APPROVED_RATINGS,
   BANNER_PLACEMENT,
+  SECTION_BANNER_PLACEMENT,
   CLOSED_POINT_QUANTITY,
   DISABLED_DISCOUNT,
   DISCOUNT_PERCENT,
@@ -233,10 +234,10 @@ describe('вітрина: знижки, банери, залишки, відгу
       `select id from public.sections where slug = 'sonyachni-paneli'`,
     );
     const scoped = await withStorefrontDb((db) =>
-      loadBanners(db, { placement: BANNER_PLACEMENT, sectionId }),
+      loadBanners(db, { placement: SECTION_BANNER_PLACEMENT, sectionId }),
     );
     const all = await withStorefrontDb((db) =>
-      loadBanners(db, { placement: BANNER_PLACEMENT }),
+      loadBanners(db, { placement: SECTION_BANNER_PLACEMENT }),
     );
 
     expect(scoped.length).toBeGreaterThan(0);

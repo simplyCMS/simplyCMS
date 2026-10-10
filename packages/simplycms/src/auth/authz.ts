@@ -34,6 +34,7 @@ export type Operation =
   | 'order.create'
   | 'order.manage'
   | 'shipping.manage'
+  | 'banner.manage'
   | 'settings.manage'
   | 'discount.manage'
   | 'customer.manage'
@@ -74,6 +75,10 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // Е6а-11: записи й читання доставки адмінкою (способи, зони, тарифи,
   // точки). Не `catalog.write` — доставка не каталог; прецедент `order.manage`.
   'shipping.manage': { admin: 'any' },
+  // Е6д: банери — окрема ділянка контенту. Не `catalog.write` (банер не
+  // каталог) і не спільне `content.manage` (спека §1): відгуки модеруються
+  // іншою операцією `review.moderate`, тож «контент» не одна роль.
+  'banner.manage': { admin: 'any' },
   // Е6б-13: системні налаштування — профіль магазину, облік залишків, теми,
   // плагіни і запис конфігу плагіна (`pluginConfigWrite`). Одна операція: це
   // одна ділянка адмінки, а не окремі ролі; прецедент `shipping.manage`.

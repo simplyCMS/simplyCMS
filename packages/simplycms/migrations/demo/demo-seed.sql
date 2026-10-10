@@ -269,7 +269,7 @@ select
   null,
   0,
   true,
-  '[{"label": "До каталогу", "href": "/catalog"}]'::jsonb
+  '[{"text": "До каталогу", "url": "/catalog", "target": "_self", "variant": "primary"}]'::jsonb
 where not exists (
   select 1 from public.banners where title = 'Сонячна енергія для вашого дому'
 );
@@ -281,15 +281,13 @@ select
   'До -15% на серію 600 Вт цього місяця.',
   'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkgoldenrod"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Бі-фаціальні панелі</text></svg>',
   'home',
-  s.id,
+  null,
   1,
   true,
-  '[{"label": "Переглянути", "href": "/catalog/sonyachni-paneli"}]'::jsonb
-from public.sections s
-where s.slug = 'sonyachni-paneli'
-  and not exists (
-    select 1 from public.banners where title = 'Знижки на бі-фаціальні панелі'
-  );
+  '[{"text": "Переглянути", "url": "/catalog/sonyachni-paneli", "target": "_self", "variant": "primary"}]'::jsonb
+where not exists (
+  select 1 from public.banners where title = 'Знижки на бі-фаціальні панелі'
+);
 
 -- ── 10. Доставка й залишки (К2-Е0): магазин, у якому можна купити ─────────
 insert into public.shipping_methods (id, code, name, description, provider, pricing, is_active, sort_order)

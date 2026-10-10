@@ -24,6 +24,7 @@ export interface BannerQuery {
 export async function loadBanners(
   db: ActorDb,
   query: BannerQuery,
+  now: Date = new Date(),
 ): Promise<Banner[]> {
   const scoped = query.sectionId
     ? and(
@@ -39,6 +40,5 @@ export async function loadBanners(
     .where(scoped)
     .orderBy(asc(banners.sortOrder));
 
-  const now = new Date();
   return rows.map(toBanner).filter((banner) => isBannerVisible(banner, now));
 }

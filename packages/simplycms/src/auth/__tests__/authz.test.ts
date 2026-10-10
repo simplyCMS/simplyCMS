@@ -79,6 +79,15 @@ describe('authz: shipping.manage (Е6а-11)', () => {
   });
 });
 
+describe('authz: banner.manage (Е6д)', () => {
+  it('адмін керує банерами з scope any; покупцю й аноніму — AuthzError', () => {
+    expect(requireOperation(ADMIN, 'banner.manage')).toBe('any');
+    expect(() => requireOperation(USER, 'banner.manage')).toThrow(AuthzError);
+    expect(() => requireOperation(ANON, 'banner.manage')).toThrow(AuthzError);
+    expect(AUTHZ_MATRIX['banner.manage']).toEqual({ admin: 'any' });
+  });
+});
+
 describe('authz: settings.manage (Е6б-13)', () => {
   it('адмін керує профілем, складом, темами й плагінами з scope any; покупцю й аноніму — AuthzError', () => {
     expect(requireOperation(ADMIN, 'settings.manage')).toBe('any');
