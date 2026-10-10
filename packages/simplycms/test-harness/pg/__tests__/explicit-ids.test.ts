@@ -228,10 +228,12 @@ describe('Е0: інваріант явного id у вставках ядра',
     // вимагати від них id, а не падати від їхньої появи), а от зникнення
     // всіх — ознака зламаного дискаверу, не чистого коду. На 2026-08-30
     // виміряно 12 drizzle-вставок у `src/`.
+    // Гілку supabase-js на реальному `src/` більше не міряємо: Е6д (Task 4)
+    // прибрала останню таку вставку (легасі BannerEdit). Гілка живе до Е7 і
+    // доводиться синтетичним джерелом нижче.
     expect(
       sites.filter((s) => s.kind === 'drizzle').length,
     ).toBeGreaterThanOrEqual(10);
-    expect(sites.some((s) => s.kind === 'supabase')).toBe(true);
   });
 
   it('кожна вставка поза іменованими виїмками передає id', () => {
@@ -277,6 +279,20 @@ describe('Е0: дискавер id звіряє таблицю за значен
       sites.map((s) => s.table),
       'аліасована вставка мусить бути знайдена, інакше гейт fail-open',
     ).toContain('orders');
+  });
+
+  it('дискавер бачить supabase-js вставку (синтетичне джерело)', () => {
+    const source = [
+      'async function save(supabase) {',
+      "  await supabase.from('banners').insert({ title: 'x' });",
+      '}',
+    ].join('\n');
+
+    const sites = discoverInsertsInSource(source, 'synthetic.ts');
+    expect(
+      sites.map((s) => [s.kind, s.table]),
+      'supabase-гілка дискавера зламана — гейт fail-open',
+    ).toContainEqual(['supabase', 'banners']);
   });
 });
 
