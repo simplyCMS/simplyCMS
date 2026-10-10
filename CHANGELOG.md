@@ -39,6 +39,8 @@
   `CREATE`, до міграцій); без прапорця поведінка `db:demo` та сама.
 - Гейт `pnpm typecheck:showcase` — у ланцюгу гейтів, CI (job `typecheck`) і гейтах
   релізу одразу після `typecheck`. Гейт сіду (С-8) — у `test:schema`.
+- Гейт `tests/showcase-isolation.test.ts`: слово «showcase» у `packages/simplycms/{src,routes,migrations}`
+  і шаблоні магазину червонить `pnpm test` (раніше інваріант тримала лише ручна команда `rg`).
 
 ### Змінено
 
