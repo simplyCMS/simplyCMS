@@ -63,4 +63,15 @@ export const messages: Catalog = {
   'admin.banners.ms': 'ms',
   'admin.banners.slideDuration': 'Slide duration:',
   'admin.banners.sec': 's',
+  'admin.banners.subtitleList': 'Banners on storefront pages',
+  'admin.banners.scheduled': 'Scheduled',
+  'admin.banners.deleteTitle': 'Delete the banner?',
+  'admin.banners.deleteWarning':
+    'The banner will disappear from the storefront and its images will be erased from storage.',
+  'admin.banners.titleRequired': 'Enter a title',
+  'admin.banners.imageRequired': 'Upload the main image',
+  'admin.banners.sectionRequired': 'Pick a section',
+  'admin.banners.buttonInvalid':
+    'Button: text up to 50 characters, URL is /path or http(s)://…',
+  'admin.banners.removeButton': 'Remove button',
 };

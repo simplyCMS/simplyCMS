@@ -60,7 +60,8 @@ const ADMIN_SCAN_DIRS = ['components', 'pages'];
 // UserCategoryEdit, UserCategoryRuleEdit; лишились BannerEdit, UserEdit).
 // Е6г Task 10: виміряно 1 (картка покупця пішла на серверний шар: UserEdit;
 // лишився BannerEdit).
-const KNOWN_WITHOUT_ID = 1;
+// Е6д Task 4: виміряно 0 (банери пішли на серверний шар; ратчет порожній).
+const KNOWN_WITHOUT_ID = 0;
 
 /**
  * Для форми `.insert(ідентифікатор)` шукає НАЙБЛИЖЧЕ ПОПЕРЕДНЄ (за
