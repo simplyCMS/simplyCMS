@@ -7,12 +7,14 @@ import {
 } from 'simplycms/commerce';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
-import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
+import {
+  normalizeMediaRefs,
+  REVIEW_MEDIA_ENTITY,
+} from 'simplycms/domain/media';
 import { productReviews, profiles, users } from 'simplycms/schema';
 import { discardMedia, eraseMediaRows } from 'simplycms/storage';
 import { actorOfGrant, type CoreActor } from '../core-actor';
 import { stateConflict } from '../errors';
-import { normalizeImages } from '../reviews/images';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';
@@ -106,7 +108,7 @@ export async function deleteCustomer(
     : [];
   for (const review of reviews) {
     discard.push(
-      ...(await eraseMediaRows(db, normalizeImages(review.images), {
+      ...(await eraseMediaRows(db, normalizeMediaRefs(review.images), {
         entityType: REVIEW_MEDIA_ENTITY,
         entityId: review.id,
       })),

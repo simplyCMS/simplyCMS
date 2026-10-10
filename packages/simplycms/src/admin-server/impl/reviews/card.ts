@@ -1,11 +1,11 @@
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { AdminReviewCard } from 'simplycms/contracts';
+import { normalizeMediaRefs } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { runAdmin } from '../run';
 import { isoTs, toDate } from '../sql-timestamps';
 import { parseAdminInput } from '../validation';
-import { normalizeImages } from './images';
 
 export const getReviewCardInput = z.object({ id: z.uuid() });
 
@@ -56,7 +56,7 @@ export const getReviewCardOp = async ({
     return {
       ...row,
       content: sanitizeNullableRichHtml(row.content, 'review'),
-      images: normalizeImages(row.images),
+      images: normalizeMediaRefs(row.images),
       createdAt: toDate(row.createdAt),
       updatedAt: toDate(row.updatedAt),
     };

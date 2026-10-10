@@ -29,6 +29,22 @@ export interface MediaStorageDriver {
   open(key: string): Promise<MediaObject | null>;
 }
 
+/**
+ * Сховище операції, що публікує й прибирає файли (аватар, фото відгуку).
+ *
+ * 🔴 Канал ОДИН: `driver` дістається і публікації, і прибиранню орфана. Доки
+ * їх було два незалежні параметри, викликач, який передав драйвер лише в
+ * заміну, мовчки прибирав орфан у РЕАЛЬНИЙ `MEDIA_ROOT` замість свого
+ * сховища: `discardMedia` ковтає помилку, а `local-fs.delete` вважає
+ * `ENOENT` успіхом. `discardWith` лишає розбіжність можливою, але вже як
+ * РІШЕННЯ — вона потрібна харнесу, де драйвер публікації навмисно зламаний
+ * саме на видаленні. Порожнє поле = той самий драйвер.
+ */
+export interface MediaStorageOptions {
+  readonly driver?: MediaStorageDriver;
+  readonly discardWith?: MediaStorageDriver;
+}
+
 /** Ключ не відповідає контракту або веде за межі кореня сховища. */
 export class MediaKeyError extends Error {
   constructor(readonly key: string) {

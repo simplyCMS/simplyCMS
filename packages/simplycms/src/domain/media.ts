@@ -120,6 +120,18 @@ export function resolveMediaUrls(
 }
 
 /**
+ * Значення медіа-колонки-масиву (`images`) → список референсів. Колонки —
+ * nullable `jsonb` без CHECK форми, тож `NULL`, обʼєкт чи не-рядки можливі;
+ * лишаються лише непорожні рядки. 🔴 Одне правило для адмінки, вітрини й
+ * стирання: копії вже розходились (одна пропускала `''`).
+ */
+export function normalizeMediaRefs(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string' && v !== '')
+    : [];
+}
+
+/**
  * Колонки схеми, що несуть медіа-референс.
  *
  * 🔴 Реєстр існує заради ГЕЙТА, а не заради коду: нова медіа-колонка,

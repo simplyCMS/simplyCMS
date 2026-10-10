@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MEDIA_URL_BASE, resolveMediaUrl, resolveMediaUrls } from '../media';
+import {
+  MEDIA_URL_BASE,
+  normalizeMediaRefs,
+  resolveMediaUrl,
+  resolveMediaUrls,
+} from '../media';
 
 describe('resolveMediaUrl', () => {
   it('storage key → URL під базою', () => {
@@ -50,5 +55,20 @@ describe('resolveMediaUrl', () => {
     expect(
       resolveMediaUrls(['ab/x.png', '', '  ', 'https://e.com/y.jpg']),
     ).toEqual(['/media/ab/x.png', 'https://e.com/y.jpg']);
+  });
+});
+
+describe('normalizeMediaRefs', () => {
+  it('масив → лише непорожні рядки в тому самому порядку', () => {
+    expect(
+      normalizeMediaRefs(['a/1.png', '', 42, null, { k: 1 }, 'b/2.png']),
+    ).toEqual(['a/1.png', 'b/2.png']);
+  });
+
+  it('не-масив (NULL, обʼєкт, рядок) → порожній список', () => {
+    expect(normalizeMediaRefs(null)).toEqual([]);
+    expect(normalizeMediaRefs(undefined)).toEqual([]);
+    expect(normalizeMediaRefs({ 0: 'a/1.png' })).toEqual([]);
+    expect(normalizeMediaRefs('a/1.png')).toEqual([]);
   });
 });

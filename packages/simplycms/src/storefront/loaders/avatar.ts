@@ -6,6 +6,7 @@ import {
   writeMedia,
   type MediaMime,
   type MediaStorageDriver,
+  type MediaStorageOptions,
 } from 'simplycms/storage';
 import { withCustomerDb, type ActorDb } from './db';
 import type { OperatorEscalation } from './escalation';
@@ -14,22 +15,6 @@ import type { OperatorEscalation } from './escalation';
 export interface AvatarBytes {
   readonly bytes: Uint8Array;
   readonly mime: MediaMime;
-}
-
-/**
- * Сховище заміни аватара.
- *
- * 🔴 Канал ОДИН: `driver` дістається і публікації, і прибиранню орфана. Доки
- * їх було два незалежні параметри, викликач, який передав драйвер лише в
- * заміну, мовчки прибирав орфан у РЕАЛЬНИЙ `MEDIA_ROOT` замість свого
- * сховища: `discardMedia` ковтає помилку, а `local-fs.delete` вважає
- * `ENOENT` успіхом. `discardWith` лишає розбіжність можливою, але вже як
- * РІШЕННЯ — вона потрібна харнесу, де драйвер публікації навмисно зламаний
- * саме на видаленні. Порожнє поле = той самий драйвер.
- */
-export interface AvatarStorageOptions {
-  readonly driver?: MediaStorageDriver;
-  readonly discardWith?: MediaStorageDriver;
 }
 
 /** Поточний референс аватара покупця або `null`. */
@@ -64,7 +49,7 @@ async function currentAvatarRef(
 export async function replaceAvatar(
   userId: string,
   input: AvatarBytes,
-  options: AvatarStorageOptions = {},
+  options: MediaStorageOptions = {},
 ): Promise<{ ref: string }> {
   const published: { ref: string | null } = { ref: null };
   try {

@@ -11,6 +11,7 @@ export {
   MediaKeyError,
   type MediaObject,
   type MediaStorageDriver,
+  type MediaStorageOptions,
 } from './driver';
 export { getMediaDriver, localFsDriver } from './local-fs';
 export { serveMedia } from './serve';

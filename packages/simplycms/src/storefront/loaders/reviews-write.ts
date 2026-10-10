@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
-import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
+import {
+  normalizeMediaRefs,
+  REVIEW_MEDIA_ENTITY,
+} from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews } from 'simplycms/schema';
 import {
@@ -9,8 +12,8 @@ import {
   eraseMediaRows,
   writeMedia,
   type MediaMime,
+  type MediaStorageOptions,
 } from 'simplycms/storage';
-import type { AvatarStorageOptions } from './avatar';
 import { withCustomerDb, type ActorDb } from './db';
 import type { OperatorEscalation } from './escalation';
 
@@ -69,7 +72,7 @@ export async function submitReviewWithImages(
   userId: string,
   input: Omit<ReviewInput, 'images'>,
   images: readonly ReviewImageBytes[],
-  options: AvatarStorageOptions = {},
+  options: MediaStorageOptions = {},
 ): Promise<{ id: string }> {
   const published: string[] = [];
   try {
@@ -138,10 +141,7 @@ export async function deleteProductReview(
     )
     .returning({ images: productReviews.images });
   if (!row) return { deleted: false, discard: [] };
-  // `images` — nullable jsonb без CHECK форми: беремо лише рядки.
-  const refs = Array.isArray(row.images)
-    ? row.images.filter((v): v is string => typeof v === 'string')
-    : [];
+  const refs = normalizeMediaRefs(row.images);
   const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: reviewId };
   const discard = await operator((tx) => eraseMediaRows(tx, refs, owner));
   return { deleted: true, discard };
