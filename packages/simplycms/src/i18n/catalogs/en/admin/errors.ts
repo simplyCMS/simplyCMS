@@ -60,6 +60,8 @@ export const messages: Catalog = {
   'admin.errors.customerSelf': 'You cannot delete your own account',
   'admin.errors.orderPersonalDataErased':
     'The customer was deleted — order items can no longer be changed',
+  'admin.errors.mediaRefInvalid':
+    'This image does not belong to this record — upload it again',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

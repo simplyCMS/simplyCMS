@@ -58,5 +58,7 @@ export const messages = {
   'admin.errors.customerSelf': 'Не можна видалити власний акаунт',
   'admin.errors.orderPersonalDataErased':
     'Покупця видалено — позиції замовлення змінити не можна',
+  'admin.errors.mediaRefInvalid':
+    'Зображення не належить цьому запису — завантажте його ще раз',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;

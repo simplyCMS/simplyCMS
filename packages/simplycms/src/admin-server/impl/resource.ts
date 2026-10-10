@@ -12,6 +12,7 @@ import { assertMaxLimit, pickColumns } from './resource-projection';
 import { listResourceRows, type ResourceListContext } from './resource-list';
 import type { ResourceWriteContext } from './resource-write';
 import { defineWriteOps } from './resource-write-ops';
+import { assertMediaColumns } from './resource-write-media';
 import { runAdmin } from './run';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
@@ -89,6 +90,7 @@ export function defineAdminResource<
     removeSchema,
     lock: config.lock,
     guard: config.guard,
+    media: config.media && assertMediaColumns(config.table, config.media),
   });
 
   return {

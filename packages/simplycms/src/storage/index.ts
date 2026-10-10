@@ -18,7 +18,9 @@ export { inspectUpload, type UploadInspection } from './inspect';
 export {
   discardMedia,
   eraseMedia,
+  eraseMediaRows,
   writeMedia,
+  type MediaOwner,
   type MediaRecord,
   type WriteMediaInput,
 } from './record';

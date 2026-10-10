@@ -92,6 +92,8 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.customerSelf]: 'admin.errors.customerSelf',
   [ADMIN_STATE_CONSTRAINT.orderPersonalDataErased]:
     'admin.errors.orderPersonalDataErased',
+  // Е6д-1: опція `media` фабрики ресурсів.
+  [ADMIN_STATE_CONSTRAINT.mediaRefInvalid]: 'admin.errors.mediaRefInvalid',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

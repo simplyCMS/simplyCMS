@@ -93,6 +93,8 @@ export const ADMIN_STATE_CONSTRAINT = {
   customerNotFound: 'customer_not_found',
   customerSelf: 'customer_self',
   orderPersonalDataErased: 'order_personal_data_erased',
+  // Е6д-1: новий референс зображення не є файлом цього запису (опція `media` фабрики).
+  mediaRefInvalid: 'media_ref_invalid',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

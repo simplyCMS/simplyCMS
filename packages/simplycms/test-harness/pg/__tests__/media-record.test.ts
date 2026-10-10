@@ -10,7 +10,12 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { replaceAvatar } from 'simplycms/storefront/loaders';
-import { eraseMedia, localFsDriver, writeMedia } from 'simplycms/storage';
+import {
+  eraseMedia,
+  eraseMediaRows,
+  localFsDriver,
+  writeMedia,
+} from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -547,6 +552,53 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
 
     expect(await real.open(oldRef), 'старий файл мав лишитись').not.toBeNull();
     expect(await avatarOf(userId)).toBe(oldRef);
+  });
+
+  // 🔴 Е6д-14/16: перша фаза двофазного стирання. Видаляє лише рядки `media`
+  // власника, повертає ЛИШЕ видалені ключі й файлів не чіпає.
+  it('eraseMediaRows: лише свої ключі власника, чужі й не-media ігноруються', async () => {
+    const real = driver();
+    const own = randomUUID();
+    const put = (entityType: string, entityId: string) =>
+      withActor({ role: 'app_admin' }, (db) =>
+        writeMedia(
+          db,
+          {
+            bytes: PNG,
+            mime: 'image/png',
+            entityType,
+            entityId,
+            uploadedBy: null,
+          },
+          real,
+        ),
+      );
+    const mine = await put('banner', own);
+    const foreign = await put('banner', randomUUID());
+    const otherType = await put('product', own);
+    const refs = [
+      'data:image/png;base64,AAAA',
+      'ab/00000000-0000-4000-8000-000000000000.png',
+      foreign.ref,
+      otherType.ref,
+      mine.ref,
+    ];
+
+    const erased = await withActor({ role: 'app_admin' }, (db) =>
+      eraseMediaRows(db, refs, { entityType: 'banner', entityId: own }),
+    );
+
+    expect(erased).toEqual([mine.ref]);
+    const left = (await queryRows(
+      dbUrl,
+      'select storage_key from public.media where storage_key = any($1) order by storage_key',
+      [[mine.ref, foreign.ref, otherType.ref]],
+    )) as { storage_key: string }[];
+    expect(left.map((r) => r.storage_key)).toEqual(
+      [foreign.ref, otherType.ref].sort(),
+    );
+    // Файл стирає ВИКЛИКАЧ після COMMIT (`discardMedia`), не ця функція.
+    expect(await real.open(mine.ref)).not.toBeNull();
   });
 
   it('тимчасові файли після всіх прогонів не лишились', async () => {

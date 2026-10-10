@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { media } from 'simplycms/schema';
 
@@ -169,4 +169,60 @@ export async function eraseMedia(
   await driver.delete(ref);
 
   return true;
+}
+
+/** Власник файлу: рядок `media` з цим `entity_type` і `entity_id` (Е6д-16). */
+export interface MediaOwner {
+  readonly entityType: string;
+  readonly entityId: string;
+}
+
+/**
+ * Перша фаза двофазного стирання (Е6д-14, КАНОН): видалити РЯДКИ `media`
+ * власника в транзакції викликача й повернути ключі, які справді видалено.
+ * Файли стирає викликач ПІСЛЯ COMMIT (`discardMedia` кожного ключа).
+ *
+ * 🔴 Чому не `eraseMedia`: той стирає файл ДО COMMIT. Для кількох файлів
+ * обрив `driver.delete` другого відкочує обидва референси, а перший файл уже
+ * зник — битий референс. Тут найгірший наслідок — орфан-файл без рядка.
+ *
+ * 🔴 Умова власника обовʼязкова (Е6д-16), перевантаження без неї немає:
+ * стирання йде за `storage_key`, тож підсунутий чужий ключ (аватар, банер
+ * іншого запису) без цієї умови стер би чужий файл. Ключ без рядка власника —
+ * чужий, `data:`/`https:`, уже стертий — тихо ігнорується й у результат не
+ * потрапляє, тож його файл ніхто не стирає.
+ *
+ * `FOR UPDATE` + `ORDER BY storage_key` — щоб паралельні стирання тих самих
+ * ключів не дійшли обидва до `discard` і не взяли локи в різному порядку.
+ */
+export async function eraseMediaRows(
+  db: ActorDb,
+  refs: readonly string[],
+  owner: MediaOwner,
+): Promise<string[]> {
+  const keys = [...new Set(refs)];
+  if (keys.length === 0) return [];
+  const locked = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(
+      and(
+        inArray(media.storageKey, keys),
+        eq(media.entityType, owner.entityType),
+        eq(media.entityId, owner.entityId),
+      ),
+    )
+    .orderBy(media.storageKey)
+    .for('update');
+  if (locked.length === 0) return [];
+  const deleted = await db
+    .delete(media)
+    .where(
+      inArray(
+        media.id,
+        locked.map((r) => r.id),
+      ),
+    )
+    .returning({ key: media.storageKey });
+  return deleted.map((r) => r.key).sort();
 }

@@ -8,6 +8,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  time,
   timestamp,
   uuid,
   varchar,
@@ -119,6 +120,22 @@ describe('columnsToZod: масив (Е6а, text[])', () => {
     expect(ok('pair', ['ab', 'cd'])).toBe(true);
     expect(ok('pair', ['ab'])).toBe(false);
     expect(ok('pair', ['abc', 'cd'])).toBe(false);
+  });
+});
+
+describe('columnsToZod: time (Е6д, banners.schedule_time_*)', () => {
+  it('голий рядок, як drizzle-zod; формат накладає refine ресурсу', () => {
+    const tt = pgTable('time_t', {
+      at: time('at'),
+      req: time('req').notNull(),
+    });
+    const s = columnsToZod(tt, 'insert');
+    const ok = (k: string, v: unknown) => s[k]!.safeParse(v).success;
+    expect(ok('at', '09:30')).toBe(true);
+    expect(ok('at', 'не час')).toBe(true);
+    expect(ok('at', null)).toBe(true);
+    expect(ok('at', 930)).toBe(false);
+    expect(ok('req', undefined)).toBe(false);
   });
 });
 

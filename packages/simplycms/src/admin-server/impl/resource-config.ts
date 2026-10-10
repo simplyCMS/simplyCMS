@@ -1,6 +1,7 @@
 import type { Table } from 'drizzle-orm';
 import type { Operation } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
+import type { MediaEntityType } from 'simplycms/domain/media';
 import type { RichHtmlProfile } from 'simplycms/sanitize';
 import type {
   ColumnName,
@@ -8,10 +9,18 @@ import type {
   ResourceRefine,
 } from './resource-schemas';
 
-/** Пакет запису, який бачить guard-хук (Е6а-16): УВЕСЬ batch, не рядок. */
+/**
+ * Пакет запису, який бачить guard-хук (Е6а-16): УВЕСЬ batch, не рядок.
+ * `before` — знімок старого рядка під `FOR UPDATE` (Е6д-2: перехресні
+ * правила перевіряються на злитому рядку); заповнюється, коли ресурс має
+ * `media`. Наявні guard-и поля не читають — воно опційне.
+ */
 export type ResourceGuardWrite<Insert, Patch> =
   | { kind: 'insert'; rows: readonly Insert[] }
-  | { kind: 'update'; updates: readonly { id: string; patch: Patch }[] };
+  | {
+      kind: 'update';
+      updates: readonly { id: string; patch: Patch; before?: Insert }[];
+    };
 
 /** Guard-хук (Е6а-16): відмова — `throw` (`stateConflict`), увесь пакет відкочується. */
 export type ResourceGuard<Insert, Patch> = (
@@ -80,6 +89,10 @@ export interface AdminResourceConfigBase<
     NoInfer<InsertPick<T, W | I> & { id: string }>,
     NoInfer<Partial<InsertPick<T, W>>>
   >;
+  /** Е6д-1: колонки-референси на файли сутності `entityType` (лише writable
+   *  `text`). Фабрика перевіряє нові референси, стирає рядки `media`
+   *  заміненого/видаленого в транзакції, а файли — після COMMIT (Е6д-14). */
+  media?: { entityType: MediaEntityType; columns: readonly NoInfer<W>[] };
 }
 
 /**
