@@ -415,12 +415,8 @@ const eslintConfig = [
   },
   // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
   // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.
-  // 🔴 `ignores` — ратчет: `ReviewDetail.tsx` мертвий і переписується
-  // хвилею відгуків разом із цим викликом. Список дзеркалиться в
-  // `tests/storage-direct-calls.test.ts` і може тільки скорочуватись.
   {
     files: ['packages/simplycms/src/**/*.{ts,tsx}'],
-    ignores: ['packages/simplycms/src/admin/pages/ReviewDetail.tsx'],
     plugins: {
       'simplycms-storage': { rules: { 'no-direct-storage': noDirectStorage } },
     },

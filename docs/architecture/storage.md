@@ -36,8 +36,8 @@
   резолв при читанні. Гейт — `tests/media-columns-coverage.test.ts`.
 - 🔴 Не викликай `supabase.storage` і не імпортуй `@supabase/storage-js`: правило
   `simplycms-storage/no-direct-storage` (`eslint-rules/no-direct-storage.mjs`) і
-  ратчет `tests/storage-direct-calls.test.ts` це валять. Єдина виїмка —
-  `admin/pages/ReviewDetail.tsx` (мертва легасі-сторінка, список лише скорочується).
+  ратчет `tests/storage-direct-calls.test.ts` це валять. Виїмок немає: список
+  `STORAGE_DIRECT_CALL_EXEMPTIONS` порожній (новий виняток — рішення, а не звичка).
 - Не клади URL у колонку сутності — лише референс.
 - Не читай `MEDIA_ROOT` на модуль-рівні — лише в рантаймі, всередині функції
   (контракт серверного env).

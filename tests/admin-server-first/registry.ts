@@ -32,6 +32,4 @@ export const PENDING_LEGACY: ReadonlyArray<{ file: string; wave: LegacyWave }> =
       file: 'packages/simplycms/src/admin/layouts/__tests__/LegacySupabaseBoundary.test.tsx',
       wave: 'Е7',
     },
-    { file: 'packages/simplycms/src/admin/pages/ReviewDetail.tsx', wave: 'Е6' },
-    { file: 'packages/simplycms/src/admin/pages/Reviews.tsx', wave: 'Е6' },
   ];
