@@ -47,17 +47,18 @@ export async function discardAll(keys: readonly string[]): Promise<void> {
 }
 
 /**
- * 🔴 Колектор `discard` обовʼязковий для db-варіантів media-ресурсу: без
+ * 🔴 Колектор `discard` обовʼязковий для db-варіантів media-ресурсу (і
+ * `removeIn` ресурсу з `cascadeMedia`, Е6д-19): без
  * нього ключі стертих рядків `media` загубились би, а файли мовчки лишились
  * орфанами (сід, порт). Помилка програміста, не користувача.
  */
 export function requireDiscard(
   entity: string,
-  media: ResourceMedia | undefined,
+  needed: boolean,
   discard: string[] | undefined,
   op: string,
 ): string[] {
-  if (media && !discard)
+  if (needed && !discard)
     throw new Error(
       `[admin-server] ${entity}: ${op} media-ресурсу вимагає колектор discard`,
     );

@@ -13,6 +13,7 @@ import { listResourceRows, type ResourceListContext } from './resource-list';
 import type { ResourceWriteContext } from './resource-write';
 import { defineWriteOps } from './resource-write-ops';
 import { assertMediaColumns } from './resource-write-media';
+import { assertCascadeMedia, cascadeCoverage } from './resource-cascade-media';
 import { runAdmin } from './run';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
@@ -91,6 +92,7 @@ export function defineAdminResource<
     lock: config.lock,
     guard: config.guard,
     media: config.media && assertMediaColumns(config.table, config.media),
+    cascadeMedia: assertCascadeMedia(config.table, config.cascadeMedia ?? []),
   });
 
   return {
@@ -101,6 +103,8 @@ export function defineAdminResource<
     updateSchema,
     removeSchema,
     subsetSchema: subsetInputSchema,
+    /** Е6д-19: які каскадні медіа стирає `remove` — для гейта класу. */
+    cascadeMedia: cascadeCoverage(config.table, config.cascadeMedia ?? []),
     /** Серверна межа сторінки (Е5-12); `undefined` — без межі. Публічна для тесту Е5-14. */
     get maxLimit(): number | undefined {
       return maxLimit;

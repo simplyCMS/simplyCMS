@@ -3,6 +3,7 @@ import type { Operation } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
 import type { MediaEntityType } from 'simplycms/domain/media';
 import type { RichHtmlProfile } from 'simplycms/sanitize';
+import type { ResourceCascadeMedia } from './resource-cascade-media';
 import type {
   ColumnName,
   InsertPick,
@@ -93,6 +94,11 @@ export interface AdminResourceConfigBase<
    *  `text`). Фабрика перевіряє нові референси, стирає рядки `media`
    *  заміненого/видаленого в транзакції, а файли — після COMMIT (Е6д-14). */
   media?: { entityType: MediaEntityType; columns: readonly NoInfer<W>[] };
+  /** Е6д-19: дочірні таблиці, які FK `ON DELETE CASCADE` видаляє разом із
+   *  рядком ресурсу і які несуть медіа. `remove` стирає їхні рядки `media` у
+   *  тій самій транзакції, а файли — після COMMIT. Покриття звіряє гейт класу
+   *  `media-cascade-coverage` з каталогом FK. */
+  cascadeMedia?: readonly ResourceCascadeMedia[];
 }
 
 /**
