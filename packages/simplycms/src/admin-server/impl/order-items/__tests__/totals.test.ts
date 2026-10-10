@@ -53,7 +53,7 @@ describe('гроші в центах (Е5б-13)', () => {
     expect(MAX_CENTS_NUMERIC_10_2).toBe(9_999_999_999);
   });
 
-  it('assertWithin: рівно межа — у межах; межа + 1 цент → 409 order_amount_out_of_range', () => {
+  it('assertWithin: рівно межа — у межах; межа + 1 цент → AdminConflictError order_amount_out_of_range (статус ставить межа, С-10)', () => {
     expect(() =>
       assertWithin(MAX_CENTS_NUMERIC_12_2, MAX_CENTS_NUMERIC_12_2),
     ).not.toThrow();
@@ -67,6 +67,7 @@ describe('гроші в центах (Е5б-13)', () => {
         constraint: 'order_amount_out_of_range',
       }),
     );
-    expect(setResponseStatus).toHaveBeenCalledWith(409);
+    // С-10: ядро статус не ставить — 409 ставить межа операції (run.ts).
+    expect(setResponseStatus).not.toHaveBeenCalled();
   });
 });

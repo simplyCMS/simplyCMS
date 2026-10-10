@@ -46,6 +46,8 @@ pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
 pnpm start            # Run production server (node server.mjs, PORT=3000) — див. docs/development/ENVIRONMENT.md
 pnpm typecheck        # TypeScript type check
+pnpm typecheck:showcase   # tsc сіду вітрини (tsconfig.showcase.json): tsx типів не перевіряє,
+                      # а кореневий tsconfig scripts/showcase/*.mts не включає
 pnpm dev:www          # Лендінг simplycms.dev (apps/www) — dev на :3100
 pnpm build:www        # Лендінг: статичний білд (prerender) → apps/www/dist/client
 pnpm typecheck:www    # Лендінг: tsc (після build:www — потребує routeTree.gen.ts)
@@ -87,6 +89,24 @@ pnpm db:demo          # підняти ЧИСТУ базу магазину з �
                       # --url, а НЕ з DATABASE_URL: створює нову БД у кластері, тож потрібен
                       # адмін-доступ до кластера, а не до бази магазину; готовий DATABASE_URL
                       # скрипт ДРУКУЄ в кінці. Покроковий запуск — docs/tasks/v2-state-map.md
+pnpm db:showcase      # ВІТРИННИЙ стенд для ручного тесту: db:demo + наповнення (8 розділів і
+                      # 33 товари з PNG-зображеннями, два типи цін, залишки у двох точках,
+                      # адресна доставка, власник і другий адмін, 18 покупців, категорія VIP і
+                      # знижки, 40 замовлень за 30 днів, схвалені відгуки). Пише через доменні
+                      # ядра під withActor (С-12), детермінований (фіксований seed PRNG).
+                      # 🔴 Обмеження (С-7/С-16): база ФІКСОВАНОГО імені simplycms_showcase на
+                      # кластері PG_HARNESS_URL (ні параметра, ні env для імені). Вона ОДНОРАЗОВА:
+                      # кожен запуск її перестворює, ручні зміни зникають. Право перестворити дає
+                      # позначка COMMENT ON DATABASE 'simplycms:showcase'; чужу базу з таким
+                      # іменем без позначки команда не чіпає (відмова з поясненням). Сам модуль
+                      # сіду відмовляє на непорожній базі (users/orders), --force немає.
+                      # Медіатека — .data/showcase-media (очищується кожним запуском).
+                      # Друкує DATABASE_URL (app_runtime), BETTER_AUTH_SECRET (новий щоразу),
+                      # MEDIA_ROOT і готову команду pnpm build && … pnpm start.
+                      # 🔴 Паролі — ЛИШЕ ЛОКАЛКА (константи scripts/showcase/env.mts і people.mts):
+                      # власник owner@showcase.test / showcase-owner-2026,
+                      # менеджер manager@showcase.test / showcase-manager-2026,
+                      # покупці buyer-01…18@showcase.test / showcase-buyer-2026
 pnpm live:smoke       # живий прогін: db:demo → build → server → curl+SQL (gate-b) + Playwright
                       # (воронка, сховище, кроки адмінки в сесії власника). Потребує Postgres
                       # (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням
@@ -99,14 +119,17 @@ pnpm db:pull / db:diff
 
 ## 3. Гейти (порядок і причини)
 
-Порядок: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → test →
-test:schema → build:packages → typecheck:template → test:packaging`.
+Порядок: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
+typecheck:showcase → test → test:schema → build:packages → typecheck:template → test:packaging`.
 
 - 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки
   `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами, а звичайний
   `pnpm install` мовчки лагодить розсинхрон замість червоніти; у CI frozen — дефолт.
 - Гейт саме `format:check`, бо `pnpm format` (`prettier --write`) не червоніє.
 - `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`.
+- `typecheck:showcase` — одразу після `typecheck`: сід `db:showcase` біжить під `tsx`, який
+  типів не перевіряє, а кореневий `tsconfig.json` не включає `scripts/showcase/*.mts`. Без
+  гейта дрейф сигнатур ядер, якими пише сід, червонів би лише на живому запуску.
 - `test:schema` у ланцюгу, бо він єдиний перевіряє накат канону міграцій і ПОВЕДІНКУ RLS —
   інші гейти схему БД не виконують.
 - `test:packaging` іде **після** `pnpm test` і `build:packages`: `tests/published-exports-parity.test.ts`
@@ -217,7 +240,7 @@ Error-зони й кастомні правила (селектори й опц�
 
 | Workflow | Job | Кроки | Коли |
 |----------|-----|-------|------|
-| `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `lint` | push/PR/manual |
+| `workflow.yml` | `typecheck` | `install` → `format:check` → `build` → `typecheck` → `typecheck:showcase` → `lint` | push/PR/manual |
 | `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
 | `workflow.yml` | `packaging` | `install` → `build:packages` → `typecheck:template` → `test:packaging` → `pilot:pack --skip-build` | push/PR/manual |
 | `workflow.yml` | `schema` | `install` → `test:schema` (service-контейнер `postgres:17`) | push/PR/manual |

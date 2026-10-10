@@ -1,12 +1,13 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { profiles } from 'simplycms/schema';
-import { advisoryXactLock } from 'simplycms/db';
+import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import {
   customerCategoryLock,
   loadDefaultUserCategoryId,
   writeCategoryChange,
 } from 'simplycms/commerce';
+import { actorOfGrant, type CoreActor } from '../core-actor';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 
@@ -17,6 +18,10 @@ export const assignCustomerCategoryInput = z.object({
   locked: z.boolean().default(true),
 });
 
+export type AssignCustomerCategoryInput = z.output<
+  typeof assignCustomerCategoryInput
+>;
+
 /**
  * Ручне призначення категорії покупцю (Е6в-20), `customer.manage`.
  *
@@ -25,7 +30,7 @@ export const assignCustomerCategoryInput = z.object({
  *     призначення посеред транзакції.
  *  2. Профіль `FOR UPDATE`; немає — помилка.
  *  3. ЕФЕКТИВНА категорія змінилась (профіль `NULL` = дефолтна, Е6в-19) →
- *     профіль + історія (`changed_by` = адмін, `rule_id = null`, `from` —
+ *     профіль + історія (`changed_by` = актор, `rule_id = null`, `from` —
  *     ефективна категорія, як у автоправил). Не змінилась — історії немає.
  *  4. Профіль завжди отримує явну `category_id` і `category_locked = locked`
  *     (за замовчуванням `true`): `NULL` + дефолтна нормалізується без
@@ -33,39 +38,50 @@ export const assignCustomerCategoryInput = z.object({
  *     Автоправила пропускають заблокованих — вручну призначений VIP не стане
  *     знову «Роздрібом» після чергової покупки.
  * Неіснуюча категорія — FK `profiles.category_id` → 409 `reference`.
+ *
+ * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний — без гранта
+ * й статусу відповіді. `changed_by` = `actor.userId` для `admin`, `NULL` для
+ * `system` (як у автоправил).
  */
+export async function assignCustomerCategory(
+  db: ActorDb,
+  input: AssignCustomerCategoryInput,
+  actor: CoreActor,
+): Promise<{ categoryId: string; locked: boolean }> {
+  await advisoryXactLock(db, customerCategoryLock(input.userId));
+  const [profile] = await db
+    .select({ categoryId: profiles.categoryId })
+    .from(profiles)
+    .where(eq(profiles.userId, input.userId))
+    .for('update');
+  if (!profile)
+    throw new Error(`[admin-server] профілю покупця ${input.userId} не існує`);
+  const effective = profile.categoryId ?? (await loadDefaultUserCategoryId(db));
+  if (effective !== input.categoryId)
+    await writeCategoryChange(db, {
+      userId: input.userId,
+      fromCategoryId: effective,
+      toCategoryId: input.categoryId,
+      reason: input.reason,
+      ruleId: null,
+      // `system` пише як автоправило — без автора (С-15).
+      changedBy: actor.kind === 'admin' ? actor.userId : null,
+    });
+  await db
+    .update(profiles)
+    .set({ categoryId: input.categoryId, categoryLocked: input.locked })
+    .where(eq(profiles.userId, input.userId));
+  return { categoryId: input.categoryId, locked: input.locked };
+}
+
+/** Операція: розбір входу ДО гранта, далі ядро з актором сесії. */
 export const assignCustomerCategoryOp = async ({
   data,
 }: {
   data: z.input<typeof assignCustomerCategoryInput>;
 }): Promise<{ categoryId: string; locked: boolean }> => {
   const input = parseAdminInput(assignCustomerCategoryInput, data);
-  return runAdmin('customer.manage', async (db, grant) => {
-    await advisoryXactLock(db, customerCategoryLock(input.userId));
-    const [profile] = await db
-      .select({ categoryId: profiles.categoryId })
-      .from(profiles)
-      .where(eq(profiles.userId, input.userId))
-      .for('update');
-    if (!profile)
-      throw new Error(
-        `[admin-server] профілю покупця ${input.userId} не існує`,
-      );
-    const effective =
-      profile.categoryId ?? (await loadDefaultUserCategoryId(db));
-    if (effective !== input.categoryId)
-      await writeCategoryChange(db, {
-        userId: input.userId,
-        fromCategoryId: effective,
-        toCategoryId: input.categoryId,
-        reason: input.reason,
-        ruleId: null,
-        changedBy: grant.subject.userId,
-      });
-    await db
-      .update(profiles)
-      .set({ categoryId: input.categoryId, categoryLocked: input.locked })
-      .where(eq(profiles.userId, input.userId));
-    return { categoryId: input.categoryId, locked: input.locked };
-  });
+  return runAdmin('customer.manage', (db, grant) =>
+    assignCustomerCategory(db, input, actorOfGrant(grant)),
+  );
 };

@@ -20,6 +20,15 @@
  *           шляху не важить — потрібна лише для CREATE/DROP DATABASE).
  *           За замовчуванням — PG_HARNESS_URL.
  *   --name  імʼя цільової БД. За замовчуванням — simplycms_demo.
+ *   --comment  необовʼязкова позначка `COMMENT ON DATABASE`. Ставиться в
+ *           тому ж кроці одразу після CREATE, ДО міграцій: обрив накату не
+ *           лишає базу без позначки (С-16, `scripts/showcase/showcase-db.mts`
+ *           за нею вирішує, чи можна базу перестворити). Без прапорця
+ *           поведінка й вивід — як були.
+ *
+ * Тестовий шов: env `DEMO_DB_MIGRATIONS_DIR` підміняє теку канону (разом із
+ * `demo/demo-seed.sql` у ній). Потрібен лише гейту `showcase-db-guard`, щоб
+ * довести «міграція впала → позначка вже стоїть»; без env — канон пакета.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -28,15 +37,18 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const MIGRATIONS_DIR = join(ROOT, 'packages/simplycms/migrations');
+const MIGRATIONS_DIR =
+  process.env.DEMO_DB_MIGRATIONS_DIR ??
+  join(ROOT, 'packages/simplycms/migrations');
 const DEMO_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
 
-/** `--url`/`--name` з argv (`node scripts/demo-db.mjs -- --name foo`). */
+/** `--url`/`--name`/`--comment` з argv (`node scripts/demo-db.mjs -- --name foo`). */
 function parseArgs(argv) {
   const args = { url: process.env.PG_HARNESS_URL, name: 'simplycms_demo' };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--url') args.url = argv[(i += 1)];
     else if (argv[i] === '--name') args.name = argv[(i += 1)];
+    else if (argv[i] === '--comment') args.comment = argv[(i += 1)];
   }
   return args;
 }
@@ -57,8 +69,11 @@ function migrationFiles() {
   return [...canon, DEMO_FILE];
 }
 
-/** Пересоздати БД `name` на кластері `adminUrl` — гарантований чистий старт. */
-async function recreateDatabase(adminUrl, name) {
+/**
+ * Пересоздати БД `name` на кластері `adminUrl` — гарантований чистий старт.
+ * `comment` (якщо задано) ставиться тим самим зʼєднанням одразу після CREATE.
+ */
+async function recreateDatabase(adminUrl, name, comment) {
   const client = new pg.Client({ connectionString: adminUrl });
   await client.connect();
   try {
@@ -69,6 +84,12 @@ async function recreateDatabase(adminUrl, name) {
     );
     await client.query(`drop database if exists "${name}"`);
     await client.query(`create database "${name}"`);
+    // COMMENT не приймає параметрів — літерал екранує сам драйвер.
+    if (comment !== undefined) {
+      await client.query(
+        `comment on database "${name}" is ${client.escapeLiteral(comment)}`,
+      );
+    }
   } finally {
     await client.end();
   }
@@ -129,7 +150,7 @@ async function main() {
   }
 
   console.log(`[demo-db] БД «${args.name}» — пересоздання…`);
-  await recreateDatabase(args.url, args.name);
+  await recreateDatabase(args.url, args.name, args.comment);
 
   const dbUrl = withDbName(args.url, args.name);
   console.log('[demo-db] накат канону (0000→0004) + demo/demo-seed.sql…');

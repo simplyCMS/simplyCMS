@@ -137,6 +137,9 @@ simplyCMS/
 │   │                                    # + seed-fixtures.mjs — джерело правди сіду
 │   ├── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 │   ├── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
+│   ├── showcase/*.mts                   # `pnpm db:showcase`: вітринний стенд для ручного тесту
+│   │                                    # (db:demo + наповнення через доменні ядра під withActor);
+│   │                                    # тулінг монорепо — у пакети й шаблон не їде
 │   └── live-smoke.mjs + live-smoke/     # `pnpm live:smoke`: sql.mjs (прямий SQL) + register.mjs +
 │                                        # funnel.mjs (Playwright-воронка) + avatar.mjs (ЄДИНИЙ
 │                                        # живий доказ порту сховища: завантаження, роздача /media,
@@ -166,6 +169,8 @@ simplyCMS/
 ├── public/                           # Статика host-а (favicon, placeholder)
 ├── playwright.config.ts              # Конфіг браузерних тестів `tests/e2e/` (admin-smoke, layout-overflow)
 ├── tsconfig.template.json            # tsconfig гейта `pnpm typecheck:template`
+├── tsconfig.showcase.json            # tsconfig гейта `pnpm typecheck:showcase` (`scripts/showcase/*.mts`
+│                                     # кореневий tsconfig не бачить, а tsx типів не перевіряє)
 ├── vitest.schema.config.ts           # Схемний контур (`pnpm test:schema`)
 ├── simplycms.config.ts               # defineConfig: locale, currency, themes, plugins
 ├── eslint.db-client-zone.mjs         # Зона: гола фабрика пулу `db/client` закрита, лише `withActor`

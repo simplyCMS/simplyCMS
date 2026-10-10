@@ -20,6 +20,10 @@ export const GATES = [
   { name: 'lint', cmd: 'pnpm lint' },
   { name: 'build', cmd: 'pnpm build' },
   { name: 'typecheck', cmd: 'pnpm typecheck' },
+  // 🔴 Окремо від `typecheck`: `tsx` типів не перевіряє, а кореневий
+  // `tsconfig.json` не включає `scripts/showcase/*.mts`, тож дрейф сигнатур
+  // ядер, якими пише сід, інакше не червонів би ніде до живого запуску.
+  { name: 'typecheck:showcase', cmd: 'pnpm typecheck:showcase' },
   { name: 'test', cmd: 'pnpm test' },
   { name: 'build:packages', cmd: 'pnpm build:packages' },
   // 🔴 Після `build:packages`, бо типізує шаблон проти зібраного `dist` —

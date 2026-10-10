@@ -36,6 +36,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Сід вітрини (`scripts/showcase/*.mts`): `tsx` типів не перевіряє, а
+      # кореневий tsconfig `.mts` не включає — окрема програма.
+      - name: Typecheck showcase seed
+        run: pnpm typecheck:showcase
+
       - name: Lint
         run: pnpm lint
 

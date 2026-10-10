@@ -50,55 +50,62 @@ async function assertCategoriesExist(db: ActorDb, ids: string[]) {
  * під першим перевіряється, що категорії існують (видалення категорії,
  * на яку посилається умова, бере той самий ключ). Рядок знижки пишеться
  * ДО цілей і умов — на ньому тримається `FOR SHARE` у `getDiscountOp`.
+ *
+ * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний
+ * `saveDiscountInput` — без гранта й статусу відповіді (конфлікт лише
+ * кидається, 409 ставить межа операції).
  */
-export const saveDiscountOp = async ({ data }: { data: SaveDiscountInput }) => {
-  // А2: операція парсить вхід сама — прямий виклик повз serverFn теж 400.
-  const input = parseAdminInput(saveDiscountInput, data);
+export async function saveDiscount(db: ActorDb, input: SaveDiscountInput) {
   const { id, targets, conditions, discountValue, ...fields } = input;
   // Число → рядок `numeric` без округлення; `NaN`/`Infinity` відсік Zod.
   const patch = { ...fields, discountValue: String(discountValue) };
   const cats = categoryIds(conditions);
-  return runAdmin('discount.manage', async (db) => {
-    if (cats.length > 0) await lockCatalogTarget(db, CUSTOMER_CONFIG_LOCK);
-    await lockCatalogTarget(db, DISCOUNT_CONFIG_LOCK);
-    if (cats.length > 0) await assertCategoriesExist(db, cats);
+  if (cats.length > 0) await lockCatalogTarget(db, CUSTOMER_CONFIG_LOCK);
+  await lockCatalogTarget(db, DISCOUNT_CONFIG_LOCK);
+  if (cats.length > 0) await assertCategoriesExist(db, cats);
 
-    const [discount] = await db
-      .insert(discounts)
-      .values({ id, ...patch })
-      .onConflictDoUpdate({
-        target: discounts.id,
-        set: { ...patch, updatedAt: new Date() },
-      })
-      .returning();
+  const [discount] = await db
+    .insert(discounts)
+    .values({ id, ...patch })
+    .onConflictDoUpdate({
+      target: discounts.id,
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning();
 
-    await db.delete(discountTargets).where(eq(discountTargets.discountId, id));
-    await db
-      .delete(discountConditions)
-      .where(eq(discountConditions.discountId, id));
-    const savedTargets = await db
-      .insert(discountTargets)
-      .values(targets.map((t) => ({ id: randomUUID(), discountId: id, ...t })))
-      .returning();
-    const savedConditions =
-      conditions.length === 0
-        ? []
-        : await db
-            .insert(discountConditions)
-            .values(
-              conditions.map((c) => ({
-                id: randomUUID(),
-                discountId: id,
-                conditionType: c.conditionType,
-                operator: c.operator,
-                value: c.value as JsonValue,
-              })),
-            )
-            .returning();
-    return {
-      discount: discount!,
-      targets: savedTargets,
-      conditions: savedConditions,
-    };
-  });
+  await db.delete(discountTargets).where(eq(discountTargets.discountId, id));
+  await db
+    .delete(discountConditions)
+    .where(eq(discountConditions.discountId, id));
+  const savedTargets = await db
+    .insert(discountTargets)
+    .values(targets.map((t) => ({ id: randomUUID(), discountId: id, ...t })))
+    .returning();
+  const savedConditions =
+    conditions.length === 0
+      ? []
+      : await db
+          .insert(discountConditions)
+          .values(
+            conditions.map((c) => ({
+              id: randomUUID(),
+              discountId: id,
+              conditionType: c.conditionType,
+              operator: c.operator,
+              value: c.value as JsonValue,
+            })),
+          )
+          .returning();
+  return {
+    discount: discount!,
+    targets: savedTargets,
+    conditions: savedConditions,
+  };
+}
+
+/** Операція: парс ДО гранта (400 до `requireGrant`) → ядро в транзакції гранта. */
+export const saveDiscountOp = async ({ data }: { data: SaveDiscountInput }) => {
+  // А2: операція парсить вхід сама — прямий виклик повз serverFn теж 400.
+  const input = parseAdminInput(saveDiscountInput, data);
+  return runAdmin('discount.manage', (db) => saveDiscount(db, input));
 };

@@ -11,16 +11,36 @@ import { ValidationError } from './errors';
  * для адмін-поверхні: і валідатор serverFn (`adminInput`), і повторний
  * парс у `defineAdminResource` йдуть сюди. Сире повідомлення/вхід Zod
  * далі за межу не потрапляють — лише білий список
- * (`sanitizeValidationIssues`). Статус ставиться ДО throw (як у
- * `toAdminConflict`: сервер бере його з відповіді в момент catch).
+ * (`sanitizeValidationIssues`). Статус ставиться ДО throw (сервер бере
+ * його з відповіді в момент catch, К3-13): це вхід serverFn — окрема межа,
+ * що виконується ДО `runAdminTransactions` (С-10).
  */
 export function parseAdminInput<S extends z.ZodType>(
   schema: S,
   data: unknown,
 ): z.output<S> {
+  try {
+    return validateAdminInput(schema, data);
+  } catch (error) {
+    // Лише Zod-відмова — 400; інший виняток (зламаний transform) — як був.
+    if (error instanceof ValidationError) setResponseStatus(400);
+    throw error;
+  }
+}
+
+/**
+ * Те саме перетворення Zod-відмови в `ValidationError`, але БЕЗ статусу
+ * відповіді — для ядер, які кличуть поза HTTP-запитом (db-варіанти фабрики
+ * `insertIn`/`updateIn`/`removeIn`, сід): справжній `setResponseStatus` поза
+ * запитом кидає власний виняток і підмінив би доменну помилку (С-10). Усередині
+ * операції 400 поставить межа `runAdminTransactions`.
+ */
+export function validateAdminInput<S extends z.ZodType>(
+  schema: S,
+  data: unknown,
+): z.output<S> {
   const result = schema.safeParse(data);
   if (result.success) return result.data;
-  setResponseStatus(400);
   throw new ValidationError(sanitizeValidationIssues(result.error.issues));
 }
 
@@ -48,12 +68,12 @@ export function adminInput<S extends z.ZodType>(
 /**
  * Помилка ОДНОГО поля, яку знає лише операція (не схема): зайнятий email
  * (Е6г-1). Той самий канал, що й Zod-відмова, — клієнт покаже її під
- * полем (`applyServerValidation`). Статус — ДО throw (К3-13).
+ * полем (`applyServerValidation`). 🔴 Лише throw: її кидає ядро зсередини
+ * операції, і 400 ставить межа (`runAdminTransactions`, С-10), а не вона.
  */
 export function fieldIssue(
   path: readonly (string | number)[],
   code: ValidationIssueCode,
 ): never {
-  setResponseStatus(400);
   throw new ValidationError([{ path, code }]);
 }
