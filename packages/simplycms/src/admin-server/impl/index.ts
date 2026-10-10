@@ -180,7 +180,26 @@ export { AdminConflictError, ValidationError } from './errors';
 // С-15: актор ядер, яких кличуть поза операцією (сід, порти).
 export type { CoreActor } from './core-actor';
 export { adminInput } from './validation';
-export { reviewContentInput, getReviewContentOp } from './reviews/content';
+// К3-Е6д, Task 6: модерація відгуків (`review.moderate`).
+export {
+  listReviewsInput,
+  listReviewsOp,
+  countPendingReviewsOp,
+  REVIEWS_PAGE_SIZE,
+} from './reviews/list';
+export { getReviewCardInput, getReviewCardOp } from './reviews/card';
+export {
+  setReviewsStatus,
+  setReviewsStatusInput,
+  setReviewsStatusOp,
+} from './reviews/status';
+export type { SetReviewsStatusInput } from './reviews/status';
+export {
+  deleteReview,
+  deleteReviewInput,
+  deleteReviewOp,
+} from './reviews/delete';
+export type { DeleteReviewInput } from './reviews/delete';
 export { diagnosePriceInput } from './price-diagnosis/input';
 export { diagnosePriceOp } from './price-diagnosis/diagnose';
 export type { PriceDiagnosis } from './price-diagnosis/diagnose';

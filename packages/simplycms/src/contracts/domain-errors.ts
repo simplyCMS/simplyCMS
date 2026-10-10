@@ -95,6 +95,8 @@ export const ADMIN_STATE_CONSTRAINT = {
   orderPersonalDataErased: 'order_personal_data_erased',
   // Е6д-1: новий референс зображення не є файлом цього запису (опція `media` фабрики).
   mediaRefInvalid: 'media_ref_invalid',
+  // Е6д-7: відгук зник між відкриттям списку й дією модератора.
+  reviewNotFound: 'review_not_found',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

@@ -35,7 +35,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 }));
 
 import {
-  getReviewContentOp,
+  getReviewCardOp,
   productsOps,
   propertyOptionsOps,
   sectionsOps,
@@ -301,7 +301,8 @@ describe('санітизація HTML: запис і віддача проти �
        values ($1, $2, $3, 3, $4)`,
       [reviewId, productId, moderated, EVIL],
     );
-    const { content } = await getReviewContentOp({ data: { reviewId } });
+    const card = await getReviewCardOp({ data: { id: reviewId } });
+    const content = card?.content;
     expect(content).toBeTruthy();
     expect(content).not.toMatch(FORBIDDEN);
     expect(content).toContain('<p>корисний текст</p>');

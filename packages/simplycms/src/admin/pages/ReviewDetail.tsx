@@ -1,4 +1,4 @@
-import { getAdminReviewContent } from 'simplycms/admin-server';
+import { getReviewCard } from 'simplycms/admin-server';
 import { RichHtml } from 'simplycms/ui/rich-html';
 import { useParams, useNavigate, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -64,9 +64,9 @@ export default function AdminReviewDetail() {
 
       // 🔴 Тема 9: розмітку відгуку для показу беремо з сервера ОЧИЩЕНОЮ —
       // сирий `data.content` покупця (недовірений вхід) не рендериться.
-      const { content: contentHtml } = await getAdminReviewContent({
-        data: { reviewId },
-      });
+      // Task 9 перепише сторінку; поки розмітку дає картка (Е6д-11).
+      const card = await getReviewCard({ data: { id: reviewId } });
+      const contentHtml = card?.content ?? null;
 
       return {
         ...data,

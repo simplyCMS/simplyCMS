@@ -6,14 +6,16 @@
  * Далі (С-2, С-12): люди — штатним Better Auth; каталог, торгівля, статуси й
  * сценарії Е6г — ядрами під `withActor({ role: 'app_admin' })` поверх
  * `app_runtime`-підключення з `env.databaseUrl`; замовлення й відгуки — як
- * вітрина (`placeOrderFor`, `withCustomerDb`). Наприкінці — два позначені
- * сирі записи (`raw-writes.mts`): схвалення відгуків і зсув часу.
+ * вітрина (`placeOrderFor`, `withCustomerDb`). Наприкінці — схвалення
+ * відгуків ядром модерації (Е6д-7) і єдиний позначений сирий запис
+ * (`raw-writes.mts`): зсув часу.
  *
  * 🔴 Порядок має значення: зсув часу — останнім (після статусів, бо
  * `changeOrderStatus` ставить `updated_at`), видалення покупця — після його
- * замовлень і відгуку; схваленню порядок байдужий (схвалюються всі
- * `pending`, зокрема вже анонімний відгук видаленого).
+ * замовлень і відгуку; схваленню порядок байдужий (схвалюються `id`
+ * з `insertProductReview`, зокрема вже анонімний відгук видаленого).
  */
+import { setReviewsStatus } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { withActor } from '../../packages/simplycms/src/db/index.ts';
 import { seedCatalog } from './catalog.mts';
 import { seedCommerce } from './commerce.mts';
@@ -25,7 +27,6 @@ import { applyStatuses, placeOrders } from './orders.mts';
 import { personOf, seedPeople, type People } from './people.mts';
 import { int } from './prng.mts';
 import {
-  approveReviews,
   REGISTRATION_MIN_DAYS,
   shiftTime,
   type DayShift,
@@ -59,11 +60,12 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
   const plan = planOrders(rand, people.buyers, guests, commerce.targets);
   const placed = await placeOrders(plan, people, commerce.shipping);
   await withActor(ADMIN, (db) => applyStatuses(db, placed));
-  await seedReviews(stream('reviews'), placed);
+  const reviewIds = await seedReviews(stream('reviews'), placed);
 
   await withActor(ADMIN, async (db) => {
     await seedCustomerScenarios(db, people);
-    await approveReviews(db);
+    // Ядро модерації (Е6д-7), а не сирий UPDATE; `id` — від `insertProductReview`.
+    await setReviewsStatus(db, { ids: reviewIds, status: 'approved' });
     await shiftTime(
       db,
       placed.map((order) => ({ id: order.id, days: order.dayShift })),

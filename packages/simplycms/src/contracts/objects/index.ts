@@ -15,3 +15,4 @@ export * from './config';
 export * from './admin-customer';
 export * from './admin-dashboard';
 export * from './review';
+export * from './admin-review';

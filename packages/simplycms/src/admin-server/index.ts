@@ -51,8 +51,15 @@ import {
   removeOrderItemOp,
   searchProductsForOrderInput,
   searchProductsForOrderOp,
-  reviewContentInput,
-  getReviewContentOp,
+  listReviewsInput,
+  listReviewsOp,
+  countPendingReviewsOp,
+  getReviewCardInput,
+  getReviewCardOp,
+  setReviewsStatusInput,
+  setReviewsStatusOp,
+  deleteReviewInput,
+  deleteReviewOp,
   shippingMethodsOps,
   removeShippingMethodsInput,
   removeShippingMethodsOp,
@@ -431,11 +438,27 @@ export const searchProductsForOrder = createServerFn({ method: 'GET' })
   .validator(adminInput(searchProductsForOrderInput))
   .handler(searchProductsForOrderOp);
 
-// Тема 9: розмітка відгуку для модерації — очищена на сервері (див.
-// impl/reviews/content.ts); сам рядок відгуку сторінка читає легасі-шляхом.
-export const getAdminReviewContent = createServerFn({ method: 'GET' })
-  .validator(adminInput(reviewContentInput))
-  .handler(getReviewContentOp);
+// К3-Е6д, Task 6: модерація відгуків (`review.moderate`). Картка поглинає
+// колишній `getAdminReviewContent` (розмітка очищена на сервері, Е6д-11).
+export const listReviews = createServerFn({ method: 'GET' })
+  .validator(adminInput(listReviewsInput))
+  .handler(listReviewsOp);
+
+export const countPendingReviews = createServerFn({ method: 'GET' }).handler(
+  countPendingReviewsOp,
+);
+
+export const getReviewCard = createServerFn({ method: 'GET' })
+  .validator(adminInput(getReviewCardInput))
+  .handler(getReviewCardOp);
+
+export const setReviewsStatus = createServerFn({ method: 'POST' })
+  .validator(adminInput(setReviewsStatusInput))
+  .handler(setReviewsStatusOp);
+
+export const deleteReview = createServerFn({ method: 'POST' })
+  .validator(adminInput(deleteReviewInput))
+  .handler(deleteReviewOp);
 
 // Е6а, Task 4: доставка (`shipping.manage`, Е6а-11). Insert/update способів,
 // зон і точок — фабрика з guard-хуком під `shipping-config` (Е6а-16); remove

@@ -4,7 +4,7 @@
  * - Відгуки — від імені покупця (`withCustomerDb` + `insertProductReview`):
  *   ті самі RLS і санітизація, що на вітрині; лише на куплені товари, по
  *   одному на пару товар/покупець (унікальний ключ таблиці). Схвалює їх
- *   позначений сирий запис (`raw-writes.mts`, С-11).
+ *   ядро модерації `setReviewsStatus` (Е6д-7) за поверненими `id`.
  * - Бан і видалення — ядрами адмінки. Видалення — ПІСЛЯ замовлень і
  *   відгуків: сценарій саме про покупця, чиї замовлення знеособлюються, а
  *   відгук стає анонімним.
@@ -71,7 +71,7 @@ function purchasedPairs(placed: readonly PlacedOrder[]): Pair[] {
 export async function seedReviews(
   rand: Rand,
   placed: readonly PlacedOrder[],
-): Promise<number> {
+): Promise<string[]> {
   const pairs = purchasedPairs(placed);
   const first = pairs.find((p) => p.buyer === ROLES.deleted);
   if (!first)
@@ -81,6 +81,7 @@ export async function seedReviews(
   while (chosen.length < REVIEW_COUNT && rest.length > 0) {
     chosen.push(rest.splice(int(rand, 0, rest.length - 1), 1)[0]!);
   }
+  const ids: string[] = [];
   for (const pair of chosen) {
     const rating = rand() < 0.15 ? int(rand, 2, 3) : int(rand, 4, 5);
     const input = {
@@ -90,11 +91,12 @@ export async function seedReviews(
       content: `<p>${pick(rand, CONTENTS)}</p>`,
       images: [],
     };
-    await withCustomerDb(pair.userId, (db) =>
+    const { id } = await withCustomerDb(pair.userId, (db) =>
       insertProductReview(db, pair.userId, input),
     );
+    ids.push(id);
   }
-  return chosen.length;
+  return ids;
 }
 
 /** Бан і видалення покупців за ролями плану (`ROLES`). */

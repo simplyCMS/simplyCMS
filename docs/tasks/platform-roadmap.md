@@ -35,7 +35,7 @@
 (`CoreActor`, С-15). Гейт сіду (С-8) — у `test:schema`, `typecheck:showcase` — у ланцюгу
 гейтів одразу після `typecheck`. Живий прогін 2026-10-08: вітрина й `/media/<key>` — 200,
 дашборд власника = прямий SQL. Як підняти — [`v2-state-map.md`](./v2-state-map.md) §5;
-борг С-11 — нижче (SHOWCASE-1).
+борг С-11 закрито в Е6д (SHOWCASE-1).
 
 🔴 **2026-10-08 — К3-Е6г (покупці й дашборд) завершено** на гілці
 `claude/k3-e6g-customers-dashboard` (до релізу). `/admin/users`, `/admin/users/$userId`
@@ -1418,11 +1418,9 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
    Легасі `Reviews`/`ReviewDetail` не чіпались (Е6г-8), їхня модерація має врахувати
    відгуки видалених покупців.
 
-SHOWCASE-1. **Схвалення відгуків сіду — сирий SQL (С-11).** Серверної операції статусу
-   відгуку немає (`insertProductReview` пише `pending`), тож `db:showcase` схвалює відгуки
-   позначеним `UPDATE product_reviews SET status = 'approved'` у
-   `scripts/showcase/raw-writes.mts`. Коли Е6д спроєктує модерацію, крок переїжджає на її
-   ядро (як решта сіду — на ядра С-15), а в `raw-writes.mts` лишається лише зсув часу (С-3).
+SHOWCASE-1. ✅ **Закрито (К3-Е6д, Task 6).** Схвалення відгуків сіду переїхало з сирого
+   `UPDATE` на ядро `setReviewsStatus` (Е6д-7): `seed.mts` кличе його з `id`, які повернув
+   `insertProductReview`. У `raw-writes.mts` лишився лише зсув часу (С-3).
 
 SHOWCASE-2. ✅ **Закрито 2026-10-10 (рішення власника: розширити С-3).** Зсув часу
    (`raw-writes.mts`) тепер зсуває й реєстрацію (`users` і `profiles` `created_at/updated_at` — ≥31 день, раніше

@@ -25,9 +25,10 @@ export async function insertProductReview(
   db: ActorDb,
   userId: string,
   input: ReviewInput,
-): Promise<void> {
+): Promise<{ id: string }> {
+  const id = randomUUID();
   await db.insert(productReviews).values({
-    id: randomUUID(),
+    id,
     productId: input.productId,
     userId,
     rating: input.rating,
@@ -38,6 +39,7 @@ export async function insertProductReview(
     images: input.images,
     status: 'pending',
   });
+  return { id };
 }
 
 /**

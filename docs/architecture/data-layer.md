@@ -260,12 +260,11 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
    колонками.
 2. **Рубіж 2 — віддача.** Лоадери вітрини (`loadProduct`, `toSectionRow`,
    `toOptionRow`, `loadProductReviews`) і операції читання адмінки (`list` та
-   RETURNING фабрики ресурсу, `getAdminReviewContent`) санітизують те, що
+   RETURNING фабрики ресурсу, `getReviewCard`) санітизують те, що
    віддають клієнту, — це закриває старі рядки, сід і демо-дані. Список
-   каталогу опису товару не віддає (`description: null`). Сторінка модерації
-   відгуку читає рядок легасі-шляхом `supabase-js` з браузера, тож розмітку для
-   показу бере із серверної операції `getAdminReviewContent` (грант
-   `review.moderate`).
+   каталогу опису товару не віддає (`description: null`). Картка модерації
+   відгуку (`getReviewCard`, грант `review.moderate`) віддає очищену розмітку
+   разом із рештою полів.
 
 **Тип.** `sanitizeRichHtml(html, profile): SanitizedHtml` (`simplycms/sanitize`,
 server-only: модуль і `sanitize-html` — у `contracts/server-only`) — ЄДИНИЙ
