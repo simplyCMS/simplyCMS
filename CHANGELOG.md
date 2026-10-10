@@ -60,6 +60,10 @@
 - `defineAdminResource({ media: { entityType, columns } })` — референси медіа-колонок
   перевіряються на власника рядка (409 `media_ref_invalid`), замінене й видалене
   стирається двофазно.
+- `defineAdminResource({ cascadeMedia: [{ fk, column, entityType }] })` (Е6д-19) — медіа
+  дочірніх рядків, яких знищує FK `ON DELETE CASCADE`: видалення товару стирає фото його
+  відгуків (рядки `media` у транзакції, файли — після COMMIT). Гейт класу
+  `media-cascade-coverage` звіряє кожну каскадну медіа-колонку з каталогу FK.
 - `simplycms/domain`: предикати банера (`isBannerButton`, межі тривалостей,
   `BANNER_MAX_BUTTONS`), `isSafeCssValue`, `normalizeMediaRefs`; константи фото відгуку
   (`REVIEW_MEDIA_ENTITY`, `MAX_REVIEW_IMAGES`, `MAX_REVIEW_IMAGE_BYTES`, Е6д-5).
@@ -81,7 +85,8 @@
   `immutable`-кеш живе рік — орфан після невдалого discard і копія в кеші після
   успішного стирання лишаються доступними. Борг треку «Готовність пілоту»
   (`docs/architecture/storage.md`, «Обмеження»).
-- Аватар і логотип лишились на однофазному `eraseMedia` (відомий виняток Е6д-14).
+- Аватар, логотип і адмінський `deleteMedia` (`ImageUpload` з `eraseOnRemove`) лишились на
+  однофазному `eraseMedia` (відомий виняток Е6д-14).
 
 ## [0.13.0] — 2026-10-10
 

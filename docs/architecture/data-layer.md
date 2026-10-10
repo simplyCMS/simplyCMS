@@ -407,6 +407,18 @@ ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) �
 `media` з `entity_id` рядка (sweep — К4). В Е6д опцію має лише ресурс банерів;
 `sections`/`products`/`property_option` — борг roadmap.
 
+**Опція `cascadeMedia` фабрики (Е6д-19).** `defineAdminResource({ …, cascadeMedia: [{ fk,
+column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
+`resource-write-remove.ts`) — дочірні таблиці, рядки яких FK `ON DELETE CASCADE` знищує
+разом із рядком ресурсу і які несуть медіа. `remove`/`removeIn`: `FOR UPDATE` батьків
+(`ORDER BY id`) → знімок дочірніх рядків `FOR UPDATE` → DELETE → `eraseMediaRows` кожного
+дочірнього рядка з власником `{ entityType, <id дочірнього> }` → після COMMIT
+`discardMedia`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
+обовʼязковий: вставка дочірнього рядка, що вже пройшла FK-перевірку (`FOR KEY SHARE`), без
+нього пішла б каскадом повз знімок. Має ресурс товарів (фото відгуків). Покриття стереже
+гейт `media-cascade-coverage` (`test-contours.md`); перелік відомих винятків однофазного
+стирання (аватар, логотип, адмінський `deleteMedia`) — `storage.md`.
+
 **Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
 валідатора без `adminInput` не пишемо.

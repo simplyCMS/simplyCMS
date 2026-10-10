@@ -177,7 +177,7 @@ Error-зони й кастомні правила (селектори й опц�
   `profile-ui`, `reviews-ui`). 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
   невидимий: зелений лінт доступності воронки не доводить її повноти.
 - **Порт сховища — `simplycms-storage/no-direct-storage`:** зона — увесь `packages/simplycms/src/**`
-  з єдиною виїмкою-ратчетом `admin/pages/ReviewDetail.tsx`; забороняє `supabase.storage`,
+  без виїмок (ратчет порожній: легасі `ReviewDetail.tsx` знесено в Е6д); забороняє `supabase.storage`,
   `x.storage.from(…)`, `x['storage']` та імпорт `@supabase/storage-js`. Файловий двійник —
   ратчет `tests/storage-direct-calls.test.ts`; негативний контроль —
   `tests/eslint-rules/no-direct-storage.test.ts`.
