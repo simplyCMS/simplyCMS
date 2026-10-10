@@ -18,7 +18,7 @@
 
 ---
 
-## [Unreleased]
+## [0.13.0] — 2026-10-10
 
 Вітринний стенд `pnpm db:showcase` (план
 [`2026-10-08-showcase-seed.md`](docs/superpowers/plans/2026-10-08-showcase-seed.md)):
