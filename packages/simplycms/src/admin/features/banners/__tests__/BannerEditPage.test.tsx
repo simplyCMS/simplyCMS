@@ -106,7 +106,7 @@ describe('BannerEditPage: створення', () => {
     fireEvent.change(screen.getByLabelText(t('common.text')), {
       target: { value: 'Go' },
     });
-    fireEvent.change(screen.getByLabelText('URL'), {
+    fireEvent.change(screen.getByLabelText(t('admin.banners.url')), {
       target: { value: 'javascript:alert(1)' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Створити' }));

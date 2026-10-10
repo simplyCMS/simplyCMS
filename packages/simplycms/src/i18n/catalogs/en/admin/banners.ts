@@ -74,4 +74,14 @@ export const messages: Catalog = {
   'admin.banners.buttonInvalid':
     'Button: text up to 50 characters, URL is /path or http(s)://…',
   'admin.banners.removeButton': 'Remove button',
+  'admin.banners.titleTooLong': 'Title is too long (up to 200 characters)',
+  'admin.banners.subtitleTooLong':
+    'Subtitle is too long (up to 500 characters)',
+  'admin.banners.overlayInvalid':
+    'Unsafe colour value (up to 100 characters, no ; { } < > or comments)',
+  'admin.banners.sortInvalid': 'Order must be a whole number from 0',
+  'admin.banners.url': 'URL',
+  'admin.banners.variant.primary': 'Primary',
+  'admin.banners.variant.secondary': 'Secondary',
+  'admin.banners.variant.outline': 'Outline',
 };

@@ -7,7 +7,7 @@ import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { SelectField } from '../shipping/methods/SelectField';
-import { TARGET_KEYS, VARIANTS, opts } from './banner-options';
+import { TARGET_KEYS, VARIANT_KEYS, opts } from './banner-options';
 import type { BannerFormInput, BannerFormValues } from './banner-form-schema';
 
 interface Props {
@@ -79,7 +79,7 @@ export function BannerButtonsCard({ form }: Props) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`btn-url-${i}`}>URL</Label>
+                <Label htmlFor={`btn-url-${i}`}>{t('admin.banners.url')}</Label>
                 <Input id={`btn-url-${i}`} {...register(`buttons.${i}.url`)} />
               </div>
               <SelectField
@@ -87,7 +87,7 @@ export function BannerButtonsCard({ form }: Props) {
                 name={`buttons.${i}.variant`}
                 id={`btn-variant-${i}`}
                 label={t('admin.banners.buttonVariant')}
-                options={VARIANTS.map((v) => ({ value: v, text: v }))}
+                options={opts(Object.keys(VARIANT_KEYS), VARIANT_KEYS, t)}
               />
               <SelectField
                 control={control}

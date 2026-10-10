@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
 import { SelectField } from '../shipping/methods/SelectField';
+import { FieldError } from './FieldError';
 import { BannerImageField } from './BannerImageField';
 import { ALIGN_KEYS, opts } from './banner-options';
 import type { BannerFormInput, BannerFormValues } from './banner-form-schema';
@@ -32,15 +33,27 @@ export function BannerMainCard({ form, entityId }: Props) {
             aria-invalid={!!errors.title}
             {...register('title')}
           />
-          {errors.title && (
-            <p role="alert" className="text-xs text-destructive">
-              {t('admin.banners.titleRequired')}
-            </p>
-          )}
+          <FieldError
+            text={
+              errors.title &&
+              t(
+                errors.title.type === 'too_big'
+                  ? 'admin.banners.titleTooLong'
+                  : 'admin.banners.titleRequired',
+              )
+            }
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="banner-subtitle">{t('admin.banners.subtitle')}</Label>
-          <Input id="banner-subtitle" {...register('subtitle')} />
+          <Input
+            id="banner-subtitle"
+            aria-invalid={!!errors.subtitle}
+            {...register('subtitle')}
+          />
+          <FieldError
+            text={errors.subtitle && t('admin.banners.subtitleTooLong')}
+          />
         </div>
         <BannerImageField
           form={form}
@@ -78,6 +91,9 @@ export function BannerMainCard({ form, entityId }: Props) {
               placeholder="rgba(0,0,0,0.4)"
               aria-invalid={!!errors.overlayColor}
               {...register('overlayColor')}
+            />
+            <FieldError
+              text={errors.overlayColor && t('admin.banners.overlayInvalid')}
             />
           </div>
         </div>

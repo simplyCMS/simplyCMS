@@ -68,8 +68,10 @@ export function toFields(v: BannerFormValues) {
 /**
  * Лише змінені поля (як `useDiscountGroupCard`): масиви в draft завжди нові
  * посилання, тож порівнюємо за значенням, а не покладаємось на diff колекції.
- * 🔴 Зміна `placement` несе `sectionId` завжди: guard бачить злитий рядок, і
- * `{ placement: 'home' }` без `sectionId: null` він відхилить (р4 B3).
+ * 🔴 р4 B3: `sectionId` виводиться з `placement` у `toFields` (не-section →
+ * `null`), тож щойно зміна `placement` потребує зміни розділу, обидва поля
+ * вже в patch. Окремого «форсування» немає: колекція відкидає рівні значення,
+ * а guard зливає patch зі знімком, тож незмінений `sectionId` і не потрібен.
  */
 export function changedFields(row: Banner, v: BannerFormValues) {
   const before: Record<string, unknown> = toFields(toFormValues(row));
@@ -78,6 +80,5 @@ export function changedFields(row: Banner, v: BannerFormValues) {
   for (const k of Object.keys(next))
     if (JSON.stringify(next[k]) !== JSON.stringify(before[k]))
       patch[k] = next[k];
-  if ('placement' in patch) patch.sectionId = next.sectionId;
   return patch;
 }

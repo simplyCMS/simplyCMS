@@ -55,7 +55,14 @@ export const TARGET_KEYS: Record<
   _blank: 'admin.banners.targetBlank',
 };
 
-export const VARIANTS = BANNER_BUTTON_VARIANTS;
+export const VARIANT_KEYS: Record<
+  (typeof BANNER_BUTTON_VARIANTS)[number],
+  MessageKey
+> = {
+  primary: 'admin.banners.variant.primary',
+  secondary: 'admin.banners.variant.secondary',
+  outline: 'admin.banners.variant.outline',
+};
 
 /** `0` = неділя, як у `isBannerVisible`; порядок показу — пн…нд. */
 export const WEEKDAYS: readonly { value: number; key: MessageKey }[] = [

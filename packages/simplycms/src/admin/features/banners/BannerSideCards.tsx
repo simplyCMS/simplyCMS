@@ -8,6 +8,7 @@ import { Label } from 'simplycms/ui/label';
 import { Slider } from 'simplycms/ui/slider';
 import { Switch } from 'simplycms/ui/switch';
 import { SortOrderField } from '../catalog-dictionaries/form-fields';
+import { FieldError } from './FieldError';
 import { SelectField } from '../shipping/methods/SelectField';
 import { ANIMATION_KEYS, PLACEMENT_KEYS, opts } from './banner-options';
 import type { BannerFormInput, BannerFormValues } from './banner-form-schema';
@@ -134,6 +135,9 @@ export function BannerSideCards({ form, sections }: Props) {
             label={t('common.sortOrder')}
             registration={register('sortOrder')}
             invalid={!!errors.sortOrder}
+          />
+          <FieldError
+            text={errors.sortOrder && t('admin.banners.sortInvalid')}
           />
         </CardContent>
       </Card>
