@@ -3,71 +3,42 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
-import { Toaster } from 'simplycms/ui/toaster';
+import {
+  auth,
+  getProductReviews,
+  mountWith,
+  submitProductReview,
+} from './reviewsTestSupport';
+import { ProductReviews } from '../ProductReviews';
 
-let currentUser: { id: string } | null = null;
-vi.mock('simplycms/core/hooks/useAuth', () => ({
-  useAuth: () => ({ user: currentUser }),
-}));
+const mount = (props: object = {}) => mountWith(ProductReviews, props);
+import type { ReviewImageUploadProps } from '../ReviewImagePicker';
+
+vi.mock('simplycms/core/hooks/useAuth', async () => {
+  const k = await import('./reviewsTestSupport');
+  return { useAuth: () => ({ user: k.auth.user }) };
+});
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
-
-const getProductReviews = vi.fn();
-vi.mock('simplycms/core/lib/reviews', () => ({
-  getProductReviews: (...a: unknown[]) => getProductReviews(...a),
-  getProductRatings: vi.fn(),
-}));
-const submitProductReview = vi.fn();
-vi.mock('simplycms/core/lib/review-form', () => ({
-  submitProductReview: (...a: unknown[]) => submitProductReview(...a),
-  deleteMyProductReview: vi.fn(),
-}));
-
-import { ProductReviews } from '../ProductReviews';
-import type { ReviewImageUploadProps } from '../ReviewImagePicker';
-
-const review = (id: string, userId: string, status = 'approved') => ({
-  id,
-  product_id: 'p1',
-  user_id: userId,
-  rating: 5,
-  title: `title-${id}`,
-  content: null,
-  images: [],
-  status,
-  created_at: new Date('2026-10-01T10:00:00Z'),
-  updated_at: new Date('2026-10-01T10:00:00Z'),
-  profile: null,
+vi.mock('simplycms/core/lib/reviews', async () => {
+  const k = await import('./reviewsTestSupport');
+  return { getProductReviews: k.getProductReviews, getProductRatings: vi.fn() };
+});
+vi.mock('simplycms/core/lib/review-form', async () => {
+  const k = await import('./reviewsTestSupport');
+  return {
+    submitProductReview: k.submitProductReview,
+    deleteMyProductReview: vi.fn(),
+  };
 });
 
-const mount = (props: { renderImageUpload?: never } | object = {}) => {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  // Новий елемент на кожен рендер: `useAuth` замокано, а не контекст, тож
-  // однаковий елемент React пропустив би.
-  const ui = () => (
-    <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
-        <ProductReviews productId="p1" {...props} />
-        <Toaster />
-      </I18nProvider>
-    </QueryClientProvider>
-  );
-  const r = render(ui());
-  return { ...r, rerenderSame: () => r.rerender(ui()) };
-};
-
 beforeEach(() => {
-  currentUser = { id: 'u-a' };
+  auth.user = { id: 'u-a' };
   getProductReviews.mockReset().mockResolvedValue([]);
   submitProductReview.mockReset();
   URL.createObjectURL = () => 'blob:x';
@@ -141,29 +112,16 @@ describe('ProductReviews — форма з фото (Е6д-6)', () => {
       expect(document.body.textContent).not.toContain('review/');
     },
   );
-});
 
-describe('useProductReviews — ключ кешу з актором (Е6д-17)', () => {
-  it('зміна користувача перезавантажує відгуки; кеш A не показується B', async () => {
-    getProductReviews.mockImplementation(async () => {
-      if (currentUser?.id === 'u-a') return [review('ra', 'u-a', 'pending')];
-      if (currentUser?.id === 'u-b') return [review('rb', 'u-b', 'pending')];
-      return [];
-    });
-    currentUser = null;
-    const { rerenderSame } = mount();
-    await waitFor(() => expect(getProductReviews).toHaveBeenCalledTimes(1));
-
-    currentUser = { id: 'u-a' };
-    rerenderSame();
-    await screen.findByText('title-ra');
-    expect(getProductReviews).toHaveBeenCalledTimes(2);
-
-    currentUser = { id: 'u-b' };
-    rerenderSame();
-    await waitFor(() => expect(getProductReviews).toHaveBeenCalledTimes(3));
-    await screen.findByText('title-rb');
-    expect(getProductReviews).toHaveBeenCalledTimes(3);
-    expect(screen.queryByText('title-ra')).toBeNull();
+  it('невідомий код/довільна помилка -> загальний текст, без сирого повідомлення', async () => {
+    submitProductReview.mockRejectedValue(new Error('review/some-new-code'));
+    mount();
+    await openForm();
+    fireEvent.click(screen.getByText('Надіслати відгук'));
+    await waitFor(() =>
+      expect(document.body.textContent).toContain('Помилка збереження'),
+    );
+    expect(document.body.textContent).not.toContain('review/');
+    expect(document.body.textContent).not.toContain('some-new-code');
   });
 });

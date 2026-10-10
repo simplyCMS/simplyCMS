@@ -28,8 +28,14 @@ const img = (name: string, over: Partial<File> = {}) => {
 };
 
 /** Керований обгортач: пікер — контрольований компонент. */
-function Harness({ maxBytes = 5 * 1024 * 1024 }: { maxBytes?: number }) {
-  const [files, setFiles] = useState<File[]>([]);
+function Harness({
+  maxBytes = 5 * 1024 * 1024,
+  initial = [],
+}: {
+  maxBytes?: number;
+  initial?: File[];
+}) {
+  const [files, setFiles] = useState<File[]>(initial);
   return (
     <ReviewImagePicker
       files={files}
@@ -41,10 +47,10 @@ function Harness({ maxBytes = 5 * 1024 * 1024 }: { maxBytes?: number }) {
   );
 }
 
-const mount = (maxBytes?: number) =>
+const mount = (maxBytes?: number, initial?: File[]) =>
   render(
     <I18nProvider locale="uk">
-      <Harness maxBytes={maxBytes} />
+      <Harness maxBytes={maxBytes} initial={initial} />
     </I18nProvider>,
   );
 
@@ -62,7 +68,21 @@ describe('ReviewImagePicker', () => {
       screen.getAllByRole('button', { name: 'Прибрати фото' })[0],
     );
     expect(container.querySelectorAll('img')).toHaveLength(1);
-    expect(revoke).toHaveBeenCalled();
+    // Ревокується рівно URL прибраного (першого) файла, другий живий.
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(revoke).toHaveBeenCalledWith('blob:mock-0');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:mock-1',
+    );
+  });
+
+  it('монтування з початковими файлами лишає превʼю чинними', () => {
+    const { container } = mount(undefined, [img('a.png'), img('b.png')]);
+    expect(revoke).not.toHaveBeenCalled();
+    const srcs = [...container.querySelectorAll('img')].map((i) =>
+      i.getAttribute('src'),
+    );
+    expect(srcs).toEqual(['blob:mock-0', 'blob:mock-1']);
   });
 
   it('6-й файл не додається, видно повідомлення', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useT, type MessageKey } from 'simplycms/i18n';
 
@@ -13,6 +13,36 @@ export interface ReviewImageUploadProps {
   /** Значення атрибута `accept` (MIME через кому). */
   accept: string;
   maxBytes: number;
+}
+
+// Стабільні ключі списку: за індексом прибрання першого фото перемонтувало б
+// решту превʼю (і перевідкликало їхні URL).
+const fileIds = new WeakMap<File, number>();
+let nextFileId = 0;
+const fileKey = (file: File) => {
+  if (!fileIds.has(file)) fileIds.set(file, nextFileId++);
+  return fileIds.get(file);
+};
+
+/**
+ * Превʼю одного файла. Blob-URL створює і відкликає ref-колбек: React
+ * викликає його cleanup рівно один раз на відʼєднання (прибрання файла,
+ * розмонтування), а відкинутий рендер або StrictMode URL не створюють —
+ * на відміну від `useMemo` у рендері.
+ */
+function PhotoPreview({ file, alt }: { file: File; alt: string }) {
+  const attach = useCallback(
+    (img: HTMLImageElement | null) => {
+      if (!img) return;
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      return () => URL.revokeObjectURL(url);
+    },
+    [file],
+  );
+  return (
+    <img ref={attach} alt={alt} className="h-16 w-16 rounded-md object-cover" />
+  );
 }
 
 /**
@@ -30,15 +60,8 @@ export function ReviewImagePicker({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
-  // Blob-URL тримає файл у памʼяті, доки його не відкликано. Набір URL
-  // рахується разом із `files`, а ефект відкликає попередній набір і при
-  // зміні, і при розмонтуванні (файлів при монтуванні немає, тож подвійний
-  // ефект StrictMode нічого не ревокує зайвого).
-  const urls = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
-  useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
-
   const handleSelect = (picked: File[]) => {
-    const allowed = accept.split(',');
+    const allowed = accept.split(',').map((m) => m.trim());
     const accepted = [...files];
     let rejection: MessageKey | null = null;
     for (const file of picked) {
@@ -73,11 +96,10 @@ export function ReviewImagePicker({
       {files.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {files.map((file, i) => (
-            <li key={`${file.name}-${i}`} className="relative">
-              <img
-                src={urls[i]}
+            <li key={fileKey(file)} className="relative">
+              <PhotoPreview
+                file={file}
                 alt={t('reviews.photoAlt', { index: i + 1 })}
-                className="h-16 w-16 rounded-md object-cover"
               />
               <button
                 type="button"

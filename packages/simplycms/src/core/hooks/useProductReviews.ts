@@ -10,6 +10,14 @@ import type { ProductReviewRow } from '../lib/reviews';
 
 export type ProductReview = ProductReviewRow;
 
+/** Коди відмови сервера -> ключі каталогу. */
+const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
+  [REVIEW_SUBMIT_ERROR.badImage]: 'reviews.errors.imageBadFormat',
+  [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
+  [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
+  [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
+};
+
 const NO_REVIEWS: ProductReview[] = [];
 
 const productReviews = entityKey(ENTITY.productReviews);
@@ -52,29 +60,16 @@ export function useProductReviews(productId: string | undefined) {
     void queryClient.invalidateQueries({ queryKey: productRatings });
   };
 
-  const onError = (err: Error) =>
-    toast({
-      variant: 'destructive',
-      title: t('common.error'),
-      description: err.message,
-    });
-
   // Коди сервера (`review/*`) у тост не потрапляють: кожен має рядок
   // каталогу, невідоме — загальний текст, а не сира серверна діагностика.
-  const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
-    [REVIEW_SUBMIT_ERROR.badImage]: 'reviews.errors.imageBadFormat',
-    [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
-    [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
-    [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
-  };
-  const onSubmitError = (err: Error) => {
+  // Власну відмову авторизації хук кидає вже перекладеною — її лишаємо.
+  const onFailure = (err: Error) => {
     const key = SUBMIT_ERROR_KEY[err.message];
-    // Локальна відмова авторизації вже перекладена тут же, у mutationFn.
-    const known = err.message === t('product.review.notAuthorized');
+    const own = err.message === t('product.review.notAuthorized');
     toast({
       variant: 'destructive',
       title: t('common.error'),
-      description: key ? t(key) : known ? err.message : t('common.saveError'),
+      description: key ? t(key) : own ? err.message : t('common.saveError'),
     });
   };
 
@@ -106,7 +101,7 @@ export function useProductReviews(productId: string | undefined) {
         description: t('product.review.submittedDescription'),
       });
     },
-    onError: onSubmitError,
+    onError: onFailure,
   });
 
   const deleteReview = useMutation({
@@ -121,7 +116,7 @@ export function useProductReviews(productId: string | undefined) {
       invalidate();
       toast({ title: t('product.review.deleted') });
     },
-    onError,
+    onError: onFailure,
   });
 
   const reviews = reviewsQuery.data ?? NO_REVIEWS;
