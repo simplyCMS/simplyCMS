@@ -1,7 +1,13 @@
 import { useId, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+import {
+  ACCEPT_ATTRIBUTE,
+  MAX_REVIEW_IMAGES,
+  MAX_REVIEW_IMAGE_BYTES,
+} from 'simplycms/domain/media';
 import { StarRating } from './StarRating';
+import type { ReviewImageUploadProps } from './ReviewImagePicker';
 
 interface ReviewFormProps {
   productId: string;
@@ -9,7 +15,7 @@ interface ReviewFormProps {
     rating: number;
     title?: string;
     content?: string;
-    images?: string[];
+    images?: File[];
   }) => void;
   isSubmitting?: boolean;
   /** Optional rich text editor component */
@@ -18,11 +24,11 @@ interface ReviewFormProps {
     onChange: (content: string) => void;
   }) => React.ReactNode;
   /** Optional image upload component */
-  renderImageUpload?: (props: {
-    images: string[];
-    onImagesChange: (images: string[]) => void;
-    maxImages: number;
-  }) => React.ReactNode;
+  renderImageUpload?: (props: ReviewImageUploadProps) => React.ReactNode;
+  /** Ліміти фото задає викликач (`ProductReviews` бере їх із `domain/media`). */
+  maxFiles?: number;
+  maxBytes?: number;
+  accept?: string;
 }
 
 export function ReviewForm({
@@ -35,6 +41,9 @@ export function ReviewForm({
   isSubmitting,
   renderEditor,
   renderImageUpload,
+  maxFiles = MAX_REVIEW_IMAGES,
+  maxBytes = MAX_REVIEW_IMAGE_BYTES,
+  accept = ACCEPT_ATTRIBUTE,
 }: ReviewFormProps) {
   const t = useT();
   // useId — не літерал (рев'ю #13): два відгуки на одній сторінці інакше
@@ -43,7 +52,7 @@ export function ReviewForm({
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<File[]>([]);
   const [ratingError, setRatingError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -128,9 +137,11 @@ export function ReviewForm({
             {t('reviews.form.photosLabel')}
           </span>
           {renderImageUpload({
-            images,
-            onImagesChange: setImages,
-            maxImages: 5,
+            files: images,
+            onFilesChange: setImages,
+            maxFiles,
+            accept,
+            maxBytes,
           })}
         </div>
       )}

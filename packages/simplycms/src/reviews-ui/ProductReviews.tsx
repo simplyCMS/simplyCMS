@@ -7,6 +7,10 @@ import { useT, type MessageKey } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
 import { ReviewCard } from './ReviewCard';
 import { ReviewForm } from './ReviewForm';
+import {
+  ReviewImagePicker,
+  type ReviewImageUploadProps,
+} from './ReviewImagePicker';
 
 interface ProductReviewsProps {
   productId: string;
@@ -16,11 +20,7 @@ interface ProductReviewsProps {
     onChange: (content: string) => void;
   }) => React.ReactNode;
   /** Optional image upload component */
-  renderImageUpload?: (props: {
-    images: string[];
-    onImagesChange: (images: string[]) => void;
-    maxImages: number;
-  }) => React.ReactNode;
+  renderImageUpload?: (props: ReviewImageUploadProps) => React.ReactNode;
 }
 
 /**
@@ -126,7 +126,9 @@ export function ProductReviews({
             }}
             isSubmitting={submitReview.isPending}
             renderEditor={renderEditor}
-            renderImageUpload={renderImageUpload}
+            renderImageUpload={
+              renderImageUpload ?? ((p) => <ReviewImagePicker {...p} />)
+            }
           />
         ) : (
           <button

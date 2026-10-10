@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
-import { useT } from 'simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
+import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
 import { deleteMyProductReview, submitProductReview } from '../lib/review-form';
 import { getProductRatings, getProductReviews } from '../lib/reviews';
 import type { ProductReviewRow } from '../lib/reviews';
@@ -32,7 +33,13 @@ export function useProductReviews(productId: string | undefined) {
   const t = useT();
 
   const reviewsQuery = useQuery({
-    queryKey: productReviews.scoped('product', productId ?? ''),
+    // Актор у ключі (Е6д-17): відповідь залежить від того, хто питає (автор
+    // бачить свій `pending`). Без нього кеш гостя пережив би вхід, а кеш
+    // покупця A показався б покупцю B.
+    queryKey: [
+      ...productReviews.scoped('product', productId ?? ''),
+      user?.id ?? 'guest',
+    ],
     queryFn: () => getProductReviews({ data: { productId: productId! } }),
     enabled: !!productId,
     staleTime: 60 * 1000,
@@ -52,11 +59,31 @@ export function useProductReviews(productId: string | undefined) {
       description: err.message,
     });
 
+  // Коди сервера (`review/*`) у тост не потрапляють: кожен має рядок
+  // каталогу, невідоме — загальний текст, а не сира серверна діагностика.
+  const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
+    [REVIEW_SUBMIT_ERROR.badImage]: 'reviews.errors.imageBadFormat',
+    [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
+    [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
+    [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
+  };
+  const onSubmitError = (err: Error) => {
+    const key = SUBMIT_ERROR_KEY[err.message];
+    // Локальна відмова авторизації вже перекладена тут же, у mutationFn.
+    const known = err.message === t('product.review.notAuthorized');
+    toast({
+      variant: 'destructive',
+      title: t('common.error'),
+      description: key ? t(key) : known ? err.message : t('common.saveError'),
+    });
+  };
+
   const submitReview = useMutation({
     mutationFn: async (data: {
       rating: number;
       title?: string;
       content?: string;
+      images?: File[];
     }) => {
       // 🔴 Перевірка ЛИШАЄТЬСЯ, хоч автора й задає сервер: без неї відмова
       // приїхала б англійською серверною діагностикою просто в тост покупця.
@@ -69,6 +96,7 @@ export function useProductReviews(productId: string | undefined) {
       form.set('rating', String(data.rating));
       form.set('title', data.title ?? '');
       form.set('content', data.content ?? '');
+      for (const file of data.images ?? []) form.append('images', file);
       await submitProductReview({ data: form });
     },
     onSuccess: () => {
@@ -78,7 +106,7 @@ export function useProductReviews(productId: string | undefined) {
         description: t('product.review.submittedDescription'),
       });
     },
-    onError,
+    onError: onSubmitError,
   });
 
   const deleteReview = useMutation({

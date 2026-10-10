@@ -28,6 +28,13 @@ export const messages: Catalog = {
   'reviews.form.contentPlaceholder': 'Write your review...',
   'reviews.form.photosLabel': 'Photos (up to 5)',
   'reviews.form.submit': 'Submit review',
+  'reviews.form.addPhotos': 'Add photos',
+  'reviews.form.removePhoto': 'Remove photo',
+
+  'reviews.errors.imageBadFormat':
+    'Photos must be PNG, JPEG, WebP, GIF or AVIF images',
+  'reviews.errors.imageTooLarge': 'Photo is larger than 5 MB',
+  'reviews.errors.tooManyImages': 'No more than 5 photos',
 
   'reviews.editor.linkUrl': 'Link URL',
 };

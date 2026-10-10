@@ -29,6 +29,14 @@ export const messages = {
   'reviews.form.contentPlaceholder': 'Напишіть ваш відгук...',
   'reviews.form.photosLabel': 'Фото (до 5)',
   'reviews.form.submit': 'Надіслати відгук',
+  'reviews.form.addPhotos': 'Додати фото',
+  'reviews.form.removePhoto': 'Прибрати фото',
+
+  // Помилки подання відгуку (коди сервера — `REVIEW_SUBMIT_ERROR`)
+  'reviews.errors.imageBadFormat':
+    'Фото має бути зображенням PNG, JPEG, WebP, GIF або AVIF',
+  'reviews.errors.imageTooLarge': 'Фото більше 5 МБ',
+  'reviews.errors.tooManyImages': 'Не більше 5 фото',
 
   // Редактор тексту відгуку (тулбар посилання)
   'reviews.editor.linkUrl': 'URL посилання',
