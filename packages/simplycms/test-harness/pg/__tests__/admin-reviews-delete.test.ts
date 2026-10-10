@@ -42,22 +42,25 @@ describe('admin: видалення відгуку (Е6д-14, Е6д-16)', () => 
     expect(await d.exists(id)).toBe(false);
   });
 
-  it('транзакція впала → відгук, media і файли на місці, driver.delete не викликано', async () => {
+  it('🔴 COMMIT впав → відгук, media і файли на місці, driver.delete не викликано', async () => {
     const id = await d.seedReview();
     const refs = await d.seedPhotos(id, 2);
+    // Відкладений тригер падає саме на COMMIT, коли `discard` уже обчислено:
+    // операція, що стирає файли ДО COMMIT, тут червоніє.
     await f.rows(
-      `create or replace function public.e6d_media_block() returns trigger
-         language plpgsql as $$ begin raise exception 'blocked'; end $$`,
+      `create or replace function public.e6d_commit_block() returns trigger
+         language plpgsql as $$ begin raise exception 'commit blocked'; end $$`,
     );
     await f.rows(
-      `create trigger e6d_media_block before delete on public.media
-         for each row execute function public.e6d_media_block()`,
+      `create constraint trigger e6d_commit_block after delete on public.product_reviews
+         deferrable initially deferred for each row
+         execute function public.e6d_commit_block()`,
     );
     const spy = vi.spyOn(d.getMediaDriver(), 'delete');
     try {
       await expect(deleteReviewOp({ data: { id } })).rejects.toThrow();
     } finally {
-      await f.rows(`drop trigger e6d_media_block on public.media`);
+      await f.rows(`drop trigger e6d_commit_block on public.product_reviews`);
     }
     expect(spy).not.toHaveBeenCalled();
     expect(await d.exists(id)).toBe(true);

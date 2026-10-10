@@ -1,5 +1,5 @@
-// К3-Е6д, Task 6: модерація — статус (Е6д-7) і видалення з двофазним
-// стиранням фото (Е6д-14, Е6д-16). Негативна авторизація — `-authz`.
+// К3-Е6д, Task 6: модерація — зміна статусу (Е6д-7). Видалення з двофазним
+// стиранням — `-delete`, негативна авторизація — `-authz`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setReviewsStatusOp } from 'simplycms/admin-server/impl';
 import {
@@ -20,7 +20,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 const NOT_FOUND = conflict('state', 'review_not_found');
 
-describe('admin: модерація відгуків (Е6д-7, Е6д-14, Е6д-16)', () => {
+describe('admin: зміна статусу відгуків (Е6д-7)', () => {
   const d = useReviewsDb('simplycms_e6d_rv_mod');
   const { f } = d;
   const set = (ids: string[], status: string, extra: object = {}) =>

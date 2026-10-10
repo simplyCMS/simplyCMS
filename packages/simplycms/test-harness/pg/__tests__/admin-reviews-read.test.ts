@@ -44,6 +44,22 @@ describe('admin: читання модерації відгуків (Е6д-7, Е
     expect(pages).toBeGreaterThanOrEqual(3);
   });
 
+  it('🔴 keyset: два рядки в одній мілісекунді (мікросекунди) не губляться на межі сторінки', async () => {
+    const a = await d.seedReview({ createdAt: '2027-01-01T10:00:00.123456Z' });
+    const b = await d.seedReview({ createdAt: '2027-01-01T10:00:00.123789Z' });
+    const seen: string[] = [];
+    let cursor: AdminReviewCursor | undefined;
+    for (let i = 0; i < 4; i++) {
+      const page = await listReviewsOp({ data: { cursor }, pageSize: 1 });
+      seen.push(
+        ...page.rows.map((r) => r.id).filter((id) => id === a || id === b),
+      );
+      cursor = page.nextCursor ?? undefined;
+      if (!cursor) break;
+    }
+    expect([...seen].sort()).toEqual([a, b].sort());
+  });
+
   it('фільтр status: pending; лічильник не залежить від фільтра', async () => {
     const before = await countPendingReviewsOp();
     const p = await d.seedReview({ status: 'pending' });
