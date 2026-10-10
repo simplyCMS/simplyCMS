@@ -22,8 +22,14 @@ import { assertPristine } from './guard.mts';
 import { seedLoyalty } from './loyalty.mts';
 import { GUEST_COUNT, planOrders, ROLES } from './orders-plan.mts';
 import { applyStatuses, placeOrders } from './orders.mts';
-import { personOf, seedPeople } from './people.mts';
-import { approveReviews, shiftTime } from './raw-writes.mts';
+import { personOf, seedPeople, type People } from './people.mts';
+import { int } from './prng.mts';
+import {
+  approveReviews,
+  REGISTRATION_MIN_DAYS,
+  shiftTime,
+  type DayShift,
+} from './raw-writes.mts';
 import { seedCustomerScenarios, seedReviews } from './scenarios.mts';
 import { stream, type SeedContext } from './seed-context.mts';
 
@@ -61,6 +67,27 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
     await shiftTime(
       db,
       placed.map((order) => ({ id: order.id, days: order.dayShift })),
+      registrations(people),
     );
   });
+}
+
+/**
+ * День-зсув реєстрації: адміни — найраніші (магазин стартував з них),
+ * покупці — з PRNG, але раніше за будь-яке своє замовлення. Видалений
+ * покупець рядка `users` уже не має.
+ */
+function registrations(people: People): DayShift[] {
+  const rand = stream('registrations');
+  const buyers = people.buyers
+    .filter((_, index) => index !== ROLES.deleted)
+    .map((b) => ({
+      id: b.id,
+      days: int(rand, REGISTRATION_MIN_DAYS, REGISTRATION_MIN_DAYS + 14),
+    }));
+  return [
+    { id: people.ownerId, days: REGISTRATION_MIN_DAYS + 30 },
+    { id: people.managerId, days: REGISTRATION_MIN_DAYS + 20 },
+    ...buyers,
+  ];
 }

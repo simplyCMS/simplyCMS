@@ -17,6 +17,7 @@ export const STREAM = {
   people: 5,
   orders: 6,
   reviews: 7,
+  registrations: 8,
 } as const;
 
 export function stream(name: keyof typeof STREAM): Rand {

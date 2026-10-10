@@ -32,6 +32,7 @@ const QUERIES = {
             join public.products p on p.id = coalesce(s.product_id, m.product_id)
            order by 1, 2, 3 nulls first`,
   users: `select u.email, u.name, (u.banned_at is not null) as banned,
+                 ${day('u.created_at')} as registered,
                  c.code as category, pr.category_locked as locked
             from public.users u
             left join public.profiles pr on pr.user_id = u.id
