@@ -54,6 +54,12 @@ export function valuesFor(column: Column): unknown[] {
   if ('length' in column && typeof column.length === 'number') {
     extra.push('a'.repeat(column.length), 'a'.repeat(column.length + 1));
   }
+  if (column.columnType === 'PgTime') {
+    // Е6д: рефайн ресурсу банерів накладається поверх базової схеми й маскує її;
+    // валідні формати `HH:MM` і `HH:MM:SS` (як віддає Postgres) дають мутації
+    // базового формату (m7) що порушити.
+    extra.push('09:00', '09:00:00', '25:00');
+  }
   if (column.columnType === 'PgNumeric') {
     // Тема 12: формат/межі десяткового рядка — на цілі/дробові межі precision/scale.
     const { precision, scale } = column as unknown as {

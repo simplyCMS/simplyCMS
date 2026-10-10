@@ -25,6 +25,7 @@ describe('isBannerButton (Е6д-13)', () => {
   it.each([
     ['javascript:', { url: 'javascript:alert(1)' }],
     ['протокол-відносний //', { url: '//evil.test' }],
+    ['зворотний слеш після / (браузер → //)', { url: '/\\evil.test' }],
     ['без слеша', { url: 'catalog' }],
     ['url 501 символ', { url: `/${'a'.repeat(500)}` }],
     ['target поза enum', { target: '_top' }],

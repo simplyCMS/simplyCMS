@@ -54,6 +54,7 @@ export {
   modificationPropertyValuesOps,
 } from './property-values/resources';
 export { sectionsOps } from './sections/resource';
+export { bannersOps } from './banners/resource';
 export { priceTypesOps } from './price-types/resource';
 export {
   setDefaultPriceTypeInput,

@@ -1059,7 +1059,7 @@ export const banners = pgTable("banners", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	placement: text().default('home').notNull(),
 	sectionId: uuid("section_id"),
-	buttons: jsonb().default([]),
+	buttons: jsonb().$type<JsonValue>().default([]),
 	dateFrom: timestamp("date_from", { withTimezone: true, mode: 'date' }),
 	dateTo: timestamp("date_to", { withTimezone: true, mode: 'date' }),
 	scheduleDays: integer("schedule_days").array(),

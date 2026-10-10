@@ -30,6 +30,7 @@ import {
   productPropertyValuesOps,
   modificationPropertyValuesOps,
   sectionsOps,
+  bannersOps,
   priceTypesOps,
   setDefaultPriceTypeInput,
   setDefaultPriceTypeOp,
@@ -299,6 +300,22 @@ export const updateSections = createServerFn({ method: 'POST' })
 export const removeSections = createServerFn({ method: 'POST' })
   .validator(adminInput(sectionsOps.removeSchema))
   .handler(sectionsOps.remove);
+
+export const listBanners = createServerFn({ method: 'GET' })
+  .validator(adminInput(bannersOps.subsetSchema))
+  .handler(bannersOps.list);
+
+export const insertBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.insertSchema))
+  .handler(bannersOps.insert);
+
+export const updateBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.updateSchema))
+  .handler(bannersOps.update);
+
+export const removeBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.removeSchema))
+  .handler(bannersOps.remove);
 
 export const listPriceTypes = createServerFn({ method: 'GET' })
   .validator(adminInput(priceTypesOps.subsetSchema))

@@ -11,7 +11,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { Column } from 'drizzle-orm';
 import { z } from 'zod';
-import { banners } from 'simplycms/schema';
 import { columnSchema, columnsToZod } from '../columns-to-zod';
 import type { SchemaMode } from '../columns-to-zod';
 import { diffAgainstReference } from './support/parity-diff';
@@ -28,14 +27,8 @@ await Promise.all(
   Object.values(import.meta.glob('../*/resource{,s}.ts')).map((load) => load()),
 );
 
-// Е6д Task 2: таблиця, для якої фабрика вже вміє будувати схеми, але ресурсу
-// ще немає (`banners` — Task 3: `time`-колонки). Справжній конфіг, коли
-// зʼявиться, перекриває цей запис (той самий ключ Map, пізніший виграє).
-const PENDING: ParityResource[] = [{ table: banners }];
 const resources = [
-  ...new Map(
-    [...PENDING, ...captured].map((r) => [getTableColumns(r.table), r]),
-  ).values(),
+  ...new Map(captured.map((r) => [getTableColumns(r.table), r])).values(),
 ];
 const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),

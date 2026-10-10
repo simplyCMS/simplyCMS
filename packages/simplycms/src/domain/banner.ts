@@ -24,8 +24,12 @@ export const BANNER_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
 const BUTTON_TEXT_MAX = 50;
 const BUTTON_URL_MAX = 500;
-/** Лише `/шлях` (не `//host`) або `http(s)://`: `javascript:` у `href` — XSS (Е6д-13). */
-const BUTTON_URL_RE = /^\/(?!\/)|^https?:\/\//;
+/**
+ * Лише `/шлях` або `http(s)://`: `javascript:` у `href` — XSS (Е6д-13). Після
+ * `/` заборонені і `/`, і `\`: браузер нормалізує `/\evil.test` у `//evil.test`
+ * (протокол-відносний open redirect).
+ */
+const BUTTON_URL_RE = /^\/(?![/\\])|^https?:\/\//;
 
 function oneOf<T extends string>(values: readonly T[], v: unknown): v is T {
   return typeof v === 'string' && (values as readonly string[]).includes(v);
