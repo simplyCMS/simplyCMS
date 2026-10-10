@@ -123,6 +123,9 @@ const RAW_READS: Record<string, string> = {
   'avatar.ts#avatarUrl':
     'шлях ЗАПИСУ: значення йде в `eraseMedia`/`profiles.avatar_url`, ' +
     'а сховище адресується ключем, не URL',
+  'reviews-write.ts#images':
+    'сирий ключ для стирання, не для показу: `DELETE … RETURNING images` ' +
+    'власного відгуку йде в `eraseMediaRows` (Е6д-9, Е6д-14)',
 };
 
 describe('резолв медіа-колонок при читанні', () => {

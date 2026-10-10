@@ -57,6 +57,20 @@ export const MEDIA_ENTITY_TYPES = [
 export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
 
 /**
+ * Фото відгуку покупця (Е6д-5, КАНОН).
+ *
+ * 🔴 `'review'` свідомо НЕ в `MEDIA_ENTITY_TYPES`: той список — allowlist
+ * адмінського `uploadMedia`, а сценарію «адмін вантажить фото відгуку» немає.
+ * Пише їх лише подача відгуку (`submitReviewWithImages`), як `'avatar'` —
+ * лише заміна аватара. Кількість і розмір КОЖНОГО файлу звіряються ДО
+ * першого запису; 5 × 5 МБ на один POST для пілоту прийнято (борг ліміту тіла
+ * запиту — roadmap, трек «Готовність пілоту»).
+ */
+export const REVIEW_MEDIA_ENTITY = 'review';
+export const MAX_REVIEW_IMAGES = 5;
+export const MAX_REVIEW_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/**
  * Стеля розміру завантаження, байти.
  *
  * 🔴 Два різні значення — навмисно, НЕ розсинхрон: «вирівняти» їх означало б

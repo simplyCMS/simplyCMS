@@ -16,7 +16,10 @@
 
 - Завантаження й видалення — **лише serverFn**: `uploadMedia`/`deleteMedia`
   (`simplycms/admin-server`) для адмінки, `uploadMyAvatar`/`removeMyAvatar`
-  (`simplycms/core/lib/profile-avatar`) для кабінету.
+  (`simplycms/core/lib/profile-avatar`) для кабінету, `submitProductReview`/
+  `deleteMyProductReview` (`simplycms/core/lib/review-form`) для фото відгуку:
+  до 5 файлів по 5 МБ одним `FormData`-запитом разом із текстом, усі перевірені
+  ДО першого запису (Е6д-5, Е6д-6).
 - Рядок `media` і файл пишуться **однією транзакцією актора** — `writeMedia(db, …)`.
   Видалення — `eraseMedia(db, ref)`, і порядок там зворотний: СПЕРШУ `DELETE`
   рядка, ПОТІМ обʼєкт, обидва до `COMMIT`. Необоротна дія стоїть якомога пізніше:
@@ -39,6 +42,7 @@
 - Не читай `MEDIA_ROOT` на модуль-рівні — лише в рантаймі, всередині функції
   (контракт серверного env).
 - `<img>` на вітрині: `loading="lazy"` і явні `width`/`height` або `aspect-ratio`.
+- Фото відгуку на модерації роздається `/media/<key>` будь-кому, хто знає ключ (uuid); приватна роздача — борг К4 (Е6д).
 
 ## Логотип магазину — референс у jsonb (Е6б-14)
 

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
 import {
@@ -7,10 +7,12 @@ import {
 } from 'simplycms/commerce';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
+import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
 import { productReviews, profiles, users } from 'simplycms/schema';
-import { eraseMedia } from 'simplycms/storage';
+import { discardMedia, eraseMediaRows } from 'simplycms/storage';
 import { actorOfGrant, type CoreActor } from '../core-actor';
 import { stateConflict } from '../errors';
+import { normalizeImages } from '../reviews/images';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';
@@ -34,13 +36,16 @@ export type DeleteCustomerInput = z.output<typeof deleteCustomerInput>;
  *  2. `users`/`profiles` `FOR UPDATE`, перевірки: існує, не я, не адмін,
  *     `confirmEmail` збігається з email (без регістру).
  *  3. Ref аватара читається ДО знеособлення (профіль зникне каскадом).
- *  4. Знеособлення замовлень → відгуки анонімні (рейтинг лишається) →
- *     відкликання токенів → `DELETE users` (каскад решти графа).
- *  5. `eraseMedia(tx, ref)` ОСТАННІМ: рядок `media` → файл → COMMIT. Відмова
- *     диска відкочує все; збій самого COMMIT лишає лише «рядок без файла», що
- *     лікується повтором (`ENOENT` — успіх). Окремої транзакції для аватара
- *     немає: інакше роль, видана між перевіркою й стиранням, стерла б аватар
- *     нового адміна при відмові видалення.
+ *  4. Знеособлення замовлень → відгуки анонімні й без фото (рейтинг
+ *     лишається; `images` взято `FOR UPDATE` до запису) → відкликання
+ *     токенів → `DELETE users` (каскад решти графа).
+ *  5. ОСТАННІМ — перша фаза двофазного стирання (Е6д-14, переписує Е6г-15):
+ *     рядки `media` аватара й фото відгуків, кожен виклик за своїм власником
+ *     (Е6д-16: чужий ключ, підсунутий у `images`, не стирається). Ключі
+ *     повертаються в `discard`; файли стирає операція ПІСЛЯ COMMIT. Відмова
+ *     транзакції файлів не чіпає; збій диска лишає лише орфан-файл без рядка.
+ *     Окремої транзакції для аватара немає: інакше роль, видана між
+ *     перевіркою й стиранням, стерла б аватар нового адміна.
  *
  * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний. Перевірка
  * «не я» — лише для `admin`; `system` (сід) її не має, решта перевірок,
@@ -50,7 +55,7 @@ export async function deleteCustomer(
   db: ActorDb,
   input: DeleteCustomerInput,
   actor: CoreActor,
-): Promise<{ erasedOrders: number; anonymizedReviews: number }> {
+): Promise<DeleteCustomerResult & { discard: string[] }> {
   await advisoryXactLock(db, customerCategoryLock(input.userId));
   await advisoryXactLock(db, ADMIN_ROLES_LOCK);
   const [user] = await db
@@ -77,9 +82,15 @@ export async function deleteCustomer(
     input.userId,
     new Date(),
   );
+  const reviews = await db
+    .select({ id: productReviews.id, images: productReviews.images })
+    .from(productReviews)
+    .where(eq(productReviews.userId, input.userId))
+    .orderBy(productReviews.id)
+    .for('update');
   const anonymized = await db
     .update(productReviews)
-    .set({ userId: null })
+    .set({ userId: null, images: sql`'[]'::jsonb` })
     .where(eq(productReviews.userId, input.userId))
     .returning({ id: productReviews.id });
   await revokeUserVerifications(db, {
@@ -87,18 +98,42 @@ export async function deleteCustomer(
     email: user.email,
   });
   await db.delete(users).where(eq(users.id, input.userId));
-  if (avatarRef) await eraseMedia(db, avatarRef);
-  return { erasedOrders, anonymizedReviews: anonymized.length };
+  const discard = avatarRef
+    ? await eraseMediaRows(db, [avatarRef], {
+        entityType: 'avatar',
+        entityId: input.userId,
+      })
+    : [];
+  for (const review of reviews) {
+    discard.push(
+      ...(await eraseMediaRows(db, normalizeImages(review.images), {
+        entityType: REVIEW_MEDIA_ENTITY,
+        entityId: review.id,
+      })),
+    );
+  }
+  return { erasedOrders, anonymizedReviews: anonymized.length, discard };
 }
 
-/** Операція: розбір входу ДО гранта, далі ядро з актором сесії. */
+export type DeleteCustomerResult = {
+  erasedOrders: number;
+  anonymizedReviews: number;
+};
+
+/**
+ * Операція: розбір входу ДО гранта, далі ядро з актором сесії; файли —
+ * ПІСЛЯ COMMIT (`runAdmin` повернувся). Збій `discardMedia` ковтається.
+ */
 export const deleteCustomerOp = async ({
   data,
 }: {
   data: z.input<typeof deleteCustomerInput>;
-}): Promise<{ erasedOrders: number; anonymizedReviews: number }> => {
+}): Promise<DeleteCustomerResult> => {
   const input = parseAdminInput(deleteCustomerInput, data);
-  return runAdmin('customer.delete', (db, grant) =>
-    deleteCustomer(db, input, actorOfGrant(grant)),
+  const { discard, ...result } = await runAdmin(
+    'customer.delete',
+    (db, grant) => deleteCustomer(db, input, actorOfGrant(grant)),
   );
+  for (const key of discard) await discardMedia(key);
+  return result;
 };

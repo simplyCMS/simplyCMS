@@ -92,6 +92,7 @@ describe('ядра операцій покупця поза запитом (show
     await expect(remove(buyer, await emailOf(buyer), SYSTEM)).resolves.toEqual({
       erasedOrders: 0,
       anonymizedReviews: 0,
+      discard: [],
     });
     expect(
       await F.rows(url(), `select 1 from public.users where id = $1`, [buyer]),

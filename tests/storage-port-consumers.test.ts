@@ -24,7 +24,12 @@ const STOREFRONT = resolve(
  * новий запис тут — це заявка на те, що ще один файл вітрини працює з
  * файлами, і вона мусить пройти рев'ю як рішення, а не проїхати в дифі.
  */
-const ALLOWED = ['loaders/avatar.ts'] as const;
+const ALLOWED = [
+  'loaders/avatar.ts',
+  // Е6д-15 (аудит Codex р1 B4): другий споживач порту з вітрини — фото
+  // відгуку (Д-3): подача пише файли, видалення власного відгуку їх стирає.
+  'loaders/reviews-write.ts',
+] as const;
 
 const IMPORTS_PORT = /from\s+['"]simplycms\/storage['"]/;
 

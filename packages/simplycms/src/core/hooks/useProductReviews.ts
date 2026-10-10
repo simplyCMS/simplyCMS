@@ -57,21 +57,19 @@ export function useProductReviews(productId: string | undefined) {
       rating: number;
       title?: string;
       content?: string;
-      images?: string[];
     }) => {
       // 🔴 Перевірка ЛИШАЄТЬСЯ, хоч автора й задає сервер: без неї відмова
       // приїхала б англійською серверною діагностикою просто в тост покупця.
       if (!user || !productId)
         throw new Error(t('product.review.notAuthorized'));
-      await submitProductReview({
-        data: {
-          productId,
-          rating: data.rating,
-          title: data.title || null,
-          content: data.content || null,
-          images: data.images ?? [],
-        },
-      });
+      // serverFn приймає `FormData` (Е6д-6): фото й текст їдуть одним
+      // запитом. Порожні рядки сервер зводить до `null`.
+      const form = new FormData();
+      form.set('productId', productId);
+      form.set('rating', String(data.rating));
+      form.set('title', data.title ?? '');
+      form.set('content', data.content ?? '');
+      await submitProductReview({ data: form });
     },
     onSuccess: () => {
       invalidate();

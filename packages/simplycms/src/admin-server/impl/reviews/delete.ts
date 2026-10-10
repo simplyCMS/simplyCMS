@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
+import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
 import { productReviews } from 'simplycms/schema';
 import { discardMedia, eraseMediaRows } from 'simplycms/storage';
 import { stateConflict } from '../errors';
@@ -32,7 +33,7 @@ export async function deleteReview(
     .returning({ images: productReviews.images });
   if (!row) stateConflict(ADMIN_STATE_CONSTRAINT.reviewNotFound);
   const discard = await eraseMediaRows(db, normalizeImages(row.images), {
-    entityType: 'review',
+    entityType: REVIEW_MEDIA_ENTITY,
     entityId: input.id,
   });
   return { discard };

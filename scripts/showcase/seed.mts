@@ -12,11 +12,13 @@
  *
  * 🔴 Порядок має значення: зсув часу — останнім (після статусів, бо
  * `changeOrderStatus` ставить `updated_at`), видалення покупця — після його
- * замовлень і відгуку; схваленню порядок байдужий (схвалюються `id`
+ * замовлень, відгуку й аватара, файли якого стираються вже після зовнішньої
+ * транзакції (Е6д-14); схваленню порядок байдужий (схвалюються `id`
  * з `insertProductReview`, зокрема вже анонімний відгук видаленого).
  */
 import { setReviewsStatus } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { withActor } from '../../packages/simplycms/src/db/index.ts';
+import { discardMedia } from '../../packages/simplycms/src/storage/index.ts';
 import { seedCatalog } from './catalog.mts';
 import { seedCommerce } from './commerce.mts';
 import { applyProcessEnv, type ShowcaseEnv } from './env.mts';
@@ -31,7 +33,11 @@ import {
   shiftTime,
   type DayShift,
 } from './raw-writes.mts';
-import { seedCustomerScenarios, seedReviews } from './scenarios.mts';
+import {
+  seedCustomerScenarios,
+  seedDeletedAvatar,
+  seedReviews,
+} from './scenarios.mts';
 import { stream, type SeedContext } from './seed-context.mts';
 
 const ADMIN = { role: 'app_admin' } as const;
@@ -61,9 +67,10 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
   const placed = await placeOrders(plan, people, commerce.shipping);
   await withActor(ADMIN, (db) => applyStatuses(db, placed));
   const reviewIds = await seedReviews(stream('reviews'), placed);
+  await seedDeletedAvatar(ctx, people);
 
-  await withActor(ADMIN, async (db) => {
-    await seedCustomerScenarios(db, people);
+  const discard = await withActor(ADMIN, async (db) => {
+    const keys = await seedCustomerScenarios(db, people);
     // Ядро модерації (Е6д-7), а не сирий UPDATE; `id` — від `insertProductReview`.
     await setReviewsStatus(db, { ids: reviewIds, status: 'approved' });
     await shiftTime(
@@ -71,7 +78,11 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
       placed.map((order) => ({ id: order.id, days: order.dayShift })),
       registrations(people),
     );
+    return keys;
   });
+  // Друга фаза стирання (Е6д-14) — лише ПІСЛЯ COMMIT: відкат зовнішньої
+  // транзакції лишає файли аватара цілими разом із рядками.
+  for (const key of discard) await discardMedia(key, env.media);
 }
 
 /**
