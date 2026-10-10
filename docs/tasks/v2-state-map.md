@@ -1231,6 +1231,7 @@ dts-плагін нового бандлера тримає одну повну 
 | `pnpm test:packaging` | tarball-парність, форма `import.meta`, тулчейн декларацій | ні |
 | `pnpm pilot:pack` | скретч-магазин зі справжніх tarball-ів: A/C/D/CLI/TOOL. 🔴 З 0.4.1 env скретча — рівно контракт магазину (без фіктивних Supabase-ключів), а Gate C стереже ще й `simplycms/dist/db`, `drizzle-orm`, `pg` | ні |
 | `pnpm db:demo` | база з нуля + демо-каталог | ні |
+| `pnpm db:showcase` | `db:demo` + вітринне наповнення (`simplycms_showcase`) для ручного тесту; гейт сіду (С-8) — у `test:schema` | ні |
 
 ---
 
@@ -1260,6 +1261,29 @@ VITE_SITE_URL=http://localhost:3000
 # 3. Запуск
 pnpm build && pnpm start        # або pnpm dev
 ```
+
+**Стенд із живими даними для ручного тесту** (вітрина й адмінка не порожні):
+
+```bash
+PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm db:showcase
+# ~10 с: перестворює simplycms_showcase (лише свою — з позначкою
+# 'simplycms:showcase'; чужу базу з тим самим іменем не чіпає), засіває її
+# і друкує готову команду запуску з DATABASE_URL (app_runtime),
+# BETTER_AUTH_SECRET, MEDIA_ROOT=.data/showcase-media, VITE_SITE_URL:
+pnpm build && DATABASE_URL=… BETTER_AUTH_SECRET=… MEDIA_ROOT=… \
+  VITE_SITE_URL=http://localhost:3000 pnpm start
+```
+
+Вхід в адмінку — `owner@showcase.test` / `showcase-owner-2026` (лише локалка;
+решта облікових записів — `docs/development/TOOLING.md` § 2). Що всередині:
+8 розділів, 33 товари з PNG-зображеннями, два типи цін, залишки у двох точках,
+адресна доставка й дві точки видачі, 18 покупців (один забанений, один
+видалений), категорія VIP і дві знижки, 40 замовлень за останні 30 днів (12
+гостьових, частина скасована), 15 схвалених відгуків. База одноразова: кожен
+запуск її перестворює, ручні зміни зникають. Живий прогін 2026-10-08: вітрина,
+розділ, картка товару — 200 з товарами сіду й `/media/<key>` (200 `image/png`);
+вхід власника → дашборд «Нові 6 · 7 днів 552 516 ₴ · 30 днів 1 767 965 ₴» =
+прямий SQL.
 
 **Перевірити весь контур одразу** (К2-Е0, DoD як скрипт): `PG_HARNESS_URL=…
 pnpm live:smoke` — сам піднімає чисту демо-БД, збирає прод-білд, стартує

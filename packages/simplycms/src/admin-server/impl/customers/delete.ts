@@ -6,9 +6,10 @@ import {
   eraseOrderPersonalData,
 } from 'simplycms/commerce';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
-import { advisoryXactLock } from 'simplycms/db';
+import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import { productReviews, profiles, users } from 'simplycms/schema';
 import { eraseMedia } from 'simplycms/storage';
+import { actorOfGrant, type CoreActor } from '../core-actor';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
@@ -19,6 +20,8 @@ export const deleteCustomerInput = z.object({
   userId: z.uuid(),
   confirmEmail: z.string().trim(),
 });
+
+export type DeleteCustomerInput = z.output<typeof deleteCustomerInput>;
 
 /**
  * Видалення акаунта покупця зі знеособленням замовлень (Е6г-15),
@@ -38,51 +41,64 @@ export const deleteCustomerInput = z.object({
  *     лікується повтором (`ENOENT` — успіх). Окремої транзакції для аватара
  *     немає: інакше роль, видана між перевіркою й стиранням, стерла б аватар
  *     нового адміна при відмові видалення.
+ *
+ * Ядро (С-2, С-15): транзакція ВИКЛИКАЧА, вхід уже розібраний. Перевірка
+ * «не я» — лише для `admin`; `system` (сід) її не має, решта перевірок,
+ * зокрема «не адмін», діють так само.
  */
+export async function deleteCustomer(
+  db: ActorDb,
+  input: DeleteCustomerInput,
+  actor: CoreActor,
+): Promise<{ erasedOrders: number; anonymizedReviews: number }> {
+  await advisoryXactLock(db, customerCategoryLock(input.userId));
+  await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+  const [user] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .for('update');
+  if (!user) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
+  const [profile] = await db
+    .select({ avatarUrl: profiles.avatarUrl })
+    .from(profiles)
+    .where(eq(profiles.userId, input.userId))
+    .for('update');
+  if (actor.kind === 'admin' && input.userId === actor.userId)
+    stateConflict(ADMIN_STATE_CONSTRAINT.customerSelf);
+  if (await isAdminUser(db, input.userId))
+    stateConflict(ADMIN_STATE_CONSTRAINT.customerIsAdmin);
+  if (input.confirmEmail.toLowerCase() !== user.email.toLowerCase())
+    fieldIssue(['confirmEmail'], 'invalid_value');
+
+  const avatarRef = profile?.avatarUrl ?? null;
+  const erasedOrders = await eraseOrderPersonalData(
+    db,
+    input.userId,
+    new Date(),
+  );
+  const anonymized = await db
+    .update(productReviews)
+    .set({ userId: null })
+    .where(eq(productReviews.userId, input.userId))
+    .returning({ id: productReviews.id });
+  await revokeUserVerifications(db, {
+    userId: input.userId,
+    email: user.email,
+  });
+  await db.delete(users).where(eq(users.id, input.userId));
+  if (avatarRef) await eraseMedia(db, avatarRef);
+  return { erasedOrders, anonymizedReviews: anonymized.length };
+}
+
+/** Операція: розбір входу ДО гранта, далі ядро з актором сесії. */
 export const deleteCustomerOp = async ({
   data,
 }: {
   data: z.input<typeof deleteCustomerInput>;
 }): Promise<{ erasedOrders: number; anonymizedReviews: number }> => {
   const input = parseAdminInput(deleteCustomerInput, data);
-  return runAdmin('customer.delete', async (db, grant) => {
-    await advisoryXactLock(db, customerCategoryLock(input.userId));
-    await advisoryXactLock(db, ADMIN_ROLES_LOCK);
-    const [user] = await db
-      .select({ email: users.email })
-      .from(users)
-      .where(eq(users.id, input.userId))
-      .for('update');
-    if (!user) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
-    const [profile] = await db
-      .select({ avatarUrl: profiles.avatarUrl })
-      .from(profiles)
-      .where(eq(profiles.userId, input.userId))
-      .for('update');
-    if (input.userId === grant.subject.userId)
-      stateConflict(ADMIN_STATE_CONSTRAINT.customerSelf);
-    if (await isAdminUser(db, input.userId))
-      stateConflict(ADMIN_STATE_CONSTRAINT.customerIsAdmin);
-    if (input.confirmEmail.toLowerCase() !== user.email.toLowerCase())
-      fieldIssue(['confirmEmail'], 'invalid_value');
-
-    const avatarRef = profile?.avatarUrl ?? null;
-    const erasedOrders = await eraseOrderPersonalData(
-      db,
-      input.userId,
-      new Date(),
-    );
-    const anonymized = await db
-      .update(productReviews)
-      .set({ userId: null })
-      .where(eq(productReviews.userId, input.userId))
-      .returning({ id: productReviews.id });
-    await revokeUserVerifications(db, {
-      userId: input.userId,
-      email: user.email,
-    });
-    await db.delete(users).where(eq(users.id, input.userId));
-    if (avatarRef) await eraseMedia(db, avatarRef);
-    return { erasedOrders, anonymizedReviews: anonymized.length };
-  });
+  return runAdmin('customer.delete', (db, grant) =>
+    deleteCustomer(db, input, actorOfGrant(grant)),
+  );
 };

@@ -26,6 +26,17 @@
 
 ## 📍 Поточний стан (оновлено 2026-10-08)
 
+🔴 **2026-10-08 — вітринний стенд `pnpm db:showcase` готовий** (план
+[`2026-10-08-showcase-seed.md`](../superpowers/plans/2026-10-08-showcase-seed.md), Task 1–8,
+гілка `claude/showcase-seed`, до релізу). Локальна база `simplycms_showcase` із живими
+даними для ручного тесту (товари з зображеннями, покупці, знижки, 40 замовлень за 30
+днів) пишеться доменними ядрами під `withActor`: статус адмін-помилки ставить межа
+операції (С-10), фабрика ресурсів має db-варіанти, ядра Е4–Е6г винесено з операцій
+(`CoreActor`, С-15). Гейт сіду (С-8) — у `test:schema`, `typecheck:showcase` — у ланцюгу
+гейтів одразу після `typecheck`. Живий прогін 2026-10-08: вітрина й `/media/<key>` — 200,
+дашборд власника = прямий SQL. Як підняти — [`v2-state-map.md`](./v2-state-map.md) §5;
+борг С-11 — нижче (SHOWCASE-1).
+
 🔴 **2026-10-08 — К3-Е6г (покупці й дашборд) завершено** на гілці
 `claude/k3-e6g-customers-dashboard` (до релізу). `/admin/users`, `/admin/users/$userId`
 і `/admin` — на `simplycms/admin-server`: список покупців (keyset, пошук, фільтри),
@@ -252,6 +263,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 | Conformance тем | `pnpm simplycms theme:conformance` + kit `simplycms/themes/conformance` (негативний контроль живим експериментом) |
 | Редизайн за референсом | скіл `redesign-from-reference` (дискавері → інспекція → мапінг → side-by-side → шліфування); доставка в магазини — симлінки на `node_modules/simplycms/skills/` |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`) |
+| Вітринний стенд | `pnpm db:showcase` — `simplycms_showcase` з наповненням для ручного тесту (одноразова, перестворюється лише з позначкою); друкує env і команду запуску. Опис — `docs/development/TOOLING.md` § 2 |
 | ✅ **Магазин на чистому Postgres** | `pnpm db:demo` (покупний демо: доставка, СИСТЕМНА точка видачі, залишки, `decrease_on_order = true`) → `.env.local` (`DATABASE_URL`, `BETTER_AUTH_SECRET`) → `pnpm build && pnpm start`. Вітрина, вхід, кабінет, чекаут — працюють: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`. Покроково — [`v2-state-map.md`](./v2-state-map.md) §5 |
 | Адмінка | 🔴 **Оживає посторінково (трек К3).** Живі сторінки — `/admin/order-statuses` (Е1б) і каталог (Е3): `/admin/products` (список on-demand, фільтри, «Показати ще»), `/admin/products/new`, `/admin/products/$productId` (картка, модифікації, ціни, залишки, властивості, зображення через порт сховища) і довідники каталогу (Е4): `/admin/sections*` (список, картка із зображенням через порт сховища, SEO, призначення властивостей), `/admin/price-types*` (список, картка, перемикання дефолту), `/admin/properties*` (список, картка, опції із зображенням) і замовлення (Е5): `/admin/orders*` (список on-demand, картка, зміна статусу з поверненням залишку при скасуванні) і доставка (Е6а): `/admin/shipping/*` (способи з тарифами в картці, зони з дефолтною, точки видачі; `/admin/shipping` → способи) і система (Е6б): `/admin/settings` (профіль магазину, логотип, соцмережі, склад), `/admin/themes*`, `/admin/plugins*` і знижки з категоріями покупців (Е6в): `/admin/discounts*`, `/admin/price-validator`, `/admin/user-categories*`; і покупці з дашбордом (Е6г): `/admin/users*`, `/admin`; решта 6 файлів `src/admin/**` — на `supabase-js`, тобто не працюють |
 | CI на PR | `typecheck` · `test` · `packaging` · `schema` · `www` |
@@ -1405,6 +1417,19 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
 К3-Е6г-4. **Модерація відгуків з `user_id IS NULL`** — хвиля Е6д («контент»).
    Легасі `Reviews`/`ReviewDetail` не чіпались (Е6г-8), їхня модерація має врахувати
    відгуки видалених покупців.
+
+SHOWCASE-1. **Схвалення відгуків сіду — сирий SQL (С-11).** Серверної операції статусу
+   відгуку немає (`insertProductReview` пише `pending`), тож `db:showcase` схвалює відгуки
+   позначеним `UPDATE product_reviews SET status = 'approved'` у
+   `scripts/showcase/raw-writes.mts`. Коли Е6д спроєктує модерацію, крок переїжджає на її
+   ядро (як решта сіду — на ядра С-15), а в `raw-writes.mts` лишається лише зсув часу (С-3).
+
+SHOWCASE-2. **Зсув часу не чіпає дату реєстрації й номер замовлення (С-3, рішення власника).**
+   Перелік колонок С-3 — лише `orders.created_at/updated_at` і `user_category_history.created_at`.
+   Тож на картці покупця реєстрація (`users.created_at`) — день прогону, а замовлення й історія
+   категорій — до 30 днів раніше; префікс `YYMMDD` номера замовлення — теж день прогону. Варіант:
+   розширити перелік С-3 (`users.created_at` на ≥31 день назад, префікс `order_number` від
+   зсунутої дати) у тому самому `raw-writes.mts`.
 
 К3-Е6г-5. **Функціональний індекс keyset списку покупців.** Пагінація
    `(date_trunc('milliseconds', users.created_at) desc, id desc)` для великих магазинів

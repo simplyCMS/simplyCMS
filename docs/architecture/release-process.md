@@ -185,12 +185,12 @@ remote незворотне, а автоматичний код на це пра
 
 ### Гейти релізу
 
-Той самий порядок, що в `CLAUDE.md`, з двома відмінностями — обидві свідомі:
+Той самий порядок, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
 у релізі НЕМАЄ `test:schema` і Є `pilot:pack`.
 
 ```
 install --frozen-lockfile → format:check → lint → build
-→ typecheck → test → build:packages → typecheck:template → test:packaging
+→ typecheck → typecheck:showcase → test → build:packages → typecheck:template → test:packaging
 → pilot:pack
 ```
 

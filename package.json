@@ -19,6 +19,7 @@
     "lint:fix": "pnpm exec eslint . --fix",
     "typecheck": "tsc --noEmit",
     "typecheck:template": "tsc -p tsconfig.template.json",
+    "typecheck:showcase": "tsc -p tsconfig.showcase.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
@@ -33,6 +34,7 @@
     "db:diff": "node scripts/db-diff.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:demo": "node scripts/demo-db.mjs",
+    "db:showcase": "pnpm exec tsx scripts/showcase/run.mts",
     "live:smoke": "node scripts/live-smoke.mjs"
   },
   "dependencies": {
@@ -115,6 +117,7 @@
     "@testing-library/user-event": "^14.6.7",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "0.31.11",

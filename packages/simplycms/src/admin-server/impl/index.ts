@@ -40,11 +40,15 @@ export {
 } from './product-modifications/reorder';
 export { productPricesOps } from './product-prices/resource';
 export {
+  saveProductPrices,
   saveProductPricesInput,
   saveProductPricesOp,
 } from './product-prices/save';
+export type { SaveProductPricesInput } from './product-prices/save';
 export { stockOps } from './stock/resource';
 export { saveStockInput, saveStockOp } from './stock/save';
+export type { SaveStockInput } from './stock/save';
+export { saveStock } from './stock/save-core';
 export {
   productPropertyValuesOps,
   modificationPropertyValuesOps,
@@ -66,9 +70,11 @@ export { ordersOps } from './orders/resource';
 export type { OrderRow } from './orders/resource';
 export { orderItemsOps } from './order-items/resource';
 export {
+  changeOrderStatus,
   changeOrderStatusInput,
   changeOrderStatusOp,
 } from './orders/change-status';
+export type { ChangeOrderStatusInput } from './orders/change-status';
 export { addOrderItemInput, addOrderItemOp } from './order-items/add';
 export {
   updateOrderItemQuantityInput,
@@ -138,7 +144,7 @@ export { removeDiscountsInput, removeDiscountsOp } from './discounts/remove';
 export { getDiscountInput, getDiscountOp } from './discounts/get';
 export { saveDiscountInput } from './discounts/save-input';
 export type { SaveDiscountInput } from './discounts/save-input';
-export { saveDiscountOp } from './discounts/save';
+export { saveDiscount, saveDiscountOp } from './discounts/save';
 export { DISCOUNT_CONFIG_LOCK } from './discount-lock';
 export { CUSTOMER_CONFIG_LOCK } from './customer-lock';
 // Харнес доводить, що `lockCatalogTarget` і `advisoryXactLock` — один лок (Е6в-15).
@@ -162,12 +168,16 @@ export {
   runCategoryRulesOp,
 } from './category-rules/run-all';
 export {
+  assignCustomerCategory,
   assignCustomerCategoryInput,
   assignCustomerCategoryOp,
 } from './customers/assign-category';
+export type { AssignCustomerCategoryInput } from './customers/assign-category';
 export { findCustomersInput, findCustomersOp } from './customers/find';
 export type { CustomerHit } from './customers/find';
 export { AdminConflictError, ValidationError } from './errors';
+// С-15: актор ядер, яких кличуть поза операцією (сід, порти).
+export type { CoreActor } from './core-actor';
 export { adminInput } from './validation';
 export { reviewContentInput, getReviewContentOp } from './reviews/content';
 export { diagnosePriceInput } from './price-diagnosis/input';
@@ -187,8 +197,18 @@ export {
 } from './customers/card';
 export { dashboardSummaryOp } from './dashboard/summary';
 export { setAdminRoleInput, setAdminRoleOp } from './customers/roles';
-export { setCustomerBanInput, setCustomerBanOp } from './customers/ban';
-export { deleteCustomerInput, deleteCustomerOp } from './customers/delete';
+export {
+  setCustomerBan,
+  setCustomerBanInput,
+  setCustomerBanOp,
+} from './customers/ban';
+export type { SetCustomerBanInput } from './customers/ban';
+export {
+  deleteCustomer,
+  deleteCustomerInput,
+  deleteCustomerOp,
+} from './customers/delete';
+export type { DeleteCustomerInput } from './customers/delete';
 export {
   updateCustomerContactsInput,
   updateCustomerContactsOp,

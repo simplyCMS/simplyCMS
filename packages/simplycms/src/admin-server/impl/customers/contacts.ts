@@ -5,7 +5,7 @@ import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock } from 'simplycms/db';
 import { customerCategoryLock } from 'simplycms/commerce';
 import { AdminConflictError, stateConflict } from '../errors';
-import { runAdmin } from '../run';
+import { runAdminTransactions } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { revokeUserVerifications } from './verifications';
 
@@ -41,66 +41,72 @@ export const updateCustomerContactsOp = async ({
 }): Promise<{ email: string }> => {
   const input = parseAdminInput(updateCustomerContactsInput, data);
   const email = input.email.toLowerCase();
-  try {
-    await runAdmin('customer.manage', async (db) => {
-      await advisoryXactLock(db, customerCategoryLock(input.userId));
-      const [current] = await db
-        .select({ email: users.email })
-        .from(users)
-        .where(eq(users.id, input.userId))
-        .for('update');
-      if (!current) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
-      const name = [input.firstName, input.lastName].filter(Boolean).join(' ');
-      if (current.email.toLowerCase() !== email) {
-        const [clash] = await db
-          .select({ id: users.id })
+  await runAdminTransactions('customer.manage', async (transaction) => {
+    try {
+      await transaction(async (db) => {
+        await advisoryXactLock(db, customerCategoryLock(input.userId));
+        const [current] = await db
+          .select({ email: users.email })
           .from(users)
-          .where(
-            sql`lower(${users.email}) = ${email} and ${ne(users.id, input.userId)}`,
-          )
-          .limit(1);
-        if (clash) fieldIssue(['email'], 'taken');
-        await db
-          .update(users)
-          .set({ email, emailVerified: false, name })
-          .where(eq(users.id, input.userId));
-        await revokeUserVerifications(db, {
-          userId: input.userId,
-          email: current.email,
-        });
-      } else {
-        // Той самий email за змістом: регістр вирівнюється, `email_verified` ні.
-        await db
-          .update(users)
-          .set({ name, email })
-          .where(eq(users.id, input.userId));
-      }
-      const contacts = {
-        firstName: input.firstName,
-        lastName: input.lastName,
-        phone: input.phone,
-        email,
-      };
-      const updated = await db
-        .update(profiles)
-        .set(contacts)
-        .where(eq(profiles.userId, input.userId))
-        .returning({ id: profiles.id });
-      if (updated.length === 0)
-        await db.insert(profiles).values({
-          id: crypto.randomUUID(),
-          userId: input.userId,
-          ...contacts,
-        });
-    });
-  } catch (error) {
-    // `runAdmin` уже зіставив 23505 у 409 — для email це помилка поля (Е6г-1).
-    if (
-      error instanceof AdminConflictError &&
-      error.constraint === 'users_email_key'
-    )
-      fieldIssue(['email'], 'taken');
-    throw error;
-  }
+          .where(eq(users.id, input.userId))
+          .for('update');
+        if (!current) stateConflict(ADMIN_STATE_CONSTRAINT.customerNotFound);
+        const name = [input.firstName, input.lastName]
+          .filter(Boolean)
+          .join(' ');
+        if (current.email.toLowerCase() !== email) {
+          const [clash] = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(
+              sql`lower(${users.email}) = ${email} and ${ne(users.id, input.userId)}`,
+            )
+            .limit(1);
+          if (clash) fieldIssue(['email'], 'taken');
+          await db
+            .update(users)
+            .set({ email, emailVerified: false, name })
+            .where(eq(users.id, input.userId));
+          await revokeUserVerifications(db, {
+            userId: input.userId,
+            email: current.email,
+          });
+        } else {
+          // Той самий email за змістом: регістр вирівнюється, `email_verified` ні.
+          await db
+            .update(users)
+            .set({ name, email })
+            .where(eq(users.id, input.userId));
+        }
+        const contacts = {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phone: input.phone,
+          email,
+        };
+        const updated = await db
+          .update(profiles)
+          .set(contacts)
+          .where(eq(profiles.userId, input.userId))
+          .returning({ id: profiles.id });
+        if (updated.length === 0)
+          await db.insert(profiles).values({
+            id: crypto.randomUUID(),
+            userId: input.userId,
+            ...contacts,
+          });
+      });
+    } catch (error) {
+      // Транзакція вже зіставила 23505 у конфлікт — для email це помилка
+      // поля (Е6г-1). Зіставлення — ВСЕРЕДИНІ межі операції, щоб 400 їй
+      // поставила межа (С-10), а не залишився 409 конфлікту.
+      if (
+        error instanceof AdminConflictError &&
+        error.constraint === 'users_email_key'
+      )
+        fieldIssue(['email'], 'taken');
+      throw error;
+    }
+  });
   return { email };
 };
