@@ -8,7 +8,9 @@ import {
   BANNER_PLACEMENTS,
   BANNER_TEXT_POSITIONS,
 } from 'simplycms/contracts';
+import { isSafeCssColor } from './css-value';
 import type {
+  Banner,
   BannerAnimation,
   BannerButton,
   BannerPlacement,
@@ -56,4 +58,48 @@ export function isBannerButton(item: unknown): item is BannerButton {
     oneOf(BANNER_BUTTON_TARGETS, obj.target) &&
     oneOf(BANNER_BUTTON_VARIANTS, obj.variant)
   );
+}
+
+/** Що тема hero показує з банера: уже відфільтроване ядром, без логіки в темі. */
+export interface HeroBannerView {
+  title: string;
+  subtitle: string | null;
+  buttons: BannerButton[];
+  textPosition: BannerTextPosition;
+  /** Лише безпечний колір (`isSafeCssColor`), інакше `null`. */
+  overlayColor: string | null;
+}
+
+/**
+ * Перший банер із заголовком або валідною кнопкою (К3-Е6д-9) — його дані мають
+ * пріоритет над каталогом теми. `null` — тема показує власні тексти.
+ */
+export function pickHeroBanner(
+  banners: readonly Banner[],
+): HeroBannerView | null {
+  for (const item of banners) {
+    const buttons = item.buttons.filter(isBannerButton);
+    if (!item.title && buttons.length === 0) continue;
+    return {
+      title: item.title,
+      subtitle: item.subtitle,
+      buttons,
+      textPosition: item.text_position,
+      overlayColor: isSafeCssColor(item.overlay_color)
+        ? item.overlay_color
+        : null,
+    };
+  }
+  return null;
+}
+
+/** Перше зображення банера для hero (десктопне має пріоритет); `null` — немає. */
+export function pickHeroImage(
+  banners: readonly Banner[],
+): { url: string; alt: string } | null {
+  for (const item of banners) {
+    const url = item.desktop_image_url || item.image_url;
+    if (url) return { url, alt: item.title };
+  }
+  return null;
 }

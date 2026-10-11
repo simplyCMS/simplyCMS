@@ -12,7 +12,7 @@ import {
   BANNER_SLIDE_MS,
   BANNER_TIME_RE,
   isBannerButton,
-  isSafeCssValue,
+  isSafeCssColor,
 } from 'simplycms/domain';
 
 /** Порожній час — «без обмеження»; формат `HH:MM` дає `<input type="time">`. */
@@ -32,7 +32,7 @@ export const bannerFormSchema = z
     desktopImageUrl: z.string(),
     mobileImageUrl: z.string(),
     textPosition: z.enum(BANNER_TEXT_POSITIONS),
-    overlayColor: z.string().refine((v) => v === '' || isSafeCssValue(v)),
+    overlayColor: z.string().refine((v) => v === '' || isSafeCssColor(v)),
     buttons: z
       .array(
         z

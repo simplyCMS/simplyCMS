@@ -237,11 +237,14 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 ### 2.2 HeroBanner: що тема показує
 
 Слот `HeroBanner?: ComponentType<{ banners: Banner[] }>` (К3-Е6д-9). Дані
-банера мають пріоритет над каталогом теми:
+банера мають пріоритет над каталогом теми. Контракт живе в коді —
+`pickHeroBanner`/`pickHeroImage` у `simplycms/domain` (`HeroBannerView`); тема
+лише викликає їх і малює результат:
 
 - банер із `title` або хоча б однією валідною кнопкою — тема показує його
   `title`, `subtitle` і кнопки; `text_position` задає вирівнювання,
-  `overlay_color` йде в `style` лише коли `isSafeCssValue`;
+  `overlay_color` приходить як `overlayColor` лише коли пройшов `isSafeCssColor`
+  (allow-list кольору: hex/імʼя/`rgb()`-подібні; `url()`/`var()` ні);
 - кнопки фільтрує `isBannerButton` (`simplycms/domain`): `javascript:`,
   `//host` та інші небезпечні `url` не рендеряться. Тема власної валідації не
   пише;

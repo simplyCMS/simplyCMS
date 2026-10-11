@@ -5,9 +5,9 @@ export const CTA_BASE =
   'inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export const ALIGN = {
-  left: 'items-start text-left',
-  center: 'items-center text-center',
-  right: 'items-end text-right',
+  left: { text: 'text-left', row: 'sm:justify-start' },
+  center: { text: 'text-center', row: 'sm:justify-center' },
+  right: { text: 'text-right', row: 'sm:justify-end' },
 } as const;
 
 const CTA_VARIANT: Record<BannerButton['variant'], string> = {

@@ -14,7 +14,7 @@ import {
   BANNER_SLIDE_MS,
   BANNER_TIME_RE,
   isBannerButton,
-  isSafeCssValue,
+  isSafeCssColor,
 } from 'simplycms/domain';
 import { defineAdminResource } from '../resource';
 import { guardBanners } from './guard';
@@ -96,7 +96,7 @@ export const bannersOps = defineAdminResource({
       s.min(BANNER_SLIDE_MS.min).max(BANNER_SLIDE_MS.max),
     animationDuration: (s: z.ZodNumber) =>
       s.min(BANNER_ANIMATION_MS.min).max(BANNER_ANIMATION_MS.max),
-    overlayColor: (s: z.ZodString) => s.refine((v) => isSafeCssValue(v)),
+    overlayColor: (s: z.ZodString) => s.refine((v) => isSafeCssColor(v)),
   },
   media: {
     entityType: 'banner',

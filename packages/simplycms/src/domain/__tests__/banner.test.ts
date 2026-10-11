@@ -6,7 +6,10 @@ import {
   isBannerButton,
   isBannerPlacement,
   isBannerTextPosition,
+  pickHeroBanner,
+  pickHeroImage,
 } from '../banner';
+import type { Banner } from 'simplycms/contracts';
 
 const valid = {
   text: 'До каталогу',
@@ -80,5 +83,62 @@ describe('предикати enum і межі', () => {
     expect(BANNER_TIME_RE.test('09:30:00')).toBe(true);
     expect(BANNER_TIME_RE.test('24:00')).toBe(false);
     expect(BANNER_TIME_RE.test('9:30')).toBe(false);
+  });
+});
+
+describe('pickHeroBanner / pickHeroImage (К3-Е6д-9)', () => {
+  const base = {
+    id: 'b',
+    title: '',
+    subtitle: null,
+    image_url: '',
+    desktop_image_url: null,
+    buttons: [],
+    overlay_color: null,
+    text_position: 'left',
+  } as unknown as Banner;
+
+  it('null без заголовка й валідних кнопок', () => {
+    expect(pickHeroBanner([])).toBeNull();
+    expect(
+      pickHeroBanner([
+        { ...base, buttons: [{ ...valid, url: 'javascript:x' } as never] },
+      ]),
+    ).toBeNull();
+  });
+
+  it('бере перший банер з текстом, кнопки фільтрує, колір — лише безпечний', () => {
+    const view = pickHeroBanner([
+      base,
+      {
+        ...base,
+        title: 'Акція',
+        subtitle: 'Sub',
+        text_position: 'right',
+        overlay_color: 'url(https://t/x)',
+        buttons: [valid as never, { ...valid, url: '//evil' } as never],
+      },
+    ]);
+    expect(view).toEqual({
+      title: 'Акція',
+      subtitle: 'Sub',
+      buttons: [valid],
+      textPosition: 'right',
+      overlayColor: null,
+    });
+    expect(
+      pickHeroBanner([{ ...base, title: 'A', overlay_color: '#000a' }])
+        ?.overlayColor,
+    ).toBe('#000a');
+  });
+
+  it('pickHeroImage: десктопне перед image_url, інакше null', () => {
+    expect(pickHeroImage([base])).toBeNull();
+    expect(
+      pickHeroImage([
+        base,
+        { ...base, title: 'T', image_url: '/a', desktop_image_url: '/d' },
+      ]),
+    ).toEqual({ url: '/d', alt: 'T' });
   });
 });

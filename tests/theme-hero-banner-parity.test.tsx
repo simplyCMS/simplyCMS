@@ -162,3 +162,25 @@ describe.each(THEMES)(
     });
   },
 );
+
+describe.each(THEMES)(
+  'HeroBanner теми $name: накладка',
+  ({ Hero, messages }) => {
+    it('url() в overlay_color не потрапляє в style', () => {
+      catalog = messages as Record<string, string>;
+      const { container } = render(
+        <Hero
+          banners={[banner({ title: 'A', overlay_color: 'url(https://t/x)' })]}
+        />,
+      );
+      expect(container.innerHTML).not.toContain('url(');
+    });
+  },
+);
+
+it('default: фолбек без вирівнювання з банера (мобільний вигляд незмінний)', () => {
+  catalog = defaultMessages.uk as Record<string, string>;
+  const { container } = render(<DefaultHero banners={[]} />);
+  expect(container.innerHTML).not.toContain('items-start');
+  expect(container.innerHTML).not.toContain('text-left');
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSafeCssValue } from '../css-value';
+import { isSafeCssColor, isSafeCssValue } from '../css-value';
 
 describe('isSafeCssValue (Е6д-4)', () => {
   it.each(['rgba(0,0,0,0.4)', '#112233', 'var(--x)'])('приймає %s', (v) => {
@@ -34,4 +34,26 @@ describe('isSafeCssValue (Е6д-4)', () => {
     expect(isSafeCssValue(undefined)).toBe(false);
     expect(isSafeCssValue(5)).toBe(false);
   });
+});
+
+describe('isSafeCssColor', () => {
+  it.each([
+    'red',
+    '#000a',
+    '#000',
+    '#112233',
+    'rgba(0,0,0,.5)',
+    'rgba(0, 0, 0, 0.4)',
+    'hsl(10 20% 30% / 0.5)',
+  ])('приймає %s', (v) => expect(isSafeCssColor(v)).toBe(true));
+  it.each([
+    'url(https://tracker/x)',
+    'var(--x)',
+    'red; x:y',
+    'expression(1)',
+    '#12',
+    '',
+    'rgb(var(--a))',
+    null,
+  ])('відхиляє %s', (v) => expect(isSafeCssColor(v)).toBe(false));
 });

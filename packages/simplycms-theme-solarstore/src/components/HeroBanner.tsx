@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import type { Banner } from 'simplycms/contracts/objects';
-import { isBannerButton, isSafeCssValue } from 'simplycms/domain';
+import { pickHeroBanner } from 'simplycms/domain';
 import { Button } from 'simplycms/ui/button';
 import { useThemeT } from 'simplycms/themes/useThemeT';
 import type { SolarstoreThemeKey } from '../messages';
@@ -18,7 +18,7 @@ const ALIGN = {
  * Контракт К3-Е6д-9: дані банера мають пріоритет — заголовок, підзаголовок і
  * кнопки першого банера з текстом показуються як є; без них (або без банерів)
  * лишається фіксований маркетинговий блок з каталогу теми. Слайдера немає.
- * Фільтр кнопок і кольору накладки — функції ядра, не власна логіка теми.
+ * Вибір банера, фільтр кнопок і колір накладки — `pickHeroBanner` ядра.
  *
  * 🔴 Заголовок розбитий на 3 ключі (`titlePrefix`/`titleHighlight`/
  * `titleSuffix`): виділений `<span>` сидить усередині речення, і єдиний
@@ -27,14 +27,10 @@ const ALIGN = {
  */
 export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
   const tt = useThemeT<SolarstoreThemeKey>();
-  const data = banners.find(
-    (item) => item.title || item.buttons.some(isBannerButton),
-  );
-  const buttons = data?.buttons.filter(isBannerButton) ?? [];
-  const align = ALIGN[data?.text_position ?? 'center'];
-  const overlay = isSafeCssValue(data?.overlay_color)
-    ? data.overlay_color
-    : undefined;
+  const data = pickHeroBanner(banners);
+  const buttons = data?.buttons ?? [];
+  const align = ALIGN[data?.textPosition ?? 'center'];
+  const overlay = data?.overlayColor ?? undefined;
 
   return (
     <section className="relative overflow-hidden py-20 md:py-32">
