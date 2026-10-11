@@ -33,6 +33,8 @@ export default defineConfig({
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.
       'tests/dist-import-meta.test.ts',
+      // Позитивний контроль того гейта: збірка фікстуру справжнім `base`.
+      'tests/dist-import-meta-fixture.test.ts',
       // Структурний гард тулчейна декларацій (dts поза бандлером + кеп памʼяті):
       // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
       'tests/dts-toolchain.test.ts',

@@ -88,7 +88,7 @@ const group = (server: boolean): Record<string, string> =>
     entries.filter(([out]) => isServerOnlySubpath(out) === server),
   );
 
-const base = {
+export const base = {
   format: ['esm'],
   // Той самий platform, що був дефолтом tsup: builtins Node (`node:crypto` у
   // лоадерах) зовнішні без попереджень; у браузер код їде лише через

@@ -53,6 +53,9 @@ export default defineConfig({
       // Гард лоуереного `import.meta` у dist: читає артефакт збірки, тому
       // без `pnpm build:packages` перевіряв би вчорашній (або порожній) dist.
       'tests/dist-import-meta.test.ts',
+      // Позитивний контроль того гейта: справжня збірка Rolldown (tmp), місце
+      // в packaging-сюїті поруч із ним.
+      'tests/dist-import-meta-fixture.test.ts',
       // Потребує зібраного `dist` — місце в packaging-сюїті, не в дефолтному
       // прогоні. Без цього рядка job `test` у CI (він не робить
       // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:

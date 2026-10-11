@@ -1,19 +1,19 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { publishableDirs } from '../scripts/pack-inspect.mjs';
-import { closure, distFiles } from './lib/dist-graph';
+import { distFiles } from './lib/dist-graph';
 
 // Гард форми `import.meta` в ОПУБЛІКОВАНОМУ коді (packaging-suite).
 //
 // 🔴 Причина, а не симптом: бандлер бере таргет із tsconfig (`ES2017`), якщо
 // його не задано явно, а за таргета нижче ES2020 ЛОУЕРИТЬ `import.meta` у змінну
 // `var import_meta = {}`. Компілюється воно тихо — падає вже в магазині:
-// `resolveSupabaseKeys(({}).env)` = `resolveSupabaseKeys(undefined)` →
-// TypeError на гідрації, ще до дружнього throw про відсутній ключ. Форму
-// треба ЗБЕРЕГТИ, щоб її підставив бандлер магазину; лікує це
-// `target: 'esnext'` у `base` кожного конфігу tsdown.
+// читання `({}).env.VITE_…` дає `undefined` на гідрації, ще до будь-якого
+// дружнього throw про відсутнє значення. Форму треба ЗБЕРЕГТИ, щоб її
+// підставив бандлер магазину; лікує це `target: 'esnext'` у `base` кожного
+// конфігу tsdown.
 //
 // Читаємо `dist/` з диска, а не вміст tarball-а: лоуерення стається на
 // збірці, а в `.tgz` лягає той самий `dist/` (його присутність там доводить
@@ -51,6 +51,11 @@ describe('опублікований dist: форма import.meta збереже
     expect(built.map((pkg) => pkg.dir)).toContain(FLAGSHIP);
   });
 
+  // Скан не вакуумний, лише поки доведено, що за цього `base` справжній
+  // `import.meta.env` виживає збірку: це доводить позитивний контроль —
+  // tests/dist-import-meta-fixture.test.ts (будує фікстур тим самим `base`,
+  // і мутація `target: 'es2017'` червонить саме його). Позитивного якоря в
+  // самому dist немає навмисно: ядро не зобовʼязане містити `import.meta.env`.
   it('жоден dist-модуль не містить лоуереного `import.meta`', () => {
     const offenders = built.flatMap((pkg) =>
       pkg.files
@@ -63,26 +68,5 @@ describe('опублікований dist: форма import.meta збереже
       `бандлер злоуерив \`import.meta\` — у конфігах tsdown цих пакетів бракує ` +
         `\`target: 'esnext'\`:\n${offenders.join('\n')}`,
     ).toEqual([]);
-  });
-
-  it('ланцюг браузерного Supabase-клієнта читає саме `import.meta.env`', () => {
-    // Позитивний якір, щоб гейт не позеленів «вхолосту»: `browser-client`
-    // резолвить ключі з `import.meta.env`, і після splitting цей код лежить
-    // у спільному чанку — тому дивимось на замикання, а не на один файл.
-    const entry = join(
-      ROOT,
-      'packages',
-      FLAGSHIP,
-      'dist/supabase/browser-client.js',
-    );
-    expect(
-      existsSync(entry),
-      `немає ${entry} — потрібен pnpm build:packages`,
-    ).toBe(true);
-
-    const code = [...closure([entry])]
-      .map((file) => readFileSync(file, 'utf8'))
-      .join('\n');
-    expect(code).toContain('import.meta.env');
   });
 });
