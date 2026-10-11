@@ -82,6 +82,18 @@ export async function isolationPart({ pages, contexts, check, fx, st }) {
   const guest = await contexts.guest.newPage();
   guest.on('pageerror', (e) => st.errors.guest.push(String(e)));
   const guestFns = captureServerFns(guest);
+
+  // Проводка `lookupMediaForRequest` у роуті `/media/$`: файл pending-відгуку
+  // віддається автору (200), гостю без cookie — 404 (Е6д-21). Мутація
+  // `lookup: () => ({ personal: true })` у роуті червоніє саме тут.
+  const mediaUrl = `${new URL(st.productUrl).origin}/media/${st.reviewRef}`;
+  const authorStatus = (await author.request.get(mediaUrl)).status();
+  const guestStatus = (await guest.request.get(mediaUrl)).status();
+  check(
+    'контент: фото pending-відгуку — автору 200, гостю без cookie 404',
+    authorStatus === 200 && guestStatus === 404,
+    `автор ${authorStatus}, гість ${guestStatus}`,
+  );
   const ssr = await (await guest.request.get(st.productUrl)).text();
   await guest.goto(st.productUrl, { waitUntil: 'networkidle' });
   const dom = await guest.content();
