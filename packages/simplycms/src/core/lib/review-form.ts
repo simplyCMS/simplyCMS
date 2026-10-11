@@ -9,6 +9,7 @@ import {
   deleteProductReview,
   requireSessionUserId,
   submitReviewWithImages,
+  updateProductReviewWithImages,
   withSessionDb,
   type ReviewImageBytes,
 } from 'simplycms/storefront/loaders';
@@ -83,6 +84,45 @@ export const submitProductReview = createServerFn({ method: 'POST' })
     const images = await inspectImages(data.getAll('images'));
     const userId = await requireSessionUserId();
     return submitReviewWithImages(userId, fields, images);
+  });
+
+/** Поля правки: ті самі текстові поля, що й при подачі, плюс `id` відгуку. */
+const reviewEditFieldsInput = z.object({
+  id: z.uuid(),
+  rating: reviewFieldsInput.shape.rating,
+  title: reviewFieldsInput.shape.title,
+  content: reviewFieldsInput.shape.content,
+  // Референси лишених фото: рядки, не файли. Належність відгуку перевіряє
+  // ядро під локом рядка, не схема.
+  keep: z.array(z.string().min(1).max(512)).max(MAX_REVIEW_IMAGES),
+});
+
+/**
+ * Відредагувати власний відгук (Е6д-23) — ОДИН запит, як подача: текст,
+ * `keep` (лишені фото) і нові `images`. Відгук повертається на модерацію.
+ *
+ * 🔴 Як і в подачі: автора задає cookie, кількість і кожен файл
+ * перевіряються ДО першого запису, а уся послідовність — у
+ * `updateProductReviewWithImages` (харнес ганяє справжній код).
+ */
+export const updateProductReview = createServerFn({ method: 'POST' })
+  .validator((data: unknown): FormData => {
+    if (!(data instanceof FormData)) {
+      throw new Error('[simplycms] updateProductReview expects FormData.');
+    }
+    return data;
+  })
+  .handler(async ({ data }): Promise<{ id: string }> => {
+    const fields = reviewEditFieldsInput.parse({
+      id: data.get('id'),
+      rating: data.get('rating'),
+      title: data.get('title'),
+      content: data.get('content'),
+      keep: data.getAll('keep'),
+    });
+    const files = await inspectImages(data.getAll('images'));
+    const userId = await requireSessionUserId();
+    return updateProductReviewWithImages(userId, { ...fields, files });
   });
 
 /**

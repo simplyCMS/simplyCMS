@@ -7,6 +7,7 @@ import {
   MAX_REVIEW_IMAGE_BYTES,
 } from 'simplycms/domain/media';
 import { StarRating } from './StarRating';
+import { KeptPhotos, type ExistingPhoto } from './KeptPhotos';
 import type { ReviewImageUploadProps } from './ReviewImagePicker';
 
 interface ReviewFormProps {
@@ -16,8 +17,18 @@ interface ReviewFormProps {
     title?: string;
     content?: string;
     images?: File[];
+    /** Референси лишених фото; лише в режимі правки. */
+    keep?: string[];
   }) => void;
   isSubmitting?: boolean;
+  /** Режим правки (Е6д-23): початкові значення й наявні фото відгуку. */
+  initial?: {
+    rating: number;
+    title: string | null;
+    content: string | null;
+    photos: ExistingPhoto[];
+  };
+  onCancel?: () => void;
   /** Optional rich text editor component */
   renderEditor?: (props: {
     content: string;
@@ -39,6 +50,8 @@ export function ReviewForm({
   productId: _productId,
   onSubmit,
   isSubmitting,
+  initial,
+  onCancel,
   renderEditor,
   renderImageUpload,
   maxFiles = MAX_REVIEW_IMAGES,
@@ -49,10 +62,12 @@ export function ReviewForm({
   // useId — не літерал (рев'ю #13): два відгуки на одній сторінці інакше
   // ділили б один id групи рейтингу.
   const ratingLabelId = useId();
-  const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const editing = initial !== undefined;
+  const [rating, setRating] = useState(initial?.rating ?? 0);
+  const [title, setTitle] = useState(initial?.title ?? '');
+  const [content, setContent] = useState(initial?.content ?? '');
   const [images, setImages] = useState<File[]>([]);
+  const [kept, setKept] = useState<ExistingPhoto[]>(initial?.photos ?? []);
   const [ratingError, setRatingError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -66,12 +81,20 @@ export function ReviewForm({
       title: title.trim() || undefined,
       content: content && content !== '<p></p>' ? content : undefined,
       images: images.length > 0 ? images : undefined,
+      ...(editing ? { keep: kept.map((p) => p.ref) } : {}),
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 border rounded-lg p-4">
-      <h3 className="font-semibold text-lg">{t('reviews.writeReview')}</h3>
+      <h3 className="font-semibold text-lg">
+        {t(editing ? 'reviews.editReview' : 'reviews.writeReview')}
+      </h3>
+      {editing && (
+        <p className="text-sm text-muted-foreground">
+          {t('reviews.form.editNote')}
+        </p>
+      )}
 
       <div className="space-y-1">
         <span id={ratingLabelId} className="text-sm font-medium">
@@ -136,24 +159,40 @@ export function ReviewForm({
           <span className="text-sm font-medium">
             {t('reviews.form.photosLabel')}
           </span>
+          <KeptPhotos
+            photos={kept}
+            onRemove={(ref) => setKept((k) => k.filter((p) => p.ref !== ref))}
+          />
           {renderImageUpload({
             files: images,
             onFilesChange: setImages,
-            maxFiles,
+            // Наявні фото займають місця ліміту: сервер перевіряє суму.
+            maxFiles: Math.max(0, maxFiles - kept.length),
             accept,
             maxBytes,
           })}
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium flex items-center"
-      >
-        {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        {t('reviews.form.submit')}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium flex items-center"
+        >
+          {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {t(editing ? 'reviews.form.save' : 'reviews.form.submit')}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="ml-2 px-4 py-2 border rounded-md text-sm"
+          >
+            {t('common.cancel')}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

@@ -55,9 +55,13 @@ export function ProductReviews({
     distribution,
     isLoading,
     submitReview,
+    updateReview,
     deleteReview,
+    userReview,
   } = useProductReviews(productId);
   const [showForm, setShowForm] = useState(false);
+  // Відгук у режимі правки (Е6д-23): форма замінює картку «ви вже залишили».
+  const [editing, setEditing] = useState(false);
 
   const visibleReviews = user
     ? reviews.filter((r) => r.status === 'approved' || r.user_id === user.id)
@@ -112,7 +116,33 @@ export function ProductReviews({
 
       {/* Write review section */}
       {user ? (
-        hasUserReview ? (
+        hasUserReview && userReview && editing ? (
+          <ReviewForm
+            productId={productId}
+            initial={{
+              rating: userReview.rating,
+              title: userReview.title,
+              content: userReview.content,
+              photos: userReview.image_refs.map((ref, i) => ({
+                ref,
+                url: userReview.images[i] ?? ref,
+              })),
+            }}
+            onCancel={() => setEditing(false)}
+            onSubmit={(data) => {
+              const { keep = [], ...rest } = data;
+              updateReview.mutate(
+                { ...rest, keep, id: userReview.id },
+                { onSuccess: () => setEditing(false) },
+              );
+            }}
+            isSubmitting={updateReview.isPending}
+            renderEditor={renderEditor}
+            renderImageUpload={
+              renderImageUpload ?? ((p) => <ReviewImagePicker {...p} />)
+            }
+          />
+        ) : hasUserReview ? (
           <p className="text-sm text-muted-foreground">
             {t('reviews.alreadySubmitted')}
           </p>
@@ -159,6 +189,7 @@ export function ProductReviews({
               key={review.id}
               review={review}
               onDelete={(id) => deleteReview.mutate(id)}
+              onEdit={() => setEditing(true)}
             />
           ))}
         </div>

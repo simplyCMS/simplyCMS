@@ -5,7 +5,11 @@ import { useToast } from 'simplycms/ui/use-toast';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
 import { PAYLOAD_TOO_LARGE_CODE } from 'simplycms/domain/media';
-import { deleteMyProductReview, submitProductReview } from '../lib/review-form';
+import {
+  deleteMyProductReview,
+  submitProductReview,
+  updateProductReview,
+} from '../lib/review-form';
 import { getProductRatings, getProductReviews } from '../lib/reviews';
 import type { ProductReviewRow } from '../lib/reviews';
 
@@ -17,6 +21,8 @@ const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
   [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
   [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
   [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
+  [REVIEW_SUBMIT_ERROR.notFound]: 'reviews.errors.notFound',
+  [REVIEW_SUBMIT_ERROR.imagesChanged]: 'reviews.errors.changed',
   // Стеля тіла запиту (К3-Е6д-2): відмова приходить від міддлвари, не від хендлера.
   [PAYLOAD_TOO_LARGE_CODE]: 'errors.payloadTooLarge',
 };
@@ -107,6 +113,43 @@ export function useProductReviews(productId: string | undefined) {
     onError: onFailure,
   });
 
+  // Правка (Е6д-23): `keep` — референси лишених фото, `images` — нові файли.
+  // Той самий кеш і той самий ключ актора, що й подача: після успіху список
+  // перечитується, і відгук приходить уже зі статусом `pending`.
+  const updateReview = useMutation({
+    mutationFn: async (data: {
+      id: string;
+      rating: number;
+      title?: string;
+      content?: string;
+      keep: string[];
+      images?: File[];
+    }) => {
+      if (!user) throw new Error(t('product.review.notAuthorized'));
+      const form = new FormData();
+      form.set('id', data.id);
+      form.set('rating', String(data.rating));
+      form.set('title', data.title ?? '');
+      form.set('content', data.content ?? '');
+      for (const ref of data.keep) form.append('keep', ref);
+      for (const file of data.images ?? []) form.append('images', file);
+      await updateProductReview({ data: form });
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({
+        title: t('reviews.edited'),
+        description: t('product.review.submittedDescription'),
+      });
+    },
+    onError: (err: Error) => {
+      onFailure(err);
+      // Відгук могли змінити чи видалити в іншій вкладці: форма працює зі
+      // знімком, тож після відмови читаємо актуальний стан.
+      invalidate();
+    },
+  });
+
   const deleteReview = useMutation({
     mutationFn: async (reviewId: string) => {
       // `false` — рядка немає або він чужий: RLS лишила `returning` порожнім.
@@ -134,6 +177,7 @@ export function useProductReviews(productId: string | undefined) {
     ...summarize(approvedReviews),
     isLoading: reviewsQuery.isLoading,
     submitReview,
+    updateReview,
     deleteReview,
   };
 }

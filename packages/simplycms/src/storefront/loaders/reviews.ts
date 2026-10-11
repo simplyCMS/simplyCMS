@@ -1,6 +1,6 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { ReviewStatus, SanitizedHtml } from 'simplycms/contracts';
-import { resolveMediaUrl } from 'simplycms/domain/media';
+import { normalizeMediaRefs, resolveMediaUrl } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews, profiles } from 'simplycms/schema';
 import type { ActorDb } from './db';
@@ -24,6 +24,8 @@ export interface ProductReviewRow {
   /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */
   content: SanitizedHtml | null;
   images: string[];
+  /** Референси тих самих фото (Е6д-23): форма правки повертає їх у `keep`. */
+  image_refs: string[];
   status: ReviewStatus;
   created_at: Date;
   updated_at: Date;
@@ -79,6 +81,7 @@ export async function loadProductReviews(
     // Через спільну функцію, а не власним кастом: інакше зображення відгуку
     // лишилось би єдиною медіа-колонкою без резолву.
     images: toImageList(row.images),
+    image_refs: normalizeMediaRefs(row.images),
     // CHECK `product_reviews_status_check` гарантує домен; тип колонки — text.
     status: row.status as ReviewStatus,
     created_at: row.createdAt,

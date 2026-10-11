@@ -9,6 +9,7 @@ import type { ProductReviews } from '../ProductReviews';
 export const auth: { user: { id: string } | null } = { user: null };
 export const getProductReviews = vi.fn();
 export const submitProductReview = vi.fn();
+export const updateProductReview = vi.fn();
 
 export const review = (id: string, userId: string, status = 'approved') => ({
   id,
@@ -17,7 +18,8 @@ export const review = (id: string, userId: string, status = 'approved') => ({
   rating: 5,
   title: `title-${id}`,
   content: null,
-  images: [],
+  images: [] as string[],
+  image_refs: [] as string[],
   status,
   created_at: new Date('2026-10-01T10:00:00Z'),
   updated_at: new Date('2026-10-01T10:00:00Z'),

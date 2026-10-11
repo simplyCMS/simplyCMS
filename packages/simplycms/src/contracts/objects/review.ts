@@ -14,6 +14,10 @@ export const REVIEW_SUBMIT_ERROR = {
   imageTooLarge: 'review/image-too-large',
   tooManyImages: 'review/too-many-images',
   alreadySubmitted: 'review/already-submitted',
+  // Е6д-23: правка. Відгуку немає або він чужий (RLS не відрізняє) — 404;
+  // `keep` не збігається зі знімком фото — 409, форму треба перечитати.
+  notFound: 'review/not-found',
+  imagesChanged: 'review/images-changed',
 } as const;
 
 export type ReviewSubmitError =
