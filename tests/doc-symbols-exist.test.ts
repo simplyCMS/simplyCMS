@@ -164,7 +164,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   simplyCMS: 'назва організації/бренду, не символ',
   ORIENT_DOC_VENV:
     'змінна скрипта orient (файл без розширення, не індексується)',
-  setLocale: 'README i18n пояснює, що такого модульного стану немає',
   // --- заплановане ---
   configSchema: 'заплановане в К5: форму налаштувань плагіна ядро ще не будує',
 };
@@ -271,10 +270,14 @@ const NON_PRODUCTION =
  * в коментарі чи назві тесту не є його визначенням. Жадібний на рядки/шаблони,
  * щоб `//` усередині URL не вважався коментарем.
  */
-export function stripCommentsAndStrings(src: string): string {
+export function stripCommentsAndStrings(
+  src: string,
+  keepStrings = false,
+): string {
   return src.replace(
     /("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
-    (_m, str: string | undefined) => (str ? str[0] + str[0] : ''),
+    (_m, str: string | undefined) =>
+      str ? (keepStrings ? str : str[0] + str[0]) : '',
   );
 }
 
@@ -285,8 +288,9 @@ const DEF_RES: RegExp[] = [
     `\\b(?:function\\*?|class|const|let|var|type|interface|enum|namespace)\\s+(${IDENT})`,
     'g',
   ),
-  // ключі об'єктів-реєстрів, властивості типів, члени enum: `name:` / `name?:`
-  new RegExp(`(?:^|[\\s,{(;])(${IDENT})\\??\\s*:(?!:)`, 'gm'),
+  // ключі об'єктів-реєстрів, властивості типів, члени enum: `name:` / `name?:`.
+  // Lookbehind відсікає середню гілку тернарника (`a ? name : b`): там `name` — вираз.
+  new RegExp(`(?:^|[\\s,{(;])(?<!\\?\\s*)(${IDENT})\\??\\s*:(?!:)`, 'gm'),
   // методи об'єктів/класів: `name(...) {` в кінці рядка
   new RegExp(
     `^\\s*(?:(?:public|private|protected|static|async|get|set|readonly)\\s+)*(${IDENT})\\s*(?:<[^>]*>)?\\([^;]*\\)\\s*(?::[^{;]+)?\\{\\s*$`,
@@ -347,7 +351,10 @@ export function definedIdentifiers(src: string, isJson = false): string[] {
       (m) => m[1] as string,
     );
   const code = stripCommentsAndStrings(src);
-  const out = [...bracedNames(code), ...thirdPartyImports(src)];
+  const out = [
+    ...bracedNames(code),
+    ...thirdPartyImports(stripCommentsAndStrings(src, true)),
+  ];
   for (const re of DEF_RES)
     for (const m of code.matchAll(re)) out.push(m[1] as string);
   return out;
@@ -462,6 +469,28 @@ describe('символи в доках існують у коді', () => {
     expect(
       Object.values(DOC_SYMBOL_ALLOWLIST).filter((r) => r.trim().length < 10),
     ).toEqual([]);
+  });
+});
+
+describe('негативний контроль індексу визначень', () => {
+  it('середня гілка тернарника не є ключем об’єкта', () => {
+    const ids = definedIdentifiers(
+      'const x = ok ? deleteMedia : other;\nconst y = ok\n  ? multiLine\n  : z;',
+    );
+    expect(ids).not.toContain('deleteMedia');
+    expect(ids).not.toContain('multiLine');
+    expect(definedIdentifiers('const r = { realKey: 1, opt?: 2 };')).toEqual(
+      expect.arrayContaining(['realKey']),
+    );
+  });
+
+  it('закоментований імпорт стороннього пакета не потрапляє в індекс', () => {
+    const src =
+      "// import { ghostImport } from 'react';\n/* import { ghostTwo } from 'react'; */\nimport { liveImport } from 'react';";
+    const ids = definedIdentifiers(src);
+    expect(ids).not.toContain('ghostImport');
+    expect(ids).not.toContain('ghostTwo');
+    expect(ids).toContain('liveImport');
   });
 });
 
