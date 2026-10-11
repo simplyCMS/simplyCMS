@@ -76,16 +76,62 @@ export async function scheduleMediaErasures(
   }
 }
 
+/** Результат `driver.delete` одного ключа: помилку тримаємо значенням. */
+type Attempt = { key: string; error: string | null };
+
+/** `driver.delete` — окремий крок від запису в БД: збій диска не мусить
+ *  потрапити в `catch` запису (і навпаки). */
+async function tryDelete(
+  driver: MediaStorageDriver,
+  key: string,
+): Promise<Attempt> {
+  try {
+    await driver.delete(key);
+    return { key, error: null };
+  } catch (error) {
+    return { key, error: errorText(error) };
+  }
+}
+
+/** Короткий запис підсумку: успіх знімає рядок, збій рахує спробу. */
+async function settle(attempts: readonly Attempt[]): Promise<void> {
+  if (attempts.length === 0) return;
+  await asService(async (db) => {
+    const ok = attempts.filter((a) => a.error === null).map((a) => a.key);
+    if (ok.length > 0)
+      await db
+        .delete(mediaErasures)
+        .where(inArray(mediaErasures.storageKey, ok));
+    for (const a of attempts)
+      if (a.error !== null)
+        await db
+          .update(mediaErasures)
+          .set({
+            attempts: sql`${mediaErasures.attempts} + 1`,
+            lastError: a.error,
+          })
+          .where(eq(mediaErasures.storageKey, a.key));
+  });
+}
+
 /**
- * Опрацювати найстаріші хвости: `FOR UPDATE SKIP LOCKED`, щоб два процеси не
- * стирали той самий файл. Файл стирається під локом рядка — так паралельний
- * добір його пропускає, а не дублює.
+ * Опрацювати найстаріші хвости трьома кроками, БЕЗ утримання локів на час
+ * мережевого `driver.delete` (завислий віддалений драйвер інакше тримав би
+ * з'єднання й локи без межі):
+ *  1. коротка транзакція вибирає ключі `FOR UPDATE SKIP LOCKED` і «бронює» їх
+ *     `requested_at = now()` — окремої колонки `claimed_at` немає, бо бронь і
+ *     так відсуває хвіст за віковий фільтр (1 хв) опортуністичного добору, тож
+ *     паралельний виклик їх не бере; ціна — «вік» хвоста рахується від
+ *     останньої спроби;
+ *  2. `driver.delete` поза транзакцією;
+ *  3. коротка транзакція `settle`.
+ * Якщо процес помре між 1 і 3, рядок лишається і його добере наступний виклик.
  */
 async function processTail(
   driver: MediaStorageDriver,
   opts: { limit: number; minAge: boolean; exclude: readonly string[] },
 ): Promise<{ done: number; failed: number }> {
-  return asService(async (db) => {
+  const keys = await asService(async (db) => {
     const conditions = [
       opts.minAge
         ? lt(mediaErasures.requestedAt, sql`now() - ${OPPORTUNISTIC_MIN_AGE}`)
@@ -95,39 +141,36 @@ async function processTail(
         : undefined,
     ].filter((c) => c !== undefined);
     const rows = await db
-      .select({ id: mediaErasures.id, key: mediaErasures.storageKey })
+      .select({ key: mediaErasures.storageKey })
       .from(mediaErasures)
       .where(and(...conditions))
       .orderBy(asc(mediaErasures.requestedAt))
       .limit(opts.limit)
       .for('update', { skipLocked: true });
-    let done = 0;
-    let failed = 0;
-    for (const row of rows) {
-      try {
-        await driver.delete(row.key);
-        await db.delete(mediaErasures).where(eq(mediaErasures.id, row.id));
-        done += 1;
-      } catch (error) {
-        await db
-          .update(mediaErasures)
-          .set({
-            attempts: sql`${mediaErasures.attempts} + 1`,
-            lastError: errorText(error),
-          })
-          .where(eq(mediaErasures.id, row.id));
-        failed += 1;
-      }
-    }
-    return { done, failed };
+    const claimed = rows.map((r) => r.key);
+    if (claimed.length > 0)
+      await db
+        .update(mediaErasures)
+        .set({ requestedAt: sql`now()` })
+        .where(inArray(mediaErasures.storageKey, claimed));
+    return claimed;
   });
+  const attempts: Attempt[] = [];
+  for (const key of keys) attempts.push(await tryDelete(driver, key));
+  await settle(attempts);
+  return {
+    done: attempts.filter((a) => a.error === null).length,
+    failed: attempts.filter((a) => a.error !== null).length,
+  };
 }
 
 /**
  * Друга фаза стирання (Е6д-14/20): файли ПІСЛЯ COMMIT транзакції, що видалила
  * рядки `media`. Успіх знімає рядок outbox, збій рахує спробу й пише
  * `last_error`. Далі опортуністично добирає до `MEDIA_ERASURE_RETRY_BATCH`
- * хвостів старших за хвилину — фонового шедулера немає.
+ * хвостів старших за хвилину (крім щойно оброблених `keys`) — фонового
+ * шедулера немає. Порожній `keys` транзакції запису не відкриває, але добір
+ * хвоста лишається.
  *
  * Не кидає ніколи: це хвіст дії, що вже відбулась, і збій диска чи БД тут
  * не має маскувати її результат. Слід лишається в outbox і в `console.warn`.
@@ -138,32 +181,12 @@ export async function completeMediaErasures(
 ): Promise<void> {
   const unique = [...new Set(keys)];
   try {
-    const ok: string[] = [];
-    const failed: { key: string; error: string }[] = [];
-    for (const key of unique) {
-      try {
-        await driver.delete(key);
-        ok.push(key);
-      } catch (error) {
-        failed.push({ key, error: errorText(error) });
-      }
-    }
-    await asService(async (db) => {
-      if (ok.length > 0)
-        await db
-          .delete(mediaErasures)
-          .where(inArray(mediaErasures.storageKey, ok));
-      for (const f of failed)
-        await db
-          .update(mediaErasures)
-          .set({
-            attempts: sql`${mediaErasures.attempts} + 1`,
-            lastError: f.error,
-          })
-          .where(eq(mediaErasures.storageKey, f.key));
-    });
-    for (const f of failed)
-      console.warn('[simplycms/storage] erase failed', f.key, f.error);
+    const attempts: Attempt[] = [];
+    for (const key of unique) attempts.push(await tryDelete(driver, key));
+    for (const a of attempts)
+      if (a.error !== null)
+        console.warn('[simplycms/storage] erase failed', a.key, a.error);
+    await settle(attempts);
     await processTail(driver, {
       limit: MEDIA_ERASURE_RETRY_BATCH,
       minAge: true,

@@ -1,3 +1,4 @@
+import { requireGrant } from 'simplycms/auth';
 import { runAdmin } from '../run';
 import {
   listMediaErasures,
@@ -14,13 +15,13 @@ export const listMediaErasuresOp = (): Promise<MediaErasure[]> =>
 
 /**
  * Повторити стирання хвостів (кнопка в адмінці). Фонового шедулера немає, тож
- * саме це — другий шлях добору, окрім опортуністичного. Грант перевіряється
- * ДО транзакції файлів: анонім до `driver.delete` не доходить.
+ * саме це — другий шлях добору, окрім опортуністичного. `requireGrant` — той самий рубіж, що й у `runAdmin`, але без
+ * порожньої транзакції: анонім до `driver.delete` не доходить.
  */
 export const retryMediaErasuresOp = async (): Promise<{
   done: number;
   failed: number;
 }> => {
-  await runAdmin('media.write', async () => undefined);
+  await requireGrant('media.write');
   return retryMediaErasures();
 };

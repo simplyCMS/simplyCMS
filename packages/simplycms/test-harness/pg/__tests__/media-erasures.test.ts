@@ -131,6 +131,51 @@ describe('outbox стирання медіа (Е6д-20)', () => {
     expect((await tails()).map((t) => t.storage_key)).toEqual(stale.keys);
   });
 
+  it('🔴 щойно передані ключі добір хвоста не бере вдруге: attempts = 1 (exclude)', async () => {
+    const { keys } = await erase(1);
+    failOn.add(keys[0]!);
+    await f.rows(
+      `update public.media_erasures set requested_at = now() - interval '2 minutes'`,
+    );
+    await completeMediaErasures(keys, fake());
+    expect((await tails())[0]!.attempts).toBe(1);
+  });
+
+  it('🔴 driver.delete іде ПОЗА транзакцією: рядки не залочені на час видалення', async () => {
+    const { keys } = await erase(1);
+    const real = d.getMediaDriver();
+    let locked: boolean | null = null;
+    const probe: MediaStorageDriver = {
+      ...real,
+      put: real.put.bind(real),
+      open: real.open.bind(real),
+      delete: async (key) => {
+        try {
+          await f.rows(`select 1 from public.media_erasures for update nowait`);
+          locked = false;
+        } catch {
+          locked = true;
+        }
+        return real.delete(key);
+      },
+    };
+    await retryMediaErasures(5, probe);
+    expect(locked).toBe(false);
+    expect(keys).toHaveLength(1);
+  });
+
+  it('completeMediaErasures([]) лишає опортуністичний добір старого хвоста', async () => {
+    const stale = await erase(1);
+    failOn.add(stale.keys[0]!);
+    await completeMediaErasures(stale.keys, fake());
+    failOn.clear();
+    await f.rows(
+      `update public.media_erasures set requested_at = now() - interval '2 minutes'`,
+    );
+    await completeMediaErasures([], fake());
+    expect(await tails()).toEqual([]);
+  });
+
   it('відкат транзакції eraseMediaRows → outbox порожній, media на місці', async () => {
     const reviewId = await d.seedReview();
     const refs = await d.seedPhotos(reviewId, 1);

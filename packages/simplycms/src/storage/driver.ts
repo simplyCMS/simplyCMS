@@ -23,7 +23,12 @@ export interface MediaObject {
 export interface MediaStorageDriver {
   /** Записує НОВИЙ обʼєкт. Зайнятий ключ — `MediaKeyCollisionError`. */
   put(key: string, bytes: Uint8Array): Promise<void>;
-  /** Видаляє обʼєкт. Відсутній — УСПІХ (ідемпотентність, рішення Е2-7). */
+  /**
+   * Видаляє обʼєкт. Відсутній — УСПІХ (ідемпотентність, рішення Е2-7).
+   * 🔴 Це ВИМОГА, на якій стоїть outbox стирання (Е6д-20): повтор по ключу,
+   * чий файл уже стертий (збій між `delete` і зняттям рядка), мусить бути
+   * успішним, інакше хвіст не закриється ніколи.
+   */
   delete(key: string): Promise<void>;
   /** Обʼєкт для роздачі або `null`, якщо ключа немає. */
   open(key: string): Promise<MediaObject | null>;

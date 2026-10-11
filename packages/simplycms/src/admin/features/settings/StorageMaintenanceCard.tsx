@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from 'simplycms/ui/card';
 import { reportTxError } from '../../lib/report-tx-error';
-import { useFormatDate } from '../customers/card/useFormatDate';
+import { useFormatDate } from '../../lib/useFormatDate';
 import { useMediaErasures } from './useMediaErasures';
 
 /**

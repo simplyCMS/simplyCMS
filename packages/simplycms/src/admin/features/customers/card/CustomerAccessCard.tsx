@@ -9,7 +9,7 @@ import { Switch } from 'simplycms/ui/switch';
 import CustomerBanDialog from './CustomerBanDialog';
 import CustomerDeleteDialog from './CustomerDeleteDialog';
 import { useCustomerAccess } from './useCustomerAccess';
-import { useFormatDate } from './useFormatDate';
+import { useFormatDate } from '../../../lib/useFormatDate';
 
 /** Доступ: роль адміна, блокування й видалення акаунта. */
 export default function CustomerAccessCard({

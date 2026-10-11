@@ -1,7 +1,7 @@
 import { useT } from 'simplycms/i18n';
 import type { AdminCategoryHistoryEntry } from 'simplycms/contracts/objects';
 import { Badge } from 'simplycms/ui/badge';
-import { useFormatDate } from './useFormatDate';
+import { useFormatDate } from '../../../lib/useFormatDate';
 
 /** Історія категорій: переведення правилом або email адміна, причина, дата. */
 export default function CustomerHistoryList({

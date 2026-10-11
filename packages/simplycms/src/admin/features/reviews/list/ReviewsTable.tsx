@@ -14,7 +14,7 @@ import {
   TableRow,
 } from 'simplycms/ui/table';
 import { adminPath } from '../../../lib/adminLinks';
-import { useFormatDate } from '../../customers/card/useFormatDate';
+import { useFormatDate } from '../../../lib/useFormatDate';
 import ReviewAuthor from '../ReviewAuthor';
 import ReviewStatusBadge from '../ReviewStatusBadge';
 
