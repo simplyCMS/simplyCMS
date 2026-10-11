@@ -33,10 +33,16 @@
   `product_reviews_status_check` (`pending`/`approved`/`rejected`) і
   `product_reviews_rating_check` (1…5) у `0001_init.sql`; нової міграції немає.
   `0002_grants.sql`: `app_user` на `product_reviews` — `SELECT, INSERT, DELETE` +
-  колонковий `UPDATE (rating, title, content, updated_at)` замість табличного
-  (Е6д-16 б).
+  колонковий `UPDATE (rating, title, content, images, status, updated_at)` замість
+  табличного (Е6д-16 б, розширено Е6д-23); INSERT звужує політика RLS
+  `product_reviews_insert_own` (`status = 'pending'`, `admin_comment IS NULL`;
+  К3-Е6д-7), оновлення — `product_reviews_update_own`.
+- **Доробка К3-Е6д (2026-10-11)**: базу магазину знову перестворити (`pnpm db:demo`):
+  нова таблиця `media_erasures` (outbox стирання, Е6д-20), `media.entity_id` —
+  `NOT NULL` (власник обовʼязковий, К3-Е6д-4); `uploadMedia` без `entityId` → 400
+  (виняток — логотип, власник `STORE_LOGO_OWNER_ID`).
 - **Канон сховища: двофазне стирання (Е6д-14).** Транзакція видаляє лише рядки
-  `media`; файли стираються ПІСЛЯ COMMIT (`discardMedia`). Новий
+  `media`; файли стираються ПІСЛЯ COMMIT (`completeMediaErasures`, outbox Е6д-20). Новий
   `eraseMediaRows(db, refs, owner)` у `simplycms/storage` з обовʼязковим власником
   (Е6д-16 а). `deleteCustomer` повертає `discard` (аватар разом із фото відгуків), тож
   обрив `driver.delete` більше не відкочує видалення акаунта (переписує Е6г-15).
@@ -50,6 +56,26 @@
 
 ### Додано
 
+- Доробка К3-Е6д-1…9 (план
+  [`2026-10-11-v2-k3-e6d-finish.md`](docs/superpowers/plans/2026-10-11-v2-k3-e6d-finish.md)):
+  - outbox `media_erasures` з `completeMediaErasures`/`scheduleMediaErasures`/
+    `retryMediaErasures`, хвости й повтор у налаштуваннях адмінки, помічник
+    `withPublishedRollback` (Е6д-20);
+  - роздача `/media/<key>` перевіряє рядок `media` і видимість власника (`serveMedia(ctx,
+    { lookup })`, `MEDIA_VISIBILITY`); персональні файли — `private, no-cache`, 404/500
+    — `no-store` (Е6д-21);
+  - `findMediaReferences`/`mediaReferenceExists`, sweep неприв'язаних медіа (≥ 24 год) у
+    налаштуваннях, `deleteMedia` → 409 `media_in_use`, гейти `media-sweep-coverage` і
+    `media-cascade-coverage` (з `via` для двоярусного каскаду) (Е6д-22);
+  - стеля тіла запиту `bodyLimitMiddleware` (`simplycms/runtime/body-limit`, 413
+    `request/payload-too-large`, 411 `request/length-required`; `UPSTREAM:START-BODY-1`);
+  - покупець редагує власний відгук (повертається в `pending`), модерація проти побаченої
+    версії: `setReviewsStatus({ items: [{ id, updatedAt }] })`, 409 `review_changed`;
+    автор бачить `own_photos` лише свого відгуку (Е6д-23);
+  - `HeroBanner` обох тем показує текст і кнопки банера (`pickHeroBanner`/`pickHeroImage`/
+    `isSafeCssColor` у `simplycms/domain`, `themes.md` §2.2);
+  - опція `media` фабрики на jsonb-масивах і ресурсах каталогу (розділи, товари, опції
+    властивостей, модифікації), `cascadeMedia` для каталогу.
 - Адмінка: `/admin/banners*` — ресурс фабрики з опцією `media` (Е6д-1), перехресні
   правила на злитому рядку (Е6д-2, Е6д-12), безпечні кнопки (`/шлях` або `http(s)://`,
   Е6д-13) і `overlay_color` за `isSafeCssValue` (Е6д-4); право `banner.manage`.
@@ -75,18 +101,17 @@
 
 ### Змінено
 
+- `eraseMedia` і `discardMedia` знесено: аватар, логотип і `deleteMedia` двофазні;
+  `ImageUpload` більше не стирає файл (проп `eraseOnRemove` прибрано), сироту змітає sweep.
 - Легасі `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail` знесено; легасі на
   `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом).
 - Сід `db:showcase` схвалює відгуки ядром `setReviewsStatus` замість сирого `UPDATE`.
 
 ### Відомі обмеження
 
-- Роздача стертих файлів (Е6д-18): `serveMedia` не перевіряє рядок `media`, а
-  `immutable`-кеш живе рік — орфан після невдалого discard і копія в кеші після
-  успішного стирання лишаються доступними. Борг треку «Готовність пілоту»
-  (`docs/architecture/storage.md`, «Обмеження»).
-- Аватар, логотип і адмінський `deleteMedia` (`ImageUpload` з `eraseOnRemove`) лишились на
-  однофазному `eraseMedia` (відомий виняток Е6д-14).
+Межі канону сховища (`docs/architecture/storage.md`, «Межі»): БД недоступна саме в момент
+відкату публікації; ручна вставка `/media/<key>` у rich HTML не створює власності; прямий
+виклик serverFn повз UI понад стелю тіла може побачити обрив зʼєднання замість 413.
 
 ## [0.13.0] — 2026-10-10
 

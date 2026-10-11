@@ -84,7 +84,7 @@ describe('Логотип у формі налаштувань (Review Focus 2, �
     });
     await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalled());
     view.unmount();
-    // Новий рядок media лишився без посилання з профілю — чесна межа до sweep К4.
+    // Новий рядок media лишився без посилання з профілю — її змітає sweep неприв'язаних медіа (Е6д-22).
     expect(mocks.saveStoreProfile).not.toHaveBeenCalled();
     expect(mocks.deleteMedia).not.toHaveBeenCalled();
   });

@@ -40,7 +40,7 @@ async function restorePart({ dbUrl, check }, snap) {
   check(
     'система: finally — знімок відновлено, логотипи кроку стерто з media',
     JSON.stringify(now) === JSON.stringify(snap),
-    `стерто рядків media: ${removed.length} (файли лишились у MEDIA_ROOT — sweep К4)`,
+    `стерто рядків media: ${removed.length} (файли лишились у MEDIA_ROOT стенда — прибрати вручну)`,
   );
 }
 

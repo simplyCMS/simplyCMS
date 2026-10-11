@@ -62,6 +62,17 @@
   всю таблицю, бо «активність» — правило показу, а не право доступу. Кожен
   публічний запит несе предикат явно (`is_active = true`, `has_page = true`).
   Забутий предикат не падає — він виводить чернетки у вітрину.
+- 🔴 **Гранти й RLS: колонковий грант не звужує INSERT.** Drizzle `insert()` називає в
+  запиті ВСІ колонки таблиці (відсутні значення — як `default`), тож колонковий грант
+  INSERT дав би `42501`: вставку звужує політика RLS `WITH CHECK`, грант лишається
+  табличним. Колонковий грант — для UPDATE. Приклад — `product_reviews` для `app_user`
+  (К3-Е6д-7, Е6д-23; `0002_grants.sql`): `SELECT, INSERT, DELETE` табличні +
+  `UPDATE (rating, title, content, images, status, updated_at)`; політика
+  `product_reviews_insert_own` — `WITH CHECK (user_id = актор AND status = 'pending' AND
+  admin_comment IS NULL)`, `product_reviews_update_own` — `USING (user_id = актор) WITH
+  CHECK (user_id = актор AND status = 'pending')`: правка покупцем повертає відгук на
+  модерацію, а `admin_comment`/`user_id` він змінити не може. `images` довіряють лише через
+  порт сховища (`storage.md`).
 - Приклад серверної функції (зразок — `storefront-routes/server/catalog.ts`):
 
   ```typescript
@@ -383,9 +394,12 @@ parsed))`; ядро приймає вже розібраний вхід і `Acto
 валідує сам через `validateAdminInput` без статусу; `removeIn` — без `prepare`, як і `remove`, захищене
 видалення лишається за іменованими операціями), ядра `saveProductPrices`, `saveStock`,
 `saveDiscount`, `changeOrderStatus`, `assignCustomerCategory`, `setCustomerBan`,
-`deleteCustomer`, `setReviewsStatus` (масова модерація, Е6д-7: без актора, як
-`setCustomerBan`; неіснуючий id у наборі → 409 `review_not_found` без часткового запису;
-сід кличе його під `withActor(app_admin)`) і `deleteReview` (повертає `discard` для
+`deleteCustomer`, `setReviewsStatus` (масова модерація, Е6д-7/Е6д-23: без актора, як
+`setCustomerBan`; вхід `{ items: [{ id, updatedAt }], status }` — модератор рішає проти
+ПОБАЧЕНОЇ версії: під `FOR UPDATE` версія кожного рядка (`isoVersion`, мілісекунди)
+порівнюється з `updatedAt`, розбіжність → 409 `review_changed` на весь пакет, неіснуючий id →
+409 `review_not_found`, часткового запису в обох випадках немає; сід кличе його під
+`withActor(app_admin)` з версіями, прочитаними SQL-ом) і `deleteReview` (повертає `discard` для
 двофазного стирання, Е6д-14). Ядро, якому потрібен актор, отримує `CoreActor`
 (`admin-server/impl/core-actor.ts`) — дискримінант `{ kind: 'admin', userId } | { kind:
 'system' }`, а не `string | null`: для `system` автора дії (`changed_by`) немає і перевірки
@@ -402,10 +416,12 @@ ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) �
 знімка: це рядок `media` з `entity_type = cfg.entityType AND entity_id = <id рядка>` під
 `FOR SHARE`, інакше 409 `media_ref_invalid`. Стирається лише референс, що задовольняє ту саму
 умову — чужий файл фабрика не стирає ніколи; незмінений `data:`/`https:` референс (демо) не
-перевіряється. Форма картки передає `ImageUpload` `eraseOnRemove={false}`, а `id` нового рядка
+перевіряється. `ImageUpload` файл при прибиранні з форми не стирає, а `id` нового рядка форма
 генерує НАПЕРЕД: «прибрав картинку → скасував форму» лишає старий файл живим, новий — орфаном
-`media` з `entity_id` рядка (sweep — К4). В Е6д опцію має лише ресурс банерів;
-`sections`/`products`/`property_option` — борг roadmap.
+`media` з `entity_id` рядка; такого сироту прибирає sweep неприв'язаних медіа (Е6д-22,
+`storage.md`). Опцію мають банери, `sections`, `products`, `property_options` і
+`product_modifications` (К3-Е6д-1); значення колонки може бути рядком або `jsonb`-масивом
+референсів (`normalizeMediaRefs`).
 
 **Опція `cascadeMedia` фабрики (Е6д-19).** `defineAdminResource({ …, cascadeMedia: [{ fk,
 column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
@@ -416,8 +432,9 @@ column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
 `completeMediaErasures`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
 обовʼязковий: вставка дочірнього рядка, що вже пройшла FK-перевірку (`FOR KEY SHARE`), без
 нього пішла б каскадом повз знімок. Має ресурс товарів (фото відгуків). Покриття стереже
-гейт `media-cascade-coverage` (`test-contours.md`); перелік відомих винятків однофазного
-стирання (аватар, логотип, адмінський `deleteMedia`) — `storage.md`.
+гейт `media-cascade-coverage` (`test-contours.md`); єдиний виняток гейта — аватар
+(`users → profiles.avatar_url`: користувача видаляє лише `deleteCustomer`); двоярусний каскад
+(товар → модифікація → фото) оголошується полем `via`. Канон стирання — `storage.md`.
 
 **Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
@@ -559,7 +576,7 @@ email в іншому регістрі — не конфлікт, записує
   не утворять: `updateProfile` вітрини, власні записи Better Auth у
   `users`/`sessions`, а також аватар вітрини (`replaceAvatarFor`/`clearAvatarFor`),
   який пише `media` + один рядок `profiles` у порядку `users` → `profiles`, а його
-  операторська транзакція `eraseMedia` чіпає лише `media`. Нова операція, що пише
+  операторська транзакція `eraseMediaRows` чіпає лише `media`. Нова операція, що пише
   два ресурси графа, підпадає під правило; виняток називає причину в коментарі
   поруч із кодом. Незалежно від advisory-лока рядки покупця блокуються в порядку
   `users` → `profiles` (FK-`KEY SHARE` на `users` теж рахується); операція, що бере
@@ -610,7 +627,7 @@ email в іншому регістрі — не конфлікт, записує
   `applyCategoryRules` в ОКРЕМІЙ транзакції `withStoreOperatorDb` у `try/catch`:
   збій правил не ламає замовлення (Е6в-19). Скасування замовлення категорію не
   перераховує. `category_id`/`category_locked` профілю змінює лише `app_admin`
-  (колонковий грант `app_user`, Е6в-24). Колонковий грант INSERT несумісний з Drizzle `insert()` (він перелічує всі колонки, відсутні — як `default`) — звужуй вставку політикою RLS `WITH CHECK`.
+  (колонковий грант `app_user`, Е6в-24).
 - Гейти: харнес `test:schema` (атомарність `saveDiscount`, локи детерміновано
   хелперами `holdAdvisoryLock`/`stillPending`, видалення категорії з історією,
   правила після оформлення), юніти рушія й підказок, `live:smoke` (крок
@@ -652,8 +669,8 @@ email в іншому регістрі — не конфлікт, записує
   ПІСЛЯ COMMIT (`completeMediaErasures`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
   `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
   місці й файлів не чіпає; збій `driver.delete` після COMMIT видалення НЕ відкочує —
-  лишається орфан-файл без рядка, битих референсів нуль (роздачу орфана — обмеження
-  Е6д-18 — див. `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
+  лишається орфан-файл без рядка, битих референсів нуль (хвіст у outbox `media_erasures`
+  добиває повтор; роздача орфана закрита перевіркою рядка, Е6д-21 — `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
   видана між перевіркою й стиранням, стерла б аватар нового адміна при відмові видалення.
 - 🔴 **Реєстр ПД `orders` (Е6г-7)** — `commerce/order-privacy.ts`:
   `ORDER_COLUMN_PRIVACY: { readonly [K in keyof Order]: 'personal' | 'operational' }`.

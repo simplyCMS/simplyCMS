@@ -78,8 +78,9 @@ export function localFsDriver(root: string = mediaRoot()): MediaStorageDriver {
       } finally {
         // 🔴 Прибирання best-effort: обʼєкт уже опублікований `link`-ом, тож
         // невдалий `unlink` нічого не ламає. Названа межа Е2: падіння процесу
-        // МІЖ `link` і `unlink` лишає сироту `.tmp-*` — її змітає sweep К4,
-        // а роздача її не віддасть (імʼя поза `MEDIA_KEY_RE`).
+        // МІЖ `link` і `unlink` лишає сироту `.tmp-*` — її змітає майбутній
+        // sweep файлів диска (К4; sweep Е6д-22 працює з рядками `media`, а не
+        // з диском), а роздача її не віддасть (імʼя поза `MEDIA_KEY_RE`).
         await rm(tmp, { force: true }).catch(() => undefined);
       }
     },

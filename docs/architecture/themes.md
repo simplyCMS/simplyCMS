@@ -245,6 +245,10 @@ import { RichHtml } from 'simplycms/ui/rich-html';
   `title`, `subtitle` і кнопки; `text_position` задає вирівнювання,
   `overlay_color` приходить як `overlayColor` лише коли пройшов `isSafeCssColor`
   (allow-list кольору: hex/імʼя/`rgb()`-подібні; `url()`/`var()` ні);
+- накладка: `overlayColor` береться з ТОГО Ж текстового банера (`pickHeroBanner`) і
+  лише як колір (`isSafeCssColor`); банер лише з картинкою (без `title` і валідних
+  кнопок) накладки не дає — тема малює свої тексти без неї. Картинка береться окремо,
+  `pickHeroImage` (десктопна має пріоритет), і від тексту не залежить;
 - кнопки фільтрує `isBannerButton` (`simplycms/domain`): `javascript:`,
   `//host` та інші небезпечні `url` не рендеряться. Тема власної валідації не
   пише;
