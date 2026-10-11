@@ -119,7 +119,7 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   `simplycms/contracts/entities` (не літерал, `collectionKey` лише в `admin-data`),
   `Date` замість рядків дат; Zod-валідація входу на сервері (`.validator(…)`);
   інвалідація TanStack Query (`router.invalidate()`) відповідає тому, що змінили; типи БД проти реальних
-  відповідей (адмінка — PostgREST, вітрина — Drizzle-схема); N+1.
+  відповідей (і адмінка, і вітрина — Drizzle-схема; адмінка — через `simplycms/admin-server`); N+1.
 
 **Стек залежить від того, що саме зачепив диф** — не змішуй правила різних зон:
 

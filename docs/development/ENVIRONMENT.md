@@ -39,8 +39,9 @@
 `VITE_SITE_URL` сервер бере з `process.env` (`seo/robots`, `seo/sitemap`, `getStorefrontRoot`). Дуального резолву немає —
 відсутній ключ гучно падає. Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
 `import.meta.env` — Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести джерело env не здатен.
-Доводять: eslint `no-restricted-syntax` на `import.meta.env` у шести серверних модулях (див. `docs/development/TOOLING.md` § «Лінт»)
-і Gate C пілота (`server-client` + `anon-client` у `SERVER_PAYLOAD`).
+Доводять: eslint `no-restricted-syntax` на `import.meta.env` у п'яти серверних модулях (`SERVER_ENV_FILES` в `eslint.config.mjs`; див. `docs/development/TOOLING.md` § «Лінт»,
+негативний контроль — `tests/eslint-server-env.test.ts`) і Gate C пілота (`SERVER_PAYLOAD` будується з `SERVER_ONLY` —
+`simplycms/contracts/server-only` — плюс серверні залежності; контроль — `tests/pilot-gate-c.test.ts`).
 
 🔴 `VITE_LOCALE` — опційний клієнтський перемикач локалі збірки (`simplycms.config.ts`:
 `locale: import.meta.env.VITE_LOCALE ?? 'uk-UA'`; е2е-обгортка приймає `uk-UA` або `en-US`).

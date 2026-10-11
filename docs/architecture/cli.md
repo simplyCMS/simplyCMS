@@ -322,9 +322,10 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 була, так і лишається.
 
 Контракт захищено машинно: eslint `no-restricted-syntax` забороняє
-`import.meta.env` у шести серверних модулях (тест відрізнити джерело не може —
+`import.meta.env` у п'яти серверних модулях (`SERVER_ENV_FILES`; тест відрізнити джерело не може —
 у vitest `import.meta.env` є Proxy над `process.env`), а Gate C пілота ловить
-витік `server-client`/`anon-client` у клієнтський бандл.
+витік server-only субшляхів ядра (`simplycms/contracts/server-only`) і серверних залежностей
+(`SERVER_PAYLOAD`) у клієнтський бандл.
 
 ## 8. Зв'язок із реліз-потягом
 

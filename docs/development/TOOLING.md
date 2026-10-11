@@ -174,9 +174,9 @@ Error-зони й кастомні правила (селектори й опц�
   `src/storefront-routes`, `src/admin`, п'ять `src/*-ui` пакета ядра, компоненти тем. У
   `routes/admin` живий React-компонент `AdminPending` використовує `useT()` (ключ
   `admin.common.loading`).
-- **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): шість модулів
-  env-контракту — `server-client`, `anon-client`, `seo/robots`, `seo/sitemap`, `api/health.tsx`,
-  `src/start.ts`.
+- **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): п'ять модулів
+  env-контракту (`SERVER_ENV_FILES`) — `seo/robots`, `seo/sitemap`, `server/root`, `api/health.tsx`,
+  `src/start.ts`. Негативний контроль — `tests/eslint-server-env.test.ts`.
 - **Тір-зони напрямку шарів:** `eslint.tier-zones.mjs` + `eslint.tier-relative.mjs` забороняють
   імпорт угору по тірах усередині пакета ядра, бо межу `dependencies` після злиття пакетів не тримає
   ніщо. Негативний контроль — `tests/tier-boundary.test.ts`.
