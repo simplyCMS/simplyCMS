@@ -83,6 +83,8 @@ describe('cli doctor (оффлайн)', () => {
       themes: 'ok',
       // node_modules ще немає — скіли ядра нема з чим звіряти.
       'skill-links': 'skip',
+      // Ядра в node_modules ще немає — peer-діапазон pg невідомий (деталі — cli-pg-driver).
+      'pg-driver': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);

@@ -8,6 +8,7 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from './doctor-fs-checks.mjs';
+import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
 /**
@@ -149,5 +150,7 @@ export function runOfflineChecks(ctx) {
     checkThemes(ctx),
     // №12 (трек К0): скіли ядра підключені лінками.
     checkSkillLinks(ctx),
+    // №13 (К3-Е7): драйвер БД — залежність магазину в межах peer ядра.
+    checkPgDriver(ctx),
   ];
 }

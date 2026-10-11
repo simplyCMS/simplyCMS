@@ -11,6 +11,7 @@ import {
   findHostDrift,
   writeHostFiles,
 } from './host-drift.mjs';
+import { pgUpdateHint } from './pg-peer.mjs';
 import { syncSkillLinks } from './skill-links.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
@@ -117,6 +118,10 @@ export async function run(argv) {
   } else {
     say.info('--no-install: пакети не чіпаю, лише host-файли.');
   }
+  // Драйвер `pg` належить магазину: update його не переписує, лише підказує, якщо новий peer
+  // ядра розійшовся з тим, що стоїть у магазині.
+  const pgHint = pgUpdateHint(storeRoot, readStoreManifest(storeRoot));
+  if (pgHint) say.warn(pgHint);
   // Лінки скілів лагодяться завжди й тихо: на exit-код вони не впливають,
   // бо після цього кроку стану «є що зробити» не лишається.
   syncSkillLinks(storeRoot);
