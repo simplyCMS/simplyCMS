@@ -3,7 +3,7 @@
 // відгуку лишаються, бо їхні посилання бачить `findMediaReferences`.
 import { describe, expect, it, vi } from 'vitest';
 import { getMediaDriver } from 'simplycms/storage';
-import { STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
+import { MEDIA_SWEEP_BATCH, STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
 import { useCatalogMediaDb } from './fixtures/catalog-media';
 import { blockCommitOn } from './fixtures/commit-block';
 import { profile } from './fixtures/admin-system';
@@ -98,6 +98,28 @@ describe('sweepUnreferencedMediaOp (Е6д-22)', () => {
     await sweepUnreferencedMediaOp();
     expect(await alive(ref)).toBe(true);
     expect(d.hasFile(ref)).toBe(true);
+  });
+
+  it('живих старих > пакета не затуляють сироту: сирота стертий, живі цілі', async () => {
+    const n = MEDIA_SWEEP_BATCH + 1;
+    // Живі (48 год, старші за сироту) — товар посилається на файл. Одним INSERT.
+    await f.rows(
+      `with g as (select gen_random_uuid() as pid, 'ab/live-' || gen_random_uuid() || '.png' as k
+                    from generate_series(1, $1))
+       , p as (insert into public.products (id, slug, name, images)
+               select pid, 'live-' || pid, 'T', jsonb_build_array(k) from g)
+       insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type, created_at)
+       select gen_random_uuid(), 'product', pid, k, 1, 'image/png', now() - interval '48 hours' from g`,
+      [n],
+    );
+    const orphan = await d.upload('banner', crypto.randomUUID());
+    await age(orphan, 25);
+    await sweepUnreferencedMediaOp();
+    expect(await alive(orphan)).toBe(false);
+    const live = await f.rows<{ c: string }>(
+      `select count(*)::text c from public.media where storage_key like 'ab/live-%'`,
+    );
+    expect(Number(live[0]!.c)).toBe(n);
   });
 
   it('COMMIT впав → файл і рядок цілі (файл стирається лише після COMMIT)', async () => {

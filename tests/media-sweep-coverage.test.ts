@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   MEDIA_ENTITY_TYPES,
-  MEDIA_REFERENCED_ENTITY_TYPES,
   REVIEW_MEDIA_ENTITY,
 } from 'simplycms/domain/media';
+import { MEDIA_REFERENCED_ENTITY_TYPES } from 'simplycms/storage';
 
 /**
  * Гейт `media-sweep-coverage` (Е6д-22): sweep стирає рядок `media` без

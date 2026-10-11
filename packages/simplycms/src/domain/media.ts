@@ -234,19 +234,14 @@ export const LOGO_MEDIA_REFERENCE = {
   entityType: 'store_logo',
 } as const;
 
-/** `entity_type`, для яких `findMediaReferences` має гілку (структурно, з реєстрів). */
-export const MEDIA_REFERENCED_ENTITY_TYPES: readonly string[] = [
-  ...new Set([
-    ...MEDIA_COLUMNS.map((c) => c.entityType),
-    LOGO_MEDIA_REFERENCE.entityType,
-  ]),
-];
-
 /**
  * Мінімальний вік рядка `media`, з якого sweep сміє його стерти (Е6д-22):
  * молодший файл міг бути щойно завантажений і ще не привʼязаний формою.
  */
 export const MEDIA_SWEEP_MIN_AGE_HOURS = 24;
 
-/** Стеля кандидатів за один запуск sweep: транзакція лишається короткою. */
-export const MEDIA_SWEEP_BATCH = 500;
+/** Кандидатів у одному пакеті sweep (окрема коротка транзакція). */
+export const MEDIA_SWEEP_BATCH = 100;
+
+/** Верхня межа пакетів за один виклик sweep; решту добере наступний. */
+export const MEDIA_SWEEP_MAX_BATCHES = 10;

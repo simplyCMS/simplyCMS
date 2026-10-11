@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
 import { createTranslator } from 'simplycms/i18n';
@@ -99,19 +100,13 @@ describe('StorageMaintenanceCard (Е6д-20)', () => {
       screen.getByRole('button', { name: t('admin.settings.storage.sweep') }),
     );
     const dialog = await screen.findByRole('alertdialog');
-    expect(mocks.sweepUnreferencedMedia).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: t('common.cancel') }));
+    // Без підтвердження виклику немає.
     expect(mocks.sweepUnreferencedMedia).not.toHaveBeenCalled();
     fireEvent.click(
-      screen.getByRole('button', { name: t('admin.settings.storage.sweep') }),
-    );
-    expect(dialog).toBeTruthy();
-    const confirm = (
-      await screen.findAllByRole('button', {
+      within(dialog).getByRole('button', {
         name: t('admin.settings.storage.sweep'),
-      })
-    ).at(-1)!;
-    fireEvent.click(confirm);
+      }),
+    );
     await waitFor(() =>
       expect(mocks.sweepUnreferencedMedia).toHaveBeenCalled(),
     );
