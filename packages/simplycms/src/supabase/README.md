@@ -56,7 +56,7 @@ const supabase = useSupabaseClient();
 ```
 
 🔴 Магазин більше НЕ звужує клієнти generic-параметром до власного
-`Database` — типа `StoreDatabase` (host `engine.shared.ts`) не існує з
+`Database` — типа `StoreDatabase` (знесено; host `engine.shared.ts`) не існує з
 0.4.1: клієнти типізуються дефолтним baseline-ом цього пакета
 (`Database` нижче).
 

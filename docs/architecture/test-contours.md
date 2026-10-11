@@ -114,7 +114,7 @@ OK  owner-invite ідемпотентний + роль admin — 2 прогон�
 OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
 ```
 Третій рядок — живий доказ фікса blocker-а з код-рев'ю: до заміни
-`Response.redirect` на `redirectResponse` ця перевірка дала б 500.
+`Response.redirect` на `redirectResponse` (знесено) ця перевірка дала б 500.
 
 ## 4. Сліпі зони (станом на 2026-08-08)
 
@@ -439,7 +439,7 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 (`POST /api/revalidate-theme`), але не клієнтський: `_storefront` має
 `staleTime: 5 * 60_000`, тож перехід на вітрину в межах застосунку до п'яти
 хвилин показував стару тему, а тост стверджував «Зміни застосовані на сайті».
-Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()`
+Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()` (знесено)
 (`admin/lib/revalidateTheme.ts`), що робив обидва кроки. 🔴 Е6б знесла і його, і
 `/api/revalidate-theme`: серверний кеш тепер скидає сама операція після COMMIT
 (`activeThemeCache.invalidate()` в `admin-server/impl/site-themes/activate.ts`,
@@ -521,7 +521,7 @@ scripts/e2e.mjs
   1. assertLocalStackTooling()   — supabase CLI + docker (перевикористано з pilot-pack/e2e.mjs)
   2. startLocalStack()           — supabase start + db reset (той самий механізм, що й `pnpm pilot:e2e`)
   3. readLocalStack(port)        — VITE_SUPABASE_* + service_role з `supabase status -o json`
-  4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs
+  4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs  (знесено)
   5. playwright test  (VITE_LOCALE=uk-UA)   ─┐ послідовно: один vite dev
      playwright test  (VITE_LOCALE=en-US)   ─┘ на теку одночасно (routeTree.gen.ts, node_modules/.vite)
   6. stopLocalStack()            — завжди, у finally
@@ -533,7 +533,7 @@ scripts/e2e.mjs
 батьківського процесу в момент старту, не пізніше) — застосунок падав би на
 першому ж запиті до Supabase. Тому bootstrap живе поза Playwright.
 
-`bootstrapOwner()` перевикористовує `runOwnerInvite` з
+`bootstrapOwner()` (знесено) перевикористовує `runOwnerInvite` з
 `packages/create-simplycms-store/template/scripts/owner-invite-core.mjs` (той
 самий код, що доводить Gate E) — не другий механізм. Єдина відмінність від
 Gate E: e2e-контуру для логіну формою потрібен ПАРОЛЬ, тож після idempotent

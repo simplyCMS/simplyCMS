@@ -624,7 +624,7 @@ RLS менше місяця; Prisma — без RLS.
 
 **Висновок.** Замінено власним генератором `columnsToZod` (Етап B, спека
 `2026-10-04-deps-security-tooling-design.md`, 7б): `buildResourceSchemas` більше
-не імпортує `drizzle-zod`, `SafePick` і касти `.pick(... as never)`/refine-функції
+не імпортує `drizzle-zod`, `SafePick` (знесено) і касти `.pick(... as never)`/refine-функції
 прибрано (коміти Етапу B). `drizzle-orm/zod` 1.0.0-rc.4 DZOD-1 не лікував (13
 помилок без кастів), тож чекати апстрім не довелось. Рантайм-еквівалентність
 з drizzle-zod стереже постійний гейт `columns-to-zod-parity.test.ts` з

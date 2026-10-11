@@ -38,7 +38,7 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
 - **Хуків знижок немає.** `admin.discount.form.fields`,
   `discount.conditions.evaluate`, `discount.before_apply`, `discount.after_apply`,
   `discount.types` і порт `CatalogRepository.getDiscounts` (разом із
-  `DiscountScope`) знесено в К3-Е6в (рішення Е6в-21): їх ніхто не кликав.
+  `DiscountScope` (знесено)) знесено в К3-Е6в (рішення Е6в-21): їх ніхто не кликав.
   Умови знижок задає внутрішній реєстр `DiscountConditionDefinition`
   (`simplycms/domain/discounts`, Е6в-4) — вбудовані умови зареєстровані тим самим
   контрактом. Плагінам реєстр відкривається в К5; до того умова невідомого типу
@@ -116,7 +116,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
   показує тост: БД і вкладка не розходяться.
 - Видалення плагіна з адмінки немає (С-3): встановлення й видалення —
   build-time (`simplycms add` + конфіг магазину, §9); supabase-шар життєвого
-  циклу (`adminLifecycle`, `pluginRepository`) знесено.
+  циклу (`adminLifecycle`, `pluginRepository` (знесено)) знесено.
 
 ## 4. Межа довіри (спека §7)
 

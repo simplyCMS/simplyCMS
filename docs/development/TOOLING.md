@@ -147,6 +147,16 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - Гейти РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` ганяють ще `pilot:pack`: Gate C
   пілота — єдиний доказ межі клієнт/сервер у реальному клієнтському бандлі, Gate IP — що витік
   ВАЛИТЬ збірку магазину. `pilot:pack` ганяється і в CI (job `packaging`).
+- Гейти-звірки з уроків Е6д (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
+  `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `upstream-workarounds.md`
+  (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
+  `UPSTREAM:<ID>` ↔ записів реєстру; `tests/doc-symbols-exist.test.ts` — кожен символ у
+  зворотних лапках у `docs/architecture`, `docs/development`, README пакетів і скілах існує в
+  коді. 🔴 Згадку СКАСОВАНОГО символу в доці позначай у тому ж рядку дужкою `(знесено)` або
+  `(замінено …)` — без маркера рядок червоніє; сторонні API й приклади — запис у
+  `DOC_SYMBOL_ALLOWLIST` з причиною (список лише скорочується, мертвий запис червоніє).
+  `tests/server-fn-consumers.test.ts` — кожна `export const … = createServerFn(…)` має
+  імпортера поза тестами й моками; виняток — `SERVER_FN_NO_CONSUMER_ALLOWLIST` з причиною.
 - `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь репозиторій**.
   Не форматується (`.prettierignore`): згенерований код (`src/routeTree.gen.ts`, заморожений
   `supabase/database.ts` ядра, Drizzle-схема і `drizzle/`), артефакти збірки і **всі `*.md`**
