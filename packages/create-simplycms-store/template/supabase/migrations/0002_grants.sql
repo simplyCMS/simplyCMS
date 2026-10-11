@@ -97,16 +97,13 @@ grant select, insert, update, delete on table
   public.wishlists
 to app_user;
 
--- Е6д-16 б, Е6д-23: відгук покупець пише лише колонковими INSERT/UPDATE.
--- Табличних немає навмисно: `status` у INSERT не входить (DEFAULT 'pending' —
--- інакше автор подав би одразу approved), `admin_comment`/`user_id` змінює
--- лише модератор. `status` в UPDATE дозволений, бо правка схваленого відгуку
--- повертає його в 'pending': політика `product_reviews_update_own` пускає
--- лише NEW.status = 'pending'. `images` довіряють лише через media-порт.
-grant select, delete on table public.product_reviews to app_user;
-grant insert (id, product_id, user_id, rating, title, content, images,
-              created_at, updated_at)
-  on table public.product_reviews to app_user;
+-- Е6д-16 б, Е6д-23: INSERT табличний (drizzle називає в ньому всі колонки,
+-- колонковий грант дав би 42501), тож звуження — у політиці
+-- `product_reviews_insert_own` (status = 'pending', admin_comment is null).
+-- UPDATE колонковий: `admin_comment`/`user_id` змінює лише модератор, `status`
+-- дозволений заради повернення правленого відгуку в 'pending'
+-- (`product_reviews_update_own`). `images` довіряють лише через media-порт.
+grant select, insert, delete on table public.product_reviews to app_user;
 grant update (rating, title, content, images, status, updated_at)
   on table public.product_reviews to app_user;
 

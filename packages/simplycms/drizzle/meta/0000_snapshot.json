@@ -2855,7 +2855,7 @@
           "to": [
             "app_user"
           ],
-          "withCheck": "user_id = (select app.current_user_id())"
+          "withCheck": "user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null"
         },
         "product_reviews_update_own": {
           "name": "product_reviews_update_own",

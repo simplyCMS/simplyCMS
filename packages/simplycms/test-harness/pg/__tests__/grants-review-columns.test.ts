@@ -1,12 +1,12 @@
 // К3-Е6д-7 (Е6д-16 б, Е6д-23): `app_user` пише `product_reviews` лише
-// колонковими грантами, а політика `product_reviews_update_own` дозволяє
+// колонковим UPDATE-грантом, а політика `product_reviews_update_own` дозволяє
 // правити й approved-відгук, але лише з поверненням у `pending`.
 //
 // Негатив розрізняє два шари: `permission denied` (42501 від гранту — колонка
 // заборонена взагалі) і `new row violates row-level security policy` (той самий
 // код 42501, але від WITH CHECK — колонка дозволена, значення ні).
-// `status` у INSERT-грант не входить: DEFAULT `'pending'` не дає обійти
-// модерацію; `admin_comment` — внутрішня примітка модератора.
+// INSERT грантом табличний (drizzle називає всі колонки), тож `status` і
+// `admin_comment` звужує політика `product_reviews_insert_own`.
 import { randomUUID } from 'node:crypto';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -104,23 +104,23 @@ describe('Е6д-16 б: колонковий UPDATE product_reviews для app_us
      values (gen_random_uuid(), '${productId}', '${USER_A}', 4${extraValue})`;
 
   describe('INSERT', () => {
-    it('із status = approved → permission denied', async () => {
+    it('із status = approved → помилка RLS', async () => {
       const p = await freshProduct();
       await expect(
         withActor(runtimeUrl, AS_A, [insertSql(p, ', status', `, 'approved'`)]),
       ).rejects.toMatchObject({
         code: '42501',
-        message: expect.stringMatching(DENIED),
+        message: expect.stringMatching(RLS),
       });
     });
 
-    it('із admin_comment → permission denied', async () => {
+    it('із admin_comment → помилка RLS', async () => {
       const p = await freshProduct();
       await expect(
         withActor(runtimeUrl, AS_A, [insertSql(p, ', admin_comment', `, 'x'`)]),
       ).rejects.toMatchObject({
         code: '42501',
-        message: expect.stringMatching(DENIED),
+        message: expect.stringMatching(RLS),
       });
     });
 

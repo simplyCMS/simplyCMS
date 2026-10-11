@@ -754,7 +754,7 @@ CREATE POLICY "orders_select_own_or_token" ON "orders" AS PERMISSIVE FOR SELECT 
 CREATE POLICY "orders_insert_own" ON "orders" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK ((user_id = (select app.current_user_id())) or (user_id is null));--> statement-breakpoint
 CREATE POLICY "orders_admin_all" ON "orders" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "product_reviews_select_approved_or_own" ON "product_reviews" AS PERMISSIVE FOR SELECT TO "app_user" USING (status = 'approved' or user_id = (select app.current_user_id()));--> statement-breakpoint
-CREATE POLICY "product_reviews_insert_own" ON "product_reviews" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
+CREATE POLICY "product_reviews_insert_own" ON "product_reviews" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null);--> statement-breakpoint
 CREATE POLICY "product_reviews_update_own" ON "product_reviews" AS PERMISSIVE FOR UPDATE TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()) and status = 'pending');--> statement-breakpoint
 CREATE POLICY "product_reviews_delete_own" ON "product_reviews" AS PERMISSIVE FOR DELETE TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "product_reviews_admin_all" ON "product_reviews" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint

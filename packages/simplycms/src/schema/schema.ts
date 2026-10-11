@@ -1042,7 +1042,7 @@ export const productReviews = pgTable("product_reviews", {
 	unique("product_reviews_product_id_user_id_key").on(table.productId, table.userId),
 	index("idx_product_reviews_user_id").on(table.userId),
 	pgPolicy("product_reviews_select_approved_or_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`status = 'approved' or user_id = (select app.current_user_id())` }),
-	pgPolicy("product_reviews_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`user_id = (select app.current_user_id())` }),
+	pgPolicy("product_reviews_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null` }),
 	pgPolicy("product_reviews_update_own", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
 	pgPolicy("product_reviews_delete_own", { as: "permissive", for: "delete", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("product_reviews_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),

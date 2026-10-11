@@ -1492,9 +1492,9 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
 К3-Е6д-7. **Табличний `INSERT` на `product_reviews` для `app_user` не звужено по
    колонках.** Сервер завжди пише `status = 'pending'`, а `user_id` бере із сесії; RLS
    `product_reviews_insert_own` звіряє лише автора. Що відгук не вставиться одразу
-   `approved` чи з `admin_comment`, тримає КОД serverFn, а не БД. Звузити колонковим
-   грантом `INSERT (…)` (або `WITH CHECK status = 'pending'`) за прецедентом Е6д-16 б
-   (нотатка рев'ю).
+   `approved` чи з `admin_comment`, тримає КОД serverFn, а не БД. Звужується `WITH CHECK`
+   у політиці `insert_own` (`status = 'pending' and admin_comment is null`): колонковий
+   грант INSERT несумісний з Drizzle (нотатка рев'ю).
 
 К3-Е6д-8. **`ReviewImagePicker` спирається на cleanup ref-колбека React 19**, а peer
    пакета дозволяє React 18: там прев'ю `blob:` URL не відкликаються (витік памʼяті на
