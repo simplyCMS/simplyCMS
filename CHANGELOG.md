@@ -26,8 +26,19 @@
 [`2026-10-10-v2-k3-e6d-content.md`](docs/superpowers/plans/2026-10-10-v2-k3-e6d-content.md)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
+К3-Е7: повний знос Supabase (спека
+[`2026-10-11-v2-k3-e7-supabase-removal-design.md`](docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md);
+план
+[`2026-10-11-v2-k3-e7-supabase-removal.md`](docs/superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)).
+Легасі на `supabase-js` — 0.
+
 ### 🔴 BREAKING для магазинів
 
+- **Тека магазину `supabase/` → `db/` (К3-Е7, скаффолдер):** міграції лежать у
+  `db/migrations`, накат — psql-цикл по цій теці; `supabase/config.toml` і
+  `supabase/templates/invite.html` більше не генеруються. Наявний магазин переносить теку
+  `git mv supabase/migrations db/migrations`; `simplycms doctor` (№7) і `simplycms update`
+  повідомляють про відсутню `db/migrations` (раніше doctor хибно казав «всі міграції нові»).
 - **Канон міграцій змінено точковою правкою baseline (Е6д-8)**: базу магазину
   перестворити (`pnpm db:demo`). `product_reviews` отримала CHECK-и
   `product_reviews_status_check` (`pending`/`approved`/`rejected`) і
@@ -54,8 +65,29 @@
   `MediaStorageOptions` (`{ driver?, discardWith? }`), спільним для аватара й відгуків.
 - Адмінка: `getAdminReviewContent` знесено — його поглинає `getReviewCard` (Е6д-11).
 
+### Видалено
+
+- **Supabase (К3-Е7):** шар `simplycms/supabase` і весь його публічний API — шість
+  експортів `simplycms/supabase*` та дзеркало в `publishConfig`; `LegacySupabaseBoundary`
+  з тестом і монтуванням, i18n `admin.legacy.*`; peer'и й залежності `@supabase/*` (ядро,
+  шаблон магазину, пілотний шаблон); `PEER_SCOPES` в `scripts/audit-deps*`.
+- Реєстр `tests/admin-server-first` (його замінює бан лінтом), гілку `supabase` в
+  `explicit-ids`/`insert-scan`, `tests/admin-inserts-need-id.test.ts`, виїмку `EXEMPT_DIRS`.
+- Кореневий `supabase/` (`config.toml`, `seed.sql`), ланцюг сіду пілота (`pilot-seed`,
+  `seed-sql`, `seed-fixtures`) і команда `pnpm pilot:seed`; `pnpm db:migrate`
+  (`scripts/db-migrate.mjs`); `tools/content-loader-mcp` із записом `mcpServers.content-loader`
+  у `.claude/settings.json`.
+
 ### Додано
 
+- Правило лінту `simplycms-supabase/no-supabase-import` (на все репо: `import`,
+  `export … from`, `import()`, `require`, TS-форми) і тест маніфестів/lock — жодного
+  `@supabase/` у `package.json` workspace-пакетів, шаблонах і `pnpm-lock.yaml`.
+- Гарди-замінники: незалежний контроль `import.meta.env` у серверних модулях, тест
+  `dist-import-meta` на фікстур-збірці з `base` з `tsdown.config.ts` (мутація
+  `format: ['cjs']`), юніт `gateBundle` для Gate C.
+- `simplycms doctor` (№7) і `simplycms update`: відсутня `db/migrations` — помилка з підказкою
+  `git mv supabase/migrations db/migrations`, якщо є стара тека.
 - Доробка К3-Е6д-1…9 (план
   [`2026-10-11-v2-k3-e6d-finish.md`](docs/superpowers/plans/2026-10-11-v2-k3-e6d-finish.md)):
   - outbox `media_erasures` з `completeMediaErasures`/`scheduleMediaErasures`/
@@ -104,7 +136,7 @@
 - `eraseMedia` і `discardMedia` знесено: аватар і логотип двофазні, serverFn `deleteMedia` знесено (споживачів не лишилось);
   `ImageUpload` більше не стирає файл (проп `eraseOnRemove` прибрано), сироту змітає sweep.
 - Легасі `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail` знесено; легасі на
-  `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом).
+  `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом; знесено в К3-Е7).
 - Сід `db:showcase` схвалює відгуки ядром `setReviewsStatus` замість сирого `UPDATE`.
 
 ### Відомі обмеження
