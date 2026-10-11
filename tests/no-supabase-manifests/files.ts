@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
@@ -54,6 +54,11 @@ export function manifestFiles(): string[] {
     'packages/create-simplycms-store/template/package.json.tpl',
     'tests/pilot/store-template/package.json',
   );
+  // Вкладені пакети шаблону (тема/плагін) — теж маніфести чужого проєкту.
+  for (const sub of ['plugins/hello-world', 'themes/default']) {
+    const rel = `packages/create-simplycms-store/template/${sub}/package.json`;
+    if (existsSync(join(ROOT, rel))) files.push(rel);
+  }
   return files;
 }
 
@@ -87,7 +92,7 @@ const linter = new Linter({ configType: 'flat' });
 
 // Явний список розширень: `**/*` flat config не вважає «явним» збігом і для
 // .ts/.tsx відповідає «No matching configuration».
-const config = [
+export const templateLintConfig = [
   {
     files: ['**/*.{ts,tsx,mts,cts,js,mjs,cjs}'],
     plugins: {
@@ -106,7 +111,7 @@ const config = [
 
 /** Лінт одного файла шаблону єдиним правилом, без конфіг-ігнорів. */
 export const lintSnippet = (code: string, filename: string) =>
-  linter.verify(code, config, { filename });
+  linter.verify(code, templateLintConfig, { filename });
 
 export const lintTemplateFile = (rel: string) =>
   lintSnippet(readFileSync(join(ROOT, rel), 'utf8'), rel);

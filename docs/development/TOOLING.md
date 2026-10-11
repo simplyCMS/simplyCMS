@@ -132,6 +132,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки
   `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами, а звичайний
   `pnpm install` мовчки лагодить розсинхрон замість червоніти; у CI frozen — дефолт.
+  Те саме робить будь-який `pnpm <script>` (supply-chain policy pnpm 11): тож мутацію lock для
+  перевірки ратчета (`tests/no-supabase-manifests`) доводь через `npx vitest`, а не `pnpm test`.
 - Гейт саме `format:check`, бо `pnpm format` (`prettier --write`) не червоніє.
 - `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`.
 - `typecheck:showcase` — одразу після `typecheck`: сід `db:showcase` біжить під `tsx`, який

@@ -27,8 +27,13 @@ describe('маніфести без @supabase/*', () => {
     expect(supabaseDeps(rel)).toEqual([]);
   });
 
+  // 🔴 Мутацію lock доводити через `npx vitest`: будь-який `pnpm <script>`
+  // (зокрема `pnpm test`) перед запуском переписує lock за supply-chain
+  // policy pnpm 11 і викидає осиротілий рядок, тож `pnpm test` до локальної
+  // мутації lock нечутливий (у CI lock і так береться з коміту).
   it('pnpm-lock.yaml не містить @supabase/', () => {
     const lock = readFileSync(join(ROOT, 'pnpm-lock.yaml'), 'utf8');
+    expect(lock).toContain('lockfileVersion'); // не вакуумно: файл справжній
     expect(lock.includes('@supabase/')).toBe(false);
   });
 });

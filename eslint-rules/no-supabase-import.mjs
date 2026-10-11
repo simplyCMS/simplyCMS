@@ -7,7 +7,8 @@
  * ще один блок із ним затер би сусідні зони (див. `no-direct-storage`).
  *
  * Ловить статичні import/export-from, динамічний `import()` (рядок або
- * шаблон без виразів) і `require('…')` зі строковим літералом.
+ * шаблон без виразів), `require('…')`, а також TS-форми
+ * `import x = require('…')` і `import('…').T` у типах.
  */
 const isSupabase = (spec) =>
   typeof spec === 'string' &&
@@ -45,9 +46,14 @@ export default {
       ExportAllDeclaration: (node) => check(node, node.source),
       ExportNamedDeclaration: (node) => check(node, node.source),
       ImportExpression: (node) => check(node, node.source),
-      "CallExpression[callee.name='require'][arguments.0.type='Literal']": (
-        node,
-      ) => check(node, node.arguments[0]),
+      // require('…') і require(`…`) без виразів
+      "CallExpression[callee.name='require']": (node) =>
+        check(node, node.arguments[0]),
+      // TS: import x = require('…')
+      TSExternalModuleReference: (node) => check(node, node.expression),
+      // TS: тип `import('…').T`
+      TSImportType: (node) =>
+        check(node, node.argument?.literal ?? node.argument),
     };
   },
 };

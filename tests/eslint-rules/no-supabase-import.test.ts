@@ -3,13 +3,18 @@ import { Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
 import rule from '../../eslint-rules/no-supabase-import.mjs';
 import eslintConfig from '../../eslint.config.mjs';
+import { templateLintConfig } from '../no-supabase-manifests/files';
 
 const linter = new Linter();
 const lint = (code: string) =>
   linter.verify(code, {
     plugins: { s: { rules: { 'no-supabase-import': rule } } },
     rules: { 's/no-supabase-import': 'error' },
-    languageOptions: { ecmaVersion: 2024, sourceType: 'module' },
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      parser: tseslint.parser,
+    },
   });
 
 describe('no-supabase-import', () => {
@@ -21,6 +26,12 @@ describe('no-supabase-import', () => {
     ['динамічний імпорт', `await import('@supabase/supabase-js');`],
     ['шаблон без виразів', 'await import(`@supabase/ssr`);'],
     ['require', `require('@supabase/supabase-js');`],
+    ['require із шаблоном', 'require(`@supabase/supabase-js`);'],
+    ['import = require', `import x = require('@supabase/supabase-js');`],
+    [
+      'тип import()',
+      `type T = import('@supabase/supabase-js').SupabaseClient;`,
+    ],
   ])('валить: %s', (_label, code) => {
     const messages = lint(code);
     expect(messages).toHaveLength(1);
@@ -32,6 +43,9 @@ describe('no-supabase-import', () => {
     ['інший скоуп', `import x from '@supabaseish/x';`],
     ['рядок, не імпорт', `const s = '@supabase/x';`],
     ['динамічний специфікатор', `import(dynamicVar);`],
+    ['require зі змінною', `require(name);`],
+    ['import = require чужий', `import x = require('node:fs');`],
+    ['тип import() чужий', `type T = import('zod').ZodType;`],
   ])('не валить: %s', (_label, code) => {
     expect(lint(code)).toHaveLength(0);
   });
@@ -52,8 +66,9 @@ describe('no-supabase-import у eslint.config.mjs', () => {
       .filter((m) => m.ruleId === 'simplycms-supabase/no-supabase-import');
     expect(hits).toHaveLength(1);
   });
-  // Захист від вакууму: парсер конфігу той самий, що в тестах шаблону.
-  it('конфіг використовує парсер typescript-eslint', () => {
-    expect(tseslint.parser).toBeDefined();
+  // Парсер mini-конфігу тестів шаблону — той самий ОБʼЄКТ, що в основному
+  // конфігу (typescript-eslint), а не інший парсер.
+  it('конфіг лінту шаблону використовує tseslint.parser', () => {
+    expect(templateLintConfig[0].languageOptions?.parser).toBe(tseslint.parser);
   });
 });
