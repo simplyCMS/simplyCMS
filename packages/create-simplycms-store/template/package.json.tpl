@@ -66,6 +66,7 @@
     "input-otp": "^1.5.0",
     "lucide-react": "^1.51.0",
     "next-themes": "^0.4.6",
+    "pg": "8.23.1",
     "react": "^19.3.0",
     "react-day-picker": "^9.13.2",
     "react-dom": "^19.3.0",

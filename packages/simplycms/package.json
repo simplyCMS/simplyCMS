@@ -584,6 +584,7 @@
     "input-otp": "^1.0.0",
     "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
+    "pg": "8.23.1",
     "react": "^18.0.0 || ^19.0.0",
     "react-day-picker": "^9.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
@@ -600,6 +601,7 @@
     "@types/sanitize-html": "^2.16.2",
     "dotenv": "^18.0.5",
     "drizzle-zod": "0.8.3",
+    "pg": "8.23.1",
     "seroval": "^1.6.8"
   },
   "dependencies": {
@@ -607,7 +609,6 @@
     "@tiptap/extension-text-align": "^3.31.4",
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
-    "pg": "8.23.1",
     "sanitize-html": "^2.18.0",
     "tailwind-merge": "^3.7.0"
   },
