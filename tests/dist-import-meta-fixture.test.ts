@@ -72,8 +72,8 @@ async function buildFixture(
     tsconfig: false,
   });
 
-  // Збірка не мала вийти за tmp: інакше `clean`/outDir могли б зачепити dist.
-  expect(outDir.startsWith(tmpdir())).toBe(true);
+  // Що збірка не зачепила dist пакета, доводить кейс із mtime нижче; тут —
+  // що вихідні файли справді зʼявилися в tmp-outDir (інакше скан порожній).
   // У tmp немає package.json з type: module, тож розширення — `.mjs`/`.cjs`.
   const outFiles = readdirSync(outDir).filter((f) => /\.[cm]?js$/.test(f));
   expect(outFiles.length).toBeGreaterThan(0);
