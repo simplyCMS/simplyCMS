@@ -54,12 +54,15 @@ describe('Gate C: серверний вантаж у клієнтському б
     expect(run({ 'entry.js': entry() }).ok).toBe(true);
   });
 
-  it('модуль db-рантайму ядра у клієнті — FAIL, у details є db', () => {
-    const result = run({
-      'entry.js': entry([`${NM}/simplycms/dist/db/client.js`]),
-    });
+  it('модуль db-рантайму ядра у клієнті — FAIL із точним рядком і шляхом модуля', () => {
+    const leaked = `${NM}/simplycms/dist/db/client.js`;
+    const result = run({ 'entry.js': entry([leaked]) });
     expect(result.ok).toBe(false);
-    expect(result.details.join('\n')).toContain('db');
+    // Повний FAIL-рядок gateBundle, а не підрядок `db`: той збігся б з будь-яким
+    // шляхом чи словом у details і не ловив би випадіння db з SERVER_ONLY.
+    expect(result.details).toContain(
+      `FAIL серверний вантаж у клієнті: ${leaked}`,
+    );
   });
 
   it('drizzle-orm у клієнті — FAIL', () => {
