@@ -173,7 +173,7 @@ default-export обʼєкта:
 const theme: ThemeModule = {
   manifest,     // { name, displayName, version, engines: { simplycms } }
   tokens,       // значення НАЯВНИХ semantic-змінних shadcn (+ dark-блок)
-  components,   // Header, Footer — обовʼязкові; HeroBanner?, HomeSections?
+  components,   // Header, Footer — обовʼязкові; HeroBanner? ({ banners }: title/кнопки банера мають пріоритет, див. architecture/themes.md §2.2), HomeSections?
   settings,     // опційно: схема налаштувань для форми в адмінці
   messages,     // опційно: власний каталог uk/en
   fonts,        // опційно: зовнішні font stylesheet-и (контракт v2.2)
