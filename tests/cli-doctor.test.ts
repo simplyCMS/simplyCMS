@@ -31,10 +31,10 @@ import {
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
 // Оффлайн-перевірки doctor на реальному скаффолді шаблону. Онлайн-перевірок у
-// doctor більше НЕМАЄ: вони ходили в Supabase REST, а магазин сервер-first —
+// doctor більше НЕМАЄ: вони ходили в HTTP-API бази, а магазин сервер-first —
 // HTTP-API до БД у нього немає взагалі (їх повертає контур К3).
 //
-// 🔴 Env — рівно серверний контракт магазину (0.4.1). Supabase-ключів тут бути
+// 🔴 Env — рівно серверний контракт магазину (0.4.1). Ключів клієнта БД тут бути
 // не може: якби checkEnv і далі гейтив їх, doctor зеленів би на магазині, який
 // не стартує, і червонів на тому, який працює.
 const ENV = {
@@ -104,7 +104,7 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkCoreVersions(stale).status).toBe('warn');
   });
 
-  it('checkEnv: гейтить DATABASE_URL і BETTER_AUTH_SECRET, не ключі Supabase', () => {
+  it('checkEnv: гейтить DATABASE_URL і BETTER_AUTH_SECRET, не ключі клієнта БД', () => {
     const empty = checkEnv({ env: {} });
     expect(empty.status).toBe('error');
     expect(empty.details).toContain('DATABASE_URL');
@@ -122,7 +122,7 @@ describe('cli doctor (оффлайн)', () => {
 
     expect(checkEnv({ env: ENV }).status).toBe('ok');
     // 🔴 Ключі поза контрактом його не заміняють: магазин, у якого заповнено
-    // лише їх (так виглядав .env.local до 0.4.1 — з ключами Supabase), не
+    // лише їх (так виглядав .env.local до 0.4.1 — з ключами клієнта БД), не
     // стартує, тож doctor мусить червоніти, а не зеленіти на «щось задано».
     const outsideContract = { VITE_SITE_URL: 'https://shop.example' };
     const stale = checkEnv({ env: outsideContract });

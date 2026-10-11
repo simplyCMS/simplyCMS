@@ -14,7 +14,7 @@ import { EngineProvider } from 'simplycms/react-query';
  * EngineContext, як це робить прод (`ClientEngineProvider` у `__root.tsx`).
  *
  * 🔴 V2: стаб більше не звужений кастом — контейнер сам звузився до двох
- * чистих провайдерів (репозиторії знесені разом із шаром `data-supabase`),
+ * чистих провайдерів (репозиторії знесені в 0.4.1),
  * тож тут заповнено рівно те, що є в контракті.
  */
 const engine: EngineContext = {

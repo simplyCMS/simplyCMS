@@ -12,7 +12,7 @@ import { findPlaceholders } from '../scripts/pilot-pack/placeholder-scan.mjs';
 // Чисті функції CLI-скаффолдера: розбір аргументів, підстановки в манифест,
 // розгортання шаблону. Ті самі функції викликає `src/index.mjs`.
 //
-// 🔴 Supabase-прапорців у CLI більше немає: магазин отримує підключення до
+// 🔴 Прапорців ключів клієнта БД у CLI більше немає: магазин отримує підключення до
 // Postgres, а не ключі клієнта до чужого HTTP-API.
 const DSN = 'postgresql://app_runtime:pw@localhost:5432/postgres';
 describe('create-store CLI', () => {

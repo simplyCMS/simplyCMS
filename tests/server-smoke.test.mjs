@@ -11,7 +11,7 @@
  *
  * Тут вони виконуються — на справжньому `server.mjs`, але поверх заглушки
  * fetch-handler-а (`tests/server-smoke/sandbox.mjs`), тож тесту не потрібні
- * ані `pnpm build`, ані Supabase, ані мережа. Що лишається за цим гейтом:
+ * ані `pnpm build`, ані БД, ані мережа. Що лишається за цим гейтом:
  * рендер реального `dist/server/server.js` — це Gate B пілота.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

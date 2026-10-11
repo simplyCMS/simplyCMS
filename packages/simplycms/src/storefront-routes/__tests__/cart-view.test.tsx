@@ -15,7 +15,7 @@ import { cartViewModelFixtures } from 'simplycms/contracts/views/fixtures';
  * Фаза 5, Step 3) — до появи kit-а Фази 6.
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдер тут рівно один — i18n. Ні
- * supabase-клієнта, ні QueryClient, ні `CartProvider` немає, тож будь-який
+ * клієнта БД, ні QueryClient, ні `CartProvider` немає, тож будь-який
  * запит чи звернення до кошика всередині view впало б тут, а не в проді.
  *
  * 🔴 На відміну від ProductDetail/Catalog, крайній стан (`itemCount: 0`)

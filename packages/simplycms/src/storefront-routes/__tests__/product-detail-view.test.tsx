@@ -15,7 +15,7 @@ import { productDetailViewModelFixtures } from 'simplycms/contracts/views/fixtur
  * (контракт тем v3, Фаза 3, Step 2) — до появи kit-а Фази 6.
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдер тут рівно один — i18n.
- * Ні supabase-клієнта, ні QueryClient, ні EngineContext немає, тож будь-який
+ * Ні клієнта БД, ні QueryClient, ні EngineContext немає, тож будь-який
  * фетч усередині view впав би тут, а не в проді.
  */
 vi.mock('@tanstack/react-router', () => ({

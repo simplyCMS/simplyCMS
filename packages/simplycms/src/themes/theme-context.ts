@@ -4,8 +4,8 @@ import type { ThemeContextType } from './types';
 /**
  * Обʼєкт React-контексту теми — НАВМИСНО окремим модулем від провайдера.
  *
- * `ThemeContext.tsx` тягне supabase-клієнт (провайдер читає активну тему з
- * БД), а conformance-kit (`simplycms/themes/conformance`) мусить підставити
+ * `ThemeContext.tsx` тягне `ThemeRegistry` і стан завантаження теми (провайдер
+ * резолвить модуль активної теми), а conformance-kit (`simplycms/themes/conformance`) мусить підставити
  * значення контексту БЕЗ БД — рендер на фікстурах. Спільний модуль
  * гарантує, що обидва боки бачать ОДИН і той самий обʼєкт контексту: два
  * `createContext` дали б view теми `null` замість налаштувань.

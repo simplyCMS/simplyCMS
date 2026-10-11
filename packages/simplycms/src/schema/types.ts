@@ -2,8 +2,8 @@
 // серверного коду (serverFn-шар К2/К3, репозиторії `data-pg`).
 //
 // Джерело типів рядків БД для всього, що ходить у БД через `simplycms/db`
-// (тобто через `withActor`): baseline `supabase-js` і його генерат знесено
-// (К3-Е7), типізувати більше нічим.
+// (тобто через `withActor`): єдине джерело типів — Drizzle-схема
+// (К3-Е7: генерат клієнта БД знесено).
 
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 

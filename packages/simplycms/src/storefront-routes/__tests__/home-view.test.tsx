@@ -12,7 +12,7 @@ import { homeViewModelFixtures } from 'simplycms/contracts/views/fixtures';
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдери тут i18n і замоканий
  * `useActiveThemeModule` (контракт v2.2, старший за `theme.views` — сам
- * view читає його для Hero/HomeSections, спека §9). Ні supabase-клієнта, ні
+ * view читає його для Hero/HomeSections, спека §9). Ні клієнта БД, ні
  * QueryClient немає, тож будь-який фетч усередині view впав би тут.
  * `ProductCarousel`/`BannerSlider` замокано — вони самі використовують
  * `embla-carousel-react` (реальний рендер під jsdom без полiфілу

@@ -6,7 +6,7 @@
 // element type», бо `JSX.ElementType` вимагає повернення `ReactNode`), а
 // `=> any` заборонений coding-style. Тому view-model-и живуть окремим
 // субшляхом `simplycms/contracts/views`, і обіцянка барелю «без імпортів
-// supabase/react» лишається правдою. React — type-only peer пакета:
+// клієнтів БД чи react» лишається правдою. React — type-only peer пакета:
 // runtime-залежностей T0 як не мав, так і не має.
 
 import type { ComponentType } from 'react';

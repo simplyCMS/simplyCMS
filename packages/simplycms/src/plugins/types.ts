@@ -27,7 +27,7 @@ export interface PluginHookDefinition {
 // плагіна — Zod-схема в `definePlugin({ settings })`, форму адмінка рендерить
 // із `z.toJSONSchema`. Ad-hoc union до-SDK епохи не мав жодного споживача.
 
-// Database plugin record (with Json types from Supabase)
+// Database plugin record (Json-поля — власний тип `Json` з контрактів)
 export interface Plugin {
   id: string;
   name: string;

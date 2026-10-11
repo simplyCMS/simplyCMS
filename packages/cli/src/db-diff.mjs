@@ -49,7 +49,7 @@ export function missingStoreMigrationsDir(storeRoot) {
  * 🔴 Після B13 канон — це baseline + сід (`0000_prelude` … `0004_functions`), а не
  * історія з 33 файлів. Компаратор від цього не змінився: він порівнює імена
  * й вміст, а не формат імені. Змінився лише ПОРЯДОК — його тепер задає
- * числовий префікс, а не таймстамп Supabase CLI.
+ * числовий префікс, а не таймстамп.
  */
 export const schemaMigrationsPath = (storeRoot) =>
   join(storeRoot, 'node_modules', 'simplycms', 'migrations');
@@ -175,7 +175,7 @@ export function compareMigrationsMulti(storeDir, sources) {
  */
 export function lintPluginMigrationSql(sql, pluginName) {
   const prefix = `plg_${pluginName.replace(/-/g, '_')}_`;
-  // Схема може бути в лапках (`"public"."plg_x"` — стиль supabase db diff),
+  // Схема може бути в лапках (`"public"."plg_x"` — стиль виводу діфф-інструментів),
   // імʼя — теж; коментарі прибираються ДО скану, інакше `-- references
   // products` у прозі давав би хибне порушення.
   const stripped = sql
@@ -343,9 +343,9 @@ export async function run(argv) {
     finish('Є що забрати (--write).');
     return;
   }
-  // 🔴 Supabase CLI тут більше не називається (B2/B13): контракт v2 — чистий
-  // Postgres, а `supabase db push` до того ж не приймає числові префікси
-  // канону. Команду накату дає оточення магазину, а не CLI ядра.
+  // 🔴 Стороннього CLI накату тут не називаємо (B2/B13): контракт v2 — чистий
+  // Postgres, а числові префікси канону накочує psql-цикл. Команду накату
+  // дає оточення магазину, а не CLI ядра.
   showSteps([
     'git diff             # ревʼю доданих міграцій',
     'застосуй їх на БД магазину інструментом свого оточення (psql/деплой),',

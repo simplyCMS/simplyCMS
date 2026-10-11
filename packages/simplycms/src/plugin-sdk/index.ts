@@ -6,9 +6,9 @@ export { definePlugin } from './definePlugin';
 // щоб автор плагіна мав усе з одного імпорту.
 //
 // 🔴 Не з барелю `simplycms/plugins`, а прямо з модуля: барель тягне ще й
-// lifecycle адмінки, який досі ходить у БД через supabase-js. Через цей
-// реекспорт PostgREST потрапляв у КОЖЕН чанк, що імпортує SDK, — тобто в
-// слоти вітрини. Валідатор — чиста функція без стану, тож дублювання його
+// `PluginLoader` із серверним модулем `simplycms/plugins/server`. Через цей
+// реекспорт серверний вантаж потрапляв би в КОЖЕН чанк, що імпортує SDK, —
+// тобто в слоти вітрини. Валідатор — чиста функція без стану, тож дублювання його
 // коду в бандлі SDK нічого не коштує.
 export { validatePluginModule } from '../plugins/validatePluginModule';
 export { usePluginT } from './usePluginT';

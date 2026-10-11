@@ -1,5 +1,5 @@
 // simplycms/contracts — Tier 0 контракти об'єктів + порти.
-// Type-only пакет: 0 runtime-залежностей, без імпортів supabase/react.
+// Type-only пакет: 0 runtime-залежностей, без імпортів клієнтів БД чи react.
 //
 // 🔴 View-model-и вітрини (контракт тем v3) свідомо НЕ ре-експортуються
 // звідси, а живуть окремим субшляхом `simplycms/contracts/views`: їхні

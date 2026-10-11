@@ -16,8 +16,8 @@ import { AssignmentsTable, type AppliesTo } from './AssignmentsTable';
 import { availableProperties } from './available-properties';
 
 /**
- * Властивості розділу (Е4, Task 8) — заміна легасі-менеджера на
- * `supabase-js` (components/, видалено). Призначення — зріз `where sectionId`;
+ * Властивості розділу (Е4, Task 8) — заміна легасі-менеджера
+ * з прямим клієнтом БД (components/, видалено). Призначення — зріз `where sectionId`;
  * назви властивостей — окремий повний зріз довідника (без join on-demand ×
  * on-demand, контракт Е3), він же — джерело для діалогу додавання.
  */
