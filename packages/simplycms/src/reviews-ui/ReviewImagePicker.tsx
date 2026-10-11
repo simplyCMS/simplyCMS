@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useT, type MessageKey } from 'simplycms/i18n';
 
@@ -25,23 +25,23 @@ const fileKey = (file: File) => {
 };
 
 /**
- * Превʼю одного файла. Blob-URL створює і відкликає ref-колбек: React
- * викликає його cleanup рівно один раз на відʼєднання (прибрання файла,
- * розмонтування), а відкинутий рендер або StrictMode URL не створюють —
- * на відміну від `useMemo` у рендері.
+ * Превʼю одного файла. Blob-URL створює й відкликає `useEffect`, а не
+ * cleanup ref-колбека: React 18 (peer пакета `^18 || ^19`) його не викликає,
+ * тож URL текли б. Ефект не виконується у відкинутому рендері (на відміну від
+ * `useMemo`), а в StrictMode пара створення/відклик симетрична.
  */
 function PhotoPreview({ file, alt }: { file: File; alt: string }) {
-  const attach = useCallback(
-    (img: HTMLImageElement | null) => {
-      if (!img) return;
-      const url = URL.createObjectURL(file);
-      img.src = url;
-      return () => URL.revokeObjectURL(url);
-    },
-    [file],
-  );
+  const imgRef = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    // src задаємо напряму, не через стан: setState в ефекті дав би зайвий
+    // рендер (і лінт-попередження). Розмір фіксований класом, тож до появи
+    // src розкладка не стрибає.
+    if (imgRef.current) imgRef.current.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   return (
-    <img ref={attach} alt={alt} className="h-16 w-16 rounded-md object-cover" />
+    <img ref={imgRef} alt={alt} className="h-16 w-16 rounded-md object-cover" />
   );
 }
 

@@ -114,4 +114,31 @@ describe('ReviewImagePicker', () => {
     unmount();
     expect(revoke).toHaveBeenCalledWith('blob:mock-0');
   });
+
+  it('заміна файла ревокує URL старого і створює URL для нового', () => {
+    const a = img('a.png');
+    const b = img('b.png');
+    const view = (files: File[]) => (
+      <I18nProvider locale="uk">
+        <ReviewImagePicker
+          files={files}
+          onFilesChange={() => {}}
+          maxFiles={5}
+          accept={ACCEPT_ATTRIBUTE}
+          maxBytes={1024}
+        />
+      </I18nProvider>
+    );
+    const { container, rerender } = render(view([a]));
+    expect(created).toEqual(['blob:mock-0']);
+    rerender(view([b]));
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(revoke).toHaveBeenCalledWith('blob:mock-0');
+    expect(created).toEqual(['blob:mock-0', 'blob:mock-1']);
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'blob:mock-1',
+    );
+    rerender(view([]));
+    expect(revoke).toHaveBeenLastCalledWith('blob:mock-1');
+  });
 });
