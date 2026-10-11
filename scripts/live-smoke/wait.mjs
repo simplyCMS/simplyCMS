@@ -42,3 +42,11 @@ export async function expectSome(locator, timeout = 5_000) {
     .then(() => true)
     .catch(() => false);
 }
+
+/** Чекає, поки елемент стане disabled; `true`/`false`, не кидає. */
+export async function expectDisabled(locator, timeout = 5_000) {
+  return expect(locator)
+    .toBeDisabled({ timeout })
+    .then(() => true)
+    .catch(() => false);
+}

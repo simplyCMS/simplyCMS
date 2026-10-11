@@ -11,6 +11,7 @@ import {
   seedPricedType,
 } from './admin-dictionaries-sql.mjs';
 import { waitText } from './selectors.mjs';
+import { expectDisabled } from './wait.mjs';
 
 const NEW_TYPE = { code: 'live_dict_type', name: 'Живий тип Е4' };
 const PRICED = { code: 'live_dict_priced', name: 'Ціновий тип Е4' };
@@ -63,7 +64,7 @@ export async function runPriceTypesPart({ page, base, dbUrl, check }) {
 
   check(
     'адмін: видалення дефолтного retail — кнопка disabled',
-    await deleteButtonOf(page, 'Роздрібна').isDisabled(),
+    await expectDisabled(deleteButtonOf(page, 'Роздрібна')),
     '',
   );
 

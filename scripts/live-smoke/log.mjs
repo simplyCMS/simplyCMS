@@ -39,8 +39,9 @@ export function pruneLogs(dir, keep = KEEP_LOGS) {
 export function runLogged(root, script) {
   const dir = join(root, '.live-smoke');
   mkdirSync(dir, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-  const stamped = join(dir, `${stamp}.log`);
+  // Мілісекунди й pid: два прогони в одну секунду не мають перезаписати журнали.
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 19);
+  const stamped = join(dir, `${stamp}-${process.pid}.log`);
   const last = join(dir, 'last.log');
   const files = [createWriteStream(stamped), createWriteStream(last)];
   const child = spawn(process.execPath, [script], {
