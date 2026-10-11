@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Гілка `claude/k3-e6d-content` (база `a15bcb31`) стає першою без Supabase у коді, залежностях, шаблоні магазину й доках про чинний стан. Реліз 0.14.0 — окремо, за словом власника.
+**Goal:** Гілка `claude/k3-e6d-content` (база `8b48c8ed`: розвідка на `a15bcb31`, поверх неї влито гілку інструментів `claude/tooling-lessons`) стає першою без Supabase у коді, залежностях, шаблоні магазину й доках про чинний стан. Реліз 0.14.0 — окремо, за словом власника.
 
 **Architecture:** Е7 зносить мертвий шар, а не портує живий: споживачів `supabase-js` немає (інвентаризація 2026-10-11, чотири розвідники). Спершу ставимо гарди-замінники для тих контролів, що спиралися на шар, і доводимо кожен мутацією. Далі зносимо шар і замикаємо повернення ратчетом (правило лінту + тест маніфестів і lock). Потім перейменовуємо теку магазину `supabase/` → `db/` і прибираємо кореневі залишки. Наприкінці правимо коментарі й доки за єдиною політикою слова (Р1) і звіряємо `git grep` з allowlist.
 
@@ -29,7 +29,7 @@
   2. Supabase як **провайдер Postgres** (dev-БД на Supabase-хостингу, session pooler). Формулюється як «провайдер Postgres», не як стек;
   3. SQL-канон міграцій (`packages/simplycms/migrations/0002_grants.sql:5`, `migrations/README.md`) і його байт-копії — канон заради коментаря не чіпаємо.
 
-  Решту історичних коментарів коду перефразовуємо без слова або прибираємо клаузу. У **доках** історичні розділи з позначкою лишаються. Окремого текстового ратчета на слово НЕМАЄ: тест «символи з доків існують у коді» прийде з паралельної гілки `claude/tooling-lessons`. Перевірка — allowlist у Task 10.
+  Решту історичних коментарів коду перефразовуємо без слова або прибираємо клаузу. У **доках** історичні розділи з позначкою лишаються. Окремого текстового ратчета на слово НЕМАЄ: його роль частково бере `tests/doc-symbols-exist` (уже в гілці, 8b48c8ed) — знесений символ у доках без маркера `(знесено)` червоніє. Перевірка слова — allowlist у Task 10.
 - **Р2 — ратчет проти повернення.** Нове правило `simplycms-supabase/no-supabase-import` (`eslint-rules/no-supabase-import.mjs`) на все репо `**/*.{ts,tsx,mts,cts,mjs,cjs,js}`. Ловить п'ять форм: static `import`, `export … from`, динамічний `import()` з літералом або шаблоном без виразів, `require()`. Плюс тест маніфестів: жодного `@supabase/` у `package.json` workspace-пакетів, `template/package.json.tpl`, `tests/pilot/store-template/package.json` і в `pnpm-lock.yaml`. `@supabase/*` у `pluginOnlySurfaceGroup` лишається: межа довіри плагіна має власний тест.
 - **Р3 — dist-import-meta.** `tsdown.config.ts` експортує `base`. Тест збирає фікстур саме цим об'єктом (імпорт, не копія опцій) у tmp. Мутація `target: 'es2017'` у самому `tsdown.config.ts` валить тест — доводиться прогоном. Тест живе в packaging-контурі, поруч із наявним `tests/dist-import-meta.test.ts`.
 - **Р4 — Gate C.** Юніт на `gateBundle` із синтетичним `bundle-stats.client.json`, три кейси. Мутація: прибрати `...SERVER_ONLY.map(...)` → червоно. Живий `pnpm pilot` лишається в DoD.
@@ -43,16 +43,17 @@
 ## Global Constraints
 
 - Відповіді, коментарі й доки — українською; коментар пояснює **чому**.
-- Жодних трейлерів `Co-Authored-By`/`Generated with`. Після **кожного** коміту субагента: `git log --format=%B a15bcb31..HEAD | grep -ciE "co-authored|generated with"` = `0`.
+- Жодних трейлерів `Co-Authored-By`/`Generated with`. Після **кожного** коміту субагента: `git log --format=%B 8b48c8ed..HEAD | grep -ciE "co-authored|generated with"` = `0` (відлік від 8b48c8ed або `main`, не від `a15bcb31`).
 - Комітити в `claude/k3-e6d-content` можна. Пуш, PR і реліз 0.14.0 — лише за словом власника.
 - А9: Е8 (живий прогін магазину з опублікованих tarball-ів npm) — окремо після релізу; цей план його не робить.
 - Копії `packages/create-simplycms-store/template/{src,db/migrations,themes/default,plugins/hello-world}` і `packages/cli/host/**` руками не правляться: правимо джерело (кореневі `src/*`, `packages/simplycms/migrations/`), потім `pnpm template:sync`.
 - Після будь-якої правки `package.json`: `pnpm install`, далі `pnpm install --frozen-lockfile`.
 - Норма `pnpm lint` = 0 errors / 7 warnings.
 - Кожен гейт-замінник і ратчет доводиться мутацією **прогоном**. У звіті задачі — рядок «мутація → червоний → відкат → зелений» з назвою тесту.
-- Задача, що чіпає `test-harness/pg`, ганяє `pnpm test:schema`. Вибірковий фільтр — БЕЗ `--` (`pnpm test:schema explicit-ids`), інакше біжить уся сюїта. Харнес: `docker run -d --rm -p 54330:5432 -e POSTGRES_HOST_AUTH_METHOD=trust pgvector/pgvector:pg17` → `PG_HARNESS_URL=postgres://postgres@localhost:54330/postgres`.
+- Задача, що чіпає `test-harness/pg`, ганяє `pnpm test:schema`. Вибірковий фільтр — БЕЗ `--` (`pnpm test:schema explicit-ids`), інакше біжить уся сюїта. Харнес канонічно — `pnpm harness:up` (пише git-ignored `.env.harness`, його підхоплює `test:schema`; прибрати — `pnpm harness:down`). Запасний шлях — ручний `docker run -d --rm -p 54330:5432 -e POSTGRES_HOST_AUTH_METHOD=trust pgvector/pgvector:pg17` → `PG_HARNESS_URL=postgres://postgres@localhost:54330/postgres`.
 - `CHANGELOG.md` (крім `[Unreleased]`) і `docs/superpowers/{plans,specs,research}/**` (крім спеки Е7 у Task 9) не чіпати.
 - ~150 рядків на модуль; нове правило й тести — окремими файлами.
+- Гейти гілки інструментів — союзники зносу, не перешкода. `tests/doc-symbols-exist` червоніє на кожен знесений символ, що лишився в доках: **чинний** текст переписується; маркер `(знесено)` — лише в історичних абзацах. Allowlist-и `tests/doc-symbols-exist/data.ts` і `tests/live-smoke-no-instant-checks/data.ts` отримають мертві записи (мертвий запис червоніє) — записи обрізати, тест не послаблювати. Задача, що зносить символ, сама прибирає його мертвий запис.
 
 ## Review Focus
 
@@ -176,6 +177,7 @@
   - `pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test` → зелено, lint 0/7.
   - `pnpm build:packages && pnpm test:packaging && node scripts/audit-exports.mjs` → зелено (ловить дзеркало `exports` ↔ `publishConfig`).
   - `pnpm template:sync` → без змін у `git status`.
+  - `pnpm vitest run tests/server-fn-consumers.test.ts tests/doc-symbols-exist.test.ts` → зелено окремим рядком у звіті (знос шару може лишити serverFn без споживача; знесені символи — в доках).
 - [ ] **Step 8: Commit.** `refactor(k3-e7)!: знесено шар simplycms/supabase, LegacySupabaseBoundary і залежності @supabase/*`. Перевірка трейлерів.
 
 ### Task 3: Ратчет проти повернення `@supabase/*` (Р2)
@@ -357,7 +359,7 @@
   - `:140` → «Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `@supabase/*` у репо заборонено лінтом (`no-supabase-import`)»;
   - `:156` → «Плагін ходить лише через порти `simplycms/plugin-sdk` (межа довіри); БД-клієнтів напряму не імпортує»;
   - `:176` лишається (гард).
-- `.agents/skills/code-review/SKILL.md:28,89,95,109,113-117,131` і `.claude/commands/*` — прибрати лише брехню (Р8).
+- `.agents/skills/code-review/SKILL.md:28,89,95,109,113-117,131` (зокрема § 2.1) і `.claude/commands/*` (`виконай-задачу.md:45,84-89,174`, `проведи-додаткове-дослідження.md:40-53`, `проаналізуй-кларіфай-питання.md:26` — cookie-сесії `@supabase/ssr` неправда, `перевір-роботу-агента-кодування.md:33`) — прибрати лише брехню (Р8). Номери рядків — на 8b48c8ed; перед правкою звірити grep-ом.
 - `docs/architecture/`:
   - `data-layer.md:95,109-114,188,218,232,235`;
   - `plugins.md:118,123,129-135,235-240`;
@@ -365,7 +367,7 @@
   - `cli.md:153,173,237,275` + опис doctor №7 (Р6) і `update`;
   - `repository-layout.md:72-74,98,138,150-151,158,168`;
   - `release-process.md:255`;
-  - `test-contours.md` — лише непозначені розділи; `§11:709` перевірити; гейти Task 1/3 дописати в §11;
+  - `test-contours.md` — лише непозначені розділи, включно з новим § 13 (гілка інструментів); `§11:709` перевірити; гейти Task 1/3 дописати в §11;
   - `platform-delivery-options.md` — позначка «Історичний документ (2026-07-30): Supabase знесено в К3-Е7» угорі, текст не правити.
 - `docs/development/ENVIRONMENT.md:32-33`; `TOOLING.md:38,76-77,147` + нові гейти (`no-supabase-import`, тест маніфестів).
 - `docs/guides/themes.md:246,333`; `docs/how-it-works.md:15,59,68,78,100` — «Postgres магазину»; `docs/marketplace/README.md:42`; `docs/tasks/seo-ssr-faceted-navigation.md:42,126,212` — `simplycms/schema/types`, `pnpm db:diff`.
@@ -395,6 +397,7 @@
   - `@supabase/ssr` (крім гардів);
   - `SupabaseProvider`.
 - [ ] **Step 2: Правки.** Без лічильників і станів у `AGENTS.md`/`CLAUDE.md`.
+- [ ] **Step 2а: Allowlist-и гейтів доків.** `pnpm vitest run tests/doc-symbols-exist.test.ts tests/live-smoke-no-instant-checks.test.ts` → зелено. Червоне через знесений символ у чинному тексті — переписати текст; в історичному абзаці — маркер `(знесено)`. Мертвий запис у `data.ts` — обрізати (розділ «Supabase (історичні розділи контурів)» лишається, лише поки його символи живуть в історичних розділах). Послаблювати тест заборонено.
 - [ ] **Step 3: Прогнати** `pnpm format:check` (`*.md` не форматуються, але `.claude/settings.json` і код — так) і `.agents/skills/codebase-research/scripts/orient --doctor` → без нових битих посилань у шарі доків.
 - [ ] **Step 4: Commit.** `docs(k3-e7): канон, інструментарій агентів і стан без Supabase; амендмент спеки Р1–Р9`. Перевірка трейлерів.
 
@@ -414,6 +417,7 @@
   | `tests/cli-doctor.test.ts`, `packages/cli/src/db-diff.mjs`, тест `update` із Task 5 | підказка `git mv supabase/migrations` (Р6) |
   | `packages/simplycms/src/db/client.ts`, `packages/simplycms/src/schema/README.md` | провайдер Postgres (Р1-2) |
   | `packages/simplycms/migrations/{0002_grants.sql,README.md}`, `packages/create-simplycms-store/template/db/migrations/{0002_grants.sql,README.md}` | SQL-канон і байт-копія (Р1-3) |
+  | `tests/doc-symbols-exist/data.ts` | причини записів-шуму з історичних розділів (лише якщо записи живі після Task 9 Step 2а) |
   | `AGENTS.md`, `.agents/skills/code-review/SKILL.md`, `.claude/commands/*.md` | гард `@supabase/*`, `supabase.storage`; Supabase MCP як інспекція dev-БД; скіл `supabase-postgres-best-practices` (Р8) |
   | `docs/architecture/{data-layer,plugins,storage,cli,themes,release-process,test-contours,platform-delivery-options}.md`, `docs/development/TOOLING.md` | гарди, провайдер Postgres, історичні позначки (Р9) |
   | `docs/tasks/{platform-roadmap,v2-state-map,redesign-mechanism-b2,theme-views-v3}.md` | історичні розділи й завершені задачі (Р9) |
@@ -421,10 +425,10 @@
   Перевірка: `git grep -il supabase -- . ':!CHANGELOG.md' ':!docs/superpowers/**' | sort > /tmp/…/actual.txt`. Кожен рядок `actual.txt` мусить бути в allowlist; `comm -23 actual allowlist` → порожньо. Зайвий файл — виправити в його задачі, а не розширювати allowlist. Розширення — лише з причиною і повідомленням архітекторові.
   Allowlist фільтрує лише шляхи, тож у «змішаних» файлах (`schema/README.md`, `cli.md`, `data-layer.md`…) забута правка пройшла б. Тому другий фільтр (аудит Codex №7): `git grep -nE "supabase/types\.ts|simplycms/supabase|src/supabase|LegacySupabaseBoundary|useSupabaseClient|SupabaseProvider|data-supabase|@supabase/ssr|supabase/config\.toml|supabase/seed" -- . ':!CHANGELOG.md' ':!docs/superpowers/**'`. Кожен рядок виводу — або гард (фікстура/асерт у тестах Р2 і `plugin-trust-boundary`), або в розділі з позначкою «історичний» у `docs/tasks/*`, `test-contours.md`, `platform-delivery-options.md`. І окремо `git grep -n "supabase/migrations"` → лише підказка Р6 (`db-diff.mjs`, її тести, `cli.md`), негативні асерти тестів скаффолдера, SQL-канон README і позначені історичні розділи. Будь-що інше — виправити в задачі-власниці.
   Після перевірки обрізати allowlist у плані до фактичного виводу `actual.txt` (окремим комітом `docs(k3-e7): allowlist плану = факт`), щоб він не брехав наступному читачеві.
-- [ ] **Step 2: Повний ланцюг гейтів.** `pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm typecheck:showcase && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm build:www && pnpm typecheck:www` → зелено, lint 0/7.
+- [ ] **Step 2: Повний ланцюг гейтів.** `pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm typecheck:showcase && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm build:www && pnpm typecheck:www` → зелено, lint 0/7. Окремим рядком у звіті — `tests/server-fn-consumers.test.ts` і `tests/doc-symbols-exist.test.ts` (входять у `pnpm test`, але результат названо явно).
 - [ ] **Step 3: Живі прогони.**
-  - `pnpm live:smoke` → зелено.
+  - `pnpm live:smoke` **двічі** → зелено обидва рази. Журнали — у `.live-smoke/<timestamp>.log`, у звіті — шляхи. Збій — процедура флейку `test-contours.md` § 13: крок поза зоною гілки ганяти на `main` до першого збою, максимум 12; 12/12 зелених на `main` → блокер гілки.
   - `pnpm pilot` → Gate C OK, без рядка `legacy`.
   - Скаффолд із tarball-ів (`pnpm pilot:pack`, далі `create-simplycms-store` з tarball-а в tmp). У магазині є `db/migrations/0000_prelude.sql…0004_functions.sql` і немає `supabase/`. Надрукований psql-цикл накатується на чисту БД харнесу (`createdb e7_store` у контейнері з Global Constraints). `pnpm simplycms doctor` → №7 не `error`.
-- [ ] **Step 4: Трейлери.** `git log --format=%B a15bcb31..HEAD | grep -ciE "co-authored|generated with"` → `0`.
+- [ ] **Step 4: Трейлери.** `git log --format=%B 8b48c8ed..HEAD | grep -ciE "co-authored|generated with"` → `0`.
 - [ ] **Step 5: Звіт архітекторові** (`dashboard-design-spec`): журнал мутацій Task 1/3/5, кількість offender'ів Р7, вивід allowlist-перевірки, результати живих прогонів. Пуш/PR/реліз — не робити.
