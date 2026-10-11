@@ -7,8 +7,8 @@ import { ImageUpload } from '../../../components/ImageUpload';
 import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
-  /** `null` — зображення ще без привʼязки до сутності (створення). */
-  readonly modId: string | null;
+  /** id модифікації: існуючої або згенерований НАПЕРЕД для нової. */
+  readonly modId: string;
 }
 
 /**
@@ -104,6 +104,7 @@ export function ModificationFormFields({ modId }: Props) {
           entityType="product_modification"
           entityId={modId}
           maxImages={10}
+          eraseOnRemove={false}
         />
       </div>
     </>

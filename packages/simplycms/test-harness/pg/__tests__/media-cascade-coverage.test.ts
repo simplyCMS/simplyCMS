@@ -11,14 +11,8 @@ import { rows, useShippingAdminDb } from './fixtures/admin-shipping';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
-const BACKLOG =
-  'опція media ресурсу ще не підключена (беклог Е6д-1, Task 10): каталожні фото власника, не персональні дані; орфани прибере sweep К4';
-
 /** `предок → таблиця.колонка` → чому каскад тут не стирає медіа фабрикою. */
 const EXEMPT: Record<string, string> = {
-  'products → product_modifications.images': BACKLOG,
-  'section_properties → property_options.image_url': BACKLOG,
-  'sections → property_options.image_url': BACKLOG,
   'users → profiles.avatar_url':
     'користувача видаляє лише іменована операція deleteCustomer: аватар стирається двофазно (Е6г-15, Е6д-14), доказ — admin-customer-delete-photos/-locks',
 };
@@ -26,15 +20,18 @@ const EXEMPT: Record<string, string> = {
 type Pair = { ancestor: string; child: string; column: string };
 const key = (p: Pair) => `${p.ancestor} → ${p.child}.${p.column}`;
 
+type Declared = { parent: string; child: string; column: string; via?: string };
+
 /** Покриття, яке ресурси оголосили опцією `cascadeMedia` (рантайм-опис фабрики). */
-const declared = (): string[] =>
+const declaredRaw = (): Declared[] =>
   Object.values(impl).flatMap((value) => {
     const cm = (value as { cascadeMedia?: unknown } | null)?.cascadeMedia;
-    if (!Array.isArray(cm)) return [];
-    return (cm as { parent: string; child: string; column: string }[]).map(
-      (c) => key({ ancestor: c.parent, child: c.child, column: c.column }),
-    );
+    return Array.isArray(cm) ? (cm as Declared[]) : [];
   });
+const declared = (): string[] =>
+  declaredRaw().map((c) =>
+    key({ ancestor: c.parent, child: c.child, column: c.column }),
+  );
 
 describe('гейт: каскадні видалення не лишають медіа (Е6д-19)', () => {
   const db = useShippingAdminDb('simplycms_e6d_media_cascade');
@@ -91,7 +88,12 @@ describe('гейт: каскадні видалення не лишають ме
     );
     const decl = declared();
     expect(decl.length).toBeGreaterThan(0);
-    for (const k of decl) expect(direct).toContain(k.split('.')[0]);
+    // Дворівневий каскад (`via`): кожна ланка ланцюжка — справжній прямий FK.
+    for (const c of declaredRaw()) {
+      const chain = [c.parent, ...(c.via ? [c.via] : []), c.child];
+      for (let i = 0; i + 1 < chain.length; i++)
+        expect(direct).toContain(`${chain[i]} → ${chain[i + 1]}`);
+    }
     const req = new Set((await required()).map(key));
     for (const k of Object.keys(EXEMPT)) {
       expect(req).toContain(k);

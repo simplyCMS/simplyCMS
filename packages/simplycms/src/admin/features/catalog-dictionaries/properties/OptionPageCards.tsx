@@ -39,6 +39,7 @@ export function OptionPageCards({ form, entityId }: Props) {
               entityType="property_option"
               entityId={entityId}
               maxImages={1}
+              eraseOnRemove={false}
             />
           </div>
           <div className="space-y-2">

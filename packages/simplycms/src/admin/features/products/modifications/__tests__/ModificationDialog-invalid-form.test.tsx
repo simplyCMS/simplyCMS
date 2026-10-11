@@ -52,6 +52,7 @@ describe('ModificationDialog: невалідний slug — інлайн-пом�
         productId="p1"
         sectionId={null}
         mod={null}
+        newId="new-mod-id"
         onCreate={onCreate}
         onUpdate={vi.fn()}
       />,

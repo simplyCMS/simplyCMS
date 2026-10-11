@@ -33,4 +33,6 @@ export const productModificationsOps = defineAdminResource({
     'stockStatus',
   ],
   readonly: ['id', 'isDefault', 'createdAt', 'updatedAt'],
+  // К3-Е6д-1: прибране з галереї фото стирає файл після COMMIT.
+  media: { entityType: 'product_modification', columns: ['images'] },
 });

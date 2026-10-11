@@ -8,8 +8,9 @@ import { RichTextEditor } from '../../../components/RichTextEditor';
 import type { ProductFormValues } from './product-form-schema';
 
 interface Props {
-  /** `null` — товар ще не створено (нова картка, зображення без привʼязки). */
-  readonly productId: string | null;
+  /** id товару: існуючого або згенерований НАПЕРЕД для нового (К3-Е6д-1) —
+   *  файл привʼязується до власника ще до першого збереження. */
+  readonly entityId: string;
 }
 
 /**
@@ -17,7 +18,7 @@ interface Props {
  * `ProductEdit.tsx` без дизайнерських змін. Читає форму з контексту
  * `useFormContext` (обгортка `Form` у `ProductForm.tsx`).
  */
-export function ProductMainFields({ productId }: Props) {
+export function ProductMainFields({ entityId }: Props) {
   const t = useT();
   const {
     register,
@@ -121,8 +122,9 @@ export function ProductMainFields({ productId }: Props) {
                 setValue('images', images, { shouldDirty: true })
               }
               entityType="product"
-              entityId={productId}
+              entityId={entityId}
               maxImages={10}
+              eraseOnRemove={false}
             />
           </div>
         </CardContent>

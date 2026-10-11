@@ -26,9 +26,12 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
   const data = useModifications(productId);
   const [editing, setEditing] = useState<ProductModification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  // К3-Е6д-1: id нової модифікації наперед — власник її фото, він же йде в insert.
+  const [newId, setNewId] = useState(() => crypto.randomUUID());
 
   const openCreate = () => {
     setEditing(null);
+    setNewId(crypto.randomUUID());
     setDialogOpen(true);
   };
   const openEdit = (mod: ProductModification) => {
@@ -39,8 +42,8 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
   // 🔴 Помилку тут НЕ ловимо: `ModificationDialog.submit` сам мапить її
   // через `adminErrorKey` і лишає діалог відкритим (Review Focus 1) —
   // подвійний catch дав би два тости на одну відмову.
-  const handleCreate = async (values: ModificationFormValues) => {
-    const id = await data.create(values);
+  const handleCreate = async (values: ModificationFormValues, id: string) => {
+    await data.create(values, id);
     toast.success(t('admin.products.mods.created'));
     return id;
   };
@@ -75,6 +78,7 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
         productId={productId}
         sectionId={sectionId}
         mod={editing}
+        newId={newId}
         onCreate={handleCreate}
         onUpdate={handleUpdate}
       />

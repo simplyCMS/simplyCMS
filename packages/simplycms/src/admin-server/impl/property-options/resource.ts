@@ -34,4 +34,6 @@ export const propertyOptionsOps = defineAdminResource({
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
   readonly: ['id', 'createdAt'],
+  // К3-Е6д-1: заміна/прибирання картинки опції стирає файл після COMMIT.
+  media: { entityType: 'property_option', columns: ['imageUrl'] },
 });

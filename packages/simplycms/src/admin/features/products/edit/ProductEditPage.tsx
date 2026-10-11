@@ -107,6 +107,7 @@ export function ProductEditPage({ productId }: Props) {
       </div>
       <ProductForm
         productId={productId}
+        entityId={productId}
         defaultValues={toFormValues(data)}
         onSubmit={(values, binding) => update(productId, values, binding)}
         submitLabel={t('common.save')}

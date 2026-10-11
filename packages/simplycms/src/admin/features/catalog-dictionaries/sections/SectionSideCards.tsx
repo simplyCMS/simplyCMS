@@ -71,6 +71,7 @@ export function SectionSideCards({ form, entityId }: Props) {
             entityType="section"
             entityId={entityId}
             maxImages={1}
+            eraseOnRemove={false}
           />
         </CardContent>
       </Card>

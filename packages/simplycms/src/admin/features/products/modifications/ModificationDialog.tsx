@@ -39,7 +39,12 @@ interface Props {
   readonly sectionId: string | null;
   /** `null` — нова модифікація (ціни/залишки/властивості — недоступні). */
   readonly mod: ProductModification | null;
-  readonly onCreate: (values: ModificationFormValues) => Promise<string>;
+  /** id нової модифікації, згенерований наперед (власник її фото). */
+  readonly newId: string;
+  readonly onCreate: (
+    values: ModificationFormValues,
+    id: string,
+  ) => Promise<string>;
   readonly onUpdate: (
     id: string,
     values: ModificationFormValues,
@@ -71,6 +76,7 @@ export function ModificationDialog({
   productId,
   sectionId,
   mod,
+  newId,
   onCreate,
   onUpdate,
 }: Props) {
@@ -89,7 +95,7 @@ export function ModificationDialog({
   const submit = async (values: ModificationFormValues) => {
     try {
       if (mod) await onUpdate(mod.id, values);
-      else await onCreate(values);
+      else await onCreate(values, newId);
       onOpenChange(false);
     } catch (e) {
       // Тема 12: помилка валідації сервера → помилка поля, тост — лише для
@@ -126,7 +132,7 @@ export function ModificationDialog({
             )}
             className="space-y-4"
           >
-            <ModificationFormFields modId={mod?.id ?? null} />
+            <ModificationFormFields modId={mod?.id ?? newId} />
           </form>
 
           <ModificationStatusControl mod={mod} form={form} />

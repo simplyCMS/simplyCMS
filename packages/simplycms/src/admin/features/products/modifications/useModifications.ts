@@ -43,8 +43,11 @@ export function useModifications(productId: string) {
   };
 
   /** Повертає id нової модифікації — виклик картки перемикає дефолт-вкладку. */
-  const create = async (form: ModificationFormValues): Promise<string> => {
-    const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт
+  const create = async (
+    form: ModificationFormValues,
+    // Діалог генерує id наперед (власник завантажених фото, К3-Е6д-1).
+    id: string = crypto.randomUUID(), // контракт id: ключ генерує клієнт
+  ): Promise<string> => {
     // 🔴 max+1 з УЖЕ завантаженого зрізу товару — нормалізує легасі-порядок
     // (там sort_order писався індексом масиву, звідси дублікати).
     const sortOrder =

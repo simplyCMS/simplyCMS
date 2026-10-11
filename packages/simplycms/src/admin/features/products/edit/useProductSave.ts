@@ -46,9 +46,10 @@ export function useProductSave() {
   const create = async (
     values: ProductFormValues,
     binding?: FormErrorBinding,
+    // Форма нового товару генерує id наперед (власник завантажених фото).
+    id: string = crypto.randomUUID(), // контракт id: ключ генерує клієнт (К3-6)
   ) => {
     try {
-      const id = crypto.randomUUID(); // контракт id: ключ генерує клієнт (К3-6)
       const tx = products.insert(toProductDraft(values, id, new Date()));
       await tx.isPersisted.promise;
       toast.success(t('admin.products.created'));
