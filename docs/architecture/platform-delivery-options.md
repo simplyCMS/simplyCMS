@@ -1,5 +1,8 @@
 # SimplyCMS як платформа: варіанти механізму поставки ядра, плагінів і тем
 
+> 🔴 **Історичний документ (2026-07-30): Supabase знесено в К3-Е7.** Усі згадки Supabase-шару,
+> `supabase/types.ts`, `supabase/migrations/` і Supabase CLI нижче — стан на момент аналізу;
+> текст навмисно не переписано. Чинний канон — `data-layer.md`, `plugins.md`, `cli.md`.
 > **Статус:** аналітичний документ для ухвалення напряму. Створено 2026-07-30.
 > **База:** дослідження 9 напрямів (Medusa, Vendure, Payload, Nuxt Layers, Shopware/Saleor,
 > OpenCart/WordPress/Magento, shadcn registry, TanStack Start внутрішньо, механіки поставки

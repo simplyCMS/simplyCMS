@@ -321,7 +321,7 @@ is required to publish packages.
 | `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |
-| Магазин падає на гідрації з TypeError у Supabase-клієнті, хоча гейти зелені | 🔴 конфіг збірки **без `target: 'esnext'`**: бандлер лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsdown.config.ts` кожного пакета; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
+| Магазин падає на гідрації з TypeError у модулі, що читає `import.meta.env` (у К0 це був клієнт Supabase), хоча гейти зелені | 🔴 конфіг збірки **без `target: 'esnext'`**: бандлер лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsdown.config.ts` кожного пакета; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
 
 ## Пов'язане
 

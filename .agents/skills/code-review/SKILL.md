@@ -25,7 +25,7 @@ fix-етапу, і не завалити замовника шумом.
 
 Не рев'юй те, що не варте рев'ю. Пропусти (і скажи про це одним рядком), якщо диф —
 це лише: перейменування без зміни семантики з зеленими гейтами, оновлення лок-файлу,
-форматування, регенерований `src/routeTree.gen.ts` чи `supabase/types.ts`, або зміна
+форматування, регенерований `src/routeTree.gen.ts`, або зміна
 доків без коду. Рев'ю таких дифів дає нітпіки, а не сигнал.
 
 Перед стартом визнач **межу**: `git diff <base>...HEAD` або конкретний діапазон
@@ -86,14 +86,14 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - `architecture` — напрямок залежностей **за тірами з
   `packages/README.md`** (це джерело, не переказуй по пам'яті). 🔴 Після треку К0
   тір — це **тека** в `packages/simplycms/src/`, а не окремий npm-пакет:
-  T0 `contracts` → T1 `domain`/`schema` → T2 `supabase`/`db`/`auth`/`react-query`/`storefront` →
+  T0 `contracts` → T1 `domain`/`schema` → T2 `db`/`auth`/`react-query`/`storefront` →
   T3 `ui` → T4 `plugins`/`themes`/`plugin-sdk`/`*-ui` → T5 `core`/`admin`/`storefront-routes`.
   Межу тримає не `dependencies`, а eslint-тір-зони (`eslint.tier-zones.mjs` +
   `eslint.tier-relative.mjs`) — тож порушення напрямку в нормі валить лінт; якщо
   диф його додав, а лінт мовчить, це знахідка про зону, не лише про імпорт.
   🔴 Два факти, без яких лінза дає хибні спрацювання: теки одного тіру —
-  **сиблінги**, а не ланка ланцюга (`supabase` і `react-query` обидва
-  залежать лише від `contracts`, один від одного — ні); дві розбіжності
+  **сиблінги**, а не ланка ланцюга (`react-query` і `runtime` один від
+  одного не залежать); дві розбіжності
   таблиці з зонами зафіксовані **фактом**, а не виправлені кодом — `plugin-sdk`
   стоїть T4 (імпортує `plugins`), а пʼять `*-ui` (T4) тягнуть `core` (T5),
   зустрічний цикл і борг розселення `core`. Це відомий борг, а не свіже
@@ -110,12 +110,11 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   `get_advisors`). 🔴 **Не став `major` за «суперечить канону»**, якщо диф
   робить локальну міграцію — діє правило локальних міграцій.
   Далі: 🔴 `pnpm db:generate-types`/`pnpm types:baseline` **ВИДАЛЕНІ**
-  (0.4.1) разом із `supabase/types.ts` — типи для НОВОГО серверного коду з
-  `simplycms/schema/types` (Drizzle), не з генератора; RLS-політики на кожній
-  зачепленій таблиці; субшляху `simplycms/data-supabase` НЕ ІСНУЄ (0.4.1) —
-  вітрина ходить у БД лоадерами `withStorefrontDb`/`withActor`, нові сторінки
-  адмінки — на `admin-server`/`admin-data`, а не на `supabase-js` (легасі-шар
-  переписується); 🔴 контракти `docs/architecture/data-layer.md` — явний `id` у
+  (0.4.1) — типи для НОВОГО серверного коду з `simplycms/schema/types`
+  (Drizzle), не з генератора; RLS-політики на кожній зачепленій таблиці;
+  вітрина ходить у БД лоадерами `withStorefrontDb`/`withActor`, адмінка — на
+  `admin-server`/`admin-data`; `@supabase/*` у репо заборонено лінтом
+  (`no-supabase-import`); 🔴 контракти `docs/architecture/data-layer.md` — явний `id` у
   кожній вставці (без `DEFAULT gen_random_uuid()`), `queryKey` із реєстру
   `simplycms/contracts/entities` (не літерал, `collectionKey` лише в `admin-data`),
   `Date` замість рядків дат; Zod-валідація входу на сервері (`.validator(…)`);
@@ -128,7 +127,7 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 | ---- | ----------------- |
 | `simplycms/routes/storefront/_storefront*` | SSR: route loaders, дані з `src/storefront-routes/server`, каркас `StorefrontShell`, SEO (`src/storefront-routes/seo`) |
 | `simplycms/routes/admin/*` | client-only: `ssr: false` **лише** на `admin.tsx` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
-| `simplycms/routes/storefront/{_protected*,auth,api}` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
+| `simplycms/routes/storefront/{_protected*,auth,api}` | auth-гейти, cookie-сесії Better Auth, серверні роути |
 | `src/server`, `src/storefront-routes/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
 | `routes.ts`, `src/routes/` | дерево збирає `virtualRouteConfig`; host тримає лише `__root.tsx` + `my/` (гард — `tests/virtual-routes-escape.test.ts`) |
 | `packages/simplycms/src/*` | напрям тірів (eslint-зони), публічні барелі й вхід у `exports`, ліміт 150 рядків, відсутність прив'язки до host-`src/` |

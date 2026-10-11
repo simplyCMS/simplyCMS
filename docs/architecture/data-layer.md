@@ -92,8 +92,7 @@
   чи функції, трансформація тихо не підхоплює. Валідатор — `.validator(…)`;
   `.inputValidator(…)` застарів.
 - Типи рядків для нового серверного коду — з `simplycms/schema/types` (виведені з
-  Drizzle). `packages/simplycms/src/supabase/database.ts` — **заморожений**
-  baseline типів легасі-адмінки: не оновлювати і не «прибирати дублювання».
+  Drizzle). Генератора типів БД немає, ручних дзеркал схеми в репо теж.
 - Cross-request кеш серверних даних — `createReadCache` модуля **`simplycms/site`**
   (§12): TTL 5 хв + лічильник поколінь. ISR і `revalidatePath` не існують;
   інвалідація — скидання кешу САМОЮ операцією адмінки після COMMIT +
@@ -108,7 +107,7 @@
   і колекціях **`simplycms/admin-data`** (TanStack DB; колекції без `schema`).
 - Шару `supabase-js` більше немає (К3-Е7): адмінка пишеться на колекціях
   `admin-data`/операціях `admin-server`, поточний перелік — `docs/tasks/v2-state-map.md`.
-  Ні вітрина, ні адмінка `supabase-js` не імпортують.
+  Ні вітрина, ні адмінка `@supabase/*` не імпортують (ратчет `no-supabase-import`).
 - Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
   `eq/gt/gte/lt/lte` — колонки `filterable` ∪ `sortable` (курсор пагінації
   відсортованої колонки; безпеки не знижує — значення клієнт і так бачить),
@@ -177,12 +176,11 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 `id` падає гучно (`23502 not_null_violation`), а не розходиться тихо — не
 «лагодь» це поверненням `.defaultRandom()` у схему.
 
-Дві іменовані виїмки:
+Одна іменована виїмка (теку-виїмок за шляхом немає — вставка без `id` у будь-якій теці `packages/simplycms/src/**`, адмінку включно, червонить гейт):
 
 | Виїмка | Чому | Хто стереже |
 |---|---|---|
 | `users`, `sessions`, `accounts`, `verifications` | Better Auth з `generateId: 'uuid'` не кладе `id` в INSERT | `test-harness/pg/__tests__/id-defaults.test.ts` |
-| `packages/simplycms/src/admin/**` | легасі-шар на `supabase-js`, переписується | `tests/admin-inserts-need-id.test.ts` — ратчет, число лише зменшується |
 
 Гейт інваріанта — `test-harness/pg/__tests__/explicit-ids.test.ts`
 (`pnpm test:schema`): **дискаверить** усі вставки в `packages/simplycms/src/**`,
@@ -212,7 +210,7 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 
 - Канон застосовного SQL — `packages/simplycms/migrations/`: baseline
   (`0000_prelude` → `0004_functions`) плюс усе, що додав `db:diff`. Порядок накату — за
-  числовим префіксом імені. Теки `supabase/migrations/` немає.
+  числовим префіксом імені.
 - 🔴 Ручні функції/тригери — лише в ручних файлах канону (`0000_prelude`,
   `0004_functions`), `0001_init` — чистий генерат (парність із drizzle-kit повна,
   без винятків за маркером); множину функцій і тригерів стереже гейт
@@ -226,9 +224,10 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
   baseline (`drizzle/0000_init.sql` + `meta/0000_snapshot.json`, синхронно з каноном і
   `schema.ts`), після якої `drizzle-kit generate` мусить сказати «No schema changes».
 - Копію канону для магазину везе шаблон скаффолдера
-  (`template/supabase/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
+  (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
-- 🔴 `pnpm db:migrate` — файл-надгробок, падає з поясненням. **Не** застосовуй
+- 🔴 Накат у магазині — `psql -f` по `db/migrations`
+  (`simplycms db:diff` дописує в цю теку, далі ревʼю й накат вручну). **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
 - `DATABASE_URL` (з `.env.local`) — джерело тулінгу `db:pull`/`db:diff` і рантайм-пул

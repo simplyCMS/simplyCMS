@@ -69,10 +69,6 @@ simplyCMS/
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
 │   │   │                         #    з host-а). Без власного каналу до БД (приймає ActorDb);
 │   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)
-│   │   ├── src/supabase/         # T2 browser/server/anon-клієнти, SupabaseProvider, keys,
-│   │   │                         #    database.ts (ЗАМОРОЖЕНИЙ baseline core-типів). Шар
-│   │   │                         #    адмінки на supabase-js, що переписується на admin-server;
-│   │   │                         #    вітрина його не імпортує, провайдер ніде не монтується
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
@@ -94,10 +90,9 @@ simplyCMS/
 │   │   ├── src/{cart,catalog,checkout,profile,reviews}-ui/   # T4 Feature-UI воронки
 │   │   ├── src/core/             # T5 Власні провайдери/хуки/компоненти (CMSProvider,
 │   │   │                         #    useAuth, useCart, useBanners…)
-│   │   ├── src/admin/            # T5 Сторінки/компоненти адмінки; частина на admin-server/
-│   │   │                         #    admin-data, решта — легасі на supabase-js (поточний
-│   │   │                         #    перелік — v2-state-map.md та реєстр
-│   │   │                         #    tests/admin-server-first/registry.ts)
+│   │   ├── src/admin/            # T5 Сторінки/компоненти адмінки на admin-server/admin-data;
+│   │   │                         #    сутності без колекції — реєстр
+│   │   │                         #    contracts/admin-server-first.ts
 │   │   ├── src/storefront-routes/# T5 pages/ (container-и) + views/ (канонічні view +
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
@@ -125,7 +120,7 @@ simplyCMS/
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
-│   ├── db-diff.mjs · db-migrate.mjs  # db-migrate — файл-надгробок (канон переїхав у packages/simplycms/migrations/)
+│   ├── db-diff.mjs                   # канон міграцій — packages/simplycms/migrations/
 │   ├── release.mjs      + release/      # bump/gates/git — `pnpm release X.Y.Z`
 │   │                                    # (bump.mjs сканує packages/* — і ядро, і скаффолдер)
 │   ├── version-packages.mjs             # «сирий» бамп версій без гейтів
@@ -134,8 +129,6 @@ simplyCMS/
 │   ├── pack-inspect.mjs + pack-inspect/ # читання вмісту tarball-ів
 │   ├── sync-create-store-template.mjs   # монорепо → template/ пакета create-simplycms-store
 │   ├── pilot-pack.mjs   + pilot-pack/   # env/pack/scaffold/build/run + gate-a…gate-d + create-pkg-smoke
-│   │                                    # + seed-fixtures.mjs — джерело правди сіду
-│   ├── pilot-seed.mjs                   # фікстури → supabase/seed.sql (`pnpm pilot:seed`)
 │   ├── demo-db.mjs                      # `pnpm db:demo`: чиста БД із канону + демо-каталог
 │   ├── showcase/*.mts                   # `pnpm db:showcase`: вітринний стенд для ручного тесту
 │   │                                    # (db:demo + наповнення через доменні ядра під withActor);
@@ -147,15 +140,12 @@ simplyCMS/
 ├── packages/simplycms/test-harness/pg/  # контур `pnpm test:schema` — підйом Postgres без Docker
 │                                     # (PG_HARNESS_URL або ефемерний initdb), накат канону,
 │                                     # інтроспекція ACL/політик, актори
-├── supabase/                         # ЗАЛИШКОВА тека: config.toml + ЗГЕНЕРОВАНИЙ seed.sql
-│                                     # локального стеку supabase. Ні migrations/, ні types.ts
-│                                     # тут немає; канон схеми — packages/simplycms/migrations/
 ├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);
 │                                     # solarstore — npm-пакет packages/simplycms-theme-solarstore/
 ├── plugins/hello-world/              # Референс-плагін (мінімальний; повний — @simplycms/plugin-faq)
 ├── tests/                            # virtual-routes-escape, published-exports-parity,
-│   │                                 # audit-deps, audit-exports, host-database-types, seo-endpoints,
-│   │                                 # pilot-seed, create-store-template-parity (парність seed.sql і фікстур/шаблону),
+│   │                                 # audit-deps, audit-exports, seo-endpoints,
+│   │                                 # no-supabase-manifests (ратчет), create-store-template-parity (парність шаблону й монорепо),
 │   │                                 # cli-* (юніти @simplycms/cli), tier-boundary (негативний
 │   │                                 # контроль тір-зон), dist-import-meta (гард лоуереного import.meta у dist)
 │   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
@@ -165,7 +155,6 @@ simplyCMS/
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler;
 │                                     # server-runtime.mjs — його Node-шар (IncomingMessage → Request,
 │                                     # стрімінг відповіді), самодостатній і покритий тестами
-├── tools/content-loader-mcp/         # Допоміжний MCP-інструмент завантаження контенту (не публікується)
 ├── public/                           # Статика host-а (favicon, placeholder)
 ├── playwright.config.ts              # Конфіг браузерних тестів `tests/e2e/` (admin-smoke, layout-overflow)
 ├── tsconfig.template.json            # tsconfig гейта `pnpm typecheck:template`

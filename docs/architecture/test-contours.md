@@ -705,10 +705,10 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   ДВА різні обʼєкти з однаковими байтами. Це не помилка й не перевіряється:
   дедуплікація за хешем вмісту — не контракт Е2.
 - **`ImageUpload` на живій сторінці.** Компонент переведено на порт і
-  покрито юнітами, але всі пʼять його сторінок адмінки лишаються на
-  `supabase-js` і на чистому Postgres не працюють — живого прогону
-  зображення товару в Е2 немає за побудовою (DoD К3 п.6 закриває хвиля
-  каталогу, Е3–Е6).
+  покрито юнітами; на момент Е2 усі пʼять його сторінок адмінки лишались на
+  `supabase-js` (шар знесено в К3-Е7) і на чистому Postgres не працювали —
+  живого прогону зображення товару в Е2 не було за побудовою (DoD К3 п.6
+  закрила хвиля каталогу, Е3–Е6).
 - **Роль підключення в `live:smoke`.** Скрипт віддає магазину `DATABASE_URL`,
   виведений із `PG_HARNESS_URL` (адмінська роль кластера), а не окремий
   `app_runtime`. RLS і гранти це не послаблює — `withActor` робить
@@ -752,7 +752,7 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 червонить), `eslint-rules/no-collection-key-outside-admin-data.mjs`
 (сегмент `'list'` лише `admin-data`, Е3-15′), `bareListSegment` у
 `query-key-from-entity.mjs` (той самий інваріант — інша форма запису),
-`ADMIN_SCAN_DIRS` (знесено) у `tests/admin-inserts-need-id.test.ts` звужено до
+`ADMIN_SCAN_DIRS` (знесено) у `tests/admin-inserts-need-id.test.ts` (знесено) звужено до
 `admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
 основним гейтом `explicit-ids` за побудовою).
 
@@ -827,6 +827,19 @@ expectTypeOf і рев'ю.
 `live:smoke` ганяється лише на production-збірці. Симптом у dev — «зберіг, а
 вітрина до 5 хв показує старе». Перевірка руками — зберегти профіль і
 перезавантажити головну.
+
+### 11.5. К3-Е7 (знос Supabase): ратчети проти повернення
+
+Знесено клієнтський шар БД, залежності `@supabase/*` і реєстри легасі-адмінки;
+замість них — гейти, кожен з негативним контролем, прогнаним при прийомі етапу:
+
+| Гейт | Що ловить | Крок ланцюга | Межа |
+|---|---|---|---|
+| `eslint-rules/no-supabase-import.mjs` (власний плагін `simplycms-supabase`, правило на ВСЕ репо) + `tests/eslint-rules/no-supabase-import.test.ts` | `@supabase/*` у статичному `import`/`export … from`, динамічному `import()` (рядок або шаблон без виразів), `require`, `import x = require`, `import('…').T` | `pnpm lint` / `pnpm test` | код шаблону магазину в основний лінт не потрапляє — його лінтує тест нижче |
+| `tests/no-supabase-manifests.test.ts` | `@supabase/*` у `package.json`/`.tpl`-маніфестах, у `pnpm-lock.yaml` і в коді шаблону магазину (власний ESLint-прогін на справжньому парсері, не вакуумний) | `pnpm test` | `pnpm test` перед запуском переписує lock за supply-chain policy pnpm 11 — мутацію lock доводь через `npx vitest` |
+| `tests/eslint-server-env.test.ts`, `tests/dist-import-meta-fixture.test.ts`, `tests/pilot-gate-c.test.ts` | незалежні контролі, що пережили знос: `import.meta.env` у зоні серверного env, позитивний контроль лоуерингу `import.meta` у dist, `gateBundle` (Gate C) на синтетичному `bundle-stats.client.json` | `pnpm test` (`dist-import-meta-fixture` — `pnpm test:packaging`) | Gate C на справжньому tarball-і — лише `pnpm pilot:pack` |
+| `tests/cli-doctor.test.ts`, `tests/cli-update.test.ts` | відсутня тека `db/migrations` магазину: doctor №7 — error, `update` — гучна помилка й ненульовий exit; стара `supabase/migrations` — з підказкою `git mv` | `pnpm test` | — |
+| `test-harness/pg/__tests__/explicit-ids.test.ts` | дискаверить вставки без `id` в УСІЙ `packages/simplycms/src/**`; ратчети-реєстри легасі-адмінки знесено разом із шаром | `pnpm test:schema` | реєстр сутностей без колекції живе в `simplycms/contracts/admin-server-first.ts` (`contracts/__tests__/admin-server-first.test.ts`) |
 
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 

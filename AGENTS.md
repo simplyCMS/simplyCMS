@@ -137,8 +137,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - Схема БД: правка `schema.ts` → `pnpm db:diff` → ревʼю SQL → `pnpm test:schema`. Міграції
   **не** через Supabase MCP (він лише для інспекції). Генератора типів БД немає — типи нового
   коду з `simplycms/schema/types`.
-- Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `supabase-js` — застарілий
-  шар, що переписується; вітрина його не імпортує.
+- Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `@supabase/*` у репо
+  заборонено лінтом (`no-supabase-import`).
 
 **Роути й рендеринг** (`docs/architecture/rendering-and-routing.md`)
 
@@ -153,7 +153,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 - Тема постачає токени, `components` і опційно `views` пʼяти сторінок; **не** дані, роути, SEO,
   сторінки чи лейаути (`theme.pages`/`MainLayout` видалені свідомо). Логіки в темі немає.
-- Плагін ходить лише через порти `simplycms/plugin-sdk` (межа довіри); Supabase-шар не імпортує.
+- Плагін ходить лише через порти `simplycms/plugin-sdk` (межа довіри); БД-клієнтів напряму не імпортує.
 - Компоненти `simplycms/ui`, а не дублікати; кольори й шрифти — через CSS-змінні теми.
 
 **Межі клієнт/сервер й env** (`docs/development/ENVIRONMENT.md`)

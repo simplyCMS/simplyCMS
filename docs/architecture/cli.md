@@ -69,14 +69,14 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
 | 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env` | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
-| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error |
+| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 
-🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в Supabase REST, а магазин
+🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в REST зовнішнього BaaS, а магазин
 контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
 мовчазного зникнення рядка звіт лишає видиму позначку `skip`:
 
@@ -141,6 +141,7 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не
    чіпається взагалі — форк сильніший за пакетний скіл. Нічого лагодити —
    мовчить. Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
+4. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
 
 ### 3.4 `simplycms db:diff [--write]`
 
@@ -150,7 +151,7 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 (`@plugins/<name>` → локальна тека магазину, bare-специфікатор →
 `node_modules/<pkg>/migrations/`; плагін без міграцій — не помилка).
 
-Порівняння з `supabase/migrations/` магазину:
+Порівняння з `db/migrations/` магазину:
 
 - відсутні в магазині → список «нові міграції <канону>»; `--write` копіює їх
   (тільки додавання — forward-fix-only);
@@ -169,8 +170,8 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 Конвенція імені плагінної міграції — `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql`
 (унеможливлює колізії імен між канонами). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених у `supabase/migrations/`. Оскільки накат тепер — прямий `psql -f`
-(немає Supabase CLI, що сам відстежує застосовані файли), це не блокує:
+накачених у `db/migrations/`. Оскільки накат — прямий `psql -f`
+(жодного CLI, що сам відстежує застосовані файли, немає), це не блокує:
 оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
 порядку імен. Перейменування-при-копіюванні відкладено (колонку
 `plugins.migrations_applied` прибрано в Е6б: її ніхто не писав).
@@ -234,12 +235,12 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | Джерело правди | Копія | Споживач |
 |---|---|---|
 | `SYNCED_FILES` (11 host-файлів глю, корінь монорепо) | `packages/cli/host/**` | `update`, `doctor` §6 |
-| `packages/simplycms/migrations/` | `template/supabase/migrations/` | `db:diff`, `doctor` §7 |
+| `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
 собі джерело правди — baseline `0000_prelude` → `0004_functions`, який пишуть
-рука і `pnpm db:diff`. Раніше джерелом були кореневі `supabase/migrations/`,
-а канон — їхнім дзеркалом; тієї теки більше немає. `template:sync` тепер
+рука і `pnpm db:diff`. Раніше джерелом була коренева тека міграцій
+(доба Supabase), а канон — її дзеркалом; тієї теки більше немає. `template:sync` тепер
 несе потік у зворотний бік: канон → копія в шаблоні.
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
@@ -272,7 +273,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
+for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
 pnpm build && pnpm start         # rebuild
 ```
 

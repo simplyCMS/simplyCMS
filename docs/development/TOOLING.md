@@ -35,9 +35,6 @@
 PR #12803), а не відмовив. **Умова перегляду:** реліз `typescript-eslint` з підтримкою TS 7.1 →
 бамп одразу на 7.1. Стан апстріму й розглянуті альтернативи — у записі TSESL-1.
 
-`tools/content-loader-mcp` (поза workspace, борг №13 роадмапа): під TS 6 при відновленні
-потребує `"types": ["node"]` у tsconfig (TS2591); зараз не виправляється.
-
 ## 2. Команди
 
 ```bash
@@ -79,8 +76,6 @@ pnpm pilot:pack       # tarball-пілот: гейти A/C/D/IP + CLI/TOOL — �
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
                       # BETTER_AUTH_SECRET із .env.local; назви товарів Gate B бере прямим SQL
                       # (HTTP-API до БД у контракті v2 немає)
-pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота (сід годує лише
-                      # локальний стек supabase start; під парність-тестом)
 pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
                       # packages/cli/host/ (канон host-файлів для simplycms update),
                       # packages/simplycms/migrations/ (для simplycms db:diff) — усі під парність-тестом
@@ -163,8 +158,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `tests/server-fn-consumers.test.ts` — кожна `export const … = createServerFn(…)` має
   імпортера поза тестами й моками; виняток — `SERVER_FN_NO_CONSUMER_ALLOWLIST` з причиною.
 - `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь репозиторій**.
-  Не форматується (`.prettierignore`): згенерований код (`src/routeTree.gen.ts`, заморожений
-  `supabase/database.ts` ядра, Drizzle-схема і `drizzle/`), артефакти збірки і **всі `*.md`**
+  Не форматується (`.prettierignore`): згенерований код (`src/routeTree.gen.ts`, Drizzle-схема і `drizzle/`), артефакти збірки і **всі `*.md`**
   (prettier ламає ручне вирівнювання таблиць і списків).
 
 ## 4. Лінт
@@ -196,6 +190,11 @@ Error-зони й кастомні правила (селектори й опц�
   `assert: 'htmlFor', depth: 3`) на п'яти теках воронки (`cart-ui`, `catalog-ui`, `checkout-ui`,
   `profile-ui`, `reviews-ui`). 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
   невидимий: зелений лінт доступності воронки не доводить її повноти.
+- **Ратчет проти `@supabase/*` — `simplycms-supabase/no-supabase-import`:** зона — ВСЕ репо
+  (усі `*.{ts,tsx,mts,cts,mjs,cjs,js}`), без виїмок; ловить статичний `import`/`export…from`,
+  динамічний `import()`, `require` і TS-форми. Код шаблону магазину в основний лінт не потрапляє —
+  його, маніфести й `pnpm-lock.yaml` стереже `tests/no-supabase-manifests.test.ts`. Негативний
+  контроль — `tests/eslint-rules/no-supabase-import.test.ts`.
 - **Порт сховища — `simplycms-storage/no-direct-storage`:** зона — увесь `packages/simplycms/src/**`
   без виїмок (ратчет порожній: легасі `ReviewDetail.tsx` знесено в Е6д); забороняє `supabase.storage`,
   `x.storage.from(…)`, `x['storage']` та імпорт `@supabase/storage-js`. Файловий двійник —
