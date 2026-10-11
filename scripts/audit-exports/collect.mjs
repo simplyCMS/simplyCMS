@@ -28,7 +28,16 @@ export const isCorePackage = (name) =>
 // Розширення файлів, де реально бувають import/require-специфікатори.
 // `*.md` навмисно виключені: доки згадують шляхи в прозі (не імпорти), і
 // дали б хибні спрацювання (перевірено вручну на цьому репо).
-const CODE_GLOBS = ['*.ts', '*.tsx', '*.mjs', '*.cjs', '*.js'];
+const CODE_GLOBS = [
+  '*.ts',
+  '*.tsx',
+  '*.mts',
+  '*.cts',
+  '*.js',
+  '*.jsx',
+  '*.mjs',
+  '*.cjs',
+];
 
 // Згенеровані файли — не джерело правди про реальне вживання; власний
 // каталог скрипта містить приклади імпортів у фікстурах. Фікстури-ЗАБОРОНИ в
@@ -91,15 +100,21 @@ export function collectPackages() {
 
 /**
  * Імпорт-форми, з яких беремо специфікатор: `from '…'` (import/export), побічний
- * `import '…'`, `import('…')`, `require('…')` і `vi.mock('…')`-родина (мок
+ * `import '…'`, `import('…')`, `require('…')`, `require.resolve('…')`,
+ * `import.meta.resolve('…')` і `vi.mock('…')`-родина (мок
  * неіснуючого субшляху так само ховає розрив exports). Довільний літерал чи
  * коментар специфікатором не є: інакше кожна згадка `simplycms/…` у ban-глобі,
  * імені правила лінту чи прикладі росила б `EXCLUDE_PATHSPECS`. `\s*` між
  * ключовим словом і лапкою покриває багаторядкові `} from\n'…'`.
  */
 const SPECIFIER_RE = new RegExp(
-  '(?:\\bfrom|\\bimport|\\brequire|\\bvi\\s*\\.\\s*(?:mock|doMock|unmock|importActual|importMock))' +
-    '\\s*\\(?\\s*([\'"])((?:@simplycms/[a-zA-Z0-9_-]+|simplycms)/[^\'"]+)\\1',
+  '(?:\\bfrom|\\bimport(?:\\s*\\.\\s*meta\\s*\\.\\s*resolve)?|\\brequire(?:\\s*\\.\\s*resolve)?' +
+    '|\\bvi\\s*\\.\\s*(?:mock|doMock|unmock|importActual|importMock))' +
+    // Між `(` і літералом можливі коментарі: `import(/* @vite-ignore */ 'x')`.
+    '\\s*\\(?\\s*(?:/\\*[\\s\\S]*?\\*/\\s*)*' +
+    // Backtick — лише без виразів (`$` у специфікаторі виключено): шаблон із
+    // `${…}` статично не розвʼязується, його гейт не бачить за побудовою.
+    '([\'"`])((?:@simplycms/[a-zA-Z0-9_-]+|simplycms)/[^\'"`$]+)\\1',
   'g',
 );
 

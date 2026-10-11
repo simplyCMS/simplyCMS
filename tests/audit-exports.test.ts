@@ -84,6 +84,33 @@ describe('audit-exports: специфікатори лише з імпорт-ф�
     expect(extractSpecifiers(text)).toEqual([]);
   });
 
+  it('шаблон із виразом, чужий пакет і не-імпортний resolve специфікатором не є', () => {
+    const text = [
+      'const a = await import(`simplycms/${name}`);',
+      'const b = require.resolve(`simplycms/a${x}`);',
+      "const c = require.resolve('zod/v4');",
+      "const d = other.resolve('simplycms/h');",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([]);
+  });
+
+  it('backtick без виразів, коментар перед літералом, require/import.meta.resolve рахуються', () => {
+    const text = [
+      'const a = await import(`simplycms/i`);',
+      "const b = await import(/* @vite-ignore */ 'simplycms/j');",
+      "const c = require.resolve('simplycms/k');",
+      "const d = import.meta.resolve('@simplycms/plugin-faq/l');",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([
+      'simplycms/i',
+      'simplycms/j',
+      'simplycms/k',
+      '@simplycms/plugin-faq/l',
+    ]);
+  });
+
   it('усі імпорт-форми рахуються', () => {
     const text = [
       "import 'simplycms/a';",
