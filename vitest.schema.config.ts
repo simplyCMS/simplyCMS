@@ -15,6 +15,14 @@ import { defineConfig } from 'vitest/config';
 // проти харнеса, а не тестову копію контракту. 🔴 Один base-prefix ключ,
 // як у `vitest.config.ts`: `@rollup/plugin-alias` матчить і `simplycms`, і
 // `simplycms/<sub>`, але не сторонні `simplycms-*`.
+// `.env.harness` (pnpm harness:up) — лише якщо PG_HARNESS_URL не задано явно:
+// loadEnvFile не перезаписує вже виставлені змінні.
+try {
+  process.loadEnvFile(resolve(import.meta.dirname, '.env.harness'));
+} catch {
+  // файла немає — працює ефемерний фолбек харнеса
+}
+
 export default defineConfig({
   resolve: {
     alias: {

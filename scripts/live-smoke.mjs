@@ -51,10 +51,16 @@ import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 const ROOT = join(import.meta.dirname, '..');
 const DB_NAME = 'simplycms_live_smoke';
 
+// `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.
+try {
+  process.loadEnvFile(join(ROOT, '.env.harness'));
+} catch {
+  // немає файла — нижче зрозуміла відмова
+}
 const adminUrl = process.env.PG_HARNESS_URL;
 if (!adminUrl)
   throw new Error(
-    '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера, як для pnpm db:demo)',
+    '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера): виконай `pnpm harness:up`',
   );
 
 const rows = [];

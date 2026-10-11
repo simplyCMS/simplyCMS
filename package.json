@@ -35,7 +35,9 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:demo": "node scripts/demo-db.mjs",
     "db:showcase": "pnpm exec tsx scripts/showcase/run.mts",
-    "live:smoke": "node scripts/live-smoke.mjs"
+    "live:smoke": "node scripts/live-smoke.mjs",
+    "harness:up": "node scripts/harness-up.mjs",
+    "harness:down": "node scripts/harness-up.mjs down"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

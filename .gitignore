@@ -75,3 +75,6 @@ scripts/dev-stand/seed-demo.sql
 
 # Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
 .claude/worktrees/
+
+# Локальний Postgres-харнес (pnpm harness:up)
+.env.harness

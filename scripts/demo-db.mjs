@@ -37,6 +37,11 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+try {
+  process.loadEnvFile(join(ROOT, '.env.harness')); // pnpm harness:up; явна змінна важливіша
+} catch {
+  // немає файла — URL дасть --url або env
+}
 const MIGRATIONS_DIR =
   process.env.DEMO_DB_MIGRATIONS_DIR ??
   join(ROOT, 'packages/simplycms/migrations');
