@@ -32,15 +32,31 @@ function findUp(name: string, fromDir: string): string {
   }
 }
 
+/** Файл встановленого пакета зник: бібліотека, ймовірно, змінила структуру. */
+export class InstalledFileMissingError extends Error {
+  constructor(
+    readonly pkg: string,
+    readonly version: string,
+    readonly relPath: string,
+  ) {
+    super(`файл ${relPath} у ${pkg}@${version} не знайдено`);
+  }
+}
+
 export function readInstalledFile(
   chain: readonly string[],
   relPath: string,
   fromDir = ROOT,
 ): string {
-  return readFileSync(
-    join(installedPackageDir(chain, fromDir), relPath),
-    'utf8',
-  );
+  const dir = installedPackageDir(chain, fromDir);
+  const file = join(dir, relPath);
+  if (!existsSync(file))
+    throw new InstalledFileMissingError(
+      chain.at(-1) as string,
+      installedVersion(chain, fromDir),
+      relPath,
+    );
+  return readFileSync(file, 'utf8');
 }
 
 export function installedVersion(

@@ -3,7 +3,11 @@ import { join, relative, resolve } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
-import { installedVersion, readInstalledFile } from './lib/installed-package';
+import {
+  InstalledFileMissingError,
+  installedVersion,
+  readInstalledFile,
+} from './lib/installed-package';
 
 /**
  * Розтяжки upstream: реєстр `docs/architecture/upstream-workarounds.md` —
@@ -216,13 +220,40 @@ const TRIPWIRES: Record<string, Tripwire> = {
   ],
 };
 
+/** Читає текст розтяжки; зниклий файл бібліотеки — зрозуміла відмова з ID, а не сирий ENOENT. */
+export function readForTripwire(id: string, read: () => string): string {
+  try {
+    return read();
+  } catch (err) {
+    if (err instanceof InstalledFileMissingError)
+      throw new Error(
+        `UPSTREAM:${id} — файл ${err.relPath} у ${err.pkg}@${err.version} не знайдено: бібліотека змінила структуру, переглянь запис реєстру`,
+      );
+    throw err;
+  }
+}
+
 describe('розтяжки upstream: передумова обходу досі тримається', () => {
   for (const [id, parts] of Object.entries(TRIPWIRES)) {
     it(`UPSTREAM:${id}`, () => {
-      const broken = parts.flatMap((p) => p.premise(p.read()));
+      const broken = parts.flatMap((p) =>
+        p.premise(readForTripwire(id, p.read)),
+      );
       expect(broken, hint(id, broken.join('; '))).toEqual([]);
     });
   }
+});
+
+describe('негативний контроль: зниклий файл бібліотеки', () => {
+  it('падає повідомленням з ID, пакетом і версією, не сирим ENOENT', () => {
+    expect(() =>
+      readForTripwire('FAKE-1', () =>
+        readInstalledFile(['drizzle-orm'], 'moved/away.js'),
+      ),
+    ).toThrow(
+      /^UPSTREAM:FAKE-1 — файл moved\/away\.js у drizzle-orm@\S+ не знайдено: бібліотека змінила структуру, переглянь запис реєстру$/,
+    );
+  });
 });
 
 describe('негативний контроль: підмінений текст-передумова червоніє', () => {
@@ -319,7 +350,7 @@ const SKIP_DIRS = new Set([
   'coverage',
   '.output',
 ]);
-const SOURCE_EXT = /\.(?:ts|tsx|mts|cts|js|mjs|cjs)$/;
+const SOURCE_EXT = /\.(?:ts|tsx|mts|cts|js|mjs|cjs|json|ya?ml|md)$/;
 const MARKER = /UPSTREAM:([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[A-Z0-9]*\d)/g;
 
 /** Усі маркери `UPSTREAM:<ID>` у коді (без самого цього файлу — він цитує ID). */
@@ -331,6 +362,8 @@ function codeMarkers(): Set<string> {
         if (!SKIP_DIRS.has(e.name)) walk(join(dir, e.name));
       } else if (SOURCE_EXT.test(e.name)) {
         const file = join(dir, e.name);
+        // Кореневі *.md (AGENTS, CHANGELOG, README) — проза й історія, не носії обходу.
+        if (dir === ROOT && e.name.endsWith('.md')) continue;
         if (relative(ROOT, file).replaceAll('\\', '/') === TRIPWIRE_FILE)
           continue;
         for (const m of readFileSync(file, 'utf8').matchAll(MARKER))
