@@ -10,9 +10,6 @@ export interface MediaReference {
   readonly id: string;
 }
 
-/** Колонка `images` — масив, решта медіа-колонок — текст (реєстр про це не знає). */
-const JSONB_COLUMNS: ReadonlySet<string> = new Set(['images']);
-
 type Row = { id: string };
 
 /**
@@ -20,7 +17,7 @@ type Row = { id: string };
  * `media_in_use` у `deleteMedia`, для sweep і для інваріанта сідів.
  *
  * 🔴 Ітерує `MEDIA_COLUMNS`, а не перелік таблиць руками: нова медіа-колонка
- * потрапляє сюди сама. Тип колонки визначає `JSONB_COLUMNS` — для jsonb-масиву
+ * потрапляє сюди сама. Тип колонки — поле `kind` реєстру — для jsonb-масиву
  * членство `col ? key`, для тексту рівність; тест парності звіряє це з
  * `information_schema`, тож колонка нового типу без гілки червонить його.
  *
@@ -32,12 +29,13 @@ export async function findMediaReferences(
   key: string,
 ): Promise<MediaReference[]> {
   const found: MediaReference[] = [];
-  for (const { table, column } of MEDIA_COLUMNS) {
+  for (const { table, column, kind } of MEDIA_COLUMNS) {
     const t = sql.identifier(table);
     const c = sql.identifier(column);
-    const predicate = JSONB_COLUMNS.has(column)
-      ? sql`jsonb_typeof(${c}) = 'array' and ${c} ? ${key}`
-      : sql`${c} = ${key}`;
+    const predicate =
+      kind === 'jsonb'
+        ? sql`jsonb_typeof(${c}) = 'array' and ${c} ? ${key}`
+        : sql`${c} = ${key}`;
     const { rows } = await db.execute<Row>(
       sql`select id::text as id from public.${t} where ${predicate}`,
     );

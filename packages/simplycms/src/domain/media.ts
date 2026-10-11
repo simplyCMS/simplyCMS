@@ -158,13 +158,18 @@ export function normalizeMediaRefs(value: unknown): string[] {
  *     проєкції і читачі поза лоадерами — зокрема `src/admin/**`.
  */
 export const MEDIA_COLUMNS = [
-  { table: 'products', column: 'images' },
-  { table: 'product_modifications', column: 'images' },
-  { table: 'product_reviews', column: 'images' },
-  { table: 'banners', column: 'image_url' },
-  { table: 'banners', column: 'desktop_image_url' },
-  { table: 'banners', column: 'mobile_image_url' },
-  { table: 'sections', column: 'image_url' },
-  { table: 'property_options', column: 'image_url' },
-  { table: 'profiles', column: 'avatar_url' },
-] as const satisfies readonly { table: string; column: string }[];
+  { table: 'products', column: 'images', kind: 'jsonb' },
+  { table: 'product_modifications', column: 'images', kind: 'jsonb' },
+  { table: 'product_reviews', column: 'images', kind: 'jsonb' },
+  { table: 'banners', column: 'image_url', kind: 'text' },
+  { table: 'banners', column: 'desktop_image_url', kind: 'text' },
+  { table: 'banners', column: 'mobile_image_url', kind: 'text' },
+  { table: 'sections', column: 'image_url', kind: 'text' },
+  { table: 'property_options', column: 'image_url', kind: 'text' },
+  { table: 'profiles', column: 'avatar_url', kind: 'text' },
+] as const satisfies readonly {
+  table: string;
+  column: string;
+  /** Тип колонки: `jsonb` — масив референсів, `text` — один. Звіряється з БД тестом парності. */
+  kind: 'text' | 'jsonb';
+}[];

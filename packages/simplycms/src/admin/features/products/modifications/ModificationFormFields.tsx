@@ -104,7 +104,6 @@ export function ModificationFormFields({ modId }: Props) {
           entityType="product_modification"
           entityId={modId}
           maxImages={10}
-          eraseOnRemove={false}
         />
       </div>
     </>

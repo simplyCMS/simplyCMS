@@ -306,6 +306,7 @@ describe('outbox стирання медіа (Е6д-20)', () => {
     const form = new FormData();
     form.set('file', pngFile(3));
     form.set('entityType', 'banner');
+    form.set('entityId', crypto.randomUUID());
     try {
       await expect(uploadMediaOp({ data: form })).rejects.toThrow();
     } finally {

@@ -83,8 +83,8 @@ describe('findMediaReferences (Е6д-22)', () => {
       return id;
     };
 
-  it('парність: кожен запис MEDIA_COLUMNS має сіятель, а тип колонки — text чи jsonb', async () => {
-    for (const { table, column } of MEDIA_COLUMNS) {
+  it('парність: кожен запис MEDIA_COLUMNS має сіятель, а kind збігається з типом колонки в БД', async () => {
+    for (const { table, column, kind } of MEDIA_COLUMNS) {
       expect(SEEDERS, `немає сіятеля для ${table}.${column}`).toHaveProperty([
         `${table}.${column}`,
       ]);
@@ -93,7 +93,7 @@ describe('findMediaReferences (Е6д-22)', () => {
           where table_schema = 'public' and table_name = $1 and column_name = $2`,
         [table, column],
       );
-      expect(['text', 'jsonb']).toContain(meta?.data_type);
+      expect(meta?.data_type, `${table}.${column}: kind ≠ тип у БД`).toBe(kind);
     }
   });
 

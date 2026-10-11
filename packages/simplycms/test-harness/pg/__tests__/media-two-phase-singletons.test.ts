@@ -48,7 +48,7 @@ describe('двофазне стирання: аватар, логотип, delet
     );
   });
 
-  const put = (entityType: string, entityId: string | null) =>
+  const put = (entityType: string, entityId: string) =>
     withActor({ role: 'app_admin' }, (db) =>
       writeMedia(db, {
         ...png(Math.floor(Math.random() * 200)),
@@ -131,8 +131,8 @@ describe('двофазне стирання: аватар, логотип, delet
     expect(await both(next)).toEqual(alive);
   });
 
-  it('deleteMedia: обрив COMMIT → цілий; успіх → стерто; медіатека без власника теж', async () => {
-    const ref = await put('banner', null);
+  it('deleteMedia: обрив COMMIT → цілий; успіх → стерто', async () => {
+    const ref = await put('banner', crypto.randomUUID());
     unblock = await blockCommitOn((q) => f.rows(q), 'media', 'delete');
     await expect(deleteMediaOp({ data: { ref } })).rejects.toThrow();
     expect(await both(ref)).toEqual(alive);

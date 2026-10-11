@@ -1,6 +1,8 @@
+import { readdirSync } from 'node:fs';
 // К3-Е6д-22: `deleteMedia` відмовляє 409 `media_in_use`, поки файл хтось
 // використовує (text- і jsonb-колонка, логотип); неприв’язаний стирається,
 // зовнішній URL — `removed: false`.
+import { setResponseStatus } from '@tanstack/react-start/server';
 import { describe, expect, it, vi } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
@@ -17,8 +19,18 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-import { deleteMediaOp, saveStoreProfileOp } from 'simplycms/admin-server/impl';
+import {
+  deleteMediaOp,
+  saveStoreProfileOp,
+  uploadMediaOp,
+} from 'simplycms/admin-server/impl';
 import { profile } from './fixtures/admin-system';
+
+const diskCount = () =>
+  readdirSync(process.env.MEDIA_ROOT!, {
+    recursive: true,
+    withFileTypes: true,
+  }).filter((e) => e.isFile()).length;
 
 const inUse = {
   name: 'AdminConflictError',
@@ -29,7 +41,7 @@ const inUse = {
 describe('deleteMedia: media_in_use (Е6д-22)', () => {
   const d = useCatalogMediaDb('simplycms_e6d_delete_in_use');
   const { f } = d;
-  const owned = (type: string, ownerId: string | null) =>
+  const owned = (type: string, ownerId: string) =>
     withActor({ role: 'app_admin' }, (db) =>
       writeMedia(db, {
         ...png(7),
@@ -43,7 +55,7 @@ describe('deleteMedia: media_in_use (Е6д-22)', () => {
       .length === 1;
 
   it('banners.image_url → 409, рядок і файл цілі', async () => {
-    const ref = await owned('banner', null);
+    const ref = await owned('banner', crypto.randomUUID());
     await f.rows(
       `insert into public.banners (id, title, image_url) values (gen_random_uuid(), 'B', $1)`,
       [ref],
@@ -72,7 +84,7 @@ describe('deleteMedia: media_in_use (Е6д-22)', () => {
   });
 
   it('неприв’язаний → стерто', async () => {
-    const ref = await owned('banner', null);
+    const ref = await owned('banner', crypto.randomUUID());
     await expect(deleteMediaOp({ data: { ref } })).resolves.toEqual({
       removed: true,
     });
@@ -84,5 +96,19 @@ describe('deleteMedia: media_in_use (Е6д-22)', () => {
     await expect(
       deleteMediaOp({ data: { ref: 'https://cdn.example/x.png' } }),
     ).resolves.toEqual({ removed: false });
+  });
+
+  it('uploadMedia без entityId для product → 400, ні рядка media, ні файлу', async () => {
+    const before = (await f.rows('select 1 from public.media')).length;
+    const filesBefore = diskCount();
+    const body = new FormData();
+    body.set('file', new File([png().bytes], 'a.png', { type: 'image/png' }));
+    body.set('entityType', 'product');
+    await expect(uploadMediaOp({ data: body })).rejects.toMatchObject({
+      name: 'ValidationError',
+    });
+    expect(setResponseStatus).toHaveBeenCalledWith(400);
+    expect((await f.rows('select 1 from public.media')).length).toBe(before);
+    expect(diskCount()).toBe(filesBefore);
   });
 });

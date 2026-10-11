@@ -124,7 +124,6 @@ export function ProductMainFields({ entityId }: Props) {
               entityType="product"
               entityId={entityId}
               maxImages={10}
-              eraseOnRemove={false}
             />
           </div>
         </CardContent>

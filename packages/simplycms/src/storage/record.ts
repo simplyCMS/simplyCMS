@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { media } from 'simplycms/schema';
 
@@ -13,8 +13,8 @@ export interface WriteMediaInput {
   readonly mime: MediaMime;
   /** До чого належить файл: `product` / `banner` / `section` / `avatar` / … */
   readonly entityType: string;
-  /** `null` — файл ще не привʼязаний до рядка (медіатека; привʼязка — К4). */
-  readonly entityId: string | null;
+  /** Власник обовʼязковий (К3-Е6д-3): без нього файл не стерти двофазно. */
+  readonly entityId: string;
   readonly uploadedBy: string | null;
 }
 
@@ -76,8 +76,7 @@ export async function writeMedia(
 /** Власник файлу: рядок `media` з цим `entity_type` і `entity_id` (Е6д-16). */
 export interface MediaOwner {
   readonly entityType: string;
-  /** `null` — файл медіатеки без привʼязки (адмінський upload без `entityId`). */
-  readonly entityId: string | null;
+  readonly entityId: string;
 }
 
 /**
@@ -113,9 +112,7 @@ export async function eraseMediaRows(
       and(
         inArray(media.storageKey, keys),
         eq(media.entityType, owner.entityType),
-        owner.entityId === null
-          ? isNull(media.entityId)
-          : eq(media.entityId, owner.entityId),
+        eq(media.entityId, owner.entityId),
       ),
     )
     .orderBy(media.storageKey)

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { media } from 'simplycms/schema';
 import { stateConflict } from '../errors';
+import { fieldIssue } from '../validation';
 import { runAdmin } from '../run';
 import {
   MAX_UPLOAD_BYTES,
@@ -25,13 +26,13 @@ import {
 // 🔴 Allowlist, а не вільний рядок: `entity_type` іде в БД і потім у
 // предикати обліку. Сам список живе в T1 (`domain/media`), бо ним же
 // типізується пропс `ImageUpload` — копії тут бути не може.
-const entityIdSchema = z.uuid().nullable();
+const entityIdSchema = z.uuid();
 
 export interface ParsedUpload {
   readonly bytes: Uint8Array;
   readonly mime: MediaMime;
   readonly entityType: MediaEntityType;
-  readonly entityId: string | null;
+  readonly entityId: string;
 }
 
 const REASON_CODE = {
@@ -77,18 +78,16 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const entityType = MEDIA_ENTITY_TYPES.find((t) => t === entityTypeRaw);
   if (!entityType) throw new Error('media/bad-entity-type');
 
-  // 🔴 Власник логотипа фіксований і ставиться ТУТ (К3-Е6д-3): клієнтський
-  // `entityId` для `store_logo` ігнорується, інакше `saveStoreProfile` не
-  // впізнав би файл, а стирання не знайшло б власника.
+  // 🔴 Власник обовʼязковий (К3-Е6д-3): рядок `media` без `entity_id` не можна
+  // стерти двофазно (умова власника одна для всіх), тож його не створюємо.
+  // Логотип — виняток: його власник фіксований і ставиться ТУТ, клієнтський
+  // `entityId` ігнорується, інакше `saveStoreProfile` не впізнав би файл.
   const entityIdRaw = data.get('entityId');
-  const entityId =
-    entityType === 'store_logo'
-      ? STORE_LOGO_OWNER_ID
-      : entityIdSchema.parse(
-          typeof entityIdRaw === 'string' && entityIdRaw !== ''
-            ? entityIdRaw
-            : null,
-        );
+  let entityId: string;
+  if (entityType === 'store_logo') entityId = STORE_LOGO_OWNER_ID;
+  else if (typeof entityIdRaw === 'string' && entityIdRaw !== '')
+    entityId = entityIdSchema.parse(entityIdRaw);
+  else fieldIssue(['entityId'], 'invalid_type');
 
   const checked = await inspectUpload(file, MAX_UPLOAD_BYTES);
   if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
@@ -161,8 +160,8 @@ export const deleteMediaInput = z.object({ ref: z.string().min(1).max(200) });
  * Порядок (Е6д-14/22): рядок `media` `FOR UPDATE` → `findMediaReferences`
  * непорожній → 409 `media_in_use` → інакше `eraseMediaRows` з власником із
  * самого рядка (+ outbox) → файл стирає `completeMediaErasures` ПІСЛЯ COMMIT.
- * Рядок без `entity_id` (медіатека, upload без привʼязки) стирається з
- * власником `entityId: null`.
+ * Рядка без `entity_id` бути не може (upload без власника відхиляється), тож
+ * такий рядок — дефект даних, а не гілка коду.
  */
 export async function deleteMediaOp({
   data,
@@ -179,7 +178,14 @@ export async function deleteMediaOp({
     if (!row) return [];
     if ((await findMediaReferences(db, data.ref)).length > 0)
       stateConflict(ADMIN_STATE_CONSTRAINT.mediaInUse);
-    return eraseMediaRows(db, [data.ref], row);
+    if (row.entityId === null)
+      throw new Error(
+        `[simplycms] media-рядок без entity_id (дефект даних): ${data.ref}`,
+      );
+    return eraseMediaRows(db, [data.ref], {
+      entityType: row.entityType,
+      entityId: row.entityId,
+    });
   });
   await completeMediaErasures(erased);
   return { removed: erased.length > 0 };

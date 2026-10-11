@@ -54,7 +54,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('BannerEditPage: створення', () => {
-  it('усі три ImageUpload: один entityId, eraseOnRemove=false; id йде в insert', async () => {
+  it('усі три ImageUpload: один entityId; id йде в insert', async () => {
     render(<BannerEditPage />, { wrapper });
     const ups = screen.getAllByTestId('image-upload');
     expect(ups).toHaveLength(3);
@@ -63,7 +63,6 @@ describe('BannerEditPage: створення', () => {
     for (const up of ups) {
       expect(up.getAttribute('data-entity-type')).toBe('banner');
       expect(up.getAttribute('data-entity-id')).toBe(id);
-      expect(up.getAttribute('data-erase')).toBe('false');
     }
     fireEvent.change(screen.getByLabelText(t('admin.banners.titleField')), {
       target: { value: 'Новий' },

@@ -15,9 +15,9 @@ interface Props {
 }
 
 /**
- * Одне зображення банера. 🔴 `eraseOnRemove={false}` (Е6д-1): прибраний файл
- * стирає сервер при збереженні (після COMMIT); якби стирав пікер, скасована
- * форма лишила б банер із посиланням на вже зниклий файл.
+ * Одне зображення банера. 🔴 Прибраний файл стирає збереження форми (опція
+ * `media` фабрики, після COMMIT), а не компонент: скасована форма інакше
+ * лишила б банер із посиланням на вже зниклий файл.
  */
 export function BannerImageField({
   form,
@@ -38,7 +38,6 @@ export function BannerImageField({
         entityType="banner"
         entityId={entityId}
         maxImages={1}
-        eraseOnRemove={false}
       />
       {error && (
         <p role="alert" className="text-xs text-destructive">
