@@ -13,6 +13,10 @@ import { completeMediaErasures, scheduleMediaErasures } from './erasures';
  * ПІСЛЯ повернення — `catch` тут її не чіпає, щоб не прибрати вже
  * закомічені файли.
  *
+ * Межа: неоднозначний COMMIT (сервер закомітив, зʼєднання обірвалось до
+ * відповіді) виглядає для `catch` як відмова й прибере файли ЖИВИХ рядків.
+ * Рідкісний випадок, свідомо прийнятий.
+ *
  * @param discardWith драйвер прибирання (лише харнес; порожньо = типовий).
  */
 export async function withPublishedRollback<T>(

@@ -113,10 +113,11 @@ async function replaceAvatarFor(
     .set({ avatarUrl: record.ref })
     .where(eq(profiles.userId, userId));
 
-  // 🔴 Тримаючи рядкові локи `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище),
-  // чекаємо на ІНШЕ зʼєднання; дедлок-детектор PG такого очікування не бачить.
-  // Операторська транзакція не сміє чіпати `users`/`profiles`, інакше буде вічний
-  // висяк, а не 40P01 (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
+  // 🔴 `operator` — це `set local role app_admin` на ТОМУ Ж зʼєднанні й тій самій
+  // транзакції (`escalation.ts`), а не окреме зʼєднання, тож рядкові локи
+  // `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище) тут власні й самі себе не
+  // блокують. Ескалація має лише стерти рядки `media`: чіпати `users`/`profiles`
+  // під `app_admin` не слід (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
   const erased = previous
     ? await operator((tx) =>
         eraseMediaRows(tx, [previous], avatarOwner(userId)),

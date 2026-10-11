@@ -71,7 +71,8 @@ export async function setReviewsStatus(
     .update(productReviews)
     .set({
       status: input.status,
-      updatedAt: sql`now()`,
+      // clock_timestamp(): див. reviews-edit — now() дав би версію зі стартом транзакції.
+      updatedAt: sql`clock_timestamp()`,
       ...(input.adminComment !== undefined
         ? { adminComment: input.adminComment || null }
         : {}),

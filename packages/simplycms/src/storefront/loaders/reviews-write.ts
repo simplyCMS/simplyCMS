@@ -29,8 +29,9 @@ export interface ReviewInput {
 /**
  * Записати відгук від імені власника сесії. 🔴 `status` завжди `'pending'`
  * (не з форми — інакше відгук обійшов би модерацію; політика INSERT теж
- * це вимагає); `user_id` задає сервер (`product_reviews_insert_own` звіряє рядок саме з названим актором). `id`
- * передає викликач, що вже привʼязав до нього файли.
+ * це вимагає); `user_id` задає сервер (`product_reviews_insert_own` звіряє
+ * рядок саме з названим актором). `id` передає викликач, що вже привʼязав до
+ * нього файли.
  */
 export async function insertProductReview(
   db: ActorDb,

@@ -84,7 +84,9 @@ export async function updateProductReviewWithImages(
             content: sanitizeNullableRichHtml(input.content, 'review'),
             images: [...keep, ...published],
             status: 'pending',
-            updatedAt: sql`now()`,
+            // clock_timestamp(), не now(): версія, записана після очікування замка, не
+            // може бути раніше за ту, на яку чекала (now() = початок транзакції).
+            updatedAt: sql`clock_timestamp()`,
           })
           .where(eq(productReviews.id, input.id));
         const removed = current.filter((ref) => !keep.includes(ref));

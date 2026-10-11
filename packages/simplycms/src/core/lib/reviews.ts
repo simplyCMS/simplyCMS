@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequest, setResponseHeader } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { readSessionSubject } from 'simplycms/auth';
+import type { ActorDb } from 'simplycms/db';
 import {
   loadProductRatings,
   loadProductReviews,
@@ -36,11 +37,12 @@ export const getProductReviews = createServerFn({ method: 'GET' })
     setResponseHeader('cache-control', 'private, no-store');
     const subject = await readSessionSubject(getRequest().headers);
 
+    // Один запит для обох гілок; різниться лише канал БД (гість / власник сесії).
+    const load = (db: ActorDb) =>
+      loadProductReviews(db, productId, subject?.userId);
     const reviews = subject
-      ? await withCustomerDb(subject.userId, (db) =>
-          loadProductReviews(db, productId, subject.userId),
-        )
-      : await withStorefrontDb((db) => loadProductReviews(db, productId));
+      ? await withCustomerDb(subject.userId, load)
+      : await withStorefrontDb(load);
     if (reviews.length === 0) return reviews;
 
     const authors = await withStoreOperatorDb((db) =>

@@ -18,7 +18,8 @@ import { reviewByTitle } from './admin-content-sql.mjs';
 import { sql } from './sql.mjs';
 
 // Константи ядра беруться з джерела, а не копіюються: стеля виводиться з них.
-// `tsx` (як і для `owner-invite.mts`) — без залежності від type-stripping Node.
+// `tsImport` із `tsx/esm/api` — без залежності від type-stripping Node (на відміну
+// від `owner-invite.mts`, що запускається самим бінарем `tsx`).
 const { MAX_REQUEST_BODY_BYTES, MAX_REVIEW_IMAGE_BYTES } = await tsImport(
   '../../packages/simplycms/src/domain/media.ts',
   import.meta.url,
