@@ -5699,7 +5699,7 @@
           "name": "entity_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "storage_key": {
           "name": "storage_key",

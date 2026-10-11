@@ -178,10 +178,6 @@ export async function deleteMediaOp({
     if (!row) return [];
     if ((await findMediaReferences(db, data.ref)).length > 0)
       stateConflict(ADMIN_STATE_CONSTRAINT.mediaInUse);
-    if (row.entityId === null)
-      throw new Error(
-        `[simplycms] media-рядок без entity_id (дефект даних): ${data.ref}`,
-      );
     return eraseMediaRows(db, [data.ref], {
       entityType: row.entityType,
       entityId: row.entityId,

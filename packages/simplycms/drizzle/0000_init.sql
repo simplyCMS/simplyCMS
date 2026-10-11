@@ -598,7 +598,7 @@ CREATE TABLE "verifications" (
 CREATE TABLE "media" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"entity_type" text NOT NULL,
-	"entity_id" uuid,
+	"entity_id" uuid NOT NULL,
 	"storage_key" text NOT NULL,
 	"size_bytes" integer NOT NULL,
 	"mime_type" text NOT NULL,

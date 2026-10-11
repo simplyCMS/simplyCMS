@@ -33,10 +33,10 @@ import { users } from './auth';
 // baseline; (3) право `UPDATE` лишалося б виданим — а це і є вектор атаки,
 // знайдений аудитом MetaHub. Стережеться поведінковим тестом у Task 5.
 //
-// `entity_id` — nullable: файл може бути завантажений ДО привʼязки (медіатека).
-// Перехід NULL → значення теж вимагає `UPDATE`, тобто ролі `app_admin`, тобто
-// явної серверної операції — саме те, чого вимагає спека («перепривʼязка —
-// лише авторизованою серверною операцією»).
+// `entity_id` — NOT NULL (К3-Е6д-4): кожен записувач передає власника, а
+// двофазне стирання й перевірка видимості при роздачі спираються на нього.
+// Рядок без власника був би невидимим для обох. Перепривʼязка — лише
+// авторизованою серверною операцією (`UPDATE` має лише `app_admin`).
 //
 // RLS не вмикається: `media` не входить до user-scoped списку B5″ (файли
 // належать магазину, не покупцю), доступ визначають гранти.
@@ -45,7 +45,7 @@ export const media = pgTable(
   {
     id: uuid().primaryKey().notNull(),
     entityType: text('entity_type').notNull(),
-    entityId: uuid('entity_id'),
+    entityId: uuid('entity_id').notNull(),
     storageKey: text('storage_key').notNull(),
     sizeBytes: integer('size_bytes').notNull(),
     mimeType: text('mime_type').notNull(),

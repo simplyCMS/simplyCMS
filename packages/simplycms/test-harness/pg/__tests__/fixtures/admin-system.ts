@@ -93,7 +93,7 @@ export async function seedMedia(
       crypto.randomUUID(),
       entityType,
       // Як `parseUploadForm`: логотип має фіксованого власника (К3-Е6д-3).
-      entityType === 'store_logo' ? STORE_LOGO_OWNER_ID : null,
+      entityType === 'store_logo' ? STORE_LOGO_OWNER_ID : crypto.randomUUID(),
       ref,
       PNG.byteLength,
     ],
