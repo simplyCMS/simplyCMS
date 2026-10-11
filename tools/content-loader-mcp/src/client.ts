@@ -1,3 +1,5 @@
+// Тимчасово: тека знесеться в К3-Е7 Task 6 (В2); до того ратчет не має червонити lint.
+// eslint-disable-next-line simplycms-supabase/no-supabase-import
 import { createClient } from '@supabase/supabase-js';
 
 /** Supabase URL зі змінних оточення */

@@ -11,6 +11,7 @@ import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
+import noSupabaseImport from './eslint-rules/no-supabase-import.mjs';
 import noDangerouslySetInnerHtml from './eslint-rules/no-dangerously-set-inner-html.mjs';
 import noInputValidator from './eslint-rules/no-input-validator.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
@@ -417,6 +418,19 @@ const eslintConfig = [
       'simplycms-storage': { rules: { 'no-direct-storage': noDirectStorage } },
     },
     rules: { 'simplycms-storage/no-direct-storage': 'error' },
+  },
+  // Ратчет проти повернення `@supabase/*` (К3-Е7, Р2) — на ВСЕ репо, не лише
+  // `packages/simplycms/src`. Власне імʼя плагіна — щоб не зливатись із
+  // сусідніми зонами. Код шаблону магазину сюди не потрапляє (ігнор вище) —
+  // його лінтує `tests/no-supabase-manifests.test.ts`.
+  {
+    files: ['**/*.{ts,tsx,mts,cts,mjs,cjs,js}'],
+    plugins: {
+      'simplycms-supabase': {
+        rules: { 'no-supabase-import': noSupabaseImport },
+      },
+    },
+    rules: { 'simplycms-supabase/no-supabase-import': 'error' },
   },
   // Ключ колекції admin-data — лише для колекцій admin-data (Е3-15′,
   // рішення архітектора). Власне правило (не тір-зона, не
