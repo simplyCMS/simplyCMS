@@ -293,7 +293,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 **Конвенція залежностей.** 🔴 Після треку К0 (рішення ПК6) ядро в темі —
 **завжди `peerDependencies`, і для референс-тем теж**: пакет ядра один
 (`simplycms`), а `dependencies` дублювали б React-контексти на кшталт
-`SupabaseProvider` (vite-dedupe шаблону покриває лише
+`CMSProvider` (vite-dedupe шаблону покриває лише
 `react`/`react-dom`/`react-query`). Референс-тема додає той самий
 `simplycms` ще й у `devDependencies` — peer сам по собі не встановлюється,
 а зібрати пакет у монорепо треба.

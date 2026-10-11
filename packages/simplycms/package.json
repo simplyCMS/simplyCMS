@@ -43,12 +43,6 @@
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
-    "./supabase": "./src/supabase/index.ts",
-    "./supabase/keys": "./src/supabase/keys.ts",
-    "./supabase/browser-client": "./src/supabase/browser-client.ts",
-    "./supabase/server-client": "./src/supabase/server-client.ts",
-    "./supabase/anon-client": "./src/supabase/anon-client.ts",
-    "./supabase/SupabaseProvider": "./src/supabase/SupabaseProvider.tsx",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
@@ -261,30 +255,6 @@
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",
         "import": "./dist/sanitize/index.js"
-      },
-      "./supabase": {
-        "types": "./dist/supabase/index.d.ts",
-        "import": "./dist/supabase/index.js"
-      },
-      "./supabase/keys": {
-        "types": "./dist/supabase/keys.d.ts",
-        "import": "./dist/supabase/keys.js"
-      },
-      "./supabase/browser-client": {
-        "types": "./dist/supabase/browser-client.d.ts",
-        "import": "./dist/supabase/browser-client.js"
-      },
-      "./supabase/server-client": {
-        "types": "./dist/supabase/server-client.d.ts",
-        "import": "./dist/supabase/server-client.js"
-      },
-      "./supabase/anon-client": {
-        "types": "./dist/supabase/anon-client.d.ts",
-        "import": "./dist/supabase/anon-client.js"
-      },
-      "./supabase/SupabaseProvider": {
-        "types": "./dist/supabase/SupabaseProvider.d.ts",
-        "import": "./dist/supabase/SupabaseProvider.js"
       },
       "./react-query": {
         "types": "./dist/react-query/index.d.ts",
@@ -597,8 +567,6 @@
     "@radix-ui/react-toggle": "^1.0.0",
     "@radix-ui/react-toggle-group": "^1.0.0",
     "@radix-ui/react-tooltip": "^1.0.0",
-    "@supabase/ssr": ">=0.5.0 <1.0.0",
-    "@supabase/supabase-js": "^2.0.0",
     "@tanstack/query-db-collection": "~1.3.4",
     "@tanstack/react-db": "~0.5.3",
     "@tanstack/react-query": "^5.0.0",

@@ -12,7 +12,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   // --- TanStack / Vite / Playwright / Vitest ---
   routeFileIgnorePattern:
     'опція плагіна TanStack Router; в аналітичному документі напрямів',
-  getCookies: 'утиліта h3/TanStack Start; в аналітичному документі напрямів',
   // --- Supabase (історичні розділи контурів) ---
   generateLink: 'Supabase Auth admin API у розділі про обхід листа',
   API_URL: 'ключ виводу `supabase status -o json` у історичному розділі',

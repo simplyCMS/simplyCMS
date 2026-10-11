@@ -120,7 +120,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 
 ## 4. Межа довіри (спека §7)
 
-Плагін **не отримує `SupabaseClient`** — лише порти SDK. Примус двошаровий:
+Плагін **не отримує клієнта БД** — лише порти SDK. Примус двошаровий:
 
 1. **dependency-lint** (eslint-зона `plugins/**` +
    `packages/simplycms-plugin-*/**`): заборонений список ПОХІДНИЙ від

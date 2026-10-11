@@ -15,7 +15,7 @@
  *      `routes/` сирцями) і `skills/` (скіли виконуються з
  *      `node_modules/simplycms/`); список — `PUBLISH_ROOTS` у collect.mjs;
  *   2) збирає ВСІ bare-імпорти — і сиблінги `@simplycms/*`, і зовнішні
- *      (`@tanstack/*`, `@tiptap/*`, `lucide-react`, `zod`, `@supabase/*`, …);
+ *      (`@tanstack/*`, `@tiptap/*`, `lucide-react`, `zod`, …);
  *   3) нормалізує subpath до імені пакета, відкидає `node:*`/вбудовані;
  *   4) перевіряє: множина bare-імпортів ⊆ (dependencies ∪ peerDependencies).
  *

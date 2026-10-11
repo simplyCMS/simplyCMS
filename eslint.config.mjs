@@ -103,7 +103,7 @@ const A11Y_LABEL_ZONE = [
 // з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
 // Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
 // `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
-// (див. packages/simplycms/src/supabase/__tests__/env-source.test.ts).
+// (див. tests/eslint-server-env.test.ts).
 const IMPORT_META_ENV =
   'MemberExpression[object.type="MetaProperty"][property.name="env"]';
 
@@ -119,8 +119,6 @@ const serverEnvRestrictedSyntax = [
 // (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
 // потрібне в бандлі, сюди їх НЕ додавати.
 const SERVER_ENV_FILES = [
-  'packages/simplycms/src/supabase/server-client.ts',
-  'packages/simplycms/src/supabase/anon-client.ts',
   'packages/simplycms/src/storefront-routes/seo/robots.ts',
   'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
   // `siteUrl` кореня вітрини (Е6б-10/11): єдине джерело URL сайту для head().
@@ -183,8 +181,6 @@ const clientSafeDepPatterns = SERVER_ONLY_DEPS.filter(
   message: PLUGIN_BOUNDARY_MESSAGE,
 }));
 const pluginOnlySurfaceGroup = [
-  'simplycms/supabase',
-  'simplycms/supabase/*',
   '@supabase/*',
   'simplycms/plugin-sdk/server',
   'simplycms/plugin-sdk/server/*',
@@ -225,7 +221,7 @@ const esqDeps = () =>
   ).join('|');
 const pluginTrustBoundarySyntax = [
   {
-    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
+    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },

@@ -23,23 +23,11 @@ import {
  * у клієнтських чанках Є — і так і має бути. Це `createServerFn`-модулі, які
  * Start на клієнті перетворює на RPC-заглушки (роути мусять на них
  * посилатися). Справжній інваріант — щоб разом із ними НЕ приїхало те, що
- * заглушка викидає: фабрика серверного Supabase-клієнта (читає cookie запиту)
- * і серверні лоадери даних. Саме це й перевіряємо.
- *
- * 🔴 Список розширено в 0.4.1 (severance): доки він перелічував лише
- * Supabase-фабрики й лоадери, гейт ФІЗИЧНО не бачив нового серверного графа
- * v2 — db-рантайму `simplycms/db` та його залежностей (drizzle-orm, pg).
- * Після переходу `/api/health` на Postgres витік цього графа в клієнт був би
- * невидимим: у браузері він падає не гейтом, а рантаймом.
+ * заглушка викидає: серверні лоадери даних, db-рантайм `simplycms/db` та його
+ * залежності (drizzle-orm, pg). Саме це й перевіряємо; у браузері такий витік
+ * падає не гейтом, а рантаймом.
  */
 const SERVER_PAYLOAD = [
-  // Legacy Supabase-шар адмінки (зникає з К3): у декларації межі його немає,
-  // бо `supabase/keys` легально спільний для anon- і browser-клієнта.
-  /simplycms\/dist\/supabase\/server-client/,
-  // Anon-клієнт читає голий `process.env` у рантаймі (контракт серверного
-  // env, спека CLI v1 §7): при витоку в клієнтський бандл він упав би вже в
-  // браузері (там `process` немає) — гейт має зловити раніше.
-  /simplycms\/dist\/supabase\/anon-client/,
   // 🔴 Похідне від ЄДИНОЇ декларації межі (contracts/server-only.ts): кожен
   // server-only субшлях — і це читач списку, а не його копія. Гілок у регексі
   // дві, бо форма в `dist` задається КОНФІГОМ збірки, а не декларацією: на
@@ -140,7 +128,7 @@ export function gateBundle(storeDir) {
    * `ADMIN_SERVER_STUB` у `allModules` — тобто вимагав, щоб стаб РЕАЛЬНО
    * приїхав у клієнтський чанк скретч-стора. Емпірично: жоден роут стора
    * СЬОГОДНІ не імпортує `simplycms/admin-server` — `/admin/order-statuses`
-   * і далі на старому Supabase-шарі (`src/admin/pages/OrderStatuses.tsx`),
+   * і далі на старому легасі-шарі (`src/admin/pages/OrderStatuses.tsx`),
    * Task 9/10 щойно переводять сторінку на ці serverFn. Vite не тягне в
    * бандл модуль, якого ніхто не імпортує, тож `allModules` СТРУКТУРНО не
    * може містити admin-server до Task 9/10 — і це узгоджується з власним
@@ -168,7 +156,7 @@ export function gateBundle(storeDir) {
     existsSync(join(adminServerDist, 'impl/index.js'));
   /**
    * 🔴 Task 10 (Е1б, Step 4б, R10): суворий assert повернуто. До цього
-   * коміту `/admin/order-statuses` сидів на старому Supabase-шарі — жоден
+   * коміту `/admin/order-statuses` сидів на старому легасі-шарі — жоден
    * роут стора не імпортував `simplycms/admin-server`, тож Vite СТРУКТУРНО
    * не міг покласти стаб у клієнтський чанк (він не тягне в бандл модуль,
    * якого ніхто не імпортує) — звідси тимчасовий INFO-лічильник у Task 8.
@@ -195,7 +183,7 @@ export function gateBundle(storeDir) {
     );
   } else {
     details.push(
-      `OK   server-fn заглушок ${stubs}, серверного вантажу (SERVER_ONLY + legacy supabase + deps) — 0`,
+      `OK   server-fn заглушок ${stubs}, серверного вантажу (SERVER_ONLY + deps) — 0`,
     );
     details.push(`OK   admin-server stub: ${adminServerStubs} ≥ 1`);
   }

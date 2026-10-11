@@ -10,7 +10,7 @@ const BUILTINS = new Set(builtinModules);
 /**
  * Пакети, яких у застосунку має бути РІВНО ОДИН інстанс: React (hooks/контекст),
  * TanStack Router/Start (реєстр роутів, SSR-контекст), TanStack Query
- * (QueryClient-контекст), Supabase (auth-стан і сховище сесії). Дубль такого
+ * (QueryClient-контекст). Дубль такого
  * пакета в дереві `node_modules` — це «Invalid hook call»/дві сесії, тому
  * ядро оголошує їх peer-ами, а версію фіксує host.
  *
@@ -32,8 +32,6 @@ const PEER_PACKAGES = new Set([
   'react-hook-form',
   'next-themes',
 ]);
-
-const PEER_SCOPES = ['@supabase/'];
 
 const EMPTY_PEERS = new Set();
 
@@ -90,8 +88,6 @@ export function collectDeclaredPeers(packages) {
 export function classifyExternal(name, declaredPeers = EMPTY_PEERS) {
   if (PEER_PACKAGES.has(name)) return 'peerDependencies';
   if (declaredPeers.has(name)) return 'peerDependencies';
-  if (PEER_SCOPES.some((scope) => name.startsWith(scope)))
-    return 'peerDependencies';
   return 'dependencies';
 }
 

@@ -106,12 +106,9 @@
   (`defineAdminResource` — фабрика операцій з інваріантами; публічна поверхня
   `index.ts` — лише топ-рівневі `createServerFn`, нутрощі — bare-субшлях `./impl`)
   і колекціях **`simplycms/admin-data`** (TanStack DB; колекції без `schema`).
-- Легасі-шар на `supabase-js` (`useSupabaseClient()` у `src/admin/**`) ще живий і
-  переписується на `admin-server`; `SupabaseProvider` ніде не монтується, тож
-  код сидить на модульному singleton-і браузерного клієнта. Нові сторінки адмінки
-  пишуться на колекціях `admin-data`/операціях `admin-server`, а не на
-  `supabase-js`. Реєстр переписаного — `tests/admin-server-first/registry.ts`,
-  поточний перелік — `docs/tasks/v2-state-map.md`. Вітрина `supabase-js` не імпортує.
+- Шару `supabase-js` більше немає (К3-Е7): адмінка пишеться на колекціях
+  `admin-data`/операціях `admin-server`, поточний перелік — `docs/tasks/v2-state-map.md`.
+  Ні вітрина, ні адмінка `supabase-js` не імпортують.
 - Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
   `eq/gt/gte/lt/lte` — колонки `filterable` ∪ `sortable` (курсор пагінації
   відсортованої колонки; безпеки не знижує — значення клієнт і так бачить),
