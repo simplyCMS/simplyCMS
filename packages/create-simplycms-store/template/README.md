@@ -40,16 +40,15 @@ cp .env.example .env.local
 Потрібен `psql` і підключення **власника БД** (не `DATABASE_URL` із
 `.env.local`: роль `app_runtime` не має прав створювати схему, ролі й таблиці).
 
-`supabase/migrations/` — схема ядра SimplyCMS: baseline (`0001_init.sql`) плюс
+`db/migrations/` — схема ядра SimplyCMS: baseline (`0001_init.sql`) плюс
 передумови, гранти й сід довідників. Файли накочуються **в порядку імен**:
 
 ```bash
-for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
+for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
-🔴 `supabase db push` цей канон не приймає: він чекає імена
-`<timestamp>_<name>.sql`, а тут нумерація послідовна — порядок накату мусить
-бути детермінованим, а не залежати від годинника машини, що згенерувала файл.
+🔴 Нумерація послідовна, а не за часом: порядок накату мусить бути
+детермінованим і не залежати від годинника машини, що згенерувала файл.
 
 ### 3. Призначити власника
 
@@ -62,7 +61,7 @@ OWNER_EMAIL=you@example.com pnpm owner:invite
 ```
 
 Команді потрібен рівно `DATABASE_URL` із `.env.local` — `service_role`-ключа
-Supabase більше немає: запрошення пишеться прямо в Postgres, тим самим кодом
+Запрошення пишеться прямо в Postgres, тим самим кодом
 ядра, що обслуговує сторінку прийняття.
 
 🔴 **Лист не надсилається** — SMTP магазин не налаштовує. Одноразове посилання
@@ -135,7 +134,7 @@ head -3 .claude/skills/redesign-from-reference/SKILL.md
 | `src/routes/my/`      | Кастомні сторінки цього магазину                    |
 | `themes/default/`     | Активна тема: manifest + tokens + components        |
 | `plugins/`            | Встановлені плагіни                                 |
-| `supabase/migrations/`| Схема БД (ядро SimplyCMS)                           |
+| `db/migrations/`      | Схема БД (ядро SimplyCMS)                           |
 | `scripts/`            | Обслуговуючі команди магазину (`owner:invite`)      |
 | `.agents/skills/`     | Симлінки на скіли пакета `simplycms` (агенти)       |
 | `.claude/skills/`     | Ті самі скіли для Claude Code                       |

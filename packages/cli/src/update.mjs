@@ -4,6 +4,7 @@
 // пінить точні версії), полагодити лінки агентних скілів і догнати
 // host-файли до канону з теки host/ цього пакета.
 import { execFileSync } from 'node:child_process';
+import { missingStoreMigrationsDir } from './db-diff.mjs';
 import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
 import {
   CANON_HOST_DIR,
@@ -125,25 +126,34 @@ export async function run(argv) {
       `Канонічна тека host/ пакета CLI порожня або відсутня (${CANON_HOST_DIR}) — ` +
         'інсталяція CLI бита, перевстанови @simplycms/cli',
     );
+  // Одна точка виходу: усі гілки host-дрейфу (немає / --write / --check)
+  // сходяться в перевірку теки міграцій, щоб жодна не мовчала про неї. Host-
+  // синк при цьому відпрацьовує повністю — відсутня тека не кидає виняток.
+  let exitCode = 0;
+  let summary = 'Готово.';
   if (drifted.length === 0) {
     say.success('Host-файли збігаються з каноном.');
-    finish('Готово.');
-    return;
-  }
-  if (options.write) {
+  } else if (options.write) {
     writeHostFiles(storeRoot, drifted);
     say.success(`Перезаписано канонічними версіями: ${drifted.join(', ')}`);
     showSteps([
       'git diff     # ревʼю перезаписаних host-файлів',
       'pnpm build   # перезбірка магазину',
     ]);
-    finish('Готово.');
-    return;
+  } else {
+    say.error(`Дрейф host-файлів проти канону: ${drifted.join(', ')}`);
+    showSteps([
+      'pnpm simplycms update --write   # перезаписати канонічними версіями',
+    ]);
+    exitCode = hostDriftExitCode(drifted, options.write);
+    summary = 'Дрейф знайдено (--check).';
   }
-  say.error(`Дрейф host-файлів проти канону: ${drifted.join(', ')}`);
-  showSteps([
-    'pnpm simplycms update --write   # перезаписати канонічними версіями',
-  ]);
-  process.exitCode = hostDriftExitCode(drifted, options.write);
-  finish('Дрейф знайдено (--check).');
+  const missingMigrations = missingStoreMigrationsDir(storeRoot);
+  if (missingMigrations) {
+    say.error(missingMigrations);
+    exitCode = Math.max(exitCode, 1);
+    summary = 'Тека міграцій магазину відсутня.';
+  }
+  if (exitCode !== 0) process.exitCode = exitCode;
+  finish(summary);
 }

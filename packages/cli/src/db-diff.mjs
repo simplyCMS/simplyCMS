@@ -21,7 +21,23 @@ import { begin, finish, say, showSteps } from './ui.mjs';
 
 /** Тека міграцій магазину. */
 export const storeMigrationsDir = (storeRoot) =>
-  join(storeRoot, 'supabase', 'migrations');
+  join(storeRoot, 'db', 'migrations');
+
+/**
+ * Гучна відсутність теки міграцій магазину: без неї компаратор бачить «усе
+ * відсутнє» чи мовчить, і doctor/update брехали б «усе гаразд». `null` —
+ * тека є; інакше текст помилки (зі старою `supabase/migrations` — з підказкою
+ * `git mv`: зворотної сумісності немає, лише спосіб переїхати).
+ * @param {string} storeRoot
+ * @returns {string | null}
+ */
+export function missingStoreMigrationsDir(storeRoot) {
+  if (existsSync(storeMigrationsDir(storeRoot))) return null;
+  const base = 'Тека міграцій магазину db/migrations відсутня.';
+  return existsSync(join(storeRoot, 'supabase', 'migrations'))
+    ? `${base} Знайдено стару supabase/migrations — перенеси: git mv supabase/migrations db/migrations`
+    : base;
+}
 
 /**
  * Канон міграцій встановленого ядра.
@@ -322,7 +338,7 @@ export async function run(argv) {
 
   if (!write) {
     showSteps([
-      'pnpm simplycms db:diff --write   # скопіювати їх у supabase/migrations/',
+      'pnpm simplycms db:diff --write   # скопіювати їх у db/migrations/',
     ]);
     finish('Є що забрати (--write).');
     return;

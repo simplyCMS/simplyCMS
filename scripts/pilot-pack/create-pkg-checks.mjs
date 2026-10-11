@@ -31,8 +31,7 @@ const EXPECTED_FILES = [
   'simplycms.config.ts',
   'src/routes/__root.tsx',
   'themes/default/index.ts',
-  'supabase/config.toml',
-  'supabase/templates/invite.html',
+  'db/migrations/0000_prelude.sql',
   'scripts/owner-invite.mjs',
   // 🔴 Без нього pnpm 11 обриває install (`ERR_PNPM_IGNORED_BUILDS`), а
   // `pnpm build` перезапускає install і теж падає — магазин не збереться.

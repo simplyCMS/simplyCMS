@@ -53,7 +53,8 @@ describe('create-store: інструкція «призначити власни
     // 🔴 Накат схеми — psql по канону міграцій. Стара порада `supabase db push`
     // не просто застаріла: вона відхиляє нумеровані імена канону, тож власник
     // упирався б у помилку CLI замість накоченої схеми.
-    expect(out).toContain('supabase/migrations/*.sql');
+    expect(out).toContain('db/migrations/*.sql');
+    expect(out).not.toContain('supabase/migrations');
     expect(out).toContain('psql');
     expect(out).not.toContain('supabase db push');
     // 🔴 Накат канону НЕ під `DATABASE_URL` із .env.local: там роль
@@ -74,7 +75,7 @@ describe('create-store: інструкція «призначити власни
   // впевненість, якої немає: перший фікс цього дефекту закрив вивід CLI і
   // пропустив README, який `scaffold()` фізично копіює в новий магазин.
   it('README шаблону не радить накат канону роллю рантайму', () => {
-    expect(readme).toContain('supabase/migrations/*.sql');
+    expect(readme).toContain('db/migrations/*.sql');
     expect(readme).not.toContain('psql "$DATABASE_URL"');
     expect(readme).toContain('власника БД');
   });

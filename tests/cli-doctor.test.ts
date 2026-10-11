@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -147,7 +148,7 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkMigrations(ctx).status).toBe('skip');
 
     const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
-    const storeDir = join(store, 'supabase', 'migrations');
+    const storeDir = join(store, 'db', 'migrations');
     const [shared] = readdirSync(storeDir).filter((n) => n.endsWith('.sql'));
     cpSync(join(storeDir, shared), join(schemaDir, shared));
     writeFileSync(join(schemaDir, '99999999999999_new.sql'), 'select 1;\n');
@@ -166,6 +167,38 @@ describe('cli doctor (оффлайн)', () => {
     });
     expect(changed.status).toBe('error');
     expect(changed.details).toContain(shared);
+  });
+
+  it('checkMigrations: канон є, а db/migrations немає — error із назвою теки', async () => {
+    const store = await scaffoldStore('doc-mig-gone');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('db/migrations');
+    expect(res.details).not.toContain('git mv');
+  });
+
+  it('checkMigrations: стара supabase/migrations — error з підказкою git mv', async () => {
+    const store = await scaffoldStore('doc-mig-legacy');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    mkdirSync(join(store, 'supabase', 'migrations'), { recursive: true });
+    writeFileSync(
+      join(store, 'supabase', 'migrations', '0001_init.sql'),
+      'select 1;\n',
+    );
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('git mv supabase/migrations db/migrations');
   });
 
   it('checkThemes: нерезолвний запис — warn; warn не валить прогін без --strict', async () => {

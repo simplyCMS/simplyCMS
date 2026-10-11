@@ -20,7 +20,7 @@
  * Кореневої теки `supabase/migrations/` більше не існує.
  *
  * Статичні файли шаблону (`package.json.tpl`, `vite.config.ts`, `routes.ts`,
- * `README.md`, `supabase/config.toml` тощо) скрипт НЕ чіпає — їхнє джерело
+ * `README.md` тощо) скрипт НЕ чіпає — їхнє джерело
  * правди сам шаблон.
  *
  * Використання: node scripts/sync-create-store-template.mjs
@@ -61,10 +61,9 @@ export const SYNCED_FILES = [
 
 /** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
 export const SYNCED_DIRS = [
-  // Канон ядра → тека міграцій магазину. Імена тек різні навмисно:
-  // перейменування `<store>/supabase/` — окремий крок (К6), а зміст уже
-  // не Supabase-специфічний.
-  { from: SCHEMA_MIGRATIONS_DIR, to: 'supabase/migrations' },
+  // Канон ядра → тека міграцій магазину (`db/migrations`: зміст — чистий
+  // Postgres, назва без згадки постачальника).
+  { from: SCHEMA_MIGRATIONS_DIR, to: 'db/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
   // 🔴 Скілів тут НЕМАЄ (трек К0): вони їдуть у магазин текою `skills/`

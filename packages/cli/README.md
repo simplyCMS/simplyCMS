@@ -5,7 +5,7 @@ CLI обслуговування розгорнутого магазину Simpl
 і синхронізація core-міграцій.
 
 Пакет ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Свіжий магазин зі скаффолдера
+e-commerce CMS на TanStack Start + чистий PostgreSQL. Свіжий магазин зі скаффолдера
 `pnpm create simplycms-store` отримує CLI одразу (у `devDependencies`).
 
 ## Встановлення
@@ -24,7 +24,7 @@ pnpm simplycms doctor
 | `simplycms create (plugin \| theme) <name> [--dry-run]` | Скаффолд плагіна або теми в самому магазині: тека `plugins/<name>` / `themes/<name>` із шаблону + якірний запис у `simplycms.config.ts` |
 | `simplycms theme:conformance <name>` | Conformance-гейт контракту тем v3: рендерить заявлені темою `views` на фікстурах ядра й падає, якщо загублено комерційний реквізит. `<name>` — ключ теми в `simplycms.config.ts`; потребує `jsdom` у магазині (`pnpm add -D jsdom`) |
 | `simplycms update [--check \| --write] [--to <version>] [--no-install]` | Оновлення пакетів ядра (`simplycms` + сателіти `@simplycms/*`) до `--to` або latest із реєстру, лагодження лінків агентних скілів + доганяння host-файлів (канон — тека `host/` цього пакета). `--check` (дефолт) — exit 1 при дрейфі, придатне для CI |
-| `simplycms db:diff [--write]` | Порівняння `supabase/migrations/` магазину з міграціями встановленого ядра (`node_modules/simplycms/migrations`): нові міграції ядра `--write` докопіює (forward-only); змінений спільний файл — error без запису |
+| `simplycms db:diff [--write]` | Порівняння `db/migrations/` магазину з міграціями встановленого ядра (`node_modules/simplycms/migrations`): нові міграції ядра `--write` докопіює (forward-only); змінений спільний файл — error без запису |
 
 ## Наскрізний сценарій: оновлення ядра
 
@@ -33,7 +33,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра + звіт дрейфу host-файлів
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити після ревʼю (URL власника БД, не app_runtime)
+for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити після ревʼю (URL власника БД, не app_runtime)
 pnpm build && pnpm start         # rebuild
 ```
 

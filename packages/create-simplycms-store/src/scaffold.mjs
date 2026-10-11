@@ -23,11 +23,10 @@ const RENAMES = {
 /**
  * Файли з плейсхолдерами — шляхи ПІСЛЯ перейменувань (RENAMES). Саме список,
  * а не хардкод одного `package.json`: наступний шаблонізований файл додається
- * сюди рядком і не губиться мовчки (так `supabase/config.toml` доїжджав до
- * користувача з `project_id = "__STORE_NAME__"`, а Supabase CLI санітизував
- * його в спільний для всіх магазинів `STORE_NAME__`).
+ * сюди рядком і не губиться мовчки (забутий файл доїжджав би до
+ * користувача з сирим `__STORE_NAME__`; це ловить placeholder-scan пілота).
  */
-const TEMPLATED_FILES = ['package.json', 'supabase/config.toml'];
+const TEMPLATED_FILES = ['package.json'];
 
 /**
  * Підстановка плейсхолдерів шаблону. Назва загальна замість `renderManifest`:
