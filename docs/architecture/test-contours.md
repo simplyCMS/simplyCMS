@@ -1034,3 +1034,35 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 Дельта `sideEffects: false` — близько 1,2–1,6 КБ: порядок величини, не
 число — між збірками дрейфують і абсолютний розмір, і сама дельта (виміри
 2026-09-03 дали −1 228 і −1 556 байтів).
+
+## 13. Нестабільний `live:smoke` і гейти за змінюваними шляхами (2026-10-11)
+
+### Нестабільний крок: процедура
+
+1. **Журнал збою — артефакт.** Повний вивід прогону лежить у `.live-smoke/last.log`
+   (і `.live-smoke/<timestamp>.log`); без нього «флейк» не відрізнити від дефекту.
+2. **Крок у зоні гілки** (гілка чіпала шляхи цього кроку за таблицею нижче) → блокер, лагодити.
+3. **Крок поза зоною гілки** → ганяти на `main` до першого збою, максимум 12; поріг
+   узгоджений із частотою збою на гілці; 12/12 зелених на `main` → блокер гілки.
+   Збій відтворився на `main` → передіснуючий: мерж не блокує, але це перший пункт
+   наступного етапу (рішення з причиною, не «борг» — `AGENTS.md` § «Дисципліна хвилі»).
+4. **Лікування — очікуванням умови** з коротким таймаутом (~5 с), а не паузою. Миттєві
+   `count()`/`isVisible()` на UI, що сходиться асинхронно, заборонені: вони читають
+   стан до збіжності й дають і хибний FAIL, і хибний OK.
+5. **Мутація, що ламає UI-збіжність, мусить червоніти** (прибрати оновлення стану →
+   очікування вичерпує таймаут → FAIL); виправлення без такого контролю не приймається.
+
+### Змінені шляхи → обовʼязкові гейти
+
+Додатково до базового ланцюга (`format:check → lint → build → typecheck → test`,
+[`TOOLING.md`](../development/TOOLING.md) § 3). Гейти визначає ця таблиця, а не оцінка
+виконавця «що дотичне».
+
+| Змінено | Гейти |
+| --- | --- |
+| `packages/simplycms/src/storage/**`, `storefront/loaders/avatar*`, `reviews*`, `routes/**`, `runtime/**`, `src/start.ts`, `src/routes/**`, `scripts/live-smoke*` | `pnpm live:smoke` (production-збірка; dev цього не доводить — § 11.4) |
+| `packages/simplycms/src/schema/**`, `migrations/**`, `test-harness/**`, сирі `INSERT` у `src/` | `pnpm test:schema` (`pnpm harness:up` для Postgres) |
+| `package.json` `exports`, `packages/simplycms/skills/**`, `packages/create-simplycms-store/template/**`, `packages/cli/host/**` | `pnpm build:packages` + `pnpm typecheck:template` + `pnpm test:packaging` |
+| i18n-каталоги (ядро / тема / плагін) | `pnpm test` (тести парності; зелений лінт повноти не доводить) |
+| `package.json` залежності, `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` першим |
+| `scripts/showcase/**` | `pnpm typecheck:showcase` |

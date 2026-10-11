@@ -64,6 +64,11 @@ pnpm build:packages   # Збірка публікованих пакетів. �
                       # межу задає simplycms/contracts/server-only, стережуть
                       # tests/dist-server-boundary.test.ts і tests/dts-toolchain.test.ts
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm harness:up       # Postgres-харнес однією командою: контейнер simplycms-harness-pg
+                      # (pgvector/pgvector:pg17, trust, порт 54331), ідемпотентно; пише
+                      # PG_HARNESS_URL у git-ignored .env.harness, який підхоплюють test:schema,
+                      # live:smoke і db:demo, якщо змінну не задано явно. Потребує Docker.
+                      # pnpm harness:down — прибрати контейнер
 pnpm test:schema      # СХЕМНИЙ контур: накат канону міграцій на чистий Postgres + парність
                       # політик і грантів + ПОВЕДІНКОВА матриця RLS.
                       # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
