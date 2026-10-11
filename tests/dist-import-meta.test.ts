@@ -56,8 +56,8 @@ describe('опублікований dist: форма import.meta збереже
 
     expect(
       offenders,
-      `бандлер злоуерив \`import.meta\` — у конфігах tsdown цих пакетів бракує ` +
-        `\`target: 'esnext'\`:\n${offenders.join('\n')}`,
+      `бандлер злоуерив \`import.meta\` — у конфігах tsdown цих пакетів не ` +
+        `\`format: ['esm']\` (лоуерить саме cjs; \`target\` не впливає):\n${offenders.join('\n')}`,
     ).toEqual([]);
   });
 });
