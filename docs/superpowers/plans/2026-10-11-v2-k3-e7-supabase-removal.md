@@ -409,18 +409,18 @@
 
   | Файл | Причина |
   |---|---|
-  | `eslint-rules/no-supabase-import.mjs`, `tests/eslint-rules/no-supabase-import.test.ts`, `tests/no-supabase-manifests.test.ts` | гард Р2 |
+  | `eslint-rules/no-supabase-import.mjs`, `tests/eslint-rules/no-supabase-import.test.ts`, `tests/no-supabase-manifests.test.ts`, `tests/no-supabase-manifests/files.ts` | гард Р2 |
   | `eslint-rules/no-direct-storage.mjs`, `tests/eslint-rules/no-direct-storage.test.ts`, `tests/storage-direct-calls.test.ts` | гард сховища |
   | `eslint.config.mjs` | `@supabase/*` межі довіри плагіна + підключення Р2 |
   | `tests/plugin-trust-boundary.test.ts` | фікстури межі довіри |
   | `tests/create-store-cli.test.ts`, `tests/create-store-invite-setup.test.ts` | негативні асерти (`SUPABASE`, `supabase db push`, `supabase/migrations`) |
-  | `tests/cli-doctor.test.ts`, `packages/cli/src/db-diff.mjs`, тест `update` із Task 5 | підказка `git mv supabase/migrations` (Р6) |
+  | `tests/cli-doctor.test.ts`, `packages/cli/src/db-diff.mjs` | підказка `git mv supabase/migrations db/migrations` (Р6) |
   | `packages/simplycms/src/db/client.ts`, `packages/simplycms/src/schema/README.md` | провайдер Postgres (Р1-2) |
   | `packages/simplycms/migrations/{0002_grants.sql,README.md}`, `packages/create-simplycms-store/template/db/migrations/{0002_grants.sql,README.md}` | SQL-канон і байт-копія (Р1-3) |
-  | `tests/doc-symbols-exist/data.ts` | причини записів-шуму з історичних розділів (лише якщо записи живі після Task 9 Step 2а) |
-  | `AGENTS.md`, `.agents/skills/code-review/SKILL.md`, `.claude/commands/*.md` | гард `@supabase/*`, `supabase.storage`; Supabase MCP як інспекція dev-БД; скіл `supabase-postgres-best-practices` (Р8) |
-  | `docs/architecture/{data-layer,plugins,storage,cli,themes,release-process,test-contours,platform-delivery-options}.md`, `docs/development/TOOLING.md` | гарди, провайдер Postgres, історичні позначки (Р9) |
-  | `docs/tasks/{platform-roadmap,v2-state-map,redesign-mechanism-b2,theme-views-v3}.md` | історичні розділи й завершені задачі (Р9) |
+  | `tests/doc-symbols-exist/data.ts` | причини записів-шуму з історичних розділів |
+  | `AGENTS.md`, `.agents/skills/code-review/SKILL.md`, `.claude/commands/{виконай-задачу,проведи-додаткове-дослідження}.md` | гард `@supabase/*`, `supabase.storage`; Supabase MCP як інспекція dev-БД; скіл `supabase-postgres-best-practices` (Р8) |
+  | `docs/architecture/{cli,data-layer,platform-delivery-options,plugins,release-process,repository-layout,storage,test-contours,themes}.md`, `docs/development/{ENVIRONMENT,TOOLING}.md`, `docs/guides/themes.md` | гарди, провайдер Postgres, імʼя тесту `no-supabase-manifests`, негативне «ключів `VITE_SUPABASE_*` магазин не потребує», історичні позначки (Р9) |
+  | `docs/tasks/{platform-roadmap,v2-state-map,redesign-mechanism-b2,seo-ssr-faceted-navigation,theme-views-v3}.md` | історичні розділи, записи про знос і завершені задачі; `seo-ssr-faceted-navigation` — Supabase MCP як read-only інспекція dev-БД (Р9) |
 
   Перевірка: `git grep -il supabase -- . ':!CHANGELOG.md' ':!docs/superpowers/**' | sort > /tmp/…/actual.txt`. Кожен рядок `actual.txt` мусить бути в allowlist; `comm -23 actual allowlist` → порожньо. Зайвий файл — виправити в його задачі, а не розширювати allowlist. Розширення — лише з причиною і повідомленням архітекторові.
   Allowlist фільтрує лише шляхи, тож у «змішаних» файлах (`schema/README.md`, `cli.md`, `data-layer.md`…) забута правка пройшла б. Тому другий фільтр (аудит Codex №7): `git grep -nE "supabase/types\.ts|simplycms/supabase|src/supabase|LegacySupabaseBoundary|useSupabaseClient|SupabaseProvider|data-supabase|@supabase/ssr|supabase/config\.toml|supabase/seed" -- . ':!CHANGELOG.md' ':!docs/superpowers/**'`. Кожен рядок виводу — або гард (фікстура/асерт у тестах Р2 і `plugin-trust-boundary`), або в розділі з позначкою «історичний» у `docs/tasks/*`, `test-contours.md`, `platform-delivery-options.md`. І окремо `git grep -n "supabase/migrations"` → лише підказка Р6 (`db-diff.mjs`, її тести, `cli.md`), негативні асерти тестів скаффолдера, SQL-канон README і позначені історичні розділи. Будь-що інше — виправити в задачі-власниці.
