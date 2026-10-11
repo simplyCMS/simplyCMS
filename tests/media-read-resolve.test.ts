@@ -121,7 +121,7 @@ const callForm = (alias: string, resolver: string): RegExp =>
 /** Проєкції, де потрібен саме РЕФЕРЕНС, а не URL. Кожна — з причиною. */
 const RAW_READS: Record<string, string> = {
   'avatar.ts#avatarUrl':
-    'шлях ЗАПИСУ: значення йде в `eraseMedia`/`profiles.avatar_url`, ' +
+    'шлях ЗАПИСУ: значення йде в `eraseMediaRows`/`profiles.avatar_url`, ' +
     'а сховище адресується ключем, не URL',
   'reviews-write.ts#images':
     'сирий ключ для стирання, не для показу: `DELETE … RETURNING images` ' +

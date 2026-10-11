@@ -64,6 +64,8 @@ export const messages: Catalog = {
     'This image does not belong to this record — upload it again',
   'admin.errors.reviewNotFound':
     'Review not found — the list has been refreshed',
+  'admin.errors.mediaInUse':
+    'The file is still used by a saved record — it was not removed from storage',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

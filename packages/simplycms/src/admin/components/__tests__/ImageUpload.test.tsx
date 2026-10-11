@@ -6,6 +6,7 @@ import { I18nProvider } from 'simplycms/i18n';
 const mocks = vi.hoisted(() => ({
   uploadMedia: vi.fn(),
   deleteMedia: vi.fn(),
+  toast: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -13,7 +14,7 @@ vi.mock('simplycms/admin-server', async () =>
   ).createAdminServerMock(mocks),
 );
 vi.mock('simplycms/core/hooks/use-toast', () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: mocks.toast }),
 }));
 
 import { ImageUpload } from '../ImageUpload';
@@ -53,5 +54,20 @@ describe('ImageUpload.eraseOnRemove', () => {
     expect(onChange).toHaveBeenCalledWith([]);
     await Promise.resolve();
     expect(mocks.deleteMedia).not.toHaveBeenCalled();
+  });
+
+  it('409 media_in_use → зрозумілий тост, форма не ламається (Е6д-22)', async () => {
+    mocks.toast.mockClear();
+    mocks.deleteMedia.mockRejectedValueOnce({
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'media_in_use',
+    });
+    removeFirst();
+    await waitFor(() =>
+      expect(mocks.toast).toHaveBeenCalledWith({
+        description: expect.stringContaining('ще використовується'),
+      }),
+    );
   });
 });

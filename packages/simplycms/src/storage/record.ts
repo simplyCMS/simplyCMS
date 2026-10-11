@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { media } from 'simplycms/schema';
 
@@ -46,8 +46,8 @@ export interface MediaRecord {
  * 🔴 Дзеркального прибирання всередині НЕМАЄ, і це не пропуск: якщо
  * `driver.put` кидає, обʼєкт не опублікований (тимчасовий файл прибирає
  * `finally` драйвера), а рядок відкочує транзакція викликача. Прибирати
- * нічого. «Вирівнювати» з `eraseMedia` заради симетрії не треба — там
- * необоротна дія вже сталась, тут ні.
+ * нічого. Уже ОПУБЛІКОВАНИЙ файл при подальшому збої викликач прибирає через
+ * outbox: `scheduleMediaErasures` + `completeMediaErasures` (Е6д-20б).
  */
 export async function writeMedia(
   db: ActorDb,
@@ -73,85 +73,11 @@ export async function writeMedia(
   return { id, ref, sizeBytes, mime: input.mime };
 }
 
-/**
- * Прибрати файл і його рядок. Повертає `false`, якщо рядка не було.
- *
- * 🔴 НЕ для нового коду: канон двофазний (Е6д-14) — `eraseMediaRows` у
- * транзакції + `completeMediaErasures` після COMMIT. Ця функція лишається для аватара,
- * логотипа й адмінського `deleteMedia` (борг К3-Е6д-3).
- *
- * 🔴 ІНВАРІАНТ (амендмент §4-К4 від 2026-09-13, рішення Е2-7): обʼєкт
- * видаляється **всередині транзакції рядка, ПІСЛЯ `DELETE` і ДО `COMMIT`**.
- * Транзакцією володіє викликач (`withActor`), тож «до COMMIT» тут означає
- * «до виходу з його колбека».
- *
- * Що це дає, по класах відмов:
- *   • помилка БД (грант, конфлікт, будь-що) — падає ДО дотику до диска,
- *     rollback, і рядок, і файл на місці;
- *   • помилка сховища — виняток піднімається з цієї функції, rollback
- *     повертає рядок, файл теж на місці;
- *   • **fail-open неможливий за побудовою**: стан «рядок закомічено, обʼєкт
- *     лишився» недосяжний, а це і є «квота, яку неможливо звільнити» —
- *     задокументована граблина MetaHub.
- *
- * 🔴 ПРИНЦИП, що обʼєднує це рішення з порядком заміни аватара: необоротна
- * дія (`unlink`, `deleteObject`) стоїть якомога пізніше в транзакції, одразу
- * перед COMMIT, щоб вікно «необоротне вже сталось, а відкат ще можливий»
- * звужувалось до самого коміту. Тут це реалізовано ВСЕРЕДИНІ одного
- * видалення; у заміні аватара (Task 5) — між кількома кроками, тож старий
- * обʼєкт прибирається останнім.
- *
- * 🔴 Залишковий стан рівно ОДИН: падіння COMMIT уже після успішного
- * `driver.delete` лишає рядок без обʼєкта. Облік ПЕРЕоцінює обсяг (тариф не
- * занижений), і повтор його лікує — `driver.delete` на відсутньому обʼєкті
- * повертає успіх (`ENOENT` для `local-fs`, `204` для S3 у К4). Облік
- * невдалих повторів — К4.
- *
- * 🔴 Чому НЕ «спершу обʼєкт, потім рядок», як казала перша редакція спеки:
- * за тим порядком будь-яка відмова БД після `driver.delete` знищувала файл
- * безповоротно. Найдешевший приклад — актор без гранта `DELETE` на `media`:
- * файл зник, рядок лишився, і повтор його НЕ лікує, бо права не зʼявляться.
- * Найгірший залишковий стан в обох порядках однаковий, але цей прибирає
- * цілий клас відмов.
- *
- * 🔴 Зовнішні референси (`https:`/`data:`/`/…`) сюди не доходять: вони не
- * є ключами сховища, рядка `media` не мають, і функція чесно поверне
- * `false`, нічого не видаливши.
- */
-export async function eraseMedia(
-  db: ActorDb,
-  ref: string,
-  driver: MediaStorageDriver = getMediaDriver(),
-): Promise<boolean> {
-  // `for update` — щоб два паралельні видалення того самого референсу не
-  // дійшли обидва до `driver.delete`: другий чекає на локу й побачить
-  // порожній результат `DELETE`.
-  const [row] = await db
-    .select({ id: media.id })
-    .from(media)
-    .where(eq(media.storageKey, ref))
-    .limit(1)
-    .for('update');
-  if (!row) return false;
-
-  const deleted = await db
-    .delete(media)
-    .where(and(eq(media.id, row.id), eq(media.storageKey, ref)))
-    .returning({ id: media.id });
-  if (deleted.length === 0) return false;
-
-  // 🔴 ПІСЛЯ DELETE і ДО COMMIT. Виняток звідси відкочує рядок разом із
-  // транзакцією викликача — саме тому порядок не можна «оптимізувати»,
-  // винісши цей виклик за межі `withActor`.
-  await driver.delete(ref);
-
-  return true;
-}
-
 /** Власник файлу: рядок `media` з цим `entity_type` і `entity_id` (Е6д-16). */
 export interface MediaOwner {
   readonly entityType: string;
-  readonly entityId: string;
+  /** `null` — файл медіатеки без привʼязки (адмінський upload без `entityId`). */
+  readonly entityId: string | null;
 }
 
 /**
@@ -160,9 +86,9 @@ export interface MediaOwner {
  * Рядок outbox `media_erasures` ставиться тут же (Е6д-20) — відкат прибирає
  * обидва. Файли стирає викликач ПІСЛЯ COMMIT: `completeMediaErasures(keys)`.
  *
- * 🔴 Чому не `eraseMedia`: той стирає файл ДО COMMIT. Для кількох файлів
- * обрив `driver.delete` другого відкочує обидва референси, а перший файл уже
- * зник — битий референс. Тут найгірший наслідок — орфан-файл без рядка.
+ * 🔴 Чому файл не стирається в транзакції: для кількох файлів обрив
+ * `driver.delete` другого відкотив би обидва референси, а перший файл уже зник
+ * би — битий референс. Тут найгірший наслідок — орфан-файл, який тримає outbox.
  *
  * 🔴 Умова власника обовʼязкова (Е6д-16), перевантаження без неї немає:
  * стирання йде за `storage_key`, тож підсунутий чужий ключ (аватар, банер
@@ -187,7 +113,9 @@ export async function eraseMediaRows(
       and(
         inArray(media.storageKey, keys),
         eq(media.entityType, owner.entityType),
-        eq(media.entityId, owner.entityId),
+        owner.entityId === null
+          ? isNull(media.entityId)
+          : eq(media.entityId, owner.entityId),
       ),
     )
     .orderBy(media.storageKey)

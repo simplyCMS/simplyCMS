@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUTHZ_MATRIX, can } from 'simplycms/auth';
+import { STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
 import { parseUploadForm } from '../media/operations';
 
 describe('media.write у матриці authz', () => {
@@ -47,6 +48,19 @@ describe('parseUploadForm', () => {
       form({ file: png(), entityType: 'banner' }),
     );
     expect(parsed.entityId).toBeNull();
+  });
+
+  it('store_logo → власник фіксований; клієнтський entityId ігнорується', async () => {
+    const extras: Record<string, string>[] = [
+      {},
+      { entityId: 'ab000000-0000-4000-8000-000000000000' },
+    ];
+    for (const extra of extras) {
+      const parsed = await parseUploadForm(
+        form({ file: png(), entityType: 'store_logo', ...extra }),
+      );
+      expect(parsed.entityId).toBe(STORE_LOGO_OWNER_ID);
+    }
   });
 
   it.each([

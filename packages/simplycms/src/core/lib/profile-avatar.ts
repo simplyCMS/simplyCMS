@@ -10,7 +10,7 @@ import {
   requireSessionUserId,
   withSessionDb,
 } from 'simplycms/storefront/loaders';
-import { inspectUpload } from 'simplycms/storage';
+import { completeMediaErasures, inspectUpload } from 'simplycms/storage';
 
 /** Машинні коди відмов: клієнт мапить їх у рядки каталогу. */
 export const AVATAR_BAD_FORMAT = 'avatar/bad-format';
@@ -71,8 +71,10 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
 /** Прибрати аватар власника сесії. */
 export const removeMyAvatar = createServerFn({ method: 'POST' }).handler(
   async (): Promise<void> => {
-    await withSessionDb((db, userId, operator) =>
+    const erased = await withSessionDb((db, userId, operator) =>
       clearAvatarFor(db, operator, userId),
     );
+    // Файл — після COMMIT (Е6д-14); не кидає, хвіст лишається в outbox.
+    await completeMediaErasures(erased);
   },
 );

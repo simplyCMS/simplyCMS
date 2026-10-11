@@ -24,8 +24,8 @@ export {
   scheduleMediaErasures,
   type MediaErasure,
 } from './erasures';
+export { findMediaReferences, type MediaReference } from './references';
 export {
-  eraseMedia,
   eraseMediaRows,
   writeMedia,
   type MediaOwner,

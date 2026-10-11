@@ -1,15 +1,21 @@
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import { media } from 'simplycms/schema';
+import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import {
   MAX_UPLOAD_BYTES,
   MEDIA_ENTITY_TYPES,
   MEDIA_URL_BASE,
   resolveMediaUrl,
+  STORE_LOGO_OWNER_ID,
   type MediaEntityType,
 } from 'simplycms/domain/media';
 import {
   completeMediaErasures,
-  eraseMedia,
+  eraseMediaRows,
+  findMediaReferences,
   inspectUpload,
   scheduleMediaErasures,
   writeMedia,
@@ -71,10 +77,18 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const entityType = MEDIA_ENTITY_TYPES.find((t) => t === entityTypeRaw);
   if (!entityType) throw new Error('media/bad-entity-type');
 
+  // 🔴 Власник логотипа фіксований і ставиться ТУТ (К3-Е6д-3): клієнтський
+  // `entityId` для `store_logo` ігнорується, інакше `saveStoreProfile` не
+  // впізнав би файл, а стирання не знайшло б власника.
   const entityIdRaw = data.get('entityId');
-  const entityId = entityIdSchema.parse(
-    typeof entityIdRaw === 'string' && entityIdRaw !== '' ? entityIdRaw : null,
-  );
+  const entityId =
+    entityType === 'store_logo'
+      ? STORE_LOGO_OWNER_ID
+      : entityIdSchema.parse(
+          typeof entityIdRaw === 'string' && entityIdRaw !== ''
+            ? entityIdRaw
+            : null,
+        );
 
   const checked = await inspectUpload(file, MAX_UPLOAD_BYTES);
   if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
@@ -140,13 +154,33 @@ export async function uploadMediaOp({
 
 export const deleteMediaInput = z.object({ ref: z.string().min(1).max(200) });
 
-/** Прибрати файл за референсом. Зовнішній URL → `removed: false`, без збою. */
+/**
+ * Прибрати файл за референсом. Зовнішній URL (рядка `media` немає) →
+ * `removed: false`, без збою.
+ *
+ * Порядок (Е6д-14/22): рядок `media` `FOR UPDATE` → `findMediaReferences`
+ * непорожній → 409 `media_in_use` → інакше `eraseMediaRows` з власником із
+ * самого рядка (+ outbox) → файл стирає `completeMediaErasures` ПІСЛЯ COMMIT.
+ * Рядок без `entity_id` (медіатека, upload без привʼязки) стирається з
+ * власником `entityId: null`.
+ */
 export async function deleteMediaOp({
   data,
 }: {
   data: z.infer<typeof deleteMediaInput>;
 }): Promise<{ removed: boolean }> {
-  return runAdmin('media.write', async (db) => ({
-    removed: await eraseMedia(db, data.ref),
-  }));
+  const erased = await runAdmin('media.write', async (db) => {
+    const [row] = await db
+      .select({ entityType: media.entityType, entityId: media.entityId })
+      .from(media)
+      .where(eq(media.storageKey, data.ref))
+      .limit(1)
+      .for('update');
+    if (!row) return [];
+    if ((await findMediaReferences(db, data.ref)).length > 0)
+      stateConflict(ADMIN_STATE_CONSTRAINT.mediaInUse);
+    return eraseMediaRows(db, [data.ref], row);
+  });
+  await completeMediaErasures(erased);
+  return { removed: erased.length > 0 };
 }

@@ -3,6 +3,7 @@ import { deleteMedia, uploadMedia } from 'simplycms/admin-server';
 import { MAX_UPLOAD_BYTES, type MediaEntityType } from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
 import { useToast } from 'simplycms/core/hooks/use-toast';
+import { adminErrorKey } from '../lib/admin-error';
 import { ImageDropzone } from './ImageDropzone';
 import { ImageGrid } from './ImageGrid';
 
@@ -125,9 +126,12 @@ export function ImageUpload({
     // а не впаде; тому окремої гілки на `https:` тут не треба.
     try {
       await deleteMedia({ data: { ref } });
-    } catch {
-      // Невдале прибирання лишає орфана — його змете sweep К4. Форму це
-      // не блокує: референс із сутності вже прибрано.
+    } catch (error) {
+      // 409 `media_in_use` (Е6д-22): збережений запис ще тримає файл — він
+      // лишається в сховищі, і про це варто сказати. Решта збоїв лишає орфана,
+      // якого змете sweep; форму це не блокує, референс із сутності вже прибрано.
+      if (adminErrorKey(error) === 'admin.errors.mediaInUse')
+        toast({ description: t('admin.errors.mediaInUse') });
     }
   };
 

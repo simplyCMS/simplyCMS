@@ -67,6 +67,14 @@ export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
  * запиту — roadmap, трек «Готовність пілоту»).
  */
 export const REVIEW_MEDIA_ENTITY = 'review';
+
+/**
+ * Власник файлу логотипа (К3-Е6д-3). Логотип один на магазин і не має рядка-
+ * носія, тож `entity_id` фіксований: двофазне стирання (`eraseMediaRows`)
+ * вимагає власника, а сервер сам підставляє цей uuid при upload `store_logo`,
+ * не довіряючи клієнту.
+ */
+export const STORE_LOGO_OWNER_ID = '00000000-0000-4000-8000-00000000106f';
 export const MAX_REVIEW_IMAGES = 5;
 export const MAX_REVIEW_IMAGE_BYTES = 5 * 1024 * 1024;
 

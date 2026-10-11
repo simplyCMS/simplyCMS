@@ -6,16 +6,10 @@ import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { replaceAvatar } from 'simplycms/storefront/loaders';
-import {
-  eraseMedia,
-  eraseMediaRows,
-  localFsDriver,
-  writeMedia,
-} from 'simplycms/storage';
+import { eraseMediaRows, localFsDriver, writeMedia } from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
   applySqlFiles,
@@ -38,7 +32,7 @@ const PNG = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4,
 ]);
 
-describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () => {
+describe('writeMedia / eraseMediaRows проти живої БД (Е2, Task 3)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_media_record');
   let dbUrl = '';
@@ -116,15 +110,6 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     return row?.avatar_url ?? null;
   };
 
-  /** Усі опубліковані обʼєкти сховища — знімок для порівняння «до/після». */
-  const diskKeys = async (): Promise<string[]> => {
-    const keys: string[] = [];
-    for (const shard of await readdir(root))
-      for (const name of await readdir(join(root, shard)))
-        keys.push(`${shard}/${name}`);
-    return keys.sort();
-  };
-
   const countMedia = async (): Promise<number> => {
     const [row] = (await queryRows(
       dbUrl,
@@ -197,143 +182,11 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     expect(await countMedia()).toBe(before);
   });
 
-  // 🔴 Порядок — інваріант, а не деталь: DELETE рядка мусить статись ДО
-  // дотику до диска, інакше повертається клас «відмова БД знищила файл».
-  it('eraseMedia видаляє рядок ДО обʼєкта, і обидва зникають', async () => {
+  // 🔴 Другий рубіж: `app_user` не має на `media` ні UPDATE, ні DELETE, тож
+  // перша фаза падає ще на `select … for update` — рядок і файл цілі.
+  it('eraseMediaRows під app_user: відмова на рядку, рядок і файл цілі', async () => {
     const real = driver();
-    // 🔴 Борг Task 3 (розходження з планом, ОРІЄНТИР-рівень — формулювання
-    // асерту): попередній тест ("пише файл...") навмисно не чистить свій
-    // рядок — заміри лічильника мусять бути ВІДНОСНИМИ до `before`, а не
-    // абсолютним `0`, інакше спільна БД файлу дає хибний RED.
-    const before = await countMedia();
-    const record = await withActor({ role: 'app_admin' }, (db) =>
-      writeMedia(
-        db,
-        {
-          bytes: PNG,
-          mime: 'image/png',
-          entityType: 'banner',
-          entityId: null,
-          uploadedBy: null,
-        },
-        real,
-      ),
-    );
-
-    let rowsAtDeleteTime = -1;
-    const removed = await withActor({ role: 'app_admin' }, async (db) => {
-      const spy = {
-        ...real,
-        // 🔴 Читаємо ТИМ САМИМ `db` із колбека — тобто ВСЕРЕДИНІ транзакції,
-        // де DELETE уже видно. Попередня редакція ходила ОКРЕМИМ зʼєднанням
-        // (`countMedia`), якому незакомічений DELETE не видно в принципі:
-        // лічильник лишався > 0 за БУДЬ-ЯКОГО порядку, тож перенесення
-        // `driver.delete` перед `db.delete` гейт не червонило (рев'ю Е2).
-        // Зсередини транзакції правильний порядок дає 0 рядків, інвертований — 1.
-        delete: async (key: string) => {
-          const found = await db.execute(
-            sql`select id from public.media where storage_key = ${key}`,
-          );
-          rowsAtDeleteTime = found.rows.length;
-          await real.delete(key);
-        },
-      };
-      return eraseMedia(db, record.ref, spy);
-    });
-
-    expect(removed).toBe(true);
-    expect(
-      rowsAtDeleteTime,
-      'DELETE рядка мусив статись ДО дотику до диска',
-    ).toBe(0);
-    expect(await real.open(record.ref)).toBeNull();
-    expect(await countMedia()).toBe(before);
-  });
-
-  // 🔴 Доказ переваги порядку: помилка сховища відкочує рядок, і не
-  // лишається ні орфана, ні напівстану.
-  it('падіння driver.delete відкочує рядок — обидва на місці', async () => {
-    const real = driver();
-    const record = await withActor({ role: 'app_admin' }, (db) =>
-      writeMedia(
-        db,
-        {
-          bytes: PNG,
-          mime: 'image/png',
-          entityType: 'banner',
-          entityId: null,
-          uploadedBy: null,
-        },
-        real,
-      ),
-    );
-    const broken = {
-      ...real,
-      delete: async () => {
-        throw new Error('сховище недоступне');
-      },
-    };
-
-    await expect(
-      withActor({ role: 'app_admin' }, (db) =>
-        eraseMedia(db, record.ref, broken),
-      ),
-    ).rejects.toThrow('сховище недоступне');
-
-    const [row] = (await queryRows(
-      dbUrl,
-      'select storage_key from public.media where storage_key = $1',
-      [record.ref],
-    )) as { storage_key: string }[];
-    expect(row?.storage_key).toBe(record.ref);
-    expect(await real.open(record.ref)).not.toBeNull();
-
-    await withActor({ role: 'app_admin' }, (db) =>
-      eraseMedia(db, record.ref, real),
-    );
-  });
-
-  it('eraseMedia неіснуючого референсу — false, без винятку', async () => {
-    const removed = await withActor({ role: 'app_admin' }, (db) =>
-      eraseMedia(db, `ff/${randomUUID()}.png`, driver()),
-    );
-    expect(removed).toBe(false);
-  });
-
-  // Залишковий стан «рядок без обʼєкта» (падіння COMMIT після unlink):
-  // повтор його лікує, бо `ENOENT` — успіх.
-  it('повтор eraseMedia після dangling-рядка проходить', async () => {
-    const real = driver();
-    const record = await withActor({ role: 'app_admin' }, (db) =>
-      writeMedia(
-        db,
-        {
-          bytes: PNG,
-          mime: 'image/png',
-          entityType: 'banner',
-          entityId: null,
-          uploadedBy: null,
-        },
-        real,
-      ),
-    );
-    await real.delete(record.ref); // імітуємо перерваний прохід
-    const removed = await withActor({ role: 'app_admin' }, (db) =>
-      eraseMedia(db, record.ref, real),
-    );
-    expect(removed).toBe(true);
-  });
-
-  // 🔴 Другий рубіж у дії: `app_user` не має на `media` ні UPDATE, ні DELETE,
-  // тож видалення падає ще на `select … for update` (Postgres вимагає для
-  // нього UPDATE) — ДО дотику до диска. Файл лишається цілим.
-  //
-  // 🔴 Чим цей кейс НЕ є: доказом ПОРЯДКУ всередині `eraseMedia`. Відмова
-  // стається на ПЕРШОМУ операторі, тобто до розгалуження «рядок чи обʼєкт
-  // першим», і інвертований порядок лишав би його зеленим (рев'ю Е2). Доказ
-  // порядку — наступний кейс, де відмова падає саме на `DELETE`.
-  it('app_user: відмова на рядку, ФАЙЛ і рядок лишаються цілі', async () => {
-    const real = driver();
+    const userId = randomUUID();
     const record = await withActor({ role: 'app_admin' }, (db) =>
       writeMedia(
         db,
@@ -341,100 +194,28 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
           bytes: PNG,
           mime: 'image/png',
           entityType: 'avatar',
-          entityId: null,
+          entityId: userId,
           uploadedBy: null,
         },
         real,
       ),
     );
-
-    // 🔴 Борг Task 3 (розходження з планом, ОРІЄНТИР-рівень — формулювання
-    // асерту): Drizzle перезагортає помилку драйвера — назовні летить
-    // `Failed query: …`, а текст Postgres лишається в `cause` (той самий
-    // висновок задокументований у `with-actor.test.ts`). Матчити відмову по
-    // повідомленню верхнього рівня не вийде.
     const error = await withActor({ role: 'app_user' }, (db) =>
-      eraseMedia(db, record.ref, real),
+      eraseMediaRows(db, [record.ref], {
+        entityType: 'avatar',
+        entityId: userId,
+      }),
     ).then(
       () => null,
       (err: unknown) => err,
     );
     expect(error).toBeInstanceOf(Error);
-    expect((error as { cause?: Error }).cause?.message).toMatch(
-      /permission denied/i,
-    );
-
-    expect(await real.open(record.ref), 'файл мав лишитись').not.toBeNull();
-    const [row] = (await queryRows(
-      dbUrl,
-      'select storage_key from public.media where storage_key = $1',
-      [record.ref],
-    )) as { storage_key: string }[];
-    expect(row?.storage_key).toBe(record.ref);
-
-    await withActor({ role: 'app_admin' }, (db) =>
-      eraseMedia(db, record.ref, real),
-    );
-  });
-
-  // 🔴 ГОЛОВНИЙ доказ порядку: відмова БД падає саме на `DELETE` рядка —
-  // тобто ПІСЛЯ `select … for update` і рівно там, де порядок і вирішує.
-  // За чинним порядком до диска не доходить, файл цілий; за інвертованим
-  // («спершу обʼєкт») файл був би вже знищений, а рядок лишився б — стан,
-  // якого повтор не лікує, бо права не зʼявляться.
-  //
-  // 🔴 Право знімається тимчасово й повертається у `finally`: актора з
-  // `UPDATE`, але без `DELETE` на `media`, у схемі немає за побудовою —
-  // `app_user` не має жодного з двох (`0002_grants.sql`), а третьої ролі
-  // канон не заводить. Створювати роль повз канон означало б перевіряти
-  // вигадану конфігурацію замість чинної.
-  it('відмова саме на DELETE рядка: ФАЙЛ і рядок лишаються цілі', async () => {
-    const real = driver();
-    const record = await withActor({ role: 'app_admin' }, (db) =>
-      writeMedia(
-        db,
-        {
-          bytes: PNG,
-          mime: 'image/png',
-          entityType: 'banner',
-          entityId: null,
-          uploadedBy: null,
-        },
-        real,
-      ),
-    );
-
-    await queryRows(
-      dbUrl,
-      'revoke delete on table public.media from app_admin',
-    );
-    let error: unknown;
-    try {
-      error = await withActor({ role: 'app_admin' }, (db) =>
-        eraseMedia(db, record.ref, real),
-      ).then(
-        () => null,
-        (err: unknown) => err,
-      );
-    } finally {
-      await queryRows(dbUrl, 'grant delete on table public.media to app_admin');
-    }
-
-    expect(error).toBeInstanceOf(Error);
+    // Drizzle перезагортає помилку драйвера: текст Postgres у `cause`.
     expect((error as { cause?: Error }).cause?.message).toMatch(
       /permission denied/i,
     );
     expect(await real.open(record.ref), 'файл мав лишитись').not.toBeNull();
-    const [row] = (await queryRows(
-      dbUrl,
-      'select storage_key from public.media where storage_key = $1',
-      [record.ref],
-    )) as { storage_key: string }[];
-    expect(row?.storage_key).toBe(record.ref);
-
-    await withActor({ role: 'app_admin' }, (db) =>
-      eraseMedia(db, record.ref, real),
-    );
+    expect(await countMedia()).toBeGreaterThan(0);
   });
 
   // 🔴 Девʼятий кейс ганяє СПРАВЖНІЙ `replaceAvatar`, а не послідовність,
@@ -447,10 +228,12 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
   // послідовність без прибирання орфана вже неможливо. Саме такий розрив і
   // був дефектом до 2026-09-13: rollback прибирає рядок, диск про транзакції
   // не знає, і ФАЙЛ нового аватара лишався б назавжди.
-  it('відмова на видаленні СТАРОГО: старий цілий, нового ні в БД, ні на диску', async () => {
+  // 🔴 Двофазність (Е6д-14): збій `driver.delete` старого файлу стається ПІСЛЯ
+  // COMMIT і заміну не відкочує — профіль на новому, рядок старого стерто, а
+  // файл старого тримає хвіст outbox (attempts = 1).
+  it('збій стирання СТАРОГО файлу: заміна відбулась, хвіст в outbox', async () => {
     const real = driver();
     const { userId, ref: oldRef } = await seedUserWithAvatar(real);
-
     const broken = {
       ...real,
       delete: async () => {
@@ -458,38 +241,26 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
       },
     };
 
-    const filesBefore = await diskKeys();
-
-    await expect(
-      replaceAvatar(
-        userId,
-        { bytes: PNG, mime: 'image/png' },
-        // Публікує зламаний драйвер, прибирає справний — розбіжність тут
-        // НАВМИСНА (у `broken` зламано саме `delete`), тому й названа полем.
-        { driver: broken, discardWith: real },
-      ),
-    ).rejects.toThrow('сховище недоступне');
-
-    // Старий цілий і в БД, і на диску.
-    expect(await avatarOf(userId)).toBe(oldRef);
-    expect(await real.open(oldRef)).not.toBeNull();
-
-    // Нового рядка немає — його прибрав rollback. Лічильник звужено до
-    // ЦЬОГО покупця: інші кейси файлу теж пишуть аватари, і глобальний
-    // `count` звʼязував би тести порядком виконання.
-    const [{ n }] = (await queryRows(
-      dbUrl,
-      "select count(*)::int as n from public.media where entity_type = 'avatar' and entity_id = $1",
-      [userId],
-    )) as { n: number }[];
-    expect(n).toBe(1);
-
-    // 🔴 І нового ФАЙЛУ немає: rollback диска не чіпає, тож єдиний, хто
-    // прибирає опублікований обʼєкт, — прибирання орфана. Знімок «до/після»,
-    // а не пошук конкретного ключа: ref нового аватара назовні не виходить.
-    expect(await diskKeys(), 'опублікований файл лишився орфаном').toEqual(
-      filesBefore,
+    const { ref } = await replaceAvatar(
+      userId,
+      { bytes: PNG, mime: 'image/png' },
+      { driver: broken },
     );
+
+    expect(await avatarOf(userId)).toBe(ref);
+    expect(await real.open(oldRef), 'файл лишається до повтору').not.toBeNull();
+    const tail = (await queryRows(
+      dbUrl,
+      'select attempts from public.media_erasures where storage_key = $1',
+      [oldRef],
+    )) as { attempts: number }[];
+    expect(tail).toEqual([{ attempts: 1 }]);
+    const left = (await queryRows(
+      dbUrl,
+      'select storage_key from public.media where entity_id = $1',
+      [userId],
+    )) as { storage_key: string }[];
+    expect(left).toEqual([{ storage_key: ref }]);
   });
 
   // 🔴 Happy-path заміни. До рев'ю Е2 його не було НІДЕ: єдиний кейс

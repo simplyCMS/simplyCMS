@@ -9,6 +9,7 @@ import { afterAll, beforeAll, expect, vi } from 'vitest';
 import { AuthzError, requireGrant, resolveGrant } from 'simplycms/auth';
 import type { StoreProfile } from 'simplycms/contracts/store-profile';
 import { closeDbPool } from 'simplycms/db';
+import { STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
 import { localFsDriver, mediaKey } from 'simplycms/storage';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
@@ -86,9 +87,16 @@ export async function seedMedia(
   const ref = mediaKey('image/png');
   await rows(
     url,
-    `insert into public.media (id, entity_type, storage_key, size_bytes, mime_type)
-     values ($1, $2, $3, $4, 'image/png')`,
-    [crypto.randomUUID(), entityType, ref, PNG.byteLength],
+    `insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type)
+     values ($1, $2, $3, $4, $5, 'image/png')`,
+    [
+      crypto.randomUUID(),
+      entityType,
+      // Як `parseUploadForm`: логотип має фіксованого власника (К3-Е6д-3).
+      entityType === 'store_logo' ? STORE_LOGO_OWNER_ID : null,
+      ref,
+      PNG.byteLength,
+    ],
   );
   await localFsDriver(root).put(ref, PNG);
   return ref;

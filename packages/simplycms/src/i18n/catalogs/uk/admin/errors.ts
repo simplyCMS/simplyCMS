@@ -61,5 +61,7 @@ export const messages = {
   'admin.errors.mediaRefInvalid':
     'Зображення не належить цьому запису — завантажте його ще раз',
   'admin.errors.reviewNotFound': 'Відгук не знайдено — список оновлено',
+  'admin.errors.mediaInUse':
+    'Файл ще використовується збереженим записом — його не видалено зі сховища',
   'admin.errors.network': 'Немає звʼязку із сервером — зміни не збережено',
 } as const;
