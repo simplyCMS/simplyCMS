@@ -11,7 +11,7 @@ import {
 import { BUNDLED_SKILLS } from '../packages/create-simplycms-store/src/skill-links.mjs';
 
 // Шаблон create-simplycms-store — генерат: дрейф із монорепо лагодиться
-// `pnpm template:sync`, а не руками (модель tests/pilot-seed.test.ts).
+// `pnpm template:sync`, а не руками (парність копії з джерелом стереже цей тест).
 const read = (p: string) => readFileSync(p, 'utf8');
 
 /** Рекурсивний перелік файлів теки, шляхи — відносні до неї, відсортовані. */

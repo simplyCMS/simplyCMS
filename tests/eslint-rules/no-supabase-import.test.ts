@@ -62,13 +62,16 @@ describe('no-supabase-import у eslint.config.mjs', () => {
     'scripts/x.mjs',
   ])('зона покриває %s', (filePath) => {
     const hits = real
-      .verify(`import '@supabase/ssr';`, eslintConfig as never, { filePath })
+      .verify(`import '@supabase/ssr';`, eslintConfig as never, filePath)
       .filter((m) => m.ruleId === 'simplycms-supabase/no-supabase-import');
     expect(hits).toHaveLength(1);
   });
   // Парсер mini-конфігу тестів шаблону — той самий ОБʼЄКТ, що в основному
   // конфігу (typescript-eslint), а не інший парсер.
   it('конфіг лінту шаблону використовує tseslint.parser', () => {
-    expect(templateLintConfig[0].languageOptions?.parser).toBe(tseslint.parser);
+    expect(
+      (templateLintConfig as { languageOptions?: { parser?: unknown } }[])[0]
+        .languageOptions?.parser,
+    ).toBe(tseslint.parser);
   });
 });

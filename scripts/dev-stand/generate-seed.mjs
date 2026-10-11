@@ -23,10 +23,10 @@ const HEADER = `-- ЗГЕНЕРОВАНО: node scripts/dev-stand/dump-demo-data
 -- властивості, ціни). Персональних даних тут немає за побудовою — allowlist
 -- таблиць і колонок живе в scripts/dev-stand/table-specs.mjs.
 --
--- Накочується на ЛОКАЛЬНИЙ стек ПОВЕРХ сіду пілота, ідемпотентно:
---   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \\
---     -f scripts/dev-stand/seed-demo.sql
--- supabase/seed.sql і scripts/pilot-pack/ НЕ чіпаються — див. README поруч.
+-- Накочується на ЛОКАЛЬНУ чисту Postgres-БД із накатаним каноном міграцій,
+-- ідемпотентно:
+--   psql "$DATABASE_URL" -f scripts/dev-stand/seed-demo.sql
+-- scripts/pilot-pack/ НЕ чіпається — див. README поруч.
 
 -- Зворотні слеші в текстах — звичайні символи, а не escape-послідовності.
 set standard_conforming_strings = on;`;

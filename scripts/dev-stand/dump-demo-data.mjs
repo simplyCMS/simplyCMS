@@ -29,9 +29,9 @@ loadEnv({ path: resolve(here, '../../.env.local'), quiet: true });
 const MISSING_URL_HELP = `[dev-stand] DATABASE_URL не заданий — дамп неможливий.
 
 Де взяти рядок підключення:
-  Supabase → Project Settings → Database → Connection string → Session pooler
-  (саме SESSION pooler, не transaction: дамп тримає одне зʼєднання й читає
-  кілька таблиць поспіль). Не забудь ?sslmode=require.
+  рядок підключення до живої Postgres-БД магазину; якщо перед нею пулер —
+  режим SESSION, не transaction (дамп тримає одне зʼєднання й читає
+  кілька таблиць поспіль). Якщо провайдер вимагає TLS — додай ?sslmode=require.
 
 Куди покласти:
   .env.local у корені репо:  DATABASE_URL=postgresql://...:6543/postgres?sslmode=require

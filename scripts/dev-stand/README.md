@@ -27,14 +27,14 @@
 
 ## Крок 1 — зняти дамп (дія власника)
 
-Потрібен рядок підключення до живої БД:
-**Supabase → Project Settings → Database → Connection string → Session
-pooler** (саме session, не transaction: скрипт тримає одне зʼєднання й читає
-кілька таблиць поспіль). Не забудь `?sslmode=require`.
+Потрібен рядок підключення до живої Postgres-БД магазину. Якщо перед нею
+пулер — режим **session**, не transaction: скрипт тримає одне зʼєднання й
+читає кілька таблиць поспіль. Якщо провайдер вимагає TLS — додай
+`?sslmode=require`.
 
 ```bash
 # .env.local у корені репо
-DATABASE_URL=postgresql://postgres.<ref>:<pass>@<host>:6543/postgres?sslmode=require
+DATABASE_URL=postgresql://<user>:<pass>@<host>:5432/postgres?sslmode=require
 
 node scripts/dev-stand/dump-demo-data.mjs
 # → scripts/dev-stand/seed-demo.sql
@@ -44,12 +44,13 @@ node scripts/dev-stand/dump-demo-data.mjs
 деградація: скрипт, формат і тест готові, реальний дамп робить власник.
 Читання — тільки `select`, жодних записів у джерело.
 
-## Крок 2 — накотити на локальний стек
+## Крок 2 — накотити на локальну БД
+
+Потрібна чиста локальна Postgres-БД із накатаним каноном міграцій (`pnpm db:demo`
+піднімає її разом із демо-даними; для ручного шляху — свій Postgres 17).
 
 ```bash
-supabase start                       # локальний стек накатує міграції + supabase/seed.sql
-psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-  -f scripts/dev-stand/seed-demo.sql
+psql "$DATABASE_URL" -f scripts/dev-stand/seed-demo.sql
 ```
 
 Сід ідемпотентний: кожен блок — `insert … on conflict (id) do update set …`,
@@ -72,16 +73,13 @@ slug властивості глобальна (`section_properties_slug_key UNI
 констрейнті слага. Як упізнати: `psql` завершується помилкою на кшталт
 `duplicate key value violates unique constraint "sections_slug_key"` (або
 `products_slug_key`) з `DETAIL: Key (slug)=(…) already exists`. Що робити:
-`supabase db reset` і накотити сід стенда наново на чистий стек — це штатний
-шлях. На практиці колізії немає, бо сід пілота тримає слаги в намесспейсі
-`pilot-seed-*` і з каталожним дампом не перетинається; падіння тут гучне й
-самодіагностоване, а не мовчазне псування даних.
+перестворити локальну БД і накотити сід стенда наново на чисту — це штатний
+шлях. Падіння тут гучне й самодіагностоване, а не мовчазне псування даних.
 
 ## Межі
 
-- `supabase/seed.sql` і `scripts/pilot-pack/**` **не чіпаються** — це контракт
-  гейтів пілота (Gate B асертить точні назви товарів із сіду). Demo-датасет
-  живе повністю окремим файлом і окремою командою.
+- `scripts/pilot-pack/**` **не чіпається** — це контракт гейтів пілота.
+  Demo-датасет живе повністю окремим файлом і окремою командою.
 - Стенд до клауд-БД напряму **не підключається**: `bootstrapThemes` і адмінка
   писали б у живий магазин. Єдиний канал — односторонній дамп на читання.
 - Окремої `package.json`-команди немає свідомо: зняття дампу — разова дія
