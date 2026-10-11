@@ -286,6 +286,10 @@ AST-скану (`tests/i18n-coverage`); парність uk↔en, префікс
 
 ### CSRF і POST-маршрути плагінів
 
+> Поруч із CSRF у `requestMiddleware` стоїть `bodyLimitMiddleware` (стеля тіла POST на
+> `/_serverFn/`, `START-BODY-1`): server function плагіна не має власного ліміту multipart —
+> діє стеля ядра.
+
 Server routes і server functions плагіна, що змінюють стан (POST/PUT/PATCH/
 DELETE), **захищені від CSRF за замовчуванням**: `csrfMiddleware` ядра
 (`simplycms/runtime/csrf`) стоїть у `requestMiddleware` хоста й діє на будь-який

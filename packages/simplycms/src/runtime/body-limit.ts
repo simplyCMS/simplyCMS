@@ -21,7 +21,18 @@ import {
  * JSON без заголовка проходить як є: його розмір обмежений на практиці
  * розміром серіалізованих аргументів, а multipart — ні.
  */
-const SERVER_FN_PREFIX = '/_serverFn/';
+const DEFAULT_SERVER_FN_BASE = '/_serverFn/';
+
+/**
+ * База шляху server functions. Start виводить її з `basepath` і
+ * `serverFns.base` та віддає в рантаймі як `process.env.TSS_SERVER_FN_BASE`
+ * (із завершальним `/`). Читається лише в момент запиту, на сервері: модуль
+ * потрапляє й у клієнтський граф через `start.ts`. Літерал мовчки вимкнув би
+ * стелю в магазині з власним `basepath`.
+ */
+function serverFnBase(): string {
+  return process.env.TSS_SERVER_FN_BASE || DEFAULT_SERVER_FN_BASE;
+}
 
 /** Текстове тіло з `content-type`: без нього клієнт Start не прочитає код. */
 function reject(status: number, code: string): Response {
@@ -34,7 +45,7 @@ function reject(status: number, code: string): Response {
 /** Чиста функція (юніт без підйому Start): `Response` відмови або `null`. */
 export function checkBodyLimit(request: Request): Response | null {
   if (request.method.toUpperCase() !== 'POST') return null;
-  if (!new URL(request.url).pathname.startsWith(SERVER_FN_PREFIX)) return null;
+  if (!new URL(request.url).pathname.startsWith(serverFnBase())) return null;
 
   const raw = request.headers.get('content-length');
   if (raw === null) {

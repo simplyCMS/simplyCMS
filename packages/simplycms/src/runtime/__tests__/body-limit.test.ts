@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   MAX_AVATAR_BYTES,
   MAX_REQUEST_BODY_BYTES,
@@ -111,5 +111,18 @@ describe('checkBodyLimit', () => {
       req('POST', '/_serverFn/x', { 'content-length': 'abc' }),
     );
     expect(res?.status).toBe(413);
+  });
+});
+
+describe('checkBodyLimit — база server functions із рантайму', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('TSS_SERVER_FN_BASE з basepath: стеля на новій базі, не на старій', () => {
+    vi.stubEnv('TSS_SERVER_FN_BASE', '/shop/_serverFn/');
+    const headers = { 'content-length': String(MAX_REQUEST_BODY_BYTES + 1) };
+    expect(
+      checkBodyLimit(req('POST', '/shop/_serverFn/x', headers))?.status,
+    ).toBe(413);
+    expect(checkBodyLimit(req('POST', '/_serverFn/x', headers))).toBeNull();
   });
 });

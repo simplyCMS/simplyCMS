@@ -12,13 +12,17 @@
  * не надсилати його (сервер має відмовити за заголовком, не читаючи тіла).
  */
 import http from 'node:http';
-import {
-  MAX_REQUEST_BODY_BYTES,
-  MAX_REVIEW_IMAGE_BYTES,
-} from '../../packages/simplycms/src/domain/media.ts';
+import { tsImport } from 'tsx/esm/api';
 import { PNG } from './avatar.mjs';
 import { reviewByTitle } from './admin-content-sql.mjs';
 import { sql } from './sql.mjs';
+
+// Константи ядра беруться з джерела, а не копіюються: стеля виводиться з них.
+// `tsx` (як і для `owner-invite.mts`) — без залежності від type-stripping Node.
+const { MAX_REQUEST_BODY_BYTES, MAX_REVIEW_IMAGE_BYTES } = await tsImport(
+  '../../packages/simplycms/src/domain/media.ts',
+  import.meta.url,
+);
 
 /** Сирий POST: статус і тіло відповіді; `chunked` — без Content-Length. */
 function rawPost(base, path, { headers, chunk }) {

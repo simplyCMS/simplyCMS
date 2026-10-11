@@ -153,7 +153,21 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 у `domain/media.ts`) → 413; multipart без `Content-Length` → 411. JSON без
 заголовка проходить. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
 
-**Межа гарантії.** Node-раннер (`server.mjs`) обмежує тіло заявленою
+**Межі гарантії.**
+- 413 віддається ДО читання тіла, тож стеля захищає від прямих викликів повз
+  UI; браузер, що ще вантажить понад стелю, може побачити обрив зʼєднання
+  замість 413. Легітимний UI перевищити її не може за побудовою: відгук —
+  `ReviewForm` (`maxFiles`/`maxBytes`, дефолти `MAX_REVIEW_IMAGES`/
+  `MAX_REVIEW_IMAGE_BYTES`), медіа адмінки — `ImageUpload` (кожен файл ≤
+  `MAX_UPLOAD_BYTES`, один файл на POST), аватар — `AvatarUpload`
+  (`MAX_AVATAR_BYTES`); тест-інваріант констант — `body-limit.test.ts`.
+- JSON без `Content-Length` (chunked) проходить без стелі — свідоме рішення
+  архітектора: його розмір обмежений аргументами server function, а
+  необмежене буферизування дає лише multipart.
+- Шлях server functions береться з `process.env.TSS_SERVER_FN_BASE` у момент
+  запиту (фолбек `/_serverFn/`), тож `basepath` магазину стелю не вимикає.
+
+**Межа спирання на рантайм.** Node-раннер (`server.mjs`) обмежує тіло заявленою
 `Content-Length`; інший рантайм або проксі без цієї гарантії — привід
 переглянути (перевірка за заголовком, а не за байтами потоку).
 
