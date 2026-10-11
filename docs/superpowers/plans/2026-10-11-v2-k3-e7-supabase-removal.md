@@ -229,7 +229,7 @@
   Прогнати → FAIL (шлях у виїмці; аудит Codex №3).
 - [ ] **Step 2: Зняти виїмку.** `EXEMPT_DIRS`, коментар `:50-75` і перевірку теки в `isExempt` прибрати; з асерту «виїмки не розповзаються» (`:254-263`) прибрати рядок `expect(EXEMPT_DIRS)…`, асерт `ID_FROM_DB` лишається. Гілку `supabase` (`kind`, `supabaseRe`, цикл, коментар `:231-233`, кейс `:284-296`) прибрати. Поле `kind` прибрати зовсім, якщо після цього воно має одне значення і ніде не читається.
 - [ ] **Step 3: Прогнати** `PG_HARNESS_URL=… pnpm test:schema explicit-ids` → PASS, включно з кейсом зі Step 1. Якщо реальних offender'ів у `admin/pages`/`admin/components` > 0 — полагодити кожен (`id` генерує викликач), записати кількість у звіт задачі для архітектора.
-- [ ] **Step 4: Знести `admin-inserts-need-id`.** `git grep -n "admin-server-first\|admin-inserts-need-id\|PENDING_LEGACY\|KNOWN_WITHOUT_ID"` → 0 поза `docs/superpowers/**` і CHANGELOG; доки правляться в Task 9, тож тут лише код і тести.
+- [ ] **Step 4: Знести `admin-inserts-need-id`.** `git grep -n "tests/admin-server-first\|admin-server-first-registry\|admin-inserts-need-id\|PENDING_LEGACY\|KNOWN_WITHOUT_ID"` (живий контракт `simplycms/contracts/admin-server-first.ts` — `ADMIN_SERVER_FIRST` — інша річ і лишається) → 0 поза `docs/superpowers/**` і CHANGELOG; доки правляться в Task 9, тож тут лише код і тести.
 - [ ] **Step 5: Прогнати** `pnpm test && pnpm test:schema` → зелено.
 - [ ] **Step 6: Commit.** `test(k3-e7): explicit-ids бачить усю адмінку; реєстри легасі supabase-js знесено`. Перевірка трейлерів.
 
@@ -385,7 +385,7 @@
   - `supabase/migrations` (крім підказки Р6 у `cli.md`);
   - `simplycms/supabase`;
   - `LegacySupabaseBoundary`;
-  - `admin-server-first`;
+  - `tests/admin-server-first` (не плутати з живим `contracts/admin-server-first.ts`);
   - `admin-inserts-need-id`;
   - `pilot:seed`;
   - `db:migrate`;
