@@ -130,8 +130,10 @@ export async function gateHttp(port, env) {
   const healthJson = await health.json();
   check(
     'GET /api/health',
-    health.status === 200 && healthJson.status === 'healthy',
-    `${health.status}, status=${healthJson.status}`,
+    health.status === 200 &&
+      healthJson.status === 'healthy' &&
+      healthJson.checks?.database?.ok === true,
+    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}`,
   );
 
   return { ok, details };
