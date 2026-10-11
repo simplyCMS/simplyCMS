@@ -45,6 +45,24 @@ export const startFnBase: Premise = need({
     /process\.env\.TSS_SERVER_FN_BASE\s*\+/.test(s),
 });
 
+/**
+ * START-IP-1: import-protection плагін Start перерезолвлює кожен імпорт через `this.resolve()`
+ * БЕЗ `kind` і ПОВЕРТАЄ цей результат — `require()` усередині вклеєного пакета резолвиться за
+ * умовою `import` (ESM-вхід dual-пакета). Передумова обходу: обидві половини досі на місці.
+ */
+export const startImportProtectionNoKind: Premise = (src) => {
+  const from = src.indexOf('const resolveAgainstImporter');
+  const to = src.indexOf('const markerKind', from);
+  const block = from >= 0 && to > from ? src.slice(from, to) : '';
+  const broken: string[] = [];
+  if (!block) broken.push('блок resolveAgainstImporter зник або змінив форму');
+  else if (/\bkind\b/.test(block))
+    broken.push('this.resolve() в import-protection тепер передає kind');
+  if (!/if \(passThroughResult\) return passThroughResult;/.test(src))
+    broken.push('плагін більше не повертає результат власного this.resolve()');
+  return broken;
+};
+
 export const shallowError: Premise = need({
   'плагін тегу $TSR/Error досі існує': (s) => s.includes('"$TSR/Error"'),
   'parse віддає лише message': (s) =>

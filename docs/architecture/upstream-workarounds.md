@@ -235,6 +235,45 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 
 ---
 
+### START-IP-1 · import-protection плагін Start перерезолвлює імпорти без `kind`: `require()` вклеєного dual-пакета йде в ESM-вхід
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/start-plugin-core` (import-protection плагін; `@tanstack/react-start`) |
+| Знайдено на | `start-plugin-core` 1.171.49 / `react-start` 1.168.60 (2026-10-11, К3-Е7 Task 11: `pnpm pilot` Gate B). Проміжні версії між 1.167.35 (без дефекту) і 1.171.49 не бісектовано; у реліз потрапило з XSS-бампом 24e2836a (0.7.0) |
+| Перевірено на версії | `start-plugin-core` 1.171.49 — 2026-10-11 |
+| Статус апстріму | не повідомлено (рішення власника) |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (`resolveAgainstImporter` без `kind` і `return passThroughResult`) |
+
+**Симптом.** Серверний бандл свіжого магазину не стартує:
+`TypeError: Class extends value #<Object> is not a constructor or null` у
+`BoundPool extends Pool` — вклеєний `pg` робить `require('pg-pool')`, а той отримує
+namespace ESM-входу (`pg-pool/esm/index.mjs`), а не CJS-експорт.
+
+**Корінь.** `start-plugin-core/dist/esm/vite/import-protection-plugin/plugin.js` (`resolveId`):
+`resolveAgainstImporter` викликає `this.resolve(source, importer, { custom, isEntry, skipSelf, attributes })`
+БЕЗ `kind`, а далі `if (passThroughResult) return passThroughResult;` віддає цей результат бандлеру як
+остаточний. Для `require()` усередині вклеєного CJS-пакета `kind` мав би бути `require-call`; без нього
+rolldown бере умову `import` із `exports` dual-пакета. Діагностика: `importProtection: { enabled: false }` у
+скретчі лікує; у 1.167.35 результат не повертався. Другий шар — що `pg` вклеюється взагалі:
+Vite у build резолвить external від кореня проєкту, а транзитивний `pg` під pnpm strict там невидимий.
+
+**Наш обхід.** `pg` — peer ядра і ПРЯМА залежність магазину (`template/package.json.tpl`,
+`tests/pilot/store-template/package.json`): його видно з кореня, тож він external і резолвиться Node
+у рантаймі (CJS-шлях). Стережуть: Gate SB пілота (`scripts/pilot-pack/server-bundle.mjs`: драйвер не
+вклеєний + allowlist усіх вклеєних пакетів із причиною — клас дефекту охоплює будь-який вклеєний CJS-пакет
+із dual-`exports`), `tests/pg-peer-parity.test.ts`, `doctor` №13 (`packages/cli/src/pg-peer.mjs`). Маркери —
+`git grep -n "UPSTREAM:START-IP-1"`.
+
+**Перевірка виправлення.** Розтяжка червоніє, коли плагін почне передавати `kind` або перестане повертати
+результат. Тоді в скретчі без `pg` у dependencies (мутація) зібрати й запустити сервер: старт без `Class extends`.
+
+**Коли виправлять.** Наш фікс (external `pg`) правильний і сам по собі — драйвер БД не мусить бути в бандлі
+магазину. Зняття НЕ обовʼязкове: після виправлення upstream лишається лише ослабити коментарі; allowlist
+Gate SB і доктор-перевірка залишаються.
+
+---
+
 ### TSDB-2 · `useLiveInfiniteQuery` без індексу сортування довантажує сторінки префіксом, що росте (оптимізація)
 
 | Поле | Значення |

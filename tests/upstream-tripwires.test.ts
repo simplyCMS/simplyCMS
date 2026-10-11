@@ -20,6 +20,7 @@ import {
   startBody,
   startFnBase,
   startFormBeforeHandler,
+  startImportProtectionNoKind,
   subsetOptionsNotReexported,
   tsEslintPeer,
 } from './upstream-tripwires/premises';
@@ -114,6 +115,30 @@ describe('негативний контроль: підмінений текст
         src.replaceAll(
           '{ message: ctx.parse(value.message) }',
           '{ message: 1, name: 2 }',
+        ),
+      ),
+    ).not.toEqual([]);
+  });
+
+  it('START-IP-1: import-protection починає передавати kind або не повертає результат', () => {
+    const src = readInstalledFile(
+      ['@tanstack/react-start', '@tanstack/start-plugin-core'],
+      'dist/esm/vite/import-protection-plugin/plugin.js',
+    );
+    expect(startImportProtectionNoKind(src)).toEqual([]);
+    expect(
+      startImportProtectionNoKind(
+        src.replace(
+          'const resolveOptions = {',
+          'const resolveOptions = { kind: _options.kind,',
+        ),
+      ),
+    ).not.toEqual([]);
+    expect(
+      startImportProtectionNoKind(
+        src.replace(
+          'if (passThroughResult) return passThroughResult;',
+          'void passThroughResult;',
         ),
       ),
     ).not.toEqual([]);

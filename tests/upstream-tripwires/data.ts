@@ -10,6 +10,7 @@ import {
   startBody,
   startFnBase,
   startFormBeforeHandler,
+  startImportProtectionNoKind,
   subsetOptionsNotReexported,
   tsEslintPeer,
   type Premise,
@@ -47,6 +48,16 @@ export const TRIPWIRES: Record<string, Tripwire> = {
           'dist/esm/ssr/serializer/ShallowErrorPlugin.js',
         ),
       premise: shallowError,
+    },
+  ],
+  'START-IP-1': [
+    {
+      read: () =>
+        readInstalledFile(
+          ['@tanstack/react-start', '@tanstack/start-plugin-core'],
+          'dist/esm/vite/import-protection-plugin/plugin.js',
+        ),
+      premise: startImportProtectionNoKind,
     },
   ],
   'TSDB-3': [
