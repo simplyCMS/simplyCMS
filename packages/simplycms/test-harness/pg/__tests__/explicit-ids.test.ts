@@ -46,35 +46,6 @@ const SCHEMA = resolve(SRC, 'schema');
  */
 const ID_FROM_DB = new Set(['users', 'sessions', 'accounts', 'verifications']);
 
-/**
- * Виїмка за ТЕКАМИ: застарілий шар адмінки на `supabase-js` — рівно ДВІ
- * теки (`pages/`, `components/`), де живуть усі відомі вставки без `id`.
- * Він не виконується на чистому Postgres і повністю переписується в
- * Е1–Е6 (рішення власника 2026-08-29). Його НЕ залишено без нагляду:
- * кількість вставок без `id` там зафіксована окремим ратчетом
- * `tests/admin-inserts-need-id.test.ts` і може лише зменшуватись.
- *
- * 🔴 Звужено з `['admin/']` (Е3, рев'ю): `admin/features/**` і `admin/
- * lib/**` несуть НОВУ архітектуру треку К3-Е3 (`collection.insert()`
- * TanStack DB через `admin-data`, id завжди явний — доводять
- * `product-form-schema.test.ts`, `useProductSave.test.tsx`), тож голе
- * `'admin/'` ховало б їх від ЦЬОГО гейту теж без потреби. 🔴 Емпірично
- * (прогін після звуження) ЦЕЙ гейт їх і так не ловить — але з причини, за
- * яку не варто ховатись: `discoverInsertsInSource`'s drizzle-регекс матчить
- * ЛИШЕ `.insert(bareIdentifier)`, а обидва виклики TanStack DB у
- * `admin/features/**` — `products.insert(toProductDraft(...))`
- * (виклик функції) і `mods.insert({...})` (обʼєктний літерал) — жоден не
- * bare identifier, тож регекс НЕ матчить ні один із них узагалі. Локальна
- * змінна `products`/`mods` МОГЛА Б колізувати з іменем Drizzle-таблиці за
- * `drizzleTables()`, якби форма виклику була `.insert(payload)` з bare-
- * ідентифікатором (як у легасі `admin/pages/**`) — сьогодні такої форми в
- * `features/**` немає, але якщо зʼявиться, гейт її МАТИМЕ ловити як
- * offender (payload без `.values(` після), і тоді доведеться явно
- * відрізняти TanStack DB від Drizzle за походженням ідентифікатора, а не
- * за формою виклику.
- */
-const EXEMPT_DIRS = ['admin/pages/', 'admin/components/'];
-
 /** Мапа «експорт Drizzle-таблиці → імʼя таблиці в SQL». */
 function drizzleTables(): Map<string, string> {
   const map = new Map<string, string>();
@@ -121,8 +92,6 @@ interface InsertSite {
   table: string;
   /** Текст того, що реально їде в БД. */
   payload: string;
-  /** Форма виклику — для читабельного повідомлення про падіння. */
-  kind: 'drizzle' | 'supabase';
   offset: number;
 }
 
@@ -136,15 +105,13 @@ interface InsertSite {
 const TABLES = drizzleTables();
 
 /**
- * Дискаверить вставки двох форм, які тільки й існують у ядрі, в УЖЕ
- * прочитаному тексті одного файлу:
- *   • Drizzle — `.insert(<таблиця>)…values(<payload>)`, де `<таблиця>` є
+ * Дискаверить Drizzle-вставки в УЖЕ прочитаному тексті одного файлу:
+ *   • `.insert(<таблиця>)…values(<payload>)`, де `<таблиця>` є
  *     експортом Drizzle-схеми (звірка з мапою відсікає `.insert(payload)`
  *     адмінки — там `payload` не таблиця). Приймається кваліфікована форма
  *     `.insert(schema.products)` і локальний АЛІАС імпорту
  *     (`import { orders as ordersTable }` → `.insert(ordersTable)`),
- *     резолвлений `aliasMap`;
- *   • supabase-js — `.from('<таблиця>').insert(<payload>)`.
+ *     резолвлений `aliasMap`.
  *
  * 🔴 Свідомо ПОЗА сканом лишаються дві форми, що не резолвляться статично:
  * `.insert(getTable(name))` (обчислене імʼя — виклик функції замість
@@ -153,7 +120,7 @@ const TABLES = drizzleTables();
  * перевірку (як `plugin-table-id.test.ts` для сирого SQL нижче), а не
  * розширювати регекс.
  *
- * 🔴 Третя форма — сирий SQL — свідомо поза скану, і вона рівно одна:
+ * 🔴 Інша форма — сирий SQL — свідомо поза скану, і вона рівно одна:
  * `plugin-sdk/server/table-db.ts` збирає `insert into <plg_*>` через
  * `sql.identifier`. Там діє СИЛЬНІШИЙ гард — рантайм-перевірка `row.id`, що
  * кидає до звернення в БД (`plugin-table-id.test.ts`), а таблиця належить
@@ -181,24 +148,12 @@ function discoverInsertsInSource(src: string, file: string): InsertSite[] {
     sites.push({
       file,
       table,
-      kind: 'drizzle',
       offset: m.index,
       // Немає свого `.values(` — це не «безпечно», це невідомо: payload
       // порожній, і гейт червоніє.
       payload: chained
         ? callArgument(src, valuesAt + '.values('.length - 1)
         : '',
-    });
-  }
-
-  const supabaseRe = /\.from\(\s*['"]([^'"]+)['"]\s*\)\s*\.insert\(/g;
-  while ((m = supabaseRe.exec(src)) !== null) {
-    sites.push({
-      file,
-      table: m[1],
-      kind: 'supabase',
-      offset: m.index,
-      payload: callArgument(src, m.index + m[0].length - 1),
     });
   }
   return sites;
@@ -216,9 +171,11 @@ function discoverInserts(root: string): InsertSite[] {
   return sites;
 }
 
-const isExempt = (site: InsertSite): boolean =>
-  ID_FROM_DB.has(site.table) ||
-  EXEMPT_DIRS.some((dir) => site.file.startsWith(dir));
+const isExempt = (site: InsertSite): boolean => ID_FROM_DB.has(site.table);
+
+/** Єдиний фільтр гейта: і реальний скан, і синтетичний кейс кличуть його. */
+const offendersOf = (sites: InsertSite[]): InsertSite[] =>
+  sites.filter((site) => !isExempt(site) && !hasIdField(site.payload));
 
 describe('Е0: інваріант явного id у вставках ядра', () => {
   const sites = discoverInserts(SRC);
@@ -228,20 +185,14 @@ describe('Е0: інваріант явного id у вставках ядра',
     // вимагати від них id, а не падати від їхньої появи), а от зникнення
     // всіх — ознака зламаного дискаверу, не чистого коду. На 2026-08-30
     // виміряно 12 drizzle-вставок у `src/`.
-    // Гілку supabase-js на реальному `src/` більше не міряємо: Е6д (Task 4)
-    // прибрала останню таку вставку (легасі BannerEdit). Гілка живе до Е7 і
-    // доводиться синтетичним джерелом нижче.
-    expect(
-      sites.filter((s) => s.kind === 'drizzle').length,
-    ).toBeGreaterThanOrEqual(10);
+    expect(sites.length).toBeGreaterThanOrEqual(10);
   });
 
   it('кожна вставка поза іменованими виїмками передає id', () => {
-    const offenders = sites
-      .filter((site) => !isExempt(site) && !hasIdField(site.payload))
+    const offenders = offendersOf(sites)
       .map(
         (site) =>
-          `${site.file}@${site.offset} → ${site.table} (${site.kind}): ${
+          `${site.file}@${site.offset} → ${site.table} ${
             site.payload.slice(0, 80).replace(/\s+/g, ' ') || '<без values()>'
           }`,
       )
@@ -252,14 +203,13 @@ describe('Е0: інваріант явного id у вставках ядра',
     ).toEqual([]);
   });
 
-  it('виїмки не розповзаються: у списку рівно ті таблиці й теки, що обґрунтовані вище', () => {
+  it('виїмки не розповзаються: у списку рівно ті таблиці, що обґрунтовані вище', () => {
     expect([...ID_FROM_DB].sort()).toEqual([
       'accounts',
       'sessions',
       'users',
       'verifications',
     ]);
-    expect(EXEMPT_DIRS).toEqual(['admin/pages/', 'admin/components/']);
   });
 });
 
@@ -280,19 +230,13 @@ describe('Е0: дискавер id звіряє таблицю за значен
       'аліасована вставка мусить бути знайдена, інакше гейт fail-open',
     ).toContain('orders');
   });
+});
 
-  it('дискавер бачить supabase-js вставку (синтетичне джерело)', () => {
-    const source = [
-      'async function save(supabase) {',
-      "  await supabase.from('banners').insert({ title: 'x' });",
-      '}',
-    ].join('\n');
-
-    const sites = discoverInsertsInSource(source, 'synthetic.ts');
-    expect(
-      sites.map((s) => [s.kind, s.table]),
-      'supabase-гілка дискавера зламана — гейт fail-open',
-    ).toContainEqual(['supabase', 'banners']);
+describe('Е0: гейт бачить усю адмінку', () => {
+  it('вставка без id у admin/pages — offender, виїмок за теками немає', () => {
+    const source = 'await db.insert(products).values(payload);';
+    const sites = discoverInsertsInSource(source, 'admin/pages/X.tsx');
+    expect(offendersOf(sites)).toHaveLength(1);
   });
 });
 

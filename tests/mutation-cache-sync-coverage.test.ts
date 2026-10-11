@@ -15,8 +15,8 @@ import { MUTATION_CACHE_SYNC_RATCHET } from '../eslint.config.mjs';
  * файли, які туди потрапили, чисті.
  *
  * 🔴 Не глобить `tinyglobby` (у devDependencies немає) — той самий
- * рекурсивний сканер `.ts(x)`, що і в `tests/explicit-ids.test.ts` /
- * `tests/admin-inserts-need-id.test.ts` (`insert-scan.ts`), щоб не заводити
+ * рекурсивний сканер `.ts(x)`, що і в `explicit-ids.test.ts`
+ * (`insert-scan.ts`), щоб не заводити
  * другий спосіб обходу дерева.
  */
 

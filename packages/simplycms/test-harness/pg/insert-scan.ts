@@ -1,10 +1,11 @@
 // Спільний сканер вставок для гейтів контракту id (трек V2-К3, етап Е0).
 //
-// Два гейти дивляться на той самий код із різних боків і мусять різати текст
+// Гейти дивляться на той самий код із різних боків і мусять різати текст
 // ОДНАКОВО, інакше «полагоджений» скан в одному місці лишає дірку в другому:
 //   • `__tests__/explicit-ids.test.ts` — інваріант: кожна вставка поза
-//     задокументованими виїмками передає `id`;
-//   • `tests/admin-inserts-need-id.test.ts` — ратчет застарілого шару адмінки.
+//     задокументованими виїмками передає `id` (адмінка без виїмок);
+//   • решта споживачів — `insert-scan.test.ts`, `mutation-cache-sync-coverage`,
+//     `storage-direct-calls`, `storage-port-consumers`.
 // Тому балансування дужок і розпізнавання поля `id` живуть тут, в одному
 // місці, а не двома копіями.
 //
@@ -52,7 +53,7 @@ export function findMatchingClose(src: string, openIndex: number): number {
 /**
  * Текст аргументу виклику, чия відкривна дужка стоїть в `openParenIdx`.
  * Один шар обгортки-масиву розгортається (`([x])` → `x`), бо
- * `supabase.from(t).insert([payload])` — та сама вставка, що й `.insert(payload)`.
+ * `db.insert(t).values([payload])` — та сама вставка, що й `.values(payload)`.
  */
 export function callArgument(src: string, openParenIdx: number): string {
   const closeIdx = findMatchingClose(src, openParenIdx);

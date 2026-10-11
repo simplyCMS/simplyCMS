@@ -752,7 +752,7 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 червонить), `eslint-rules/no-collection-key-outside-admin-data.mjs`
 (сегмент `'list'` лише `admin-data`, Е3-15′), `bareListSegment` у
 `query-key-from-entity.mjs` (той самий інваріант — інша форма запису),
-`ADMIN_SCAN_DIRS` у `tests/admin-inserts-need-id.test.ts` звужено до
+`ADMIN_SCAN_DIRS` (знесено) у `tests/admin-inserts-need-id.test.ts` звужено до
 `admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
 основним гейтом `explicit-ids` за побудовою).
 
