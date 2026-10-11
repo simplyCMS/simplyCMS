@@ -31,36 +31,23 @@ export const isCorePackage = (name) =>
 const CODE_GLOBS = ['*.ts', '*.tsx', '*.mjs', '*.cjs', '*.js'];
 
 // Згенеровані файли — не джерело правди про реальне вживання; власний
-// каталог скрипта може містити приклади специфікаторів у коментарях.
+// каталог скрипта містить приклади імпортів у фікстурах. Фікстури-ЗАБОРОНИ в
+// звичайних рядках (ban-глоби eslint-зон, імена правил) винятків не потребують:
+// сканер бере специфікатори лише з імпорт-форм. Тут лишились тільки файли, що
+// містять СИНТЕТИЧНІ справжні імпорти в рядках-фікстурах негативного контролю.
 const EXCLUDE_PATHSPECS = [
   ':!**/routeTree.gen.ts',
   ':!scripts/audit-exports/**',
   ':!scripts/audit-exports.mjs',
-  // Межа довіри плагінів (Фаза 3): ban-глоби виду 'simplycms/admin-server/*' у
-  // eslint-зоні та синтетичні порушення в її негативному контролі — це
-  // специфікатори-ЗАБОРОНИ і фікстури, а не реальні імпорти.
-  ':!eslint.config.mjs',
+  // Межа довіри плагінів (Фаза 3): негативний контроль годує ESLint кодом
+  // `import … from 'simplycms/admin-server'` та ін. — це фікстури-порушення.
   ':!tests/plugin-trust-boundary.test.ts',
-  // Те саме для тір-зон напрямку шарів (ПК3, К0): таблиця зон складає
-  // ban-глоби `simplycms/<тека>`, а негативний контроль годує ESLint
-  // синтетичними порушеннями (включно з `simplycms/…` у прикладі команди в
-  // докблоці). Реальних імпортів там немає.
-  ':!eslint.tier-zones.mjs',
+  // Тір-зони (ПК3, К0): негативний контроль містить синтетичний
+  // `import type { X } from 'simplycms/admin'`.
   ':!tests/tier-boundary.test.ts',
-  // Те саме для зони «зʼєднання лише через withActor» (Task 6, В2-К1а):
-  // `eslint.db-client-zone.mjs` складає ban-патерни, а негативний контроль
-  // годує ESLint синтетичним `simplycms/db/client`. Це специфікатор-ЗАБОРОНА,
-  // а не імпорт: субшляху `./db/client` в `exports` немає свідомо.
-  ':!eslint.db-client-zone.mjs',
-  ':!tests/db-client-boundary.test.ts',
-  // Таблиця зон і lint-хелпер живуть у теці поруч — виняток мусить покривати
-  // її ЦІЛКОМ, інакше кожен винос фікстур у новий файл мовчки повертає їх у
-  // скан (спіймано рев'ю К0, коло 2).
-  ':!tests/tier-boundary/**',
-  // Негативний контроль самого цього аудиту: у ньому лежать СИНТЕТИЧНІ
-  // специфікатори мертвих К0-імен (`@simplycms/runtime/…`), якими тест
-  // доводить, що кошик `stale` червоніє. Без винятку фікстура потрапляла б
-  // у скан і валила гейт сама на собі.
+  // Негативний контроль самого цього аудиту: фікстури з імпорт-формами
+  // (`import 'simplycms/a'`, мертвих К0-імен), якими тест доводить поведінку
+  // сканера. Без винятку вони валили б гейт самі на собі.
   ':!tests/audit-exports.test.ts',
 ];
 
@@ -103,47 +90,60 @@ export function collectPackages() {
 }
 
 /**
- * Збирає всі унікальні субшлях-специфікатори ядра з коду —
- * `@simplycms/<pkg>/<subpath>` (сателіти) і `simplycms/<subpath>` (флагман).
- * Квото-обмежений патерн (специфікатор цілком у лапках) відсікає шум типу
- * коментарів на кшталт "перенесено в simplycms/domain/discounts." — крапка
- * речення не потрапляє в лапки й не проходить регекс. Він же розводить дві
- * гілки: `'@simplycms/x'` починається з `@`, тож під гілку флагмана не
- * підпадає, а `simplycms-theme-*` — не має слеша одразу після імені.
+ * Імпорт-форми, з яких беремо специфікатор: `from '…'` (import/export), побічний
+ * `import '…'`, `import('…')`, `require('…')` і `vi.mock('…')`-родина (мок
+ * неіснуючого субшляху так само ховає розрив exports). Довільний літерал чи
+ * коментар специфікатором не є: інакше кожна згадка `simplycms/…` у ban-глобі,
+ * імені правила лінту чи прикладі росила б `EXCLUDE_PATHSPECS`. `\s*` між
+ * ключовим словом і лапкою покриває багаторядкові `} from\n'…'`.
  */
-export function collectSpecifiers() {
-  const pattern = '[\'"](@simplycms/[a-zA-Z0-9_-]+|simplycms)/[^\'"]+[\'"]';
-  // `--untracked`: сусідній audit-deps обходить ФС і бачить усе, тож без цього
-  // прапорця новий (ще не доданий у git) файл проходив би повз гейт exports.
-  // node_modules і артефакти збірки й далі відсікає `.gitignore`.
-  const args = [
-    'grep',
-    '--untracked',
-    '-ohE',
-    pattern,
-    '--',
-    ...CODE_GLOBS,
-    ...EXCLUDE_PATHSPECS,
-  ];
+const SPECIFIER_RE = new RegExp(
+  '(?:\\bfrom|\\bimport|\\brequire|\\bvi\\s*\\.\\s*(?:mock|doMock|unmock|importActual|importMock))' +
+    '\\s*\\(?\\s*([\'"])((?:@simplycms/[a-zA-Z0-9_-]+|simplycms)/[^\'"]+)\\1',
+  'g',
+);
 
-  let raw;
-  try {
-    raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
-  } catch (err) {
-    // git grep повертає exit 1, якщо збігів немає взагалі — це не помилка.
-    if (err.status === 1) {
-      raw = String(err.stdout ?? '');
-    } else {
-      throw err;
-    }
-  }
+/**
+ * Витягає субшлях-специфікатори ядра з тексту одного файлу —
+ * `@simplycms/<pkg>/<subpath>` (сателіти) і `simplycms/<subpath>` (флагман).
+ * Гілки розведені регексом: `'@simplycms/x'` починається з `@`, тож під гілку
+ * флагмана не підпадає, а `simplycms-theme-*` не має слеша одразу після імені.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function extractSpecifiers(text) {
+  return [...text.matchAll(SPECIFIER_RE)].map((m) => m[2]);
+}
+
+/** Збирає всі унікальні специфікатори ядра з коду репо (див. `extractSpecifiers`). */
+export function collectSpecifiers() {
+  // `--untracked`/`--others`: сусідній audit-deps обходить ФС і бачить усе, тож
+  // без цього новий (ще не доданий у git) файл проходив би повз гейт exports.
+  // node_modules і артефакти збірки й далі відсікає `.gitignore`.
+  const raw = execFileSync(
+    'git',
+    [
+      'ls-files',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '--',
+      ...CODE_GLOBS,
+      ...EXCLUDE_PATHSPECS,
+    ],
+    { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+  );
 
   const specifiers = new Set();
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    // Знімаємо обрамлюючі лапки.
-    specifiers.add(trimmed.slice(1, -1));
+  for (const file of raw.split('\n')) {
+    if (!file) continue;
+    // Файл у індексі, але видалений з диска (ще не staged) — не джерело.
+    const path = join(ROOT, file);
+    if (!existsSync(path)) continue;
+    for (const spec of extractSpecifiers(readFileSync(path, 'utf8'))) {
+      specifiers.add(spec);
+    }
   }
   return [...specifiers].sort();
 }

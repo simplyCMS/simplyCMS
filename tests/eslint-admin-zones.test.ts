@@ -15,8 +15,9 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
  */
 
 const ADMIN_TSX = 'packages/simplycms/src/admin/features/x/X.tsx';
-// Склеєно: літерал імені правила audit-exports сприйняв би за субшлях пакета.
-const QUERY_KEY_RULE = ['simplycms', 'query-key-from-entity'].join('/');
+// Ім'я правила лінту: audit-exports бере специфікатори лише з імпорт-форм,
+// тож літерал тут субшляхом пакета не вважається.
+const QUERY_KEY_RULE = 'simplycms/query-key-from-entity';
 
 let eslint: ESLint;
 
