@@ -10,6 +10,7 @@ import {
   uploadMediaOp,
   listMediaErasuresOp,
   retryMediaErasuresOp,
+  sweepUnreferencedMediaOp,
   orderStatusesOps,
   setDefaultInput,
   setDefaultOrderStatusOp,
@@ -190,6 +191,11 @@ export const listMediaErasures = createServerFn({ method: 'GET' }).handler(
 export const retryMediaErasures = createServerFn({ method: 'POST' }).handler(
   retryMediaErasuresOp,
 );
+
+// Е6д-22: sweep неприв’язаних файлів. Вводу немає — валідувати нічого.
+export const sweepUnreferencedMedia = createServerFn({
+  method: 'POST',
+}).handler(sweepUnreferencedMediaOp);
 
 // 🔴 Task 3 (Е3): файл переростає канон 150 рядків СВІДОМО — К3-9′ вимагає
 // ЄДИНОГО модуля serverFn, і розбиття його на кілька змінило б межу, яку

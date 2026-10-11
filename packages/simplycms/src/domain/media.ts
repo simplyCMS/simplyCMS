@@ -170,18 +170,83 @@ export function normalizeMediaRefs(value: unknown): string[] {
  *     проєкції і читачі поза лоадерами — зокрема `src/admin/**`.
  */
 export const MEDIA_COLUMNS = [
-  { table: 'products', column: 'images', kind: 'jsonb' },
-  { table: 'product_modifications', column: 'images', kind: 'jsonb' },
-  { table: 'product_reviews', column: 'images', kind: 'jsonb' },
-  { table: 'banners', column: 'image_url', kind: 'text' },
-  { table: 'banners', column: 'desktop_image_url', kind: 'text' },
-  { table: 'banners', column: 'mobile_image_url', kind: 'text' },
-  { table: 'sections', column: 'image_url', kind: 'text' },
-  { table: 'property_options', column: 'image_url', kind: 'text' },
-  { table: 'profiles', column: 'avatar_url', kind: 'text' },
+  { table: 'products', column: 'images', entityType: 'product', kind: 'jsonb' },
+  {
+    table: 'product_modifications',
+    column: 'images',
+    entityType: 'product_modification',
+    kind: 'jsonb',
+  },
+  {
+    table: 'product_reviews',
+    column: 'images',
+    entityType: REVIEW_MEDIA_ENTITY,
+    kind: 'jsonb',
+  },
+  { table: 'banners', column: 'image_url', entityType: 'banner', kind: 'text' },
+  {
+    table: 'banners',
+    column: 'desktop_image_url',
+    entityType: 'banner',
+    kind: 'text',
+  },
+  {
+    table: 'banners',
+    column: 'mobile_image_url',
+    entityType: 'banner',
+    kind: 'text',
+  },
+  {
+    table: 'sections',
+    column: 'image_url',
+    entityType: 'section',
+    kind: 'text',
+  },
+  {
+    table: 'property_options',
+    column: 'image_url',
+    entityType: 'property_option',
+    kind: 'text',
+  },
+  {
+    table: 'profiles',
+    column: 'avatar_url',
+    entityType: 'avatar',
+    kind: 'text',
+  },
 ] as const satisfies readonly {
   table: string;
   column: string;
+  /** `media.entity_type` файлів, чий референс лежить у цій колонці (гейт sweep). */
+  entityType: string;
   /** Тип колонки: `jsonb` — масив референсів, `text` — один. Звіряється з БД тестом парності. */
   kind: 'text' | 'jsonb';
 }[];
+
+/**
+ * Гілка референсу поза `MEDIA_COLUMNS`: логотип лежить у
+ * `system_settings.value->>'logo'`, а не в колонці (Е6д-22). `findMediaReferences`
+ * перевіряє її окремо; гейт `media-sweep-coverage` рахує її поруч із колонками.
+ */
+export const LOGO_MEDIA_REFERENCE = {
+  table: 'system_settings',
+  column: 'value.logo',
+  entityType: 'store_logo',
+} as const;
+
+/** `entity_type`, для яких `findMediaReferences` має гілку (структурно, з реєстрів). */
+export const MEDIA_REFERENCED_ENTITY_TYPES: readonly string[] = [
+  ...new Set([
+    ...MEDIA_COLUMNS.map((c) => c.entityType),
+    LOGO_MEDIA_REFERENCE.entityType,
+  ]),
+];
+
+/**
+ * Мінімальний вік рядка `media`, з якого sweep сміє його стерти (Е6д-22):
+ * молодший файл міг бути щойно завантажений і ще не привʼязаний формою.
+ */
+export const MEDIA_SWEEP_MIN_AGE_HOURS = 24;
+
+/** Стеля кандидатів за один запуск sweep: транзакція лишається короткою. */
+export const MEDIA_SWEEP_BATCH = 500;

@@ -49,8 +49,13 @@ export const messages = {
   'admin.settings.storage.hint':
     'Файли, які не вдалося стерти після видалення запису. Їх уже не видно на сайті',
   'admin.settings.storage.count': 'Хвостів стирання: {count}',
-  'admin.settings.storage.attempts': 'Спроб: {count}, з {date}',
+  'admin.settings.storage.attempts': 'Спроб: {count}, остання {date}',
   'admin.settings.storage.retry': 'Повторити стирання',
   'admin.settings.storage.retried': 'Стерто: {done}, не вдалося: {failed}',
   'admin.settings.storage.loadError': 'Не вдалося завантажити хвости стирання',
+  'admin.settings.storage.sweep': 'Прибрати неприв’язані файли',
+  'admin.settings.storage.sweepTitle': 'Прибрати неприв’язані файли?',
+  'admin.settings.storage.sweepText':
+    'Буде стерто файли, які старші за добу й ніде не використовуються. Скасувати це не можна',
+  'admin.settings.storage.swept': 'Прибрано файлів: {count}',
 } as const;

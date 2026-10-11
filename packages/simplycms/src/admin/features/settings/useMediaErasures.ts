@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { listMediaErasures, retryMediaErasures } from 'simplycms/admin-server';
+import {
+  listMediaErasures,
+  retryMediaErasures,
+  sweepUnreferencedMedia,
+} from 'simplycms/admin-server';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 
 const KEY = entityKey(ENTITY.mediaErasures).all();
@@ -17,5 +21,10 @@ export function useMediaErasures() {
     mutationFn: () => retryMediaErasures(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
   });
-  return { query, retry };
+  // Sweep стирає рядки media й ставить хвости в outbox — список хвостів змінюється.
+  const sweep = useMutation({
+    mutationFn: () => sweepUnreferencedMedia(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: KEY }),
+  });
+  return { query, retry, sweep };
 }

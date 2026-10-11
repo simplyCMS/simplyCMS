@@ -11,6 +11,7 @@ import {
 } from 'simplycms/ui/card';
 import { reportTxError } from '../../lib/report-tx-error';
 import { useFormatDate } from '../../lib/useFormatDate';
+import { SweepMediaButton } from './SweepMediaButton';
 import { useMediaErasures } from './useMediaErasures';
 
 /**
@@ -20,7 +21,7 @@ import { useMediaErasures } from './useMediaErasures';
 export function StorageMaintenanceCard() {
   const t = useT();
   const formatDate = useFormatDate('short');
-  const { query, retry } = useMediaErasures();
+  const { query, retry, sweep } = useMediaErasures();
   const tails = query.data ?? [];
 
   const onRetry = () =>
@@ -69,14 +70,17 @@ export function StorageMaintenanceCard() {
             ))}
           </ul>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          disabled={tails.length === 0 || retry.isPending}
-          onClick={onRetry}
-        >
-          {t('admin.settings.storage.retry')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={tails.length === 0 || retry.isPending}
+            onClick={onRetry}
+          >
+            {t('admin.settings.storage.retry')}
+          </Button>
+          <SweepMediaButton sweep={sweep} />
+        </div>
       </CardContent>
     </Card>
   );

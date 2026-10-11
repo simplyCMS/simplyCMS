@@ -23,6 +23,7 @@ vi.mock('sonner', () => ({
 const mocks = vi.hoisted(() => ({
   listMediaErasures: vi.fn(),
   retryMediaErasures: vi.fn(),
+  sweepUnreferencedMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -86,5 +87,43 @@ describe('StorageMaintenanceCard (Е6д-20)', () => {
     expect(toastSuccess).toHaveBeenCalledWith(
       t('admin.settings.storage.retried', { done: 1, failed: 0 }),
     );
+  });
+
+  it('sweep: діалог підтвердження, без підтвердження не кличеться; після — тост з кількістю', async () => {
+    mocks.listMediaErasures.mockResolvedValue([]);
+    mocks.sweepUnreferencedMedia.mockResolvedValue({ erased: 3 });
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    render(<StorageMaintenanceCard />, { wrapper: makeWrapper(client) });
+    await screen.findByText(t('admin.settings.storage.count', { count: 0 }));
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.settings.storage.sweep') }),
+    );
+    const dialog = await screen.findByRole('alertdialog');
+    expect(mocks.sweepUnreferencedMedia).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: t('common.cancel') }));
+    expect(mocks.sweepUnreferencedMedia).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole('button', { name: t('admin.settings.storage.sweep') }),
+    );
+    expect(dialog).toBeTruthy();
+    const confirm = (
+      await screen.findAllByRole('button', {
+        name: t('admin.settings.storage.sweep'),
+      })
+    ).at(-1)!;
+    fireEvent.click(confirm);
+    await waitFor(() =>
+      expect(mocks.sweepUnreferencedMedia).toHaveBeenCalled(),
+    );
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: KEY }));
+    expect(toastSuccess).toHaveBeenCalledWith(
+      t('admin.settings.storage.swept', { count: 3 }),
+    );
+  });
+
+  it('дата хвоста підписана як остання спроба', async () => {
+    mocks.listMediaErasures.mockResolvedValue([TAIL]);
+    render(<StorageMaintenanceCard />, { wrapper: makeWrapper(client) });
+    expect(await screen.findByText(/остання/)).toBeTruthy();
   });
 });

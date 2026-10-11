@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { STORE_PROFILE_KEY } from 'simplycms/contracts/store-profile';
 import type { ActorDb } from 'simplycms/db';
-import { MEDIA_COLUMNS } from 'simplycms/domain/media';
+import { LOGO_MEDIA_REFERENCE, MEDIA_COLUMNS } from 'simplycms/domain/media';
 
 /** Де саме файл ще використовується: таблиця, колонка (або шлях у jsonb) і id рядка. */
 export interface MediaReference {
@@ -46,6 +46,10 @@ export async function findMediaReferences(
          where key = ${STORE_PROFILE_KEY} and value->>'logo' = ${key}`,
   );
   for (const row of logo.rows)
-    found.push({ table: 'system_settings', column: 'value.logo', id: row.id });
+    found.push({
+      table: LOGO_MEDIA_REFERENCE.table,
+      column: LOGO_MEDIA_REFERENCE.column,
+      id: row.id,
+    });
   return found;
 }
