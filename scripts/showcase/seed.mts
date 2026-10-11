@@ -16,6 +16,7 @@
  * транзакції (Е6д-14); схваленню порядок байдужий (схвалюються `id`
  * з `insertProductReview`, зокрема вже анонімний відгук видаленого).
  */
+import { sql } from 'drizzle-orm';
 import { setReviewsStatus } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { withActor } from '../../packages/simplycms/src/db/index.ts';
 import { completeMediaErasures } from '../../packages/simplycms/src/storage/index.ts';
@@ -75,7 +76,17 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
     // Ядро модерації (Е6д-7), а не сирий UPDATE; `id` — від `insertProductReview`.
     // Перший відгук — видалюваного покупця, тож фото кладемо на другий.
     await seedGuestVisibleMedia(db, ctx, reviewIds[1]!);
-    await setReviewsStatus(db, { ids: reviewIds, status: 'approved' });
+    // Е6д-23: модерація звіряє версію — беремо її з рядків, які щойно вставили
+    // (мілісекунди, як віддає картка адмінки).
+    const versions = await db.execute<{ id: string; updatedAt: string }>(sql`
+      select id, to_char(date_trunc('milliseconds', updated_at) at time zone 'utc',
+             'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "updatedAt"
+        from public.product_reviews
+       where id in (${sql.join(
+         reviewIds.map((id) => sql`${id}::uuid`),
+         sql`, `,
+       )})`);
+    await setReviewsStatus(db, { items: versions.rows, status: 'approved' });
     await shiftTime(
       db,
       placed.map((order) => ({ id: order.id, days: order.dayShift })),

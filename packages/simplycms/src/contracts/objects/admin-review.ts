@@ -15,6 +15,8 @@ export interface AdminReviewRow {
   status: ReviewStatus;
   imagesCount: number;
   createdAt: Date;
+  /** Версія для модерації (Е6д-23): мілісекунди, як їх повертає `isoTs`. */
+  updatedAt: Date;
 }
 
 /** Курсор keyset-пагінації `(created_at desc, id desc)`. */
@@ -38,5 +40,4 @@ export interface AdminReviewCard extends AdminReviewRow {
   images: string[];
   productSlug: string;
   sectionSlug: string | null;
-  updatedAt: Date;
 }

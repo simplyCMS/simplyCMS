@@ -92,6 +92,26 @@ export function useReviewsDb(prefix: string) {
         [id],
       )
     ).status;
+  /** Версія рядка так, як її бачить модератор (мс, UTC) — `updatedAt` картки. */
+  const version = async (id: string) =>
+    (
+      await f.one<{ v: string }>(
+        `select to_char(date_trunc('milliseconds', updated_at) at time zone 'utc',
+                'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as v
+           from public.product_reviews where id = $1`,
+        [id],
+      )
+    ).v;
+  /** `items` для `setReviewsStatus` з поточних версій; невідомий id — «зараз». */
+  const items = (ids: string[]) =>
+    Promise.all(
+      ids.map(async (id) => ({
+        id,
+        updatedAt: (await exists(id))
+          ? await version(id)
+          : new Date().toISOString(),
+      })),
+    );
   const exists = async (id: string) =>
     (await d.count('product_reviews', 'id = $1', [id])) === 1;
 
@@ -101,6 +121,8 @@ export function useReviewsDb(prefix: string) {
     seedReview,
     seedPhotos,
     status,
+    version,
+    items,
     exists,
     getMediaDriver,
   };

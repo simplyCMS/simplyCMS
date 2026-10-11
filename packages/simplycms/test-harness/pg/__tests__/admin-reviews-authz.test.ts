@@ -37,7 +37,13 @@ describe('admin: покупець не модерує відгуки (Е6д-7)',
       ['getReviewCard', () => getReviewCardOp({ data: { id } })],
       [
         'setReviewsStatus',
-        () => setReviewsStatusOp({ data: { ids: [id], status: 'approved' } }),
+        () =>
+          setReviewsStatusOp({
+            data: {
+              items: [{ id, updatedAt: '2026-01-01T00:00:00.000Z' }],
+              status: 'approved',
+            },
+          }),
       ],
       ['deleteReview', () => deleteReviewOp({ data: { id } })],
     ];

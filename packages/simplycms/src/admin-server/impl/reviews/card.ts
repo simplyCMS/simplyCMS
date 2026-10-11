@@ -44,7 +44,7 @@ export const getReviewCardOp = async ({
              case when jsonb_typeof(r.images) = 'array'
                   then jsonb_array_length(r.images) else 0 end as "imagesCount",
              ${isoTs(sql`r.created_at`)} as "createdAt",
-             ${isoTs(sql`r.updated_at`)} as "updatedAt"
+             ${isoTs(sql`date_trunc('milliseconds', r.updated_at)`)} as "updatedAt"
         from public.product_reviews r
         join public.products p on p.id = r.product_id
         left join public.sections s on s.id = p.section_id

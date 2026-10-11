@@ -71,7 +71,11 @@ describe('ReviewCardPage', () => {
     );
     await waitFor(() =>
       expect(mocks.setReviewsStatus).toHaveBeenCalledWith({
-        data: { ids: [REVIEW_ID], status: 'rejected', adminComment: 'спам' },
+        data: {
+          items: [{ id: REVIEW_ID, updatedAt: '2026-10-02T00:00:00.000Z' }],
+          status: 'rejected',
+          adminComment: 'спам',
+        },
       }),
     );
     await waitFor(() =>

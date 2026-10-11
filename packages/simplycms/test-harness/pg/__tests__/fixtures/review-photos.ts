@@ -59,8 +59,10 @@ export function useReviewPhotosDb(prefix: string) {
     )[0];
 
   /** Відкладений тригер: падає на COMMIT, коли ядро вже відпрацювало. */
-  const blockCommit = (table: 'product_reviews' | 'users') =>
-    blockCommitOn((sql) => f.rows(sql), table);
+  const blockCommit = (
+    table: 'product_reviews' | 'users',
+    event: 'insert' | 'update' | 'delete' = 'delete',
+  ) => blockCommitOn((sql) => f.rows(sql), table, event);
 
   return { ...d, diskKeys, reviewMedia, mediaCount, reviewRow, blockCommit };
 }

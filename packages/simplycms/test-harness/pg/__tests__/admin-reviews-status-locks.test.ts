@@ -39,7 +39,7 @@ describe('admin: зміна статусу відгуків — гонка з в
     );
     try {
       const op = setReviewsStatusOp({
-        data: { ids, status: 'approved' },
+        data: { items: await d.items(ids), status: 'approved' },
       });
       op.catch(() => {});
       expect(await stillPending(op, 300)).toBe(true);

@@ -22,6 +22,7 @@ export const row = (n: number, over: Record<string, unknown> = {}) => ({
   status: 'pending',
   imagesCount: 0,
   createdAt: new Date(Date.UTC(2026, 9, 1, 10) - n * 1000),
+  updatedAt: new Date(Date.UTC(2026, 9, 1, 11) - n * 1000),
   ...over,
 });
 

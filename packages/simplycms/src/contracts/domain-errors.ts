@@ -97,6 +97,8 @@ export const ADMIN_STATE_CONSTRAINT = {
   mediaRefInvalid: 'media_ref_invalid',
   // Е6д-7: відгук зник між відкриттям списку й дією модератора.
   reviewNotFound: 'review_not_found',
+  // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
+  reviewChanged: 'review_changed',
   // Е6д-22: файл ще використовується колонкою схеми чи логотипом.
   mediaInUse: 'media_in_use',
 } as const;

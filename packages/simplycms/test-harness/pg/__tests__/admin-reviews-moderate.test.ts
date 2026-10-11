@@ -23,8 +23,10 @@ const NOT_FOUND = conflict('state', 'review_not_found');
 describe('admin: зміна статусу відгуків (Е6д-7)', () => {
   const d = useReviewsDb('simplycms_e6d_rv_mod');
   const { f } = d;
-  const set = (ids: string[], status: string, extra: object = {}) =>
-    setReviewsStatusOp({ data: { ids, status, ...extra } as never });
+  const set = async (ids: string[], status: string, extra: object = {}) =>
+    setReviewsStatusOp({
+      data: { items: await d.items(ids), status, ...extra } as never,
+    });
   const comment = async (id: string) =>
     (
       await f.one<{ c: string | null }>(

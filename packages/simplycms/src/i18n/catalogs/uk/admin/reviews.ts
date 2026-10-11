@@ -5,6 +5,8 @@ export const messages = {
   'admin.reviews.all': 'Всі',
   'admin.reviews.approvedPlural': 'Затверджені',
   'admin.reviews.rejectedPlural': 'Відхилені',
+  'admin.reviews.changed':
+    'Відгук змінився — дані оновлено, перегляньте його ще раз',
   'admin.reviews.empty': 'Відгуків не знайдено',
   'admin.reviews.rating': 'Рейтинг',
   'admin.reviews.notFound': 'Відгук не знайдено',

@@ -7,8 +7,18 @@ import { toast } from 'sonner';
 import { adminErrorKey } from '../../lib/admin-error';
 import { reportTxError } from '../../lib/report-tx-error';
 
-/** `ok` — записано; `gone` — відгук зник (409): стан застарів; `failed` — решта збоїв. */
-export type StatusOutcome = 'ok' | 'gone' | 'failed';
+/** Версія відгуку, яку побачив модератор (Е6д-23). */
+export interface ReviewVersion {
+  readonly id: string;
+  readonly updatedAt: Date;
+}
+
+/**
+ * `ok` — записано; `gone` — відгук зник, `changed` — покупець змінив його
+ * після того, як модератор його побачив (обидва 409: стан застарів); `failed`
+ * — решта збоїв.
+ */
+export type StatusOutcome = 'ok' | 'gone' | 'changed' | 'failed';
 
 /**
  * Зміна статусу одного чи багатьох відгуків (список і картка). Кеш
@@ -20,22 +30,32 @@ export function useSetReviewsStatus() {
   const t = useT();
   const qc = useQueryClient();
   return async (
-    ids: string[],
+    items: readonly ReviewVersion[],
     status: ReviewStatus,
     adminComment?: string | null,
   ): Promise<StatusOutcome> => {
     let outcome: StatusOutcome = 'ok';
     try {
+      // ISO з мілісекундами: саме з нею сервер звіряє версію під локом.
+      const wire = items.map((i) => ({
+        id: i.id,
+        updatedAt: i.updatedAt.toISOString(),
+      }));
       const { updated } = await setReviewsStatus({
         data:
           adminComment === undefined
-            ? { ids, status }
-            : { ids, status, adminComment },
+            ? { items: wire, status }
+            : { items: wire, status, adminComment },
       });
       toast.success(t('admin.reviews.updated', { count: updated }));
     } catch (e) {
+      const key = adminErrorKey(e);
       outcome =
-        adminErrorKey(e) === 'admin.errors.reviewNotFound' ? 'gone' : 'failed';
+        key === 'admin.errors.reviewNotFound'
+          ? 'gone'
+          : key === 'admin.reviews.changed'
+            ? 'changed'
+            : 'failed';
       reportTxError(t, e);
     }
     await qc.invalidateQueries({ queryKey: [ENTITY.productReviews] });

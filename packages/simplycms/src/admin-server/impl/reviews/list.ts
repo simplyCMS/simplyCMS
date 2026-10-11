@@ -17,8 +17,9 @@ export const listReviewsInput = z.object({
   cursor: z.object({ createdAt: z.date(), id: z.uuid() }).optional(),
 });
 
-type Raw = Omit<AdminReviewRow, 'createdAt'> & {
+type Raw = Omit<AdminReviewRow, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
+  updatedAt: string;
   createdAtKey: string;
 };
 
@@ -62,6 +63,7 @@ export const listReviewsOp = async ({
              case when jsonb_typeof(r.images) = 'array'
                   then jsonb_array_length(r.images) else 0 end as "imagesCount",
              ${isoTs(sql`r.created_at`)} as "createdAt",
+             ${isoTs(sql`date_trunc('milliseconds', r.updated_at)`)} as "updatedAt",
              ${isoTs(sql`date_trunc('milliseconds', r.created_at)`)} as "createdAtKey"
         from public.product_reviews r
         join public.products p on p.id = r.product_id
@@ -80,6 +82,7 @@ export const listReviewsOp = async ({
       rows: page.map(({ createdAtKey: _key, ...row }) => ({
         ...row,
         createdAt: toDate(row.createdAt),
+        updatedAt: toDate(row.updatedAt),
       })),
       nextCursor,
     };

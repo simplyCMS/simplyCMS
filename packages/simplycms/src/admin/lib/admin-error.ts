@@ -96,6 +96,8 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.mediaRefInvalid]: 'admin.errors.mediaRefInvalid',
   // Е6д-7: модерація відгуків.
   [ADMIN_STATE_CONSTRAINT.reviewNotFound]: 'admin.errors.reviewNotFound',
+  // Е6д-23: версія відгуку застаріла — сам текст належить каталогу відгуків.
+  [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
   // Е6д-22: файл ще використовується.
   [ADMIN_STATE_CONSTRAINT.mediaInUse]: 'admin.errors.mediaInUse',
 } satisfies Record<AdminStateConstraint, MessageKey>;

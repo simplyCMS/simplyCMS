@@ -53,7 +53,7 @@ async function selectTwo() {
 }
 
 describe('ReviewsBulkBar', () => {
-  it('«Схвалити вибрані» шле { ids, status } і інвалідує [product_reviews]', async () => {
+  it('«Схвалити вибрані» шле { items з updatedAt, status } і інвалідує [product_reviews]', async () => {
     mocks.setReviewsStatus.mockResolvedValue({ updated: 2 });
     const { user, client } = await selectTwo();
     const spy = vi.spyOn(client, 'invalidateQueries');
@@ -62,7 +62,13 @@ describe('ReviewsBulkBar', () => {
     );
     await waitFor(() =>
       expect(mocks.setReviewsStatus).toHaveBeenCalledWith({
-        data: { ids: [rows[0]!.id, rows[1]!.id], status: 'approved' },
+        data: {
+          items: [rows[0]!, rows[1]!].map((r) => ({
+            id: r.id,
+            updatedAt: r.updatedAt.toISOString(),
+          })),
+          status: 'approved',
+        },
       }),
     );
     await waitFor(() =>
@@ -103,6 +109,28 @@ describe('ReviewsBulkBar', () => {
       expect(ui.toastError).toHaveBeenCalledWith(
         t('admin.errors.reviewNotFound'),
       ),
+    );
+    expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.productReviews] });
+    await waitFor(() =>
+      expect(
+        screen.queryByText(t('admin.reviews.selectedCount', { count: 2 })),
+      ).toBeNull(),
+    );
+  });
+
+  it('🔴 409 review_changed → тост admin.reviews.changed, перечитування, вибір знято', async () => {
+    mocks.setReviewsStatus.mockRejectedValue({
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'review_changed',
+    });
+    const { user, client } = await selectTwo();
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    await user.click(
+      screen.getByRole('button', { name: t('admin.reviews.approveSelected') }),
+    );
+    await waitFor(() =>
+      expect(ui.toastError).toHaveBeenCalledWith(t('admin.reviews.changed')),
     );
     expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.productReviews] });
     await waitFor(() =>

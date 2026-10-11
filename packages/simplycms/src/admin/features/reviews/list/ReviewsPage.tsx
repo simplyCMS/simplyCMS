@@ -50,7 +50,10 @@ export default function ReviewsPage() {
     });
   const apply = async (to: ReviewStatus) => {
     setBusy(true);
-    const outcome = await setStatuses([...selected], to);
+    const outcome = await setStatuses(
+      rows.filter((r) => selected.has(r.id)),
+      to,
+    );
     setBusy(false);
     // Вибір знімаємо і після успіху, і після 409: id могли зникнути.
     if (outcome !== 'failed') setSelected(new Set());

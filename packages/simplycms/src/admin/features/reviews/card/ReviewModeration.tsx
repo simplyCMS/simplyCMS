@@ -34,7 +34,11 @@ export default function ReviewModeration({
   const remove = useDeleteReview(review.id);
   const apply = async (status: ReviewStatus) => {
     setBusy(true);
-    await setStatuses([review.id], status, note.trim() === '' ? null : note);
+    await setStatuses(
+      [{ id: review.id, updatedAt: review.updatedAt }],
+      status,
+      note.trim() === '' ? null : note,
+    );
     setBusy(false);
   };
   return (

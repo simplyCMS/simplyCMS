@@ -7,6 +7,8 @@ export const messages: Catalog = {
   'admin.reviews.all': 'All',
   'admin.reviews.approvedPlural': 'Approved',
   'admin.reviews.rejectedPlural': 'Rejected',
+  'admin.reviews.changed':
+    'The review was changed — data refreshed, please review it again',
   'admin.reviews.empty': 'No reviews found',
   'admin.reviews.rating': 'Rating',
   'admin.reviews.notFound': 'Review not found',
