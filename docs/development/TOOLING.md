@@ -115,6 +115,7 @@ pnpm db:showcase      # ВІТРИННИЙ стенд для ручного те
 pnpm live:smoke       # живий прогін: db:demo → build → server → curl+SQL (gate-b) + Playwright
                       # (воронка, сховище, кроки адмінки в сесії власника). Потребує Postgres
                       # (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням
+                      # Журнал: .live-smoke/last.log (+ <timestamp>.log, 10 останніх); при FAIL — шлях і рядки FAIL наприкінці.
 pnpm db:pull / db:diff
                       # Схема БД — див. docs/architecture/data-layer.md § «Міграції»
 ```

@@ -78,3 +78,6 @@ scripts/dev-stand/seed-demo.sql
 
 # Локальний Postgres-харнес (pnpm harness:up)
 .env.harness
+
+# Журнали живого прогону (pnpm live:smoke)
+.live-smoke/
