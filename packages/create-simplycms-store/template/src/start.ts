@@ -3,6 +3,7 @@ import { redirect } from '@tanstack/react-router';
 import { readSessionSubject } from 'simplycms/auth';
 import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
 import { csrfMiddleware } from 'simplycms/runtime/csrf';
+import { bodyLimitMiddleware } from 'simplycms/runtime/body-limit';
 
 /**
  * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
@@ -62,8 +63,10 @@ const adminRequestGuard = createMiddleware().server(
  * Start вмикається лише БЕЗ `startInstance`, тож тут він явний: без нього
  * server functions і POST-роути приймали б міжсайтові запити. Виняток —
  * `CSRF_EXEMPT_PREFIXES` у `simplycms/runtime/csrf` (Better Auth).
+ * Далі стеля тіла (`bodyLimitMiddleware`, К3-Е6д-2): відмова за `Content-Length`
+ * до читання сесії й до `formData()` обробника server function.
  */
 export const startInstance = createStart(() => ({
   serializationAdapters: [domainErrorAdapter],
-  requestMiddleware: [csrfMiddleware, adminRequestGuard],
+  requestMiddleware: [csrfMiddleware, bodyLimitMiddleware, adminRequestGuard],
 }));

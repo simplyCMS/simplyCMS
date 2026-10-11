@@ -16,6 +16,7 @@ import { register } from './register.mjs';
 import { bannersPart } from './admin-content-banners.mjs';
 import { isolationPart, submitPart } from './admin-content-reviews.mjs';
 import { moderationPart } from './admin-content-moderation.mjs';
+import { bodyLimitPart } from './body-limit.mjs';
 import { cleanupContentStep } from './admin-content-cleanup.mjs';
 import { userByEmail } from './admin-customers-sql.mjs';
 import { stockSnapshot, sql } from './sql.mjs';
@@ -75,6 +76,7 @@ export async function runAdminContentStep({
     await submitPart(args);
     await isolationPart(args);
     await moderationPart(args);
+    await bodyLimitPart(args);
   } catch (e) {
     check('контент: крок дійшов до кінця', false, `виняток: ${e.message}`);
   } finally {

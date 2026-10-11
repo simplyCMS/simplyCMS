@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import { PAYLOAD_TOO_LARGE_CODE } from 'simplycms/domain/media';
 import { deleteMyProductReview, submitProductReview } from '../lib/review-form';
 import { getProductRatings, getProductReviews } from '../lib/reviews';
 import type { ProductReviewRow } from '../lib/reviews';
@@ -16,6 +17,8 @@ const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
   [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
   [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
   [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
+  // Стеля тіла запиту (К3-Е6д-2): відмова приходить від міддлвари, не від хендлера.
+  [PAYLOAD_TOO_LARGE_CODE]: 'errors.payloadTooLarge',
 };
 
 const NO_REVIEWS: ProductReview[] = [];

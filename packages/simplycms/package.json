@@ -54,6 +54,7 @@
     "./runtime": "./src/runtime/index.ts",
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
     "./runtime/csrf": "./src/runtime/csrf.ts",
+    "./runtime/body-limit": "./src/runtime/body-limit.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
@@ -304,6 +305,10 @@
       "./runtime/csrf": {
         "types": "./dist/runtime/csrf.d.ts",
         "import": "./dist/runtime/csrf.js"
+      },
+      "./runtime/body-limit": {
+        "types": "./dist/runtime/body-limit.d.ts",
+        "import": "./dist/runtime/body-limit.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",

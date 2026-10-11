@@ -65,6 +65,14 @@ HTTP-сервер. Теки `.output/` немає.
 - `pnpm start` = `node server.mjs`; порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
   (за замовчуванням `0.0.0.0`).
 
+🔴 **Стеля тіла запиту (К3-Е6д-2).** Request-міддлвара `bodyLimitMiddleware` відхиляє POST на
+`/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (`domain/media.ts`, ≈ 26 МБ: 5 фото
+відгуку по 5 МБ + 1 МБ службових байтів) відповіддю 413, а multipart без `Content-Length` — 411.
+Перевірка йде за заголовком, тож спирається на Node-раннер (`server.mjs`), що обмежує тіло заявленою
+довжиною (`UPSTREAM:START-BODY-1`). Проксі перед магазином (nginx `client_max_body_size`, Traefik
+`maxRequestBodyBytes`) має пропускати принаймні цю стелю і НЕ перетворювати тіло на chunked без
+`Content-Length`, інакше завантаження файлів отримає 411. Інший рантайм (не `server.mjs`) — переглянути.
+
 **Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` + production-`node_modules`
 (потрібен рівно один рантайм-пакет — `sirv`, він у `dependencies`). `VITE_*` для КЛІЄНТСЬКОГО
 бандла запікаються на етапі `vite build`, тож збірку робить той самий env, що й прод.

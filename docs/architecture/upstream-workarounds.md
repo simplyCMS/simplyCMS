@@ -134,6 +134,37 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 
 ---
 
+### START-BODY-1 · Start не обмежує розмір тіла server function
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/start-server-core` (обробник server functions) |
+| Знайдено на | 1.169.39 (2026-10-11, К3-Е6д-2) |
+| Перевірено на версії | 1.169.39 — 2026-10-11: `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника (`createStartHandler.js`) |
+| Статус апстріму | не повідомлено; ліміти тіла — відповідальність хоста/проксі, Start їх не надає |
+
+**Симптом.** Будь-який клієнт (навіть анонімний) може послати на
+`/_serverFn/<id>` багатогігабайтний multipart: сервер буферизує його повністю
+в памʼять до виклику хендлера, де вже стоять наші перевірки розміру файлів.
+
+**Наш обхід.** `bodyLimitMiddleware` (`packages/simplycms/src/runtime/body-limit.ts`,
+`requestMiddleware` у `src/start.ts` після CSRF): POST на `/_serverFn/` із
+`Content-Length` понад `MAX_REQUEST_BODY_BYTES` (виводиться з доменних лімітів
+у `domain/media.ts`) → 413; multipart без `Content-Length` → 411. JSON без
+заголовка проходить. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
+
+**Межа гарантії.** Node-раннер (`server.mjs`) обмежує тіло заявленою
+`Content-Length`; інший рантайм або проксі без цієї гарантії — привід
+переглянути (перевірка за заголовком, а не за байтами потоку).
+
+**Перевірка виправлення.** `packages/simplycms/src/runtime/__tests__/body-limit.test.ts`
+і крок `live-smoke/body-limit.mjs` (413/411 на справжньому сервері, 5 × 5 МБ — 200).
+
+**Коли виправлять.** Якщо Start отримає власний ліміт тіла з відмовою до
+`formData()` — прибрати міддлвару й перенести стелю в його опцію.
+
+---
+
 ### START-2 · Start серіалізує будь-який `Error` лише як `message`
 
 | Поле | Значення |

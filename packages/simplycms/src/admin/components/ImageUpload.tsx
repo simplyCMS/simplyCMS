@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react';
 import { uploadMedia } from 'simplycms/admin-server';
-import { MAX_UPLOAD_BYTES, type MediaEntityType } from 'simplycms/domain/media';
+import {
+  MAX_UPLOAD_BYTES,
+  PAYLOAD_TOO_LARGE_CODE,
+  type MediaEntityType,
+} from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ImageDropzone } from './ImageDropzone';
@@ -62,6 +66,16 @@ export function ImageUpload({
       } catch (error) {
         const badFormat =
           error instanceof Error && error.message === 'media/bad-format';
+        if (
+          error instanceof Error &&
+          error.message === PAYLOAD_TOO_LARGE_CODE
+        ) {
+          toast({
+            variant: 'destructive',
+            title: t('errors.payloadTooLarge'),
+          });
+          return null;
+        }
         toast({
           variant: 'destructive',
           title: badFormat

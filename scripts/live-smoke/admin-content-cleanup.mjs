@@ -59,7 +59,7 @@ export async function cleanupContentStep({ dbUrl, check, st }) {
         return true;
       }),
     );
-  for (const id of [st.reviewId, st.seededId].filter(Boolean))
+  for (const id of [st.reviewId, st.seededId, st.bigReviewId].filter(Boolean))
     results.push(
       await attempt(facts, `відгук ${id.slice(0, 8)}`, async () => {
         st.mediaKeys.push(...(await dropMedia(dbUrl, 'review', id)));

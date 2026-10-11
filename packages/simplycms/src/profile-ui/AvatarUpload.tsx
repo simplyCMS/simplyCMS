@@ -1,7 +1,11 @@
 import { useRef, useState } from 'react';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
-import { ACCEPT_ATTRIBUTE, MAX_AVATAR_BYTES } from 'simplycms/domain/media';
+import {
+  ACCEPT_ATTRIBUTE,
+  MAX_AVATAR_BYTES,
+  PAYLOAD_TOO_LARGE_CODE,
+} from 'simplycms/domain/media';
 import { AvatarPreview } from './AvatarPreview';
 import {
   removeMyAvatar,
@@ -52,6 +56,7 @@ export function AvatarUpload({
     const code = cause instanceof Error ? cause.message : '';
     if (code === 'avatar/bad-format') return t('profile.avatar.badFormat');
     if (code === 'avatar/too-large') return t('profile.avatar.tooLarge');
+    if (code === PAYLOAD_TOO_LARGE_CODE) return t('errors.payloadTooLarge');
     return t('profile.avatar.failed');
   };
 

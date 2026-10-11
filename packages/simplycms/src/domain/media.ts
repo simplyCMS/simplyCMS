@@ -63,8 +63,8 @@ export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
  * адмінського `uploadMedia`, а сценарію «адмін вантажить фото відгуку» немає.
  * Пише їх лише подача відгуку (`submitReviewWithImages`), як `'avatar'` —
  * лише заміна аватара. Кількість і розмір КОЖНОГО файлу звіряються ДО
- * першого запису; 5 × 5 МБ на один POST для пілоту прийнято (борг ліміту тіла
- * запиту — roadmap, трек «Готовність пілоту»).
+ * першого запису; сумарну стелю тіла запиту тримає `MAX_REQUEST_BODY_BYTES`
+ * (К3-Е6д-2, `runtime/body-limit`).
  */
 export const REVIEW_MEDIA_ENTITY = 'review';
 
@@ -105,6 +105,34 @@ export const MAX_REVIEW_IMAGE_BYTES = 5 * 1024 * 1024;
  */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Запас на multipart-обгортку (межі, заголовки частин, поля форми) понад
+ * сумарний розмір файлів. 1 МБ з великим запасом: 5 файлів + кілька полів
+ * займають одиниці КБ службових байтів.
+ */
+export const MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
+
+/**
+ * Машинні коди відмови стелі тіла (тіло відповіді 413/411). Живуть у T1, бо
+ * їх читає клієнт: serverFn-клієнт Start кидає `Error(тіло відповіді)` лише
+ * коли відповідь має `content-type` — порожнє тіло віддало б неінформативну
+ * invariant-помилку, з якої 413 не відрізнити від будь-якого збою.
+ */
+export const PAYLOAD_TOO_LARGE_CODE = 'request/payload-too-large';
+export const LENGTH_REQUIRED_CODE = 'request/length-required';
+
+/**
+ * Стеля тіла будь-якого POST на server function (К3-Е6д-2). Виводиться з
+ * найбільшого легітимного запиту — подачі відгуку з 5 фото — а не літералом,
+ * тож зміна лімітів вище автоматично зсуває стелю. Не менша за одиночне
+ * завантаження медіа й аватар (тест це стереже).
+ */
+export const MAX_REQUEST_BODY_BYTES = Math.max(
+  MAX_REVIEW_IMAGES * MAX_REVIEW_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES,
+  MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES,
+  MAX_AVATAR_BYTES + MULTIPART_OVERHEAD_BYTES,
+);
 
 // Форми, які вже Є адресою й не потребують бази. `blob:` — локальне прев’ю,
 // яке браузер створює до завантаження; воно ніколи не доходить до БД, але

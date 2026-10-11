@@ -27,6 +27,7 @@ pnpm add simplycms
 | `defineRuntime(input)` | Збирає `SimplyCmsRuntime = { engine, modules, theme, plugins }` з `adapters: { links, config }`. 🔴 Без споживачів (див. «Відкрите питання») |
 | `bootstrapRuntime(rt)` | Послідовно виконує `setup()` усіх `EngineModule` під час старту застосунку. 🔴 Без споживачів |
 | `csrfMiddleware` (`simplycms/runtime/csrf`) | Request-міддлвара CSRF для `requestMiddleware` у `start.ts`: перевіряє origin мутуючих запитів (server functions і server routes), виняток — `CSRF_EXEMPT_PREFIXES` (`/api/auth/`). Client-safe |
+| `bodyLimitMiddleware` (`simplycms/runtime/body-limit`) | Request-міддлвара стелі тіла (К3-Е6д-2): POST на `/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413, multipart без `Content-Length` → 411. Стоїть після CSRF. Чиста частина — `checkBodyLimit` |
 | Типи | `DefineRuntimeInput`, `SimplyCmsRuntime`, `EngineModule`, `SimplyCmsConfig` (без `seo`: назва й описи — профіль магазину в БД, URL сайту — серверний env `VITE_SITE_URL`, Е6б-11), `PluginRegistration`, `ThemeLoader` |
 
 ## Як магазин ФАКТИЧНО збирає `EngineContext`
