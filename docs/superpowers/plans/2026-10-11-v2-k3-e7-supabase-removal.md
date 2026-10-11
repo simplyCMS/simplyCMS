@@ -76,7 +76,7 @@
 
 **Interfaces:**
 - Produces: `export const base` з `packages/simplycms/tsdown.config.ts` (тип `UserConfig`); тест-контроль для `SERVER_ENV_FILES`, на який спирається Task 2 (там зникають два записи).
-- Consumes: `gateBundle(storeDir: string): { ok: boolean; details: string[] }` з `scripts/pilot-pack/gate-c.mjs:116`. Читає `<storeDir>/bundle-stats.client.json` (форма `{ [chunk]: { modules: string[] } }`) і `<storeDir>/node_modules/simplycms/dist/admin-server/{index.js,impl/index.js}`.
+- Consumes: `gateBundle(storeDir: string): { ok: boolean; details: string[] }` з `scripts/pilot-pack/gate-c.mjs:116`. Читає `<storeDir>/bundle-stats.client.json` (форма `{ [chunk]: { modules: string[]; isEntry: boolean; imports: string[] } }` — `initialChunks` (`:100-112`) читає `isEntry` і `imports`; без них перевірка `NOT_IN_INITIAL` вакуумна або падає) і `<storeDir>/node_modules/simplycms/dist/admin-server/{index.js,impl/index.js}`.
 
 - [ ] **Step 1: `tests/eslint-server-env.test.ts`.** `new ESLint({ cwd: repoRoot })`, `lintText('export const x = import.meta.env.FOO;\n', { filePath, warnIgnored: true })` — за взірцем `tests/plugin-trust-boundary.test.ts`. Очікування:
   - для кожного з п'яти шляхів — 1 повідомлення `ruleId === 'no-restricted-syntax'`, текст містить `process.env`. Шляхи: `packages/simplycms/src/storefront-routes/seo/robots.ts`, `…/seo/sitemap.ts`, `…/storefront-routes/server/root.ts`, `packages/simplycms/routes/storefront/api/health.tsx`, `src/start.ts`;
@@ -101,7 +101,10 @@
 - [ ] **Step 7: `tests/pilot-gate-c.test.ts`.** Store-dir у tmp: `bundle-stats.client.json`, а також `node_modules/simplycms/dist/admin-server/index.js` і `impl/index.js` (порожні файли). Кейси:
   - чистий: модулі `node_modules/simplycms/dist/storefront-routes/server/x.js` (заглушка server-fn, має матчити `SERVER_FN_STUB`) і `node_modules/simplycms/dist/admin-server/index.js` → `ok === true`;
   - той самий набір + `node_modules/simplycms/dist/db/client.js` → `ok === false`, `details` містить `db`;
-  - той самий набір + `node_modules/drizzle-orm/index.js` → `ok === false`.
+  - той самий набір + `node_modules/drizzle-orm/index.js` → `ok === false`;
+  - initial-кейс: entry-чанк (`isEntry: true`) статично імпортує чанк із `node_modules/simplycms/dist/admin/x.js` → `ok === false` (`NOT_IN_INITIAL`); той самий модуль у чанку, досяжному лише динамічно (не в `imports`), → `ok === true`.
+
+  Кожен чанк фікстури має всі три поля (аудит Codex №6).
 
   Точні форми module-id звірити з `SERVER_FN_STUB` і `adminServerStubs` у `gate-c.mjs`.
 - [ ] **Step 8: Прогнати** `pnpm vitest run tests/pilot-gate-c.test.ts` → PASS. Мутація: прибрати `...SERVER_ONLY.map(...)` з `SERVER_PAYLOAD` → кейс `db/client.js` FAIL; відкат → PASS.
@@ -115,7 +118,8 @@
   - `packages/simplycms/src/supabase/` (уся тека);
   - `packages/simplycms/src/admin/layouts/LegacySupabaseBoundary.tsx` і `__tests__/LegacySupabaseBoundary.test.tsx`;
   - `packages/simplycms/src/i18n/catalogs/{uk,en}/admin/legacy.ts`;
-  - `packages/simplycms/src/core/__tests__/cms-provider-no-supabase.test.tsx`.
+  - `packages/simplycms/src/core/__tests__/cms-provider-no-supabase.test.tsx`;
+  - `tests/admin-server-first/registry.ts` і `tests/admin-server-first-registry.test.ts` — у ЦІЙ задачі, а не в Task 4: тест реєстру червоніє «протухлим записом», щойно зникає `LegacySupabaseBoundary` (аудит Codex №1).
 - Modify:
   - `packages/simplycms/src/admin/layouts/AdminLayout.tsx:8,21-23,66-68`;
   - `packages/simplycms/src/i18n/catalogs/{uk,en}/admin/index.ts` (імпорт і спред `legacy`);
@@ -181,7 +185,7 @@
 - Modify: `eslint.config.mjs` — новий блок `plugins: { 'simplycms-supabase': { rules: { 'no-supabase-import': … } } }` на `files: ['**/*.{ts,tsx,mts,cts,mjs,cjs,js}']`, рівень `error`; поруч із блоком `simplycms-storage` (`:417-424`).
 
 **Interfaces:**
-- Produces: правило `simplycms-supabase/no-supabase-import` з `messageId: 'supabaseImport'`. Тест маніфестів експортує нічого, лише асерти.
+- Produces: правило `simplycms-supabase/no-supabase-import` з `messageId: 'supabaseImport'`. Тест маніфестів нічого не експортує, лише асерти (маніфести, lock, код шаблону).
 
 - [ ] **Step 1: RuleTester-тест правила.**
   - invalid (по 1 помилці `supabaseImport`):
@@ -200,26 +204,32 @@
 - [ ] **Step 3: Правило.** Збіг — специфікатор `=== '@supabase'` або `startsWith('@supabase/')`. Вузли: `ImportDeclaration`, `ExportAllDeclaration`, `ExportNamedDeclaration[source]`, `ImportExpression` з `source` — `Literal` або `TemplateLiteral` без `expressions` (значення з `quasis[0].value.cooked`), `CallExpression[callee.name='require'][arguments.0.type='Literal']`. Повідомлення українською: Supabase знесено в К3-Е7, БД — лише через `simplycms/db`.
 - [ ] **Step 4: Підключити в `eslint.config.mjs`.** Додати `lintText`-кейси в той самий тест-файл: `@supabase/ssr`-імпорт з `filePath` `packages/simplycms/src/x.ts`, `src/x.ts`, `plugins/x/index.ts`, `scripts/x.mjs` → по 1 помилці `simplycms-supabase/no-supabase-import`. Це доводить, що зона покриває все репо, а не лише RuleTester.
 - [ ] **Step 5: `tests/no-supabase-manifests.test.ts`.** Множина файлів — `package.json` кореня і всіх workspace-пакетів (обхід `pnpm-workspace.yaml` globs), `packages/create-simplycms-store/template/package.json.tpl`, `tests/pilot/store-template/package.json`. Кожен парситься (для `.tpl` — текстом). Об'єднання ключів `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies` не містить `@supabase/`. Окремий кейс: `pnpm-lock.yaml` не містить підрядка `@supabase/`. Окремий кейс-контроль: список файлів непорожній і містить `.tpl` (тест не вакуумний).
+- [ ] **Step 5а: Код шаблону поза лінтом (аудит Codex №2).** `packages/create-simplycms-store/template/*` і `template/*/**` в ignores (`eslint.config.mjs:620-630`), лінт бачить лише `template/scripts/**`. `template/src/**` — синкована копія кореневого `src/` (його лінт бачить), але `template/{vite.config.ts,routes.ts,simplycms.config.ts,…}` і `tests/pilot/store-template/**` — ні. У `tests/no-supabase-manifests.test.ts` додати кейс: обійти всі `*.{ts,tsx,mts,cts,js,mjs,cjs}` у `packages/create-simplycms-store/template/` і `tests/pilot/store-template/`, лінтувати кожен через `new Linter({ configType: 'flat' })` з ОДНИМ правилом `simplycms-supabase/no-supabase-import` і парсером `typescript-eslint` (без конфіг-ігнорів) → 0 повідомлень. Контроль невакуумності: список файлів містить `template/vite.config.ts` і `template/simplycms.config.ts`.
 - [ ] **Step 6: Прогнати** `pnpm lint && pnpm vitest run tests/eslint-rules/no-supabase-import.test.ts tests/no-supabase-manifests.test.ts tests/plugin-trust-boundary.test.ts` (останній фільтрує за `ruleId === 'no-restricted-imports'`, друге правило на тій самій фікстурі лічильників не ламає — підтвердити прогоном) → зелено, lint 0/7. Мутації:
   - додати `"@supabase/ssr": "^0.12.7"` у `package.json.tpl` → FAIL; відкат;
   - дописати рядок `  '@supabase/x@1.0.0':` у кінець `pnpm-lock.yaml` → FAIL; `git checkout pnpm-lock.yaml`;
-  - тимчасовий `import '@supabase/ssr'` у `src/start.ts` → `pnpm lint` червоний; відкат.
+  - тимчасовий `import '@supabase/ssr'` у `src/start.ts` → `pnpm lint` червоний; відкат;
+  - тимчасовий `import '@supabase/ssr'` у `packages/create-simplycms-store/template/simplycms.config.ts` → кейс Step 5а червоний (`pnpm lint` при цьому зелений — саме тому кейс існує); відкат.
 - [ ] **Step 7: Commit.** `test(k3-e7): ратчет no-supabase-import на все репо і заборона @supabase/ у маніфестах і lock`. Перевірка трейлерів.
 - [ ] **Step 8: Журнал мутацій Step 6 → архітекторові.**
 
 ### Task 4: Тестові реєстри легасі (А4, Р7)
 
 **Files:**
-- Delete: `tests/admin-server-first/registry.ts`, `tests/admin-server-first-registry.test.ts`, `tests/admin-inserts-need-id.test.ts`
+- Delete: `tests/admin-inserts-need-id.test.ts` (реєстр `admin-server-first` знесено в Task 2)
 - Modify: `packages/simplycms/test-harness/pg/__tests__/explicit-ids.test.ts:50-76,125,147,194-203,231-233,284-296`; `packages/simplycms/test-harness/pg/insert-scan.ts:55` (приклад JSDoc → `db.insert(t).values([payload])`); `tests/media-read-resolve.test.ts:34` (коментар бреше про «адмінку на supabase-js»)
 
 **Interfaces:**
 - Consumes: `discoverInsertsInSource` у `explicit-ids.test.ts`; `insert-scan.ts` лишається спільним (його імпортують `insert-scan.test.ts`, `mutation-cache-sync-coverage`, `storage-direct-calls`, `storage-port-consumers`).
 
-- [ ] **Step 1: Тест Review Focus №5.** У `explicit-ids.test.ts` додати синтетичний кейс: джерело `await db.insert(products).values(payload)` без `id` з шляхом `…/admin/pages/X.tsx` → `discoverInsertsInSource` повертає offender. Прогнати → FAIL (шлях у виїмці).
-- [ ] **Step 2: Зняти виїмку.** `EXEMPT_DIRS` і коментар `:50-75` прибрати разом із логікою пропуску. Гілку `supabase` (`kind`, `supabaseRe`, цикл, коментар `:231-233`, кейс `:284-296`) прибрати. Поле `kind` прибрати зовсім, якщо після цього воно має одне значення і ніде не читається.
+- [ ] **Step 1: Тест Review Focus №5.** `discoverInsertsInSource(src, file)` повертає вставки незалежно від шляху; виїмку застосовує фільтр тесту `!isExempt(site) && !hasIdField(site.payload)` (`explicit-ids.test.ts:239-252`). Тому:
+  - винести цей фільтр у функцію `offendersOf(sites: InsertSite[]): InsertSite[]` того ж файлу, і основний тест, і синтетичний кейс кличуть її;
+  - синтетичний кейс: джерело `await db.insert(products).values(payload)` без `id`, файл `…/admin/pages/X.tsx` → `offendersOf(discoverInsertsInSource(src, file))` має довжину 1.
+
+  Прогнати → FAIL (шлях у виїмці; аудит Codex №3).
+- [ ] **Step 2: Зняти виїмку.** `EXEMPT_DIRS`, коментар `:50-75` і перевірку теки в `isExempt` прибрати; з асерту «виїмки не розповзаються» (`:254-263`) прибрати рядок `expect(EXEMPT_DIRS)…`, асерт `ID_FROM_DB` лишається. Гілку `supabase` (`kind`, `supabaseRe`, цикл, коментар `:231-233`, кейс `:284-296`) прибрати. Поле `kind` прибрати зовсім, якщо після цього воно має одне значення і ніде не читається.
 - [ ] **Step 3: Прогнати** `PG_HARNESS_URL=… pnpm test:schema explicit-ids` → PASS, включно з кейсом зі Step 1. Якщо реальних offender'ів у `admin/pages`/`admin/components` > 0 — полагодити кожен (`id` генерує викликач), записати кількість у звіт задачі для архітектора.
-- [ ] **Step 4: Знести три файли реєстрів.** `git grep -n "admin-server-first\|admin-inserts-need-id\|PENDING_LEGACY\|KNOWN_WITHOUT_ID"` → 0 поза `docs/superpowers/**` і CHANGELOG; доки правляться в Task 9, тож тут лише код і тести.
+- [ ] **Step 4: Знести `admin-inserts-need-id`.** `git grep -n "admin-server-first\|admin-inserts-need-id\|PENDING_LEGACY\|KNOWN_WITHOUT_ID"` → 0 поза `docs/superpowers/**` і CHANGELOG; доки правляться в Task 9, тож тут лише код і тести.
 - [ ] **Step 5: Прогнати** `pnpm test && pnpm test:schema` → зелено.
 - [ ] **Step 6: Commit.** `test(k3-e7): explicit-ids бачить усю адмінку; реєстри легасі supabase-js знесено`. Перевірка трейлерів.
 
@@ -235,14 +245,19 @@
 - Test: `tests/cli-doctor.test.ts:144-170`, `tests/create-store-cli.test.ts:196` (перевірку `project_id` у `config.toml` знести), `tests/create-store-invite-setup.test.ts:53-58,77`, новий кейс `update` у `tests/cli-update.test.ts` (або наявному тесті update — знайти `parseUpdateArgs` у `tests/`)
 
 **Interfaces:**
-- Produces: `storeMigrationsDir(storeRoot: string): string` → `join(storeRoot, 'db', 'migrations')`. Новий експорт там само, у `db-diff.mjs`: `missingStoreMigrationsDir(storeRoot: string): string | null`. Повертає `null`, якщо тека є; інакше — текст помилки «тека міграцій магазину db/migrations відсутня», а якщо існує `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`. Його використовують `checkMigrations` і `update`.
+- Produces: `storeMigrationsDir(storeRoot: string): string` → `join(storeRoot, 'db', 'migrations')`. Новий експорт там само, у `db-diff.mjs`: `missingStoreMigrationsDir(storeRoot: string): string | null`. Повертає `null`, якщо тека є. Інакше — рівно `Тека міграцій магазину db/migrations відсутня.`; якщо існує `supabase/migrations`, до неї дописується ` Знайдено стару supabase/migrations — перенеси: git mv supabase/migrations db/migrations`. Тести асертять саме ці рядки. Його використовують `checkMigrations` і `update`.
 
 - [ ] **Step 1: Тести doctor.** У `cli-doctor.test.ts`:
   - наявний кейс `:150` → `join(store, 'db', 'migrations')`;
   - новий: канон є, `db/migrations` немає, `supabase/` немає → `status: 'error'`, `details` містить `db/migrations`;
   - новий: канон є, немає `db/migrations`, є `supabase/migrations/0001_init.sql` → `error`, `details` містить `git mv supabase/migrations db/migrations`;
   - наявний `skip` без канону лишається `skip`: канон перевіряється першим.
-- [ ] **Step 2: Тест update.** Тимчасовий магазин із host-файлами, що збігаються з каноном, без `db/migrations`. Host-файли магазину навмисно розсинхронізовані з каноном. `run(['--no-install', '--write'])` → `process.exitCode === 1`, у виводі текст `missingStoreMigrationsDir` І host-файли в цьому ж прогоні перезаписано канонічними (вміст збігається з `packages/cli/host/`). Інший кейс: з `db/migrations` → exitCode не 1 (відомий успіх). Знайти, як наявні тести update ізолюють `findStoreRoot`/`say`, і повторити прийом.
+- [ ] **Step 2: Тест update.** Тимчасовий магазин без `db/migrations`. `process.exitCode` скидати між кейсами. Кейси:
+  - host-файли навмисно розсинхронізовані, `run(['--no-install', '--write'])` → `process.exitCode === 1`, у виводі текст з Interfaces, host-файли в цьому ж прогоні перезаписано канонічними (вміст = `packages/cli/host/`);
+  - host-файли збігаються з каноном, `run(['--no-install'])` → `process.exitCode === 1` і той самий текст (гілка «дрейфу немає» теж не мовчить);
+  - з `db/migrations` і без дрейфу → `process.exitCode` не `1`.
+
+  Знайти, як наявні тести update ізолюють `findStoreRoot`/`say`, і повторити прийом.
 - [ ] **Step 3: Тести скаффолдера.**
   - `create-store-invite-setup.test.ts:53-58,77` → `toContain('db/migrations/*.sql')`, гард `not.toContain('supabase db push')` лишається;
   - новий асерт: надрукованих кроків `not.toContain('supabase/migrations')`.
@@ -251,7 +266,7 @@
 - [ ] **Step 5: Імплементація.**
   - `storeMigrationsDir` і `missingStoreMigrationsDir` у `db-diff.mjs`.
   - У `checkMigrations` — перевірка одразу після `skip`.
-  - У `update.run` — перевірка ПІСЛЯ синку host-файлів і лінків: `say.error(<текст>)`, `process.exitCode = 1`, далі звичний вихід. Не `throw`, щоб host-синк лишався корисним.
+  - `update.run` перебудувати: зараз дві гілки виходять ранніми `return` (`:131` «дрейфу немає», `:141` після `writeHostFiles`; аудит Codex №4). Після `syncSkillLinks` і обробки host-дрейфу всі три гілки (без дрейфу / `--write` / `--check`) сходяться в одну точку: перевірка `missingStoreMigrationsDir` → `say.error(<текст>)` і `process.exitCode = 1`; далі підсумковий `finish`. Код виходу дрейфу (`hostDriftExitCode`) не губиться: підсумковий — максимум з обох. Не `throw`, щоб host-синк лишався корисним.
   - Друковані тексти `db-diff.mjs:325-331` і `steps.mjs:116-133` → `db/migrations`, без згадки Supabase CLI.
   - `sync`: `to: 'db/migrations'`, далі `pnpm template:sync && git rm -r packages/create-simplycms-store/template/supabase`.
 - [ ] **Step 6: Прогнати.**
@@ -275,13 +290,14 @@
   - `tsconfig.json:36-38` — `tools`, `supabase/functions` з exclude;
   - `.gitignore:46-47`;
   - `.claude/settings.json` → `{}` + перенос рядка;
+  - `packages/simplycms/migrations/demo/demo-seed.sql:12` (коментар про домен посилається на `seed-fixtures.mjs` → прибрати посилання, домен описати словами), далі `pnpm template:sync` для копії в шаблоні; `tests/create-store-template-parity.test.ts:14` («модель tests/pilot-seed.test.ts» → описати модель без посилання) — аудит Codex №5;
   - `scripts/dev-stand/generate-seed.mjs:29`, `scripts/dev-stand/README.md:31,50,75-82`, `scripts/dev-stand/dump-demo-data.mjs:32` — Postgres-формулювання, без `supabase start/db reset` і без `supabase/seed.sql`.
 
 **Interfaces:** нічого не продукує для інших задач.
 
 🔴 Паралельна гілка `claude/tooling-lessons` (сесія `simplycms-8c`) теж правитиме `.claude/*`, `.agents/skills/code-review/SKILL.md`, `.claude/commands/*`. Вона ребейзиться на Е7 після нас — на неї не чекати й її змін не мержити.
 
-- [ ] **Step 1: Доказ відсутності читачів.** `git grep -nE "seed-fixtures|seed-sql|pilot-seed|pilot:seed|db-migrate|db:migrate|content-loader|supabase/seed|supabase/config" -- ':!docs/**' ':!CHANGELOG.md'` → лише файли, що зносяться в цій задачі. Решту доків правити в Task 9.
+- [ ] **Step 1: Доказ відсутності читачів.** `git grep -nE "seed-fixtures|seed-sql|pilot-seed|pilot:seed|db-migrate|db:migrate|content-loader|supabase/seed|supabase/config" -- ':!docs/**' ':!CHANGELOG.md'` → лише файли, що зносяться або правляться в цій задачі (включно з `demo-seed.sql` і його копією, `create-store-template-parity.test.ts`). Решту доків правити в Task 9. Повторити grep після правок → 0 поза `docs/**` і CHANGELOG.
 - [ ] **Step 2: Знести й поправити.** Скрипти `pnpm-workspace.yaml` не чіпають: `tools/` поза workspace.
 - [ ] **Step 3: Прогнати.**
   - `pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test` → зелено.
@@ -403,6 +419,7 @@
   | `docs/tasks/{platform-roadmap,v2-state-map,redesign-mechanism-b2,theme-views-v3}.md` | історичні розділи й завершені задачі (Р9) |
 
   Перевірка: `git grep -il supabase -- . ':!CHANGELOG.md' ':!docs/superpowers/**' | sort > /tmp/…/actual.txt`. Кожен рядок `actual.txt` мусить бути в allowlist; `comm -23 actual allowlist` → порожньо. Зайвий файл — виправити в його задачі, а не розширювати allowlist. Розширення — лише з причиною і повідомленням архітекторові.
+  Allowlist фільтрує лише шляхи, тож у «змішаних» файлах (`schema/README.md`, `cli.md`, `data-layer.md`…) забута правка пройшла б. Тому другий фільтр (аудит Codex №7): `git grep -nE "supabase/types\.ts|simplycms/supabase|src/supabase|LegacySupabaseBoundary|useSupabaseClient|SupabaseProvider|data-supabase|@supabase/ssr|supabase/config\.toml|supabase/seed" -- . ':!CHANGELOG.md' ':!docs/superpowers/**'`. Кожен рядок виводу — або гард (фікстура/асерт у тестах Р2 і `plugin-trust-boundary`), або в розділі з позначкою «історичний» у `docs/tasks/*`, `test-contours.md`, `platform-delivery-options.md`. І окремо `git grep -n "supabase/migrations"` → лише підказка Р6 (`db-diff.mjs`, її тести, `cli.md`), негативні асерти тестів скаффолдера, SQL-канон README і позначені історичні розділи. Будь-що інше — виправити в задачі-власниці.
   Після перевірки обрізати allowlist у плані до фактичного виводу `actual.txt` (окремим комітом `docs(k3-e7): allowlist плану = факт`), щоб він не брехав наступному читачеві.
 - [ ] **Step 2: Повний ланцюг гейтів.** `pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm typecheck:showcase && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm build:www && pnpm typecheck:www` → зелено, lint 0/7.
 - [ ] **Step 3: Живі прогони.**
