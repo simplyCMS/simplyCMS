@@ -97,13 +97,17 @@ grant select, insert, update, delete on table
   public.wishlists
 to app_user;
 
--- Е6д-16 б: відгук покупець змінює лише колонковим UPDATE. Табличного немає
--- навмисно: `images` мають довіряти лише через media-порт (інакше автор вписав
--- би ключ чужого файла, а ескалація `app_admin` при видаленні стерла б його),
--- а `status`/`admin_comment`/`user_id` змінює лише модератор. Жоден шлях
--- вітрини `product_reviews` не оновлює (виміряно), тож грант лише звужує.
-grant select, insert, delete on table public.product_reviews to app_user;
-grant update (rating, title, content, updated_at)
+-- Е6д-16 б, Е6д-23: відгук покупець пише лише колонковими INSERT/UPDATE.
+-- Табличних немає навмисно: `status` у INSERT не входить (DEFAULT 'pending' —
+-- інакше автор подав би одразу approved), `admin_comment`/`user_id` змінює
+-- лише модератор. `status` в UPDATE дозволений, бо правка схваленого відгуку
+-- повертає його в 'pending': політика `product_reviews_update_own` пускає
+-- лише NEW.status = 'pending'. `images` довіряють лише через media-порт.
+grant select, delete on table public.product_reviews to app_user;
+grant insert (id, product_id, user_id, rating, title, content, images,
+              created_at, updated_at)
+  on table public.product_reviews to app_user;
+grant update (rating, title, content, images, status, updated_at)
   on table public.product_reviews to app_user;
 
 -- Замовлення не редагуються покупцем: скасування чи зміна — серверна

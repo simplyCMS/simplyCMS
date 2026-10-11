@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
 import {
   normalizeMediaRefs,
@@ -27,9 +27,9 @@ export interface ReviewInput {
 }
 
 /**
- * Записати відгук від імені власника сесії. 🔴 `status` завжди `'pending'`
- * (не з форми — інакше відгук обійшов би модерацію), `user_id` задає сервер
- * (`product_reviews_insert_own` звіряє рядок саме з названим актором). `id`
+ * Записати відгук від імені власника сесії. 🔴 `status` не пишеться взагалі:
+ * у колонковому INSERT-гранті його немає, діє DEFAULT 'pending' (інакше відгук
+ * обійшов би модерацію); `user_id` задає сервер (`product_reviews_insert_own` звіряє рядок саме з названим актором). `id`
  * передає викликач, що вже привʼязав до нього файли.
  */
 export async function insertProductReview(
@@ -38,18 +38,17 @@ export async function insertProductReview(
   input: ReviewInput,
   id: string = randomUUID(),
 ): Promise<{ id: string }> {
-  await db.insert(productReviews).values({
-    id,
-    productId: input.productId,
-    userId,
-    rating: input.rating,
-    title: input.title,
-    // 🔴 Тема 9, рубіж 1: відгук пише недовірений автор (server function можна
-    // викликати напряму, повз редактор) — розмітку чистимо ДО запису.
-    content: sanitizeNullableRichHtml(input.content, 'review'),
-    images: input.images,
-    status: 'pending',
-  });
+  // 🔴 Тема 9, рубіж 1: відгук пише недовірений автор (server function можна
+  // викликати напряму, повз редактор) — розмітку чистимо ДО запису.
+  const content = sanitizeNullableRichHtml(input.content, 'review');
+  // Сирий SQL, а не конструктор вставки drizzle: він додає до
+  // INSERT усі колонки зі `default`, а Postgres перевіряє колонковий грант на
+  // кожну названу колонку — `status`/`admin_comment` без гранту дали б 42501.
+  await db.execute(sql`
+    insert into product_reviews (id, product_id, user_id, rating, title, content, images)
+    values (${id}, ${input.productId}, ${userId}, ${input.rating}, ${input.title},
+            ${content}, ${JSON.stringify(input.images)}::jsonb)
+  `);
   return { id };
 }
 

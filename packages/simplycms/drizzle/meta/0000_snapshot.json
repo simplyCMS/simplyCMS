@@ -2857,14 +2857,14 @@
           ],
           "withCheck": "user_id = (select app.current_user_id())"
         },
-        "product_reviews_update_own_pending": {
-          "name": "product_reviews_update_own_pending",
+        "product_reviews_update_own": {
+          "name": "product_reviews_update_own",
           "as": "PERMISSIVE",
           "for": "UPDATE",
           "to": [
             "app_user"
           ],
-          "using": "user_id = (select app.current_user_id()) and status = 'pending'",
+          "using": "user_id = (select app.current_user_id())",
           "withCheck": "user_id = (select app.current_user_id()) and status = 'pending'"
         },
         "product_reviews_delete_own": {
