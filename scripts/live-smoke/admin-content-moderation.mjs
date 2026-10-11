@@ -87,12 +87,19 @@ export async function moderationPart({
       .getByText(fx.seededText)
       .first()
       .waitFor({ timeout: 10_000 })
-      .then(() => guest.getByText(fx.reviewText).first().isVisible())
+      .then(() =>
+        guest
+          .getByText(fx.reviewText)
+          .first()
+          .waitFor({ state: 'visible', timeout: 10_000 })
+          .then(() => true),
+      )
       .catch(() => false);
     const photo = await guest
       .locator(`img[src="/media/${st.reviewRef}"]`)
       .first()
-      .isVisible()
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
       .catch(() => false);
     check(
       'контент: вітрина показує обидва схвалені відгуки, фото відгуку покупця видно',

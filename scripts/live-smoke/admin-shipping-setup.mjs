@@ -17,13 +17,13 @@ export async function zoneDefaultPart({ page, base, dbUrl, check, fx: FX }) {
   const t1 = await ui.makeDefault(page, FX.zone);
   const db1 = await sqlx.pollUntil(read, (r) => isDef(r, FX.zone));
   const badge1 =
-    (await ui.hasDefaultBadge(page, FX.zone)) &&
-    !(await ui.hasDefaultBadge(page, FX.rate.zone));
+    (await ui.expectDefaultBadge(page, FX.zone, true)) &&
+    (await ui.expectDefaultBadge(page, FX.rate.zone, false));
   const t2 = await ui.makeDefault(page, FX.rate.zone);
   const db2 = await sqlx.pollUntil(read, (r) => isDef(r, FX.rate.zone));
   const badge2 =
-    (await ui.hasDefaultBadge(page, FX.rate.zone)) &&
-    !(await ui.hasDefaultBadge(page, FX.zone));
+    (await ui.expectDefaultBadge(page, FX.rate.zone, true)) &&
+    (await ui.expectDefaultBadge(page, FX.zone, false));
   await ui.deleteRow(page, FX.zone);
   const db3 = await sqlx.pollUntil(read, (r) => r.length === 1);
   check(
