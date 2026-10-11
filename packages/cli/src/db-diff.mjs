@@ -248,6 +248,16 @@ export async function run(argv) {
   const { write } = parseDbDiffArgs(argv);
   begin('simplycms db:diff');
   const storeRoot = findStoreRoot();
+  // 🔴 До будь-якої генерації: інакше `--write` через `copyMigrations`
+  // (`mkdir -p`) мовчки створив би нову `db/migrations` — зокрема в магазині,
+  // що ще лежить на старій `supabase/migrations`.
+  const missingDir = missingStoreMigrationsDir(storeRoot);
+  if (missingDir) {
+    say.error(missingDir);
+    process.exitCode = 1;
+    finish('Тека міграцій магазину відсутня.');
+    return;
+  }
   const storeDir = storeMigrationsDir(storeRoot);
 
   // Канони: ядро (обовʼязкове) + плагіни з конфігу, що везуть migrations/.
