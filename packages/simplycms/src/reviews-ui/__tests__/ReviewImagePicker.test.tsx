@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { useState } from 'react';
+import { StrictMode, useState } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
 import { ACCEPT_ATTRIBUTE } from 'simplycms/domain/media';
 import { ReviewImagePicker } from '../ReviewImagePicker';
@@ -115,7 +115,7 @@ describe('ReviewImagePicker', () => {
     expect(revoke).toHaveBeenCalledWith('blob:mock-0');
   });
 
-  it('заміна файла ревокує URL старого і створює URL для нового', () => {
+  it('інший File у списку: li перемонтовується за fileKey — URL старого ревокується, для нового створюється', () => {
     const a = img('a.png');
     const b = img('b.png');
     const view = (files: File[]) => (
@@ -140,5 +140,27 @@ describe('ReviewImagePicker', () => {
     );
     rerender(view([]));
     expect(revoke).toHaveBeenLastCalledWith('blob:mock-1');
+  });
+
+  it('StrictMode: кожен створений URL ревокнуто, крім живого; після розмонтування — усі', () => {
+    const { unmount } = render(
+      <StrictMode>
+        <I18nProvider locale="uk">
+          <Harness initial={[img('a.png')]} />
+        </I18nProvider>
+      </StrictMode>,
+    );
+    // Подвійний ефект StrictMode: створено 2, перший відкликано, живий лишається.
+    expect(created.length).toBeGreaterThanOrEqual(2);
+    expect(revoke).toHaveBeenCalledTimes(created.length - 1);
+    const live = created.filter(
+      (u) => !revoke.mock.calls.some(([r]) => r === u),
+    );
+    expect(live).toHaveLength(1);
+    unmount();
+    expect(revoke).toHaveBeenCalledTimes(created.length);
+    expect(new Set(revoke.mock.calls.map(([u]) => u))).toEqual(
+      new Set(created),
+    );
   });
 });

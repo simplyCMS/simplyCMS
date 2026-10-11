@@ -40,7 +40,7 @@ const VALUES: Record<string, string> = {
   updated_at: 'now()',
 };
 
-describe('Е6д-16 б: колонковий UPDATE product_reviews для app_user', () => {
+describe('Е6д-16 б: колонкові гранти INSERT/UPDATE product_reviews для app_user', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_review_columns');
   let dbUrl = '';

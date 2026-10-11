@@ -3,7 +3,11 @@
 // відгуку лишаються, бо їхні посилання бачить `findMediaReferences`.
 import { describe, expect, it, vi } from 'vitest';
 import { getMediaDriver } from 'simplycms/storage';
-import { MEDIA_SWEEP_BATCH, STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
+import {
+  MEDIA_SWEEP_BATCH,
+  MEDIA_SWEEP_MAX_BATCHES,
+  STORE_LOGO_OWNER_ID,
+} from 'simplycms/domain/media';
 import { useCatalogMediaDb } from './fixtures/catalog-media';
 import { blockCommitOn } from './fixtures/commit-block';
 import { profile } from './fixtures/admin-system';
@@ -120,6 +124,46 @@ describe('sweepUnreferencedMediaOp (Е6д-22)', () => {
       `select count(*)::text c from public.media where storage_key like 'ab/live-%'`,
     );
     expect(Number(live[0]!.c)).toBe(n);
+  });
+
+  /** `n` сиріт із власником `banner/<uuid>`, 48 год, ключі `ab/<prefix>-…` (файлів на диску немає — драйвер стирає ідемпотентно). */
+  const seedOrphans = (prefix: string, n: number) =>
+    f.rows(
+      `insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type, created_at)
+       select gen_random_uuid(), 'banner', gen_random_uuid(),
+              'ab/' || $2::text || '-' || g || '.png', 1, 'image/png', now() - interval '48 hours'
+         from generate_series(1, $1) g`,
+      [n, prefix],
+    );
+  const left = async (prefix: string) =>
+    Number(
+      (
+        await f.rows<{ c: string }>(
+          `select count(*)::text c from public.media where storage_key like $1`,
+          [`ab/${prefix}-%`],
+        )
+      )[0]!.c,
+    );
+
+  it('сиріт більше за пакет, але в межах MAX_BATCHES → усі стерті за один виклик', async () => {
+    const n = MEDIA_SWEEP_BATCH * 2 + 1;
+    await seedOrphans('multi', n);
+    const { erased } = await sweepUnreferencedMediaOp();
+    expect(erased).toBeGreaterThanOrEqual(n);
+    expect(await left('multi')).toBe(0);
+  });
+
+  it('стеля MAX_BATCHES: MAX×BATCH+1 сиріт → рівно MAX×BATCH стерто, один лишається', async () => {
+    const cap = MEDIA_SWEEP_MAX_BATCHES * MEDIA_SWEEP_BATCH;
+    // Чистимо чужих сиріт, щоб лічильник був точним (інші тести лишають лише живих/свіжих).
+    await sweepUnreferencedMediaOp();
+    await seedOrphans('cap', cap + 1);
+    const first = await sweepUnreferencedMediaOp();
+    expect(first.erased).toBe(cap);
+    expect(await left('cap')).toBe(1);
+    const second = await sweepUnreferencedMediaOp();
+    expect(second.erased).toBe(1);
+    expect(await left('cap')).toBe(0);
   });
 
   it('COMMIT впав → файл і рядок цілі (файл стирається лише після COMMIT)', async () => {
