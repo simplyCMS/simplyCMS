@@ -33,7 +33,6 @@ const mocks = vi.hoisted(() => ({
   saveStoreProfile: vi.fn(),
   saveStockManagement: vi.fn(),
   uploadMedia: vi.fn(),
-  deleteMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (

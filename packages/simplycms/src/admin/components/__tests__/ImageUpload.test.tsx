@@ -5,7 +5,6 @@ import { I18nProvider } from 'simplycms/i18n';
 
 const mocks = vi.hoisted(() => ({
   uploadMedia: vi.fn(),
-  deleteMedia: vi.fn(),
   toast: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
@@ -37,6 +36,5 @@ describe('ImageUpload: прибирання з форми', () => {
     fireEvent.click(container.querySelector('.lucide-x')!.closest('button')!);
     expect(onImagesChange).toHaveBeenCalledWith([]);
     await Promise.resolve();
-    expect(mocks.deleteMedia).not.toHaveBeenCalled();
   });
 });

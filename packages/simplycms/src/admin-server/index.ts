@@ -5,8 +5,6 @@ import { createServerFn } from '@tanstack/react-start';
 import {
   adminInput,
   uploadFormInput,
-  deleteMediaInput,
-  deleteMediaOp,
   uploadMediaOp,
   listMediaErasuresOp,
   retryMediaErasuresOp,
@@ -177,10 +175,6 @@ export const reorderOrderStatus = createServerFn({ method: 'POST' })
 export const uploadMedia = createServerFn({ method: 'POST' })
   .validator(uploadFormInput)
   .handler(uploadMediaOp);
-
-export const deleteMedia = createServerFn({ method: 'POST' })
-  .validator(adminInput(deleteMediaInput))
-  .handler(deleteMediaOp);
 
 // Е6д-20: хвости стирання файлів. Читання й повтор — без вводу, валідувати
 // нічого.

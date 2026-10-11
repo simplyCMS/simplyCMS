@@ -39,7 +39,6 @@ export function createAdminServerMock(
     setDefaultOrderStatus: vi.fn(),
     reorderOrderStatus: vi.fn(),
     uploadMedia: vi.fn(),
-    deleteMedia: vi.fn(),
     listMediaErasures: list(),
     retryMediaErasures: vi.fn(),
     sweepUnreferencedMedia: vi.fn(),

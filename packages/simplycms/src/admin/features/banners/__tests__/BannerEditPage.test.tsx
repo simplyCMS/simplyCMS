@@ -32,7 +32,6 @@ const m = vi.hoisted(() => ({
   updateBanners: vi.fn(),
   removeBanners: vi.fn(),
   listSections: vi.fn(),
-  deleteMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (

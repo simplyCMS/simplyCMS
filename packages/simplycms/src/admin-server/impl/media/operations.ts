@@ -1,8 +1,4 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
-import { media } from 'simplycms/schema';
-import { stateConflict } from '../errors';
 import { fieldIssue } from '../validation';
 import { runAdmin } from '../run';
 import {
@@ -14,9 +10,6 @@ import {
   type MediaEntityType,
 } from 'simplycms/domain/media';
 import {
-  completeMediaErasures,
-  eraseMediaRows,
-  findMediaReferences,
   inspectUpload,
   withPublishedRollback,
   writeMedia,
@@ -140,40 +133,4 @@ export async function uploadMediaOp({
       return { ref: record.ref, url };
     }),
   );
-}
-
-export const deleteMediaInput = z.object({ ref: z.string().min(1).max(200) });
-
-/**
- * Прибрати файл за референсом. Зовнішній URL (рядка `media` немає) →
- * `removed: false`, без збою.
- *
- * Порядок (Е6д-14/22): рядок `media` `FOR UPDATE` → `findMediaReferences`
- * непорожній → 409 `media_in_use` → інакше `eraseMediaRows` з власником із
- * самого рядка (+ outbox) → файл стирає `completeMediaErasures` ПІСЛЯ COMMIT.
- * Рядка без `entity_id` бути не може (upload без власника відхиляється), тож
- * такий рядок — дефект даних, а не гілка коду.
- */
-export async function deleteMediaOp({
-  data,
-}: {
-  data: z.infer<typeof deleteMediaInput>;
-}): Promise<{ removed: boolean }> {
-  const erased = await runAdmin('media.write', async (db) => {
-    const [row] = await db
-      .select({ entityType: media.entityType, entityId: media.entityId })
-      .from(media)
-      .where(eq(media.storageKey, data.ref))
-      .limit(1)
-      .for('update');
-    if (!row) return [];
-    if ((await findMediaReferences(db, data.ref)).length > 0)
-      stateConflict(ADMIN_STATE_CONSTRAINT.mediaInUse);
-    return eraseMediaRows(db, [data.ref], {
-      entityType: row.entityType,
-      entityId: row.entityId,
-    });
-  });
-  await completeMediaErasures(erased);
-  return { removed: erased.length > 0 };
 }

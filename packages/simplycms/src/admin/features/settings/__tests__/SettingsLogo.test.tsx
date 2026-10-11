@@ -32,7 +32,6 @@ const mocks = vi.hoisted(() => ({
   saveStoreProfile: vi.fn(),
   saveStockManagement: vi.fn(),
   uploadMedia: vi.fn(),
-  deleteMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -67,7 +66,6 @@ describe('Логотип у формі налаштувань (Review Focus 2, �
     await waitFor(() =>
       expect(document.querySelector('.group .lucide-x')).toBeNull(),
     );
-    expect(mocks.deleteMedia).not.toHaveBeenCalled();
     expect(mocks.saveStoreProfile).not.toHaveBeenCalled();
   });
 
@@ -86,6 +84,5 @@ describe('Логотип у формі налаштувань (Review Focus 2, �
     view.unmount();
     // Новий рядок media лишився без посилання з профілю — її змітає sweep неприв'язаних медіа (Е6д-22).
     expect(mocks.saveStoreProfile).not.toHaveBeenCalled();
-    expect(mocks.deleteMedia).not.toHaveBeenCalled();
   });
 });

@@ -39,7 +39,6 @@ const m = vi.hoisted(() => ({
   listBanners: vi.fn(),
   updateBanners: vi.fn(),
   listSections: vi.fn(),
-  deleteMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -60,7 +59,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('BannerEditPage: редагування', () => {
-  it('прибрати картинку і «Скасувати»: жодного deleteMedia/updateBanners', async () => {
+  it('прибрати картинку і «Скасувати»: жодного updateBanners', async () => {
     params.bannerId = BANNERS[0]!.id;
     render(<BannerEditPage />, { wrapper });
     await screen.findByDisplayValue('Літній розпродаж');
@@ -70,7 +69,6 @@ describe('BannerEditPage: редагування', () => {
       ),
     );
     fireEvent.click(screen.getByText(t('common.cancel')));
-    expect(m.deleteMedia).not.toHaveBeenCalled();
     expect(m.updateBanners).not.toHaveBeenCalled();
   });
 

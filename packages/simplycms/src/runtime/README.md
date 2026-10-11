@@ -3,8 +3,8 @@
 `defineConfig` типізує `simplycms.config.ts` (локаль, валюта, набір тем
 і плагінів лінивими лоадерами) — це і є чинний спосіб конфігурації магазину.
 Шар несе також `defineRuntime`/`bootstrapRuntime` — заявлений, але **без
-жодного споживача в коді** (див. нижче). Залежить лише від контрактів
-`simplycms/contracts` — Supabase та `import.meta.env` усередині немає.
+жодного споживача в коді** (див. нижче). Залежить від контрактів
+`simplycms/contracts` і доменних констант `simplycms/domain/media` (стеля тіла) — Supabase та `import.meta.env` усередині немає.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Postgres. Окремим пакетом він більше не
@@ -27,7 +27,7 @@ pnpm add simplycms
 | `defineRuntime(input)` | Збирає `SimplyCmsRuntime = { engine, modules, theme, plugins }` з `adapters: { links, config }`. 🔴 Без споживачів (див. «Відкрите питання») |
 | `bootstrapRuntime(rt)` | Послідовно виконує `setup()` усіх `EngineModule` під час старту застосунку. 🔴 Без споживачів |
 | `csrfMiddleware` (`simplycms/runtime/csrf`) | Request-міддлвара CSRF для `requestMiddleware` у `start.ts`: перевіряє origin мутуючих запитів (server functions і server routes), виняток — `CSRF_EXEMPT_PREFIXES` (`/api/auth/`). Client-safe |
-| `bodyLimitMiddleware` (`simplycms/runtime/body-limit`) | Request-міддлвара стелі тіла (К3-Е6д-2): POST на `/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413, multipart без `Content-Length` → 411. Стоїть після CSRF. Чиста частина — `checkBodyLimit` |
+| `bodyLimitMiddleware` (`simplycms/runtime/body-limit`) | Request-міддлвара стелі тіла (К3-Е6д-2): POST на `/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413, без `Content-Length` → 411 для всього, що не JSON (і для всього, що Start читає як форму). Стоїть після CSRF. Чиста частина — `checkBodyLimit` |
 | Типи | `DefineRuntimeInput`, `SimplyCmsRuntime`, `EngineModule`, `SimplyCmsConfig` (без `seo`: назва й описи — профіль магазину в БД, URL сайту — серверний env `VITE_SITE_URL`, Е6б-11), `PluginRegistration`, `ThemeLoader` |
 
 ## Як магазин ФАКТИЧНО збирає `EngineContext`

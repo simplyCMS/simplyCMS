@@ -99,7 +99,6 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   // Е6д-23: версія відгуку застаріла — сам текст належить каталогу відгуків.
   [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
   // Е6д-22: файл ще використовується.
-  [ADMIN_STATE_CONSTRAINT.mediaInUse]: 'admin.errors.mediaInUse',
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

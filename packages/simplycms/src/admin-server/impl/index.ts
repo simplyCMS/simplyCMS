@@ -20,8 +20,6 @@ export {
   removeManyOrderStatusesOp,
 } from './order-statuses/remove';
 export {
-  deleteMediaInput,
-  deleteMediaOp,
   parseUploadForm,
   uploadMediaOp,
   uploadFormInput,

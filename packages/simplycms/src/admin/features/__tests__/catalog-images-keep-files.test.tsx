@@ -10,7 +10,6 @@ import { I18nProvider } from 'simplycms/i18n';
 
 const mocks = vi.hoisted(() => ({
   uploadMedia: vi.fn(),
-  deleteMedia: vi.fn(),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -74,13 +73,9 @@ describe('форми каталогу: прибрана картинка не с
     ['товар', () => <ProductMainFields entityId="product-id" />],
     ['модифікація', () => <ModificationFormFields modId="mod-id" />],
   ];
-  it.each(cases)(
-    '%s: референс знято з форми, deleteMedia не викликано',
-    async (_n, body) => {
-      const seen = removeImage(body);
-      await Promise.resolve();
-      expect(seen.images).toEqual([]);
-      expect(mocks.deleteMedia).not.toHaveBeenCalled();
-    },
-  );
+  it.each(cases)('%s: референс знято з форми', async (_n, body) => {
+    const seen = removeImage(body);
+    await Promise.resolve();
+    expect(seen.images).toEqual([]);
+  });
 });

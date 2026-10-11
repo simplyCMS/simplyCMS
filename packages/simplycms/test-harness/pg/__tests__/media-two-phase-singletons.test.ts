@@ -1,4 +1,4 @@
-// К3-Е6д-3: аватар (заміна й очищення), логотип і `deleteMedia` на двофазному
+// К3-Е6д-3: аватар (заміна й очищення) і логотип на двофазному
 // стиранні. Обрив саме на COMMIT (відкладений тригер) доводить, що файл
 // стирається ПІСЛЯ нього: старий файл і рядок `media` лишаються цілі.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -30,12 +30,12 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-import { deleteMediaOp, saveStoreProfileOp } from 'simplycms/admin-server/impl';
+import { saveStoreProfileOp } from 'simplycms/admin-server/impl';
 import { removeMyAvatar } from 'simplycms/core/lib/profile-avatar';
 import { replaceAvatar } from 'simplycms/storefront/loaders';
 import { profile } from './fixtures/admin-system';
 
-describe('двофазне стирання: аватар, логотип, deleteMedia (К3-Е6д-3)', () => {
+describe('двофазне стирання: аватар, логотип (К3-Е6д-3)', () => {
   const d = useReviewsDb('simplycms_e6d_two_phase_singletons');
   const { f } = d;
   let unblock: (() => Promise<unknown>) | null = null;
@@ -129,19 +129,5 @@ describe('двофазне стирання: аватар, логотип, delet
     await saveStoreProfileOp({ data: profile({ logo: next }) });
     expect(await both(old)).toEqual(gone);
     expect(await both(next)).toEqual(alive);
-  });
-
-  it('deleteMedia: обрив COMMIT → цілий; успіх → стерто', async () => {
-    const ref = await put('banner', crypto.randomUUID());
-    unblock = await blockCommitOn((q) => f.rows(q), 'media', 'delete');
-    await expect(deleteMediaOp({ data: { ref } })).rejects.toThrow();
-    expect(await both(ref)).toEqual(alive);
-    await unblock();
-    unblock = null;
-    await expect(deleteMediaOp({ data: { ref } })).resolves.toEqual({
-      removed: true,
-    });
-    expect(await both(ref)).toEqual(gone);
-    expect(await tails()).toBe(0);
   });
 });

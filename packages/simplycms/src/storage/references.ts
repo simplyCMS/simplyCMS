@@ -67,8 +67,8 @@ export function mediaReferenceExists(key: SQL): SQL {
 }
 
 /**
- * Усі місця, де референс `key` лежить у даних (Е6д-22): джерело для 409
- * `media_in_use` у `deleteMedia`, для страховки sweep і для інваріанта сідів.
+ * Усі місця, де референс `key` лежить у даних (Е6д-22): джерело для
+ * страховки sweep і для інваріанта сідів.
  */
 export async function findMediaReferences(
   db: ActorDb,

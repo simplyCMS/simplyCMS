@@ -99,8 +99,6 @@ export const ADMIN_STATE_CONSTRAINT = {
   reviewNotFound: 'review_not_found',
   // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
   reviewChanged: 'review_changed',
-  // Е6д-22: файл ще використовується колонкою схеми чи логотипом.
-  mediaInUse: 'media_in_use',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

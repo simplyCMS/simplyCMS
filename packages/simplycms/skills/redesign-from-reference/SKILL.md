@@ -389,7 +389,7 @@ pnpm simplycms create theme <slug>
 
 - Обовʼязкові — `Header`/`Footer`; опційні — `HeroBanner` (отримує `banners`; `title`, `subtitle` і кнопки банера
   мають пріоритет над каталогом теми, кнопки фільтрує `isBannerButton`, колір
-  накладки — `isSafeCssValue`, див. `docs/architecture/themes.md` §2.2),
+  накладки — `isSafeCssColor`, див. `docs/architecture/themes.md` §2.2),
   `HomeSections` (**без пропсів**, дані тягне сама).
 - **Усі рядки UI — через `useThemeT`** і власний каталог теми (uk/en). Кирилиця
   в JSX валить лінт; неповний каталог валить парність-тест.
