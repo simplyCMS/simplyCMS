@@ -35,13 +35,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { loadHarnessEnv } from './harness-env.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-try {
-  process.loadEnvFile(join(ROOT, '.env.harness')); // pnpm harness:up; явна змінна важливіша
-} catch {
-  // немає файла — URL дасть --url або env
-}
+loadHarnessEnv(ROOT); // pnpm harness:up; явна змінна важливіша
 const MIGRATIONS_DIR =
   process.env.DEMO_DB_MIGRATIONS_DIR ??
   join(ROOT, 'packages/simplycms/migrations');

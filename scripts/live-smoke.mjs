@@ -50,6 +50,7 @@ import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
+import { loadHarnessEnv } from './harness-env.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -61,11 +62,7 @@ if (!process.env.LIVE_SMOKE_LOGGED) {
 const DB_NAME = 'simplycms_live_smoke';
 
 // `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.
-try {
-  process.loadEnvFile(join(ROOT, '.env.harness'));
-} catch {
-  // немає файла — нижче зрозуміла відмова
-}
+loadHarnessEnv(ROOT);
 const adminUrl = process.env.PG_HARNESS_URL;
 if (!adminUrl)
   throw new Error(

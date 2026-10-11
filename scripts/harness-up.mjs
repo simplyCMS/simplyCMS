@@ -8,11 +8,11 @@
  * місце: контейнер `simplycms-harness-pg` (pgvector/pgvector:pg17, trust) на
  * фіксованому порту, а `PG_HARNESS_URL` пишеться в git-ignored `.env.harness`,
  * який споживачі (`vitest.schema.config.ts`, `live-smoke.mjs`, `demo-db.mjs`)
- * підхоплюють через `process.loadEnvFile`, якщо змінну не задано явно.
+ * підхоплюють через `harness-env.mjs`, якщо змінну не задано явно і контейнер живий.
  * Ідемпотентний: уже запущений контейнер не чіпається.
  */
 import { spawnSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const NAME = 'simplycms-harness-pg';
@@ -36,9 +36,9 @@ if (probe.error || probe.status !== 0)
 
 if (process.argv[2] === 'down') {
   docker('rm', '-f', NAME);
-  console.log(
-    `[harness] ${NAME} зупинено (.env.harness лишено — він ідемпотентний).`,
-  );
+  // Застарілий файл змусив би споживачів ганятись за мертвим URL.
+  rmSync(ENV_FILE, { force: true });
+  console.log(`[harness] ${NAME} зупинено, .env.harness видалено.`);
   process.exit(0);
 }
 
