@@ -123,10 +123,7 @@ export function ProductReviews({
               rating: userReview.rating,
               title: userReview.title,
               content: userReview.content,
-              photos: userReview.image_refs.map((ref, i) => ({
-                ref,
-                url: userReview.images[i] ?? ref,
-              })),
+              photos: userReview.own_photos,
             }}
             onCancel={() => setEditing(false)}
             onSubmit={(data) => {

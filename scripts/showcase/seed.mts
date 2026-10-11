@@ -17,6 +17,7 @@
  * з `insertProductReview`, зокрема вже анонімний відгук видаленого).
  */
 import { sql } from 'drizzle-orm';
+import { isoVersion } from '../../packages/simplycms/src/admin-server/impl/sql-timestamps.ts';
 import { setReviewsStatus } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { withActor } from '../../packages/simplycms/src/db/index.ts';
 import { completeMediaErasures } from '../../packages/simplycms/src/storage/index.ts';
@@ -79,8 +80,7 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
     // Е6д-23: модерація звіряє версію — беремо її з рядків, які щойно вставили
     // (мілісекунди, як віддає картка адмінки).
     const versions = await db.execute<{ id: string; updatedAt: string }>(sql`
-      select id, to_char(date_trunc('milliseconds', updated_at) at time zone 'utc',
-             'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "updatedAt"
+      select id, ${isoVersion(sql`updated_at`)} as "updatedAt"
         from public.product_reviews
        where id in (${sql.join(
          reviewIds.map((id) => sql`${id}::uuid`),

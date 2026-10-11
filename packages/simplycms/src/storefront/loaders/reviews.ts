@@ -24,8 +24,12 @@ export interface ProductReviewRow {
   /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */
   content: SanitizedHtml | null;
   images: string[];
-  /** Референси тих самих фото (Е6д-23): форма правки повертає їх у `keep`. */
-  image_refs: string[];
+  /**
+   * Фото ВЛАСНОГО відгуку парами `{ref, url}` з одного масиву (Е6д-23): форма
+   * правки повертає `ref` у `keep`. Для чужих відгуків і гостя — порожньо:
+   * референси сховища чужим не потрібні.
+   */
+  own_photos: { ref: string; url: string }[];
   status: ReviewStatus;
   created_at: Date;
   updated_at: Date;
@@ -49,6 +53,7 @@ export interface ProductRating {
 export async function loadProductReviews(
   db: ActorDb,
   productId: string,
+  viewerId: string | null = null,
 ): Promise<ProductReviewRow[]> {
   // 🔴 Явний список колонок, а не `select()`: `admin_comment` — внутрішня
   // примітка модератора (Д-1), яка не має навіть потрапити в обʼєкт рядка,
@@ -81,7 +86,13 @@ export async function loadProductReviews(
     // Через спільну функцію, а не власним кастом: інакше зображення відгуку
     // лишилось би єдиною медіа-колонкою без резолву.
     images: toImageList(row.images),
-    image_refs: normalizeMediaRefs(row.images),
+    own_photos:
+      viewerId !== null && row.userId === viewerId
+        ? normalizeMediaRefs(row.images).flatMap((ref) => {
+            const url = resolveMediaUrl(ref);
+            return url === null ? [] : [{ ref, url }];
+          })
+        : [],
     // CHECK `product_reviews_status_check` гарантує домен; тип колонки — text.
     status: row.status as ReviewStatus,
     created_at: row.createdAt,

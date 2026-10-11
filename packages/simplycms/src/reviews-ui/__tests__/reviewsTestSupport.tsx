@@ -19,7 +19,7 @@ export const review = (id: string, userId: string, status = 'approved') => ({
   title: `title-${id}`,
   content: null,
   images: [] as string[],
-  image_refs: [] as string[],
+  own_photos: [] as { ref: string; url: string }[],
   status,
   created_at: new Date('2026-10-01T10:00:00Z'),
   updated_at: new Date('2026-10-01T10:00:00Z'),

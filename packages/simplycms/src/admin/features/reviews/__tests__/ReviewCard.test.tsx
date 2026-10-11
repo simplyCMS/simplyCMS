@@ -39,6 +39,7 @@ beforeEach(() => {
   stubDom();
   Object.values(mocks).forEach((m) => m.mockReset());
   ui.navigate.mockClear();
+  ui.toastError.mockReset();
   mocks.getReviewCard.mockResolvedValue(card());
 });
 afterEach(cleanup);
@@ -80,6 +81,28 @@ describe('ReviewCardPage', () => {
     );
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.productReviews] }),
+    );
+  });
+
+  it('🔴 409 review_changed → тост admin.reviews.changed і перечитування картки', async () => {
+    mocks.setReviewsStatus.mockRejectedValue({
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'review_changed',
+    });
+    const user = userEvent.setup();
+    const { client } = renderWithClient(<ReviewCardPage />);
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    await user.click(
+      await screen.findByRole('button', { name: t('admin.reviews.reject') }),
+    );
+    await waitFor(() =>
+      expect(ui.toastError).toHaveBeenCalledWith(t('admin.reviews.changed')),
+    );
+    expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.productReviews] });
+    // Перечитування: картка запитана вдруге.
+    await waitFor(() =>
+      expect(mocks.getReviewCard.mock.calls.length).toBeGreaterThan(1),
     );
   });
 

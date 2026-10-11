@@ -41,3 +41,4 @@ export {
   type MediaRecord,
   type WriteMediaInput,
 } from './record';
+export { withPublishedRollback } from './rollback';

@@ -18,7 +18,7 @@ import {
   eraseMediaRows,
   findMediaReferences,
   inspectUpload,
-  scheduleMediaErasures,
+  withPublishedRollback,
   writeMedia,
   type MediaMime,
 } from 'simplycms/storage';
@@ -122,9 +122,8 @@ export async function uploadMediaOp({
 }: {
   data: FormData;
 }): Promise<{ ref: string; url: string }> {
-  let written: string | null = null;
-  try {
-    return await runAdmin('media.write', async (db, grant) => {
+  return withPublishedRollback((track) =>
+    runAdmin('media.write', async (db, grant) => {
       const parsed = await parseUploadForm(data);
       const record = await writeMedia(db, {
         bytes: parsed.bytes,
@@ -133,22 +132,14 @@ export async function uploadMediaOp({
         entityId: parsed.entityId,
         uploadedBy: grant.subject.userId,
       });
-      written = record.ref;
+      track(record.ref);
       const url = resolveMediaUrl(record.ref, MEDIA_URL_BASE);
       // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок
       // замість `!` тримає межу чесною — тип звужується доказом.
       if (url === null) throw new Error('media/bad-format');
       return { ref: record.ref, url };
-    });
-  } catch (error) {
-    // Через outbox (Е6д-20б); обидві функції не кидають — первинну помилку
-    // не маскуємо.
-    if (written !== null) {
-      await scheduleMediaErasures([written]);
-      await completeMediaErasures([written]);
-    }
-    throw error;
-  }
+    }),
+  );
 }
 
 export const deleteMediaInput = z.object({ ref: z.string().min(1).max(200) });

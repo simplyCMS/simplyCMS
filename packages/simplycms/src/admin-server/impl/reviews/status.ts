@@ -4,6 +4,7 @@ import { REVIEW_STATUSES } from 'simplycms/contracts';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import { productReviews } from 'simplycms/schema';
+import { isoVersion } from '../sql-timestamps';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
@@ -48,7 +49,7 @@ export async function setReviewsStatus(
       // Мілісекунди, як `isoTs` у картці/списку: БД тримає мікросекунди, а
       // модератор бачить лише `.SSS`; порівняння сирим значенням давало б
       // хибний 409 на кожному рядку з `now()`.
-      version: sql<string>`to_char(date_trunc('milliseconds', ${productReviews.updatedAt}) at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
+      version: sql<string>`${isoVersion(sql`${productReviews.updatedAt}`)}`,
     })
     .from(productReviews)
     .where(inArray(productReviews.id, ids))

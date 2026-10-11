@@ -10,7 +10,7 @@ import { productReviews } from 'simplycms/schema';
 import {
   completeMediaErasures,
   eraseMediaRows,
-  scheduleMediaErasures,
+  withPublishedRollback,
   writeMedia,
   type MediaStorageOptions,
 } from 'simplycms/storage';
@@ -50,53 +50,49 @@ export async function updateProductReviewWithImages(
   const keep = [...new Set(input.keep)];
   if (keep.length + input.files.length > MAX_REVIEW_IMAGES)
     throw new Error(REVIEW_SUBMIT_ERROR.tooManyImages);
-  const published: string[] = [];
-  let discard: string[];
-  try {
-    discard = await withCustomerDb(userId, async (db, operator) => {
-      const [row] = await db
-        .select({ images: productReviews.images })
-        .from(productReviews)
-        .where(
-          and(
-            eq(productReviews.id, input.id),
-            eq(productReviews.userId, userId),
-          ),
-        )
-        .for('update');
-      if (!row) throw new Error(REVIEW_SUBMIT_ERROR.notFound);
-      const current = normalizeMediaRefs(row.images);
-      if (!keep.every((ref) => current.includes(ref)))
-        throw new Error(REVIEW_SUBMIT_ERROR.imagesChanged);
-      const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: input.id };
-      for (const image of input.files) {
-        const meta = { ...image, ...owner, uploadedBy: userId };
-        published.push((await writeMedia(db, meta, options.driver)).ref);
-      }
-      await db
-        .update(productReviews)
-        .set({
-          rating: input.rating,
-          title: input.title,
-          // 🔴 Тема 9, рубіж 1: як при подачі — чистимо ДО запису.
-          content: sanitizeNullableRichHtml(input.content, 'review'),
-          images: [...keep, ...published],
-          status: 'pending',
-          updatedAt: sql`now()`,
-        })
-        .where(eq(productReviews.id, input.id));
-      const removed = current.filter((ref) => !keep.includes(ref));
-      return operator((tx) => eraseMediaRows(tx, removed, owner));
-    });
-  } catch (error) {
-    await scheduleMediaErasures(published);
-    await completeMediaErasures(
-      published,
-      options.discardWith ?? options.driver,
-    );
-    throw error;
-  }
-  // Поза `try`: після COMMIT опубліковані файли вже референсовані, `catch` їх
+  const discard = await withPublishedRollback(
+    (track) =>
+      withCustomerDb(userId, async (db, operator) => {
+        const published: string[] = [];
+        const [row] = await db
+          .select({ images: productReviews.images })
+          .from(productReviews)
+          .where(
+            and(
+              eq(productReviews.id, input.id),
+              eq(productReviews.userId, userId),
+            ),
+          )
+          .for('update');
+        if (!row) throw new Error(REVIEW_SUBMIT_ERROR.notFound);
+        const current = normalizeMediaRefs(row.images);
+        if (!keep.every((ref) => current.includes(ref)))
+          throw new Error(REVIEW_SUBMIT_ERROR.imagesChanged);
+        const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: input.id };
+        for (const image of input.files) {
+          const meta = { ...image, ...owner, uploadedBy: userId };
+          const ref = (await writeMedia(db, meta, options.driver)).ref;
+          track(ref);
+          published.push(ref);
+        }
+        await db
+          .update(productReviews)
+          .set({
+            rating: input.rating,
+            title: input.title,
+            // 🔴 Тема 9, рубіж 1: як при подачі — чистимо ДО запису.
+            content: sanitizeNullableRichHtml(input.content, 'review'),
+            images: [...keep, ...published],
+            status: 'pending',
+            updatedAt: sql`now()`,
+          })
+          .where(eq(productReviews.id, input.id));
+        const removed = current.filter((ref) => !keep.includes(ref));
+        return operator((tx) => eraseMediaRows(tx, removed, owner));
+      }),
+    options.discardWith ?? options.driver,
+  );
+  // Після повернення: після COMMIT опубліковані файли вже референсовані, `catch` їх
   // прибирати не сміє.
   await completeMediaErasures(discard, options.discardWith ?? options.driver);
   return { id: input.id };

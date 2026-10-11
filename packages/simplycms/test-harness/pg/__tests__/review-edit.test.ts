@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
 import { MAX_REVIEW_IMAGES } from 'simplycms/domain/media';
 import {
+  loadProductReviews,
   submitReviewWithImages,
+  withCustomerDb,
+  withStorefrontDb,
   updateProductReviewWithImages,
 } from 'simplycms/storefront/loaders';
 import { png, useReviewPhotosDb } from './fixtures/review-photos';
@@ -147,6 +150,27 @@ describe('редагування відгуку покупцем (Е6д-23)', ()
       status: 'approved',
       images: refs,
     });
+  });
+
+  it('🔴 own_photos: лише автору; гість і інший покупець не бачать референсів', async () => {
+    const { userId, id, refs } = await seeded(2);
+    const other = await d.seedUser('Інший');
+    const photos = (rows: Awaited<ReturnType<typeof loadProductReviews>>) =>
+      rows.find((r) => r.id === id)?.own_photos;
+    const own = await withCustomerDb(userId, (db) =>
+      loadProductReviews(db, f.ids.panel, userId),
+    );
+    expect(photos(own)!.map((p) => p.ref)).toEqual(refs);
+    expect(photos(own)!.every((p) => p.url.includes(p.ref))).toBe(true);
+    const asOther = await withCustomerDb(other, (db) =>
+      loadProductReviews(db, f.ids.panel, other),
+    );
+    expect(photos(asOther)).toEqual([]);
+    const asGuest = await withStorefrontDb((db) =>
+      loadProductReviews(db, f.ids.panel),
+    );
+    expect(photos(asGuest)).toEqual([]);
+    expect(JSON.stringify(asGuest)).not.toContain('"ref"');
   });
 
   it('🔴 чужий відгук → 404, відгук і файли цілі', async () => {

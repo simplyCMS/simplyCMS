@@ -4,7 +4,7 @@ import type { MediaOwner } from 'simplycms/storage';
 import {
   completeMediaErasures,
   eraseMediaRows,
-  scheduleMediaErasures,
+  withPublishedRollback,
   writeMedia,
   type MediaMime,
   type MediaStorageDriver,
@@ -50,37 +50,23 @@ async function currentAvatarRef(
  * (`requireSessionUserId`), у харнесі — від сіду; прийнятий від КЛІЄНТА
  * переписав би чужий профіль, тож ця межа лишається в serverFn.
  *
- * 🔴 Холдер-обʼєкт, а не `let`: присвоєння з колбека потік керування TS не
- * бачить, тож у `catch` проста змінна звузилась би до рівно `null`, і
- * `tsc --strict` МОВЧКИ погодився б із мертвою гілкою прибирання.
+ * Відкат опублікованого файлу — `withPublishedRollback` (Е6д-20б).
  */
 export async function replaceAvatar(
   userId: string,
   input: AvatarBytes,
   options: MediaStorageOptions = {},
 ): Promise<{ ref: string }> {
-  const published: { ref: string | null } = { ref: null };
-  try {
-    const { ref, erased } = await withCustomerDb(userId, (db, operator) =>
-      replaceAvatarFor(db, operator, userId, input, options.driver, (ref) => {
-        published.ref = ref;
-      }),
-    );
-    // Другу фазу (файл старого аватара) — ПІСЛЯ COMMIT (Е6д-14); не кидає.
-    await completeMediaErasures(erased, options.driver);
-    return { ref };
-  } catch (error) {
-    // Через outbox (Е6д-20б); обидві функції не кидають — первинну помилку
-    // не маскуємо.
-    if (published.ref !== null) {
-      await scheduleMediaErasures([published.ref]);
-      await completeMediaErasures(
-        [published.ref],
-        options.discardWith ?? options.driver,
-      );
-    }
-    throw error;
-  }
+  const { ref, erased } = await withPublishedRollback(
+    (track) =>
+      withCustomerDb(userId, (db, operator) =>
+        replaceAvatarFor(db, operator, userId, input, options.driver, track),
+      ),
+    options.discardWith ?? options.driver,
+  );
+  // Другу фазу (файл старого аватара) — ПІСЛЯ COMMIT (Е6д-14); не кидає.
+  await completeMediaErasures(erased, options.driver);
+  return { ref };
 }
 
 /**

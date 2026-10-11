@@ -8,9 +8,8 @@ import {
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews } from 'simplycms/schema';
 import {
-  completeMediaErasures,
   eraseMediaRows,
-  scheduleMediaErasures,
+  withPublishedRollback,
   writeMedia,
   type MediaMime,
   type MediaStorageOptions,
@@ -76,43 +75,38 @@ export async function submitReviewWithImages(
   images: readonly ReviewImageBytes[],
   options: MediaStorageOptions = {},
 ): Promise<{ id: string }> {
-  const published: string[] = [];
-  try {
-    return await withCustomerDb(userId, async (db) => {
-      const id = randomUUID();
-      const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: id };
-      const [existing] = await db
-        .select({ id: productReviews.id })
-        .from(productReviews)
-        .where(
-          and(
-            eq(productReviews.productId, input.productId),
-            eq(productReviews.userId, userId),
-          ),
-        )
-        .limit(1);
-      if (existing) throw new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted);
-      for (const image of images) {
-        const meta = { ...image, ...owner, uploadedBy: userId };
-        published.push((await writeMedia(db, meta, options.driver)).ref);
-      }
-      const full = { ...input, images: published };
-      return insertProductReview(db, userId, full, id).catch((e: unknown) => {
-        throw isDuplicateReview(e)
-          ? new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted)
-          : e;
-      });
-    });
-  } catch (error) {
-    // Через outbox (Е6д-20б): збій диска лишає видимий хвіст. Обидві функції
-    // не кидають, тож первинна помилка не маскується.
-    await scheduleMediaErasures(published);
-    await completeMediaErasures(
-      published,
-      options.discardWith ?? options.driver,
-    );
-    throw error;
-  }
+  return withPublishedRollback(
+    (track) =>
+      withCustomerDb(userId, async (db) => {
+        const id = randomUUID();
+        const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: id };
+        const [existing] = await db
+          .select({ id: productReviews.id })
+          .from(productReviews)
+          .where(
+            and(
+              eq(productReviews.productId, input.productId),
+              eq(productReviews.userId, userId),
+            ),
+          )
+          .limit(1);
+        if (existing) throw new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted);
+        const published: string[] = [];
+        for (const image of images) {
+          const meta = { ...image, ...owner, uploadedBy: userId };
+          const ref = (await writeMedia(db, meta, options.driver)).ref;
+          track(ref);
+          published.push(ref);
+        }
+        const full = { ...input, images: published };
+        return insertProductReview(db, userId, full, id).catch((e: unknown) => {
+          throw isDuplicateReview(e)
+            ? new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted)
+            : e;
+        });
+      }),
+    options.discardWith ?? options.driver,
+  );
 }
 
 /** Помилка драйвера — у `.cause` Drizzle (UPSTREAM:DRZ-1, upstream-workarounds.md). */

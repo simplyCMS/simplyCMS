@@ -7,7 +7,7 @@ import type {
 } from 'simplycms/contracts';
 import { REVIEW_STATUSES } from 'simplycms/contracts';
 import { runAdmin } from '../run';
-import { isoTs, toDate } from '../sql-timestamps';
+import { isoTs, isoVersion, toDate } from '../sql-timestamps';
 import { parseAdminInput } from '../validation';
 
 export const REVIEWS_PAGE_SIZE = 50;
@@ -63,7 +63,7 @@ export const listReviewsOp = async ({
              case when jsonb_typeof(r.images) = 'array'
                   then jsonb_array_length(r.images) else 0 end as "imagesCount",
              ${isoTs(sql`r.created_at`)} as "createdAt",
-             ${isoTs(sql`date_trunc('milliseconds', r.updated_at)`)} as "updatedAt",
+             ${isoVersion(sql`r.updated_at`)} as "updatedAt",
              ${isoTs(sql`date_trunc('milliseconds', r.created_at)`)} as "createdAtKey"
         from public.product_reviews r
         join public.products p on p.id = r.product_id

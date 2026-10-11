@@ -38,7 +38,7 @@ export const getProductReviews = createServerFn({ method: 'GET' })
 
     const reviews = subject
       ? await withCustomerDb(subject.userId, (db) =>
-          loadProductReviews(db, productId),
+          loadProductReviews(db, productId, subject.userId),
         )
       : await withStorefrontDb((db) => loadProductReviews(db, productId));
     if (reviews.length === 0) return reviews;

@@ -43,7 +43,10 @@ vi.mock('simplycms/core/lib/review-form', async () => {
 const withPhotos = (id: string, userId: string, status = 'approved') => ({
   ...review(id, userId, status),
   images: ['/media/a.png', '/media/b.png'],
-  image_refs: ['a.png', 'b.png'],
+  own_photos: [
+    { ref: 'a.png', url: '/media/a.png' },
+    { ref: 'b.png', url: '/media/b.png' },
+  ],
 });
 
 beforeEach(() => {
