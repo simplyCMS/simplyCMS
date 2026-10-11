@@ -150,8 +150,10 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 **Наш обхід.** `bodyLimitMiddleware` (`packages/simplycms/src/runtime/body-limit.ts`,
 `requestMiddleware` у `src/start.ts` після CSRF): POST на `/_serverFn/` із
 `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (виводиться з доменних лімітів
-у `domain/media.ts`) → 413; multipart без `Content-Length` → 411. JSON без
-заголовка проходить. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
+у `domain/media.ts`) → 413; POST без `Content-Length` → 411, окрім медіатипу
+`application/json` (парситься до `;`, без регістру). Start читає
+`request.formData()` і для multipart, і для urlencoded, тож відсікати
+лише multipart мало. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
 
 **Межі гарантії.**
 - 413 віддається ДО читання тіла, тож стеля захищає від прямих викликів повз
@@ -161,9 +163,9 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
   `MAX_REVIEW_IMAGE_BYTES`), медіа адмінки — `ImageUpload` (кожен файл ≤
   `MAX_UPLOAD_BYTES`, один файл на POST), аватар — `AvatarUpload`
   (`MAX_AVATAR_BYTES`); тест-інваріант констант — `body-limit.test.ts`.
-- JSON без `Content-Length` (chunked) проходить без стелі — свідоме рішення
-  архітектора: його розмір обмежений аргументами server function, а
-  необмежене буферизування дає лише multipart.
+- 🔴 Відкрите вікно: JSON без `Content-Length` (chunked) проходить без стелі,
+  а Start буферизує `request.json()` повністю. Свідомо прийнятий архітектором
+  залишковий ризик (не «обмежений аргументами» — розмір обирає клієнт).
 - Шлях server functions береться з `process.env.TSS_SERVER_FN_BASE` у момент
   запиту (фолбек `/_serverFn/`), тож `basepath` магазину стелю не вимикає.
 

@@ -9,17 +9,21 @@ import {
 /**
  * Стеля тіла POST на server functions.
  *
- * `@tanstack/start-server-core` для multipart безумовно робить
- * `await request.formData()` без жодних лімітів: анонімний клієнт міг би
- * змусити сервер буферизувати гігабайти. Request-міддлвара виконується ДО
- * обробника server function, тож відмовляє за заголовком, не читаючи тіла.
+ * `@tanstack/start-server-core` читає тіло повністю й без лімітів:
+ * `request.formData()` для multipart І для urlencoded (перевірка через
+ * `includes`), `request.json()` для JSON. Анонімний клієнт міг би змусити
+ * сервер буферизувати гігабайти. Request-міддлвара виконується ДО обробника
+ * server function, тож відмовляє за заголовком, не читаючи тіла.
  *
  * 🔴 Це перевірка `Content-Length`, а не підрахунок байтів потоку: Node-раннер
- * (`server.mjs`) обмежує тіло саме заявленою довжиною. Тому multipart БЕЗ
- * `Content-Length` (chunked) відхиляється 411 — інакше стелю можна обійти.
- * Інший рантайм або проксі без цієї гарантії — привід переглянути.
- * JSON без заголовка проходить як є: його розмір обмежений на практиці
- * розміром серіалізованих аргументів, а multipart — ні.
+ * (`server.mjs`) обмежує тіло саме заявленою довжиною. Тому POST БЕЗ
+ * `Content-Length` (chunked) проходить лише з медіатипом `application/json`;
+ * будь-що інше → 411. Інший рантайм або проксі без цієї гарантії — привід
+ * переглянути.
+ *
+ * 🔴 Відкрите вікно: chunked JSON не має стелі, а Start буферизує
+ * `request.json()` повністю. Це свідомо прийнятий архітектором залишковий
+ * ризик (не «обмежене аргументами server function»: клієнт сам обирає розмір).
  */
 const DEFAULT_SERVER_FN_BASE = '/_serverFn/';
 
@@ -42,6 +46,12 @@ function reject(status: number, code: string): Response {
   });
 }
 
+/** Медіатип без параметрів, нижнім регістром: `text/plain; x=application/json` → `text/plain`. */
+function mediaType(request: Request): string {
+  const raw = request.headers.get('content-type') ?? '';
+  return (raw.split(';')[0] ?? '').trim().toLowerCase();
+}
+
 /** Чиста функція (юніт без підйому Start): `Response` відмови або `null`. */
 export function checkBodyLimit(request: Request): Response | null {
   if (request.method.toUpperCase() !== 'POST') return null;
@@ -49,10 +59,9 @@ export function checkBodyLimit(request: Request): Response | null {
 
   const raw = request.headers.get('content-length');
   if (raw === null) {
-    const type = request.headers.get('content-type') ?? '';
-    return type.toLowerCase().startsWith('multipart/')
-      ? reject(411, LENGTH_REQUIRED_CODE)
-      : null;
+    return mediaType(request) === 'application/json'
+      ? null
+      : reject(411, LENGTH_REQUIRED_CODE);
   }
   const length = Number(raw);
   if (

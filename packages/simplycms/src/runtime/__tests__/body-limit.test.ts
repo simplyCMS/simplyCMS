@@ -62,6 +62,29 @@ describe('checkBodyLimit', () => {
     );
     expect(res?.status).toBe(411);
   });
+  it.each([
+    'application/x-www-form-urlencoded',
+    'text/plain; x=multipart/form-data',
+    'text/plain; x=application/json',
+    '',
+  ])('chunked %j → 411 (Start читає formData/невідоме)', (type) => {
+    const headers: Record<string, string> = type
+      ? { 'content-type': type }
+      : {};
+    expect(checkBodyLimit(req('POST', '/_serverFn/x', headers))?.status).toBe(
+      411,
+    );
+  });
+  it('chunked JSON з параметрами/регістром → пропуск (прийнятий ризик)', () => {
+    for (const type of [
+      'Application/JSON; charset=utf-8',
+      'application/json',
+    ]) {
+      expect(
+        checkBodyLimit(req('POST', '/_serverFn/x', { 'content-type': type })),
+      ).toBeNull();
+    }
+  });
   it('JSON без content-length → пропуск', () => {
     expect(
       checkBodyLimit(
