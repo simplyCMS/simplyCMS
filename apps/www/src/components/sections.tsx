@@ -130,7 +130,7 @@ export function HowItWorksSection() {
               <span className="c">├─</span> src/routes/my/{' '}
               <span className="c"># your own pages</span>
               {'\n'}
-              <span className="c">├─</span> supabase/migrations/
+              <span className="c">├─</span> db/migrations/
               {'\n'}
               <span className="c">└─</span> themes/ · plugins/
             </pre>

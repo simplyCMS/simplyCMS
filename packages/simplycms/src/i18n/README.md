@@ -5,7 +5,7 @@
 У комплекті каталоги `uk` (повний) і `en` (частковий).
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+e-commerce CMS на TanStack Start + PostgreSQL. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
 створюється скаффолдером `pnpm create simplycms-store`.
 

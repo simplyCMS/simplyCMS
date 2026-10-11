@@ -7,7 +7,7 @@
 |----------|-----|
 | Контракт | `definePlugin` (`src/index.ts`) |
 | Таблиця | `plg_faq_items` — міграція в `migrations/`, накат: `simplycms db:diff --write` + ревʼю |
-| Адмінка | `/admin/faq` (`routes/admin/faq/`) — CRUD через `usePluginTable`, без прямого Supabase |
+| Адмінка | `/admin/faq` (`routes/admin/faq/`) — CRUD через `usePluginTable`, без прямого клієнта БД |
 | Слот | `product.detail.after` — FAQ до товару + загальні питання |
 | Налаштування | Zod-схема `maxVisible`; форму рендерить адмінка, значення читає `usePluginConfig` |
 | i18n | `src/messages.ts`, ключі `plugin.faq.*`, uk/en |

@@ -7,10 +7,10 @@
 не тягне сам — вони приходять серверними лоадерами `simplycms/storefront`
 через `simplycms/db` (`withActor`). `EngineContext` звузився до
 `{ links, config }`: жодних `CatalogRepository`/`OrderRepository`, жодного
-Supabase-клієнта в цьому шарі.
+клієнта БД в цьому шарі.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+e-commerce CMS на TanStack Start + PostgreSQL. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
 створюється скаффолдером `pnpm create simplycms-store`.
 

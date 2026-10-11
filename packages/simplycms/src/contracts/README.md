@@ -3,10 +3,10 @@
 Контракти доменних об'єктів (`Product`, `Order`, `DiscountGroup`, …), порти рушія —
 інтерфейси репозиторіїв та провайдерів, які реалізує шар даних, — і view-model-и
 канонічних сторінок вітрини (контракт тем v3). Tier 0: нуль рантайм-залежностей,
-без Supabase; `react` — опційний type-only peer лише для slot-типів `./views`.
+без клієнта БД; `react` — опційний type-only peer лише для slot-типів `./views`.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+e-commerce CMS на TanStack Start + PostgreSQL. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
 створюється скаффолдером `pnpm create simplycms-store`.
 

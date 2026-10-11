@@ -4,7 +4,7 @@
 і плагінів лінивими лоадерами) — це і є чинний спосіб конфігурації магазину.
 Шар несе також `defineRuntime`/`bootstrapRuntime` — заявлений, але **без
 жодного споживача в коді** (див. нижче). Залежить від контрактів
-`simplycms/contracts` і доменних констант `simplycms/domain/media` (стеля тіла) — Supabase та `import.meta.env` усередині немає.
+`simplycms/contracts` і доменних констант `simplycms/domain/media` (стеля тіла) — клієнта БД та `import.meta.env` усередині немає.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + Postgres. Окремим пакетом він більше не

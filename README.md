@@ -1,6 +1,6 @@
 # SimplyCMS
 
-Open-source e-commerce CMS built with TanStack Start, Supabase, and shadcn/ui.
+Open-source e-commerce CMS built with TanStack Start, React, PostgreSQL, Better Auth, and shadcn/ui.
 
 **Ядро постачається пʼятьма npm-пакетами** (трек К0): unscoped фреймворк
 `simplycms` — увесь двигун одним пакетом, шар береться субшляхом
@@ -60,7 +60,7 @@ cd my-store && pnpm install && pnpm build && pnpm start
 ```
 
 Скаффолдер розгортає повний каркас магазину (host-обвʼязка, міграції
-Supabase, дефолтна тема) із версіями ядра, що відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
+`db/migrations/`, дефолтна тема) із версіями ядра, що відповідають його власній. Магазин налаштований **лише під pnpm 11+**:
 `pnpm-workspace.yaml` везе `allowBuilds`, без якого install обривається.
 
 🔴 У перші 24 години після виходу нової версії ядра install упреться в
@@ -87,7 +87,7 @@ pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
 pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
-                                  # for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done)
+                                  # for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
@@ -95,10 +95,12 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 (контракт, межа довіри, таблиці `plg_*`, i18n) —
 [`docs/architecture/plugins.md`](docs/architecture/plugins.md).
 
-### Потрібна Supabase
+### Потрібен PostgreSQL 17
 
-Ядро працює поверх Supabase (Postgres + Auth + Storage). Схема ядра — 40 таблиць
-із RLS; канон міграцій лежить у
+Ядро працює поверх чистого PostgreSQL 17 (Drizzle) з автентифікацією на Better
+Auth; файли — через порт `simplycms/storage`. Контракт env магазину — рівно три
+ключі: `DATABASE_URL`, `BETTER_AUTH_SECRET` і `VITE_SITE_URL`. Схема ядра — 40
+таблиць із RLS; канон міграцій лежить у
 [`packages/simplycms/migrations/`](packages/simplycms/migrations/).
 
 ## Розробка самого ядра
@@ -107,7 +109,7 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 
 ```bash
 pnpm install
-cp .env.example .env.local     # заповнити ключі Supabase
+cp .env.example .env.local     # заповнити DATABASE_URL, BETTER_AUTH_SECRET, VITE_SITE_URL
 pnpm dev                       # dev-сервер (Vite, порт 5173+)
 pnpm build && pnpm start       # production-запуск (порт 3000)
 ```
@@ -140,8 +142,8 @@ pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundl
 pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local)
 ```
 
-🔴 `pnpm pilot:e2e` і Gate E — **decommissioned у 0.4.1** разом зі стеком
-Supabase: команди більше немає, `--e2e` падає з поясненням. Owner-флоу на
+🔴 `pnpm pilot:e2e` і Gate E — **decommissioned у 0.4.1** разом із локальним
+стеком БД: команди більше немає, `--e2e` падає з поясненням. Owner-флоу на
 Better Auth повертає трек К6 (деталі —
 [`docs/architecture/test-contours.md`](docs/architecture/test-contours.md)).
 
@@ -168,7 +170,7 @@ packages/       # Публіковані пакети — рівно пʼять
     src/contracts/        #   контракти + порти (0 deps) + view-model-и вітрини
     src/domain/           #   чиста логіка: pricing, discounts, inventory, shipping
     src/schema/           #   Drizzle-схема ядра + RLS у TS
-    src/supabase/         #   клієнти + baseline типів БД
+    src/db/ · src/auth/   #   пул pg + withActor · Better Auth (серверний контур)
     src/storefront-routes/#   канонічні сторінки (pages/ + views/) + shells + SEO
     src/admin/            #   сторінки й компоненти адмінки
     src/themes/ plugins/  #   ThemeRegistry · HookRegistry, PluginSlot, validatePluginModule
@@ -179,9 +181,8 @@ packages/       # Публіковані пакети — рівно пʼять
   cli/                    # simplycms CLI: doctor/add/create (plugin|theme)/update/db:diff (docs/architecture/cli.md)
   simplycms-plugin-faq/   # референс-плагін повного контуру (@simplycms/plugin-faq)
   simplycms-theme-solarstore/  # референс-тема повного контуру (@simplycms/theme-solarstore)
-  create-simplycms-store/ # скаффолдер + вбудований шаблон магазину
+  create-simplycms-store/ # скаффолдер + вбудований шаблон магазину (db/migrations — міграції магазину)
 themes/ plugins/          # Референсні теми й локальні плагіни магазину (@plugins/*)
-supabase/                 # Міграції, seed, згенеровані типи, edge functions
 scripts/                  # Тулчейн: міграції, аудити пакування, пілот, реліз
 ```
 
