@@ -56,6 +56,7 @@
     "./runtime/csrf": "./src/runtime/csrf.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
+    "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
     "./ui": "./src/ui/index.ts",
     "./ui/*": "./src/ui/*.tsx",
@@ -311,6 +312,10 @@
       "./storefront/loaders": {
         "types": "./dist/storefront/loaders/index.d.ts",
         "import": "./dist/storefront/loaders/index.js"
+      },
+      "./storefront/media-visibility": {
+        "types": "./dist/storefront/media-visibility.d.ts",
+        "import": "./dist/storefront/media-visibility.js"
       },
       "./storefront/seo": {
         "types": "./dist/storefront/seo/index.d.ts",

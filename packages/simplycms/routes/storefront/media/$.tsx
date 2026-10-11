@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { lookupMediaForRequest } from 'simplycms/storefront/media-visibility';
 import { serveMedia } from 'simplycms/storage';
 
 /**
@@ -20,7 +21,8 @@ import { serveMedia } from 'simplycms/storage';
 export const Route = createFileRoute('/media/$')({
   server: {
     handlers: {
-      GET: ({ request }: { request: Request }) => serveMedia({ request }),
+      GET: ({ request }: { request: Request }) =>
+        serveMedia({ request }, { lookup: lookupMediaForRequest }),
       // 🔴 HEAD реєструється ЯВНО. Start 1.169.x сам падає з HEAD на GET
       // (`createStartHandler`: `HEAD ?? GET ?? ANY`), але 1.167.x робив
       // простий lookup `handlers[METHOD] ?? ANY` — і HEAD ішов у SSR, віддаючи
@@ -28,7 +30,8 @@ export const Route = createFileRoute('/media/$')({
       // `immutable`. Явний рядок тримає роздачу коректною незалежно від
       // версії Start у магазині (peer `^1`). `ANY` замість двох рядків не
       // брати: роздача публічна, і роут почав би відповідати на запис.
-      HEAD: ({ request }: { request: Request }) => serveMedia({ request }),
+      HEAD: ({ request }: { request: Request }) =>
+        serveMedia({ request }, { lookup: lookupMediaForRequest }),
     },
   },
 });

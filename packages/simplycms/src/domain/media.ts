@@ -75,6 +75,18 @@ export const REVIEW_MEDIA_ENTITY = 'review';
  * не довіряючи клієнту.
  */
 export const STORE_LOGO_OWNER_ID = '00000000-0000-4000-8000-00000000106f';
+
+/**
+ * Типи власника, чиї файли роздаються з `private, no-cache` (Е6д-21): їхня
+ * видимість залежить від глядача (відгук на модерації видно лише автору й
+ * адміну; аватар — персональні дані), тож спільний/CDN-кеш з `immutable`
+ * зберіг би файл для того, кому його вже не можна показувати.
+ */
+export const PERSONAL_MEDIA_ENTITY_TYPES = [
+  REVIEW_MEDIA_ENTITY,
+  'avatar',
+] as const;
+
 export const MAX_REVIEW_IMAGES = 5;
 export const MAX_REVIEW_IMAGE_BYTES = 5 * 1024 * 1024;
 

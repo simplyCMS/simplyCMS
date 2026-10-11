@@ -29,6 +29,9 @@ const ALLOWED = [
   // Е6д-15 (аудит Codex р1 B4): другий споживач порту з вітрини — фото
   // відгуку (Д-3): подача пише файли, видалення власного відгуку їх стирає.
   'loaders/reviews-write.ts',
+  // Е6д-21: лише ТИП `MediaServeVerdict` — вердикт роздачі; файлів модуль не
+  // торкається, а `storage` не знає про вітрину, тож тип живе в порту.
+  'media-visibility.ts',
 ] as const;
 
 const IMPORTS_PORT = /from\s+['"]simplycms\/storage['"]/;

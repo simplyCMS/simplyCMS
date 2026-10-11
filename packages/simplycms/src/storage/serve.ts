@@ -11,6 +11,18 @@ import { getMediaDriver } from './local-fs';
  */
 const PREFIX = `${MEDIA_URL_BASE.replace(/\/+$/, '')}/`;
 
+/**
+ * Вердикт перевірки рядка `media` і видимості сутності-власника (Е6д-21).
+ * `missing` (рядка немає) і `hidden` (глядач не бачить власника) віддають
+ * однаковий 404: 403 підтвердив би існування файлу.
+ */
+export type MediaServeVerdict = 'missing' | 'hidden' | { personal: boolean };
+
+/** Залежності роздачі: `lookup` інʼєктує маршрут (порт не знає про вітрину). */
+export interface ServeMediaDeps {
+  lookup: (key: string, request: Request) => Promise<MediaServeVerdict>;
+}
+
 /** Одна відповідь «немає» на всі відмови (див. докблок нижче). */
 const notFound = (): Response =>
   new Response('Not found', {
@@ -33,15 +45,25 @@ const notFound = (): Response =>
  *
  * 🔴 `Content-Type` — з РОЗШИРЕННЯ КЛЮЧА, а не з запиту: ключ згенерував
  * сервер із просніфаного MIME (Task 2), тобто це і є перевірене значення.
- * Читати рядок `media` тут було б зайвим походом у БД на кожну картинку.
  *
- * 🔴 `immutable`-кеш законний лише тому, що ключі іммутабельні (Е2-8):
- * новий файл — новий ключ, тож «протухлої» відповіді не існує. Після
- * видалення обʼєкта браузер і CDN можуть ще тримати копію — це прийнятно,
- * бо референс на неї вже зник із рядка сутності.
+ * 🔴 Файл без рядка `media` не роздається (Е6д-21): `lookup` читає рядок і
+ * перевіряє видимість власника, бо між COMMIT видалення і стиранням файлу
+ * (outbox) обʼєкт ще живий, а фото відгуку на модерації не публічне. Це
+ * один індексований SELECT на запит — ціна за те, що «видалене/приховане»
+ * справді зникає, а не лишається доступним за прямим URL.
+ *
+ * 🔴 Кеш залежить від вердикту: публічні файли — `immutable` (ключі
+ * іммутабельні, Е2-8: новий файл — новий ключ), персональні —
+ * `private, no-cache`, щоб спільний кеш не пережив зміну видимості.
+ *
+ * 🔴 304 на `If-None-Match` віддається ПІСЛЯ `lookup`: ключ незмінний, тож
+ * `etag` — сильний валідатор, але персональний файл ревалідується з
+ * перевіркою видимості, а не повним перезавантаженням. Прихований файл дає
+ * 404, не 304.
  */
 export async function serveMedia(
   ctx: { request: Request },
+  deps: ServeMediaDeps,
   driver: MediaStorageDriver = getMediaDriver(),
 ): Promise<Response> {
   const { pathname } = new URL(ctx.request.url);
@@ -86,6 +108,23 @@ export async function serveMedia(
   const contentType = MIME_BY_EXT[ext];
   if (!contentType) return notFound();
 
+  const verdict = await deps.lookup(key, ctx.request);
+  if (verdict === 'missing' || verdict === 'hidden') return notFound();
+
+  const etag = `"${key}"`;
+  const cacheControl = verdict.personal
+    ? 'private, no-cache'
+    : 'public, max-age=31536000, immutable';
+  const ifNoneMatch = ctx.request.headers.get('if-none-match');
+  if (
+    ifNoneMatch?.split(',').some((t) => t.trim() === etag || t.trim() === '*')
+  ) {
+    return new Response(null, {
+      status: 304,
+      headers: { etag, 'cache-control': cacheControl },
+    });
+  }
+
   let object;
   try {
     object = await driver.open(key);
@@ -99,8 +138,8 @@ export async function serveMedia(
     headers: {
       'content-type': contentType,
       'content-length': String(object.size),
-      'cache-control': 'public, max-age=31536000, immutable',
-      etag: `"${key}"`,
+      'cache-control': cacheControl,
+      etag,
       'x-content-type-options': 'nosniff',
     },
   });

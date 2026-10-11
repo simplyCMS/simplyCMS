@@ -14,7 +14,11 @@ export {
   type MediaStorageOptions,
 } from './driver';
 export { getMediaDriver, localFsDriver } from './local-fs';
-export { serveMedia } from './serve';
+export {
+  serveMedia,
+  type MediaServeVerdict,
+  type ServeMediaDeps,
+} from './serve';
 export { inspectUpload, type UploadInspection } from './inspect';
 export {
   completeMediaErasures,
