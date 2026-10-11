@@ -56,6 +56,16 @@ describe('checkBodyLimit', () => {
     );
     expect(await noLen?.text()).toBe(LENGTH_REQUIRED_CODE);
   });
+  it.each([
+    'application/json; x=multipart/form-data',
+    'application/json; x=application/x-www-form-urlencoded',
+    'Application/JSON; X=Multipart/Form-Data',
+  ])('%s без content-length → 411 (Start прочитав би як форму)', (ct) => {
+    const res = checkBodyLimit(
+      req('POST', '/_serverFn/x', { 'content-type': ct }),
+    );
+    expect(res?.status).toBe(411);
+  });
   it('multipart без content-length → 411', () => {
     const res = checkBodyLimit(
       req('POST', '/_serverFn/x', { 'content-type': MULTIPART }),

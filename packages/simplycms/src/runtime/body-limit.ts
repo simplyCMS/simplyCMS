@@ -3,7 +3,7 @@ import {
   LENGTH_REQUIRED_CODE,
   MAX_REQUEST_BODY_BYTES,
   PAYLOAD_TOO_LARGE_CODE,
-} from '../domain/media';
+} from 'simplycms/domain/media';
 
 // UPSTREAM:START-BODY-1 — docs/architecture/upstream-workarounds.md
 /**
@@ -17,8 +17,9 @@ import {
  *
  * 🔴 Це перевірка `Content-Length`, а не підрахунок байтів потоку: Node-раннер
  * (`server.mjs`) обмежує тіло саме заявленою довжиною. Тому POST БЕЗ
- * `Content-Length` (chunked) проходить лише з медіатипом `application/json`;
- * будь-що інше → 411. Інший рантайм або проксі без цієї гарантії — привід
+ * `Content-Length` (chunked) проходить лише з медіатипом `application/json`,
+ * який Start НЕ читає як форму; усе, що Start прочитав би як форму, і будь-що
+ * не-JSON → 411. Інший рантайм або проксі без цієї гарантії — привід
  * переглянути.
  *
  * 🔴 Відкрите вікно: chunked JSON не має стелі, а Start буферизує
@@ -46,10 +47,24 @@ function reject(status: number, code: string): Response {
   });
 }
 
-/** Медіатип без параметрів, нижнім регістром: `text/plain; x=application/json` → `text/plain`. */
-function mediaType(request: Request): string {
-  const raw = request.headers.get('content-type') ?? '';
-  return (raw.split(';')[0] ?? '').trim().toLowerCase();
+/**
+ * Дзеркало предиката Start (`server-functions-handler.js`, ~28-53): тіло
+ * читається як форма, якщо `content-type` ЛИШЕ МІСТИТЬ multipart/form-data чи
+ * x-www-form-urlencoded — навіть у параметрі (`application/json; x=multipart/…`).
+ * Звіряти при кожному бампі Start (UPSTREAM:START-BODY-1).
+ */
+function startReadsAsForm(contentType: string): boolean {
+  return (
+    contentType.includes('multipart/form-data') ||
+    contentType.includes('application/x-www-form-urlencoded')
+  );
+}
+
+/** Чи можна пропустити POST без `Content-Length`: лише чистий JSON, який Start не читає як форму. */
+function isUnboundedJsonAllowed(request: Request): boolean {
+  const raw = (request.headers.get('content-type') ?? '').toLowerCase();
+  if (startReadsAsForm(raw)) return false;
+  return (raw.split(';')[0] ?? '').trim() === 'application/json';
 }
 
 /** Чиста функція (юніт без підйому Start): `Response` відмови або `null`. */
@@ -59,7 +74,7 @@ export function checkBodyLimit(request: Request): Response | null {
 
   const raw = request.headers.get('content-length');
   if (raw === null) {
-    return mediaType(request) === 'application/json'
+    return isUnboundedJsonAllowed(request)
       ? null
       : reject(411, LENGTH_REQUIRED_CODE);
   }
