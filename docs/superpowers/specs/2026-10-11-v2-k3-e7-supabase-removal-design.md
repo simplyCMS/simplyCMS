@@ -108,8 +108,6 @@
 - **Р9 — доки.** Розділи чинного стану оновлено, історичні з позначкою не чіпано; `platform-delivery-options.md` — позначка «історичний» угорі.
 - **Дрібне.** `.claude/settings.json` → `{}` (дозвіл власника, В2); `tsconfig.json` без `tools` і `supabase/functions`; `scripts/db-migrate.mjs` і `db:migrate` знесено; `TEMPLATED_FILES` → `['package.json']`; `PEER_SCOPES` прибрано.
 
-### Додаткові ухвали виконання
+### Додаткова ухвала виконання (поза Р1–Р9)
 
-- Р3: мутація доводиться саме `format: ['cjs']` — `target` не лоуерить `import.meta` у ESM-виході Rolldown.
-- Р2: ратчет ловить і TS-форми (`import x = require(...)`, `import('…').T`), не лише п'ять форм плану.
 - pnpm 11 переписує lock перед кожним `pnpm <script>`, тож мутацію lock доводять через `npx vitest`, а не `pnpm test`.
