@@ -10,6 +10,7 @@ import { PNG } from './avatar.mjs';
 import { waitText } from './selectors.mjs';
 import { pollUntil } from './admin-shipping-sql.mjs';
 import * as q from './admin-system-sql.mjs';
+import { expectSome } from './wait.mjs';
 
 const LOGO_INPUT = 'input[type="file"]';
 
@@ -70,15 +71,17 @@ export async function profilePart({ page, buyerPage, base, dbUrl, check, fx }) {
     .first()
     .getAttribute('src', { timeout: 10_000 })
     .catch(() => null);
-  const phone = await buyerPage
-    .locator(`footer a[href="tel:${fx.phone.replace(/[^+\d]/g, '')}"]`)
-    .count();
+  const phone = await expectSome(
+    buyerPage.locator(
+      `footer a[href="tel:${fx.phone.replace(/[^+\d]/g, '')}"]`,
+    ),
+  );
   const sameAs = await homeSameAs(buyerPage);
   check(
     'система: новий запит головної — назва, логотип, телефон, sameAs',
     title.includes(fx.name) &&
       logoSrc === `/media/${saved?.logo}` &&
-      phone > 0 &&
+      phone &&
       sameAs.includes(fx.telegram),
     `title «${title}», logo ${logoSrc}, tel ${phone}, sameAs ${sameAs.join(' ')}`,
   );

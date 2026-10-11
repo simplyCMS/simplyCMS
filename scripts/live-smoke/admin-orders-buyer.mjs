@@ -12,6 +12,7 @@ import {
   openCheckoutPrefilled,
   submitCheckout,
 } from './place-order.mjs';
+import { expectCount } from './wait.mjs';
 
 /** Сумарна кількість позицій замовлення. */
 export const qty = (items) => items.reduce((s, i) => s + i.quantity, 0);
@@ -85,17 +86,18 @@ export async function verifyCabinet({ page, base, order, state, check }) {
     waitUntil: 'networkidle',
   });
   const shown = await waitText(page, state?.name ?? '—');
-  const cancelButtons = await page
-    .getByRole('button', { name: 'Скасувати', exact: true })
-    .count();
+  const noCancelButton = await expectCount(
+    page.getByRole('button', { name: 'Скасувати', exact: true }),
+    0,
+  );
   const label =
     state?.code === 'cancelled'
       ? 'кабінет: B показано «Скасовано», кнопки «Скасувати» немає'
       : 'кабінет: у підтвердженому A кнопки «Скасувати» немає';
   check(
     label,
-    shown && cancelButtons === 0,
-    `бейдж «${state?.name}» видно=${shown}, кнопок «Скасувати» ${cancelButtons}`,
+    shown && noCancelButton,
+    `бейдж «${state?.name}» видно=${shown}, кнопки «Скасувати» немає=${noCancelButton}`,
   );
 }
 

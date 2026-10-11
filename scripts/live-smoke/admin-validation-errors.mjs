@@ -10,6 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
+import { expectCount } from './wait.mjs';
 
 const MESSAGE = 'Значення завелике: не більше 1000000';
 
@@ -48,6 +49,7 @@ export async function runAdminValidationErrorsStep({
 
     const field = page.getByText(MESSAGE);
     await field.waitFor({ timeout: 10_000 });
+    const oneMessage = await expectCount(field, 1);
     const body = (await page.locator('body').innerText()).toString();
     const [{ count }] = await sql(
       dbUrl,
@@ -56,12 +58,12 @@ export async function runAdminValidationErrorsStep({
     );
     check(
       'валідація: залишок 1 000 001 → локалізована помилка поля, без сирого JSON',
-      (await field.count()) === 1 &&
+      oneMessage &&
         (await page.locator('#stock-quantity').getAttribute('aria-invalid')) ===
           'true' &&
         !/"code"|"path"|too_big|invalid_type/.test(body) &&
         count === 0,
-      `поле: ${await field.count()}, рядків залишку в БД: ${count}`,
+      `поле: ${oneMessage ? 1 : '≠1'}, рядків залишку в БД: ${count}`,
     );
     check(
       'валідація: адмін pageerror = 0',

@@ -10,6 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
+import { expectVisible } from './wait.mjs';
 
 export const SEEDED = 55;
 export const PAGE = 50;
@@ -67,12 +68,10 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
     const badge = page
       .locator('tr', { hasText: `Мод ${tag}` })
       .getByText('В наявності');
-    await badge.waitFor({ timeout: 10_000 }).catch(() => {});
+    const badgeShown = await expectVisible(badge, 10_000);
     check(
       'збереження: залишок модифікації 5 → in_stock у SQL і бейдж «В наявності»',
-      mod?.quantity === 5 &&
-        mod.stock_status === 'in_stock' &&
-        (await badge.count()) === 1,
+      mod?.quantity === 5 && mod.stock_status === 'in_stock' && badgeShown,
       JSON.stringify(mod),
     );
 

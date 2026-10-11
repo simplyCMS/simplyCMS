@@ -12,6 +12,7 @@
 import { PNG } from './avatar.mjs';
 import { bannerByTitle, mediaKeysOf, poll } from './admin-content-sql.mjs';
 import { sql } from './sql.mjs';
+import { expectSome } from './wait.mjs';
 
 /** Основне зображення — ПЕРШИЙ із трьох `ImageUpload` картки. */
 const MAIN_INPUT = 'form input[type="file"]';
@@ -32,7 +33,7 @@ async function uploadMain(page, name) {
 async function homeShows(page, base, fx) {
   await page.goto(base, { waitUntil: 'networkidle' });
   const img = page.locator(`img[alt="${fx.bannerTitle}"]`).first();
-  return (await img.count()) ? await img.getAttribute('src') : null;
+  return (await expectSome(img, 3_000)) ? await img.getAttribute('src') : null;
 }
 
 export async function bannersPart({ page, guest, base, dbUrl, check, fx, st }) {

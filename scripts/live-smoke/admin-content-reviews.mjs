@@ -8,6 +8,7 @@
  */
 import { PNG } from './avatar.mjs';
 import { mediaKeysOf, poll, reviewByTitle } from './admin-content-sql.mjs';
+import { expectVisible } from './wait.mjs';
 
 /** GET-відповіді serverFn сторінки: шлях, заголовки й тіло. */
 export function captureServerFns(page) {
@@ -61,7 +62,7 @@ export async function isolationPart({ pages, contexts, check, fx, st }) {
   const card = author.locator('div.border.rounded-lg', {
     hasText: fx.reviewText,
   });
-  const badge = await card.getByText('На модерації').count();
+  const badge = await expectVisible(card.getByText('На модерації').first());
   const src = await card
     .locator('img[alt="Фото 1"]')
     .first()
@@ -69,7 +70,7 @@ export async function isolationPart({ pages, contexts, check, fx, st }) {
     .catch(() => null);
   check(
     'контент: автор бачить свій pending-відгук із фото й бейджем «На модерації»',
-    badge > 0 && src === `/media/${st.reviewRef}`,
+    badge && src === `/media/${st.reviewRef}`,
     `бейдж ${badge}, фото ${src}`,
   );
   // Шлях `getProductReviews` — та відповідь, що несе id відгуку автора: хеш
