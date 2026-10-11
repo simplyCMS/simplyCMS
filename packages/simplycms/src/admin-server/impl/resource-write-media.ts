@@ -1,5 +1,5 @@
 import { getTableColumns, getTableName, is, type Table } from 'drizzle-orm';
-import { PgText } from 'drizzle-orm/pg-core';
+import { PgJsonb, PgText } from 'drizzle-orm/pg-core';
 import type { ActorDb } from 'simplycms/db';
 import { discardMedia } from 'simplycms/storage';
 import { lockCatalogTarget } from './catalog-lock';
@@ -22,9 +22,9 @@ type Rec = Record<string, unknown>;
 export function assertMediaColumns(table: Table, media: ResourceMedia) {
   const columns = getTableColumns(table);
   for (const col of media.columns)
-    if (!is(columns[col], PgText))
+    if (!is(columns[col], PgText) && !is(columns[col], PgJsonb))
       throw new Error(
-        `[admin-server] ${getTableName(table)}.${col}: media-колонка мусить бути text`,
+        `[admin-server] ${getTableName(table)}.${col}: media-колонка мусить бути text або jsonb`,
       );
   return media;
 }

@@ -1,7 +1,10 @@
 import { and, asc, eq, inArray, type Table } from 'drizzle-orm';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
-import type { MediaEntityType } from 'simplycms/domain/media';
+import {
+  normalizeMediaRefs,
+  type MediaEntityType,
+} from 'simplycms/domain/media';
 import { media as mediaTable } from 'simplycms/schema';
 import { eraseMediaRows } from 'simplycms/storage';
 import { stateConflict } from './errors';
@@ -45,18 +48,24 @@ export async function readSnapshot(
   return new Map(rows.map((row) => [String(row.id), row]));
 }
 
-/** Непорожні рядкові референси рядка по колонках `media`. */
+/**
+ * Референси одного значення медіа-колонки (К3-Е6д-1): `text` — один непорожній
+ * рядок, `jsonb` — масив (нормалізований: лише непорожні рядки).
+ */
+export const columnRefs = (value: unknown): string[] =>
+  typeof value === 'string'
+    ? value === ''
+      ? []
+      : [value]
+    : normalizeMediaRefs(value);
+
+/** Непорожні референси рядка по всіх колонках `media`. */
 const refsOf = (media: ResourceMedia, row: Record<string, unknown> | null) =>
-  new Set(
-    media.columns.flatMap((col) => {
-      const value = row?.[col];
-      return typeof value === 'string' && value !== '' ? [value] : [];
-    }),
-  );
+  new Set(media.columns.flatMap((col) => columnRefs(row?.[col])));
 
 /**
- * Перевірка НОВИХ референсів (Е6д-1): непорожнє значення, що відрізняється
- * від знімка, мусить бути рядком `media` з `entity_type = media.entityType`
+ * Перевірка НОВИХ референсів (Е6д-1): непорожній ключ, якого не було в знімку
+ * колонки (для jsonb-масиву — доданий елемент), мусить бути рядком `media` з `entity_type = media.entityType`
  * і `entity_id = <id рядка>`, інакше 409 `media_ref_invalid`.
  *
  * 🔴 Умова `entity_id` — не формальність: стирання йде за `storage_key`, тож
@@ -76,10 +85,12 @@ export async function assertMediaRefs(
 ): Promise<void> {
   const wanted = rows.flatMap(({ id, next, before }) =>
     media.columns.flatMap((col) => {
-      const value = next[col];
-      const fresh =
-        typeof value === 'string' && value !== '' && value !== before?.[col];
-      return fresh ? [{ id, key: value }] : [];
+      // Нові = ключі значення, яких не було в знімку ТІЄЇ Ж колонки: для
+      // `text` — зміна рядка, для `jsonb`-масиву — додані елементи.
+      const old = new Set(columnRefs(before?.[col]));
+      return columnRefs(next[col])
+        .filter((key) => !old.has(key))
+        .map((key) => ({ id, key }));
     }),
   );
   if (wanted.length === 0) return;

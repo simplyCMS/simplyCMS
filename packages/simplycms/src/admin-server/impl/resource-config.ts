@@ -90,9 +90,10 @@ export interface AdminResourceConfigBase<
     NoInfer<InsertPick<T, W | I> & { id: string }>,
     NoInfer<Partial<InsertPick<T, W>>>
   >;
-  /** Е6д-1: колонки-референси на файли сутності `entityType` (лише writable
-   *  `text`). Фабрика перевіряє нові референси, стирає рядки `media`
-   *  заміненого/видаленого в транзакції, а файли — після COMMIT (Е6д-14). */
+  /** Е6д-1: колонки-референси на файли сутності `entityType` (лише
+   *  writable `text` або `jsonb`-масив референсів, К3-Е6д-1). Фабрика
+   *  перевіряє нові референси, стирає рядки `media` заміненого/видаленого в
+   *  транзакції, а файли — після COMMIT (Е6д-14). */
   media?: { entityType: MediaEntityType; columns: readonly NoInfer<W>[] };
   /** Е6д-19: дочірні таблиці, які FK `ON DELETE CASCADE` видаляє разом із
    *  рядком ресурсу і які несуть медіа. `remove` стирає їхні рядки `media` у
