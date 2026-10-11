@@ -152,8 +152,8 @@
 - **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній таблиці.
 
 Стережуть: `eslint-rules/query-key-from-entity.mjs` (зона — `core/`, `*-ui/`,
-`react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` — виїмка, доки
-сторінки не переписані), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
+`react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета ядра; адмінку
+додано в К3-Е7, охоплення — `tests/eslint-admin-zones.test.ts`), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
 тест парності `schema/__tests__/entity-parity.test.ts` (реєстр ↔ схема),
 `admin-data/__tests__/collection-key-storefront-isolation.test.ts`.
 

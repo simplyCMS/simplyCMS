@@ -87,17 +87,15 @@ const I18N_MIGRATED_FILES = [
 // Доступні імена контролів воронки (К2-Е0, Е0-4, рішення Р5): у пʼяти теках
 // воронки 41 `<label>` не звʼязаний ні з чим — скрінрідер і `getByLabelText`
 // поля не знаходять. `cart-ui` у зоні наперед: форм там сьогодні нуль, і гейт
-// має стояти ДО появи першої.
-//
-// 🔴 `src/admin/**` тут НЕМАЄ навмисно — з тієї ж причини, що й у зоні
-// `query-key-from-entity` нижче: ~52 файли адмінки переписуються треком К3,
-// правити їхні лейбли зараз означало б робити роботу двічі.
+// має стояти ДО появи першої. Адмінка — у зоні з К3-Е7 (виїмку зняли разом
+// із легасі-шаром; негативний контроль — tests/eslint-admin-zones.test.ts).
 const A11Y_LABEL_ZONE = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
   'packages/simplycms/src/profile-ui/**/*.tsx',
   'packages/simplycms/src/catalog-ui/**/*.tsx',
   'packages/simplycms/src/reviews-ui/**/*.tsx',
   'packages/simplycms/src/cart-ui/**/*.tsx',
+  'packages/simplycms/src/admin/**/*.tsx',
 ];
 
 // Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ
@@ -325,10 +323,8 @@ const eslintConfig = [
   // тут мовчки вимкнув би один із двох детекторів залежно від порядку
   // конфігів. Окреме імʼя правила прибирає перетин повністю.
   //
-  // 🔴 `src/admin/**` тут НЕМАЄ навмисно: її ~170 літеральних ключів
-  // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
-  // означало б робити роботу двічі. Додати теку — крок завершення
-  // переписування адмінки (DoD К3-3).
+  // `src/admin/**` — у зоні з К3-Е7 (DoD К3-3: адмінку переписано, виїмку
+  // знято; негативний контроль — tests/eslint-admin-zones.test.ts).
   //
   // 🔴 Референс-тема й референс-плагін — теж у зоні (борг Е1а №8, Е3-12):
   // `simplycms/contracts/entities` — публічний T0-субшлях, межа довіри тем
@@ -343,6 +339,7 @@ const eslintConfig = [
       'packages/simplycms/src/react-query/**/*.{ts,tsx}',
       'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin/**/*.{ts,tsx}',
       'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
       'packages/simplycms-plugin-faq/src/**/*.{ts,tsx}',
     ],

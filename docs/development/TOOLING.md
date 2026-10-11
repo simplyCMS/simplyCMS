@@ -183,12 +183,13 @@ Error-зони й кастомні правила (селектори й опц�
 - **Контракт ключів кешу React Query** — `eslint-rules/query-key-from-entity.mjs`: літеральний
   перший сегмент `queryKey` (прямий, через константу-масив і в умовному виборі) заборонений;
   сегмент 0 іде з реєстру `simplycms/contracts/entities` (`ENTITY`/`AGGREGATE`/`SESSION_KEY`).
-  Зона — `core/`, `*-ui/`, `react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` —
-  виїмка, доки сторінки адмінки не переписані на `admin-server`. Деталі —
+  Зона — `core/`, `*-ui/`, `react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета
+  ядра (адмінку додано в К3-Е7). Деталі —
   `docs/architecture/data-layer.md` § «Контракт ключів кешу».
 - **Доступні імена контролів:** `jsx-a11y/label-has-associated-control` (error,
   `assert: 'htmlFor', depth: 3`) на п'яти теках воронки (`cart-ui`, `catalog-ui`, `checkout-ui`,
-  `profile-ui`, `reviews-ui`). 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
+  `profile-ui`, `reviews-ui`) і в адмінці `src/admin/**` (з К3-Е7). Охоплення адмінки обома
+  правилами доводить `tests/eslint-admin-zones.test.ts`. 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
   невидимий: зелений лінт доступності воронки не доводить її повноти.
 - **Ратчет проти `@supabase/*` — `simplycms-supabase/no-supabase-import`:** зона — ВСЕ репо
   (усі `*.{ts,tsx,mts,cts,mjs,cjs,js}`), без виїмок; ловить статичний `import`/`export…from`,

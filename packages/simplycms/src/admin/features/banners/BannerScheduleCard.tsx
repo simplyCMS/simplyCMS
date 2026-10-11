@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
@@ -24,6 +25,9 @@ const Err = ({ text }: { text?: string }) =>
  */
 export function BannerScheduleCard({ form }: Props) {
   const t = useT();
+  // Префікс id для пар label↔checkbox днів: Radix Checkbox — не нативний
+  // input, тож вкладення в <label> скрінрідеру імені не дає, потрібен htmlFor.
+  const dayIdPrefix = useId();
   const { register, control, formState } = form;
   const { errors } = formState;
   return (
@@ -62,9 +66,11 @@ export function BannerScheduleCard({ form }: Props) {
                 {WEEKDAYS.map((d) => (
                   <label
                     key={d.value}
+                    htmlFor={`${dayIdPrefix}-${d.value}`}
                     className="flex items-center gap-1.5 cursor-pointer"
                   >
                     <Checkbox
+                      id={`${dayIdPrefix}-${d.value}`}
                       checked={field.value.includes(d.value)}
                       onCheckedChange={(on) =>
                         field.onChange(
