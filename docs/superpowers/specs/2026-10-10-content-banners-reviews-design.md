@@ -58,7 +58,8 @@
   (референс — не URL); `'review'` немає в `MEDIA_ENTITY_TYPES`. Колонка `images` є в
   `MEDIA_COLUMNS` і вітрина її резолвить (`toImageList`).
 - Зразок заливки файлу покупцем без орфана — аватар (`storefront/loaders/avatar.ts`:
-  `writeMedia` у транзакції, `discardMedia` при відкаті, один драйвер на обидва кроки).
+  `writeMedia` у транзакції, `discardMedia` при відкаті, один драйвер на обидва кроки;
+  *`discardMedia` замінено Е6д-20 — відкат через `withPublishedRollback`*).
 - Сід: `scripts/showcase/raw-writes.mts:12-39` — `approveReviews` сирим SQL (борг
   SHOWCASE-1 / С-11: має стати ядром модерації).
 
@@ -108,7 +109,7 @@
   🔴 Схема валідації — ОДНА, спільна з `entities/banner.ts`, якщо там уже є предикати форми
   (`isBannerButton`): дві копії правила «яка кнопка валідна» розійдуться.
 - `id` генерує клієнт колекції (інваріант), `touch: 'updatedAt'`.
-- **Картинки:** референси в колонках; у формі `ImageUpload` з `eraseOnRemove={false}`, а
+- **Картинки:** референси в колонках; у формі `ImageUpload` ~~з `eraseOnRemove={false}`~~ *(проп `eraseOnRemove` знесено Е6д-22: `ImageUpload` файл не стирає взагалі)*, а
   замінені/прибрані референси стирає СЕРВЕР: транзакція update/delete видаляє лише рядки
   `media`, файли — після COMMIT (двофазне стирання, **Е6д-14 плану**; замінює порядок
   «рядок → обʼєкт → COMMIT» К3-Е2 для всього нового коду). Причина: з
@@ -116,8 +117,8 @@
   мертвим референсом. Хука у фабриці не було — **рішення Е6д-1 плану**: декларативна
   опція фабрики `media: { entityType, columns }` (знімок старого рядка один раз `FOR
   UPDATE`, перевірка нових референсів як `media` цієї сутності, 409 `media_ref_invalid`,
-  `eraseMediaRows` заміненого в транзакції + `discardMedia` після COMMIT). Той самий знімок бачить guard перехресних правил
-  (Е6д-2). Предикати кнопки й кольору — у T1 (`domain/banner.ts`, `isSafeCssValue`;
+  `eraseMediaRows` заміненого в транзакції; ~~`discardMedia` після COMMIT~~ *замінено Е6д-20: файл стирає `completeMediaErasures` з outbox*). Той самий знімок бачить guard перехресних правил
+  (Е6д-2). Предикати кнопки й кольору — у T1 (`domain/banner.ts`, `isSafeCssColor` для накладки; `isSafeCssValue` лишився для токенів теми;
   Е6д-3, Е6д-4).
 - Дати розкладу — через `admin/lib/datetime-local` (`fromDateTimeLocal`), як знижки.
 - Видалення — з підтвердженням (AlertDialog), як скрізь у новій адмінці.
@@ -169,7 +170,7 @@
   зразком аватара: перевірка `inspectUpload` (сніфер MIME + стеля розміру) ДО транзакції;
   у транзакції `withCustomerDb` — `writeMedia` кожного файлу, рядок `media` з
   `entity_type='review'`, `entity_id = reviewId`, insert відгуку з референсами в `images`;
-  падіння транзакції → `discardMedia` усіх записаних. Окремого «завантаж спершу, привʼяжи
+  падіння транзакції → ~~`discardMedia` усіх записаних~~ *(замінено Е6д-20: `withPublishedRollback` через outbox)*. Окремого «завантаж спершу, привʼяжи
   потім» НЕМАЄ: він породжує орфани, яких К4-sweep ще не прибирає.
   `userId` — з серверної сесії, ніколи з клієнта.
 - Ліміти: до 5 фото, лише `ACCEPTED_IMAGE_MIME`, стеля — `MAX_REVIEW_IMAGE_BYTES` (5 МБ;
@@ -248,13 +249,13 @@
   (`eraseMediaRows` ставить хвіст у тій самій транзакції; `completeMediaErasures` після COMMIT
   стирає поза транзакцією з бронюванням `requested_at`, збій лишає хвіст; повтор вручну).
   Відкат щойно опублікованого файлу теж через outbox (`withPublishedRollback`);
-  `discardMedia` і `eraseMedia` знесено, аватар, логотип і `deleteMedia` двофазні.
+  `discardMedia` і `eraseMedia` знесено, аватар і логотип двофазні. Проп `ImageUpload.eraseOnRemove` і serverFn `deleteMedia` (без споживачів після цього) також знесено.
 - **Е6д-21 — роздача.** `serveMedia` бере рядок `media` і видимість власника через
   інʼєктований `lookup`; `missing`/`hidden` — однаковий 404 `no-store`, збій БД — 500;
   фото відгуку на модерації бачать автор і модератор; персональні типи — `private, no-cache`.
   Це скасовує початкове «прийнятно для пілоту» щодо роздачі за ключем.
 - **Е6д-22 — посилання й sweep.** `findMediaReferences` (спільні гілки з `MEDIA_COLUMNS` і
-  логотипом) дає 409 `media_in_use` у `deleteMedia` і sweep неприв'язаних рядків старших за 24 год.
+  логотипом) є джерелом посилань для sweep неприв'язаних рядків старших за 24 год.
   `media.entity_id` — `NOT NULL`: власник обовʼязковий.
 - **Е6д-23 — редагування відгуку.** Покупець правит текст і фото, відгук повертається в
   `pending` (колонковий `UPDATE`, політика `product_reviews_update_own`; INSERT звужено

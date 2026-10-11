@@ -65,7 +65,7 @@
     { lookup })`, `MEDIA_VISIBILITY`); персональні файли — `private, no-cache`, 404/500
     — `no-store` (Е6д-21);
   - `findMediaReferences`/`mediaReferenceExists`, sweep неприв'язаних медіа (≥ 24 год) у
-    налаштуваннях, `deleteMedia` → 409 `media_in_use`, гейти `media-sweep-coverage` і
+    налаштуваннях, гейти `media-sweep-coverage` і
     `media-cascade-coverage` (з `via` для двоярусного каскаду) (Е6д-22);
   - стеля тіла запиту `bodyLimitMiddleware` (`simplycms/runtime/body-limit`, 413
     `request/payload-too-large`, 411 `request/length-required`; `UPSTREAM:START-BODY-1`);
@@ -78,7 +78,7 @@
     властивостей, модифікації), `cascadeMedia` для каталогу.
 - Адмінка: `/admin/banners*` — ресурс фабрики з опцією `media` (Е6д-1), перехресні
   правила на злитому рядку (Е6д-2, Е6д-12), безпечні кнопки (`/шлях` або `http(s)://`,
-  Е6д-13) і `overlay_color` за `isSafeCssValue` (Е6д-4); право `banner.manage`.
+  Е6д-13) і `overlay_color` за `isSafeCssColor` (Е6д-4); право `banner.manage`.
 - Адмінка: `/admin/reviews*` — список з keyset і масовою модерацією (`setReviewsStatus`,
   409 `review_not_found` без часткового запису, Е6д-7), картка з фото й внутрішньою
   приміткою (не їде на вітрину, Д-1), бейдж «очікують» у сайдбарі (Д-4); відгуки
@@ -101,7 +101,7 @@
 
 ### Змінено
 
-- `eraseMedia` і `discardMedia` знесено: аватар, логотип і `deleteMedia` двофазні;
+- `eraseMedia` і `discardMedia` знесено: аватар і логотип двофазні, serverFn `deleteMedia` знесено (споживачів не лишилось);
   `ImageUpload` більше не стирає файл (проп `eraseOnRemove` прибрано), сироту змітає sweep.
 - Легасі `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail` знесено; легасі на
   `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом).
@@ -111,7 +111,7 @@
 
 Межі канону сховища (`docs/architecture/storage.md`, «Межі»): БД недоступна саме в момент
 відкату публікації; ручна вставка `/media/<key>` у rich HTML не створює власності; прямий
-виклик serverFn повз UI понад стелю тіла може побачити обрив зʼєднання замість 413.
+виклик serverFn повз UI понад стелю тіла може побачити обрив зʼєднання замість 413; чистий JSON без `Content-Length` (chunked) проходить без стелі, бо Start буферизує його повністю ([`UPSTREAM:START-BODY-1`](docs/architecture/upstream-workarounds.md)).
 
 ## [0.13.0] — 2026-10-10
 

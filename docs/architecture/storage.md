@@ -14,8 +14,8 @@
 
 ## Правила
 
-- Завантаження й видалення — **лише serverFn**: `uploadMedia`/`deleteMedia`
-  (`simplycms/admin-server`) для адмінки, `uploadMyAvatar`/`removeMyAvatar`
+- Завантаження й видалення — **лише serverFn**: `uploadMedia`
+  (`simplycms/admin-server`) для адмінки (прибрати файл окремим serverFn не можна: заміну чи видалення сутності стирає сервер, сироту — sweep), `uploadMyAvatar`/`removeMyAvatar`
   (`simplycms/core/lib/profile-avatar`) для кабінету, `submitProductReview`/
   `deleteMyProductReview` (`simplycms/core/lib/review-form`) для фото відгуку:
   до 5 файлів по 5 МБ одним `FormData`-запитом разом із текстом, усі перевірені
@@ -68,11 +68,9 @@
     до COMMIT. Гейт класу `test-harness/pg/__tests__/media-cascade-coverage.test.ts`
     звіряє кожну каскадну медіа-колонку з каталогу FK з покриттям або винятком із
     причиною.
-  - аватар (`replaceAvatar`/`removeMyAvatar`), логотип магазину (Е6б-14) і адмінський
-    `deleteMedia` теж двофазні (К3-Е6д-3): винятків із двофазного канону немає.
-    `deleteMedia` перед стиранням звіряє `findMediaReferences` (див. «Посилання на
-    медіа») і при живому посиланні відповідає 409 `media_in_use`; `ImageUpload` файл сам
-    не стирає, а сироту, лишену скасованою формою, прибирає sweep.
+  - аватар (`replaceAvatar`/`removeMyAvatar`), логотип магазину (Е6б-14) теж двофазні (К3-Е6д-3): винятків із двофазного канону немає.
+    `ImageUpload` файл сам не стирає, а сироту, лишену скасованою формою, прибирає sweep
+    (він звіряє `findMediaReferences`, див. «Посилання на медіа»).
 - Фото відгуку (Е6д-5): `'review'` свідомо **не** в `MEDIA_ENTITY_TYPES` — той
   список є allowlist адмінського `uploadMedia`, а сценарію «адмін вантажить фото
   відгуку» немає (як і `'avatar'`, пишеться повз список). Константи —
@@ -81,7 +79,7 @@
   КОЖНОГО файлу звіряються до першого `writeMedia`. Тіло запиту має стелю
   (`bodyLimitMiddleware`, `MAX_REQUEST_BODY_BYTES` = найбільше з доменних лімітів +
   `MULTIPART_OVERHEAD_BYTES`; відмова 413 `request/payload-too-large`, без
-  `Content-Length` — 411 `request/length-required`; база шляху — `TSS_SERVER_FN_BASE`;
+  `Content-Length` — 411 `request/length-required` для всього, що не JSON і для всього, що Start читає як форму; база шляху — `TSS_SERVER_FN_BASE`;
   К3-Е6д-2, `ENVIRONMENT.md`). Межа: UI відсікає завелике ДО відправки, тож прямий
   виклик повз UI може побачити обрив зʼєднання замість 413 (`UPSTREAM:START-BODY-1`,
   `upstream-workarounds.md`).
@@ -178,6 +176,9 @@ COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку 
    файл, якщо його рядок `media` без посилання з колонок.
 3. Прямий виклик serverFn повз UI, що перевищує стелю тіла, може побачити обрив
    зʼєднання замість 413 (`UPSTREAM:START-BODY-1`).
+4. Чистий JSON без `Content-Length` (chunked) проходить без стелі, а Start буферизує
+   `request.json()` повністю — залишковий ризик, прийнятий архітектором
+   (`upstream-workarounds.md`, START-BODY-1).
 
 ## Логотип магазину — референс у jsonb (Е6б-14)
 

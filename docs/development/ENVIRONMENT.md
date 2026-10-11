@@ -67,8 +67,8 @@ HTTP-сервер. Теки `.output/` немає.
 
 🔴 **Стеля тіла запиту (К3-Е6д-2).** Request-міддлвара `bodyLimitMiddleware` відхиляє POST на
 `/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (`domain/media.ts`, ≈ 26 МБ: 5 фото
-відгуку по 5 МБ + 1 МБ службових байтів) відповіддю 413, а POST без `Content-Length` — 411, крім `application/json`
-(chunked JSON — відкрите вікно: Start буферизує `request.json()` повністю, ризик свідомо прийнято архітектором).
+відгуку по 5 МБ + 1 МБ службових байтів) відповіддю 413, а POST без `Content-Length` — 411 для всього, що не JSON, і для всього, що Start читає як форму
+(`application/json; x=multipart/form-data` теж; chunked чистий JSON — відкрите вікно: Start буферизує `request.json()` повністю, ризик свідомо прийнято архітектором).
 Перевірка йде за заголовком, тож спирається на Node-раннер (`server.mjs`), що обмежує тіло заявленою
 довжиною (`UPSTREAM:START-BODY-1`). Проксі перед магазином (nginx `client_max_body_size`, Traefik
 `maxRequestBodyBytes`) має пропускати принаймні цю стелю і НЕ перетворювати тіло на chunked без

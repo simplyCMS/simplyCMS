@@ -150,10 +150,15 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 **Наш обхід.** `bodyLimitMiddleware` (`packages/simplycms/src/runtime/body-limit.ts`,
 `requestMiddleware` у `src/start.ts` після CSRF): POST на `/_serverFn/` із
 `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (виводиться з доменних лімітів
-у `domain/media.ts`) → 413; POST без `Content-Length` → 411, окрім медіатипу
-`application/json` (парситься до `;`, без регістру). Start читає
-`request.formData()` і для multipart, і для urlencoded, тож відсікати
-лише multipart мало. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
+у `domain/media.ts`) → 413; POST без `Content-Length` → 411 для всього, що не
+чистий JSON, і для всього, що Start прочитав би як форму. Предикат
+ДЗЕРКАЛИТЬ апстрім: `server-functions-handler.js` (1.169.39, рядки ~40-43:
+`contentType.includes('multipart/form-data') || …includes('application/x-www-form-urlencoded')`,
+далі `request.formData()`). Це `includes`, а не порівняння медіатипу, тож
+`application/json; x=multipart/form-data` Start читає як форму без стелі —
+наша перевірка відмовляє 411 тим самим предикатом (плюс нижній регістр:
+суворіше за Start, безпечно). 🔴 Предикат звіряти з `server-functions-handler.js`
+при КОЖНОМУ бампі `@tanstack/start-server-core`. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
 
 **Межі гарантії.**
 - 413 віддається ДО читання тіла, тож стеля захищає від прямих викликів повз
@@ -163,7 +168,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
   `MAX_REVIEW_IMAGE_BYTES`), медіа адмінки — `ImageUpload` (кожен файл ≤
   `MAX_UPLOAD_BYTES`, один файл на POST), аватар — `AvatarUpload`
   (`MAX_AVATAR_BYTES`); тест-інваріант констант — `body-limit.test.ts`.
-- 🔴 Відкрите вікно: JSON без `Content-Length` (chunked) проходить без стелі,
+- 🔴 Відкрите вікно: чистий JSON без `Content-Length` (chunked) проходить без стелі,
   а Start буферизує `request.json()` повністю. Свідомо прийнятий архітектором
   залишковий ризик (не «обмежений аргументами» — розмір обирає клієнт).
 - Шлях server functions береться з `process.env.TSS_SERVER_FN_BASE` у момент

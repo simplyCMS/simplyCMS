@@ -46,7 +46,8 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   route-теці відповідного пакета.
 - 🔴 **Стеля тіла POST на server functions** — `bodyLimitMiddleware` (`simplycms/runtime/body-limit`,
   другою в `requestMiddleware` після CSRF): `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413,
-  multipart без нього → 411 (`UPSTREAM:START-BODY-1`).
+  без нього → 411 для всього, що не JSON (і для всього, що Start читає як форму;
+  `UPSTREAM:START-BODY-1`).
 - 🔴 **Мутуючий запит захищений від CSRF за замовчуванням.** `csrfMiddleware`
   (`simplycms/runtime/csrf`, першою в `requestMiddleware` у `src/start.ts`)
   перевіряє КОЖЕН запит із методом поза GET/HEAD/OPTIONS — і server function, і
