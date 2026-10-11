@@ -44,4 +44,13 @@ export const messages = {
   'admin.settings.network.youtube': 'YouTube',
   'admin.settings.network.x': 'X',
   'admin.settings.network.viber': 'Viber',
+  // Сховище файлів: хвости стирання (Е6д-20).
+  'admin.settings.storage.title': 'Сховище файлів',
+  'admin.settings.storage.hint':
+    'Файли, які не вдалося стерти після видалення запису. Їх уже не видно на сайті',
+  'admin.settings.storage.count': 'Хвостів стирання: {count}',
+  'admin.settings.storage.attempts': 'Спроб: {count}, з {date}',
+  'admin.settings.storage.retry': 'Повторити стирання',
+  'admin.settings.storage.retried': 'Стерто: {done}, не вдалося: {failed}',
+  'admin.settings.storage.loadError': 'Не вдалося завантажити хвости стирання',
 } as const;

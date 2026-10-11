@@ -8,6 +8,8 @@ import {
   deleteMediaInput,
   deleteMediaOp,
   uploadMediaOp,
+  listMediaErasuresOp,
+  retryMediaErasuresOp,
   orderStatusesOps,
   setDefaultInput,
   setDefaultOrderStatusOp,
@@ -178,6 +180,16 @@ export const uploadMedia = createServerFn({ method: 'POST' })
 export const deleteMedia = createServerFn({ method: 'POST' })
   .validator(adminInput(deleteMediaInput))
   .handler(deleteMediaOp);
+
+// Е6д-20: хвости стирання файлів. Читання й повтор — без вводу, валідувати
+// нічого.
+export const listMediaErasures = createServerFn({ method: 'GET' }).handler(
+  listMediaErasuresOp,
+);
+
+export const retryMediaErasures = createServerFn({ method: 'POST' }).handler(
+  retryMediaErasuresOp,
+);
 
 // 🔴 Task 3 (Е3): файл переростає канон 150 рядків СВІДОМО — К3-9′ вимагає
 // ЄДИНОГО модуля serverFn, і розбиття його на кілька змінило б межу, яку

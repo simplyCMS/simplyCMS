@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
 import { reportTxError } from '../../lib/report-tx-error';
 import { StockManagementCard } from './StockManagementCard';
+import { StorageMaintenanceCard } from './StorageMaintenanceCard';
 import { StoreProfileForm } from './StoreProfileForm';
 import { useSystemSettings } from './useSystemSettings';
 
@@ -50,6 +51,7 @@ export default function SettingsPage() {
           })
         }
       />
+      <StorageMaintenanceCard />
     </div>
   );
 }

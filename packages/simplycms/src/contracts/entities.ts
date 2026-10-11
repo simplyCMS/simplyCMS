@@ -22,6 +22,7 @@ export const ENTITY = {
   discounts: 'discounts',
   languages: 'languages',
   media: 'media',
+  mediaErasures: 'media_erasures',
   modificationPropertyValues: 'modification_property_values',
   orderItems: 'order_items',
   orderStatuses: 'order_statuses',

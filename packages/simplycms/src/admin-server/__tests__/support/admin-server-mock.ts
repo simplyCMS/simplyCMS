@@ -40,6 +40,8 @@ export function createAdminServerMock(
     reorderOrderStatus: vi.fn(),
     uploadMedia: vi.fn(),
     deleteMedia: vi.fn(),
+    listMediaErasures: list(),
+    retryMediaErasures: vi.fn(),
     listProducts: list(),
     insertProducts: vi.fn(),
     updateProducts: vi.fn(),
