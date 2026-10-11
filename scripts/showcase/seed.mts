@@ -23,6 +23,7 @@ import { seedCatalog } from './catalog.mts';
 import { seedCommerce } from './commerce.mts';
 import { applyProcessEnv, type ShowcaseEnv } from './env.mts';
 import { assertPristine } from './guard.mts';
+import { seedGuestVisibleMedia } from './guest-media.mts';
 import { seedLoyalty } from './loyalty.mts';
 import { GUEST_COUNT, planOrders, ROLES } from './orders-plan.mts';
 import { applyStatuses, placeOrders } from './orders.mts';
@@ -72,6 +73,8 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
   const discard = await withActor(ADMIN, async (db) => {
     const keys = await seedCustomerScenarios(db, people);
     // Ядро модерації (Е6д-7), а не сирий UPDATE; `id` — від `insertProductReview`.
+    // Перший відгук — видалюваного покупця, тож фото кладемо на другий.
+    await seedGuestVisibleMedia(db, ctx, reviewIds[1]!);
     await setReviewsStatus(db, { ids: reviewIds, status: 'approved' });
     await shiftTime(
       db,
