@@ -7,6 +7,7 @@
 // код 42501, але від WITH CHECK — колонка дозволена, значення ні).
 // INSERT грантом табличний (drizzle називає всі колонки), тож `status` і
 // `admin_comment` звужує політика `product_reviews_insert_own`.
+// UPSTREAM:DRZ-INSERT-1 — docs/architecture/upstream-workarounds.md (розтяжка: tests/upstream-tripwires.test.ts)
 import { randomUUID } from 'node:crypto';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';

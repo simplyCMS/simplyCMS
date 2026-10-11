@@ -31,6 +31,13 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 Повний перелік місць обходу — `git grep -n "UPSTREAM:TSDB-1"`. Запис без
 маркерів у коді або маркер без запису — дефект реєстру.
 
+**Розтяжка.** Виконуваний бік реєстру — `tests/upstream-tripwires.test.ts`: передумова
+обходу, яку видно з тексту встановленого модуля, перевіряється тестом і червоніє на
+бампі САМА. Кожен активний запис мусить мати рядок `| Розтяжка |` (назва тесту) або
+`| Розтяжка: немає | <причина> |`, а запис без маркерів у коді — `| Маркери: немає | <причина> |`;
+тест звіряє маркери коду з активними записами в обидва боки. Новий запис без одного з
+цих рядків валить тест.
+
 **Новий запис** — ID `<ПРЕФІКС>-<N>` (префікс бібліотеки, номер наскрізний),
 усі поля обовʼязкові; «корінь» — з якорем на ВИХІДНИЙ код бібліотеки
 (`node_modules/.pnpm/<pkg>@<ver>/…/src/<file>:<line>`), а не переказ доків.
@@ -47,6 +54,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 | Знайдено на | 1.2.11 (2026-09-23) |
 | Перевірено на версії | `query-db-collection` 1.3.4 / `@tanstack/db` 0.11.3 — 2026-10-05 |
 | Статус апстріму | не повідомлено (рішення власника) |
+| Розтяжка: немає | поведінка write-back — рантаймова (ревалідація ключів), статично з коду бібліотеки не читається; сторожі — `collection-key-storefront-isolation.test.ts` і контрольний кейс I1 |
 
 **Поточна поведінка (1.3.4 / db 0.11.3).** `writeUpsert`/`writeDelete` →
 `updateCacheData` (`src/query.ts:~3168-3300`) шукає ключі ПРЕФІКСНО
@@ -142,6 +150,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 | Знайдено на | 1.169.39 (2026-10-11, К3-Е6д-2) |
 | Перевірено на версії | 1.169.39 — 2026-10-11: `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника (`createStartHandler.js`) |
 | Статус апстріму | не повідомлено; ліміти тіла — відповідальність хоста/проксі, Start їх не надає |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (предикат форми `includes(…)` + `formData()`, `TSS_SERVER_FN_BASE`) |
 
 **Симптом.** Будь-який клієнт (навіть анонімний) може послати на
 `/_serverFn/<id>` багатогігабайтний multipart: сервер буферизує його повністю
@@ -194,6 +203,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 | Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, live:smoke К3-Е3) |
 | Перевірено на версії | `@tanstack/router-core` 1.171.34 / `@tanstack/start-client-core` 1.170.34 / `@tanstack/start-server-core` 1.169.39 — 2026-10-04 (бамп XSS GHSA-qx66-fv34-fjm8): `ShallowErrorPlugin` без змін (parse — лише `message`), контрольний кейс тесту «без адаптера» зелений; адаптери Start і далі йдуть ПЕРЕД дефолтними плагінами (`getSerovalPlugins` у `start-client-core` і `server-functions-handler`) |
 | Статус апстріму | не повідомлено; ймовірно, свідомий дизайн (не протікати серверні поля), а не дефект |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (`ShallowErrorPlugin` досі серіалізує лише `message`) |
 
 **Симптом.** Помилка serverFn доходить у браузер як `new Error(message)`:
 `name` і власні поля (`kind`, `constraint`, `operation`) зникають. Конфлікт
@@ -233,6 +243,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 | Знайдено на | `@tanstack/db` 0.8.6 / `@tanstack/react-db` 0.3.6 (2026-09-23): друга сторінка не довантажувалась |
 | Перевірено на версії | `@tanstack/db` 0.11.3 / `@tanstack/react-db` 0.5.3 — 2026-10-05: довантажує префіксом (див. нижче) |
 | Статус апстріму | не повідомлено; поведінка задокументована попередженням бібліотеки |
+| Розтяжка: немає | довантаження сторінок видно лише в рантаймі живого запиту; сторож — кейс (2б) `on-demand-contract.test.tsx` |
 
 **Симптом (на 0.11.3).** Без індексу на полі `orderBy` друга сторінка
 (`pageSize: 2`) запитується як `{ sorts, limit: 5 }` — префікс
@@ -272,6 +283,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 | Знайдено на | 0.8.6 (2026-09-23) |
 | Перевірено на версії | 0.8.6 — 2026-09-23; `@tanstack/db` 0.11.3 — 2026-10-05 (не виправлено: `parseLoadSubsetOptions` повертає `{ filters, sorts, limit }`, `expression-helpers.ts:504-526`) |
 | Статус апстріму | не повідомлено |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (`parseLoadSubsetOptions` не повертає `offset`) |
 
 **Симптом.** Offset-пагінація з on-demand колекції вічно вантажила б
 першу сторінку, якщо брати результат `parseLoadSubsetOptions` як є.
@@ -304,6 +316,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 | Знайдено на | 1.2.11 (2026-09-23) |
 | Перевірено на версії | 1.2.11 — 2026-09-23; `@tanstack/query-db-collection` 1.3.4 — 2026-10-05 (не виправлено: `dist/esm/index.d.ts` не реекспортує `LoadSubsetOptions`) |
 | Статус апстріму | не повідомлено |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (`index.d.ts` не реекспортує `LoadSubsetOptions`) |
 
 **Симптом / корінь.** Тип є в `@tanstack/db`, але `query-db-collection`
 його не реекспортує (`dist/*.d.ts`). Прямої залежності на `@tanstack/db` ми
@@ -325,6 +338,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 | Знайдено на | 0.45.2, Етап B 2026-10-05 (раніше ховалось під DZOD-1) |
 | Перевірено на версії | 0.45.3 — 2026-10-05: відтворено (прибрати `as never` → TS2345 «not assignable to `SelectedFields`»), не виправлено |
 | Статус апстріму | не повідомлено |
+| Розтяжка: немає | це типова помилка TS2345, яку дає лише компіляція без `as never`; сторож — `pnpm typecheck` після зняття кастів |
 
 **Симптом.** `db.select(picked)` / `.returning(picked)`, де `picked` — проєкція
 «усі колонки, крім `omit`» (`pickColumns`, `resource-projection.ts`), не
@@ -357,6 +371,32 @@ typecheck` і `build:packages` зелені.
 
 ---
 
+### DRZ-INSERT-1 · `insert().values()` називає ВСІ колонки таблиці (відсутні — як `default`)
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `drizzle-orm` |
+| Знайдено на | 0.45.3 (К3-Е6д, 2026-10-11): колонковий грант INSERT на `product_reviews` дав `42501` |
+| Перевірено на версії | 0.45.3 — 2026-10-11 |
+| Статус апстріму | не дефект, а дизайн білдера; не повідомлено |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (SQL `insert().values()` для таблиці з DEFAULT-колонкою) |
+
+**Поведінка, на яку спираємося.** Білдер вставки генерує `insert into "t" ("a", "b", …)
+values ($1, default, …)` для всіх колонок таблиці. Тому колонковий грант
+`INSERT (a, …)` не працює: Postgres перевіряє право на кожну названу колонку, навіть
+з `default`. Правило проєкту — табличний грант INSERT + звуження політикою RLS
+`WITH CHECK`, колонкові гранти лише для UPDATE (`docs/architecture/data-layer.md`,
+розділ про гранти й RLS).
+
+**Де в коді.** Гранти `product_reviews` для `app_user` (`0002_grants.sql`) і їхній
+тест `test-harness/pg/__tests__/grants-review-columns.test.ts` (маркер тут).
+
+**Коли виправлять.** Якщо Drizzle почне пропускати колонки з `default`, розтяжка
+червоніє: колонковий INSERT-грант стане можливим, але правило з `data-layer.md` варто
+переглянути свідомо, а не мовчки.
+
+---
+
 ### TSESL-1 · TypeScript 6.0; TS 7 блокує `typescript-eslint` (peer `<6.1.0`)
 
 | Поле | Значення |
@@ -365,6 +405,8 @@ typecheck` і `build:packages` зелені.
 | Знайдено на | `typescript-eslint` 8.x (peer `typescript <6.1.0`), 2026-08-04 |
 | Перевірено на версії | 8.71.0 з `typescript` 6.0.3 — 2026-10-05 (peer `typescript >=4.8.4 <6.1.0`, без змін) |
 | Статус апстріму | **у роботі**: трекер [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) відкритий (`accepting prs`, `team assigned`), draft PR [#12803](https://github.com/typescript-eslint/typescript-eslint/pull/12803) — чекає програмного API TS 7.1 (стан на 2026-10-05) |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (peer `typescript` досі `<6.1.0`) |
+| Маркери: немає | обмеження лишає версію `typescript` у `package.json`, а не обхід у коді |
 
 **Симптом / корінь.** Гейт `pnpm lint` — на `typescript-eslint`, чий peer
 не допускає TS ≥ 6.1, тож TS 7 на ньому не підняти. TS 6.0.3 проходить: потрібне
@@ -440,6 +482,7 @@ typescript-eslint peerDependencies` і реліз-ноти — чи є підт�
 | Знайдено на | `tsup` 2026-08-24; `tsdown` 0.22.x 2026-09-02 |
 | Перевірено на версії | `tsdown` 0.23.0 — 2026-10-05 (`dts` у нас `false`, зміна API `dts` не зачіпає; зміна дефолта `resolveDepSubpath` — `build:packages`, `test:packaging`, `pilot:pack`, `dist-server-boundary` зелені, JS у `dist` побайтово той самий). Спайк tsgo — 2026-10-04, див. нижче |
 | Статус апстріму | не повідомлено |
+| Розтяжка: немає | вичерпання heap видно лише на справжній збірці; сторож — `pnpm build:packages` |
 
 **Симптом / корінь.** Dts-плагін тримає повну `ts.Program` і вичерпує
 кеп 3 ГБ за ~25 с; `tsc -p tsconfig.dts.json` робить те саме за 11 с /
@@ -481,6 +524,8 @@ worktree, код не збережено):
 | Знайдено на | 0.31.10 і 1.0.0-rc.4 (спайк Drizzle 1.0 RC, 2026-10-04) |
 | Перевірено на версії | 0.31.11 — 2026-10-05 (змін у генерації політик не перевірялось окремо; захист нижче діє незалежно від версії) |
 | Статус апстріму | не повідомлено |
+| Розтяжка: немає | дефект проявляється лише в SQL, який видає `drizzle-kit generate` на тестовій схемі; захист процесний (опис нижче) |
+| Маркери: немає | обходу в коді немає |
 
 **Симптом.** Генерація змін політик (`pgPolicy`): зміна `using`/`to`/`withCheck`
 дає коректний `ALTER POLICY`, зміна `for`/`as` — коректний DROP+CREATE.
@@ -515,6 +560,8 @@ worktree, код не збережено):
 | Знайдено на | спайк `1.0.0-rc.4` (тег `rc`) проти 0.45.2 / 0.31.10, 2026-10-04 |
 | Перевірено на версії | 0.45.3 / 0.31.11 — 2026-10-05; `1.0.0` stable ще не вийшла (з 2026-04-30 — RC) |
 | Статус апстріму | 1.0 у RC; лінія 0.45 майже не оновлюється; `drizzle-zod` 0.8.3 — з 2025-08 |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (встановлений `drizzle-orm` досі 0.x) |
+| Маркери: немає | рішення про вибір ORM, а не обхід у коді |
 
 **Рішення.** НЕ мігрувати на RC: вигоди для нас ~нульові (DZOD-1, DRZ-1 і
 баг DKIT-1 1.0 не лікує). Коли вийде `1.0.0` stable — **0,5–1 день** за
@@ -566,8 +613,8 @@ RLS менше місяця; Prisma — без RLS.
 
 | ID | Бібліотека · версія | На що спираємося | Де в коді | Що зламається, якщо зміниться | Тест-сторож |
 |---|---|---|---|---|---|
-| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `admin-server/impl/errors.ts` (`toAdminConflict`); `storefront/loaders/reviews-write.ts` (`isDuplicateReview`) | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `impl/__tests__/run.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач) |
-| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | — (перевіряти рев'ю при апгрейді Start) |
+| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `admin-server/impl/errors.ts` (`toAdminConflict`); `storefront/loaders/reviews-write.ts` (`isDuplicateReview`) | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `impl/__tests__/run.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
+| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
 
 ---
 
