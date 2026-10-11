@@ -13,8 +13,8 @@
  *
  * | Режим              | Команда           | Гейти              | Джерело даних     |
  * |--------------------|-------------------|--------------------|-------------------|
- * | пакувальність      | `pnpm pilot:pack` | A, C, D, IP, CLI, TOOL | нічого (без БД) |
- * | повний (проти БД)  | `pnpm pilot`      | A-D, IP, CLI, TOOL | `.env.local`      |
+ * | пакувальність      | `pnpm pilot:pack` | A, C, SB, D, IP, CLI, TOOL | нічого (без БД) |
+ * | повний (проти БД)  | `pnpm pilot`      | A-D, SB, IP, CLI, TOOL | `.env.local`      |
  *
  * 🔴 Режиму `--e2e` більше немає: він піднімав локальний стек БД, а
  * магазин контракту v2 ходить у чистий Postgres — стек не був би ні джерелом
@@ -69,8 +69,8 @@ function describeMode() {
 /** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
 function describeScope() {
   return packOnly
-    ? 'гейти A/C/D/IP + CLI/TOOL'
-    : 'гейти A-D/IP + CLI/TOOL (E знято)';
+    ? 'гейти A/C/SB/D/IP + CLI/TOOL'
+    : 'гейти A-D/SB/IP + CLI/TOOL (E знято)';
 }
 
 async function main() {

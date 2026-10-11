@@ -11,6 +11,7 @@ import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
+import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
 import { gateImportProtection } from './gate-ip.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
@@ -33,6 +34,9 @@ export async function runGates(opts) {
 
   step('Gate C — bundle-guard + splitting');
   results.push(['C', gateBundle(opts.storeDir)]);
+
+  step('Gate SB — що вклеєно в серверний бандл');
+  results.push(['SB', gateServerBundle(opts.storeDir)]);
 
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
