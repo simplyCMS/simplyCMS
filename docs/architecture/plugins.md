@@ -116,7 +116,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
   показує тост: БД і вкладка не розходяться.
 - Видалення плагіна з адмінки немає (С-3): встановлення й видалення —
   build-time (`simplycms add` + конфіг магазину, §9); supabase-шар життєвого
-  циклу (`adminLifecycle`, `pluginRepository` (знесено)) знесено.
+  циклу (`adminLifecycle` (знесено), `pluginRepository` (знесено)) знесено.
 
 ## 4. Межа довіри (спека §7)
 

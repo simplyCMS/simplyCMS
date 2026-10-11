@@ -29,8 +29,8 @@
 ## 2. Теми: що тема не робить
 
 Тема постачає токени, `components` і (опційно) `views`; **не** постачає даних,
-роутів, SEO, сторінок і лейаутів (`theme.pages`, `MainLayout`, `CatalogLayout`,
-`ProfileLayout` видалені свідомо, і не повертаються). Логіки в темі немає. Каркаси
+роутів, SEO, сторінок і лейаутів (`theme.pages`, `MainLayout` (знесено), `CatalogLayout`,
+`ProfileLayout` (знесено) видалені свідомо, і не повертаються). Логіки в темі немає. Каркаси
 `StorefrontShell`/`ProtectedShell` обгортають канонічну сторінку; view — чиста
 функція від view-model-а. Деталі — `themes.md` §2.
 

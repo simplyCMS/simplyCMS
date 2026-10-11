@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -9,24 +9,28 @@ import { describe, expect, it } from 'vitest';
  * бреше мовчки: рев'ю звіряє дифф із планом, а не доки з кодом (уроки Е6д —
  * `deleteMedia` лишився в доках без жодного споживача). Тест бере кожен
  * ідентифікатор у зворотних лапках, схожий на символ коду, і вимагає, щоб він
- * хоч раз зустрічався в зібраному індексі ідентифікаторів коду.
+ * ВИЗНАЧАВСЯ у продакшн-коді.
  *
  * Що сканується: markdown у `docs/architecture` і `docs/development`,
  * `packages/<pkg>/README.md`, README усередині `packages/simplycms/src` та
  * `packages/simplycms/skills`. Архів (`CHANGELOG.md`, `docs/superpowers`) — поза
- * скануванням: це історія, а не поточне твердження. Блоки коду (три
- * зворотні лапки) пропускаються — це приклади.
+ * скануванням. Блоки коду (три зворотні лапки) пропускаються — це приклади.
  *
  * «Схожий на символ»: `camelCase` / `PascalCase` з великою літерою всередині або
- * `UPPER_SNAKE`, у лапках цілком, опційно з `()`. Індекс — усі ідентифікатори
- * коду (packages, src, scripts, tests, eslint-rules, .agents, кореневі конфіги),
- * без пошуку по кожному файлу окремо.
+ * `UPPER_SNAKE`, у лапках цілком, опційно з `()`.
  *
- * ЯВНИЙ маркер історичної згадки. Знесений символ, який дока мусить назвати
- * (пояснити, що його немає), позначається в ТОМУ Ж РЯДКУ дужкою `(знесено)`
- * або `(замінено …)` — наприклад «`adminLifecycle` (знесено)». Без маркера
- * рядок червоніє: інакше кожен знос лишав би в доках живе посилання на
- * неіснуюче, а з тотальним винятком тест нічого б не стерег.
+ * Індекс — ВИЗНАЧЕННЯ, а не згадки: після зняття коментарів і вмісту рядків
+ * береться `function/class/const/let/var/type/interface/enum`, ключі
+ * об'єктів-реєстрів і властивості типів, методи, деструктуризація й
+ * `export {…}`, змінні `env.X`, імена файлів-модулів, ключі JSON, іменовані
+ * імпорти зі сторонніх пакетів (API бібліотеки, яке код справді кличе).
+ * Файли тестів/харнеса/моків дають лише експорти й `UPPER_SNAKE`-константи
+ * (гейти, на які посилаються доки); їхні назви тестів і коментарі —
+ * ніколи: саме так `deleteMedia` лишався «живим» після зносу.
+ *
+ * ЯВНИЙ маркер історичної згадки діє на КОНКРЕТНИЙ символ: дужка `(знесено)`
+ * або `(замінено …)` мусить стояти БЕЗПОСЕРЕДНЬО після символу в лапках —
+ * «`adminLifecycle` (знесено)». Маркер деінде в рядку нічого не гасить.
  *
  * Шум — `DOC_SYMBOL_ALLOWLIST` (символ → причина): сторонні API, приклади,
  * заплановане. Список лише скорочується: запис, символ якого з'явився в коді
@@ -35,8 +39,11 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(import.meta.dirname, '..');
 
-/** Маркер історичної згадки: `(знесено…)` / `(замінено…)` у рядку. */
-const HISTORICAL_MARKER = /\((?:знесено|замінено)/;
+/**
+ * Маркер історичної згадки: `(знесено…)` / `(замінено…)` БЕЗПОСЕРЕДНЬО після
+ * символу в лапках (через пробіли). Діє на цей символ, а не на весь рядок.
+ */
+const HISTORICAL_AFTER = /^\s*\((?:знесено|замінено)/;
 
 export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   // --- Next.js / Vendure / інші продукти, згадані як порівняння ---
@@ -93,6 +100,71 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   PostToolUse: 'подія хука Claude Code',
   SessionStart: 'подія хука Claude Code',
   SubagentStart: 'подія хука Claude Code',
+  // --- API бібліотек і платформи, які код не імпортує поіменно ---
+  allowBuilds: 'ключ pnpm-workspace, нова назва `onlyBuiltDependencies`',
+  minimumReleaseAge: 'ключ pnpm-workspace',
+  setQueryData: 'метод TanStack Query QueryClient',
+  toISOString: 'метод Date (стандартна бібліотека)',
+  multipleOf: 'ключ JSON Schema / Zod',
+  NaN: 'глобал JavaScript',
+  safeParse: 'метод схеми Zod',
+  dangerouslySetInnerHTML: 'проп React',
+  suppressHydrationWarning: 'проп React',
+  transpileModule: 'метод TypeScript API',
+  FormData: 'вебплатформний клас',
+  formData: 'метод Request (вебплатформа)',
+  localStorage: 'вебплатформний глобал',
+  IntersectionObserver: 'вебплатформний глобал',
+  scrollWidth: 'властивість DOM-елемента',
+  innerText: 'властивість DOM-елемента / метод Playwright',
+  isVisible: 'метод Playwright Locator (описано заборону миттєвих перевірок)',
+  waitFor: 'утиліта Testing Library',
+  expectTypeOf: 'утиліта Vitest',
+  globalSetup: 'опція Playwright/Vitest',
+  createPluginSetupTasks: 'внутрішнє імʼя Playwright',
+  execValidator: 'внутрішнє імʼя Start (start-client-core)',
+  extractSimpleComparisons: 'внутрішнє імʼя @tanstack/db',
+  normalizeThrown: 'внутрішнє імʼя @tanstack/db (записи реєстру)',
+  writeInsert: 'утиліта query-db-collection (записи реєстру)',
+  writeUpsert: 'утиліта query-db-collection (записи реєстру)',
+  writeDelete: 'утиліта query-db-collection (записи реєстру)',
+  writeBatch: 'утиліта query-db-collection (записи реєстру)',
+  updateCacheData: 'внутрішнє імʼя query-db-collection (записи реєстру)',
+  gcTime: 'опція TanStack Query',
+  SyncNotInitializedError: 'клас помилки @tanstack/db (записи реєстру)',
+  getSerovalPlugins: 'внутрішнє імʼя Start (запис START-1)',
+  getDefaultSerovalPlugins: 'внутрішнє імʼя Start (запис START-1)',
+  defaultSerovalPlugins: 'внутрішнє імʼя Start (запис START-1)',
+  makeSerovalPlugin: 'внутрішнє імʼя Start (запис START-1)',
+  ShallowErrorPlugin: 'внутрішнє імʼя Start/seroval (запис START-1)',
+  toCrossJSONAsync: 'API seroval (запис START-1)',
+  fromCrossJSON: 'API seroval (запис START-1)',
+  SelectedFields: 'тип Drizzle (запис DRZ-*)',
+  $inferSelect: 'властивість Drizzle-таблиці',
+  PgTableWithColumns: 'тип Drizzle (запис DRZ-*)',
+  DrizzleQueryError: 'клас помилки Drizzle (запис реєстру)',
+  isAlreadyPublished: 'внутрішня перевірка pnpm publish',
+  inviteUserByEmail: 'Supabase Auth admin API в історичному розділі',
+  FAILED_TO_CREATE_SESSION: 'код помилки Better Auth',
+  INVALID_ORIGIN: 'код помилки Better Auth',
+  TSR_ROUTES_BY_ID_MAP: 'змінна, яку генерує TanStack Router',
+  srcDirectory: 'опція плагіна TanStack Start',
+  ERR_PNPM_FETCH_404: 'код помилки pnpm, цитата',
+  ERR_PNPM_IGNORED_BUILDS: 'код помилки pnpm, цитата',
+  CollectionPage: 'тип schema.org у скілі редизайну',
+  ItemList: 'тип schema.org у скілі редизайну',
+  setDefault:
+    'назва операції в прозі (сімейство `setDefault*` серверних функцій)',
+  // --- інше ---
+  __PLUGIN_NAME__: 'плейсхолдер шаблону скаффолдера (підставляється CLI)',
+  __THEME_NAME__: 'плейсхолдер шаблону скаффолдера (підставляється CLI)',
+  __THEME_DISPLAY_NAME__:
+    'плейсхолдер шаблону скаффолдера (підставляється CLI)',
+  __CORE_RANGE__: 'плейсхолдер шаблону скаффолдера (підставляється CLI)',
+  simplyCMS: 'назва організації/бренду, не символ',
+  ORIENT_DOC_VENV:
+    'змінна скрипта orient (файл без розширення, не індексується)',
+  setLocale: 'README i18n пояснює, що такого модульного стану немає',
   // --- заплановане ---
   configSchema: 'заплановане в К5: форму налаштувань плагіна ядро ще не будує',
 };
@@ -106,12 +178,15 @@ const isSymbolLike = (s: string): boolean =>
   /^[A-Z][a-z0-9]+[A-Z][\w$]*$/.test(s) || // PascalCase
   /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(s); // UPPER_SNAKE
 
-/** Символи-кандидати в рядку: ціле вмістиме лапок, опційно з `()`. */
+/** Символи-кандидати в рядку (без тих, за якими стоїть маркер): ціле вмістиме лапок, опційно з `()`. */
 function symbolsInLine(line: string): string[] {
   const out: string[] = [];
   for (const m of line.matchAll(/`([^`\n]+)`/g)) {
     const id = /^([A-Za-z_$][\w$]*)(?:\(\))?$/.exec(m[1] as string)?.[1];
-    if (id && isSymbolLike(id)) out.push(id);
+    if (!id || !isSymbolLike(id)) continue;
+    const rest = line.slice((m.index ?? 0) + m[0].length);
+    if (HISTORICAL_AFTER.test(rest)) continue;
+    out.push(id);
   }
   return out;
 }
@@ -132,7 +207,6 @@ export function missingSymbols(
     stripFences(doc.text)
       .split('\n')
       .forEach((line, i) => {
-        if (HISTORICAL_MARKER.test(line)) return;
         for (const sym of symbolsInLine(line)) {
           if (index.has(sym)) continue;
           (found.get(sym) ?? found.set(sym, []).get(sym))?.push(
@@ -188,30 +262,170 @@ function collectDocs(): DocFile[] {
   }));
 }
 
+/** Не продакшн-код: тести, харнес, моки, e2e — їхні згадки не доводять існування символу. */
+const NON_PRODUCTION =
+  /(?:^|\/)(?:__tests__|test-harness|tests|e2e)\/|\.test\.|\.spec\.|\.e2e\.|mock/i;
+
+/**
+ * Прибирає коментарі й ВМІСТ рядкових літералів (лапки лишаються): згадка імені
+ * в коментарі чи назві тесту не є його визначенням. Жадібний на рядки/шаблони,
+ * щоб `//` усередині URL не вважався коментарем.
+ */
+export function stripCommentsAndStrings(src: string): string {
+  return src.replace(
+    /("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+    (_m, str: string | undefined) => (str ? str[0] + str[0] : ''),
+  );
+}
+
+const IDENT = '[A-Za-z_$][\\w$]*';
+const DEF_RES: RegExp[] = [
+  // function/class/const/let/var/type/interface/enum (з export чи без)
+  new RegExp(
+    `\\b(?:function\\*?|class|const|let|var|type|interface|enum|namespace)\\s+(${IDENT})`,
+    'g',
+  ),
+  // ключі об'єктів-реєстрів, властивості типів, члени enum: `name:` / `name?:`
+  new RegExp(`(?:^|[\\s,{(;])(${IDENT})\\??\\s*:(?!:)`, 'gm'),
+  // методи об'єктів/класів: `name(...) {` в кінці рядка
+  new RegExp(
+    `^\\s*(?:(?:public|private|protected|static|async|get|set|readonly)\\s+)*(${IDENT})\\s*(?:<[^>]*>)?\\([^;]*\\)\\s*(?::[^{;]+)?\\{\\s*$`,
+    'gm',
+  ),
+  // змінні оточення, що читає код
+  new RegExp(`\\benv\\.(${IDENT})`, 'g'),
+];
+
+/** Імена з деструктуризації `const { a, b: c } =` та `export { a, b as c }`. */
+function bracedNames(code: string): string[] {
+  const out: string[] = [];
+  const res = [
+    /\b(?:const|let|var)\s*\{([^}]*)\}\s*=/g,
+    /\bexport\s*\{([^}]*)\}/g,
+  ];
+  for (const re of res)
+    for (const m of code.matchAll(re))
+      for (const part of (m[1] as string).split(',')) {
+        const name = part
+          .trim()
+          .split(/\s+as\s+|\s*:\s*/)
+          .pop();
+        if (name && new RegExp(`^${IDENT}$`).test(name)) out.push(name);
+      }
+  return out;
+}
+
+/**
+ * Іменовані імпорти зі СТОРОННІХ пакетів (`react`, `@tanstack/*`, `node:*`):
+ * дока називає API бібліотеки, яке код справді викликає — зникне з бібліотеки,
+ * зламається збірка. Імпорти з власних шляхів сюди не йдуть: вони не визначення.
+ */
+function thirdPartyImports(code: string): string[] {
+  const out: string[] = [];
+  const re =
+    /\bimport\s+(?:type\s+)?(?:\w+\s*,\s*)?\{([^}]*)\}\s*from\s*(['"])([^'"]+)\2/g;
+  for (const m of code.matchAll(re)) {
+    if (
+      /^(?:\.|simplycms|@simplycms|@themes|@plugins|@\/)/.test(m[3] as string)
+    )
+      continue;
+    for (const part of (m[1] as string).split(',')) {
+      const name = part
+        .trim()
+        .split(/\s+as\s+/)[0]
+        ?.replace(/^type\s+/, '');
+      if (name && new RegExp(`^${IDENT}$`).test(name)) out.push(name);
+    }
+  }
+  return out;
+}
+
+/** Ідентифікатори, ВИЗНАЧЕНІ (не лише згадані) у тексті продакшн-файла. */
+export function definedIdentifiers(src: string, isJson = false): string[] {
+  if (isJson)
+    return [...src.matchAll(/"([A-Za-z_$][\w$]*)"\s*:/g)].map(
+      (m) => m[1] as string,
+    );
+  const code = stripCommentsAndStrings(src);
+  const out = [...bracedNames(code), ...thirdPartyImports(src)];
+  for (const re of DEF_RES)
+    for (const m of code.matchAll(re)) out.push(m[1] as string);
+  return out;
+}
+
+/** Гейт-символи з файлів тестів: лише експорти та `UPPER_SNAKE`-константи. */
+export function gateIdentifiers(src: string): string[] {
+  const code = stripCommentsAndStrings(src);
+  const out: string[] = [];
+  for (const m of code.matchAll(
+    new RegExp(
+      `\\bexport\\s+(?:async\\s+)?(?:default\\s+)?(?:function\\*?|class|const|let|var|type|interface|enum)\\s+(${IDENT})`,
+      'g',
+    ),
+  ))
+    out.push(m[1] as string);
+  for (const m of code.matchAll(
+    /\b(?:const|let)\s+([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\b/g,
+  ))
+    out.push(m[1] as string);
+  return out;
+}
+
 function buildIndex(): Set<string> {
   const index = new Set<string>();
   // Власні експорти цього файлу (його текст у індекс не йде) — доки на них посилаються.
   index.add('DOC_SYMBOL_ALLOWLIST');
+  const prod = (r: string): boolean =>
+    CODE_EXT.test(r) && !NON_PRODUCTION.test(r);
+  const gate = (r: string): boolean =>
+    /\.(?:tsx?|mts|mjs)$/.test(r) && NON_PRODUCTION.test(r);
   const files = [
-    ...walk(join(ROOT, 'packages'), (r) => CODE_EXT.test(r)),
-    ...['src', 'scripts', 'tests', 'eslint-rules', '.agents'].flatMap((d) =>
-      walk(join(ROOT, d), (r) => !r.endsWith('.md')),
-    ),
+    ...[
+      'packages',
+      'src',
+      'scripts',
+      'apps',
+      'plugins',
+      'themes',
+      'tools',
+      'eslint-rules',
+    ].flatMap((d) => {
+      try {
+        return walk(join(ROOT, d), prod);
+      } catch {
+        return [];
+      }
+    }),
     ...readdirSync(ROOT, { withFileTypes: true })
       .filter((e) => e.isFile() && /\.(?:ts|mjs|js|cjs|json)$/.test(e.name))
       .map((e) => join(ROOT, e.name)),
   ];
-  for (const file of files) {
-    // Сам цей файл цитує перевірювані символи (allowlist, контролі) — інакше
-    // кожен запис «існував би» завдяки власному ключу.
+  const gateFiles = [
+    ...['packages', 'src', 'scripts', 'tests'].flatMap((d) =>
+      walk(join(ROOT, d), gate),
+    ),
+  ];
+  for (const file of gateFiles) {
+    // Сам цей файл цитує перевірювані символи (allowlist, контролі).
     if (file === import.meta.filename) continue;
+    for (const id of gateIdentifiers(readFileSync(file, 'utf8'))) index.add(id);
+  }
+  for (const file of files) {
     let text: string;
     try {
       text = readFileSync(file, 'utf8');
     } catch {
       continue;
     }
-    for (const m of text.matchAll(/[A-Za-z_$][\w$]*/g)) index.add(m[0]);
+    // Імʼя файла-модуля (`SettingsLogo.tsx` -> SettingsLogo) теж визначення.
+    // Ключі i18n-каталогів — рядкові (`'auth.login.bannedContacts':`): беремо
+    // кожен сегмент, бо доки називають їх по частинах.
+    if (/\/i18n\/catalogs\//.test(file))
+      for (const k of text.matchAll(/['"]([\w.]+)['"]\s*:/g))
+        for (const seg of (k[1] as string).split('.')) index.add(seg);
+    index.add(basename(file).replace(/(?:\.d)?\.[a-z]+$/, ''));
+    for (const id of definedIdentifiers(text, file.endsWith('.json')))
+      index.add(id);
   }
   return index;
 }
@@ -267,7 +481,7 @@ describe('негативний контроль', () => {
     );
   });
 
-  it('маркер (знесено)/(замінено …) у тому ж рядку гасить, у сусідньому — ні', () => {
+  it('маркер гасить лише символ, після якого стоїть', () => {
     expect(missingSymbols(doc('`eraseMedia` (знесено).'), index)).toEqual([]);
     expect(
       missingSymbols(doc('`eraseMedia` (замінено на `realSymbol`).'), index),
@@ -275,6 +489,10 @@ describe('негативний контроль', () => {
     expect(missingSymbols(doc('(знесено)\n`eraseMedia`'), index)).toHaveLength(
       1,
     );
+    // маркер в іншому місці рядка не гасить інший символ
+    expect(
+      missingSymbols(doc('`ghostOne` (знесено), але `ghostTwo` живий'), index),
+    ).toEqual([{ symbol: 'ghostTwo', where: ['x.md:1'] }]);
   });
 
   it('існуючі символи, прості слова й блоки коду не шумлять', () => {

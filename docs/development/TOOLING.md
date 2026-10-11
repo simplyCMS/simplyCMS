@@ -153,9 +153,10 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `upstream-workarounds.md`
   (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
   `UPSTREAM:<ID>` ↔ записів реєстру; `tests/doc-symbols-exist.test.ts` — кожен символ у
-  зворотних лапках у `docs/architecture`, `docs/development`, README пакетів і скілах існує в
-  коді. 🔴 Згадку СКАСОВАНОГО символу в доці позначай у тому ж рядку дужкою `(знесено)` або
-  `(замінено …)` — без маркера рядок червоніє; сторонні API й приклади — запис у
+  зворотних лапках у `docs/architecture`, `docs/development`, README пакетів і скілах ВИЗНАЧЕНИЙ
+  у продакшн-коді (згадка в коментарі чи назві тесту не рахується). 🔴 Згадку СКАСОВАНОГО
+  символу в доці позначай БЕЗПОСЕРЕДНЬО після нього дужкою: «`sym` (знесено)» або
+  «`sym` (замінено …)» — маркер діє лише на цей символ, без маркера він червоніє; сторонні API й приклади — запис у
   `DOC_SYMBOL_ALLOWLIST` з причиною (список лише скорочується, мертвий запис червоніє).
   `tests/server-fn-consumers.test.ts` — кожна `export const … = createServerFn(…)` має
   імпортера поза тестами й моками; виняток — `SERVER_FN_NO_CONSUMER_ALLOWLIST` з причиною.
