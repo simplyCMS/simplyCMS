@@ -51,9 +51,10 @@ export default {
         check(node, node.arguments[0]),
       // TS: import x = require('…')
       TSExternalModuleReference: (node) => check(node, node.expression),
-      // TS: тип `import('…').T`
+      // TS: тип `import('…').T`. Нова форма AST — `source`; `argument` у
+      // typescript-eslint deprecated, лишається запасним шляхом для старих версій.
       TSImportType: (node) =>
-        check(node, node.argument?.literal ?? node.argument),
+        check(node, node.source ?? node.argument?.literal ?? node.argument),
     };
   },
 };
