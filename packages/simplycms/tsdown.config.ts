@@ -106,9 +106,11 @@ export const base = {
   cwd: PACKAGE_ROOT,
   tsconfig: resolve(PACKAGE_ROOT, 'tsconfig.json'),
   sourcemap: true,
-  // 🔴 target esnext: за нижчого таргета бандлер лоуерить `import.meta` у
-  // `var import_meta = {}`, і опублікований dist читає `{}.env.VITE_…`.
-  // Гард — tests/dist-import-meta.test.ts.
+  // 🔴 Форму `import.meta` у ESM-виході зберігає `format: ['esm']`: Rolldown не
+  // лоуерить її за жодного `target` (виміряно es2015…esnext), а cjs лоуерить у
+  // `{}.env…`. `target: 'esnext'` на `import.meta` не впливає — його лишено
+  // явним, щоб рівень синтаксису не залежав від tsconfig пакета.
+  // Гард — tests/dist-import-meta-fixture.test.ts (+ dist-import-meta.test.ts).
   target: 'esnext',
   deps: { neverBundle: [/^simplycms(\/|$)/, /^@simplycms\//] },
 } satisfies UserConfig;

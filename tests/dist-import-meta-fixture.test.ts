@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -12,6 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'tsdown';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { LOWERED_IMPORT_META } from './dist-import-meta/lowered';
 import { base } from '../packages/simplycms/tsdown.config';
 
 // Позитивний контроль гейта `dist-import-meta.test.ts` (packaging-suite).
@@ -32,9 +34,9 @@ import { base } from '../packages/simplycms/tsdown.config';
 // Причина змістовна: тест доводить властивість ПУБЛІКОВАНОГО конфігу збірки і є
 // парою до dist-import-meta.test.ts, тож вони ходять разом у релізному ланцюзі.
 //
-// 🔴 Мутація, що червонить цей тест, — `format: ['cjs']` у `base` (вихід стає
-// `{}.env.VITE_X`). `target: 'es2017'` НЕ червонить: Rolldown не лоуерить
-// `import.meta` у ESM-виході за жодного таргета (виміряно: es2015…esnext).
+// 🔴 `target` на форму `import.meta` не впливає (виміряно es2015…esnext), тож
+// мутація `target: 'es2017'` цей тест НЕ червонить. Червонить `format: ['cjs']`
+// у `base`; а cjs-кейс нижче — самоперевірка патерна LOWERED_IMPORT_META.
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const FLAGSHIP_ENTRY = join(ROOT, 'packages/simplycms/dist/index.js');
@@ -49,37 +51,56 @@ afterAll(() => {
   rmSync(tmp, { recursive: true, force: true });
 });
 
-describe('фікстур: base-конфіг tsdown зберігає форму import.meta.env', () => {
-  it('вихід містить import.meta.env.VITE_X і не лоуерить import.meta', async () => {
-    const source = join(tmp, 'fixture.ts');
-    const outDir = join(tmp, 'out');
-    writeFileSync(source, 'export const v = import.meta.env.VITE_X;\n');
+/** Збирає фікстур із `base` (+ `extra`) в окремий tmp-outDir, повертає вихідний код. */
+async function buildFixture(
+  name: string,
+  extra: Record<string, unknown> = {},
+): Promise<string> {
+  const dir = join(tmp, name);
+  const source = join(dir, 'fixture.ts');
+  const outDir = join(dir, 'out');
+  mkdirSync(dir);
+  writeFileSync(source, 'export const v = import.meta.env.VITE_X;\n');
+
+  await build({
+    ...base,
+    ...extra,
+    entry: { fixture: source },
+    outDir,
+    cwd: dir,
+    clean: false,
+    tsconfig: false,
+  });
+
+  // Збірка не мала вийти за tmp: інакше `clean`/outDir могли б зачепити dist.
+  expect(outDir.startsWith(tmpdir())).toBe(true);
+  // У tmp немає package.json з type: module, тож розширення — `.mjs`/`.cjs`.
+  const outFiles = readdirSync(outDir).filter((f) => /\.[cm]?js$/.test(f));
+  expect(outFiles.length).toBeGreaterThan(0);
+  return outFiles.map((f) => readFileSync(join(outDir, f), 'utf8')).join('\n');
+}
+
+describe('фікстур: base-конфіг tsdown і форма import.meta.env', () => {
+  it('esm (base): вихід містить import.meta.env.VITE_X і не лоуерить import.meta', async () => {
     const mtimeBefore = existsSync(FLAGSHIP_ENTRY)
       ? statSync(FLAGSHIP_ENTRY).mtimeMs
       : null;
 
-    await build({
-      ...base,
-      entry: { fixture: source },
-      outDir,
-      cwd: tmp,
-      clean: false,
-      tsconfig: false,
-    });
-
-    // Збірка не мала вийти за tmp: інакше `clean`/outDir могли б зачепити dist.
-    expect(outDir.startsWith(tmpdir())).toBe(true);
-    // У tmp немає package.json з type: module, тож розширення виходу — `.mjs`.
-    const outFiles = readdirSync(outDir).filter((f) => /\.m?js$/.test(f));
-    expect(outFiles.length).toBeGreaterThan(0);
-    const code = outFiles
-      .map((f) => readFileSync(join(outDir, f), 'utf8'))
-      .join('\n');
+    const code = await buildFixture('esm');
 
     expect(code).toContain('import.meta.env.VITE_X');
-    expect(code).not.toMatch(/import_meta\d*/);
+    expect(code).not.toMatch(LOWERED_IMPORT_META);
     if (mtimeBefore !== null) {
       expect(statSync(FLAGSHIP_ENTRY).mtimeMs).toBe(mtimeBefore);
     }
+  });
+
+  it('самоперевірка: cjs ЛОУЕРИТЬ import.meta і патерн це впізнає', async () => {
+    // Якщо бамп tsdown/Rolldown змінить форму лоуерення, червоніє цей кейс, а
+    // не тихо вакуумніє скан dist (там той самий LOWERED_IMPORT_META).
+    const code = await buildFixture('cjs', { format: ['cjs'] });
+
+    expect(code).not.toContain('import.meta.env.VITE_X');
+    expect(code).toMatch(LOWERED_IMPORT_META);
   });
 });
