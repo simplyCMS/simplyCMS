@@ -133,7 +133,7 @@ export function defineWriteOps<Row, Insert, Patch>(
     // db-варіанти: та сама схема (strip readonly/insertOnly), але без статусу
     // відповіді — поза запитом його нема куди ставити (С-10); усередині
     // операції 400 поставить межа `runAdminTransactions`. Для media-ресурсу
-    // ключі йдуть у `discard`, а `discardMedia` кличе ВИКЛИКАЧ після COMMIT.
+    // ключі йдуть у `discard`, а `completeMediaErasures` кличе ВИКЛИКАЧ після COMMIT.
     insertIn: (db: ActorDb, input: unknown) =>
       insertRows(db, validateAdminInput(d.insertSchema, input)),
     updateIn: (db: ActorDb, input: unknown, discard?: string[]) => {

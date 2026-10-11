@@ -608,6 +608,16 @@ CREATE TABLE "media" (
 	CONSTRAINT "media_size_bytes_non_negative" CHECK (size_bytes >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "media_erasures" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"storage_key" text NOT NULL,
+	"requested_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"last_error" text,
+	CONSTRAINT "media_erasures_storage_key_key" UNIQUE("storage_key")
+);
+--> statement-breakpoint
+ALTER TABLE "media_erasures" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -747,6 +757,7 @@ CREATE INDEX "idx_verifications_identifier" ON "verifications" USING btree ("ide
 CREATE INDEX "idx_media_entity" ON "media" USING btree ("entity_type","entity_id");--> statement-breakpoint
 CREATE INDEX "idx_media_uploaded_by" ON "media" USING btree ("uploaded_by");--> statement-breakpoint
 CREATE POLICY "comparisons_own_all" ON "comparisons" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
+CREATE POLICY "media_erasures_admin_all" ON "media_erasures" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "order_items_select_own_or_token" ON "order_items" AS PERMISSIVE FOR SELECT TO "app_user" USING (exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), ''))))));--> statement-breakpoint
 CREATE POLICY "order_items_insert_own" ON "order_items" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null)));--> statement-breakpoint
 CREATE POLICY "order_items_admin_all" ON "order_items" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint

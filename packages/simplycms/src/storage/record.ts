@@ -5,6 +5,7 @@ import { media } from 'simplycms/schema';
 
 import type { MediaStorageDriver } from './driver';
 import { mediaKey, type MediaMime } from './keys';
+import { enqueueMediaErasures } from './erasures';
 import { getMediaDriver } from './local-fs';
 
 export interface WriteMediaInput {
@@ -42,7 +43,7 @@ export interface MediaRecord {
  * 🔴 `id` передається ЯВНО: `DEFAULT gen_random_uuid()` знято на всіх
  * таблицях Категорії A (К3-Е0), тож вставка без `id` дала б `23502`.
  *
- * 🔴 Дзеркального `discardMedia` всередині НЕМАЄ, і це не пропуск: якщо
+ * 🔴 Дзеркального прибирання всередині НЕМАЄ, і це не пропуск: якщо
  * `driver.put` кидає, обʼєкт не опублікований (тимчасовий файл прибирає
  * `finally` драйвера), а рядок відкочує транзакція викликача. Прибирати
  * нічого. «Вирівнювати» з `eraseMedia` заради симетрії не треба — там
@@ -73,38 +74,10 @@ export async function writeMedia(
 }
 
 /**
- * Best-effort прибирання щойно записаного обʼєкта після ВІДКОТУ транзакції.
- *
- * 🔴 Потрібне там, де файл уже опубліковано, а транзакція впала пізніше:
- * rollback прибирає рядок `media`, але диск транзакцій не знає — обʼєкт
- * лишився б орфаном. Кличеться з `catch` ЗОВНІ транзакції (всередині вона
- * вже мертва).
- *
- * 🔴 ОДНЕ документоване місце, де помилка прибирання ковтається. Саме одне:
- * розсипані по викликачах `.catch(() => {})` рано чи пізно проковтнуть щось
- * інше. Первинну помилку це не маскує — функція нічого не кидає, а викликач
- * перекидає свою далі сам.
- *
- * 🔴 `console.warn`, а не тиша: орфан мусить лишати слід, інакше sweep К4 не
- * має жодного сигналу, що він узагалі потрібен. `ref` у повідомленні
- * обовʼязковий — без нього запис у лозі не дає чим шукати обʼєкт.
- */
-export async function discardMedia(
-  ref: string,
-  driver: MediaStorageDriver = getMediaDriver(),
-): Promise<void> {
-  try {
-    await driver.delete(ref);
-  } catch (error) {
-    console.warn('[simplycms/storage] discard failed', ref, error);
-  }
-}
-
-/**
  * Прибрати файл і його рядок. Повертає `false`, якщо рядка не було.
  *
  * 🔴 НЕ для нового коду: канон двофазний (Е6д-14) — `eraseMediaRows` у
- * транзакції + `discardMedia` після COMMIT. Ця функція лишається для аватара,
+ * транзакції + `completeMediaErasures` після COMMIT. Ця функція лишається для аватара,
  * логотипа й адмінського `deleteMedia` (борг К3-Е6д-3).
  *
  * 🔴 ІНВАРІАНТ (амендмент §4-К4 від 2026-09-13, рішення Е2-7): обʼєкт
@@ -184,7 +157,8 @@ export interface MediaOwner {
 /**
  * Перша фаза двофазного стирання (Е6д-14, КАНОН): видалити РЯДКИ `media`
  * власника в транзакції викликача й повернути ключі, які справді видалено.
- * Файли стирає викликач ПІСЛЯ COMMIT (`discardMedia` кожного ключа).
+ * Рядок outbox `media_erasures` ставиться тут же (Е6д-20) — відкат прибирає
+ * обидва. Файли стирає викликач ПІСЛЯ COMMIT: `completeMediaErasures(keys)`.
  *
  * 🔴 Чому не `eraseMedia`: той стирає файл ДО COMMIT. Для кількох файлів
  * обрив `driver.delete` другого відкочує обидва референси, а перший файл уже
@@ -228,5 +202,7 @@ export async function eraseMediaRows(
       ),
     )
     .returning({ key: media.storageKey });
-  return deleted.map((r) => r.key).sort();
+  const erased = deleted.map((r) => r.key).sort();
+  await enqueueMediaErasures(db, erased);
+  return erased;
 }

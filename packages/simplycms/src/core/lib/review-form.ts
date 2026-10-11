@@ -12,7 +12,7 @@ import {
   withSessionDb,
   type ReviewImageBytes,
 } from 'simplycms/storefront/loaders';
-import { discardMedia, inspectUpload } from 'simplycms/storage';
+import { completeMediaErasures, inspectUpload } from 'simplycms/storage';
 
 /** Порожнє поле форми → `null`: `FormData` віддає `''`, а не відсутність. */
 const optionalText = (max: number) =>
@@ -90,7 +90,7 @@ export const submitProductReview = createServerFn({ method: 'POST' })
  *
  * 🔴 Файли фото стираються ПІСЛЯ COMMIT (Е6д-14): транзакція видаляє лише
  * рядки `media`, тож падіння COMMIT лишає і файли, і референси цілими, а
- * збій диска — лише орфан-файл без рядка (`discardMedia` не кидає).
+ * збій диска лишає рядок outbox `media_erasures` (Е6д-20).
  */
 export const deleteMyProductReview = createServerFn({ method: 'POST' })
   .validator(z.object({ reviewId: z.uuid() }))
@@ -99,6 +99,6 @@ export const deleteMyProductReview = createServerFn({ method: 'POST' })
     const { deleted, discard } = await withSessionDb((db, userId, operator) =>
       deleteProductReview(db, operator, userId, reviewId),
     );
-    for (const key of discard) await discardMedia(key);
+    await completeMediaErasures(discard);
     return deleted;
   });

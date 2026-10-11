@@ -1,7 +1,7 @@
 import { getTableColumns, getTableName, is, type Table } from 'drizzle-orm';
 import { PgJsonb, PgText } from 'drizzle-orm/pg-core';
 import type { ActorDb } from 'simplycms/db';
-import { discardMedia } from 'simplycms/storage';
+import { completeMediaErasures } from 'simplycms/storage';
 import { lockCatalogTarget } from './catalog-lock';
 import type { ResourceGuard } from './resource-config';
 import {
@@ -41,9 +41,9 @@ export const assertInsertRefs = (
     rows.map((next) => ({ id: String(next.id), next })),
   );
 
-/** Друга фаза Е6д-14: файли — ПІСЛЯ COMMIT; `discardMedia` не кидає. */
+/** Друга фаза Е6д-14: файли — ПІСЛЯ COMMIT; `completeMediaErasures` не кидає. */
 export async function discardAll(keys: readonly string[]): Promise<void> {
-  for (const key of keys) await discardMedia(key);
+  await completeMediaErasures(keys);
 }
 
 /**

@@ -8,9 +8,10 @@ import {
   type MediaEntityType,
 } from 'simplycms/domain/media';
 import {
-  discardMedia,
+  completeMediaErasures,
   eraseMedia,
   inspectUpload,
+  scheduleMediaErasures,
   writeMedia,
   type MediaMime,
 } from 'simplycms/storage';
@@ -127,8 +128,12 @@ export async function uploadMediaOp({
       return { ref: record.ref, url };
     });
   } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    if (written !== null) await discardMedia(written);
+    // Через outbox (Е6д-20б); обидві функції не кидають — первинну помилку
+    // не маскуємо.
+    if (written !== null) {
+      await scheduleMediaErasures([written]);
+      await completeMediaErasures([written]);
+    }
     throw error;
   }
 }

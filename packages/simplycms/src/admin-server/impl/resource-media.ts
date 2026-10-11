@@ -121,7 +121,7 @@ export async function assertMediaRefs(
  *
  * Окремий виклик `eraseMediaRows` на рядок з його власником (Е6д-16): ключ,
  * що належить іншому запису (вписаний повз перевірку), сховище тихо
- * пропускає. Повертає ключі для `discardMedia` ПІСЛЯ COMMIT — файли тут не
+ * пропускає. Повертає ключі для `completeMediaErasures` ПІСЛЯ COMMIT — файли тут не
  * стираються.
  */
 export async function eraseReplacedMedia(

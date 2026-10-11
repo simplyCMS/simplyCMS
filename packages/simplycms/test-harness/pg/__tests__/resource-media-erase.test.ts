@@ -1,5 +1,5 @@
 // К3-Е6д, Task 2 (Е6д-14/16): двофазне стирання у фабриці ресурсів. Транзакція
-// видаляє лише рядки `media`, файли — `discardMedia` ПІСЛЯ COMMIT. Обриви —
+// видаляє лише рядки `media`, файли — `completeMediaErasures` ПІСЛЯ COMMIT. Обриви —
 // реальним драйвером зі шпигуном на `delete`, не моком сховища.
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';

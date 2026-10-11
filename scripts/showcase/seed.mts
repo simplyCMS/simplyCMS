@@ -18,7 +18,7 @@
  */
 import { setReviewsStatus } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { withActor } from '../../packages/simplycms/src/db/index.ts';
-import { discardMedia } from '../../packages/simplycms/src/storage/index.ts';
+import { completeMediaErasures } from '../../packages/simplycms/src/storage/index.ts';
 import { seedCatalog } from './catalog.mts';
 import { seedCommerce } from './commerce.mts';
 import { applyProcessEnv, type ShowcaseEnv } from './env.mts';
@@ -82,7 +82,7 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
   });
   // Друга фаза стирання (Е6д-14) — лише ПІСЛЯ COMMIT: відкат зовнішньої
   // транзакції лишає файли аватара цілими разом із рядками.
-  for (const key of discard) await discardMedia(key, env.media);
+  await completeMediaErasures(discard, env.media);
 }
 
 /**

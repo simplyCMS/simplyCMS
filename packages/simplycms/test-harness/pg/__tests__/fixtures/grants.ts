@@ -85,6 +85,9 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // 🔴 Без UPDATE/DELETE у `app_user`: незмінність колонок власності медіа
   // тримається відсутністю права, а не тригером (`schema/media.ts`).
   media: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
+  // Outbox стирання файлів (Е6д-20): лише `app_admin`; ескалація `operator` —
+  // теж `app_admin`, покупцеві ключі чужих файлів не потрібні.
+  media_erasures: { app_admin: CRUD },
 };
 
 /** Ролі, чиї гранти взагалі очікуються (решта — порушення). */

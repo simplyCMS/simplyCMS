@@ -397,7 +397,7 @@ columns } })` (`admin-server/impl/resource-media.ts`, `resource-write-media.ts`)
 транзакції insert/update/remove: лок → знімок старих рядків (`SELECT … WHERE id = ANY($ids)
 ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) → guard (бачить знімок; у банерів
 зливає знімок із патчем, Е6д-2) → перевірка НОВИХ референсів → запис → `eraseMediaRows`
-заміненого чи видаленого (лише рядки `media`) → після COMMIT `discardMedia` (Е6д-14,
+заміненого чи видаленого (лише рядки `media`) → після COMMIT `completeMediaErasures` (Е6д-14,
 `storage.md`). Новий референс перевіряється, лише якщо він непорожній і відрізняється від
 знімка: це рядок `media` з `entity_type = cfg.entityType AND entity_id = <id рядка>` під
 `FOR SHARE`, інакше 409 `media_ref_invalid`. Стирається лише референс, що задовольняє ту саму
@@ -413,7 +413,7 @@ column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
 разом із рядком ресурсу і які несуть медіа. `remove`/`removeIn`: `FOR UPDATE` батьків
 (`ORDER BY id`) → знімок дочірніх рядків `FOR UPDATE` → DELETE → `eraseMediaRows` кожного
 дочірнього рядка з власником `{ entityType, <id дочірнього> }` → після COMMIT
-`discardMedia`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
+`completeMediaErasures`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
 обовʼязковий: вставка дочірнього рядка, що вже пройшла FK-перевірку (`FOR KEY SHARE`), без
 нього пішла б каскадом повз знімок. Має ресурс товарів (фото відгуків). Покриття стереже
 гейт `media-cascade-coverage` (`test-contours.md`); перелік відомих винятків однофазного
@@ -649,7 +649,7 @@ email в іншому регістрі — не конфлікт, записує
   `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMediaRows`
   аватара (власник `avatar/<userId>`) і фото кожного відгуку покупця (власник
   `review/<id>`) — лише рядки `media`; ядро повертає `discard`, а операція стирає файли
-  ПІСЛЯ COMMIT (`discardMedia`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
+  ПІСЛЯ COMMIT (`completeMediaErasures`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
   `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
   місці й файлів не чіпає; збій `driver.delete` після COMMIT видалення НЕ відкочує —
   лишається орфан-файл без рядка, битих референсів нуль (роздачу орфана — обмеження

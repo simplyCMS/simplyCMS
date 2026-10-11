@@ -122,7 +122,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
-    expect(tables.length).toBe(42);
+    // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
+    expect(tables.length).toBe(43);
     for (const expected of [
       'users',
       'sessions',
@@ -162,12 +163,14 @@ describe('канон міграцій: накат на чисту БД', () => {
       `select tablename, policyname, qual, with_check from pg_policies
         where schemaname = 'public'`,
     );
-    expect(rows.length).toBe(24);
+    // 24 → 25: службова `media_erasures_admin_all` (лише app_admin, Е6д-20).
+    expect(rows.length).toBe(25);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
     expect(tables).toEqual([
       'comparisons',
+      'media_erasures',
       'order_items',
       'orders',
       'product_reviews',

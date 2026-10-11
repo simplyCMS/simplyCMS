@@ -12,7 +12,7 @@ import {
   REVIEW_MEDIA_ENTITY,
 } from 'simplycms/domain/media';
 import { productReviews, profiles, users } from 'simplycms/schema';
-import { discardMedia, eraseMediaRows } from 'simplycms/storage';
+import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
 import { actorOfGrant, type CoreActor } from '../core-actor';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
@@ -124,7 +124,7 @@ export type DeleteCustomerResult = {
 
 /**
  * Операція: розбір входу ДО гранта, далі ядро з актором сесії; файли —
- * ПІСЛЯ COMMIT (`runAdmin` повернувся). Збій `discardMedia` ковтається.
+ * ПІСЛЯ COMMIT (`runAdmin` повернувся). Збій диска лишає рядок outbox.
  */
 export const deleteCustomerOp = async ({
   data,
@@ -136,6 +136,6 @@ export const deleteCustomerOp = async ({
     'customer.delete',
     (db, grant) => deleteCustomer(db, input, actorOfGrant(grant)),
   );
-  for (const key of discard) await discardMedia(key);
+  await completeMediaErasures(discard);
   return result;
 };

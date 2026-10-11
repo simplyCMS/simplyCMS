@@ -143,6 +143,7 @@ grant select, insert, update, delete on table
   public.discounts,
   public.languages,
   public.media,
+  public.media_erasures,
   public.modification_property_values,
   public.order_items,
   public.order_statuses,

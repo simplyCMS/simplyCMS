@@ -126,7 +126,7 @@ export async function snapshotCascadeMedia(
  * Стирання рядків `media` дочірніх записів, видалених каскадом (Е6д-14):
  * окремий `eraseMediaRows` на рядок з його власником (Е6д-16) — чужий ключ,
  * вписаний у колонку, сховище тихо пропускає. Повертає ключі для
- * `discardMedia` ПІСЛЯ COMMIT.
+ * `completeMediaErasures` ПІСЛЯ COMMIT.
  */
 export async function eraseCascadeMedia(
   db: ActorDb,

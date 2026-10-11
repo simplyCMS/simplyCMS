@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { profiles } from 'simplycms/schema';
 import {
-  discardMedia,
+  completeMediaErasures,
   eraseMedia,
+  scheduleMediaErasures,
   writeMedia,
   type MediaMime,
   type MediaStorageDriver,
@@ -59,9 +60,15 @@ export async function replaceAvatar(
       }),
     );
   } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    if (published.ref !== null)
-      await discardMedia(published.ref, options.discardWith ?? options.driver);
+    // Через outbox (Е6д-20б); обидві функції не кидають — первинну помилку
+    // не маскуємо.
+    if (published.ref !== null) {
+      await scheduleMediaErasures([published.ref]);
+      await completeMediaErasures(
+        [published.ref],
+        options.discardWith ?? options.driver,
+      );
+    }
     throw error;
   }
 }

@@ -7,7 +7,7 @@ import {
   REVIEW_MEDIA_ENTITY,
 } from 'simplycms/domain/media';
 import { productReviews } from 'simplycms/schema';
-import { discardMedia, eraseMediaRows } from 'simplycms/storage';
+import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
@@ -43,7 +43,7 @@ export async function deleteReview(
 
 /**
  * Операція: після COMMIT (`runAdmin` повернувся) стирає файли. Збій
- * `discardMedia` ковтається — найгірший наслідок орфан-файл без рядка.
+ * диска лишає рядок outbox `media_erasures`, `completeMediaErasures` не кидає.
  */
 export const deleteReviewOp = async ({
   data,
@@ -54,5 +54,5 @@ export const deleteReviewOp = async ({
   const { discard } = await runAdmin('review.moderate', (db) =>
     deleteReview(db, input),
   );
-  for (const key of discard) await discardMedia(key);
+  await completeMediaErasures(discard);
 };

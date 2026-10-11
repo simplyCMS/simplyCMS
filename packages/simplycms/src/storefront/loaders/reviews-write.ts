@@ -8,8 +8,9 @@ import {
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews } from 'simplycms/schema';
 import {
-  discardMedia,
+  completeMediaErasures,
   eraseMediaRows,
+  scheduleMediaErasures,
   writeMedia,
   type MediaMime,
   type MediaStorageOptions,
@@ -103,9 +104,13 @@ export async function submitReviewWithImages(
       });
     });
   } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    for (const ref of published)
-      await discardMedia(ref, options.discardWith ?? options.driver);
+    // Через outbox (Е6д-20б): збій диска лишає видимий хвіст. Обидві функції
+    // не кидають, тож первинна помилка не маскується.
+    await scheduleMediaErasures(published);
+    await completeMediaErasures(
+      published,
+      options.discardWith ?? options.driver,
+    );
     throw error;
   }
 }

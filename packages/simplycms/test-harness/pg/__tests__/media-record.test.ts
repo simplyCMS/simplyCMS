@@ -597,7 +597,7 @@ describe('writeMedia / eraseMedia проти живої БД (Е2, Task 3)', () 
     expect(left.map((r) => r.storage_key)).toEqual(
       [foreign.ref, otherType.ref].sort(),
     );
-    // Файл стирає ВИКЛИКАЧ після COMMIT (`discardMedia`), не ця функція.
+    // Файл стирає ВИКЛИКАЧ після COMMIT (`completeMediaErasures`), не ця функція.
     expect(await real.open(mine.ref)).not.toBeNull();
   });
 

@@ -12,7 +12,7 @@ type Exec = (sql: string) => Promise<unknown>;
 export async function blockCommitOn(
   exec: Exec,
   table: string,
-  event: 'update' | 'delete' = 'delete',
+  event: 'insert' | 'update' | 'delete' = 'delete',
 ): Promise<() => Promise<unknown>> {
   await exec(
     `create or replace function public.e6d_commit_block() returns trigger

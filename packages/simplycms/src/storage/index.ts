@@ -17,7 +17,14 @@ export { getMediaDriver, localFsDriver } from './local-fs';
 export { serveMedia } from './serve';
 export { inspectUpload, type UploadInspection } from './inspect';
 export {
-  discardMedia,
+  completeMediaErasures,
+  listMediaErasures,
+  MEDIA_ERASURE_RETRY_BATCH,
+  retryMediaErasures,
+  scheduleMediaErasures,
+  type MediaErasure,
+} from './erasures';
+export {
   eraseMedia,
   eraseMediaRows,
   writeMedia,
