@@ -27,7 +27,22 @@ export interface ServeMediaDeps {
 const notFound = (): Response =>
   new Response('Not found', {
     status: 404,
-    headers: { 'content-type': 'text/plain; charset=utf-8' },
+    // 🔴 `no-store`: 404 прихованого файлу (pending-фото) інакше осів би в
+    // CDN за URL і віддавався б автору, а після схвалення — усім.
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+  });
+
+/** Збій `lookup` (БД недоступна): 500 без деталей, не кешується. */
+const serverError = (): Response =>
+  new Response('Internal error', {
+    status: 500,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store',
+    },
   });
 
 /**
@@ -108,7 +123,14 @@ export async function serveMedia(
   const contentType = MIME_BY_EXT[ext];
   if (!contentType) return notFound();
 
-  const verdict = await deps.lookup(key, ctx.request);
+  let verdict: MediaServeVerdict;
+  try {
+    verdict = await deps.lookup(key, ctx.request);
+  } catch (error) {
+    // Не ковтаємо мовчки: інакше відмову БД не відрізнити від «файла немає».
+    console.error(`[simplycms] media lookup failed: ${key}`, error);
+    return serverError();
+  }
   if (verdict === 'missing' || verdict === 'hidden') return notFound();
 
   const etag = `"${key}"`;

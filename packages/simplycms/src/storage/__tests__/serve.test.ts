@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -125,6 +125,7 @@ describe('serveMedia', () => {
       const calls = openSpy();
       const response = await get(`/media/${KEY}`);
       expect(response.status).toBe(404);
+      expect(response.headers.get('cache-control')).toBe('no-store');
       expect(calls()).toBe(0);
     },
   );
@@ -153,5 +154,32 @@ describe('serveMedia', () => {
       headers: { 'if-none-match': `"${KEY}"` },
     });
     expect(response.status).toBe(404);
+  });
+
+  it('lookup кидає → 500 no-store без деталей помилки', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const response = await serveMedia(
+      { request: new Request(`http://localhost/media/${KEY}`) },
+      {
+        lookup: async () => {
+          throw new Error('db down secret');
+        },
+      },
+      driver,
+    );
+    expect(response.status).toBe(500);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.text()).not.toContain('secret');
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('304 персонального файлу несе private, no-cache', async () => {
+    verdict = { personal: true };
+    const response = await get(`/media/${KEY}`, {
+      headers: { 'if-none-match': `"${KEY}"` },
+    });
+    expect(response.status).toBe(304);
+    expect(response.headers.get('cache-control')).toBe('private, no-cache');
   });
 });
