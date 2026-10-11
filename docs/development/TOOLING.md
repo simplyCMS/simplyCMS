@@ -72,7 +72,7 @@ pnpm test:schema      # СХЕМНИЙ контур: накат канону м�
                       # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
                       # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
-pnpm pilot:pack       # tarball-пілот: гейти A/C/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
+pnpm pilot:pack       # tarball-пілот: гейти A/C/SB/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
                       # BETTER_AUTH_SECRET із .env.local; назви товарів Gate B бере прямим SQL
                       # (HTTP-API до БД у контракті v2 немає)
@@ -143,9 +143,11 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   магазину), тож `pnpm typecheck` шаблону не бачить. Гейт типізує шаблон проти зібраного `dist`
   (те саме, що бачить магазин). Список файлів під ним стереже
   `tests/template-typecheck-coverage.test.ts`.
-- Гейти РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` ганяють ще `pilot:pack`: Gate C
-  пілота — єдиний доказ межі клієнт/сервер у реальному клієнтському бандлі, Gate IP — що витік
-  ВАЛИТЬ збірку магазину. `pilot:pack` ганяється і в CI (job `packaging`).
+- Гейти РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` ганяють ще ПОВНИЙ `pilot`
+  (`scripts/release/pilot-full.mjs`: `pnpm harness:up` + `db:demo` → `pnpm pilot`, Docker потрібен):
+  Gate C — межа клієнт/сервер у реальному клієнтському бандлі, Gate SB — драйвер БД не вклеєний у
+  серверний бандл, Gate IP — витік ВАЛИТЬ збірку, Gate B — серверний бандл стартує. `pilot:pack`
+  (без БД) ганяється в CI (job `packaging`).
 - Гейти-звірки з уроків Е6д (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
   `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `upstream-workarounds.md`
   (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
@@ -270,7 +272,7 @@ Error-зони й кастомні правила (селектори й опц�
   зібраних `dist/` кожного пакета.
 - 🔴 `pnpm pilot` (Gate B проти живої БД) у CI **не** ганяється: він потребує живої бази
   (`DATABASE_URL`), а це зовнішній стан, від дрейфу якого гейт червонів би без регресії коду. Прогін
-  `pilot` перед релізом — відповідальність розробника.
+  `pilot` перед релізом — гейт релізу (`pilot-full.mjs`), не CI.
 - 🔴 `pnpm pilot:pack` (без БД) — крок job `packaging`: Gate C і Gate IP — єдиний поведінковий доказ
   межі клієнт/сервер у реальному магазині з tarball-ів. Передрелізний гейт у CI —
   детерміністичний tarball-parity плюс `pilot:pack --skip-build`.

@@ -75,6 +75,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
+| 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
 
 🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в REST зовнішнього BaaS, а магазин
 контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
@@ -141,7 +142,8 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не
    чіпається взагалі — форк сильніший за пакетний скіл. Нічого лагодити —
    мовчить. Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
-4. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
+4. **Драйвер `pg` (К3-Е7).** Після кроку версій `update` порівнює `pg` магазину з peer-діапазоном щойно встановленого ядра і, якщо вони розійшлися, лише ДРУКУЄ, що оновити (`pnpm add pg@<peer>`): версію `pg` у `package.json` магазину `update` не переписує — пін належить магазину (спільна реалізація з doctor №13).
+5. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
 
 ### 3.4 `simplycms db:diff [--write]`
 
@@ -296,6 +298,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
 

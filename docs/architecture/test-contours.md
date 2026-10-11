@@ -44,7 +44,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 монорепо → build:packages → pnpm pack → npm registry → create-store → магазин
 └── pnpm test ┘
 └── test:schema ┘ (схема+гранти+RLS, окремий Postgres)
-└───── pilot:pack (A/C/D/CLI/TOOL) ──────┘
+└───── pilot:pack (A/C/SB/D/IP/CLI/TOOL) ─┘
 └──────────── pilot (+B, жива БД) ────────────────────────┘
                                         └── НЕ ПОКРИТО ────────────────┘
 ```
@@ -54,7 +54,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | Юніти | `pnpm test` | сирців | — |
 | Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (без Docker) |
 | Пакувальність | `pnpm pilot:pack` | локальних tarball-ів | — |
-| Проти живої БД | `pnpm pilot` | + HTTP-відповіді | `DATABASE_URL` у `.env.local` |
+| Проти живої БД | `pnpm pilot` | + HTTP-відповіді; **обовʼязковий у релізі** (`scripts/release/pilot-full.mjs`: харнес + `db:demo` → `pnpm pilot`) | `DATABASE_URL` у `.env.local` або `PILOT_DATABASE_URL`; у релізі — Docker (`pnpm harness:up`) |
 | ~~Локальний стек~~ | ~~`pnpm pilot:e2e`~~ | 🔴 **DECOMMISSIONED (0.4.1)** — команди немає; повертає К6 | — |
 | Реальний реєстр | **немає** | — | мережа |
 
@@ -858,6 +858,9 @@ server-only дерево для `admin-server` і `storefront/loaders` (Е3-5), 
 | `eslint-rules/server-only-relative.mjs` | відносний імпорт у server-only дерево ззовні — помилка лінту | `tests/eslint-rules/server-only-relative.test.ts` |
 | групи `no-restricted-imports` плагінів | плагін не імпортує серверний граф | `tests/plugin-trust-boundary.test.ts` |
 | `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
+| **Gate SB** (`scripts/pilot-pack/gate-sb.mjs` + `server-bundle.mjs`; юніт `tests/pilot-server-bundle.test.ts`; `UPSTREAM:START-IP-1`) | серверний бандл скретча за `bundle-stats.ssr.json`: драйвер БД (`pg`, `pg-*`, `postgres-*`) НЕ вклеєний, а кожен вклеєний пакет має причину в `server-bundle-allowlist.mjs` (клас дефекту — вклеєний CJS-пакет із dual-`exports`, до якого йде `require()`); запис, якого в бандлі вже немає, — гниль | мутація 2026-10-11: прибрати `pg` з deps скретча → перезбірка → FAIL (вклеєно `pg`, `pg-pool`, …); повернути → OK. `pnpm pilot:pack`, без БД |
+| `tests/pg-peer-parity.test.ts` | версія `pg`: peer ядра = шаблон магазину = пілотний оверлей = корінь монорепо; ядро не має `pg` у `dependencies` | розбіжна версія в шаблоні або оверлеї, відсутній `pg` — червоні |
+| doctor №13 + підказка `update` (`tests/cli-pg-driver.test.ts`) | `pg` — пряма залежність магазину в межах peer-діапазону ядра; `update` версію `pg` НЕ переписує | кейси: немає pg / не в dependencies / невідповідна версія / ок; мутації: перевірка завжди ok, update без підказки, update переписує pg |
 | Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** пілота (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
 | `tests/dist-server-boundary.test.ts`, блок сентинелів | контроль САМОГО списку `SERVER_ONLY`: мапа літералів не похідна від списку, кожен є в джерелі дерева, у серверному `dist` і відсутній у клієнтському | закоментований рядок `'storefront'` у декларації → червоний packaging |
 | `eslint-rules/no-server-only-in-client.mjs` (зона `simplycms-client-boundary`, К3-Е2) | клієнтська тека ядра (`admin/**`, пʼять `*-ui/**`) не імпортує server-only субшлях чи серверну залежність зі СТАТИЧНОГО `import`/`export…from` — окремий детектор, бо базовий `no-restricted-imports` не розрізняє `import` і стираний компілятором `import type` (канон `OrderStatuses.tsx:8`) | `tests/eslint-rules/no-server-only-in-client.test.ts` (фікстури Linter API) + `tests/tier-boundary-client-boundary.test.ts` (реальний конфіг: заборона в `checkout-ui`, виїмка `core/lib`, чистий `import type` в `admin`) |

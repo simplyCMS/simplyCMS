@@ -34,6 +34,17 @@
 
 ### 🔴 BREAKING для магазинів
 
+- **`pg` — peer ядра і пряма залежність магазину (К3-Е7, Task 11):** `simplycms` більше не тягне
+  `pg` у `dependencies`, а очікує його як `peerDependencies` (точний пін `8.23.1`); шаблон і
+  `create-simplycms-store` додають `"pg": "8.23.1"` у залежності магазину. **Існуючий магазин
+  мусить додати `pnpm add pg@8.23.1`.** `simplycms doctor` (№13) вимагає декларації і версії в
+  межах peer, `simplycms update` версію `pg` не переписує — лише підказує.
+- **Виправлено старт свіжого магазину з 0.7.0:** серверний бандл падав на старті
+  (`TypeError: Class extends value #<Object> is not a constructor or null` у `BoundPool extends Pool`).
+  Причина — дефект import-protection плагіна TanStack Start ≥1.168.60 + вклеєний транзитивний `pg`
+  ([`UPSTREAM:START-IP-1`](docs/architecture/upstream-workarounds.md)). Опубліковані 0.7–0.13 не
+  виправляються. Реліз тепер ганяє повний `pnpm pilot` (Gate B), а пілот — новий Gate SB (драйвер не
+  вклеєний + allowlist вклеєних пакетів).
 - **Тека магазину `supabase/` → `db/` (К3-Е7, скаффолдер):** міграції лежать у
   `db/migrations`, накат — psql-цикл по цій теці; `supabase/config.toml` і
   `supabase/templates/invite.html` більше не генеруються. Наявний магазин переносить теку

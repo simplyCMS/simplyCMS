@@ -15,6 +15,10 @@
   нього базовий URL береться із самого запиту — у dev це очікуваний WARN; у проді рекомендований: з
   рядковим baseURL Better Auth довіряє рівно цьому origin і відкидає інші з 403 `INVALID_ORIGIN`).
   Контракт стереже `tests/env-contract.test.ts`
+- 🔴 `pg` — не змінна, а **залежність магазину** (К3-Е7): драйвер БД оголошено peer-ом ядра, а
+  `package.json` магазину декларує його прямою залежністю тієї ж точної версії
+  (`tests/pg-peer-parity.test.ts`). Без цього Vite вклеює транзитивний `pg` у серверний бандл, і
+  магазин не стартує (`UPSTREAM:START-IP-1`); `simplycms doctor` (№13) стежить за декларацією.
 - `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt, `getStorefrontRoot` → `siteUrl`
   для canonical і JSON-LD вітрини; невалідна адреса там стає порожньою з одним `console.warn`);
   запікається при `vite build`,
