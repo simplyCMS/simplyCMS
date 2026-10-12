@@ -69,6 +69,10 @@ simplyCMS/
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
 │   │   │                         #    з host-а). Без власного каналу до БД (приймає ActorDb);
 │   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)
+│   │   ├── src/env/              # T2 Резолвер груп env драйверів (S3, SMTP) за правилом «все або
+│   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
+│   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
+│   │   │                         #    server-only (К3-Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +

@@ -170,8 +170,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 - Server-only дерево задає `simplycms/contracts/server-only`; статичний імпорт server-only
   субшляху з клієнтського коду заборонено (лінт + Gate C пілота).
-- Контракт магазину — рівно **три** env-ключі: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
-  `VITE_SITE_URL`. Серверний код читає **лише** `process.env` і лише в рантаймі; `import.meta.env`
+- Обов'язкових env-ключів рівно **три**: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `VITE_SITE_URL`. Опційні — групами драйверів за правилом «все або нічого» (`simplycms/env`). Серверний код читає **лише** `process.env` і лише в рантаймі; `import.meta.env`
   у серверних модулях заборонено лінтом.
 
 **i18n** (`docs/architecture/i18n.md`)

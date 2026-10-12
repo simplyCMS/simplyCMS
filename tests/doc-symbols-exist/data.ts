@@ -125,5 +125,7 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   ORIENT_DOC_VENV:
     'змінна скрипта orient (файл без розширення, не індексується)',
   // --- заплановане ---
+  MIGRATION_DATABASE_URL:
+    'заплановане в К3-Е8 (Task 5): читає лише scripts/start.mjs; запис видалити, коли код з’явиться',
   configSchema: 'заплановане в К5: форму налаштувань плагіна ядро ще не будує',
 };

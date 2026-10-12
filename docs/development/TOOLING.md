@@ -11,7 +11,7 @@
   `pnpm-workspace.yaml`: поле `pnpm` у `package.json` мовчки ігнорується, `.npmrc` читається
   лише для auth і registry. Workspace: `packages/*`, `themes/*`, `plugins/*`, `apps/*`
   (`apps/*` — private-застосунки платформи, не пакети ядра: реліз-потяг їх не чіпає).
-- Версії залежностей — у `package.json`; `Node >=22.12` стоїть у ВСІХ пʼяти публікованих пакетах
+- Версії залежностей — у `package.json`; `Node >=24` стоїть у ВСІХ пʼяти публікованих пакетах
   і в `packages/create-simplycms-store/template/package.json.tpl` під тестом-піном парності.
 
 Стек (версії — у `package.json`, тут лише те, що визначає рішення):

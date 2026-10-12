@@ -112,7 +112,7 @@ export function printNextSteps({
   if (skillsPending)
     steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
   if (!hasEnv)
-    steps.push('cp .env.example .env.local   # три ключі контракту магазину');
+    steps.push('cp .env.example .env.local   # три обовʼязкові ключі магазину');
   // 🔴 Накат схеми — psql по канону міграцій (`db/migrations`): канон
   // нумерований послідовно (`0000_prelude.sql`), інструмент оточення
   // застосовує файли в порядку імен.

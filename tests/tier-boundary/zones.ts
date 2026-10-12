@@ -59,6 +59,9 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
+  // Резолвер груп env (Е8-Р7) — T2 без жодних upward-винятків: чиста функція
+  // над переданим оточенням, `db` їй ні до чого — тож ловиться навіть він.
+  ['packages/simplycms/src/env', 'simplycms/db', 'simplycms/contracts'],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

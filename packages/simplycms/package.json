@@ -42,6 +42,7 @@
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
+    "./env": "./src/env/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
@@ -251,6 +252,10 @@
       "./site": {
         "types": "./dist/site/index.d.ts",
         "import": "./dist/site/index.js"
+      },
+      "./env": {
+        "types": "./dist/env/index.d.ts",
+        "import": "./dist/env/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",
@@ -526,7 +531,7 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "repository": {
     "type": "git",

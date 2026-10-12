@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { S3_KEYS, SMTP_KEYS } from 'simplycms/env';
 
 /**
  * Пін контракту env магазину (К2-Е0, Е0-7): три документи (.env.example,
@@ -21,13 +22,20 @@ const SERVER_ONLY = ['DATABASE_URL', 'BETTER_AUTH_SECRET'] as const;
  * їх частиною контракту (тест `активні ключі — рівно контракт` червонів би),
  * а відсутність позбавила б магазин єдиної документації про них.
  */
-const OPTIONAL = ['BETTER_AUTH_URL', 'MEDIA_ROOT'] as const;
+const OPTIONAL = [
+  'BETTER_AUTH_URL',
+  'MEDIA_ROOT',
+  // Групи драйверів (Е8): ключі беремо з модуля резолвера, не з копії.
+  ...S3_KEYS,
+  ...SMTP_KEYS,
+  'MIGRATION_DATABASE_URL',
+] as const;
 
 describe('контракт env магазину', () => {
   it('.env.example: активні ключі — рівно контракт', () => {
     const active = readFileSync(resolve(ROOT, '.env.example'), 'utf8')
       .split('\n')
-      .filter((line) => /^[A-Z_]+=/.test(line))
+      .filter((line) => /^[A-Z][A-Z0-9_]*=/.test(line))
       .map((line) => line.split('=')[0]);
     expect(active.sort()).toEqual([...CONTRACT].sort());
   });
@@ -74,5 +82,29 @@ describe('контракт env магазину', () => {
         new RegExp(`^# ${key}=`, 'm'),
       );
     }
+  });
+
+  it('шаблонний env.example: та сама множина активних і опційних ключів, що кореневий', () => {
+    const keysOf = (file: string) => {
+      const lines = readFileSync(resolve(ROOT, file), 'utf8').split('\n');
+      const pick = (re: RegExp) =>
+        lines
+          .map((line) => re.exec(line)?.[1])
+          .filter((k): k is string => k !== undefined)
+          .sort();
+      return {
+        active: pick(/^([A-Z][A-Z0-9_]*)=/),
+        // PG_HARNESS_URL — dev-ключ самого монорепо, у магазині його немає.
+        commented: pick(/^# ([A-Z][A-Z0-9_]*)=/).filter(
+          (k) => k !== 'PG_HARNESS_URL',
+        ),
+      };
+    };
+    const root = keysOf('.env.example');
+    const template = keysOf(
+      'packages/create-simplycms-store/template/env.example',
+    );
+    expect(template.active).toEqual(root.active);
+    expect(template.commented).toEqual(root.commented);
   });
 });
