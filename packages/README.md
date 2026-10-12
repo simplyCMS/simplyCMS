@@ -132,11 +132,16 @@ bin-інструмент). Конвеєр підхоплює новий паке
    за побудовою; server-only групу задає `contracts/server-only`.
    `entry` — МАПА `<шлях у dist> → файл`: за списковою формою бандлер бере
    outbase = спільний предок і мовчки затирає корінь пакета.
-   🔴 **`target: 'esnext'` живе у спільному `base`.** Без нього бандлер
-   лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist`
-   читає `({}).env` — браузерний код, що читає `import.meta.env`, падає на гідрації (спіймано
-   К0: при злитті 21 конфігу опція вціліла лише в одному профілі). Гард —
-   `tests/dist-import-meta.test.ts` у packaging-suite. Розкладка entry — не
+   🔴 **Форму `import.meta` у `dist` зберігає `format: ['esm']` у спільному
+   `base`, а не `target`.** Rolldown у ESM-виході не лоуерить `import.meta`
+   за жодного `target` (виміряно es2015…esnext), а cjs лоуерить у
+   `var import_meta = {}` / `{}.env…` — опублікований `dist` читає
+   `({}).env`, і браузерний код, що читає `import.meta.env`, падає на
+   гідрації (спіймано К0 при злитті 21 конфігу). `target: 'esnext'` лишено
+   явним лише для незалежності рівня синтаксису від tsconfig пакета. Гард —
+   `tests/dist-import-meta.test.ts` у packaging-suite (скан `dist`), його
+   самоперевірка патерна `LOWERED_IMPORT_META` — cjs-кейс
+   `tests/dist-import-meta-fixture.test.ts`. Розкладка entry — не
    політика синтаксису.
    Альтернатива — без збірки взагалі: сирці в tarball, без скрипту `build`
    (`cli`, `create-simplycms-store`). `pnpm build:packages` фільтрує за
