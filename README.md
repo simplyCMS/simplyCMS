@@ -138,8 +138,8 @@ Vite резолвлять те, чого немає в `exports`, а tree-shakin
 справжніх tarball-ів, без workspace-аліасів:
 
 ```bash
-pnpm pilot:pack   # gates A/C/D + CLI/TOOL — роути з node_modules, bundle-guard, Tailwind, смоуки обох CLI-пакетів. Без БД
-pnpm pilot        # + gate B: живий HTTP проти вашої бази (.env.local)
+pnpm pilot:pack   # gates A/C/SB/D/IP/CLI/TOOL — роути з node_modules, bundle-guard, склад серверного бандла, Tailwind, Import Protection, смоуки обох CLI-пакетів. Без БД
+pnpm pilot        # + gate B: production-запуск і живий HTTP проти вашої бази (.env.local); обовʼязковий у релізі
 ```
 
 🔴 `pnpm pilot:e2e` і Gate E — **decommissioned у 0.4.1** разом із локальним

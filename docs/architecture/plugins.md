@@ -357,7 +357,7 @@ CLI: definePlugin + messages + README з конвенціями) + якірни�
 | Мульти-канони/SQL-лінт db:diff | `tests/cli-db-diff.test.ts` |
 | Скаффолд create plugin | `tests/cli-create.test.ts` (+ реальні діагностики `transpileModule`) |
 | Два physical() під /admin | `tests/virtual-routes-escape.test.ts` |
-| Пакування (route-id, бандл, tarball, CLI) | `pnpm pilot:pack` — Gates A/C/D/CLI/TOOL |
+| Пакування (route-id, бандл, tarball, CLI) | `pnpm pilot:pack` — Gates A/C/SB/D/IP/CLI/TOOL |
 | Поведінка наживо (toggle, віджет) | 🔴 **decommissioned у 0.4.1** разом зі стеком Supabase — `pnpm test:e2e` немає; спека `plugin.e2e.ts` лишилась без входу, повертає трек К6 |
 
 🔴 Зелений `pnpm test` пакування плагіна **не доводить** — це загальний

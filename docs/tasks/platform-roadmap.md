@@ -41,6 +41,21 @@
 (з розділом «Амендмент (план, 2026-10-11)»). Наступний — **Е8** (живий прогін магазину з
 опублікованих tarball-ів npm; після релізу).
 
+🔴 **К3-Е7, Task 11 (2026-10-11) — дефект START-IP-1: опубліковані 0.7–0.13 не стартують у
+свіжому магазині.** `pnpm pilot` (Gate B) на HEAD показав `TypeError: Class extends value
+#<Object>` у `BoundPool extends Pool`: import-protection плагін `@tanstack/start-plugin-core`
+≥1.171 (приїхав з XSS-бампом 24e2836a, 0.7.0) перерезолвлює `require()` без `kind`, а `pg`
+вклеюється в серверний бандл, бо не є прямою залежністю магазину
+([`UPSTREAM:START-IP-1`](../architecture/upstream-workarounds.md)). Виправлення (до релізу):
+🔴 **BREAKING — `pg` став peer-залежністю ядра (точний пін `8.23.1`) і ПРЯМОЮ залежністю магазину**
+(шаблон, `tests/pilot/store-template`; існуючий магазин: `pnpm add pg@8.23.1`); `doctor` №13 —
+декларація `pg` і версія в межах peer (`update` версію `pg` не переписує, лише підказує); пілот
+дістав Gate SB (драйвер не вклеєний + allowlist вклеєних пакетів із причинами,
+`scripts/pilot-pack/server-bundle-allowlist.mjs`) і крок Gate B «sanitize-html на сервері» (проба —
+оверлей `scripts/pilot-pack/sanitize-probe.sql`, демо-сід чистий); реліз ганяє повний `pnpm pilot`
+(`scripts/release/pilot-full.mjs` у `scripts/release/gates.mjs`). Рішення про уже опубліковані
+0.7–0.13 у npm — за власником (тут не чіпалися). Реліз 0.14.0 НЕ виконано.
+
 🔴 **2026-10-10 — К3-Е6д (контент: банери й відгуки) завершено** на гілці
 `claude/k3-e6d-content` (до релізу). `/admin/banners*` і `/admin/reviews*` — на
 `simplycms/admin-server`: банери — ресурс фабрики з опцією `media` (Е6д-1: знімок, guard
@@ -288,12 +303,12 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 |----------|----------------------|
 | Створення магазину | `pnpm create simplycms-store` |
 | Реліз ядра | `pnpm release X.Y.Z` → PR у `main` → push публікує на npmjs (+тег) |
-| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI/TOOL |
-| Пілот проти живої БД | `pnpm pilot` (Gate B, read-only проти `DATABASE_URL` із `.env.local`; назви товарів — прямим SQL) |
+| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/SB/D/IP/CLI/TOOL |
+| Пілот проти живої БД | `pnpm pilot` (+ Gate B: production-запуск `server.mjs` скретча й HTTP проти `DATABASE_URL` із `.env.local` або `PILOT_DATABASE_URL`; назви товарів — прямим SQL; демо-БД — з оверлеєм проби санітайзера `scripts/pilot-pack/sanitize-probe.sql`, `scripts/pilot-pack/apply-probe.mjs`). 🔴 **Обовʼязковий у релізі:** `pnpm release` ганяє його через `scripts/release/pilot-full.mjs` (харнес `harness:up` → `db:demo` → `pnpm pilot`), реєстр гейтів — `scripts/release/gates.mjs` |
 | Схема, політики, гранти | 🔴 **`pnpm test:schema`** — накат канону на чистий Postgres + парність політик і грантів + поведінкова матриця RLS із трьома негативними контролями. **Без Docker** (`PG_HARNESS_URL` або ефемерний `initdb`); у CI — job `schema` |
 | ~~Пілот проти локального стека~~ | 🔴 `pnpm pilot:e2e` — **КОМАНДИ НЕМАЄ** (знято в 0.4.1 разом зі стеком Supabase і Gate E); відновлення на Postgres-стеку — К6 |
 | ~~Браузерний e2e~~ | 🔴 `pnpm test:e2e` — **КОМАНДИ НЕМАЄ** (знято в 0.4.1; специ `tests/e2e/**` лишились без входу) — К6 |
-| Обслуговування магазину | `pnpm simplycms doctor (12 перевірок) / add [--theme\|--plugin] [--copy] / create plugin\|theme / update (версії + host-файли + лінки скілів) / db:diff` |
+| Обслуговування магазину | `pnpm simplycms doctor (13 перевірок; №13 — `pg` пряма залежність магазину в межах peer ядра) / add [--theme\|--plugin] [--copy] / create plugin\|theme / update (версії + host-файли + лінки скілів) / db:diff` |
 | Плагіни | `definePlugin` + порти `simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq` (🔴 з шаблону знято, ставиться `simplycms add`); межа довіри — dependency-lint |
 | Теми | контракт v3: v2.2 (tokens+components+messages+fonts) + опційні `views` пʼяти сторінок (`simplycms/contracts/views`); npm або copy-in; `bootstrapThemes` |
 | Conformance тем | `pnpm simplycms theme:conformance` + kit `simplycms/themes/conformance` (негативний контроль живим експериментом) |
@@ -1014,8 +1029,14 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    `invite.html`» не перевірена (Gate E і e2e-bootstrap свідомо обходять
    лист). ⚠️ Флоу invite переписується у V2-К1 (Better Auth) — борг
    переїжджає туди як DoD-пункт.
-2. **Пілот у CI не ганяється** (свідомо: зовнішній стан БД/Docker) —
-   прогін перед релізом — відповідальність розробника. 🔴 Уточнено
+2. **Пілот у CI не ганяється** (свідомо: зовнішній стан БД/Docker).
+   🔴 Оновлено К3-Е7 (Task 11, 2026-10-11): прогін перед релізом більше не
+   «відповідальність розробника» — повний `pnpm pilot` (Gate B) примушує
+   релізний гейт `pilot` у `scripts/release/gates.mjs`
+   (`scripts/release/pilot-full.mjs`: харнес + `db:demo` + `pnpm pilot`; потрібен Docker).
+   Причина: `pilot:pack` без БД не піднімає сервер скретча, і дефект
+   START-IP-1 просидів у 0.7.0–0.13.0 непоміченим. CI-джоб `pilot` лишається
+   відсутнім. (Історичний запис нижче.) 🔴 Уточнено
    2026-09-03: причина стосується `pilot` з Gate B (жива БД); `pnpm
    pilot:pack` БД не потребує й детермінований — рішення власника: він іде
    в CI job `packaging` разом із мутаційним контролем Import Protection

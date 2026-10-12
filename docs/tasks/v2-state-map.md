@@ -843,6 +843,16 @@ COMMIT, гонки подачі (`23505`), 409 `review_not_found` у масов�
 
 ### 3.1. Адмінка — мертва до своєї сесії (історія переведення; ✅ завершено К3-Е7)
 
+🔴 **К3-Е7, Task 11 (2026-10-11) — свіжий магазин з опублікованих 0.7–0.13 НЕ стартує** (START-IP-1):
+`pg` вклеювався в серверний бандл, а import-protection плагін Start ≥1.171 віддавав `require('pg-pool')`
+ESM-вхід — `Class extends value #<Object>` на старті. Дефект просидів у 0.7.0–0.13.0, бо реліз ганяв лише
+`pilot:pack` без БД. Виправлено до релізу 0.14.0 (НЕ виконано): 🔴 `pg` — peer ядра (`8.23.1`) і пряма
+залежність магазину (BREAKING: існуючий магазин — `pnpm add pg@8.23.1`), `doctor` №13, Gate SB пілота,
+реліз ганяє повний `pnpm pilot` (`scripts/release/pilot-full.mjs`); проба санітайзера — оверлей
+`scripts/pilot-pack/sanitize-probe.sql`. Реєстр — `UPSTREAM:START-IP-1` в
+[`upstream-workarounds.md`](../architecture/upstream-workarounds.md). Що робити з уже опублікованими
+0.7–0.13 — рішення власника. Живий прогін з tarball-ів npm — Е8, після релізу.
+
 🔴 **Е7 (2026-10-11) — завершальний крок: легасі на `supabase-js` = 0.** Знесено шар
 `simplycms/supabase` (6 експортів і дзеркало в `publishConfig`), `LegacySupabaseBoundary`
 з тестом і монтуванням, i18n `admin.legacy.*`, peer'и й залежності `@supabase/*`, реєстр
@@ -1305,7 +1315,8 @@ dts-плагін нового бандлера тримає одну повну 
 | `pnpm test` | юніти (лічильник змінюється щорелізу — дивись вивід) | ні |
 | `pnpm test:schema` | накат канону, парність політик і грантів, **поведінкова матриця RLS** із трьома негативними контролями | **ні** |
 | `pnpm test:packaging` | tarball-парність, форма `import.meta`, тулчейн декларацій | ні |
-| `pnpm pilot:pack` | скретч-магазин зі справжніх tarball-ів: A/C/D/CLI/TOOL. 🔴 З 0.4.1 env скретча — рівно контракт магазину (без фіктивних Supabase-ключів), а Gate C стереже ще й `simplycms/dist/db`, `drizzle-orm`, `pg` | ні |
+| `pnpm pilot:pack` | скретч-магазин зі справжніх tarball-ів: A/C/SB/D/IP/CLI/TOOL. 🔴 З 0.4.1 env скретча — рівно контракт магазину (без фіктивних Supabase-ключів), а Gate C стереже ще й `simplycms/dist/db`, `drizzle-orm`, `pg`. 🔴 К3-Е7: Gate SB — драйвер БД і інші вклеєні пакети в серверному бандлі за allowlist-ом | ні |
+| `pnpm pilot` | `pilot:pack` + Gate B: production-запуск `server.mjs` скретча проти живої БД. 🔴 **Обовʼязковий у релізі** (К3-Е7): `scripts/release/pilot-full.mjs` (`harness:up` → `db:demo` → `pnpm pilot`; `gates.mjs`) | так (харнес) |
 | `pnpm db:demo` | база з нуля + демо-каталог | ні |
 | `pnpm db:showcase` | `db:demo` + вітринне наповнення (`simplycms_showcase`) для ручного тесту; гейт сіду (С-8) — у `test:schema` | ні |
 
