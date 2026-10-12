@@ -9,7 +9,7 @@ import { startStore } from './build.mjs';
 import { prepareStore } from './prepare-store.mjs';
 import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
-import { gateHttp } from './gate-b.mjs';
+import { checkExecve, gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
@@ -78,9 +78,25 @@ export async function runGates(opts) {
  */
 async function gateServer({ storeDir, port, env }) {
   step(`Gate B — production-запуск на порту ${port}`);
-  const server = await startStore(storeDir, port);
+  // Старт — через прод-скрипт магазину (Е8-Р6): накат під «паролем власника»
+  // (тут це той самий DSN) і execve на server.mjs без нього.
+  const server = await startStore(
+    storeDir,
+    port,
+    // start.mjs `.env` не читає, тож усі три ключі скретча йдуть через env процесу.
+    { ...env, MIGRATION_DATABASE_URL: env.DATABASE_URL },
+    { entry: 'scripts/start.mjs' },
+  );
   try {
-    return ['B', await gateHttp(port, env)];
+    const http = await gateHttp(port, env);
+    const execve = checkExecve(server.pid, server.logs());
+    return [
+      'B',
+      {
+        ok: http.ok && execve.ok,
+        details: [...http.details, ...execve.details],
+      },
+    ];
   } finally {
     server.stop();
   }

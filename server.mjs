@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseEnv } from 'node:util';
 import sirv from 'sirv';
+import { resolveDriverEnv } from 'simplycms/env';
 
 import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
 
@@ -26,12 +27,35 @@ import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
 // в теці запуску (для `pnpm start` — корінь магазину). Наслідок контракту:
 // ротація серверних ключів (`DATABASE_URL`, `BETTER_AUTH_SECRET`) =
 // перезапуск процесу, без перезбірки.
+//
+// 🔴 Ключі, які start.mjs прибирає з оточення сервера (пароль власника схеми),
+// з файлів НЕ підтягуються: інакше `.env.local` повернув би їх у процес, що
+// пережив `execve`. Дубль списку з `scripts/start-core.mjs` (`STRIPPED_ENV`) —
+// парність двох списків стереже `tests/start-core.test.ts`.
+const STRIPPED_ENV = ['MIGRATION_DATABASE_URL'];
 for (const file of ['.env.local', '.env']) {
   if (!existsSync(file)) continue;
   const parsed = parseEnv(readFileSync(file, 'utf8'));
   for (const [key, value] of Object.entries(parsed)) {
+    if (STRIPPED_ENV.includes(key)) continue;
     if (!(key in process.env)) process.env[key] = value;
   }
+}
+
+// Часткова група драйвера (наприклад, забутий S3_REGION) валить старт ДО
+// слухання порту: мовчазний фолбек на local-fs загубив би файли при редеплої.
+// Помилка називає лише імена ключів, не значення.
+try {
+  const driverEnv = resolveDriverEnv(process.env);
+  for (const warning of driverEnv.warnings) console.warn(`[server] ${warning}`);
+  if (driverEnv.mail.driver === 'log') {
+    console.warn(
+      '[server] пошта не налаштована: листи лише в лозі сервера (SMTP_URL і MAIL_FROM).',
+    );
+  }
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
 }
 
 // Динамічний імпорт ПІСЛЯ наповнення env: статичний хоістився б вище циклу,

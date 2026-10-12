@@ -13,6 +13,7 @@
  * знайшлася хоч одна назва: більшого про чужі дані сказати не можна.
  */
 
+import { readFileSync } from 'node:fs';
 import pg from 'pg';
 
 /** Товари з БД — очікувані рядки для SSR-перевірок. */
@@ -164,5 +165,49 @@ export async function gateHttp(port, env) {
     `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}`,
   );
 
+  return { ok, details };
+}
+
+/**
+ * Доказ, що `scripts/start.mjs` справді замінив процес (Е8-Р6): PID той самий
+ * (`execve` міняє образ, не процес), `cmdline` — вже `server.mjs`, а в
+ * `environ` немає пароля власника схеми. Лише Linux (`/proc`); на інших ОС —
+ * явний skip із причиною, а не мовчазний «зелений».
+ *
+ * @param {number} pid PID дитини, якого запустив гейт
+ * @param {string} startLogs лог старту (накат мусить сказати, що нічого не робить)
+ * @returns {{ ok: boolean; skipped?: boolean; details: string[] }}
+ */
+export function checkExecve(pid, startLogs) {
+  const details = [];
+  let ok = true;
+  const check = (label, passed, fact) => {
+    details.push(`${passed ? 'OK  ' : 'FAIL'} ${label} — ${fact}`);
+    if (!passed) ok = false;
+  };
+
+  check(
+    'лог старту',
+    startLogs.includes('нічого накочувати'),
+    'очікую «нічого накочувати» (БД уже накочена db:demo)',
+  );
+  if (process.platform !== 'linux') {
+    details.push(
+      `SKIP /proc/<pid>/environ і cmdline — перевірка лише на Linux (тут ${process.platform})`,
+    );
+    return { ok, skipped: true, details };
+  }
+  const environ = readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0');
+  check(
+    'environ без MIGRATION_DATABASE_URL',
+    !environ.some((entry) => entry.startsWith('MIGRATION_DATABASE_URL=')),
+    `${environ.length} змінних`,
+  );
+  const cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0');
+  check(
+    'cmdline — server.mjs',
+    cmdline.some((arg) => arg.endsWith('server.mjs')),
+    cmdline.join(' ').trim(),
+  );
   return { ok, details };
 }

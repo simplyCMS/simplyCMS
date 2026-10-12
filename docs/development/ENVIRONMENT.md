@@ -91,7 +91,14 @@ HTTP-сервер. Теки `.output/` немає.
   `max-age=31536000, immutable`), решта — `IncomingMessage → Request → fetch-handler →
   ServerResponse` зі стрімінгом в обидва боки (`Readable.toWeb` / `Readable.fromWeb`), тому
   SSR-стрімінг Start не ламається.
-- `pnpm start` = `node server.mjs`; порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
+- `pnpm start` = `node server.mjs` (локальний запуск); у проді — `pnpm start:prod` =
+  `node scripts/start.mjs`: спершу накат міграцій (`simplycms/migrate`) під
+  `MIGRATION_DATABASE_URL` (пароль власника схеми; не задано — накат пропущено), далі
+  `process.execve` підміняє процес на `server.mjs` БЕЗ цієї змінної (потрібен Node ≥ 24).
+  🔴 `start.mjs` читає лише `process.env` і `.env*` не читає (у проді env дає Dokploy); локальний
+  накат — `pnpm simplycms db:apply`, який `.env.local` читає. `server.mjs` теж не підтягує
+  `MIGRATION_DATABASE_URL` з `.env*`. Часткова група `S3_*`/`SMTP_*` валить обидва старти до
+  накату/слухання порту (`simplycms/env`). Порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
   (за замовчуванням `0.0.0.0`).
 
 🔴 **Стеля тіла запиту (К3-Е6д-2).** Request-міддлвара `bodyLimitMiddleware` відхиляє POST на

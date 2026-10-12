@@ -13,8 +13,15 @@
  * до кореневого `node_modules`), а сама вона gitignored.
  */
 import { spawn } from 'node:child_process';
-import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer } from 'node:http';
+import ts from 'typescript';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +42,9 @@ const STUB_HANDLER = `export default {
         SMOKE_ONLY_ENV: process.env.SMOKE_ONLY_ENV ?? null,
       });
     }
+    // Імена ключів env (значень немає навмисно): доводить, що server.mjs не
+    // повернув STRIPPED_ENV з файлу .env.local.
+    if (pathname === '/__keys') return Response.json(Object.keys(process.env));
     return new Response('<!doctype html><html><body>смок</body></html>', {
       headers: { 'content-type': 'text/html; charset=utf-8' },
     });
@@ -75,10 +85,34 @@ function layout() {
   );
   writeFileSync(join(dir, 'dist', 'client', 'favicon.ico'), 'ico\n');
 
+  // `simplycms/env` у монорепо — TS-вихідники, які голий Node не читає, тож
+  // пісочниця везе СПРАВЖНІЙ резолвер, зібраний esbuild-ом у пакет-пʼятку.
+  const pkg = join(dir, 'node_modules', 'simplycms');
+  mkdirSync(pkg, { recursive: true });
+  // `resolve.ts` самодостатній (без імпортів), тож досить транспіляції.
+  writeFileSync(
+    join(pkg, 'env.mjs'),
+    ts.transpileModule(
+      readFileSync(join(ROOT, 'packages/simplycms/src/env/resolve.ts'), 'utf8'),
+      {
+        compilerOptions: {
+          module: ts.ModuleKind.ESNext,
+          target: ts.ScriptTarget.ES2022,
+        },
+      },
+    ).outputText,
+  );
+  writeFileSync(
+    join(pkg, 'package.json'),
+    '{ "name": "simplycms", "type": "module", "exports": { "./env": "./env.mjs" } }\n',
+  );
+
   // Пріоритет контракту: process.env > .env.local > .env.
   writeFileSync(
     join(dir, '.env.local'),
-    'SMOKE_FROM_PROCESS=from-env-local\nSMOKE_SHARED=from-env-local\nSMOKE_ONLY_LOCAL=from-env-local\n',
+    'SMOKE_FROM_PROCESS=from-env-local\nSMOKE_SHARED=from-env-local\nSMOKE_ONLY_LOCAL=from-env-local\n' +
+      // Пароль власника схеми не має повернутися в сервер із файлу.
+      'MIGRATION_DATABASE_URL=postgres://owner:s3cr3t@x/db\n',
   );
   writeFileSync(
     join(dir, '.env'),
@@ -88,7 +122,7 @@ function layout() {
 }
 
 /** Піднімає `node server.mjs` у пісочниці; віддає базовий URL і стоп-функцію. */
-export async function startSmokeServer() {
+export async function startSmokeServer(extraEnv = {}) {
   const dir = layout();
   const port = await freePort();
   const child = spawn(process.execPath, ['server.mjs'], {
@@ -100,6 +134,7 @@ export async function startSmokeServer() {
       PORT: String(port),
       HOST: '127.0.0.1',
       SMOKE_FROM_PROCESS: 'from-process',
+      ...extraEnv,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -133,4 +168,30 @@ export async function startSmokeServer() {
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+/**
+ * Старт, який МУСИТЬ завершитися помилкою до слухання порту (часткова група
+ * env). Повертає код виходу й stderr.
+ */
+export async function runSmokeExpectingExit(extraEnv) {
+  const dir = layout();
+  try {
+    const child = spawn(process.execPath, ['server.mjs'], {
+      cwd: dir,
+      env: {
+        PATH: process.env.PATH ?? '',
+        PORT: String(await freePort()),
+        HOST: '127.0.0.1',
+        ...extraEnv,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => (stderr += chunk));
+    const code = await new Promise((done) => child.once('exit', done));
+    return { code, stderr };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }

@@ -11,6 +11,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "start": "node server.mjs",
+    "start:prod": "node scripts/start.mjs",
     "owner:invite": "node scripts/owner-invite.mjs"
   },
   "dependencies": {

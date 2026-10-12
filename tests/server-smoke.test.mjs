@@ -16,7 +16,10 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { startSmokeServer } from './server-smoke/sandbox.mjs';
+import {
+  runSmokeExpectingExit,
+  startSmokeServer,
+} from './server-smoke/sandbox.mjs';
 
 describe('server.mjs: production-runner піднімається й обслуговує запити', () => {
   let server;
@@ -75,5 +78,24 @@ describe('server.mjs: production-runner піднімається й обслуг
       // Ключ, якого немає ні в процесі, ні в `.env.local`, бере `.env`.
       SMOKE_ONLY_ENV: 'from-env',
     });
+  });
+
+  it('MIGRATION_DATABASE_URL з .env.local у процес сервера не потрапляє', async () => {
+    const keys = await (await fetch(`${server.baseUrl}/__keys`)).json();
+
+    expect(keys).toContain('SMOKE_ONLY_LOCAL');
+    expect(keys).not.toContain('MIGRATION_DATABASE_URL');
+  });
+});
+
+describe('server.mjs: часткова група env валить старт до слухання порту', () => {
+  it('S3_BUCKET без решти → ненульовий код, stderr називає ключі, не значення', async () => {
+    const { code, stderr } = await runSmokeExpectingExit({
+      S3_BUCKET: 'secret-bucket-name',
+    });
+
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('S3_ENDPOINT');
+    expect(stderr).not.toContain('secret-bucket-name');
   });
 });
