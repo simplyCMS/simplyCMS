@@ -41,7 +41,7 @@
   межах peer, `simplycms update` версію `pg` не переписує — лише підказує.
 - **Виправлено старт свіжого магазину з 0.7.0:** серверний бандл падав на старті
   (`TypeError: Class extends value #<Object> is not a constructor or null` у `BoundPool extends Pool`).
-  Причина — дефект import-protection плагіна TanStack Start ≥1.168.60 + вклеєний транзитивний `pg`
+  Причина — дефект import-protection плагіна `@tanstack/start-plugin-core` ≥1.171 (приїхав через `@tanstack/react-start` 1.168.60, коміт 24e2836a) + вклеєний транзитивний `pg`
   ([`UPSTREAM:START-IP-1`](docs/architecture/upstream-workarounds.md)). Опубліковані 0.7–0.13 не
   виправляються. Реліз тепер ганяє повний `pnpm pilot` (Gate B), а пілот — новий Gate SB (драйвер не
   вклеєний + allowlist вклеєних пакетів).
