@@ -47,6 +47,11 @@ export type DriverEnv = {
  * повідомлення потрапляє в лог контейнера, а там не місце секретам.
  */
 export class DriverEnvError extends Error {
+  /**
+   * Стабільна позначка для `server.mjs`: він не імпортує ядро, тож
+   * `instanceof` недоступний, а `code` переживає межу бандла.
+   */
+  readonly code = 'SIMPLYCMS_DRIVER_ENV';
   readonly group: 's3' | 'smtp';
   readonly missing: readonly string[];
 

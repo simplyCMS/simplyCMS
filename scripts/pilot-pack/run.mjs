@@ -9,7 +9,7 @@ import { startStore } from './build.mjs';
 import { prepareStore } from './prepare-store.mjs';
 import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
-import { checkExecve, gateHttp } from './gate-b.mjs';
+import { checkExecve, checkPartialEnv, gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
 import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
@@ -84,17 +84,22 @@ async function gateServer({ storeDir, port, env }) {
     storeDir,
     port,
     // start.mjs `.env` не читає, тож усі три ключі скретча йдуть через env процесу.
-    { ...env, MIGRATION_DATABASE_URL: env.DATABASE_URL },
+    {
+      ...env,
+      MIGRATION_DATABASE_URL: env.DATABASE_URL,
+      NODE_ENV: 'production',
+    },
     { entry: 'scripts/start.mjs' },
   );
   try {
     const http = await gateHttp(port, env);
     const execve = checkExecve(server.pid, server.logs());
+    const partial = checkPartialEnv(storeDir, env);
     return [
       'B',
       {
-        ok: http.ok && execve.ok,
-        details: [...http.details, ...execve.details],
+        ok: http.ok && execve.ok && partial.ok,
+        details: [...http.details, ...execve.details, ...partial.details],
       },
     ];
   } finally {

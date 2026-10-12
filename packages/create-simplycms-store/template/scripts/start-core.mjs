@@ -59,8 +59,8 @@ export async function runStart({
 }) {
   // Спершу env: часткова група має зупинити старт ДО накату, а не після.
   try {
-    const { warnings } = resolveDriverEnv(env);
-    for (const warning of warnings) log(`[start] ${warning}`);
+    // Лише щоб упасти до накату; попередження друкує серверний бандл (один раз).
+    resolveDriverEnv(env);
   } catch (error) {
     log(error instanceof Error ? error.message : String(error));
     return 1;
@@ -99,5 +99,14 @@ export async function runStart({
       ([key, value]) => value !== undefined && !STRIPPED_ENV.includes(key),
     ),
   );
-  execve(execPath, [execPath, join(cwd, 'server.mjs')], serverEnv);
+  try {
+    execve(execPath, [execPath, join(cwd, 'server.mjs')], serverEnv);
+  } catch (error) {
+    // EPERM тощо: текст системної помилки без оточення, яке ми передавали.
+    const code = error && typeof error === 'object' ? error.code : undefined;
+    log(
+      `[start] process.execve не вдався${code ? ` (${code})` : ''}; сервер не запущено.`,
+    );
+    return 1;
+  }
 }

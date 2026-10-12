@@ -13,6 +13,7 @@
  * знайшлася хоч одна назва: більшого про чужі дані сказати не можна.
  */
 
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
 
@@ -191,6 +192,9 @@ export function checkExecve(pid, startLogs) {
     startLogs.includes('нічого накочувати'),
     'очікую «нічого накочувати» (БД уже накочена db:demo)',
   );
+  // Р7′ п.3: log-драйвер у проді — попередження рівно ОДИН раз (друкує лише бандл).
+  const warnings = startLogs.split('пошта не налаштована').length - 1;
+  check('попередження про пошту', warnings === 1, `разів: ${warnings}`);
   if (process.platform !== 'linux') {
     details.push(
       `SKIP /proc/<pid>/environ і cmdline — перевірка лише на Linux (тут ${process.platform})`,
@@ -210,4 +214,43 @@ export function checkExecve(pid, startLogs) {
     cmdline.join(' ').trim(),
   );
   return { ok, details };
+}
+
+/**
+ * Перевірка env у ЗІБРАНОМУ бандлі (Е8-Р7′): виклик у `src/server.ts` мусить
+ * пережити збірку, і часткова група S3 валить `server.mjs` ДО listen. Окремий
+ * процес зі штучним порожнім портом: слухання довело б, що перевірка не спрацювала.
+ *
+ * @param {string} storeDir
+ * @param {Record<string,string>} env три ключі скретча
+ */
+export function checkPartialEnv(storeDir, env) {
+  const secret = 'pilot-partial-bucket-value';
+  const run = spawnSync('node', ['server.mjs'], {
+    cwd: storeDir,
+    env: {
+      ...process.env,
+      ...env,
+      S3_BUCKET: secret,
+      PORT: '0',
+      HOST: '127.0.0.1',
+      NODE_ENV: 'production',
+    },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  const out = `${run.stdout}${run.stderr}`;
+  const passed =
+    run.status !== null &&
+    run.status !== 0 &&
+    out.includes('S3_ENDPOINT') &&
+    !out.includes(secret) &&
+    !out.includes('слухає');
+  return {
+    ok: passed,
+    details: [
+      `${passed ? 'OK  ' : 'FAIL'} часткова група S3 у зібраному бандлі — код ${run.status}, ` +
+        `називає S3_ENDPOINT: ${out.includes('S3_ENDPOINT')}, слухав: ${out.includes('слухає')}`,
+    ],
+  };
 }

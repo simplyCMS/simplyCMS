@@ -15,7 +15,6 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseEnv } from 'node:util';
 import sirv from 'sirv';
-import { resolveDriverEnv } from 'simplycms/env';
 
 import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
 
@@ -42,25 +41,22 @@ for (const file of ['.env.local', '.env']) {
   }
 }
 
-// Часткова група драйвера (наприклад, забутий S3_REGION) валить старт ДО
-// слухання порту: мовчазний фолбек на local-fs загубив би файли при редеплої.
-// Помилка називає лише імена ключів, не значення.
-try {
-  const driverEnv = resolveDriverEnv(process.env);
-  for (const warning of driverEnv.warnings) console.warn(`[server] ${warning}`);
-  if (driverEnv.mail.driver === 'log') {
-    console.warn(
-      '[server] пошта не налаштована: листи лише в лозі сервера (SMTP_URL і MAIL_FROM).',
-    );
-  }
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-}
-
 // Динамічний імпорт ПІСЛЯ наповнення env: статичний хоістився б вище циклу,
 // і модуль-рівневий код збірки виконався б до того, як env готовий.
-const { default: serverEntry } = await import('./dist/server/server.js');
+//
+// Перевірку груп env драйверів робить сам серверний бандл на верхньому рівні
+// `src/server.ts` (Е8-Р7′): `server.mjs` не залежить від ядра, тож стартує і в
+// корені монорепо. Часткова група (забутий S3_REGION) кидає помилку під час
+// імпорту → виходимо ДО listen. Клас помилки живе в бандлі, тому впізнаємо за
+// `code`, а не `instanceof`; для неї стек не друкуємо (лише імена ключів).
+let serverEntry;
+try {
+  ({ default: serverEntry } = await import('./dist/server/server.js'));
+} catch (error) {
+  if (error?.code === 'SIMPLYCMS_DRIVER_ENV') console.error(error.message);
+  else console.error('[server] Не вдалося завантажити сервер:', error);
+  process.exit(1);
+}
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);

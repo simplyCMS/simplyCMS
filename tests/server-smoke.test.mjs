@@ -88,14 +88,26 @@ describe('server.mjs: production-runner піднімається й обслуг
   });
 });
 
-describe('server.mjs: часткова група env валить старт до слухання порту', () => {
-  it('S3_BUCKET без решти → ненульовий код, stderr називає ключі, не значення', async () => {
-    const { code, stderr } = await runSmokeExpectingExit({
-      S3_BUCKET: 'secret-bucket-name',
+describe('server.mjs: помилка імпорту серверного бандла валить старт до listen', () => {
+  it('помилка групи env (code) → exit ≠ 0, лише message без стека, порт не слухається', async () => {
+    const { code, stdout, stderr } = await runSmokeExpectingExit({
+      SMOKE_DRIVER_ENV_ERROR: 'Група S3 задана не повністю: бракує S3_ENDPOINT',
     });
 
     expect(code).not.toBe(0);
     expect(stderr).toContain('S3_ENDPOINT');
-    expect(stderr).not.toContain('secret-bucket-name');
+    expect(stderr).not.toMatch(/\n\s+at /);
+    expect(stdout).not.toContain('слухає');
+  });
+
+  it('будь-яка інша помилка імпорту → exit ≠ 0 і повний стек', async () => {
+    const { code, stdout, stderr } = await runSmokeExpectingExit({
+      SMOKE_OTHER_ERROR: 'зламаний бандл',
+    });
+
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('зламаний бандл');
+    expect(stderr).toMatch(/\n\s+at /);
+    expect(stdout).not.toContain('слухає');
   });
 });

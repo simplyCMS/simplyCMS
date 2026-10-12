@@ -13,22 +13,23 @@
  * до кореневого `node_modules`), а сама вона gitignored.
  */
 import { spawn } from 'node:child_process';
-import {
-  copyFileSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import ts from 'typescript';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** Заглушка `dist/server/server.js`: той самий контракт `{ fetch(Request) }`. */
-const STUB_HANDLER = `export default {
+const STUB_HANDLER = `// Імітація перевірки env у серверному бандлі (src/server.ts, Е8-Р7′):
+// кидає під час ІМПОРТУ, як справжній бандл при частковій групі.
+if (process.env.SMOKE_DRIVER_ENV_ERROR) {
+  throw Object.assign(new Error(process.env.SMOKE_DRIVER_ENV_ERROR), {
+    code: 'SIMPLYCMS_DRIVER_ENV',
+  });
+}
+if (process.env.SMOKE_OTHER_ERROR) throw new Error(process.env.SMOKE_OTHER_ERROR);
+export default {
   async fetch(request) {
     const { pathname } = new URL(request.url);
     // Гілка 500-хендлера: помилка ПІСЛЯ того, як sirv віддав запит далі.
@@ -84,28 +85,6 @@ function layout() {
     'export const smoke = true;\n',
   );
   writeFileSync(join(dir, 'dist', 'client', 'favicon.ico'), 'ico\n');
-
-  // `simplycms/env` у монорепо — TS-вихідники, які голий Node не читає, тож
-  // пісочниця везе СПРАВЖНІЙ резолвер, зібраний esbuild-ом у пакет-пʼятку.
-  const pkg = join(dir, 'node_modules', 'simplycms');
-  mkdirSync(pkg, { recursive: true });
-  // `resolve.ts` самодостатній (без імпортів), тож досить транспіляції.
-  writeFileSync(
-    join(pkg, 'env.mjs'),
-    ts.transpileModule(
-      readFileSync(join(ROOT, 'packages/simplycms/src/env/resolve.ts'), 'utf8'),
-      {
-        compilerOptions: {
-          module: ts.ModuleKind.ESNext,
-          target: ts.ScriptTarget.ES2022,
-        },
-      },
-    ).outputText,
-  );
-  writeFileSync(
-    join(pkg, 'package.json'),
-    '{ "name": "simplycms", "type": "module", "exports": { "./env": "./env.mjs" } }\n',
-  );
 
   // Пріоритет контракту: process.env > .env.local > .env.
   writeFileSync(
@@ -171,8 +150,8 @@ export async function startSmokeServer(extraEnv = {}) {
 }
 
 /**
- * Старт, який МУСИТЬ завершитися помилкою до слухання порту (часткова група
- * env). Повертає код виходу й stderr.
+ * Старт, який МУСИТЬ завершитися помилкою до слухання порту (бандл кинув під час
+ * імпорту). Повертає код виходу, stdout і stderr.
  */
 export async function runSmokeExpectingExit(extraEnv) {
   const dir = layout();
@@ -188,9 +167,11 @@ export async function runSmokeExpectingExit(extraEnv) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stderr = '';
+    let stdout = '';
+    child.stdout.on('data', (chunk) => (stdout += chunk));
     child.stderr.on('data', (chunk) => (stderr += chunk));
     const code = await new Promise((done) => child.once('exit', done));
-    return { code, stderr };
+    return { code, stdout, stderr };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

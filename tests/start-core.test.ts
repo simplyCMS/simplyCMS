@@ -103,6 +103,18 @@ describe('runStart', () => {
     expect(logs.join('\n')).not.toContain('s3cr3t-Pa55');
   });
 
+  it('execve кинув (EPERM) → код 1, повідомлення без оточення й секретів', async () => {
+    const { deps, logs } = setup({
+      execve: vi.fn(() => {
+        throw Object.assign(new Error(`EPERM ${OWNER_URL}`), { code: 'EPERM' });
+      }),
+    });
+    expect(await runStart(deps)).toBe(1);
+    const out = logs.join('\n');
+    expect(out).toContain('EPERM');
+    expect(out).not.toContain('s3cr3t-Pa55');
+  });
+
   it('нічого накочувати → окремий рядок у лозі', async () => {
     const { deps, logs } = setup({
       migrate: vi.fn(async () => ({ applied: [] })),

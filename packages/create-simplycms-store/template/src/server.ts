@@ -9,6 +9,7 @@ import {
 } from 'simplycms/storefront-routes/seo/interceptor';
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
+import { resolveDriverEnv } from 'simplycms/env';
 import { declareBuiltThemes } from 'simplycms/site';
 import config from '../simplycms.config';
 
@@ -17,6 +18,25 @@ import config from '../simplycms.config';
 // лишається й після видалення пакета. Без декларації активація теми
 // відмовляє (fail-closed). Модульний рівень: вхід один для dev, preview і prod.
 declareBuiltThemes(Object.keys(config.themes ?? {}));
+
+// Група драйвера env (S3, SMTP) — «все або нічого» (Е8-Р7′). Перевірка на
+// верхньому рівні, щоб помилка кинулась під час імпорту бандла в `server.mjs`
+// ДО listen: часткова група не має мовчки скотитися на local-fs. Не ховати
+// за `import.meta.env`/`typeof window` — бандлер міг би вирізати виклик.
+// Попередження друкуємо лише в проді: у dev HMR перезапускав би модуль, а
+// log-драйвер пошти там норма.
+{
+  const driverEnv = resolveDriverEnv(process.env);
+  if (process.env.NODE_ENV === 'production') {
+    for (const warning of driverEnv.warnings)
+      console.warn(`[server] ${warning}`);
+    if (driverEnv.mail.driver === 'log') {
+      console.warn(
+        '[server] пошта не налаштована: листи лише в лозі сервера (SMTP_URL і MAIL_FROM).',
+      );
+    }
+  }
+}
 
 /**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).
