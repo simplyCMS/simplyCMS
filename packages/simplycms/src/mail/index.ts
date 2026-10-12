@@ -4,3 +4,12 @@ export type { MailMessage, MailTransport } from './types';
 export { logTransport } from './log';
 export { smtpTransport } from './smtp';
 export { getMailTransport, selectMailTransport } from './transport';
+export {
+  MAIL_RETRY_BATCH,
+  deliverMail,
+  enqueueMail,
+  listMailOutbox,
+  retryMail,
+  scheduleMail,
+} from './outbox';
+export type { MailItem, MailKind, MailOutboxRow } from './outbox';

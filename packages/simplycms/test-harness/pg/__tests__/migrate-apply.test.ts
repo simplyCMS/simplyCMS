@@ -83,7 +83,7 @@ describe('applyMigrations: журнал і накат', () => {
     }
   }, 120_000);
 
-  it('змінений накочений файл + новий 0005 → MigrationChecksumError, нічого не накочено', async () => {
+  it('змінений накочений файл + новий 0006 → MigrationChecksumError, нічого не накочено', async () => {
     const db = await freshDb(harness.url);
     const copy = canonCopy();
     try {
@@ -91,7 +91,7 @@ describe('applyMigrations: журнал і накат', () => {
       // Один зайвий байт у кінці накоченого файлу.
       const grants = readFileSync(join(copy.dir, '0002_grants.sql'), 'utf8');
       copy.write('0002_grants.sql', `${grants} `);
-      copy.write('0005_x.sql', 'create table public.x_new (id int);');
+      copy.write('0006_x.sql', 'create table public.x_new (id int);');
 
       const err = await applyMigrations({
         connectionString: db.url,
@@ -114,7 +114,7 @@ describe('applyMigrations: журнал і накат', () => {
     const db = await freshDb(harness.url);
     const copy = canonCopy();
     try {
-      copy.write('0005_y.sql', 'create table public.y_core (id int);');
+      copy.write('0006_y.sql', 'create table public.y_core (id int);');
       await applyMigrations({ connectionString: db.url, dir: copy.dir });
 
       copy.write(
@@ -148,7 +148,7 @@ describe('applyMigrations: журнал і накат', () => {
     const copy = canonCopy();
     try {
       await applyMigrations({ connectionString: db.url, dir: copy.dir });
-      copy.write('0005_a.sql', 'create table public.a_ok (id int);');
+      copy.write('0006_a.sql', 'create table public.a_ok (id int);');
       copy.write(
         '0006_b.sql',
         'create table public.b_bad (id int);\nselect * from public.no_such_table;',
@@ -158,7 +158,7 @@ describe('applyMigrations: журнал і накат', () => {
         applyMigrations({ connectionString: db.url, dir: copy.dir }),
       ).rejects.toThrow(/0006_b\.sql/);
       const names = (await journalOf(db.url)).map((row) => row.name);
-      expect(names).toContain('0005_a.sql');
+      expect(names).toContain('0006_a.sql');
       expect(names).not.toContain('0006_b.sql');
       expect(await exists(db.url, 'public.a_ok')).toBe(true);
       expect(await exists(db.url, 'public.b_bad')).toBe(false);
@@ -172,9 +172,9 @@ describe('applyMigrations: журнал і накат', () => {
     const db = await freshDb(harness.url);
     const copy = canonCopy();
     try {
-      copy.write('0005_gone.sql', 'create table public.gone (id int);');
+      copy.write('0006_gone.sql', 'create table public.gone (id int);');
       await applyMigrations({ connectionString: db.url, dir: copy.dir });
-      rmSync(join(copy.dir, '0005_gone.sql'));
+      rmSync(join(copy.dir, '0006_gone.sql'));
       const lines: string[] = [];
       const report = await applyMigrations({
         connectionString: db.url,
@@ -183,7 +183,7 @@ describe('applyMigrations: журнал і накат', () => {
       });
       expect(report.applied).toEqual([]);
       expect(lines).toContain(
-        '[migrate] файл 0005_gone.sql є в журналі, але відсутній у теці',
+        '[migrate] файл 0006_gone.sql є в журналі, але відсутній у теці',
       );
     } finally {
       copy.cleanup();

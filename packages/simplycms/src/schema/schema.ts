@@ -58,6 +58,7 @@ import type { JsonValue } from "./json";
 
 export * from "./auth";
 export * from "./media";
+export * from "./mail";
 
 export const appRole = pgEnum("app_role", ['admin', 'user'])
 export const discountGroupOperator = pgEnum("discount_group_operator", ['and', 'or', 'not', 'min', 'max'])

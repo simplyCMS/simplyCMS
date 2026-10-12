@@ -1,3 +1,5 @@
+import { redactUrls } from 'simplycms/env';
+
 /** Одна відповідь «немає» на всі відмови (див. докблок `serveMedia`). */
 export const notFound = (): Response =>
   new Response('Not found', {
@@ -40,9 +42,5 @@ export function describeDriverError(error: unknown): string {
   if (!(error instanceof Error)) return 'unknown';
   const code = (error as { code?: unknown }).code;
   const head = typeof code === 'string' ? `${error.name}[${code}]` : error.name;
-  const message = error.message.replace(
-    /([a-z][a-z0-9+.-]*:\/\/)[^\s/]*@/gi,
-    '$1***@',
-  );
-  return `${head}: ${message}`;
+  return `${head}: ${redactUrls(error.message)}`;
 }

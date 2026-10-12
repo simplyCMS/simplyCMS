@@ -88,6 +88,8 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Outbox стирання файлів (Е6д-20): лише `app_admin`; ескалація `operator` —
   // теж `app_admin`, покупцеві ключі чужих файлів не потрібні.
   media_erasures: { app_admin: CRUD },
+  // Outbox пошти (Е8-Р10): тіло листа скидання — секрет, лише `app_admin`.
+  mail_outbox: { app_admin: CRUD },
   // Журнал накату (Е8-Р2): пише лише власник схеми під час накату; `app_admin`
   // читає (`doctor --online`, `status` через `SET ROLE app_admin`).
   simplycms_migrations: { app_admin: ['SELECT'] },

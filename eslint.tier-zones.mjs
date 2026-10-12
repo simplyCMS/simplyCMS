@@ -112,7 +112,9 @@ const TIER_ZONES = [
   ['src/env', 2, 'env', []],
   // Порт пошти (Е8, Task 9) — T2. Upward `env`: вибір драйвера за групою SMTP_* і
   // прод-предикат беруться з резолвера, власного читання груп env немає.
-  ['src/mail', 2, 'mail', ['env']],
+  // `db` і `schema` — для outbox `mail_outbox` (Task 10): запис лише через
+  // `withActor`. `auth` свідомо НЕ в списку: auth кличе пошту, не навпаки.
+  ['src/mail', 2, 'mail', ['env', 'db', 'schema']],
   // Build-time плагіни Vite (К3-Е8) — T2: Node-код збірки, жодних імпортів з
   // інших тек ядра, upward-винятків немає.
   ['src/vite', 2, 'vite', []],

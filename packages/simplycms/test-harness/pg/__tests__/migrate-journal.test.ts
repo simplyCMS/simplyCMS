@@ -89,10 +89,10 @@ describe('журнал simplycms_migrations', () => {
     const db = await freshDb(harness.url);
     const copy = canonCopy();
     try {
-      copy.write('0005_b.sql', 'select * from public.no_such_table;');
+      copy.write('0006_b.sql', 'select * from public.no_such_table;');
       await expect(
         applyMigrations({ connectionString: db.url, dir: copy.dir }),
-      ).rejects.toThrow(/0005_b\.sql/);
+      ).rejects.toThrow(/0006_b\.sql/);
       const rows = await readJournal(withUser(db.url, 'app_runtime'));
       expect(rows?.map((row) => row.name)).toEqual(canonNames());
     } finally {

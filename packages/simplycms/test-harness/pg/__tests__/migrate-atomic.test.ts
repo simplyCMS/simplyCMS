@@ -41,7 +41,7 @@ describe('applyMigrations: файл і рядок журналу — одна т
     const copy = canonCopy();
     try {
       await applyMigrations({ connectionString: db.url, dir: copy.dir });
-      copy.write('0005_x.sql', 'create table public.x_tx (id int);');
+      copy.write('0006_x.sql', 'create table public.x_tx (id int);');
 
       const original = pg.Client.prototype.query;
       vi.spyOn(pg.Client.prototype, 'query').mockImplementation(function (
@@ -53,7 +53,7 @@ describe('applyMigrations: файл і рядок журналу — одна т
           typeof text === 'string' &&
           JOURNAL_INSERT.test(text) &&
           Array.isArray(values) &&
-          values[0] === '0005_x.sql'
+          values[0] === '0006_x.sql'
         ) {
           return Promise.reject(new Error('шпигун: запис у журнал впав'));
         }
@@ -65,14 +65,14 @@ describe('applyMigrations: файл і рядок журналу — одна т
       ).rejects.toThrow();
       expect(await exists(db.url, 'public.x_tx')).toBe(false);
       const names = (await journalOf(db.url)).map((row) => row.name);
-      expect(names).not.toContain('0005_x.sql');
+      expect(names).not.toContain('0006_x.sql');
 
       vi.restoreAllMocks();
       const again = await applyMigrations({
         connectionString: db.url,
         dir: copy.dir,
       });
-      expect(again.applied).toEqual(['0005_x.sql']);
+      expect(again.applied).toEqual(['0006_x.sql']);
       expect(await exists(db.url, 'public.x_tx')).toBe(true);
     } finally {
       copy.cleanup();

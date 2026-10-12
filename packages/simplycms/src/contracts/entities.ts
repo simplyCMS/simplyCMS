@@ -22,6 +22,7 @@ export const ENTITY = {
   discounts: 'discounts',
   languages: 'languages',
   media: 'media',
+  mailOutbox: 'mail_outbox',
   mediaErasures: 'media_erasures',
   modificationPropertyValues: 'modification_property_values',
   orderItems: 'order_items',

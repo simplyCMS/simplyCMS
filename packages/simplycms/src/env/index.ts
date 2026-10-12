@@ -12,4 +12,5 @@ export {
   checkDriverEnvOnStart,
   isProductionRuntime,
 } from './resolve';
+export { redactUrls } from './redact';
 export type { MediaEnv, MailEnv, DriverEnv } from './resolve';

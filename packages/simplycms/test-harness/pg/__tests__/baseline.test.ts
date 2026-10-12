@@ -136,7 +136,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
     // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
     // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
-    expect(tables.length).toBe(44);
+    // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (перша міграція `0005`).
+    expect(tables.length).toBe(45);
     for (const expected of [
       'simplycms_migrations',
       'users',
@@ -178,12 +179,14 @@ describe('канон міграцій: накат на чисту БД', () => {
         where schemaname = 'public'`,
     );
     // 24 → 25: службова `media_erasures_admin_all` (лише app_admin, Е6д-20).
-    expect(rows.length).toBe(25);
+    // 25 → 26: `mail_outbox_admin_all` (лише app_admin, Е8 Task 10).
+    expect(rows.length).toBe(26);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
     expect(tables).toEqual([
       'comparisons',
+      'mail_outbox',
       'media_erasures',
       'order_items',
       'orders',
