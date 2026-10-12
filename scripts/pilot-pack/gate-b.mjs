@@ -8,7 +8,7 @@
  *
  * 🔴 Очікувані назви беруться з тієї самої бази, з якою працює магазин, —
  * прямим SQL за `DATABASE_URL`. HTTP-API до БД у контракті v2 немає взагалі
- * (PostgREST зник разом із Supabase), тож іншого способу дізнатися, ЩО має
+ * (PostgREST зник у 0.4.1), тож іншого способу дізнатися, ЩО має
  * опинитися в HTML, не існує. База довільна, тому достатньо, щоб у HTML
  * знайшлася хоч одна назва: більшого про чужі дані сказати не можна.
  */
@@ -90,6 +90,34 @@ export async function gateHttp(port, env) {
     `${catalog.status}, ${catalogMatch.fact}, ціни(₴): ${hasPrice}`,
   );
 
+  // 🔴 Рантайм-сторож санітайзера на СЕРВЕРНОМУ бандлі скретча (UPSTREAM:START-IP-1): у бандл
+  // вклеєні dual-пакети (`is-plain-object`, `postcss`, `nanoid`), яких `sanitize-html` бере через
+  // `require()` — безпечно лише поки він бере іменовані експорти. Статичний Gate SB переходу на
+  // default-імпорт не бачить, тож тут реально проганяємо `sanitize-html` на SSR: опис товару з
+  // оверлею — rich-розмітка зі `style` (проганяє `postcss.parse`), `<script>` і `onerror`. Проба — оверлей пілота `sanitize-probe.sql`
+  // (`apply-probe.mjs` поверх `pnpm db:demo`; демо-сід чистий): без неї крок червоніє, а не мовчки пропускається.
+  const probe = await fetch(
+    `${base}/catalog/invertory/invertor-merezhevyi-5kw`,
+  );
+  const probeHtml = await probe.text();
+  const kept =
+    probeHtml.includes('<strong>98%</strong>') &&
+    probeHtml.includes('<a href="https://example.com/inverter"') &&
+    /<p style="text-align:\s*center">/.test(probeHtml);
+  const dirty =
+    /<script>alert\(1\)|onerror=/.test(probeHtml) ||
+    probeHtml.includes('title="t"') ||
+    probeHtml.includes('color:red') ||
+    probeHtml.includes('color: red');
+  check(
+    'GET /catalog/invertory/invertor-merezhevyi-5kw (sanitize-html на сервері)',
+    probe.status === 200 && kept && !dirty,
+    `${probe.status}, <strong>/<a href> лишились: ${kept}, небезпечне лишилось: ${dirty}` +
+      (probe.status === 200 && !kept
+        ? ' (або немає проби — `node scripts/pilot-pack/apply-probe.mjs <DSN>` поверх `pnpm db:demo`, або серверний sanitize-html зламаний)'
+        : ''),
+  );
+
   const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
   const location = admin.headers.get('location');
   check(
@@ -130,8 +158,10 @@ export async function gateHttp(port, env) {
   const healthJson = await health.json();
   check(
     'GET /api/health',
-    health.status === 200 && healthJson.status === 'healthy',
-    `${health.status}, status=${healthJson.status}`,
+    health.status === 200 &&
+      healthJson.status === 'healthy' &&
+      healthJson.checks?.database?.ok === true,
+    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}`,
   );
 
   return { ok, details };

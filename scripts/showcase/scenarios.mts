@@ -4,10 +4,11 @@
  * - Відгуки — від імені покупця (`withCustomerDb` + `insertProductReview`):
  *   ті самі RLS і санітизація, що на вітрині; лише на куплені товари, по
  *   одному на пару товар/покупець (унікальний ключ таблиці). Схвалює їх
- *   позначений сирий запис (`raw-writes.mts`, С-11).
+ *   ядро модерації `setReviewsStatus` (Е6д-7) за поверненими `id`.
  * - Бан і видалення — ядрами адмінки. Видалення — ПІСЛЯ замовлень і
  *   відгуків: сценарій саме про покупця, чиї замовлення знеособлюються, а
- *   відгук стає анонімним.
+ *   відгук стає анонімним. Його файли стирає `seed.mts` ПІСЛЯ зовнішньої
+ *   транзакції (Е6д-14) за ключами `discard`.
  */
 import {
   deleteCustomer,
@@ -17,11 +18,14 @@ import {
 } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
 import { withCustomerDb } from '../../packages/simplycms/src/storefront/loaders/db.ts';
+import { replaceAvatar } from '../../packages/simplycms/src/storefront/loaders/avatar.ts';
 import { insertProductReview } from '../../packages/simplycms/src/storefront/loaders/reviews-write.ts';
 import { ROLES } from './orders-plan.mts';
 import type { PlacedOrder } from './orders.mts';
 import type { People } from './people.mts';
+import { pngBytes } from './png.mts';
 import { int, pick, type Rand } from './prng.mts';
+import type { SeedContext } from './seed-context.mts';
 
 export const REVIEW_COUNT = 15;
 
@@ -71,7 +75,7 @@ function purchasedPairs(placed: readonly PlacedOrder[]): Pair[] {
 export async function seedReviews(
   rand: Rand,
   placed: readonly PlacedOrder[],
-): Promise<number> {
+): Promise<string[]> {
   const pairs = purchasedPairs(placed);
   const first = pairs.find((p) => p.buyer === ROLES.deleted);
   if (!first)
@@ -81,6 +85,7 @@ export async function seedReviews(
   while (chosen.length < REVIEW_COUNT && rest.length > 0) {
     chosen.push(rest.splice(int(rand, 0, rest.length - 1), 1)[0]!);
   }
+  const ids: string[] = [];
   for (const pair of chosen) {
     const rating = rand() < 0.15 ? int(rand, 2, 3) : int(rand, 4, 5);
     const input = {
@@ -90,18 +95,36 @@ export async function seedReviews(
       content: `<p>${pick(rand, CONTENTS)}</p>`,
       images: [],
     };
-    await withCustomerDb(pair.userId, (db) =>
+    const { id } = await withCustomerDb(pair.userId, (db) =>
       insertProductReview(db, pair.userId, input),
     );
+    ids.push(id);
   }
-  return chosen.length;
+  return ids;
 }
 
-/** Бан і видалення покупців за ролями плану (`ROLES`). */
+/**
+ * Аватар покупця, якого далі видалять, — шляхом вітрини (`replaceAvatar`) у
+ * ВЛАСНІЙ транзакції ДО зовнішньої: файл публікується до COMMIT, і відкат
+ * зовнішньої лишив би орфан, нерозрізненний із цілим аватаром (р4 M4).
+ */
+export async function seedDeletedAvatar(
+  ctx: SeedContext,
+  people: People,
+): Promise<void> {
+  const bytes = pngBytes({ width: 96, height: 96, seed: 1801 });
+  await replaceAvatar(
+    people.buyers[ROLES.deleted]!.id,
+    { bytes, mime: 'image/png' },
+    { driver: ctx.media },
+  );
+}
+
+/** Бан і видалення за ролями (`ROLES`); `discard` — стерти ПІСЛЯ COMMIT. */
 export async function seedCustomerScenarios(
   db: ActorDb,
   people: People,
-): Promise<void> {
+): Promise<string[]> {
   const banned = people.buyers[ROLES.banned]!;
   await setCustomerBan(
     db,
@@ -113,7 +136,7 @@ export async function seedCustomerScenarios(
   );
   const deleted = people.buyers[ROLES.deleted]!;
   // `system`: сід — не адмін-сесія; перевірки «не адмін» і email діють так само.
-  await deleteCustomer(
+  const { discard } = await deleteCustomer(
     db,
     deleteCustomerInput.parse({
       userId: deleted.id,
@@ -121,4 +144,5 @@ export async function seedCustomerScenarios(
     }),
     { kind: 'system' },
   );
+  return discard;
 }

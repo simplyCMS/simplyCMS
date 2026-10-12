@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, isNotNull } from 'drizzle-orm';
 import { banners } from 'simplycms/schema';
 import type { Banner } from 'simplycms/contracts';
 import type { ActorDb } from './db';
@@ -24,14 +24,21 @@ export interface BannerQuery {
 export async function loadBanners(
   db: ActorDb,
   query: BannerQuery,
+  now: Date = new Date(),
 ): Promise<Banner[]> {
-  const scoped = query.sectionId
-    ? and(
-        eq(banners.isActive, true),
-        eq(banners.placement, query.placement),
-        eq(banners.sectionId, query.sectionId),
-      )
-    : and(eq(banners.isActive, true), eq(banners.placement, query.placement));
+  // Банер `placement='section'` без розділу (розділ видалено, FK SET NULL) не
+  // належить жодному місцю. Без `sectionId` у запиті фільтр за розділом зник би
+  // й віддав таких «осиротілих» — тому для 'section' розділ завжди обов'язковий.
+  const bySection = query.sectionId
+    ? eq(banners.sectionId, query.sectionId)
+    : query.placement === 'section'
+      ? isNotNull(banners.sectionId)
+      : undefined;
+  const scoped = and(
+    eq(banners.isActive, true),
+    eq(banners.placement, query.placement),
+    bySection,
+  );
 
   const rows = await db
     .select(bannerColumns)
@@ -39,6 +46,5 @@ export async function loadBanners(
     .where(scoped)
     .orderBy(asc(banners.sortOrder));
 
-  const now = new Date();
   return rows.map(toBanner).filter((banner) => isBannerVisible(banner, now));
 }

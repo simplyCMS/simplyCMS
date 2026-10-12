@@ -108,7 +108,15 @@ async function imagesForDemo(
     .orderBy(asc(products.slug));
   for (const { id } of demo) {
     const images = await uploadProductImages(db, ctx, rand, id, 1);
-    await productsOps.updateIn(db, [{ id, patch: { images } }]);
+    // К3-Е6д-1: `products` — media-ресурс, `updateIn` вимагає колектор ключів
+    // заміненого. Демо-зображення (посилання, не файли) рядків `media` не
+    // мають, тож стирати нічого: непорожній колектор = дефект сіду.
+    const replaced: string[] = [];
+    await productsOps.updateIn(db, [{ id, patch: { images } }], replaced);
+    if (replaced.length > 0)
+      throw new Error(
+        `[showcase] демо-товар ${id}: замінено файли ${replaced}`,
+      );
   }
 }
 

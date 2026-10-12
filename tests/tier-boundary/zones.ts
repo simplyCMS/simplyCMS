@@ -8,21 +8,12 @@
 export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   ['packages/simplycms/src/contracts', 'simplycms/domain/pricing', 'react'],
   ['packages/simplycms/src/domain', 'simplycms/schema', 'simplycms/contracts'],
-  [
-    'packages/simplycms/src/schema',
-    'simplycms/supabase',
-    'simplycms/contracts',
-  ],
-  ['packages/simplycms/src/db', 'simplycms/supabase', 'simplycms/schema'],
-  ['packages/simplycms/src/auth', 'simplycms/supabase', 'simplycms/db'],
-  [
-    'packages/simplycms/src/supabase',
-    'simplycms/react-query',
-    'simplycms/contracts',
-  ],
+  ['packages/simplycms/src/schema', 'simplycms/db', 'simplycms/contracts'],
+  ['packages/simplycms/src/db', 'simplycms/react-query', 'simplycms/schema'],
+  ['packages/simplycms/src/auth', 'simplycms/react-query', 'simplycms/db'],
   [
     'packages/simplycms/src/react-query',
-    'simplycms/supabase',
+    'simplycms/db',
     'simplycms/domain/money',
   ],
   [
@@ -37,7 +28,7 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   ],
   [
     'packages/simplycms/src/storefront',
-    'simplycms/supabase/server-client',
+    'simplycms/react-query',
     'simplycms/contracts',
   ],
   [
@@ -45,11 +36,11 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Порт сховища (Е2) — T2 з upward-винятком лише на `db`; `supabase` того
-  // самого тіру у виняток НЕ входить, тож ловиться.
+  // Порт сховища (Е2) — T2 з upward-винятком лише на `db`; `react-query`
+  // того самого тіру у виняток НЕ входить, тож ловиться.
   [
     'packages/simplycms/src/storage',
-    'simplycms/supabase',
+    'simplycms/react-query',
     'simplycms/domain/media',
   ],
   // Облік залишків (Е3-5) — T2 з upward-винятком лише на `db`; імпорт назад
@@ -72,7 +63,7 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   [
     'packages/simplycms/src/themes',
     'simplycms/admin/pages/Themes',
-    'simplycms/supabase/anon-client',
+    'simplycms/react-query',
   ],
   [
     'packages/simplycms/src/plugins',

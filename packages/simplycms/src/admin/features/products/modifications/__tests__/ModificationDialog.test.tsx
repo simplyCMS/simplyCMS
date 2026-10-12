@@ -64,7 +64,7 @@ const MOD: ProductModification = {
 };
 
 function renderDialog(
-  onCreate: (values: ModificationFormValues) => Promise<string>,
+  onCreate: (values: ModificationFormValues, id: string) => Promise<string>,
   onUpdate: (id: string, values: ModificationFormValues) => Promise<void>,
 ) {
   const queryClient = new QueryClient();
@@ -80,6 +80,7 @@ function renderDialog(
       productId="p1"
       sectionId={null}
       mod={MOD}
+      newId="new-mod-id"
       onCreate={onCreate}
       onUpdate={onUpdate}
     />,

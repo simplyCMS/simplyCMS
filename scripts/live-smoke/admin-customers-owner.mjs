@@ -8,6 +8,7 @@
  * видалення — `alertdialog`, діалог бану — `dialog`.
  */
 import { waitText } from './selectors.mjs';
+import { expectDisabled } from './wait.mjs';
 import { pickOption } from './admin-shipping-owner.mjs';
 
 const card = (page, base, userId) =>
@@ -70,7 +71,7 @@ export async function deleteFromCard(page, base, userId, email) {
   await page.getByRole('button', { name: 'Видалити акаунт' }).click();
   const dialog = page.getByRole('alertdialog');
   const confirm = dialog.getByRole('button', { name: 'Видалити назавжди' });
-  const disabledBefore = await confirm.isDisabled();
+  const disabledBefore = await expectDisabled(confirm);
   await page.locator('#delete-email').fill(email);
   await confirm.click();
   return { disabledBefore, toast: await waitText(page, 'Акаунт видалено') };

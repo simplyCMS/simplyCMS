@@ -4,12 +4,14 @@
 // пінить точні версії), полагодити лінки агентних скілів і догнати
 // host-файли до канону з теки host/ цього пакета.
 import { execFileSync } from 'node:child_process';
+import { missingStoreMigrationsDir } from './db-diff.mjs';
 import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
 import {
   CANON_HOST_DIR,
   findHostDrift,
   writeHostFiles,
 } from './host-drift.mjs';
+import { pgUpdateHint } from './pg-peer.mjs';
 import { syncSkillLinks } from './skill-links.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
@@ -116,6 +118,10 @@ export async function run(argv) {
   } else {
     say.info('--no-install: пакети не чіпаю, лише host-файли.');
   }
+  // Драйвер `pg` належить магазину: update його не переписує, лише підказує, якщо новий peer
+  // ядра розійшовся з тим, що стоїть у магазині.
+  const pgHint = pgUpdateHint(storeRoot, readStoreManifest(storeRoot));
+  if (pgHint) say.warn(pgHint);
   // Лінки скілів лагодяться завжди й тихо: на exit-код вони не впливають,
   // бо після цього кроку стану «є що зробити» не лишається.
   syncSkillLinks(storeRoot);
@@ -125,25 +131,34 @@ export async function run(argv) {
       `Канонічна тека host/ пакета CLI порожня або відсутня (${CANON_HOST_DIR}) — ` +
         'інсталяція CLI бита, перевстанови @simplycms/cli',
     );
+  // Одна точка виходу: усі гілки host-дрейфу (немає / --write / --check)
+  // сходяться в перевірку теки міграцій, щоб жодна не мовчала про неї. Host-
+  // синк при цьому відпрацьовує повністю — відсутня тека не кидає виняток.
+  let exitCode = 0;
+  let summary = 'Готово.';
   if (drifted.length === 0) {
     say.success('Host-файли збігаються з каноном.');
-    finish('Готово.');
-    return;
-  }
-  if (options.write) {
+  } else if (options.write) {
     writeHostFiles(storeRoot, drifted);
     say.success(`Перезаписано канонічними версіями: ${drifted.join(', ')}`);
     showSteps([
       'git diff     # ревʼю перезаписаних host-файлів',
       'pnpm build   # перезбірка магазину',
     ]);
-    finish('Готово.');
-    return;
+  } else {
+    say.error(`Дрейф host-файлів проти канону: ${drifted.join(', ')}`);
+    showSteps([
+      'pnpm simplycms update --write   # перезаписати канонічними версіями',
+    ]);
+    exitCode = hostDriftExitCode(drifted, options.write);
+    summary = 'Дрейф знайдено (--check).';
   }
-  say.error(`Дрейф host-файлів проти канону: ${drifted.join(', ')}`);
-  showSteps([
-    'pnpm simplycms update --write   # перезаписати канонічними версіями',
-  ]);
-  process.exitCode = hostDriftExitCode(drifted, options.write);
-  finish('Дрейф знайдено (--check).');
+  const missingMigrations = missingStoreMigrationsDir(storeRoot);
+  if (missingMigrations) {
+    say.error(missingMigrations);
+    exitCode = Math.max(exitCode, 1);
+    summary = 'Тека міграцій магазину відсутня.';
+  }
+  if (exitCode !== 0) process.exitCode = exitCode;
+  finish(summary);
 }

@@ -113,9 +113,9 @@ export function printNextSteps({
     steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
   if (!hasEnv)
     steps.push('cp .env.example .env.local   # три ключі контракту магазину');
-  // 🔴 Накат схеми — psql по канону міграцій, а не `supabase db push`: канон
-  // нумерований послідовно (`0000_prelude.sql`), а Supabase CLI чекає
-  // `<timestamp>_<name>.sql` і такі імена відхиляє.
+  // 🔴 Накат схеми — psql по канону міграцій (`db/migrations`): канон
+  // нумерований послідовно (`0000_prelude.sql`), інструмент оточення
+  // застосовує файли в порядку імен.
   //
   // 🔴 URL тут — ПРИВІЛЕЙОВАНИЙ (власник БД), а НЕ `DATABASE_URL` із
   // `.env.local`. `0000_prelude.sql` створює ролі й безумовно робить
@@ -127,7 +127,7 @@ export function printNextSteps({
   // заводимо — URL підставляється руками.
   steps.push(
     '# накат канону — підключенням ВЛАСНИКА БД, не app_runtime із .env.local:\n' +
-      'for f in supabase/migrations/*.sql; do ' +
+      'for f in db/migrations/*.sql; do ' +
       'psql "postgresql://<owner>:<pass>@<host>:5432/<db>" ' +
       '-v ON_ERROR_STOP=1 -f "$f"; done',
   );

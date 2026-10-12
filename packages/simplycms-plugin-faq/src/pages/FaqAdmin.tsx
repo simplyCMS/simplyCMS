@@ -13,7 +13,7 @@ import type { FaqItem } from '../types';
 
 /**
  * Адмін-сторінка референс-плагіна: CRUD по власній таблиці через
- * `usePluginTable` — жодного прямого Supabase-клієнта (межа довіри §7).
+ * `usePluginTable` — жодного прямого клієнта БД (межа довіри §7).
  * Роут `/admin/faq` — дитина layout `/admin` (guard + AdminLayout
  * успадковуються від каркаса адмінки автоматично).
  */

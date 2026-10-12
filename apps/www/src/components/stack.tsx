@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { EXT } from '../lib/links';
 import {
+  BetterAuthLogo,
   DrizzleLogo,
   ExternalIcon,
   PnpmLogo,
+  PostgresLogo,
   ReactLogo,
   ShadcnLogo,
-  SupabaseLogo,
   TailwindLogo,
   TanStackLogo,
   TypeScriptLogo,
@@ -48,10 +49,10 @@ const STACK: StackItem[] = [
     logo: <ViteLogo />,
   },
   {
-    name: 'Supabase',
-    host: 'supabase.com',
-    href: 'https://supabase.com',
-    logo: <SupabaseLogo />,
+    name: 'PostgreSQL',
+    host: 'postgresql.org',
+    href: 'https://www.postgresql.org',
+    logo: <PostgresLogo />,
   },
   {
     name: 'Tailwind CSS v4',
@@ -70,6 +71,12 @@ const STACK: StackItem[] = [
     host: 'orm.drizzle.team',
     href: 'https://orm.drizzle.team',
     logo: <DrizzleLogo />,
+  },
+  {
+    name: 'Better Auth',
+    host: 'better-auth.com',
+    href: 'https://www.better-auth.com',
+    logo: <BetterAuthLogo />,
   },
   {
     name: 'Zod',

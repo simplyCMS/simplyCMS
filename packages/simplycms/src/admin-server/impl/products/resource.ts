@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { products } from 'simplycms/schema';
+import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
+import {
+  productModifications,
+  productReviews,
+  products,
+} from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
@@ -41,4 +46,21 @@ export const productsOps = defineAdminResource({
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
   readonly: ['id', 'createdAt', 'updatedAt'],
+  // К3-Е6д-1: фото товару — власник `product`; заміна/прибирання стирає файл.
+  media: { entityType: 'product', columns: ['images'] },
+  // Е6д-19: FK `product_reviews.product_id` — CASCADE; без опції фото
+  // відгуків пережили б товар (публічні за URL, недосяжні для `deleteCustomer`).
+  cascadeMedia: [
+    {
+      fk: productReviews.productId,
+      column: productReviews.images,
+      entityType: REVIEW_MEDIA_ENTITY,
+    },
+    // К3-Е6д-1: FK `product_modifications.product_id` — CASCADE.
+    {
+      fk: productModifications.productId,
+      column: productModifications.images,
+      entityType: 'product_modification',
+    },
+  ],
 });

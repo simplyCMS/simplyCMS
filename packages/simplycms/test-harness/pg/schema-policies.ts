@@ -43,11 +43,14 @@ function roleNames(to: PgPolicyConfig['to']): string[] {
 
 /** Усі таблиці, оголошені в модулях схеми ядра. */
 function schemaTables(): PgTable[] {
-  const tables: PgTable[] = [];
+  // Set: `schema.ts` реекспортує `./auth` і `./media`, тож ті самі таблиці
+  // приходять з двох модулів. Доки в них не було політик, дубль був невидимий;
+  // `media_erasures` (Е6д-20) подвоїла б свою політику у звіряннi.
+  const tables = new Set<PgTable>();
   for (const module of SCHEMA_MODULES)
     for (const exported of Object.values(module))
-      if (is(exported, PgTable)) tables.push(exported);
-  return tables;
+      if (is(exported, PgTable)) tables.add(exported);
+  return [...tables];
 }
 
 /**

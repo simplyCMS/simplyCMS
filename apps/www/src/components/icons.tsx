@@ -189,18 +189,44 @@ export function ViteLogo() {
   );
 }
 
-export function SupabaseLogo() {
+export function BetterAuthLogo() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
-        d="M13.4 22.3c-.5.63-1.52.28-1.53-.53l-.18-9.31h6.35c1.15 0 1.79 1.33 1.08 2.23l-5.72 7.61Z"
-        fill="#3ECF8E"
+        d="M12 2.8 4.5 5.6v5.7c0 4.6 3.1 8.2 7.5 9.9 4.4-1.7 7.5-5.3 7.5-9.9V5.6L12 2.8Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
       />
       <path
-        d="M10.6 1.7c.5-.63 1.52-.28 1.53.53l.08 9.31H5.96c-1.15 0-1.79-1.33-1.08-2.23L10.6 1.7Z"
-        fill="#3ECF8E"
-        opacity="0.65"
+        d="m8.8 12.1 2.2 2.2 4.2-4.4"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+export function PostgresLogo() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M17.3 4.6C15.9 3.2 14 2.5 12 2.5S8.1 3.2 6.7 4.6C5.3 6 4.6 7.9 4.6 9.9c0 1.7.5 3.3 1.5 4.6.6.8.9 1.7.9 2.7V19c0 1.1.9 2 2 2h.5c.8 0 1.5-.7 1.5-1.5V17"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17.3 4.6c1.6.3 2.7 1.3 2.7 2.9 0 1.5-.8 2.7-2.2 3.4M12 17v2.5c0 .8.7 1.5 1.5 1.5h.5c1.1 0 2-.9 2-2v-1.8c0-1 .3-1.9.9-2.7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.7" cy="8.6" r="1" fill="currentColor" />
     </svg>
   );
 }

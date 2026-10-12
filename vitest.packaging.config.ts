@@ -29,10 +29,14 @@ export default defineConfig({
     include: [
       'tests/published-exports-parity.test.ts',
       'tests/create-store-pack.test.ts',
+      // Оверлей-проба пілота не їде в tarball-и (склад — `npm pack --dry-run`, потрібен dist).
+      'tests/pilot-probe-not-packed.test.ts',
       'tests/cli-pack.test.ts',
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.
       'tests/dist-import-meta.test.ts',
+      // Позитивний контроль того гейта: збірка фікстуру справжнім `base`.
+      'tests/dist-import-meta-fixture.test.ts',
       // Структурний гард тулчейна декларацій (dts поза бандлером + кеп памʼяті):
       // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
       'tests/dts-toolchain.test.ts',

@@ -12,7 +12,7 @@ import { findPlaceholders } from '../scripts/pilot-pack/placeholder-scan.mjs';
 // Чисті функції CLI-скаффолдера: розбір аргументів, підстановки в манифест,
 // розгортання шаблону. Ті самі функції викликає `src/index.mjs`.
 //
-// 🔴 Supabase-прапорців у CLI більше немає: магазин отримує підключення до
+// 🔴 Прапорців ключів клієнта БД у CLI більше немає: магазин отримує підключення до
 // Postgres, а не ключі клієнта до чужого HTTP-API.
 const DSN = 'postgresql://app_runtime:pw@localhost:5432/postgres';
 describe('create-store CLI', () => {
@@ -190,11 +190,11 @@ describe('create-store CLI', () => {
       storeName: 'demo',
       version: '0.1.0',
     });
-    // project_id тримає імена контейнерів локального стеку: спільний на два
-    // магазини = спільна БД, тому підстановка тут не менш важлива за manifest.
-    expect(
-      readFileSync(join(target, 'supabase/config.toml'), 'utf8'),
-    ).toContain('project_id = "demo"');
+    // Теки міграцій магазину — db/migrations; supabase/ у магазині не буває.
+    expect(existsSync(join(target, 'db/migrations/0000_prelude.sql'))).toBe(
+      true,
+    );
+    expect(existsSync(join(target, 'supabase'))).toBe(false);
     expect(findPlaceholders(target)).toEqual([]);
   });
 

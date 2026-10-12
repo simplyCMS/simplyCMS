@@ -38,9 +38,6 @@ import type { tanstackStart } from '@tanstack/react-start/plugin/vite';
  * `tests/eslint-rules/no-server-only-in-client.test.ts` +
  * `tests/tier-boundary-client-boundary.test.ts`), а не «лінт» одним рядком —
  * саме так їх перелічує таблиця §12 `docs/architecture/test-contours.md`.
- *
- * Legacy `supabase/*` навмисно НЕ тут: `supabase/keys` легально спільний для
- * anon- і browser-клієнта; Gate C тримає ці два файли літералами до К3.
  */
 export const SERVER_ONLY = [
   'db',

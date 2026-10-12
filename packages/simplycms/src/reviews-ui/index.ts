@@ -2,5 +2,6 @@
 export * from './ProductReviews';
 export * from './ReviewCard';
 export * from './ReviewForm';
+export * from './ReviewImagePicker';
 export * from './ReviewRichTextEditor';
 export * from './StarRating';

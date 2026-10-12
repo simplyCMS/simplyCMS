@@ -39,7 +39,7 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 - `simplycms.config.ts` `seo`: лише `siteName`, `defaultTitle`, `titleTemplate`. **Немає** `defaultDescription`, `baseUrl`, `ogImage` — потрібно для fallback-ланцюжка resolver-а.
   > **Примітка (з К3-Е6б):** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
 
-### 1.4 Модель даних (з `supabase/types.ts`)
+### 1.4 Модель даних (з `simplycms/schema/types`)
 - `sections`: `id, slug, name, description, parent_id, image_url, meta_title, meta_description, ...` — є `meta_*`; **немає** `is_filterable/has_page/property_type`.
 - `section_properties`: `id, slug, name, property_type, is_filterable, has_page, is_required, section_id, options(Json), sort_order` — є `is_filterable/has_page/property_type/slug`; **немає** `meta_*`. `property_type` ∈ `text|number|select|multiselect|range|color|boolean`.
 - `section_property_assignments`: `section_id, property_id, applies_to, sort_order` — M2M секція↔властивість.
@@ -123,7 +123,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - [ ] Аналогічні (без `schema_json`) у `sections`.
 - [ ] У `section_properties` додати `meta_title, meta_description, seo_h1, canonical_url, og_title, og_description, robots` (зараз SEO-полів немає).
 - [ ] У `property_options` додати `seo_h1, canonical_url, meta_keywords|seo_tags, og_description, twitter_description, robots` (вже є `meta_title/meta_description`).
-- [ ] Supabase migration + `pnpm db:generate-types`.
+- [ ] Міграція: правка `schema.ts` → `pnpm db:diff <name>` → ревʼю SQL → `pnpm test:schema` (генератора типів немає — типи з `simplycms/schema/types`).
 - [ ] `schema_json` — **JSONB**, не TEXT.
 
 ### Блок B — `seoResolver`
@@ -209,7 +209,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 ---
 
 ## 10. MCP / інструменти
-- **supabase** — міграція SEO-полів + генерація типів; перевірка структур таблиць/join-ів для серверної фільтрації.
+- **Supabase MCP** — лише read-only інспекція dev-БД: перевірка структур таблиць/join-ів для серверної фільтрації (міграції SEO-полів — через `pnpm db:diff`).
 - **shadcn** — `Collapsible`/`Accordion`/`Table` для SEO-панелей і огляду лендингів.
 - **context7** — schema.org Product/CollectionPage; TanStack Router `validateSearch`/search-params API.
 - **deep-research** — для §9 (механізм SEO-правил).

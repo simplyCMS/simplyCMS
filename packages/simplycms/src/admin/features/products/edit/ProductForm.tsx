@@ -26,6 +26,8 @@ const SERVER_ERROR_FIELDS = ['name', 'slug'] as const;
 interface Props {
   /** `null` — новий товар (не створено, ID немає). */
   readonly productId: string | null;
+  /** id власника фото: `productId` або згенерований наперед id нового товару. */
+  readonly entityId: string;
   readonly defaultValues: ProductFormValues;
   /** `binding` — привʼязка серверних помилок валідації до полів цієї форми (Тема 12). */
   readonly onSubmit: (
@@ -64,6 +66,7 @@ interface Props {
  */
 export function ProductForm({
   productId,
+  entityId,
   defaultValues,
   onSubmit,
   submitLabel,
@@ -101,7 +104,7 @@ export function ProductForm({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <ProductMainFields productId={productId} />
+            <ProductMainFields entityId={entityId} />
             <ProductSeoFields />
             <PluginSlot
               name="admin.product.form.fields"

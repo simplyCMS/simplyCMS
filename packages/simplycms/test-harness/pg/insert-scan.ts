@@ -1,15 +1,17 @@
 // Спільний сканер вставок для гейтів контракту id (трек V2-К3, етап Е0).
 //
-// Два гейти дивляться на той самий код із різних боків і мусять різати текст
+// Гейти дивляться на той самий код із різних боків і мусять різати текст
 // ОДНАКОВО, інакше «полагоджений» скан в одному місці лишає дірку в другому:
 //   • `__tests__/explicit-ids.test.ts` — інваріант: кожна вставка поза
-//     задокументованими виїмками передає `id`;
-//   • `tests/admin-inserts-need-id.test.ts` — ратчет застарілого шару адмінки.
+//     задокументованими виїмками передає `id` (адмінка без виїмок);
+//   • решта споживачів — `insert-scan.test.ts`, `mutation-cache-sync-coverage`,
+//     `storage-direct-calls`, `storage-port-consumers`.
 // Тому балансування дужок і розпізнавання поля `id` живуть тут, в одному
 // місці, а не двома копіями.
 //
-// 🔴 Це НЕ парсер TS. Він не розрізняє коментарі (`//`, `/* */`) і не розуміє
-// підстановок `${…}` усередині шаблонних рядків (backtick-рядок трактується
+// 🔴 Це НЕ парсер TS. Балансування дужок пропускає рядки й коментарі
+// (`//…`, `/*…*/`), а `hasIdField` перед розбором їх прибирає. Межа без
+// парсера: regex-літерал із лапкою (`/'/`) читається як початок рядка. Не розуміє підстановок `${…}` усередині шаблонних рядків (backtick-рядок трактується
 // як непрозорий текст до найближчого закривного backtick). Для коду, який
 // реально сканується, цього досить; хитрий обхід зупинить ревʼю людиною.
 
@@ -19,7 +21,10 @@ import { join } from 'node:path';
 /**
  * Індекс символу, що закриває дужку, відкриту в `openIndex`
  * (`src[openIndex]` — сам відкривний символ `(`, `{` або `[`). Вміст
- * рядкових літералів ігнорується, щоб дужка всередині рядка не збила глибину.
+ * рядкових літералів і коментарів ігнорується, щоб дужка всередині них не
+ * збила глибину. 🔴 Коментарі — не косметика: апостроф у `// don't` інакше
+ * відкрив би «рядок» до кінця файлу, і аргумент вставки поглинув би `id:`
+ * сусідньої вставки (fail-open гейта явного id).
  */
 export function findMatchingClose(src: string, openIndex: number): number {
   const open = src[openIndex];
@@ -34,6 +39,18 @@ export function findMatchingClose(src: string, openIndex: number): number {
         continue;
       }
       if (ch === inString) inString = null;
+      continue;
+    }
+    if (ch === '/' && src[i + 1] === '/') {
+      const end = src.indexOf('\n', i);
+      if (end === -1) break;
+      i = end;
+      continue;
+    }
+    if (ch === '/' && src[i + 1] === '*') {
+      const end = src.indexOf('*/', i + 2);
+      if (end === -1) break;
+      i = end + 1;
       continue;
     }
     if (ch === '"' || ch === "'" || ch === '`') {
@@ -52,7 +69,7 @@ export function findMatchingClose(src: string, openIndex: number): number {
 /**
  * Текст аргументу виклику, чия відкривна дужка стоїть в `openParenIdx`.
  * Один шар обгортки-масиву розгортається (`([x])` → `x`), бо
- * `supabase.from(t).insert([payload])` — та сама вставка, що й `.insert(payload)`.
+ * `db.insert(t).values([payload])` — та сама вставка, що й `.values(payload)`.
  */
 export function callArgument(src: string, openParenIdx: number): string {
   const closeIdx = findMatchingClose(src, openParenIdx);
@@ -73,8 +90,66 @@ export function callArgument(src: string, openParenIdx: number): string {
  */
 export const ID_FIELD = /(^|[\s{,])id:\s*\S|(^|[{,])\s*id\s*[,}]/;
 
-/** Чи передає цей фрагмент поле `id`. */
-export const hasIdField = (text: string): boolean => ID_FIELD.test(text);
+/**
+ * Прибирає з тексту коментарі й ВМІСТ рядкових літералів (лапки лишаються),
+ * щоб `id:` у коментарі чи рядку не рахувався полем. Без парсера: `${…}` у
+ * шаблонному рядку — частина рядка (див. шапку файлу).
+ */
+export function stripCommentsAndStrings(text: string): string {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === '/' && next === '/') {
+      while (i < text.length && text[i] !== '\n') i++;
+      out += '\n';
+    } else if (ch === '/' && next === '*') {
+      const end = text.indexOf('*/', i + 2);
+      i = end < 0 ? text.length : end + 1;
+      out += ' ';
+    } else if (ch === '"' || ch === "'" || ch === '`') {
+      i++;
+      while (i < text.length && text[i] !== ch) {
+        if (text[i] === '\\') i++;
+        i++;
+      }
+      out += ch + ch;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+/** Елементи верхнього рівня через кому (дужки й рядки вже не містять ком). */
+function topLevelItems(text: string): string[] {
+  const items: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(' || ch === '{' || ch === '[') depth++;
+    else if (ch === ')' || ch === '}' || ch === ']') depth--;
+    else if (ch === ',' && depth === 0) {
+      items.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  items.push(text.slice(start));
+  return items.map((item) => item.trim()).filter((item) => item !== '');
+}
+
+/**
+ * Чи передає цей фрагмент поле `id`. Для масиву рядків (`{…}, {…}` — вигляд
+ * `callArgument` після розгортання `[…]`) `id` мусить бути в КОЖНОМУ
+ * елементі: один елемент із `id` не виправдовує решту. Коментарі й рядкові
+ * літерали перед розбором прибираються.
+ */
+export function hasIdField(text: string): boolean {
+  const items = topLevelItems(stripCommentsAndStrings(text));
+  if (items.length === 0) return false;
+  return items.every((item) => ID_FIELD.test(item));
+}
 
 /** Рекурсивно всі `*.ts`/`*.tsx` теки. */
 export function sourceFiles(dir: string): string[] {

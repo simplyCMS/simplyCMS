@@ -7,6 +7,7 @@ import {
   PgJsonb,
   PgNumeric,
   PgText,
+  PgTime,
   PgTimestamp,
   PgUUID,
   PgVarchar,
@@ -84,6 +85,11 @@ export function columnSchema(column: Column): z.ZodType {
   if (is(column, PgBoolean)) return z.boolean();
   if (is(column, PgInteger)) return z.int().gte(-2147483648).lte(2147483647);
   if (is(column, PgTimestamp)) return z.date();
+  // Е6д: `banners.schedule_time_from/to` (time). Дзеркало drizzle-zod —
+  // `dataType: 'string'` → голий `z.string()`; формат `HH:MM(:SS)` накладає
+  // `refine` ресурсу (`BANNER_TIME_RE`), а не генератор: паритетний гейт
+  // допускає суворішу схему лише для numeric (`parity-diff.ts`).
+  if (is(column, PgTime)) return z.string();
   if (is(column, PgJsonb)) return jsonSchema;
   // Е6а: `shipping_zones.cities/regions` (text[]). Дзеркало drizzle-zod
   // (`PgArray` → масив схеми базової колонки, `size` → точна довжина).

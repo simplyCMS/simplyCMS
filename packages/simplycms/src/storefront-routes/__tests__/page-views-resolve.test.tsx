@@ -36,12 +36,6 @@ vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
 }));
 
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => ({
-    from: () => ({ select: () => ({ eq: () => ({}) }) }),
-  }),
-}));
-
 vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));

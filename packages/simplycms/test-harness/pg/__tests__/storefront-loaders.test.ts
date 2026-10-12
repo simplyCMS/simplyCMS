@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { loadDefaultPriceTypeId } from 'simplycms/commerce';
 import {
+  loadBanners,
   loadHomePageData,
   loadHomeProducts,
   loadOneSectionProducts,
@@ -130,6 +131,50 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(all.map((row) => row.slug)).not.toContain(HIDDEN_SECTION_SLUG);
     expect(roots.map((row) => row.slug)).not.toContain(HIDDEN_SECTION_SLUG);
     expect(direct).toBeNull();
+  });
+
+  it('демо-банер віддається з однією валідною кнопкою; кнопка javascript: відфільтрована', async () => {
+    const demo = await withStorefrontDb((db) =>
+      loadBanners(db, { placement: 'home' }),
+    );
+    const sun = demo.find((b) => b.title === 'Сонячна енергія для вашого дому');
+    expect(sun?.buttons).toHaveLength(1);
+    expect(sun?.buttons[0]).toMatchObject({
+      text: 'До каталогу',
+      url: '/catalog',
+    });
+    // Другий демо-банер — home без розділу (інакше суперечить guard Task 3).
+    const sale = demo.find((b) => b.title === 'Знижки на бі-фаціальні панелі');
+    expect(sale?.section_id).toBeNull();
+
+    // Прямий SQL повз форму: небезпечна кнопка не доходить до вітрини.
+    await queryRows(
+      dbUrl,
+      `insert into public.banners (id, title, image_url, placement, sort_order, is_active, buttons)
+       values ('10000009-0000-4000-8000-0000000000e1'::uuid, 'XSS-банер', 'data:,x', 'global', 0, true,
+       '[{"text":"x","url":"javascript:alert(1)","target":"_self","variant":"primary"}]'::jsonb)`,
+    );
+    const global = await withStorefrontDb((db) =>
+      loadBanners(db, { placement: 'global' }),
+    );
+    expect(global.find((b) => b.title === 'XSS-банер')?.buttons).toEqual([]);
+  });
+
+  it('розклад: банер 09:00:00–17:00:00 видимий рівно о 09:00 (хвилинна точність)', async () => {
+    await queryRows(
+      dbUrl,
+      `insert into public.banners (id, title, image_url, placement, sort_order, is_active, buttons, schedule_time_from, schedule_time_to)
+       values ('10000009-0000-4000-8000-0000000000e2'::uuid, 'Розклад-банер', 'data:,x', 'blog', 0, true, '[]'::jsonb, '09:00:00', '17:00:00')`,
+    );
+    const at = (h: number, m: number) => new Date(2026, 0, 5, h, m, 30);
+    const titles = async (now: Date) =>
+      (
+        await withStorefrontDb((db) =>
+          loadBanners(db, { placement: 'blog' }, now),
+        )
+      ).map((b) => b.title);
+    expect(await titles(at(9, 0))).toContain('Розклад-банер');
+    expect(await titles(at(8, 59))).not.toContain('Розклад-банер');
   });
 
   it('головна: банери, добірки й товари розділів без неактивних', async () => {

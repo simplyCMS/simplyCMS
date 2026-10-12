@@ -12,7 +12,7 @@
 | Папка магазину на хостингу | Репозиторій магазину (~8 файлів + конфіг) | Git-репо розробника магазину |
 | «Модулі» в адмінці (upload zip) | **`simplycms` CLI** в терміналі | Команда встановлення/оновлення розширень |
 | OpenCart Marketplace | Маркетплейс SimplyCMS | Сайт-каталог, що вказує на npm-пакети |
-| MySQL на хостингу | Supabase-проєкт магазину | БД + auth + storage, окремо від коду |
+| MySQL на хостингу | Postgres магазину | Чистий PostgreSQL 17, окремо від коду; auth — Better Auth у тому ж процесі, файли — локальне сховище |
 
 Головна відмінність: в OpenCart «встановити» = закинути файли на працюючий сервер.
 У Vite/React/SSR-світі «встановити» = додати залежність + перезібрати. Тому роль
@@ -56,7 +56,7 @@ simplycms db:diff --write              ← окремий крок, ЛЮДСЬК
 
 ## Анатомія працюючого магазину
 
-Один Node-процес + Supabase як окремий сервіс:
+Один Node-процес + Postgres як окремий сервіс:
 
 - **Storefront (SSR)** — канонічні сторінки з `simplycms/storefront-routes`
   (головна, каталог, категорія, товар, кошик, checkout…) + власні сторінки магазину.
@@ -65,7 +65,7 @@ simplycms db:diff --write              ← окремий крок, ЛЮДСЬК
 - **Admin (SPA, `/admin`)** — сторінки з `simplycms/admin-routes` + сторінки
   встановлених плагінів (`/admin/<plugin>/…`). Перевизначення сторінок адмінки
   не існує (як в OpenCart/WP) — лише доповнення.
-- **Server functions** — дані для сторінок → Supabase (Postgres/Auth/Storage).
+- **Server functions** — дані для сторінок → Postgres (Drizzle, єдиний канал `withActor`); auth — Better Auth, файли — порт `simplycms/storage`.
 
 Межа відповідальностей: **усе, що змінює код — CLI + rebuild (розробник);
 усе, що змінює поведінку встановленого — адмінка, миттєво (власник).**
@@ -75,8 +75,9 @@ simplycms db:diff --write              ← окремий крок, ЛЮДСЬК
 **Новий магазин:**
 ```bash
 pnpm create simplycms-store my-shop   # тонка збірка: конфіг + ~8 файлів
-# створити Supabase-проєкт, вписати ключі в .env.local
-pnpm db:migrate                        # схема ядра з коробки
+# заповнити .env.local (DATABASE_URL, BETTER_AUTH_SECRET, VITE_SITE_URL)
+for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # схема ядра з коробки
+OWNER_EMAIL=you@example.com pnpm owner:invite   # власник магазину
 pnpm dev                               # повний магазин: вітрина + адмінка + default-тема
 ```
 Деплой — `pnpm build` + будь-який Node-хостинг, як звичайний TanStack Start застосунок.
@@ -97,7 +98,7 @@ pnpm update simplycms "@simplycms/*" && pnpm build   # нові сторінки
 **Автор плагіна:** `simplycms create plugin` (скаффолд на `simplycms/plugin-sdk`)
 → `simplycms plugin:dev` (локальний dev-loop) → `npm publish` під своїм scope
 → PR у індекс маркетплейсу. Доступ до даних — тільки через порти SDK
-(прямого Supabase-клієнта плагін не отримує).
+(клієнта БД плагін не отримує).
 
 ## Маркетплейс = каталог, не сховище
 

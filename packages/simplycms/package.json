@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -43,19 +43,15 @@
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
-    "./supabase": "./src/supabase/index.ts",
-    "./supabase/keys": "./src/supabase/keys.ts",
-    "./supabase/browser-client": "./src/supabase/browser-client.ts",
-    "./supabase/server-client": "./src/supabase/server-client.ts",
-    "./supabase/anon-client": "./src/supabase/anon-client.ts",
-    "./supabase/SupabaseProvider": "./src/supabase/SupabaseProvider.tsx",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
     "./runtime/csrf": "./src/runtime/csrf.ts",
+    "./runtime/body-limit": "./src/runtime/body-limit.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
+    "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
     "./ui": "./src/ui/index.ts",
     "./ui/*": "./src/ui/*.tsx",
@@ -260,30 +256,6 @@
         "types": "./dist/sanitize/index.d.ts",
         "import": "./dist/sanitize/index.js"
       },
-      "./supabase": {
-        "types": "./dist/supabase/index.d.ts",
-        "import": "./dist/supabase/index.js"
-      },
-      "./supabase/keys": {
-        "types": "./dist/supabase/keys.d.ts",
-        "import": "./dist/supabase/keys.js"
-      },
-      "./supabase/browser-client": {
-        "types": "./dist/supabase/browser-client.d.ts",
-        "import": "./dist/supabase/browser-client.js"
-      },
-      "./supabase/server-client": {
-        "types": "./dist/supabase/server-client.d.ts",
-        "import": "./dist/supabase/server-client.js"
-      },
-      "./supabase/anon-client": {
-        "types": "./dist/supabase/anon-client.d.ts",
-        "import": "./dist/supabase/anon-client.js"
-      },
-      "./supabase/SupabaseProvider": {
-        "types": "./dist/supabase/SupabaseProvider.d.ts",
-        "import": "./dist/supabase/SupabaseProvider.js"
-      },
       "./react-query": {
         "types": "./dist/react-query/index.d.ts",
         "import": "./dist/react-query/index.js"
@@ -304,6 +276,10 @@
         "types": "./dist/runtime/csrf.d.ts",
         "import": "./dist/runtime/csrf.js"
       },
+      "./runtime/body-limit": {
+        "types": "./dist/runtime/body-limit.d.ts",
+        "import": "./dist/runtime/body-limit.js"
+      },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
@@ -311,6 +287,10 @@
       "./storefront/loaders": {
         "types": "./dist/storefront/loaders/index.d.ts",
         "import": "./dist/storefront/loaders/index.js"
+      },
+      "./storefront/media-visibility": {
+        "types": "./dist/storefront/media-visibility.d.ts",
+        "import": "./dist/storefront/media-visibility.js"
       },
       "./storefront/seo": {
         "types": "./dist/storefront/seo/index.d.ts",
@@ -587,8 +567,6 @@
     "@radix-ui/react-toggle": "^1.0.0",
     "@radix-ui/react-toggle-group": "^1.0.0",
     "@radix-ui/react-tooltip": "^1.0.0",
-    "@supabase/ssr": ">=0.5.0 <1.0.0",
-    "@supabase/supabase-js": "^2.0.0",
     "@tanstack/query-db-collection": "~1.3.4",
     "@tanstack/react-db": "~0.5.3",
     "@tanstack/react-query": "^5.0.0",
@@ -606,6 +584,7 @@
     "input-otp": "^1.0.0",
     "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
+    "pg": "8.23.1",
     "react": "^18.0.0 || ^19.0.0",
     "react-day-picker": "^9.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
@@ -622,6 +601,7 @@
     "@types/sanitize-html": "^2.16.2",
     "dotenv": "^18.0.5",
     "drizzle-zod": "0.8.3",
+    "pg": "8.23.1",
     "seroval": "^1.6.8"
   },
   "dependencies": {
@@ -629,7 +609,6 @@
     "@tiptap/extension-text-align": "^3.31.4",
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
-    "pg": "8.23.1",
     "sanitize-html": "^2.18.0",
     "tailwind-merge": "^3.7.0"
   },

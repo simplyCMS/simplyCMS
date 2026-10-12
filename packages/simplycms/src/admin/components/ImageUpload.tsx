@@ -1,39 +1,42 @@
 import { useState, useCallback } from 'react';
-import { deleteMedia, uploadMedia } from 'simplycms/admin-server';
-import { MAX_UPLOAD_BYTES, type MediaEntityType } from 'simplycms/domain/media';
+import { uploadMedia } from 'simplycms/admin-server';
+import {
+  MAX_UPLOAD_BYTES,
+  PAYLOAD_TOO_LARGE_CODE,
+  type MediaEntityType,
+} from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ImageDropzone } from './ImageDropzone';
 import { ImageGrid } from './ImageGrid';
 
-interface ImageUploadProps {
+interface ImageUploadBase {
   /** 🔴 РЕФЕРЕНСИ сховища, не URL (рішення Е2-1). */
   images: string[];
   onImagesChange: (images: string[]) => void;
-  /** До чого належать файли — allowlist серверної операції `media.write`. */
-  entityType: MediaEntityType;
-  /** `null`/відсутній — сутність ще не створена; привʼязка орфана — К4. */
-  entityId?: string | null;
   maxImages?: number;
   disabled?: boolean;
-  /**
-   * Стирати файл одразу при прибиранні з форми. За замовчуванням `true` —
-   * поведінка сутностей, чия колонка пишеться разом із формою. `false` —
-   * коли файл стирає серверна операція збереження ПІСЛЯ успішного запису
-   * (логотип магазину, Е6б-14): скасована форма чи відмова сервера не мусить
-   * лишити профіль із посиланням на вже стертий файл.
-   */
-  eraseOnRemove?: boolean;
 }
+
+/**
+ * Власник файлу обовʼязковий (К3-Е6д-3): `entityId` потрібен усім типам,
+ * крім `store_logo` — його власника сервер підставляє сам.
+ * Прибраний з форми файл стирає збереження форми (опція `media` фабрики), а не
+ * цей компонент.
+ */
+type ImageUploadProps = ImageUploadBase &
+  (
+    | { entityType: Exclude<MediaEntityType, 'store_logo'>; entityId: string }
+    | { entityType: 'store_logo'; entityId?: undefined }
+  );
 
 export function ImageUpload({
   images,
   onImagesChange,
   entityType,
-  entityId = null,
+  entityId,
   maxImages = 10,
   disabled = false,
-  eraseOnRemove = true,
 }: ImageUploadProps) {
   const t = useT();
   const [isUploading, setIsUploading] = useState(false);
@@ -54,7 +57,7 @@ export function ImageUpload({
       const body = new FormData();
       body.set('file', file);
       body.set('entityType', entityType);
-      if (entityId) body.set('entityId', entityId);
+      if (entityId !== undefined) body.set('entityId', entityId);
       try {
         // 🔴 Повертається РЕФЕРЕНС, а не URL: у колонку сутності лягає він
         // (рішення Е2-1), а `url` — лише для прев'ю в цій формі.
@@ -63,6 +66,16 @@ export function ImageUpload({
       } catch (error) {
         const badFormat =
           error instanceof Error && error.message === 'media/bad-format';
+        if (
+          error instanceof Error &&
+          error.message === PAYLOAD_TOO_LARGE_CODE
+        ) {
+          toast({
+            variant: 'destructive',
+            title: t('errors.payloadTooLarge'),
+          });
+          return null;
+        }
         toast({
           variant: 'destructive',
           title: badFormat
@@ -117,19 +130,8 @@ export function ImageUpload({
     [disabled, maxImages, images, onImagesChange, toast, t, uploadFile],
   );
 
-  const removeImage = async (index: number) => {
-    const ref = images[index];
+  const removeImage = (index: number) =>
     onImagesChange(images.filter((_, i) => i !== index));
-    if (!eraseOnRemove) return;
-    // Зовнішній URL рядка `media` не має — порт чесно поверне `removed: false`,
-    // а не впаде; тому окремої гілки на `https:` тут не треба.
-    try {
-      await deleteMedia({ data: { ref } });
-    } catch {
-      // Невдале прибирання лишає орфана — його змете sweep К4. Форму це
-      // не блокує: референс із сутності вже прибрано.
-    }
-  };
 
   const moveImage = (from: number, to: number) => {
     if (to < 0 || to >= images.length) return;

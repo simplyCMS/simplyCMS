@@ -31,7 +31,7 @@ function buildSchema(t: Translator) {
 type SetPasswordValues = z.infer<ReturnType<typeof buildSchema>>;
 
 /**
- * Форма нового пароля: валідація й поля. Сам виклик Supabase лишається у
+ * Форма нового пароля: валідація й поля. Сам виклик `authClient.resetPassword` (Better Auth) лишається у
  * сторінці — форма нічого не знає ні про клієнта, ні про навігацію.
  */
 export function SetPasswordForm({

@@ -1,5 +1,8 @@
 # SimplyCMS як платформа: варіанти механізму поставки ядра, плагінів і тем
 
+> 🔴 **Історичний документ (2026-07-30): Supabase знесено в К3-Е7.** Усі згадки Supabase-шару,
+> `supabase/types.ts`, `supabase/migrations/` і Supabase CLI нижче — стан на момент аналізу;
+> текст навмисно не переписано. Чинний канон — `data-layer.md`, `plugins.md`, `cli.md`.
 > **Статус:** аналітичний документ для ухвалення напряму. Створено 2026-07-30.
 > **База:** дослідження 9 напрямів (Medusa, Vendure, Payload, Nuxt Layers, Shopware/Saleor,
 > OpenCart/WordPress/Magento, shadcn registry, TanStack Start внутрішньо, механіки поставки
@@ -94,7 +97,7 @@ end-to-end splitting на реальних 65 роутах.
 3. **i18n відсутній повністю** (українська захардкоджена в темах). Ядро, що постачає
    сторінки, постачає й текст → без каталогів повідомлень core-сторінки непридатні
    для не-UA магазинів. Вирішити до відкриття платформи.
-4. **Межа довіри плагіна:** зараз плагін отримує `SupabaseClient` напряму. Потрібна
+4. **Межа довіри плагіна:** зараз плагін отримує `SupabaseClient` (знесено) напряму. Потрібна
    вузька перелічувана поверхня (ports-only API) + лінт імпортів у CI.
 5. **Готовність до пакування:** 10/17 пакетів `private: true`, build-скрипт лише у 6;
    у корені репо **немає LICENSE**. GitHub Packages вимагає токен навіть на читання —
@@ -132,8 +135,8 @@ end-to-end splitting на реальних 65 роутах.
    `migrate.mjs` замінюється. Data-access лишається на supabase-js/PostgREST.
 6. **Supabase-шар:** консолідувати в єдиний пакет `@simplycms/supabase` за зразком
    `metahub/packages/supabase` (@kit/supabase), звірено з офіційним quickstart Supabase
-   для TanStack Start (два клієнти: browser + server на `getCookies`/`setCookie`;
-   новий нейминг `VITE_SUPABASE_PUBLISHABLE_KEY`). Плагіни клієнт не отримують —
+   для TanStack Start (два клієнти: browser + server на cookie-API Start;
+   новий нейминг `VITE_SUPABASE_PUBLISHABLE_KEY` (знесено)). Плагіни клієнт не отримують —
    тільки порти з SDK.
 
 ---

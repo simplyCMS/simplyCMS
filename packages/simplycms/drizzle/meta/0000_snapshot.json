@@ -2855,16 +2855,16 @@
           "to": [
             "app_user"
           ],
-          "withCheck": "user_id = (select app.current_user_id())"
+          "withCheck": "user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null"
         },
-        "product_reviews_update_own_pending": {
-          "name": "product_reviews_update_own_pending",
+        "product_reviews_update_own": {
+          "name": "product_reviews_update_own",
           "as": "PERMISSIVE",
           "for": "UPDATE",
           "to": [
             "app_user"
           ],
-          "using": "user_id = (select app.current_user_id()) and status = 'pending'",
+          "using": "user_id = (select app.current_user_id())",
           "withCheck": "user_id = (select app.current_user_id()) and status = 'pending'"
         },
         "product_reviews_delete_own": {
@@ -2887,7 +2887,16 @@
           "withCheck": "true"
         }
       },
-      "checkConstraints": {},
+      "checkConstraints": {
+        "product_reviews_status_check": {
+          "name": "product_reviews_status_check",
+          "value": "status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])"
+        },
+        "product_reviews_rating_check": {
+          "name": "product_reviews_rating_check",
+          "value": "rating >= 1 AND rating <= 5"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.products": {
@@ -5690,7 +5699,7 @@
           "name": "entity_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "storage_key": {
           "name": "storage_key",
@@ -5795,6 +5804,70 @@
         }
       },
       "isRLSEnabled": false
+    },
+    "public.media_erasures": {
+      "name": "media_erasures",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "media_erasures_storage_key_key": {
+          "name": "media_erasures_storage_key_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "storage_key"
+          ]
+        }
+      },
+      "policies": {
+        "media_erasures_admin_all": {
+          "name": "media_erasures_admin_all",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_admin"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
     }
   },
   "enums": {

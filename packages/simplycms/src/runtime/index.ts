@@ -1,5 +1,5 @@
 // simplycms/runtime — складання магазину через адаптери.
-// Залежить лише від контрактів simplycms/contracts (без supabase/env).
+// Залежить лише від контрактів simplycms/contracts (без клієнта БД й env).
 
 import type {
   EngineContext,
@@ -27,8 +27,8 @@ export interface EngineModule {
 }
 
 export interface DefineRuntimeInput {
-  // 🔴 V2: адаптерів даних тут більше немає — репозиторії знесені разом із
-  // шаром `data-supabase`, читання йде серверними лоадерами. Лишились два
+  // 🔴 V2: адаптерів даних тут більше немає — репозиторії знесені в 0.4.1,
+  // читання йде серверними лоадерами. Лишились два
   // чистих провайдери, з яких і складається EngineContext.
   adapters: {
     links: LinkResolver;
@@ -48,7 +48,7 @@ export interface SimplyCmsRuntime {
 
 /**
  * Збирає рантайм магазину з адаптерів. Усі залежності інжектуються —
- * жодного прямого доступу до supabase чи import.meta.env тут немає.
+ * жодного прямого доступу до БД чи import.meta.env тут немає.
  */
 export function defineRuntime(input: DefineRuntimeInput): SimplyCmsRuntime {
   const { adapters } = input;

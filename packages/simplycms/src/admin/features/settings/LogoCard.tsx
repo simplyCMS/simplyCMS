@@ -9,9 +9,9 @@ type Props = {
 };
 
 /**
- * Блок «Логотип». 🔴 `eraseOnRemove={false}` (Е6б-14): стирає файл лише
- * `saveStoreProfile` після успішного запису — скасована форма не лишає
- * профіль із посиланням на вже стертий файл.
+ * Блок «Логотип». 🔴 Прибраний файл стирає збереження форми
+ * (`saveStoreProfile` після успішного запису), а не компонент: скасована форма
+ * не лишає профіль із посиланням на вже стертий файл.
  */
 export function LogoCard({ logo, onChange }: Props) {
   const t = useT();
@@ -29,7 +29,6 @@ export function LogoCard({ logo, onChange }: Props) {
           onImagesChange={(next) => onChange(next[0] ?? null)}
           entityType="store_logo"
           maxImages={1}
-          eraseOnRemove={false}
         />
       </CardContent>
     </Card>

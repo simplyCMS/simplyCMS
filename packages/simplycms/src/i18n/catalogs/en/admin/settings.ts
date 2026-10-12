@@ -44,4 +44,18 @@ export const messages: Catalog = {
   'admin.settings.network.youtube': 'YouTube',
   'admin.settings.network.x': 'X',
   'admin.settings.network.viber': 'Viber',
+  // Файлове сховище: хвости стирання (Е6д-20).
+  'admin.settings.storage.title': 'File storage',
+  'admin.settings.storage.hint':
+    'Files that could not be erased after their record was deleted. They are no longer shown on the site',
+  'admin.settings.storage.count': 'Pending erasures: {count}',
+  'admin.settings.storage.attempts': 'Attempts: {count}, last {date}',
+  'admin.settings.storage.retry': 'Retry erasure',
+  'admin.settings.storage.retried': 'Erased: {done}, failed: {failed}',
+  'admin.settings.storage.loadError': 'Failed to load pending erasures',
+  'admin.settings.storage.sweep': 'Remove unreferenced files',
+  'admin.settings.storage.sweepTitle': 'Remove unreferenced files?',
+  'admin.settings.storage.sweepText':
+    'Files older than a day that are not used anywhere will be erased. This cannot be undone',
+  'admin.settings.storage.swept': 'Files removed: {count}',
 };

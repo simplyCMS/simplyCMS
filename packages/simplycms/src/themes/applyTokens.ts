@@ -1,3 +1,4 @@
+import { isSafeCssValue } from 'simplycms/domain';
 import type { DesignTokens, ThemeTokenValues } from './types';
 
 /**
@@ -35,26 +36,11 @@ const TOKEN_KEYS: ReadonlyArray<keyof ThemeTokenValues> = [
   'font-heading',
 ];
 
-/**
- * Значення потрапляє в `<style>`, тож символи, якими можна закрити оголошення
- * чи блок (або відкрити коментар / тег), робили б інʼєкцію можливою. Токени
- * бувають і з БД (налаштування теми), тому фільтруємо, а не довіряємо.
- */
-const UNSAFE_VALUE = /[;{}<>]|\/\*/;
-
-function isSafeValue(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.trim() !== '' &&
-    !UNSAFE_VALUE.test(value)
-  );
-}
-
 /** Зібрати один CSS-блок `selector { --key: value; … }` */
 function renderBlock(selector: string, values: ThemeTokenValues): string {
-  const declarations = TOKEN_KEYS.filter((key) => isSafeValue(values[key])).map(
-    (key) => `  --${key}: ${values[key]};`,
-  );
+  const declarations = TOKEN_KEYS.filter((key) =>
+    isSafeCssValue(values[key], Infinity),
+  ).map((key) => `  --${key}: ${values[key]};`);
 
   if (declarations.length === 0) return '';
 

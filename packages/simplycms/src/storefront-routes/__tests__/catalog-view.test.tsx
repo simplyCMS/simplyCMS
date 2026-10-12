@@ -18,7 +18,7 @@ import {
  * фікстурах (контракт тем v3, Фаза 4, Step 2) — до появи kit-а Фази 6.
  *
  * 🔴 Це водночас ДОКАЗ чистоти обох view: провайдер тут рівно один — i18n.
- * Ні supabase-клієнта, ні QueryClient, ні EngineContext немає, тож будь-який
+ * Ні клієнта БД, ні QueryClient, ні EngineContext немає, тож будь-який
  * запит усередині view впав би тут, а не в проді.
  */
 vi.mock('@tanstack/react-router', () => ({

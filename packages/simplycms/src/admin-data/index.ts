@@ -27,6 +27,9 @@ export type { ModificationPropertyValuesCollection } from './collections/modific
 export { sectionsCollection } from './collections/sections';
 export type { SectionsCollection } from './collections/sections';
 
+export { bannersCollection } from './collections/banners';
+export type { BannersCollection } from './collections/banners';
+
 export { priceTypesCollection } from './collections/price-types';
 export type { PriceTypesCollection } from './collections/price-types';
 

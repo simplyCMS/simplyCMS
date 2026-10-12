@@ -14,9 +14,6 @@ dist-ssr/
 # Згенерований роут-трі (TanStack Router): автор — `pnpm build`/`pnpm dev`
 src/routeTree.gen.ts
 
-# Локальний стан Supabase CLI
-supabase/.temp/
-
 # Логи та системне сміття
 *.log
 .DS_Store

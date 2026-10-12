@@ -173,7 +173,7 @@ default-export обʼєкта:
 const theme: ThemeModule = {
   manifest,     // { name, displayName, version, engines: { simplycms } }
   tokens,       // значення НАЯВНИХ semantic-змінних shadcn (+ dark-блок)
-  components,   // Header, Footer — обовʼязкові; HeroBanner?, HomeSections?
+  components,   // Header, Footer — обовʼязкові; HeroBanner? ({ banners }: title/кнопки банера мають пріоритет, див. architecture/themes.md §2.2), HomeSections?
   settings,     // опційно: схема налаштувань для форми в адмінці
   messages,     // опційно: власний каталог uk/en
   fonts,        // опційно: зовнішні font stylesheet-и (контракт v2.2)
@@ -243,7 +243,8 @@ core-каталог ядра (`packages/simplycms/src/i18n/`) заборонен
 типізацію ядра). `en` мусить
 дзеркалити `uk` ключ-у-ключ. Core-рядки (назви сторінок, кошик…) бери
 `useT()` — не дублюй їх у каталозі теми. Компоненти теми можуть вільно
-використовувати хуки даних ядра (`simplycms/core`) і `useSupabaseClient` —
+використовувати хуки ядра (`simplycms/core`) — клієнта БД тема не імпортує
+(`@supabase/*` у репо заборонено лінтом), а
 межі довіри для тем немає свідомо (тема — довірена презентація, це контракт).
 
 ### 3.5 Перевизначення view (контракт v3) — опційно
@@ -330,7 +331,7 @@ pnpm simplycms theme:conformance aurora    # рендер заявлених vie
 | Entry | `src/index.ts`, default-export `ThemeModule`; `exports` лише `"."` |
 | `files` | `dist` **і `src`** — без `src` у tarball-і не працюватиме copy-in (§2.2) |
 | Збірка | tsdown, ESM; 🔴 **класи мають лишатися літералами в dist-JS** — саме dist сканують Tailwind-глоби магазину; динамічна склейка імен класів = зникнення стилів |
-| Залежності | `simplycms` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт SupabaseProvider); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |
+| Залежності | `simplycms` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт `EngineProvider`); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |
 | Сумісність | `engines.simplycms` у manifest |
 | `description` | англійською (показується з npm-реєстру) |
 

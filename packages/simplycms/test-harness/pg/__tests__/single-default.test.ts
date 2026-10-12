@@ -1,7 +1,7 @@
 // К3-14: часткові unique-індекси `is_default` — поведінковий доказ, що
 // інваріант «не більше одного дефолту» тримає БД, а не два нетранзакційні
 // запити з браузера (unset-усіх → insert нового), які й досі лишаються
-// єдиним записувачем на v2-стеку (supabase-js без HTTP-посередника).
+// єдиним записувачем на v2-стеку (легасі-клієнт БД без HTTP-посередника).
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

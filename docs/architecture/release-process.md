@@ -186,20 +186,26 @@ remote незворотне, а автоматичний код на це пра
 ### Гейти релізу
 
 Той самий порядок, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
-у релізі НЕМАЄ `test:schema` і Є `pilot:pack`.
+у релізі НЕМАЄ `test:schema` і Є повний `pilot` (Gate A–D, SB, IP, CLI, TOOL).
 
 ```
 install --frozen-lockfile → format:check → lint → build
 → typecheck → typecheck:showcase → test → build:packages → typecheck:template → test:packaging
-→ pilot:pack
+→ pilot
 ```
 
-🔴 `pilot:pack` — останній і саме тут, а не в CI (трек T, 2026-09-02):
-Gate C пілота — єдиний доказ межі клієнт/сервер у РЕАЛЬНОМУ клієнтському
-бандлі скретч-магазину, зібраному з тих самих tarball-ів. У CI він не
-ганяється: рішення 2026-08-01 стосується `pnpm pilot` із Gate B, якому
-потрібна жива БД, — а `pilot:pack` бази не потребує й детермінований, тож
-реліз лишається єдиним місцем, де він обовʼязковий.
+🔴 `pilot` — останній і саме тут, а не в CI (трек T, 2026-09-02; з К3-Е7 — ПОВНИЙ, не
+`pilot:pack`): Gate C пілота — єдиний доказ межі клієнт/сервер у РЕАЛЬНОМУ клієнтському
+бандлі скретч-магазину, зібраному з тих самих tarball-ів, а Gate B — єдиний доказ, що
+серверний бандл свіжого магазину СТАРТУЄ (`/` і `/api/health` віддають 200 з
+`database.ok: true`). Без Gate B дефект вклеєного `pg` (`UPSTREAM:START-IP-1`) сидів у
+0.7.0–0.13.0 непоміченим: `pilot:pack` без БД сервера скретча не піднімає. Тому гейт —
+`node scripts/release/pilot-full.mjs`: `pnpm harness:up` (ідемпотентно, потрібен Docker) →
+`pnpm db:demo --name release_pilot` (свіжа БД з демо-сідом) → `pnpm pilot` із цим DSN.
+Gate B не скорочується. Прогін ≈ 1 хв (вимір 2026-10-11, з харнесом і сідом) — не
+привід робити його опційним. У CI він не ганяється: рішення 2026-08-01 (жива БД — зовнішній
+стан); реліз — єдине місце, де він обовʼязковий. Харнес після гейта лишається піднятим
+(`pnpm harness:down` прибирає його).
 
 🔴 `test:schema` у реліз НЕ входить, хоча в ланцюзі CLAUDE.md він є: гейт
 потребує Postgres на машині релізу, а реліз має лишатися запускним з
@@ -321,7 +327,7 @@ is required to publish packages.
 | `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |
-| Магазин падає на гідрації з TypeError у Supabase-клієнті, хоча гейти зелені | 🔴 конфіг збірки **без `target: 'esnext'`**: бандлер лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0: опція вціліла лише в одному з профілів при злитті 21 конфігу) | тримати `target: 'esnext'` у спільному `base` `tsdown.config.ts` кожного пакета; гард — `tests/dist-import-meta.test.ts` у packaging-suite |
+| Магазин падає на гідрації з TypeError у модулі, що читає `import.meta.env` (у К0 це був клієнт Supabase), хоча гейти зелені | 🔴 конфіг збірки з `format: ['cjs']`: бандлер лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist` читає `({}).env` замість `import.meta.env` (спіймано К0 при злитті 21 конфігу; `target` на цю форму не впливає — виміряно es2015…esnext) | тримати `format: ['esm']` у спільному `base` `tsdown.config.ts`; гард — `tests/dist-import-meta.test.ts` у packaging-suite, самоперевірка патерна `LOWERED_IMPORT_META` — cjs-кейс `tests/dist-import-meta-fixture.test.ts` |
 
 ## Пов'язане
 

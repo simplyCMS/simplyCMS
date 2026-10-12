@@ -69,14 +69,15 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
 | 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env` | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
-| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error |
+| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
+| 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
 
-🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в Supabase REST, а магазин
+🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в REST зовнішнього BaaS, а магазин
 контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
 мовчазного зникнення рядка звіт лишає видиму позначку `skip`:
 
@@ -141,6 +142,8 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не
    чіпається взагалі — форк сильніший за пакетний скіл. Нічого лагодити —
    мовчить. Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
+4. **Драйвер `pg` (К3-Е7).** Після кроку версій `update` порівнює `pg` магазину з peer-діапазоном щойно встановленого ядра і, якщо вони розійшлися, лише ДРУКУЄ, що оновити (`pnpm add pg@<peer>`): версію `pg` у `package.json` магазину `update` не переписує — пін належить магазину (спільна реалізація з doctor №13).
+5. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
 
 ### 3.4 `simplycms db:diff [--write]`
 
@@ -150,7 +153,7 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 (`@plugins/<name>` → локальна тека магазину, bare-специфікатор →
 `node_modules/<pkg>/migrations/`; плагін без міграцій — не помилка).
 
-Порівняння з `supabase/migrations/` магазину:
+Порівняння з `db/migrations/` магазину. Відсутня тека `db/migrations` (зі старою `supabase/migrations` — з підказкою `git mv`) — гучна помилка й exit 1 ще до генерації: `--write` не створює теку мовчки.
 
 - відсутні в магазині → список «нові міграції <канону>»; `--write` копіює їх
   (тільки додавання — forward-fix-only);
@@ -169,8 +172,8 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 Конвенція імені плагінної міграції — `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql`
 (унеможливлює колізії імен між канонами). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених у `supabase/migrations/`. Оскільки накат тепер — прямий `psql -f`
-(немає Supabase CLI, що сам відстежує застосовані файли), це не блокує:
+накачених у `db/migrations/`. Оскільки накат — прямий `psql -f`
+(жодного CLI, що сам відстежує застосовані файли, немає), це не блокує:
 оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
 порядку імен. Перейменування-при-копіюванні відкладено (колонку
 `plugins.migrations_applied` прибрано в Е6б: її ніхто не писав).
@@ -234,12 +237,12 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | Джерело правди | Копія | Споживач |
 |---|---|---|
 | `SYNCED_FILES` (11 host-файлів глю, корінь монорепо) | `packages/cli/host/**` | `update`, `doctor` §6 |
-| `packages/simplycms/migrations/` | `template/supabase/migrations/` | `db:diff`, `doctor` §7 |
+| `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
 собі джерело правди — baseline `0000_prelude` → `0004_functions`, який пишуть
-рука і `pnpm db:diff`. Раніше джерелом були кореневі `supabase/migrations/`,
-а канон — їхнім дзеркалом; тієї теки більше немає. `template:sync` тепер
+рука і `pnpm db:diff`. Раніше джерелом була коренева тека міграцій
+(доба Supabase), а канон — її дзеркалом; тієї теки більше немає. `template:sync` тепер
 несе потік у зворотний бік: канон → копія в шаблоні.
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
@@ -250,7 +253,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
   `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
   `src/styles/globals.css`). 🔴 `src/start.ts` несе CSRF-захист: першою в
   `requestMiddleware` стоїть `csrfMiddleware` із `simplycms/runtime/csrf`
-  (перед `adminRequestGuard`). Дефолтний захист Start вмикається лише БЕЗ
+  (далі `bodyLimitMiddleware` із `simplycms/runtime/body-limit` — стеля тіла, К3-Е6д-2 — і `adminRequestGuard`). Дефолтний захист Start вмикається лише БЕЗ
   `startInstance`, тож `simplycms update` не повинен повертати магазину
   `start.ts` без нього — парність трьох копій стережуть
   `tests/csrf-middleware.test.ts` і `create-store-template-parity`. 🔴 `src/engine.shared.ts` увійшов у канон у
@@ -272,7 +275,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
+for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
 pnpm build && pnpm start         # rebuild
 ```
 
@@ -295,6 +298,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
 
@@ -321,9 +325,10 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 була, так і лишається.
 
 Контракт захищено машинно: eslint `no-restricted-syntax` забороняє
-`import.meta.env` у шести серверних модулях (тест відрізнити джерело не може —
+`import.meta.env` у п'яти серверних модулях (`SERVER_ENV_FILES`; тест відрізнити джерело не може —
 у vitest `import.meta.env` є Proxy над `process.env`), а Gate C пілота ловить
-витік `server-client`/`anon-client` у клієнтський бандл.
+витік server-only субшляхів ядра (`simplycms/contracts/server-only`) і серверних залежностей
+(`SERVER_PAYLOAD`) у клієнтський бандл.
 
 ## 8. Зв'язок із реліз-потягом
 

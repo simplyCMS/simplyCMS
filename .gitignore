@@ -43,8 +43,6 @@ coverage
 # temp/node_modules
 temp/node_modules
 temp/.env.local
-/supabase/.temp
-/supabase/.branches
 
 # Package pack artifacts (npm/pnpm pack)
 *.tgz
@@ -75,3 +73,9 @@ scripts/dev-stand/seed-demo.sql
 
 # Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
 .claude/worktrees/
+
+# Локальний Postgres-харнес (pnpm harness:up)
+.env.harness
+
+# Журнали живого прогону (pnpm live:smoke)
+.live-smoke/

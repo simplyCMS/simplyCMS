@@ -4,7 +4,7 @@
 // 🔴 Фасадної ролі тут БІЛЬШЕ НЕМАЄ. Реекспорти чужого (pricing, discounts,
 // shipping, `cn`, `Database`) знято разом із розчиненням пакета: споживач
 // бере їх із джерела — `simplycms/domain/*`, `simplycms/contracts`,
-// `simplycms/ui/utils`, `simplycms/supabase`. Повне розселення власних
+// `simplycms/ui/utils`. Повне розселення власних
 // модулів по тірах — свідомо поза К0.
 
 // ---- Providers ----

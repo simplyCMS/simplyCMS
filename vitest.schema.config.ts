@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { loadHarnessEnv } from './scripts/harness-env.mjs';
 
 // Окремий конфіг для schema-гейта `test:schema` (Task 1, план В2-К1а).
 //
@@ -15,6 +16,10 @@ import { defineConfig } from 'vitest/config';
 // проти харнеса, а не тестову копію контракту. 🔴 Один base-prefix ключ,
 // як у `vitest.config.ts`: `@rollup/plugin-alias` матчить і `simplycms`, і
 // `simplycms/<sub>`, але не сторонні `simplycms-*`.
+// `.env.harness` (pnpm harness:up) — лише якщо PG_HARNESS_URL не задано явно
+// і контейнер запущений (див. scripts/harness-env.mjs).
+loadHarnessEnv(import.meta.dirname);
+
 export default defineConfig({
   resolve: {
     alias: {

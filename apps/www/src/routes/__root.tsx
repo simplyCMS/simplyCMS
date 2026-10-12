@@ -10,7 +10,7 @@ const SITE = 'https://simplycms.dev';
 const TITLE =
   'SimplyCMS — the open-source e-commerce platform for the TypeScript era';
 const DESCRIPTION =
-  'Open-source e-commerce on TanStack Start, React 19 and Supabase. Your store is a thin assembly of ~8 files; the core ships as versioned npm packages, so pnpm update delivers new pages to production stores. MIT licensed.';
+  'Open-source e-commerce on TanStack Start, React 19 and PostgreSQL. Your store is a thin assembly of ~8 files; the core ships as versioned npm packages, so pnpm update delivers new pages to production stores. MIT licensed.';
 
 /** JSON-LD для пошуковиків: софт-продукт із безкоштовним прайсом. */
 const JSON_LD = JSON.stringify({

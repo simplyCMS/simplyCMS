@@ -1,4 +1,4 @@
-// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–12). Кожна повертає Check
+// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–13). Кожна повертає Check
 // (ui.mjs); файлові №6–7 і №12 живуть у doctor-fs-checks.mjs (ліміт рядків).
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -8,6 +8,7 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from './doctor-fs-checks.mjs';
+import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
 /**
@@ -100,7 +101,7 @@ export function checkAllowBuilds({ storeRoot }) {
  *
  * 🔴 Гейтяться саме ці два ключі, бо саме вони блокують старт: без
  * `DATABASE_URL` немає пулу `simplycms/db`, без `BETTER_AUTH_SECRET` сервер
- * відмовляється підписувати сесії. Ключів Supabase магазин не має взагалі —
+ * відмовляється підписувати сесії. Інших ключів до БД магазин не має —
  * браузер до бази не звертається.
  */
 export function checkEnv({ env }) {
@@ -149,5 +150,7 @@ export function runOfflineChecks(ctx) {
     checkThemes(ctx),
     // №12 (трек К0): скіли ядра підключені лінками.
     checkSkillLinks(ctx),
+    // №13 (К3-Е7): драйвер БД — залежність магазину в межах peer ядра.
+    checkPgDriver(ctx),
   ];
 }

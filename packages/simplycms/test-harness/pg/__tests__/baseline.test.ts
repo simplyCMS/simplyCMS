@@ -2,8 +2,8 @@
 //
 // 🔴 Це доказ рішення B13, а не смоук. Стара історія з 33 файлів котилася на
 // чистий Postgres ЛИШЕ через рукотворний шим `auth.*`/`storage.*`. Тут шима
-// немає взагалі — і саме тому тест зелений: у baseline v2 схеми GoTrue й
-// Supabase Storage не існує як класу. Поява такої залежності знову зробить
+// немає взагалі — і саме тому тест зелений: у baseline v2 схем стороннього
+// сервісу автентифікації й сховища не існує як класу. Поява такої залежності знову зробить
 // цей файл червоним.
 //
 // Другий сенс — довести ідемпотентність: `0000_prelude`, `0003_seed` і `0004_functions`
@@ -21,6 +21,7 @@ import {
   randomDbName,
   withDbName,
 } from '../apply.mjs';
+import { withActor } from '../actors.mjs';
 
 const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -121,7 +122,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
-    expect(tables.length).toBe(42);
+    // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
+    expect(tables.length).toBe(43);
     for (const expected of [
       'users',
       'sessions',
@@ -161,12 +163,14 @@ describe('канон міграцій: накат на чисту БД', () => {
       `select tablename, policyname, qual, with_check from pg_policies
         where schemaname = 'public'`,
     );
-    expect(rows.length).toBe(24);
+    // 24 → 25: службова `media_erasures_admin_all` (лише app_admin, Е6д-20).
+    expect(rows.length).toBe(25);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
     expect(tables).toEqual([
       'comparisons',
+      'media_erasures',
       'order_items',
       'orders',
       'product_reviews',
@@ -263,5 +267,45 @@ describe('канон міграцій: накат на чисту БД', () => {
     );
     expect(gone[0]?.t).toBeNull();
     expect(Number(gone[0]?.c)).toBe(0);
+  }, 120_000);
+
+  // Е6д-8: домен статусу й рейтингу тримає БД. `app_admin` обходить RLS,
+  // тож відмову дає саме CHECK (23514), а не політика чи грант.
+  it('product_reviews: CHECK статусу й рейтингу існують і спрацьовують', async () => {
+    const names = await queryRows(
+      dbUrl,
+      `select conname from pg_constraint
+        where conrelid = 'public.product_reviews'::regclass and contype = 'c'
+        order by conname`,
+    );
+    expect(names.map((row) => row.conname)).toEqual([
+      'product_reviews_rating_check',
+      'product_reviews_status_check',
+    ]);
+    const user = '55555555-5555-4555-8555-555555555555';
+    const product = '66666666-6666-4666-8666-666666666666';
+    await queryRows(
+      dbUrl,
+      `insert into public.users (id, email, name) values ($1, 'rv@example.test', 'RV')`,
+      [user],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.products (id, slug, name) values ($1, 'rv', 'RV')`,
+      [product],
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.product_reviews (id, product_id, user_id, rating)
+       values (gen_random_uuid(), $1, $2, 5)`,
+      [product, user],
+    );
+    for (const change of ["status = 'spam'", 'rating = 0', 'rating = 6']) {
+      await expect(
+        withActor(dbUrl, { role: 'app_admin' }, [
+          `update public.product_reviews set ${change}`,
+        ]),
+      ).rejects.toMatchObject({ code: '23514' });
+    }
   }, 120_000);
 });

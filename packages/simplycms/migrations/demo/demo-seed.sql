@@ -8,8 +8,8 @@
 -- і НІКОЛИ не бере участі в `simplycms db:diff` чи в складі канону, який
 -- звіряє `pnpm test:schema` (доказ — `demo-seed.test.ts` того ж контуру).
 --
--- Домен — магазин сонячних панелей та електрообладнання (той самий, що й у
--- фікстурах пілота, `scripts/pilot-pack/seed-fixtures.mjs`).
+-- Домен — магазин сонячних панелей та електрообладнання: панелі, інвертори,
+-- акумулятори.
 --
 -- 🔴 БЕЗ користувачів, замовлень і персональних даних — лише публічний
 -- каталог: секції, товари, ціни, властивості, банери. Ідемпотентність —
@@ -102,7 +102,7 @@ from (
      'sonyachni-paneli', 'SP-600B', true, false),
     ('10000002-0000-4000-8000-000000000004'::uuid, 'invertor-merezhevyi-5kw', 'Мережевий інвертор 5 кВт',
      'On-grid інвертор для мережевих систем.',
-     'Мережевий інвертор 5 кВт із ККД до 98%, доступний в однофазному та трифазному виконанні.',
+     '<p>Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><ul><li>Однофазне та трифазне підключення</li><li>Моніторинг через мобільний застосунок</li></ul><p><a href="/catalog/invertory">Усі інвертори</a></p>',
      'invertory', 'INV-5K', true, true),
     ('10000002-0000-4000-8000-000000000005'::uuid, 'invertor-gibrydnyi-8kw', 'Гібридний інвертор 8 кВт',
      'Робота з мережею та акумулятором одночасно.',
@@ -269,7 +269,7 @@ select
   null,
   0,
   true,
-  '[{"label": "До каталогу", "href": "/catalog"}]'::jsonb
+  '[{"text": "До каталогу", "url": "/catalog", "target": "_self", "variant": "primary"}]'::jsonb
 where not exists (
   select 1 from public.banners where title = 'Сонячна енергія для вашого дому'
 );
@@ -281,15 +281,13 @@ select
   'До -15% на серію 600 Вт цього місяця.',
   'data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><rect width="1200" height="400" fill="darkgoldenrod"/><text x="600" y="215" fill="white" font-size="48" text-anchor="middle">Бі-фаціальні панелі</text></svg>',
   'home',
-  s.id,
+  null,
   1,
   true,
-  '[{"label": "Переглянути", "href": "/catalog/sonyachni-paneli"}]'::jsonb
-from public.sections s
-where s.slug = 'sonyachni-paneli'
-  and not exists (
-    select 1 from public.banners where title = 'Знижки на бі-фаціальні панелі'
-  );
+  '[{"text": "Переглянути", "url": "/catalog/sonyachni-paneli", "target": "_self", "variant": "primary"}]'::jsonb
+where not exists (
+  select 1 from public.banners where title = 'Знижки на бі-фаціальні панелі'
+);
 
 -- ── 10. Доставка й залишки (К2-Е0): магазин, у якому можна купити ─────────
 insert into public.shipping_methods (id, code, name, description, provider, pricing, is_active, sort_order)

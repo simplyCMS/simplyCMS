@@ -287,7 +287,9 @@ CREATE TABLE "product_reviews" (
 	"admin_comment" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "product_reviews_product_id_user_id_key" UNIQUE("product_id","user_id")
+	CONSTRAINT "product_reviews_product_id_user_id_key" UNIQUE("product_id","user_id"),
+	CONSTRAINT "product_reviews_status_check" CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+	CONSTRAINT "product_reviews_rating_check" CHECK (rating >= 1 AND rating <= 5)
 );
 --> statement-breakpoint
 ALTER TABLE "product_reviews" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -596,7 +598,7 @@ CREATE TABLE "verifications" (
 CREATE TABLE "media" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"entity_type" text NOT NULL,
-	"entity_id" uuid,
+	"entity_id" uuid NOT NULL,
 	"storage_key" text NOT NULL,
 	"size_bytes" integer NOT NULL,
 	"mime_type" text NOT NULL,
@@ -606,6 +608,16 @@ CREATE TABLE "media" (
 	CONSTRAINT "media_size_bytes_non_negative" CHECK (size_bytes >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "media_erasures" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"storage_key" text NOT NULL,
+	"requested_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"last_error" text,
+	CONSTRAINT "media_erasures_storage_key_key" UNIQUE("storage_key")
+);
+--> statement-breakpoint
+ALTER TABLE "media_erasures" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -745,6 +757,7 @@ CREATE INDEX "idx_verifications_identifier" ON "verifications" USING btree ("ide
 CREATE INDEX "idx_media_entity" ON "media" USING btree ("entity_type","entity_id");--> statement-breakpoint
 CREATE INDEX "idx_media_uploaded_by" ON "media" USING btree ("uploaded_by");--> statement-breakpoint
 CREATE POLICY "comparisons_own_all" ON "comparisons" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
+CREATE POLICY "media_erasures_admin_all" ON "media_erasures" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "order_items_select_own_or_token" ON "order_items" AS PERMISSIVE FOR SELECT TO "app_user" USING (exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), ''))))));--> statement-breakpoint
 CREATE POLICY "order_items_insert_own" ON "order_items" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null)));--> statement-breakpoint
 CREATE POLICY "order_items_admin_all" ON "order_items" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
@@ -752,8 +765,8 @@ CREATE POLICY "orders_select_own_or_token" ON "orders" AS PERMISSIVE FOR SELECT 
 CREATE POLICY "orders_insert_own" ON "orders" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK ((user_id = (select app.current_user_id())) or (user_id is null));--> statement-breakpoint
 CREATE POLICY "orders_admin_all" ON "orders" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "product_reviews_select_approved_or_own" ON "product_reviews" AS PERMISSIVE FOR SELECT TO "app_user" USING (status = 'approved' or user_id = (select app.current_user_id()));--> statement-breakpoint
-CREATE POLICY "product_reviews_insert_own" ON "product_reviews" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
-CREATE POLICY "product_reviews_update_own_pending" ON "product_reviews" AS PERMISSIVE FOR UPDATE TO "app_user" USING (user_id = (select app.current_user_id()) and status = 'pending') WITH CHECK (user_id = (select app.current_user_id()) and status = 'pending');--> statement-breakpoint
+CREATE POLICY "product_reviews_insert_own" ON "product_reviews" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null);--> statement-breakpoint
+CREATE POLICY "product_reviews_update_own" ON "product_reviews" AS PERMISSIVE FOR UPDATE TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()) and status = 'pending');--> statement-breakpoint
 CREATE POLICY "product_reviews_delete_own" ON "product_reviews" AS PERMISSIVE FOR DELETE TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "product_reviews_admin_all" ON "product_reviews" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "profiles_select_own" ON "profiles" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint

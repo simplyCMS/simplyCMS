@@ -40,11 +40,11 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
   const served = await page.request.get(`${base}${src}`);
   const headers = served.headers();
   check(
-    'аватар: роздача — 200 image/png із nosniff та immutable',
+    'аватар: роздача — 200 image/png із nosniff та private, no-cache (Е6д-21)',
     served.status() === 200 &&
       headers['content-type'] === 'image/png' &&
       headers['x-content-type-options'] === 'nosniff' &&
-      (headers['cache-control'] ?? '').includes('immutable'),
+      headers['cache-control'] === 'private, no-cache',
     `${served.status()} ${headers['content-type']} ${headers['cache-control']}`,
   );
 

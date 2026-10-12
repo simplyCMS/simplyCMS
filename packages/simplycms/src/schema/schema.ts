@@ -1042,10 +1042,13 @@ export const productReviews = pgTable("product_reviews", {
 	unique("product_reviews_product_id_user_id_key").on(table.productId, table.userId),
 	index("idx_product_reviews_user_id").on(table.userId),
 	pgPolicy("product_reviews_select_approved_or_own", { as: "permissive", for: "select", to: ["app_user"], using: sql`status = 'approved' or user_id = (select app.current_user_id())` }),
-	pgPolicy("product_reviews_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`user_id = (select app.current_user_id())` }),
-	pgPolicy("product_reviews_update_own_pending", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id()) and status = 'pending'`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
+	pgPolicy("product_reviews_insert_own", { as: "permissive", for: "insert", to: ["app_user"], withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending' and admin_comment is null` }),
+	pgPolicy("product_reviews_update_own", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
 	pgPolicy("product_reviews_delete_own", { as: "permissive", for: "delete", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("product_reviews_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
+	// Е6д-8: домен статусу й рейтингу тримає БД, а не лише zod (масив — REVIEW_STATUSES у T0).
+	check("product_reviews_status_check", sql`status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])`),
+	check("product_reviews_rating_check", sql`rating >= 1 AND rating <= 5`),
 ]);
 
 export const banners = pgTable("banners", {
@@ -1059,7 +1062,7 @@ export const banners = pgTable("banners", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	placement: text().default('home').notNull(),
 	sectionId: uuid("section_id"),
-	buttons: jsonb().default([]),
+	buttons: jsonb().$type<JsonValue>().default([]),
 	dateFrom: timestamp("date_from", { withTimezone: true, mode: 'date' }),
 	dateTo: timestamp("date_to", { withTimezone: true, mode: 'date' }),
 	scheduleDays: integer("schedule_days").array(),

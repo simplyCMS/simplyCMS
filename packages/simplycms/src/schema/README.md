@@ -6,10 +6,8 @@
 
 > **Типи (B12, частина).** `types.ts` віддає рядки таблиць (`$inferSelect` /
 > `$inferInsert`) — це джерело типів для **нового** серверного коду, тобто
-> всього, що ходить у БД через `simplycms/db`. Старі джерела
-> (`supabase/types.ts` магазину і `src/supabase/database.ts`) заморожені до
-> контуру К1′б і обслуговують код, який ще ходить через `supabase-js`.
-> Дублювання тут очікуване — не «оптимізуй» його передчасно.
+> всього, що ходить у БД через `simplycms/db`. Інших
+> джерел типів рядків БД немає: легасі-baseline клієнта БД знесено (К3-Е7).
 
 > 🔴 **Контракт id (трек V2-К3, Е0; ревізія Е1а).** 41 таблиця «Категорії A»
 > **не має** `DEFAULT gen_random_uuid()` — ключ передає викликач у кожному
@@ -19,7 +17,7 @@
 > Деталі — `docs/architecture/data-layer.md`, розділ «Контракт id».
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
-e-commerce CMS на TanStack Start + Supabase. Окремим пакетом він більше не
+e-commerce CMS на TanStack Start + PostgreSQL. Окремим пакетом він більше не
 постачається: усе ядро приходить одним npm-пакетом `simplycms`, а магазин
 створюється скаффолдером `pnpm create simplycms-store`.
 
@@ -97,8 +95,9 @@ SQL. Нумерація в них своя в кожної: drizzle рахує �
 - Між `db:diff` і накатом — **обовʼязкове людське ревʼю SQL**: drizzle-kit не
   розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
   ролі, гранти та функції.
-- 🔴 `db:migrate` виведено з експлуатації (B2/B13): Supabase CLI виходить із
-  тулчейна, а числові префікси канону він не приймає.
+- 🔴 Кореневої команди накату немає (B2/B13): накат — psql-цикл по
+  `db/migrations/*.sql` (числові префікси канону задають порядок); на чистий
+  Postgres канон накочує `pnpm test:schema`.
 - `drizzle-kit` запускається з cwd = тека цього пакета, а `schema`/`out` у конфізі
   мусять лишатися **відносними**: 0.31 у `generate` склеює `./${out}` і на
   абсолютному шляху падає з `ENOENT`.
@@ -116,7 +115,7 @@ SQL. Нумерація в них своя в кожної: drizzle рахує �
 Tarball пакета везе теку `migrations/` — **канон** застосовного SQL ядра
 (baseline `0000_prelude` → `0004_functions` плюс усе, що додав `db:diff`). Це
 джерело для `simplycms db:diff` у магазині: команда порівнює
-`supabase/migrations/` магазину з `node_modules/simplycms/migrations/` і
+`db/migrations/` магазину з `node_modules/simplycms/migrations/` і
 докопіює нові міграції ядра. Копію для скаффолдера тримає `pnpm
 template:sync` під parity-тестом. Деталі — [`../../migrations/README.md`](../../migrations/README.md).
 

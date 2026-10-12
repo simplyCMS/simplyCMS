@@ -2,7 +2,7 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
@@ -11,9 +11,11 @@ import type { ProductReview } from 'simplycms/core/hooks/useProductReviews';
 interface ReviewCardProps {
   review: ProductReview;
   onDelete?: (id: string) => void;
+  /** Правка власного відгуку (Е6д-23). */
+  onEdit?: (review: ProductReview) => void;
 }
 
-export function ReviewCard({ review, onDelete }: ReviewCardProps) {
+export function ReviewCard({ review, onDelete, onEdit }: ReviewCardProps) {
   const { user } = useAuth();
   const t = useT();
   const isOwn = user?.id === review.user_id;
@@ -80,43 +82,56 @@ export function ReviewCard({ review, onDelete }: ReviewCardProps) {
             </div>
           </div>
 
-          {isOwn && onDelete && (
-            <div className="relative">
+          <div className="flex items-center">
+            {isOwn && onEdit && (
               <button
-                className="h-8 w-8 flex items-center justify-center rounded text-muted-foreground hover:text-destructive"
-                onClick={() => setConfirmDelete(true)}
+                type="button"
+                aria-label={t('reviews.edit')}
+                title={t('reviews.edit')}
+                className="h-8 w-8 flex items-center justify-center rounded text-muted-foreground hover:text-foreground"
+                onClick={() => onEdit(review)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Pencil className="h-4 w-4" />
               </button>
-              {confirmDelete && (
-                <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg p-4 z-10 w-64">
-                  <p className="text-sm font-medium mb-2">
-                    {t('reviews.delete.confirmTitle')}
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {t('reviews.delete.confirmText')}
-                  </p>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      className="px-3 py-1 border rounded text-sm"
-                      onClick={() => setConfirmDelete(false)}
-                    >
-                      {t('common.cancel')}
-                    </button>
-                    <button
-                      className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm"
-                      onClick={() => {
-                        onDelete(review.id);
-                        setConfirmDelete(false);
-                      }}
-                    >
-                      {t('common.delete')}
-                    </button>
+            )}
+            {isOwn && onDelete && (
+              <div className="relative">
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded text-muted-foreground hover:text-destructive"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                {confirmDelete && (
+                  <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg p-4 z-10 w-64">
+                    <p className="text-sm font-medium mb-2">
+                      {t('reviews.delete.confirmTitle')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {t('reviews.delete.confirmText')}
+                    </p>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        className="px-3 py-1 border rounded text-sm"
+                        onClick={() => setConfirmDelete(false)}
+                      >
+                        {t('common.cancel')}
+                      </button>
+                      <button
+                        className="px-3 py-1 bg-destructive text-destructive-foreground rounded text-sm"
+                        onClick={() => {
+                          onDelete(review.id);
+                          setConfirmDelete(false);
+                        }}
+                      >
+                        {t('common.delete')}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {review.title && <h4 className="font-semibold">{review.title}</h4>}

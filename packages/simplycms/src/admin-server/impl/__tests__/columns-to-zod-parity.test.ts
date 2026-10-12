@@ -34,8 +34,10 @@ const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),
 );
 // Е6а: + `PgArray` (`shipping_zones.cities/regions`, text[]) — десятий тип.
+// Е6д: + `PgTime` (`banners.schedule_time_from/to`) — одинадцятий.
 const TYPES = [
   'PgArray',
+  'PgTime',
   'PgUUID',
   'PgText',
   'PgVarchar',
@@ -48,7 +50,7 @@ const TYPES = [
 ];
 
 describe('паритет columnsToZod з drizzle-zod', () => {
-  it('10 типів колонок у ресурсних таблицях і жодного невідомого', () => {
+  it('11 типів колонок у ресурсних таблицях і жодного невідомого', () => {
     const types = [...new Set(columns.map((c) => c.columnType))].sort();
     expect(types).toEqual([...TYPES].sort());
     expect(() => columns.forEach((c) => columnSchema(c))).not.toThrow();
@@ -113,6 +115,10 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       'm5 numeric: без формату': mutate('PgNumeric', () => z.string()),
       // Е6а: схема елемента масиву — не декорація (`[1]`, `['a', 1]` у VALUES).
       'm6 PgArray: items any': mutate('PgArray', () => z.array(z.any())),
+      // Е6д: формат часу в генераторі розійшовся б з drizzle-zod — гейт бачить.
+      'm7 PgTime: формат': mutate('PgTime', () =>
+        z.string().regex(/^\d\d:\d\d$/),
+      ),
     };
     const byName = new Map<string, Column>(
       resources.flatMap((r) =>
@@ -129,6 +135,7 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       'm4 timestamp: date -> any': (c) => c.columnType === 'PgTimestamp',
       'm5 numeric: без формату': (c) => c.columnType === 'PgNumeric',
       'm6 PgArray: items any': (c) => c.columnType === 'PgArray',
+      'm7 PgTime: формат': (c) => c.columnType === 'PgTime',
     };
     it('контроль ідентичності: незмінений генератор — порожній diff', () => {
       const identity: Gen = (t, m, r) => ({ ...columnsToZod(t, m, r) });

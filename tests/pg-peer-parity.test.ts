@@ -1,0 +1,54 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+/**
+ * Парність версії `pg`: peer ядра ↔ шаблон магазину ↔ пілотний оверлей ↔ корінь монорепо
+ * (К3-Е7, Task 11). Драйвер постачає ХОСТ (магазин), ядро його лише очікує: один екземпляр
+ * `pg` у магазині — один пул і одна ідентичність типів, а вклеєний у бандл `pg` ламає старт
+ * (`UPSTREAM:START-IP-1`). Точний пін має причину: форма помилок драйвера (`.cause` із
+ * `code`/`constraint`) перевірена саме на 8.23.1 (`DRZ-1` у реєстрі обходів), тож магазин
+ * не може мовчки поїхати на іншу версію.
+ */
+const ROOT = resolve(import.meta.dirname, '..');
+type Manifest = {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+const read = (file: string): Manifest =>
+  JSON.parse(readFileSync(resolve(ROOT, file), 'utf8')) as Manifest;
+
+const core = read('packages/simplycms/package.json');
+const template = read(
+  'packages/create-simplycms-store/template/package.json.tpl',
+);
+const pilot = read('tests/pilot/store-template/package.json');
+const root = read('package.json');
+
+describe('pg: peer ядра ↔ магазин', () => {
+  const peer = core.peerDependencies?.pg;
+
+  it('ядро оголошує pg як peer, а не як власну залежність', () => {
+    expect(peer, 'peerDependencies.pg відсутній').toBeTruthy();
+    expect(
+      core.dependencies?.pg,
+      'pg лишився в dependencies ядра',
+    ).toBeUndefined();
+  });
+
+  it.each([
+    ['шаблон магазину', template.dependencies?.pg],
+    ['пілотний оверлей', pilot.dependencies?.pg],
+    ['корінь монорепо', root.devDependencies?.pg],
+    ['devDependencies ядра', core.devDependencies?.pg],
+  ])('%s: версія pg = peer ядра', (_label, version) => {
+    expect(version, 'pg не оголошено').toBeTruthy();
+    expect(version).toBe(peer);
+  });
+
+  it('магазин декларує pg ПРЯМОЮ залежністю (а не лише dev)', () => {
+    expect(template.dependencies?.pg).toBeTruthy();
+    expect(template.devDependencies?.pg).toBeUndefined();
+  });
+});

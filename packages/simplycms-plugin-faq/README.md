@@ -7,7 +7,7 @@
 |----------|-----|
 | Контракт | `definePlugin` (`src/index.ts`) |
 | Таблиця | `plg_faq_items` — міграція в `migrations/`, накат: `simplycms db:diff --write` + ревʼю |
-| Адмінка | `/admin/faq` (`routes/admin/faq/`) — CRUD через `usePluginTable`, без прямого Supabase |
+| Адмінка | `/admin/faq` (`routes/admin/faq/`) — CRUD через `usePluginTable`, без прямого клієнта БД |
 | Слот | `product.detail.after` — FAQ до товару + загальні питання |
 | Налаштування | Zod-схема `maxVisible`; форму рендерить адмінка, значення читає `usePluginConfig` |
 | i18n | `src/messages.ts`, ключі `plugin.faq.*`, uk/en |
@@ -16,8 +16,8 @@
 
 ```bash
 pnpm simplycms add @simplycms/plugin-faq --plugin
-pnpm simplycms db:diff --write   # міграція плагіна → supabase/migrations (ревʼю!)
-psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f supabase/migrations/<нова>.sql
+pnpm simplycms db:diff --write   # міграція плагіна → db/migrations (ревʼю!)
+psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f db/migrations/<нова>.sql
 pnpm build
 ```
 

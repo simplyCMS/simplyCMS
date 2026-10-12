@@ -1,6 +1,6 @@
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
-import type { SanitizedHtml } from 'simplycms/contracts';
-import { resolveMediaUrl } from 'simplycms/domain/media';
+import type { ReviewStatus, SanitizedHtml } from 'simplycms/contracts';
+import { normalizeMediaRefs, resolveMediaUrl } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import { productReviews, profiles } from 'simplycms/schema';
 import type { ActorDb } from './db';
@@ -24,8 +24,13 @@ export interface ProductReviewRow {
   /** Тема 9: розмітка відгуку — лише очищена (рубіж 2). */
   content: SanitizedHtml | null;
   images: string[];
-  status: string;
-  admin_comment: string | null;
+  /**
+   * Фото ВЛАСНОГО відгуку парами `{ref, url}` з одного масиву (Е6д-23): форма
+   * правки повертає `ref` у `keep`. Для чужих відгуків і гостя — порожньо:
+   * референси сховища чужим не потрібні.
+   */
+  own_photos: { ref: string; url: string }[];
+  status: ReviewStatus;
   created_at: Date;
   updated_at: Date;
   profile?: ReviewAuthor | null;
@@ -48,9 +53,24 @@ export interface ProductRating {
 export async function loadProductReviews(
   db: ActorDb,
   productId: string,
+  viewerId: string | null = null,
 ): Promise<ProductReviewRow[]> {
+  // 🔴 Явний список колонок, а не `select()`: `admin_comment` — внутрішня
+  // примітка модератора (Д-1), яка не має навіть потрапити в обʼєкт рядка,
+  // не те що у відповідь серверної функції.
   const rows = await db
-    .select()
+    .select({
+      id: productReviews.id,
+      productId: productReviews.productId,
+      userId: productReviews.userId,
+      rating: productReviews.rating,
+      title: productReviews.title,
+      content: productReviews.content,
+      images: productReviews.images,
+      status: productReviews.status,
+      createdAt: productReviews.createdAt,
+      updatedAt: productReviews.updatedAt,
+    })
     .from(productReviews)
     .where(eq(productReviews.productId, productId))
     .orderBy(desc(productReviews.createdAt));
@@ -66,8 +86,15 @@ export async function loadProductReviews(
     // Через спільну функцію, а не власним кастом: інакше зображення відгуку
     // лишилось би єдиною медіа-колонкою без резолву.
     images: toImageList(row.images),
-    status: row.status,
-    admin_comment: row.adminComment,
+    own_photos:
+      viewerId !== null && row.userId === viewerId
+        ? normalizeMediaRefs(row.images).flatMap((ref) => {
+            const url = resolveMediaUrl(ref);
+            return url === null ? [] : [{ ref, url }];
+          })
+        : [],
+    // CHECK `product_reviews_status_check` гарантує домен; тип колонки — text.
+    status: row.status as ReviewStatus,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   }));

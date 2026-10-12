@@ -7,6 +7,10 @@ import { useT, type MessageKey } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
 import { ReviewCard } from './ReviewCard';
 import { ReviewForm } from './ReviewForm';
+import {
+  ReviewImagePicker,
+  type ReviewImageUploadProps,
+} from './ReviewImagePicker';
 
 interface ProductReviewsProps {
   productId: string;
@@ -16,11 +20,7 @@ interface ProductReviewsProps {
     onChange: (content: string) => void;
   }) => React.ReactNode;
   /** Optional image upload component */
-  renderImageUpload?: (props: {
-    images: string[];
-    onImagesChange: (images: string[]) => void;
-    maxImages: number;
-  }) => React.ReactNode;
+  renderImageUpload?: (props: ReviewImageUploadProps) => React.ReactNode;
 }
 
 /**
@@ -55,9 +55,13 @@ export function ProductReviews({
     distribution,
     isLoading,
     submitReview,
+    updateReview,
     deleteReview,
+    userReview,
   } = useProductReviews(productId);
   const [showForm, setShowForm] = useState(false);
+  // Відгук у режимі правки (Е6д-23): форма замінює картку «ви вже залишили».
+  const [editing, setEditing] = useState(false);
 
   const visibleReviews = user
     ? reviews.filter((r) => r.status === 'approved' || r.user_id === user.id)
@@ -112,7 +116,30 @@ export function ProductReviews({
 
       {/* Write review section */}
       {user ? (
-        hasUserReview ? (
+        hasUserReview && userReview && editing ? (
+          <ReviewForm
+            productId={productId}
+            initial={{
+              rating: userReview.rating,
+              title: userReview.title,
+              content: userReview.content,
+              photos: userReview.own_photos,
+            }}
+            onCancel={() => setEditing(false)}
+            onSubmit={(data) => {
+              const { keep = [], ...rest } = data;
+              updateReview.mutate(
+                { ...rest, keep, id: userReview.id },
+                { onSuccess: () => setEditing(false) },
+              );
+            }}
+            isSubmitting={updateReview.isPending}
+            renderEditor={renderEditor}
+            renderImageUpload={
+              renderImageUpload ?? ((p) => <ReviewImagePicker {...p} />)
+            }
+          />
+        ) : hasUserReview ? (
           <p className="text-sm text-muted-foreground">
             {t('reviews.alreadySubmitted')}
           </p>
@@ -126,7 +153,9 @@ export function ProductReviews({
             }}
             isSubmitting={submitReview.isPending}
             renderEditor={renderEditor}
-            renderImageUpload={renderImageUpload}
+            renderImageUpload={
+              renderImageUpload ?? ((p) => <ReviewImagePicker {...p} />)
+            }
           />
         ) : (
           <button
@@ -157,6 +186,7 @@ export function ProductReviews({
               key={review.id}
               review={review}
               onDelete={(id) => deleteReview.mutate(id)}
+              onEdit={() => setEditing(true)}
             />
           ))}
         </div>

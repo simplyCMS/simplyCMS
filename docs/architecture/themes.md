@@ -55,8 +55,9 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 - Registry-awareness адмінки (§5) — читає лише `ThemeRegistry.has(name)`;
   uninstall-рядка з адмінки немає (деактивація достатня для v1, Р0).
 - Межі довіри на теми **немає свідомо** (Р10, §7): тема, на відміну від
-  плагіна, законно імпортує `simplycms/supabase`/`simplycms/core` — це
-  контракт v2, а не діра.
+  плагіна, законно імпортує публічні субшляхи ядра (`simplycms/ui`,
+  `simplycms/core`, `simplycms/i18n`) — це контракт v2, а не діра; клієнта БД
+  тема не імпортує (`@supabase/*` у репо заборонено ратчетом `no-supabase-import`).
 - Шрифти теми (`fonts`, контракт v2.2) — **лише зовнішні `https:`-stylesheet**;
   `@font-face`-обʼєктів і роздачі файлів шрифтів темою немає свідомо
   (npm-тема не має каналу статики) — §2, §8.
@@ -168,7 +169,7 @@ ThemeViews = {
 пакета. Причина не стилістична: тип прибіндженого слота мусить бути
 `ComponentType` з react (структурний `(props) => unknown` JSX не приймає —
 TS2786), тож `views` тягне type-only імпорт react. Барель `simplycms/contracts`
-обіцяє «без імпортів supabase/react», і ця обіцянка лишається правдою саме
+обіцяє «без імпортів react і клієнтів БД», і ця обіцянка лишається правдою саме
 завдяки окремому субшляху; `react` оголошений **опційним type-only peer**
 (`peerDependenciesMeta`) — рантайм-залежностей T0 як не мав, так і не має.
 
@@ -234,6 +235,31 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 не компілюється. Фікстури (`simplycms/contracts/views/fixtures`) — єдине місце,
 де `SanitizedHtml` отримують приведенням типу: це статичний авторський HTML.
 
+### 2.2 HeroBanner: що тема показує
+
+Слот `HeroBanner?: ComponentType<{ banners: Banner[] }>` (К3-Е6д-9). Дані
+банера мають пріоритет над каталогом теми. Контракт живе в коді —
+`pickHeroBanner`/`pickHeroImage` у `simplycms/domain` (`HeroBannerView`); тема
+лише викликає їх і малює результат:
+
+- банер із `title` або хоча б однією валідною кнопкою — тема показує його
+  `title`, `subtitle` і кнопки; `text_position` задає вирівнювання,
+  `overlay_color` приходить як `overlayColor` лише коли пройшов `isSafeCssColor`
+  (allow-list кольору: hex/імʼя/`rgb()`-подібні; `url()`/`var()` ні);
+- накладка: `overlayColor` береться з ТОГО Ж текстового банера (`pickHeroBanner`) і
+  лише як колір (`isSafeCssColor`); банер лише з картинкою (без `title` і валідних
+  кнопок) накладки не дає — тема малює свої тексти без неї. Картинка береться окремо,
+  `pickHeroImage` (десктопна має пріоритет), і від тексту не залежить;
+- кнопки фільтрує `isBannerButton` (`simplycms/domain`): `javascript:`,
+  `//host` та інші небезпечні `url` не рендеряться. Тема власної валідації не
+  пише;
+- без такого банера (порожній масив або банер лише з картинкою) — тексти й
+  CTA каталогу теми (`theme.hero.*`); порожній стан default лишається як є.
+
+Тема тут лише презентує: слайдера, вибору банера за розкладом і запитів
+немає — це робить ядро до виклику слота. Парність обох тем доводить
+`tests/theme-hero-banner-parity.test.tsx`.
+
 ## 3. Пакування: npm vs copy-in
 
 Обидва шляхи зі спеки §17.4 підтримуються (Р0):
@@ -268,7 +294,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 **Конвенція залежностей.** 🔴 Після треку К0 (рішення ПК6) ядро в темі —
 **завжди `peerDependencies`, і для референс-тем теж**: пакет ядра один
 (`simplycms`), а `dependencies` дублювали б React-контексти на кшталт
-`SupabaseProvider` (vite-dedupe шаблону покриває лише
+`CMSProvider` (vite-dedupe шаблону покриває лише
 `react`/`react-dom`/`react-query`). Референс-тема додає той самий
 `simplycms` ще й у `devDependencies` — peer сам по собі не встановлюється,
 а зібрати пакет у монорепо треба.
@@ -584,9 +610,9 @@ Playwright): гейт мусить бути доступним і магазин
   (фаза «Шліфування»), навмисно окремою сесією: так валідація контракту
   відділена від валідації клона.
 - **Межа довіри, як у плагінів (Р10).** Обидві наявні теми легітимно
-  імпортують `simplycms/supabase/SupabaseProvider` і хуки `simplycms/core`
-  — тема, на відміну від плагіна, споживає DI-клієнт напряму за контрактом
-  v2 (`HomeSections` сам тягне дані хуками). Плагінна eslint-зона
+  імпортують публічні субшляхи ядра (`simplycms/ui`, `simplycms/i18n`,
+  `simplycms/core/hooks/…`) — тема, на відміну від плагіна, споживає їх
+  напряму за контрактом v2; клієнта БД вона не має. Плагінна eslint-зона
   (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Якщо колись
   зʼявиться theme-sdk із портами (аналог `simplycms/plugin-sdk`, субшлях
   того самого пакета) — це
@@ -630,7 +656,7 @@ Playwright): гейт мусить бути доступним і магазин
 | CLI-канал гейта: чисті функції команди (парсер, резолв теми з конфігу, підсумок звіту, аліаси з tsconfig) | `tests/cli-theme-conformance.test.ts` |
 | CLI-канал гейта: ЖИВИЙ ланцюг `installStoreDom → createStoreRunner → runner.import → kit` на синтетичній темі з `views` (зелений прогін + червоний на загубленому реквізиті) | `tests/cli-theme-conformance-run.test.ts` |
 | CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
-| `bootstrapThemes` | `packages/simplycms/src/themes/__tests__/bootstrapThemes.test.ts` (mock supabase: без missing — нуль load/insert/getSession; без сесії — нуль load; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
+| `bootstrapThemes` | `packages/simplycms/src/themes/__tests__/bootstrapThemes.test.ts` (мок серверної поверхні `simplycms/themes/server`: усі теми вже в БД — ні list, ні register; без права запису модулі не вантажаться; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
 | Registry-awareness адмінки | компонентний тест `packages/simplycms/src/admin/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
 | i18n каталоги тем | `tests/theme-messages-parity.test.ts` + AST-скан `SCANNED_ROOTS` |

@@ -62,6 +62,17 @@
   всю таблицю, бо «активність» — правило показу, а не право доступу. Кожен
   публічний запит несе предикат явно (`is_active = true`, `has_page = true`).
   Забутий предикат не падає — він виводить чернетки у вітрину.
+- 🔴 **Гранти й RLS: колонковий грант не звужує INSERT.** Drizzle `insert()` називає в
+  запиті ВСІ колонки таблиці (відсутні значення — як `default`), тож колонковий грант
+  INSERT дав би `42501`: вставку звужує політика RLS `WITH CHECK`, грант лишається
+  табличним. Колонковий грант — для UPDATE. Приклад — `product_reviews` для `app_user`
+  (К3-Е6д-7, Е6д-23; `0002_grants.sql`): `SELECT, INSERT, DELETE` табличні +
+  `UPDATE (rating, title, content, images, status, updated_at)`; політика
+  `product_reviews_insert_own` — `WITH CHECK (user_id = актор AND status = 'pending' AND
+  admin_comment IS NULL)`, `product_reviews_update_own` — `USING (user_id = актор) WITH
+  CHECK (user_id = актор AND status = 'pending')`: правка покупцем повертає відгук на
+  модерацію, а `admin_comment`/`user_id` він змінити не може. `images` довіряють лише через
+  порт сховища (`storage.md`).
 - Приклад серверної функції (зразок — `storefront-routes/server/catalog.ts`):
 
   ```typescript
@@ -81,8 +92,7 @@
   чи функції, трансформація тихо не підхоплює. Валідатор — `.validator(…)`;
   `.inputValidator(…)` застарів.
 - Типи рядків для нового серверного коду — з `simplycms/schema/types` (виведені з
-  Drizzle). `packages/simplycms/src/supabase/database.ts` — **заморожений**
-  baseline типів легасі-адмінки: не оновлювати і не «прибирати дублювання».
+  Drizzle). Генератора типів БД немає, ручних дзеркал схеми в репо теж.
 - Cross-request кеш серверних даних — `createReadCache` модуля **`simplycms/site`**
   (§12): TTL 5 хв + лічильник поколінь. ISR і `revalidatePath` не існують;
   інвалідація — скидання кешу САМОЮ операцією адмінки після COMMIT +
@@ -95,12 +105,9 @@
   (`defineAdminResource` — фабрика операцій з інваріантами; публічна поверхня
   `index.ts` — лише топ-рівневі `createServerFn`, нутрощі — bare-субшлях `./impl`)
   і колекціях **`simplycms/admin-data`** (TanStack DB; колекції без `schema`).
-- Легасі-шар на `supabase-js` (`useSupabaseClient()` у `src/admin/**`) ще живий і
-  переписується на `admin-server`; `SupabaseProvider` ніде не монтується, тож
-  код сидить на модульному singleton-і браузерного клієнта. Нові сторінки адмінки
-  пишуться на колекціях `admin-data`/операціях `admin-server`, а не на
-  `supabase-js`. Реєстр переписаного — `tests/admin-server-first/registry.ts`,
-  поточний перелік — `docs/tasks/v2-state-map.md`. Вітрина `supabase-js` не імпортує.
+- Шару `supabase-js` більше немає (К3-Е7): адмінка пишеться на колекціях
+  `admin-data`/операціях `admin-server`, поточний перелік — `docs/tasks/v2-state-map.md`.
+  Ні вітрина, ні адмінка `@supabase/*` не імпортують (ратчет `no-supabase-import`).
 - Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
   `eq/gt/gte/lt/lte` — колонки `filterable` ∪ `sortable` (курсор пагінації
   відсортованої колонки; безпеки не знижує — значення клієнт і так бачить),
@@ -145,8 +152,8 @@
 - **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній таблиці.
 
 Стережуть: `eslint-rules/query-key-from-entity.mjs` (зона — `core/`, `*-ui/`,
-`react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` — виїмка, доки
-сторінки не переписані), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
+`react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета ядра; адмінку
+додано в К3-Е7, охоплення — `tests/eslint-admin-zones.test.ts`), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
 тест парності `schema/__tests__/entity-parity.test.ts` (реєстр ↔ схема),
 `admin-data/__tests__/collection-key-storefront-isolation.test.ts`.
 
@@ -169,12 +176,11 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 `id` падає гучно (`23502 not_null_violation`), а не розходиться тихо — не
 «лагодь» це поверненням `.defaultRandom()` у схему.
 
-Дві іменовані виїмки:
+Одна іменована виїмка (теку-виїмок за шляхом немає — вставка без `id` у будь-якій теці `packages/simplycms/src/**`, адмінку включно, червонить гейт):
 
 | Виїмка | Чому | Хто стереже |
 |---|---|---|
 | `users`, `sessions`, `accounts`, `verifications` | Better Auth з `generateId: 'uuid'` не кладе `id` в INSERT | `test-harness/pg/__tests__/id-defaults.test.ts` |
-| `packages/simplycms/src/admin/**` | легасі-шар на `supabase-js`, переписується | `tests/admin-inserts-need-id.test.ts` — ратчет, число лише зменшується |
 
 Гейт інваріанта — `test-harness/pg/__tests__/explicit-ids.test.ts`
 (`pnpm test:schema`): **дискаверить** усі вставки в `packages/simplycms/src/**`,
@@ -204,7 +210,7 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 
 - Канон застосовного SQL — `packages/simplycms/migrations/`: baseline
   (`0000_prelude` → `0004_functions`) плюс усе, що додав `db:diff`. Порядок накату — за
-  числовим префіксом імені. Теки `supabase/migrations/` немає.
+  числовим префіксом імені.
 - 🔴 Ручні функції/тригери — лише в ручних файлах канону (`0000_prelude`,
   `0004_functions`), `0001_init` — чистий генерат (парність із drizzle-kit повна,
   без винятків за маркером); множину функцій і тригерів стереже гейт
@@ -218,9 +224,10 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
   baseline (`drizzle/0000_init.sql` + `meta/0000_snapshot.json`, синхронно з каноном і
   `schema.ts`), після якої `drizzle-kit generate` мусить сказати «No schema changes».
 - Копію канону для магазину везе шаблон скаффолдера
-  (`template/supabase/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
+  (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
-- 🔴 `pnpm db:migrate` — файл-надгробок, падає з поясненням. **Не** застосовуй
+- 🔴 Накат у магазині — `psql -f` по `db/migrations`
+  (`simplycms db:diff` дописує в цю теку, далі ревʼю й накат вручну). **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
 - `DATABASE_URL` (з `.env.local`) — джерело тулінгу `db:pull`/`db:diff` і рантайм-пул
@@ -260,12 +267,11 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
    колонками.
 2. **Рубіж 2 — віддача.** Лоадери вітрини (`loadProduct`, `toSectionRow`,
    `toOptionRow`, `loadProductReviews`) і операції читання адмінки (`list` та
-   RETURNING фабрики ресурсу, `getAdminReviewContent`) санітизують те, що
+   RETURNING фабрики ресурсу, `getReviewCard`) санітизують те, що
    віддають клієнту, — це закриває старі рядки, сід і демо-дані. Список
-   каталогу опису товару не віддає (`description: null`). Сторінка модерації
-   відгуку читає рядок легасі-шляхом `supabase-js` з браузера, тож розмітку для
-   показу бере із серверної операції `getAdminReviewContent` (грант
-   `review.moderate`).
+   каталогу опису товару не віддає (`description: null`). Картка модерації
+   відгуку (`getReviewCard`, грант `review.moderate`) віддає очищену розмітку
+   разом із рештою полів.
 
 **Тип.** `sanitizeRichHtml(html, profile): SanitizedHtml` (`simplycms/sanitize`,
 server-only: модуль і `sanitize-html` — у `contracts/server-only`) — ЄДИНИЙ
@@ -384,10 +390,47 @@ parsed))`; ядро приймає вже розібраний вхід і `Acto
 валідує сам через `validateAdminInput` без статусу; `removeIn` — без `prepare`, як і `remove`, захищене
 видалення лишається за іменованими операціями), ядра `saveProductPrices`, `saveStock`,
 `saveDiscount`, `changeOrderStatus`, `assignCustomerCategory`, `setCustomerBan`,
-`deleteCustomer`. Ядро, якому потрібен актор, отримує `CoreActor`
+`deleteCustomer`, `setReviewsStatus` (масова модерація, Е6д-7/Е6д-23: без актора, як
+`setCustomerBan`; вхід `{ items: [{ id, updatedAt }], status }` — модератор рішає проти
+ПОБАЧЕНОЇ версії: під `FOR UPDATE` версія кожного рядка (`isoVersion`, мілісекунди)
+порівнюється з `updatedAt`, розбіжність → 409 `review_changed` на весь пакет, неіснуючий id →
+409 `review_not_found`, часткового запису в обох випадках немає; сід кличе його під
+`withActor(app_admin)` з версіями, прочитаними SQL-ом) і `deleteReview` (повертає `discard` для
+двофазного стирання, Е6д-14). Ядро, якому потрібен актор, отримує `CoreActor`
 (`admin-server/impl/core-actor.ts`) — дискримінант `{ kind: 'admin', userId } | { kind:
 'system' }`, а не `string | null`: для `system` автора дії (`changed_by`) немає і перевірки
 «не я» теж, як в автоправил. Операція передає актора з гранта (`actorOfGrant`).
+
+**Опція `media` фабрики (Е6д-1).** `defineAdminResource({ …, media: { entityType,
+columns } })` (`admin-server/impl/resource-media.ts`, `resource-write-media.ts`) робить
+медіа-колонки ресурсу частиною його інваріантів, а не кодом у кожному ресурсі. Порядок у
+транзакції insert/update/remove: лок → знімок старих рядків (`SELECT … WHERE id = ANY($ids)
+ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) → guard (бачить знімок; у банерів
+зливає знімок із патчем, Е6д-2) → перевірка НОВИХ референсів → запис → `eraseMediaRows`
+заміненого чи видаленого (лише рядки `media`) → після COMMIT `completeMediaErasures` (Е6д-14,
+`storage.md`). Новий референс перевіряється, лише якщо він непорожній і відрізняється від
+знімка: це рядок `media` з `entity_type = cfg.entityType AND entity_id = <id рядка>` під
+`FOR SHARE`, інакше 409 `media_ref_invalid`. Стирається лише референс, що задовольняє ту саму
+умову — чужий файл фабрика не стирає ніколи; незмінений `data:`/`https:` референс (демо) не
+перевіряється. `ImageUpload` файл при прибиранні з форми не стирає, а `id` нового рядка форма
+генерує НАПЕРЕД: «прибрав картинку → скасував форму» лишає старий файл живим, новий — орфаном
+`media` з `entity_id` рядка; такого сироту прибирає sweep неприв'язаних медіа (Е6д-22,
+`storage.md`). Опцію мають банери, `sections`, `products`, `property_options` і
+`product_modifications` (К3-Е6д-1); значення колонки може бути рядком або `jsonb`-масивом
+референсів (`normalizeMediaRefs`).
+
+**Опція `cascadeMedia` фабрики (Е6д-19).** `defineAdminResource({ …, cascadeMedia: [{ fk,
+column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
+`resource-write-remove.ts`) — дочірні таблиці, рядки яких FK `ON DELETE CASCADE` знищує
+разом із рядком ресурсу і які несуть медіа. `remove`/`removeIn`: `FOR UPDATE` батьків
+(`ORDER BY id`) → знімок дочірніх рядків `FOR UPDATE` → DELETE → `eraseMediaRows` кожного
+дочірнього рядка з власником `{ entityType, <id дочірнього> }` → після COMMIT
+`completeMediaErasures`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
+обовʼязковий: вставка дочірнього рядка, що вже пройшла FK-перевірку (`FOR KEY SHARE`), без
+нього пішла б каскадом повз знімок. Має ресурс товарів (фото відгуків). Покриття стереже
+гейт `media-cascade-coverage` (`test-contours.md`); єдиний виняток гейта — аватар
+(`users → profiles.avatar_url`: користувача видаляє лише `deleteCustomer`); двоярусний каскад
+(товар → модифікація → фото) оголошується полем `via`. Канон стирання — `storage.md`.
 
 **Нова форма адмінки** = помилка збереження йде через `applyServerValidation` (або
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
@@ -529,7 +572,7 @@ email в іншому регістрі — не конфлікт, записує
   не утворять: `updateProfile` вітрини, власні записи Better Auth у
   `users`/`sessions`, а також аватар вітрини (`replaceAvatarFor`/`clearAvatarFor`),
   який пише `media` + один рядок `profiles` у порядку `users` → `profiles`, а його
-  операторська транзакція `eraseMedia` чіпає лише `media`. Нова операція, що пише
+  операторська транзакція `eraseMediaRows` чіпає лише `media`. Нова операція, що пише
   два ресурси графа, підпадає під правило; виняток називає причину в коментарі
   поруч із кодом. Незалежно від advisory-лока рядки покупця блокуються в порядку
   `users` → `profiles` (FK-`KEY SHARE` на `users` теж рахується); операція, що бере
@@ -616,13 +659,15 @@ email в іншому регістрі — не конфлікт, записує
   `users`/`profiles` `FOR UPDATE` → перевірки (існує, не я, не адмін, введений email
   збігається без регістру) → ref аватара читається ДО знеособлення → знеособлення
   замовлень → відгуки анонімні (`user_id NULL`, рейтинг і текст лишаються) →
-  `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMedia(tx, ref)`
-  ОСТАННІМ кроком перед COMMIT. Рядок `media` переживає каскад, бо `uploaded_by` має
-  `SET NULL`. Збій `driver.delete` відкочує все (покупець, замовлення з ПД, відгук і
-  `media` на місці), повтор завершує видалення; збій самого COMMIT лишає лише «файл
-  зник, рядок є», що лікується повтором (`local-fs` вважає `ENOENT` успіхом).
-  Окремої транзакції для аватара немає: інакше роль, видана між перевіркою й стиранням,
-  стерла б аватар нового адміна при відмові видалення.
+  `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMediaRows`
+  аватара (власник `avatar/<userId>`) і фото кожного відгуку покупця (власник
+  `review/<id>`) — лише рядки `media`; ядро повертає `discard`, а операція стирає файли
+  ПІСЛЯ COMMIT (`completeMediaErasures`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
+  `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
+  місці й файлів не чіпає; збій `driver.delete` після COMMIT видалення НЕ відкочує —
+  лишається орфан-файл без рядка, битих референсів нуль (хвіст у outbox `media_erasures`
+  добиває повтор; роздача орфана закрита перевіркою рядка, Е6д-21 — `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
+  видана між перевіркою й стиранням, стерла б аватар нового адміна при відмові видалення.
 - 🔴 **Реєстр ПД `orders` (Е6г-7)** — `commerce/order-privacy.ts`:
   `ORDER_COLUMN_PRIVACY: { readonly [K in keyof Order]: 'personal' | 'operational' }`.
   Нова drizzle-колонка без запису червонить `typecheck`; харнес звіряє реєстр з

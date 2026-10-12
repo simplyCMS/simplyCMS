@@ -43,6 +43,7 @@ import {
 import {
   APPROVED_RATINGS,
   BANNER_PLACEMENT,
+  SECTION_BANNER_PLACEMENT,
   CLOSED_POINT_QUANTITY,
   DISABLED_DISCOUNT,
   DISCOUNT_PERCENT,
@@ -228,22 +229,24 @@ describe('вітрина: знижки, банери, залишки, відгу
     expect(titles).not.toContain(EXPIRED_BANNER_TITLE);
   });
 
-  it('банери звужуються розділом', async () => {
+  it('банери звужуються розділом; банер section без розділу не віддається ніколи (Е6д-12)', async () => {
     const sectionId = await firstId(
       `select id from public.sections where slug = 'sonyachni-paneli'`,
     );
     const scoped = await withStorefrontDb((db) =>
-      loadBanners(db, { placement: BANNER_PLACEMENT, sectionId }),
+      loadBanners(db, { placement: SECTION_BANNER_PLACEMENT, sectionId }),
     );
-    const all = await withStorefrontDb((db) =>
-      loadBanners(db, { placement: BANNER_PLACEMENT }),
+    const unscoped = await withStorefrontDb((db) =>
+      loadBanners(db, { placement: SECTION_BANNER_PLACEMENT }),
     );
 
-    expect(scoped.length).toBeGreaterThan(0);
-    expect(scoped.length).toBeLessThan(all.length);
+    expect(scoped.map((b) => b.title)).toEqual(['Банер розділу']);
     expect(scoped.every((banner) => banner.section_id === sectionId)).toBe(
       true,
     );
+    // Без розділу в запиті фільтр за ним зникав і віддавав «осиротілий» банер.
+    expect(unscoped.map((b) => b.title)).not.toContain('Банер без розділу');
+    expect(unscoped.every((banner) => banner.section_id !== null)).toBe(true);
   });
 
   // ── Залишки ───────────────────────────────────────────────────────────────

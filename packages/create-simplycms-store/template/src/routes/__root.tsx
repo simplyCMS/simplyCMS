@@ -12,9 +12,9 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
-// 🔴 Субшлях, а не барель `simplycms/plugins`: барель тягне ще й lifecycle
-// адмінки, який досі ходить у БД через supabase-js. Тут корінь застосунку —
-// у нього цей вантаж потрапляти не має.
+// 🔴 Субшлях, а не барель `simplycms/plugins`: барель тягне ще й
+// `PluginLoader` із серверним модулем `simplycms/plugins/server`. Тут корінь
+// застосунку — у нього цей вантаж потрапляти не має.
 import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useAuth } from 'simplycms/core/hooks/useAuth';

@@ -34,7 +34,7 @@ export function Hero() {
             <Reveal delay={160}>
               <p className="hero-lede">
                 Storefront, admin, checkout and plugins on{' '}
-                <strong>TanStack Start, React&nbsp;19 and Supabase</strong> —
+                <strong>TanStack Start, React&nbsp;19 and PostgreSQL</strong> —
                 not on 2008-era PHP. Your store is a thin assembly of ~8 files;
                 the core ships as versioned npm packages, so{' '}
                 <strong>

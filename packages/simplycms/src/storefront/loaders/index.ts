@@ -21,6 +21,7 @@ export * from './profile';
 export * from './recipients';
 export * from './reviews';
 export * from './reviews-write';
+export * from './reviews-edit';
 export * from './stock';
 export * from './stock-info';
 export * from './product-detail';

@@ -44,7 +44,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 монорепо → build:packages → pnpm pack → npm registry → create-store → магазин
 └── pnpm test ┘
 └── test:schema ┘ (схема+гранти+RLS, окремий Postgres)
-└───── pilot:pack (A/C/D/CLI/TOOL) ──────┘
+└───── pilot:pack (A/C/SB/D/IP/CLI/TOOL) ─┘
 └──────────── pilot (+B, жива БД) ────────────────────────┘
                                         └── НЕ ПОКРИТО ────────────────┘
 ```
@@ -54,7 +54,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | Юніти | `pnpm test` | сирців | — |
 | Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (без Docker) |
 | Пакувальність | `pnpm pilot:pack` | локальних tarball-ів | — |
-| Проти живої БД | `pnpm pilot` | + HTTP-відповіді | `DATABASE_URL` у `.env.local` |
+| Проти живої БД | `pnpm pilot` | + HTTP-відповіді; **обовʼязковий у релізі** (`scripts/release/pilot-full.mjs`: харнес + `db:demo` → `pnpm pilot`) | `DATABASE_URL` у `.env.local` або `PILOT_DATABASE_URL`; у релізі — Docker (`pnpm harness:up`) |
 | ~~Локальний стек~~ | ~~`pnpm pilot:e2e`~~ | 🔴 **DECOMMISSIONED (0.4.1)** — команди немає; повертає К6 | — |
 | Реальний реєстр | **немає** | — | мережа |
 
@@ -114,7 +114,7 @@ OK  owner-invite ідемпотентний + роль admin — 2 прогон�
 OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
 ```
 Третій рядок — живий доказ фікса blocker-а з код-рев'ю: до заміни
-`Response.redirect` на `redirectResponse` ця перевірка дала б 500.
+`Response.redirect` на `redirectResponse` (знесено) ця перевірка дала б 500.
 
 ## 4. Сліпі зони (станом на 2026-08-08)
 
@@ -439,7 +439,7 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 (`POST /api/revalidate-theme`), але не клієнтський: `_storefront` має
 `staleTime: 5 * 60_000`, тож перехід на вітрину в межах застосунку до п'яти
 хвилин показував стару тему, а тост стверджував «Зміни застосовані на сайті».
-Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()`
+Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()` (знесено)
 (`admin/lib/revalidateTheme.ts`), що робив обидва кроки. 🔴 Е6б знесла і його, і
 `/api/revalidate-theme`: серверний кеш тепер скидає сама операція після COMMIT
 (`activeThemeCache.invalidate()` в `admin-server/impl/site-themes/activate.ts`,
@@ -521,7 +521,7 @@ scripts/e2e.mjs
   1. assertLocalStackTooling()   — supabase CLI + docker (перевикористано з pilot-pack/e2e.mjs)
   2. startLocalStack()           — supabase start + db reset (той самий механізм, що й `pnpm pilot:e2e`)
   3. readLocalStack(port)        — VITE_SUPABASE_* + service_role з `supabase status -o json`
-  4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs
+  4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs  (знесено)
   5. playwright test  (VITE_LOCALE=uk-UA)   ─┐ послідовно: один vite dev
      playwright test  (VITE_LOCALE=en-US)   ─┘ на теку одночасно (routeTree.gen.ts, node_modules/.vite)
   6. stopLocalStack()            — завжди, у finally
@@ -533,7 +533,7 @@ scripts/e2e.mjs
 батьківського процесу в момент старту, не пізніше) — застосунок падав би на
 першому ж запиті до Supabase. Тому bootstrap живе поза Playwright.
 
-`bootstrapOwner()` перевикористовує `runOwnerInvite` з
+`bootstrapOwner()` (знесено) перевикористовує `runOwnerInvite` з
 `packages/create-simplycms-store/template/scripts/owner-invite-core.mjs` (той
 самий код, що доводить Gate E) — не другий механізм. Єдина відмінність від
 Gate E: e2e-контуру для логіну формою потрібен ПАРОЛЬ, тож після idempotent
@@ -679,10 +679,13 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `test-harness/pg/__tests__/single-default.test.ts` | часткові unique-індекси `is_default` на 7 таблицях (23505), GLOBAL незалежно від сіду | `pnpm test:schema` | «не більше одного»; «принаймні один» — контракт операцій |
 | Gate C (`scripts/pilot-pack/gate-c.mjs`) | `admin-server/impl` у клієнтському бандлі; присутність стаба `admin-server/index` | `pnpm pilot:pack` | — |
 | `eslint-rules/no-direct-storage.mjs` (зона `simplycms-storage`) + `tests/eslint-rules/no-direct-storage.test.ts` | прямий виклик сховища повз порт: `supabase.storage`, `x.storage.from(…)`, `x['storage']`, імпорт `@supabase/storage-js` | `pnpm lint` / `pnpm test` | бачить лише те, що ESLint парсить у СВОЇЙ зоні — тека поза зоною йому невидима (тому поруч файловий ратчет) |
-| `tests/storage-direct-calls.test.ts` | ті самі три форми, але СКАНОМ ПО ФАЙЛАХ усього `packages/simplycms/src/**`; список виїмок може тільки скорочуватись (сьогодні один файл — `admin/pages/ReviewDetail.tsx`) | `pnpm test` | регекс по тексту: виклик, зібраний динамічно, не ловиться |
-| `tests/storage-port-consumers.test.ts` | який лоадер вітрини сміє імпортувати `simplycms/storage` (allowlist рівно з `avatar.ts`) — пін під тір-зоною `storefront: ['db','auth','storage']`, яка не вміє бути вужчою за теку | `pnpm test` | лише лоадери вітрини; інші теки з винятком (`admin-server`) свого піна не мають |
+| `tests/storage-direct-calls.test.ts` | ті самі три форми, але СКАНОМ ПО ФАЙЛАХ усього `packages/simplycms/src/**`; список виїмок може тільки скорочуватись (сьогодні виїмок немає: легасі `ReviewDetail.tsx` знесено в Е6д) | `pnpm test` | регекс по тексту: виклик, зібраний динамічно, не ловиться |
+| `tests/storage-port-consumers.test.ts` | який лоадер вітрини сміє імпортувати `simplycms/storage` (allowlist: `avatar.ts`, `reviews-write.ts` — фото відгуку, Е6д-15, `reviews-edit.ts` — правка відгуку, Е6д-23, і `media-visibility.ts` — лише тип вердикту роздачі, Е6д-21) — пін під тір-зоною `storefront: ['db','auth','storage']`, яка не вміє бути вужчою за теку | `pnpm test` | лише лоадери вітрини; інші теки з винятком (`admin-server`) свого піна не мають |
+| `test-harness/pg/__tests__/media-cascade-coverage.test.ts` (Е6д-19) | каскадна медіа-колонка без рішення: для кожної таблиці `MEDIA_COLUMNS` — транзитивне замикання FK `ON DELETE CASCADE` з каталогу; пара «предок → колонка» мусить бути в `cascadeMedia` ресурсу предка або в `EXEMPT` з причиною; оголошене покриття — справжній прямий CASCADE-FK (двоярусний каскад товар → модифікація → фото оголошується полем `via`), винятки не застарілі | `pnpm test:schema` | `EXEMPT` лише один — аватар (`users → profiles.avatar_url`, видаляє `deleteCustomer`); поведінку стирання доводить `admin-products-remove-reviews`, шлях `deleteCustomer` гейт не виконує |
+| `tests/media-sweep-coverage.test.ts` (Е6д-22) | `entity_type` у `MEDIA_COLUMNS`/логотипі без гілки посилань у `findMediaReferences` (sweep стер би живий файл) і зайва гілка без реєстру; винятки `NOT_SWEPT` (зараз порожній) не застарілі | `pnpm test` | доводить повноту гілок, а не коректність їхнього SQL — це `media-sweep`/`media-references` проти Postgres |
 | `tests/media-columns-coverage.test.ts` | розбіжність реєстру `MEDIA_COLUMNS` зі схемою Drizzle: медіа-колонка, додана без резолву на вітрині, показала б покупцеві голий storage key | `pnpm test` | доводить ПОВНОТУ реєстру, а не те, що кожен читач справді кличе `resolveMediaUrl` |
-| `test-harness/pg/__tests__/media-record.test.ts` (девʼять кейсів) | `writeMedia`/`eraseMedia` проти ЖИВОГО Postgres: відкат рядка при падінні запису файлу, «рядок → обʼєкт» усередині однієї транзакції, `app_user` без гранта `DELETE` не торкається файлу, повтор після dangling-рядка, послідовність заміни зі зламаним видаленням старого | `pnpm test:schema` | драйвер — `local-fs`; поведінка S3 (К4) не покрита, орфан після обриву між `put` і COMMIT — теж |
+| `test-harness/pg/__tests__/media-record.test.ts` (вісім кейсів) | `writeMedia`/`eraseMediaRows` проти ЖИВОГО Postgres: запис файлу й рядка з правильним `size_bytes`/`mime_type`, відкат рядка при падінні запису файлу, `app_user` без гранта `DELETE` не торкається файлу, збій стирання старого файлу лишає хвіст в outbox, успішна заміна, падіння запису нового не чіпає файл старого, стирання лише ключів власника, відсутність тимчасових файлів | `pnpm test:schema` | драйвер — `local-fs`; поведінка S3 (К4) не покрита, орфан після обриву між `put` і COMMIT — теж |
+| `packages/simplycms/src/runtime/__tests__/body-limit.test.ts` + `scripts/live-smoke/body-limit.mjs` (К3-Е6д-2) | стеля тіла server functions: 413 `request/payload-too-large` за `Content-Length`, 411 `request/length-required` для всього, що не JSON (і для всього, що Start читає як форму, зокрема `application/json; x=multipart/form-data`), база шляху з `TSS_SERVER_FN_BASE`; живий прогін — відгук із 5 файлами проходить, понад стелю відсікається | `pnpm test` / `pnpm live:smoke` | перевіряє заголовок, а не байти потоку; обрив зʼєднання замість 413 при прямому виклику повз UI (`UPSTREAM:START-BODY-1`) не покритий |
 | `packages/simplycms/src/storage/__tests__/*.test.ts` (`serve`, `local-fs`, `inspect`, `mime`, `keys`) | заголовки роздачі (`nosniff`, `immutable`, `content-type` з розширення ключа), 404 на traversal (сирий і процентно-кодований), сніфер MIME за магічними байтами, взаємна оберненість `EXT_BY_MIME`/`MIME_BY_EXT` | `pnpm test` | у юнітах немає ні реального multipart-тіла, ні роздачі роутом Start — це доводить лише `pnpm live:smoke` |
 
 🔴 Урок Е1б для рев'ю: рев'ю ПО ДИФУ сліпе до парність-тестів за
@@ -702,10 +705,10 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   ДВА різні обʼєкти з однаковими байтами. Це не помилка й не перевіряється:
   дедуплікація за хешем вмісту — не контракт Е2.
 - **`ImageUpload` на живій сторінці.** Компонент переведено на порт і
-  покрито юнітами, але всі пʼять його сторінок адмінки лишаються на
-  `supabase-js` і на чистому Postgres не працюють — живого прогону
-  зображення товару в Е2 немає за побудовою (DoD К3 п.6 закриває хвиля
-  каталогу, Е3–Е6).
+  покрито юнітами; на момент Е2 усі пʼять його сторінок адмінки лишались на
+  `supabase-js` (шар знесено в К3-Е7) і на чистому Postgres не працювали —
+  живого прогону зображення товару в Е2 не було за побудовою (DoD К3 п.6
+  закрила хвиля каталогу, Е3–Е6).
 - **Роль підключення в `live:smoke`.** Скрипт віддає магазину `DATABASE_URL`,
   виведений із `PG_HARNESS_URL` (адмінська роль кластера), а не окремий
   `app_runtime`. RLS і гранти це не послаблює — `withActor` робить
@@ -749,7 +752,7 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 червонить), `eslint-rules/no-collection-key-outside-admin-data.mjs`
 (сегмент `'list'` лише `admin-data`, Е3-15′), `bareListSegment` у
 `query-key-from-entity.mjs` (той самий інваріант — інша форма запису),
-`ADMIN_SCAN_DIRS` у `tests/admin-inserts-need-id.test.ts` звужено до
+`ADMIN_SCAN_DIRS` (знесено) у `tests/admin-inserts-need-id.test.ts` (знесено) звужено до
 `admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
 основним гейтом `explicit-ids` за побудовою).
 
@@ -825,6 +828,19 @@ expectTypeOf і рев'ю.
 вітрина до 5 хв показує старе». Перевірка руками — зберегти профіль і
 перезавантажити головну.
 
+### 11.5. К3-Е7 (знос Supabase): ратчети проти повернення
+
+Знесено клієнтський шар БД, залежності `@supabase/*` і реєстри легасі-адмінки;
+замість них — гейти, кожен з негативним контролем, прогнаним при прийомі етапу:
+
+| Гейт | Що ловить | Крок ланцюга | Межа |
+|---|---|---|---|
+| `eslint-rules/no-supabase-import.mjs` (власний плагін `simplycms-supabase`, правило на ВСЕ репо) + `tests/eslint-rules/no-supabase-import.test.ts` | `@supabase/*` у статичному `import`/`export … from`, динамічному `import()` (рядок або шаблон без виразів), `require`, `import x = require`, `import('…').T` | `pnpm lint` / `pnpm test` | код шаблону магазину в основний лінт не потрапляє — його лінтує тест нижче |
+| `tests/no-supabase-manifests.test.ts` | `@supabase/*` у `package.json`/`.tpl`-маніфестах, у `pnpm-lock.yaml` і в коді шаблону магазину (власний ESLint-прогін на справжньому парсері, не вакуумний) | `pnpm test` | `pnpm test` перед запуском переписує lock за supply-chain policy pnpm 11 — мутацію lock доводь через `npx vitest` |
+| `tests/eslint-server-env.test.ts`, `tests/dist-import-meta-fixture.test.ts`, `tests/pilot-gate-c.test.ts` | незалежні контролі, що пережили знос: `import.meta.env` у зоні серверного env, позитивний контроль лоуерингу `import.meta` у dist, `gateBundle` (Gate C) на синтетичному `bundle-stats.client.json` | `pnpm test` (`dist-import-meta-fixture` — `pnpm test:packaging`) | Gate C на справжньому tarball-і — лише `pnpm pilot:pack` |
+| `tests/cli-doctor.test.ts`, `tests/cli-update.test.ts` | відсутня тека `db/migrations` магазину: doctor №7 — error, `update` — гучна помилка й ненульовий exit; стара `supabase/migrations` — з підказкою `git mv` | `pnpm test` | — |
+| `test-harness/pg/__tests__/explicit-ids.test.ts` | дискаверить вставки без `id` в УСІЙ `packages/simplycms/src/**`; ратчети-реєстри легасі-адмінки знесено разом із шаром | `pnpm test:schema` | реєстр сутностей без колекції живе в `simplycms/contracts/admin-server-first.ts` (`contracts/__tests__/admin-server-first.test.ts`) |
+
 ## 12. Межа клієнт/сервер: одна декларація, сім читачів (трек T, 2026-09-02; сьомий — К3-Е2)
 
 Server-only субшляхи ядра задекларовано ОДИН раз — `simplycms/contracts/server-only`
@@ -842,6 +858,10 @@ server-only дерево для `admin-server` і `storefront/loaders` (Е3-5), 
 | `eslint-rules/server-only-relative.mjs` | відносний імпорт у server-only дерево ззовні — помилка лінту | `tests/eslint-rules/server-only-relative.test.ts` |
 | групи `no-restricted-imports` плагінів | плагін не імпортує серверний граф | `tests/plugin-trust-boundary.test.ts` |
 | `scripts/pilot-pack/gate-c.mjs` | серверного вантажу в клієнтських чанках скретч-магазину немає | `SERVER_PAYLOAD` похідний, гейт червоніє на `impl` |
+| **Gate SB** (`scripts/pilot-pack/gate-sb.mjs` + `server-bundle.mjs`; юніт `tests/pilot-server-bundle.test.ts`; `UPSTREAM:START-IP-1`) | серверний бандл скретча за `bundle-stats.ssr.json`: драйвер БД (`pg`, `pg-*`, `postgres-*`) НЕ вклеєний, а кожен вклеєний пакет має причину в `server-bundle-allowlist.mjs` (клас дефекту — вклеєний CJS-пакет із dual-`exports`, до якого йде `require()`); запис, якого в бандлі вже немає, — гниль | мутація 2026-10-11: прибрати `pg` з deps скретча → перезбірка → FAIL (вклеєно `pg`, `pg-pool`, …); повернути → OK. `pnpm pilot:pack`, без БД |
+| Gate B, крок «sanitize-html на сервері» (`scripts/pilot-pack/gate-b.mjs` + оверлей `sanitize-probe.sql`; накочує `apply-probe.mjs`/`pilot-full.mjs`) | серверний `sanitize-html` у бандлі скретча реально працює (dual-пакети `postcss`/`is-plain-object`/`nanoid` вклеєні): SSR картки товару віддає `<strong>`, `<a href>`, `text-align`, без `<script>`/`onerror`/`color`; вимагає демо-БД + оверлей; `tests/demo-seed-clean.test.ts` (демо без `<script`/`onerror`/`javascript:`) і `tests/pilot-probe-not-packed.test.ts` (оверлей не в tarball-ах, packaging) | мутація 2026-10-11: зламаний `postcss.parse` у `dist/server/server.js` скретча → FAIL; відкат → OK. `pnpm pilot` |
+| `tests/pg-peer-parity.test.ts` | версія `pg`: peer ядра = шаблон магазину = пілотний оверлей = корінь монорепо; ядро не має `pg` у `dependencies` | розбіжна версія в шаблоні або оверлеї, відсутній `pg` — червоні |
+| doctor №13 + підказка `update` (`tests/cli-pg-driver.test.ts`) | `pg` — пряма залежність магазину в межах peer-діапазону ядра; `update` версію `pg` НЕ переписує | кейси: немає pg / не в dependencies / невідповідна версія / ок; мутації: перевірка завжди ok, update без підказки, update переписує pg |
 | Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** пілота (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
 | `tests/dist-server-boundary.test.ts`, блок сентинелів | контроль САМОГО списку `SERVER_ONLY`: мапа літералів не похідна від списку, кожен є в джерелі дерева, у серверному `dist` і відсутній у клієнтському | закоментований рядок `'storefront'` у декларації → червоний packaging |
 | `eslint-rules/no-server-only-in-client.mjs` (зона `simplycms-client-boundary`, К3-Е2) | клієнтська тека ядра (`admin/**`, пʼять `*-ui/**`) не імпортує server-only субшлях чи серверну залежність зі СТАТИЧНОГО `import`/`export…from` — окремий детектор, бо базовий `no-restricted-imports` не розрізняє `import` і стираний компілятором `import type` (канон `OrderStatuses.tsx:8`) | `tests/eslint-rules/no-server-only-in-client.test.ts` (фікстури Linter API) + `tests/tier-boundary-client-boundary.test.ts` (реальний конфіг: заборона в `checkout-ui`, виїмка `core/lib`, чистий `import type` в `admin`) |
@@ -1031,3 +1051,35 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 Дельта `sideEffects: false` — близько 1,2–1,6 КБ: порядок величини, не
 число — між збірками дрейфують і абсолютний розмір, і сама дельта (виміри
 2026-09-03 дали −1 228 і −1 556 байтів).
+
+## 13. Нестабільний `live:smoke` і гейти за змінюваними шляхами (2026-10-11)
+
+### Нестабільний крок: процедура
+
+1. **Журнал збою — артефакт.** Повний вивід прогону лежить у `.live-smoke/last.log`
+   (і `.live-smoke/<timestamp>.log`); без нього «флейк» не відрізнити від дефекту.
+2. **Крок у зоні гілки** (гілка чіпала шляхи цього кроку за таблицею нижче) → блокер, лагодити.
+3. **Крок поза зоною гілки** → ганяти на `main` до першого збою, максимум 12; поріг
+   узгоджений із частотою збою на гілці; 12/12 зелених на `main` → блокер гілки.
+   Збій відтворився на `main` → передіснуючий: мерж не блокує, але це перший пункт
+   наступного етапу (рішення з причиною, не «борг» — `AGENTS.md` § «Дисципліна хвилі»).
+4. **Лікування — очікуванням умови** з коротким таймаутом (~5 с), а не паузою. Миттєві
+   `count()`/`isVisible()` на UI, що сходиться асинхронно, заборонені: вони читають
+   стан до збіжності й дають і хибний FAIL, і хибний OK.
+5. **Мутація, що ламає UI-збіжність, мусить червоніти** (прибрати оновлення стану →
+   очікування вичерпує таймаут → FAIL); виправлення без такого контролю не приймається.
+
+### Змінені шляхи → обовʼязкові гейти
+
+Додатково до базового ланцюга (`format:check → lint → build → typecheck → test`,
+[`TOOLING.md`](../development/TOOLING.md) § 3). Гейти визначає ця таблиця, а не оцінка
+виконавця «що дотичне».
+
+| Змінено | Гейти |
+| --- | --- |
+| `packages/simplycms/src/storage/**`, `storefront/loaders/avatar*`, `reviews*`, `routes/**`, `runtime/**`, `src/start.ts`, `src/routes/**`, `scripts/live-smoke*` | `pnpm live:smoke` (production-збірка; dev цього не доводить — § 11.4) |
+| `packages/simplycms/src/schema/**`, `migrations/**`, `test-harness/**`, сирі `INSERT` у `src/` | `pnpm test:schema` (`pnpm harness:up` для Postgres) |
+| `package.json` `exports`, `packages/simplycms/skills/**`, `packages/create-simplycms-store/template/**`, `packages/cli/host/**` | `pnpm build:packages` + `pnpm typecheck:template` + `pnpm test:packaging` |
+| i18n-каталоги (ядро / тема / плагін) | `pnpm test` (тести парності; зелений лінт повноти не доводить) |
+| `package.json` залежності, `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` першим |
+| `scripts/showcase/**` | `pnpm typecheck:showcase` |

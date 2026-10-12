@@ -93,6 +93,12 @@ export const ADMIN_STATE_CONSTRAINT = {
   customerNotFound: 'customer_not_found',
   customerSelf: 'customer_self',
   orderPersonalDataErased: 'order_personal_data_erased',
+  // Е6д-1: новий референс зображення не є файлом цього запису (опція `media` фабрики).
+  mediaRefInvalid: 'media_ref_invalid',
+  // Е6д-7: відгук зник між відкриттям списку й дією модератора.
+  reviewNotFound: 'review_not_found',
+  // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
+  reviewChanged: 'review_changed',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

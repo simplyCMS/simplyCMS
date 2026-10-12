@@ -5,6 +5,7 @@
 import { existsSync } from 'node:fs';
 import {
   compareMigrationsMulti,
+  missingStoreMigrationsDir,
   pluginMigrationSources,
   storeMigrationsDir,
 } from './db-diff.mjs';
@@ -52,6 +53,10 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
       'node_modules/simplycms/migrations відсутня — встановлене ядро ще не везе міграцій, онови його (pnpm simplycms update)';
     return { id, title, status: 'skip', details };
   }
+  // Після skip: без канону порівнювати нема з чим, а з каноном відсутня тека
+  // магазину — не «усе нове відсутнє», а зламаний магазин.
+  const missingDir = missingStoreMigrationsDir(storeRoot);
+  if (missingDir) return { id, title, status: 'error', details: missingDir };
   const sources = [
     { name: null, spec: 'simplycms', dir: schemaMigrationsDir },
     ...pluginMigrationSources(storeRoot),

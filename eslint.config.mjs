@@ -11,6 +11,7 @@ import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
+import noSupabaseImport from './eslint-rules/no-supabase-import.mjs';
 import noDangerouslySetInnerHtml from './eslint-rules/no-dangerously-set-inner-html.mjs';
 import noInputValidator from './eslint-rules/no-input-validator.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
@@ -86,24 +87,22 @@ const I18N_MIGRATED_FILES = [
 // Доступні імена контролів воронки (К2-Е0, Е0-4, рішення Р5): у пʼяти теках
 // воронки 41 `<label>` не звʼязаний ні з чим — скрінрідер і `getByLabelText`
 // поля не знаходять. `cart-ui` у зоні наперед: форм там сьогодні нуль, і гейт
-// має стояти ДО появи першої.
-//
-// 🔴 `src/admin/**` тут НЕМАЄ навмисно — з тієї ж причини, що й у зоні
-// `query-key-from-entity` нижче: ~52 файли адмінки переписуються треком К3,
-// правити їхні лейбли зараз означало б робити роботу двічі.
+// має стояти ДО появи першої. Адмінка — у зоні з К3-Е7 (виїмку зняли разом
+// із легасі-шаром; негативний контроль — tests/eslint-admin-zones.test.ts).
 const A11Y_LABEL_ZONE = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
   'packages/simplycms/src/profile-ui/**/*.tsx',
   'packages/simplycms/src/catalog-ui/**/*.tsx',
   'packages/simplycms/src/reviews-ui/**/*.tsx',
   'packages/simplycms/src/cart-ui/**/*.tsx',
+  'packages/simplycms/src/admin/**/*.tsx',
 ];
 
 // Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ
 // з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
 // Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
 // `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
-// (див. packages/simplycms/src/supabase/__tests__/env-source.test.ts).
+// (див. tests/eslint-server-env.test.ts).
 const IMPORT_META_ENV =
   'MemberExpression[object.type="MetaProperty"][property.name="env"]';
 
@@ -115,12 +114,10 @@ const serverEnvRestrictedSyntax = [
   },
 ];
 
-// ТОЧНО серверні модулі контракту §7. browser-client.ts та ізоморфний код
-// (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
-// потрібне в бандлі, сюди їх НЕ додавати.
+// ТОЧНО серверні модулі контракту §7. Ізоморфний код (роут товару,
+// simplycms.config.ts) — клієнтський контур: йому значення потрібне в
+// бандлі, сюди його НЕ додавати.
 const SERVER_ENV_FILES = [
-  'packages/simplycms/src/supabase/server-client.ts',
-  'packages/simplycms/src/supabase/anon-client.ts',
   'packages/simplycms/src/storefront-routes/seo/robots.ts',
   'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
   // `siteUrl` кореня вітрини (Е6б-10/11): єдине джерело URL сайту для head().
@@ -130,7 +127,7 @@ const SERVER_ENV_FILES = [
 ];
 
 // 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
-// `simplycms/plugin-sdk` — прямі імпорти Supabase-шару звідси заборонені.
+// `simplycms/plugin-sdk` — прямі імпорти клієнтського шару БД (`@supabase/*`) звідси заборонені.
 // Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
 // (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
 // `plugin-*`: plugin-system і plugin-sdk — ядро, їх зона не покриває.
@@ -161,9 +158,10 @@ export const MUTATION_CACHE_SYNC_RATCHET = [];
 
 // 🔴 Похідне від ЄДИНОЇ декларації межі (`contracts/server-only.ts`): усі
 // server-only субшляхи ядра й серверні залежності — bare і з підшляхами.
-// Літерали нижче — те, що плагіну заборонено ПОНАД server-only: Supabase-шар
-// адмінки (до К3) і serverFn-модулі ядра (`admin-server`, `plugin-sdk/server`):
-// плагін кличе хуки SDK, а не хендлери під ними.
+// Літерали нижче — те, що плагіну заборонено ПОНАД server-only: `@supabase/*`
+// (шар знесено в К3-Е7 — бан лишено як ратчет проти повернення) і serverFn-модулі
+// ядра (`admin-server`, `plugin-sdk/server`): плагін кличе хуки SDK, а не
+// хендлери під ними.
 const PLUGIN_BOUNDARY_MESSAGE =
   'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).';
 // Залежності без винятків ідуть глобами; ті, що мають `clientSafe`, — ні:
@@ -183,8 +181,6 @@ const clientSafeDepPatterns = SERVER_ONLY_DEPS.filter(
   message: PLUGIN_BOUNDARY_MESSAGE,
 }));
 const pluginOnlySurfaceGroup = [
-  'simplycms/supabase',
-  'simplycms/supabase/*',
   '@supabase/*',
   'simplycms/plugin-sdk/server',
   'simplycms/plugin-sdk/server/*',
@@ -225,7 +221,7 @@ const esqDeps = () =>
   ).join('|');
 const pluginTrustBoundarySyntax = [
   {
-    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:supabase|plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
+    selector: `ImportExpression > Literal[value=/^(?:simplycms\\u002F(?:plugin-sdk\\u002Fserver|admin-server|${esq(SERVER_ONLY)})(?:\\u002F.*)?|@supabase\\u002F.*|(?:${esqDeps()}))$/]`,
     message:
       'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7) — динамічний import() теж.',
   },
@@ -328,10 +324,8 @@ const eslintConfig = [
   // тут мовчки вимкнув би один із двох детекторів залежно від порядку
   // конфігів. Окреме імʼя правила прибирає перетин повністю.
   //
-  // 🔴 `src/admin/**` тут НЕМАЄ навмисно: її ~170 літеральних ключів
-  // зникнуть разом зі сторінками адмінки в Е1б–Е6, правити їх зараз
-  // означало б робити роботу двічі. Додати теку — крок завершення
-  // переписування адмінки (DoD К3-3).
+  // `src/admin/**` — у зоні з К3-Е7 (DoD К3-3: адмінку переписано, виїмку
+  // знято; негативний контроль — tests/eslint-admin-zones.test.ts).
   //
   // 🔴 Референс-тема й референс-плагін — теж у зоні (борг Е1а №8, Е3-12):
   // `simplycms/contracts/entities` — публічний T0-субшлях, межа довіри тем
@@ -346,6 +340,7 @@ const eslintConfig = [
       'packages/simplycms/src/react-query/**/*.{ts,tsx}',
       'packages/simplycms/src/storefront-routes/**/*.{ts,tsx}',
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin/**/*.{ts,tsx}',
       'packages/simplycms-theme-solarstore/src/**/*.{ts,tsx}',
       'packages/simplycms-plugin-faq/src/**/*.{ts,tsx}',
     ],
@@ -415,16 +410,25 @@ const eslintConfig = [
   },
   // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
   // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.
-  // 🔴 `ignores` — ратчет: `ReviewDetail.tsx` мертвий і переписується
-  // хвилею відгуків разом із цим викликом. Список дзеркалиться в
-  // `tests/storage-direct-calls.test.ts` і може тільки скорочуватись.
   {
     files: ['packages/simplycms/src/**/*.{ts,tsx}'],
-    ignores: ['packages/simplycms/src/admin/pages/ReviewDetail.tsx'],
     plugins: {
       'simplycms-storage': { rules: { 'no-direct-storage': noDirectStorage } },
     },
     rules: { 'simplycms-storage/no-direct-storage': 'error' },
+  },
+  // Ратчет проти повернення `@supabase/*` (К3-Е7, Р2) — на ВСЕ репо, не лише
+  // `packages/simplycms/src`. Власне імʼя плагіна — щоб не зливатись із
+  // сусідніми зонами. Код шаблону магазину сюди не потрапляє (ігнор вище) —
+  // його лінтує `tests/no-supabase-manifests.test.ts`.
+  {
+    files: ['**/*.{ts,tsx,mts,cts,mjs,cjs,js}'],
+    plugins: {
+      'simplycms-supabase': {
+        rules: { 'no-supabase-import': noSupabaseImport },
+      },
+    },
+    rules: { 'simplycms-supabase/no-supabase-import': 'error' },
   },
   // Ключ колекції admin-data — лише для колекцій admin-data (Е3-15′,
   // рішення архітектора). Власне правило (не тір-зона, не
@@ -617,10 +621,10 @@ const eslintConfig = [
       // `npm install` пакетів ядра в згенерованому магазині.
       //
       // 🔴 Виняток — `template/scripts/**`. Спочатку там жив лише власний код
-      // шаблону (service_role-логіка owner:invite), двійника якого в монорепо
-      // немає; обґрунтування вище до нього не застосовне — він імпортує лише
-      // node-builtin'и й `@supabase/supabase-js`, тож лінтується як звичайний
-      // .mjs і не має ховатися від гейта.
+      // шаблону (логіка owner:invite), двійника якого в монорепо немає;
+      // обґрунтування вище до нього не застосовне — він імпортує лише
+      // node-builtin'и й `simplycms/*`, тож лінтується як звичайний .mjs і не
+      // має ховатися від гейта.
       //
       // (Скрипти design-import жили тут синкованою копією до переїзду в
       // `.claude/skills/redesign-from-reference/scripts/` — тепер та копія

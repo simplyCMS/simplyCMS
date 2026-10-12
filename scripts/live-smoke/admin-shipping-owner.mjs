@@ -30,9 +30,21 @@ export async function deleteRow(page, text) {
     .click();
 }
 
-/** Чи є в рядку бейдж «За замовчуванням». */
-export async function hasDefaultBadge(page, text) {
-  return (await rowOf(page, text).getByText('За замовчуванням').count()) > 0;
+/**
+ * Чекає, поки бейдж «За замовчуванням» у рядку зони набуде очікуваного стану
+ * (`present`): `true` — досягнуто, `false` — таймаут. 🔴 Не миттєвий `count()`:
+ * перемальовка після write-back колекції йде асинхронно, зріз DOM одразу після
+ * тосту може передувати їй (флейк «бейдж true/false» при правильній БД).
+ */
+export function expectDefaultBadge(page, text, present, timeout = 5_000) {
+  // 🔴 Рядки з тим самим регексом можуть бути кількома («Україна» — префікс),
+  // а `waitFor` строгий: беремо рядки, що вже мають бейдж, і `.first()`.
+  return rowOf(page, text)
+    .filter({ has: page.getByText('За замовчуванням') })
+    .first()
+    .waitFor({ state: present ? 'visible' : 'detached', timeout })
+    .then(() => true)
+    .catch(() => false);
 }
 
 /** Нова зона лише з назвою → список зон. */

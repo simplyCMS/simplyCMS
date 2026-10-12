@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { csrfMiddleware } from 'simplycms/runtime/csrf';
+import { bodyLimitMiddleware } from 'simplycms/runtime/body-limit';
 import { Route as HealthRoute } from '../packages/simplycms/routes/storefront/api/health';
 import { startInstance } from '../src/start';
 import { toRequestUrl } from '../server-runtime.mjs';
@@ -155,7 +156,8 @@ describe('проводка csrfMiddleware у start.ts', () => {
   it('startInstance: csrfMiddleware — ПЕРШИЙ у requestMiddleware', async () => {
     const options = await startInstance.getOptions();
     expect(options.requestMiddleware?.[0]).toBe(csrfMiddleware);
-    expect(options.requestMiddleware).toHaveLength(2);
+    expect(options.requestMiddleware?.[1]).toBe(bodyLimitMiddleware);
+    expect(options.requestMiddleware).toHaveLength(3);
   });
 
   it('наскрізно: першою міддлварою startInstance cross-site POST блокується', async () => {
@@ -173,13 +175,13 @@ describe('проводка csrfMiddleware у start.ts', () => {
     'src/start.ts',
     'packages/cli/host/src/start.ts',
     'packages/create-simplycms-store/template/src/start.ts',
-  ])('%s: CSRF перед adminRequestGuard', (file) => {
+  ])('%s: CSRF і стеля тіла перед adminRequestGuard', (file) => {
     const src = readFileSync(resolve(__dirname, '..', file), 'utf8');
     expect(src).toContain(
       "import { csrfMiddleware } from 'simplycms/runtime/csrf';",
     );
     expect(src).toContain(
-      'requestMiddleware: [csrfMiddleware, adminRequestGuard]',
+      'requestMiddleware: [csrfMiddleware, bodyLimitMiddleware, adminRequestGuard]',
     );
   });
 });

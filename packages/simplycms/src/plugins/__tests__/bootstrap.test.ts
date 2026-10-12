@@ -5,7 +5,7 @@ import type { PluginBootstrapRow, PluginModule, PluginRecord } from '../types';
 
 /**
  * 🔴 Мокається СЕРВЕРНА поверхня (`simplycms/plugins/server`), а не
- * Supabase-клієнт: після рішення B9 bootstrap не тримає клієнта до БД —
+ * клієнт БД: після рішення B9 bootstrap не тримає клієнта до БД —
  * читання й запис рядків `plugins` живуть у serverFn. Юніт доводить
  * складання рядків і роботу з реєстром; право на запис доводить
  * `pnpm test:schema` проти живої БД.

@@ -2,9 +2,17 @@ import type { z } from 'zod';
 import type { ActorDb } from 'simplycms/db';
 import { lockCatalogTarget } from './catalog-lock';
 import type { ResourceGuard, ResourceGuardWrite } from './resource-config';
+import type { ResourceCascadeMedia } from './resource-cascade-media';
+import type { ResourceMedia } from './resource-media';
+import {
+  assertInsertRefs,
+  discardAll,
+  requireDiscard,
+  updateWithMedia,
+} from './resource-write-media';
+import { removeRowsWithMedia } from './resource-write-remove';
 import {
   insertResourceRows,
-  removeResourceRows,
   updateResourceRows,
   type ResourceWriteContext,
 } from './resource-write';
@@ -21,7 +29,11 @@ interface WriteOpsDeps<Insert, Patch> {
   removeSchema: z.ZodType<{ id: string }[], { id: string }[]>;
   lock?: string;
   guard?: ResourceGuard<Insert, Patch>;
+  media?: ResourceMedia;
+  cascadeMedia?: readonly ResourceCascadeMedia[];
 }
+
+type Rec = Record<string, unknown>;
 
 /**
  * Операції запису фабрики `defineAdminResource` (винесено з `resource.ts`,
@@ -40,6 +52,9 @@ interface WriteOpsDeps<Insert, Patch> {
 export function defineWriteOps<Row, Insert, Patch>(
   d: WriteOpsDeps<Insert, Patch>,
 ) {
+  const { media } = d;
+  // Залежності media-шляху (`resource-write-media.ts`); без `media` — немає.
+  const md = media && { ...d, media };
   const prepare = async (
     db: ActorDb,
     write: ResourceGuardWrite<Insert, Patch>,
@@ -48,25 +63,41 @@ export function defineWriteOps<Row, Insert, Patch>(
     if (d.guard) await d.guard(db, write);
   };
   type Updates = { id: string; patch: Patch }[];
+  // `removeIn` стирає й каскадні медіа (Е6д-19) — колектор потрібен і їм.
+  const needs = {
+    updateIn: !!media,
+    removeIn: !!media || !!d.cascadeMedia?.length,
+  };
+  const collector = (discard: string[] | undefined, op: keyof typeof needs) =>
+    requireDiscard(d.ctx.entity, needs[op], discard, op);
+  // Е6д-14: файли стираються після `run`, тобто після COMMIT.
+  const runThenDiscard = async <Out>(
+    fn: (db: ActorDb, discard: string[]) => Promise<Out>,
+  ) => {
+    const discard: string[] = [];
+    const out = await d.run((db) => fn(db, discard));
+    await discardAll(discard);
+    return out;
+  };
   // Тіла над уже розпарсеним входом — спільні для операції і `*In`.
+  // Е6д-1: insert = lock → guard → перевірка нових референсів → запис.
   const insertRows = async (db: ActorDb, parsed: Insert[]) => {
     await prepare(db, { kind: 'insert', rows: parsed });
-    const rows = parsed as Record<string, unknown>[];
+    const rows = parsed as Rec[];
+    if (media) await assertInsertRefs(db, media, rows);
     return (await insertResourceRows(db, d.ctx, rows)) as Row[];
   };
-  const updateRows = async (db: ActorDb, parsed: Updates) => {
+  // Е6д-1: з `media` — `resource-write-media.ts`; без — рівно колишній шлях.
+  const updateRows = async (
+    db: ActorDb,
+    parsed: Updates,
+    discard: string[],
+  ) => {
+    if (md) return (await updateWithMedia(db, md, parsed, discard)) as Row[];
     await prepare(db, { kind: 'update', updates: parsed });
-    const updates = parsed as { id: string; patch: Record<string, unknown> }[];
+    const updates = parsed as { id: string; patch: Rec }[];
     return (await updateResourceRows(db, d.ctx, updates)) as Row[];
   };
-  // 🔴 Дзеркало чинного `remove`: БЕЗ `prepare` — guard не має варіанта
-  // `remove` (`resource-config.ts`); захищене видалення — іменовані операції.
-  const removeRows = (db: ActorDb, parsed: { id: string }[]) =>
-    removeResourceRows(
-      db,
-      d.ctx.table,
-      parsed.map((r) => r.id),
-    );
   return {
     // 🔴 А2 (фікс архітектора після Task 4 Е3): фабрика сама парсить вхід
     // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
@@ -87,22 +118,32 @@ export function defineWriteOps<Row, Insert, Patch>(
     // ДО `run` — readonly-патч ніколи не доходить до транзакції.
     update: async ({ data }: { data: Updates }) => {
       const parsed = parseAdminInput(d.updateSchema, data);
-      return d.run((db) => updateRows(db, parsed));
+      return runThenDiscard((db, keys) => updateRows(db, parsed, keys));
     },
 
+    // 🔴 `remove` БЕЗ `prepare`: guard не має варіанта `remove`
+    // (`resource-config.ts`); захищене видалення — іменовані операції.
     remove: async ({ data }: { data: { id: string }[] }) => {
       const parsed = parseAdminInput(d.removeSchema, data);
-      return d.run((db) => removeRows(db, parsed));
+      return runThenDiscard((db, keys) =>
+        removeRowsWithMedia(db, d, parsed, keys),
+      );
     },
 
     // db-варіанти: та сама схема (strip readonly/insertOnly), але без статусу
     // відповіді — поза запитом його нема куди ставити (С-10); усередині
-    // операції 400 поставить межа `runAdminTransactions`.
+    // операції 400 поставить межа `runAdminTransactions`. Для media-ресурсу
+    // ключі йдуть у `discard`, а `completeMediaErasures` кличе ВИКЛИКАЧ після COMMIT.
     insertIn: (db: ActorDb, input: unknown) =>
       insertRows(db, validateAdminInput(d.insertSchema, input)),
-    updateIn: (db: ActorDb, input: unknown) =>
-      updateRows(db, validateAdminInput(d.updateSchema, input)),
-    removeIn: (db: ActorDb, input: unknown) =>
-      removeRows(db, validateAdminInput(d.removeSchema, input)),
+    updateIn: (db: ActorDb, input: unknown, discard?: string[]) => {
+      const keys = collector(discard, 'updateIn');
+      return updateRows(db, validateAdminInput(d.updateSchema, input), keys);
+    },
+    removeIn: (db: ActorDb, input: unknown, discard?: string[]) => {
+      const keys = collector(discard, 'removeIn');
+      const parsed = validateAdminInput(d.removeSchema, input);
+      return removeRowsWithMedia(db, d, parsed, keys);
+    },
   };
 }

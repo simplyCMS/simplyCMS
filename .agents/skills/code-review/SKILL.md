@@ -25,7 +25,7 @@ fix-етапу, і не завалити замовника шумом.
 
 Не рев'юй те, що не варте рев'ю. Пропусти (і скажи про це одним рядком), якщо диф —
 це лише: перейменування без зміни семантики з зеленими гейтами, оновлення лок-файлу,
-форматування, регенерований `src/routeTree.gen.ts` чи `supabase/types.ts`, або зміна
+форматування, регенерований `src/routeTree.gen.ts`, або зміна
 доків без коду. Рев'ю таких дифів дає нітпіки, а не сигнал.
 
 Перед стартом визнач **межу**: `git diff <base>...HEAD` або конкретний діапазон
@@ -86,14 +86,14 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 - `architecture` — напрямок залежностей **за тірами з
   `packages/README.md`** (це джерело, не переказуй по пам'яті). 🔴 Після треку К0
   тір — це **тека** в `packages/simplycms/src/`, а не окремий npm-пакет:
-  T0 `contracts` → T1 `domain`/`schema` → T2 `supabase`/`db`/`auth`/`react-query`/`storefront` →
+  T0 `contracts` → T1 `domain`/`schema` → T2 `db`/`auth`/`react-query`/`storefront` →
   T3 `ui` → T4 `plugins`/`themes`/`plugin-sdk`/`*-ui` → T5 `core`/`admin`/`storefront-routes`.
   Межу тримає не `dependencies`, а eslint-тір-зони (`eslint.tier-zones.mjs` +
   `eslint.tier-relative.mjs`) — тож порушення напрямку в нормі валить лінт; якщо
   диф його додав, а лінт мовчить, це знахідка про зону, не лише про імпорт.
   🔴 Два факти, без яких лінза дає хибні спрацювання: теки одного тіру —
-  **сиблінги**, а не ланка ланцюга (`supabase` і `react-query` обидва
-  залежать лише від `contracts`, один від одного — ні); дві розбіжності
+  **сиблінги**, а не ланка ланцюга (`react-query` і `runtime` один від
+  одного не залежать); дві розбіжності
   таблиці з зонами зафіксовані **фактом**, а не виправлені кодом — `plugin-sdk`
   стоїть T4 (імпортує `plugins`), а пʼять `*-ui` (T4) тягнуть `core` (T5),
   зустрічний цикл і борг розселення `core`. Це відомий борг, а не свіже
@@ -110,17 +110,16 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
   `get_advisors`). 🔴 **Не став `major` за «суперечить канону»**, якщо диф
   робить локальну міграцію — діє правило локальних міграцій.
   Далі: 🔴 `pnpm db:generate-types`/`pnpm types:baseline` **ВИДАЛЕНІ**
-  (0.4.1) разом із `supabase/types.ts` — типи для НОВОГО серверного коду з
-  `simplycms/schema/types` (Drizzle), не з генератора; RLS-політики на кожній
-  зачепленій таблиці; субшляху `simplycms/data-supabase` НЕ ІСНУЄ (0.4.1) —
-  вітрина ходить у БД лоадерами `withStorefrontDb`/`withActor`, нові сторінки
-  адмінки — на `admin-server`/`admin-data`, а не на `supabase-js` (легасі-шар
-  переписується); 🔴 контракти `docs/architecture/data-layer.md` — явний `id` у
+  (0.4.1) — типи для НОВОГО серверного коду з `simplycms/schema/types`
+  (Drizzle), не з генератора; RLS-політики на кожній зачепленій таблиці;
+  вітрина ходить у БД лоадерами `withStorefrontDb`/`withActor`, адмінка — на
+  `admin-server`/`admin-data`; `@supabase/*` у репо заборонено лінтом
+  (`no-supabase-import`); 🔴 контракти `docs/architecture/data-layer.md` — явний `id` у
   кожній вставці (без `DEFAULT gen_random_uuid()`), `queryKey` із реєстру
   `simplycms/contracts/entities` (не літерал, `collectionKey` лише в `admin-data`),
   `Date` замість рядків дат; Zod-валідація входу на сервері (`.validator(…)`);
   інвалідація TanStack Query (`router.invalidate()`) відповідає тому, що змінили; типи БД проти реальних
-  відповідей (адмінка — PostgREST, вітрина — Drizzle-схема); N+1.
+  відповідей (і адмінка, і вітрина — Drizzle-схема; адмінка — через `simplycms/admin-server`); N+1.
 
 **Стек залежить від того, що саме зачепив диф** — не змішуй правила різних зон:
 
@@ -128,7 +127,7 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 | ---- | ----------------- |
 | `simplycms/routes/storefront/_storefront*` | SSR: route loaders, дані з `src/storefront-routes/server`, каркас `StorefrontShell`, SEO (`src/storefront-routes/seo`) |
 | `simplycms/routes/admin/*` | client-only: `ssr: false` **лише** на `admin.tsx` + `pendingComponent`, guard у `src/start.ts`, TanStack Query замість loader-даних |
-| `simplycms/routes/storefront/{_protected*,auth,api}` | auth-гейти, cookie-сесії `@supabase/ssr`, серверні роути |
+| `simplycms/routes/storefront/{_protected*,auth,api}` | auth-гейти, cookie-сесії Better Auth, серверні роути |
 | `src/server`, `src/storefront-routes/server` | `createServerFn`: Zod-валідація входу, перевірка сесії/ролі, жодних client-only імпортів |
 | `routes.ts`, `src/routes/` | дерево збирає `virtualRouteConfig`; host тримає лише `__root.tsx` + `my/` (гард — `tests/virtual-routes-escape.test.ts`) |
 | `packages/simplycms/src/*` | напрям тірів (eslint-зони), публічні барелі й вхід у `exports`, ліміт 150 рядків, відсутність прив'язки до host-`src/` |
@@ -147,6 +146,22 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 
 Пошук по репо — **`git grep`**, не `grep -r`: інакше провалишся в `node_modules`,
 `.output` і генерат.
+
+---
+
+## 2.1. Названі ризики — обов'язкові від того, хто запускає рев'ю
+
+Контролер/оркестратор передає кожному рецензенту **3-6 конкретних сценаріїв збою**
+у вигляді «вхід/стан → що зламається», виведених із дифу ТА плану. Рецензент дає
+вердикт на **кожен** (`підтверджено` / `спростовано` — з якорем у коді чи запуском),
+окремо від власних знахідок.
+
+Чому: без названих ризиків рев'ю звіряє диф із планом і не бачить дефекту, що
+закладений у самому плані. Приклад Е6д: sweep «500 найстаріших → фільтр» (план і
+код збігались, а на великій таблиці відфільтровані рядки ніколи не доходили до
+вибірки) і обхід стелі тіла chunked-запитом `application/x-www-form-urlencoded`.
+Немає названих ризиків — це недоробка запиту; рецензент повертає це першим рядком
+звіту, а не мовчки йде за планом.
 
 ---
 
@@ -198,6 +213,9 @@ drift, типи, кеш/інвалідація, edge cases, легасі, RLS, �
 **Що:** одне-два речення
 **Доказ:** фрагмент коду / вхід, за якого ламається / вивід запуску
 **Як лагодити:** конкретна дія, не «варто розглянути»
+
+## Названі ризики
+- <ризик> — підтверджено/спростовано, якір
 
 ## Відкинуто на порозі
 - назва — причина в піврядка (по одному рядку, без деталей)

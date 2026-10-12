@@ -5,9 +5,10 @@ import { createServerFn } from '@tanstack/react-start';
 import {
   adminInput,
   uploadFormInput,
-  deleteMediaInput,
-  deleteMediaOp,
   uploadMediaOp,
+  listMediaErasuresOp,
+  retryMediaErasuresOp,
+  sweepUnreferencedMediaOp,
   orderStatusesOps,
   setDefaultInput,
   setDefaultOrderStatusOp,
@@ -30,6 +31,7 @@ import {
   productPropertyValuesOps,
   modificationPropertyValuesOps,
   sectionsOps,
+  bannersOps,
   priceTypesOps,
   setDefaultPriceTypeInput,
   setDefaultPriceTypeOp,
@@ -50,8 +52,15 @@ import {
   removeOrderItemOp,
   searchProductsForOrderInput,
   searchProductsForOrderOp,
-  reviewContentInput,
-  getReviewContentOp,
+  listReviewsInput,
+  listReviewsOp,
+  countPendingReviewsOp,
+  getReviewCardInput,
+  getReviewCardOp,
+  setReviewsStatusInput,
+  setReviewsStatusOp,
+  deleteReviewInput,
+  deleteReviewOp,
   shippingMethodsOps,
   removeShippingMethodsInput,
   removeShippingMethodsOp,
@@ -167,9 +176,20 @@ export const uploadMedia = createServerFn({ method: 'POST' })
   .validator(uploadFormInput)
   .handler(uploadMediaOp);
 
-export const deleteMedia = createServerFn({ method: 'POST' })
-  .validator(adminInput(deleteMediaInput))
-  .handler(deleteMediaOp);
+// Е6д-20: хвости стирання файлів. Читання й повтор — без вводу, валідувати
+// нічого.
+export const listMediaErasures = createServerFn({ method: 'GET' }).handler(
+  listMediaErasuresOp,
+);
+
+export const retryMediaErasures = createServerFn({ method: 'POST' }).handler(
+  retryMediaErasuresOp,
+);
+
+// Е6д-22: sweep неприв’язаних файлів. Вводу немає — валідувати нічого.
+export const sweepUnreferencedMedia = createServerFn({
+  method: 'POST',
+}).handler(sweepUnreferencedMediaOp);
 
 // 🔴 Task 3 (Е3): файл переростає канон 150 рядків СВІДОМО — К3-9′ вимагає
 // ЄДИНОГО модуля serverFn, і розбиття його на кілька змінило б межу, яку
@@ -300,6 +320,22 @@ export const removeSections = createServerFn({ method: 'POST' })
   .validator(adminInput(sectionsOps.removeSchema))
   .handler(sectionsOps.remove);
 
+export const listBanners = createServerFn({ method: 'GET' })
+  .validator(adminInput(bannersOps.subsetSchema))
+  .handler(bannersOps.list);
+
+export const insertBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.insertSchema))
+  .handler(bannersOps.insert);
+
+export const updateBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.updateSchema))
+  .handler(bannersOps.update);
+
+export const removeBanners = createServerFn({ method: 'POST' })
+  .validator(adminInput(bannersOps.removeSchema))
+  .handler(bannersOps.remove);
+
 export const listPriceTypes = createServerFn({ method: 'GET' })
   .validator(adminInput(priceTypesOps.subsetSchema))
   .handler(priceTypesOps.list);
@@ -414,11 +450,27 @@ export const searchProductsForOrder = createServerFn({ method: 'GET' })
   .validator(adminInput(searchProductsForOrderInput))
   .handler(searchProductsForOrderOp);
 
-// Тема 9: розмітка відгуку для модерації — очищена на сервері (див.
-// impl/reviews/content.ts); сам рядок відгуку сторінка читає легасі-шляхом.
-export const getAdminReviewContent = createServerFn({ method: 'GET' })
-  .validator(adminInput(reviewContentInput))
-  .handler(getReviewContentOp);
+// К3-Е6д, Task 6: модерація відгуків (`review.moderate`). Картка поглинає
+// колишній легасі-запит вмісту відгуку (розмітка очищена на сервері, Е6д-11).
+export const listReviews = createServerFn({ method: 'GET' })
+  .validator(adminInput(listReviewsInput))
+  .handler(listReviewsOp);
+
+export const countPendingReviews = createServerFn({ method: 'GET' }).handler(
+  countPendingReviewsOp,
+);
+
+export const getReviewCard = createServerFn({ method: 'GET' })
+  .validator(adminInput(getReviewCardInput))
+  .handler(getReviewCardOp);
+
+export const setReviewsStatus = createServerFn({ method: 'POST' })
+  .validator(adminInput(setReviewsStatusInput))
+  .handler(setReviewsStatusOp);
+
+export const deleteReview = createServerFn({ method: 'POST' })
+  .validator(adminInput(deleteReviewInput))
+  .handler(deleteReviewOp);
 
 // Е6а, Task 4: доставка (`shipping.manage`, Е6а-11). Insert/update способів,
 // зон і точок — фабрика з guard-хуком під `shipping-config` (Е6а-16); remove

@@ -11,14 +11,34 @@ export {
   MediaKeyError,
   type MediaObject,
   type MediaStorageDriver,
+  type MediaStorageOptions,
 } from './driver';
 export { getMediaDriver, localFsDriver } from './local-fs';
-export { serveMedia } from './serve';
+export {
+  serveMedia,
+  type MediaServeVerdict,
+  type ServeMediaDeps,
+} from './serve';
 export { inspectUpload, type UploadInspection } from './inspect';
 export {
-  discardMedia,
-  eraseMedia,
+  completeMediaErasures,
+  listMediaErasures,
+  MEDIA_ERASURE_RETRY_BATCH,
+  retryMediaErasures,
+  scheduleMediaErasures,
+  type MediaErasure,
+} from './erasures';
+export {
+  findMediaReferences,
+  MEDIA_REFERENCED_ENTITY_TYPES,
+  mediaReferenceExists,
+  type MediaReference,
+} from './references';
+export {
+  eraseMediaRows,
   writeMedia,
+  type MediaOwner,
   type MediaRecord,
   type WriteMediaInput,
 } from './record';
+export { withPublishedRollback } from './rollback';

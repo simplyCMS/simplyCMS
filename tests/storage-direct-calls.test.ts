@@ -8,19 +8,14 @@ const SRC = resolve(import.meta.dirname, '../packages/simplycms/src');
 /**
  * Ратчет прямих викликів сховища поза портом `simplycms/storage`.
  *
- * 🔴 Список може тільки СКОРОЧУВАТИСЬ. `ReviewDetail.tsx` лишається тут не
- * тому, що виклик правильний, а тому, що сторінка цілком мертва: вона читає
- * й пише через `supabase-js` і на чистому Postgres не працює. Її перепише
- * хвиля відгуків (Е4–Е6) разом із цим викликом. Переписати її «заодно» в Е2
- * означало б тягнути в storage-етап половину хвилі сутностей.
+ * 🔴 Список виїмок порожній (легасі-картку відгуку переписано в Е6д) і
+ * може лише зростати свідомим рішенням з причиною біля запису.
  *
  * 🔴 Тест дублює лінт-правило навмисно: правило бачить лише те, що ESLint
  * парсить у своїй зоні, а цей скан ходить по ФАЙЛАХ — тож новий виклик у
  * теці, яку зона колись перестане покривати, не проскочить мовчки.
  */
-export const STORAGE_DIRECT_CALL_EXEMPTIONS = [
-  'admin/pages/ReviewDetail.tsx',
-] as const;
+export const STORAGE_DIRECT_CALL_EXEMPTIONS: readonly string[] = [];
 
 const DIRECT_CALL = /\.storage\.from\(|supabase\.storage|@supabase\/storage-js/;
 
@@ -31,9 +26,7 @@ describe('прямі виклики сховища поза портом', () =>
 
   it('поза списком виїмок прямих викликів немає', () => {
     expect(
-      offenders.filter(
-        (f) => !STORAGE_DIRECT_CALL_EXEMPTIONS.includes(f as never),
-      ),
+      offenders.filter((f) => !STORAGE_DIRECT_CALL_EXEMPTIONS.includes(f)),
       'новий прямий виклик сховища — використай simplycms/storage через serverFn',
     ).toEqual([]);
   });

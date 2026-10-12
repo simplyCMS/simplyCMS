@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runAudit } from '../scripts/audit-exports.mjs';
+import { extractSpecifiers } from '../scripts/audit-exports/collect.mjs';
 
 // Крос-пакетний гейт (Task 1.2): усі реально вжиті специфікатори
 // `@simplycms/<pkg>/<subpath>` мають відповідний ключ у `exports`
@@ -64,5 +65,78 @@ describe('audit-exports: мертві імена пакетів ядра', () =>
 
     expect(stale).toEqual([]);
     expect(missing).toEqual([]);
+  });
+});
+
+// 🔴 Сканер бере специфікатори лише з імпорт-форм. Раніше будь-який літерал
+// `'simplycms/…'` (коментар, ім'я правила лінту, ban-глоб) вважався субшляхом і
+// росив список `EXCLUDE_PATHSPECS`. Негативний контроль — на чистій функції
+// витягання, без читання репо.
+describe('audit-exports: специфікатори лише з імпорт-форм', () => {
+  it('коментар і звичайний рядок специфікатором не є', () => {
+    const text = [
+      "// 'simplycms/x'",
+      "/* import-подібне: 'simplycms/y' */",
+      "const r = 'simplycms/z';",
+      "const rule = 'simplycms/query-key-from-entity';",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([]);
+  });
+
+  it('шаблон із виразом, чужий пакет і не-імпортний resolve специфікатором не є', () => {
+    const text = [
+      'const a = await import(`simplycms/${name}`);',
+      'const b = require.resolve(`simplycms/a${x}`);',
+      "const c = require.resolve('zod/v4');",
+      "const d = other.resolve('simplycms/h');",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([]);
+  });
+
+  it('backtick без виразів, коментар перед літералом, require/import.meta.resolve рахуються', () => {
+    const text = [
+      'const a = await import(`simplycms/i`);',
+      "const b = await import(/* @vite-ignore */ 'simplycms/j');",
+      "const c = require.resolve('simplycms/k');",
+      "const d = import.meta.resolve('@simplycms/plugin-faq/l');",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([
+      'simplycms/i',
+      'simplycms/j',
+      'simplycms/k',
+      '@simplycms/plugin-faq/l',
+    ]);
+  });
+
+  it('усі імпорт-форми рахуються', () => {
+    const text = [
+      "import 'simplycms/a';",
+      "import { x } from 'simplycms/b';",
+      "import {\n  y,\n} from\n  '@simplycms/plugin-faq/c';",
+      "export * from 'simplycms/d';",
+      "const m = await import('simplycms/e');",
+      "const r = require('simplycms/f');",
+      "vi.mock('simplycms/g', () => ({}));",
+    ].join('\n');
+
+    expect(extractSpecifiers(text)).toEqual([
+      'simplycms/a',
+      'simplycms/b',
+      '@simplycms/plugin-faq/c',
+      'simplycms/d',
+      'simplycms/e',
+      'simplycms/f',
+      'simplycms/g',
+    ]);
+  });
+
+  it('справжній імпорт неіснуючого субшляху потрапляє в кошик missing', () => {
+    const specifiers = extractSpecifiers("import 'simplycms/nope-x';");
+    const { missing } = runAudit({ specifiers });
+
+    expect(missing.map((m) => m.specifier)).toEqual(['simplycms/nope-x']);
   });
 });

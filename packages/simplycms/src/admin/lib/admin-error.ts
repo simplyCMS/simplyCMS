@@ -92,6 +92,13 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.customerSelf]: 'admin.errors.customerSelf',
   [ADMIN_STATE_CONSTRAINT.orderPersonalDataErased]:
     'admin.errors.orderPersonalDataErased',
+  // Е6д-1: опція `media` фабрики ресурсів.
+  [ADMIN_STATE_CONSTRAINT.mediaRefInvalid]: 'admin.errors.mediaRefInvalid',
+  // Е6д-7: модерація відгуків.
+  [ADMIN_STATE_CONSTRAINT.reviewNotFound]: 'admin.errors.reviewNotFound',
+  // Е6д-23: версія відгуку застаріла — сам текст належить каталогу відгуків.
+  [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
+  // Е6д-22: файл ще використовується.
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */

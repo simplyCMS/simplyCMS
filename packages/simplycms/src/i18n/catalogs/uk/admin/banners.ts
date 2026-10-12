@@ -64,4 +64,24 @@ export const messages = {
   'admin.banners.ms': 'мс',
   'admin.banners.slideDuration': 'Час показу слайду:',
   'admin.banners.sec': 'с',
+  'admin.banners.subtitleList': 'Банери на сторінках вітрини',
+  'admin.banners.scheduled': 'За розкладом',
+  'admin.banners.deleteTitle': 'Видалити банер?',
+  'admin.banners.deleteWarning':
+    'Банер зникне з вітрини, а його зображення буде стерто зі сховища.',
+  'admin.banners.titleRequired': 'Вкажіть заголовок',
+  'admin.banners.imageRequired': 'Завантажте основне зображення',
+  'admin.banners.sectionRequired': 'Оберіть розділ',
+  'admin.banners.buttonInvalid':
+    'Кнопка: текст до 50 символів, адреса — /шлях або http(s)://…',
+  'admin.banners.removeButton': 'Прибрати кнопку',
+  'admin.banners.titleTooLong': 'Заголовок задовгий (до 200 символів)',
+  'admin.banners.subtitleTooLong': 'Підзаголовок задовгий (до 500 символів)',
+  'admin.banners.overlayInvalid':
+    'Недопустиме значення кольору (до 100 символів, без ; { } < > та коментарів)',
+  'admin.banners.sortInvalid': 'Порядок — ціле число від 0',
+  'admin.banners.url': 'Адреса (URL)',
+  'admin.banners.variant.primary': 'Основна',
+  'admin.banners.variant.secondary': 'Додаткова',
+  'admin.banners.variant.outline': 'З рамкою',
 } as const;

@@ -57,6 +57,40 @@ export const MEDIA_ENTITY_TYPES = [
 export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
 
 /**
+ * Фото відгуку покупця (Е6д-5, КАНОН).
+ *
+ * 🔴 `'review'` свідомо НЕ в `MEDIA_ENTITY_TYPES`: той список — allowlist
+ * адмінського `uploadMedia`, а сценарію «адмін вантажить фото відгуку» немає.
+ * Пише їх лише подача відгуку (`submitReviewWithImages`), як `'avatar'` —
+ * лише заміна аватара. Кількість і розмір КОЖНОГО файлу звіряються ДО
+ * першого запису; сумарну стелю тіла запиту тримає `MAX_REQUEST_BODY_BYTES`
+ * (К3-Е6д-2, `runtime/body-limit`).
+ */
+export const REVIEW_MEDIA_ENTITY = 'review';
+
+/**
+ * Власник файлу логотипа (К3-Е6д-3). Логотип один на магазин і не має рядка-
+ * носія, тож `entity_id` фіксований: двофазне стирання (`eraseMediaRows`)
+ * вимагає власника, а сервер сам підставляє цей uuid при upload `store_logo`,
+ * не довіряючи клієнту.
+ */
+export const STORE_LOGO_OWNER_ID = '00000000-0000-4000-8000-00000000106f';
+
+/**
+ * Типи власника, чиї файли роздаються з `private, no-cache` (Е6д-21): їхня
+ * видимість залежить від глядача (відгук на модерації видно лише автору й
+ * адміну; аватар — персональні дані), тож спільний/CDN-кеш з `immutable`
+ * зберіг би файл для того, кому його вже не можна показувати.
+ */
+export const PERSONAL_MEDIA_ENTITY_TYPES = [
+  REVIEW_MEDIA_ENTITY,
+  'avatar',
+] as const;
+
+export const MAX_REVIEW_IMAGES = 5;
+export const MAX_REVIEW_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/**
  * Стеля розміру завантаження, байти.
  *
  * 🔴 Два різні значення — навмисно, НЕ розсинхрон: «вирівняти» їх означало б
@@ -71,6 +105,34 @@ export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
  */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 export const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Запас на multipart-обгортку (межі, заголовки частин, поля форми) понад
+ * сумарний розмір файлів. 1 МБ з великим запасом: 5 файлів + кілька полів
+ * займають одиниці КБ службових байтів.
+ */
+export const MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
+
+/**
+ * Машинні коди відмови стелі тіла (тіло відповіді 413/411). Живуть у T1, бо
+ * їх читає клієнт: serverFn-клієнт Start кидає `Error(тіло відповіді)` лише
+ * коли відповідь має `content-type` — порожнє тіло віддало б неінформативну
+ * invariant-помилку, з якої 413 не відрізнити від будь-якого збою.
+ */
+export const PAYLOAD_TOO_LARGE_CODE = 'request/payload-too-large';
+export const LENGTH_REQUIRED_CODE = 'request/length-required';
+
+/**
+ * Стеля тіла будь-якого POST на server function (К3-Е6д-2). Виводиться з
+ * найбільшого легітимного запиту — подачі відгуку з 5 фото — а не літералом,
+ * тож зміна лімітів вище автоматично зсуває стелю. Не менша за одиночне
+ * завантаження медіа й аватар (тест це стереже).
+ */
+export const MAX_REQUEST_BODY_BYTES = Math.max(
+  MAX_REVIEW_IMAGES * MAX_REVIEW_IMAGE_BYTES + MULTIPART_OVERHEAD_BYTES,
+  MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES,
+  MAX_AVATAR_BYTES + MULTIPART_OVERHEAD_BYTES,
+);
 
 // Форми, які вже Є адресою й не потребують бази. `blob:` — локальне прев’ю,
 // яке браузер створює до завантаження; воно ніколи не доходить до БД, але
@@ -106,6 +168,18 @@ export function resolveMediaUrls(
 }
 
 /**
+ * Значення медіа-колонки-масиву (`images`) → список референсів. Колонки —
+ * nullable `jsonb` без CHECK форми, тож `NULL`, обʼєкт чи не-рядки можливі;
+ * лишаються лише непорожні рядки. 🔴 Одне правило для адмінки, вітрини й
+ * стирання: копії вже розходились (одна пропускала `''`).
+ */
+export function normalizeMediaRefs(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string' && v !== '')
+    : [];
+}
+
+/**
  * Колонки схеми, що несуть медіа-референс.
  *
  * 🔴 Реєстр існує заради ГЕЙТА, а не заради коду: нова медіа-колонка,
@@ -124,13 +198,78 @@ export function resolveMediaUrls(
  *     проєкції і читачі поза лоадерами — зокрема `src/admin/**`.
  */
 export const MEDIA_COLUMNS = [
-  { table: 'products', column: 'images' },
-  { table: 'product_modifications', column: 'images' },
-  { table: 'product_reviews', column: 'images' },
-  { table: 'banners', column: 'image_url' },
-  { table: 'banners', column: 'desktop_image_url' },
-  { table: 'banners', column: 'mobile_image_url' },
-  { table: 'sections', column: 'image_url' },
-  { table: 'property_options', column: 'image_url' },
-  { table: 'profiles', column: 'avatar_url' },
-] as const satisfies readonly { table: string; column: string }[];
+  { table: 'products', column: 'images', entityType: 'product', kind: 'jsonb' },
+  {
+    table: 'product_modifications',
+    column: 'images',
+    entityType: 'product_modification',
+    kind: 'jsonb',
+  },
+  {
+    table: 'product_reviews',
+    column: 'images',
+    entityType: REVIEW_MEDIA_ENTITY,
+    kind: 'jsonb',
+  },
+  { table: 'banners', column: 'image_url', entityType: 'banner', kind: 'text' },
+  {
+    table: 'banners',
+    column: 'desktop_image_url',
+    entityType: 'banner',
+    kind: 'text',
+  },
+  {
+    table: 'banners',
+    column: 'mobile_image_url',
+    entityType: 'banner',
+    kind: 'text',
+  },
+  {
+    table: 'sections',
+    column: 'image_url',
+    entityType: 'section',
+    kind: 'text',
+  },
+  {
+    table: 'property_options',
+    column: 'image_url',
+    entityType: 'property_option',
+    kind: 'text',
+  },
+  {
+    table: 'profiles',
+    column: 'avatar_url',
+    entityType: 'avatar',
+    kind: 'text',
+  },
+] as const satisfies readonly {
+  table: string;
+  column: string;
+  /** `media.entity_type` файлів, чий референс лежить у цій колонці (гейт sweep). */
+  entityType: string;
+  /** Тип колонки: `jsonb` — масив референсів, `text` — один. Звіряється з БД тестом парності. */
+  kind: 'text' | 'jsonb';
+}[];
+
+/**
+ * Гілка референсу поза `MEDIA_COLUMNS`: логотип лежить у
+ * `system_settings.value->>'logo'`, а не в колонці (Е6д-22). `findMediaReferences`
+ * перевіряє її окремо; гейт `media-sweep-coverage` рахує її поруч із колонками.
+ */
+export const LOGO_MEDIA_REFERENCE = {
+  table: 'system_settings',
+  column: 'value.logo',
+  entityType: 'store_logo',
+} as const;
+
+/**
+ * Мінімальний вік рядка `media`, з якого sweep сміє його стерти (Е6д-22):
+ * молодший файл міг бути щойно завантажений і ще не привʼязаний формою.
+ */
+export const MEDIA_SWEEP_MIN_AGE_HOURS = 24;
+
+/** Кандидатів у одному пакеті sweep (окрема коротка транзакція). */
+export const MEDIA_SWEEP_BATCH = 100;
+
+/** Верхня межа пакетів за один виклик sweep; решту добере наступний. */
+export const MEDIA_SWEEP_MAX_BATCHES = 10;

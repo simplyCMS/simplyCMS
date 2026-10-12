@@ -1,14 +1,16 @@
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   assertSchemaMigrations,
   compareMigrations,
@@ -18,6 +20,7 @@ import {
   listSqlFiles,
   parseDbDiffArgs,
   pluginMigrationSources,
+  run,
   schemaMigrationsPath,
   storeMigrationsDir,
 } from '../packages/cli/src/db-diff.mjs';
@@ -258,5 +261,54 @@ describe('cli db:diff: lintPluginMigrationSql', () => {
         'hello-world',
       ),
     ).toEqual([]);
+  });
+});
+
+describe('cli db:diff: відсутня тека міграцій магазину', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  /** Запускає `run` у корені магазину з тихим виводом; повертає exitCode. */
+  async function runIn(store: string, argv: string[]) {
+    const cwd = process.cwd();
+    const silent = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    try {
+      process.chdir(store);
+      await run(argv);
+      return process.exitCode;
+    } finally {
+      process.chdir(cwd);
+      silent.mockRestore();
+    }
+  }
+
+  it('без db/migrations: --write відмовляє (exit 1) і не створює теку', async () => {
+    const store = await scaffoldStore('no-migrations');
+    makeSchemaDir(store);
+    rmSync(storeMigrationsDir(store), { recursive: true });
+
+    expect(await runIn(store, ['--write'])).toBe(1);
+    expect(existsSync(storeMigrationsDir(store))).toBe(false);
+  });
+
+  it('db/migrations — файл: відмова (exit 1), файл не чіпано, без ENOTDIR', async () => {
+    const store = await scaffoldStore('file-migrations');
+    makeSchemaDir(store);
+    rmSync(storeMigrationsDir(store), { recursive: true });
+    writeFileSync(storeMigrationsDir(store), 'не тека\n');
+
+    expect(await runIn(store, ['--write'])).toBe(1);
+    expect(readFileSync(storeMigrationsDir(store), 'utf8')).toBe('не тека\n');
+  });
+
+  it('зі старою supabase/migrations: відмова теж, теку db/migrations не створено', async () => {
+    const store = await scaffoldStore('legacy-migrations');
+    makeSchemaDir(store);
+    rmSync(storeMigrationsDir(store), { recursive: true });
+    mkdirSync(join(store, 'supabase', 'migrations'), { recursive: true });
+
+    expect(await runIn(store, ['--write'])).toBe(1);
+    expect(existsSync(storeMigrationsDir(store))).toBe(false);
   });
 });

@@ -64,12 +64,8 @@ async function freshDemoDb(adminUrl: string, prefix: string): Promise<string> {
   return name;
 }
 
-/**
- * Демо-база + сід у власну медіатеку. Повертає хендл для асертів; пул
- * лишається відкритим на ЦЮ базу (для операцій ядра в тесті) — його
- * закриває `cleanup` або наступний `seedFreshShowcase`.
- */
-export async function seedFreshShowcase(
+/** Демо-база й env без сіду: тест бачить стан бази й після падіння сіду. */
+export async function prepareShowcase(
   adminUrl: string,
   prefix: string,
 ): Promise<SeededShowcase> {
@@ -78,24 +74,11 @@ export async function seedFreshShowcase(
   const mediaRoot = await mkdtemp(join(tmpdir(), 'showcase-gate-media-'));
   const env = showcaseEnv(adminUrl, name, mediaRoot);
   const dbUrl = withDbName(adminUrl, name);
-  const cleanup = async () => {
-    await closeDbPool();
-    resetAuth();
-    for (const key of ENV_KEYS) delete process.env[key];
-    await dropTempDatabase(adminUrl, name);
-    await rm(mediaRoot, { recursive: true, force: true });
-  };
   const [demo] = (await queryRows(
     dbUrl,
     `select (select count(*)::int from public.sections) as sections,
             (select count(*)::int from public.products) as products`,
   )) as { sections: number; products: number }[];
-  try {
-    await seedShowcase(env);
-  } catch (error) {
-    await cleanup();
-    throw error;
-  }
   return {
     name,
     dbUrl,
@@ -103,8 +86,29 @@ export async function seedFreshShowcase(
     demo: demo!,
     rows: async <T>(sql: string, params: unknown[] = []) =>
       (await queryRows(dbUrl, sql, params)) as T[],
-    cleanup,
+    cleanup: async () => {
+      await closeDbPool();
+      resetAuth();
+      for (const key of ENV_KEYS) delete process.env[key];
+      await dropTempDatabase(adminUrl, name);
+      await rm(mediaRoot, { recursive: true, force: true });
+    },
   };
+}
+
+/** Демо-база + сід у власну медіатеку (`prepareShowcase` + `seedShowcase`). */
+export async function seedFreshShowcase(
+  adminUrl: string,
+  prefix: string,
+): Promise<SeededShowcase> {
+  const s = await prepareShowcase(adminUrl, prefix);
+  try {
+    await seedShowcase(s.env);
+  } catch (error) {
+    await s.cleanup();
+    throw error;
+  }
+  return s;
 }
 
 /** Усі файли медіатеки (рекурсивно, без тимчасових `.tmp-*`). */

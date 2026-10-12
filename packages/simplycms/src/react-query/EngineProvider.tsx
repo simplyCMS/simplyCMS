@@ -1,5 +1,5 @@
 // Інжекція EngineContext через React-контекст.
-// Усі feature-хуки беруть залежності з useEngine() — ніколи не імпортують supabase напряму.
+// Усі feature-хуки беруть залежності з useEngine() — ніколи не імпортують клієнт БД напряму.
 
 import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';

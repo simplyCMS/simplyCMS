@@ -5,7 +5,7 @@ import { resolveAuthBaseUrl, resolveAuthSecret } from '../env';
 //
 // 🔴 Що саме доводиться тут — ФОРМА резолву, а не джерело: у vitest
 // `import.meta.env` — Proxy над `process.env`, тож тест джерело довести не
-// здатен у принципі (той самий урок, що з Supabase-фабриками). Джерело
+// здатен у принципі (той самий урок, що з фабрикою пулу БД). Джерело
 // стереже лінт-зона `import.meta.env` у серверних модулях.
 
 describe('resolveAuthSecret', () => {

@@ -35,9 +35,6 @@
 PR #12803), а не відмовив. **Умова перегляду:** реліз `typescript-eslint` з підтримкою TS 7.1 →
 бамп одразу на 7.1. Стан апстріму й розглянуті альтернативи — у записі TSESL-1.
 
-`tools/content-loader-mcp` (поза workspace, борг №13 роадмапа): під TS 6 при відновленні
-потребує `"types": ["node"]` у tsconfig (TS2591); зараз не виправляється.
-
 ## 2. Команди
 
 ```bash
@@ -64,17 +61,21 @@ pnpm build:packages   # Збірка публікованих пакетів. �
                       # межу задає simplycms/contracts/server-only, стережуть
                       # tests/dist-server-boundary.test.ts і tests/dts-toolchain.test.ts
 pnpm test:packaging   # Tarball-parity suite (vitest.packaging.config.ts)
+pnpm harness:up       # Postgres-харнес однією командою: контейнер simplycms-harness-pg
+                      # (pgvector/pgvector:pg17, trust, порт 54331), ідемпотентно; пише
+                      # PG_HARNESS_URL у git-ignored .env.harness, який підхоплюють test:schema,
+                      # live:smoke і db:demo, лише якщо змінну не задано явно І контейнер запущений
+                      # (інакше файл ігнорується з попередженням). Потребує Docker.
+                      # pnpm harness:down — прибрати контейнер і .env.harness
 pnpm test:schema      # СХЕМНИЙ контур: накат канону міграцій на чистий Postgres + парність
                       # політик і грантів + ПОВЕДІНКОВА матриця RLS.
                       # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
                       # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
-pnpm pilot:pack       # tarball-пілот: гейти A/C/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
+pnpm pilot:pack       # tarball-пілот: гейти A/C/SB/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
                       # BETTER_AUTH_SECRET із .env.local; назви товарів Gate B бере прямим SQL
                       # (HTTP-API до БД у контракті v2 немає)
-pnpm pilot:seed       # перегенерувати supabase/seed.sql із фікстур пілота (сід годує лише
-                      # локальний стек supabase start; під парність-тестом)
 pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
                       # packages/cli/host/ (канон host-файлів для simplycms update),
                       # packages/simplycms/migrations/ (для simplycms db:diff) — усі під парність-тестом
@@ -110,6 +111,7 @@ pnpm db:showcase      # ВІТРИННИЙ стенд для ручного те
 pnpm live:smoke       # живий прогін: db:demo → build → server → curl+SQL (gate-b) + Playwright
                       # (воронка, сховище, кроки адмінки в сесії власника). Потребує Postgres
                       # (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням
+                      # Журнал: .live-smoke/last.log (+ <timestamp>.log, 10 останніх); при FAIL — шлях і рядки FAIL наприкінці.
 pnpm db:pull / db:diff
                       # Схема БД — див. docs/architecture/data-layer.md § «Міграції»
 ```
@@ -125,6 +127,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки
   `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами, а звичайний
   `pnpm install` мовчки лагодить розсинхрон замість червоніти; у CI frozen — дефолт.
+  Те саме робить будь-який `pnpm <script>` (supply-chain policy pnpm 11): тож мутацію lock для
+  перевірки ратчета (`tests/no-supabase-manifests`) доводь через `npx vitest`, а не `pnpm test`.
 - Гейт саме `format:check`, бо `pnpm format` (`prettier --write`) не червоніє.
 - `build` іде **перед** `typecheck`, бо генерує `src/routeTree.gen.ts`.
 - `typecheck:showcase` — одразу після `typecheck`: сід `db:showcase` біжить під `tsx`, який
@@ -139,12 +143,24 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   магазину), тож `pnpm typecheck` шаблону не бачить. Гейт типізує шаблон проти зібраного `dist`
   (те саме, що бачить магазин). Список файлів під ним стереже
   `tests/template-typecheck-coverage.test.ts`.
-- Гейти РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` ганяють ще `pilot:pack`: Gate C
-  пілота — єдиний доказ межі клієнт/сервер у реальному клієнтському бандлі, Gate IP — що витік
-  ВАЛИТЬ збірку магазину. `pilot:pack` ганяється і в CI (job `packaging`).
+- Гейти РЕЛІЗУ (`scripts/release/gates.mjs`) після `test:packaging` ганяють ще ПОВНИЙ `pilot`
+  (`scripts/release/pilot-full.mjs`: `pnpm harness:up` + `db:demo` → `pnpm pilot`, Docker потрібен):
+  Gate C — межа клієнт/сервер у реальному клієнтському бандлі, Gate SB — драйвер БД не вклеєний у
+  серверний бандл, Gate IP — витік ВАЛИТЬ збірку, Gate B — серверний бандл стартує. `pilot:pack`
+  (без БД) ганяється в CI (job `packaging`).
+- Гейти-звірки з уроків Е6д (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
+  `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `upstream-workarounds.md`
+  (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
+  `UPSTREAM:<ID>` ↔ записів реєстру; `tests/doc-symbols-exist.test.ts` — кожен символ у
+  зворотних лапках у `docs/architecture`, `docs/development`, README пакетів і скілах ВИЗНАЧЕНИЙ
+  у продакшн-коді (згадка в коментарі чи назві тесту не рахується). 🔴 Згадку СКАСОВАНОГО
+  символу в доці позначай БЕЗПОСЕРЕДНЬО після нього дужкою: «`sym` (знесено)» або
+  «`sym` (замінено …)» — маркер діє лише на цей символ, без маркера він червоніє; сторонні API й приклади — запис у
+  `DOC_SYMBOL_ALLOWLIST` з причиною (список лише скорочується, мертвий запис червоніє).
+  `tests/server-fn-consumers.test.ts` — кожна `export const … = createServerFn(…)` має
+  імпортера поза тестами й моками; виняток — `SERVER_FN_NO_CONSUMER_ALLOWLIST` з причиною.
 - `prettier` — exact `3.9.6` у `devDependencies`; обидві команди покривають **увесь репозиторій**.
-  Не форматується (`.prettierignore`): згенерований код (`src/routeTree.gen.ts`, заморожений
-  `supabase/database.ts` ядра, Drizzle-схема і `drizzle/`), артефакти збірки і **всі `*.md`**
+  Не форматується (`.prettierignore`): згенерований код (`src/routeTree.gen.ts`, Drizzle-схема і `drizzle/`), артефакти збірки і **всі `*.md`**
   (prettier ламає ручне вирівнювання таблиць і списків).
 
 ## 4. Лінт
@@ -160,24 +176,30 @@ Error-зони й кастомні правила (селектори й опц�
   `src/storefront-routes`, `src/admin`, п'ять `src/*-ui` пакета ядра, компоненти тем. У
   `routes/admin` живий React-компонент `AdminPending` використовує `useT()` (ключ
   `admin.common.loading`).
-- **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): шість модулів
-  env-контракту — `server-client`, `anon-client`, `seo/robots`, `seo/sitemap`, `api/health.tsx`,
-  `src/start.ts`.
+- **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): п'ять модулів
+  env-контракту (`SERVER_ENV_FILES`) — `seo/robots`, `seo/sitemap`, `server/root`, `api/health.tsx`,
+  `src/start.ts`. Негативний контроль — `tests/eslint-server-env.test.ts`.
 - **Тір-зони напрямку шарів:** `eslint.tier-zones.mjs` + `eslint.tier-relative.mjs` забороняють
   імпорт угору по тірах усередині пакета ядра, бо межу `dependencies` після злиття пакетів не тримає
   ніщо. Негативний контроль — `tests/tier-boundary.test.ts`.
 - **Контракт ключів кешу React Query** — `eslint-rules/query-key-from-entity.mjs`: літеральний
   перший сегмент `queryKey` (прямий, через константу-масив і в умовному виборі) заборонений;
   сегмент 0 іде з реєстру `simplycms/contracts/entities` (`ENTITY`/`AGGREGATE`/`SESSION_KEY`).
-  Зона — `core/`, `*-ui/`, `react-query/`, `storefront-routes/` пакета ядра; `src/admin/**` —
-  виїмка, доки сторінки адмінки не переписані на `admin-server`. Деталі —
+  Зона — `core/`, `*-ui/`, `react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета
+  ядра (адмінку додано в К3-Е7). Деталі —
   `docs/architecture/data-layer.md` § «Контракт ключів кешу».
 - **Доступні імена контролів:** `jsx-a11y/label-has-associated-control` (error,
   `assert: 'htmlFor', depth: 3`) на п'яти теках воронки (`cart-ui`, `catalog-ui`, `checkout-ui`,
-  `profile-ui`, `reviews-ui`). 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
+  `profile-ui`, `reviews-ui`) і в адмінці `src/admin/**` (з К3-Е7). Охоплення адмінки обома
+  правилами доводить `tests/eslint-admin-zones.test.ts`. 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
   невидимий: зелений лінт доступності воронки не доводить її повноти.
+- **Ратчет проти `@supabase/*` — `simplycms-supabase/no-supabase-import`:** зона — ВСЕ репо
+  (усі `*.{ts,tsx,mts,cts,mjs,cjs,js}`), без виїмок; ловить статичний `import`/`export…from`,
+  динамічний `import()`, `require` і TS-форми. Код шаблону магазину в основний лінт не потрапляє —
+  його, маніфести й `pnpm-lock.yaml` стереже `tests/no-supabase-manifests.test.ts`. Негативний
+  контроль — `tests/eslint-rules/no-supabase-import.test.ts`.
 - **Порт сховища — `simplycms-storage/no-direct-storage`:** зона — увесь `packages/simplycms/src/**`
-  з єдиною виїмкою-ратчетом `admin/pages/ReviewDetail.tsx`; забороняє `supabase.storage`,
+  без виїмок (ратчет порожній: легасі `ReviewDetail.tsx` знесено в Е6д); забороняє `supabase.storage`,
   `x.storage.from(…)`, `x['storage']` та імпорт `@supabase/storage-js`. Файловий двійник —
   ратчет `tests/storage-direct-calls.test.ts`; негативний контроль —
   `tests/eslint-rules/no-direct-storage.test.ts`.
@@ -250,7 +272,7 @@ Error-зони й кастомні правила (селектори й опц�
   зібраних `dist/` кожного пакета.
 - 🔴 `pnpm pilot` (Gate B проти живої БД) у CI **не** ганяється: він потребує живої бази
   (`DATABASE_URL`), а це зовнішній стан, від дрейфу якого гейт червонів би без регресії коду. Прогін
-  `pilot` перед релізом — відповідальність розробника.
+  `pilot` перед релізом — гейт релізу (`pilot-full.mjs`), не CI.
 - 🔴 `pnpm pilot:pack` (без БД) — крок job `packaging`: Gate C і Gate IP — єдиний поведінковий доказ
   межі клієнт/сервер у реальному магазині з tarball-ів. Передрелізний гейт у CI —
   детерміністичний tarball-parity плюс `pilot:pack --skip-build`.

@@ -1,16 +1,17 @@
 import { z } from 'zod';
+import { fieldIssue } from '../validation';
 import { runAdmin } from '../run';
 import {
   MAX_UPLOAD_BYTES,
   MEDIA_ENTITY_TYPES,
   MEDIA_URL_BASE,
   resolveMediaUrl,
+  STORE_LOGO_OWNER_ID,
   type MediaEntityType,
 } from 'simplycms/domain/media';
 import {
-  discardMedia,
-  eraseMedia,
   inspectUpload,
+  withPublishedRollback,
   writeMedia,
   type MediaMime,
 } from 'simplycms/storage';
@@ -18,13 +19,13 @@ import {
 // 🔴 Allowlist, а не вільний рядок: `entity_type` іде в БД і потім у
 // предикати обліку. Сам список живе в T1 (`domain/media`), бо ним же
 // типізується пропс `ImageUpload` — копії тут бути не може.
-const entityIdSchema = z.uuid().nullable();
+const entityIdSchema = z.uuid();
 
 export interface ParsedUpload {
   readonly bytes: Uint8Array;
   readonly mime: MediaMime;
   readonly entityType: MediaEntityType;
-  readonly entityId: string | null;
+  readonly entityId: string;
 }
 
 const REASON_CODE = {
@@ -70,10 +71,16 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const entityType = MEDIA_ENTITY_TYPES.find((t) => t === entityTypeRaw);
   if (!entityType) throw new Error('media/bad-entity-type');
 
+  // 🔴 Власник обовʼязковий (К3-Е6д-3): рядок `media` без `entity_id` не можна
+  // стерти двофазно (умова власника одна для всіх), тож його не створюємо.
+  // Логотип — виняток: його власник фіксований і ставиться ТУТ, клієнтський
+  // `entityId` ігнорується, інакше `saveStoreProfile` не впізнав би файл.
   const entityIdRaw = data.get('entityId');
-  const entityId = entityIdSchema.parse(
-    typeof entityIdRaw === 'string' && entityIdRaw !== '' ? entityIdRaw : null,
-  );
+  let entityId: string;
+  if (entityType === 'store_logo') entityId = STORE_LOGO_OWNER_ID;
+  else if (typeof entityIdRaw === 'string' && entityIdRaw !== '')
+    entityId = entityIdSchema.parse(entityIdRaw);
+  else fieldIssue(['entityId'], 'invalid_type');
 
   const checked = await inspectUpload(file, MAX_UPLOAD_BYTES);
   if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
@@ -108,9 +115,8 @@ export async function uploadMediaOp({
 }: {
   data: FormData;
 }): Promise<{ ref: string; url: string }> {
-  let written: string | null = null;
-  try {
-    return await runAdmin('media.write', async (db, grant) => {
+  return withPublishedRollback((track) =>
+    runAdmin('media.write', async (db, grant) => {
       const parsed = await parseUploadForm(data);
       const record = await writeMedia(db, {
         bytes: parsed.bytes,
@@ -119,29 +125,12 @@ export async function uploadMediaOp({
         entityId: parsed.entityId,
         uploadedBy: grant.subject.userId,
       });
-      written = record.ref;
+      track(record.ref);
       const url = resolveMediaUrl(record.ref, MEDIA_URL_BASE);
       // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок
       // замість `!` тримає межу чесною — тип звужується доказом.
       if (url === null) throw new Error('media/bad-format');
       return { ref: record.ref, url };
-    });
-  } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    if (written !== null) await discardMedia(written);
-    throw error;
-  }
-}
-
-export const deleteMediaInput = z.object({ ref: z.string().min(1).max(200) });
-
-/** Прибрати файл за референсом. Зовнішній URL → `removed: false`, без збою. */
-export async function deleteMediaOp({
-  data,
-}: {
-  data: z.infer<typeof deleteMediaInput>;
-}): Promise<{ removed: boolean }> {
-  return runAdmin('media.write', async (db) => ({
-    removed: await eraseMedia(db, data.ref),
-  }));
+    }),
+  );
 }

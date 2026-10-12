@@ -1,5 +1,6 @@
 import { banners } from 'simplycms/schema';
-import type { Banner, BannerButton } from 'simplycms/contracts';
+import type { Banner } from 'simplycms/contracts';
+import { isBannerButton } from 'simplycms/domain';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 
 /** Мапа select-а банера: доменний `Banner` вимагає рівно ці колонки. */
@@ -30,7 +31,13 @@ export const bannerColumns = {
 };
 
 /** Рядок банера до нормалізації: `buttons` — нетипізований jsonb. */
-type RawBannerRow = Omit<Banner, 'buttons' | 'schedule_days'> & {
+type RawBannerRow = Omit<
+  Banner,
+  'buttons' | 'schedule_days' | 'placement' | 'animation_type' | 'text_position'
+> & {
+  placement: string;
+  animation_type: string;
+  text_position: string;
   buttons: unknown;
   schedule_days: number[] | null;
 };
@@ -46,6 +53,11 @@ type RawBannerRow = Omit<Banner, 'buttons' | 'schedule_days'> & {
 export function toBanner(row: RawBannerRow): Banner {
   return {
     ...row,
+    // В БД CHECK-ів на ці колонки немає, тож значення поза enum можливе (прямий
+    // SQL). Кастуємо, а не відкидаємо банер: тема мусить мати fallback.
+    placement: row.placement as Banner['placement'],
+    animation_type: row.animation_type as Banner['animation_type'],
+    text_position: row.text_position as Banner['text_position'],
     // Три медіа-колонки банера — той самий референс-контракт, що й у товару.
     // `image_url` в контракті обовʼязковий (NOT NULL у схемі), тож fallback
     // на вихідне значення — лише страховка від порожнього рядка, не бізнес-логіка.
@@ -57,17 +69,6 @@ export function toBanner(row: RawBannerRow): Banner {
       : [],
     schedule_days: Array.isArray(row.schedule_days) ? row.schedule_days : null,
   };
-}
-
-function isBannerButton(item: unknown): item is BannerButton {
-  if (typeof item !== 'object' || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    typeof obj.text === 'string' &&
-    typeof obj.url === 'string' &&
-    typeof obj.target === 'string' &&
-    typeof obj.variant === 'string'
-  );
 }
 
 /**
@@ -96,9 +97,12 @@ export function isBannerVisible(banner: Banner, now: Date): boolean {
     const hh = String(now.getHours()).padStart(2, '0');
     const mm = String(now.getMinutes()).padStart(2, '0');
     const current = `${hh}:${mm}`;
+    // Postgres `time` приходить як `HH:MM:SS`; порівняння рядків `09:00` з
+    // `09:00:00` ховало б банер рівно о першій хвилині вікна. Хвилинна
+    // точність, обидві межі включно.
     if (
-      current < banner.schedule_time_from ||
-      current > banner.schedule_time_to
+      current < banner.schedule_time_from.slice(0, 5) ||
+      current > banner.schedule_time_to.slice(0, 5)
     )
       return false;
   }

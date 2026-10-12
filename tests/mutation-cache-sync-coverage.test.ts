@@ -15,8 +15,8 @@ import { MUTATION_CACHE_SYNC_RATCHET } from '../eslint.config.mjs';
  * файли, які туди потрапили, чисті.
  *
  * 🔴 Не глобить `tinyglobby` (у devDependencies немає) — той самий
- * рекурсивний сканер `.ts(x)`, що і в `tests/explicit-ids.test.ts` /
- * `tests/admin-inserts-need-id.test.ts` (`insert-scan.ts`), щоб не заводити
+ * рекурсивний сканер `.ts(x)`, що і в `explicit-ids.test.ts`
+ * (`insert-scan.ts`), щоб не заводити
  * другий спосіб обходу дерева.
  */
 
@@ -29,8 +29,6 @@ const IMPORT_RE = /from ['"]simplycms\/admin-(?:data|server)/;
 const EXEMPT: Readonly<Record<string, string>> = {
   'packages/simplycms/src/admin/components/ImageUpload.tsx':
     'сховище файлів, не сутність кешу: результат — референс у стан форми власника',
-  'packages/simplycms/src/admin/pages/ReviewDetail.tsx':
-    'легасі-сторінка до Е6: serverFn лише ЧИТАЄ очищену розмітку відгуку (Тема 9), мутації — supabase-js; сутності кешу з write-back-хендлером немає',
 };
 
 function isUnderRatchetOrFeatures(fileRel: string): boolean {

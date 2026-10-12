@@ -6,7 +6,7 @@ import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { adminPath } from '../../../lib/adminLinks';
 import { toAmount } from '../../orders/to-amount';
-import { useFormatDate } from './useFormatDate';
+import { useFormatDate } from '../../../lib/useFormatDate';
 
 const RECENT_LIMIT = 10;
 

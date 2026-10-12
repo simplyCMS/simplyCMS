@@ -31,6 +31,7 @@ export const PENDING_RATING = 1;
 
 /** Місце розміщення банерів, яке читає каркас вітрини. */
 export const BANNER_PLACEMENT = 'home';
+export const SECTION_BANNER_PLACEMENT = 'section';
 export const HIDDEN_BANNER_TITLE = 'Вимкнений банер';
 export const EXPIRED_BANNER_TITLE = 'Прострочений банер';
 
@@ -95,6 +96,19 @@ export const SHOWCASE_FIXTURE_STATEMENTS: string[] = [
   `insert into public.banners (id, title, image_url, placement, sort_order, is_active, date_to)
    values (gen_random_uuid(), '${EXPIRED_BANNER_TITLE}', '/expired.jpg',
            '${BANNER_PLACEMENT}', 91, true, now() - interval '1 day')`,
+
+  // ── Банери розділу: один привʼязаний, один без розділу ───────────────────
+  // Демо-сід більше не кладе `home`-банер із `section_id` (воно суперечить
+  // інваріанту «section_id ⇔ placement = section»), тож звуження розділом
+  // перевіряється на власних рядках `section`.
+  `insert into public.banners (id, title, image_url, placement, section_id, sort_order, is_active)
+   select gen_random_uuid(), 'Банер розділу', '/section.jpg',
+          '${SECTION_BANNER_PLACEMENT}', s.id, 0, true
+     from public.sections s where s.slug = 'sonyachni-paneli'`,
+
+  `insert into public.banners (id, title, image_url, placement, sort_order, is_active)
+   values (gen_random_uuid(), 'Банер без розділу', '/orphan.jpg',
+           '${SECTION_BANNER_PLACEMENT}', 1, true)`,
 
   // ── Точки видачі: відкрита й закрита, обидві із залишком ─────────────────
   // Метод `pickup` — із демо-сіду; тут лише дві точки: відкрита й закрита.

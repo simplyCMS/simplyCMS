@@ -2,12 +2,30 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
-import { useT } from 'simplycms/i18n';
-import { deleteMyProductReview, submitProductReview } from '../lib/review-form';
+import { useT, type MessageKey } from 'simplycms/i18n';
+import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import { PAYLOAD_TOO_LARGE_CODE } from 'simplycms/domain/media';
+import {
+  deleteMyProductReview,
+  submitProductReview,
+  updateProductReview,
+} from '../lib/review-form';
 import { getProductRatings, getProductReviews } from '../lib/reviews';
 import type { ProductReviewRow } from '../lib/reviews';
 
 export type ProductReview = ProductReviewRow;
+
+/** Коди відмови сервера -> ключі каталогу. */
+const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
+  [REVIEW_SUBMIT_ERROR.badImage]: 'reviews.errors.imageBadFormat',
+  [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
+  [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
+  [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
+  [REVIEW_SUBMIT_ERROR.notFound]: 'reviews.errors.notFound',
+  [REVIEW_SUBMIT_ERROR.imagesChanged]: 'reviews.errors.changed',
+  // Стеля тіла запиту (К3-Е6д-2): відмова приходить від міддлвари, не від хендлера.
+  [PAYLOAD_TOO_LARGE_CODE]: 'errors.payloadTooLarge',
+};
 
 const NO_REVIEWS: ProductReview[] = [];
 
@@ -32,7 +50,13 @@ export function useProductReviews(productId: string | undefined) {
   const t = useT();
 
   const reviewsQuery = useQuery({
-    queryKey: productReviews.scoped('product', productId ?? ''),
+    // Актор у ключі (Е6д-17): відповідь залежить від того, хто питає (автор
+    // бачить свій `pending`). Без нього кеш гостя пережив би вхід, а кеш
+    // покупця A показався б покупцю B.
+    queryKey: [
+      ...productReviews.scoped('product', productId ?? ''),
+      user?.id ?? 'guest',
+    ],
     queryFn: () => getProductReviews({ data: { productId: productId! } }),
     enabled: !!productId,
     staleTime: 60 * 1000,
@@ -45,33 +69,39 @@ export function useProductReviews(productId: string | undefined) {
     void queryClient.invalidateQueries({ queryKey: productRatings });
   };
 
-  const onError = (err: Error) =>
+  // Коди сервера (`review/*`) у тост не потрапляють: кожен має рядок
+  // каталогу, невідоме — загальний текст, а не сира серверна діагностика.
+  // Власну відмову авторизації хук кидає вже перекладеною — її лишаємо.
+  const onFailure = (err: Error) => {
+    const key = SUBMIT_ERROR_KEY[err.message];
+    const own = err.message === t('product.review.notAuthorized');
     toast({
       variant: 'destructive',
       title: t('common.error'),
-      description: err.message,
+      description: key ? t(key) : own ? err.message : t('common.saveError'),
     });
+  };
 
   const submitReview = useMutation({
     mutationFn: async (data: {
       rating: number;
       title?: string;
       content?: string;
-      images?: string[];
+      images?: File[];
     }) => {
       // 🔴 Перевірка ЛИШАЄТЬСЯ, хоч автора й задає сервер: без неї відмова
       // приїхала б англійською серверною діагностикою просто в тост покупця.
       if (!user || !productId)
         throw new Error(t('product.review.notAuthorized'));
-      await submitProductReview({
-        data: {
-          productId,
-          rating: data.rating,
-          title: data.title || null,
-          content: data.content || null,
-          images: data.images ?? [],
-        },
-      });
+      // serverFn приймає `FormData` (Е6д-6): фото й текст їдуть одним
+      // запитом. Порожні рядки сервер зводить до `null`.
+      const form = new FormData();
+      form.set('productId', productId);
+      form.set('rating', String(data.rating));
+      form.set('title', data.title ?? '');
+      form.set('content', data.content ?? '');
+      for (const file of data.images ?? []) form.append('images', file);
+      await submitProductReview({ data: form });
     },
     onSuccess: () => {
       invalidate();
@@ -80,7 +110,44 @@ export function useProductReviews(productId: string | undefined) {
         description: t('product.review.submittedDescription'),
       });
     },
-    onError,
+    onError: onFailure,
+  });
+
+  // Правка (Е6д-23): `keep` — референси лишених фото, `images` — нові файли.
+  // Той самий кеш і той самий ключ актора, що й подача: після успіху список
+  // перечитується, і відгук приходить уже зі статусом `pending`.
+  const updateReview = useMutation({
+    mutationFn: async (data: {
+      id: string;
+      rating: number;
+      title?: string;
+      content?: string;
+      keep: string[];
+      images?: File[];
+    }) => {
+      if (!user) throw new Error(t('product.review.notAuthorized'));
+      const form = new FormData();
+      form.set('id', data.id);
+      form.set('rating', String(data.rating));
+      form.set('title', data.title ?? '');
+      form.set('content', data.content ?? '');
+      for (const ref of data.keep) form.append('keep', ref);
+      for (const file of data.images ?? []) form.append('images', file);
+      await updateProductReview({ data: form });
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({
+        title: t('reviews.edited'),
+        description: t('product.review.submittedDescription'),
+      });
+    },
+    onError: (err: Error) => {
+      onFailure(err);
+      // Відгук могли змінити чи видалити в іншій вкладці: форма працює зі
+      // знімком, тож після відмови читаємо актуальний стан.
+      invalidate();
+    },
   });
 
   const deleteReview = useMutation({
@@ -95,7 +162,7 @@ export function useProductReviews(productId: string | undefined) {
       invalidate();
       toast({ title: t('product.review.deleted') });
     },
-    onError,
+    onError: onFailure,
   });
 
   const reviews = reviewsQuery.data ?? NO_REVIEWS;
@@ -110,6 +177,7 @@ export function useProductReviews(productId: string | undefined) {
     ...summarize(approvedReviews),
     isLoading: reviewsQuery.isLoading,
     submitReview,
+    updateReview,
     deleteReview,
   };
 }

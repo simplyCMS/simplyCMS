@@ -9,6 +9,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
+import { expectVisible } from './wait.mjs';
 
 const PAGE = 50;
 const SEEDED = 55;
@@ -28,7 +29,7 @@ async function loadAll({ page, url, rowKeys, loadMore }) {
   // Кнопка зникає, коли сторінок більше немає; поки триває підвантаження,
   // вона disabled — чекаємо, а не клікаємо (інакше клік гониться з ремонтом DOM).
   for (let clicks = 0, tries = 0; tries < 200; tries++) {
-    if (!(await button.isVisible().catch(() => false))) break;
+    if (!(await expectVisible(button, 1_500))) break;
     if (!(await button.isEnabled().catch(() => false))) {
       await page.waitForTimeout(150);
       continue;

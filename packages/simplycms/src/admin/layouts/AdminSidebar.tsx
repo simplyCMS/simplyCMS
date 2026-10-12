@@ -39,9 +39,11 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from 'simplycms/ui/sidebar';
+import { usePendingReviewsCount } from '../features/reviews/list/usePendingReviewsCount';
 
 // Пункти меню тримають КЛЮЧІ, не тексти: масив лишається на рівні модуля
 // (він статичний), а підпис резолвиться під час рендера через `t()`.
@@ -135,6 +137,8 @@ export function AdminSidebar() {
   const t = useT();
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
+  // Лічильник очікуючих відгуків (Д-4): бейдж лише коли є що модерувати.
+  const pendingReviews = usePendingReviewsCount().data?.pending ?? 0;
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -262,6 +266,9 @@ export function AdminSidebar() {
                       {!collapsed && <span>{t(item.titleKey)}</span>}
                     </NavLink>
                   </SidebarMenuButton>
+                  {item.url === adminPath('reviews') && pendingReviews > 0 && (
+                    <SidebarMenuBadge>{pendingReviews}</SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

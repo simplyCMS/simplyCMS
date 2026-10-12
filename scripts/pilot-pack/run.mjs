@@ -11,6 +11,7 @@ import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
+import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
 import { gateImportProtection } from './gate-ip.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
@@ -34,6 +35,9 @@ export async function runGates(opts) {
   step('Gate C — bundle-guard + splitting');
   results.push(['C', gateBundle(opts.storeDir)]);
 
+  step('Gate SB — що вклеєно в серверний бандл');
+  results.push(['SB', gateServerBundle(opts.storeDir)]);
+
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
 
@@ -45,13 +49,13 @@ export async function runGates(opts) {
   step('Gate TOOL — tarball @simplycms/cli');
   results.push(['TOOL', await toolPkgSmoke()]);
 
-  // Gate E (bootstrap власника) знято разом із локальним стеком Supabase —
-  // він жив на service_role-ключі GoTrue. Рядок лишається видимим, щоб звіт
+  // Gate E (bootstrap власника) знято разом із локальним стеком БД —
+  // він жив на service-ключі сервісу автентифікації. Рядок лишається видимим, щоб звіт
   // не виглядав так, ніби owner-флоу колись покривався й тихо зник.
   results.push([
     'E',
     skippedGate(
-      'Gate E — знято разом зі стеком Supabase: owner-флоу на Better Auth ' +
+      'Gate E — знято разом зі стеком БД: owner-флоу на Better Auth ' +
         'повертає контур К6',
     ),
   ]);

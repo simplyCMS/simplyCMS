@@ -30,8 +30,8 @@ import * as schema from 'simplycms/schema';
  *     (звіряється текст лівої й правої частини, не граф даних);
  *   • читання цілим рядком (`db.select().from(banners)` без проєкції) —
  *     їх ловить лише мапер сутності;
- *   • читачів поза `storefront/loaders/**` — адмінка (`src/admin/**`) досі
- *     на supabase-js і переписується треком К3.
+ *   • читачів поза `storefront/loaders/**` — адмінка (`src/admin/**`) читає
+ *     через `admin-server`, і цей гейт її не сканує.
  * Тобто «кожен запис резолвиться при читанні» — обіцянка ширша за гейт;
  * докблок `domain/media.ts` тепер каже рівно те, що тут перевіряється.
  */
@@ -73,6 +73,8 @@ function loaderFiles(dir: string): string[] {
 const RESOLVED_BY: Record<string, string> = {
   'profile.ts#avatar_url': 'resolveMediaUrl',
   'reviews.ts#avatar_url': 'resolveMediaUrl',
+  // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
+  'reviews.ts#images': 'toImageList',
   'products.ts#images': 'toImageList',
   'entities/home-product.ts#images': 'toImageList',
   'entities/modification.ts#images': 'toImageList',
@@ -119,8 +121,14 @@ const callForm = (alias: string, resolver: string): RegExp =>
 /** Проєкції, де потрібен саме РЕФЕРЕНС, а не URL. Кожна — з причиною. */
 const RAW_READS: Record<string, string> = {
   'avatar.ts#avatarUrl':
-    'шлях ЗАПИСУ: значення йде в `eraseMedia`/`profiles.avatar_url`, ' +
+    'шлях ЗАПИСУ: значення йде в `eraseMediaRows`/`profiles.avatar_url`, ' +
     'а сховище адресується ключем, не URL',
+  'reviews-write.ts#images':
+    'сирий ключ для стирання, не для показу: `DELETE … RETURNING images` ' +
+    'власного відгуку йде в `eraseMediaRows` (Е6д-9, Е6д-14)',
+  'reviews-edit.ts#images':
+    'сирі ключі для звірки `keep` ⊆ поточних і для стирання прибраних: ' +
+    '`SELECT … FOR UPDATE` власного відгуку під правку (Е6д-23)',
 };
 
 describe('резолв медіа-колонок при читанні', () => {

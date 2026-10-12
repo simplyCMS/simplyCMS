@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { requireGrant } from 'simplycms/auth';
 import { dashboardSummaryOp } from 'simplycms/admin-server/impl';
 import { MEDIA_URL_BASE } from 'simplycms/domain/media';
+import { lookupMediaForRequest } from 'simplycms/storefront/media-visibility';
 import { localFsDriver, serveMedia, sniffImageMime } from 'simplycms/storage';
 import { ShowcaseNotPristineError } from '../../../../../scripts/showcase/guard.mts';
 import { seedShowcase } from '../../../../../scripts/showcase/run.mts';
@@ -85,6 +86,7 @@ describe('сід вітрини: гейт С-8', () => {
     const url = `http://localhost${MEDIA_URL_BASE.replace(/\/+$/, '')}/${refs[0]}`;
     const res = await serveMedia(
       { request: new Request(url) },
+      { lookup: lookupMediaForRequest },
       localFsDriver(s.env.mediaRoot),
     );
     expect(res.status).toBe(200);

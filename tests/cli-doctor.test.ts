@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -30,10 +31,10 @@ import {
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
 // Оффлайн-перевірки doctor на реальному скаффолді шаблону. Онлайн-перевірок у
-// doctor більше НЕМАЄ: вони ходили в Supabase REST, а магазин сервер-first —
+// doctor більше НЕМАЄ: вони ходили в HTTP-API бази, а магазин сервер-first —
 // HTTP-API до БД у нього немає взагалі (їх повертає контур К3).
 //
-// 🔴 Env — рівно серверний контракт магазину (0.4.1). Supabase-ключів тут бути
+// 🔴 Env — рівно серверний контракт магазину (0.4.1). Ключів клієнта БД тут бути
 // не може: якби checkEnv і далі гейтив їх, doctor зеленів би на магазині, який
 // не стартує, і червонів на тому, який працює.
 const ENV = {
@@ -82,6 +83,8 @@ describe('cli doctor (оффлайн)', () => {
       themes: 'ok',
       // node_modules ще немає — скіли ядра нема з чим звіряти.
       'skill-links': 'skip',
+      // Ядра в node_modules ще немає — peer-діапазон pg невідомий (деталі — cli-pg-driver).
+      'pg-driver': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -103,7 +106,7 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkCoreVersions(stale).status).toBe('warn');
   });
 
-  it('checkEnv: гейтить DATABASE_URL і BETTER_AUTH_SECRET, не ключі Supabase', () => {
+  it('checkEnv: гейтить DATABASE_URL і BETTER_AUTH_SECRET, не ключі клієнта БД', () => {
     const empty = checkEnv({ env: {} });
     expect(empty.status).toBe('error');
     expect(empty.details).toContain('DATABASE_URL');
@@ -121,7 +124,7 @@ describe('cli doctor (оффлайн)', () => {
 
     expect(checkEnv({ env: ENV }).status).toBe('ok');
     // 🔴 Ключі поза контрактом його не заміняють: магазин, у якого заповнено
-    // лише їх (так виглядав .env.local до 0.4.1 — з ключами Supabase), не
+    // лише їх (так виглядав .env.local до 0.4.1 — з ключами клієнта БД), не
     // стартує, тож doctor мусить червоніти, а не зеленіти на «щось задано».
     const outsideContract = { VITE_SITE_URL: 'https://shop.example' };
     const stale = checkEnv({ env: outsideContract });
@@ -147,7 +150,7 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkMigrations(ctx).status).toBe('skip');
 
     const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
-    const storeDir = join(store, 'supabase', 'migrations');
+    const storeDir = join(store, 'db', 'migrations');
     const [shared] = readdirSync(storeDir).filter((n) => n.endsWith('.sql'));
     cpSync(join(storeDir, shared), join(schemaDir, shared));
     writeFileSync(join(schemaDir, '99999999999999_new.sql'), 'select 1;\n');
@@ -166,6 +169,53 @@ describe('cli doctor (оффлайн)', () => {
     });
     expect(changed.status).toBe('error');
     expect(changed.details).toContain(shared);
+  });
+
+  it('checkMigrations: канон є, а db/migrations немає — error із назвою теки', async () => {
+    const store = await scaffoldStore('doc-mig-gone');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('db/migrations');
+    expect(res.details).not.toContain('git mv');
+  });
+
+  it('checkMigrations: стара supabase/migrations — error з підказкою git mv', async () => {
+    const store = await scaffoldStore('doc-mig-legacy');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    mkdirSync(join(store, 'supabase', 'migrations'), { recursive: true });
+    writeFileSync(
+      join(store, 'supabase', 'migrations', '0001_init.sql'),
+      'select 1;\n',
+    );
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('git mv supabase/migrations db/migrations');
+  });
+
+  it('checkMigrations: db/migrations — файл, а не тека → зрозумілий error, без ENOTDIR', async () => {
+    const store = await scaffoldStore('doc-mig-file');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    writeFileSync(join(store, 'db', 'migrations'), 'не тека\n');
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('db/migrations');
+    expect(res.details).toContain('не тека');
   });
 
   it('checkThemes: нерезолвний запис — warn; warn не валить прогін без --strict', async () => {

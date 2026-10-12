@@ -33,12 +33,6 @@ vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ sectionSlug: 'invertory' }),
 }));
 
-vi.mock('simplycms/supabase/SupabaseProvider', () => ({
-  useSupabaseClient: () => ({
-    from: () => ({ select: () => ({ eq: () => ({}) }) }),
-  }),
-}));
-
 vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));

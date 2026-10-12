@@ -45,8 +45,8 @@ const TIER_ZONES = [
   ['src/contracts', 0, 'contracts', []],
   ['src/domain', 1, 'domain', []],
   ['src/schema', 1, 'schema', []],
-  // db-рантайм v2 (Task 6, В2-К1а) — T2 поруч із `supabase`: він теж говорить
-  // із БД і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
+  // db-рантайм v2 (Task 6, В2-К1а) — T2 поруч із `auth`: він теж серверний
+  // і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
   // `contracts`, `domain`, `schema` — і більше нічого.
   ['src/db', 2, 'db', []],
   // Auth-контур v2 (Task 7, В2-К1а) — T2 поруч із `db`: він теж серверний і
@@ -54,7 +54,6 @@ const TIER_ZONES = [
   // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
   ['src/auth', 2, 'auth', ['db']],
-  ['src/supabase', 2, 'supabase', []],
   ['src/react-query', 2, 'react-query', []],
   ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
@@ -113,13 +112,7 @@ const TIER_ZONES = [
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.
   // `i18n` навмисно НЕ в списку: текст у примітиві — легальний випадок.
-  [
-    'src/ui',
-    3,
-    'ui',
-    [],
-    ['schema', 'supabase', 'react-query', 'storefront', 'runtime'],
-  ],
+  ['src/ui', 3, 'ui', [], ['schema', 'react-query', 'storefront', 'runtime']],
   ['src/themes', 4, 'themes', []],
   ['src/plugins', 4, 'plugins', []],
   // Колекції адмінки (Е1б) — T4: над contracts/schema-типами, під

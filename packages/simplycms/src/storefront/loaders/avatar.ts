@@ -1,11 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { profiles } from 'simplycms/schema';
+import type { MediaOwner } from 'simplycms/storage';
 import {
-  discardMedia,
-  eraseMedia,
+  completeMediaErasures,
+  eraseMediaRows,
+  withPublishedRollback,
   writeMedia,
   type MediaMime,
   type MediaStorageDriver,
+  type MediaStorageOptions,
 } from 'simplycms/storage';
 import { withCustomerDb, type ActorDb } from './db';
 import type { OperatorEscalation } from './escalation';
@@ -16,21 +19,11 @@ export interface AvatarBytes {
   readonly mime: MediaMime;
 }
 
-/**
- * Сховище заміни аватара.
- *
- * 🔴 Канал ОДИН: `driver` дістається і публікації, і прибиранню орфана. Доки
- * їх було два незалежні параметри, викликач, який передав драйвер лише в
- * заміну, мовчки прибирав орфан у РЕАЛЬНИЙ `MEDIA_ROOT` замість свого
- * сховища: `discardMedia` ковтає помилку, а `local-fs.delete` вважає
- * `ENOENT` успіхом. `discardWith` лишає розбіжність можливою, але вже як
- * РІШЕННЯ — вона потрібна харнесу, де драйвер публікації навмисно зламаний
- * саме на видаленні. Порожнє поле = той самий драйвер.
- */
-export interface AvatarStorageOptions {
-  readonly driver?: MediaStorageDriver;
-  readonly discardWith?: MediaStorageDriver;
-}
+/** Власник файлу аватара: рядок `media` `avatar/<userId>` (Е6д-16). */
+const avatarOwner = (userId: string): MediaOwner => ({
+  entityType: 'avatar',
+  entityId: userId,
+});
 
 /** Поточний референс аватара покупця або `null`. */
 async function currentAvatarRef(
@@ -57,37 +50,30 @@ async function currentAvatarRef(
  * (`requireSessionUserId`), у харнесі — від сіду; прийнятий від КЛІЄНТА
  * переписав би чужий профіль, тож ця межа лишається в serverFn.
  *
- * 🔴 Холдер-обʼєкт, а не `let`: присвоєння з колбека потік керування TS не
- * бачить, тож у `catch` проста змінна звузилась би до рівно `null`, і
- * `tsc --strict` МОВЧКИ погодився б із мертвою гілкою прибирання.
+ * Відкат опублікованого файлу — `withPublishedRollback` (Е6д-20б).
  */
 export async function replaceAvatar(
   userId: string,
   input: AvatarBytes,
-  options: AvatarStorageOptions = {},
+  options: MediaStorageOptions = {},
 ): Promise<{ ref: string }> {
-  const published: { ref: string | null } = { ref: null };
-  try {
-    return await withCustomerDb(userId, (db, operator) =>
-      replaceAvatarFor(db, operator, userId, input, options.driver, (ref) => {
-        published.ref = ref;
-      }),
-    );
-  } catch (error) {
-    // Best-effort і НЕ маскує первинну помилку: `discardMedia` не кидає.
-    if (published.ref !== null)
-      await discardMedia(published.ref, options.discardWith ?? options.driver);
-    throw error;
-  }
+  const { ref, erased } = await withPublishedRollback(
+    (track) =>
+      withCustomerDb(userId, (db, operator) =>
+        replaceAvatarFor(db, operator, userId, input, options.driver, track),
+      ),
+    options.discardWith ?? options.driver,
+  );
+  // Другу фазу (файл старого аватара) — ПІСЛЯ COMMIT (Е6д-14); не кидає.
+  await completeMediaErasures(erased, options.driver);
+  return { ref };
 }
 
 /**
  * Кроки заміни ВСЕРЕДИНІ транзакції. Модуль-приватна навмисно (`replaceAvatar`).
  *
- * 🔴 ПОРЯДОК: старий аватар прибирається ОСТАННІМ — необоротна дія якомога
- * пізніше, одразу перед COMMIT. Якби видалення старого стояло першим,
- * будь-яка подальша відмова відкотила б РЯДОК старого, але не повернула б
- * його ФАЙЛ, і покупець лишився б із профілем, що веде в нікуди.
+ * 🔴 Транзакція стирає лише РЯДОК старого аватара (+ outbox); його ФАЙЛ стирає
+ * `replaceAvatar` після COMMIT (Е6д-14), тож відмова транзакції файлу не чіпає.
  *
  * 🔴 Старий рядок прибирається через `operator`: `app_user` не має гранта
  * `DELETE` на `media` (`0002_grants.sql:120`) — саме відсутність права
@@ -104,7 +90,7 @@ async function replaceAvatarFor(
   input: AvatarBytes,
   driver: MediaStorageDriver | undefined,
   onPublished: (ref: string) => void,
-): Promise<{ ref: string }> {
+): Promise<{ ref: string; erased: string[] }> {
   const previous = await currentAvatarRef(db, userId);
 
   const record = await writeMedia(
@@ -127,29 +113,36 @@ async function replaceAvatarFor(
     .set({ avatarUrl: record.ref })
     .where(eq(profiles.userId, userId));
 
-  // 🔴 Тримаючи рядкові локи `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище),
-  // чекаємо на ІНШЕ зʼєднання; дедлок-детектор PG такого очікування не бачить.
-  // Операторська транзакція не сміє чіпати `users`/`profiles`, інакше буде вічний
-  // висяк, а не 40P01 (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
-  if (previous) await operator((tx) => eraseMedia(tx, previous, driver));
+  // 🔴 `operator` — це `set local role app_admin` на ТОМУ Ж зʼєднанні й тій самій
+  // транзакції (`escalation.ts`), а не окреме зʼєднання, тож рядкові локи
+  // `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище) тут власні й самі себе не
+  // блокують. Ескалація має лише стерти рядки `media`: чіпати `users`/`profiles`
+  // під `app_admin` не слід (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
+  const erased = previous
+    ? await operator((tx) =>
+        eraseMediaRows(tx, [previous], avatarOwner(userId)),
+      )
+    : [];
 
-  return { ref: record.ref };
+  return { ref: record.ref, erased };
 }
 
-/** Прибрати аватар. Ідемпотентна: без аватара — no-op. */
+/**
+ * Прибрати аватар. Ідемпотентна: без аватара — no-op. Повертає ключі, чиї
+ * файли викликач стирає `completeMediaErasures` ПІСЛЯ COMMIT (Е6д-14).
+ */
 export async function clearAvatarFor(
   db: ActorDb,
   operator: OperatorEscalation,
   userId: string,
-  driver?: MediaStorageDriver,
-): Promise<void> {
+): Promise<string[]> {
   const previous = await currentAvatarRef(db, userId);
-  if (!previous) return;
+  if (!previous) return [];
 
   await db
     .update(profiles)
     .set({ avatarUrl: null })
     .where(eq(profiles.userId, userId));
   // 🔴 Те саме очікування між зʼєднаннями, що в `replaceAvatarFor` (див. там).
-  await operator((tx) => eraseMedia(tx, previous, driver));
+  return operator((tx) => eraseMediaRows(tx, [previous], avatarOwner(userId)));
 }

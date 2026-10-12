@@ -24,7 +24,58 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-10-08)
+## 📍 Поточний стан (оновлено 2026-10-12)
+
+🔴 **2026-10-11 — К3-Е7 (повний знос Supabase) виконано** на гілці `claude/k3-e6d-content`
+(той самий PR, що й Е6д; реліз-коміт 0.14.0 — 2026-10-12, публікація на npm — мержем PR у `main`).
+**Легасі на `supabase-js` = 0.** Знесено шар `simplycms/supabase` (6 експортів `simplycms/supabase*`
+і дзеркало в `publishConfig`), `LegacySupabaseBoundary`, peer'и й залежності `@supabase/*`,
+реєстр `tests/admin-server-first`, кореневий `supabase/` із сідом пілота, `pnpm db:migrate`,
+`pnpm pilot:seed` і `tools/content-loader-mcp`. Тека магазину `supabase/` → `db/`
+(`db/migrations`; `doctor` №7 і `simplycms update` не мовчать про відсутню теку). Повернення
+замикає ратчет: правило лінту `simplycms-supabase/no-supabase-import` на все репо і тест
+маніфестів/lock (жодного `@supabase/`); гарди-замінники — незалежний контроль
+`import.meta.env`, `dist-import-meta` на фікстур-збірці й юніт Gate C. План —
+[`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md), спека —
+[`2026-10-11-v2-k3-e7-supabase-removal-design.md`](../superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md)
+(з розділом «Амендмент (план, 2026-10-11)»). Наступний — **Е8** (живий прогін магазину з
+опублікованих tarball-ів npm; після публікації 0.14.0).
+
+🔴 **К3-Е7, Task 11 (2026-10-11) — дефект START-IP-1: опубліковані 0.7–0.13 не стартують у
+свіжому магазині.** `pnpm pilot` (Gate B) на HEAD показав `TypeError: Class extends value
+#<Object>` у `BoundPool extends Pool`: import-protection плагін `@tanstack/start-plugin-core`
+≥1.171 (приїхав з XSS-бампом 24e2836a, 0.7.0) перерезолвлює `require()` без `kind`, а `pg`
+вклеюється в серверний бандл, бо не є прямою залежністю магазину
+([`UPSTREAM:START-IP-1`](../architecture/upstream-workarounds.md)). Виправлення (реліз 0.14.0):
+🔴 **BREAKING — `pg` став peer-залежністю ядра (точний пін `8.23.1`) і ПРЯМОЮ залежністю магазину**
+(шаблон, `tests/pilot/store-template`; існуючий магазин: `pnpm add pg@8.23.1`); `doctor` №13 —
+декларація `pg` і версія в межах peer (`update` версію `pg` не переписує, лише підказує); пілот
+дістав Gate SB (драйвер не вклеєний + allowlist вклеєних пакетів із причинами,
+`scripts/pilot-pack/server-bundle-allowlist.mjs`) і крок Gate B «sanitize-html на сервері» (проба —
+оверлей `scripts/pilot-pack/sanitize-probe.sql`, демо-сід чистий); реліз ганяє повний `pnpm pilot`
+(`scripts/release/pilot-full.mjs` у `scripts/release/gates.mjs`). Рішення про уже опубліковані
+0.7–0.13 у npm — за власником (тут не чіпалися).
+
+🔴 **2026-10-10 — К3-Е6д (контент: банери й відгуки) завершено** на гілці
+`claude/k3-e6d-content` (реліз 0.14.0). `/admin/banners*` і `/admin/reviews*` — на
+`simplycms/admin-server`: банери — ресурс фабрики з опцією `media` (Е6д-1: знімок, guard
+злитого рядка, перевірка нових референсів, стирання заміненого), спільні предикати кнопки й
+тривалостей у `simplycms/domain` (Е6д-3, Е6д-13); відгуки — список з keyset і масовою
+модерацією (`setReviewsStatus`, Е6д-7), картка з фото й внутрішньою приміткою, бейдж
+«очікують» у сайдбарі; на вітрині покупець подає відгук із фото одним `FormData`-запитом
+(Е6д-6), автор бачить свій `pending` разом із фото, гість — ні (Е6д-17). 🔴 Канон сховища
+змінено: **двофазне стирання** (Е6д-14) — транзакція видаляє лише рядки `media`, файли — після
+COMMIT; власність ключа перевіряє `eraseMediaRows` (Е6д-16). Доробка К3-Е6д-1…9 (2026-10-11)
+перевела на двофазне стирання й аватар та логотип, додала outbox
+`media_erasures` (Е6д-20), роздачу з перевіркою рядка й видимості (Е6д-21), sweep (Е6д-22)
+та редагування відгуку покупцем (Е6д-23); усі борги К3-Е6д-1…9 закрито. Видалення товару
+стирає фото його відгуків опцією фабрики `cascadeMedia` (Е6д-19) під гейтом класу `media-cascade-coverage`. Легасі на `supabase-js` — **2** файли
+(`LegacySupabaseBoundary` з тестом; знесено в Е7, див. вище). Доведено `pnpm live:smoke` (крок `admin-content.mjs`;
+негативні контролі — без запису `status` у `setReviewsStatus` і з `adminComment` у
+`loadProductReviews` — червоніють). Норма лінту — 0 errors / 7 warnings. Далі — **Е7**
+(знос `LegacySupabaseBoundary` і `src/supabase/` — ✅ виконано 2026-10-11) → **Е8**. Деталі —
+[`v2-state-map.md`](./v2-state-map.md) §2.12, канон — `docs/architecture/storage.md`,
+`docs/architecture/data-layer.md` (опція `media`, С-15), борги — «Борги К3-Е6д».
 
 🔴 **2026-10-08 — вітринний стенд `pnpm db:showcase` готовий** (план
 [`2026-10-08-showcase-seed.md`](../superpowers/plans/2026-10-08-showcase-seed.md), Task 1–8,
@@ -35,7 +86,7 @@
 (`CoreActor`, С-15). Гейт сіду (С-8) — у `test:schema`, `typecheck:showcase` — у ланцюгу
 гейтів одразу після `typecheck`. Живий прогін 2026-10-08: вітрина й `/media/<key>` — 200,
 дашборд власника = прямий SQL. Як підняти — [`v2-state-map.md`](./v2-state-map.md) §5;
-борг С-11 — нижче (SHOWCASE-1).
+борг С-11 закрито в Е6д (SHOWCASE-1).
 
 🔴 **2026-10-08 — К3-Е6г (покупці й дашборд) завершено** на гілці
 `claude/k3-e6g-customers-dashboard` (до релізу). `/admin/users`, `/admin/users/$userId`
@@ -167,7 +218,7 @@ server-only тека `simplycms/commerce`, спільна з чекаутом), 
 advisory-lock, `ON DELETE RESTRICT` цін — Е4-1), `/admin/properties*` (тип
 незмінний після створення, глобальний slug — Е4-6, опції). Легасі на
 `supabase-js` — **34** файли, кожен записаний у реєстр
-`tests/admin-server-first/registry.ts`; `PriceValidator` переїхав у Е6.
+`tests/admin-server-first/registry.ts` (знесено в К3-Е7); `PriceValidator` переїхав у Е6.
 Доведено `pnpm live:smoke` (крок довідників) і ручним прогоном — деталі в
 розділі «К3 Адмінка» нижче й у [`v2-state-map.md`](./v2-state-map.md) §2.5.
 
@@ -191,8 +242,8 @@ Supabase (healthcheck перестав брехати); легасі-роут `/
 генератор типів (`db:generate-types`, `types:baseline`, `supabase/types.ts`) і
 онлайн-перевірки `doctor`; аватар чесно відмовляє до К4; пілот більше не
 підставляє фіктивних Supabase-ключів, а Gate C стереже новий серверний граф
-(`simplycms/dist/db`, `drizzle-orm`, `pg`). 🔴 `supabase-js` лишається живим
-**лише під адмінкою** — зноситься треком К3.
+(`simplycms/dist/db`, `drizzle-orm`, `pg`). 🔴 `supabase-js` лишався живим
+**лише під адмінкою** — знесено в К3-Е7 (2026-10-11).
 
 **Рев'ю контуру пройдено** (6 лінз + адверсаріальна перевірка кожної знахідки,
 два кола фіксів). Три дефекти, доведені живими прогонами й виправлені в тому ж
@@ -252,12 +303,12 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 |----------|----------------------|
 | Створення магазину | `pnpm create simplycms-store` |
 | Реліз ядра | `pnpm release X.Y.Z` → PR у `main` → push публікує на npmjs (+тег) |
-| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/D/CLI/TOOL |
-| Пілот проти живої БД | `pnpm pilot` (Gate B, read-only проти `DATABASE_URL` із `.env.local`; назви товарів — прямим SQL) |
+| Пілот пакування (без БД) | `pnpm pilot:pack` — gates A/C/SB/D/IP/CLI/TOOL |
+| Пілот проти живої БД | `pnpm pilot` (+ Gate B: production-запуск `server.mjs` скретча й HTTP проти `DATABASE_URL` із `.env.local` або `PILOT_DATABASE_URL`; назви товарів — прямим SQL; демо-БД — з оверлеєм проби санітайзера `scripts/pilot-pack/sanitize-probe.sql`, `scripts/pilot-pack/apply-probe.mjs`). 🔴 **Обовʼязковий у релізі:** `pnpm release` ганяє його через `scripts/release/pilot-full.mjs` (харнес `harness:up` → `db:demo` → `pnpm pilot`), реєстр гейтів — `scripts/release/gates.mjs` |
 | Схема, політики, гранти | 🔴 **`pnpm test:schema`** — накат канону на чистий Postgres + парність політик і грантів + поведінкова матриця RLS із трьома негативними контролями. **Без Docker** (`PG_HARNESS_URL` або ефемерний `initdb`); у CI — job `schema` |
 | ~~Пілот проти локального стека~~ | 🔴 `pnpm pilot:e2e` — **КОМАНДИ НЕМАЄ** (знято в 0.4.1 разом зі стеком Supabase і Gate E); відновлення на Postgres-стеку — К6 |
 | ~~Браузерний e2e~~ | 🔴 `pnpm test:e2e` — **КОМАНДИ НЕМАЄ** (знято в 0.4.1; специ `tests/e2e/**` лишились без входу) — К6 |
-| Обслуговування магазину | `pnpm simplycms doctor (12 перевірок) / add [--theme\|--plugin] [--copy] / create plugin\|theme / update (версії + host-файли + лінки скілів) / db:diff` |
+| Обслуговування магазину | `pnpm simplycms doctor (13 перевірок; №13 — `pg` пряма залежність магазину в межах peer ядра) / add [--theme\|--plugin] [--copy] / create plugin\|theme / update (версії + host-файли + лінки скілів) / db:diff` |
 | Плагіни | `definePlugin` + порти `simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq` (🔴 з шаблону знято, ставиться `simplycms add`); межа довіри — dependency-lint |
 | Теми | контракт v3: v2.2 (tokens+components+messages+fonts) + опційні `views` пʼяти сторінок (`simplycms/contracts/views`); npm або copy-in; `bootstrapThemes` |
 | Conformance тем | `pnpm simplycms theme:conformance` + kit `simplycms/themes/conformance` (негативний контроль живим експериментом) |
@@ -265,7 +316,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`) |
 | Вітринний стенд | `pnpm db:showcase` — `simplycms_showcase` з наповненням для ручного тесту (одноразова, перестворюється лише з позначкою); друкує env і команду запуску. Опис — `docs/development/TOOLING.md` § 2 |
 | ✅ **Магазин на чистому Postgres** | `pnpm db:demo` (покупний демо: доставка, СИСТЕМНА точка видачі, залишки, `decrease_on_order = true`) → `.env.local` (`DATABASE_URL`, `BETTER_AUTH_SECRET`) → `pnpm build && pnpm start`. Вітрина, вхід, кабінет, чекаут — працюють: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`. Покроково — [`v2-state-map.md`](./v2-state-map.md) §5 |
-| Адмінка | 🔴 **Оживає посторінково (трек К3).** Живі сторінки — `/admin/order-statuses` (Е1б) і каталог (Е3): `/admin/products` (список on-demand, фільтри, «Показати ще»), `/admin/products/new`, `/admin/products/$productId` (картка, модифікації, ціни, залишки, властивості, зображення через порт сховища) і довідники каталогу (Е4): `/admin/sections*` (список, картка із зображенням через порт сховища, SEO, призначення властивостей), `/admin/price-types*` (список, картка, перемикання дефолту), `/admin/properties*` (список, картка, опції із зображенням) і замовлення (Е5): `/admin/orders*` (список on-demand, картка, зміна статусу з поверненням залишку при скасуванні) і доставка (Е6а): `/admin/shipping/*` (способи з тарифами в картці, зони з дефолтною, точки видачі; `/admin/shipping` → способи) і система (Е6б): `/admin/settings` (профіль магазину, логотип, соцмережі, склад), `/admin/themes*`, `/admin/plugins*` і знижки з категоріями покупців (Е6в): `/admin/discounts*`, `/admin/price-validator`, `/admin/user-categories*`; і покупці з дашбордом (Е6г): `/admin/users*`, `/admin`; решта 6 файлів `src/admin/**` — на `supabase-js`, тобто не працюють |
+| Адмінка | 🔴 **Оживає посторінково (трек К3).** Живі сторінки — `/admin/order-statuses` (Е1б) і каталог (Е3): `/admin/products` (список on-demand, фільтри, «Показати ще»), `/admin/products/new`, `/admin/products/$productId` (картка, модифікації, ціни, залишки, властивості, зображення через порт сховища) і довідники каталогу (Е4): `/admin/sections*` (список, картка із зображенням через порт сховища, SEO, призначення властивостей), `/admin/price-types*` (список, картка, перемикання дефолту), `/admin/properties*` (список, картка, опції із зображенням) і замовлення (Е5): `/admin/orders*` (список on-demand, картка, зміна статусу з поверненням залишку при скасуванні) і доставка (Е6а): `/admin/shipping/*` (способи з тарифами в картці, зони з дефолтною, точки видачі; `/admin/shipping` → способи) і система (Е6б): `/admin/settings` (профіль магазину, логотип, соцмережі, склад), `/admin/themes*`, `/admin/plugins*` і знижки з категоріями покупців (Е6в): `/admin/discounts*`, `/admin/price-validator`, `/admin/user-categories*`; і покупці з дашбордом (Е6г): `/admin/users*`, `/admin`; і контент (Е6д): `/admin/banners*`, `/admin/reviews*` (масова модерація, бейдж «очікують»); легасі на `supabase-js` — 0 (К3-Е7: `LegacySupabaseBoundary` і шар `simplycms/supabase` знесено) |
 | CI на PR | `typecheck` · `test` · `packaging` · `schema` · `www` |
 
 Реліз-процес — [`release-process.md`](../architecture/release-process.md);
@@ -582,7 +633,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            `/admin/properties/$propertyId` і сторінки опцій (тип властивості
            — `insertOnly`, Е4-5; slug властивості глобальний — Е4-6;
            `SLUG_RE` і `PRICE_TYPE_CODE_RE` у T1 `simplycms/domain` — Е4-7).
-           Закомічений реєстр легасі `tests/admin-server-first/registry.ts`
+           Закомічений реєстр легасі `tests/admin-server-first/registry.ts` (знесено в К3-Е7)
            (`SERVER_FIRST_EXCEPTIONS` + `PENDING_LEGACY`, звірка в обидва
            боки — Е4-4); `PriceValidator` — свідомий виняток К3-2, переїжджає
            в **Е6** разом зі знижками. Спільна фабрика моку `admin-server`
@@ -796,11 +847,48 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-10-07-v2-k3-e6g-customers-dashboard.md`](../superpowers/plans/2026-10-07-v2-k3-e6g-customers-dashboard.md).
            🔴 Залишок — **6** файлів `src/admin/**` на `supabase-js` (виміряно
            2026-10-08; у `features/` — 0). Наступні — контент (**Е6д**) → **Е7–Е8**.
+     - [x] ✅ **Е6д — контент: банери й відгуки** (2026-10-10). Легасі `Banners`,
+           `BannerEdit`, `Reviews`, `ReviewDetail` переписано з нуля в
+           `admin/features/{banners,reviews}/**` (`banner.manage`, `review.moderate`).
+           Рішення Е6д-1…Е6д-18:
+           - опція `media` фабрики й порядок у транзакції (Е6д-1); guard банера на
+             злитому рядку (Е6д-2), перехресне правило — лише коли патч торкається полів
+             (Е6д-12); предикати банера в T1, масиви enum у T0 (Е6д-3, Е6д-10); URL кнопки —
+             `/шлях` або `http(s)://` (Е6д-13); `isSafeCssValue`/`isSafeCssColor` у `domain` (Е6д-4; накладка банера — лише `isSafeCssColor`);
+           - фото відгуку: `'review'` поза `MEDIA_ENTITY_TYPES`, 5 × 5 МБ до першого запису
+             (Е6д-5); `renderImageUpload` на `File[]`, подача — FormData-serverFn (Е6д-6);
+             ескалація при видаленні власного відгуку (Е6д-9); ратчет споживачів порту
+             (Е6д-15);
+           - модерація: `setReviewsStatus` без актора, 409 `review_not_found` без
+             часткового запису (Е6д-7); картка віддає референси фото, легасі-запит вмісту
+             знесено (Е6д-11); автор бачить свій `pending`, гість — ні (Е6д-17);
+           - CHECK-и відгуків — точкова правка baseline (Е6д-8, BREAKING «перестворити
+             базу»); колонковий грант `UPDATE` на `product_reviews` для `app_user` (Е6д-16 б);
+           - 🔴 канон сховища: двофазне стирання (Е6д-14), власність ключа — у
+             `eraseMediaRows` (Е6д-16 а); обмеження роздачі стертих файлів (Е6д-18)
+             закрито в доробці: Е6д-20…23.
+           🔴 **Доведено живим прогоном** (`pnpm live:smoke`, крок
+           `runAdminContentStep`, перед «системою»): власник створює банер із PNG і
+           кнопкою — головна показує його картинку з `/media`; заміна картинки лишає рівно
+           один рядок `media` банера, старий файл 404; видалення прибирає банер із БД і
+           вітрини; новий покупець подає відгук із фото (`pending`, один референс = рядок
+           `media` сутності `review`), бачить його з бейджем «На модерації», а гість у новому
+           context не бачить ні в SSR, ні у відповіді `getProductReviews`
+           (`private, no-store`); бейдж «очікують», картка з фото 200, масове схвалення двох
+           відгуків → вітрина показує обидва, відповідь без `admin_comment`. Обидва
+           негативні контролі червоніють. План —
+           [`2026-10-10-v2-k3-e6d-content.md`](../superpowers/plans/2026-10-10-v2-k3-e6d-content.md).
+           🔴 Залишок — **2** файли `src/admin/**` на `supabase-js`
+           (`LegacySupabaseBoundary` з тестом, виміряно 2026-10-10); знесено в Е7 (2026-10-11).
+           - [x] ✅ **Е7 — повний знос Supabase** (2026-10-11, гілка `claude/k3-e6d-content`, реліз 0.14.0).
+             План [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md); рішення Р1–Р9 і розбіжності зі спекою — у спеці Е7, розділ «Амендмент».
+             Легасі = 0. Наступний — **Е8** (живий прогін з tarball-ів після релізу).
    - [ ] К4 Storage — **залишок після К3-Е2**: драйвер `s3`,
-         `transform`/srcset, presigned direct-upload, облік невдалих
-         видалень і sweep орфанів (обʼєкт без рядка після обриву між `put`
-         і COMMIT — ФС не бере участі в двофазному коміті), привʼязка
-         `entity_id` для медіатеки.
+         `transform`/srcset, presigned direct-upload, sweep файлів ДИСКА без
+         рядка `media` (обʼєкт після обриву між `put` і COMMIT — ФС не бере
+         участі в двофазному коміті). Облік невдалих видалень (outbox
+         `media_erasures`), sweep рядків-сиріт і `entity_id` NOT NULL закрито
+         в К3-Е6д; медіатека — за правилом `storage.md` (власний `entity_type`).
          🔴 Закрито етапом К3-Е2, а не тут: порт як єдиний канал і драйвер
          `local-fs`, лінт-заборона прямих викликів (правило
          `simplycms-storage/no-direct-storage` + файловий ратчет), розмір
@@ -817,7 +905,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
          причому БЕЗ Docker: спайк довів, що досить `initdb`/`pg_ctl`
          локально + service-контейнер у CI; тут лишаються пілотні гейти
          B/E під новий стек (Gate B проти Postgres — і це знімає Docker-
-         залежність пілота взагалі)
+         залежність пілота взагалі). 🔴 Р5: сід пілота під Postgres-стек пишеться з нуля; ланцюг `supabase/seed.sql` знесено в Е7.
    - 🔴 **[2026-08-20]** Пакетна розкладка V2 (доля `supabase` → `db`/`auth`,
      `data-supabase` → `data-pg`) вирішена спекою К0
      ([`2026-08-20-package-consolidation-design.md`](../superpowers/specs/2026-08-20-package-consolidation-design.md)):
@@ -941,8 +1029,14 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    `invite.html`» не перевірена (Gate E і e2e-bootstrap свідомо обходять
    лист). ⚠️ Флоу invite переписується у V2-К1 (Better Auth) — борг
    переїжджає туди як DoD-пункт.
-2. **Пілот у CI не ганяється** (свідомо: зовнішній стан БД/Docker) —
-   прогін перед релізом — відповідальність розробника. 🔴 Уточнено
+2. **Пілот у CI не ганяється** (свідомо: зовнішній стан БД/Docker).
+   🔴 Оновлено К3-Е7 (Task 11, 2026-10-11): прогін перед релізом більше не
+   «відповідальність розробника» — повний `pnpm pilot` (Gate B) примушує
+   релізний гейт `pilot` у `scripts/release/gates.mjs`
+   (`scripts/release/pilot-full.mjs`: харнес + `db:demo` + `pnpm pilot`; потрібен Docker).
+   Причина: `pilot:pack` без БД не піднімає сервер скретча, і дефект
+   START-IP-1 просидів у 0.7.0–0.13.0 непоміченим. CI-джоб `pilot` лишається
+   відсутнім. (Історичний запис нижче.) 🔴 Уточнено
    2026-09-03: причина стосується `pilot` з Gate B (жива БД); `pnpm
    pilot:pack` БД не потребує й детермінований — рішення власника: він іде
    в CI job `packaging` разом із мутаційним контролем Import Protection
@@ -990,12 +1084,10 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     сторінку, користувач бачить порожній екран (сервер нічого не віддає
     замість неї). Лишається додати `pendingComponent` обом роутам (з i18n-ключем
     за зразком `admin.common.loading`) і зняти позначку «прогалина» в доці.
-13. **`tools/content-loader-mcp` досі на Supabase і поза workspace**; у
-    `.claude/settings.json` лишився запис `mcpServers.content-loader`
-    (`npx tsx …`). Доля тулзи — рішення власника (переписати на Drizzle/чистий
-    Postgres, втягнути у workspace чи прибрати разом із записом). Див.
-    К0-9 нижче (там — проблема з окремим `npm install`). Під TS 6 при
-    відновленні потрібен `"types": ["node"]` у його tsconfig (TS2591).
+13. ✅ **Закрито К3-Е7 (2026-10-11): `tools/content-loader-mcp` знесено** разом із записом
+    `mcpServers.content-loader` у `.claude/settings.json` і виключенням у `tsconfig.json`
+    (рішення власника В2; план [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)). Первісне формулювання: тулза була
+    на Supabase й поза workspace.
 16. **CSP (Content-Security-Policy) — окремий трек, разом із механізмом
     інтеграції типових пікселів і аналітики** (рішення власника 2026-10-05).
     Зараз CSP немає зовсім; базові заголовки безпеки — тема 4 треку
@@ -1021,7 +1113,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     звʼязка з TanStack DB/Query, ціна для self-hosted.
 
 - **Відкладене видалення медіа після підтвердженого Save форми** (`ImageUpload`:
-  товар, розділ, опція); sweep К4 цей випадок не покриває. *(Записано
+  товар, розділ, опція); ЗАКРИТО доробкою К3-Е6д (`ImageUpload` файл сам не стирає, сироту змітає sweep Е6д-22). *(Записано
   фінальним рев'ю V2-К3-Е4, 2026-10-03; номер і власника визначить власник.)*
   `ImageUpload.removeImage` видаляє обʼєкт сховища й рядок `media` одразу, ДО
   Save форми-власника: «Видалити → Скасувати» або «видалити → Save 409»
@@ -1072,7 +1164,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    знахідки виправлені в тій самій гілці (див. К1а-8, К1а-9).
 
 К1а-8. 🔴 **`pnpm test:e2e` і `pnpm pilot:e2e` DECOMMISSIONED цим самим
-   треком.** `supabase/config.toml` вимкнув `[db.migrations]` (B13: канон
+   треком.** (Історичний запис: `supabase/config.toml` знесено в К3-Е7, 2026-10-11.) `supabase/config.toml` вимкнув `[db.migrations]` (B13: канон
    більше не лежить у `supabase/migrations/`), тож локальний стек
    `supabase start` піднімається з ПОРОЖНЬОЮ схемою і сід падає на першому
    `insert`. Обидва контури й так були поза CI. Відновлення — К1′б/К6,
@@ -1097,7 +1189,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
     `get_user_stats(uuid)` (витік перс. даних в обхід RLS). Причина
     системна: у репо нуль GRANT-ів — уся привілейна поверхня (табличні
     гранти `anon`/`authenticated` + EXECUTE SECDEF-функцій) — неявний
-    дефолт Supabase/Postgres, який жоден гейт не бачить. **Закривається
+    дефолт Supabase/Postgres, який жоден гейт не бачить (історичний запис про старий стек; Supabase знесено в К3-Е7). **Закривається
     структурно у V2-К1а** (B5″: гранти як код + гейт парності; B13: цих
     функцій немає в baseline). На живій `alterenergy` — прийнятий ризик
     власника 2026-08-23 (демо-дані; магазин буде перезапущений на новій
@@ -1126,7 +1218,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    `*-ui` (T4) тягнуть його вгору — зустрічний цикл, зафіксований у
    тір-зонах фактом.
 
-К0-4. **Межа довіри плагінів звужена за побудовою.** ESLint-зона банить лише
+К0-4. **Межа довіри плагінів звужена за побудовою.** (Історично, до К3-Е7: шар `simplycms/supabase` знесено; бан `@supabase/*` тепер на все репо — правило `no-supabase-import`.) ESLint-зона банить лише
    Supabase-шар (`simplycms/supabase`, `simplycms/data-supabase`,
    `@supabase/*`). 🔴 Зона НЕ звужувалась — вона байт-ідентична стану до К0;
    але зник ТЕРТЄВИЙ крок: раніше звернення плагіна до іншого шару ядра
@@ -1184,25 +1276,10 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    доставляється в `head()` через router context штатно. Лишається боргом
    виконання; природний момент — К2 (лоадери однаково переписуються).
 
-К0-9. **`tools/content-loader-mcp` не стартує без окремого `npm install`**
-   (аудит 2026-08-21). Це автономний npm-проєкт із власним
-   `package-lock.json` і ПОЗА `pnpm-workspace.yaml` (там лише `packages/*`,
-   `themes/*`, `plugins/*`, `apps/*`), тож `pnpm install` його залежності не
-   ставить: ні `tools/content-loader-mcp/node_modules`, ні коренева тека не
-   містять `@modelcontextprotocol/sdk`/`cheerio`/`tsx`. Запис
-   `mcpServers.content-loader` у `.claude/settings.json` (`npx tsx …`)
-   сьогодні не підніметься. Рішення власника: втягнути тулзу у workspace
-   (перетворивши лок на pnpm-ний) або лишити автономною й задокументувати
-   `npm install` як передумову.
-   🔴 **Доповнено 2026-08-30 (Е0, контракт id):** тулза й досі поза
-   workspace, і тепер до застарілості додався другий вимір — 34 виклики
-   `.insert(` у `tools/content-loader-mcp/src` не передають клієнтський
-   `id`, тобто несумісні з контрактом Е0 (Категорія A, `DROP DEFAULT`).
-   Гейтом це не покрито (тулза поза `pnpm-workspace.yaml`, тести в гейти не
-   входять — той самий аргумент, що й вище), але коли рішення власника про
-   долю тулзи (рядком вище) таки виконається, вставки доведеться правити
-   разом, а не постфактум: мігрувати `id` разом із втягуванням у workspace
-   або формально вилучити інструмент.
+К0-9. ✅ **Закрито К3-Е7 (2026-10-11): `tools/content-loader-mcp` знесено** (рішення
+   власника В2; план [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)). Історично: тулза не стартувала без окремого
+   `npm install` (поза `pnpm-workspace.yaml`) і 34 її виклики `.insert(` не передавали
+   клієнтський `id` (контракт Е0); обидва виміри зникли разом із тулзою.
 
 **Борги контуру 0.4.1** (аудит 2026-08-29). 🔴 Жоден із них план 0.4.1 **не
 закриває** — він знімав Supabase зі шляху вітрини, а це знахідки суміжні.
@@ -1284,12 +1361,9 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    (`{ links, config }`); шар рантайму лишається неспожитим. Рішення знести
    чи зробити єдиним шляхом складання — за власником.
 
-0.4.1-11. **`SupabaseProvider` не монтується в проді.** Адмінка (до К3)
-   фактично сидить на модульному singleton (`useSupabaseClient()` без
-   контексту відкатується на `resolveDefaultClient()` →
-   `getSupabaseBrowserClient()`); DI-шов декларований, але точки інжекції
-   немає. Три тести адмінки інжектують мок через провайдер, якого прод не
-   має.
+0.4.1-11. ✅ **Закрито К3-Е7 (2026-10-11): `SupabaseProvider` знесено** разом із шаром
+   `simplycms/supabase` (план [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)). Історично: провайдер не монтувався в
+   проді, адмінка сиділа на модульному singleton.
 
 🔴 Три перші борги власник виніс в **окремий короткий план** (вони не
 повʼязані з Supabase, і змішувати їх із контуром severance не варто);
@@ -1400,6 +1474,49 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
    (операції `list`/`insert`/`update`/`remove` окремими модулями) — окремою
    хвилею, не в Е5.
 
+**Борги К3-Е6д** (свідомо поза хвилею — не блокують мерж):
+
+✅ **Усі закриті доробкою К3-Е6д** (план
+[`2026-10-11-v2-k3-e6d-finish.md`](../superpowers/plans/2026-10-11-v2-k3-e6d-finish.md),
+рішення Е6д-20…23 — спека `2026-10-10-content-banners-reviews-design.md`, амендмент).
+
+К3-Е6д-1. ✅ **Опція `media` фабрики для `sections`/`products`/`property_options`/
+   `product_modifications`** (Task 3, `8b863f86`, `ad580add`). Опція приймає jsonb-масив;
+   `cascadeMedia` — на `sections`, `section_properties` і `products` (двоярусний каскад через
+   `via`); `EXEMPT` гейта `media-cascade-coverage` лишився лише для аватара.
+
+К3-Е6д-2. ✅ **Ліміт тіла запиту** (Task 8, `2fca06c4`, `4b5ad130`). `bodyLimitMiddleware`
+   (`simplycms/runtime/body-limit`): `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413,
+   без заголовка → 411 для всього, що не JSON (і для всього, що Start читає як форму); база шляху з `TSS_SERVER_FN_BASE`; `UPSTREAM:START-BODY-1`.
+
+К3-Е6д-3. ✅ **Аватар і логотип на двофазне стирання** (Task 5, `368daed7`,
+   `34e9a704`, `6e641fe5`). `eraseMedia` і `discardMedia` знесено; логотип має власника
+   `STORE_LOGO_OWNER_ID`; serverFn `deleteMedia` (409 `media_in_use`) уведено і знесено в доробці — споживачів не мав.
+
+К3-Е6д-4. ✅ **Роздача стертих файлів** (Task 4 і 6, `f701ee8b`, `236c4814`, `467a11b6`,
+   `9a5cfcd1`). `serveMedia` перевіряє рядок `media` (`lookup`); `media.entity_id` — `NOT NULL`;
+   збій стирання лишає видимий хвіст outbox `media_erasures` з повтором в адмінці.
+
+К3-Е6д-5. ✅ **Приватна роздача медіа** (Task 6, `467a11b6`). Фото відгуку на модерації бачать
+   автор і модератор (видимість делегована RLS), решта — 404; персональні типи — `private,
+   no-cache`.
+
+К3-Е6д-6. ✅ **Редагування відгуку покупцем** (Task 9, `f18db2c8`, `a7d6bcc2`, `fca47697`).
+   Правка повертає відгук у `pending`; модерація проти побаченої версії
+   (`setReviewsStatus({ items: [{ id, updatedAt }] })`, 409 `review_changed`).
+
+К3-Е6д-7. ✅ **Звуження INSERT на `product_reviews`** (Task 1, `4017b3a0`, `fefa0477`).
+   Політика `insert_own` з `status = 'pending' AND admin_comment IS NULL` (грант INSERT
+   табличний — Drizzle називає всі колонки); колонковий `UPDATE` і політика `update_own`.
+
+К3-Е6д-8. ✅ **`ReviewImagePicker` без залежності від cleanup ref-колбека React 19**
+   (Task 2, `bc825948`). Прев'ю відкликає `blob:` URL у `useEffect`-cleanup; peer лишається
+   `^18 || ^19`.
+
+К3-Е6д-9. ✅ **Контракт тем: показ тексту й кнопок банера** (Task 10, `997a4692`,
+   `cb3c3d14`). `HeroBanner` обох тем малює `title`/`subtitle`/кнопки банера через
+   `pickHeroBanner`/`pickHeroImage` (`simplycms/domain`); контракт — `themes.md` §2.2.
+
 **Борги К3-Е6г** (свідомо поза хвилею — не блокують мерж):
 
 К3-Е6г-1. **Стирання гостьових замовлень за email на запит** (Е6г-7). Видалення
@@ -1414,15 +1531,13 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
 К3-Е6г-3. **Самостійне видалення акаунта й зміна email у кабінеті покупця.** Зараз це
    робить лише власник магазину з картки; для покупця потрібна пошта з підтвердженням.
 
-К3-Е6г-4. **Модерація відгуків з `user_id IS NULL`** — хвиля Е6д («контент»).
+К3-Е6г-4. ✅ **Закрито К3-Е6д.** **Модерація відгуків з `user_id IS NULL`** — хвиля Е6д («контент»).
    Легасі `Reviews`/`ReviewDetail` не чіпались (Е6г-8), їхня модерація має врахувати
    відгуки видалених покупців.
 
-SHOWCASE-1. **Схвалення відгуків сіду — сирий SQL (С-11).** Серверної операції статусу
-   відгуку немає (`insertProductReview` пише `pending`), тож `db:showcase` схвалює відгуки
-   позначеним `UPDATE product_reviews SET status = 'approved'` у
-   `scripts/showcase/raw-writes.mts`. Коли Е6д спроєктує модерацію, крок переїжджає на її
-   ядро (як решта сіду — на ядра С-15), а в `raw-writes.mts` лишається лише зсув часу (С-3).
+SHOWCASE-1. ✅ **Закрито (К3-Е6д, Task 6).** Схвалення відгуків сіду переїхало з сирого
+   `UPDATE` на ядро `setReviewsStatus` (Е6д-7): `seed.mts` кличе його з `id`, які повернув
+   `insertProductReview`. У `raw-writes.mts` лишився лише зсув часу (С-3).
 
 SHOWCASE-2. ✅ **Закрито 2026-10-10 (рішення власника: розширити С-3).** Зсув часу
    (`raw-writes.mts`) тепер зсуває й реєстрацію (`users` і `profiles` `created_at/updated_at` — ≥31 день, раніше
@@ -1444,10 +1559,10 @@ SHOWCASE-2. ✅ **Закрито 2026-10-10 (рішення власника: р
    тож стирання адреси знімка `kind: address` (Е6г-10) доводить харнес (Task 7), а
    `live:smoke` — лише незмінність знімка точки видачі.
 
-К3-Е6г-8. **Аватар чекає на друге зʼєднання.** `replaceAvatarFor`/`clearAvatarFor`
+К3-Е6г-8. ✅ *(закрито К3-Е6д-3: аватар на двофазному стиранні)* **Аватар чекає на друге зʼєднання.** `replaceAvatarFor`/`clearAvatarFor`
    кличуть `operator(eraseMedia)` в окремій транзакції, утримуючи локи транзакції
    покупця й друге зʼєднання пулу. Перенести `eraseMedia` попереднього обʼєкта
-   після COMMIT (орфан рядка лікує sweep К4) або виконати в одній транзакції. Зона
+   після COMMIT (орфан рядка лікує sweep Е6д-22) або виконати в одній транзакції. Зона
    К4. Це наявний дизайн К3-Е2, не дефект Е6г; межу зафіксовано в `data-layer.md`
    §13 (Е6г-22) і коментарем в `avatar.ts`.
 
@@ -1503,7 +1618,7 @@ SHOWCASE-2. ✅ **Закрито 2026-10-10 (рішення власника: р
    «покупці» (картка покупця); операція `assignCustomerCategory` вже є.
 
 К3-Е6в-5. ✅ Закрито К3-Е6г (`UserEdit` знесено). **Легасі `UserEdit.tsx` вставляє історію без `to_category_name`**
-   (`NOT NULL` з Е6в-2) — вставка впаде; сторінка мертва (supabase-js) і
+   (`NOT NULL` з Е6в-2) — вставка впаде; сторінка мертва (supabase-js; шар знесено в К3-Е7) і
    переписується в хвилі «покупці». Фінальне рев'ю доповнює: нова `UserEdit` пише
    `to_category_name` і `from_category_name`, дає зняття `category_locked` і не
    читає `profiles.auth_provider` (колонки немає, Е6в-2); `Users.tsx` — теж без
@@ -1549,7 +1664,7 @@ SHOWCASE-2. ✅ **Закрито 2026-10-10 (рішення власника: р
    інстансі, що її виконав; решта бачить старе до TTL (5 хв).
 
 К3-Е6б-2. **Сироти логотипів, завантажених без збереження профілю.** Рядок
-   `media` (`store_logo`) і файл лишаються без посилання — прибирає sweep К4
+   `media` (`store_logo`) і файл лишаються без посилання — прибирає sweep Е6д-22
    (описано в `docs/architecture/storage.md`).
 
 К3-Е6б-3. **`declareBuiltThemes` і спільний екземпляр `simplycms/site` доводить

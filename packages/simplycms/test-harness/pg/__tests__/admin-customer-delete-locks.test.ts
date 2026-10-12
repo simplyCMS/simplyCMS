@@ -1,5 +1,5 @@
 // К3-Е6г, Task 7 (Е6г-4, Е6г-15, Review Focus 3): локи, гонка з видачею ролі
-// і обрив на стиранні файла аватара. Детерміновано: окремі pg-клієнти.
+// і обрив на стиранні файла аватара (після COMMIT, Е6д-14). Детерміновано: окремі pg-клієнти.
 import pg from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 import { getMediaDriver } from 'simplycms/storage';
@@ -88,41 +88,28 @@ describe('admin: видалення акаунта — локи й обрив (�
     },
   );
 
-  it('обрив driver.delete → відкат усього; повтор зі справним драйвером завершує', async () => {
+  // Е6д-14 переписує Е6г-15 (зміну асерту санкціоновано рішенням): файли
+  // стираються ПІСЛЯ COMMIT, тож обрив диска відкату вже не дає — найгірший
+  // наслідок орфан-файл без рядка, а не битий референс.
+  it('обрив driver.delete → покупця видалено, рядків media немає, файл аватара — орфан', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const b = await d.seedBuyer({ avatar: true });
-    const { address } = await d.placeThree(b.userId);
-    await f.rows(
-      `insert into public.product_reviews (id, product_id, user_id, rating, status)
-       values (gen_random_uuid(), $1, $2, 4, 'approved')`,
-      [f.ids.panel, b.userId],
-    );
+    await d.placeThree(b.userId);
     const spy = vi
       .spyOn(getMediaDriver(), 'delete')
       .mockRejectedValueOnce(new Error('disk'));
     try {
-      await expect(call(b.userId, b.email)).rejects.toThrow('disk');
-      expect(await d.userExists(b.userId)).toBe(true);
-      expect(
-        (
-          await f.one<{ e: string | null }>(
-            `select email as e from public.orders where id = $1`,
-            [address],
-          )
-        ).e,
-      ).not.toBeNull();
-      expect(await d.count('product_reviews', 'user_id = $1', [b.userId])).toBe(
-        1,
-      );
-      expect(await d.mediaRows(b.avatar!)).toHaveLength(1);
-      expect(d.hasFile(b.avatar!)).toBe(true);
-      expect(await d.count('verifications', 'value = $1', [b.userId])).toBe(1);
       await expect(call(b.userId, b.email)).resolves.toMatchObject({
         erasedOrders: 3,
       });
-      expect(d.hasFile(b.avatar!)).toBe(false);
+      expect(spy).toHaveBeenCalledWith(b.avatar);
+      expect(await d.userExists(b.userId)).toBe(false);
+      expect(await d.mediaRows(b.avatar!)).toEqual([]);
+      expect(d.hasFile(b.avatar!)).toBe(true);
+      expect(await d.count('verifications', 'value = $1', [b.userId])).toBe(0);
     } finally {
-      // Шпигун не має пережити тест навіть при падінні асертів.
-      spy.mockRestore();
+      // Шпигуни не мають пережити тест навіть при падінні асертів.
+      vi.restoreAllMocks();
     }
   });
 

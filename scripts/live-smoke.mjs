@@ -27,6 +27,8 @@
  * магазину на прогрітому кеші, заміна логотипа, склад, теми (і в тій самій
  * вкладці), плагін — єдиний доказ спільного екземпляра `simplycms/site`.
  * Друкує таблицю — §12 test-contours.md посилається сюди замість рукопису.
+ * Повний вивід лягає у `.live-smoke/last.log` (+ `<timestamp>.log`, 10 останніх);
+ * при збої наприкінці друкується шлях і рядки FAIL (`live-smoke/log.mjs`).
  *
  * Потребує: Postgres (`PG_HARNESS_URL`, адмін-доступ до кластера — як
  * `pnpm db:demo`) і Chromium для Playwright (`pnpm exec playwright install
@@ -47,14 +49,24 @@ import { runFunnel } from './live-smoke/funnel.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
+import { runLogged } from './live-smoke/log.mjs';
+import { loadHarnessEnv } from './harness-env.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
+
+// Зовнішній запуск лише тіпає вивід у `.live-smoke/*.log` і друкує FAIL-рядки
+// наприкінці; сам прогін — той самий файл у дочірньому процесі.
+if (!process.env.LIVE_SMOKE_LOGGED) {
+  process.exit(await runLogged(ROOT, import.meta.filename));
+}
 const DB_NAME = 'simplycms_live_smoke';
 
+// `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.
+loadHarnessEnv(ROOT);
 const adminUrl = process.env.PG_HARNESS_URL;
 if (!adminUrl)
   throw new Error(
-    '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера, як для pnpm db:demo)',
+    '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера): виконай `pnpm harness:up`',
   );
 
 const rows = [];

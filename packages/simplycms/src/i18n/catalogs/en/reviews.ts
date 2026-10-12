@@ -7,6 +7,9 @@ export const messages: Catalog = {
   'reviews.countMany': 'reviews',
 
   'reviews.alreadySubmitted': "You've already reviewed this product.",
+  'reviews.edit': 'Edit',
+  'reviews.editReview': 'Edit review',
+  'reviews.edited': 'Review updated',
   'reviews.writeReview': 'Write a review',
   'reviews.loginPrompt': 'Sign in to leave a review',
   'reviews.loginOrRegister': 'Sign in or create an account',
@@ -28,6 +31,18 @@ export const messages: Catalog = {
   'reviews.form.contentPlaceholder': 'Write your review...',
   'reviews.form.photosLabel': 'Photos (up to 5)',
   'reviews.form.submit': 'Submit review',
+  'reviews.form.addPhotos': 'Add photos',
+  'reviews.form.save': 'Save changes',
+  'reviews.form.editNote': 'After saving, the review goes back to moderation',
+  'reviews.form.removePhoto': 'Remove photo',
+
+  'reviews.errors.imageBadFormat':
+    'Photos must be PNG, JPEG, WebP, GIF or AVIF images',
+  'reviews.errors.imageTooLarge': 'Photo is larger than 5 MB',
+  'reviews.errors.notFound': 'Review not found',
+  'reviews.errors.changed':
+    'The review has changed — refresh the page and try again',
+  'reviews.errors.tooManyImages': 'No more than 5 photos',
 
   'reviews.editor.linkUrl': 'Link URL',
 };

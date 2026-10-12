@@ -57,11 +57,17 @@ describe('фабрика ресурсів: db-варіанти поза запи
     const s = section();
     await asAdmin((tx) => sectionsOps.insertIn(tx, [s]));
     const upd = await asAdmin((tx) =>
-      sectionsOps.updateIn(tx, [{ id: s.id, patch: { name: 'Нова назва' } }]),
+      sectionsOps.updateIn(
+        tx,
+        [{ id: s.id, patch: { name: 'Нова назва' } }],
+        [],
+      ),
     );
     expect(upd).toMatchObject([{ id: s.id, name: 'Нова назва' }]);
     expect(await sectionRow(s.id)).toEqual({ name: 'Нова назва' });
-    const del = await asAdmin((tx) => sectionsOps.removeIn(tx, [{ id: s.id }]));
+    const del = await asAdmin((tx) =>
+      sectionsOps.removeIn(tx, [{ id: s.id }], []),
+    );
     expect(del).toEqual({ count: 1 });
     expect(await sectionRow(s.id)).toBeUndefined();
   });

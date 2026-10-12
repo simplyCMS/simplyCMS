@@ -65,6 +65,7 @@ describe('ProductForm: невалідна назва — інлайн-помил
     render(
       <ProductForm
         productId={null}
+        entityId="new-product-id"
         defaultValues={DEFAULT_VALUES}
         onSubmit={onSubmit}
         submitLabel="Створити"

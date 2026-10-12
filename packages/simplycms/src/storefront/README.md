@@ -20,7 +20,7 @@ pnpm add simplycms
 
 | Subpath | Експорти |
 |---------|----------|
-| `simplycms/storefront`          | Тип `StorefrontClient` + реекспорт `./loaders` і `./seo` |
+| `simplycms/storefront`          | Реекспорт `./loaders` і `./seo` |
 | `simplycms/storefront/loaders`  | `withStorefrontDb`, `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 

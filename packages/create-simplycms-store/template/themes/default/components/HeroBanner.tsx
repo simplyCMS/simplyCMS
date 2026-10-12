@@ -1,8 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
 import type { Banner } from 'simplycms/contracts/objects';
+import { pickHeroBanner, pickHeroImage } from 'simplycms/domain';
 import { useThemeT } from 'simplycms/themes/useThemeT';
 import { MONO_STACK } from './mono';
+import { ALIGN, BannerCta, CTA_BASE } from './HeroBannerParts';
 import type { ThemeKey } from '../messages';
 
 const TRUST = [
@@ -27,16 +29,15 @@ const TRUST = [
   noteKey: ThemeKey;
 }>;
 
-const CTA_BASE =
-  'inline-flex h-11 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
-
 /**
  * HeroBanner default-теми — спека: локальний артефакт
  * `docs/design-references/…/components/HeroBanner.spec.md` (поза git).
  *
  * Модель взаємодії — static: жодного слайдера, автопрокрутки чи паралаксу
- * (hero референсу виміряно як фіксований блок). Ядро дає `banners`, і ми
- * беремо звідти ЛИШЕ зображення — тексти йдуть з каталогу теми.
+ * (hero референсу виміряно як фіксований блок). Контракт К3-Е6д-9: дані
+ * банера мають пріоритет — заголовок, підзаголовок і кнопки першого банера
+ * з текстом показуються як є; без них (або без банерів) — тексти каталогу
+ * теми. Вибір банера, фільтр кнопок і колір накладки — `pickHeroBanner` ядра.
  *
  * 🔴 Фото — виключно з нашої БД. Чужа картинка з референсу тут не зʼявиться
  * за жодних умов.
@@ -49,17 +50,20 @@ const CTA_BASE =
  */
 export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
   const tt = useThemeT<ThemeKey>();
-  const banner = banners.find(
-    (item) => item.desktop_image_url || item.image_url,
-  );
-  const image = banner?.desktop_image_url || banner?.image_url || null;
+  const hero = pickHeroBanner(banners);
+  const picked = pickHeroImage(banners);
+  const image = picked?.url ?? null;
+  const buttons = hero?.buttons ?? [];
+  // Вирівнювання лише з банером: у фолбеку блок лишається як був.
+  const align = hero ? ALIGN[hero.textPosition] : null;
+  const overlay = hero?.overlayColor ?? undefined;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 md:py-20">
       <div
         className={`grid items-center gap-10 ${image ? 'md:grid-cols-2' : ''}`}
       >
-        <div>
+        <div className={align?.text}>
           <span
             className="inline-flex items-center rounded-full border border-border/80 bg-card/80 px-4 py-2 text-[13px] font-medium text-foreground"
             style={{ fontFamily: MONO_STACK }}
@@ -68,29 +72,45 @@ export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
           </span>
 
           <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-[-0.025em] text-foreground md:text-5xl lg:text-[64px]">
-            {tt('theme.hero.titleLine1')}
-            <br />
-            {tt('theme.hero.titleLine2')}
+            {hero?.title ? (
+              hero.title
+            ) : (
+              <>
+                {tt('theme.hero.titleLine1')}
+                <br />
+                {tt('theme.hero.titleLine2')}
+              </>
+            )}
           </h1>
 
-          <p className="mt-6 max-w-[448px] text-[17px] leading-[1.625] text-muted-foreground">
-            {tt('theme.hero.subtitle')}
-          </p>
+          {(hero ? hero.subtitle : tt('theme.hero.subtitle')) && (
+            <p className="mt-6 max-w-[448px] text-[17px] leading-[1.625] text-muted-foreground">
+              {hero ? hero.subtitle : tt('theme.hero.subtitle')}
+            </p>
+          )}
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/catalog"
-              className={`${CTA_BASE} bg-primary text-primary-foreground hover:opacity-90`}
-            >
-              {tt('theme.hero.ctaPrimary')}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/catalog"
-              className={`${CTA_BASE} border border-border bg-card text-foreground hover:bg-muted`}
-            >
-              {tt('theme.hero.ctaSecondary')}
-            </Link>
+          <div
+            className={`mt-8 flex flex-col gap-3 sm:flex-row ${align?.row ?? ''}`}
+          >
+            {buttons.length > 0 ? (
+              buttons.map((btn, i) => <BannerCta key={i} button={btn} />)
+            ) : (
+              <>
+                <Link
+                  to="/catalog"
+                  className={`${CTA_BASE} bg-primary text-primary-foreground hover:opacity-90`}
+                >
+                  {tt('theme.hero.ctaPrimary')}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/catalog"
+                  className={`${CTA_BASE} border border-border bg-card text-foreground hover:bg-muted`}
+                >
+                  {tt('theme.hero.ctaSecondary')}
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:gap-8">
@@ -116,12 +136,18 @@ export function HeroBanner({ banners = [] }: { banners?: Banner[] }) {
             власному скріншоті фази 5 прогону №1). */}
         {image && (
           <div className="flex justify-center md:justify-end">
-            <div className="flex aspect-square w-full max-w-[320px] items-center justify-center overflow-hidden rounded-full border border-border bg-card md:max-w-[440px]">
+            <div className="flex aspect-square w-full max-w-[320px] items-center justify-center relative overflow-hidden rounded-full border border-border bg-card md:max-w-[440px]">
               <img
                 src={image}
-                alt={banner?.title ?? ''}
+                alt={picked?.alt ?? ''}
                 className="h-full w-full object-cover"
               />
+              {overlay && (
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{ background: overlay }}
+                />
+              )}
             </div>
           </div>
         )}

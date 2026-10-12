@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUTHZ_MATRIX, can } from 'simplycms/auth';
+import { STORE_LOGO_OWNER_ID } from 'simplycms/domain/media';
 import { parseUploadForm } from '../media/operations';
 
 describe('media.write у матриці authz', () => {
@@ -10,6 +11,8 @@ describe('media.write у матриці authz', () => {
     expect(can({ userId: null, roles: [] }, 'media.write')).toBe(false);
   });
 });
+
+const OWNER = 'ab000000-0000-4000-8000-000000000000';
 
 describe('parseUploadForm', () => {
   const png = () =>
@@ -42,11 +45,23 @@ describe('parseUploadForm', () => {
     expect(parsed.bytes.byteLength).toBe(12);
   });
 
-  it('entityId відсутній → null (файл ще не привʼязаний; привʼязка — К4)', async () => {
-    const parsed = await parseUploadForm(
-      form({ file: png(), entityType: 'banner' }),
-    );
-    expect(parsed.entityId).toBeNull();
+  it('store_logo → власник фіксований; клієнтський entityId ігнорується', async () => {
+    const extras: Record<string, string>[] = [
+      {},
+      { entityId: 'ab000000-0000-4000-8000-000000000000' },
+    ];
+    for (const extra of extras) {
+      const parsed = await parseUploadForm(
+        form({ file: png(), entityType: 'store_logo', ...extra }),
+      );
+      expect(parsed.entityId).toBe(STORE_LOGO_OWNER_ID);
+    }
+  });
+
+  it('без entityId (не store_logo) → відмова валідації, а не файл без власника', async () => {
+    await expect(
+      parseUploadForm(form({ file: png(), entityType: 'banner' })),
+    ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
   it.each([
@@ -70,12 +85,16 @@ describe('parseUploadForm', () => {
       'a.png',
     );
     await expect(
-      parseUploadForm(form({ file: svg, entityType: 'product' })),
+      parseUploadForm(
+        form({ file: svg, entityType: 'product', entityId: OWNER }),
+      ),
     ).rejects.toThrow('media/bad-format');
 
     const big = new File([new Uint8Array(11 * 1024 * 1024)], 'big.png');
     await expect(
-      parseUploadForm(form({ file: big, entityType: 'product' })),
+      parseUploadForm(
+        form({ file: big, entityType: 'product', entityId: OWNER }),
+      ),
     ).rejects.toThrow('media/too-large');
   });
 });

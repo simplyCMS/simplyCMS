@@ -10,7 +10,8 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { fileURLToPath } from 'node:url';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   findHostDrift,
   listFiles,
@@ -22,6 +23,7 @@ import {
 } from '../packages/cli/src/skill-links.mjs';
 import {
   hostDriftExitCode,
+  run,
   parseUpdateArgs,
   planCoreInstall,
   resolveTargetVersion,
@@ -204,5 +206,66 @@ describe('cli update', () => {
     expect(hostDriftExitCode(['server.mjs'], false)).toBe(1);
     expect(hostDriftExitCode(['server.mjs'], true)).toBe(0);
     expect(hostDriftExitCode([], false)).toBe(0);
+  });
+
+  describe('run: відсутня тека міграцій магазину', () => {
+    const MISSING = 'Тека міграцій магазину db/migrations відсутня.';
+    const CANON = fileURLToPath(
+      new URL('../packages/cli/host', import.meta.url),
+    );
+    const initialExitCode = process.exitCode;
+    afterEach(() => {
+      vi.restoreAllMocks();
+      process.exitCode = initialExitCode;
+    });
+
+    /** Ізоляція: `findStoreRoot` читає `process.cwd()`, вивід clack — `process.stdout`. */
+    async function runIn(store: string, argv: string[]) {
+      let out = '';
+      vi.spyOn(process, 'cwd').mockReturnValue(store);
+      vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+        out += String(chunk);
+        return true;
+      });
+      process.exitCode = undefined;
+      await run(argv);
+      return { out, code: process.exitCode };
+    }
+
+    it('--write: host-файли перезаписано, а відсутня тека все одно дає exitCode 1', async () => {
+      const store = await scaffoldStore('upd-nomig-write');
+      rmSync(join(store, 'db', 'migrations'), { recursive: true });
+      writeFileSync(join(store, 'server.mjs'), '// розсинхрон\n');
+      const { out, code } = await runIn(store, ['--no-install', '--write']);
+      expect(code).toBe(1);
+      expect(out).toContain(MISSING);
+      expect(readFileSync(join(store, 'server.mjs'), 'utf8')).toBe(
+        readFileSync(join(CANON, 'server.mjs'), 'utf8'),
+      );
+    });
+
+    it('без дрейфу: «дрейфу немає» теж не мовчить про відсутню теку', async () => {
+      const store = await scaffoldStore('upd-nomig-clean');
+      rmSync(join(store, 'db', 'migrations'), { recursive: true });
+      const { out, code } = await runIn(store, ['--no-install']);
+      expect(code).toBe(1);
+      expect(out).toContain(MISSING);
+    });
+
+    it('db/migrations — файл: зрозуміла відмова, exitCode 1, без ENOTDIR', async () => {
+      const store = await scaffoldStore('upd-mig-file');
+      rmSync(join(store, 'db', 'migrations'), { recursive: true });
+      writeFileSync(join(store, 'db', 'migrations'), 'не тека\n');
+      const { out, code } = await runIn(store, ['--no-install']);
+      expect(code).toBe(1);
+      expect(out).toContain('не тека');
+    });
+
+    it('з db/migrations і без дрейфу: exitCode не 1', async () => {
+      const store = await scaffoldStore('upd-mig-ok');
+      const { out, code } = await runIn(store, ['--no-install']);
+      expect(code).not.toBe(1);
+      expect(out).not.toContain(MISSING);
+    });
   });
 });

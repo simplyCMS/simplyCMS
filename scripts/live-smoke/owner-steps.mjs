@@ -13,7 +13,9 @@
  * знижки й категорії покупців К3-Е6в (`./admin-discounts.mjs`: власний новий
  * покупець; прибирає за собою) → покупці й дашборд К3-Е6г
  * (`./admin-customers.mjs`: два нові покупці, контакти, категорія, роль, бан,
- * видалення; прибирає за собою) → система К3-Е6б (`./admin-system.mjs`: профіль, логотип, склад, теми, плагіни;
+ * видалення; прибирає за собою) → контент К3-Е6д (`./admin-content.mjs`:
+ * банери, відгук із фото, ізоляція `pending`, масова модерація; прибирає за
+ * собою) → система К3-Е6б (`./admin-system.mjs`: профіль, логотип, склад, теми, плагіни;
  * ОСТАННІМ — відновлює стан SQL-ом повз кеш процесу). Окремий browser context —
  * сесія власника не змішується із сесією покупця воронки; кожен крок
  * відкриває свою сторінку зі своїм лічильником `pageerror`, а контекст
@@ -31,6 +33,7 @@ import { runAdminValidationErrorsStep } from './admin-validation-errors.mjs';
 import { runAdminShippingStep } from './admin-shipping.mjs';
 import { runAdminDiscountsStep } from './admin-discounts.mjs';
 import { runAdminCustomersStep } from './admin-customers.mjs';
+import { runAdminContentStep } from './admin-content.mjs';
 import { runAdminSystemStep } from './admin-system.mjs';
 
 export async function runOwnerSteps({
@@ -50,97 +53,43 @@ export async function runOwnerSteps({
     loginErrors.length === 0,
     [email, ...loginErrors].join(' | '),
   );
+  // Аргументи кроків: без сторінки воронки й з нею — склад як був у кожного.
+  const step = { context: owner.context, base, dbUrl, check };
+  const withBuyer = { ...step, buyerPage };
   try {
-    await runAdminCatalogStep({ context: owner.context, base, dbUrl, check });
-    await runAdminDictionariesStep({
-      context: owner.context,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminCatalogStep(step);
+    await runAdminDictionariesStep(step);
     // Усередині того самого `try`: контекст власника ще відкритий.
-    await runAdminOrdersStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminOrdersStep(withBuyer);
     // Редагування позицій К3-Е5б — після кроку замовлень Е5, той самий context.
-    await runAdminOrderEditStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminOrderEditStep(withBuyer);
     // Збереження в картках і повернення до списків (TSDB-1) — перед пагінацією.
-    await runAdminSaveReturnStep({
-      context: owner.context,
-      base,
-      dbUrl,
-      check,
-    });
-    await runAdminOrderSaveReturnStep({
-      context: owner.context,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminSaveReturnStep(step);
+    await runAdminOrderSaveReturnStep(step);
     // Тема 12: помилка валідації serverFn → помилка поля (сіє й прибирає свій товар).
-    await runAdminValidationErrorsStep({
-      context: owner.context,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminValidationErrorsStep(step);
     // Пагінація списків — ОСТАННІМ: засів на 55+55 рядків не зачіпає кроки вище.
-    await runAdminListsPaginationStep({
-      context: owner.context,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminListsPaginationStep(step);
     // Доставка К3-Е6а — ПІСЛЯ пагінації: крок тимчасово додає другу точку й
     // способи, а воронка й `resolveStockPoint` стоять на одній точці демо;
     // прибирає за собою сам.
-    await runAdminShippingStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminShippingStep(withBuyer);
     // Знижки й категорії К3-Е6в — ПІСЛЯ доставки: оформлює на демо-точці,
     // яку доставка щойно повернула в єдиний стан; ПЕРЕД системою, бо та
     // лишається останньою. Прибирає за собою сам (правило «2+ замовлення»
     // інакше перевело б покупця воронки у «VIP» на замовленні кроку системи).
-    await runAdminDiscountsStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminDiscountsStep(withBuyer);
     // Покупці К3-Е6г — ПІСЛЯ знижок (власні покупці A/B у своїх context-ах,
     // тимчасова пара категорій з автоправилом) і ПЕРЕД системою; прибирає
     // за собою сам: покупців, правило, категорії, залишок.
-    await runAdminCustomersStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminCustomersStep(withBuyer);
+    // Контент К3-Е6д — ПІСЛЯ покупців (свій новий покупець і гості у власних
+    // context-ах) і ПЕРЕД системою; прибирає за собою сам: банер, відгуки,
+    // рядки й файли `media`, покупця.
+    await runAdminContentStep(withBuyer);
     // Система К3-Е6б — ОСТАННІМ у всьому прогоні: `finally` кроку відновлює
     // стан SQL-ом, що оминає кеш процесу `simplycms/site` (Е6б-9).
-    await runAdminSystemStep({
-      context: owner.context,
-      buyerPage,
-      base,
-      dbUrl,
-      check,
-    });
+    await runAdminSystemStep(withBuyer);
   } finally {
     await owner.context.close();
   }

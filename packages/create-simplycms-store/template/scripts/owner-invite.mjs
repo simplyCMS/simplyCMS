@@ -2,8 +2,8 @@
 //
 // 🔴 Контракт env — серверний (спека CLI v1 §7): скрипт читає лише
 // `process.env`, а `.env.local`/`.env` служать способом його наповнити.
-// Ключ підключення тут один — `DATABASE_URL`; service_role-ключа Supabase
-// більше не існує.
+// Ключ підключення тут один — `DATABASE_URL`; окремого service-ключа
+// немає.
 import { readFileSync } from 'node:fs';
 import { closeDbPool } from 'simplycms/db';
 import { runOwnerInvite } from './owner-invite-core.mjs';

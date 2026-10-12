@@ -15,6 +15,10 @@
   нього базовий URL береться із самого запиту — у dev це очікуваний WARN; у проді рекомендований: з
   рядковим baseURL Better Auth довіряє рівно цьому origin і відкидає інші з 403 `INVALID_ORIGIN`).
   Контракт стереже `tests/env-contract.test.ts`
+- 🔴 `pg` — не змінна, а **залежність магазину** (К3-Е7): драйвер БД оголошено peer-ом ядра, а
+  `package.json` магазину декларує його прямою залежністю тієї ж точної версії
+  (`tests/pg-peer-parity.test.ts`). Без цього Vite вклеює транзитивний `pg` у серверний бандл, і
+  магазин не стартує (`UPSTREAM:START-IP-1`); `simplycms doctor` (№13) стежить за декларацією.
 - `VITE_SITE_URL` — публічний URL сайту (sitemap.xml, robots.txt, `getStorefrontRoot` → `siteUrl`
   для canonical і JSON-LD вітрини; невалідна адреса там стає порожньою з одним `console.warn`);
   запікається при `vite build`,
@@ -29,10 +33,8 @@
 - Поза контрактом магазину — dev-ключ `PG_HARNESS_URL`: готовий Postgres для `pnpm test:schema` (без
   нього харнес підіймає ефемерний кластер сам) і для `pnpm db:demo` (альтернатива — прапорець
   `--url`; `DATABASE_URL` цим двом не джерело, бо обидва СТВОРЮЮТЬ базу в кластері).
-- `VITE_SUPABASE_*` магазину не потрібні ні вітрині, ні входу, ні `/api/health`.
-  `resolveSupabaseKeys` і фабрики клієнтів лишились у `simplycms/supabase` як шар **адмінки**:
-  магазин, якому потрібна робоча легасі-адмінка, тримає ці ключі у власному env — контрактом ядра
-  вони не є.
+- Інших ключів, зокрема `VITE_SUPABASE_*`, магазин не потребує й ядро їх не читає: клієнтського
+  шару БД немає (знесено в К3-Е7), адмінка працює на `admin-server`.
 
 🔴 **Контурів env два, джерела в них різні.** Клієнтський бандл читає `import.meta.env` — значення
 запікаються при `vite build`. Серверний код (SSR, server fns, middleware, SEO) читає **лише**
@@ -41,8 +43,9 @@
 `VITE_SITE_URL` сервер бере з `process.env` (`seo/robots`, `seo/sitemap`, `getStorefrontRoot`). Дуального резолву немає —
 відсутній ключ гучно падає. Контракт стережеться машинно, і саме так, бо інакше не можна: у vitest
 `import.meta.env` — Proxy над `process.env` (один обʼєкт), тож ТЕСТ довести джерело env не здатен.
-Доводять: eslint `no-restricted-syntax` на `import.meta.env` у шести серверних модулях (див. `docs/development/TOOLING.md` § «Лінт»)
-і Gate C пілота (`server-client` + `anon-client` у `SERVER_PAYLOAD`).
+Доводять: eslint `no-restricted-syntax` на `import.meta.env` у п'яти серверних модулях (`SERVER_ENV_FILES` в `eslint.config.mjs`; див. `docs/development/TOOLING.md` § «Лінт»,
+негативний контроль — `tests/eslint-server-env.test.ts`) і Gate C пілота (`SERVER_PAYLOAD` будується з `SERVER_ONLY` —
+`simplycms/contracts/server-only` — плюс серверні залежності; контроль — `tests/pilot-gate-c.test.ts`).
 
 🔴 `VITE_LOCALE` — опційний клієнтський перемикач локалі збірки (`simplycms.config.ts`:
 `locale: import.meta.env.VITE_LOCALE ?? 'uk-UA'`; е2е-обгортка приймає `uk-UA` або `en-US`).
@@ -64,6 +67,17 @@ HTTP-сервер. Теки `.output/` немає.
   SSR-стрімінг Start не ламається.
 - `pnpm start` = `node server.mjs`; порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
   (за замовчуванням `0.0.0.0`).
+
+🔴 **Стеля тіла запиту (К3-Е6д-2).** Request-міддлвара `bodyLimitMiddleware` відхиляє POST на
+`/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (`domain/media.ts`, ≈ 26 МБ: 5 фото
+відгуку по 5 МБ + 1 МБ службових байтів) відповіддю 413, а POST без `Content-Length` — 411 для всього, що не JSON, і для всього, що Start читає як форму
+(`application/json; x=multipart/form-data` теж; chunked чистий JSON — відкрите вікно: Start буферизує `request.json()` повністю, ризик свідомо прийнято архітектором).
+Перевірка йде за заголовком, тож спирається на Node-раннер (`server.mjs`), що обмежує тіло заявленою
+довжиною (`UPSTREAM:START-BODY-1`). Проксі перед магазином (nginx `client_max_body_size`, Traefik
+`maxRequestBodyBytes`) має пропускати принаймні цю стелю і НЕ перетворювати тіло на chunked без
+`Content-Length`, інакше завантаження файлів отримає 411. Інший рантайм (не `server.mjs`) — переглянути. 413 віддається до читання тіла: стеля захищає від
+прямих викликів повз UI, а браузер, що ще вантажить понад стелю, може побачити обрив зʼєднання
+замість 413 (штатний UI відсікає завеликі файли до відправки).
 
 **Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` + production-`node_modules`
 (потрібен рівно один рантайм-пакет — `sirv`, він у `dependencies`). `VITE_*` для КЛІЄНТСЬКОГО

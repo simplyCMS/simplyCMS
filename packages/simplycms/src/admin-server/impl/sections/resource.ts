@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { sections } from 'simplycms/schema';
+import { propertyOptions, sectionProperties, sections } from 'simplycms/schema';
 import { SLUG_RE } from 'simplycms/domain';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -37,4 +37,16 @@ export const sectionsOps = defineAdminResource({
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
   readonly: ['id', 'parentId', 'createdAt', 'updatedAt'],
+  // К3-Е6д-1: заміна/прибирання картинки розділу стирає файл після COMMIT.
+  media: { entityType: 'section', columns: ['imageUrl'] },
+  // Видалення розділу каскадить `section_properties.section_id`, а далі
+  // `property_options` — фото опцій не мусять пережити розділ.
+  cascadeMedia: [
+    {
+      via: sectionProperties.sectionId,
+      fk: propertyOptions.propertyId,
+      column: propertyOptions.imageUrl,
+      entityType: 'property_option',
+    },
+  ],
 });

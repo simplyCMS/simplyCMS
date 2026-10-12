@@ -12,6 +12,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import { configPluginEntries, stripPrefixes } from './config-edit.mjs';
@@ -21,7 +22,30 @@ import { begin, finish, say, showSteps } from './ui.mjs';
 
 /** Тека міграцій магазину. */
 export const storeMigrationsDir = (storeRoot) =>
-  join(storeRoot, 'supabase', 'migrations');
+  join(storeRoot, 'db', 'migrations');
+
+/**
+ * Гучна відсутність теки міграцій магазину: без неї компаратор бачить «усе
+ * відсутнє» чи мовчить, і doctor/update брехали б «усе гаразд». `null` —
+ * тека є; інакше текст помилки (зі старою `supabase/migrations` — з підказкою
+ * `git mv`: зворотної сумісності немає, лише спосіб переїхати). `db/migrations` —
+ * файл, а не тека, — теж гучна помилка, спільна для doctor, update і db:diff.
+ * @param {string} storeRoot
+ * @returns {string | null}
+ */
+export function missingStoreMigrationsDir(storeRoot) {
+  const dir = storeMigrationsDir(storeRoot);
+  if (existsSync(dir)) {
+    // Файл замість теки: без цього перша ж `readdirSync` кидала б сирий ENOTDIR.
+    return statSync(dir).isDirectory()
+      ? null
+      : 'db/migrations існує, але це не тека, а файл — видали його й створи теку міграцій.';
+  }
+  const base = 'Тека міграцій магазину db/migrations відсутня.';
+  return existsSync(join(storeRoot, 'supabase', 'migrations'))
+    ? `${base} Знайдено стару supabase/migrations — перенеси: git mv supabase/migrations db/migrations`
+    : base;
+}
 
 /**
  * Канон міграцій встановленого ядра.
@@ -33,7 +57,7 @@ export const storeMigrationsDir = (storeRoot) =>
  * 🔴 Після B13 канон — це baseline + сід (`0000_prelude` … `0004_functions`), а не
  * історія з 33 файлів. Компаратор від цього не змінився: він порівнює імена
  * й вміст, а не формат імені. Змінився лише ПОРЯДОК — його тепер задає
- * числовий префікс, а не таймстамп Supabase CLI.
+ * числовий префікс, а не таймстамп.
  */
 export const schemaMigrationsPath = (storeRoot) =>
   join(storeRoot, 'node_modules', 'simplycms', 'migrations');
@@ -159,7 +183,7 @@ export function compareMigrationsMulti(storeDir, sources) {
  */
 export function lintPluginMigrationSql(sql, pluginName) {
   const prefix = `plg_${pluginName.replace(/-/g, '_')}_`;
-  // Схема може бути в лапках (`"public"."plg_x"` — стиль supabase db diff),
+  // Схема може бути в лапках (`"public"."plg_x"` — стиль виводу діфф-інструментів),
   // імʼя — теж; коментарі прибираються ДО скану, інакше `-- references
   // products` у прозі давав би хибне порушення.
   const stripped = sql
@@ -232,6 +256,16 @@ export async function run(argv) {
   const { write } = parseDbDiffArgs(argv);
   begin('simplycms db:diff');
   const storeRoot = findStoreRoot();
+  // 🔴 До будь-якої генерації: інакше `--write` через `copyMigrations`
+  // (`mkdir -p`) мовчки створив би нову `db/migrations` — зокрема в магазині,
+  // що ще лежить на старій `supabase/migrations`.
+  const missingDir = missingStoreMigrationsDir(storeRoot);
+  if (missingDir) {
+    say.error(missingDir);
+    process.exitCode = 1;
+    finish('Тека міграцій магазину відсутня.');
+    return;
+  }
   const storeDir = storeMigrationsDir(storeRoot);
 
   // Канони: ядро (обовʼязкове) + плагіни з конфігу, що везуть migrations/.
@@ -322,14 +356,14 @@ export async function run(argv) {
 
   if (!write) {
     showSteps([
-      'pnpm simplycms db:diff --write   # скопіювати їх у supabase/migrations/',
+      'pnpm simplycms db:diff --write   # скопіювати їх у db/migrations/',
     ]);
     finish('Є що забрати (--write).');
     return;
   }
-  // 🔴 Supabase CLI тут більше не називається (B2/B13): контракт v2 — чистий
-  // Postgres, а `supabase db push` до того ж не приймає числові префікси
-  // канону. Команду накату дає оточення магазину, а не CLI ядра.
+  // 🔴 Стороннього CLI накату тут не називаємо (B2/B13): контракт v2 — чистий
+  // Postgres, а числові префікси канону накочує psql-цикл. Команду накату
+  // дає оточення магазину, а не CLI ядра.
   showSteps([
     'git diff             # ревʼю доданих міграцій',
     'застосуй їх на БД магазину інструментом свого оточення (psql/деплой),',

@@ -1,6 +1,6 @@
 # SimplyCMS Core
 
-Open-source headless commerce engine — core packages for TanStack Start (Vite) + Supabase.
+Open-source headless commerce engine — core packages for TanStack Start (Vite) + PostgreSQL.
 
 ## Пакети (топологія К0, 2026-08-20)
 
@@ -31,13 +31,12 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `schema/` | `simplycms/schema` | T1 | Drizzle-baseline схеми ядра + RLS у TS. Тулінг (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`) — на рівні пакета, не в `src/` |
 | `db/` | `simplycms/db` | T2 | db-рантайм v2: пул `pg` + `withActor` (транзакція + claims `app.user_id` + `SET LOCAL ROLE`) + `advisoryXactLock` — ЄДИНА SQL-реалізація транзакційного advisory-локу за рядковим ключем (адмінка й `commerce` мусять хешувати ключ однаково, Е6в-15). 🔴 Єдиний канал до Postgres — субшляху `./db/client` в `exports` немає, прямий імпорт фабрики пулу є помилкою лінту |
 | `auth/` | `simplycms/auth` | T2 | Серверний auth-контур v2 (Better Auth, пін версії): інстанс + `drizzleAdapter` над схемою, хук `user.create.after` (`profiles`+`user_roles`, інваріант `first_user_no_auto_admin`), invite власника, typed authz (`requireOperation`, матриця «роль × операція»). Підключений до `start.ts`/роутів (К1′б, GoTrue знесено). Імпортує `db` (свій тір) навмисно: зʼєднання лише через `withActor` |
-| `supabase/` | `simplycms/supabase` | T2 | Клієнти browser/server/anon, `SupabaseProvider`, `resolveSupabaseKeys`, baseline-типи БД (`database.ts`). 🔴 Живий ЛИШЕ для адмінки — переписує трек К3 |
 | `react-query/` | `simplycms/react-query` | T2 | `EngineProvider`/`useEngine` (links+config), `CartProvider`/`useCart`, `catalogKeys` |
 | `runtime/` | `simplycms/runtime` | T2 | `defineRuntime` (складання `EngineContext`) + host-`defineConfig` |
 | `i18n/` | `simplycms/i18n` | T2 | Request-scoped транслятор (`createTranslator`, `I18nProvider`, `useT`) + каталоги uk/en |
-| `storefront/` | `simplycms/storefront` | T2 | SSR-лоадери (`withStorefrontDb` над Drizzle) + SEO-генератори — без Supabase. Upward-виняток `db`+`auth`+`storage`+`inventory`+`commerce`+`site`: `withActor`, читання сесії, канал до файлів (аватар), спільний гвард залишків, серверне ціноутворення/доставка і кеш профілю й активної теми — той самий набір, що в `admin-server` |
+| `storefront/` | `simplycms/storefront` | T2 | SSR-лоадери (`withStorefrontDb` над Drizzle) + SEO-генератори — без клієнта БД у браузері. Upward-виняток `db`+`auth`+`storage`+`inventory`+`commerce`+`site`: `withActor`, читання сесії, канал до файлів (аватар), спільний гвард залишків, серверне ціноутворення/доставка і кеш профілю й активної теми — той самий набір, що в `admin-server` |
 | `admin-server/` | `simplycms/admin-server` (+ службовий `./admin-server/impl`) | T2 | Серверний шар адмінки (трек К3, Е1б): фабрика операцій `defineAdminResource` + іменовані операції з інваріантами; публічна поверхня `index.ts` — ЛИШЕ топ-рівневі `createServerFn` (К3-4′), нутрощі — за bare-субшляхом `impl` (дзеркало `storefront/loaders` для Gate C, К3-9′). Upward-виняток `db`+`auth`+`storage`+`inventory`+`commerce`+`site`, як у `storefront`: `withActor`, `requireGrant`, канал до файлів, спільний гвард залишків, серверне ціноутворення/доставка (редагування позицій замовлення, Е5б) і скидання кешу профілю й теми після COMMIT (Е6б-9) |
-| `storage/` | `simplycms/storage` | T2 | 🔴 Порт сховища файлів (К3-Е2): драйвер `local-fs` (іммутабельні ключі `ab/<uuid>.<ext>`, атомарна публікація через `link`), `inspectUpload` (MIME за магічними байтами, SVG заборонений), `writeMedia`/`eraseMedia` — файл і рядок `media` в ОДНІЙ транзакції актора, `serveMedia` для роуту `/media/$`. **server-only** за `contracts/server-only`; upward-виняток `db` — канал до Postgres лише `withActor`. Клієнту звідси не потрібно нічого: резолв URL живе в `domain/media` (T1) |
+| `storage/` | `simplycms/storage` | T2 | 🔴 Порт сховища файлів (К3-Е2): драйвер `local-fs` (іммутабельні ключі `ab/<uuid>.<ext>`, атомарна публікація через `link`), `inspectUpload` (MIME за магічними байтами, SVG заборонений), `writeMedia` (файл + рядок `media`; відкат публікації — `withPublishedRollback` через outbox) і `eraseMediaRows` (двофазне стирання: у транзакції лише рядки `media` + хвіст outbox `media_erasures`, файл стирає `completeMediaErasures` після COMMIT), `serveMedia` для роуту `/media/$`. **server-only** за `contracts/server-only`; upward-виняток `db` — канал до Postgres лише `withActor`. Клієнту звідси не потрібно нічого: резолв URL живе в `domain/media` (T1) |
 | `commerce/` | `simplycms/commerce` | T2 | 🔴 Серверне ціноутворення й доставка (К3-Е5б, Е5б-5): ядро ціноутворення К3-Е6в — `loadPricingContext` (один контекст: ефективна категорія з відкатом на дефолтну, тип ціни ЦІЄЇ категорії, інакше глобальний дефолтний, ліс знижок, `now`) + `priceCart` (рядки з `available`, сума центами), `priceItems` — обгортка для чеку; категорії покупців і автоправила (`applyCategoryRules`, `customerCategoryLock`, `loadCustomerStats`), `validateShippingChoice` + `quoteShippingCost` (метод, точка видачі, зона за містом, тариф від `subtotal`), довідники цін/знижок/доставки/точок видачі. ОДНА копія рушія на чекаут вітрини (`storefront/loaders`) і редагування позицій замовлення (`admin-server`) — копія вже раз давала розходження знижок. Переїхало зі `storefront/loaders` без реекспорту. **server-only** за `contracts/server-only`; upward-виняток лише `db` |
 | `inventory/` | `simplycms/inventory` | T2 | 🔴 Облік залишків (Е3-5): спільний гвард `stock_status` — `loadTargetStatus`/`setTargetStatus`/`syncStatusWithQuantity`, пише в `products`/`product_modifications` через ActorDb; облік замовлення (Е5) — `reserveOrderStock`/`releaseOrderStock` (списане й повернене ПО ПОЗИЦІЇ: `order_items.stock_point_id`/`stock_reserved`), `loadStockManagement`, `InsufficientStockError`. Одна копія на вітрину (оформлення й скасування) і адмінку (зміна статусу замовлення). **server-only** за `contracts/server-only`; upward-виняток лише `db` — канал до Postgres той самий `withActor`. Не плутати з `simplycms/domain/inventory` (T1, чиста арифметика без IO, клієнтобезпечна) |
 | `site/` | `simplycms/site` | T2 | 🔴 Кеш профілю магазину й активної теми (К3-Е6б, Е6б-7): `createReadCache` (TTL 5 хв + лічильник поколінь), `storeProfileCache`/`activeThemeCache`, `readStoreProfile`, реєстр вшитих тем `declareBuiltThemes`/`isBuiltTheme`. ОДИН модульний стан: вітрина читає, адмінка скидає після COMMIT (`admin-server` не імпортує `storefront`). Власного каналу до БД немає — функції приймають `ActorDb`. **server-only** за `contracts/server-only`; upward-виняток лише `db` |
@@ -133,11 +132,16 @@ bin-інструмент). Конвеєр підхоплює новий паке
    за побудовою; server-only групу задає `contracts/server-only`.
    `entry` — МАПА `<шлях у dist> → файл`: за списковою формою бандлер бере
    outbase = спільний предок і мовчки затирає корінь пакета.
-   🔴 **`target: 'esnext'` живе у спільному `base`.** Без нього бандлер
-   лоуерить `import.meta` у `var import_meta = {}`, і опублікований `dist`
-   читає `({}).env` — браузерний Supabase-клієнт падає на гідрації (спіймано
-   К0: при злитті 21 конфігу опція вціліла лише в одному профілі). Гард —
-   `tests/dist-import-meta.test.ts` у packaging-suite. Розкладка entry — не
+   🔴 **Форму `import.meta` у `dist` зберігає `format: ['esm']` у спільному
+   `base`, а не `target`.** Rolldown у ESM-виході не лоуерить `import.meta`
+   за жодного `target` (виміряно es2015…esnext), а cjs лоуерить у
+   `var import_meta = {}` / `{}.env…` — опублікований `dist` читає
+   `({}).env`, і браузерний код, що читає `import.meta.env`, падає на
+   гідрації (спіймано К0 при злитті 21 конфігу). `target: 'esnext'` лишено
+   явним лише для незалежності рівня синтаксису від tsconfig пакета. Гард —
+   `tests/dist-import-meta.test.ts` у packaging-suite (скан `dist`), його
+   самоперевірка патерна `LOWERED_IMPORT_META` — cjs-кейс
+   `tests/dist-import-meta-fixture.test.ts`. Розкладка entry — не
    політика синтаксису.
    Альтернатива — без збірки взагалі: сирці в tarball, без скрипту `build`
    (`cli`, `create-simplycms-store`). `pnpm build:packages` фільтрує за

@@ -64,7 +64,12 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Повне володіння своїми рядками.
   comparisons: { app_user: CRUD },
   wishlists: { app_user: CRUD },
-  product_reviews: { app_user: CRUD, app_admin: CRUD },
+  // UPDATE покупця — лише колонковий (`COLUMN_GRANTS`, Е6д-16 б, Е6д-23);
+  // INSERT табличний, звужений політикою.
+  product_reviews: {
+    app_user: ['SELECT', 'INSERT', 'DELETE'],
+    app_admin: CRUD,
+  },
   // Адрес і отримувачів адмін лише читає (потрібно для обробки замовлення).
   user_addresses: { app_user: CRUD, app_admin: ['SELECT'] },
   user_recipients: { app_user: CRUD, app_admin: ['SELECT'] },
@@ -80,6 +85,9 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // 🔴 Без UPDATE/DELETE у `app_user`: незмінність колонок власності медіа
   // тримається відсутністю права, а не тригером (`schema/media.ts`).
   media: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
+  // Outbox стирання файлів (Е6д-20): лише `app_admin`; ескалація `operator` —
+  // теж `app_admin`, покупцеві ключі чужих файлів не потрібні.
+  media_erasures: { app_admin: CRUD },
 };
 
 /** Ролі, чиї гранти взагалі очікуються (решта — порушення). */
@@ -101,6 +109,12 @@ export const COLUMN_GRANTS: Record<
   profiles: {
     app_user: {
       UPDATE: ['avatar_url', 'first_name', 'last_name', 'phone', 'updated_at'],
+    },
+  },
+  // Е6д-23: UPDATE без `admin_comment`/`user_id`, а `status` лише заради повернення в pending.
+  product_reviews: {
+    app_user: {
+      UPDATE: ['content', 'images', 'rating', 'status', 'title', 'updated_at'],
     },
   },
 };

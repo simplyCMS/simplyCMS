@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { sectionProperties } from 'simplycms/schema';
+import { propertyOptions, sectionProperties } from 'simplycms/schema';
 import { SLUG_RE } from 'simplycms/domain';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -33,4 +33,13 @@ export const sectionPropertiesOps = defineAdminResource({
   ],
   insertOnly: ['propertyType'],
   readonly: ['id', 'sectionId', 'options', 'createdAt'],
+  // К3-Е6д-1: FK `property_options.property_id` — CASCADE; без опції фото
+  // опцій пережили б властивість.
+  cascadeMedia: [
+    {
+      fk: propertyOptions.propertyId,
+      column: propertyOptions.imageUrl,
+      entityType: 'property_option',
+    },
+  ],
 });

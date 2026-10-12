@@ -34,8 +34,6 @@
   "exclude": [
     "node_modules",
     "temp",
-    "tools",
-    "supabase/functions",
     "vitest.config.ts",
     "**/dist",
     "tests/pilot/store-template",

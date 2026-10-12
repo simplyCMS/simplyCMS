@@ -6,7 +6,7 @@ import type { EngineContext } from 'simplycms/contracts';
 import { EngineProvider, useEngine } from '../EngineProvider';
 
 // 🔴 V2: EngineContext звужений до двох чистих провайдерів — репозиторії й
-// порт-хуки знесені разом із шаром `data-supabase` (браузер у БД не ходить).
+// порт-хуки знесені в 0.4.1 (браузер у БД не ходить).
 // Тож фікстура тут повна, а не «мінімальна»: у контейнері справді два поля.
 const mockEngine: EngineContext = {
   links: {

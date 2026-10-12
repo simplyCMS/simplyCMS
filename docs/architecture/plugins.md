@@ -38,7 +38,7 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
 - **Хуків знижок немає.** `admin.discount.form.fields`,
   `discount.conditions.evaluate`, `discount.before_apply`, `discount.after_apply`,
   `discount.types` і порт `CatalogRepository.getDiscounts` (разом із
-  `DiscountScope`) знесено в К3-Е6в (рішення Е6в-21): їх ніхто не кликав.
+  `DiscountScope` (знесено)) знесено в К3-Е6в (рішення Е6в-21): їх ніхто не кликав.
   Умови знижок задає внутрішній реєстр `DiscountConditionDefinition`
   (`simplycms/domain/discounts`, Е6в-4) — вбудовані умови зареєстровані тим самим
   контрактом. Плагінам реєстр відкривається в К5; до того умова невідомого типу
@@ -115,26 +115,28 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
   а хук повертає `is_active = false` другим викликом `setPluginActive` і
   показує тост: БД і вкладка не розходяться.
 - Видалення плагіна з адмінки немає (С-3): встановлення й видалення —
-  build-time (`simplycms add` + конфіг магазину, §9); supabase-шар життєвого
-  циклу (`adminLifecycle`, `pluginRepository`) знесено.
+  build-time (`simplycms add` + конфіг магазину, §9); клієнтський шар життєвого
+  циклу (`adminLifecycle` (знесено), `pluginRepository` (знесено)) знесено.
 
 ## 4. Межа довіри (спека §7)
 
-Плагін **не отримує `SupabaseClient`** — лише порти SDK. Примус двошаровий:
+Плагін **не отримує клієнта БД** — лише порти SDK. Примус двошаровий:
 
 1. **dependency-lint** (eslint-зона `plugins/**` +
    `packages/simplycms-plugin-*/**`): заборонений список ПОХІДНИЙ від
    `simplycms/contracts/server-only` (`SERVER_ONLY` — субшляхи ядра,
    `SERVER_ONLY_DEPS` — серверні пакети на кшталт `drizzle-orm`/`pg`) плюс
-   поверхня, заборонена плагіну ПОНАД server-only: `simplycms/supabase(/*)`,
+   поверхня, заборонена плагіну ПОНАД server-only:
    `@supabase/*`, `simplycms/plugin-sdk/server(/*)`,
    `simplycms/admin-server(/*)`. Заборона накриває і статичний import, і
    `export … from`, і динамічний `import()` (окремий селектор). 🔴 Список у
    `eslint.config.mjs` — ЧИТАЧ декларації, а не її копія: розширення межі
-   правиться в одному файлі й доїжджає сюди само. 🔴 Субшляху
-   `simplycms/data-supabase` у списку БІЛЬШЕ НЕМАЄ: шар знесено в 0.4.1, і
-   специфікатор не резолвиться в принципі, тож правило стерегло б порожнечу, а
-   негативний контроль — неіснуючий модуль. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
+   правиться в одному файлі й доїжджає сюди само. 🔴 Субшляхів
+   знесеного клієнтського шару БД у списку БІЛЬШЕ НЕМАЄ:
+   шар знесено (0.4.1, К3-Е7), специфікатори не резолвяться в принципі, тож
+   правило стерегло б порожнечу, а негативний контроль — неіснуючий модуль.
+   Пакетна заборона `@supabase/*` лишається; поза плагінами її тримає
+   ратчет `no-supabase-import` на все репо. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
    `plugins`/`plugin-sdk` — ядро, зона їх не покриває. Доводить не зелений
    лінт, а негативний контроль `tests/plugin-trust-boundary.test.ts`
    (синтетичне порушення в зоні й поза нею) — урок env-контракту: правило,
@@ -232,12 +234,12 @@ React або віддає на очищення ядру окремим ріше
   останнє слово за людським ревʼю скопійованої міграції.
 - Імʼя для лінта — **канонічне зі специфікатора пакета** (`stripPrefixes`),
   а не конфіг-ключ: `--name`-аліас у конфізі не збиває перевірку.
-- Накат: `git diff` (ревʼю) → пряме `psql`, файл за файлом (немає Supabase
-  CLI, що сам відстежує застосовані міграції — таймстамп «у минуле» нічого
+- Накат: `git diff` (ревʼю) → пряме `psql`, файл за файлом (жодного CLI, що сам
+  відстежує застосовані міграції — таймстамп «у минуле» нічого
   не блокує):
-  `for f in supabase/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done`
+  `for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done`
   (URL власника БД: `app_runtime` не має прав на `create table`).
-  🔴 Генератора типів магазину (`supabase/types.ts`) більше немає (0.4.1) —
+  🔴 Генератора типів магазину немає (0.4.1) —
   плагінні таблиці типізуються ЛИШЕ через власний generic плагіна
   (`usePluginTable<Row>`), не через автогенерат.
 
@@ -285,6 +287,10 @@ AST-скану (`tests/i18n-coverage`); парність uk↔en, префікс
 `tests/plugin-messages-parity.test.ts` (плагіни дискавляться з диска).
 
 ### CSRF і POST-маршрути плагінів
+
+> Поруч із CSRF у `requestMiddleware` стоїть `bodyLimitMiddleware` (стеля тіла POST на
+> `/_serverFn/`, `START-BODY-1`): server function плагіна не має власного ліміту multipart —
+> діє стеля ядра.
 
 Server routes і server functions плагіна, що змінюють стан (POST/PUT/PATCH/
 DELETE), **захищені від CSRF за замовчуванням**: `csrfMiddleware` ядра
@@ -351,7 +357,7 @@ CLI: definePlugin + messages + README з конвенціями) + якірни�
 | Мульти-канони/SQL-лінт db:diff | `tests/cli-db-diff.test.ts` |
 | Скаффолд create plugin | `tests/cli-create.test.ts` (+ реальні діагностики `transpileModule`) |
 | Два physical() під /admin | `tests/virtual-routes-escape.test.ts` |
-| Пакування (route-id, бандл, tarball, CLI) | `pnpm pilot:pack` — Gates A/C/D/CLI/TOOL |
+| Пакування (route-id, бандл, tarball, CLI) | `pnpm pilot:pack` — Gates A/C/SB/D/IP/CLI/TOOL |
 | Поведінка наживо (toggle, віджет) | 🔴 **decommissioned у 0.4.1** разом зі стеком Supabase — `pnpm test:e2e` немає; спека `plugin.e2e.ts` лишилась без входу, повертає трек К6 |
 
 🔴 Зелений `pnpm test` пакування плагіна **не доводить** — це загальний

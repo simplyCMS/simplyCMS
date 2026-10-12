@@ -5,6 +5,7 @@
  */
 import { optionBySlug, propertyBySlug } from './admin-dictionaries-sql.mjs';
 import { waitText } from './selectors.mjs';
+import { expectCount, expectSome } from './wait.mjs';
 
 export const PROP = { slug: 'live-dict-prop', name: 'Жива властивість Е4' };
 const OPT = { slug: 'live-dict-opt', name: 'Жива опція Е4' };
@@ -42,8 +43,8 @@ export async function createPropertyWithOption({ page, base, dbUrl, check }) {
   await addOption.waitFor({ timeout: 10_000 });
   check(
     'адмін: картка властивості без контролу типу (Е4-5)',
-    (await page.locator('#property-type').count()) === 0 &&
-      (await page.getByText('Тип властивості').count()) > 0,
+    (await expectCount(page.locator('#property-type'), 0)) &&
+      (await expectSome(page.getByText('Тип властивості'))),
     '#property-type відсутній, тип — текстом',
   );
   await addOption.click();

@@ -74,6 +74,7 @@ async function submitWith(error: Error) {
       productId="p1"
       sectionId={null}
       mod={MOD}
+      newId="new-mod-id"
       onCreate={vi.fn()}
       onUpdate={onUpdate}
     />,

@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { localFsDriver } from '../local-fs';
-import { serveMedia } from '../serve';
+import { serveMedia, type MediaServeVerdict } from '../serve';
 
 const KEY = 'ab/ab000000-0000-4000-8000-000000000000.png';
 const PNG = Uint8Array.from([
@@ -13,10 +13,26 @@ const PNG = Uint8Array.from([
 describe('serveMedia', () => {
   let root: string;
   let driver: ReturnType<typeof localFsDriver>;
-  const get = (path: string) =>
-    serveMedia({ request: new Request(`http://localhost${path}`) }, driver);
+  let verdict: MediaServeVerdict = { personal: false };
+  const lookup = async () => verdict;
+  const get = (path: string, init?: RequestInit) =>
+    serveMedia(
+      { request: new Request(`http://localhost${path}`, init) },
+      { lookup },
+      driver,
+    );
+  const openSpy = () => {
+    const open = driver.open.bind(driver);
+    let calls = 0;
+    driver.open = async (key) => {
+      calls += 1;
+      return open(key);
+    };
+    return () => calls;
+  };
 
   beforeEach(async () => {
+    verdict = { personal: false };
     root = await mkdtemp(join(tmpdir(), 'simplycms-serve-'));
     driver = localFsDriver(root);
     await driver.put(KEY, PNG);
@@ -48,14 +64,7 @@ describe('serveMedia', () => {
   // реєстрації запит віддає HTML замість заголовків файлу — те, що кешують
   // CDN і проксі.
   it('HEAD віддає ті самі заголовки без тіла', async () => {
-    const response = await serveMedia(
-      {
-        request: new Request(`http://localhost/media/${KEY}`, {
-          method: 'HEAD',
-        }),
-      },
-      driver,
-    );
+    const response = await get(`/media/${KEY}`, { method: 'HEAD' });
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('image/png');
     expect(response.headers.get('content-length')).toBe(String(PNG.length));
@@ -106,5 +115,71 @@ describe('serveMedia', () => {
     const body = await response.text();
     expect(body).not.toContain(root);
     expect(body).not.toContain('etc/passwd');
+  });
+
+  // Е6д-21: рядок `media` і видимість перевіряє `lookup`, а не роут.
+  it.each(['missing', 'hidden'] as const)(
+    "вердикт '%s' → 404 і драйвер не відкривали",
+    async (v) => {
+      verdict = v;
+      const calls = openSpy();
+      const response = await get(`/media/${KEY}`);
+      expect(response.status).toBe(404);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(calls()).toBe(0);
+    },
+  );
+
+  it('персональний файл — private, no-cache', async () => {
+    verdict = { personal: true };
+    const response = await get(`/media/${KEY}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-cache');
+  });
+
+  it('If-None-Match зі збігом при видимому файлі → 304 без driver.open', async () => {
+    const calls = openSpy();
+    const response = await get(`/media/${KEY}`, {
+      headers: { 'if-none-match': `"${KEY}"` },
+    });
+    expect(response.status).toBe(304);
+    expect(response.body).toBeNull();
+    expect(calls()).toBe(0);
+  });
+
+  // 🔴 304 не можна віддавати до lookup: прихований файл підтвердив би себе.
+  it('If-None-Match при hidden → 404, не 304', async () => {
+    verdict = 'hidden';
+    const response = await get(`/media/${KEY}`, {
+      headers: { 'if-none-match': `"${KEY}"` },
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it('lookup кидає → 500 no-store без деталей помилки', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const response = await serveMedia(
+      { request: new Request(`http://localhost/media/${KEY}`) },
+      {
+        lookup: async () => {
+          throw new Error('db down secret');
+        },
+      },
+      driver,
+    );
+    expect(response.status).toBe(500);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.text()).not.toContain('secret');
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('304 персонального файлу несе private, no-cache', async () => {
+    verdict = { personal: true };
+    const response = await get(`/media/${KEY}`, {
+      headers: { 'if-none-match': `"${KEY}"` },
+    });
+    expect(response.status).toBe(304);
+    expect(response.headers.get('cache-control')).toBe('private, no-cache');
   });
 });

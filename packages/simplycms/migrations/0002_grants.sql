@@ -92,11 +92,20 @@ to app_user;
 -- ── 4. app_user: власні рядки (звуження до своїх — робота RLS) ─────────────
 grant select, insert, update, delete on table
   public.comparisons,
-  public.product_reviews,
   public.user_addresses,
   public.user_recipients,
   public.wishlists
 to app_user;
+
+-- Е6д-16 б, Е6д-23: INSERT табличний (drizzle називає в ньому всі колонки,
+-- колонковий грант дав би 42501), тож звуження — у політиці
+-- `product_reviews_insert_own` (status = 'pending', admin_comment is null).
+-- UPDATE колонковий: `admin_comment`/`user_id` змінює лише модератор, `status`
+-- дозволений заради повернення правленого відгуку в 'pending'
+-- (`product_reviews_update_own`). `images` довіряють лише через media-порт.
+grant select, insert, delete on table public.product_reviews to app_user;
+grant update (rating, title, content, images, status, updated_at)
+  on table public.product_reviews to app_user;
 
 -- Замовлення не редагуються покупцем: скасування чи зміна — серверна
 -- операція під `app_admin` (політик UPDATE/DELETE для `app_user` немає).
@@ -134,6 +143,7 @@ grant select, insert, update, delete on table
   public.discounts,
   public.languages,
   public.media,
+  public.media_erasures,
   public.modification_property_values,
   public.order_items,
   public.order_statuses,

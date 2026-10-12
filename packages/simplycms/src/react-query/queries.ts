@@ -1,4 +1,4 @@
-// Стабільний namespace ключів кешу React Query (без React/supabase).
+// Стабільний namespace ключів кешу React Query (без React і клієнта БД).
 //
 // 🔴 V2: фабрики query-опцій поверх портів (`catalogQueries`/`orderQueries`)
 // і ключі замовлень знесені разом із шаром репозиторіїв — браузер у БД не

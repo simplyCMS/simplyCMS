@@ -18,6 +18,152 @@
 
 ---
 
+## [0.14.0] — 2026-10-12
+
+К3-Е6д: контент — банери й відгуки на серверному шарі (спека
+[`2026-10-10-content-banners-reviews-design.md`](docs/superpowers/specs/2026-10-10-content-banners-reviews-design.md);
+план
+[`2026-10-10-v2-k3-e6d-content.md`](docs/superpowers/plans/2026-10-10-v2-k3-e6d-content.md)).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+К3-Е7: повний знос Supabase (спека
+[`2026-10-11-v2-k3-e7-supabase-removal-design.md`](docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md);
+план
+[`2026-10-11-v2-k3-e7-supabase-removal.md`](docs/superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)).
+Легасі на `supabase-js` — 0.
+
+### 🔴 BREAKING для магазинів
+
+- **`pg` — peer ядра і пряма залежність магазину (К3-Е7, Task 11):** `simplycms` більше не тягне
+  `pg` у `dependencies`, а очікує його як `peerDependencies` (точний пін `8.23.1`); шаблон і
+  `create-simplycms-store` додають `"pg": "8.23.1"` у залежності магазину. **Існуючий магазин
+  мусить додати `pnpm add pg@8.23.1`.** `simplycms doctor` (№13) вимагає декларації і версії в
+  межах peer, `simplycms update` версію `pg` не переписує — лише підказує.
+- **Виправлено старт свіжого магазину з 0.7.0:** серверний бандл падав на старті
+  (`TypeError: Class extends value #<Object> is not a constructor or null` у `BoundPool extends Pool`).
+  Причина — дефект import-protection плагіна `@tanstack/start-plugin-core` ≥1.171 (приїхав через `@tanstack/react-start` 1.168.60, коміт 24e2836a) + вклеєний транзитивний `pg`
+  ([`UPSTREAM:START-IP-1`](docs/architecture/upstream-workarounds.md)). Опубліковані 0.7–0.13 не
+  виправляються. Реліз тепер ганяє повний `pnpm pilot` (Gate B), а пілот — новий Gate SB (драйвер не
+  вклеєний + allowlist вклеєних пакетів).
+- **Тека магазину `supabase/` → `db/` (К3-Е7, скаффолдер):** міграції лежать у
+  `db/migrations`, накат — psql-цикл по цій теці; `supabase/config.toml` і
+  `supabase/templates/invite.html` більше не генеруються. Наявний магазин переносить теку
+  `git mv supabase/migrations db/migrations`; `simplycms doctor` (№7) і `simplycms update`
+  повідомляють про відсутню `db/migrations` (раніше doctor хибно казав «всі міграції нові»).
+- **Канон міграцій змінено точковою правкою baseline (Е6д-8)**: базу магазину
+  перестворити (`pnpm db:demo`). `product_reviews` отримала CHECK-и
+  `product_reviews_status_check` (`pending`/`approved`/`rejected`) і
+  `product_reviews_rating_check` (1…5) у `0001_init.sql`; нової міграції немає.
+  `0002_grants.sql`: `app_user` на `product_reviews` — `SELECT, INSERT, DELETE` +
+  колонковий `UPDATE (rating, title, content, images, status, updated_at)` замість
+  табличного (Е6д-16 б, розширено Е6д-23); INSERT звужує політика RLS
+  `product_reviews_insert_own` (`status = 'pending'`, `admin_comment IS NULL`;
+  К3-Е6д-7), оновлення — `product_reviews_update_own`.
+- **Доробка К3-Е6д (2026-10-11)**: базу магазину знову перестворити (`pnpm db:demo`):
+  нова таблиця `media_erasures` (outbox стирання, Е6д-20), `media.entity_id` —
+  `NOT NULL` (власник обовʼязковий, К3-Е6д-4); `uploadMedia` без `entityId` → 400
+  (виняток — логотип, власник `STORE_LOGO_OWNER_ID`).
+- **Канон сховища: двофазне стирання (Е6д-14).** Транзакція видаляє лише рядки
+  `media`; файли стираються ПІСЛЯ COMMIT (`completeMediaErasures`, outbox Е6д-20). Новий
+  `eraseMediaRows(db, refs, owner)` у `simplycms/storage` з обовʼязковим власником
+  (Е6д-16 а). `deleteCustomer` повертає `discard` (аватар разом із фото відгуків), тож
+  обрив `driver.delete` більше не відкочує видалення акаунта (переписує Е6г-15).
+- **Відгук із фото — одним запитом (Е6д-6):** `submitProductReview` — FormData-serverFn
+  (текст + до 5 файлів по 5 МБ); проп `renderImageUpload` у `reviews-ui` — на `File[]`
+  (`{ files, onFilesChange, maxFiles, accept, maxBytes }`), штатний пікер
+  `ReviewImagePicker` увімкнено за замовчуванням.
+- `simplycms/storage`: тип `AvatarStorageOptions` (вітрина) замінено нейтральним
+  `MediaStorageOptions` (`{ driver?, discardWith? }`), спільним для аватара й відгуків.
+- Адмінка: `getAdminReviewContent` знесено — його поглинає `getReviewCard` (Е6д-11).
+
+### Видалено
+
+- **Supabase (К3-Е7):** шар `simplycms/supabase` і весь його публічний API — шість
+  експортів `simplycms/supabase*` та дзеркало в `publishConfig`; `LegacySupabaseBoundary`
+  з тестом і монтуванням, i18n `admin.legacy.*`; peer'и й залежності `@supabase/*` (ядро,
+  шаблон магазину, пілотний шаблон); `PEER_SCOPES` в `scripts/audit-deps*`.
+- Реєстр `tests/admin-server-first` (його замінює бан лінтом), гілку `supabase` в
+  `explicit-ids`/`insert-scan`, `tests/admin-inserts-need-id.test.ts`, виїмку `EXEMPT_DIRS`.
+- Кореневий `supabase/` (`config.toml`, `seed.sql`), ланцюг сіду пілота (`pilot-seed`,
+  `seed-sql`, `seed-fixtures`) і команда `pnpm pilot:seed`; `pnpm db:migrate`
+  (`scripts/db-migrate.mjs`); `tools/content-loader-mcp` із записом `mcpServers.content-loader`
+  у `.claude/settings.json`.
+
+### Додано
+
+- Правило лінту `simplycms-supabase/no-supabase-import` (на все репо: `import`,
+  `export … from`, `import()`, `require`, TS-форми) і тест маніфестів/lock — жодного
+  `@supabase/` у `package.json` workspace-пакетів, шаблонах і `pnpm-lock.yaml`.
+- Гарди-замінники: незалежний контроль `import.meta.env` у серверних модулях, тест
+  `dist-import-meta` на фікстур-збірці з `base` з `tsdown.config.ts` (мутація
+  `format: ['cjs']`), юніт `gateBundle` для Gate C.
+- `simplycms doctor` (№7) і `simplycms update`: відсутня `db/migrations` — помилка з підказкою
+  `git mv supabase/migrations db/migrations`, якщо є стара тека.
+- Лінт: адмінка (`src/admin/**`) більше не виїмка з правил a11y-міток (`jsx-a11y`) і
+  `query-key-from-entity` (К3-Е7, 9в): виміряно 1 порушення (`BannerScheduleCard` — Radix
+  `Checkbox` без `htmlFor`), виправлено; зону стереже `tests/eslint-admin-zones.test.ts`
+  (по всіх теках `admin/*`).
+- Пілот і реліз (К3-Е7, Task 11): Gate SB пілота (`scripts/pilot-pack/gate-sb.mjs`:
+  драйвер БД не вклеєний у серверний бандл + allowlist вклеєних пакетів), крок Gate B
+  «sanitize-html на сервері» (оверлей `scripts/pilot-pack/sanitize-probe.sql`), релізний гейт
+  `pilot` (`scripts/release/pilot-full.mjs`), розтяжка `UPSTREAM:START-IP-1`.
+- Доробка К3-Е6д-1…9 (план
+  [`2026-10-11-v2-k3-e6d-finish.md`](docs/superpowers/plans/2026-10-11-v2-k3-e6d-finish.md)):
+  - outbox `media_erasures` з `completeMediaErasures`/`scheduleMediaErasures`/
+    `retryMediaErasures`, хвости й повтор у налаштуваннях адмінки, помічник
+    `withPublishedRollback` (Е6д-20);
+  - роздача `/media/<key>` перевіряє рядок `media` і видимість власника (`serveMedia(ctx,
+    { lookup })`, `MEDIA_VISIBILITY`); персональні файли — `private, no-cache`, 404/500
+    — `no-store` (Е6д-21);
+  - `findMediaReferences`/`mediaReferenceExists`, sweep неприв'язаних медіа (≥ 24 год) у
+    налаштуваннях, гейти `media-sweep-coverage` і
+    `media-cascade-coverage` (з `via` для двоярусного каскаду) (Е6д-22);
+  - стеля тіла запиту `bodyLimitMiddleware` (`simplycms/runtime/body-limit`, 413
+    `request/payload-too-large`, 411 `request/length-required`; `UPSTREAM:START-BODY-1`);
+  - покупець редагує власний відгук (повертається в `pending`), модерація проти побаченої
+    версії: `setReviewsStatus({ items: [{ id, updatedAt }] })`, 409 `review_changed`;
+    автор бачить `own_photos` лише свого відгуку (Е6д-23);
+  - `HeroBanner` обох тем показує текст і кнопки банера (`pickHeroBanner`/`pickHeroImage`/
+    `isSafeCssColor` у `simplycms/domain`, `themes.md` §2.2);
+  - опція `media` фабрики на jsonb-масивах і ресурсах каталогу (розділи, товари, опції
+    властивостей, модифікації), `cascadeMedia` для каталогу.
+- Адмінка: `/admin/banners*` — ресурс фабрики з опцією `media` (Е6д-1), перехресні
+  правила на злитому рядку (Е6д-2, Е6д-12), безпечні кнопки (`/шлях` або `http(s)://`,
+  Е6д-13) і `overlay_color` за `isSafeCssColor` (Е6д-4); право `banner.manage`.
+- Адмінка: `/admin/reviews*` — список з keyset і масовою модерацією (`setReviewsStatus`,
+  409 `review_not_found` без часткового запису, Е6д-7), картка з фото й внутрішньою
+  приміткою (не їде на вітрину, Д-1), бейдж «очікують» у сайдбарі (Д-4); відгуки
+  видаленого покупця — «Колишній покупець».
+- `defineAdminResource({ media: { entityType, columns } })` — референси медіа-колонок
+  перевіряються на власника рядка (409 `media_ref_invalid`), замінене й видалене
+  стирається двофазно.
+- `defineAdminResource({ cascadeMedia: [{ fk, column, entityType }] })` (Е6д-19) — медіа
+  дочірніх рядків, яких знищує FK `ON DELETE CASCADE`: видалення товару стирає фото його
+  відгуків (рядки `media` у транзакції, файли — після COMMIT). Гейт класу
+  `media-cascade-coverage` звіряє кожну каскадну медіа-колонку з каталогу FK.
+- `simplycms/domain`: предикати банера (`isBannerButton`, межі тривалостей,
+  `BANNER_MAX_BUTTONS`), `isSafeCssValue`, `normalizeMediaRefs`; константи фото відгуку
+  (`REVIEW_MEDIA_ENTITY`, `MAX_REVIEW_IMAGES`, `MAX_REVIEW_IMAGE_BYTES`, Е6д-5).
+- Вітрина: автор бачить свій несхвалений відгук разом із фото й бейджем
+  «На модерації»; `getProductReviews` відповідає `cache-control: private, no-store`
+  (Е6д-17).
+- `live:smoke`: крок контенту (`admin-content.mjs`) — банери, відгук із фото, ізоляція
+  `pending` від гостя, масова модерація.
+
+### Змінено
+
+- `eraseMedia` і `discardMedia` знесено: аватар і логотип двофазні, serverFn `deleteMedia` знесено (споживачів не лишилось);
+  `ImageUpload` більше не стирає файл (проп `eraseOnRemove` прибрано), сироту змітає sweep.
+- Легасі `Banners`, `BannerEdit`, `Reviews`, `ReviewDetail` знесено; легасі на
+  `supabase-js` — **2** файли `src/admin/**` (`LegacySupabaseBoundary` з тестом; знесено в К3-Е7).
+- Сід `db:showcase` схвалює відгуки ядром `setReviewsStatus` замість сирого `UPDATE`.
+
+### Відомі обмеження
+
+Межі канону сховища (`docs/architecture/storage.md`, «Межі»): БД недоступна саме в момент
+відкату публікації; ручна вставка `/media/<key>` у rich HTML не створює власності; прямий
+виклик serverFn повз UI понад стелю тіла може побачити обрив зʼєднання замість 413; чистий JSON без `Content-Length` (chunked) проходить без стелі, бо Start буферизує його повністю ([`UPSTREAM:START-BODY-1`](docs/architecture/upstream-workarounds.md)).
+
 ## [0.13.0] — 2026-10-10
 
 Вітринний стенд `pnpm db:showcase` (план
