@@ -24,10 +24,10 @@
 
 ---
 
-## 📍 Поточний стан (оновлено 2026-10-11)
+## 📍 Поточний стан (оновлено 2026-10-12)
 
 🔴 **2026-10-11 — К3-Е7 (повний знос Supabase) виконано** на гілці `claude/k3-e6d-content`
-(той самий PR, що й Е6д; до релізу — реліз 0.14.0 ще не виконано, лише за словом власника).
+(той самий PR, що й Е6д; реліз-коміт 0.14.0 — 2026-10-12, публікація на npm — мержем PR у `main`).
 **Легасі на `supabase-js` = 0.** Знесено шар `simplycms/supabase` (6 експортів `simplycms/supabase*`
 і дзеркало в `publishConfig`), `LegacySupabaseBoundary`, peer'и й залежності `@supabase/*`,
 реєстр `tests/admin-server-first`, кореневий `supabase/` із сідом пілота, `pnpm db:migrate`,
@@ -39,14 +39,14 @@
 [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md), спека —
 [`2026-10-11-v2-k3-e7-supabase-removal-design.md`](../superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md)
 (з розділом «Амендмент (план, 2026-10-11)»). Наступний — **Е8** (живий прогін магазину з
-опублікованих tarball-ів npm; після релізу).
+опублікованих tarball-ів npm; після публікації 0.14.0).
 
 🔴 **К3-Е7, Task 11 (2026-10-11) — дефект START-IP-1: опубліковані 0.7–0.13 не стартують у
 свіжому магазині.** `pnpm pilot` (Gate B) на HEAD показав `TypeError: Class extends value
 #<Object>` у `BoundPool extends Pool`: import-protection плагін `@tanstack/start-plugin-core`
 ≥1.171 (приїхав з XSS-бампом 24e2836a, 0.7.0) перерезолвлює `require()` без `kind`, а `pg`
 вклеюється в серверний бандл, бо не є прямою залежністю магазину
-([`UPSTREAM:START-IP-1`](../architecture/upstream-workarounds.md)). Виправлення (до релізу):
+([`UPSTREAM:START-IP-1`](../architecture/upstream-workarounds.md)). Виправлення (реліз 0.14.0):
 🔴 **BREAKING — `pg` став peer-залежністю ядра (точний пін `8.23.1`) і ПРЯМОЮ залежністю магазину**
 (шаблон, `tests/pilot/store-template`; існуючий магазин: `pnpm add pg@8.23.1`); `doctor` №13 —
 декларація `pg` і версія в межах peer (`update` версію `pg` не переписує, лише підказує); пілот
@@ -54,10 +54,10 @@
 `scripts/pilot-pack/server-bundle-allowlist.mjs`) і крок Gate B «sanitize-html на сервері» (проба —
 оверлей `scripts/pilot-pack/sanitize-probe.sql`, демо-сід чистий); реліз ганяє повний `pnpm pilot`
 (`scripts/release/pilot-full.mjs` у `scripts/release/gates.mjs`). Рішення про уже опубліковані
-0.7–0.13 у npm — за власником (тут не чіпалися). Реліз 0.14.0 НЕ виконано.
+0.7–0.13 у npm — за власником (тут не чіпалися).
 
 🔴 **2026-10-10 — К3-Е6д (контент: банери й відгуки) завершено** на гілці
-`claude/k3-e6d-content` (до релізу). `/admin/banners*` і `/admin/reviews*` — на
+`claude/k3-e6d-content` (реліз 0.14.0). `/admin/banners*` і `/admin/reviews*` — на
 `simplycms/admin-server`: банери — ресурс фабрики з опцією `media` (Е6д-1: знімок, guard
 злитого рядка, перевірка нових референсів, стирання заміненого), спільні предикати кнопки й
 тривалостей у `simplycms/domain` (Е6д-3, Е6д-13); відгуки — список з keyset і масовою
@@ -880,7 +880,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
            [`2026-10-10-v2-k3-e6d-content.md`](../superpowers/plans/2026-10-10-v2-k3-e6d-content.md).
            🔴 Залишок — **2** файли `src/admin/**` на `supabase-js`
            (`LegacySupabaseBoundary` з тестом, виміряно 2026-10-10); знесено в Е7 (2026-10-11).
-           - [x] ✅ **Е7 — повний знос Supabase** (2026-10-11, гілка `claude/k3-e6d-content`, до релізу).
+           - [x] ✅ **Е7 — повний знос Supabase** (2026-10-11, гілка `claude/k3-e6d-content`, реліз 0.14.0).
              План [`2026-10-11-v2-k3-e7-supabase-removal.md`](../superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md); рішення Р1–Р9 і розбіжності зі спекою — у спеці Е7, розділ «Амендмент».
              Легасі = 0. Наступний — **Е8** (живий прогін з tarball-ів після релізу).
    - [ ] К4 Storage — **залишок після К3-Е2**: драйвер `s3`,

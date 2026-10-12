@@ -18,7 +18,7 @@
 
 ---
 
-## [Unreleased]
+## [0.14.0] — 2026-10-12
 
 К3-Е6д: контент — банери й відгуки на серверному шарі (спека
 [`2026-10-10-content-banners-reviews-design.md`](docs/superpowers/specs/2026-10-10-content-banners-reviews-design.md);
