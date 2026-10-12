@@ -41,6 +41,8 @@ export function createAdminServerMock(
     uploadMedia: vi.fn(),
     listMediaErasures: list(),
     retryMediaErasures: vi.fn(),
+    listMailOutbox: list(),
+    retryMailOutbox: vi.fn(),
     sweepUnreferencedMedia: vi.fn(),
     listProducts: list(),
     insertProducts: vi.fn(),

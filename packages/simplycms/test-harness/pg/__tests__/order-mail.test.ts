@@ -11,9 +11,13 @@ import {
   it,
   vi,
 } from 'vitest';
-import { closeDbPool } from 'simplycms/db';
+import { closeDbPool, withActor } from 'simplycms/db';
 import type { PlaceOrderInput } from 'simplycms/contracts';
-import type { MailMessage, MailTransport } from 'simplycms/mail';
+import {
+  listMailOutbox,
+  type MailMessage,
+  type MailTransport,
+} from 'simplycms/mail';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -238,6 +242,24 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
       expect(rows.every((r) => r.attempts === 1)).toBe(true);
     });
     expect(sent).toEqual([]);
+  });
+
+  it('🔴 хвости для картки адмінки: вид і вік є, тіла листа (message) немає', async () => {
+    failWith = new Error('smtp down');
+    expect((await place()).ok).toBe(true);
+    await vi.waitFor(async () => expect(await outbox()).toHaveLength(2));
+    const rows = await withActor({ role: 'app_admin' }, (db) =>
+      listMailOutbox(db),
+    );
+    expect(rows.map((r) => r.kind).sort()).toEqual([
+      'order_customer',
+      'order_owner',
+    ]);
+    for (const row of rows) {
+      expect(Object.keys(row)).not.toContain('message');
+      expect(JSON.stringify(row)).not.toContain('admin/orders');
+      expect(row.requestedAt).toBeInstanceOf(Date);
+    }
   });
 
   it('🔴 ROLLBACK замовлення (нестача залишку) → листів і рядків немає', async () => {

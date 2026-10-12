@@ -27,6 +27,7 @@ export {
 export type { ParsedUpload } from './media/operations';
 export { listMediaErasuresOp, retryMediaErasuresOp } from './media/erasures';
 export { sweepUnreferencedMediaOp } from './media/sweep';
+export { listMailOutboxOp, retryMailOutboxOp } from './mail-outbox/outbox';
 export type { SubsetInput, SubsetPayload } from './subset';
 export { productsOps } from './products/resource';
 export { productModificationsOps } from './product-modifications/resource';

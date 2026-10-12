@@ -2,6 +2,7 @@ import { Loader2, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
 import { reportTxError } from '../../lib/report-tx-error';
+import { MailOutboxCard } from './MailOutboxCard';
 import { StockManagementCard } from './StockManagementCard';
 import { StorageMaintenanceCard } from './StorageMaintenanceCard';
 import { StoreProfileForm } from './StoreProfileForm';
@@ -52,6 +53,7 @@ export default function SettingsPage() {
         }
       />
       <StorageMaintenanceCard />
+      <MailOutboxCard />
     </div>
   );
 }

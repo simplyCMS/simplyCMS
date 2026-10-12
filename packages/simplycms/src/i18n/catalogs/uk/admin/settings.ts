@@ -58,4 +58,21 @@ export const messages = {
   'admin.settings.storage.sweepText':
     'Буде стерто файли, які старші за добу й ніде не використовуються. Скасувати це не можна',
   'admin.settings.storage.swept': 'Прибрано файлів: {count}',
+  // Пошта: хвости outbox (Е8-Р10).
+  'admin.settings.mail.title': 'Пошта',
+  'admin.settings.mail.hint':
+    'Листи, які не вдалося надіслати. Тіло листа тут не показується — воно може містити посилання для входу',
+  'admin.settings.mail.empty': 'Усі листи надіслано',
+  'admin.settings.mail.count': 'Листів у черзі: {count}',
+  'admin.settings.mail.attempts': 'Спроб: {count}, у черзі {age}',
+  'admin.settings.mail.retry': 'Повторити надсилання',
+  'admin.settings.mail.retried': 'Надіслано: {sent}, не вдалося: {failed}',
+  'admin.settings.mail.loadError': 'Не вдалося завантажити чергу листів',
+  'admin.settings.mail.ageMinutes': '{count} хв',
+  'admin.settings.mail.ageHours': '{count} год',
+  'admin.settings.mail.ageDays': '{count} дн.',
+  'admin.settings.mail.kind.password_reset': 'Скидання пароля',
+  'admin.settings.mail.kind.owner_invite': 'Запрошення власника',
+  'admin.settings.mail.kind.order_customer': 'Лист покупцю про замовлення',
+  'admin.settings.mail.kind.order_owner': 'Лист власнику про замовлення',
 } as const;

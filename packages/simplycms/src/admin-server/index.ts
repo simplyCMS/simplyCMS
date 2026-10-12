@@ -8,6 +8,8 @@ import {
   uploadMediaOp,
   listMediaErasuresOp,
   retryMediaErasuresOp,
+  listMailOutboxOp,
+  retryMailOutboxOp,
   sweepUnreferencedMediaOp,
   orderStatusesOps,
   setDefaultInput,
@@ -184,6 +186,15 @@ export const listMediaErasures = createServerFn({ method: 'GET' }).handler(
 
 export const retryMediaErasures = createServerFn({ method: 'POST' }).handler(
   retryMediaErasuresOp,
+);
+
+// Е8, Task 12: хвости пошти (outbox `mail_outbox`). Вводу немає.
+export const listMailOutbox = createServerFn({ method: 'GET' }).handler(
+  listMailOutboxOp,
+);
+
+export const retryMailOutbox = createServerFn({ method: 'POST' }).handler(
+  retryMailOutboxOp,
 );
 
 // Е6д-22: sweep неприв’язаних файлів. Вводу немає — валідувати нічого.
