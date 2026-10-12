@@ -292,6 +292,16 @@ describe('cli db:diff: відсутня тека міграцій магазин
     expect(existsSync(storeMigrationsDir(store))).toBe(false);
   });
 
+  it('db/migrations — файл: відмова (exit 1), файл не чіпано, без ENOTDIR', async () => {
+    const store = await scaffoldStore('file-migrations');
+    makeSchemaDir(store);
+    rmSync(storeMigrationsDir(store), { recursive: true });
+    writeFileSync(storeMigrationsDir(store), 'не тека\n');
+
+    expect(await runIn(store, ['--write'])).toBe(1);
+    expect(readFileSync(storeMigrationsDir(store), 'utf8')).toBe('не тека\n');
+  });
+
   it('зі старою supabase/migrations: відмова теж, теку db/migrations не створено', async () => {
     const store = await scaffoldStore('legacy-migrations');
     makeSchemaDir(store);

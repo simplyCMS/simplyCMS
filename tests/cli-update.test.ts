@@ -252,6 +252,15 @@ describe('cli update', () => {
       expect(out).toContain(MISSING);
     });
 
+    it('db/migrations — файл: зрозуміла відмова, exitCode 1, без ENOTDIR', async () => {
+      const store = await scaffoldStore('upd-mig-file');
+      rmSync(join(store, 'db', 'migrations'), { recursive: true });
+      writeFileSync(join(store, 'db', 'migrations'), 'не тека\n');
+      const { out, code } = await runIn(store, ['--no-install']);
+      expect(code).toBe(1);
+      expect(out).toContain('не тека');
+    });
+
     it('з db/migrations і без дрейфу: exitCode не 1', async () => {
       const store = await scaffoldStore('upd-mig-ok');
       const { out, code } = await runIn(store, ['--no-install']);

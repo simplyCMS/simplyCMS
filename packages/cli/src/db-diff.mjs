@@ -12,6 +12,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import { configPluginEntries, stripPrefixes } from './config-edit.mjs';
@@ -27,12 +28,19 @@ export const storeMigrationsDir = (storeRoot) =>
  * Гучна відсутність теки міграцій магазину: без неї компаратор бачить «усе
  * відсутнє» чи мовчить, і doctor/update брехали б «усе гаразд». `null` —
  * тека є; інакше текст помилки (зі старою `supabase/migrations` — з підказкою
- * `git mv`: зворотної сумісності немає, лише спосіб переїхати).
+ * `git mv`: зворотної сумісності немає, лише спосіб переїхати). `db/migrations` —
+ * файл, а не тека, — теж гучна помилка, спільна для doctor, update і db:diff.
  * @param {string} storeRoot
  * @returns {string | null}
  */
 export function missingStoreMigrationsDir(storeRoot) {
-  if (existsSync(storeMigrationsDir(storeRoot))) return null;
+  const dir = storeMigrationsDir(storeRoot);
+  if (existsSync(dir)) {
+    // Файл замість теки: без цього перша ж `readdirSync` кидала б сирий ENOTDIR.
+    return statSync(dir).isDirectory()
+      ? null
+      : 'db/migrations існує, але це не тека, а файл — видали його й створи теку міграцій.';
+  }
   const base = 'Тека міграцій магазину db/migrations відсутня.';
   return existsSync(join(storeRoot, 'supabase', 'migrations'))
     ? `${base} Знайдено стару supabase/migrations — перенеси: git mv supabase/migrations db/migrations`

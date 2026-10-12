@@ -203,6 +203,21 @@ describe('cli doctor (оффлайн)', () => {
     expect(res.details).toContain('git mv supabase/migrations db/migrations');
   });
 
+  it('checkMigrations: db/migrations — файл, а не тека → зрозумілий error, без ENOTDIR', async () => {
+    const store = await scaffoldStore('doc-mig-file');
+    rmSync(join(store, 'db', 'migrations'), { recursive: true });
+    writeFileSync(join(store, 'db', 'migrations'), 'не тека\n');
+    const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+    writeFileSync(join(schemaDir, '0000_prelude.sql'), 'select 1;\n');
+    const res = checkMigrations({
+      storeRoot: store,
+      schemaMigrationsDir: schemaDir,
+    });
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('db/migrations');
+    expect(res.details).toContain('не тека');
+  });
+
   it('checkThemes: нерезолвний запис — warn; warn не валить прогін без --strict', async () => {
     const store = await scaffoldStore('doc-theme');
     const configPath = join(store, 'simplycms.config.ts');
