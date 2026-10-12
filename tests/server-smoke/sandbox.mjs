@@ -43,10 +43,11 @@ export default {
         SMOKE_ONLY_ENV: process.env.SMOKE_ONLY_ENV ?? null,
       });
     }
+    // NODE_ENV, яким бандл побачив процес (Р16).
+    if (pathname === '/__node_env')
+      return Response.json(process.env.NODE_ENV ?? null);
     // Імена ключів env (значень немає навмисно): доводить, що server.mjs не
     // повернув STRIPPED_ENV з файлу .env.local.
-    // NODE_ENV, яким бандл побачив процес (Р16).
-    if (pathname === '/__node_env') return Response.json(process.env.NODE_ENV ?? null);
     if (pathname === '/__keys') return Response.json(Object.keys(process.env));
     return new Response('<!doctype html><html><body>смок</body></html>', {
       headers: { 'content-type': 'text/html; charset=utf-8' },
