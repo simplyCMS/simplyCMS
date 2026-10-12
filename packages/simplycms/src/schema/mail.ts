@@ -23,7 +23,11 @@ export const mailOutbox = pgTable(
   'mail_outbox',
   {
     id: uuid().primaryKey().notNull(),
+    // Без CHECK свідомо: набір видів листів розширюваний, контракт — TS-тип
+    // `MailKind` (`simplycms/mail`); новий вид не повинен вимагати міграції.
     kind: text().notNull(),
+    // jsonb без `.$type<>()`: форма `MailMessage` живе в `simplycms/mail`, а
+    // схема (T1) не імпортує вгору; тому читач кастує `as MailMessage`.
     message: jsonb().notNull(),
     requestedAt: timestamp('requested_at', { withTimezone: true, mode: 'date' })
       .defaultNow()

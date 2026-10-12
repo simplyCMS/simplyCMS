@@ -12,6 +12,7 @@ import {
 } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import {
+  MAIL_RETRY_BATCH,
   deliverMail,
   enqueueMail,
   listMailOutbox,
@@ -108,6 +109,18 @@ describe('outbox пошти mail_outbox (Е8-Р10)', () => {
     expect(row!.last_error).not.toContain('b@x.test');
   });
 
+  it('🔴 last_error не містить адреси отримувача з тексту помилки драйвера', async () => {
+    const ids = await enqueue('who.am-i+tag@x.test');
+    failWith = new Error(
+      '550 rejected RCPT who.am-i+tag@x.test (no such user)',
+    );
+    await deliverMail(ids, fake);
+    const [row] = await rows();
+    expect(row!.last_error).not.toContain('who.am-i');
+    expect(row!.last_error).not.toContain('x.test');
+    expect(row!.last_error).toContain('<email>');
+  });
+
   it('🔴 last_error маскує userinfo URL і обрізається до 500 символів', async () => {
     const ids = await enqueue('c@x.test');
     failWith = new Error(
@@ -191,6 +204,17 @@ describe('outbox пошти mail_outbox (Е8-Р10)', () => {
     ]);
     expect(old).toHaveLength(2);
     expect(await rows()).toEqual([]);
+  });
+
+  it("🔴 добір обмежений MAIL_RETRY_BATCH: шість старих хвостів → п'ять надіслано", async () => {
+    for (let i = 1; i <= 6; i++) await enqueue(`q${i}@x.test`);
+    await queryRows(
+      dbUrl,
+      `update public.mail_outbox set requested_at = now() - interval '2 minutes'`,
+    );
+    await deliverMail([], fake);
+    expect(sent).toHaveLength(MAIL_RETRY_BATCH);
+    expect(await rows()).toHaveLength(1);
   });
 
   it('свіжий хвіст опортуністично НЕ чіпається, retryMail його бере', async () => {
