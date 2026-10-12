@@ -54,6 +54,7 @@
     "./runtime/body-limit": "./src/runtime/body-limit.ts",
     "./runtime/build-id": "./src/runtime/build-id.ts",
     "./runtime/stale-chunk": "./src/runtime/stale-chunk.ts",
+    "./runtime/stale-chunk-react": "./src/runtime/stale-chunk-react.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
@@ -304,6 +305,10 @@
       "./runtime/stale-chunk": {
         "types": "./dist/runtime/stale-chunk.d.ts",
         "import": "./dist/runtime/stale-chunk.js"
+      },
+      "./runtime/stale-chunk-react": {
+        "types": "./dist/runtime/stale-chunk-react.d.ts",
+        "import": "./dist/runtime/stale-chunk-react.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",

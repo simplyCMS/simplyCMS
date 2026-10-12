@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ComponentType, ReactNode } from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { I18nProvider } from 'simplycms/i18n';
 
 /**
@@ -36,6 +36,14 @@ vi.mock('simplycms/storefront-routes/server/auth', () => ({
   isAdmin: vi.fn(),
 }));
 
+// Предикат справжній, перезавантаження — шпигун: jsdom не дає підмінити
+// `location.reload`, а доводимо саме проводку межі помилок.
+vi.mock('simplycms/runtime/stale-chunk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('simplycms/runtime/stale-chunk')>()),
+  reloadOnceForStaleChunk: vi.fn(() => true),
+}));
+
+import { reloadOnceForStaleChunk } from 'simplycms/runtime/stale-chunk';
 import { Route } from '../admin';
 
 /** Симулює серіалізовану помилку з `beforeLoad`: лише `name`/`message` доїжджають до клієнта (К3-13). */
@@ -64,6 +72,37 @@ function renderAdminError(error: Error) {
 }
 
 describe('AdminError (errorComponent роуту /admin)', () => {
+  beforeEach(() => vi.mocked(reloadOnceForStaleChunk).mockClear());
+  afterEach(cleanup);
+
+  it('застарілий чанк → один reload і нейтральний стан, не екран помилки', () => {
+    const error = new TypeError(
+      'Failed to fetch dynamically imported module: /assets/page-OLD.js',
+    );
+    renderAdminError(error);
+
+    expect(reloadOnceForStaleChunk).toHaveBeenCalledTimes(1);
+    expect(reloadOnceForStaleChunk).toHaveBeenCalledWith(error);
+    expect(screen.getByText('Оновлюємо сторінку…')).toBeTruthy();
+    expect(screen.queryByText(error.message)).toBeNull();
+  });
+
+  it('застарілий чанк, але reload відмовив (уже пробували) → звичайний екран помилки', () => {
+    vi.mocked(reloadOnceForStaleChunk).mockReturnValueOnce(false);
+    const error = new TypeError('Importing a module script failed.');
+    renderAdminError(error);
+
+    expect(screen.getByText(error.message)).toBeTruthy();
+    expect(screen.queryByText('Оновлюємо сторінку…')).toBeNull();
+  });
+
+  it('не-чанк помилка → звичайний екран, reload не викликано', () => {
+    renderAdminError(toClientError('Error', 'x'));
+
+    expect(screen.getByText('x')).toBeTruthy();
+    expect(reloadOnceForStaleChunk).not.toHaveBeenCalled();
+  });
+
   it('InsecureContextError → перекладений рядок з каталогу', () => {
     renderAdminError(
       toClientError(

@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { BUILD_ID } from '../build-id';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Mod = typeof import('../stale-chunk');
 
@@ -33,7 +31,7 @@ const staleError = new TypeError(
   'Failed to fetch dynamically imported module: https://shop.test/assets/app-OLD.js',
 );
 
-describe('застарілий чанк', () => {
+describe('reloadOnceForStaleChunk і предикат', () => {
   let m: Mod;
   beforeEach(async () => {
     m = await newDocument();
@@ -125,46 +123,31 @@ describe('застарілий чанк', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
-  describe('installStaleChunkGuard', () => {
-    function setup() {
-      const store = memoryStorage();
-      const reload = vi.fn();
-      vi.stubGlobal('window', {
-        sessionStorage: store,
-        location: { reload },
-      });
-      const listeners = new Map<string, (e: Event) => void>();
-      m.installStaleChunkGuard({
-        addEventListener: (t: string, l: (e: Event) => void) =>
-          void listeners.set(t, l),
-      } as unknown as Window);
-      const fire = (payload: unknown) => {
-        const preventDefault = vi.fn();
-        listeners.get('vite:preloadError')!({
-          payload,
-          preventDefault,
-        } as unknown as Event);
-        return preventDefault;
-      };
-      return { reload, fire, store };
-    }
+  it('не-чанк помилка → false без reload і без запису в сховище', () => {
+    const storage = memoryStorage();
+    const reload = vi.fn();
+    expect(
+      m.reloadOnceForStaleChunk(
+        new Error('UNAUTHORIZED'),
+        deps(storage, reload),
+      ),
+    ).toBe(false);
+    expect(reload).not.toHaveBeenCalled();
+    expect(storage.data.size).toBe(0);
+  });
 
-    afterEach(() => vi.unstubAllGlobals());
-
-    it('чанкова помилка: reload і preventDefault', () => {
-      const { reload, fire } = setup();
-      expect(fire(staleError)).toHaveBeenCalledTimes(1);
-      expect(reload).toHaveBeenCalledTimes(1);
-    });
-
-    it('сторож уже стоїть (reload був) — подію не глушимо, reload не повторюється', () => {
-      const { reload, fire, store } = setup();
-      store.setItem(
-        `${m.CHUNK_RELOAD_KEY_PREFIX}${BUILD_ID}:${staleError.message}`,
-        '1',
-      );
-      expect(fire(staleError)).not.toHaveBeenCalled();
-      expect(reload).not.toHaveBeenCalled();
-    });
+  it('геттер sessionStorage кидає → false без reload', () => {
+    const reload = vi.fn();
+    expect(
+      m.reloadOnceForStaleChunk(staleError, {
+        session: () => {
+          throw new Error('SecurityError');
+        },
+        reload,
+        build: 'b1',
+        online: () => true,
+      }),
+    ).toBe(false);
+    expect(reload).not.toHaveBeenCalled();
   });
 });

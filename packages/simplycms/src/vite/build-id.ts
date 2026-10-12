@@ -22,6 +22,11 @@ export interface BuildIdContext {
   cwd: string;
 }
 
+// 🔴 Мемо одне на процес і НЕ залежить від `command`/`env`: `serve`, а потім
+// `build` в одному процесі віддасть `'dev'` для збірки (Vite так не робить —
+// він викликає плагін наново). Прийнятно, бо один процес Vite = одна команда;
+// хто викликає `resolveBuildId` з різними командами в одному процесі, мусить
+// скинути мемо сам (у тестах — `vi.resetModules`).
 let memo: string | undefined;
 
 export function resolveBuildId(

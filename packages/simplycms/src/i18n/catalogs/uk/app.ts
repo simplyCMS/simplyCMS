@@ -11,5 +11,6 @@ export const messages = {
   'app.notFound.message': 'Сторінку не знайдено',
   'app.error.title': 'Щось пішло не так',
   'app.error.fallback': 'Сталася непередбачувана помилка.',
+  'app.error.reloading': 'Оновлюємо сторінку…',
   'app.backHome': 'На головну',
 } as const;

@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
 import { useT } from 'simplycms/i18n';
+import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
 
 /**
@@ -100,6 +101,17 @@ function AdminPending() {
  */
 function AdminError({ error }: ErrorComponentProps) {
   const t = useT();
+  // Застарілий чанк після деплою: лікує перезавантаження, а не екран помилки.
+  const recovering = useStaleChunkRecovery(error);
+  if (recovering) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          {t('app.error.reloading')}
+        </p>
+      </div>
+    );
+  }
   // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що. Поля
   // читаємо структурно, без `instanceof` — той самий контракт К3-13.
   const fields: { name?: unknown; message?: unknown } =

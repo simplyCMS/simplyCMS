@@ -8,6 +8,7 @@ import {
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { useEffect } from 'react';
+import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'simplycms/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -186,6 +187,17 @@ function NotFound() {
 
 /** Глобальний error boundary */
 function ErrorBoundary({ error }: ErrorComponentProps) {
+  // Застарілий чанк після деплою: лікує перезавантаження, а не екран помилки.
+  const recovering = useStaleChunkRecovery(error);
+  if (recovering) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          {t('app.error.reloading')}
+        </p>
+      </div>
+    );
+  }
   // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що, не лише
   // `Error`. Повідомлення беремо лише рядком; інакше — fallback-ключ.
   const message =
