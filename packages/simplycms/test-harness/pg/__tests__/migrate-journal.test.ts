@@ -114,11 +114,20 @@ describe('журнал simplycms_migrations', () => {
       await holder.query(
         'lock table public.simplycms_migrations in access exclusive mode',
       );
-      const started = Date.now();
-      await expect(
-        readJournal(withUser(db.url, 'app_runtime'), { timeoutMs: 400 }),
-      ).rejects.toMatchObject({ code: '57014' });
-      expect(Date.now() - started).toBeLessThan(5_000);
+      // Власна межа 5 с, а не таймаут vitest: без `statement_timeout` читач
+      // висить на локу, і негативний контроль має падати швидко, а не за 120 с.
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const outcome = await Promise.race([
+        readJournal(withUser(db.url, 'app_runtime'), { timeoutMs: 400 }).then(
+          () => 'resolved',
+          (error: unknown) => error,
+        ),
+        new Promise((resolve) => {
+          timer = setTimeout(() => resolve('завис довше 5 с'), 5_000);
+        }),
+      ]);
+      clearTimeout(timer);
+      expect(outcome).toMatchObject({ code: '57014' });
     } finally {
       await holder.query('rollback').catch(() => {});
       await holder.end();
