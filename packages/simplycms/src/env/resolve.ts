@@ -148,6 +148,16 @@ export function describeDriverEnv(d: DriverEnv): string {
 }
 
 /**
+ * Єдиний предикат прод-рантайму (Р16). `server.mjs` безумовно ставить
+ * `NODE_ENV=production` перед імпортом бандла, тож у зібраному магазині він
+ * істинний без участі власника; усі прод-залежні рішення (попередження про
+ * пошту, log-драйвер без тіл листів) беруть сигнал лише звідси.
+ */
+export function isProductionRuntime(env: Env): boolean {
+  return env.NODE_ENV === 'production';
+}
+
+/**
  * Перевірка env на старті сервера (Е8-Р7′): хост магазину кличе лише її, без
  * умов і текстів. Часткова група кидає `DriverEnvError` (`code:
  * 'SIMPLYCMS_DRIVER_ENV'`); попередження друкуються тільки в проді — у dev
@@ -158,7 +168,7 @@ export function checkDriverEnvOnStart(
   log: (line: string) => void,
 ): void {
   const driverEnv = resolveDriverEnv(env);
-  if (env.NODE_ENV !== 'production') return;
+  if (!isProductionRuntime(env)) return;
   for (const warning of driverEnv.warnings) log(warning);
   if (driverEnv.mail.driver === 'log') {
     log(

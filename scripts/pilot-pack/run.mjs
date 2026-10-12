@@ -87,7 +87,6 @@ async function gateServer({ storeDir, port, env }) {
     {
       ...env,
       MIGRATION_DATABASE_URL: env.DATABASE_URL,
-      NODE_ENV: 'production',
     },
     { entry: 'scripts/start.mjs' },
   );

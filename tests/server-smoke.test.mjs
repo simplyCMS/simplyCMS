@@ -111,3 +111,30 @@ describe('server.mjs: помилка імпорту серверного бан�
     expect(stdout).not.toContain('слухає');
   });
 });
+
+describe('server.mjs: прод-режим не залежить від NODE_ENV власника (Р16)', () => {
+  const IGNORED = 'проігноровано: server.mjs завжди production';
+
+  it('NODE_ENV не задано → бандл бачить production, рядка про ігнорування немає', async () => {
+    const server = await startSmokeServer();
+    try {
+      const seen = await (await fetch(`${server.baseUrl}/__node_env`)).json();
+      expect(seen).toBe('production');
+      expect(server.log()).not.toContain(IGNORED);
+    } finally {
+      server.stop();
+    }
+  });
+
+  it('NODE_ENV=development → production у бандлі й рівно один рядок-попередження', async () => {
+    const server = await startSmokeServer({ NODE_ENV: 'development' });
+    try {
+      const seen = await (await fetch(`${server.baseUrl}/__node_env`)).json();
+      expect(seen).toBe('production');
+      expect(server.log().split(IGNORED).length - 1).toBe(1);
+      expect(server.log()).toContain('NODE_ENV=development');
+    } finally {
+      server.stop();
+    }
+  });
+});

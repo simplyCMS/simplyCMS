@@ -41,6 +41,18 @@ for (const file of ['.env.local', '.env']) {
   }
 }
 
+// 🔴 Р16: `server.mjs` — прод-раннер зібраного бандла за визначенням, тож
+// ставить `NODE_ENV=production` безумовно (як `next start`), а не чекає, що
+// власник його задасть: від цього залежать попередження про пошту, прод-збірка
+// react у рантаймі й режим log-драйвера. Змішаного режиму не буває (для dev є
+// `vite`). Лише присвоєння в `process.env` — ядро тут не імпортується (Е8-Р7′).
+if (process.env.NODE_ENV && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    `NODE_ENV=${process.env.NODE_ENV} проігноровано: server.mjs завжди production`,
+  );
+}
+process.env.NODE_ENV = 'production';
+
 // Динамічний імпорт ПІСЛЯ наповнення env: статичний хоістився б вище циклу,
 // і модуль-рівневий код збірки виконався б до того, як env готовий.
 //

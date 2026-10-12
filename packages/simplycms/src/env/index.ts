@@ -10,5 +10,6 @@ export {
   resolveDriverEnv,
   describeDriverEnv,
   checkDriverEnvOnStart,
+  isProductionRuntime,
 } from './resolve';
 export type { MediaEnv, MailEnv, DriverEnv } from './resolve';

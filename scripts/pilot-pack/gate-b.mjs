@@ -281,7 +281,6 @@ export function checkPartialEnv(storeDir, env) {
       S3_BUCKET: secret,
       PORT: '0',
       HOST: '127.0.0.1',
-      NODE_ENV: 'production',
     },
     encoding: 'utf8',
     timeout: 30_000,

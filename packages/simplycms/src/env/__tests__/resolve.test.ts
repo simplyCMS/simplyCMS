@@ -3,6 +3,7 @@ import {
   DriverEnvError,
   S3_KEYS,
   checkDriverEnvOnStart,
+  isProductionRuntime,
   describeDriverEnv,
   resolveDriverEnv,
 } from '../index';
@@ -143,6 +144,16 @@ describe('describeDriverEnv', () => {
     expect(text).toContain('smtp');
     expect(text).not.toContain('p4ss');
     expect(text).not.toContain('u:');
+  });
+});
+
+describe('isProductionRuntime', () => {
+  it('істинний лише для NODE_ENV=production', () => {
+    expect(isProductionRuntime({ NODE_ENV: 'production' })).toBe(true);
+    expect(isProductionRuntime({ NODE_ENV: 'development' })).toBe(false);
+    expect(isProductionRuntime({ NODE_ENV: 'test' })).toBe(false);
+    expect(isProductionRuntime({ NODE_ENV: '' })).toBe(false);
+    expect(isProductionRuntime({})).toBe(false);
   });
 });
 
