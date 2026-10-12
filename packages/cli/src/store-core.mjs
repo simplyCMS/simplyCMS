@@ -30,6 +30,8 @@ function importTarget(entry) {
  * Резолв за умовою `import`. 🔴 `require.resolve` її не знає: субшляхи
  * серверного ядра (`simplycms/migrate`) в опублікованому пакеті мають лише
  * `types` та `import`, тож CommonJS-резолв падає `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+ * Межі фолбеку: лише ТОЧНИЙ ключ `exports[subpath]` (без патернів `*`), без
+ * рядкового `exports` і без умови `node`.
  */
 function resolveImportCondition(storeRoot, spec) {
   const { name, subpath } = splitSpec(spec);
@@ -56,7 +58,7 @@ function resolveImportCondition(storeRoot, spec) {
  * @param {string} storeRoot
  * @param {string} spec
  */
-export function importFromStore(storeRoot, spec) {
+export async function importFromStore(storeRoot, spec) {
   const require = createRequire(join(storeRoot, 'package.json'));
   let file;
   try {

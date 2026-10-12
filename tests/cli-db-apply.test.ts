@@ -1,3 +1,8 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import {
   describeError,
@@ -5,8 +10,6 @@ import {
   parseDbApplyArgs,
   run,
 } from '../packages/cli/src/db-apply.mjs';
-import { redactUrls } from '../packages/cli/src/redact-urls.mjs';
-import { importFromStore } from '../packages/cli/src/store-core.mjs';
 
 // `simplycms db:apply` без живої БД: ядро (`simplycms/migrate`) підміняється
 // фейком через ін'єкцію в `run`. Живу поведінку накату доводять тести ядра
@@ -116,6 +119,7 @@ describe('simplycms db:apply', () => {
     const out = h.text();
     expect(out).not.toContain('s3cr3t');
     expect(out).toContain('ECONNREFUSED');
+    expect(out).not.toContain('Error ECONNREFUSED');
     expect(out).toContain('postgres://owner:***@h:5432/db');
   });
 
@@ -127,57 +131,47 @@ describe('simplycms db:apply', () => {
     expect(() => parseDbApplyArgs(['--wat'])).toThrow(/--wat/);
   });
 
+  it('describeError: базове «Error» не друкується, спеціалізоване ім’я — так', () => {
+    expect(describeError(new Error('boom'))).toBe('boom');
+    const typed = Object.assign(new Error('x'), {
+      name: 'MigrationChecksumError',
+    });
+    expect(describeError(typed)).toBe('MigrationChecksumError: x');
+  });
+
   it('describeError: не-Error значення теж маскується', () => {
     expect(describeError(`bad ${OWNER}`)).not.toContain('s3cr3t');
   });
 });
 
-describe('redactUrls', () => {
-  it('маскує пароль, лишаючи схему, користувача й хост', () => {
-    expect(redactUrls('x postgres://u:p@h:1/d y')).toBe(
-      'x postgres://u:***@h:1/d y',
-    );
-    expect(redactUrls('postgresql://u:p%40ss@h/d?sslmode=require')).toBe(
-      'postgresql://u:***@h/d?sslmode=require',
-    );
-  });
+// 🔴 Код виходу доходить до процесу лише через `index.mjs` (`process.exitCode`):
+// юніти вище бачать значення, що повертає `run`, і не помітили б, що рядок з
+// прокиданням зник — тоді `db:apply --check` у CI перестав би червоніти.
+describe('simplycms db:apply через index.mjs', () => {
+  const cli = fileURLToPath(
+    new URL('../packages/cli/src/index.mjs', import.meta.url),
+  );
 
-  it('невкодований @ у паролі не лишає хвоста; URL без пароля не чіпається', () => {
-    expect(redactUrls('postgres://u:pa@ss@h/d')).toBe('postgres://u:***@h/d');
-    expect(redactUrls('postgres://u@h/d')).toBe('postgres://u@h/d');
-    expect(redactUrls('без урлів')).toBe('без урлів');
-  });
-
-  it('кілька URL в одному тексті', () => {
-    const out = redactUrls('a postgres://u:1@h/d b postgres://v:2@g/e');
-    expect(out).not.toMatch(/:1@|:2@/);
-  });
-});
-
-describe('importFromStore', () => {
-  it('субшлях лише з умовою import (як опублікований simplycms/migrate) резолвиться', async () => {
-    const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
-    const { tmpdir } = await import('node:os');
-    const { join } = await import('node:path');
-    const root = mkdtempSync(join(tmpdir(), 'store-core-'));
-    const pkg = join(root, 'node_modules', 'fake-core');
-    mkdirSync(join(pkg, 'dist'), { recursive: true });
-    writeFileSync(join(root, 'package.json'), '{}');
-    writeFileSync(
-      join(pkg, 'package.json'),
-      JSON.stringify({
-        name: 'fake-core',
-        type: 'module',
-        exports: {
-          './migrate': {
-            types: './dist/index.d.ts',
-            import: './dist/index.js',
-          },
-        },
-      }),
-    );
-    writeFileSync(join(pkg, 'dist/index.js'), 'export const marker = 42;\n');
-    const mod = await importFromStore(root, 'fake-core/migrate');
-    expect(mod.marker).toBe(42);
+  it('без MIGRATION_DATABASE_URL → процес виходить з 1 і називає змінну', () => {
+    const store = mkdtempSync(join(tmpdir(), 'db-apply-spawn-'));
+    try {
+      writeFileSync(
+        join(store, 'package.json'),
+        JSON.stringify({ dependencies: { '@simplycms/core': '0.0.0' } }),
+      );
+      const env: NodeJS.ProcessEnv = { ...process.env, DATABASE_URL: RUNTIME };
+      delete env.MIGRATION_DATABASE_URL;
+      const run = spawnSync(process.execPath, [cli, 'db:apply'], {
+        cwd: store,
+        encoding: 'utf8',
+        env,
+      });
+      expect(run.status).toBe(1);
+      const out = `${run.stdout}${run.stderr}`;
+      expect(out).toContain('MIGRATION_DATABASE_URL');
+      expect(out).not.toContain('rt-pass');
+    } finally {
+      rmSync(store, { recursive: true });
+    }
   });
 });

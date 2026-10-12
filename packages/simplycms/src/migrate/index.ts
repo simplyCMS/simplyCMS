@@ -15,7 +15,12 @@ export {
   type ApplyReport,
 } from './apply';
 export { scramSha256Verifier } from './scram';
-export { readJournal, pendingMigrations, type JournalRow } from './journal';
+export {
+  readJournal,
+  pendingMigrations,
+  type JournalRow,
+  type ReadJournalOptions,
+} from './journal';
 export {
   MigrationChecksumError,
   UnjournaledDatabaseError,

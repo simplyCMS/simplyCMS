@@ -1,7 +1,9 @@
 // Журнал накату (К3-Е8, Е8-Р2): база зі схемою, але без журналу, накату не
 // піддається; `readJournal` читає журнал з рантайм-підключення лише через
 // `SET LOCAL ROLE app_admin` — прямого права `app_runtime` не має.
+import { createServer, type Socket } from 'node:net';
 import { join } from 'node:path';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   applyMigrations,
@@ -98,4 +100,51 @@ describe('журнал simplycms_migrations', () => {
       await db.drop();
     }
   }, 120_000);
+
+  // Бюджет `timeoutMs` має діяти на ОБИДВІ фази: запит (statement_timeout сесії)
+  // і з'єднання (connectionTimeoutMillis). Негативний контроль: без параметра
+  // читач чекав би на лок безкінечно.
+  it('readJournal({ timeoutMs }): запит за блокованою таблицею — statement timeout (57014)', async () => {
+    const db = await freshDb(harness.url);
+    const holder = new pg.Client({ connectionString: db.url });
+    try {
+      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      await holder.connect();
+      await holder.query('begin');
+      await holder.query(
+        'lock table public.simplycms_migrations in access exclusive mode',
+      );
+      const started = Date.now();
+      await expect(
+        readJournal(withUser(db.url, 'app_runtime'), { timeoutMs: 400 }),
+      ).rejects.toMatchObject({ code: '57014' });
+      expect(Date.now() - started).toBeLessThan(5_000);
+    } finally {
+      await holder.query('rollback').catch(() => {});
+      await holder.end();
+      await db.drop();
+    }
+  }, 120_000);
+
+  it("readJournal({ timeoutMs }): сервер, що приймає TCP і мовчить, — timeout з'єднання", async () => {
+    const sockets = new Set<Socket>();
+    const silent = createServer((socket) => {
+      sockets.add(socket);
+      socket.on('error', () => {});
+    });
+    await new Promise<void>((resolve) =>
+      silent.listen(0, '127.0.0.1', resolve),
+    );
+    const { port } = silent.address() as { port: number };
+    try {
+      await expect(
+        readJournal(`postgres://app_runtime@127.0.0.1:${port}/db`, {
+          timeoutMs: 300,
+        }),
+      ).rejects.toThrow(/timeout/i);
+    } finally {
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => silent.close(resolve));
+    }
+  }, 30_000);
 });

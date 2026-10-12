@@ -81,7 +81,9 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor
 read-only, ключ власника схеми не мусить лежати на кожній машині. Журнал читає ядро
 (`simplycms/migrate` через `importFromStore`, Е8-Р13) у read-only транзакції під
-`SET ROLE app_admin`. Таймаут з'єднання — 3 с.
+`SET ROLE app_admin`. Бюджет 3 с і на з'єднання, і на запит: ядро приймає його як
+`readJournal(url, { timeoutMs })` (`connectionTimeoutMillis` + `statement_timeout` сесії). Немає
+пакета `pg` у магазині — окремий `skip` з підказкою, а не «Cannot find module».
 
 | id | status | значення |
 |---|---|---|
@@ -325,7 +327,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
-| `tests/cli-db-apply.test.ts` + онлайн-кейси `cli-doctor` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1`, `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
+| `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |

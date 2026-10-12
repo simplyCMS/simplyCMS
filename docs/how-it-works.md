@@ -43,7 +43,7 @@ simplycms add @vendor/simplycms-plugin-novaposhta
 simplycms db:diff --write              ← окремий крок, ЛЮДСЬКЕ РЕВʼЮ обовʼязкове
 ├─ N канонів: міграції ядра + кожного встановленого плагіна
 ├─ SQL-лінт межі довіри: плагін чіпає лише свої таблиці plg_<name>_*
-└─ далі: git diff → pnpm simplycms db:apply (журнал сам накочує лише нові файли; плагінні
+└─ далі: git diff → pnpm simplycms db:apply (з MIGRATION_DATABASE_URL власника схеми; журнал накочує лише нові файли; плагінні
    таблиці типізуються власним generic-ом плагіна, не автогенератом)
 ```
 

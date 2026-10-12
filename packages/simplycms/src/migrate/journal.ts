@@ -49,6 +49,16 @@ export async function selectJournal(
   return rows.map(toRow);
 }
 
+/** Параметри читання журналу з рантайм-підключення. */
+export type ReadJournalOptions = {
+  /**
+   * Бюджет у мілісекундах і на з'єднання (`connectionTimeoutMillis`), і на
+   * запит (`statement_timeout` сесії). Без нього читач чекає скільки завгодно:
+   * для `doctor --online` і `status` недоступна БД не має підвішувати команду.
+   */
+  timeoutMs?: number;
+};
+
 /**
  * Журнал із рантайм-підключення (`DATABASE_URL`, роль `app_runtime`).
  * `app_runtime` прямих прав не має (fail-closed), тож читання — у read-only
@@ -58,8 +68,15 @@ export async function selectJournal(
  */
 export async function readJournal(
   runtimeConnectionString: string,
+  options: ReadJournalOptions = {},
 ): Promise<JournalRow[] | null> {
-  const client = new pg.Client({ connectionString: runtimeConnectionString });
+  const { timeoutMs } = options;
+  const client = new pg.Client({
+    connectionString: runtimeConnectionString,
+    ...(timeoutMs
+      ? { connectionTimeoutMillis: timeoutMs, statement_timeout: timeoutMs }
+      : {}),
+  });
   await client.connect();
   try {
     await client.query('begin read only');

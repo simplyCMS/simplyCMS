@@ -7,7 +7,7 @@ import { storeMigrationsDir } from './db-diff.mjs';
 import { redactUrls } from './redact-urls.mjs';
 import { importFromStore } from './store-core.mjs';
 
-/** Таймаут з'єднання: недоступна БД не має підвішувати діагностику. */
+/** Бюджет на з'єднання й запит: недоступна БД не має підвішувати діагностику. */
 export const CONNECT_TIMEOUT_MS = 3000;
 
 const REACHABLE = 'Доступність БД (DATABASE_URL)';
@@ -17,9 +17,22 @@ const check = (id, title, status, details) => ({ id, title, status, details });
 const reason = (error) =>
   redactUrls(error instanceof Error ? error.message : String(error));
 
+/** Позначка «перевірити не вдалося» (skip), а не «БД зламана» (error). */
+const unverifiable = (message) =>
+  Object.assign(new Error(message), { skip: true });
+
 /** Справжнє з'єднання з таймаутом; `pg` береться з магазину (peer ядра). */
 async function probeConnection(storeRoot, connectionString) {
-  const { default: pg } = await importFromStore(storeRoot, 'pg');
+  let pg;
+  try {
+    ({ default: pg } = await importFromStore(storeRoot, 'pg'));
+  } catch (error) {
+    if (error?.code !== 'MODULE_NOT_FOUND') throw error;
+    throw unverifiable(
+      'пакет pg не встановлено в магазині: встанови залежності (pnpm install) ' +
+        'або додай драйвер — pnpm add pg@<peer ядра> (діапазон скаже перевірка pg)',
+    );
+  }
   const client = new pg.Client({
     connectionString,
     connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
@@ -79,6 +92,11 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
   try {
     await (deps.probe ?? ((u) => probeConnection(storeRoot, u)))(url);
   } catch (error) {
+    if (error?.skip)
+      return [
+        check('db-reachable', REACHABLE, 'skip', error.message),
+        check('migrations-journal', JOURNAL, 'skip', 'немає драйвера pg'),
+      ];
     return [
       check('db-reachable', REACHABLE, 'error', reason(error)),
       check('migrations-journal', JOURNAL, 'skip', 'БД недоступна'),
@@ -89,7 +107,7 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
     const core =
       deps.core ?? (await importFromStore(storeRoot, 'simplycms/migrate'));
     const files = core.listMigrationFiles(storeMigrationsDir(storeRoot));
-    const rows = await core.readJournal(url);
+    const rows = await core.readJournal(url, { timeoutMs: CONNECT_TIMEOUT_MS });
     return [reachable, journalCheck(rows, files, core)];
   } catch (error) {
     return [

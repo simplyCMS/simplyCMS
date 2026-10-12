@@ -33,7 +33,9 @@ export function describeError(error) {
     /** @type {{ name?: string; code?: string; message?: string }} */ (
       error instanceof Error ? error : { message: String(error) }
     );
-  const head = [err.name, err.code].filter(Boolean).join(' ');
+  // Базове `Error` — шум: інформативні лише спеціалізовані імена (MigrationChecksumError…).
+  const name = err.name === 'Error' ? undefined : err.name;
+  const head = [name, err.code].filter(Boolean).join(' ');
   return redactUrls(`${head ? `${head}: ` : ''}${err.message ?? ''}`);
 }
 
