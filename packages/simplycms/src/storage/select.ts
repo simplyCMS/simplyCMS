@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { resolveDriverEnv, type MediaEnv } from 'simplycms/env';
 import type { MediaStorageDriver } from './driver';
-import { mediaRoot } from './env';
+import { DEFAULT_MEDIA_ROOT } from './env';
 import { localFsDriver } from './local-fs';
 import { s3Driver } from './s3';
 
@@ -9,7 +9,7 @@ import { s3Driver } from './s3';
 export function selectMediaDriver(media: MediaEnv): MediaStorageDriver {
   if (media.driver === 's3') return s3Driver(media);
   return localFsDriver(
-    media.root ? resolve(process.cwd(), media.root) : mediaRoot(),
+    resolve(process.cwd(), media.root ?? DEFAULT_MEDIA_ROOT),
   );
 }
 

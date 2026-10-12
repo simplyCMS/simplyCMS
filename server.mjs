@@ -16,7 +16,13 @@ import { dirname, join } from 'node:path';
 import { parseEnv } from 'node:util';
 import sirv from 'sirv';
 
-import { sendWebResponse, toWebRequest } from './server-runtime.mjs';
+import {
+  parseSiteOrigin,
+  rejectOversizedBody,
+  requestPath,
+  sendWebResponse,
+  toWebRequest,
+} from './server-runtime.mjs';
 
 // Контракт серверного env (спека CLI v1 §7): єдине джерело для серверного
 // коду — `process.env`, а `.env`-файли лише НАПОВНЮЮТЬ його перед стартом
@@ -53,6 +59,17 @@ if (process.env.NODE_ENV && process.env.NODE_ENV !== 'production') {
 }
 process.env.NODE_ENV = 'production';
 
+// Р18б: origin запиту — лише з `VITE_SITE_URL` (заголовки Host/X-Forwarded-*
+// клієнт підробляє, а origin з `request.url` бере CSRF-перевірка Start і
+// Better Auth). Без валідного значення старт неможливий — до `listen`.
+let SITE_ORIGIN;
+try {
+  SITE_ORIGIN = parseSiteOrigin(process.env.VITE_SITE_URL);
+} catch (error) {
+  console.error(`[server] ${error.message}`);
+  process.exit(1);
+}
+
 // Динамічний імпорт ПІСЛЯ наповнення env: статичний хоістився б вище циклу,
 // і модуль-рівневий код збірки виконався б до того, як env готовий.
 //
@@ -69,6 +86,11 @@ try {
   else console.error('[server] Не вдалося завантажити сервер:', error);
   process.exit(1);
 }
+
+// 🔴 Префікс server functions — ПІСЛЯ імпорту бандла: Start виставляє
+// `TSS_SERVER_FN_BASE` у `process.env` сам під час імпорту (Р20). Від нього
+// залежить, який запит отримує велику стелю тіла (multipart на serverFn).
+const SERVER_FN_BASE = process.env.TSS_SERVER_FN_BASE || '/_serverFn/';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);
@@ -88,9 +110,23 @@ const serveStatic = sirv(join(ROOT, 'dist', 'client'), {
 });
 
 const server = createServer((req, res) => {
+  // Р18б: request-target не з одного `/` (`//evil/x`, `/\evil`) — 400 до sirv
+  // і хендлера, інакше Start відповів би 308 на чужий хост (S3-04).
+  if (requestPath(req.url) === null) {
+    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end('Bad Request');
+    return;
+  }
+  // Р20: стеля тіла за `Content-Length` — для ВСІХ шляхів, до хендлера.
+  if (rejectOversizedBody(req, res, SERVER_FN_BASE)) return;
   serveStatic(req, res, async () => {
     try {
-      const response = await serverEntry.fetch(toWebRequest(req, res));
+      const response = await serverEntry.fetch(
+        toWebRequest(req, res, {
+          origin: SITE_ORIGIN,
+          serverFnBase: SERVER_FN_BASE,
+        }),
+      );
       sendWebResponse(res, response);
     } catch (error) {
       console.error('[server] Необроблена помилка запиту:', error);

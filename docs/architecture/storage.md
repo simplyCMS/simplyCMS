@@ -4,7 +4,8 @@
 декларацією `contracts/server-only`). Драйверів два, обидва реалізують той самий
 інтерфейс `MediaStorageDriver` (`put`/`delete`/`open`), контракт не змінювався:
 
-- **`local-fs`** — дефолт self-host (диск, корінь із `MEDIA_ROOT`, дефолт `./.data/media`
+- **`local-fs`** — дефолт self-host (диск, корінь із `MEDIA_ROOT` лише через резолвер `simplycms/env`
+  — порожнє значення це «не задано», дефолт `./.data/media`
   відносно робочої теки процесу; у проді — змонтований том, бо дефолт лежить усередині
   теки деплою);
 - **`s3`** (`storage/s3.ts`) — S3-сумісне сховище (Garage, MinIO, AWS) на `aws4fetch`:
@@ -136,7 +137,8 @@
   ратчет `tests/storage-direct-calls.test.ts` це валять. Виїмок немає: список
   `STORAGE_DIRECT_CALL_EXEMPTIONS` порожній (новий виняток — рішення, а не звичка).
 - Не клади URL у колонку сутності — лише референс.
-- Не читай `MEDIA_ROOT` і `S3_*` на модуль-рівні — лише в рантаймі, всередині функції
+- Не читай `MEDIA_ROOT` і `S3_*` сирим `process.env` — лише `resolveDriverEnv` (порожній `KEY=` від
+  Dokploy інакше став би коренем деплою, Р22). Не читай їх і на модуль-рівні — лише в рантаймі, всередині функції
   (контракт серверного env): інстанс драйвера створює `getMediaDriver()` при першому виклику,
   коли `server.mjs` уже наповнив `process.env`.
 - Новий драйвер проходить **контрактний набір** `packages/simplycms/test-harness/storage/contract.ts`
@@ -202,9 +204,8 @@ COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку 
    файл, якщо його рядок `media` без посилання з колонок.
 3. Прямий виклик serverFn повз UI, що перевищує стелю тіла, може побачити обрив
    зʼєднання замість 413 (`UPSTREAM:START-BODY-1`).
-4. Чистий JSON без `Content-Length` (chunked) проходить без стелі, а Start буферизує
-   `request.json()` повністю — залишковий ризик, прийнятий архітектором
-   (`upstream-workarounds.md`, START-BODY-1).
+4. Chunked JSON обмежує лічильник байтів Node-раннера (1 МіБ, Р20); під іншим
+   рантаймом без такого лічильника вікно відкрите (`upstream-workarounds.md`, START-BODY-1).
 5. **Колізія ключа в `s3` — best-effort** (`UPSTREAM:GARAGE-INM-1`). Garage ігнорує
    `If-None-Match: *`, тож `put` спершу робить `HEAD` (`200` → `MediaKeyCollisionError`) і лише
    потім `PUT`. Між ними інша публікація того ж ключа проскочить; ключ — свіжий UUID викликача,

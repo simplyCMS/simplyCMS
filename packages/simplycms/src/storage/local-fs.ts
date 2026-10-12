@@ -10,7 +10,6 @@ import {
   type MediaObject,
   type MediaStorageDriver,
 } from './driver';
-import { mediaRoot } from './env';
 
 /** Код помилки Node (`fs` кидає `Error` із полем `code`). */
 const codeOf = (error: unknown): string | undefined =>
@@ -49,7 +48,7 @@ function mediaTmpName(): string {
  * Тимчасовий файл лежить у ТІЙ САМІЙ шард-теці — `link` не працює через
  * межу файлової системи.
  */
-export function localFsDriver(root: string = mediaRoot()): MediaStorageDriver {
+export function localFsDriver(root: string): MediaStorageDriver {
   const base = resolve(root);
 
   const pathFor = (key: string): string => {

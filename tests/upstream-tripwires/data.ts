@@ -10,6 +10,7 @@ import {
   startBody,
   startFnBase,
   startFormBeforeHandler,
+  startHandlerType,
   startImportProtectionNoKind,
   subsetOptionsNotReexported,
   tsEslintPeer,
@@ -32,6 +33,10 @@ export const TRIPWIRES: Record<string, Tripwire> = {
     {
       read: () => readInstalledFile(SSC, 'dist/esm/createServerRpc.js'),
       premise: startFnBase,
+    },
+    {
+      read: () => readInstalledFile(SSC, 'dist/esm/createStartHandler.js'),
+      premise: startHandlerType,
     },
   ],
   'START-1': [

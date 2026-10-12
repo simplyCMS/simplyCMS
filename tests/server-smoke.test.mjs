@@ -16,8 +16,11 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { connect } from 'node:net';
+
 import {
   runSmokeExpectingExit,
+  SMOKE_SITE_URL,
   startSmokeServer,
 } from './server-smoke/sandbox.mjs';
 
@@ -137,4 +140,62 @@ describe('server.mjs: прод-режим не залежить від NODE_ENV 
       server.stop();
     }
   });
+});
+
+describe('server.mjs: origin запиту лише з VITE_SITE_URL (Р18б)', () => {
+  it('підроблені Host / X-Forwarded-* не змінюють request.url у хендлері', async () => {
+    const server = await startSmokeServer();
+    try {
+      const url = await (
+        await fetch(`${server.baseUrl}/__url?a=1`, {
+          headers: {
+            host: 'evil.example',
+            'x-forwarded-host': 'evil.example',
+            'x-forwarded-proto': 'http',
+          },
+        })
+      ).json();
+      expect(url).toBe(`${SMOKE_SITE_URL}/__url?a=1`);
+    } finally {
+      server.stop();
+    }
+  });
+
+  it('GET //evil//x → 400 без Location (а не 308 на чужий хост, S3-04)', async () => {
+    const server = await startSmokeServer();
+    try {
+      const port = Number(new URL(server.baseUrl).port);
+      const raw = await new Promise((resolve, reject) => {
+        const socket = connect(port, '127.0.0.1');
+        let data = '';
+        socket.on('data', (chunk) => (data += chunk));
+        socket.on('close', () => resolve(data));
+        socket.on('error', reject);
+        socket.write(
+          'GET //evil//x HTTP/1.1\r\nHost: shop.test\r\nConnection: close\r\n\r\n',
+        );
+      });
+      expect(raw.split(' ')[1]).toBe('400');
+      expect(raw.toLowerCase()).not.toContain('location:');
+    } finally {
+      server.stop();
+    }
+  });
+
+  it.each([
+    ['не задано', undefined],
+    ['порожнє', ''],
+    ['відносне', '/relative'],
+    ['протокол ftp', 'ftp://x'],
+  ])(
+    'VITE_SITE_URL %s → exit ≠ 0 до listen, у stderr імʼя ключа',
+    async (_n, value) => {
+      const { code, stdout, stderr } = await runSmokeExpectingExit({
+        VITE_SITE_URL: value,
+      });
+      expect(code).not.toBe(0);
+      expect(stderr).toContain('VITE_SITE_URL');
+      expect(stdout).not.toContain('слухає');
+    },
+  );
 });

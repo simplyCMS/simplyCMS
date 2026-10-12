@@ -7,6 +7,7 @@ const localFsDriver = vi.hoisted(() => vi.fn());
 vi.mock('../s3', () => ({ s3Driver }));
 vi.mock('../local-fs', () => ({ localFsDriver }));
 
+import { resolve } from 'node:path';
 import { selectMediaDriver } from '../select';
 
 const S3_ENV = {
@@ -61,6 +62,30 @@ describe('вибір драйвера сховища за env', () => {
     const get = await fresh();
     expect(get()).toBe(get());
     expect(localFsDriver).toHaveBeenCalledTimes(1);
+  });
+
+  // Р22: Dokploy зберігає порожній `KEY=`; сире читання клало б файли в `cwd`.
+  it.each(['', '   '])(
+    'MEDIA_ROOT=%j → корінь за замовчуванням, а не cwd (Р22)',
+    async (value) => {
+      for (const k of Object.keys(S3_ENV)) vi.stubEnv(k, '');
+      vi.stubEnv('MEDIA_ROOT', value);
+      const get = await fresh();
+      get();
+      expect(localFsDriver).toHaveBeenCalledWith(
+        resolve(process.cwd(), '.data/media'),
+      );
+    },
+  );
+
+  it('MEDIA_ROOT задано → корінь від cwd', async () => {
+    for (const k of Object.keys(S3_ENV)) vi.stubEnv(k, '');
+    vi.stubEnv('MEDIA_ROOT', 'uploads');
+    const get = await fresh();
+    get();
+    expect(localFsDriver).toHaveBeenCalledWith(
+      resolve(process.cwd(), 'uploads'),
+    );
   });
 
   it('selectMediaDriver — чиста відповідність без кешу', () => {

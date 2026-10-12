@@ -103,15 +103,18 @@ describe('csrfMiddleware — поведінка', () => {
     expect(res.headers.get('allow')).toBe('GET, HEAD');
   });
 
-  it('за проксі: origin із x-forwarded-* збігається з Origin публічного домену', async () => {
-    const url = toRequestUrl({
-      url: '/_serverFn/x',
-      headers: {
-        'x-forwarded-proto': 'https',
-        'x-forwarded-host': 'shop.example.com',
-        host: 'internal:3000',
+  it('за проксі: URL запиту будує раннер з VITE_SITE_URL, заголовки клієнта не рахуються (Р18б)', async () => {
+    const url = toRequestUrl(
+      {
+        url: '/_serverFn/x',
+        headers: {
+          'x-forwarded-proto': 'http',
+          'x-forwarded-host': 'evil.example',
+          host: 'internal:3000',
+        },
       },
-    });
+      'https://shop.example.com',
+    );
     const ok = await run(
       csrfMiddleware,
       new Request(url, {
@@ -122,12 +125,12 @@ describe('csrfMiddleware — поведінка', () => {
     );
     expect(ok).toBe('next');
 
-    // Origin внутрішнього хоста за проксі — не збігається з публічним.
+    // Origin, якого хотів би зловмисник через підроблений X-Forwarded-Host.
     const bad = await run(
       csrfMiddleware,
       new Request(url, {
         method: 'POST',
-        headers: { origin: 'http://internal:3000' },
+        headers: { origin: 'http://evil.example' },
         body: '{}',
       }),
     );

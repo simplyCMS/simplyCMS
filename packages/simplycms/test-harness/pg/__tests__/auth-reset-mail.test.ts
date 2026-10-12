@@ -1,11 +1,18 @@
 // К3-Е8, Task 11: лист скидання пароля йде через outbox і порт пошти, назва
 // магазину — з профілю, локаль — від хоста, база посилання — з env (Р18а).
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import type { MailMessage, MailTransport } from 'simplycms/mail';
 import { declareStoreLocale } from 'simplycms/site';
 import * as F from './fixtures/customer-categories';
+import {
+  requestPath,
+  sendWebResponse,
+  toWebRequest,
+} from '../../../../../server-runtime.mjs';
 
 const SITE = 'https://shop.example';
 const STORE = 'Сонячний <магазин>';
@@ -136,6 +143,58 @@ describe('скидання пароля через порт пошти (Е8-Т11
     expect(sent[0]!.text).toContain(`${SITE}/api/auth/reset-password/`);
     expect(sent[0]!.text).not.toContain('evil.example');
     expect(sent[0]!.html).not.toContain('evil.example');
+  });
+
+  it('Р18(в): через справжній раннер — X-Forwarded-Host і request-target //evil не змінюють базу посилання', async () => {
+    declareStoreLocale('uk');
+    await F.seedCustomer(url(), { email: 'reset-runner@x.test' });
+    const urls: string[] = [];
+    const server = createServer((req, res) => {
+      // Той самий шлях, що в `server.mjs`: поганий request-target — 400, далі
+      // Request будує toWebRequest з origin сайту.
+      if (requestPath(req.url) === null) {
+        res.writeHead(400).end();
+        return;
+      }
+      const request = toWebRequest(req, res, {
+        origin: SITE,
+        serverFnBase: '/_serverFn/',
+      });
+      urls.push(request.url);
+      void auth.handler(request).then((r) => sendWebResponse(res, r));
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    try {
+      const evil = await fetch(
+        `${base}//evil.example/api/auth/request-password-reset`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: 'reset-runner@x.test' }),
+        },
+      );
+      expect(evil.status).toBe(400);
+      expect(sent).toHaveLength(0);
+
+      const response = await fetch(`${base}/api/auth/request-password-reset`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-forwarded-host': 'evil.example',
+          'x-forwarded-proto': 'https',
+        },
+        body: JSON.stringify({ email: 'reset-runner@x.test' }),
+      });
+      expect(response.status, await response.clone().text()).toBe(200);
+      await waitFor(() => sent.length === 1);
+      expect(sent[0]!.text).toContain(`${SITE}/api/auth/reset-password/`);
+      expect(sent[0]!.text).not.toContain('evil.example');
+      // Origin запиту, який бачить auth, — з конфігу, а не з заголовків клієнта.
+      expect(urls).toEqual([`${SITE}/api/auth/request-password-reset`]);
+    } finally {
+      await new Promise((r) => server.close(r));
+    }
   });
 
   it('M1: redirectTo на чужий origin відхиляється 403 (trustedOrigins з env, origin-check увімкнено)', async () => {

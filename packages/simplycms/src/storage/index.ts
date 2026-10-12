@@ -3,7 +3,7 @@
 // 🔴 Клієнту звідси НЕ ПОТРІБНО нічого: резолв URL живе в
 // `simplycms/domain/media` (T1, чистий), а запис і видалення — серверні
 // операції за serverFn. Саме тому все піддерево в `SERVER_ONLY`.
-export { DEFAULT_MEDIA_ROOT, mediaRoot } from './env';
+export { DEFAULT_MEDIA_ROOT } from './env';
 export { MEDIA_KEY_RE, MIME_BY_EXT, mediaKey, type MediaMime } from './keys';
 export { sniffImageMime } from './mime';
 export {

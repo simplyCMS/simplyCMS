@@ -148,7 +148,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 |---|---|
 | Бібліотека | `@tanstack/start-server-core` (обробник server functions) |
 | Знайдено на | 1.169.39 (2026-10-11, К3-Е6д-2) |
-| Перевірено на версії | 1.169.39 — 2026-10-11: `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника (`createStartHandler.js`) |
+| Перевірено на версії | 1.169.39 — 2026-10-12 (А4-R): `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника і отримує `handlerType` (`'serverFn'` за НОРМАЛІЗОВАНИМ `url.pathname`, `createStartHandler.js:286,328,404-409`), тип контексту — `RequestServerOptions.handlerType` (`start-client-core` 1.170.34) |
 | Статус апстріму | не повідомлено; ліміти тіла — відповідальність хоста/проксі, Start їх не надає |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (предикат форми `includes(…)` + `formData()`, `TSS_SERVER_FN_BASE`) |
 
@@ -156,18 +156,27 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 `/_serverFn/<id>` багатогігабайтний multipart: сервер буферизує його повністю
 в памʼять до виклику хендлера, де вже стоять наші перевірки розміру файлів.
 
-**Наш обхід.** `bodyLimitMiddleware` (`packages/simplycms/src/runtime/body-limit.ts`,
-`requestMiddleware` у `src/start.ts` після CSRF): POST на `/_serverFn/` із
-`Content-Length` понад `MAX_REQUEST_BODY_BYTES` (виводиться з доменних лімітів
-у `domain/media.ts`) → 413; POST без `Content-Length` → 411 для всього, що не
-чистий JSON, і для всього, що Start прочитав би як форму. Предикат
+**Наш обхід.** Два рубежі. (1) Node-раннер (`server.mjs` + `server-runtime.mjs`)
+тримає стелю на ВСІ запити з тілом незалежно від шляху: `Content-Length` понад
+стелю класу → 413 до виклику хендлера, а chunked-потік іде через лічильник
+байтів (при переповненні зʼєднання знищується, хендлер повного тіла не
+отримує). Стеля — 1 МіБ; 26 МіБ (`MAX_REQUEST_BODY_BYTES` з `domain/media.ts`,
+парність стереже `tests/server-body-limit.test.mjs`) лише для
+`multipart/form-data` на ТОЧНИЙ сирий префікс server functions; закодований
+шлях (`/%5FserverFn/…`) отримує малу стелю. (2) `bodyLimitMiddleware`
+(`packages/simplycms/src/runtime/body-limit.ts`, `requestMiddleware` у
+`src/start.ts` після CSRF) — другий рубіж для інших рантаймів: для
+`handlerType === 'serverFn'` (а не за сирим `pathname`: Start нормалізує шлях, і
+`/%5FserverFn/x` — теж server function) POST із `Content-Length` понад
+`MAX_REQUEST_BODY_BYTES` → 413; POST без `Content-Length` → 411 для всього, що не
+чистий JSON, і для всього, що Start прочитав би як форму. Предикат форми
 ДЗЕРКАЛИТЬ апстрім: `server-functions-handler.js` (1.169.39, рядки ~40-43:
 `contentType.includes('multipart/form-data') || …includes('application/x-www-form-urlencoded')`,
 далі `request.formData()`). Це `includes`, а не порівняння медіатипу, тож
 `application/json; x=multipart/form-data` Start читає як форму без стелі —
 наша перевірка відмовляє 411 тим самим предикатом (плюс нижній регістр:
-суворіше за Start, безпечно). 🔴 Предикат звіряти з `server-functions-handler.js`
-при КОЖНОМУ бампі `@tanstack/start-server-core`. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
+суворіше за Start, безпечно). 🔴 Предикат і `handlerType` звіряти з Start при
+КОЖНОМУ бампі `@tanstack/start-server-core`. Маркери — `git grep -n "UPSTREAM:START-BODY-1"`.
 
 **Межі гарантії.**
 - 413 віддається ДО читання тіла, тож стеля захищає від прямих викликів повз
@@ -177,18 +186,17 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
   `MAX_REVIEW_IMAGE_BYTES`), медіа адмінки — `ImageUpload` (кожен файл ≤
   `MAX_UPLOAD_BYTES`, один файл на POST), аватар — `AvatarUpload`
   (`MAX_AVATAR_BYTES`); тест-інваріант констант — `body-limit.test.ts`.
-- 🔴 Відкрите вікно: чистий JSON без `Content-Length` (chunked) проходить без стелі,
-  а Start буферизує `request.json()` повністю. Свідомо прийнятий архітектором
-  залишковий ризик (не «обмежений аргументами» — розмір обирає клієнт).
-- Шлях server functions береться з `process.env.TSS_SERVER_FN_BASE` у момент
-  запиту (фолбек `/_serverFn/`), тож `basepath` магазину стелю не вимикає.
+- Chunked JSON більше не безмежний (вікно закрите лічильником раннера, А4-R).
+- Шлях server functions: раннер читає `process.env.TSS_SERVER_FN_BASE` ПІСЛЯ
+  імпорту бандла (фолбек `/_serverFn/`).
 
-**Межа спирання на рантайм.** Node-раннер (`server.mjs`) обмежує тіло заявленою
-`Content-Length`; інший рантайм або проксі без цієї гарантії — привід
-переглянути (перевірка за заголовком, а не за байтами потоку).
+**Межа спирання на рантайм.** Стеля повна лише під Node-раннером
+(`server.mjs`): лічильник байтів живе в ньому. Інший рантайм або проксі без
+такого лічильника має лише рубіж міддлвари (за заголовком `Content-Length`):
+chunked-тіло там без стелі — привід переглянути.
 
-**Перевірка виправлення.** `packages/simplycms/src/runtime/__tests__/body-limit.test.ts`
-і крок `live-smoke/body-limit.mjs` (413/411 на справжньому сервері, 5 × 5 МБ — 200).
+**Перевірка виправлення.** `packages/simplycms/src/runtime/__tests__/body-limit.test.ts`,
+`tests/server-body-limit.test.mjs` (справжній `server.mjs`, сирий сокет) і крок `live-smoke/body-limit.mjs` (413/411 на справжньому сервері, 5 × 5 МБ — 200).
 
 **Коли виправлять.** Якщо Start отримає власний ліміт тіла з відмовою до
 `formData()` — прибрати міддлвару й перенести стелю в його опцію.

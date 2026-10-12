@@ -106,16 +106,30 @@ HTTP-сервер. Теки `.output/` немає.
   накату, а `server.mjs` — до слухання порту (`simplycms/env`). Порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
   (за замовчуванням `0.0.0.0`).
 
-🔴 **Стеля тіла запиту (К3-Е6д-2).** Request-міддлвара `bodyLimitMiddleware` відхиляє POST на
-`/_serverFn/` із `Content-Length` понад `MAX_REQUEST_BODY_BYTES` (`domain/media.ts`, ≈ 26 МБ: 5 фото
-відгуку по 5 МБ + 1 МБ службових байтів) відповіддю 413, а POST без `Content-Length` — 411 для всього, що не JSON, і для всього, що Start читає як форму
-(`application/json; x=multipart/form-data` теж; chunked чистий JSON — відкрите вікно: Start буферизує `request.json()` повністю, ризик свідомо прийнято архітектором).
-Перевірка йде за заголовком, тож спирається на Node-раннер (`server.mjs`), що обмежує тіло заявленою
-довжиною (`UPSTREAM:START-BODY-1`). Проксі перед магазином (nginx `client_max_body_size`, Traefik
-`maxRequestBodyBytes`) має пропускати принаймні цю стелю і НЕ перетворювати тіло на chunked без
-`Content-Length`, інакше завантаження файлів отримає 411. Інший рантайм (не `server.mjs`) — переглянути. 413 віддається до читання тіла: стеля захищає від
-прямих викликів повз UI, а браузер, що ще вантажить понад стелю, може побачити обрив зʼєднання
-замість 413 (штатний UI відсікає завеликі файли до відправки).
+🔴 **Стеля тіла запиту (К3-Е6д-2, Е8-Р20).** Node-раннер (`server.mjs`) обмежує тіло ВСІХ запитів
+незалежно від шляху: `Content-Length` понад стелю → 413 до виклику хендлера (без читання тіла, зʼєднання
+живе), а chunked-потік іде через лічильник байтів — при переповненні зʼєднання знищується. Стеля
+за замовчуванням — 1 МіБ; 26 МіБ (`MAX_REQUEST_BODY_BYTES`, `domain/media.ts`: 5 фото відгуку по 5 МБ +
+1 МБ службових) — лише для `multipart/form-data` на точний префікс server functions
+(`/_serverFn/`, або `TSS_SERVER_FN_BASE`). Закодований шлях (`/%5FserverFn/…`) отримує малу стелю.
+Другий рубіж — request-міддлвара `bodyLimitMiddleware` (за `handlerType === 'serverFn'`, який дає
+Start): POST на server function із `Content-Length` понад стелю → 413, а без `Content-Length` — 411
+для всього, що не JSON, і для всього, що Start читає як форму (`application/json; x=multipart/form-data`
+теж). Чистий chunked JSON обмежує лічильник раннера (`UPSTREAM:START-BODY-1`). Проксі перед
+магазином (nginx `client_max_body_size`, Traefik `maxRequestBodyBytes`) має пропускати принаймні цю
+стелю і НЕ перетворювати multipart на chunked без `Content-Length`, інакше завантаження файлів
+отримає 411. Інший рантайм (не `server.mjs`) лишається без лічильника — переглянути. 413 віддається до
+читання тіла: браузер, що ще вантажить понад стелю, може побачити обрив зʼєднання замість 413
+(штатний UI відсікає завеликі файли до відправки).
+
+🔴 **Origin запиту — лише `VITE_SITE_URL` (Е8-Р18б).** `server.mjs` будує `request.url` з origin
+`VITE_SITE_URL` + шлях і query запиту; `Host`, `X-Forwarded-Host`, `X-Forwarded-Proto` для URL
+ігноруються (їх підробляє клієнт, а origin звідти бере CSRF-перевірка Start і Better Auth).
+Прапорця «довіряти проксі» немає. Без валідного `VITE_SITE_URL` (абсолютний `http(s)`-URL)
+раннер завершується з кодом 1 до слухання порту, у повідомленні — лише імʼя ключа. Request-target
+мусить починатися рівно з одного `/`: `//evil/x` і `/\evil` → 400 (інакше Start відповів би 308 на
+чужий хост); absolute-form (`http://h/p?q`) зводиться до шляху й query. `X-Forwarded-For` (IP для
+rate-limit) це не зачіпає.
 
 **Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` + production-`node_modules`
 (потрібен рівно один рантайм-пакет — `sirv`, він у `dependencies`). `VITE_*` для КЛІЄНТСЬКОГО

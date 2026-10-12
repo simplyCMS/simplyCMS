@@ -44,6 +44,8 @@ export default {
       });
     }
     // NODE_ENV, яким бандл побачив процес (Р16).
+    // URL, який раннер дав Request (Р18б): origin має бути з VITE_SITE_URL.
+    if (pathname === '/__url') return Response.json(request.url);
     if (pathname === '/__node_env')
       return Response.json(process.env.NODE_ENV ?? null);
     // Імена ключів env (значень немає навмисно): доводить, що server.mjs не
@@ -55,6 +57,24 @@ export default {
   },
 };
 `;
+
+/** Origin сайту за замовчуванням у пісочниці (`VITE_SITE_URL`). */
+export const SMOKE_SITE_URL = 'https://shop.test';
+
+/** Env процесу пісочниці: `undefined` у `extraEnv` прибирає ключ (напр. VITE_SITE_URL). */
+function sandboxEnv(port, extraEnv, base = {}) {
+  const env = {
+    PATH: process.env.PATH ?? '',
+    PORT: String(port),
+    HOST: '127.0.0.1',
+    VITE_SITE_URL: SMOKE_SITE_URL,
+    ...base,
+    ...extraEnv,
+  };
+  for (const key of Object.keys(env))
+    if (env[key] === undefined) delete env[key];
+  return env;
+}
 
 /** Вільний порт: піднімаємо й одразу віддаємо (гонка тут неістотна). */
 const freePort = () =>
@@ -115,13 +135,7 @@ export async function startSmokeServer(extraEnv = {}, handlerSource) {
     cwd: dir,
     // 🔴 Env НЕ успадковуємо: реальні ключі розробника зробили б перевірку
     // пріоритету недетерміністичною.
-    env: {
-      PATH: process.env.PATH ?? '',
-      PORT: String(port),
-      HOST: '127.0.0.1',
-      SMOKE_FROM_PROCESS: 'from-process',
-      ...extraEnv,
-    },
+    env: sandboxEnv(port, extraEnv, { SMOKE_FROM_PROCESS: 'from-process' }),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -165,12 +179,7 @@ export async function runSmokeExpectingExit(extraEnv) {
   try {
     const child = spawn(process.execPath, ['server.mjs'], {
       cwd: dir,
-      env: {
-        PATH: process.env.PATH ?? '',
-        PORT: String(await freePort()),
-        HOST: '127.0.0.1',
-        ...extraEnv,
-      },
+      env: sandboxEnv(await freePort(), extraEnv),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stderr = '';

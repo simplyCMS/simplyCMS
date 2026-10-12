@@ -46,6 +46,25 @@ export const startFnBase: Premise = need({
 });
 
 /**
+ * START-BODY-1 (Р20): request-middleware отримує `handlerType`, виведений з
+ * НОРМАЛІЗОВАНОГО шляху (`getNormalizedURL` → `url.pathname.startsWith(SERVER_FN_BASE)`).
+ * На ньому тримається стеля тіла ядра: предикат за сирим `pathname` пропускав
+ * `/%5FserverFn/…`.
+ */
+export const startHandlerType: Premise = need({
+  'handlerType виводиться з isServerFnRequest': (s) =>
+    /handlerType\s*=\s*isServerFnRequest\s*\?\s*"serverFn"\s*:\s*"router"/.test(
+      s,
+    ),
+  'isServerFnRequest — за нормалізованим url.pathname': (s) =>
+    /isServerFnRequest\s*=\s*!!SERVER_FN_BASE\s*&&\s*url\.pathname\.startsWith\(SERVER_FN_BASE\)/.test(
+      s,
+    ),
+  'executeMiddleware отримує handlerType': (s) =>
+    /pathname:\s*url\.pathname,\s*handlerType,/.test(s),
+});
+
+/**
  * START-IP-1: import-protection плагін Start перерезолвлює кожен імпорт через `this.resolve()`
  * БЕЗ `kind` і ПОВЕРТАЄ цей результат — `require()` усередині вклеєного пакета резолвиться за
  * умовою `import` (ESM-вхід dual-пакета). Передумова обходу: обидві половини досі на місці.
