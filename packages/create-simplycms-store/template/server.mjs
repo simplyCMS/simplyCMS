@@ -16,10 +16,9 @@ import { dirname, join } from 'node:path';
 import { parseEnv } from 'node:util';
 import sirv from 'sirv';
 
+import { parseSiteOrigin } from './server-origin.mjs';
 import {
-  parseSiteOrigin,
-  rejectOversizedBody,
-  requestPath,
+  rejectBadRequest,
   sendWebResponse,
   toWebRequest,
 } from './server-runtime.mjs';
@@ -78,19 +77,28 @@ try {
 // корені монорепо. Часткова група (забутий S3_REGION) кидає помилку під час
 // імпорту → виходимо ДО listen. Клас помилки живе в бандлі, тому впізнаємо за
 // `code`, а не `instanceof`; для неї стек не друкуємо (лише імена ключів).
-let serverEntry;
+let bundle;
 try {
-  ({ default: serverEntry } = await import('./dist/server/server.js'));
+  bundle = await import('./dist/server/server.js');
 } catch (error) {
   if (error?.code === 'SIMPLYCMS_DRIVER_ENV') console.error(error.message);
   else console.error('[server] Не вдалося завантажити сервер:', error);
   process.exit(1);
 }
+const serverEntry = bundle.default;
 
-// 🔴 Префікс server functions — ПІСЛЯ імпорту бандла: Start виставляє
-// `TSS_SERVER_FN_BASE` у `process.env` сам під час імпорту (Р20). Від нього
-// залежить, який запит отримує велику стелю тіла (multipart на serverFn).
-const SERVER_FN_BASE = process.env.TSS_SERVER_FN_BASE || '/_serverFn/';
+// 🔴 Префікс server functions — іменований експорт бандла (`src/server.ts`,
+// Р20′): Start ІНЛАЙНИТЬ `TSS_SERVER_FN_BASE` у збірку через Vite define, у
+// `process.env` раннера змінної немає. Від бази залежить, який запит отримує
+// велику стелю тіла (multipart на serverFn). Мовчазного фолбеку на дефолт
+// немає: старий host-файл без експорту дав би малу стелю на нестандартній базі.
+const SERVER_FN_BASE = bundle.SERVER_FN_BASE;
+if (typeof SERVER_FN_BASE !== 'string' || !SERVER_FN_BASE.startsWith('/')) {
+  console.error(
+    '[server] Бандл не експортує SERVER_FN_BASE: онови host-файли (`simplycms update --write`) і перезбери.',
+  );
+  process.exit(1);
+}
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);
@@ -110,15 +118,9 @@ const serveStatic = sirv(join(ROOT, 'dist', 'client'), {
 });
 
 const server = createServer((req, res) => {
-  // Р18б: request-target не з одного `/` (`//evil/x`, `/\evil`) — 400 до sirv
-  // і хендлера, інакше Start відповів би 308 на чужий хост (S3-04).
-  if (requestPath(req.url) === null) {
-    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
-    res.end('Bad Request');
-    return;
-  }
-  // Р20: стеля тіла за `Content-Length` — для ВСІХ шляхів, до хендлера.
-  if (rejectOversizedBody(req, res, SERVER_FN_BASE)) return;
+  // Р18б/Р20: поганий request-target (400) і `Content-Length` понад стелю
+  // (413) — до sirv і хендлера, для ВСІХ шляхів.
+  if (rejectBadRequest(req, res, SERVER_FN_BASE)) return;
   serveStatic(req, res, async () => {
     try {
       const response = await serverEntry.fetch(

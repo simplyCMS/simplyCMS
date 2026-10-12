@@ -29,6 +29,8 @@ if (process.env.SMOKE_DRIVER_ENV_ERROR) {
   });
 }
 if (process.env.SMOKE_OTHER_ERROR) throw new Error(process.env.SMOKE_OTHER_ERROR);
+// Іменований експорт бази, як у справжньому бандлі (src/server.ts, Р20′).
+export const SERVER_FN_BASE = process.env.SMOKE_SERVER_FN_BASE ?? '/_serverFn/';
 export default {
   async fetch(request) {
     const { pathname } = new URL(request.url);
@@ -98,7 +100,12 @@ function layout(handlerSource = STUB_HANDLER) {
   mkdirSync(join(dir, 'dist', 'client', 'assets'), { recursive: true });
 
   // Обидва файли runner-а — реальні, з кореня репо.
-  for (const file of ['server.mjs', 'server-runtime.mjs']) {
+  for (const file of [
+    'server.mjs',
+    'server-runtime.mjs',
+    'server-origin.mjs',
+    'server-body-limit.mjs',
+  ]) {
     copyFileSync(join(ROOT, file), join(dir, file));
   }
   writeFileSync(join(dir, 'package.json'), '{ "type": "module" }\n');
@@ -174,8 +181,8 @@ export async function startSmokeServer(extraEnv = {}, handlerSource) {
  * Старт, який МУСИТЬ завершитися помилкою до слухання порту (бандл кинув під час
  * імпорту). Повертає код виходу, stdout і stderr.
  */
-export async function runSmokeExpectingExit(extraEnv) {
-  const dir = layout();
+export async function runSmokeExpectingExit(extraEnv, handlerSource) {
+  const dir = layout(handlerSource);
   try {
     const child = spawn(process.execPath, ['server.mjs'], {
       cwd: dir,

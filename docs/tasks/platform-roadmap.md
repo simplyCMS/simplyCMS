@@ -1497,7 +1497,7 @@ T-5. ✅ ЗАКРИТО 2026-09-12. **§12 `test-contours.md` — прозова
 
 К3-Е6д-2. ✅ **Ліміт тіла запиту** (Task 8, `2fca06c4`, `4b5ad130`). `bodyLimitMiddleware`
    (`simplycms/runtime/body-limit`): `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413,
-   без заголовка → 411 для всього, що не JSON (і для всього, що Start читає як форму); база шляху з `TSS_SERVER_FN_BASE`; `UPSTREAM:START-BODY-1`.
+   без заголовка → 411 для всього, що не JSON (і для всього, що Start читає як форму); база шляху з експорту `SERVER_FN_BASE` бандла; `UPSTREAM:START-BODY-1`.
 
 К3-Е6д-3. ✅ **Аватар і логотип на двофазне стирання** (Task 5, `368daed7`,
    `34e9a704`, `6e641fe5`). `eraseMedia` і `discardMedia` знесено; логотип має власника

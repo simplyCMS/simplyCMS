@@ -92,7 +92,7 @@ export async function serveMedia(
   // почав би відповідати на POST/PUT/DELETE. Явний `HEAD:` лишає allowlist
   // методів закритим. Не «спрощувати».
   //
-  // 🔴 `null`-тіло переживає Node-runner: `server-runtime.mjs:87-89` має
+  // 🔴 `null`-тіло переживає Node-runner: `sendWebResponse` у `server-runtime.mjs` має
   // явну гілку `if (!response.body) { res.end(); return; }` — перевірено,
   // бо `Readable.fromWeb(null)` тут падав би.
   const bodyless = ctx.request.method === 'HEAD';

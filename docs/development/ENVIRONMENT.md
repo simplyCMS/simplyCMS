@@ -111,7 +111,7 @@ HTTP-сервер. Теки `.output/` немає.
 живе), а chunked-потік іде через лічильник байтів — при переповненні зʼєднання знищується. Стеля
 за замовчуванням — 1 МіБ; 26 МіБ (`MAX_REQUEST_BODY_BYTES`, `domain/media.ts`: 5 фото відгуку по 5 МБ +
 1 МБ службових) — лише для `multipart/form-data` на точний префікс server functions
-(`/_serverFn/`, або `TSS_SERVER_FN_BASE`). Закодований шлях (`/%5FserverFn/…`) отримує малу стелю.
+(`/_serverFn/` або база з `basepath`/`serverFns.base`; раннер бере її з експорту `SERVER_FN_BASE` бандла, бо Start інлайнить її при збірці, а не кладе в `process.env`; бандл без експорту — exit 1, `simplycms update --write`). Закодований шлях (`/%5FserverFn/…`) отримує малу стелю.
 Другий рубіж — request-міддлвара `bodyLimitMiddleware` (за `handlerType === 'serverFn'`, який дає
 Start): POST на server function із `Content-Length` понад стелю → 413, а без `Content-Length` — 411
 для всього, що не JSON, і для всього, що Start читає як форму (`application/json; x=multipart/form-data`

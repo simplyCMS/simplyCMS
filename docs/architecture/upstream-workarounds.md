@@ -187,8 +187,13 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
   `MAX_UPLOAD_BYTES`, один файл на POST), аватар — `AvatarUpload`
   (`MAX_AVATAR_BYTES`); тест-інваріант констант — `body-limit.test.ts`.
 - Chunked JSON більше не безмежний (вікно закрите лічильником раннера, А4-R).
-- Шлях server functions: раннер читає `process.env.TSS_SERVER_FN_BASE` ПІСЛЯ
-  імпорту бандла (фолбек `/_serverFn/`).
+- Шлях server functions: Start ІНЛАЙНИТЬ `TSS_SERVER_FN_BASE` у збірку Vite
+  define-ом (`start-plugin-core` `vite/planning.js`, функція defineReplaceEnv), у
+  `process.env` раннера змінної немає. Тому `src/server.ts` експортує
+  `SERVER_FN_BASE` (той самий define підставляє літерал), `server.mjs` читає
+  експорт після `await import(bundle)`, а бандл без експорту → exit 1
+  («онови host-файли»). Фолбеку на дефолт немає. Доводить
+  `tests/server-fn-base-build.test.ts` (справжня збірка з `serverFns.base`).
 
 **Межа спирання на рантайм.** Стеля повна лише під Node-раннером
 (`server.mjs`): лічильник байтів живе в ньому. Інший рантайм або проксі без

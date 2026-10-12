@@ -44,6 +44,8 @@ export default defineConfig({
       // (трек T): ламається першою, коли серверний код потрапляє в чанк,
       // досяжний із клієнтського entry.
       'tests/dist-server-boundary.test.ts',
+      // Справжня збірка з нестандартним `serverFns.base` (Р20′).
+      'tests/server-fn-base-build.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки
     // б'ється за I/O і плутає вивід.

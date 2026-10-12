@@ -115,6 +115,19 @@ describe('server.mjs: помилка імпорту серверного бан�
   });
 });
 
+describe('server.mjs: база serverFn з експорту бандла (Р20′)', () => {
+  it('бандл без SERVER_FN_BASE → exit ≠ 0 до listen, підказка про update --write', async () => {
+    const { code, stdout, stderr } = await runSmokeExpectingExit(
+      {},
+      'export default { fetch: async () => new Response("ok") };\n',
+    );
+    expect(code).not.toBe(0);
+    expect(stderr).toContain('SERVER_FN_BASE');
+    expect(stderr).toContain('simplycms update --write');
+    expect(stdout).not.toContain('слухає');
+  });
+});
+
 describe('server.mjs: прод-режим не залежить від NODE_ENV власника (Р16)', () => {
   const IGNORED = 'проігноровано: server.mjs завжди production';
 

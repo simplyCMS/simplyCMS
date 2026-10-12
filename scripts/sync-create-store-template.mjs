@@ -43,6 +43,8 @@ export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
 export const SYNCED_FILES = [
   'server.mjs',
   'server-runtime.mjs',
+  'server-origin.mjs',
+  'server-body-limit.mjs',
   'src/styles/globals.css',
   'src/routes/__root.tsx',
   'src/start.ts',

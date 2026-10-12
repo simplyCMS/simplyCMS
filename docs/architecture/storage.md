@@ -98,7 +98,7 @@
   КОЖНОГО файлу звіряються до першого `writeMedia`. Тіло запиту має стелю
   (`bodyLimitMiddleware`, `MAX_REQUEST_BODY_BYTES` = найбільше з доменних лімітів +
   `MULTIPART_OVERHEAD_BYTES`; відмова 413 `request/payload-too-large`, без
-  `Content-Length` — 411 `request/length-required` для всього, що не JSON і для всього, що Start читає як форму; база шляху — `TSS_SERVER_FN_BASE`;
+  `Content-Length` — 411 `request/length-required` для всього, що не JSON і для всього, що Start читає як форму; база шляху — експорт `SERVER_FN_BASE` бандла (інлайн Start);
   К3-Е6д-2, `ENVIRONMENT.md`). Межа: UI відсікає завелике ДО відправки, тож прямий
   виклик повз UI може побачити обрив зʼєднання замість 413 (`UPSTREAM:START-BODY-1`,
   `upstream-workarounds.md`).

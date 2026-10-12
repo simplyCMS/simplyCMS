@@ -39,7 +39,14 @@ export const startFormBeforeHandler: Premise = (src) => {
     : ['formData() більше не передує виклику хендлера'];
 };
 
-/** START-BODY-1: шлях serverFn береться з TSS_SERVER_FN_BASE (стеля тіла читає ту саму змінну). */
+/**
+ * START-BODY-1: Start будує шлях serverFn з ключа `process.env.TSS_SERVER_FN_BASE`
+ * (джерело ДО інлайну Vite define). Той самий ключ читає експорт `SERVER_FN_BASE`
+ * у `src/server.ts`: якщо Start перейменує ключ, define перестане його підставляти
+ * і експорт мовчки впаде на дефолт. Що значення справді інлайниться в збірку —
+ * доводить `tests/server-fn-base-build.test.ts`, ця передумова лише ловить
+ * перейменування.
+ */
 export const startFnBase: Premise = need({
   'RPC-клієнт будує URL з process.env.TSS_SERVER_FN_BASE': (s) =>
     /process\.env\.TSS_SERVER_FN_BASE\s*\+/.test(s),

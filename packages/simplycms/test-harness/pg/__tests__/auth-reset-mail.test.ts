@@ -9,7 +9,7 @@ import type { MailMessage, MailTransport } from 'simplycms/mail';
 import { declareStoreLocale } from 'simplycms/site';
 import * as F from './fixtures/customer-categories';
 import {
-  requestPath,
+  rejectBadRequest,
   sendWebResponse,
   toWebRequest,
 } from '../../../../../server-runtime.mjs';
@@ -150,12 +150,9 @@ describe('скидання пароля через порт пошти (Е8-Т11
     await F.seedCustomer(url(), { email: 'reset-runner@x.test' });
     const urls: string[] = [];
     const server = createServer((req, res) => {
-      // Той самий шлях, що в `server.mjs`: поганий request-target — 400, далі
-      // Request будує toWebRequest з origin сайту.
-      if (requestPath(req.url) === null) {
-        res.writeHead(400).end();
-        return;
-      }
+      // Одне джерело з `server.mjs`: `rejectBadRequest` (400 на поганий
+      // request-target, 413 за Content-Length), далі `toWebRequest`.
+      if (rejectBadRequest(req, res, '/_serverFn/')) return;
       const request = toWebRequest(req, res, {
         origin: SITE,
         serverFnBase: '/_serverFn/',

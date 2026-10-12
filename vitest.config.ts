@@ -63,6 +63,9 @@ export default defineConfig({
       // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:
       // `entryFiles()` на порожньому dist дає `[]`, і перетин теж `[]`.
       'tests/dist-server-boundary.test.ts',
+      // Справжня збірка застосунку з нестандартним `serverFns.base` (~хвилина):
+      // місце в packaging-сюїті.
+      'tests/server-fn-base-build.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —

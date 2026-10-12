@@ -33,6 +33,16 @@ declareStoreLocale(normalizeLocale(config.locale));
 checkDriverEnvOnStart(process.env, (line) => console.warn(`[server] ${line}`));
 
 /**
+ * База шляху server functions для Node-раннера (`server.mjs`, Р20′).
+ *
+ * 🔴 Start інлайнить `process.env.TSS_SERVER_FN_BASE` у збірку Vite define-ом
+ * (літерал із `basepath` + `serverFns.base`, із завершальним `/`); у
+ * `process.env` рантайму змінної НЕМАЄ. Тому раннер бере базу не з env, а з
+ * цього експорту: від неї залежить, яка стеля тіла діє на server functions.
+ */
+export const SERVER_FN_BASE = process.env.TSS_SERVER_FN_BASE ?? '/_serverFn/';
+
+/**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).
  *
  * Тут — точка розширення ПЕРЕД делегацією в Start-хендлер: SEO-ендпойнти

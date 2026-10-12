@@ -5,7 +5,7 @@ import { csrfMiddleware } from 'simplycms/runtime/csrf';
 import { bodyLimitMiddleware } from 'simplycms/runtime/body-limit';
 import { Route as HealthRoute } from '../packages/simplycms/routes/storefront/api/health';
 import { startInstance } from '../src/start';
-import { toRequestUrl } from '../server-runtime.mjs';
+import { toRequestUrl } from '../server-origin.mjs';
 
 // Роут health тягне `simplycms/db`; БД тут не потрібна — `ANY` до неї не ходить.
 vi.mock('simplycms/db', () => ({ withActor: async () => {} }));

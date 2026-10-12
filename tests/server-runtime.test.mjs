@@ -10,10 +10,9 @@ import { describe, expect, it } from 'vitest';
 import {
   parseSiteOrigin,
   requestPath,
-  sendWebResponse,
   toRequestUrl,
-  toWebRequest,
-} from '../server-runtime.mjs';
+} from '../server-origin.mjs';
+import { sendWebResponse, toWebRequest } from '../server-runtime.mjs';
 
 const OPTIONS = { origin: 'https://shop.test', serverFnBase: '/_serverFn/' };
 
@@ -216,11 +215,9 @@ describe('parseSiteOrigin', () => {
     },
   );
 
-  it('значення з облікових даних у текст помилки не потрапляє', () => {
-    try {
-      parseSiteOrigin('ftp://user:s3cr3t@x');
-    } catch (error) {
-      expect(error.message).not.toContain('s3cr3t');
-    }
+  it('облікові дані з userinfo в текст помилки не потрапляють', () => {
+    const parse = () => parseSiteOrigin('ftp://user:s3cr3t@x');
+    expect(parse).toThrow(/VITE_SITE_URL/);
+    expect(parse).not.toThrow(/s3cr3t/);
   });
 });

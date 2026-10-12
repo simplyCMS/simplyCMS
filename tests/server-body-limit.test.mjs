@@ -28,8 +28,9 @@ import {
 import {
   PAYLOAD_TOO_LARGE_CODE as RUNNER_PAYLOAD_CODE,
   SERVER_FN_BODY_LIMIT,
-} from '../server-runtime.mjs';
+} from '../server-body-limit.mjs';
 
+import { rawExchange } from './server-smoke/raw-exchange.mjs';
 import { startSmokeServer } from './server-smoke/sandbox.mjs';
 
 const BODY_LIMIT = join(
@@ -39,13 +40,14 @@ const BODY_LIMIT = join(
 );
 
 /**
- * Дзеркало Start: `handlerType` за НОРМАЛІЗОВАНИМ шляхом (`%5F` → `_`) і базою
- * `TSS_SERVER_FN_BASE`. Нестандартну базу ставить сам бандл під час імпорту —
- * як Start; тест доводить, що раннер читає її ПІСЛЯ імпорту.
+ * Стаб бандла: `handlerType` за НОРМАЛІЗОВАНИМ шляхом (`%5F` → `_`) і базою з
+ * іменованого експорту `SERVER_FN_BASE` — як справжній `src/server.ts` (Р20′).
+ * Це доводить механіку «раннер читає експорт»; що експорт справді інлайниться
+ * Start-ом у справжній збірці з нестандартною базою — `tests/server-fn-base-build.test.ts`.
  */
 const makeHandler = (
-  customBase,
-) => `${customBase ? `process.env.TSS_SERVER_FN_BASE = ${JSON.stringify(customBase)};` : ''}
+  customBase = '/_serverFn/',
+) => `export const SERVER_FN_BASE = ${JSON.stringify(customBase)};
 import { checkBodyLimit } from ${JSON.stringify(BODY_LIMIT)};
 let calls = 0;
 let bytes = 0;
@@ -55,8 +57,7 @@ export default {
     if (pathname === '/__calls') return Response.json({ calls, bytes });
     if (pathname === '/__env') return new Response('ok');
     calls++;
-    const base = process.env.TSS_SERVER_FN_BASE || '/_serverFn/';
-    const type = decodeURIComponent(pathname).startsWith(base) ? 'serverFn' : 'router';
+    const type = decodeURIComponent(pathname).startsWith(SERVER_FN_BASE) ? 'serverFn' : 'router';
     const refusal = checkBodyLimit(request, type);
     if (refusal) return refusal;
     if (request.body) for await (const chunk of request.body) bytes += chunk.byteLength;
@@ -64,53 +65,6 @@ export default {
   },
 };
 `;
-
-/**
- * Шле сирі байти, читає відповідь до кінця заголовків. Повертає статус,
- * заголовки та `closedBy` — чи закрив сервер сокет протягом `settleMs`
- * після відповіді.
- */
-function rawExchange(port, head, body, settleMs = 400) {
-  return new Promise((resolve, reject) => {
-    const socket = connect(port, '127.0.0.1');
-    let received = '';
-    let answered = false;
-    let closed = false;
-    socket.on('error', (error) => {
-      // ECONNRESET після відповіді — теж закриття; до відповіді — провал.
-      if (answered) closed = true;
-      else reject(error);
-    });
-    socket.on('close', () => {
-      closed = true;
-      if (!answered)
-        reject(new Error(`сокет закрито без відповіді: ${received}`));
-    });
-    socket.on('data', (chunk) => {
-      received += chunk.toString('latin1');
-      const end = received.indexOf('\r\n\r\n');
-      if (answered || end === -1) return;
-      answered = true;
-      const [statusLine, ...lines] = received.slice(0, end).split('\r\n');
-      const headers = Object.fromEntries(
-        lines.map((line) => {
-          const at = line.indexOf(':');
-          return [line.slice(0, at).toLowerCase(), line.slice(at + 1).trim()];
-        }),
-      );
-      setTimeout(() => {
-        socket.destroy();
-        resolve({
-          status: Number(statusLine.split(' ')[1]),
-          headers,
-          closedBy: closed ? 'server' : null,
-        });
-      }, settleMs);
-    });
-    socket.write(head);
-    if (body) socket.write(body);
-  });
-}
 
 describe('server.mjs: 413/411 без закриття зʼєднання', () => {
   let server;
@@ -212,12 +166,14 @@ describe('server.mjs: стеля тіла на всі шляхи (Р20)', () => 
   });
 
   it('/_serverFn/x application/json 2 МіБ → 413 (мала стеля: не multipart)', async () => {
+    const before = await calls();
     const result = await rawExchange(
       port,
       head('/_serverFn/x', 'application/json', 2 * MIB),
       Buffer.alloc(1024, 0x61),
     );
     expect(result.status).toBe(413);
+    expect(await calls()).toBe(before);
   });
 
   it('/_serverFn/x multipart 20 МіБ → до хендлера, 27 МіБ → 413', async () => {
@@ -294,7 +250,7 @@ describe('server.mjs: стеля тіла на всі шляхи (Р20)', () => 
   });
 });
 
-describe('server.mjs: база serverFn читається ПІСЛЯ імпорту бандла (Р20)', () => {
+describe('server.mjs: база serverFn — з експорту бандла (Р20′)', () => {
   let server;
   let port;
 
