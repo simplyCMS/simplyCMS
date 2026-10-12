@@ -7,6 +7,8 @@ import {
   lintTemplateFile,
   manifestFiles,
   supabaseDeps,
+  supabaseRefsInJson,
+  supabaseRefsInYaml,
   templateCodeFiles,
 } from './no-supabase-manifests/files';
 
@@ -27,6 +29,12 @@ describe('маніфести без @supabase/*', () => {
     expect(supabaseDeps(rel)).toEqual([]);
   });
 
+  it('pnpm-workspace.yaml: overrides без @supabase/*', () => {
+    const yaml = readFileSync(join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
+    expect(yaml).toContain('packages:'); // не вакуумно: файл справжній
+    expect(supabaseRefsInYaml(yaml)).toEqual([]);
+  });
+
   // 🔴 Мутацію lock доводити через `npx vitest`: будь-який `pnpm <script>`
   // (зокрема `pnpm test`) перед запуском переписує lock за supply-chain
   // policy pnpm 11 і викидає осиротілий рядок, тож `pnpm test` до локальної
@@ -35,6 +43,50 @@ describe('маніфести без @supabase/*', () => {
     const lock = readFileSync(join(ROOT, 'pnpm-lock.yaml'), 'utf8');
     expect(lock).toContain('lockfileVersion'); // не вакуумно: файл справжній
     expect(lock.includes('@supabase/')).toBe(false);
+  });
+});
+
+// Негативні контролі форми перевірки: `@supabase/*` не сховати в `overrides`,
+// `pnpm.overrides`, `resolutions`, `peerDependenciesMeta` і `overrides`
+// pnpm-workspace.yaml (інакше lock знову тягне пакет повз `dependencies`).
+describe('supabaseRefsInJson / supabaseRefsInYaml', () => {
+  it.each([
+    ['overrides', { overrides: { '@supabase/x': '1.0.0' } }],
+    ['pnpm.overrides', { pnpm: { overrides: { '@supabase/x': '1.0.0' } } }],
+    ['resolutions', { resolutions: { '@supabase/x': '1.0.0' } }],
+    [
+      'peerDependenciesMeta',
+      { peerDependenciesMeta: { '@supabase/x': { optional: true } } },
+    ],
+    [
+      'значення overrides (npm: аліас)',
+      { overrides: { foo: 'npm:@supabase/x' } },
+    ],
+    ['вкладений override', { overrides: { foo: { '@supabase/x': '1.0.0' } } }],
+    ['dependencies', { dependencies: { '@supabase/x': '1.0.0' } }],
+  ])('%s → знайдено', (_name, json) => {
+    expect(supabaseRefsInJson(json)).toEqual(['@supabase/x']);
+  });
+
+  it('чистий маніфест → порожньо', () => {
+    expect(
+      supabaseRefsInJson({
+        dependencies: { react: '1' },
+        overrides: { foo: '1' },
+        peerDependenciesMeta: { pg: { optional: true } },
+      }),
+    ).toEqual([]);
+  });
+
+  it('overrides у pnpm-workspace.yaml → знайдено', () => {
+    const yaml = "packages:\n  - 'a/*'\noverrides:\n  '@supabase/x': 1.0.0\n";
+    expect(supabaseRefsInYaml(yaml)).toEqual(['@supabase/x']);
+  });
+
+  it('@supabase/ поза overrides yaml (коментар, інший ключ) не рахується', () => {
+    const yaml =
+      "# @supabase/x знесено\npackages:\n  - 'a/*'\noverrides:\n  foo: 1.0.0\n";
+    expect(supabaseRefsInYaml(yaml)).toEqual([]);
   });
 });
 

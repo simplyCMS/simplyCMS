@@ -69,14 +69,40 @@ const DEP_KEYS = [
   'optionalDependencies',
 ] as const;
 
-/** Імена залежностей маніфеста; `.tpl` парситься текстом (плейсхолдери). */
+// Секції, де `@supabase/*` ховається повз `dependencies`: підміна версій і
+// мета peer-ів. У них перевіряються і ключі, і значення (`npm:@supabase/x`),
+// і вкладені обʼєкти — тому текстовий пошук по серіалізованій секції.
+const OVERRIDE_KEYS = ['overrides', 'resolutions', 'peerDependenciesMeta'];
+const SUPABASE_REF = /@supabase\/[\w.-]+/g;
+
+/** Усі згадки `@supabase/*` у залежностях і підмінах маніфеста (унікальні). */
+export function supabaseRefsInJson(json: Record<string, unknown>): string[] {
+  const deps = DEP_KEYS.flatMap((k) =>
+    Object.keys((json[k] as Record<string, string> | undefined) ?? {}),
+  ).filter((n) => n.startsWith('@supabase/'));
+  const pnpm = (json.pnpm ?? {}) as Record<string, unknown>;
+  const sections = [
+    ...OVERRIDE_KEYS.map((k) => json[k]),
+    ...OVERRIDE_KEYS.map((k) => pnpm[k]),
+  ].filter((v) => v !== undefined);
+  const refs = sections.flatMap(
+    (v) => JSON.stringify(v).match(SUPABASE_REF) ?? [],
+  );
+  return [...new Set([...deps, ...refs])];
+}
+
+/** `@supabase/*` у топ-рівневому блоці `overrides:` pnpm-workspace.yaml. */
+export function supabaseRefsInYaml(text: string): string[] {
+  const block =
+    /^overrides:[^\n]*\n((?:[ \t].*\n?|\n)*)/m.exec(text)?.[0] ?? '';
+  return [...new Set(block.match(SUPABASE_REF) ?? [])];
+}
+
+/** Імена залежностей і підмін маніфеста; `.tpl` парситься текстом (плейсхолдери). */
 export function supabaseDeps(rel: string): string[] {
   const text = readFileSync(join(ROOT, rel), 'utf8');
-  if (rel.endsWith('.tpl')) return text.match(/@supabase\/[\w.-]+/g) ?? [];
-  const json = JSON.parse(text) as Record<string, Record<string, string>>;
-  return DEP_KEYS.flatMap((k) => Object.keys(json[k] ?? {})).filter((n) =>
-    n.startsWith('@supabase/'),
-  );
+  if (rel.endsWith('.tpl')) return text.match(SUPABASE_REF) ?? [];
+  return supabaseRefsInJson(JSON.parse(text) as Record<string, unknown>);
 }
 
 /** Код шаблону магазину — поза основним лінтом (ігнори eslint.config.mjs). */
