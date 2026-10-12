@@ -90,6 +90,34 @@ export async function gateHttp(port, env) {
     `${catalog.status}, ${catalogMatch.fact}, ціни(₴): ${hasPrice}`,
   );
 
+  // 🔴 Рантайм-сторож санітайзера на СЕРВЕРНОМУ бандлі скретча (UPSTREAM:START-IP-1): у бандл
+  // вклеєні dual-пакети (`is-plain-object`, `postcss`, `nanoid`), яких `sanitize-html` бере через
+  // `require()` — безпечно лише поки він бере іменовані експорти. Статичний Gate SB переходу на
+  // default-імпорт не бачить, тож тут реально проганяємо `sanitize-html` на SSR: опис товару в
+  // демо-сіді — rich-розмітка зі `style` (проганяє `postcss.parse`), `<script>` і `onerror`. Потрібна демо-БД (`pnpm db:demo`): без
+  // проби крок червоніє, а не мовчки пропускається.
+  const probe = await fetch(
+    `${base}/catalog/invertory/invertor-merezhevyi-5kw`,
+  );
+  const probeHtml = await probe.text();
+  const kept =
+    probeHtml.includes('<strong>98%</strong>') &&
+    probeHtml.includes('<a href="https://example.com/inverter"') &&
+    /<p style="text-align:\s*center">/.test(probeHtml);
+  const dirty =
+    /<script>alert\(1\)|onerror=/.test(probeHtml) ||
+    probeHtml.includes('title="t"') ||
+    probeHtml.includes('color:red') ||
+    probeHtml.includes('color: red');
+  check(
+    'GET /catalog/invertory/invertor-merezhevyi-5kw (sanitize-html на сервері)',
+    probe.status === 200 && kept && !dirty,
+    `${probe.status}, <strong>/<a href> лишились: ${kept}, небезпечне лишилось: ${dirty}` +
+      (probe.status === 200 && !kept
+        ? ' (або немає проби — накоти демо-БД `pnpm db:demo`, або серверний sanitize-html зламаний)'
+        : ''),
+  );
+
   const admin = await fetch(`${base}/admin`, { redirect: 'manual' });
   const location = admin.headers.get('location');
   check(

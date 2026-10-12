@@ -265,6 +265,12 @@ Vite у build резолвить external від кореня проєкту, а
 із dual-`exports`), `tests/pg-peer-parity.test.ts`, `doctor` №13 (`packages/cli/src/pg-peer.mjs`). Маркери —
 `git grep -n "UPSTREAM:START-IP-1"`.
 
+**Dual-пакети в бандлі безпечні, доки споживач бере іменовані експорти** (зараз `sanitize-html` →
+`is-plain-object`, `postcss`, `nanoid`); рантайм-сторож — крок Gate B «sanitize-html на сервері»
+(`GET /catalog/invertory/invertor-merezhevyi-5kw`: проба в `demo-seed.sql` зі `style`, `<script>`,
+`onerror` → `<strong>`/`<a>`/`text-align` дожили, небезпечне зникло; мутація — зламаний `postcss.parse` у
+серверному бандлі скретча → FAIL). Статичний Gate SB переходу споживача на default-імпорт не бачить.
+
 **Перевірка виправлення.** Розтяжка червоніє, коли плагін почне передавати `kind` або перестане повертати
 результат. Тоді в скретчі без `pg` у dependencies (мутація) зібрати й запустити сервер: старт без `Class extends`.
 
