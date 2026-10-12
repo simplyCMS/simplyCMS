@@ -73,6 +73,9 @@ simplyCMS/
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
 │   │   │                         #    server-only (К3-Е8)
+│   │   ├── src/mail/             # T2 Порт пошти: getMailTransport() обирає драйвер за групою SMTP_URL+MAIL_FROM
+│   │   │                         #    (resolveDriverEnv): smtpTransport (peer nodemailer) і logTransport (у проді
+│   │   │                         #    без тіла листа). Upward лише env. server-only (К3-Е8)
 │   │   ├── src/vite/             # T2 Build-time плагіни Vite для збірки магазину: resolveBuildId +
 │   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz). Без залежності
 │   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)

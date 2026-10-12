@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import {
   appendFileSync,
   cpSync,
@@ -434,5 +435,77 @@ describe('cli doctor: режим production і пошта', () => {
     expect(modeNotice(true).title).toBe('режим: production');
     expect(modeNotice(false).title).toContain('режим: розробка');
     expect(modeNotice(false).title).toContain('--production');
+  });
+});
+
+// Проводка режиму в `doctor.run` (рев'ю Task 9, I1): справжній процес CLI проти
+// скаффолда з фейковим ядром у `node_modules` — перевіряє те, чого не бачать юніти
+// (`importFromStore('simplycms/env')`, `production`/`mail` у ctx, рядок режиму першим).
+// Обрано спавн, а не рефакторинг у чисту функцію: чиста збірка списку не довела б
+// саме імпорт ядра з магазину й передачу ctx.
+describe('cli doctor: проводка режиму в run()', () => {
+  const INDEX = join(process.cwd(), 'packages/cli/src/index.mjs');
+
+  async function storeWithFakeCore(name: string) {
+    const store = await scaffoldStore(name);
+    const dir = join(store, 'node_modules/simplycms');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'simplycms',
+        version: '9.9.9-sentinel',
+        type: 'module',
+        exports: { './env': { import: './env.mjs' } },
+      }),
+    );
+    writeFileSync(
+      join(dir, 'env.mjs'),
+      `export const isProductionRuntime = (env) => env.NODE_ENV === 'production';
+export const resolveDriverEnv = (env) => ({
+  mail: env.SMTP_URL ? { driver: 'smtp' } : { driver: 'log' },
+});
+`,
+    );
+    return store;
+  }
+
+  function doctor(store: string, args: string[], nodeEnv?: string) {
+    const env: Record<string, string | undefined> = { ...process.env, ...ENV };
+    delete env.NODE_ENV;
+    delete env.SMTP_URL;
+    if (nodeEnv) env.NODE_ENV = nodeEnv;
+    const r = spawnSync('node', [INDEX, 'doctor', ...args], {
+      cwd: store,
+      env,
+      encoding: 'utf8',
+    });
+    const out = `${r.stdout}${r.stderr}`;
+    return { out, status: r.status, lines: out.split('\n') };
+  }
+  const mailLine = (lines: string[]) =>
+    lines.find((l) => l.includes('Пошта налаштована')) ?? '';
+
+  it('--production: режим першим рядком, log-пошта = error, exit 1', async () => {
+    const r = doctor(await storeWithFakeCore('wire-prod'), ['--production']);
+    const mode = r.lines.findIndex((l) => l.includes('режим:'));
+    const root = r.lines.findIndex((l) => l.includes('Корінь магазину'));
+    expect(r.out).toContain('режим: production');
+    expect(mode).toBeGreaterThanOrEqual(0);
+    expect(mode).toBeLessThan(root);
+    expect(mailLine(r.lines)).toContain('✗ Пошта налаштована');
+    expect(r.status).toBe(1);
+  });
+
+  it('NODE_ENV=production без прапорця → режим production (предикат ядра)', async () => {
+    const r = doctor(await storeWithFakeCore('wire-env'), [], 'production');
+    expect(r.out).toContain('режим: production');
+  });
+
+  it('без прапорця: розробка, log-пошта = warn, режим називає --production', async () => {
+    const r = doctor(await storeWithFakeCore('wire-dev'), []);
+    expect(r.out).toContain('режим: розробка');
+    expect(r.out).toContain('--production');
+    expect(mailLine(r.lines)).toContain('! Пошта налаштована');
   });
 });
