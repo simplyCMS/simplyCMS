@@ -109,31 +109,38 @@ export function s3Driver(cfg: S3Config): MediaStorageDriver {
   };
 }
 
-/** Стрім, що відкриває `GET` на першому читанні й закриває його на `cancel`. */
+/**
+ * Стрім, що відкриває `GET` на першому читанні й закриває його на `cancel`.
+ * `highWaterMark: 0` — без нього `pull` викликається одразу після створення, і
+ * `GET` ішов би навіть у стріму, який ніхто не читає.
+ */
 function lazyBody(
   aws: () => AwsClient,
   url: string,
   fail: (method: string, status: number) => Error,
 ): ReadableStream<Uint8Array> {
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-  return new ReadableStream<Uint8Array>({
-    async pull(controller) {
-      if (!reader) {
-        const res = await aws().fetch(url);
-        if (!res.ok || !res.body) {
-          await drain(res);
-          throw fail('GET', res.status);
+  return new ReadableStream<Uint8Array>(
+    {
+      async pull(controller) {
+        if (!reader) {
+          const res = await aws().fetch(url);
+          if (!res.ok || !res.body) {
+            await drain(res);
+            throw fail('GET', res.status);
+          }
+          reader = res.body.getReader();
         }
-        reader = res.body.getReader();
-      }
-      const { done, value } = await reader.read();
-      if (done) controller.close();
-      else controller.enqueue(value);
+        const { done, value } = await reader.read();
+        if (done) controller.close();
+        else controller.enqueue(value);
+      },
+      async cancel(reason) {
+        await reader?.cancel(reason);
+      },
     },
-    async cancel(reason) {
-      await reader?.cancel(reason);
-    },
-  });
+    { highWaterMark: 0 },
+  );
 }
 
 /** Тіло відповіді не читаємо — звільняємо зʼєднання. */

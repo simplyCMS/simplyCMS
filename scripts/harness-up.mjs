@@ -17,10 +17,18 @@
 import { spawnSync } from 'node:child_process';
 import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePort } from './harness-ports.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 const PREFIX = process.env.HARNESS_PREFIX ?? 'simplycms-harness';
-const num = (key, fallback) => Number(process.env[key] ?? fallback);
+const num = (key, fallback, opts) => {
+  try {
+    return parsePort(key, process.env[key], fallback, opts);
+  } catch (error) {
+    console.error(`[harness] ${error.message}`);
+    process.exit(1);
+  }
+};
 
 const PG = {
   name: `${PREFIX}-pg`,
@@ -31,7 +39,7 @@ const PG = {
 // `fetch` відмовляє ще до мережі (UPSTREAM:FETCH-BAD-PORT-1).
 const GARAGE = {
   name: `${PREFIX}-garage`,
-  port: num('HARNESS_GARAGE_PORT', 4192),
+  port: num('HARNESS_GARAGE_PORT', 4192, { fetchable: true }),
   image: 'dxflrs/garage:v2.4.1',
   region: 'garage',
   bucket: 'simplycms-harness',
@@ -73,7 +81,7 @@ if (process.argv[2] === 'down') {
 }
 
 /** Запускає контейнер, якщо його ще немає; зупинений прибирає, щоб не впертись в імʼя. */
-function ensure(name, runArgs) {
+function ensure(name, runArgs, published) {
   const running = docker(
     'ps',
     '--filter',
@@ -81,7 +89,22 @@ function ensure(name, runArgs) {
     '--format',
     '{{.Names}}',
   ).stdout.trim();
-  if (running) return;
+  if (running) {
+    // Уже запущений контейнер на іншому порту, ніж просять, дав би у
+    // `.env.harness` адресу, за якою нічого немає.
+    if (published) {
+      const actual = docker('port', name, `${published.inner}/tcp`)
+        .stdout.split('\n')[0]
+        ?.split(':')
+        .pop();
+      if (actual && Number(actual) !== published.port)
+        fail(
+          `${name} уже запущено на порту ${actual}, а просять ${published.port}. ` +
+            `Або викинь HARNESS_*_PORT, або перестворіть стенд (pnpm harness:down).`,
+        );
+    }
+    return;
+  }
   docker('rm', '-f', name);
   const run = docker('run', '-d', '--rm', '--name', name, ...runArgs);
   if (run.status !== 0)
@@ -105,25 +128,29 @@ ensure(PG.name, [
   'POSTGRES_HOST_AUTH_METHOD=trust',
   PG.image,
 ]);
-ensure(GARAGE.name, [
-  '-p',
-  `${GARAGE.port}:3900`,
-  '-v',
-  `${join(ROOT, 'docker/garage/garage.dev.toml')}:/etc/garage.toml:ro`,
-  '-e',
-  `GARAGE_RPC_SECRET=${GARAGE.rpcSecret}`,
-  '-e',
-  `GARAGE_DEFAULT_ACCESS_KEY=${GARAGE.accessKey}`,
-  '-e',
-  `GARAGE_DEFAULT_SECRET_KEY=${GARAGE.secretKey}`,
-  '-e',
-  `GARAGE_DEFAULT_BUCKET=${GARAGE.bucket}`,
-  GARAGE.image,
-  '/garage',
-  'server',
-  '--single-node',
-  '--default-bucket',
-]);
+ensure(
+  GARAGE.name,
+  [
+    '-p',
+    `${GARAGE.port}:3900`,
+    '-v',
+    `${join(ROOT, 'docker/garage/garage.dev.toml')}:/etc/garage.toml:ro`,
+    '-e',
+    `GARAGE_RPC_SECRET=${GARAGE.rpcSecret}`,
+    '-e',
+    `GARAGE_DEFAULT_ACCESS_KEY=${GARAGE.accessKey}`,
+    '-e',
+    `GARAGE_DEFAULT_SECRET_KEY=${GARAGE.secretKey}`,
+    '-e',
+    `GARAGE_DEFAULT_BUCKET=${GARAGE.bucket}`,
+    GARAGE.image,
+    '/garage',
+    'server',
+    '--single-node',
+    '--default-bucket',
+  ],
+  { inner: 3900, port: GARAGE.port },
+);
 ensure(MAILPIT.name, [
   '-p',
   `${MAILPIT.smtpPort}:1025`,

@@ -81,10 +81,9 @@ describe('serveMedia', () => {
   // Е8-Р14: збій драйвера (мережа S3) ≠ «файла немає». 404 кешували б CDN і
   // браузер; 503 + один лог з ключем дає оператору причину.
   it('виняток driver.open → 503, один console.error з ключем, без секретів', async () => {
-    const secret = 'S3_SECRET_KEY-marker-9f31';
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     driver.open = async () => {
-      throw new Error('S3 GET не вдався: 500');
+      throw new Error('GET http://AKID:S3CR3T@s3.test/bucket/k failed');
     };
     try {
       const response = await get(`/media/${KEY}`);
@@ -93,7 +92,10 @@ describe('serveMedia', () => {
       expect(log).toHaveBeenCalledTimes(1);
       const logged = JSON.stringify(log.mock.calls[0]);
       expect(logged).toContain(KEY);
-      expect(logged).not.toContain(secret);
+      // Облікові дані з URL у повідомленні драйвера не доходять до логу.
+      expect(logged).not.toContain('S3CR3T');
+      expect(logged).not.toContain('AKID:');
+      expect(logged).toContain('s3.test/bucket/k failed');
       expect(await response.text()).not.toContain(KEY);
     } finally {
       log.mockRestore();

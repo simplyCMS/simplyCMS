@@ -91,6 +91,42 @@ describe('s3Driver', () => {
     );
   });
 
+  // Збій GET при читанні тіла не мусить виглядати порожнім успіхом.
+  it.each([404, 500])(
+    'stream: GET %i відхиляє читання, а не дає порожнє тіло',
+    async (status) => {
+      const head = () =>
+        new Response(null, { status: 200, headers: { 'content-length': '3' } });
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: Request | string | URL, init?: RequestInit) => {
+          const req =
+            input instanceof Request ? input : new Request(input, init);
+          return req.method === 'HEAD'
+            ? head()
+            : new Response(null, { status });
+        }),
+      );
+      const object = await s3Driver(cfg).open(KEY);
+      await expect(
+        (async () => {
+          const reader = object!.stream().getReader();
+          while (!(await reader.read()).done);
+        })(),
+      ).rejects.toThrow(`S3 GET не вдався: ${status}`);
+    },
+  );
+
+  it('stream: GET не йде, доки стрім не читають', async () => {
+    const calls = stubFetch([
+      new Response(null, { status: 200, headers: { 'content-length': '3' } }),
+    ]);
+    const object = await s3Driver(cfg).open(KEY);
+    object!.stream();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(calls.map((c) => c.method)).toEqual(['HEAD']);
+  });
+
   it('ключ із сегментом .. відбивається до мережі', async () => {
     const calls = stubFetch([]);
     await expect(s3Driver(cfg).open('ab/../x.png')).rejects.toBeInstanceOf(

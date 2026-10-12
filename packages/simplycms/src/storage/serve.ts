@@ -2,6 +2,12 @@ import { MEDIA_URL_BASE } from 'simplycms/domain/media';
 import type { MediaStorageDriver } from './driver';
 import { MEDIA_KEY_RE, MIME_BY_EXT } from './keys';
 import { getMediaDriver } from './select';
+import {
+  describeDriverError,
+  notFound,
+  serverError,
+  unavailable,
+} from './serve-responses';
 
 /**
  * Префікс роздачі — ВИВЕДЕНИЙ з `MEDIA_URL_BASE` (рішення Е2-11), а не
@@ -22,38 +28,6 @@ export type MediaServeVerdict = 'missing' | 'hidden' | { personal: boolean };
 export interface ServeMediaDeps {
   lookup: (key: string, request: Request) => Promise<MediaServeVerdict>;
 }
-
-/** Одна відповідь «немає» на всі відмови (див. докблок нижче). */
-const notFound = (): Response =>
-  new Response('Not found', {
-    status: 404,
-    // 🔴 `no-store`: 404 прихованого файлу (pending-фото) інакше осів би в
-    // CDN за URL і віддавався б автору, а після схвалення — усім.
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
-
-/** Збій `lookup` (БД недоступна): 500 без деталей, не кешується. */
-/** Сховище тимчасово недоступне: клієнт і CDN не мусять запамʼятовувати це як «файла немає». */
-const unavailable = (): Response =>
-  new Response('Service unavailable', {
-    status: 503,
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
-
-const serverError = (): Response =>
-  new Response('Internal error', {
-    status: 500,
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
 
 /**
  * GET `/media/<key>` — роздача обʼєктів драйвера сховища.
@@ -167,12 +141,12 @@ export async function serveMedia(
   } catch (error) {
     // 🔴 Збій драйвера (мережа S3, права диска) — НЕ «файла немає» (Е8-Р14):
     // 404 `immutable`-кешували б CDN і браузер, а оператор не бачив би причини.
-    // Лог — ключ і повідомлення помилки: драйвери кидають лише метод і статус,
-    // секретів у тексті немає (а `error` не серіалізується цілком — без стека
-    // з аргументами підпису).
+    // Лог — ключ і `describeDriverError` (імʼя/код + повідомлення з замаскованими
+    // обліковими даними URL): сторонній драйвер може покласти в `message` URL з
+    // ключами, а сам `error` цілком (стек, `cause`) у лог не йде.
     console.error(
       `[simplycms] media driver open failed: ${key}`,
-      error instanceof Error ? error.message : 'unknown',
+      describeDriverError(error),
     );
     return unavailable();
   }
