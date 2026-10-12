@@ -238,6 +238,22 @@ describe('Е0: гейт бачить усю адмінку', () => {
     const sites = discoverInsertsInSource(source, 'admin/pages/X.tsx');
     expect(offendersOf(sites)).toHaveLength(1);
   });
+
+  it('апостроф у коментарі всередині values() не тягне аргумент до кінця файлу', () => {
+    // Без пропуску коментарів у findMatchingClose `// don't` відкривав би
+    // «рядок», аргумент першої вставки поглинав би `id:` другої — fail-open.
+    const source = [
+      "await db.insert(products).values({ // don't",
+      "  name: 'x',",
+      '});',
+      "await db.insert(products).values({ id: newId(), name: 'y' });",
+    ].join('\n');
+    const offenders = offendersOf(
+      discoverInsertsInSource(source, 'admin/x.ts'),
+    );
+    expect(offenders).toHaveLength(1);
+    expect(offenders[0].offset).toBe(source.indexOf('.insert('));
+  });
 });
 
 describe('Е0: таблиці, чий id кладе БД, ключа НЕ отримують', () => {

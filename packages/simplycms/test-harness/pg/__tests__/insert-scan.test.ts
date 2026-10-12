@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { callArgument, hasIdField } from '../insert-scan';
+import { callArgument, findMatchingClose, hasIdField } from '../insert-scan';
 
 // Е5б Task 8 (H): розпізнавання поля `id` спільного сканера вставок.
 // Знахідка Task 3: шортхенд `{ id, … }` давав хибну червону ознаку, і
@@ -80,5 +80,19 @@ describe('hasIdField: масиви, коментарі й рядки (M1)', () =
     ['map-вставка з id', '.values(rows.map((r) => ({ id: r.id, name: r.n })))'],
   ])('%s → є id', (_name, call) => {
     expect(hasIdField(valuesPayload(call))).toBe(true);
+  });
+});
+
+describe('findMatchingClose: коментарі не збивають балансування', () => {
+  it('апостроф у //-коментарі не відкриває рядок', () => {
+    const src = "values({ // don't\n name: 'x' }); other({ id: 1 })";
+    expect(src.slice(0, findMatchingClose(src, 6) + 1)).toBe(
+      "values({ // don't\n name: 'x' })",
+    );
+  });
+
+  it('дужка в /* */-коментарі не рахується', () => {
+    const src = 'f(a /* ) */, b) + g()';
+    expect(src.slice(0, findMatchingClose(src, 1) + 1)).toBe('f(a /* ) */, b)');
   });
 });
