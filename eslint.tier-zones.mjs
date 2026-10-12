@@ -72,11 +72,25 @@ const TIER_ZONES = [
   // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з адмінкою.
   // `site` (Е6б-7) — спільний кеш профілю/теми: вітрина читає, адмінка скидає.
+  // `mail`, `env`, `i18n` (Е8, Task 12): лист замовлення ставиться в outbox у
+  // транзакції оформлення; посилання в листі — лише `siteUrl` (Р18в), тексти —
+  // каталог `mail.*`.
   [
     'src/storefront',
     2,
     'storefront',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
+    [
+      'db',
+      'auth',
+      'storage',
+      'inventory',
+      'commerce',
+      'sanitize',
+      'site',
+      'mail',
+      'env',
+      'i18n',
+    ],
   ],
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
@@ -88,11 +102,21 @@ const TIER_ZONES = [
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з вітриною.
   // `site` (Е6б-7) — спільний кеш профілю/теми: адмінка скидає після COMMIT,
   // а `storefront` їй імпортувати не можна (той самий тір).
+  // `mail` (Е8, Task 12): картка хвостів пошти читає/повторює outbox.
   [
     'src/admin-server',
     2,
     'admin-server',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
+    [
+      'db',
+      'auth',
+      'storage',
+      'inventory',
+      'commerce',
+      'sanitize',
+      'site',
+      'mail',
+    ],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу

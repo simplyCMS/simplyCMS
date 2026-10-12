@@ -1,4 +1,4 @@
-/** Листи ядра (скидання пароля, запрошення власника). */
+/** Листи ядра (скидання пароля, запрошення власника, замовлення). */
 export const messages = {
   'mail.reset.subject': 'Скидання пароля — {storeName}',
   'mail.reset.intro':
@@ -14,4 +14,21 @@ export const messages = {
   'mail.invite.ttl': 'Посилання одноразове й дійсне {hours} год.',
   'mail.invite.ignore':
     'Якщо ви не чекали цього листа — просто проігноруйте його.',
+  'mail.order.customer.subject':
+    'Замовлення №{orderNumber} прийнято — {storeName}',
+  'mail.order.customer.intro':
+    'Дякуємо за замовлення в магазині «{storeName}». Номер вашого замовлення: {orderNumber}.',
+  'mail.order.line': '{name} × {quantity} — {total}',
+  'mail.order.subtotal': 'Товари: {amount}',
+  'mail.order.shipping': 'Доставка: {amount}',
+  'mail.order.total': 'Разом: {amount}',
+  'mail.order.owner.subject': 'Нове замовлення №{orderNumber} — {storeName}',
+  'mail.order.owner.intro':
+    'У магазині «{storeName}» нове замовлення №{orderNumber}.',
+  'mail.order.owner.customer': 'Покупець: {name}, {phone}, {email}',
+  'mail.order.owner.noEmail': 'email не вказано',
+  'mail.order.owner.delivery': 'Доставка: {address}',
+  'mail.order.owner.openLink':
+    'Щоб відкрити замовлення в адмінці, перейдіть за посиланням:',
+  'mail.order.owner.action': 'Відкрити замовлення',
 } satisfies Record<string, string>;

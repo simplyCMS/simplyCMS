@@ -18,3 +18,10 @@ export type {
   OwnerInviteMailInput,
   PasswordResetMailInput,
 } from './render/auth';
+export { renderOrderCustomerMail, renderOrderOwnerMail } from './render/order';
+export type {
+  OrderCustomerMailInput,
+  OrderMailData,
+  OrderMailItem,
+  OrderOwnerMailInput,
+} from './render/order';
