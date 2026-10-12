@@ -114,9 +114,9 @@ const serverEnvRestrictedSyntax = [
   },
 ];
 
-// ТОЧНО серверні модулі контракту §7. browser-client.ts та ізоморфний код
-// (роут товару, simplycms.config.ts) — клієнтський контур: їм значення
-// потрібне в бандлі, сюди їх НЕ додавати.
+// ТОЧНО серверні модулі контракту §7. Ізоморфний код (роут товару,
+// simplycms.config.ts) — клієнтський контур: йому значення потрібне в
+// бандлі, сюди його НЕ додавати.
 const SERVER_ENV_FILES = [
   'packages/simplycms/src/storefront-routes/seo/robots.ts',
   'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
@@ -158,9 +158,10 @@ export const MUTATION_CACHE_SYNC_RATCHET = [];
 
 // 🔴 Похідне від ЄДИНОЇ декларації межі (`contracts/server-only.ts`): усі
 // server-only субшляхи ядра й серверні залежності — bare і з підшляхами.
-// Літерали нижче — те, що плагіну заборонено ПОНАД server-only: клієнтський шар БД
-// адмінки (до К3) і serverFn-модулі ядра (`admin-server`, `plugin-sdk/server`):
-// плагін кличе хуки SDK, а не хендлери під ними.
+// Літерали нижче — те, що плагіну заборонено ПОНАД server-only: `@supabase/*`
+// (шар знесено в К3-Е7 — бан лишено як ратчет проти повернення) і serverFn-модулі
+// ядра (`admin-server`, `plugin-sdk/server`): плагін кличе хуки SDK, а не
+// хендлери під ними.
 const PLUGIN_BOUNDARY_MESSAGE =
   'Плагін працює лише через порти simplycms/plugin-sdk (межа довіри, спека §7).';
 // Залежності без винятків ідуть глобами; ті, що мають `clientSafe`, — ні:
