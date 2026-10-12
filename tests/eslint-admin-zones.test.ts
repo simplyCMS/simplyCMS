@@ -14,7 +14,11 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
  * filePath усередині адмінки.
  */
 
-const ADMIN_TSX = 'packages/simplycms/src/admin/features/x/X.tsx';
+// 🔴 Усі теки адмінки, а не одна: звуження зони до `admin/features/**` лишало
+// тест зеленим, хоча решта теки випадала з лінту.
+const ADMIN_DIRS = ['components', 'pages', 'layouts', 'lib', 'features'];
+const adminFile = (dir: string, ext: 'ts' | 'tsx'): string =>
+  `packages/simplycms/src/admin/${dir}/x/X.${ext}`;
 // Ім'я правила лінту: audit-exports бере специфікатори лише з імпорт-форм,
 // тож літерал тут субшляхом пакета не вважається.
 const QUERY_KEY_RULE = 'simplycms/query-key-from-entity';
@@ -33,17 +37,22 @@ async function ruleIds(code: string, filePath: string): Promise<string[]> {
   return result.messages.map((m) => m.ruleId ?? `<${m.message}>`);
 }
 
-describe('адмінка в зонах лінту', () => {
-  it('ловить <label> без звʼязаного контролу', async () => {
+describe.each(ADMIN_DIRS)('адмінка в зонах лінту: admin/%s', (dir) => {
+  it('ловить <label> без звʼязаного контролу (.tsx)', async () => {
     const code =
       'export const X = () => (<div><label>Імʼя</label><input /></div>);\n';
-    expect(await ruleIds(code, ADMIN_TSX)).toContain(
+    expect(await ruleIds(code, adminFile(dir, 'tsx'))).toContain(
       'jsx-a11y/label-has-associated-control',
     );
   });
 
-  it('ловить літеральний перший сегмент queryKey', async () => {
-    const code = "export const q = { queryKey: ['banners', 'all'] };\n";
-    expect(await ruleIds(code, ADMIN_TSX)).toContain(QUERY_KEY_RULE);
-  });
+  it.each(['ts', 'tsx'] as const)(
+    'ловить літеральний перший сегмент queryKey (.%s)',
+    async (ext) => {
+      const code = "export const q = { queryKey: ['banners', 'all'] };\n";
+      expect(await ruleIds(code, adminFile(dir, ext))).toContain(
+        QUERY_KEY_RULE,
+      );
+    },
+  );
 });
