@@ -111,3 +111,26 @@
 ### Додаткова ухвала виконання (поза Р1–Р9)
 
 - pnpm 11 переписує lock перед кожним `pnpm <script>`, тож мутацію lock доводять через `npx vitest`, а не `pnpm test`.
+
+### Доповнення виконання (поза Р1–Р9): 9в і Task 11
+
+- **9в — зняті виїмки `src/admin`.** `A11Y_LABEL_ZONE` і `query-key-from-entity` більше не виключають
+  адмінку (виїмка трималася на застарілому «клієнтському шарі БД адмінки»). Вимір: 1 порушення
+  `jsx-a11y` (`BannerScheduleCard`, Radix `Checkbox` без `htmlFor`) — виправлено (`htmlFor` + `useId`),
+  порушень ключів кешу 0. Контроль — `tests/eslint-admin-zones.test.ts`; мутація (прибрати `admin` з
+  обох зон) → червоно (коміт `ee68755d`; пізніше параметризовано по всіх теках `admin/*`).
+- **Task 11 — свіжий магазин з 0.7–0.13 не стартує (`UPSTREAM:START-IP-1`).** Повний `pnpm pilot`
+  (Gate B) показав `TypeError: Class extends value #<Object>` у `BoundPool extends Pool`: import-protection
+  плагін `@tanstack/start-plugin-core` ≥1.171 перерезолвлює `require()` без `kind` (ESM-вхід `pg-pool`), а
+  `pg` вклеюється в серверний бандл, бо не є прямою залежністю магазину. Рішення архітектора (форма A):
+  `pg` — **peer ядра** (точний пін `8.23.1`) і **пряма залежність магазину** (шаблон,
+  `tests/pilot/store-template`; BREAKING для існуючих магазинів); `doctor` №13 (декларація + версія в
+  межах peer; `update` `pg` не переписує, лише друкує підказку); **Gate SB** пілота
+  (`scripts/pilot-pack/gate-sb.mjs`, `server-bundle*.mjs`: драйвер не вклеєний + allowlist усіх вклеєних
+  пакетів із причинами, клас дефекту — будь-який вклеєний CJS-пакет із dual-`exports`) і тест парності
+  версії `pg` (`tests/pg-peer-parity.test.ts`); розтяжка на upstream у `tests/upstream-tripwires.test.ts`;
+  крок Gate B «sanitize-html на сервері» — проба в оверлеї пілота
+  `scripts/pilot-pack/sanitize-probe.sql` (демо-сід лишається чистим; рантайм-сторож dual-пакетів у
+  бандлі); **реліз ганяє повний `pnpm pilot`** (`scripts/release/pilot-full.mjs` у
+  `scripts/release/gates.mjs`: `harness:up` → `db:demo` → оверлей → `pnpm pilot`). Опубліковані 0.7–0.13
+  не чіпаємо — рішення про них за власником; реліз 0.14.0 не виконано.

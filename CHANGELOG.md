@@ -99,6 +99,14 @@
   `format: ['cjs']`), юніт `gateBundle` для Gate C.
 - `simplycms doctor` (№7) і `simplycms update`: відсутня `db/migrations` — помилка з підказкою
   `git mv supabase/migrations db/migrations`, якщо є стара тека.
+- Лінт: адмінка (`src/admin/**`) більше не виїмка з правил a11y-міток (`jsx-a11y`) і
+  `query-key-from-entity` (К3-Е7, 9в): виміряно 1 порушення (`BannerScheduleCard` — Radix
+  `Checkbox` без `htmlFor`), виправлено; зону стереже `tests/eslint-admin-zones.test.ts`
+  (по всіх теках `admin/*`).
+- Пілот і реліз (К3-Е7, Task 11): Gate SB пілота (`scripts/pilot-pack/gate-sb.mjs`:
+  драйвер БД не вклеєний у серверний бандл + allowlist вклеєних пакетів), крок Gate B
+  «sanitize-html на сервері» (оверлей `scripts/pilot-pack/sanitize-probe.sql`), релізний гейт
+  `pilot` (`scripts/release/pilot-full.mjs`), розтяжка `UPSTREAM:START-IP-1`.
 - Доробка К3-Е6д-1…9 (план
   [`2026-10-11-v2-k3-e6d-finish.md`](docs/superpowers/plans/2026-10-11-v2-k3-e6d-finish.md)):
   - outbox `media_erasures` з `completeMediaErasures`/`scheduleMediaErasures`/
