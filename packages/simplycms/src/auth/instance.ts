@@ -8,7 +8,11 @@ import {
   type IsUserBanned,
 } from './ban';
 import { createAuthDb } from './drizzle-proxy';
-import { resolveAuthBaseUrl, resolveAuthSecret } from './auth-env';
+import {
+  assertAuthBaseUrl,
+  resolveAuthBaseUrl,
+  resolveAuthSecret,
+} from './auth-env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
 import { provisionUserInDb } from './provision';
 import { createResetPasswordSender } from './reset-mail';
@@ -57,7 +61,12 @@ export interface AuthDeps {
  */
 export function createAuth(deps: AuthDeps = {}) {
   const resetGuard = deps.resetGuard ?? isResetStillValid;
-  const baseURL = deps.baseURL ?? resolveAuthBaseUrl(process.env);
+  // Порожній чи некоректний `deps.baseURL` — гучна відмова з імʼям поля, а не
+  // гола `TypeError` від `new URL` нижче.
+  const baseURL =
+    deps.baseURL === undefined
+      ? resolveAuthBaseUrl(process.env)
+      : assertAuthBaseUrl(deps.baseURL, 'AuthDeps.baseURL');
 
   return betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),

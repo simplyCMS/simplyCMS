@@ -49,4 +49,18 @@ describe('resolveAuthBaseUrl', () => {
       expect(() => resolveAuthBaseUrl(env)).toThrow(/VITE_SITE_URL/);
     },
   );
+
+  it.each(['not a url', '/relative', 'http://'])(
+    'A: недійсний BETTER_AUTH_URL (%j) падає з імʼям ключа, без значення і без голої TypeError',
+    (bad) => {
+      const attempt = () =>
+        resolveAuthBaseUrl({
+          BETTER_AUTH_URL: bad,
+          VITE_SITE_URL: 'https://site.test',
+        });
+      expect(attempt).toThrow(/BETTER_AUTH_URL/);
+      expect(attempt).not.toThrow(bad);
+      expect(attempt).not.toThrow(TypeError);
+    },
+  );
 });

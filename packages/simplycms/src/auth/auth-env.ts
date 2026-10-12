@@ -42,6 +42,27 @@ export function resolveAuthSecret(env: AuthEnv): string {
 }
 
 /**
+ * Перевіряє, що база посилань — коректна абсолютна адреса, і повертає її без змін.
+ *
+ * 🔴 Без цього зіпсоване значення давало б голу `TypeError: Invalid URL` у
+ * `new URL(...)` без імені ключа. Помилка називає ключ, але не значення:
+ * у `BETTER_AUTH_URL` може лежати що завгодно.
+ *
+ * @param key імʼя ключа env (або поля `AuthDeps`) для повідомлення
+ */
+export function assertAuthBaseUrl(value: string, key: string): string {
+  try {
+    new URL(value);
+  } catch {
+    throw new Error(
+      `[simplycms/auth] ${key} не є коректною абсолютною адресою — база ` +
+        'посилань не може бути порожньою чи відносною.',
+    );
+  }
+  return value;
+}
+
+/**
  * Публічна база URL застосунку: колбеки і посилання в листах (скидання пароля).
  *
  * 🔴 Р18а: `BETTER_AUTH_URL` (явний override) або ORIGIN із `VITE_SITE_URL` — той
@@ -50,11 +71,12 @@ export function resolveAuthSecret(env: AuthEnv): string {
  * `request.url`, тобто з підробного `Host`/`X-Forwarded-Host`, — тому відсутність
  * обох ключів ПАДАЄ гучно, як відсутній секрет, а не мовчки відкриває S3-01.
  *
- * @throws Error якщо немає ні `BETTER_AUTH_URL`, ні `VITE_SITE_URL`.
+ * @throws Error якщо немає ні `BETTER_AUTH_URL`, ні `VITE_SITE_URL`, або
+ * `BETTER_AUTH_URL` не є абсолютною адресою.
  */
 export function resolveAuthBaseUrl(env: AuthEnv): string {
   const explicit = env.BETTER_AUTH_URL || undefined;
-  if (explicit) return explicit;
+  if (explicit) return assertAuthBaseUrl(explicit, 'BETTER_AUTH_URL');
   if (!env.VITE_SITE_URL) {
     throw new Error(
       '[simplycms/auth] Відсутні BETTER_AUTH_URL і VITE_SITE_URL — нема з чого ' +

@@ -27,10 +27,6 @@ export type AllowEntry = { kind: DevKind | DevKind[]; reason: string };
  */
 export const ALLOWLIST: Record<string, AllowEntry> = {
   // Логи сервера: дивиться розробник у терміналі.
-  'packages/simplycms/src/storefront-routes/server/auth.ts': {
-    kind: 'console',
-    reason: 'console.error — лог',
-  },
   'packages/simplycms/src/storefront-routes/seo/interceptor.ts': {
     kind: 'console',
     reason: 'console.error — лог',
@@ -79,10 +75,6 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
   'packages/simplycms/src/plugin-sdk/definePlugin.ts': {
     kind: 'throw',
     reason: 'throw new Error — діагностика для автора плагіна',
-  },
-  'packages/simplycms/src/plugin-sdk/usePluginTable.ts': {
-    kind: 'throw',
-    reason: 'throw new Error — межа довіри (гард plg_)',
   },
   'packages/simplycms/src/plugin-sdk/usePluginConfig.ts': {
     kind: 'console',
