@@ -107,6 +107,8 @@ describe('resolveDriverEnv: група SMTP', () => {
     const error = catchError({ MAIL_FROM: 'shop@example.test' });
     expect(error.group).toBe('smtp');
     expect(error.missing).toEqual(['SMTP_URL']);
+    expect(error.message).toContain('SMTP_URL');
+    expect(error.message).not.toContain('shop@example.test');
   });
 
   it('обидва ключі — smtp', () => {
