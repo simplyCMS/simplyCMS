@@ -50,25 +50,34 @@ export function satisfies(version, range) {
 }
 
 /**
- * Стан драйвера магазину: що декларовано, яка версія встановлена, який peer-діапазон у ядра.
+ * Стан залежності-драйвера магазину: що декларовано, яка версія встановлена, який peer-діапазон
+ * у ядра. Спільний для `pg` (№13) і `nodemailer` (№14).
  * @param {string} storeRoot
  * @param {Record<string, unknown>} manifest
+ * @param {string} name
  */
-export function readPgState(storeRoot, manifest) {
+export function readPeerState(storeRoot, manifest, name) {
   const deps = /** @type {Record<string,string>} */ (
     manifest.dependencies ?? {}
   );
-  const declared = deps.pg;
   const installed = readJson(
-    join(storeRoot, 'node_modules/pg/package.json'),
+    join(storeRoot, 'node_modules', name, 'package.json'),
   )?.version;
   const core = readJson(join(storeRoot, 'node_modules/simplycms/package.json'));
   return {
-    declared,
+    declared: deps[name],
     installed: typeof installed === 'string' ? installed : undefined,
-    peerRange: core?.peerDependencies?.pg,
+    peerRange: core?.peerDependencies?.[name],
   };
 }
+
+/**
+ * Стан драйвера БД магазину (`pg`).
+ * @param {string} storeRoot
+ * @param {Record<string, unknown>} manifest
+ */
+export const readPgState = (storeRoot, manifest) =>
+  readPeerState(storeRoot, manifest, 'pg');
 
 /**
  * Підказка для `simplycms update`: чи треба вручну оновити `pg` магазину під peer нової версії

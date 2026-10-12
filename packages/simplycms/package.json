@@ -39,6 +39,7 @@
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./mail": "./src/mail/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
@@ -245,6 +246,10 @@
       "./storage": {
         "types": "./dist/storage/index.d.ts",
         "import": "./dist/storage/index.js"
+      },
+      "./mail": {
+        "types": "./dist/mail/index.d.ts",
+        "import": "./dist/mail/index.js"
       },
       "./inventory": {
         "types": "./dist/inventory/index.d.ts",
@@ -614,6 +619,7 @@
     "input-otp": "^1.0.0",
     "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
+    "nodemailer": "10.1.0",
     "pg": "8.23.1",
     "react": "^18.0.0 || ^19.0.0",
     "react-day-picker": "^9.0.0",
@@ -631,6 +637,7 @@
     "@types/sanitize-html": "^2.16.2",
     "dotenv": "^18.0.5",
     "drizzle-zod": "0.8.3",
+    "nodemailer": "10.1.0",
     "pg": "8.23.1",
     "seroval": "^1.6.8"
   },

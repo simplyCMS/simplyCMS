@@ -76,6 +76,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
+| 14 | `nodemailer` — пряма залежність магазину (`dependencies`) у межах peer-діапазону ядра (`src/doctor-mail-check.mjs`, спільне читання стану — `src/pg-peer.mjs`; К3-Е8, Е8-Р11). Без декларації SMTP-драйвер порту `simplycms/mail` не працює. Ядра в `node_modules` ще немає — `skip` | error |
 
 Онлайн-перевірки (лише з `--online`, К3-Е8, `src/doctor-db-checks.mjs`) ходять у БД
 з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor
@@ -328,6 +329,7 @@ pnpm build                       # активація/налаштування �
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
 | `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
+| `tests/cli-mail-driver.test.ts` | doctor №14 (немає nodemailer / не в dependencies / невідповідна версія / ок / ядро не встановлено) |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |

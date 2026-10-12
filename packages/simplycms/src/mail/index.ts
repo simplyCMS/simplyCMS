@@ -1,0 +1,6 @@
+// Порт пошти — server-only піддерево (`contracts/server-only`): `nodemailer` і
+// секрет у `SMTP_URL`. Драйвер обирає група env (`resolveDriverEnv`), не код магазину.
+export type { MailMessage, MailTransport } from './types';
+export { logTransport } from './log';
+export { smtpTransport } from './smtp';
+export { getMailTransport, selectMailTransport } from './transport';

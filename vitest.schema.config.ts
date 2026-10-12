@@ -1,8 +1,10 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import {
+  harnessMailEnv,
   harnessServicesEnv,
   loadHarnessEnv,
+  MAIL_KEYS,
   SERVICE_KEYS,
 } from './scripts/harness-env.mjs';
 
@@ -28,7 +30,10 @@ loadHarnessEnv(import.meta.dirname);
 // група повна. Усе pg-крило (`diskKeys()`, стирання файлів на диску) побудоване на
 // `local-fs`, тож воно бачить `S3_*` порожніми (порожнє = «не задано» для
 // `resolveDriverEnv`), а ключі Garage отримує лише контрактний набір драйверів.
-const blankS3 = Object.fromEntries(SERVICE_KEYS.map((k) => [k, '']));
+// Так само `SMTP_URL`/`MAIL_FROM` (Task 9): pg-крило лишається на драйвері пошти `log`.
+const blankS3 = Object.fromEntries(
+  [...SERVICE_KEYS, ...MAIL_KEYS].map((k) => [k, '']),
+);
 const common = {
   environment: 'node',
   // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
@@ -52,7 +57,10 @@ export default defineConfig({
           ...common,
           name: 'pg',
           include: ['packages/simplycms/test-harness/**/*.test.ts'],
-          exclude: ['packages/simplycms/test-harness/storage/**'],
+          exclude: [
+            'packages/simplycms/test-harness/storage/**',
+            'packages/simplycms/test-harness/mail/**',
+          ],
           env: blankS3,
         },
       },
@@ -63,6 +71,15 @@ export default defineConfig({
           name: 'storage',
           include: ['packages/simplycms/test-harness/storage/**/*.test.ts'],
           env: harnessServicesEnv(import.meta.dirname),
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'mail',
+          include: ['packages/simplycms/test-harness/mail/**/*.test.ts'],
+          env: harnessMailEnv(import.meta.dirname),
         },
       },
     ],

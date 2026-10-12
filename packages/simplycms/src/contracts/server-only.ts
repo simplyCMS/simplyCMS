@@ -67,6 +67,9 @@ export const SERVER_ONLY = [
   // передає сюди; клієнту група S3/SMTP не потрібна й секретів у бандлі бути не
   // може.
   'env',
+  // Порт пошти (К3-Е8, Task 9): `nodemailer` і SMTP-секрет у `SMTP_URL` —
+  // лише сервер; клієнтові звідси не потрібно нічого.
+  'mail',
   // Build-time плагіни Vite (К3-Е8): `child_process`, `zlib`, `fs` — збірка
   // магазину в Node. Клієнт цей субшлях імпортувати не повинен.
   'vite',
@@ -94,6 +97,8 @@ export const SERVER_ONLY_DEPS = [
   // Санітизатор HTML: htmlparser2 + postcss — десятки КБ, потрібні лише там,
   // де розмітку пишуть чи віддають із сервера.
   { name: 'sanitize-html' },
+  // SMTP-клієнт порту пошти: `net`/`tls`, у браузері не існує.
+  { name: 'nodemailer' },
 ] as const;
 
 /**

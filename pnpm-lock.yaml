@@ -261,6 +261,9 @@ importers:
       jsdom:
         specifier: ^30.1.2
         version: 30.1.2(@noble/hashes@2.3.0)
+      nodemailer:
+        specifier: 10.1.0
+        version: 10.1.0
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -533,6 +536,9 @@ importers:
       drizzle-zod:
         specifier: 0.8.3
         version: 0.8.3(drizzle-orm@0.45.3(@types/pg@8.23.1)(kysely@0.29.5)(pg@8.23.1))(zod@4.6.5)
+      nodemailer:
+        specifier: 10.1.0
+        version: 10.1.0
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -4361,6 +4367,10 @@ packages:
   node-releases@2.0.51:
     resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
+
+  nodemailer@10.1.0:
+    resolution: {integrity: sha512-fXW8AulB25aOTuwfRYV6lqHyfz2VM4rr4SGXH03mE7x5znEUpzL5mu6anARUpZN7744Ziwkmr4AxSLPJsBQspg==}
+    engines: {node: '>=20.0.0'}
 
   object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
@@ -8770,6 +8780,8 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
 
   node-releases@2.0.51: {}
+
+  nodemailer@10.1.0: {}
 
   object-inspect@1.13.4: {}
 

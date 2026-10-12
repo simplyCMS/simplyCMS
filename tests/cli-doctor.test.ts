@@ -85,6 +85,8 @@ describe('cli doctor (оффлайн)', () => {
       'skill-links': 'skip',
       // Ядра в node_modules ще немає — peer-діапазон pg невідомий (деталі — cli-pg-driver).
       'pg-driver': 'skip',
+      // Те саме для nodemailer (К3-Е8, №14).
+      'mail-driver': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);

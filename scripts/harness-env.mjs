@@ -33,6 +33,9 @@ export const SERVICE_KEYS = [
   'S3_SECRET_KEY',
 ];
 
+/** Ключі пошти стенду (Mailpit): їх бере лише контрактний набір SMTP (див. `harnessMailEnv`). */
+export const MAIL_KEYS = ['SMTP_URL', 'MAIL_FROM'];
+
 /** Живий файл `.env.harness` або `null` (немає файла чи контейнер не запущено). */
 function liveHarnessFile(root) {
   const file = join(root, '.env.harness');
@@ -72,5 +75,25 @@ export function harnessServicesEnv(root) {
       const v = process.env[k] ?? fromFile[k];
       return v === undefined ? [] : [[k, v]];
     }),
+  );
+}
+
+/**
+ * Пошта стенду (Mailpit) для контрактного набору SMTP. 🔴 `SMTP_URL`/`MAIL_FROM`
+ * ядро читає з `process.env` (група «все або нічого»), тож їх бачить лише проєкт
+ * `mail`: у pg-крилі вони перемкнули б пошту на smtp. `HARNESS_MAILPIT_URL` —
+ * HTTP API Mailpit, з якого тест читає доставлені листи.
+ */
+export function harnessMailEnv(root) {
+  const fromFile = liveHarnessFile(root) ?? {};
+  const pick = (k) => process.env[k] ?? fromFile[k];
+  const smtpUrl = process.env.SMTP_URL ?? fromFile.HARNESS_SMTP_URL;
+  const mailpit = pick('HARNESS_MAILPIT_URL');
+  return Object.fromEntries(
+    Object.entries({
+      SMTP_URL: smtpUrl,
+      MAIL_FROM: process.env.MAIL_FROM ?? 'shop@harness.test',
+      HARNESS_MAILPIT_URL: mailpit,
+    }).filter(([, v]) => v !== undefined),
   );
 }
