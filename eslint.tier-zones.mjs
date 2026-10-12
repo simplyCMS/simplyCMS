@@ -95,7 +95,9 @@ const TIER_ZONES = [
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
   // до Postgres немає. `auth` НЕ у винятку — грант перевіряє викликач
   // (serverFn), а не сам порт.
-  ['src/storage', 2, 'storage', ['db']],
+  // `env` (Е8-Р7): вибір драйвера за групами S3_*/MEDIA_ROOT — чиста функція
+  // `resolveDriverEnv`, власного читання `process.env` у сховищі немає.
+  ['src/storage', 2, 'storage', ['db', 'env']],
   // Облік залишків (Е3-5) — T2. Upward `db`: гвард пише через ActorDb
   // (withActor — єдиний канал до Postgres), як у `storage`.
   ['src/inventory', 2, 'inventory', ['db']],

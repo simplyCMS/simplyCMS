@@ -637,6 +637,7 @@
   "dependencies": {
     "@tiptap/extension-image": "^3.31.4",
     "@tiptap/extension-text-align": "^3.31.4",
+    "aws4fetch": "1.0.20",
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
     "sanitize-html": "^2.18.0",

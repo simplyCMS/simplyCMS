@@ -1,6 +1,10 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { loadHarnessEnv } from './scripts/harness-env.mjs';
+import {
+  harnessServicesEnv,
+  loadHarnessEnv,
+  SERVICE_KEYS,
+} from './scripts/harness-env.mjs';
 
 // Окремий конфіг для schema-гейта `test:schema` (Task 1, план В2-К1а).
 //
@@ -20,6 +24,20 @@ import { loadHarnessEnv } from './scripts/harness-env.mjs';
 // і контейнер запущений (див. scripts/harness-env.mjs).
 loadHarnessEnv(import.meta.dirname);
 
+// 🔴 Два проєкти, бо `S3_*` змінюють поведінку ядра: `getMediaDriver()` бере s3, коли
+// група повна. Усе pg-крило (`diskKeys()`, стирання файлів на диску) побудоване на
+// `local-fs`, тож воно бачить `S3_*` порожніми (порожнє = «не задано» для
+// `resolveDriverEnv`), а ключі Garage отримує лише контрактний набір драйверів.
+const blankS3 = Object.fromEntries(SERVICE_KEYS.map((k) => [k, '']));
+const common = {
+  environment: 'node',
+  // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
+  // файли билися б за той самий вільний порт і tmp-теку.
+  fileParallelism: false,
+  testTimeout: 60_000,
+  hookTimeout: 60_000,
+} as const;
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -27,12 +45,26 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
-    include: ['packages/simplycms/test-harness/**/*.test.ts'],
-    // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
-    // файли билися б за той самий вільний порт і tmp-теку.
-    fileParallelism: false,
-    testTimeout: 60_000,
-    hookTimeout: 60_000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'pg',
+          include: ['packages/simplycms/test-harness/**/*.test.ts'],
+          exclude: ['packages/simplycms/test-harness/storage/**'],
+          env: blankS3,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'storage',
+          include: ['packages/simplycms/test-harness/storage/**/*.test.ts'],
+          env: harnessServicesEnv(import.meta.dirname),
+        },
+      },
+    ],
   },
 });

@@ -13,7 +13,9 @@ export {
   type MediaStorageDriver,
   type MediaStorageOptions,
 } from './driver';
-export { getMediaDriver, localFsDriver } from './local-fs';
+export { localFsDriver } from './local-fs';
+export { s3Driver } from './s3';
+export { getMediaDriver, selectMediaDriver } from './select';
 export {
   serveMedia,
   type MediaServeVerdict,

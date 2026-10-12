@@ -4,7 +4,7 @@ import { withActor, type ActorDb } from 'simplycms/db';
 import { mediaErasures } from 'simplycms/schema';
 
 import type { MediaStorageDriver } from './driver';
-import { getMediaDriver } from './local-fs';
+import { getMediaDriver } from './select';
 
 /** Скільки хвостів опортуністично добирає `completeMediaErasures` (Е6д-20). */
 export const MEDIA_ERASURE_RETRY_BATCH = 5;

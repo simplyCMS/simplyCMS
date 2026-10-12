@@ -118,17 +118,4 @@ export function localFsDriver(root: string = mediaRoot()): MediaStorageDriver {
   };
 }
 
-let cached: MediaStorageDriver | null = null;
-
-/**
- * Дефолтний драйвер магазину. Мемоізований — але саме тут, а не в
- * модуль-рівневому `const`: інстанс створюється при ПЕРШОМУ виклику, коли
- * `process.env.MEDIA_ROOT` уже наповнено (`server.mjs` робить це перед
- * динамічним імпортом хендлера).
- */
-export function getMediaDriver(): MediaStorageDriver {
-  cached ??= localFsDriver();
-  return cached;
-}
-
 export { MediaKeyCollisionError, MediaKeyError };

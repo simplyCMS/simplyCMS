@@ -31,6 +31,8 @@ export const SERVER_BUNDLE_ALLOWLIST = {
   '@tanstack/start-client-core': 'ESM-only; noExternal Start',
   '@tanstack/start-server-core': 'ESM-only; noExternal Start',
   '@tanstack/start-storage-context': 'ESM-only; noExternal Start',
+  aws4fetch:
+    'dual (exports import/require, без type); у бандл береться ESM-вхід dist/aws4fetch.esm.mjs через ESM-імпорт s3-драйвера ядра — require() до нього в бандлі немає, залежностей у пакета нема (перевірено на бандлі скретча 2026-10-12)',
   'better-auth': 'ESM-only; noExternal Start (peer на react-start)',
   'better-call': 'dual, лише ESM-імпорти better-auth',
   'cookie-es': 'ESM-only',

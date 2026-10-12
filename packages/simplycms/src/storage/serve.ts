@@ -1,7 +1,7 @@
 import { MEDIA_URL_BASE } from 'simplycms/domain/media';
 import type { MediaStorageDriver } from './driver';
 import { MEDIA_KEY_RE, MIME_BY_EXT } from './keys';
-import { getMediaDriver } from './local-fs';
+import { getMediaDriver } from './select';
 
 /**
  * Префікс роздачі — ВИВЕДЕНИЙ з `MEDIA_URL_BASE` (рішення Е2-11), а не
@@ -36,6 +36,16 @@ const notFound = (): Response =>
   });
 
 /** Збій `lookup` (БД недоступна): 500 без деталей, не кешується. */
+/** Сховище тимчасово недоступне: клієнт і CDN не мусять запамʼятовувати це як «файла немає». */
+const unavailable = (): Response =>
+  new Response('Service unavailable', {
+    status: 503,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+  });
+
 const serverError = (): Response =>
   new Response('Internal error', {
     status: 500,
@@ -154,8 +164,17 @@ export async function serveMedia(
   let object;
   try {
     object = await driver.open(key);
-  } catch {
-    return notFound();
+  } catch (error) {
+    // 🔴 Збій драйвера (мережа S3, права диска) — НЕ «файла немає» (Е8-Р14):
+    // 404 `immutable`-кешували б CDN і браузер, а оператор не бачив би причини.
+    // Лог — ключ і повідомлення помилки: драйвери кидають лише метод і статус,
+    // секретів у тексті немає (а `error` не серіалізується цілком — без стека
+    // з аргументами підпису).
+    console.error(
+      `[simplycms] media driver open failed: ${key}`,
+      error instanceof Error ? error.message : 'unknown',
+    );
+    return unavailable();
   }
   if (!object) return notFound();
 
