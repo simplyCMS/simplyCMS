@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { productModifications, products } from 'simplycms/schema';
 import type { StockStatus } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
@@ -22,10 +22,9 @@ export interface StockTarget {
  * 🔴 Потрібен `reserveStock`, щоб розпізнати `on_order` (рішення архітектора
  * B, К2-Е0): для такої цілі достатність залишку НЕ перевіряється — товар
  * «під замовлення» продається і на нулі, і в мінус (борг постачанню).
- * `null` — рядок є, статус не заданий (DEFAULT схеми — `in_stock`,
- * `isPurchasable(null) === true`, Task 8); рядка немає взагалі — теж `null`,
- * бо викликачу цього модуля важливо лише «чи `on_order`», а «рядка немає» і
- * так виходить з `lockTargetStock` окремою гілкою.
+ * `null` — рядка немає взагалі (колонка NOT NULL, Е8-Р3: наявний рядок
+ * статус має). Викликачу цього модуля важливо лише «чи `on_order`», а «рядка
+ * немає» і так виходить з `lockTargetStock` окремою гілкою.
  */
 export async function loadTargetStatus(
   db: ActorDb,
@@ -54,10 +53,10 @@ export async function loadTargetStatus(
  * 🔴 `on_order` не чіпається ніколи: «під замовлення» — рішення магазину, що
  * товар продається й на нулі (`isPurchasable('on_order') === true`, Task 8),
  * і безумовний фліп затер би його. Тому в `out_of_stock` переходять лише
- * `in_stock` і NULL, а назад в `in_stock` — лише `out_of_stock`.
+ * `in_stock`, а назад в `in_stock` — лише `out_of_stock`.
  *
- * 🔴 Матриця сама по собі пари взаємно оберненою НЕ робить: `in_stock` і
- * NULL зводяться в `out_of_stock` в один стан. Умову «повернути рівно те, що
+ * 🔴 Матриця сама по собі пари взаємно оберненою НЕ робить: `on_order` у
+ * `out_of_stock` не йде, а `out_of_stock` повертається лише в `in_stock`. Умову «повернути рівно те, що
  * було» тримає ВИКЛИКАЧ — `releaseStock` фліпає назад лише з нуля (див. його
  * гвард), інакше скасування старого замовлення підняло б у продаж товар,
  * який магазин зняв вручну.
@@ -74,9 +73,7 @@ export async function setTargetStatus(
   if (target.modificationId) {
     const col = productModifications.stockStatus;
     const from =
-      next === 'out_of_stock'
-        ? or(isNull(col), eq(col, 'in_stock'))
-        : eq(col, 'out_of_stock');
+      next === 'out_of_stock' ? eq(col, 'in_stock') : eq(col, 'out_of_stock');
     await db
       .update(productModifications)
       .set({ stockStatus: next, updatedAt })
@@ -86,9 +83,7 @@ export async function setTargetStatus(
   if (!target.productId) return;
   const col = products.stockStatus;
   const from =
-    next === 'out_of_stock'
-      ? or(isNull(col), eq(col, 'in_stock'))
-      : eq(col, 'out_of_stock');
+    next === 'out_of_stock' ? eq(col, 'in_stock') : eq(col, 'out_of_stock');
   await db
     .update(products)
     .set({ stockStatus: next, updatedAt })

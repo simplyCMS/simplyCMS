@@ -11,7 +11,6 @@
 // прогін «двічі поспіль» тут обовʼязковий, а не косметичний.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -311,7 +310,7 @@ describe('канон міграцій: накат на чисту БД', () => {
   }, 120_000);
 
   // Е8-Р3: борги схеми, внесені в baseline на місці перед заморожуванням.
-  it('борги схеми Е8-Р3: CHECK, NOT NULL, індекси; keyset-індекс покупців бере планувальник', async () => {
+  it('борги схеми Е8-Р3: CHECK, NOT NULL, індекси, source', async () => {
     const checks = await queryRows(
       dbUrl,
       `select conname from pg_constraint
@@ -364,25 +363,6 @@ describe('канон міграцій: накат на чисту БД', () => {
       );
       if (ok) await insert;
       else await expect(insert).rejects.toMatchObject({ code: '23514' });
-    }
-
-    // 🔴 Індекс keyset покупців корисний, лише коли вираз ЗБІГАЄТЬСЯ із
-    // запитом списку (`admin-server/impl/customers/list.ts`). seqscan вимкнено,
-    // щоб на порожній таблиці вирішувала саме придатність індексу.
-    const client = new pg.Client({ connectionString: dbUrl });
-    await client.connect();
-    try {
-      await client.query('set enable_seqscan = off');
-      const plan = await client.query(
-        `explain select u.id from public.users u
-          order by date_trunc('milliseconds', u.created_at at time zone 'UTC') desc, u.id desc
-          limit 51`,
-      );
-      expect(plan.rows.map((row) => row['QUERY PLAN']).join('\n')).toContain(
-        'users_created_ms_id_idx',
-      );
-    } finally {
-      await client.end();
     }
   }, 120_000);
 });

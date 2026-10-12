@@ -59,9 +59,9 @@ export function resolveCurrentPricing(
 ): CurrentPricing {
   const { product, hasModifications, selectedMod } = input;
 
-  const stockStatus: StockStatus | null = hasModifications
+  const stockStatus: StockStatus = hasModifications
     ? (selectedMod?.stock_status ?? 'in_stock')
-    : (product.stock_status ?? 'in_stock');
+    : product.stock_status;
   const modificationId = hasModifications ? selectedMod?.id || null : null;
   const priced = priceOf(input, modificationId);
   const price = priced.price ?? undefined;

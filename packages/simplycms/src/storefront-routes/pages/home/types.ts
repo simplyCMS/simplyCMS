@@ -7,7 +7,7 @@ export interface HomeProduct {
   slug: string;
   images: string[];
   short_description: string | null;
-  stock_status: string | null;
+  stock_status: string;
   section: { slug: string } | null;
   /** Розділ — ціль знижок `section` для `priceForCard` (Е6в-11). */
   section_id: string | null;

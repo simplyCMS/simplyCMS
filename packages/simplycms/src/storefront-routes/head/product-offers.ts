@@ -13,11 +13,11 @@ export interface GuestPriceTypes {
 
 /** Мінімум товару для `offers`: структурний тип — тека `head` клієнт-безпечна. */
 export interface ProductOffersInput {
-  stock_status: StockStatus | null;
+  stock_status: StockStatus;
   has_modifications: boolean | null;
   product_modifications: ReadonlyArray<{
     id: string;
-    stock_status: StockStatus | null;
+    stock_status: StockStatus;
   }>;
   product_prices: PriceEntry[];
   guest_price_types: GuestPriceTypes;

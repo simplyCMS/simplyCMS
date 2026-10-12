@@ -20,7 +20,7 @@ export interface ProductListRow {
   readonly name: string;
   readonly images: readonly string[] | null;
   readonly isActive: boolean;
-  readonly stockStatus: StockStatus | null;
+  readonly stockStatus: StockStatus;
   readonly sectionName: string | undefined;
 }
 

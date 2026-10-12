@@ -20,7 +20,7 @@ export interface ProductModificationRow {
   slug: string;
   is_default: boolean;
   sort_order: number;
-  stock_status: 'in_stock' | 'out_of_stock' | 'on_order' | null;
+  stock_status: StockStatus;
   sku: string | null;
   images: unknown;
 }
@@ -40,7 +40,7 @@ export interface ModificationPrice {
 
 /** Ціна, наявність і артикул для ПОТОЧНОГО вибору (товар або модифікація). */
 export interface CurrentPricing {
-  stockStatus: StockStatus | null;
+  stockStatus: StockStatus;
   price: number | undefined;
   oldPrice: number | null | undefined;
   sku: string | null | undefined;

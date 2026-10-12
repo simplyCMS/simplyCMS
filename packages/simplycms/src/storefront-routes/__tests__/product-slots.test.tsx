@@ -66,16 +66,11 @@ describe('slot-компоненти картки товару', () => {
     expect(root?.querySelectorAll('span')).toHaveLength(1);
   });
 
-  // 🔴 `null` тут — негативний контроль ПРАВИЛА, а не крайовий випадок рендеру:
-  // саме на ньому слот раніше розходився з доменом (`isPurchasable(null) === true`,
-  // а власна формула слота давала «немає в наявності»). DEFAULT колонки —
-  // `in_stock`, тож відсутність твердження і є «в наявності»: бейджа немає.
   it.each([
     ['in_stock', 0],
     ['on_order', 1],
     ['out_of_stock', 1],
-    [null, 0],
-  ] as ReadonlyArray<readonly [StockStatus | null, number]>)(
+  ] as ReadonlyArray<readonly [StockStatus, number]>)(
     'ProductStockBadge: маркер є завжди (%s)',
     (status, badges) => {
       const { container } = render(

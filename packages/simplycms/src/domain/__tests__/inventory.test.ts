@@ -18,10 +18,6 @@ describe('isPurchasable — статус є джерелом правди (К2-�
   it('in_stock — доступний навіть без жодного рядка залишків', () => {
     expect(isPurchasable('in_stock')).toBe(true);
   });
-  it('null (статус не заданий) — доступний, як і DEFAULT схеми', () => {
-    expect(isPurchasable(null)).toBe(true);
-    expect(isPurchasable(undefined)).toBe(true);
-  });
   it('on_order — доступний під замовлення', () => {
     expect(isPurchasable('on_order')).toBe(true);
   });
@@ -41,7 +37,6 @@ describe('schemaOrgAvailability', () => {
     expect(schemaOrgAvailability('out_of_stock')).toBe(
       'https://schema.org/OutOfStock',
     );
-    expect(schemaOrgAvailability(null)).toBe('https://schema.org/InStock');
   });
 });
 

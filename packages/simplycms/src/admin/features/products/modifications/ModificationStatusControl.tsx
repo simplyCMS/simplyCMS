@@ -42,7 +42,7 @@ export function ModificationStatusControl({ mod, form }: Props) {
     if (!liveMod) return null;
     return (
       <StockStatusSelect
-        value={liveMod.stockStatus ?? 'in_stock'}
+        value={liveMod.stockStatus}
         onChange={(v) => {
           // 🔴 Item 2: без .catch — відхилена мутація тихо відкочується
           // (бібліотека сама) і лишає unhandled rejection у консолі.

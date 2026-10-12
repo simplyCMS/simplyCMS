@@ -3,16 +3,16 @@
 // 550w=3, decrease_on_order=true — з сіду; тест додає лише те, чого сід не має
 // (дві власні точки для перевірки «одна точка, а не сума», залишки для товарів
 // без сідового обліку, і два товари для рішень архітектора B/L — `on_order`
-// і товар зі стандартним `in_stock`; реальний `NULL` у `stock_status` після
-// Е8-Р3 (NOT NULL у baseline) неможливий — тест лише доводить відмову БД).
+// і товар зі стандартним `in_stock`; `NULL` у `stock_status` неможливий
+// (NOT NULL у baseline, Е8-Р3) — окремий кейс лише доводить відмову БД).
 //
 // 🔴 Рев'ю (Opus) до цього файлу додало ще чотири кейси (кожен заводить
 // ВЛАСНУ точку й самодостатній, щоб не мішати стан зі спільними
 // POINT_A/POINT_B): I1 — деактивована точка не губить залишок на
 // поверненні; I2 — та сама пара «списання/повернення» на МОДИФІКАЦІЇ, не
 // лише простому товарі; I3 — подвійне скасування повертає залишок рівно
-// ОДИН раз (гвард `lockOrderStatus`); M4 — реальний `NULL` фліпається у
-// `out_of_stock` write-side, не лише читається як доступний.
+// ОДИН раз (гвард `lockOrderStatus`); M4 — товар зі стандартним `in_stock`
+// фліпається у `out_of_stock` на нулі write-side.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -54,10 +54,7 @@ const FLIP_RACE_SLUG = 'akumulyator-lifepo4-200ah';
 const UNTRACKED_SLUG = 'invertor-gibrydnyi-8kw';
 /** Залишки на СИСТЕМНІЙ і на тестовій точці — третя ланка правила точки. */
 const FALLBACK_SLUG = 'akumulyator-lifepo4-100ah';
-/**
- * Сідовий товар БЕЗ жодного власного тесту вище — зі статусом `in_stock`
- * (раніше тут примусово ставили реальний `NULL`; Е8-Р3 зробив колонку NOT NULL).
- */
+/** Сідовий товар БЕЗ жодного власного тесту вище — зі статусом `in_stock`. */
 const IN_STOCK_SLUG = 'invertor-merezhevyi-5kw';
 /** Товар «під замовлення» (рішення архітектора B) — демо-сід такого не має. */
 const ON_ORDER_SLUG = 'test-on-order-status';
@@ -72,7 +69,7 @@ interface QtyRow {
   quantity: number;
 }
 interface StatusRow {
-  stock_status: string | null;
+  stock_status: string;
 }
 
 const baseInput = (
@@ -156,7 +153,7 @@ describe('замовлення списує залишок і повертає �
         [pointId, productId],
       )) as { quantity: number }[]
     )[0].quantity;
-  const statusOf = async (productId: string): Promise<string | null> =>
+  const statusOf = async (productId: string): Promise<string> =>
     (
       (await queryRows(
         dbUrl,

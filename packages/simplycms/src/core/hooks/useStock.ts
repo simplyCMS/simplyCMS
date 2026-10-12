@@ -80,12 +80,10 @@ export function getStockStatusLabel(
     case 'on_order':
       return t('product.onOrder');
     default:
-      // 🔴 `null`/`undefined` — «статус не заданий», а DEFAULT колонки —
-      // `in_stock`: відсутність твердження за каноном схеми і Є «в наявності».
-      // Окремий текст «Невідомо» був ТРЕТІМ голосом правила поруч із доменним
-      // `isPurchasable` і зі слотом бейджа — на тому самому `null` вони казали
-      // різне. Ключ `product.stockUnknown` знято з обох каталогів разом із цією
-      // гілкою: інших читачів у нього не було.
+      // `null` — лише «цілі наявності немає» (`EMPTY` лоадера), не «статус не
+      // заданий»: колонка `stock_status` NOT NULL (Е8-Р3). Окремий текст
+      // «Невідомо» був би другим голосом правила поруч із доменним
+      // `isPurchasable`; ключ `product.stockUnknown` знято з обох каталогів.
       return t('product.inStock');
   }
 }

@@ -23,9 +23,7 @@ const EXPECTED_JSONLD_AVAILABILITY = {
   on_order: 'https://schema.org/BackOrder',
 };
 
-/** `null`/незаданий статус — DEFAULT колонки БД, семантика «в наявності». */
-export const badgeTextFor = (status) =>
-  EXPECTED_BADGE_TEXT[status ?? 'in_stock'];
+export const badgeTextFor = (status) => EXPECTED_BADGE_TEXT[status];
 
 export const jsonLdAvailabilityFor = (status) =>
-  EXPECTED_JSONLD_AVAILABILITY[status ?? 'in_stock'];
+  EXPECTED_JSONLD_AVAILABILITY[status];

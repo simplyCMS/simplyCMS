@@ -8,7 +8,7 @@ import type { StockStatus } from './inventory';
 export interface ProductModification {
   id: string;
   sku: string | null;
-  stock_status: StockStatus | null;
+  stock_status: StockStatus;
   is_default: boolean;
   sort_order: number;
 }
@@ -19,7 +19,7 @@ export interface Product {
   name: string;
   description: string | null;
   section_id: string | null;
-  stock_status: StockStatus | null;
+  stock_status: StockStatus;
   has_modifications: boolean;
   modifications: ProductModification[];
   prices: PriceEntry[];

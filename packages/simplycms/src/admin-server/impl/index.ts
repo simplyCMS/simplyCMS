@@ -210,6 +210,7 @@ export {
   listCustomersInput,
   listCustomersOp,
 } from './customers/list';
+export { buildCustomersListSql } from './customers/list-sql';
 export {
   HISTORY_LIMIT,
   getCustomerCardInput,
