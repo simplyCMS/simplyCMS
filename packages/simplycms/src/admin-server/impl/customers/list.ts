@@ -13,6 +13,9 @@ import { parseAdminInput } from '../validation';
 
 export const CUSTOMERS_PAGE_SIZE = 50;
 
+/** Ключ keyset — той самий вираз, що в індексі `users_created_ms_id_idx`. */
+const createdKey = sql`date_trunc('milliseconds', u.created_at at time zone 'UTC')`;
+
 export const listCustomersInput = z.object({
   search: z.string().trim().min(2).max(100).optional(),
   categoryId: z.uuid().optional(),
@@ -48,9 +51,12 @@ function searchClause(search: string): SQL {
  * - Категорія ефективна (`coalesce(p.category_id, дефолтна)`), фільтр — за нею.
  * - Агрегати замовлень — та сама умова, що в `loadCustomerStats`: скасовані
  *   не рахуються, `status_id NULL` рахується.
- * - 🔴 Порядок і курсор по `date_trunc('milliseconds', created_at)`: курсор
- *   приходить як JS `Date` (мс), а в БД мікросекунди — порівняння з
- *   неусіченим значенням пропускало б рядки на межі сторінок.
+ * - 🔴 Порядок і курсор по `date_trunc('milliseconds', created_at at time zone
+ *   'UTC')`: курсор приходить як JS `Date` (мс), а в БД мікросекунди —
+ *   порівняння з неусіченим значенням пропускало б рядки на межі сторінок.
+ *   Вираз збігається з індексом `users_created_ms_id_idx` дослівно (`at time
+ *   zone 'UTC'` потрібен, щоб вираз індексу був IMMUTABLE) — інакше
+ *   планувальник індексу не візьме.
  * - `pageSize` — тестовий шов операції; серверна функція його не передає,
  *   тож клієнт розміром сторінки не керує.
  */
@@ -77,8 +83,8 @@ export const listCustomersOp = async ({
   if (f.banned === false) where.push(sql`u.banned_at is null`);
   if (f.cursor)
     where.push(
-      sql`(date_trunc('milliseconds', u.created_at), u.id) <
-        (${f.cursor.createdAt.toISOString()}::timestamptz, ${f.cursor.id}::uuid)`,
+      sql`(${createdKey}, u.id) <
+        (${f.cursor.createdAt.toISOString()}::timestamptz at time zone 'UTC', ${f.cursor.id}::uuid)`,
     );
   const whereSql = where.length
     ? sql`where ${sql.join(where, sql` and `)}`
@@ -107,7 +113,7 @@ export const listCustomersOp = async ({
            where o.user_id = u.id
              and s.code is distinct from ${ORDER_STATUS_CODE.cancelled}) agg
         ${whereSql}
-       order by date_trunc('milliseconds', u.created_at) desc, u.id desc
+       order by ${createdKey} desc, u.id desc
        limit ${pageSize + 1}`);
     const page = result.rows.slice(0, pageSize);
     const last = page[page.length - 1];

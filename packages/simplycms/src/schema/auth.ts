@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   foreignKey,
   index,
   pgTable,
@@ -57,7 +59,23 @@ export const users = pgTable(
     bannedAt: timestamp('banned_at', { withTimezone: true, mode: 'date' }),
     banReason: text('ban_reason'),
   },
-  (table) => [unique('users_email_key').on(table.email)],
+  (table) => [
+    unique('users_email_key').on(table.email),
+    // Е8-Р3 (Е6г-9): email — ключ входу й порівняння; регістр нормалізує КОЖЕН
+    // шлях запису, а CHECK не дає обійти це сирим INSERT/UPDATE (дубль
+    // `A@x`/`a@x` пройшов би повз `users_email_key`).
+    check('users_email_lowercase', sql`${table.email} = lower(${table.email})`),
+    // Keyset списку покупців (admin-server/impl/customers/list.ts) сортує за
+    // ЦИМ виразом: без точного збігу планувальник індексу не візьме. `at time
+    // zone 'UTC'` обовʼязковий — `date_trunc` над `timestamptz` STABLE, а вираз
+    // індексу мусить бути IMMUTABLE (з UTC результат — `timestamp`, і це
+    // дозволено).
+    index('users_created_ms_id_idx').using(
+      'btree',
+      sql`date_trunc('milliseconds', ${table.createdAt} at time zone 'UTC') desc`,
+      sql`${table.id} desc`,
+    ),
+  ],
 );
 
 export const sessions = pgTable(

@@ -398,7 +398,7 @@ export const products = pgTable("products", {
 	images: jsonb().$type<string[]>().default([]),
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
-	stockStatus: stockStatus("stock_status").default('in_stock'),
+	stockStatus: stockStatus("stock_status").default('in_stock').notNull(),
 	// B7: `MerchantReturnPolicy` і `OfferShippingDetails` у JSON-LD стають
 	// обовʼязковими, а рендер приїде в К2 — колонки додаються зараз, поки
 	// схема молода. Рівнів ДВА, і другий не потребує DDL: магазинний дефолт
@@ -432,7 +432,7 @@ export const productModifications = pgTable("product_modifications", {
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	stockStatus: stockStatus("stock_status").default('in_stock'),
+	stockStatus: stockStatus("stock_status").default('in_stock').notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.productId],
@@ -666,9 +666,15 @@ export const userCategoryHistory = pgTable("user_category_history", {
 	toCategoryName: text("to_category_name").notNull(),
 	reason: text(),
 	ruleId: uuid("rule_id"),
+	// Е8-Р3 (Е6г-6): ХТО зробив перехід, окремо від `rule_id`. FK правила —
+	// SET NULL, тож після видалення правила `rule_id is not null` брехав би
+	// «вручну» про запис, зроблений автоправилом. Колонка без DEFAULT: кожна
+	// вставка називає джерело явно.
+	source: text().notNull(),
 	changedBy: uuid("changed_by"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
+	check("user_category_history_source_check", sql`source = ANY (ARRAY['manual'::text, 'rule'::text])`),
 	foreignKey({
 			columns: [table.fromCategoryId],
 			foreignColumns: [userCategories.id],
@@ -792,6 +798,8 @@ export const orders = pgTable("orders", {
 	savedAddressId: uuid("saved_address_id"),
 	personalDataErasedAt: timestamp("personal_data_erased_at", { withTimezone: true, mode: 'date' }),
 }, (table) => [
+	// Е8-Р3 (Е6г-13): дашборд і списки замовлень сортують/фільтрують за датою.
+	index("orders_created_at_idx").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_orders_pickup_point_id").using("btree", table.pickupPointId.asc().nullsLast().op("uuid_ops")),
 	index("idx_orders_shipping_method_id").using("btree", table.shippingMethodId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({

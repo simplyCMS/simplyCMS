@@ -3,7 +3,8 @@
 // 550w=3, decrease_on_order=true — з сіду; тест додає лише те, чого сід не має
 // (дві власні точки для перевірки «одна точка, а не сума», залишки для товарів
 // без сідового обліку, і два товари для рішень архітектора B/L — `on_order`
-// і реальний `NULL` у `stock_status`).
+// і товар зі стандартним `in_stock`; реальний `NULL` у `stock_status` після
+// Е8-Р3 (NOT NULL у baseline) неможливий — тест лише доводить відмову БД).
 //
 // 🔴 Рев'ю (Opus) до цього файлу додало ще чотири кейси (кожен заводить
 // ВЛАСНУ точку й самодостатній, щоб не мішати стан зі спільними
@@ -54,11 +55,10 @@ const UNTRACKED_SLUG = 'invertor-gibrydnyi-8kw';
 /** Залишки на СИСТЕМНІЙ і на тестовій точці — третя ланка правила точки. */
 const FALLBACK_SLUG = 'akumulyator-lifepo4-100ah';
 /**
- * Сідовий товар БЕЗ жодного власного тесту вище — переводиться на реальний
- * `NULL` у `stock_status` (борг рев'ю Task 8: доти правило `null → in_stock`
- * було доведено лише чистою функцією `isPurchasable`, не межею лоадера).
+ * Сідовий товар БЕЗ жодного власного тесту вище — зі статусом `in_stock`
+ * (раніше тут примусово ставили реальний `NULL`; Е8-Р3 зробив колонку NOT NULL).
  */
-const NULL_STATUS_SLUG = 'invertor-merezhevyi-5kw';
+const IN_STOCK_SLUG = 'invertor-merezhevyi-5kw';
 /** Товар «під замовлення» (рішення архітектора B) — демо-сід такого не має. */
 const ON_ORDER_SLUG = 'test-on-order-status';
 // sort_order 10/11 — свідомо ДАЛІ за сідову точку (0): порядок показу без тайів.
@@ -215,7 +215,7 @@ describe('замовлення списує залишок і повертає �
       FLIP_RACE_SLUG,
       UNTRACKED_SLUG,
       FALLBACK_SLUG,
-      NULL_STATUS_SLUG,
+      IN_STOCK_SLUG,
     ])
       ids[slug] = await idOf(slug);
     await queryRows(
@@ -248,16 +248,6 @@ describe('замовлення списує залишок і повертає �
         ids[FLIP_RACE_SLUG],
         ids[FALLBACK_SLUG],
       ],
-    );
-
-    // 🔴 Борг рев'ю Task 8: реальний `NULL` у `stock_status` (не «рядка
-    // немає») — товар уже вставлений сідом зі значенням `'in_stock'`
-    // (літерал у `demo-seed.sql`, не DEFAULT), тож NULL тут можливий лише
-    // явним UPDATE.
-    await queryRows(
-      dbUrl,
-      `update public.products set stock_status = null where id = $1`,
-      [ids[NULL_STATUS_SLUG]],
     );
 
     // 🔴 Рішення архітектора B: ціль «під замовлення» — демо-сід такої не
@@ -408,15 +398,27 @@ describe('замовлення списує залишок і повертає �
     expect(await statusOf(ids[UNTRACKED_SLUG])).toBe('in_stock');
   });
 
-  it("🔴 NULL реальний у stock_status: лоадер читання вважає ціль доступною (борг рев'ю Task 8)", async () => {
-    // Не «рядка немає» (undefined у loadStockStatus), а САМЕ NULL у наявному
-    // рядку — DEFAULT схеми такий самий, тож isPurchasable(null) === true
-    // (Task 8) мусить лишитись правдивим і на межі лоадера, не лише в чистій
-    // функції.
+  it('🔴 NULL у stock_status неможливий: NOT NULL у products і product_modifications (Е8-Р3, К2-Е0-1)', async () => {
+    // Раніше `NULL` означав «доступний» і тягнув у код гілку `null → in_stock`
+    // (борг рев'ю Task 8). Тепер це інваріант схеми, а не договір коду.
+    await expect(
+      queryRows(
+        dbUrl,
+        `update public.products set stock_status = null where id = $1`,
+        [ids[IN_STOCK_SLUG]],
+      ),
+    ).rejects.toMatchObject({ code: '23502', column: 'stock_status' });
+    await expect(
+      queryRows(
+        dbUrl,
+        `update public.product_modifications set stock_status = null
+          where id = (select id from public.product_modifications limit 1)`,
+      ),
+    ).rejects.toMatchObject({ code: '23502', column: 'stock_status' });
     const info = await withStorefrontDb((db) =>
-      loadStockInfo(db, { productId: ids[NULL_STATUS_SLUG] }),
+      loadStockInfo(db, { productId: ids[IN_STOCK_SLUG] }),
     );
-    expect(info.stockStatus).toBeNull();
+    expect(info.stockStatus).toBe('in_stock');
     expect(info.isAvailable).toBe(true);
   });
 
@@ -784,7 +786,7 @@ describe('замовлення списує залишок і повертає �
     await expect(leaked!(async () => {})).rejects.toThrow(/already finished/);
   });
 
-  it('🔴 M4: реальний NULL фліпається в out_of_stock на нулі (рішення L, write-side)', async () => {
+  it('🔴 M4: in_stock фліпається в out_of_stock на нулі (рішення L, write-side)', async () => {
     const [{ id: pointId }] = (await queryRows(
       dbUrl,
       `insert into public.pickup_points (id, method_id, name, address, city, is_active, sort_order)
@@ -796,18 +798,16 @@ describe('замовлення списує залишок і повертає �
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
        values (gen_random_uuid(), $1, $2, null, 2)`,
-      [pointId, ids[NULL_STATUS_SLUG]],
+      [pointId, ids[IN_STOCK_SLUG]],
     );
 
-    // Перед замовленням статус — САМЕ NULL (той самий рядок, що й у read-side
-    // кейсі вище), не рядок 'in_stock': гвард `or(isNull(col), eq(col,
-    // 'in_stock'))` мусить спрацювати саме на NULL-гілці, інакше товар із
-    // DEFAULT-статусом ніколи не переходив би в `out_of_stock`.
-    expect(await statusOf(ids[NULL_STATUS_SLUG])).toBeNull();
+    // Перед замовленням статус — `in_stock` (колонка NOT NULL, DEFAULT
+    // 'in_stock'): гвард фліпу мусить спрацювати на ньому.
+    expect(await statusOf(ids[IN_STOCK_SLUG])).toBe('in_stock');
 
-    await place(ids[NULL_STATUS_SLUG], 2, pointId);
-    expect(await quantities(ids[NULL_STATUS_SLUG])).toEqual([0]);
-    expect(await statusOf(ids[NULL_STATUS_SLUG])).toBe('out_of_stock');
+    await place(ids[IN_STOCK_SLUG], 2, pointId);
+    expect(await quantities(ids[IN_STOCK_SLUG])).toEqual([0]);
+    expect(await statusOf(ids[IN_STOCK_SLUG])).toBe('out_of_stock');
   });
 
   it('🔴 без системної точки резолв падає в ПЕРШУ АКТИВНУ за (sort_order, id)', async () => {

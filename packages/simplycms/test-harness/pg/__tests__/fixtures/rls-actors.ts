@@ -86,10 +86,10 @@ export const SEED_STATEMENTS: string[] = [
   // `::uuid` обовʼязковий: у формі `select … union all select …` Postgres
   // виводить тип із літерала (text), а не з цільової колонки, як у `values`.
   // `to_category_name` — знімок назви (Е6в-2): вставка пише його сама.
-  `insert into public.user_category_history (id, user_id, to_category_id, to_category_name)
-     select gen_random_uuid(), '${USER_A}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}
+  `insert into public.user_category_history (id, user_id, to_category_id, to_category_name, source)
+     select gen_random_uuid(), '${USER_A}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}, 'manual'
      union all
-     select gen_random_uuid(), '${USER_B}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}`,
+     select gen_random_uuid(), '${USER_B}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}, 'manual'`,
   // Ролі: A і B — звичайні користувачі, ADMIN — адмін. Саме цей рядок робить
   // видимою суть `user_roles`: побачити чужу роль означає дізнатись, хто адмін.
   `insert into public.user_roles (id, user_id, role) values

@@ -18,7 +18,7 @@
   префікс `__PLUGIN_TABLE_PREFIX__` — інакше воно колізує з каноном ядра
   (`0001_init.sql` і компанія), і `db:diff` зупиниться на «одне імʼя, різний
   вміст у двох канонах», не скопіювавши НІЧОГО. Саме тому скаффолд поклав
-  `0001___PLUGIN_TABLE_PREFIX__init.sql`. Чіпати можна ЛИШЕ
+  `__MIGRATION_TS_____PLUGIN_TABLE_PREFIX__init.sql` (таймстамп скаффолду, UTC). Чіпати можна ЛИШЕ
   таблиці `__PLUGIN_TABLE_PREFIX__*` (межа довіри — `simplycms db:diff` це
   лінтить). Забрати в магазин: `pnpm simplycms db:diff --write` → ревʼю →
   `psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -f <нова>.sql` (URL власника БД — `app_runtime` не має

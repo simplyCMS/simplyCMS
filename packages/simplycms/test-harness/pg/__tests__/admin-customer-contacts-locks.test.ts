@@ -109,8 +109,8 @@ describe('admin: контакти покупця — локи й гонки (Е6
         [id],
       );
       await rival.query(
-        `insert into public.user_category_history (id, user_id, to_category_name)
-         values ($1, $2, 'Тест')`,
+        `insert into public.user_category_history (id, user_id, to_category_name, source)
+         values ($1, $2, 'Тест', 'manual')`,
         [crypto.randomUUID(), id],
       );
       const op = call(id, { email: 'dl2@x.test' });

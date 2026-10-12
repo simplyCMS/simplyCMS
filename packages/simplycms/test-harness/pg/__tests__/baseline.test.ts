@@ -11,6 +11,7 @@
 // прогін «двічі поспіль» тут обовʼязковий, а не косметичний.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -306,6 +307,82 @@ describe('канон міграцій: накат на чисту БД', () => {
           `update public.product_reviews set ${change}`,
         ]),
       ).rejects.toMatchObject({ code: '23514' });
+    }
+  }, 120_000);
+
+  // Е8-Р3: борги схеми, внесені в baseline на місці перед заморожуванням.
+  it('борги схеми Е8-Р3: CHECK, NOT NULL, індекси; keyset-індекс покупців бере планувальник', async () => {
+    const checks = await queryRows(
+      dbUrl,
+      `select conname from pg_constraint
+        where conname in ('users_email_lowercase', 'user_category_history_source_check')
+        order by conname`,
+    );
+    expect(checks.map((row) => row.conname)).toEqual([
+      'user_category_history_source_check',
+      'users_email_lowercase',
+    ]);
+    const notNull = await queryRows(
+      dbUrl,
+      `select table_name, is_nullable from information_schema.columns
+        where table_schema = 'public' and column_name = 'stock_status'
+          and table_name in ('products', 'product_modifications')
+        order by table_name`,
+    );
+    expect(notNull).toEqual([
+      { table_name: 'product_modifications', is_nullable: 'NO' },
+      { table_name: 'products', is_nullable: 'NO' },
+    ]);
+    const indexes = await queryRows(
+      dbUrl,
+      `select indexname from pg_indexes
+        where indexname in ('orders_created_at_idx', 'users_created_ms_id_idx')
+        order by indexname`,
+    );
+    expect(indexes.map((row) => row.indexname)).toEqual([
+      'orders_created_at_idx',
+      'users_created_ms_id_idx',
+    ]);
+
+    // Джерело історії — лише 'manual' | 'rule'.
+    const user = '77777777-7777-4777-8777-777777777777';
+    await queryRows(
+      dbUrl,
+      `insert into public.users (id, email, name) values ($1, 'src@example.test', 'S')`,
+      [user],
+    );
+    for (const [source, ok] of [
+      ['manual', true],
+      ['rule', true],
+      ['auto', false],
+    ] as const) {
+      const insert = queryRows(
+        dbUrl,
+        `insert into public.user_category_history (id, user_id, to_category_name, source)
+         values (gen_random_uuid(), $1, 'X', $2)`,
+        [user, source],
+      );
+      if (ok) await insert;
+      else await expect(insert).rejects.toMatchObject({ code: '23514' });
+    }
+
+    // 🔴 Індекс keyset покупців корисний, лише коли вираз ЗБІГАЄТЬСЯ із
+    // запитом списку (`admin-server/impl/customers/list.ts`). seqscan вимкнено,
+    // щоб на порожній таблиці вирішувала саме придатність індексу.
+    const client = new pg.Client({ connectionString: dbUrl });
+    await client.connect();
+    try {
+      await client.query('set enable_seqscan = off');
+      const plan = await client.query(
+        `explain select u.id from public.users u
+          order by date_trunc('milliseconds', u.created_at at time zone 'UTC') desc, u.id desc
+          limit 51`,
+      );
+      expect(plan.rows.map((row) => row['QUERY PLAN']).join('\n')).toContain(
+        'users_created_ms_id_idx',
+      );
+    } finally {
+      await client.end();
     }
   }, 120_000);
 });

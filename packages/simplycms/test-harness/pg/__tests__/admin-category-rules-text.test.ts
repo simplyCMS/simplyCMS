@@ -1,7 +1,8 @@
 // Фінальне рев'ю К3-Е6в, F7: текстові умови автоправил нормалізуються на
 // записі сервером (`trim` + нижній регістр — у БД лежить канонічна форма,
-// хоч би що надіслав клієнт) і при порівнянні рушієм (email покупця з
-// великими літерами збігається з умовою).
+// хоч би що надіслав клієнт) і при порівнянні рушієм. Email покупця в БД —
+// завжди нижній регістр (CHECK `users_email_lowercase`, Е8-Р3), тож
+// нормалізація умови — єдина сторона, де регістр ще може розійтись.
 import { describe, expect, it, vi } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { applyCategoryRules } from 'simplycms/commerce';
@@ -35,7 +36,7 @@ describe('admin: текстові умови автоправил нормалі
       )
     )[0]!.conditions;
 
-  it('insert і update пишуть канонічну форму; рушій переводить покупця з email у верхньому регістрі', async () => {
+  it('insert і update пишуть канонічну форму; рушій переводить покупця за нормалізованою умовою', async () => {
     const from = await F.seedCategory(url());
     const to = await F.seedCategory(url());
     const id = crypto.randomUUID();
@@ -59,7 +60,7 @@ describe('admin: текстові умови автоправил нормалі
 
     const customer = await F.seedCustomer(url(), {
       categoryId: from,
-      email: 'Someone@BUYER-Domain.test',
+      email: 'someone@buyer-domain.test',
     });
     await expect(
       withActor({ role: 'app_admin' }, (tx) =>

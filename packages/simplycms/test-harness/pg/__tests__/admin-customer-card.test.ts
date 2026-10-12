@@ -24,8 +24,8 @@ describe('admin: картка покупця (Е6г-6)', () => {
     await F.rows(
       url(),
       `insert into public.user_category_history
-         (id, user_id, from_category_id, to_category_id, from_category_name, to_category_name, reason, changed_by)
-       values ($1, $2, null, $3, null, 'Знімок VIP', 'Оптовик', $4)`,
+         (id, user_id, from_category_id, to_category_id, from_category_name, to_category_name, reason, source, changed_by)
+       values ($1, $2, null, $3, null, 'Знімок VIP', 'Оптовик', 'manual', $4)`,
       [crypto.randomUUID(), buyer, F.DEFAULT_CATEGORY, F.ADMIN_ID],
     );
     await R.seedOrder(url(), {
@@ -62,6 +62,36 @@ describe('admin: картка покупця (Е6г-6)', () => {
     ).toBeNull();
   });
 
+  it('byRule переживає видалення правила: джерело — source, а не rule_id', async () => {
+    const buyer = await F.seedCustomer(url());
+    const rule = await F.seedRule(url(), {
+      from: null,
+      to: F.DEFAULT_CATEGORY,
+      conditions: F.ORDERS_GTE_2,
+    });
+    await F.rows(
+      url(),
+      `insert into public.user_category_history
+         (id, user_id, to_category_id, to_category_name, reason, rule_id, source)
+       values ($1, $2, $3, 'Роздріб', 'за правилом', $4, 'rule')`,
+      [crypto.randomUUID(), buyer, F.DEFAULT_CATEGORY, rule],
+    );
+    // FK історії на правило — SET NULL: після видалення `rule_id` порожній.
+    await F.rows(url(), `delete from public.category_rules where id = $1`, [
+      rule,
+    ]);
+    const [raw] = await F.rows(
+      url(),
+      `select rule_id from public.user_category_history where user_id = $1`,
+      [buyer],
+    );
+    expect(raw!.rule_id).toBeNull();
+    const card = (await getCustomerCardOp({ data: { userId: buyer } }))!;
+    expect(card.history.map((h) => [h.reason, h.byRule])).toEqual([
+      ['за правилом', true],
+    ]);
+  });
+
   it('історія: новіші зверху, byRule лише у запису правила; понад ліміт — обрізано', async () => {
     const buyer = await F.seedCustomer(url());
     const rule = await F.seedRule(url(), {
@@ -73,14 +103,15 @@ describe('admin: картка покупця (Е6г-6)', () => {
       F.rows(
         url(),
         `insert into public.user_category_history
-           (id, user_id, to_category_id, to_category_name, reason, rule_id, created_at)
-         values ($1, $2, $3, 'Роздріб', $4, $5, $6)`,
+           (id, user_id, to_category_id, to_category_name, reason, rule_id, source, created_at)
+         values ($1, $2, $3, 'Роздріб', $4, $5, $6, $7)`,
         [
           crypto.randomUUID(),
           buyer,
           F.DEFAULT_CATEGORY,
           reason,
           ruleId,
+          ruleId === null ? 'manual' : 'rule',
           createdAt,
         ],
       );
@@ -99,8 +130,8 @@ describe('admin: картка покупця (Е6г-6)', () => {
       await F.rows(
         url(),
         `insert into public.user_category_history
-           (id, user_id, to_category_id, to_category_name, reason, created_at)
-         values ($1, $2, $3, 'Роздріб', $4, now() - ($5 || ' minutes')::interval)`,
+           (id, user_id, to_category_id, to_category_name, reason, source, created_at)
+         values ($1, $2, $3, 'Роздріб', $4, 'manual', now() - ($5 || ' minutes')::interval)`,
         [crypto.randomUUID(), many, F.DEFAULT_CATEGORY, `№${i}`, String(i)],
       );
     }

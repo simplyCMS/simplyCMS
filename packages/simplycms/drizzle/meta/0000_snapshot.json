@@ -1634,6 +1634,22 @@
         }
       },
       "indexes": {
+        "orders_created_at_idx": {
+          "name": "orders_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_orders_pickup_point_id": {
           "name": "idx_orders_pickup_point_id",
           "columns": [
@@ -2356,7 +2372,7 @@
           "type": "stock_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "'in_stock'"
         }
       },
@@ -3004,7 +3020,7 @@
           "type": "stock_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "'in_stock'"
         },
         "return_policy": {
@@ -4807,6 +4823,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "changed_by": {
           "name": "changed_by",
           "type": "uuid",
@@ -4973,7 +4995,12 @@
           "withCheck": "true"
         }
       },
-      "checkConstraints": {},
+      "checkConstraints": {
+        "user_category_history_source_check": {
+          "name": "user_category_history_source_check",
+          "value": "source = ANY (ARRAY['manual'::text, 'rule'::text])"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user_recipients": {
@@ -5595,7 +5622,29 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "users_created_ms_id_idx": {
+          "name": "users_created_ms_id_idx",
+          "columns": [
+            {
+              "expression": "date_trunc('milliseconds', \"created_at\" at time zone 'UTC') desc",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"id\" desc",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -5608,7 +5657,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "users_email_lowercase": {
+          "name": "users_email_lowercase",
+          "value": "\"users\".\"email\" = lower(\"users\".\"email\")"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.verifications": {
@@ -5867,7 +5921,7 @@
         }
       },
       "checkConstraints": {},
-      "isRLSEnabled": true
+      "isRLSEnabled": false
     }
   },
   "enums": {
