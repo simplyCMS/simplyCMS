@@ -114,14 +114,3 @@ export const ownerInviteStore: OwnerInviteStore = {
     });
   },
 };
-
-/** Чи є в магазині хоч один адмін — потрібно CLI, щоб не слати invite двічі. */
-export const hasAnyAdmin = async (): Promise<boolean> =>
-  withActor({ role: 'app_admin' }, async (db) => {
-    const rows = await db
-      .select({ id: userRoles.id })
-      .from(userRoles)
-      .where(eq(userRoles.role, 'admin'))
-      .limit(1);
-    return rows.length > 0;
-  });

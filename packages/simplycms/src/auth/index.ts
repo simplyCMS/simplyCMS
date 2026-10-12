@@ -55,7 +55,7 @@ export type {
   VerifyOwnerInviteResult,
 } from './invite';
 
-export { ownerInviteStore, hasAnyAdmin } from './invite-store';
+export { ownerInviteStore } from './invite-store';
 
 export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
 export type { SessionSubject } from './session';

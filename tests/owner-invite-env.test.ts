@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -52,5 +52,20 @@ describe('owner-invite: наповнення env з файлів (К1)', () => {
     const env: Record<string, string | undefined> = {};
     loadEnvFiles(env, [join(tmpdir(), 'owner-invite-env-none', '.env')]);
     expect(env).toEqual({});
+  });
+
+  // `owner-invite.mjs` тягне `simplycms/db` (пакет у юніті не зібраний), тож
+  // запуск дочірнім процесом неможливий; стережемо проводку статично: скрипт
+  // обов'язково кличе спільний завантажувач і не має власного розбору файлів.
+  it('owner-invite.mjs кличе спільний завантажувач і не має власного циклу', () => {
+    const script = readFileSync(
+      'packages/create-simplycms-store/template/scripts/owner-invite.mjs',
+      'utf8',
+    );
+    expect(script).toMatch(
+      /import \{ loadEnvFiles \} from '\.\/owner-invite-env\.mjs';/,
+    );
+    expect(script).toMatch(/^loadEnvFiles\(\);$/m);
+    expect(script).not.toMatch(/readFileSync|split\(/);
   });
 });

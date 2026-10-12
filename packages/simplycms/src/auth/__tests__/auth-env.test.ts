@@ -50,7 +50,7 @@ describe('resolveAuthBaseUrl', () => {
     },
   );
 
-  it.each(['not a url', '/relative', 'http://'])(
+  it.each(['not a url', '/relative', 'http://', 'foo:bar', 'ftp://x.test'])(
     'A: недійсний BETTER_AUTH_URL (%j) падає з імʼям ключа, без значення і без голої TypeError',
     (bad) => {
       const attempt = () =>

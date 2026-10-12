@@ -171,7 +171,7 @@ describe('issueOwnerInvite: забанений (Е6г-19)', () => {
       now: NOW,
       token: 'tok-1',
     });
-    // Свіжий стан: роль і токен прибираємо, бан ставимо.
+    // Свіжий стан: токен прибираємо, бан ставимо.
     fake.adminRoles.clear();
     fake.tokens.clear();
     fake.banned.add(first.userId);

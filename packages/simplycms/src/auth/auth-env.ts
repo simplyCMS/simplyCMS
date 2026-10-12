@@ -51,14 +51,19 @@ export function resolveAuthSecret(env: AuthEnv): string {
  * @param key імʼя ключа env (або поля `AuthDeps`) для повідомлення
  */
 export function assertAuthBaseUrl(value: string, key: string): string {
+  let protocol: string | undefined;
   try {
-    new URL(value);
+    protocol = new URL(value).protocol;
   } catch {
-    throw new Error(
-      `[simplycms/auth] ${key} не є коректною абсолютною адресою — база ` +
-        'посилань не може бути порожньою чи відносною.',
-    );
+    // нижче: та сама відмова, що й для чужої схеми
   }
+  // `foo:bar` парситься як URL, але origin у нього непрозорий (`null`) — база
+  // посилань і trustedOrigins були б зламані мовчки.
+  if (protocol !== 'http:' && protocol !== 'https:')
+    throw new Error(
+      `[simplycms/auth] ${key} не є коректною абсолютною адресою з протоколом ` +
+        'http: або https: — база посилань не може бути порожньою, відносною чи чужою схемою.',
+    );
   return value;
 }
 

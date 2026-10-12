@@ -30,13 +30,41 @@ const KIND_PATTERNS: Record<DevKind, (line: string) => boolean> = {
   'log-sink': (l) => /\blog\(/.test(l),
 };
 
-function insideDevDiagnostic(file: string, line: number): boolean {
+const kindsOf = (file: string, entries = ALLOWLIST): DevKind[] => {
+  const raw = entries[file]!.kind;
+  return Array.isArray(raw) ? raw : [raw];
+};
+
+/** Чи збігається вікно рядків навколо `line` із видом `kind`. */
+function matchesKind(file: string, line: number, kind: DevKind): boolean {
   const lines = readFileSync(resolve(REPO, file), 'utf8').split('\n');
-  const raw = ALLOWLIST[file]!.kind;
-  const allowed = Array.isArray(raw) ? raw : [raw];
   return lines
     .slice(Math.max(0, line - 3), line)
-    .some((l) => allowed.some((kind) => KIND_PATTERNS[kind](l)));
+    .some((l) => KIND_PATTERNS[kind](l));
+}
+
+function insideDevDiagnostic(file: string, line: number): boolean {
+  return kindsOf(file).some((kind) => matchesKind(file, line, kind));
+}
+
+/**
+ * Записи allowlist без жодного кириличного рядка заявленого виду у файлі:
+ * `[файл, вид]`. Виняток без предмета — вигадка, що ховає майбутній регрес.
+ */
+export function staleAllowlistKinds(
+  entries: Record<string, { kind: DevKind | DevKind[] }>,
+  findings: readonly { file: string; line: number }[],
+): string[] {
+  const stale: string[] = [];
+  for (const file of Object.keys(entries)) {
+    for (const kind of kindsOf(file, entries as typeof ALLOWLIST)) {
+      const used = findings.some(
+        (f) => f.file === file && matchesKind(file, f.line, kind),
+      );
+      if (!used) stale.push(`${file} [${kind}]`);
+    }
+  }
+  return stale;
 }
 
 /**
@@ -68,6 +96,26 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
     const stale = PENDING_FILES.filter((f) => !withStrings.has(f));
 
     expect(stale, 'мігровані файли, забуті в PENDING_FILES').toEqual([]);
+  });
+
+  it('реєстр ALLOWLIST не містить записів без збігу заявленого виду', () => {
+    expect(
+      staleAllowlistKinds(ALLOWLIST, findings),
+      'allowlist-запис без жодного збігу виду у файлі',
+    ).toEqual([]);
+  });
+
+  it('негативний контроль: фіктивний запис allowlist червоніє', () => {
+    const fake = {
+      ...ALLOWLIST,
+      'packages/simplycms/src/plugin-sdk/usePluginTable.ts': {
+        kind: 'throw' as const,
+        reason: 'фіктивний',
+      },
+    };
+    expect(staleAllowlistKinds(fake, findings)).toEqual([
+      'packages/simplycms/src/plugin-sdk/usePluginTable.ts [throw]',
+    ]);
   });
 
   it('усі шляхи в реєстрі існують', () => {

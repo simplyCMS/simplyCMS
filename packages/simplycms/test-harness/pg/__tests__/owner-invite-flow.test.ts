@@ -182,54 +182,79 @@ describe('запрошення власника наскрізь', () => {
     const headersOf = (response: Response) =>
       new Headers({ cookie: cookieOf(response) });
 
-    const HIJACK = 'hijack@example.test';
-    let hijackSession: Headers;
-    let hijackInvite: { userId: string; url: string };
-
-    it('(1) пошту зайнято самореєстрацією: випуск запрошення НЕ дає ролі живій сесії', async () => {
+    /** Самореєстрація зловмисника на пошту власника + випуск запрошення. */
+    const hijackedInvite = async (email: string) => {
       const signUp = await getAuth().api.signUpEmail({
-        body: { email: HIJACK, password: PASSWORD, name: 'Зловмисник' },
+        body: { email, password: PASSWORD, name: 'Зловмисник' },
         asResponse: true,
       });
       expect(signUp.status).toBe(200);
-      hijackSession = headersOf(signUp);
-
+      const session = headersOf(signUp);
       const invite = await issueOwnerInvite({
         store: ownerInviteStore,
         schedule,
-        email: HIJACK,
+        email,
         env: { VITE_SITE_URL: SITE },
       });
-      hijackInvite = invite;
+      return { session, invite };
+    };
+
+    it('(1) пошту зайнято самореєстрацією: випуск запрошення НЕ дає ролі живій сесії', async () => {
+      const { session, invite } = await hijackedInvite('hijack@example.test');
       expect(invite.created).toBe(false);
       expect(invite.existingUnverified).toBe(true);
 
-      const subject = await readSessionSubject(hijackSession);
+      const subject = await readSessionSubject(session);
       expect(subject?.userId).toBe(invite.userId);
       expect(subject?.roles).not.toContain('admin');
       expect(await adminRoleCount(invite.userId)).toBe(0);
     });
 
     it('(2) прийняття гасить сесію самореєстрації, новий вхід дає admin', async () => {
+      const email = 'hijack-accept@example.test';
+      const { session, invite } = await hijackedInvite(email);
       const accepted = await acceptOwnerInvite({
         auth: getAuth(),
         store: ownerInviteStore,
-        email: HIJACK,
-        token: tokenOf(hijackInvite.url),
+        email,
+        token: tokenOf(invite.url),
         password: NEW_PASSWORD,
       });
-      expect(accepted).toEqual({ ok: true, userId: hijackInvite.userId });
+      expect(accepted).toEqual({ ok: true, userId: invite.userId });
 
-      expect(
-        await getAuth().api.getSession({ headers: hijackSession }),
-      ).toBeNull();
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
       // Старий пароль зловмисника теж не діє.
-      expect((await signIn(HIJACK, PASSWORD)).status).not.toBe(200);
+      expect((await signIn(email, PASSWORD)).status).not.toBe(200);
 
-      const fresh = await signIn(HIJACK, NEW_PASSWORD);
+      const fresh = await signIn(email, NEW_PASSWORD);
       expect(fresh.status).toBe(200);
       const subject = await readSessionSubject(headersOf(fresh));
       expect(subject?.roles).toContain('admin');
+    });
+
+    it('(2б) страховка: опцію BA вимкнено — явне deleteUserSessions у accept усе одно гасить сесію', async () => {
+      const email = 'hijack-insurance@example.test';
+      const { session, invite } = await hijackedInvite(email);
+      const { options } = await getAuth().$context;
+      // Тип опції звужено до `true` (createAuth ставить літерал) — для тесту розширюємо.
+      const emailAndPassword = options.emailAndPassword as {
+        revokeSessionsOnPasswordReset?: boolean;
+      };
+      const saved = emailAndPassword.revokeSessionsOnPasswordReset;
+      emailAndPassword.revokeSessionsOnPasswordReset = false;
+      try {
+        const accepted = await acceptOwnerInvite({
+          auth: getAuth(),
+          store: ownerInviteStore,
+          email,
+          token: tokenOf(invite.url),
+          password: NEW_PASSWORD,
+        });
+        expect(accepted.ok).toBe(true);
+      } finally {
+        emailAndPassword.revokeSessionsOnPasswordReset = saved;
+      }
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
     });
 
     it('(3) звичайне скидання пароля гасить живі сесії', async () => {

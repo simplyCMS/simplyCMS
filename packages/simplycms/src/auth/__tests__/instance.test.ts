@@ -123,7 +123,7 @@ describe('Better Auth: email+password на memory-адаптері', () => {
 });
 
 describe('createAuth: база посилань (хвіст A)', () => {
-  it.each(['', 'not a url', '/relative'])(
+  it.each(['', 'not a url', '/relative', 'foo:bar'])(
     'deps.baseURL=%j — гучна відмова з імʼям поля, а не гола TypeError',
     (baseURL) => {
       const attempt = () =>
