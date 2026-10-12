@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import {
   checkCoreVersions,
   checkEnv,
@@ -48,8 +48,18 @@ const ENV = {
   BETTER_AUTH_SECRET: 'x'.repeat(32),
 };
 
+// Тимчасові скаффолди файлу прибираються разом наприкінці: кожен кейс
+// створює магазин у власній теці tmpdir.
+const scaffoldRoots: string[] = [];
+afterAll(() => {
+  for (const dir of scaffoldRoots)
+    rmSync(dir, { recursive: true, force: true });
+});
+
 async function scaffoldStore(name: string) {
-  const target = join(mkdtempSync(join(tmpdir(), 'cli-doc-')), name);
+  const root = mkdtempSync(join(tmpdir(), 'cli-doc-'));
+  scaffoldRoots.push(root);
+  const target = join(root, name);
   await scaffold({
     templateDir: 'packages/create-simplycms-store/template',
     targetDir: target,
