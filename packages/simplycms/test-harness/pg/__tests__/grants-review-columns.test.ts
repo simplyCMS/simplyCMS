@@ -9,12 +9,10 @@
 // `admin_comment` звужує політика `product_reviews_insert_own`.
 // UPSTREAM:DRZ-INSERT-1 — docs/architecture/upstream-workarounds.md (розтяжка: tests/upstream-tripwires.test.ts)
 import { randomUUID } from 'node:crypto';
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -26,7 +24,6 @@ import { withActor } from '../actors.mjs';
 import { COLUMN_GRANTS } from './fixtures/grants';
 import { SEED_STATEMENTS, USER_A, USER_B } from './fixtures/rls-actors';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const DENIED = /permission denied/;
 const RLS = /new row violates row-level security policy/;
 const AS_A = { userId: USER_A, role: 'app_user' };
@@ -51,13 +48,7 @@ describe('Е6д-16 б: колонкові гранти INSERT/UPDATE product_rev
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     // Сід містить pending-відгук A (4★) — саме його й правимо.
     for (const statement of SEED_STATEMENTS) await queryRows(dbUrl, statement);
     runtimeUrl = withUser(dbUrl, 'app_runtime');

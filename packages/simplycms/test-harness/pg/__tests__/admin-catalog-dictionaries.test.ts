@@ -6,8 +6,6 @@
 // requireGrant мокається модульно, а операції беруться напряму зі службового
 // server-only субшляху `simplycms/admin-server/impl`. Тест доводить ОПЕРАЦІЮ
 // (та сама схема, що в validator serverFn), а не межу HTTP Start.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   afterAll,
   beforeAll,
@@ -20,7 +18,7 @@ import {
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -49,15 +47,6 @@ import {
   setDefaultPriceTypeOp,
   removeManyPriceTypesOp,
 } from 'simplycms/admin-server/impl';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 const at = new Date('2026-09-01T00:00:00Z');
 let seq = 0;
@@ -94,7 +83,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
 

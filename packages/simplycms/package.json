@@ -43,6 +43,7 @@
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
     "./env": "./src/env/index.ts",
+    "./migrate": "./src/migrate/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
@@ -256,6 +257,10 @@
       "./env": {
         "types": "./dist/env/index.d.ts",
         "import": "./dist/env/index.js"
+      },
+      "./migrate": {
+        "types": "./dist/migrate/index.d.ts",
+        "import": "./dist/migrate/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",

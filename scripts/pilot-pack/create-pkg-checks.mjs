@@ -26,6 +26,9 @@ const EXPECTED_FILES = [
   'package.json',
   '.gitignore',
   '.env.example',
+  // `*.sql text eol=lf` (Е8-О4): сума журналу накату не має залежати від ОС.
+  // npm/pnpm pack dot-файл не ріжуть (виміряно), тож він їде без RENAMES.
+  '.gitattributes',
   'routes.ts',
   'vite.config.ts',
   'simplycms.config.ts',

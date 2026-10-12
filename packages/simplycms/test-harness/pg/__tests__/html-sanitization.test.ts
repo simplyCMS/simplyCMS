@@ -9,13 +9,11 @@
 //
 // serverFn тут НЕ викликаються (getRequest() без ALS-контексту падає) —
 // requireGrant мокається модульно, операції беруться напряму.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -49,13 +47,6 @@ import {
   withCustomerDb,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 /** Розмітка, у якій і корисний текст, і кілька класичних векторів. */
 const EVIL =
@@ -97,7 +88,7 @@ describe('санітизація HTML: запис і віддача проти �
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     await seedUser(authorId);
     await queryRows(
       dbUrl,

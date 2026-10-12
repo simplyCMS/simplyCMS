@@ -4,13 +4,11 @@
 // канон → app_runtime → afterAll із closeDbPool() ПЕРШИМ; setResponseStatus
 // і requireGrant мокаються з тієї самої причини (поза HTTP-запитом
 // Start-контексту немає).
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -40,15 +38,6 @@ import {
   saveStockInput,
 } from 'simplycms/admin-server/impl';
 
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
-
 const SECTION = '0e300000-0000-4000-8000-000000000011';
 const PRODUCT = '0e300000-0000-4000-8000-000000000012';
 const POINT = '0e300000-0000-4000-8000-000000000013';
@@ -63,7 +52,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
 
     await queryRows(

@@ -5,7 +5,6 @@
 // узагалі (знижки, банери, точки видачі), або вона звужує рядки за АКТОРОМ
 // транзакції (відгуки). Довести і те, і те можна лише на живій БД: зелений
 // юніт-тест на моках сказав би рівно нічого.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -32,6 +31,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -79,13 +79,8 @@ interface IdRow {
   id: string;
 }
 
-const filesToApply = (): string[] => [
-  ...readdirSync(MIGRATIONS_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS_DIR, name)),
-  join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-];
+/** Не-міграційний SQL поверх канону (канон котить `applyCanon`). */
+const DEMO_SEED_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
 
 describe('вітрина: знижки, банери, залишки, відгуки', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -111,7 +106,8 @@ describe('вітрина: знижки, банери, залишки, відгу
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, filesToApply());
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [DEMO_SEED_FILE]);
     for (const statement of SHOWCASE_FIXTURE_STATEMENTS) {
       await queryRows(dbUrl, statement);
     }

@@ -226,8 +226,21 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 - Копію канону для магазину везе шаблон скаффолдера
   (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
-- 🔴 Накат у магазині — `psql -f` по `db/migrations`
-  (`simplycms db:diff` дописує в цю теку, далі ревʼю й накат вручну). **Не** застосовуй
+- 🔴 Накат — лише `applyMigrations` із `simplycms/migrate` (Е8-Р2): одна реалізація
+  для проду, харнесу `test:schema` і `pnpm db:demo`. Журнал
+  `public.simplycms_migrations` тримає імʼя й sha256 (після CRLF→LF) кожного
+  накоченого файлу; змінений накочений файл — `MigrationChecksumError` до будь-якого
+  DDL, база зі схемою без журналу — `UnjournaledDatabaseError` (адопції немає),
+  паралельні накати однієї бази серіалізує `pg_advisory_lock`. `psql -f` повз
+  журнал лишає базу, яку наступний накат відмовиться чіпати.
+- 🔴 Файл міграції виконується в ОДНІЙ транзакції накату разом зі своїм записом у
+  журнал: файл, що впав, відкочується цілком. Тому `concurrently` і власні
+  `begin`/`commit` у файлі відкидаються ще до накату
+  (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
+  а не тихий провал.
+- 🔴 Baseline `0000…0004` заморожено (`tests/migrations-frozen.test.ts`): нова схема —
+  лише новий файл `0005_*` і далі, що несе свої гранти й RLS у собі.
+- `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
 - `DATABASE_URL` (з `.env.local`) — джерело тулінгу `db:pull`/`db:diff` і рантайм-пул

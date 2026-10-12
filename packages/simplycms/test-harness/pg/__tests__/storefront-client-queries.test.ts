@@ -4,7 +4,6 @@
 // сам `createServerFn` тут не викликається — поза HTTP-контекстом у нього
 // немає запиту, — але весь SQL, предикати видимості й нормалізація живуть у
 // лоадерах, і довести їх можна лише на живій БД.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -22,6 +21,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -52,13 +52,8 @@ interface IdRow {
   id: string;
 }
 
-const filesToApply = (): string[] => [
-  ...readdirSync(MIGRATIONS_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS_DIR, name)),
-  join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-];
+/** Не-міграційний SQL поверх канону (канон котить `applyCanon`). */
+const DEMO_SEED_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
 
 describe('вибірки вітрини, знятi з браузера', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -69,7 +64,8 @@ describe('вибірки вітрини, знятi з браузера', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, filesToApply());
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [DEMO_SEED_FILE]);
     for (const statement of [
       ...FIXTURE_STATEMENTS,
       ...CLIENT_FIXTURE_STATEMENTS,

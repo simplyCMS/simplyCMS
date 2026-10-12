@@ -5,8 +5,6 @@
 // і підставлений чужий id читав чуже. Тепер id задає СЕРВЕР через актора
 // транзакції, і довести це можна лише так: виконати ті самі лоадери двома
 // різними акторами на одній БД.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
@@ -26,7 +24,7 @@ import {
 import type { NewOrderInput } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -35,7 +33,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const PASSWORD = 'super-secret-password';
 
 /** Помічники харнеса — `.mjs`, тож форму рядка описуємо на місці. */
@@ -111,13 +108,7 @@ describe('персональні дані вітрини під актором',
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     await queryRows(
       dbUrl,
       `insert into public.shipping_methods (id, code, name, provider)

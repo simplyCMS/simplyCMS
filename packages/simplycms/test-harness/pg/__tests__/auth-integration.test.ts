@@ -7,8 +7,6 @@
 // РЕАЛЬНОЇ сесії, дійсно замикає ланцюг на реальній БД. Тут signUp іде проти
 // накатаного baseline, id береться саме із сесії (не з insert-у), і саме він
 // їде у `withActor`.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createAuth,
@@ -20,7 +18,7 @@ import type { InviteEmail } from 'simplycms/auth';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -29,7 +27,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const PRODUCT = '44444444-4444-4444-8444-444444444444';
 const PASSWORD = 'super-secret-password';
 
@@ -73,13 +70,7 @@ describe('Better Auth над реальним Postgres', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     await queryRows(
       dbUrl,
       `insert into public.products (id, slug, name)

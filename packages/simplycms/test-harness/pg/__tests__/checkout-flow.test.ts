@@ -22,7 +22,6 @@
 // записане» — курʼєр із тарифом, знижка за кількістю (квота НЕ дорівнює
 // подвоєній ціні картки з quantity:1/cartTotal:0) і три відмови, ОДНАКОВІ
 // для квоти й оформлення на тих самих входах.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -30,6 +29,7 @@ import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
 import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -117,13 +117,8 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     // Негативна частина фікстури поверх сіду: вимкнений метод, зона, тариф, закрита точка.
     for (const statement of HIDDEN_SHIPPING_FIXTURES)
       await queryRows(dbUrl, statement);

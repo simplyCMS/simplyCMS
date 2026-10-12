@@ -6,27 +6,16 @@
 // 🔴 app_runtime тут не потрібен: тест перевіряє сам DDL (обмеження
 // унікальності), а не RLS чи грант ролі — привілейоване підключення
 // dbUrl, як у single-default.test.ts.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
   randomDbName,
   withDbName,
 } from '../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 const SECTION = 'e3130000-0000-4000-8000-000000000001';
 const PROP_SCALAR = 'e3130000-0000-4000-8000-000000000002';
@@ -45,7 +34,7 @@ describe('Е3-13: multiselect — рядок на опцію (NULLS NOT DISTINCT
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
 
     await queryRows(
       dbUrl,

@@ -1,12 +1,10 @@
 // Спільний сід харнесів курсора subset (admin-subset-cursor / -pagination):
 // тимчасова БД з каноном, товари й замовлення з міткою `created_at` на межі
 // мілісекундного Date курсора і µs-хвостом у БД.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { productsOps } from 'simplycms/admin-server/impl';
 import { resolveHarness } from '../../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -15,7 +13,6 @@ import {
   withUser,
 } from '../../apply.mjs';
 
-const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
 export const SECTION = '0e300000-0000-4000-8000-0000000000c1';
 /** Мілісекундний Date курсора; у БД — .123456 (µs-хвіст). */
 export const V = new Date('2026-01-01T00:00:00.123Z');
@@ -49,11 +46,7 @@ export async function seedCursorDb(): Promise<CursorDb> {
   const dbName = randomDbName('simplycms_admin_cursor');
   await createTempDatabase(harness.url, dbName);
   const dbUrl = withDbName(harness.url, dbName);
-  const canon = readdirSync(MIGRATIONS)
-    .filter((n) => n.endsWith('.sql'))
-    .sort()
-    .map((n) => join(MIGRATIONS, n));
-  await applySqlFiles(dbUrl, canon);
+  await applyCanon(dbUrl);
   process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   await queryRows(
     dbUrl,

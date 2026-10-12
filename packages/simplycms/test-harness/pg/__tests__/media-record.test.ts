@@ -1,7 +1,6 @@
 // Шапка — той самий патерн, що в admin-order-statuses.test.ts: resolveHarness
 // → createTempDatabase → канон → app_runtime у DATABASE_URL; afterAll із
 // closeDbPool() ПЕРШИМ.
-import { readdirSync } from 'node:fs';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -12,7 +11,7 @@ import { replaceAvatar } from 'simplycms/storefront/loaders';
 import { eraseMediaRows, localFsDriver, writeMedia } from 'simplycms/storage';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -20,13 +19,6 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 const PNG = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4,
@@ -43,7 +35,7 @@ describe('writeMedia / eraseMediaRows проти живої БД (Е2, Task 3)',
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
     root = await mkdtemp(join(tmpdir(), 'simplycms-media-rec-'));
   }, 120_000);

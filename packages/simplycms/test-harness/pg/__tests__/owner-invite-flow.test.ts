@@ -5,8 +5,6 @@
 // токена — без БД, форма сторінки — без сервера), але «власник справді
 // увійшов у щойно піднятий магазин» доводиться лише тут: на живій схемі, тим
 // самим кодом, що виконує роут `/auth/invite`.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   acceptOwnerInvite,
@@ -20,7 +18,7 @@ import type { InviteEmail } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -29,7 +27,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const OWNER = 'owner@example.test';
 const SHOPPER = 'shopper@example.test';
 const PASSWORD = 'owner-password-not-a-real-one';
@@ -57,13 +54,7 @@ describe('запрошення власника наскрізь', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
 
     // Як у проді: застосунок конектиться `app_runtime`, а інстанс auth
     // береться синглтоном `getAuth()` — тим самим, що обслуговує `/api/auth/$`.

@@ -1,8 +1,6 @@
 // Д-1: внутрішня примітка модератора не їде на вітрину. Перевірка на рівні
 // рядка лоадера і на рівні серіалізованого payload — поле не має ні існувати,
 // ні проливатись текстом.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import {
@@ -12,7 +10,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -22,7 +20,6 @@ import {
 } from '../apply.mjs';
 import { PRODUCT, SEED_STATEMENTS, USER_A } from './fixtures/rls-actors';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const NOTE = 'внутрішнє';
 
 describe('Д-1: вітрина без admin_comment', () => {
@@ -34,13 +31,7 @@ describe('Д-1: вітрина без admin_comment', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     for (const statement of SEED_STATEMENTS) await queryRows(dbUrl, statement);
     // Примітка і на власному pending A, і на схваленому чужому (B).
     await queryRows(

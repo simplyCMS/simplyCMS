@@ -73,6 +73,10 @@ simplyCMS/
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
 │   │   │                         #    server-only (К3-Е8)
+│   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
+│   │   │                         #    readJournal): одна реалізація для проду, db:apply, test:schema і
+│   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків
+│   │   │                         #    немає. server-only (К3-Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +

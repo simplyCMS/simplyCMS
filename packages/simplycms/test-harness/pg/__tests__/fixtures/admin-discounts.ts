@@ -2,7 +2,6 @@
 // демо-сід + фікстури контуру commerce для priceItems) → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Групи й знижки сідяться привілейованим
 // підключенням — повз guard, це сід, а не перевірка.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -29,12 +28,9 @@ export function useDiscountsAdminDb(
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    const files = readdirSync(MIGRATIONS)
-      .filter((n) => n.endsWith('.sql'))
-      .sort()
-      .map((n) => join(MIGRATIONS, n));
-    if (opts.commerce) files.push(join(MIGRATIONS, 'demo/demo-seed.sql'));
-    await H.applySqlFiles(dbUrl, files);
+    await H.applyCanon(dbUrl);
+    if (opts.commerce)
+      await H.applySqlFiles(dbUrl, [join(MIGRATIONS, 'demo/demo-seed.sql')]);
     if (opts.commerce) {
       for (const s of COMMERCE_FIXTURE_STATEMENTS) await H.queryRows(dbUrl, s);
       const [u] = await rows(

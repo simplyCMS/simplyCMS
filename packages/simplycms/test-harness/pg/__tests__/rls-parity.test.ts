@@ -10,12 +10,10 @@
 // Поведінковий бік (хто які рядки бачить) — `rls-behaviour.test.ts`; ці два
 // файли не дублюють один одного: текст політики може збігатися й при цьому
 // пускати не тих, а поведінка може збігатися при розʼїханому baseline.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -28,8 +26,6 @@ import {
   rlsEnabledTables,
 } from '../policies.mjs';
 import { declaredPolicies, declaredRlsTables } from '../schema-policies';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 // 🔴 Пін мажора Postgres. Нормалізація предикатів робиться ТИМ САМИМ сервером,
 // що й дамп (`policies.mjs`), тож форма виводу `pg_get_expr` між мажорами
@@ -75,13 +71,7 @@ describe('парність RLS: baseline ↔ schema.ts', () => {
       );
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     live = (await livePolicies(dbUrl)) as LivePolicy[];
   }, 120_000);
 

@@ -7,13 +7,11 @@
 // службового server-only субшляху `simplycms/admin-server/impl` (легальний
 // у тестах харнеса; клієнтський код його не імпортує НІКОЛИ — Gate C
 // стереже це payload-маркером).
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -43,15 +41,6 @@ import {
   removeManyOrderStatusesOp,
 } from 'simplycms/admin-server/impl';
 
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
-
 interface StatusRow {
   id: string;
   code: string;
@@ -73,7 +62,7 @@ describe('order_statuses: операції проти живої БД (Е1б, Ta
     dbUrl = withDbName(harness.url, dbName);
     // 🔴 Канон уже сідить order_statuses (0003_seed.sql: 6 рядків, дефолт
     // 'new', sort_order 0..5) — demo-seed тут не потрібен.
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     // Як у всіх сусідніх тестах: app_runtime, і ЛИШЕ після сетапу канону.
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);

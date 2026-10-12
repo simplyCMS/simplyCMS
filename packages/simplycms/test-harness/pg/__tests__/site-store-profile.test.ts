@@ -1,16 +1,12 @@
 // `readStoreProfile` проти живого Postgres (К3-Е6б, Task 2, Review Focus 1):
 // відсутній чи зіпсований рядок `store_profile` — порожній профіль, не помилка.
-import { readdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { EMPTY_STORE_PROFILE } from 'simplycms/domain/store-profile';
 import { readStoreProfile, toStorefrontProfile } from 'simplycms/site';
 import { resolveHarness } from '../up.mjs';
 import * as H from '../apply.mjs';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 describe('readStoreProfile проти живого Postgres', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -21,13 +17,7 @@ describe('readStoreProfile проти живого Postgres', () => {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(CANON_DIR, n)),
-    );
+    await H.applyCanon(dbUrl);
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
   }, 120_000);
 

@@ -7,12 +7,10 @@
 // ACL чистої БД звіряється з декларацією `fixtures/grants.ts`. Нова таблиця
 // без гранта, зайвий грант, `GRANT … TO PUBLIC`, право в `app_runtime` —
 // кожне з цього червонить файл.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryInTransaction,
@@ -32,8 +30,6 @@ import {
   expectedGrantMatrix,
   GRANTED_ROLES,
 } from './fixtures/grants';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 /** Таблиці з увімкненим RLS — на них гранти мусять збігатися з політиками. */
 const RLS_TABLES = [
@@ -63,13 +59,7 @@ describe('парність привілеїв: baseline v2', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     // Власника таблиць фільтруємо: у різних оточеннях він зветься по-різному
     // (`postgres`, `pgtest`, роль деплою) і до контракту не належить.
     actual = (await tableGrants(dbUrl, [

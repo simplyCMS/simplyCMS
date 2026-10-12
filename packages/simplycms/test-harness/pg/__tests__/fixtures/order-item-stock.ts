@@ -1,7 +1,6 @@
 // БД харнес-тесту дельти залишку по позиції (К3-Е5б Task 2, Е5б-7′): канон +
 // демо-сід; оформлення — воронкою вітрини, облік — під `app_admin` після
 // `orders … FOR UPDATE` (Е5б-8). Залишок кожен тест задає сам — точні асерти.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll } from 'vitest';
@@ -38,13 +37,8 @@ export function useOrderItemStockDb(prefix: string) {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await H.applyCanon(dbUrl);
+    await H.applySqlFiles(dbUrl, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     const id = async (text: string, p: unknown[] = []) =>
       (await one<{ id: string }>(text, p)).id;
     ids.method = await id(

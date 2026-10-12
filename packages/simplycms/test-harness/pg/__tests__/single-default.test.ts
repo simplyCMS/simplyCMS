@@ -2,11 +2,11 @@
 // інваріант «не більше одного дефолту» тримає БД, а не два нетранзакційні
 // запити з браузера (unset-усіх → insert нового), які й досі лишаються
 // єдиним записувачем на v2-стеку (легасі-клієнт БД без HTTP-посередника).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -19,13 +19,6 @@ const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 // 🔴 Локальна константа — `aggregate-deps.test.ts` (Task 1) ще не існує на
 // момент цього завдання; шлях той самий, що використає той файл пізніше.
 const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 /**
  * 🔴 Параметризовано на ВСІ 7 індексів (рев'ю р3: два кейси доводили 2 з
@@ -100,7 +93,7 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     // Демо-сід — для товарів (P1/P2); користувачі — власна фікстура.
     await applySqlFiles(dbUrl, [DEMO_SEED]);
     await queryRows(

@@ -1,7 +1,6 @@
 // Спільна БД контуру `simplycms/commerce` (К3-Е5б, Task 1): канон міграцій +
 // демо-сід + негативна доставка + фікстури `./commerce`. Реєструє хуки
 // `beforeAll`/`afterAll` у describe, що її кличе, і віддає id, прочитані з БД.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import type { CheckoutItemInput } from 'simplycms/contracts';
@@ -58,13 +57,8 @@ export function useCommerceDb(prefix: string): CommerceDb {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await H.applyCanon(dbUrl);
+    await H.applySqlFiles(dbUrl, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     for (const s of [
       ...HIDDEN_SHIPPING_FIXTURES,
       ...COMMERCE_FIXTURE_STATEMENTS,

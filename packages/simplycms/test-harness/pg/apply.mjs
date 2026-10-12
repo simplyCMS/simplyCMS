@@ -2,11 +2,33 @@
 // тимчасової БД для ізоляції тестів `test:schema`.
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+
+/** Канон міграцій ядра — та сама тека, що їде в tarball пакета. */
+export const CANON_DIR = fileURLToPath(
+  new URL('../../migrations', import.meta.url),
+);
+
+/**
+ * Накат КАНОНУ — лише через `applyMigrations` (Е8-Р2): харнес міряє ту саму
+ * реалізацію накату, що й прод, разом із журналом. Повертає звіт накату.
+ *
+ * 🔴 Імпорт динамічний, а не статичний: модуль ядра — TypeScript, а
+ * `scripts/live-smoke.mjs` імпортує цей файл чистим `node` (лише
+ * `withDbName`). Статичний імпорт `.ts` поклав би live-smoke ще до старту.
+ *
+ * @returns {Promise<import('../../src/migrate/index.ts').ApplyReport>}
+ */
+export async function applyCanon(connectionString) {
+  const { applyMigrations } = await import('../../src/migrate/index.ts');
+  return applyMigrations({ connectionString, dir: CANON_DIR });
+}
 
 /**
  * Накатує SQL-файли по черзі в ОДНОМУ з'єднанні. `ON_ERROR_STOP`-семантика:
  * перша помилка кидає виняток з іменем файлу, що впав, — решта не котиться.
+ * Лише для НЕ-міграційного SQL (демо-сід, фікстури); канон — `applyCanon`.
  */
 export async function applySqlFiles(connectionString, filePaths) {
   const client = new pg.Client({ connectionString });

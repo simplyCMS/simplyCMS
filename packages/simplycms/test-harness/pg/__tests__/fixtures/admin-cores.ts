@@ -1,7 +1,6 @@
 // БД харнес-тесту ядер адмінки (showcase Task 3): канон + демо-сід (облік
 // залишку зі списанням, `decrease_on_order = true`) → app_runtime → afterAll
 // із closeDbPool() ПЕРШИМ. Шапка — патерн admin-orders.test.ts.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -36,14 +35,8 @@ export function useCoresDb(prefix: string) {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     url = H.withDbName(harness.url, dbName);
-    const canon = readdirSync(MIGRATIONS)
-      .filter((n) => n.endsWith('.sql'))
-      .sort()
-      .map((n) => join(MIGRATIONS, n));
-    await H.applySqlFiles(url, [
-      ...canon,
-      join(MIGRATIONS, 'demo/demo-seed.sql'),
-    ]);
+    await H.applyCanon(url);
+    await H.applySqlFiles(url, [join(MIGRATIONS, 'demo/demo-seed.sql')]);
     ids.retail = await id(
       `select id from public.price_types where code = 'retail'`,
     );

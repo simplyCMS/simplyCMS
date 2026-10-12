@@ -6,14 +6,17 @@
 // сервісу автентифікації й сховища не існує як класу. Поява такої залежності знову зробить
 // цей файл червоним.
 //
-// Другий сенс — довести ідемпотентність: `0000_prelude`, `0003_seed` і `0004_functions`
-// котяться повторно (докат канону в магазині, що вже стартував), тому
-// прогін «двічі поспіль» тут обовʼязковий, а не косметичний.
+// Другий сенс — довести ідемпотентність рукописних файлів: `0000_prelude`
+// створює КЛАСТЕРНІ ролі, тож друга база того самого кластера котить його
+// поверх наявних; `0003_seed` і `0004_functions` — так само. Журнал накату
+// (`simplycms/migrate`, Е8) повторний накат файлу в одній базі прибрав, але
+// від кластерних об'єктів не рятує.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -41,7 +44,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
   }, 120_000);
 
   afterAll(async () => {
@@ -49,14 +52,23 @@ describe('канон міграцій: накат на чисту БД', () => {
     await harness?.teardown();
   });
 
-  it('канон складається рівно з пʼяти упорядкованих файлів', () => {
-    expect(canonFiles().map((p) => p.split('/').pop())).toEqual([
+  // 🔴 Перші п'ять — заморожений baseline (Е8, `tests/migrations-frozen.test.ts`
+  // стереже їхні суми). Нова схема — лише нові файли `NNNN_<імʼя>.sql`, що
+  // сортуються ПІСЛЯ `0004`: інакше накат на свіжу базу йшов би іншим
+  // порядком, ніж на базу, що жила з baseline.
+  it('канон: заморожений baseline першим, далі нумеровані файли після 0004', () => {
+    const names = canonFiles().map((p) => p.split('/').pop()!);
+    expect(names.slice(0, 5)).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
       '0002_grants.sql',
       '0003_seed.sql',
       '0004_functions.sql',
     ]);
+    for (const name of names.slice(5)) {
+      expect(name).toMatch(/^\d{4}_[a-z0-9_]+\.sql$/);
+      expect(name > '0004_functions.sql').toBe(true);
+    }
   });
 
   it('жоден файл канону не згадує auth.* чи storage.* (доказ B13)', async () => {
@@ -123,8 +135,10 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
     // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
-    expect(tables.length).toBe(43);
+    // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
+    expect(tables.length).toBe(44);
     for (const expected of [
+      'simplycms_migrations',
       'users',
       'sessions',
       'accounts',

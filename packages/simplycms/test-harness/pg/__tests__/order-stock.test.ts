@@ -13,7 +13,6 @@
 // лише простому товарі; I3 — подвійне скасування повертає залишок рівно
 // ОДИН раз (гвард `lockOrderStatus`); M4 — товар зі стандартним `in_stock`
 // фліпається у `out_of_stock` на нулі write-side.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -31,6 +30,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -189,13 +189,8 @@ describe('замовлення списує залишок і повертає �
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     [{ id: methodId }] = (await queryRows(
       dbUrl,
       `select id from public.shipping_methods where code = 'pickup'`,

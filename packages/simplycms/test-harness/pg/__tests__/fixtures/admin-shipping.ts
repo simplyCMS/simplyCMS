@@ -1,13 +1,9 @@
 // БД і сід харнес-тестів адмінки доставки (Е6а, Task 4): канон → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Канон доставки не везе — сід свій у кожному тесті.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
 
 /** Реєструє хуки БД у describe, що кличе; `url()` — привілейоване підключення. */
 export function useShippingAdminDb(prefix: string): { url: () => string } {
@@ -18,13 +14,7 @@ export function useShippingAdminDb(prefix: string): { url: () => string } {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(
-      dbUrl,
-      readdirSync(MIGRATIONS)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS, n)),
-    );
+    await H.applyCanon(dbUrl);
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
   }, 120_000);
   afterAll(async () => {
