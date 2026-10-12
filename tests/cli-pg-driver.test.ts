@@ -100,6 +100,39 @@ describe('doctor №13: checkPgDriver', () => {
     ).toBe('ok');
   });
 
+  // Гілка `verdict === null`: специфікацію не вдалося порівняти — не вгадуємо.
+  it.each(['workspace:*', '8.x'])(
+    'неоднозначна специфікація «%s» без встановленого pg → skip',
+    async (spec) => {
+      const store = await scaffoldStore('pg-unparsable');
+      const manifest = manifestOf(store);
+      manifest.dependencies.pg = spec;
+      fakeInstall(store, { peer: '8.23.1' });
+      const r = checkPgDriver({ storeRoot: store, manifest });
+      expect(r.status).toBe('skip');
+      expect(r.details).toContain('не вдалося порівняти');
+    },
+  );
+
+  // Fallback без `node_modules/pg`: міряємо базу оголошеного діапазону.
+  it('без встановленого pg `^8.0.0` проти peer 8.23.1 → error за базою діапазону', async () => {
+    const store = await scaffoldStore('pg-fallback');
+    const manifest = manifestOf(store);
+    manifest.dependencies.pg = '^8.0.0';
+    fakeInstall(store, { peer: '8.23.1' });
+    const r = checkPgDriver({ storeRoot: store, manifest });
+    expect(r.status).toBe('error');
+    expect(r.details).toContain('pg 8.0.0');
+  });
+
+  it('без встановленого pg точна оголошена версія в межах peer → ok', async () => {
+    const store = await scaffoldStore('pg-fallback-ok');
+    const manifest = manifestOf(store);
+    manifest.dependencies.pg = '8.23.1';
+    fakeInstall(store, { peer: '8.23.1' });
+    expect(checkPgDriver({ storeRoot: store, manifest }).status).toBe('ok');
+  });
+
   it('ядро не встановлено → skip (peer-діапазон невідомий)', async () => {
     const store = await scaffoldStore('pg-noinstall');
     expect(
