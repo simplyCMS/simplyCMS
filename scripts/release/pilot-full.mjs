@@ -41,6 +41,7 @@ if (!harnessUrl) throw new Error('У .env.harness немає PG_HARNESS_URL');
 run(`pnpm db:demo --name ${DB_NAME}`);
 const databaseUrl = new URL(harnessUrl);
 databaseUrl.pathname = `/${DB_NAME}`;
+run(`node scripts/pilot-pack/apply-probe.mjs ${databaseUrl.toString()}`);
 run('pnpm pilot', {
   PILOT_DATABASE_URL: databaseUrl.toString(),
   PILOT_BETTER_AUTH_SECRET: randomBytes(24).toString('hex'),

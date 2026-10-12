@@ -29,6 +29,8 @@ export default defineConfig({
     include: [
       'tests/published-exports-parity.test.ts',
       'tests/create-store-pack.test.ts',
+      // Оверлей-проба пілота не їде в tarball-и (склад — `npm pack --dry-run`, потрібен dist).
+      'tests/pilot-probe-not-packed.test.ts',
       'tests/cli-pack.test.ts',
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.

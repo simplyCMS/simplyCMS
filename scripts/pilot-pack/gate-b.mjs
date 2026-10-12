@@ -93,9 +93,9 @@ export async function gateHttp(port, env) {
   // 🔴 Рантайм-сторож санітайзера на СЕРВЕРНОМУ бандлі скретча (UPSTREAM:START-IP-1): у бандл
   // вклеєні dual-пакети (`is-plain-object`, `postcss`, `nanoid`), яких `sanitize-html` бере через
   // `require()` — безпечно лише поки він бере іменовані експорти. Статичний Gate SB переходу на
-  // default-імпорт не бачить, тож тут реально проганяємо `sanitize-html` на SSR: опис товару в
-  // демо-сіді — rich-розмітка зі `style` (проганяє `postcss.parse`), `<script>` і `onerror`. Потрібна демо-БД (`pnpm db:demo`): без
-  // проби крок червоніє, а не мовчки пропускається.
+  // default-імпорт не бачить, тож тут реально проганяємо `sanitize-html` на SSR: опис товару з
+  // оверлею — rich-розмітка зі `style` (проганяє `postcss.parse`), `<script>` і `onerror`. Проба — оверлей пілота `sanitize-probe.sql`
+  // (`apply-probe.mjs` поверх `pnpm db:demo`; демо-сід чистий): без неї крок червоніє, а не мовчки пропускається.
   const probe = await fetch(
     `${base}/catalog/invertory/invertor-merezhevyi-5kw`,
   );
@@ -114,7 +114,7 @@ export async function gateHttp(port, env) {
     probe.status === 200 && kept && !dirty,
     `${probe.status}, <strong>/<a href> лишились: ${kept}, небезпечне лишилось: ${dirty}` +
       (probe.status === 200 && !kept
-        ? ' (або немає проби — накоти демо-БД `pnpm db:demo`, або серверний sanitize-html зламаний)'
+        ? ' (або немає проби — `node scripts/pilot-pack/apply-probe.mjs <DSN>` поверх `pnpm db:demo`, або серверний sanitize-html зламаний)'
         : ''),
   );
 
