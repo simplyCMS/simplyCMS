@@ -89,7 +89,11 @@ describe('create-store: інструкція «призначити власни
   // dev-сервера; тепер без `VITE_SITE_URL` команда відмовляє (поведінку доводить
   // `tests/owner-invite.test.ts`), а тут стережемо, що літерал не повернувся.
   it('owner-invite не має дефолтної адреси сайту', () => {
-    for (const file of ['owner-invite.mjs', 'owner-invite-core.mjs'])
+    for (const file of [
+      'owner-invite.mjs',
+      'owner-invite-core.mjs',
+      'owner-invite-cli.mjs',
+    ])
       expect(read(`${TEMPLATE}/scripts/${file}`)).not.toMatch(/localhost/);
   });
 });

@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { SCANNED_ROOTS, scanAll, sourceFiles } from './i18n-coverage/scan';
-import { ALLOWLIST, PENDING_FILES } from './i18n-coverage/pending';
+import {
+  ALLOWLIST,
+  PENDING_FILES,
+  type DevKind,
+} from './i18n-coverage/pending';
 
 const REPO = resolve(__dirname, '..');
 
@@ -17,17 +21,22 @@ const REPO = resolve(__dirname, '..');
  * тим, що виняток діє лише для файлів, явно перелічених в `ALLOWLIST`, — а
  * там немає жодного JSX.
  */
+const KIND_PATTERNS: Record<DevKind, (line: string) => boolean> = {
+  console: (l) => l.includes('console.'),
+  throw: (l) => /throw new \w*Error\(/.test(l),
+  // Конструктор підкласу Error: те саме повідомлення, що й `throw new Error`.
+  super: (l) => /\bsuper\(/.test(l),
+  // Ін'єкційний лог-синк драйвера пошти (`log(...)`): рядок читає оператор.
+  'log-sink': (l) => /\blog\(/.test(l),
+};
+
 function insideDevDiagnostic(file: string, line: number): boolean {
   const lines = readFileSync(resolve(REPO, file), 'utf8').split('\n');
-  return lines.slice(Math.max(0, line - 3), line).some(
-    (l) =>
-      l.includes('console.') ||
-      /throw new \w*Error\(/.test(l) ||
-      // Конструктор підкласу Error: те саме повідомлення, що й `throw new Error`.
-      /\bsuper\(/.test(l) ||
-      // Ін'єкційний лог-синк драйвера пошти (`log(...)`): рядок читає оператор.
-      /\blog\(/.test(l),
-  );
+  const raw = ALLOWLIST[file]!.kind;
+  const allowed = Array.isArray(raw) ? raw : [raw];
+  return lines
+    .slice(Math.max(0, line - 3), line)
+    .some((l) => allowed.some((kind) => KIND_PATTERNS[kind](l)));
 }
 
 /**

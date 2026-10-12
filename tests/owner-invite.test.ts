@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { inviteIdentifier, verifyOwnerInvite } from 'simplycms/auth';
 import type { OwnerInviteStore } from 'simplycms/auth';
 import type { MailItem, MailMessage, MailTransport } from 'simplycms/mail';
-import {
-  runOwnerInvite,
-  runOwnerInviteCli,
-} from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
+import { runOwnerInvite } from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
+import { runOwnerInviteCli } from '../packages/create-simplycms-store/template/scripts/owner-invite-cli.mjs';
 
 // Юніт скрипта `owner:invite` із шаблону магазину.
 //
@@ -304,6 +302,51 @@ describe('owner-invite CLI-обгортка', () => {
     expect(calls).toHaveLength(0);
     expect(errors.join('\n')).toContain('VITE_SITE_URL');
     expect(errors.join('\n')).not.toContain('localhost');
+  });
+
+  /** CLI з реальним ядром і фейковою поштою; повертає надіслане й попередження. */
+  const withLocale = async (locale: string | undefined) => {
+    const { store } = makeStore();
+    const mail = makeMail();
+    const errors: string[] = [];
+    const env: Record<string, string> = { ...baseEnv, ...SMTP_ENV };
+    if (locale !== undefined) env.VITE_LOCALE = locale;
+    const code = await runOwnerInviteCli({
+      argv: [],
+      env,
+      log: () => {},
+      error: (m: string) => errors.push(m),
+      run: (o) =>
+        runOwnerInvite({
+          ...o,
+          store,
+          schedule: mail.schedule,
+          deliver: mail.deliver,
+          transport: mail.transport,
+        }),
+    });
+    return { code, mail, errors };
+  };
+
+  it('M3: VITE_LOCALE=en-US — лист запрошення англійською, без попереджень', async () => {
+    const { code, mail, errors } = await withLocale('en-US');
+    expect(code).toBe(0);
+    expect(mail.sent[0]!.subject).toMatch(/^Owner invitation/);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('M3: невалідна VITE_LOCALE — одне попередження й uk', async () => {
+    const { code, mail, errors } = await withLocale('xx-YY');
+    expect(code).toBe(0);
+    expect(mail.sent[0]!.subject).toMatch(/^Запрошення власника/);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('VITE_LOCALE');
+  });
+
+  it('M3: без VITE_LOCALE — uk без попередження', async () => {
+    const { mail, errors } = await withLocale(undefined);
+    expect(mail.sent[0]!.subject).toMatch(/^Запрошення власника/);
+    expect(errors).toHaveLength(0);
   });
 
   it('невідомий аргумент — код 1', async () => {

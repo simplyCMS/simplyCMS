@@ -12,7 +12,9 @@ import { defineConfig } from 'simplycms/runtime';
  * у `vite.config.ts`), ядро приходить із `node_modules`.
  */
 export default defineConfig({
-  locale: 'uk-UA',
+  // 🔴 Єдине джерело локалі — env: той самий `VITE_LOCALE` читає `owner:invite`
+  // для мови листа. ЛИШЕ `import.meta.env` — файл імпортується тільки через Vite.
+  locale: import.meta.env.VITE_LOCALE ?? 'uk-UA',
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },

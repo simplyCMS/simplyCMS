@@ -54,7 +54,9 @@
 
 🔴 `VITE_LOCALE` — опційний клієнтський перемикач локалі збірки (`simplycms.config.ts`:
 `locale: import.meta.env.VITE_LOCALE ?? 'uk-UA'`; е2е-обгортка приймає `uk-UA` або `en-US`).
-Запікається при `vite build`, не є частиною контракту з трьох ключів.
+Запікається при `vite build`, не є частиною контракту з трьох ключів. Те саме значення задає мову листів: `pnpm owner:invite` читає `VITE_LOCALE` (невалідне — попередження й `uk`), а сервер отримує локаль від host-а (`declareStoreLocale` у `src/server.ts`).
+
+🔴 `VITE_SITE_URL` — ORIGIN сайту: шлях і кінцевий слеш ігноруються. Від нього будуються і посилання в листах (`siteUrl` з `simplycms/env`), і база Better Auth (`BETTER_AUTH_URL` — лише явний override; без обох ключів `createAuth` падає, бо інакше BA брав би базу із запиту).
 
 ### Групи драйверів
 

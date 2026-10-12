@@ -9,6 +9,14 @@
  */
 
 /**
+ * Вид діагностики, дозволений для файлу. Точковість важлива: файл із записом
+ * `throw` не може заховати кириличний `super('…')` чи лог-рядок — кожен вид
+ * перевіряється окремо в `i18n-coverage.test.ts`.
+ */
+export type DevKind = 'console' | 'throw' | 'super' | 'log-sink';
+export type AllowEntry = { kind: DevKind | DevKind[]; reason: string };
+
+/**
  * Рядки, що не є інтерфейсом і лишаються українськими навмисно.
  *
  * 🔴 Критерій один: текст читає той, хто тримає термінал або пише тему/плагін,
@@ -17,72 +25,122 @@
  * тест окремо асертить, що кожен його кириличний рядок стоїть усередині
  * `console.*` або `throw new Error(...)` (див. `i18n-coverage.test.ts`).
  */
-export const ALLOWLIST: Record<string, string> = {
+export const ALLOWLIST: Record<string, AllowEntry> = {
   // Логи сервера: дивиться розробник у терміналі.
-  'packages/simplycms/src/storefront-routes/server/auth.ts':
-    'console.error — лог',
-  'packages/simplycms/src/storefront-routes/seo/interceptor.ts':
-    'console.error — лог',
-  'packages/simplycms/src/plugins/bootstrap.ts': 'console.error — лог',
+  'packages/simplycms/src/storefront-routes/server/auth.ts': {
+    kind: 'console',
+    reason: 'console.error — лог',
+  },
+  'packages/simplycms/src/storefront-routes/seo/interceptor.ts': {
+    kind: 'console',
+    reason: 'console.error — лог',
+  },
+  'packages/simplycms/src/plugins/bootstrap.ts': {
+    kind: 'console',
+    reason: 'console.error — лог',
+  },
   // Дзеркало плагінного bootstrap: логи синхронізації рядків `themes` читає
   // розробник магазину в консолі, а не покупець.
-  'packages/simplycms/src/themes/bootstrapThemes.ts':
-    'console.error/warn — лог',
+  'packages/simplycms/src/themes/bootstrapThemes.ts': {
+    kind: 'console',
+    reason: 'console.error/warn — лог',
+  },
   // Повідомлення валідатора теми адресовані АВТОРОВІ теми, не покупцю: вони
   // кидаються під час реєстрації модуля й потрапляють у консоль складання.
-  'packages/simplycms/src/themes/validateThemeModule.ts':
-    'throw new Error — діагностика для автора теми',
+  'packages/simplycms/src/themes/validateThemeModule.ts': {
+    kind: ['throw', 'console'],
+    reason: 'throw new Error — діагностика для автора теми',
+  },
   // Той самий валідатор, лише винесений блок форми `views` (контракт v3).
-  'packages/simplycms/src/themes/validateThemeViews.ts':
-    'throw new Error — діагностика для автора теми',
+  'packages/simplycms/src/themes/validateThemeViews.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика для автора теми',
+  },
   // Той самий клас: conformance-kit (контракт v3) кидає помилки АВТОРОВІ
   // теми — про відсутнє DOM-середовище, падіння view чи загублений реквізит.
   // Це вивід гейта в терміналі, а не текст інтерфейсу; JSX у файлі немає.
-  'packages/simplycms/src/themes/conformance/assertThemeViewsConformance.ts':
-    'throw new Error — діагностика для автора теми',
+  'packages/simplycms/src/themes/conformance/assertThemeViewsConformance.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика для автора теми',
+  },
   // console.warn на невалідному записі fonts — читає автор теми в консолі
   // складання, не покупець (контракт v2.2, Р4).
-  'packages/simplycms/src/themes/safeFontStylesheets.ts':
-    'console.warn — діагностика для автора теми',
+  'packages/simplycms/src/themes/safeFontStylesheets.ts': {
+    kind: 'console',
+    reason: 'console.warn — діагностика для автора теми',
+  },
   // Той самий клас діагностики для контуру плагінів (Фаза 3): валідатор і
   // definePlugin кидають на порушенні контракту, порти SDK — на зловживанні
   // межею довіри; usePluginConfig лише попереджає в консоль розробника.
-  'packages/simplycms/src/plugins/validatePluginModule.ts':
-    'throw + console.warn — діагностика для автора плагіна',
-  'packages/simplycms/src/plugin-sdk/definePlugin.ts':
-    'throw new Error — діагностика для автора плагіна',
-  'packages/simplycms/src/plugin-sdk/usePluginTable.ts':
-    'throw new Error — межа довіри (гард plg_)',
-  'packages/simplycms/src/plugin-sdk/usePluginConfig.ts': 'console.warn — лог',
+  'packages/simplycms/src/plugins/validatePluginModule.ts': {
+    kind: ['console', 'throw'],
+    reason: 'throw + console.warn — діагностика для автора плагіна',
+  },
+  'packages/simplycms/src/plugin-sdk/definePlugin.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика для автора плагіна',
+  },
+  'packages/simplycms/src/plugin-sdk/usePluginTable.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — межа довіри (гард plg_)',
+  },
+  'packages/simplycms/src/plugin-sdk/usePluginConfig.ts': {
+    kind: 'console',
+    reason: 'console.warn — лог',
+  },
   // Серверна половина портів (рішення B9): усі рядки — `throw new Error` на
   // порушенні межі даних плагіна або на невалідному запиті. Їх читає автор
   // плагіна в логах сервера; жоден із них не доходить до покупця — хендлер
   // віддає браузеру помилку, а не її текст як інтерфейс.
-  'packages/simplycms/src/plugin-sdk/server/guard.ts':
-    'throw new Error — межа даних плагіна',
-  'packages/simplycms/src/plugin-sdk/server/table-db.ts':
-    'throw new Error — діагностика запиту плагіна',
-  'packages/simplycms/src/plugin-sdk/server/index.ts':
-    'throw new Error — відмова в записі не-адміну',
-  'packages/simplycms/src/admin/lib/pluginSettingsFields.ts':
-    'console.warn — діагностика непредставної settings-схеми плагіна',
+  'packages/simplycms/src/plugin-sdk/server/guard.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — межа даних плагіна',
+  },
+  'packages/simplycms/src/plugin-sdk/server/table-db.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика запиту плагіна',
+  },
+  'packages/simplycms/src/plugin-sdk/server/index.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — відмова в записі не-адміну',
+  },
+  'packages/simplycms/src/admin/lib/pluginSettingsFields.ts': {
+    kind: 'console',
+    reason: 'console.warn — діагностика непредставної settings-схеми плагіна',
+  },
   // Кореневі дані вітрини (Е6б-10/12): обидва кидають, коли host не віддає
   // профіль магазину. Читає розробник магазину, що зібрав `__root.tsx`, — не
   // покупець: на зібраному магазині ці гілки недосяжні.
-  'packages/simplycms/src/storefront-routes/head/head.ts':
-    'throw new Error — діагностика host-а (кореневий лоадер)',
-  'packages/simplycms/src/themes/store-profile.tsx':
-    'throw new Error — діагностика host-а (провайдер профілю)',
+  'packages/simplycms/src/storefront-routes/head/head.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика host-а (кореневий лоадер)',
+  },
+  'packages/simplycms/src/themes/store-profile.tsx': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика host-а (провайдер профілю)',
+  },
   // Е8-Т11: auth і пошта у SCANNED_ROOTS. Усе нижче — діагностика оператора
   // (помилки env, лог-рядки), не текст для покупця; листи — лише з `mail.*`.
-  'packages/simplycms/src/auth/auth-env.ts':
-    'throw new Error — діагностика env',
-  'packages/simplycms/src/auth/authz.ts':
-    'super(...) помилки — клієнт читає name/operation, не message',
-  'packages/simplycms/src/auth/instance.ts': 'console.warn — лог доставки',
-  'packages/simplycms/src/auth/invite.ts': 'super(...) помилки — діагностика',
-  'packages/simplycms/src/mail/log.ts':
-    'лог-драйвер: рядок для оператора в лозі процесу',
+  'packages/simplycms/src/auth/auth-env.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика env',
+  },
+  'packages/simplycms/src/auth/authz.ts': {
+    kind: 'super',
+    reason: 'super(...) помилки — клієнт читає name/operation, не message',
+  },
+  'packages/simplycms/src/auth/reset-mail.ts': {
+    kind: 'console',
+    reason: 'console.warn — лог доставки',
+  },
+  'packages/simplycms/src/auth/invite.ts': {
+    kind: 'super',
+    reason: 'super(...) помилки — діагностика',
+  },
+  'packages/simplycms/src/mail/log.ts': {
+    kind: 'log-sink',
+    reason: 'лог-драйвер: рядок для оператора в лозі процесу',
+  },
 };
 
 /**

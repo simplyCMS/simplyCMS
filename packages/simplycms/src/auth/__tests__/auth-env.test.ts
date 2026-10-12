@@ -21,18 +21,7 @@ describe('resolveAuthSecret', () => {
 });
 
 describe('resolveAuthBaseUrl', () => {
-  it('без жодного ключа — undefined, з порожнім — теж', () => {
-    expect(resolveAuthBaseUrl({})).toBeUndefined();
-    expect(resolveAuthBaseUrl({ BETTER_AUTH_URL: '' })).toBeUndefined();
-    expect(resolveAuthBaseUrl({ BETTER_AUTH_URL: 'https://a.test' })).toBe(
-      'https://a.test',
-    );
-  });
-
-  it('Р18а: без BETTER_AUTH_URL база береться з VITE_SITE_URL, BETTER_AUTH_URL виграє', () => {
-    expect(resolveAuthBaseUrl({ VITE_SITE_URL: 'https://site.test' })).toBe(
-      'https://site.test',
-    );
+  it('BETTER_AUTH_URL — явний override', () => {
     expect(
       resolveAuthBaseUrl({
         BETTER_AUTH_URL: 'https://auth.test',
@@ -40,4 +29,24 @@ describe('resolveAuthBaseUrl', () => {
       }),
     ).toBe('https://auth.test');
   });
+
+  it('Р18а/M6: без override — ORIGIN VITE_SITE_URL (шлях ігнорується, як у siteUrl)', () => {
+    expect(
+      resolveAuthBaseUrl({ VITE_SITE_URL: 'https://site.test/shop/' }),
+    ).toBe('https://site.test');
+    expect(
+      resolveAuthBaseUrl({
+        BETTER_AUTH_URL: '',
+        VITE_SITE_URL: 'https://site.test',
+      }),
+    ).toBe('https://site.test');
+  });
+
+  it.each([[{}], [{ BETTER_AUTH_URL: '', VITE_SITE_URL: '' }]])(
+    'I1: без обох ключів падає гучно й називає обидва (S3-01 не відкривається мовчки) %j',
+    (env) => {
+      expect(() => resolveAuthBaseUrl(env)).toThrow(/BETTER_AUTH_URL/);
+      expect(() => resolveAuthBaseUrl(env)).toThrow(/VITE_SITE_URL/);
+    },
+  );
 });

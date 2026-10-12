@@ -6,7 +6,7 @@
 // немає.
 import { readFileSync } from 'node:fs';
 import { closeDbPool } from 'simplycms/db';
-import { runOwnerInviteCli } from './owner-invite-core.mjs';
+import { runOwnerInviteCli } from './owner-invite-cli.mjs';
 
 /** Дописує у `process.env` лише ВІДСУТНІ ключі: реальний env завжди виграє. */
 function loadEnvFile(path) {

@@ -11,6 +11,8 @@
  * юнітом без інстансу Better Auth і без БД.
  */
 
+import { siteUrl } from 'simplycms/env';
+
 /** Джерело змінних оточення (та сама форма, що в `db/client`). */
 export interface AuthEnv {
   readonly BETTER_AUTH_SECRET?: string;
@@ -42,9 +44,22 @@ export function resolveAuthSecret(env: AuthEnv): string {
 /**
  * Публічна база URL застосунку: колбеки і посилання в листах (скидання пароля).
  *
- * 🔴 Р18а: `BETTER_AUTH_URL ?? VITE_SITE_URL`, а не виведення з запиту — без бази
- * Better Auth бере її (і `trustedOrigins`) із `request.url`, тобто з довільного
- * `Host`/`X-Forwarded-Host`. `VITE_SITE_URL` він сам не читає.
+ * 🔴 Р18а: `BETTER_AUTH_URL` (явний override) або ORIGIN із `VITE_SITE_URL` — той
+ * самий origin, що й у `siteUrl()` (шлях `VITE_SITE_URL` ігнорується, обидві бази
+ * не розходяться). Без бази Better Auth взяв би її (і `trustedOrigins`) із
+ * `request.url`, тобто з підробного `Host`/`X-Forwarded-Host`, — тому відсутність
+ * обох ключів ПАДАЄ гучно, як відсутній секрет, а не мовчки відкриває S3-01.
+ *
+ * @throws Error якщо немає ні `BETTER_AUTH_URL`, ні `VITE_SITE_URL`.
  */
-export const resolveAuthBaseUrl = (env: AuthEnv): string | undefined =>
-  env.BETTER_AUTH_URL || env.VITE_SITE_URL || undefined;
+export function resolveAuthBaseUrl(env: AuthEnv): string {
+  const explicit = env.BETTER_AUTH_URL || undefined;
+  if (explicit) return explicit;
+  if (!env.VITE_SITE_URL) {
+    throw new Error(
+      '[simplycms/auth] Відсутні BETTER_AUTH_URL і VITE_SITE_URL — нема з чого ' +
+        'будувати базу посилань (без неї вона береться із запиту).',
+    );
+  }
+  return new URL(siteUrl('/', { VITE_SITE_URL: env.VITE_SITE_URL })).origin;
+}

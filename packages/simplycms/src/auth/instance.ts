@@ -1,15 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { withActor } from 'simplycms/db';
-import { createTranslator } from 'simplycms/i18n';
-import {
-  deliverMail,
-  renderPasswordResetMail,
-  scheduleMail,
-  type MailTransport,
-} from 'simplycms/mail';
+import type { MailTransport, scheduleMail } from 'simplycms/mail';
 import { accounts, sessions, users, verifications } from 'simplycms/schema';
-import { getStoreLocale, readStoreProfile } from 'simplycms/site';
 import {
   createSessionBanHook,
   isUserBannedInDb,
@@ -19,6 +11,7 @@ import { createAuthDb } from './drizzle-proxy';
 import { resolveAuthBaseUrl, resolveAuthSecret } from './auth-env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
 import { provisionUserInDb } from './provision';
+import { createResetPasswordSender } from './reset-mail';
 import { isResetStillValid, type ResetGuard } from './reset-guard';
 
 /**
@@ -59,39 +52,21 @@ export interface AuthDeps {
   readonly storeName?: string;
 }
 
-/** `profile.name || 'SimplyCMS'` — той самий фолбек, що й в owner:invite. */
-const readStoreName = (): Promise<string> =>
-  withActor({ role: 'app_admin' }, readStoreProfile).then(
-    (profile) => profile.name || 'SimplyCMS',
-  );
-
-/** Помилка фонової доставки без секретів: лише клас помилки, без тексту. */
-const logDeliveryFailure = (error: unknown): void => {
-  console.warn(
-    '[simplycms/auth] фонова доставка листа скидання пароля не вдалась:',
-    error instanceof Error ? error.name : typeof error,
-  );
-};
-
-/** Явний origin: `baseURL` для посилань і єдиний довірений origin. */
-function authBase(baseURL: string | undefined) {
-  if (!baseURL) return {};
-  return { baseURL, trustedOrigins: [new URL(baseURL).origin] };
-}
-
 /**
  * Створює інстанс. Env читається ТУТ, у рантаймі — не на модуль-рівні.
  */
 export function createAuth(deps: AuthDeps = {}) {
-  const schedule = deps.schedule ?? scheduleMail;
   const resetGuard = deps.resetGuard ?? isResetStillValid;
+  const baseURL = deps.baseURL ?? resolveAuthBaseUrl(process.env);
 
   return betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
     // 🔴 Р18а: база посилань і trustedOrigins — ЗАВЖДИ з env (`BETTER_AUTH_URL`
-    // або `VITE_SITE_URL`). Без цього BA бере їх із `request.url`, і підроблений
-    // `Host`/`X-Forwarded-Host` отруює посилання скидання пароля.
-    ...authBase(deps.baseURL ?? resolveAuthBaseUrl(process.env)),
+    // або origin `VITE_SITE_URL`); без обох resolveAuthBaseUrl падає. Без бази
+    // BA брав би їх із `request.url`, і підроблений `Host`/`X-Forwarded-Host`
+    // отруював би посилання скидання пароля.
+    baseURL,
+    trustedOrigins: [new URL(baseURL).origin],
     database:
       deps.database ??
       drizzleAdapter(createAuthDb(), {
@@ -104,25 +79,18 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
-      sendResetPassword: async ({ user, url, token }) => {
-        // Токен BA уже вставив окремим запитом: якщо email змінився або
-        // акаунт видалено між пошуком і вставкою, guard його прибирає (Е6г-18).
-        if (!(await resetGuard(user.id, user.email, token))) return;
-        const message = renderPasswordResetMail({
-          to: user.email,
-          url,
-          storeName: deps.storeName ?? (await readStoreName()),
-          t: createTranslator(getStoreLocale()),
-        });
-        // Швидкий запис у БД — лист у черзі, далі доставка БЕЗ await (Е8-О1):
-        // BA кличе колбек лише для наявного email, і затримка SMTP у відповіді
-        // видала б існування акаунта за часом відповіді. Збій доставки лишає
-        // рядок в outbox — його добере наступна доставка.
-        const ids = await schedule([{ kind: 'password_reset', message }]);
-        void deliverMail(ids, deps.mailTransport).catch(logDeliveryFailure);
-      },
+      sendResetPassword: createResetPasswordSender({
+        resetGuard,
+        schedule: deps.schedule,
+        mailTransport: deps.mailTransport,
+        storeName: deps.storeName,
+      }),
     },
     advanced: {
+      // Явно, а не за замовчуванням BA: інакше `isTest()` мовчки вимикає
+      // перевірку origin/redirectTo у Vitest, і trustedOrigins лишається без
+      // негативного контролю.
+      disableOriginCheck: false,
       database: {
         // 🔴 `'uuid'` — єдине значення, коректне для ОБОХ адаптерів. Драйвер
         // drizzle-pg оголошує `supportsUUIDs`, тож id генерує сама БД

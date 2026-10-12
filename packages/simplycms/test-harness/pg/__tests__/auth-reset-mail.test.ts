@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createAuth } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import type { MailMessage, MailTransport } from 'simplycms/mail';
-import { declareStoreLocale, resetStoreLocale } from 'simplycms/site';
+import { declareStoreLocale } from 'simplycms/site';
 import * as F from './fixtures/customer-categories';
 
 const SITE = 'https://shop.example';
@@ -16,11 +16,13 @@ describe('скидання пароля через порт пошти (Е8-Т11
   const sent: MailMessage[] = [];
   /** Транспорт, який чекає ручного дозволу: так «раніше за транспорт» доводиться без годинника. */
   let gate: Promise<void> = Promise.resolve();
-  let transportDone: Promise<void> = Promise.resolve();
+  /** Ставиться ВСЕРЕДИНІ транспорту, після воріт: «send завершився». */
+  let sendFinished = false;
   const transport: MailTransport = {
     driver: 'smtp',
     send: async (m) => {
       await gate;
+      sendFinished = true;
       sent.push(m);
     },
   };
@@ -55,7 +57,7 @@ describe('скидання пароля через порт пошти (Е8-Т11
   afterEach(() => {
     sent.length = 0;
     gate = Promise.resolve();
-    resetStoreLocale();
+    sendFinished = false;
   });
   afterAll(async () => {
     delete process.env.VITE_SITE_URL;
@@ -92,20 +94,25 @@ describe('скидання пароля через порт пошти (Е8-Т11
     await F.seedCustomer(url(), { email: 'reset-slow@x.test' });
     let release!: () => void;
     gate = new Promise((r) => (release = r));
-    let finished = false;
-    transportDone = gate.then(() => {
-      finished = true;
-    });
 
-    await auth.api.requestPasswordReset({
-      body: { email: 'reset-slow@x.test' },
-    });
-
-    // Повернулись, а транспорт ще не завершився; лист уже в черзі.
-    expect(finished).toBe(false);
-    expect(await outboxKinds()).toEqual(['password_reset']);
-    release();
-    await transportDone;
+    // Ворота закриті, тож «await deliverMail» ніколи б не повернувся: гонка з
+    // короткою межею перетворює таке зависання на швидкий червоний, а не на
+    // 15-секундний таймаут. Межа не є частиною доказу — доказ у `sendFinished`.
+    const outcome = await Promise.race([
+      auth.api
+        .requestPasswordReset({ body: { email: 'reset-slow@x.test' } })
+        .then(() => 'returned' as const),
+      new Promise<'hung'>((r) => setTimeout(() => r('hung'), 3000)),
+    ]);
+    try {
+      expect(outcome).toBe('returned');
+      // Повернулись, а транспорт ще не завершив send; лист уже в черзі.
+      expect(sendFinished).toBe(false);
+      expect(await outboxKinds()).toEqual(['password_reset']);
+    } finally {
+      release();
+    }
+    await waitFor(() => sendFinished);
     await waitFor(async () => (await outboxKinds()).length === 0);
   }, 15_000);
 
@@ -129,5 +136,24 @@ describe('скидання пароля через порт пошти (Е8-Т11
     expect(sent[0]!.text).toContain(`${SITE}/api/auth/reset-password/`);
     expect(sent[0]!.text).not.toContain('evil.example');
     expect(sent[0]!.html).not.toContain('evil.example');
+  });
+
+  it('M1: redirectTo на чужий origin відхиляється 403 (trustedOrigins з env, origin-check увімкнено)', async () => {
+    await F.seedCustomer(url(), { email: 'reset-redir@x.test' });
+    const post = (origin: string, redirectTo: string) =>
+      auth.handler(
+        new Request(`${origin}/api/auth/request-password-reset`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', origin },
+          body: JSON.stringify({ email: 'reset-redir@x.test', redirectTo }),
+        }),
+      );
+    // Запит «із evil»: за базою із запиту його origin був би довіреним.
+    const evil = await post('http://evil.example', 'http://evil.example/reset');
+    expect(evil.status).toBe(403);
+    // Свій origin + чужий redirectTo — теж 403.
+    const redirect = await post(SITE, 'http://evil.example/reset');
+    expect(redirect.status).toBe(403);
+    expect(sent).toHaveLength(0);
   });
 });
