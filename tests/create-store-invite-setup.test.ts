@@ -50,20 +50,22 @@ describe('create-store: інструкція «призначити власни
     }
 
     expect(out).toContain('owner:invite');
-    // 🔴 Накат схеми — psql по канону міграцій. Стара порада `supabase db push`
-    // не просто застаріла: вона відхиляє нумеровані імена канону, тож власник
-    // упирався б у помилку CLI замість накоченої схеми.
-    expect(out).toContain('db/migrations/*.sql');
+    // 🔴 Накат схеми — `simplycms db:apply` (ядро `simplycms/migrate`). Ні
+    // стара порада `supabase db push` (відхиляє нумеровані імена канону), ні
+    // ручний `psql`-цикл (повз журнал сум) не повертаються.
+    expect(out).toContain('db:apply');
     expect(out).not.toContain('supabase/migrations');
-    expect(out).toContain('psql');
+    expect(out).not.toContain('psql');
+    expect(out).not.toContain('for f in');
     expect(out).not.toContain('supabase db push');
     // 🔴 Накат канону НЕ під `DATABASE_URL` із .env.local: там роль
     // `app_runtime` (`nosuperuser nocreatedb nocreaterole`), а
     // `0000_prelude.sql` створює ролі й безумовно робить `alter role`. Порада
-    // `psql "$DATABASE_URL"` падала за будь-якого стану бази, тож гард саме на
-    // неї — інакше регресія повернулась би мовчки.
-    expect(out).not.toContain('psql "$DATABASE_URL"');
-    expect(out).toContain('ВЛАСНИКА БД');
+    // `psql "$DATABASE_URL"` падала за будь-якого стану бази, тож накат
+    // іде підключенням власника з `MIGRATION_DATABASE_URL` — інакше
+    // регресія повернулась би мовчки.
+    expect(out).toContain('MIGRATION_DATABASE_URL');
+    expect(out).toContain('власник БД');
     expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(out).toContain('DATABASE_URL');
     expect(out).toContain('BETTER_AUTH_SECRET');
@@ -75,8 +77,10 @@ describe('create-store: інструкція «призначити власни
   // впевненість, якої немає: перший фікс цього дефекту закрив вивід CLI і
   // пропустив README, який `scaffold()` фізично копіює в новий магазин.
   it('README шаблону не радить накат канону роллю рантайму', () => {
-    expect(readme).toContain('db/migrations/*.sql');
-    expect(readme).not.toContain('psql "$DATABASE_URL"');
+    expect(readme).toContain('pnpm simplycms db:apply');
+    expect(readme).not.toContain('psql');
+    expect(readme).not.toContain('for f in');
+    expect(readme).toContain('MIGRATION_DATABASE_URL');
     expect(readme).toContain('власника БД');
   });
 

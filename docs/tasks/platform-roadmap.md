@@ -1330,16 +1330,25 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    `server.mjs`, `package.json` і production-`node_modules`» — інструкцією для
    людини. Для хмари (`simplycms/platform`, Dokploy) і для будь-якого
    контейнерного хостингу потрібен артефакт, а не абзац у доках.
+   🟡 План К3-Е8 ([`docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](../superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md)) закриває це двома хвилями: накат при старті —
+   `simplycms/migrate` + `db:apply` (Task 3–4, виконано), прод-старт контейнера
+   (`scripts/start.mjs`) — хвиля А2; остаточно пункт закриває Task 25.
 
 0.4.1-7. **Немає команди накату схеми на порожню БД.** `pnpm db:demo` підіймає
    ДЕМО-магазин, `pnpm test:schema` — харнес гейта; чистого «накотити канон на
    продову БД» немає, скаффолдер друкує `psql`-рядок руками. Потрібна команда
    CLI (`simplycms db:apply` або еквівалент) із тим самим каноном.
+   ✅ Закрито планом К3-Е8 ([`docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](../superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md), Task 4): `simplycms db:apply`
+   (`MIGRATION_DATABASE_URL` власника схеми) делегує ядру `simplycms/migrate`;
+   `psql`-цикл прибрано з усіх друкованих носіїв.
 
 0.4.1-8. **Пароль ролі `app_runtime` не автоматизований.** `0000_prelude.sql`
    створює LOGIN-роль, але пароль їй ставить людина довільним способом; у
    `DATABASE_URL` він потім потрапляє вручну. Для деплой-пакета це має бути
    крок із перевіркою, а не усна домовленість.
+   ✅ Закрито планом К3-Е8 ([`docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](../superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md), Task 3–4): після накату ядро
+   синхронізує пароль `app_runtime` з `DATABASE_URL` верифікатором SCRAM (відкритий
+   пароль на сервер не йде; лише друкований ASCII — Р15).
 
 0.4.1-9. **Накат канону вимагає привілейованого підключення, а команди для
    цього немає.** `0000_prelude.sql` створює ролі й безумовно робить
@@ -1352,8 +1361,9 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
    шаблонів плагіна), тепер називають підключення власника БД; гарди —
    `tests/create-store-invite-setup.test.ts` (і на вивід CLI, і на README
    шаблону — перший фікс закрив лише вивід, README пропустив).
-   🔴 Відкрите: команди CLI (`simplycms db:apply`) досі немає, накат лишається
-   ручним `psql` із підстановкою URL — той самий розрив, що й 0.4.1-7.
+   ✅ Закрито планом К3-Е8 ([`docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](../superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md), Task 4): команда `simplycms db:apply`
+   є, друкований шлях накату — вона; `psql`-цикл у тексти не повертається
+   (гарди — `tests/create-store-invite-setup.test.ts`).
 
 0.4.1-10. **`defineRuntime`/`bootstrapRuntime`/`EngineModule`/`SimplyCmsRuntime`
    (`simplycms/runtime`) — публічна поверхня без жодного споживача.** Збірку

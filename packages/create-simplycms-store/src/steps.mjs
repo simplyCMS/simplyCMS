@@ -113,23 +113,19 @@ export function printNextSteps({
     steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
   if (!hasEnv)
     steps.push('cp .env.example .env.local   # три обовʼязкові ключі магазину');
-  // 🔴 Накат схеми — psql по канону міграцій (`db/migrations`): канон
-  // нумерований послідовно (`0000_prelude.sql`), інструмент оточення
-  // застосовує файли в порядку імен.
+  // 🔴 Накат схеми — `simplycms db:apply` (ядро `simplycms/migrate`, журнал
+  // контрольних сум): канон нумерований послідовно (`0000_prelude.sql`), файли
+  // йдуть у порядку імен.
   //
-  // 🔴 URL тут — ПРИВІЛЕЙОВАНИЙ (власник БД), а НЕ `DATABASE_URL` із
-  // `.env.local`. `0000_prelude.sql` створює ролі й безумовно робить
-  // `alter role app_runtime …`, а сама `app_runtime` — `nosuperuser
+  // 🔴 Підключення — `MIGRATION_DATABASE_URL` (ПРИВІЛЕЙОВАНИЙ власник БД), а НЕ
+  // `DATABASE_URL` із `.env.local`. `0000_prelude.sql` створює ролі й безумовно
+  // робить `alter role app_runtime …`, а сама `app_runtime` — `nosuperuser
   // nocreatedb nocreaterole`, тож під нею накат падає за будь-якого стану
-  // бази (`permission denied for database`, `permission denied to alter
-  // role`, або роль ще не існує на чистому кластері). Це bootstrap-крок
-  // людини, а не рантайм-ключ, тому нової змінної в контракті магазину не
-  // заводимо — URL підставляється руками.
+  // бази. Це bootstrap-крок людини, а не рантайм-ключ: змінна опційна поза
+  // накатом і в контракті «три ключі» магазину не значиться.
   steps.push(
-    '# накат канону — підключенням ВЛАСНИКА БД, не app_runtime із .env.local:\n' +
-      'for f in db/migrations/*.sql; do ' +
-      'psql "postgresql://<owner>:<pass>@<host>:5432/<db>" ' +
-      '-v ON_ERROR_STOP=1 -f "$f"; done',
+    '# накат схеми — MIGRATION_DATABASE_URL (власник БД, не app_runtime) у .env.local або в env:\n' +
+      `${STORE_MANAGER} simplycms db:apply`,
   );
   // 🔴 service_role-ключа тут більше немає: запрошення власника випускається
   // прямо в Postgres (контракт v2), тож потрібен лише DATABASE_URL із

@@ -11,6 +11,7 @@ const COMMANDS = {
   create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
   'db:diff': () => import('./db-diff.mjs'),
+  'db:apply': () => import('./db-apply.mjs'),
   'theme:conformance': () => import('./theme-conformance.mjs'),
 };
 
@@ -20,7 +21,8 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   simplycms <команда> [опції]
 
 Команди:
-  doctor    Read-only діагностика магазину; --strict — попередження теж валять
+  doctor    Read-only діагностика магазину; --strict — попередження теж валять,
+            --online — ще й стан БД (журнал міграцій, з DATABASE_URL)
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
               --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається
@@ -30,6 +32,8 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   update    Оновити ядро і host-файли:
               update [--check | --write] [--to <version>] [--no-install]
   db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
+  db:apply  Накатити db/migrations на БД (MIGRATION_DATABASE_URL — власник схеми):
+              db:apply [--dry-run | --check]   (--check: код 3, якщо є ненакочені)
   theme:conformance
             Conformance-гейт контракту тем v3: theme:conformance <name>
             (<name> — ключ теми в simplycms.config.ts; потребує jsdom)
@@ -57,7 +61,10 @@ async function main() {
     return;
   }
   const module = await COMMANDS[command]();
-  await module.run(rest);
+  const code = await module.run(rest);
+  // Команди з контрактом кодів виходу (db:apply) повертають число; решта
+  // виставляє process.exitCode самі й повертають undefined.
+  if (typeof code === 'number' && code !== 0) process.exitCode = code;
 }
 
 main().catch((error) => {

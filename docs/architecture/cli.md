@@ -57,7 +57,7 @@ pnpm simplycms doctor
 
 ## 3. Команди
 
-### 3.1 `simplycms doctor [--strict]`
+### 3.1 `simplycms doctor [--strict] [--online]`
 
 Read-only діагностика. Оффлайн-перевірки (завжди):
 
@@ -77,13 +77,19 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
 
-🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в REST зовнішнього BaaS, а магазин
-контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
-мовчазного зникнення рядка звіт лишає видиму позначку `skip`:
+Онлайн-перевірки (лише з `--online`, К3-Е8, `src/doctor-db-checks.mjs`) ходять у БД
+з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor
+read-only, ключ власника схеми не мусить лежати на кожній машині. Журнал читає ядро
+(`simplycms/migrate` через `importFromStore`, Е8-Р13) у read-only транзакції під
+`SET ROLE app_admin`. Таймаут з'єднання — 3 с.
 
-| id | title | status | details |
-|---|---|---|---|
-| `db-online` | Перевірки стану БД | `skip` | недоступні: магазин сервер-first, HTTP-API до БД немає; повернуться контуром К3 |
+| id | status | значення |
+|---|---|---|
+| `db-reachable` | `ok` / `error` / `skip` | з'єднання з `DATABASE_URL`; помилка — `error` (без пароля в тексті), немає `DATABASE_URL` — `skip` |
+| `migrations-journal` | `ok` / `warn` / `error` / `skip` | усе накочено — `ok`; є ненакочені — `warn` з іменами; змінений накочений файл або база без журналу — `error` («база без журналу»); БД недоступна — `skip` із причиною |
+
+Без `--online` звіт лишає видимий рядок `db-online` зі статусом `skip` і підказкою
+«увімкни `--online`» — мовчазне зникнення читалося б як «БД перевірено».
 
 Exit-коди: `1` — є хоч один error; самі warn → `0`; `--strict` — warn теж
 валить. Стан «не вдалося перевірити» на exit-код не впливає.
@@ -177,14 +183,30 @@ tables … from public`, тож файл `0001_plg_*` ліг би перед н�
 жодна плагінна міграція не сортується перед `0002_grants.sql`
 (`tests/plugin-migration-order.test.ts`). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених у `db/migrations/`. Оскільки накат — прямий `psql -f`
-(жодного CLI, що сам відстежує застосовані файли, немає), це не блокує:
-оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
-порядку імен. Перейменування-при-копіюванні відкладено (колонку
+накачених у `db/migrations/`. Це не блокує: `pnpm simplycms db:apply` (§3.4.1)
+накочує за журналом усі файли без запису, ім'я «з минулого» теж.
+Перейменування-при-копіюванні відкладено (колонку
 `plugins.migrations_applied` прибрано в Е6б: її ніхто не писав).
 
 Режим перегляду (без `--write`) — завжди exit 0; CI-семантику має
 `update --check`.
+
+### 3.4.1 `simplycms db:apply [--dry-run | --check]`
+
+Накочує `db/migrations/` магазину на БД — єдиний друкований шлях накату (ручного
+`psql`-циклу немає). Робота ядра `simplycms/migrate` (Е8-Р2): журнал
+`public.simplycms_migrations` із sha256 файлів, `pg_advisory_lock`, кожен файл в
+одній транзакції зі своїм записом. Команда лише розбирає env, делегує й друкує.
+
+- Підключення — **лише** `MIGRATION_DATABASE_URL` (власник схеми; `process.env` >
+  `.env.local` > `.env`). Назад на `DATABASE_URL` команда не падає ніколи: без
+  `MIGRATION_DATABASE_URL` — exit 1 з назвою змінної. `DATABASE_URL`, якщо заданий,
+  іде як `runtimeUrl` — ядро синхронізує пароль `app_runtime` (лише друкований ASCII).
+- `--dry-run` — список ненакочених, базу не змінює, exit 0. `--check` — те саме, але
+  exit `3`, якщо ненакочені є (контракт кодів Е8-О8: `0` гаразд, `3` є що робити,
+  `1` помилка).
+- Помилка ядра друкується як `name`, `code` і `message`, пропущене через `redactUrls`
+  (`scheme://user:***@host`); режиму «повний текст» немає — вивід потрапляє в лог деплою.
 
 ### 3.5 `simplycms create (plugin | theme) <name> [--dry-run]`
 
@@ -280,7 +302,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
+pnpm simplycms db:apply          # накатити (після ревʼю!; MIGRATION_DATABASE_URL — власник схеми)
 pnpm build && pnpm start         # rebuild
 ```
 
@@ -303,6 +325,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/cli-db-apply.test.ts` + онлайн-кейси `cli-doctor` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1`, `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
