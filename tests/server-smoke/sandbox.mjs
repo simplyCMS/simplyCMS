@@ -64,7 +64,7 @@ const freePort = () =>
   });
 
 /** Розкладає пісочницю на диску й повертає її шлях. */
-function layout() {
+function layout(handlerSource = STUB_HANDLER) {
   const dir = join(
     ROOT,
     'node_modules',
@@ -79,7 +79,7 @@ function layout() {
     copyFileSync(join(ROOT, file), join(dir, file));
   }
   writeFileSync(join(dir, 'package.json'), '{ "type": "module" }\n');
-  writeFileSync(join(dir, 'dist', 'server', 'server.js'), STUB_HANDLER);
+  writeFileSync(join(dir, 'dist', 'server', 'server.js'), handlerSource);
   writeFileSync(
     join(dir, 'dist', 'client', 'assets', 'app-smoke123.js'),
     'export const smoke = true;\n',
@@ -100,9 +100,13 @@ function layout() {
   return dir;
 }
 
-/** Піднімає `node server.mjs` у пісочниці; віддає базовий URL і стоп-функцію. */
-export async function startSmokeServer(extraEnv = {}) {
-  const dir = layout();
+/**
+ * Піднімає `node server.mjs` у пісочниці; віддає базовий URL і стоп-функцію.
+ * `handlerSource` підміняє заглушку fetch-handler-а (тест 413/411 вантажить
+ * справжній `checkBodyLimit` ядра).
+ */
+export async function startSmokeServer(extraEnv = {}, handlerSource) {
+  const dir = layout(handlerSource);
   const port = await freePort();
   const child = spawn(process.execPath, ['server.mjs'], {
     cwd: dir,

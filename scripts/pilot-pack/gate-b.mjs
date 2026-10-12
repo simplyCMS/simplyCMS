@@ -15,6 +15,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { get } from 'node:http';
 import pg from 'pg';
 
 /** Товари з БД — очікувані рядки для SSR-перевірок. */
@@ -176,7 +177,43 @@ export async function gateHttp(port, env) {
     `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}, build=${healthJson.build} (очікую ${expectedBuild ?? 'не dev'})`,
   );
 
+  // Стиснення статики (Task 7): `server.mjs` лише ВІДДАЄ `.br`/`.gz` через
+  // sirv, а кладе їх плагін `precompressAssets` у збірці. Без нього вимір
+  // показував нуль. Заголовок `Accept-Encoding` ставимо сирим `http.get`:
+  // `fetch` додає свій і не дає перевірити «без заголовка».
+  const entry = /\/assets\/[^"']+\.js/.exec(
+    await (await fetch(`${base}/`)).text(),
+  )?.[0];
+  const brHead = entry ? await headOf(port, entry, 'br') : null;
+  const plainHead = entry ? await headOf(port, entry, null) : null;
+  check(
+    'GET /assets/<entry>.js (стиснення)',
+    brHead?.['content-encoding'] === 'br' &&
+      plainHead !== null &&
+      plainHead['content-encoding'] === undefined,
+    `${entry ?? 'entry не знайдено в HTML'}: br → ${brHead?.['content-encoding'] ?? '—'}, без заголовка → ${plainHead?.['content-encoding'] ?? '—'}`,
+  );
+
   return { ok, details };
+}
+
+/** Заголовки відповіді на GET зі вказаним (або без) `Accept-Encoding`. */
+function headOf(port, path, acceptEncoding) {
+  return new Promise((resolveHead, reject) => {
+    const request = get(
+      {
+        host: '127.0.0.1',
+        port,
+        path,
+        headers: acceptEncoding ? { 'accept-encoding': acceptEncoding } : {},
+      },
+      (response) => {
+        response.resume();
+        resolveHead(response.headers);
+      },
+    );
+    request.on('error', reject);
+  });
 }
 
 /**

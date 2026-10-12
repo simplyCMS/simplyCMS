@@ -70,6 +70,22 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; з К0 — ще й інваріанти топології 5 і доставки скілів: у tarball немає `template/.claude/**`, deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/` | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs` |
 | **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 6 команд (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout, `theme:conformance default` на тому ж голому скаффолді доїжджає до теми з конфігу й чесно падає (exit 1) з точною командою `pnpm add -D jsdom` замість мовчазного обходу | `tool-pkg-smoke.mjs` |
 
+🔴 **Gate B: збірка, стиснення, 413/411 (К3-Е8, Tasks 6-7).** Крок
+`/api/health` звіряє поле `build` із `BUILD_ID`, який пілот сам задає перед
+збіркою (`e8-<random>`): це доказ, що `define` `__SIMPLYCMS_BUILD_ID__` з
+`vite.config.ts` магазину дійшов до коду ЯДРА в `node_modules`, а не лише до
+коду магазину (без плагіна там `'dev'`). Крок стиснення бере з HTML перший
+`/assets/*.js` і вимагає `content-encoding: br` на `Accept-Encoding: br` та
+відсутність заголовка без нього. Вимір 2026-10-12 ДО плагіна `precompressAssets`:
+`server.mjs` (sirv з `brotli/gzip`) віддавав вхідний чанк у 402134 байти сирим,
+бо `.br`/`.gz` не клав ніхто; плагін стискає клієнтське оточення у
+`closeBundle`. 413/411 через справжній `server.mjs` тримає
+`tests/server-body-limit.test.mjs` (сирий сокет, не `fetch`): Node сам
+`Connection: close` НЕ ставить (виміряно: `connection: keep-alive`), тож
+обходу `UPSTREAM` не потрібно, а тест стереже, що відмова Start-middleware
+(`reject` у `body-limit.ts`) не додає закриття. Чого це не доводить: поведінку
+за реверс-проксі (Traefik/Dokploy), який може закривати з'єднання сам.
+
 🔴 **Іменування двох останніх гейтів** (зафіксовано спекою CLI v1 §1): Gate
 **CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук
 ІНСТРУМЕНТА `@simplycms/cli` (bin `simplycms`). Обидва перевіряють упакований

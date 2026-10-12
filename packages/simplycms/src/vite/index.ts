@@ -6,6 +6,8 @@ import { resolveBuildId } from './build-id';
 
 export { resolveBuildId } from './build-id';
 export type { BuildIdEnv, BuildIdContext } from './build-id';
+export { precompressAssets, precompressDir } from './precompress';
+export type { PrecompressOptions, PrecompressPlugin } from './precompress';
 
 /**
  * Мінімальна форма плагіна Vite: ядро не залежить від `vite`, а структурна
