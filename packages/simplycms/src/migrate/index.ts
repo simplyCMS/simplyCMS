@@ -14,6 +14,7 @@ export {
   type ApplyOptions,
   type ApplyReport,
 } from './apply';
+export { scramSha256Verifier } from './scram';
 export { readJournal, pendingMigrations, type JournalRow } from './journal';
 export {
   MigrationChecksumError,

@@ -12,6 +12,7 @@ import { resolveHarness } from '../up.mjs';
 import { applySqlFiles, queryRows, withUser } from '../apply.mjs';
 import {
   CANON_DIR,
+  canonCopy,
   canonNames,
   exists,
   freshDb,
@@ -76,6 +77,24 @@ describe('журнал simplycms_migrations', () => {
         queryRows(runtime, 'select name from public.simplycms_migrations'),
       ).rejects.toMatchObject({ code: '42501' });
     } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
+  it('накат упав посередині → рядки, що встигли, читаються під app_runtime', async () => {
+    // Вікно гранту: журнал створено, грант `app_admin` ставиться після накату;
+    // без гранту й на шляху падіння `readJournal` кидав би 42501.
+    const db = await freshDb(harness.url);
+    const copy = canonCopy();
+    try {
+      copy.write('0005_b.sql', 'select * from public.no_such_table;');
+      await expect(
+        applyMigrations({ connectionString: db.url, dir: copy.dir }),
+      ).rejects.toThrow(/0005_b\.sql/);
+      const rows = await readJournal(withUser(db.url, 'app_runtime'));
+      expect(rows?.map((row) => row.name)).toEqual(canonNames());
+    } finally {
+      copy.cleanup();
       await db.drop();
     }
   }, 120_000);

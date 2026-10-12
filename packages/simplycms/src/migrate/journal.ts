@@ -19,10 +19,16 @@ export const CREATE_JOURNAL_SQL = `create table if not exists public.simplycms_m
  * Читання — `app_admin`, і лише читання: `doctor --online` і `status`
  * ходять із `DATABASE_URL` (`app_runtime`) через `SET ROLE app_admin`, а
  * писати журнал має право лише власник схеми під час накату. Ідемпотентно:
- * виконується після кожного накату, бо роль створює `0000_prelude.sql`.
+ * виконується після кожного накату — і після того, що впав посередині, —
+ * якщо журнал і роль уже є (роль створює `0000_prelude.sql`): інакше
+ * накочені рядки лишились би непрочитними для `doctor`/`status`.
  */
-export const GRANT_JOURNAL_SQL =
-  'grant select on public.simplycms_migrations to app_admin';
+export const GRANT_JOURNAL_SQL = `do $$ begin
+  if to_regclass('public.simplycms_migrations') is not null
+     and exists (select 1 from pg_roles where rolname = 'app_admin') then
+    grant select on public.simplycms_migrations to app_admin;
+  end if;
+end $$`;
 
 const SELECT_JOURNAL_SQL = `select name, checksum, applied_at
   from public.simplycms_migrations order by name`;
@@ -63,7 +69,8 @@ export async function readJournal(
       await client.query('commit');
       return rows;
     } catch (err) {
-      await client.query('rollback');
+      // Мертве з'єднання не має підмінити першопричину помилкою rollback.
+      await client.query('rollback').catch(() => {});
       if ((err as { code?: string }).code === '42P01') return null;
       throw err;
     }
@@ -91,4 +98,13 @@ export function pendingMigrations(
     else if (checksum !== file.checksum) changed.push(file.name);
   }
   return { pending, changed };
+}
+
+/** Імена накочених файлів, яких уже немає в теці. */
+export function missingFromDir(
+  rows: JournalRow[],
+  files: MigrationFile[],
+): string[] {
+  const present = new Set(files.map((file) => file.name));
+  return rows.filter((row) => !present.has(row.name)).map((row) => row.name);
 }

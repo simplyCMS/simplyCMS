@@ -2,7 +2,7 @@
 // правильними сумами, повтор нічого не котить, `dryRun` нічого не створює,
 // змінений накочений файл зупиняє накат ДО першого DDL, файл, що впав,
 // відкочується цілком і в журнал не потрапляє.
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -162,6 +162,29 @@ describe('applyMigrations: журнал і накат', () => {
       expect(names).not.toContain('0006_b.sql');
       expect(await exists(db.url, 'public.a_ok')).toBe(true);
       expect(await exists(db.url, 'public.b_bad')).toBe(false);
+    } finally {
+      copy.cleanup();
+      await db.drop();
+    }
+  }, 120_000);
+
+  it('накочений файл, якого немає в теці → рядок у лозі, не помилка', async () => {
+    const db = await freshDb(harness.url);
+    const copy = canonCopy();
+    try {
+      copy.write('0005_gone.sql', 'create table public.gone (id int);');
+      await applyMigrations({ connectionString: db.url, dir: copy.dir });
+      rmSync(join(copy.dir, '0005_gone.sql'));
+      const lines: string[] = [];
+      const report = await applyMigrations({
+        connectionString: db.url,
+        dir: copy.dir,
+        log: (line) => lines.push(line),
+      });
+      expect(report.applied).toEqual([]);
+      expect(lines).toContain(
+        '[migrate] файл 0005_gone.sql є в журналі, але відсутній у теці',
+      );
     } finally {
       copy.cleanup();
       await db.drop();

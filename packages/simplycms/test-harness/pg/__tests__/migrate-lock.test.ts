@@ -4,10 +4,17 @@
 // є рядок `pg_locks` із `granted = false` на ключі `MIGRATION_LOCK_KEY`.
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { applyMigrations, MIGRATION_LOCK_KEY } from 'simplycms/migrate';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  applyMigrations,
+  MIGRATION_LOCK_KEY,
+  MigrationChecksumError,
+} from 'simplycms/migrate';
 import { resolveHarness } from '../up.mjs';
 import {
   CANON_DIR,
+  canonCopy,
   canonNames,
   exists,
   freshDb,
@@ -15,11 +22,12 @@ import {
   numberOf,
 } from './fixtures/migrate';
 
-/** Скільки з'єднань цієї БД чекають на лок накату (64-бітний ключ = classid:objid). */
-const WAITING = `select count(*)::int as n from pg_locks
-  where locktype = 'advisory' and granted = false and objsubid = 1
+/** Рядки `pg_locks` на лок накату цієї БД (64-бітний ключ = classid:objid). */
+const lockRows = (granted: boolean) => `select count(*)::int as n from pg_locks
+  where locktype = 'advisory' and granted = ${granted} and objsubid = 1
     and database = (select oid from pg_database where datname = current_database())
     and ((classid::bigint << 32) | objid::bigint) = ${MIGRATION_LOCK_KEY.toString()}`;
+const WAITING = lockRows(false);
 
 const POLL_LIMIT_MS = 5_000;
 
@@ -66,6 +74,30 @@ describe('applyMigrations: advisory-лок', () => {
     } finally {
       await holder.end();
       await run?.catch(() => {});
+      await db.drop();
+    }
+  }, 120_000);
+
+  it('помилка накату відпускає лок: наступний накат іде без очікування', async () => {
+    const db = await freshDb(harness.url);
+    const copy = canonCopy();
+    try {
+      await applyMigrations({ connectionString: db.url, dir: copy.dir });
+      const grants = readFileSync(join(copy.dir, '0002_grants.sql'), 'utf8');
+      copy.write('0002_grants.sql', `${grants} `);
+      await expect(
+        applyMigrations({ connectionString: db.url, dir: copy.dir }),
+      ).rejects.toBeInstanceOf(MigrationChecksumError);
+      expect(await numberOf(db.url, lockRows(true))).toBe(0);
+
+      copy.write('0002_grants.sql', grants);
+      const again = await applyMigrations({
+        connectionString: db.url,
+        dir: copy.dir,
+      });
+      expect(again.applied).toEqual([]);
+    } finally {
+      copy.cleanup();
       await db.drop();
     }
   }, 120_000);

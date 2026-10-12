@@ -1,12 +1,17 @@
-// Синк пароля app_runtime (К3-Е8, Е8-О2). Харнес і CI Schema автентифікують
-// `trust`, тож логін із паролем пройшов би з БУДЬ-ЯКИМ паролем — це не
-// доказ. Доказ — верифікатор SCRAM у `pg_authid.rolpassword`: StoredKey,
-// обчислений із очікуваного пароля, мусить збігтися зі збереженим.
+// Синк пароля app_runtime (К3-Е8, Е8-О2, рішення Р15). Харнес і CI Schema
+// автентифікують `trust`, тож логін із паролем пройшов би з БУДЬ-ЯКИМ
+// паролем — це не доказ. Доказів три:
+//   1. ОРАКУЛ — сам Postgres: він хешує відкритий пароль під
+//      `password_encryption='scram-sha-256'`, а наша `scramSha256Verifier` із
+//      його сіллю й ітераціями мусить дати той самий рядок байт у байт. Тест
+//      не тримає власної копії математики SCRAM.
+//   2. `rolpassword` після накату — рівно той верифікатор, що ми надіслали:
+//      нерозпізнаний секрет Postgres мовчки хешує вдруге як відкритий пароль.
+//   3. У жодному SQL, що пішов на сервер, немає відкритого пароля.
 //
-// 🔴 `ALTER ROLE` кластерний, а харнес спільний: верифікатор до кейсу
-// зберігається й відновлюється в `finally`, інакше паралельні прогони на
-// не-trust кластері лишились би без робочого пароля.
-import { createHash, createHmac, pbkdf2Sync } from 'node:crypto';
+// 🔴 `ALTER ROLE` кластерний, а харнес спільний: верифікатор `app_runtime`
+// зберігається до кейсу й відновлюється після, оракул ходить тимчасовою роллю.
+import pg from 'pg';
 import {
   afterAll,
   afterEach,
@@ -15,13 +20,20 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
-import { applyMigrations } from 'simplycms/migrate';
+import { applyMigrations, scramSha256Verifier } from 'simplycms/migrate';
 import { resolveHarness } from '../up.mjs';
-import { queryRows } from '../apply.mjs';
+import { queryRows, randomDbName } from '../apply.mjs';
 import { CANON_DIR, freshDb } from './fixtures/migrate';
 
 const PASSWORD = 'N3w-P@ss';
+/** Пробіл і всі спецсимволи URL, включно з лапкою, — друкований ASCII. */
+const ORACLE_PASSWORDS = [
+  PASSWORD,
+  'pass with spaces',
+  'p%40ss:/?#[]@!$&\'()*+,;=~`"\\',
+];
 
 /** Рядок підключення з іншим користувачем і паролем (percent-encoding — URL). */
 const withCredentials = (url: string, user: string, password: string) => {
@@ -31,33 +43,26 @@ const withCredentials = (url: string, user: string, password: string) => {
   return next.toString();
 };
 
-const verifier = async (url: string): Promise<string | null> =>
+const rolpassword = async (url: string, role: string): Promise<string | null> =>
   (
     (await queryRows(
       url,
-      `select rolpassword from pg_authid where rolname = 'app_runtime'`,
+      'select rolpassword from pg_authid where rolname = $1',
+      [role],
     )) as { rolpassword: string | null }[]
   )[0]!.rolpassword;
 
-/** Чи відповідає SCRAM-верифікатор паролю (RFC 5802/7677: StoredKey). */
-const scramMatches = (stored: string | null, password: string): boolean => {
-  const parts = /^SCRAM-SHA-256\$(\d+):([^$]+)\$([^:]+):(.+)$/.exec(
-    stored ?? '',
-  );
+/** Сіль та ітерації з верифікатора, який зробив сам Postgres. */
+const saltAndIterations = (verifier: string | null) => {
+  const parts = /^SCRAM-SHA-256\$(\d+):([^$]+)\$/.exec(verifier ?? '');
   if (!parts) throw new Error('rolpassword не є верифікатором SCRAM-SHA-256');
-  const [, iterations, salt, storedKey] = parts;
-  const salted = pbkdf2Sync(
-    password,
-    Buffer.from(salt!, 'base64'),
-    Number(iterations),
-    32,
-    'sha256',
-  );
-  const clientKey = createHmac('sha256', salted).update('Client Key').digest();
-  return createHash('sha256').update(clientKey).digest('base64') === storedKey;
+  return {
+    iterations: Number(parts[1]),
+    salt: Buffer.from(parts[2]!, 'base64'),
+  };
 };
 
-describe('applyMigrations: пароль app_runtime', () => {
+describe('пароль app_runtime: верифікатор SCRAM', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   let db: Awaited<ReturnType<typeof freshDb>>;
   let saved: string | null;
@@ -69,10 +74,11 @@ describe('applyMigrations: пароль app_runtime', () => {
   }, 120_000);
 
   beforeEach(async () => {
-    saved = await verifier(harness.url);
+    saved = await rolpassword(harness.url, 'app_runtime');
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     // Той самий верифікатор, що був до кейсу (а не «якийсь пароль»).
     await queryRows(
       harness.url,
@@ -87,7 +93,31 @@ describe('applyMigrations: пароль app_runtime', () => {
     await harness?.teardown();
   });
 
-  it('runtimeUrl під app_runtime → StoredKey збігається з новим паролем; пароля в лозі немає', async () => {
+  it('оракул: Postgres і scramSha256Verifier дають той самий верифікатор', async () => {
+    const role = randomDbName('scram_oracle');
+    const client = new pg.Client({ connectionString: harness.url });
+    await client.connect();
+    try {
+      await client.query(`create role ${role} nologin`);
+      await client.query("set password_encryption = 'scram-sha-256'");
+      for (const password of ORACLE_PASSWORDS) {
+        await client.query(
+          `alter role ${role} password ${client.escapeLiteral(password)}`,
+        );
+        const fromPostgres = await rolpassword(harness.url, role);
+        const { salt, iterations } = saltAndIterations(fromPostgres);
+        expect(scramSha256Verifier(password, salt, iterations)).toBe(
+          fromPostgres,
+        );
+      }
+    } finally {
+      await client.query(`drop role if exists ${role}`);
+      await client.end();
+    }
+  });
+
+  it('runtimeUrl під app_runtime → rolpassword = надісланий верифікатор, пароля в SQL і лозі немає', async () => {
+    const query = vi.spyOn(pg.Client.prototype, 'query');
     const lines: string[] = [];
     const report = await applyMigrations({
       connectionString: db.url,
@@ -96,11 +126,16 @@ describe('applyMigrations: пароль app_runtime', () => {
       log: (line) => lines.push(line),
     });
     expect(report.runtimePasswordSynced).toBe(true);
-    expect(scramMatches(await verifier(harness.url), PASSWORD)).toBe(true);
-    // Негативний контроль самої перевірки: інший пароль не збігається.
-    expect(scramMatches(await verifier(harness.url), `${PASSWORD}x`)).toBe(
-      false,
+
+    const sent = query.mock.calls.map(([arg]) =>
+      typeof arg === 'string' ? arg : JSON.stringify(arg),
     );
+    for (const sql of sent) expect(sql).not.toContain(PASSWORD);
+    const alter = sent.filter((sql) => /^alter role app_runtime/.test(sql));
+    expect(alter).toHaveLength(1);
+    const literal = /password '([^']+)'$/.exec(alter[0]!)?.[1];
+    expect(await rolpassword(harness.url, 'app_runtime')).toBe(literal);
+
     const log = lines.join('\n');
     expect(log).toContain('синхронізовано');
     expect(log).not.toContain(PASSWORD);
@@ -108,15 +143,25 @@ describe('applyMigrations: пароль app_runtime', () => {
   }, 120_000);
 
   it('runtimeUrl з іншим користувачем → не синхронізовано, пароль не змінено', async () => {
-    const lines: string[] = [];
     const report = await applyMigrations({
       connectionString: db.url,
       dir: CANON_DIR,
       runtimeUrl: withCredentials(db.url, 'someone_else', PASSWORD),
-      log: (line) => lines.push(line),
     });
     expect(report.runtimePasswordSynced).toBe(false);
-    expect(await verifier(harness.url)).toBe(saved);
-    expect(lines.join('\n')).not.toContain(PASSWORD);
+    expect(await rolpassword(harness.url, 'app_runtime')).toBe(saved);
+  }, 120_000);
+
+  it('не-ASCII пароль → відмова про алфавіт без значення, пароль не змінено', async () => {
+    const password = 'Пароль-1';
+    const err = await applyMigrations({
+      connectionString: db.url,
+      dir: CANON_DIR,
+      runtimeUrl: withCredentials(db.url, 'app_runtime', password),
+    }).catch((e: unknown) => e as Error);
+    expect((err as Error).message).toContain('друкованих ASCII');
+    expect((err as Error).message).not.toContain(password);
+    expect((err as Error).message).not.toContain(encodeURIComponent(password));
+    expect(await rolpassword(harness.url, 'app_runtime')).toBe(saved);
   }, 120_000);
 });
