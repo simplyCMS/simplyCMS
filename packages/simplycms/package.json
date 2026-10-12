@@ -43,6 +43,7 @@
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
     "./env": "./src/env/index.ts",
+    "./vite": "./src/vite/index.ts",
     "./migrate": "./src/migrate/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./react-query": "./src/react-query/index.ts",
@@ -51,6 +52,8 @@
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
     "./runtime/csrf": "./src/runtime/csrf.ts",
     "./runtime/body-limit": "./src/runtime/body-limit.ts",
+    "./runtime/build-id": "./src/runtime/build-id.ts",
+    "./runtime/stale-chunk": "./src/runtime/stale-chunk.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
@@ -258,6 +261,10 @@
         "types": "./dist/env/index.d.ts",
         "import": "./dist/env/index.js"
       },
+      "./vite": {
+        "types": "./dist/vite/index.d.ts",
+        "import": "./dist/vite/index.js"
+      },
       "./migrate": {
         "types": "./dist/migrate/index.d.ts",
         "import": "./dist/migrate/index.js"
@@ -289,6 +296,14 @@
       "./runtime/body-limit": {
         "types": "./dist/runtime/body-limit.d.ts",
         "import": "./dist/runtime/body-limit.js"
+      },
+      "./runtime/build-id": {
+        "types": "./dist/runtime/build-id.d.ts",
+        "import": "./dist/runtime/build-id.js"
+      },
+      "./runtime/stale-chunk": {
+        "types": "./dist/runtime/stale-chunk.d.ts",
+        "import": "./dist/runtime/stale-chunk.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",

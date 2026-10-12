@@ -2,6 +2,7 @@ import { StrictMode, startTransition } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { StartClient } from '@tanstack/react-start/client';
 import { ThemeRegistry } from 'simplycms/themes/ThemeRegistry';
+import { installStaleChunkGuard } from 'simplycms/runtime/stale-chunk';
 import { readActiveThemeName } from 'simplycms/storefront-routes/active-theme';
 
 // Side-effect: реєстрація тем у ThemeRegistry (до прогріву кешу нижче)
@@ -33,5 +34,9 @@ async function hydrate() {
     );
   });
 }
+
+// Застарілий чанк після деплою: до гідрації, щоб подія `vite:preloadError`
+// від перших же ледачих імпортів уже мала обробник.
+installStaleChunkGuard(window);
 
 void hydrate();

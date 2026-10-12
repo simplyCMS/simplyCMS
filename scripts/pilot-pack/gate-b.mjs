@@ -158,12 +158,22 @@ export async function gateHttp(port, env) {
 
   const health = await fetch(`${base}/api/health`);
   const healthJson = await health.json();
+  // 🔴 `build` доводить, що `define` __SIMPLYCMS_BUILD_ID__ з vite.config магазину
+  // дійшов до коду ЯДРА в node_modules (а не лише до коду самого магазину):
+  // без нього там лишився б guard-дефолт 'dev'. Очікуване значення пілот задає
+  // сам перед збіркою (`BUILD_ID=e8-…`); у `--reuse` збірка стара, тож
+  // вимагаємо хоча б «не dev».
+  const expectedBuild = process.env.BUILD_ID?.slice(0, 12);
+  const buildOk = expectedBuild
+    ? healthJson.build === expectedBuild
+    : typeof healthJson.build === 'string' && healthJson.build !== 'dev';
   check(
     'GET /api/health',
     health.status === 200 &&
       healthJson.status === 'healthy' &&
-      healthJson.checks?.database?.ok === true,
-    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}`,
+      healthJson.checks?.database?.ok === true &&
+      buildOk,
+    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}, build=${healthJson.build} (очікую ${expectedBuild ?? 'не dev'})`,
   );
 
   return { ok, details };

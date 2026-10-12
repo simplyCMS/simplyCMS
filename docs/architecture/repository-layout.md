@@ -73,6 +73,9 @@ simplyCMS/
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
 │   │   │                         #    server-only (К3-Е8)
+│   │   ├── src/vite/             # T2 Build-time плагіни Vite для збірки магазину: resolveBuildId +
+│   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__). Без залежності
+│   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)
 │   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
 │   │   │                         #    readJournal): одна реалізація для проду, db:apply, test:schema і
 │   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків

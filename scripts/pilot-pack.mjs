@@ -36,6 +36,7 @@
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
  */
 
+import { randomBytes } from 'node:crypto';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -83,6 +84,12 @@ async function main() {
         '— bootstrap власника на Better Auth) повертає трек К6. Доступні ' +
         'режими: `pnpm pilot:pack` і `pnpm pilot`.',
     );
+  }
+
+  // Ідентифікатор збірки скретча (Е8): Gate B звіряє з ним `/api/health.build`.
+  // У `--reuse` збірки немає — id лишається тим, що вшито раніше.
+  if (!reuse) {
+    process.env.BUILD_ID ||= `e8-${randomBytes(4).toString('hex')}`;
   }
 
   const port = packOnly ? PACK_ONLY_PORT : await freePort();

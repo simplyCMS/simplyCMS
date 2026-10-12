@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
 import { importProtection } from 'simplycms/contracts/server-only';
+import { simplycmsBuildInfo } from 'simplycms/vite';
 
 /**
  * Vite-конфіг магазину.
@@ -31,6 +32,9 @@ export default ({ mode }: { mode: string }) => {
 
   return {
     plugins: [
+      // Ідентифікатор збірки для `/api/health` і сторожа застарілих чанків:
+      // `define` глобала збірки (simplycms/vite).
+      simplycmsBuildInfo(),
       tailwindcss(),
       tanstackStart({
         router: { virtualRouteConfig: './routes.ts' },

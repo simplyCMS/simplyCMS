@@ -179,6 +179,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   commerce: '[simplycms/commerce] extraCartTotal — невідʼємне число',
   site: '[simplycms/site] TTL кешу має бути додатним числом',
   env: 'задана не повністю: ',
+  vite: 'simplycms-build-info',
   migrate: 'адопція бази без журналу не підтримується',
   sanitize: 'nofollow ugc noopener noreferrer',
 };

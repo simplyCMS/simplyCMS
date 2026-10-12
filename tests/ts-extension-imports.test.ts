@@ -86,14 +86,20 @@ const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
 };
 
 /**
- * Єдиний легальний випадок — специфікатор межі клієнт/сервер у кореневому
- * `vite.config.ts` (мандат Task 1). Будь-який ІНШИЙ value-імпорт з
+ * Легальні випадки — лише два імпорти в кореневому `vite.config.ts`: межа
+ * клієнт/сервер (мандат Task 1) і плагін збірки (К3-Е8). Будь-який ІНШИЙ value-імпорт з
  * `.ts`/`.tsx` у програмі кореневого typecheck — витік прапорця.
  */
 const ALLOWLIST: ReadonlyArray<{ file: string; specifier: string }> = [
   {
     file: 'vite.config.ts',
     specifier: './packages/simplycms/src/contracts/server-only.ts',
+  },
+  // Друге легальне місце (К3-Е8): плагін ідентифікатора збірки. Конфіг Vite не
+  // бачить alias-ів, тож `simplycms/vite` у корені резолвиться лише шляхом.
+  {
+    file: 'vite.config.ts',
+    specifier: './packages/simplycms/src/vite/index.ts',
   },
 ];
 
