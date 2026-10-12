@@ -57,7 +57,7 @@ pnpm simplycms doctor
 
 ## 3. Команди
 
-### 3.1 `simplycms doctor [--strict] [--online]`
+### 3.1 `simplycms doctor [--strict] [--online] [--production]`
 
 Read-only діагностика. Оффлайн-перевірки (завжди):
 
@@ -77,6 +77,10 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
 | 14 | `nodemailer` — пряма залежність магазину (`dependencies`) у межах peer-діапазону ядра (`src/doctor-mail-check.mjs`, спільне читання стану — `src/pg-peer.mjs`; К3-Е8, Е8-Р11). Без декларації SMTP-драйвер порту `simplycms/mail` не працює. Ядра в `node_modules` ще немає — `skip` | error |
+
+| 15 | пошта (`checkMailConfigured`, `src/doctor-mail-check.mjs`; Е8-Р17): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
+
+**Режим (Е8-Р17).** `--production` АБО `isProductionRuntime(process.env)` з `simplycms/env` (CLI бере його через `importFromStore`; власної перевірки `NODE_ENV` немає, `.env*` магазину для режиму не читаються). Після Р16 `NODE_ENV=production` ставить лише `server.mjs`, тож разовий `doctor` (CI, `prod-run`) прод-режим задає прапорцем. Перший рядок звіту — «режим: production» або «режим: розробка (для перевірки проду — `--production`)». Коди виходу не змінюються: режим міняє лише серйозність перевірок, що від нього залежать.
 
 Онлайн-перевірки (лише з `--online`, К3-Е8, `src/doctor-db-checks.mjs`) ходять у БД
 з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor

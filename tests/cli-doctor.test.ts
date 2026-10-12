@@ -22,6 +22,11 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
+import {
+  checkMailConfigured,
+  modeNotice,
+  resolveDoctorMode,
+} from '../packages/cli/src/doctor-mail-check.mjs';
 import { checkThemes } from '../packages/cli/src/doctor-theme-checks.mjs';
 import {
   computeExitCode,
@@ -87,6 +92,8 @@ describe('cli doctor (оффлайн)', () => {
       'pg-driver': 'skip',
       // Те саме для nodemailer (К3-Е8, №14).
       'mail-driver': 'skip',
+      // Без ядра драйвер пошти невідомий (Е8-Р17).
+      'mail-configured': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -348,12 +355,19 @@ describe('cli doctor (оффлайн)', () => {
     expect(parseDoctorArgs(['--strict'])).toEqual({
       strict: true,
       online: false,
+      production: false,
     });
-    expect(parseDoctorArgs([])).toEqual({ strict: false, online: false });
+    expect(parseDoctorArgs([])).toEqual({
+      strict: false,
+      online: false,
+      production: false,
+    });
     expect(parseDoctorArgs(['--online'])).toEqual({
       strict: false,
       online: true,
+      production: false,
     });
+    expect(parseDoctorArgs(['--production']).production).toBe(true);
     expect(() => parseDoctorArgs(['--wat'])).toThrow(/--wat/);
   });
 
@@ -365,5 +379,60 @@ describe('cli doctor (оффлайн)', () => {
     expect(notice.status).toBe('skip');
     expect(notice.details).toContain('--online');
     expect(computeExitCode([notice], { strict: true })).toBe(0);
+  });
+});
+
+// Е8-Р17: режим doctor — `--production` або `isProductionRuntime` ядра; від нього залежить
+// лише серйозність log-драйвера пошти.
+describe('cli doctor: режим production і пошта', () => {
+  const log = { driver: 'log' };
+  const core = {
+    isProductionRuntime: (e: Record<string, string>) =>
+      e.NODE_ENV === 'production',
+  };
+
+  it('log + --production → error і exit 1', () => {
+    const production = resolveDoctorMode({ flag: true, env: {}, core });
+    const check = checkMailConfigured({ production, mail: log });
+    expect(check.status).toBe('error');
+    expect(computeExitCode([check])).toBe(1);
+  });
+
+  it('log без прапорця і без NODE_ENV → warn і exit 0', () => {
+    const production = resolveDoctorMode({ flag: false, env: {}, core });
+    const check = checkMailConfigured({ production, mail: log });
+    expect(check.status).toBe('warn');
+    expect(computeExitCode([check])).toBe(0);
+  });
+
+  it('NODE_ENV=production без прапорця → error (предикат ядра)', () => {
+    const production = resolveDoctorMode({
+      flag: false,
+      env: { NODE_ENV: 'production' },
+      core,
+    });
+    expect(production).toBe(true);
+    expect(checkMailConfigured({ production, mail: log }).status).toBe('error');
+  });
+
+  it('smtp → ok у будь-якому режимі; часткова група → error; без ядра → skip', () => {
+    expect(
+      checkMailConfigured({ production: true, mail: { driver: 'smtp' } })
+        .status,
+    ).toBe('ok');
+    expect(
+      checkMailConfigured({ production: false, mail: { error: 'MAIL_FROM' } })
+        .status,
+    ).toBe('error');
+    expect(checkMailConfigured({ production: true, mail: null }).status).toBe(
+      'skip',
+    );
+    expect(resolveDoctorMode({ flag: false, env: {}, core: null })).toBe(false);
+  });
+
+  it('перший рядок звіту називає режим', () => {
+    expect(modeNotice(true).title).toBe('режим: production');
+    expect(modeNotice(false).title).toContain('режим: розробка');
+    expect(modeNotice(false).title).toContain('--production');
   });
 });

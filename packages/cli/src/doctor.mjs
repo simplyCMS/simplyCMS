@@ -10,6 +10,8 @@ import {
 import { schemaMigrationsPath } from './db-diff.mjs';
 import { runOfflineChecks } from './doctor-checks.mjs';
 import { runOnlineChecks } from './doctor-db-checks.mjs';
+import { modeNotice, resolveDoctorMode } from './doctor-mail-check.mjs';
+import { importFromStore } from './store-core.mjs';
 import { CANON_HOST_DIR } from './host-drift.mjs';
 import { begin, finish, reportChecks, summarizeChecks } from './ui.mjs';
 
@@ -21,12 +23,14 @@ const ROOT_TITLE = 'Корінь магазину знайдено';
 export function parseDoctorArgs(argv) {
   let strict = false;
   let online = false;
+  let production = false;
   for (const arg of argv) {
     if (arg === '--strict') strict = true;
     else if (arg === '--online') online = true;
+    else if (arg === '--production') production = true;
     else throw new Error(`Невідомий аргумент doctor: ${arg}`);
   }
-  return { strict, online };
+  return { strict, online, production };
 }
 
 /**
@@ -58,9 +62,18 @@ export function computeExitCode(checks, { strict = false } = {}) {
   return 0;
 }
 
+/** Драйвер пошти за env магазину; часткова група → повідомлення без значень. */
+function resolveMail(core, env) {
+  try {
+    return { driver: core.resolveDriverEnv(env).mail.driver };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 /** @param {string[]} argv */
 export async function run(argv) {
-  const { strict, online } = parseDoctorArgs(argv);
+  const { strict, online, production: productionFlag } = parseDoctorArgs(argv);
   begin('simplycms doctor');
   let storeRoot;
   try {
@@ -72,10 +85,22 @@ export async function run(argv) {
     finish('Магазин не знайдено — решта перевірок не має сенсу.');
     return;
   }
+  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP (Е8-Р17).
+  const core = await importFromStore(storeRoot, 'simplycms/env').catch(
+    () => null,
+  );
+  const env = readStoreEnv(storeRoot);
+  const production = resolveDoctorMode({
+    flag: productionFlag,
+    env: process.env,
+    core,
+  });
   const ctx = {
+    production,
+    mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
     storeRoot,
     manifest: readStoreManifest(storeRoot),
-    env: readStoreEnv(storeRoot),
+    env,
     cliVersion: readCliVersion(),
     // Канон дрейфу і шлях до міграцій ядра — спільні з update/db:diff:
     // джерело шляху одне, реалізації порівнянь — теж (host-drift/db-diff).
@@ -83,6 +108,7 @@ export async function run(argv) {
     schemaMigrationsDir: schemaMigrationsPath(storeRoot),
   };
   const checks = [
+    modeNotice(production),
     { id: 'root', title: ROOT_TITLE, status: 'ok', details: storeRoot },
     ...runOfflineChecks(ctx),
   ];

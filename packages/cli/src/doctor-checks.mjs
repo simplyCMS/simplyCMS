@@ -8,7 +8,7 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from './doctor-fs-checks.mjs';
-import { checkMailDriver } from './doctor-mail-check.mjs';
+import { checkMailConfigured, checkMailDriver } from './doctor-mail-check.mjs';
 import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
@@ -155,5 +155,7 @@ export function runOfflineChecks(ctx) {
     checkPgDriver(ctx),
     // №14 (К3-Е8): пошта — nodemailer у залежностях магазину в межах peer ядра.
     checkMailDriver(ctx),
+    // №15 (Е8-Р17): драйвер пошти; серйозність log залежить від режиму.
+    checkMailConfigured(ctx),
   ];
 }

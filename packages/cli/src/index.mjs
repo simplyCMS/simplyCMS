@@ -22,7 +22,8 @@ const HELP = `simplycms — CLI обслуговування магазину Si
 
 Команди:
   doctor    Read-only діагностика магазину; --strict — попередження теж валять,
-            --online — ще й стан БД (журнал міграцій, з DATABASE_URL)
+            --online — ще й стан БД (журнал міграцій, з DATABASE_URL),
+            --production — перевіряти як прод (log-драйвер пошти — error, не warn)
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
               --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається
