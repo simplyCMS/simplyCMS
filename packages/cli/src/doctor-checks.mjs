@@ -1,4 +1,4 @@
-// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–12). Кожна повертає Check
+// Оффлайн-перевірки doctor (§4.1 спеки, пп. 2–13). Кожна повертає Check
 // (ui.mjs); файлові №6–7 і №12 живуть у doctor-fs-checks.mjs (ліміт рядків).
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
