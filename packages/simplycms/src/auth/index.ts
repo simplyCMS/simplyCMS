@@ -15,8 +15,8 @@
 export { createAuth, getAuth, resetAuth } from './instance';
 export type { AuthDeps, SimplyAuth } from './instance';
 
-export { resolveAuthSecret, resolveAuthBaseUrl } from './env';
-export type { AuthEnv } from './env';
+export { resolveAuthSecret, resolveAuthBaseUrl } from './auth-env';
+export type { AuthEnv } from './auth-env';
 
 export {
   buildUserProvision,

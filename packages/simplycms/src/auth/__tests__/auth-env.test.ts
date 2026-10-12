@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveAuthBaseUrl, resolveAuthSecret } from '../env';
+import { resolveAuthBaseUrl, resolveAuthSecret } from '../auth-env';
 
 // Контракт серверного env auth-контуру (спека CLI v1 §7, Task 7).
 //

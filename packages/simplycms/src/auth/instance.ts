@@ -7,7 +7,7 @@ import {
   type IsUserBanned,
 } from './ban';
 import { createAuthDb } from './drizzle-proxy';
-import { resolveAuthBaseUrl, resolveAuthSecret } from './env';
+import { resolveAuthBaseUrl, resolveAuthSecret } from './auth-env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
 import { renderResetPasswordEmail } from './invite-email';
 import { provisionUserInDb } from './provision';
