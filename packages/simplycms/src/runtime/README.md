@@ -19,6 +19,8 @@ pnpm add simplycms
 
 Вхід цього шару — субшлях `simplycms/runtime`.
 
+Client-safe субшляхи поза барелем (К3-Е8): `simplycms/runtime/build-id` (ідентифікатор збірки з `define`-глобала `__SIMPLYCMS_BUILD_ID__`, у dev — `'dev'`), `simplycms/runtime/stale-chunk` (сторож застарілих чанків після деплою: `vite:preloadError` → одне перезавантаження, ключ у сховищі сесії браузера містить id збірки, тож петлі немає) і `simplycms/runtime/stale-chunk-react` (хук `useStaleChunkRecovery` для меж помилок роутера — невдалий `import()` лінивого маршруту туди, а не в подію Vite). Окремо від барелю, щоб клієнтський вхід не тягнув `defineRuntime`.
+
 ## Що всередині
 
 | Символ | Що робить |

@@ -85,6 +85,8 @@ simplyCMS/
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
 │   │   │                         #    клієнтський seroval-адаптер межі serverFn (реєструється в
 │   │   │                         #    src/start.ts serializationAdapters)
+│   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
+│   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
 │   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
