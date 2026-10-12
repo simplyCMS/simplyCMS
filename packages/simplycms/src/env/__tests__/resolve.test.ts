@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DriverEnvError,
   S3_KEYS,
+  checkDriverEnvOnStart,
   describeDriverEnv,
   resolveDriverEnv,
 } from '../index';
@@ -142,5 +143,44 @@ describe('describeDriverEnv', () => {
     expect(text).toContain('smtp');
     expect(text).not.toContain('p4ss');
     expect(text).not.toContain('u:');
+  });
+});
+
+describe('checkDriverEnvOnStart', () => {
+  const run = (env: Record<string, string | undefined>) => {
+    const lines: string[] = [];
+    checkDriverEnvOnStart(env, (line) => lines.push(line));
+    return lines;
+  };
+
+  it('прод + log-драйвер → рівно один рядок про пошту', () => {
+    const lines = run({ NODE_ENV: 'production' });
+    expect(
+      lines.filter((l) => l.includes('пошта не налаштована')),
+    ).toHaveLength(1);
+    expect(lines).toHaveLength(1);
+  });
+
+  it('dev → жодного рядка', () => {
+    expect(run({})).toEqual([]);
+    expect(
+      run({ NODE_ENV: 'development', ...S3_FULL, MEDIA_ROOT: '/x' }),
+    ).toEqual([]);
+  });
+
+  it('прод + s3 і MEDIA_ROOT → попередження про MEDIA_ROOT', () => {
+    const lines = run({ NODE_ENV: 'production', ...S3_FULL, MEDIA_ROOT: '/x' });
+    expect(lines.some((l) => l.includes('MEDIA_ROOT'))).toBe(true);
+  });
+
+  it('часткова група → кидає з кодом, значень немає', () => {
+    let caught: unknown;
+    try {
+      run({ NODE_ENV: 'production', S3_BUCKET: 'BUCKET-7f3a' });
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: 'SIMPLYCMS_DRIVER_ENV' });
+    expect((caught as Error).message).not.toContain('BUCKET-7f3a');
   });
 });

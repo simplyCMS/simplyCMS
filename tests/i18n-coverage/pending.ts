@@ -18,9 +18,6 @@
  * `console.*` або `throw new Error(...)` (див. `i18n-coverage.test.ts`).
  */
 export const ALLOWLIST: Record<string, string> = {
-  // Хост магазину: попередження старту (пошта не налаштована) читає власник
-  // у логах контейнера, не покупець.
-  'src/server.ts': 'console.warn — лог старту',
   // Логи сервера: дивиться розробник у терміналі.
   'packages/simplycms/src/storefront-routes/server/auth.ts':
     'console.error — лог',

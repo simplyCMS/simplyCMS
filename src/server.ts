@@ -9,7 +9,7 @@ import {
 } from 'simplycms/storefront-routes/seo/interceptor';
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
-import { resolveDriverEnv } from 'simplycms/env';
+import { checkDriverEnvOnStart } from 'simplycms/env';
 import { declareBuiltThemes } from 'simplycms/site';
 import config from '../simplycms.config';
 
@@ -23,20 +23,8 @@ declareBuiltThemes(Object.keys(config.themes ?? {}));
 // верхньому рівні, щоб помилка кинулась під час імпорту бандла в `server.mjs`
 // ДО listen: часткова група не має мовчки скотитися на local-fs. Не ховати
 // за `import.meta.env`/`typeof window` — бандлер міг би вирізати виклик.
-// Попередження друкуємо лише в проді: у dev HMR перезапускав би модуль, а
-// log-драйвер пошти там норма.
-{
-  const driverEnv = resolveDriverEnv(process.env);
-  if (process.env.NODE_ENV === 'production') {
-    for (const warning of driverEnv.warnings)
-      console.warn(`[server] ${warning}`);
-    if (driverEnv.mail.driver === 'log') {
-      console.warn(
-        '[server] пошта не налаштована: листи лише в лозі сервера (SMTP_URL і MAIL_FROM).',
-      );
-    }
-  }
-}
+// Логіка й тексти попереджень — у ядрі (`simplycms/env`), хост лише кличе.
+checkDriverEnvOnStart(process.env, (line) => console.warn(`[server] ${line}`));
 
 /**
  * Кастомний серверний вхід (`server.entry` у `vite.config.ts`).

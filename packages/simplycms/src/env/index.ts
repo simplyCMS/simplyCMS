@@ -9,5 +9,6 @@ export {
   DriverEnvError,
   resolveDriverEnv,
   describeDriverEnv,
+  checkDriverEnvOnStart,
 } from './resolve';
 export type { MediaEnv, MailEnv, DriverEnv } from './resolve';
