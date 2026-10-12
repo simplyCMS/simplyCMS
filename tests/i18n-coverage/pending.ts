@@ -73,6 +73,16 @@ export const ALLOWLIST: Record<string, string> = {
     'throw new Error — діагностика host-а (кореневий лоадер)',
   'packages/simplycms/src/themes/store-profile.tsx':
     'throw new Error — діагностика host-а (провайдер профілю)',
+  // Е8-Т11: auth і пошта у SCANNED_ROOTS. Усе нижче — діагностика оператора
+  // (помилки env, лог-рядки), не текст для покупця; листи — лише з `mail.*`.
+  'packages/simplycms/src/auth/auth-env.ts':
+    'throw new Error — діагностика env',
+  'packages/simplycms/src/auth/authz.ts':
+    'super(...) помилки — клієнт читає name/operation, не message',
+  'packages/simplycms/src/auth/instance.ts': 'console.warn — лог доставки',
+  'packages/simplycms/src/auth/invite.ts': 'super(...) помилки — діагностика',
+  'packages/simplycms/src/mail/log.ts':
+    'лог-драйвер: рядок для оператора в лозі процесу',
 };
 
 /**

@@ -17,13 +17,10 @@ export function logTransport(
   return {
     driver: 'log',
     async send(m) {
-      const head =
-        '[simplycms/mail] Лист НЕ надіслано (SMTP не налаштовано). ' +
-        `Кому: ${m.to}. Тема: ${m.subject}.`;
+      const prod = isProductionRuntime(process.env);
       log(
-        isProductionRuntime(process.env)
-          ? `${head} Тип: ${m.kind ?? 'не вказано'}.`
-          : `${head}\n${m.text}`,
+        `[simplycms/mail] Лист НЕ надіслано (SMTP не налаштовано). Кому: ${m.to}. Тема: ${m.subject}.` +
+          (prod ? ` Тип: ${m.kind ?? 'не вказано'}.` : `\n${m.text}`),
       );
     },
   };

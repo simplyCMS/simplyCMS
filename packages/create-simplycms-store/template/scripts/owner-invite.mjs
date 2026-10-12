@@ -1,4 +1,4 @@
-// Запуск: OWNER_EMAIL=owner@example.com pnpm owner:invite
+// Запуск: OWNER_EMAIL=owner@example.com pnpm owner:invite [--print-link]
 //
 // 🔴 Контракт env — серверний (спека CLI v1 §7): скрипт читає лише
 // `process.env`, а `.env.local`/`.env` служать способом його наповнити.
@@ -6,7 +6,7 @@
 // немає.
 import { readFileSync } from 'node:fs';
 import { closeDbPool } from 'simplycms/db';
-import { runOwnerInvite } from './owner-invite-core.mjs';
+import { runOwnerInviteCli } from './owner-invite-core.mjs';
 
 /** Дописує у `process.env` лише ВІДСУТНІ ключі: реальний env завжди виграє. */
 function loadEnvFile(path) {
@@ -28,31 +28,13 @@ function loadEnvFile(path) {
 loadEnvFile('.env.local');
 loadEnvFile('.env');
 
-const email = process.env.OWNER_EMAIL;
-const siteUrl = process.env.VITE_SITE_URL ?? 'http://localhost:3000';
-
-const missing = [
-  ...(process.env.DATABASE_URL ? [] : ['DATABASE_URL']),
-  ...(email ? [] : ['OWNER_EMAIL']),
-];
-if (missing.length > 0) {
-  console.error(
-    `Потрібні змінні оточення: ${missing.join(', ')} ` +
-      '(env процесу або .env.local магазину).',
-  );
-  process.exit(1);
-}
-
+// Розбір аргументів, перевірка env і код виходу — в ядрі (`runOwnerInviteCli`),
+// щоб `--print-link` та вимогу `VITE_SITE_URL` можна було довести юнітом.
 try {
-  await runOwnerInvite({
-    email,
-    siteUrl,
-    storeName: process.env.VITE_STORE_NAME ?? 'SimplyCMS',
-    log: (message) => console.log(message),
+  process.exitCode = await runOwnerInviteCli({
+    argv: process.argv.slice(2),
+    env: process.env,
   });
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
 } finally {
   // Без цього процес висів би на відкритому пулі Postgres.
   await closeDbPool();

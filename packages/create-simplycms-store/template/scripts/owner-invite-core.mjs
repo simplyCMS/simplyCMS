@@ -1,47 +1,76 @@
 // Ядро owner:invite — запрошення власника ПРЯМО в Postgres (контракт v2).
 //
-// 🔴 GoTrue тут більше немає. Раніше скрипт кликав `admin.auth.admin
-// .inviteUserByEmail` і будував посилання на `/auth/confirm` — обидві точки
-// зникли разом із зовнішнім сервісом автентифікації, тож скрипт вів у 404 навіть коли «успішно»
-// відпрацьовував. Тепер він кличе рівно той самий `issueOwnerInvite`, що й
-// ядро: один механізм запрошення на весь продукт, без другої копії правил.
+// 🔴 GoTrue тут більше немає. Скрипт кличе рівно той самий `issueOwnerInvite`,
+// що й ядро: один механізм запрошення на весь продукт, без другої копії правил.
 //
-// 🔴 Лист НЕ надсилається — SMTP у магазині не налаштований (рішення
-// власника). Замість мовчазної відправки в нікуди посилання друкується в
-// консоль: власник відкриває його сам. Саме тому `sendEmail` тут — лог, а не
-// заглушка-нічого.
+// 🔴 Лист ставиться в outbox і доставляється через порт пошти (Е8-С2):
+//   - SMTP налаштований — «лист надіслано на <email>», посилання НЕ друкується
+//     (лог CLI читає більше людей, ніж скринька власника);
+//   - драйвер `log` поза продом — посилання друкується (dev-канал);
+//   - прод без SMTP — відмова (код 1) ДО випуску токена: посилання не друкуємо
+//     мовчки в лог контейнера; власник або налаштовує пошту, або свідомо
+//     передає `--print-link`.
 import {
   issueOwnerInvite,
   OwnerInviteError,
   ownerInviteStore,
 } from 'simplycms/auth';
+import {
+  isProductionRuntime,
+  redactUrls,
+  resolveDriverEnv,
+} from 'simplycms/env';
+import { createTranslator, normalizeLocale } from 'simplycms/i18n';
+import { deliverMail, scheduleMail, selectMailTransport } from 'simplycms/mail';
+
+const NO_MAIL_IN_PROD =
+  'Пошта не налаштована, а в проді посилання запрошення не друкується в лог. ' +
+  'Налаштуйте SMTP_URL і MAIL_FROM (лист піде на пошту власника) або ' +
+  'свідомо запустіть команду з --print-link — тоді посилання з’явиться в консолі.';
 
 /**
  * @param {{
  *   email: string;
  *   siteUrl: string;
  *   storeName?: string;
+ *   locale?: string;
+ *   printLink?: boolean;
+ *   env?: Record<string, string | undefined>;
  *   log: (message: string) => void;
  *   store?: import('simplycms/auth').OwnerInviteStore;
+ *   schedule?: typeof scheduleMail;
+ *   deliver?: typeof deliverMail;
+ *   transport?: import('simplycms/mail').MailTransport;
  * }} options
  */
 export async function runOwnerInvite({
   email,
   siteUrl,
   storeName = 'SimplyCMS',
+  locale = 'uk',
+  printLink = false,
+  env = process.env,
   log,
   store = ownerInviteStore,
+  schedule = scheduleMail,
+  deliver = deliverMail,
+  transport,
 }) {
+  const mail = resolveDriverEnv(env).mail;
+  const production = isProductionRuntime(env);
+  if (mail.driver === 'log' && production && !printLink)
+    throw Object.assign(new Error(NO_MAIL_IN_PROD), { code: 'no-mail' });
+
   let result;
   try {
     result = await issueOwnerInvite({
       store,
-      sendEmail: async (message) => {
-        log(`Лист «${message.subject}» не надсилається: SMTP не налаштовано.`);
-      },
+      schedule,
       email,
-      siteUrl,
+      env: { VITE_SITE_URL: siteUrl },
       storeName,
+      // CLI не бачить `simplycms.config` магазину — локаль листа з env.
+      t: createTranslator(normalizeLocale(locale)),
     });
   } catch (error) {
     // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду.
@@ -64,7 +93,85 @@ export async function runOwnerInvite({
       ? `Користувача ${email} створено, роль admin закріплена.`
       : `Користувач ${email} уже існує — роль admin на місці, токен перевипущено.`,
   );
-  log(`Посилання (одноразове, дійсне 24 год):\n  ${result.url}`);
+
+  // Невдачу доставки видно лише через транспорт: `deliverMail` не кидає (рядок
+  // лишається в outbox), тож обгортка запам'ятовує помилку саме цього листа.
+  const base = transport ?? selectMailTransport(mail);
+  const recipient = email.trim().toLowerCase(); // як у `issueOwnerInvite`
+  let failure = null;
+  const probe = {
+    driver: base.driver,
+    async send(message) {
+      try {
+        await base.send(message);
+      } catch (error) {
+        if (message.kind === 'owner_invite' && message.to === recipient)
+          failure = error;
+        throw error;
+      }
+    },
+  };
+  await deliver(result.mailIds, probe);
+
+  const showLink = printLink || (mail.driver === 'log' && !production);
+  if (showLink) log(`Посилання (одноразове, дійсне 24 год):\n  ${result.url}`);
+  if (mail.driver === 'log') log('SMTP не налаштовано — лист не надсилається.');
+  else if (failure === null) log(`Лист надіслано на ${email}.`);
+  else
+    throw new Error(
+      `Лист на ${email} не надіслано: ${redactUrls(String(failure?.message ?? failure))}. ` +
+        'Він лишився в черзі пошти — повторіть після виправлення SMTP.',
+    );
 
   return result;
+}
+
+/**
+ * Тіло CLI-обгортки: розбір аргументів, перевірка env, код виходу. Окремо від
+ * `owner-invite.mjs`, щоб «`--print-link` доходить до ядра» перевірявся юнітом, а
+ * не дочірнім процесом (пакет `simplycms` у тесті не зібраний).
+ *
+ * @returns {Promise<number>} код виходу
+ */
+export async function runOwnerInviteCli({
+  argv,
+  env,
+  log = (m) => console.log(m),
+  error = (m) => console.error(m),
+  run = runOwnerInvite,
+}) {
+  const unknown = argv.filter((arg) => arg !== '--print-link');
+  if (unknown.length > 0) {
+    error(
+      `Невідомий аргумент: ${unknown.join(' ')}. Підтримується лише --print-link.`,
+    );
+    return 1;
+  }
+  // 🔴 Р18г: жодної дефолтної адреси — посилання з чужою адресою привело б
+  // власника в нікуди (або на чужий хост), а мовчазний фолбек це приховує.
+  const missing = ['DATABASE_URL', 'OWNER_EMAIL', 'VITE_SITE_URL'].filter(
+    (key) => !env[key],
+  );
+  if (missing.length > 0) {
+    error(
+      `Потрібні змінні оточення: ${missing.join(', ')} ` +
+        '(env процесу або .env.local магазину).',
+    );
+    return 1;
+  }
+  try {
+    await run({
+      email: env.OWNER_EMAIL,
+      siteUrl: env.VITE_SITE_URL,
+      storeName: env.VITE_STORE_NAME ?? 'SimplyCMS',
+      locale: env.VITE_LOCALE ?? 'uk',
+      printLink: argv.includes('--print-link'),
+      env,
+      log,
+    });
+    return 0;
+  } catch (e) {
+    error(e instanceof Error ? e.message : String(e));
+    return 1;
+  }
 }

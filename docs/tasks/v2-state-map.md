@@ -1113,10 +1113,10 @@ direct-upload, sweep файлів ДИСКА без рядка `media` (обʼє
 
 ### 3.3. Листи не відправляються (рішення власника)
 
-Запрошення власника і скидання пароля кличуть колбек відправки, але транспорт
-— заглушка (`src/auth/send-email.ts`, `stubSendAuthEmail`): лист пишеться в
-`console.warn` разом із посиланням. Рендер листа юніт-тестовний; доставки
-немає. **Це навмисно** — тестується локально, де є SMTP.
+Станом на К3-Е8 (Task 11) листи йдуть через порт `simplycms/mail`: скидання
+пароля — `scheduleMail` + доставка без `await`, запрошення — `owner:invite`
+(`--print-link`, гілки Е8-С2). Без `SMTP_URL`/`MAIL_FROM` працює драйвер `log`.
+Заглушки `stubSendAuthEmail` більше немає.
 
 ### 3.4. Ціни позицій замовлення не перераховуються
 
@@ -1391,9 +1391,9 @@ const m = await import('./packages/simplycms/src/auth/index.ts');
 const r = await m.issueOwnerInvite({
   email: 'admin@example.com',
   store: m.ownerInviteStore,
-  siteUrl: 'http://localhost:3000',
-  // Лист не несе поля `url` — посилання повертає сам issueOwnerInvite (r.url).
-  sendEmail: async (mail) => console.log(mail.subject),
+  env: { VITE_SITE_URL: 'http://localhost:3000' },
+  // Лист не потрібен: посилання повертає сам issueOwnerInvite (r.url).
+  schedule: async () => [],
 });
 console.log(r.url);   // відкрити в браузері → форма пароля
 ```

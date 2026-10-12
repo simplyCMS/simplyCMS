@@ -14,7 +14,7 @@ import {
   ownerInviteStore,
   verifyOwnerInvite,
 } from 'simplycms/auth';
-import type { InviteEmail } from 'simplycms/auth';
+import type { MailMessage } from 'simplycms/mail';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -45,7 +45,7 @@ describe('Better Auth над реальним Postgres', () => {
   const dbName = randomDbName('simplycms_auth');
   let dbUrl: string;
   let auth: ReturnType<typeof createAuth>;
-  const sentEmails: InviteEmail[] = [];
+  const sentEmails: MailMessage[] = [];
 
   /** Реєстрація + id, узятий САМЕ із сесії, а не з відповіді signUp. */
   const signUpAndReadSession = async (email: string): Promise<string> => {
@@ -165,11 +165,12 @@ describe('Better Auth над реальним Postgres', () => {
     const email = 'owner@example.test';
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        sentEmails.push(message);
+      schedule: async (items) => {
+        sentEmails.push(...items.map((item) => item.message));
+        return [];
       },
       email,
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
 
     expect(invite.created).toBe(true);
@@ -202,11 +203,12 @@ describe('Better Auth над реальним Postgres', () => {
     const email = 'owner@example.test';
     const again = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        sentEmails.push(message);
+      schedule: async (items) => {
+        sentEmails.push(...items.map((item) => item.message));
+        return [];
       },
       email,
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
 
     expect(again.created).toBe(false);

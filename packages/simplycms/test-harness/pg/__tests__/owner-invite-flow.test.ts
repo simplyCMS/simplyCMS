@@ -14,7 +14,7 @@ import {
   ownerInviteStore,
   resetAuth,
 } from 'simplycms/auth';
-import type { InviteEmail } from 'simplycms/auth';
+import type { MailMessage } from 'simplycms/mail';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -36,7 +36,7 @@ describe('запрошення власника наскрізь', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_invite');
   let dbUrl: string;
-  const letters: InviteEmail[] = [];
+  const letters: MailMessage[] = [];
   let inviteUrl: string;
   let userId: string;
 
@@ -77,11 +77,12 @@ describe('запрошення власника наскрізь', () => {
   it('посилання з листа веде на /auth/invite і несе пошту з токеном', async () => {
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        letters.push(message);
+      schedule: async (items) => {
+        letters.push(...items.map((item) => item.message));
+        return [];
       },
       email: OWNER,
-      siteUrl: SITE,
+      env: { VITE_SITE_URL: SITE },
     });
     inviteUrl = invite.url;
     userId = invite.userId;

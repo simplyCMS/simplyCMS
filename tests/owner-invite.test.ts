@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { inviteIdentifier, verifyOwnerInvite } from 'simplycms/auth';
 import type { OwnerInviteStore } from 'simplycms/auth';
-import { runOwnerInvite } from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
+import type { MailItem, MailMessage, MailTransport } from 'simplycms/mail';
+import {
+  runOwnerInvite,
+  runOwnerInviteCli,
+} from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
 
 // Юніт скрипта `owner:invite` із шаблону магазину.
 //
@@ -48,16 +52,52 @@ function makeStore() {
   return { store, users, tokens, roles, banned };
 }
 
+/** Фейкова пошта: `schedule` збирає листи, `deliver` віддає їх транспорту. */
+function makeMail(opts: { failSend?: boolean } = {}) {
+  const queued: MailMessage[] = [];
+  const sent: MailMessage[] = [];
+  const transport: MailTransport = {
+    driver: 'smtp',
+    send: async (m) => {
+      if (opts.failSend)
+        throw new Error('connect ECONNREFUSED smtp://user:pw@mail.test:587');
+      sent.push(m);
+    },
+  };
+  const schedule = async (items: readonly MailItem[]) => {
+    queued.push(...items.map((i) => i.message));
+    return items.map((_, i) => `id-${i}`);
+  };
+  const deliver = async (_ids: readonly string[], t?: MailTransport) => {
+    for (const m of queued) await t!.send(m).catch(() => {});
+  };
+  return { queued, sent, transport, schedule, deliver };
+}
+
+const SMTP_ENV = {
+  SMTP_URL: 'smtp://u:p@mail.test:587',
+  MAIL_FROM: 'a@b.test',
+};
+
 /** Прогін скрипта зі збором того, що він надрукував. */
-async function run(store: OwnerInviteStore) {
+async function run(
+  store: OwnerInviteStore,
+  extra: Partial<Parameters<typeof runOwnerInvite>[0]> = {},
+  mail = makeMail(),
+) {
   const lines: string[] = [];
   const result = await runOwnerInvite({
     email: EMAIL,
     siteUrl: SITE,
     store,
+    env: {},
+    schedule: mail.schedule,
+    deliver: mail.deliver,
+    transport: mail.transport,
     log: (message: string) => lines.push(message),
+    ...extra,
   });
-  return { result, output: lines.join('\n') };
+  return { result, output: lines.join('\n'), mail };
 }
 
 describe('owner-invite (скрипт шаблону)', () => {
@@ -70,8 +110,7 @@ describe('owner-invite (скрипт шаблону)', () => {
     expect(users.size).toBe(1);
     expect(roles).toEqual([{ userId: result.userId, role: 'admin' }]);
     expect(result.url.startsWith(`${SITE}/auth/invite?email=`)).toBe(true);
-    // 🔴 Друк посилання — і є доставка: SMTP немає, тож мовчазний прогін
-    // залишив би власника без єдиного шляху до адмінки.
+    // Драйвер `log` поза продом: посилання друкується (dev-канал).
     expect(output).toContain(result.url);
     expect(output).toContain('SMTP');
   });
@@ -131,5 +170,143 @@ describe('owner-invite (скрипт шаблону)', () => {
     expect(roles).toHaveLength(0);
     expect(tokens.size).toBe(0);
     expect(first.result.created).toBe(true);
+  });
+});
+
+describe('owner-invite: три гілки Е8-С2', () => {
+  it('(1) SMTP: «лист надіслано», посилання й токена у виводі немає, лист у транспорті', async () => {
+    const { store } = makeStore();
+    const { result, output, mail } = await run(store, { env: SMTP_ENV });
+    const token = new URL(result.url).searchParams.get('token')!;
+
+    expect(output).toContain(`Лист надіслано на ${EMAIL}`);
+    expect(output).not.toContain(result.url);
+    expect(output).not.toContain(token);
+    expect(output).not.toContain('/auth/invite');
+    expect(mail.sent).toHaveLength(1);
+    expect(mail.sent[0]!.text).toContain(result.url);
+    expect(mail.sent[0]!.kind).toBe('owner_invite');
+  });
+
+  it('(1б) SMTP зламаний: код помилки без секретів, посилання не друкується', async () => {
+    const { store } = makeStore();
+    const lines: string[] = [];
+    const attempt = run(
+      store,
+      { env: SMTP_ENV, log: (m: string) => lines.push(m) },
+      makeMail({ failSend: true }),
+    );
+    await expect(attempt).rejects.toThrow(/не надіслано/);
+    await expect(attempt).rejects.not.toThrow(/pw@/);
+    expect(lines.join('\n')).not.toContain('/auth/invite');
+  });
+
+  it('(2) log поза продом: посилання у виводі', async () => {
+    const { store } = makeStore();
+    const { result, output } = await run(store, { env: {} });
+    expect(output).toContain(result.url);
+  });
+
+  it('(3) прод + log без --print-link: відмова ДО випуску токена, текст без посилання', async () => {
+    const { store, users, tokens } = makeStore();
+    const lines: string[] = [];
+    const attempt = run(store, {
+      env: { NODE_ENV: 'production' },
+      log: (m: string) => lines.push(m),
+    });
+    await expect(attempt).rejects.toThrow(/SMTP_URL/);
+    await expect(attempt).rejects.toThrow(/MAIL_FROM/);
+    await expect(attempt).rejects.toThrow(/--print-link/);
+    await expect(attempt).rejects.not.toThrow(/auth\/invite/);
+    // Нічого не випущено: ні користувача, ні токена.
+    expect(users.size).toBe(0);
+    expect(tokens.size).toBe(0);
+    expect(lines).toHaveLength(0);
+  });
+
+  it('(3б) прод + log з --print-link: посилання є', async () => {
+    const { store } = makeStore();
+    const { result, output } = await run(store, {
+      env: { NODE_ENV: 'production' },
+      printLink: true,
+    });
+    expect(output).toContain(result.url);
+  });
+
+  it('посилання листа будується від VITE_SITE_URL, а не від чогось іншого', async () => {
+    const { store } = makeStore();
+    const { result, mail } = await run(store, { env: SMTP_ENV });
+    expect(result.url.startsWith(`${SITE}/auth/invite?`)).toBe(true);
+    expect(mail.queued[0]!.html).toContain(SITE);
+  });
+});
+
+describe('owner-invite CLI-обгортка', () => {
+  const baseEnv = {
+    DATABASE_URL: 'postgres://x',
+    OWNER_EMAIL: EMAIL,
+    VITE_SITE_URL: SITE,
+  };
+  const cli = async (argv: string[], env: Record<string, string>) => {
+    const calls: Parameters<typeof runOwnerInvite>[0][] = [];
+    const errors: string[] = [];
+    const code = await runOwnerInviteCli({
+      argv,
+      env,
+      error: (m: string) => errors.push(m),
+      run: (async (o: Parameters<typeof runOwnerInvite>[0]) => {
+        calls.push(o);
+      }) as unknown as typeof runOwnerInvite,
+    });
+    return { code, calls, errors };
+  };
+
+  it('--print-link доходить до ядра; без прапорця — false', async () => {
+    expect((await cli(['--print-link'], baseEnv)).calls[0]!.printLink).toBe(
+      true,
+    );
+    expect((await cli([], baseEnv)).calls[0]!.printLink).toBe(false);
+  });
+
+  it('прод без SMTP: без прапорця код 1, з прапорцем — посилання (наскрізно через ядро)', async () => {
+    const { store } = makeStore();
+    const mail = makeMail();
+    const env = { ...baseEnv, NODE_ENV: 'production' };
+    const lines: string[] = [];
+    const errors: string[] = [];
+    const real = (argv: string[]) =>
+      runOwnerInviteCli({
+        argv,
+        env,
+        log: (m: string) => lines.push(m),
+        error: (m: string) => errors.push(m),
+        run: (o) =>
+          runOwnerInvite({
+            ...o,
+            store,
+            schedule: mail.schedule,
+            deliver: mail.deliver,
+            transport: mail.transport,
+          }),
+      });
+    expect(await real([])).toBe(1);
+    expect(errors.join('\n')).toMatch(/--print-link/);
+    expect(lines.join('\n')).not.toContain('/auth/invite');
+    expect(await real(['--print-link'])).toBe(0);
+    expect(lines.join('\n')).toContain(`${SITE}/auth/invite?`);
+  });
+
+  it('Р18г: без VITE_SITE_URL — код 1 з імʼям ключа, ядро не кличеться, фолбеку localhost немає', async () => {
+    const env: Record<string, string> = { ...baseEnv };
+    delete env.VITE_SITE_URL;
+    const { code, calls, errors } = await cli([], env);
+    expect(code).toBe(1);
+    expect(calls).toHaveLength(0);
+    expect(errors.join('\n')).toContain('VITE_SITE_URL');
+    expect(errors.join('\n')).not.toContain('localhost');
+  });
+
+  it('невідомий аргумент — код 1', async () => {
+    expect((await cli(['--print-lnk'], baseEnv)).code).toBe(1);
   });
 });

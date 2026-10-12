@@ -1,5 +1,8 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { renderInviteEmail, type SendInviteEmail } from './invite-email';
+import { createTranslator, type Translator } from 'simplycms/i18n';
+import { siteUrl } from 'simplycms/env';
+import { renderOwnerInviteMail, scheduleMail } from 'simplycms/mail';
+import { getStoreLocale } from 'simplycms/site';
 
 /**
  * Invite власника — заміна механіки `inviteUserByEmail` (Task 7, В2-К1а).
@@ -55,10 +58,14 @@ const hashToken = (token: string): string =>
 
 export interface IssueOwnerInviteInput {
   readonly store: OwnerInviteStore;
-  readonly sendEmail: SendInviteEmail;
+  /** Постановка листа в outbox. За замовчуванням — `scheduleMail`. */
+  readonly schedule?: typeof scheduleMail;
   readonly email: string;
-  readonly siteUrl: string;
+  /** Джерело `VITE_SITE_URL` для посилання (див. `siteUrl`); за замовчуванням `process.env`. */
+  readonly env?: Readonly<Record<string, string | undefined>>;
   readonly storeName?: string;
+  /** Транслятор листа; за замовчуванням — від локалі хоста. */
+  readonly t?: Translator;
   readonly ttlMs?: number;
   readonly now?: Date;
   /** Тільки для тестів: детермінований токен замість випадкового. */
@@ -70,6 +77,8 @@ export interface OwnerInviteResult {
   /** `false` — користувач уже існував: повторний invite його не дублює. */
   readonly created: boolean;
   readonly url: string;
+  /** Id рядків outbox для `deliverMail`. */
+  readonly mailIds: readonly string[];
 }
 
 /**
@@ -102,20 +111,23 @@ export async function issueOwnerInvite(
   });
   if (outcome === 'banned') throw new OwnerInviteError('banned');
 
-  const url =
-    `${input.siteUrl.replace(/\/$/, '')}/auth/invite` +
-    `?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`;
-
-  await input.sendEmail(
-    renderInviteEmail({
-      to: email,
-      url,
-      storeName: input.storeName ?? 'SimplyCMS',
-      ttlMs,
-    }),
+  const url = siteUrl(
+    `/auth/invite?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`,
+    input.env ?? process.env,
   );
 
-  return { userId, created: existing === null, url };
+  const message = renderOwnerInviteMail({
+    to: email,
+    url,
+    storeName: input.storeName ?? 'SimplyCMS',
+    ttlMs,
+    t: input.t ?? createTranslator(getStoreLocale()),
+  });
+  const mailIds = await (input.schedule ?? scheduleMail)([
+    { kind: 'owner_invite', message },
+  ]);
+
+  return { userId, created: existing === null, url, mailIds };
 }
 
 /** Чому запрошення не прийнято — рівно ті випадки, які має розрізняти UI. */

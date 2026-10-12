@@ -25,9 +25,10 @@ describe('create-store: інструкція «призначити власни
     // 🔴 Найдорожча помилка тут — лишити стару команду: вона просить ключ,
     // якого магазин уже не використовує, і власник шукатиме його в Dashboard.
     expect(readme).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
-    // Доставки листа немає — якщо README про це змовчить, власник чекатиме
-    // пошту, якої не буде.
-    expect(readme).toMatch(/консоль/);
+    // Три гілки доставки (Е8-С2): якщо README змовчить про пошту й
+    // `--print-link`, власник чекатиме лист, якого не буде, або не знайде посилання.
+    expect(readme).toMatch(/SMTP_URL/);
+    expect(readme).toMatch(/--print-link/);
   });
 
   it('README не обіцяє неіснуючих сторінок GoTrue', () => {
@@ -84,21 +85,11 @@ describe('create-store: інструкція «призначити власни
     expect(readme).toContain('власника БД');
   });
 
-  // Посилання запрошення будується з `VITE_SITE_URL`, а без нього — з дефолту
-  // скрипта. Дефолт мусить збігатися з портом, на якому магазин реально
-  // піднімається, інакше лінк веде на порожній порт.
-  it('дефолт site URL у owner-invite = порт dev-сервера й `pnpm start`', () => {
-    const invite = read(`${TEMPLATE}/scripts/owner-invite.mjs`);
-    const port = /'http:\/\/localhost:(\d+)'/.exec(invite)?.[1];
-
-    expect(port).toBe('3000');
-    for (const config of [
-      `${TEMPLATE}/vite.config.ts`,
-      'tests/pilot/store-template/vite.config.ts',
-    ]) {
-      expect(read(config)).toMatch(
-        new RegExp(`server: \\{ port: ${port}, strictPort: true \\}`),
-      );
-    }
+  // 🔴 Р18г: фолбеку на localhost немає. Раніше дефолт мусив збігатися з портом
+  // dev-сервера; тепер без `VITE_SITE_URL` команда відмовляє (поведінку доводить
+  // `tests/owner-invite.test.ts`), а тут стережемо, що літерал не повернувся.
+  it('owner-invite не має дефолтної адреси сайту', () => {
+    for (const file of ['owner-invite.mjs', 'owner-invite-core.mjs'])
+      expect(read(`${TEMPLATE}/scripts/${file}`)).not.toMatch(/localhost/);
   });
 });

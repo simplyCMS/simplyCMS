@@ -10,7 +10,8 @@ import {
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
-import { declareBuiltThemes } from 'simplycms/site';
+import { normalizeLocale } from 'simplycms/i18n';
+import { declareBuiltThemes, declareStoreLocale } from 'simplycms/site';
 import config from '../simplycms.config';
 
 // Вшиті теми — ті, що зібрані з `config.themes` (Е6б-8). Сервер інакше про них
@@ -18,6 +19,11 @@ import config from '../simplycms.config';
 // лишається й після видалення пакета. Без декларації активація теми
 // відмовляє (fail-closed). Модульний рівень: вхід один для dev, preview і prod.
 declareBuiltThemes(Object.keys(config.themes ?? {}));
+
+// Локаль листів (скидання пароля, запрошення): серверний код `simplycms.config`
+// не бачить, тож host повідомляє її тим самим каналом (Е8-Р8). Без декларації
+// ядро шле українською з одним попередженням.
+declareStoreLocale(normalizeLocale(config.locale));
 
 // Група драйвера env (S3, SMTP) — «все або нічого» (Е8-Р7′). Перевірка на
 // верхньому рівні, щоб помилка кинулась під час імпорту бандла в `server.mjs`

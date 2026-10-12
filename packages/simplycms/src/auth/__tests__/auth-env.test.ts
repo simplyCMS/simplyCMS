@@ -21,11 +21,23 @@ describe('resolveAuthSecret', () => {
 });
 
 describe('resolveAuthBaseUrl', () => {
-  it('опційний: без ключа — undefined, з порожнім — теж', () => {
+  it('без жодного ключа — undefined, з порожнім — теж', () => {
     expect(resolveAuthBaseUrl({})).toBeUndefined();
     expect(resolveAuthBaseUrl({ BETTER_AUTH_URL: '' })).toBeUndefined();
     expect(resolveAuthBaseUrl({ BETTER_AUTH_URL: 'https://a.test' })).toBe(
       'https://a.test',
     );
+  });
+
+  it('Р18а: без BETTER_AUTH_URL база береться з VITE_SITE_URL, BETTER_AUTH_URL виграє', () => {
+    expect(resolveAuthBaseUrl({ VITE_SITE_URL: 'https://site.test' })).toBe(
+      'https://site.test',
+    );
+    expect(
+      resolveAuthBaseUrl({
+        BETTER_AUTH_URL: 'https://auth.test',
+        VITE_SITE_URL: 'https://site.test',
+      }),
+    ).toBe('https://auth.test');
   });
 });

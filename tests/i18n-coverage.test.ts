@@ -19,9 +19,15 @@ const REPO = resolve(__dirname, '..');
  */
 function insideDevDiagnostic(file: string, line: number): boolean {
   const lines = readFileSync(resolve(REPO, file), 'utf8').split('\n');
-  return lines
-    .slice(Math.max(0, line - 3), line)
-    .some((l) => l.includes('console.') || /throw new \w*Error\(/.test(l));
+  return lines.slice(Math.max(0, line - 3), line).some(
+    (l) =>
+      l.includes('console.') ||
+      /throw new \w*Error\(/.test(l) ||
+      // Конструктор підкласу Error: те саме повідомлення, що й `throw new Error`.
+      /\bsuper\(/.test(l) ||
+      // Ін'єкційний лог-синк драйвера пошти (`log(...)`): рядок читає оператор.
+      /\blog\(/.test(l),
+  );
 }
 
 /**

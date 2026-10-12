@@ -13,3 +13,8 @@ export {
 export type { ReadCache, ThemeRecord } from './read-cache';
 export { readStoreProfile, toStorefrontProfile } from './store-profile';
 export { declareBuiltThemes, isBuiltTheme } from './built-themes';
+export {
+  declareStoreLocale,
+  getStoreLocale,
+  resetStoreLocale,
+} from './store-locale';

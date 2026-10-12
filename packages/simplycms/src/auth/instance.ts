@@ -1,6 +1,15 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { withActor } from 'simplycms/db';
+import { createTranslator } from 'simplycms/i18n';
+import {
+  deliverMail,
+  renderPasswordResetMail,
+  scheduleMail,
+  type MailTransport,
+} from 'simplycms/mail';
 import { accounts, sessions, users, verifications } from 'simplycms/schema';
+import { getStoreLocale, readStoreProfile } from 'simplycms/site';
 import {
   createSessionBanHook,
   isUserBannedInDb,
@@ -9,10 +18,8 @@ import {
 import { createAuthDb } from './drizzle-proxy';
 import { resolveAuthBaseUrl, resolveAuthSecret } from './auth-env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
-import { renderResetPasswordEmail } from './invite-email';
 import { provisionUserInDb } from './provision';
 import { isResetStillValid, type ResetGuard } from './reset-guard';
-import { stubSendAuthEmail, type SendAuthEmail } from './send-email';
 
 /**
  * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
@@ -44,26 +51,47 @@ export interface AuthDeps {
   readonly resetGuard?: ResetGuard;
   readonly secret?: string;
   readonly baseURL?: string;
-  /**
-   * Канал доставки листів. За замовчуванням — заглушка з логом
-   * (`./send-email`): SMTP лишається справою магазину, ядро лише КЛИЧЕ канал.
-   */
-  readonly sendEmail?: SendAuthEmail;
-  /** Назва магазину в темі листа. */
+  /** Постановка листа в outbox. За замовчуванням — `scheduleMail` (власна транзакція). */
+  readonly schedule?: typeof scheduleMail;
+  /** Транспорт порту пошти. За замовчуванням — `getMailTransport()` за env. */
+  readonly mailTransport?: MailTransport;
+  /** Назва магазину в листі. За замовчуванням — з профілю магазину в БД. */
   readonly storeName?: string;
+}
+
+/** `profile.name || 'SimplyCMS'` — той самий фолбек, що й в owner:invite. */
+const readStoreName = (): Promise<string> =>
+  withActor({ role: 'app_admin' }, readStoreProfile).then(
+    (profile) => profile.name || 'SimplyCMS',
+  );
+
+/** Помилка фонової доставки без секретів: лише клас помилки, без тексту. */
+const logDeliveryFailure = (error: unknown): void => {
+  console.warn(
+    '[simplycms/auth] фонова доставка листа скидання пароля не вдалась:',
+    error instanceof Error ? error.name : typeof error,
+  );
+};
+
+/** Явний origin: `baseURL` для посилань і єдиний довірений origin. */
+function authBase(baseURL: string | undefined) {
+  if (!baseURL) return {};
+  return { baseURL, trustedOrigins: [new URL(baseURL).origin] };
 }
 
 /**
  * Створює інстанс. Env читається ТУТ, у рантаймі — не на модуль-рівні.
  */
 export function createAuth(deps: AuthDeps = {}) {
-  const sendEmail = deps.sendEmail ?? stubSendAuthEmail;
-  const storeName = deps.storeName ?? 'SimplyCMS';
+  const schedule = deps.schedule ?? scheduleMail;
   const resetGuard = deps.resetGuard ?? isResetStillValid;
 
   return betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
-    baseURL: deps.baseURL ?? resolveAuthBaseUrl(process.env),
+    // 🔴 Р18а: база посилань і trustedOrigins — ЗАВЖДИ з env (`BETTER_AUTH_URL`
+    // або `VITE_SITE_URL`). Без цього BA бере їх із `request.url`, і підроблений
+    // `Host`/`X-Forwarded-Host` отруює посилання скидання пароля.
+    ...authBase(deps.baseURL ?? resolveAuthBaseUrl(process.env)),
     database:
       deps.database ??
       drizzleAdapter(createAuthDb(), {
@@ -76,17 +104,22 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
-      // 🔴 Колбек прибіндований ЗАВЖДИ, навіть коли транспорт — заглушка.
-      // Інакше `requestPasswordReset` мовчки повертав би 200 без жодного
-      // сліду, і «лист не прийшов» неможливо було б відрізнити від
-      // «магазин не налаштував пошту».
       sendResetPassword: async ({ user, url, token }) => {
         // Токен BA уже вставив окремим запитом: якщо email змінився або
         // акаунт видалено між пошуком і вставкою, guard його прибирає (Е6г-18).
         if (!(await resetGuard(user.id, user.email, token))) return;
-        await sendEmail(
-          renderResetPasswordEmail({ to: user.email, url, storeName }),
-        );
+        const message = renderPasswordResetMail({
+          to: user.email,
+          url,
+          storeName: deps.storeName ?? (await readStoreName()),
+          t: createTranslator(getStoreLocale()),
+        });
+        // Швидкий запис у БД — лист у черзі, далі доставка БЕЗ await (Е8-О1):
+        // BA кличе колбек лише для наявного email, і затримка SMTP у відповіді
+        // видала б існування акаунта за часом відповіді. Збій доставки лишає
+        // рядок в outbox — його добере наступна доставка.
+        const ids = await schedule([{ kind: 'password_reset', message }]);
+        void deliverMail(ids, deps.mailTransport).catch(logDeliveryFailure);
       },
     },
     advanced: {

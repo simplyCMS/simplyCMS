@@ -15,6 +15,7 @@
 export interface AuthEnv {
   readonly BETTER_AUTH_SECRET?: string;
   readonly BETTER_AUTH_URL?: string;
+  readonly VITE_SITE_URL?: string;
 }
 
 /**
@@ -30,9 +31,8 @@ export function resolveAuthSecret(env: AuthEnv): string {
 
   if (!secret) {
     throw new Error(
-      '[simplycms/auth] Відсутня змінна оточення BETTER_AUTH_SECRET — ' +
-        'нема чим підписувати сесії. Контракт серверного env — спека CLI v1 ' +
-        '§7 (лише process.env, лише в рантаймі).',
+      '[simplycms/auth] Відсутня змінна оточення BETTER_AUTH_SECRET — нема ' +
+        'чим підписувати сесії (лише process.env, лише в рантаймі, спека CLI v1 §7).',
     );
   }
 
@@ -40,9 +40,11 @@ export function resolveAuthSecret(env: AuthEnv): string {
 }
 
 /**
- * Публічна база URL застосунку (потрібна для колбеків OAuth і посилань у
- * листах). Опційна: без неї Better Auth виводить базу з самого запиту, чого
- * достатньо для email/password-флоу.
+ * Публічна база URL застосунку: колбеки і посилання в листах (скидання пароля).
+ *
+ * 🔴 Р18а: `BETTER_AUTH_URL ?? VITE_SITE_URL`, а не виведення з запиту — без бази
+ * Better Auth бере її (і `trustedOrigins`) із `request.url`, тобто з довільного
+ * `Host`/`X-Forwarded-Host`. `VITE_SITE_URL` він сам не читає.
  */
 export const resolveAuthBaseUrl = (env: AuthEnv): string | undefined =>
-  env.BETTER_AUTH_URL || undefined;
+  env.BETTER_AUTH_URL || env.VITE_SITE_URL || undefined;

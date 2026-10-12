@@ -25,6 +25,7 @@ import { messages as orders } from './orders';
 import { messages as auth } from './auth';
 import { messages as reviews } from './reviews';
 import { messages as errors } from './errors';
+import { messages as mail } from './mail';
 import { messages as admin } from './admin/index';
 
 export const messages: Catalog = {
@@ -44,5 +45,6 @@ export const messages: Catalog = {
   ...auth,
   ...reviews,
   ...errors,
+  ...mail,
   ...admin,
 };

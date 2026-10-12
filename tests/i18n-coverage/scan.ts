@@ -78,6 +78,9 @@ export const SCANNED_ROOTS = [
   'packages/simplycms/src/themes',
   'packages/simplycms/src/plugins',
   'packages/simplycms/src/plugin-sdk',
+  // Е8-Т11: листи ядра — тексти лише з каталогу `mail.*`, не з літералів.
+  'packages/simplycms/src/mail',
+  'packages/simplycms/src/auth',
   // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
   // у `SCANNED_ROOTS` їх не було, а eslint-зона `I18N_MIGRATED_FILES` бачить
   // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`

@@ -55,9 +55,9 @@ describe('users.email: нижній регістр на всіх шляхах з
   it('issueOwnerInvite з Owner@Shop.UA кладе owner@shop.ua', async () => {
     await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async () => undefined,
+      schedule: async () => [],
       email: 'Owner@Shop.UA',
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
     expect(await emailOf('owner@shop.ua')).toEqual(['owner@shop.ua']);
     expect(await emailOf('Owner@Shop.UA')).toEqual([]);
@@ -66,9 +66,9 @@ describe('users.email: нижній регістр на всіх шляхах з
   it('адмін-запрошення — той самий issueOwnerInvite: повторний виклик з іншим регістром не дублює рядок', async () => {
     const again = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async () => undefined,
+      schedule: async () => [],
       email: 'OWNER@shop.ua',
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
     expect(again.created).toBe(false);
     expect(await emailOf('owner@shop.ua')).toHaveLength(1);
