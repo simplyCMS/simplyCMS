@@ -104,7 +104,9 @@ describe('s3Driver', () => {
             input instanceof Request ? input : new Request(input, init);
           return req.method === 'HEAD'
             ? head()
-            : new Response(null, { status });
+            : // Тіло НЕпорожнє: інакше спрацювала б друга половина умови
+              // (`!res.body`) і мутація саме `!res.ok` лишилась би зеленою.
+              new Response('NoSuchKey', { status });
         }),
       );
       const object = await s3Driver(cfg).open(KEY);
