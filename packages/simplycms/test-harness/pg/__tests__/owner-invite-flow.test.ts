@@ -8,10 +8,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   acceptOwnerInvite,
+  createAuth,
   getAuth,
   isAdminRequest,
   issueOwnerInvite,
   ownerInviteStore,
+  readSessionSubject,
   resetAuth,
 } from 'simplycms/auth';
 import type { MailMessage } from 'simplycms/mail';
@@ -161,5 +163,151 @@ describe('запрошення власника наскрізь', () => {
       { email: OWNER, role: 'admin' },
       { email: SHOPPER, role: 'user' },
     ]);
+  });
+  describe('Р19: роль лише після прийняття, сесії гаснуть', () => {
+    const NEW_PASSWORD = 'owner-new-password-after-accept';
+    const schedule = async (items: readonly { message: MailMessage }[]) => {
+      letters.push(...items.map((item) => item.message));
+      return [];
+    };
+    const roleRows = (id: string) =>
+      queryRows(
+        dbUrl,
+        `select role::text as role from public.user_roles where user_id = $1`,
+        [id],
+      );
+    const adminRoleCount = async (id: string) =>
+      (await roleRows(id)).filter((r) => r.role === 'admin').length;
+    const tokenOf = (url: string) => new URL(url).searchParams.get('token')!;
+    const headersOf = (response: Response) =>
+      new Headers({ cookie: cookieOf(response) });
+
+    const HIJACK = 'hijack@example.test';
+    let hijackSession: Headers;
+    let hijackInvite: { userId: string; url: string };
+
+    it('(1) пошту зайнято самореєстрацією: випуск запрошення НЕ дає ролі живій сесії', async () => {
+      const signUp = await getAuth().api.signUpEmail({
+        body: { email: HIJACK, password: PASSWORD, name: 'Зловмисник' },
+        asResponse: true,
+      });
+      expect(signUp.status).toBe(200);
+      hijackSession = headersOf(signUp);
+
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email: HIJACK,
+        env: { VITE_SITE_URL: SITE },
+      });
+      hijackInvite = invite;
+      expect(invite.created).toBe(false);
+      expect(invite.existingUnverified).toBe(true);
+
+      const subject = await readSessionSubject(hijackSession);
+      expect(subject?.userId).toBe(invite.userId);
+      expect(subject?.roles).not.toContain('admin');
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+    });
+
+    it('(2) прийняття гасить сесію самореєстрації, новий вхід дає admin', async () => {
+      const accepted = await acceptOwnerInvite({
+        auth: getAuth(),
+        store: ownerInviteStore,
+        email: HIJACK,
+        token: tokenOf(hijackInvite.url),
+        password: NEW_PASSWORD,
+      });
+      expect(accepted).toEqual({ ok: true, userId: hijackInvite.userId });
+
+      expect(
+        await getAuth().api.getSession({ headers: hijackSession }),
+      ).toBeNull();
+      // Старий пароль зловмисника теж не діє.
+      expect((await signIn(HIJACK, PASSWORD)).status).not.toBe(200);
+
+      const fresh = await signIn(HIJACK, NEW_PASSWORD);
+      expect(fresh.status).toBe(200);
+      const subject = await readSessionSubject(headersOf(fresh));
+      expect(subject?.roles).toContain('admin');
+    });
+
+    it('(3) звичайне скидання пароля гасить живі сесії', async () => {
+      const email = 'reset-revokes@example.test';
+      await getAuth().api.signUpEmail({
+        body: { email, password: PASSWORD, name: 'Покупець' },
+      });
+      const session = headersOf(await signIn(email, PASSWORD));
+      expect(
+        await getAuth().api.getSession({ headers: session }),
+      ).not.toBeNull();
+
+      const resetMails: MailMessage[] = [];
+      const auth = createAuth({
+        schedule: async (items) => {
+          resetMails.push(...items.map((item) => item.message));
+          return [];
+        },
+        mailTransport: { driver: 'smtp', send: async () => {} },
+      });
+      await auth.api.requestPasswordReset({ body: { email } });
+      expect(resetMails).toHaveLength(1);
+      const token = /reset-password\/([^?\s"]+)/.exec(resetMails[0]!.text)![1];
+
+      await auth.api.resetPassword({
+        body: { newPassword: 'another-password-after-reset', token },
+      });
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
+    });
+
+    it('(6) BA відхиляє пароль: ролі admin немає, токен спожито', async () => {
+      const email = 'weak-password@example.test';
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email,
+        env: { VITE_SITE_URL: SITE },
+      });
+      const token = tokenOf(invite.url);
+      const args = {
+        auth: getAuth(),
+        store: ownerInviteStore,
+        email,
+        token,
+      };
+      expect(await acceptOwnerInvite({ ...args, password: 'short' })).toEqual({
+        ok: false,
+        reason: 'password-rejected',
+      });
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+      expect(
+        await acceptOwnerInvite({ ...args, password: NEW_PASSWORD }),
+      ).toEqual({ ok: false, reason: 'not-found' });
+    });
+
+    it('(7) бан між випуском і прийняттям: not-found, ролі admin немає', async () => {
+      const email = 'banned-between@example.test';
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email,
+        env: { VITE_SITE_URL: SITE },
+      });
+      await queryRows(
+        dbUrl,
+        `update public.users set banned_at = now() where id = $1`,
+        [invite.userId],
+      );
+      expect(
+        await acceptOwnerInvite({
+          auth: getAuth(),
+          store: ownerInviteStore,
+          email,
+          token: tokenOf(invite.url),
+          password: NEW_PASSWORD,
+        }),
+      ).toEqual({ ok: false, reason: 'not-found' });
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+    });
   });
 });

@@ -1,4 +1,6 @@
 // К3-Е6г, Task 4 (Е6г-19): invite власника під `admin-roles` з перевіркою бану.
+// Р19: випуск лишає лише токен, роль видає `grantAdminRole` — той самий лок і
+// `FOR SHARE` стоять на видачі ролі.
 import pg from 'pg';
 import { describe, expect, it } from 'vitest';
 import { inviteIdentifier, ownerInviteStore } from 'simplycms/auth';
@@ -18,6 +20,7 @@ describe('invite власника: бан і лок (Е6г-19)', () => {
       valueHash: hash,
       expiresAt: new Date(Date.now() + 3_600_000),
     });
+  const grant = (userId: string) => ownerInviteStore.grantAdminRole({ userId });
   const state = async (userId: string, address: string) => ({
     roles: (
       await F.rows(
@@ -35,12 +38,30 @@ describe('invite власника: бан і лок (Е6г-19)', () => {
     ).length,
   });
 
-  it('незабаненому: роль admin і токен є; повтор перевипускає токен без дубля ролі', async () => {
+  it('незабаненому: токен є, ролі немає; повтор перевипускає токен', async () => {
     const address = email();
     const id = await F.seedCustomer(url(), { email: address });
     await expect(issue(id, address)).resolves.toBe('issued');
     await expect(issue(id, address)).resolves.toBe('issued');
-    expect(await state(id, address)).toEqual({ roles: ['admin'], tokens: 1 });
+    expect(await state(id, address)).toEqual({ roles: [], tokens: 1 });
+  });
+
+  it('grantAdminRole: роль admin видається, повтор без дубля; забаненому — banned', async () => {
+    const address = email();
+    const id = await F.seedCustomer(url(), { email: address });
+    await expect(grant(id)).resolves.toBe('granted');
+    await expect(grant(id)).resolves.toBe('granted');
+    expect((await state(id, address)).roles).toEqual(['admin']);
+
+    const other = email();
+    const bannedId = await F.seedCustomer(url(), { email: other });
+    await F.rows(
+      url(),
+      `update public.users set banned_at = now() where id = $1`,
+      [bannedId],
+    );
+    await expect(grant(bannedId)).resolves.toBe('banned');
+    expect((await state(bannedId, other)).roles).toEqual([]);
   });
 
   it('забаненому: відмова banned, ні ролі, ні рядка owner-invite:<email>', async () => {
@@ -62,16 +83,20 @@ describe('invite власника: бан і лок (Е6г-19)', () => {
     try {
       const op = issue(id, address);
       op.catch(() => {});
+      const grantOp = grant(id);
+      grantOp.catch(() => {});
       expect(await stillPending(op, 300)).toBe(true);
+      expect(await stillPending(grantOp, 300)).toBe(true);
       expect(await state(id, address)).toEqual({ roles: [], tokens: 0 });
       await lock.release();
       await expect(op).resolves.toBe('issued');
+      await expect(grantOp).resolves.toBe('granted');
     } finally {
       await lock.cleanup();
     }
   });
 
-  it('бан ↔ invite: бан під admin-roles без коміту → invite чекає → commit → banned, ролі немає', async () => {
+  it('бан ↔ видача ролі: бан під admin-roles без коміту → видача чекає → commit → banned, ролі немає', async () => {
     // КАНОН: лок `admin-roles` потрібен для ЗВОРОТНОГО порядку «invite
     // першим». Invite взяв `FOR SHARE` і вставив роль без коміту; бан без
     // лока не бачить незакоміченої ролі, чекає на рядку `users`, а після
@@ -95,7 +120,7 @@ describe('invite власника: бан і лок (Е6г-19)', () => {
         `update public.users set banned_at = now() where id = $1`,
         [id],
       );
-      const op = issue(id, address);
+      const op = grant(id);
       op.catch(() => {});
       expect(await stillPending(op, 300)).toBe(true);
       await banner.query('commit');

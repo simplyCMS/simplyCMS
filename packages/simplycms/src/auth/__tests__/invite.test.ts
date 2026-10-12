@@ -25,6 +25,7 @@ function createFakeStore() {
   const tokens = new Map<string, TokenRow>();
   const adminRoles = new Set<string>();
   const banned = new Set<string>();
+  const verified = new Set<string>();
   let nextId = 1;
 
   const store: OwnerInviteStore = {
@@ -34,13 +35,18 @@ function createFakeStore() {
       usersByEmail.set(email, id);
       return id;
     },
-    // Е6г-19: роль і токен — ОДИН метод; на бані не лягає нічого.
-    issueAdminInvite: async ({ userId, identifier, valueHash, expiresAt }) => {
+    // Р19: випуск лишає лише токен; на бані не лягає нічого.
+    issueAdminInvite: async ({ identifier, userId, valueHash, expiresAt }) => {
       if (banned.has(userId)) return 'banned';
-      adminRoles.add(userId);
       tokens.set(identifier, { valueHash, expiresAt });
       return 'issued';
     },
+    grantAdminRole: async ({ userId }) => {
+      if (banned.has(userId)) return 'banned';
+      adminRoles.add(userId);
+      return 'granted';
+    },
+    isEmailVerified: async (userId) => verified.has(userId),
     consumeToken: async (identifier) => {
       const row = tokens.get(identifier) ?? null;
       tokens.delete(identifier);
@@ -48,7 +54,7 @@ function createFakeStore() {
     },
   };
 
-  return { store, usersByEmail, tokens, adminRoles, banned };
+  return { store, usersByEmail, tokens, adminRoles, banned, verified };
 }
 
 const NOW = new Date('2026-08-23T10:00:00Z');
@@ -67,7 +73,7 @@ describe('issueOwnerInvite', () => {
     sent.length = 0;
   });
 
-  it('створює користувача, закріплює admin і шле лист із токеном', async () => {
+  it('створює користувача й шле лист із токеном; ролі admin від випуску немає', async () => {
     const result = await issueOwnerInvite({
       store: fake.store,
       schedule,
@@ -81,7 +87,9 @@ describe('issueOwnerInvite', () => {
     // Пошта нормалізується в нижній регістр — інакше `Owner@` і `owner@`
     // дали б двох різних власників.
     expect(fake.usersByEmail.has('owner@example.test')).toBe(true);
-    expect(fake.adminRoles.has(result.userId)).toBe(true);
+    // Р19: роль видає лише прийняття запрошення.
+    expect(fake.adminRoles.size).toBe(0);
+    expect(result.existingUnverified).toBe(false);
     expect(result.url).toBe(
       'https://shop.example/auth/invite?email=owner%40example.test&token=tok-abc',
     );
@@ -127,7 +135,23 @@ describe('issueOwnerInvite', () => {
     expect(second.userId).toBe(first.userId);
     expect(second.created).toBe(false);
     expect(fake.usersByEmail.size).toBe(1);
-    expect(fake.adminRoles.size).toBe(1);
+    expect(fake.adminRoles.size).toBe(0);
+  });
+
+  it('existingUnverified: лише для наявного непідтвердженого акаунта', async () => {
+    const run = (token: string) =>
+      issueOwnerInvite({
+        store: fake.store,
+        schedule,
+        email: 'owner@example.test',
+        env: ENV,
+        now: NOW,
+        token,
+      });
+    expect((await run('tok-1')).existingUnverified).toBe(false); // новий
+    expect((await run('tok-2')).existingUnverified).toBe(true); // наявний, не підтверджений
+    fake.verified.add(fake.usersByEmail.get('owner@example.test')!);
+    expect((await run('tok-3')).existingUnverified).toBe(false); // підтверджений
   });
 });
 

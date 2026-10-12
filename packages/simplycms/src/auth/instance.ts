@@ -79,6 +79,10 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
+      // 🔴 Р19: скидання пароля (і прийняття запрошення — воно йде тим самим
+      // `resetPassword`) гасить усі сесії користувача. Без цього сесія, що
+      // вже була в зловмисника, переживала б зміну пароля.
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: createResetPasswordSender({
         resetGuard,
         schedule: deps.schedule,

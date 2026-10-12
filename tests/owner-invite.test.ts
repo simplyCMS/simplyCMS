@@ -22,6 +22,7 @@ function makeStore() {
   const tokens = new Map<string, { valueHash: string; expiresAt: Date }>();
   const roles: { userId: string; role: string }[] = [];
   const banned = new Set<string>();
+  const verified = new Set<string>();
   let nextId = 1;
 
   const store: OwnerInviteStore = {
@@ -33,13 +34,18 @@ function makeStore() {
     },
     issueAdminInvite: async ({ userId, identifier, valueHash, expiresAt }) => {
       if (banned.has(userId)) return 'banned';
-      if (!roles.some((row) => row.userId === userId && row.role === 'admin')) {
-        roles.push({ userId, role: 'admin' });
-      }
       // Перевипуск гасить попередній токен — та сама семантика, що в БД.
       tokens.set(identifier, { valueHash, expiresAt });
       return 'issued';
     },
+    grantAdminRole: async ({ userId }) => {
+      if (banned.has(userId)) return 'banned';
+      if (!roles.some((row) => row.userId === userId && row.role === 'admin')) {
+        roles.push({ userId, role: 'admin' });
+      }
+      return 'granted';
+    },
+    isEmailVerified: async (userId) => verified.has(userId),
     consumeToken: async (identifier) => {
       const record = tokens.get(identifier) ?? null;
       tokens.delete(identifier);
@@ -47,7 +53,7 @@ function makeStore() {
     },
   };
 
-  return { store, users, tokens, roles, banned };
+  return { store, users, tokens, roles, banned, verified };
 }
 
 /** Фейкова пошта: `schedule` збирає листи, `deliver` віддає їх транспорту. */
@@ -99,14 +105,17 @@ async function run(
 }
 
 describe('owner-invite (скрипт шаблону)', () => {
-  it('новий email: користувач, роль admin і надруковане посилання', async () => {
+  it('новий email: користувач і надруковане посилання; ролі admin від випуску немає', async () => {
     const { store, users, roles } = makeStore();
 
     const { result, output } = await run(store);
 
     expect(result.created).toBe(true);
     expect(users.size).toBe(1);
-    expect(roles).toEqual([{ userId: result.userId, role: 'admin' }]);
+    // Р19: роль видає прийняття запрошення, а не випуск.
+    expect(roles).toEqual([]);
+    expect(output).not.toContain('Увага: акаунт уже існує');
+    expect(output).not.toMatch(/закріплена|на місці/);
     expect(result.url.startsWith(`${SITE}/auth/invite?email=`)).toBe(true);
     // Драйвер `log` поза продом: посилання друкується (dev-канал).
     expect(output).toContain(result.url);
@@ -125,7 +134,7 @@ describe('owner-invite (скрипт шаблону)', () => {
     });
   });
 
-  it('повторний прогін ідемпотентний: той самий користувач, одна роль', async () => {
+  it('повторний прогін ідемпотентний: той самий користувач, ролі немає', async () => {
     const { store, users, roles } = makeStore();
 
     const first = await run(store);
@@ -134,7 +143,45 @@ describe('owner-invite (скрипт шаблону)', () => {
     expect(second.result.created).toBe(false);
     expect(second.result.userId).toBe(first.result.userId);
     expect(users.size).toBe(1);
-    expect(roles).toHaveLength(1);
+    expect(roles).toHaveLength(0);
+  });
+
+  const WARNING =
+    'Увага: акаунт уже існує й не підтверджений — роль буде видано лише після прийняття запрошення з цієї скриньки.';
+
+  it('Р19: наявний непідтверджений акаунт — попередження дослівно, код виходу 0', async () => {
+    const { store, users } = makeStore();
+    await store.createUser({ email: EMAIL, name: EMAIL });
+    const mail = makeMail();
+    const lines: string[] = [];
+    const code = await runOwnerInviteCli({
+      argv: [],
+      env: {
+        DATABASE_URL: 'postgres://x',
+        OWNER_EMAIL: EMAIL,
+        VITE_SITE_URL: SITE,
+      },
+      log: (m) => lines.push(m),
+      error: (m) => lines.push(m),
+      run: (opts) =>
+        runOwnerInvite({
+          ...opts,
+          store,
+          schedule: mail.schedule,
+          deliver: mail.deliver,
+          transport: mail.transport,
+        }),
+    });
+    expect(code).toBe(0);
+    expect(users.size).toBe(1);
+    expect(lines).toContain(WARNING);
+  });
+
+  it('Р19: наявний підтверджений акаунт — без попередження', async () => {
+    const { store, verified } = makeStore();
+    verified.add(await store.createUser({ email: EMAIL, name: EMAIL }));
+    const { output } = await run(store);
+    expect(output).not.toContain('Увага: акаунт уже існує');
   });
 
   it('перевипуск гасить попереднє посилання', async () => {

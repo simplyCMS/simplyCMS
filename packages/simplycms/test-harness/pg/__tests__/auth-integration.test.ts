@@ -161,7 +161,7 @@ describe('Better Auth над реальним Postgres', () => {
     ).toEqual([first.id]);
   });
 
-  it('invite власника: токен випускається, гаситься й дає роль admin', async () => {
+  it('invite власника: токен випускається й гаситься; роль admin від випуску/перевірки не видається (Р19)', async () => {
     const email = 'owner@example.test';
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
@@ -196,10 +196,11 @@ describe('Better Auth над реальним Postgres', () => {
       `select role::text from public.user_roles where user_id = $1`,
       [invite.userId],
     );
-    expect(roles).toEqual([{ role: 'admin' }]);
+    // Р19: роль видає лише прийняття запрошення (`acceptOwnerInvite`).
+    expect(roles).toEqual([]);
   });
 
-  it('повторний invite не дублює ні користувача, ні роль', async () => {
+  it('повторний invite не дублює користувача й не видає ролі', async () => {
     const email = 'owner@example.test';
     const again = await issueOwnerInvite({
       store: ownerInviteStore,
@@ -220,6 +221,6 @@ describe('Better Auth над реальним Postgres', () => {
            where user_id = $2 and role = 'admin') as roles`,
       [email, again.userId],
     );
-    expect(counts).toEqual({ users: 1, roles: 1 });
+    expect(counts).toEqual({ users: 1, roles: 0 });
   });
 });

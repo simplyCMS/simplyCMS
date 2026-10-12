@@ -23,10 +23,15 @@ export interface OwnerInviteStore {
   findUserIdByEmail(email: string): Promise<string | null>;
   createUser(input: { email: string; name: string }): Promise<string>;
   /**
-   * Роль `admin` + токен в ОДНІЙ транзакції під `admin-roles` (Е6г-19).
-   * `'banned'` — користувач забанений: нічого не записано. Двох окремих
-   * кроків («токен», потім «роль») немає свідомо: між ними лишалась би
-   * щілина «токен є, ролі немає» або видача ролі забаненому.
+   * Лише токен під `admin-roles` (Е6г-19). `'banned'` — користувач забанений:
+   * нічого не записано.
+   *
+   * 🔴 Р19: роль `admin` тут НЕ видається. Better Auth не вимагає підтвердження
+   * пошти, тож будь-хто міг зареєструватися на пошту власника ДО випуску
+   * запрошення — видача ролі при випуску віддала б адмінку його живим сесіям.
+   * Роль видає `grantAdminRole` після прийняття (доказ володіння скринькою) і
+   * скидання сесій. Токен і роль розділені свідомо: щілина «токен є, ролі
+   * немає» безпечна, а «роль є до прийняття» — це і була дірка.
    */
   issueAdminInvite(input: {
     userId: string;
@@ -34,6 +39,15 @@ export interface OwnerInviteStore {
     valueHash: string;
     expiresAt: Date;
   }): Promise<'issued' | 'banned'>;
+  /**
+   * Видача ролі `admin` ПІСЛЯ прийняття запрошення: лок `admin-roles` першим
+   * запитом, `FOR SHARE` на користувача, перевірка бану (той самий інваріант
+   * Е6г-4/Е6г-19, що раніше стояв у `issueAdminInvite`). `'banned'` — роль не
+   * видано (користувача забанили між випуском і прийняттям).
+   */
+  grantAdminRole(input: { userId: string }): Promise<'granted' | 'banned'>;
+  /** `users.email_verified` — щоб CLI попередив про непідтверджений акаунт. */
+  isEmailVerified(userId: string): Promise<boolean>;
   consumeToken(
     identifier: string,
   ): Promise<{ valueHash: string; expiresAt: Date } | null>;
@@ -76,6 +90,12 @@ export interface OwnerInviteResult {
   readonly userId: string;
   /** `false` — користувач уже існував: повторний invite його не дублює. */
   readonly created: boolean;
+  /**
+   * Р19: акаунт існував і `email_verified = false` — це може бути чужа
+   * самореєстрація на пошту власника. Роль від випуску не видається, але CLI
+   * про це попереджає.
+   */
+  readonly existingUnverified: boolean;
   readonly url: string;
   /** Id рядків outbox для `deliverMail`. */
   readonly mailIds: readonly string[];
@@ -83,8 +103,7 @@ export interface OwnerInviteResult {
 
 /**
  * Випускає запрошення. Ідемпотентно щодо КОРИСТУВАЧА: повторний виклик на ту
- * саму пошту не створює другого рядка `users` і не дублює роль — він лише
- * перевипускає токен. Саме так поводився старий `owner:invite` (гілка
+ * саму пошту не створює другого рядка `users` — він лише перевипускає токен. Саме так поводився старий `owner:invite` (гілка
  * `email_exists`), і саме цю поведінку власник очікує від «надішли ще раз».
  */
 export async function issueOwnerInvite(
@@ -95,14 +114,16 @@ export async function issueOwnerInvite(
   const now = input.now ?? new Date();
 
   const existing = await input.store.findUserIdByEmail(email);
+  const existingUnverified =
+    existing !== null && !(await input.store.isEmailVerified(existing));
   const userId =
     existing ?? (await input.store.createUser({ email, name: email }));
 
   const token = input.token ?? randomBytes(32).toString('base64url');
-  // Роль закріплюється НЕ хуком signUp (той дає рівно `user` — інваріант
-  // `first_user_no_auto_admin`), а саме тут: invite власника і є єдиний
-  // легальний шлях до `admin` на чистому магазині. Роль і токен лягають
-  // одним викликом: забанений не отримує ні того, ні іншого.
+  // Тут випускається лише токен. Роль `admin` видає `acceptOwnerInvite`
+  // після прийняття (Р19): invite власника — єдиний легальний шлях до
+  // `admin` на чистому магазині (хук signUp дає рівно `user`, інваріант
+  // `first_user_no_auto_admin`), але лише для контролера скриньки.
   const outcome = await input.store.issueAdminInvite({
     userId,
     identifier: inviteIdentifier(email),
@@ -127,7 +148,13 @@ export async function issueOwnerInvite(
     { kind: 'owner_invite', message },
   ]);
 
-  return { userId, created: existing === null, url, mailIds };
+  return {
+    userId,
+    created: existing === null,
+    existingUnverified,
+    url,
+    mailIds,
+  };
 }
 
 /** Чому запрошення не прийнято — рівно ті випадки, які має розрізняти UI. */

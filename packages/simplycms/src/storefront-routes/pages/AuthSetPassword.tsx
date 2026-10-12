@@ -47,8 +47,9 @@ export default function AuthSetPassword() {
       return;
     }
 
-    // Після скидання сесії немає — BA гасить усі сесії користувача, тож
-    // ведемо на вхід, а не в кабінет.
+    // Після скидання сесії немає: `revokeSessionsOnPasswordReset` у
+    // `createAuth` (Р19) гасить усі сесії користувача, тож ведемо на вхід, а
+    // не в кабінет.
     navigate({ to: '/auth' });
   };
 

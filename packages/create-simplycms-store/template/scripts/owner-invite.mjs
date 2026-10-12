@@ -4,29 +4,13 @@
 // `process.env`, а `.env.local`/`.env` служать способом його наповнити.
 // Ключ підключення тут один — `DATABASE_URL`; окремого service-ключа
 // немає.
-import { readFileSync } from 'node:fs';
 import { closeDbPool } from 'simplycms/db';
+import { loadEnvFiles } from './owner-invite-env.mjs';
 import { runOwnerInviteCli } from './owner-invite-cli.mjs';
 
-/** Дописує у `process.env` лише ВІДСУТНІ ключі: реальний env завжди виграє. */
-function loadEnvFile(path) {
-  let raw;
-  try {
-    raw = readFileSync(path, 'utf8');
-  } catch {
-    return;
-  }
-  for (const line of raw.split('\n')) {
-    const trimmed = line.trimStart();
-    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
-    const key = trimmed.slice(0, trimmed.indexOf('=')).trim();
-    const value = trimmed.slice(trimmed.indexOf('=') + 1).trim();
-    if (!(key in process.env)) process.env[key] = value;
-  }
-}
-
-loadEnvFile('.env.local');
-loadEnvFile('.env');
+// Паритет із `server.mjs` (К1): реальний env > `.env.local` > `.env`, лапки,
+// коментарі й `export` розбирає `parseEnv`.
+loadEnvFiles();
 
 // Розбір аргументів, перевірка env і код виходу — в ядрі (`runOwnerInviteCli`),
 // щоб `--print-link` та вимогу `VITE_SITE_URL` можна було довести юнітом.
