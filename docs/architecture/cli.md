@@ -80,7 +80,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 15 | пошта (`checkMailConfigured`, `src/doctor-mail-check.mjs`; Е8-Р17): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
 | 16 | підтвердження пошти (`checkEmailVerification`, Р30): `--production` + драйвер не `smtp` → реєстрація без підтвердження пошти | warn |
 | 17 | `engines.simplycms` кожного плагіна й теми конфігу покриває встановлене ядро (`src/doctor-engines.mjs`; Р32). `satisfies` береться з ядра магазину (`simplycms/contracts/semver` через `importFromStore`) — npm-вирівняний, без копії semver у CLI; діапазон — `default.manifest.engines` зібраного пакета або літерал у сирцях локального `@plugins/*`/`@themes/*`. Не покриває → error з пакетом, діапазоном, версією ядра й дією «онови плагін або відкоти ядро»; `engines` відсутній чи нерозбірливий, модуль не вдалося прочитати → warn; ядра немає — `skip`. Теми перевіряються всі з конфігу (активна зберігається в БД, офлайн невідома) — у details тема з пометкою «може бути неактивною». Для пакетів `doctor` ІМПОРТУЄ модуль плагіна/теми з магазину, тож виконуються його побічні ефекти верхнього рівня; збій імпорту → warn. Контекст перевірок збирає `buildOfflineContext` (`doctor.mjs`), спільний для `doctor` і `status` (`ctx.engines`). Ця ж перевірка входить у спільний список `status` | error / warn |
-| 18 | файли агента (`checkAgentFiles`, `src/agent-files.mjs`; Б §3.3): керований блок `AGENTS.md` = `renderManagedBlock(node_modules/simplycms/agent/intro.md)`, `CLAUDE.md` є й містить рядок `@AGENTS.md` (Claude Code сам `AGENTS.md` не читає), у `.claude/settings.json` є канонічний запис хука `SessionStart` (`node .claude/hooks/session-start.mjs`, matcher `startup\|clear\|compact`) і шим `.claude/hooks/session-start.mjs` (host-файл: байт-копія шаблону в `host/`, тож `update --write` пише його разом із записом; запис є, а шиму немає → warn із дією `update --write`). Розбіжність, маркери відсутні/пошкоджені, немає `CLAUDE.md` чи імпорту, запису немає → warn; `details` несе рекомендовані дозволи Claude Code з `simplycms/agent/permissions.json` («читання вільно, зміни через підтвердження») — `update` дозволи не зливає. Ядро без `agent/` — `skip` | warn → `update --write` |
+| 18 | файли агента (`checkAgentFiles`, `src/agent-files.mjs`; Б §3.3): керований блок `AGENTS.md` = `renderManagedBlock(node_modules/simplycms/agent/intro.md)`, `CLAUDE.md` є й містить рядок `@AGENTS.md` (Claude Code сам `AGENTS.md` не читає), у `.claude/settings.json` є канонічний запис хука `SessionStart` (exec-форма: `node` + `args` `${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs`, matcher `startup\|clear\|compact`; `claude --version` < 2.1.139 → warn) і шим `.claude/hooks/session-start.mjs` (host-файл: байт-копія шаблону в `host/`, тож `update --write` пише його разом із записом; запис є, а шиму немає → warn із дією `update --write`). Розбіжність, маркери відсутні/пошкоджені, немає `CLAUDE.md` чи імпорту, запису немає → warn; `details` несе рекомендовані дозволи Claude Code з `simplycms/agent/permissions.json` («читання вільно, зміни через підтвердження») — `update` дозволи не зливає. Ядро без `agent/` — `skip` | warn → `update --write` |
 
 **Режим (Е8-Р17).** `--production` АБО `isProductionRuntime(process.env)` з `simplycms/env` (CLI бере його через `importFromStore`; власної перевірки `NODE_ENV` немає, `.env*` магазину для режиму не читаються). Після Р16 `NODE_ENV=production` ставить лише `server.mjs`, тож разовий `doctor` (CI, `prod-run`) прод-режим задає прапорцем. Перший рядок звіту — «режим: production» або «режим: розробка (для перевірки проду — `--production`)». Коди виходу не змінюються: режим міняє лише серйозність перевірок, що від нього залежать.
 
@@ -161,6 +161,26 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
   ≤25 рядків. при обрізанні до 25 рядків рядки «не вдалося перевірити» не зрізаються, зрізаються проблеми. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
   мовчазна зміна режиму змінила б серйозність перевірок.
+- **Шим хука** (`.claude/hooks/session-start.mjs`; host-файл, байт-копія шаблону) кличе
+  `status --hook` CLI магазину (`@simplycms/cli` з `node_modules`) і віддає агенту
+  результат як додатковий контекст сесії. Поведінка за кодом виходу: `0`/`3` — текст як є;
+  `1` з непорожнім stdout — «УВАГА: частину стану не перевірено.» + повний текст; інші
+  коди, порожній вивід, таймаут 8 с — «УВАГА: стан невідомий …»; немає CLI в
+  `node_modules` — «УВАГА: стан магазину невідомий — залежності не встановлено»
+  + `pnpm install`. Сам шим завжди завершується кодом `0`: збій хука не блокує сесію.
+  Корінь магазину — `${CLAUDE_PROJECT_DIR}` (фолбек `process.cwd()`).
+- **Запис у `settings.json`** — exec-форма: `{ "type": "command", "command": "node",
+  "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs"], "timeout": 10 }`
+  (matcher `startup|clear|compact`). Відносний шлях залежить від поточної теки процесу хука;
+  `${CLAUDE_PROJECT_DIR}` (корінь проєкту сесії) від неї не залежить, а плейсхолдер у
+  `args` не потребує лапок. Живий доказ (Claude Code 2.1.296): `claude -p` з кореня
+  магазину запускає SessionStart-хук; з підтеки `src/` Claude Code `.claude/settings.json`
+  кореня не знаходить і хук не запускається ні в якій формі — агента запускають з кореня. `update`
+  розпізнає і старий відносний запис (`node .claude/hooks/session-start.mjs`), і новий та
+  переводить старий у канонічний. **Мінімальна версія:** Claude Code ≥ 2.1.139 (поле
+  `args` у хуках); перевірено на 2.1.296. doctor №18 дає `warn`, якщо `claude --version`
+  (доступний у PATH) старіший; без бінарника перевірка мовчить (магазин може вести інший
+  агент).
 
 ### 3.1.2 `simplycms smoke <url>`
 

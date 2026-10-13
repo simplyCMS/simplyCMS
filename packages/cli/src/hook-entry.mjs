@@ -5,14 +5,29 @@ import { isDeepStrictEqual } from 'node:util';
 /** Шлях шима — за ним упізнається наш запис, навіть якщо команду змінили. */
 export const HOOK_SCRIPT = '.claude/hooks/session-start.mjs';
 
-/** Канонічний запис: та сама форма, що в шаблонному `settings.json` (Task 20). */
+/**
+ * Канонічний запис: та сама форма, що в шаблонному `settings.json`. Exec-форма
+ * (`command` + `args`, без shell) із `${CLAUDE_PROJECT_DIR}`: відносний шлях
+ * `node .claude/hooks/…` залежить від поточної теки процесу хука; плейсхолдер у
+ * `args` не потребує лапок.
+ */
 const SESSION_START_ENTRY = {
   matcher: 'startup|clear|compact',
-  hooks: [{ type: 'command', command: `node ${HOOK_SCRIPT}`, timeout: 10 }],
+  hooks: [
+    {
+      type: 'command',
+      command: 'node',
+      args: [`\${CLAUDE_PROJECT_DIR}/${HOOK_SCRIPT}`],
+      timeout: 10,
+    },
+  ],
 };
 
+// Упізнає і новий запис (шлях у `args`), і старий відносний (`node .claude/hooks/…` у `command`).
 const isOurs = (hook) =>
-  typeof hook?.command === 'string' && hook.command.includes(HOOK_SCRIPT);
+  (typeof hook?.command === 'string' && hook.command.includes(HOOK_SCRIPT)) ||
+  (Array.isArray(hook?.args) &&
+    hook.args.some((a) => typeof a === 'string' && a.includes(HOOK_SCRIPT)));
 const holdsOurs = (group) =>
   Array.isArray(group?.hooks) && group.hooks.some(isOurs);
 

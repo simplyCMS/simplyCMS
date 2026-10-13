@@ -470,6 +470,42 @@ describe('cli doctor (оффлайн)', () => {
     expect(missing.details).toContain('pnpm simplycms update --write');
   });
 
+  it('№18 agent-files: Claude Code старіший за 2.1.139 → warn; новіший чи відсутній → без warn', async () => {
+    const store = await scaffoldStore('doc-claude-ver');
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    const bin = mkdtempSync(join(tmpdir(), 'fake-claude-'));
+    scaffoldRoots.push(bin);
+    const fake = (version: string) => {
+      writeFileSync(
+        join(bin, 'claude'),
+        `#!/bin/sh\necho "${version} (Claude Code)"\n`,
+        { mode: 0o755 },
+      );
+    };
+    const savedPath = process.env.PATH;
+    process.env.PATH = bin;
+    try {
+      fake('2.1.138');
+      const old = checkAgentFiles({ storeRoot: store });
+      expect(old.status).toBe('warn');
+      expect(old.details).toContain('Claude Code ≥ 2.1.139');
+      fake('2.1.139');
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      fake('2.2.0');
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      fake('1.99.999');
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('warn');
+      fake('не версія');
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      rmSync(join(bin, 'claude'));
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+    } finally {
+      process.env.PATH = savedPath;
+    }
+  });
+
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {
     const warn = [{ id: 'a', title: 'a', status: 'warn' as const }];
     const error = [{ id: 'b', title: 'b', status: 'error' as const }];

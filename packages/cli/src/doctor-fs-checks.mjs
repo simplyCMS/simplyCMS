@@ -9,6 +9,7 @@ import {
   inspectAgentFiles,
   isShimMissing,
 } from './agent-files.mjs';
+import { claudeVersionWarning } from './claude-version.mjs';
 import {
   compareMigrationsMulti,
   missingStoreMigrationsDir,
@@ -137,10 +138,17 @@ export function checkAgentFiles({ storeRoot }) {
     ...describeAgentDrift(state),
   ];
   const lines = describeRecommendedPermissions(storeRoot);
-  if (problems.length === 0)
+  const outdated = claudeVersionWarning();
+  if (problems.length === 0 && outdated === null)
     return { id, title, status: 'ok', details: lines.join('\n') || undefined };
   // Шим — host-файл, його пише лише `--write`; решту доглядає й звичайний `update`.
   const flag = isShimMissing(state) ? ' --write' : '';
   const fix = `${problems.join('; ')}. Полагодь: pnpm simplycms update${flag}`;
-  return { id, title, status: 'warn', details: [fix, ...lines].join('\n') };
+  const details = [problems.length > 0 ? fix : null, outdated, ...lines];
+  return {
+    id,
+    title,
+    status: 'warn',
+    details: details.filter(Boolean).join('\n'),
+  };
 }

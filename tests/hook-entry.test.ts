@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { ensureSessionStartHook } from '../packages/cli/src/hook-entry.mjs';
 
 // Запис хука старту сесії (Б §3.2): update доглядає лише свій запис у settings.json.
-const COMMAND = 'node .claude/hooks/session-start.mjs';
+const SCRIPT = '${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs';
+// Старий відносний запис: залежав від поточної теки агента.
+const LEGACY_COMMAND = 'node .claude/hooks/session-start.mjs';
+const OURS = { type: 'command', command: 'node', args: [SCRIPT], timeout: 10 };
 const parse = (text: string) => JSON.parse(text);
 
 describe('ensureSessionStartHook', () => {
@@ -12,7 +15,7 @@ describe('ensureSessionStartHook', () => {
     expect(parse(next).hooks.SessionStart).toEqual([
       {
         matcher: 'startup|clear|compact',
-        hooks: [{ type: 'command', command: COMMAND, timeout: 10 }],
+        hooks: [OURS],
       },
     ]);
   });
@@ -55,7 +58,7 @@ describe('ensureSessionStartHook', () => {
   it('змінена команда чи таймаут → updated, наш запис один і канонічний', () => {
     const canon = ensureSessionStartHook('{}').next;
     const changed = canon
-      .replace(COMMAND, `${COMMAND} --old`)
+      .replace('"command": "node"', '"command": "node --old"')
       .replace('"timeout": 10', '"timeout": 99');
     const { status, next } = ensureSessionStartHook(changed);
     expect(status).toBe('updated');
@@ -69,7 +72,7 @@ describe('ensureSessionStartHook', () => {
           {
             matcher: 'startup',
             hooks: [
-              { type: 'command', command: COMMAND },
+              { type: 'command', command: LEGACY_COMMAND },
               { type: 'command', command: 'echo theirs' },
             ],
           },
@@ -83,8 +86,26 @@ describe('ensureSessionStartHook', () => {
       matcher: 'startup',
       hooks: [{ type: 'command', command: 'echo theirs' }],
     });
-    expect(list[1].hooks[0].command).toBe(COMMAND);
+    expect(list[1].hooks[0]).toEqual(OURS);
     expect(ensureSessionStartHook(next).status).toBe('ok');
+  });
+
+  it('старий відносний запис (node .claude/hooks/…) → updated на exec-форму', () => {
+    const legacy = {
+      hooks: {
+        SessionStart: [
+          {
+            matcher: 'startup|clear|compact',
+            hooks: [{ type: 'command', command: LEGACY_COMMAND, timeout: 10 }],
+          },
+        ],
+      },
+    };
+    const { status, next } = ensureSessionStartHook(JSON.stringify(legacy));
+    expect(status).toBe('updated');
+    expect(parse(next).hooks.SessionStart).toEqual([
+      { matcher: 'startup|clear|compact', hooks: [OURS] },
+    ]);
   });
 
   it('невалідний JSON чи не-обʼєкт → помилка', () => {

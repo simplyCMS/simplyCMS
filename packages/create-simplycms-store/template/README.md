@@ -153,6 +153,18 @@ pnpm simplycms update   # доробить відсутні лінки, приб
 head -3 .claude/skills/simplycms-redesign/SKILL.md
 ```
 
+### Хук старту сесії Claude Code
+
+`.claude/settings.json` запускає `.claude/hooks/session-start.mjs` на старті сесії
+(`startup|clear|compact`) і віддає агенту стан магазину (`simplycms status --hook`).
+Запис — exec-форма (`command: node`, `args` зі шляхом через `${CLAUDE_PROJECT_DIR}`),
+тож шлях шима не залежить від поточної теки процесу хука. Claude Code читає
+`.claude/settings.json` лише з теки, де стартувала сесія (вгору по теках не шукає) —
+запускай агента з кореня магазину.
+
+Потрібен Claude Code ≥ 2.1.139 (поле `args` у хуках); перевірено на 2.1.296. `pnpm
+simplycms doctor` (№18) попередить, якщо встановлено старішу версію.
+
 ## Драйвер БД (`pg`)
 
 `pg` — пряма залежність цього магазину (`package.json`), а не лише транзитивна ядра. Версія мусить

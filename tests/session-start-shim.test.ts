@@ -163,10 +163,52 @@ describe('шим як host-файл і запис у settings.json шаблон�
       encoding: 'utf8',
     });
 
-  it('settings.json шаблону — рівно той запис, що пише ensureSessionStartHook (одне джерело)', () => {
-    expect(readFileSync(join(TEMPLATE_CLAUDE, 'settings.json'), 'utf8')).toBe(
-      ensureSessionStartHook('{}').next,
+  it('settings.json шаблону — семантично той запис, що пише ensureSessionStartHook (одне джерело)', () => {
+    // Порівняння розібраного JSON: prettier стискає короткий `args` в один рядок, а
+    // `JSON.stringify` розкладає його — текст відрізняється, зміст ні.
+    expect(
+      JSON.parse(readFileSync(join(TEMPLATE_CLAUDE, 'settings.json'), 'utf8')),
+    ).toEqual(JSON.parse(ensureSessionStartHook('{}').next));
+  });
+
+  it('settings.json шаблону має очікувану форму exec-запису (command/args/matcher/timeout)', () => {
+    const settings = JSON.parse(
+      readFileSync(join(TEMPLATE_CLAUDE, 'settings.json'), 'utf8'),
     );
+    expect(settings.hooks.SessionStart).toEqual([
+      {
+        matcher: 'startup|clear|compact',
+        hooks: [
+          {
+            type: 'command',
+            command: 'node',
+            args: ['${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs'],
+            timeout: 10,
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('старий відносний запис і наявний шим: update --check → 3, update → запис новий (updated)', async () => {
+    const store = await scaffoldFakeStore('hook-legacy', roots);
+    const path = join(store, '.claude/settings.json');
+    const canon = readFileSync(path, 'utf8');
+    writeFileSync(
+      path,
+      canon
+        .replace(
+          '"command": "node"',
+          '"command": "node .claude/hooks/session-start.mjs"',
+        )
+        .replace(/\n\s*"args": \[[^\]]*\],/, ''),
+    );
+    expect(readFileSync(path, 'utf8')).toContain('node .claude/hooks/');
+    expect(cli(store, '--check').status).toBe(3);
+    expect(readFileSync(path, 'utf8')).toContain('node .claude/hooks/');
+    expect(cli(store, '--write').status).toBe(0);
+    expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual(JSON.parse(canon));
+    expect(cli(store, '--check').status).toBe(0);
   });
 
   it('старий шим: update --check → 3, update --write замінює файл на канон', async () => {
