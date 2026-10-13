@@ -8,7 +8,8 @@
  * лишався зеленим саме на тому класі регресії, який ловить реальний магазин.
  *
  * Джерело env залежить від РЕЖИМУ пілота, а не від розкладки файлів магазину:
- *  - `pilot` — живі значення з кореневого `.env.local` (прогін ходить у БД);
+ *  - `pilot` — живі значення з кореневого `.env.local` (прогін ходить у БД),
+ *    плюс групи `S3_*`/`SMTP_URL`/`MAIL_FROM`, якщо їх задано як `PILOT_*`;
  *  - `pilot:pack` — значення без БД (гейти пакувальності до неї не звертаються).
  */
 
@@ -70,7 +71,35 @@ export function resolvePilotEnv(port, { requireDb = true } = {}) {
     DATABASE_URL: databaseUrl,
     BETTER_AUTH_SECRET: secret,
     VITE_SITE_URL: siteUrl,
+    ...groupsFromRun(),
   };
+}
+
+/**
+ * Групи драйверів (К3-Е8): `S3_*` для сховища, `SMTP_URL`/`MAIL_FROM` для пошти.
+ * Прогін задає їх під префіксом `PILOT_` (як `PILOT_DATABASE_URL`) — так вони не
+ * просочуються в інші дочірні процеси пілота (збірка пакетів, CLI-гейти), а в
+ * скретч потрапляють лише тут, явно. Група «все або нічого» (`simplycms/env`):
+ * неповну скретч відхилить на старті, тож фільтрувати тут її не треба.
+ */
+export const PILOT_GROUP_KEYS = [
+  'S3_ENDPOINT',
+  'S3_REGION',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY',
+  'S3_SECRET_KEY',
+  'SMTP_URL',
+  'MAIL_FROM',
+];
+
+/** Задані в оточенні прогону ключі груп (`PILOT_<KEY>`) без префікса. */
+function groupsFromRun() {
+  return Object.fromEntries(
+    PILOT_GROUP_KEYS.flatMap((key) => {
+      const value = process.env[`PILOT_${key}`];
+      return value ? [[key, value]] : [];
+    }),
+  );
 }
 
 /** Мінімальний парсер `.env` (без залежностей: KEY=VALUE, `#` — коментар). */

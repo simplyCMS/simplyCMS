@@ -224,9 +224,10 @@ function headOf(port, path, acceptEncoding) {
  *
  * @param {number} pid PID дитини, якого запустив гейт
  * @param {string} startLogs лог старту (накат мусить сказати, що нічого не робить)
+ * @param {{ smtp?: boolean }} [opts] `smtp` — прогін задав SMTP (К3-Е8): попередження про лог не очікується
  * @returns {{ ok: boolean; skipped?: boolean; details: string[] }}
  */
-export function checkExecve(pid, startLogs) {
+export function checkExecve(pid, startLogs, { smtp = false } = {}) {
   const details = [];
   let ok = true;
   const check = (label, passed, fact) => {
@@ -240,8 +241,16 @@ export function checkExecve(pid, startLogs) {
     'очікую «нічого накочувати» (БД уже накочена db:demo)',
   );
   // Р7′ п.3: log-драйвер у проді — попередження рівно ОДИН раз (друкує лише бандл).
+  // З SMTP (повний прогін `pilot-full`) драйвер smtp, і попередження не має бути.
   const warnings = startLogs.split('пошта не налаштована').length - 1;
-  check('попередження про пошту', warnings === 1, `разів: ${warnings}`);
+  const expected = smtp ? 0 : 1;
+  check(
+    smtp
+      ? 'без попередження про пошту (SMTP задано)'
+      : 'попередження про пошту',
+    warnings === expected,
+    `разів: ${warnings}`,
+  );
   if (process.platform !== 'linux') {
     details.push(
       `SKIP /proc/<pid>/environ і cmdline — перевірка лише на Linux (тут ${process.platform})`,
@@ -269,15 +278,26 @@ export function checkExecve(pid, startLogs) {
  * процес зі штучним порожнім портом: слухання довело б, що перевірка не спрацювала.
  *
  * @param {string} storeDir
- * @param {Record<string,string>} env три ключі скретча
+ * @param {Record<string,string>} env env скретча (три ключі + групи драйверів, якщо задані)
  */
 export function checkPartialEnv(storeDir, env) {
   const secret = 'pilot-partial-bucket-value';
+  // Повний прогін несе всю групу S3 (К3-Е8) у `.env` скретча, а `server.mjs`
+  // наповнює з нього ВІДСУТНІ ключі. Порожній рядок — «присутній, але порожній»:
+  // і блокує наповнення, і читається групою як відсутній, тож лишається
+  // тільки `S3_BUCKET` — інакше група була б повною, і перевірка нічого б не довела.
+  const emptyS3 = Object.fromEntries(
+    ['S3_ENDPOINT', 'S3_REGION', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'].map((k) => [
+      k,
+      '',
+    ]),
+  );
   const run = spawnSync('node', ['server.mjs'], {
     cwd: storeDir,
     env: {
       ...process.env,
       ...env,
+      ...emptyS3,
       S3_BUCKET: secret,
       PORT: '0',
       HOST: '127.0.0.1',

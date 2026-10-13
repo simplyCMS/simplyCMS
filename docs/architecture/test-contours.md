@@ -55,10 +55,28 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (без Docker) |
 | Пакувальність | `pnpm pilot:pack` | локальних tarball-ів | — |
 | Проти живої БД | `pnpm pilot` | + HTTP-відповіді; **обовʼязковий у релізі** (`scripts/release/pilot-full.mjs`: харнес + `db:demo` → `pnpm pilot`) | `DATABASE_URL` у `.env.local` або `PILOT_DATABASE_URL`; у релізі — Docker (`pnpm harness:up`) |
+| Сховище й пошта запакованого ядра | Gate MEDIA, Gate MAIL у `pnpm pilot` (повний режим) | + `s3`-драйвер проти Garage і `smtp`-драйвер проти Mailpit з `node_modules` скретча | `PILOT_S3_*`, `PILOT_SMTP_URL`, `PILOT_MAIL_FROM`, `PILOT_MAILPIT_URL` (їх задає `pilot-full` з `.env.harness`); без них — SKIP з причиною |
 | ~~Локальний стек~~ | ~~`pnpm pilot:e2e`~~ | 🔴 **DECOMMISSIONED (0.4.1)** — команди немає; повертає К6 | — |
 | Реальний реєстр | **немає** | — | мережа |
 
 ## 3. Що доводить кожен гейт
+
+- **Gate MEDIA** (`scripts/pilot-pack/gate-media.mjs`, К3-Е8): дочірній процес у скретчі
+  кладе файл через `getMediaDriver()` запакованого `simplycms/storage`, читає ті самі байти,
+  а гейт сам підписаним `HEAD` перевіряє, що обʼєкт лежить у Garage, і після `delete` — що
+  його там немає. Ловить клас «забутий `S3_*` у запакованому магазині → драйвер мовчки
+  `local-fs`». Очікування бере з `PILOT_S3_*` (що прогін хотів), а не з env скретча, тож
+  випадіння ключів дає FAIL, а не тихий SKIP. Не доводить: мережеві збої S3 під навантаженням.
+- **Gate MAIL** (`scripts/pilot-pack/gate-mail.mjs`, К3-Е8): `getMailTransport().send` з
+  унікальною темою у запакованому `simplycms/mail`; Mailpit API мусить мати лист із цією
+  темою і `From = MAIL_FROM`. Ловить драйвер `log` замість `smtp`. Не доводить доставку
+  в реальну скриньку (DKIM/SPF) — лише SMTP-канал.
+- **`live:smoke` і пошта** (`scripts/live-smoke/mail.mjs`): сервер піднімається з
+  `SMTP_URL`/`MAIL_FROM` на Mailpit, тож реєстрація кожного покупця йде повним шляхом Р30
+  (форма → лист підтвердження → посилання → вхід). Окремо: лист замовлення покупцю,
+  лист скидання пароля з відкриттям форми, відмова входу до підтвердження. Кожному
+  контексту браузера дається власний `X-Forwarded-For` (`client-ip.mjs`): без проксі
+  Better Auth має один бакет ліміту на всіх, і підтверджена реєстрація впиралась у 429.
 
 | Гейт | Доводить | Джерело |
 |---|---|---|

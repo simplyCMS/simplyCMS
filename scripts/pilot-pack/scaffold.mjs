@@ -34,6 +34,7 @@ import {
 import { join, resolve } from 'node:path';
 import { TEMPLATE_DIR } from '../sync-create-store-template.mjs';
 import { writeOverrides } from './overrides.mjs';
+import { PILOT_GROUP_KEYS } from './env.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const PILOT_OVERLAY_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
@@ -50,12 +51,18 @@ const PILOT_OVERLAY_DIR = join(REPO_ROOT, 'tests/pilot/store-template');
 const RENAMES = { gitignore: '.gitignore', 'env.example': '.env.example' };
 
 /**
- * Ключі, які магазин чекає у своєму `.env` — увесь контракт 0.4.1 і нічого
- * понад нього: клієнтський `VITE_SITE_URL` плюс два серверні. Зайвий ключ у
+ * Ключі, які магазин чекає у своєму `.env` — увесь контракт 0.4.1 (+ опційні
+ * групи драйверів) і нічого понад нього: клієнтський `VITE_SITE_URL` плюс два серверні. Зайвий ключ у
  * цьому списку означав би, що пілот збирає магазин із env, якого в продукті
  * немає, — саме так тут доти жили фіктивні ключі клієнта БД.
  */
-const ENV_KEYS = ['VITE_SITE_URL', 'DATABASE_URL', 'BETTER_AUTH_SECRET'];
+const ENV_KEYS = [
+  'VITE_SITE_URL',
+  'DATABASE_URL',
+  'BETTER_AUTH_SECRET',
+  // Групи драйверів (К3-Е8): лише коли прогін їх задав, див. `env.mjs`.
+  ...PILOT_GROUP_KEYS,
+];
 
 /**
  * Розгорнути магазин: шаблон пакета + пілотний оверлей + tarball-и та `.env`.

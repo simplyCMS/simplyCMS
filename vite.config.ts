@@ -5,7 +5,10 @@ import { resolve } from 'node:path';
 // Хост не має залежності `simplycms` — резолвить ядро alias-ом, якого
 // конфіг Vite не бачить, тож декларація межі береться відносним шляхом.
 import { importProtection } from './packages/simplycms/src/contracts/server-only.ts';
-import { simplycmsBuildInfo } from './packages/simplycms/src/vite/index.ts';
+import {
+  precompressAssets,
+  simplycmsBuildInfo,
+} from './packages/simplycms/src/vite/index.ts';
 
 export default ({ mode }: { mode: string }) => {
   // Контракт серверного env (спека CLI v1 §7): серверний код читає ЛИШЕ
@@ -29,6 +32,9 @@ export default ({ mode }: { mode: string }) => {
       // Ідентифікатор збірки для `/api/health` і сторожа застарілих чанків:
       // `define` __SIMPLYCMS_BUILD_ID__ (simplycms/vite).
       simplycmsBuildInfo(),
+      // `.br`/`.gz` поруч з асетами: `server.mjs` віддає їх через sirv, а `live:smoke`
+      // (той самий `gateHttp`, що й пілот) вимірює стиснення на цій збірці.
+      precompressAssets(),
       tailwindcss(),
       tanstackStart({
         router: { virtualRouteConfig: './routes.ts' },

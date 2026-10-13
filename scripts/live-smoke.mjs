@@ -45,12 +45,20 @@ import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
+import { applyProbe } from './pilot-pack/apply-probe.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
-import { loadHarnessEnv } from './harness-env.mjs';
+import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
+import {
+  clearMailpit,
+  runMailChecks,
+  runSignupConfirmation,
+} from './live-smoke/mail.mjs';
+import { signUp } from './live-smoke/register.mjs';
+import { withClientIps } from './live-smoke/client-ip.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -69,6 +77,17 @@ if (!adminUrl)
     '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера): виконай `pnpm harness:up`',
   );
 
+// Пошта стенду (Mailpit): `SMTP_URL`/`MAIL_FROM` — лише в явний env СЕРВЕРА нижче,
+// у `process.env` скрипта потрапляє тільки HTTP-API Mailpit для читання листів.
+// Без нього гучна відмова (`mailpitApi`), не skip.
+const mailEnv = harnessMailEnv(ROOT);
+if (mailEnv.HARNESS_MAILPIT_URL)
+  process.env.HARNESS_MAILPIT_URL = mailEnv.HARNESS_MAILPIT_URL;
+if (!mailEnv.SMTP_URL)
+  throw new Error(
+    '[live-smoke] потрібен SMTP_URL (Mailpit): виконай `pnpm harness:up`',
+  );
+
 const rows = [];
 const check = (label, passed, fact) => {
   rows.push([label, passed ? 'OK' : 'FAIL', fact]);
@@ -82,6 +101,9 @@ async function main() {
     { cwd: ROOT, stdio: 'inherit' },
   );
   const dbUrl = withDbName(adminUrl, DB_NAME);
+  // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
+  // про серверний sanitize-html червоніє (демо-сід чистий).
+  await applyProbe(dbUrl);
   const port = await freePort();
   // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
   // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
@@ -113,7 +135,13 @@ async function main() {
       stdio: 'inherit',
       env: { ...process.env, ...env },
     });
-    server = await startStore(ROOT, port, env);
+    // Чиста скринька ДО старту: листи цього прогону — єдині в ній.
+    await clearMailpit();
+    server = await startStore(ROOT, port, {
+      ...env,
+      SMTP_URL: mailEnv.SMTP_URL,
+      MAIL_FROM: mailEnv.MAIL_FROM,
+    });
     const base = `http://127.0.0.1:${port}`;
 
     // 2. curl+SQL — гейт B пілота як є.
@@ -136,7 +164,7 @@ async function main() {
 
     // 3. Браузер: реєстрація → картка → кошик → чекаут → скасування.
     const { chromium } = await import('@playwright/test');
-    browser = await chromium.launch();
+    browser = withClientIps(await chromium.launch());
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -147,7 +175,18 @@ async function main() {
       if (r.method() === 'POST' && pathname.startsWith('/_serverFn/'))
         serverFnPaths.add(pathname);
     });
-    await runFunnel({ page, base, dbUrl, check });
+    const { email } = await runFunnel({ page, base, dbUrl, check });
+
+    // 3.1. Пошта (К3-Е8): лист замовлення, скидання пароля, підтвердження
+    // реєстрації (Р30) — через справжній SMTP-канал у Mailpit.
+    await runMailChecks({
+      browser,
+      base,
+      email,
+      from: mailEnv.MAIL_FROM,
+      check,
+    });
+    await runSignupConfirmation({ browser, base, signUp, check });
 
     // 3a. CSRF: POST із чужим Origin на server function і server route → 403.
     await runCsrfChecks({ base, serverFnPaths, check });

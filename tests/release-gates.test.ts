@@ -31,6 +31,11 @@ describe('гейти релізу', () => {
     expect(script).toContain('pnpm harness:up');
     expect(script).toContain('pnpm db:demo');
     expect(script).toContain("run('pnpm pilot'");
+    // Garage і Mailpit харнесу доходять до пілота: без них gate-media/gate-mail — skip.
+    expect(script).toContain('PILOT_S3_');
+    expect(script).toContain('PILOT_SMTP_URL');
+    expect(script).toContain('PILOT_MAIL_FROM');
+    expect(script).toContain('PILOT_MAILPIT_URL');
     expect(script).not.toContain('--pack-only');
     expect(script).not.toContain('pilot:pack');
     expect(GATES.some((g) => g.cmd.includes('pilot:pack'))).toBe(false);

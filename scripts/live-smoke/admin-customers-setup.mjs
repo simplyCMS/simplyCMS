@@ -4,6 +4,8 @@
  * категорії з автоправилом — і доведення «контакти й email» та «ручна
  * категорія не зсувається автоправилом» (A) з контролем, що правило живе (B).
  */
+import { setTimeout } from 'node:timers/promises';
+import { confirmEmail } from './mail.mjs';
 import { register } from './register.mjs';
 import { bumpStock } from './admin-discounts-sql.mjs';
 import { pollUntil } from './admin-shipping-sql.mjs';
@@ -61,16 +63,30 @@ export async function contactsPart({
     oldEmail,
     'Невірний email або пароль',
   );
+  // Р30: зміна email власником скидає `email_verified`, тож з SMTP новий email
+  // спершу відмовляє (і шле лист підтвердження), а після посилання — пускає.
+  const unverified = await buyer.loginAs(
+    pages.a,
+    base,
+    next,
+    'Пошту ще не підтверджено',
+  );
+  const confirmed = await confirmEmail(pages.a, next);
+  // Better Auth: 3 входи за 10 с з одного клієнта — це вже третя спроба в цьому
+  // контексті, тож чекаємо кінця вікна ліміту, а не отримуємо 429.
+  await setTimeout(10_500);
   const ok = await buyer.loginAs(pages.a, base, next);
   const session = await buyer.sessionOf(pages.a);
   check(
-    'покупці: A вийшов, зі старим email вхід відмовлено, з новим — увійшов (сесія на новий email)',
+    'покупці: A вийшов, зі старим email вхід відмовлено, з новим — спершу відмова до підтвердження пошти (Р30), після листа — увійшов (сесія на новий email)',
     status === 200 &&
       guest === null &&
       oldRejected &&
+      unverified &&
+      confirmed &&
       ok &&
       session?.user?.email === next,
-    `вихід ${status}, гість ${guest === null}, старий email відмовлено ${oldRejected}, сесія ${session?.user?.email}`,
+    `вихід ${status}, гість ${guest === null}, старий email відмовлено ${oldRejected}, новий до підтвердження відмовлено ${unverified}, лист підтвердження ${confirmed}, сесія ${session?.user?.email}`,
   );
 }
 

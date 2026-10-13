@@ -11,6 +11,8 @@ import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { checkExecve, checkPartialEnv, gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
+import { gateMedia } from './gate-media.mjs';
+import { gateMail } from './gate-mail.mjs';
 import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
 import { gateImportProtection } from './gate-ip.mjs';
@@ -63,6 +65,14 @@ export async function runGates(opts) {
   // Gate B потребує живого сервера і живої БД, тож у `--pack-only` не існує.
   if (!opts.packOnly) results.push(await gateServer(opts));
 
+  // MEDIA і MAIL — запаковане ядро проти Garage і Mailpit (К3-Е8, Task 13). Після
+  // B, бо їм потрібен лише скретч, а не живий сервер; у `--pack-only` — skip із
+  // причиною, щоб звіт показував, що їх не ганяли.
+  step('Gate MEDIA — драйвер s3 запакованого ядра проти Garage');
+  results.push(['MEDIA', await gateMedia(opts.storeDir, opts.env, opts)]);
+  step('Gate MAIL — SMTP-драйвер запакованого ядра проти Mailpit');
+  results.push(['MAIL', await gateMail(opts.storeDir, opts.env, opts)]);
+
   // 🔴 Останнім: кожна червона збірка спорожнює dist скретча, а Gate C/D і
   // Gate B читають його. Гейт сам перезбирає скретч наприкінці.
   step('Gate IP — Import Protection валить витік у збірці магазину');
@@ -92,7 +102,9 @@ async function gateServer({ storeDir, port, env }) {
   );
   try {
     const http = await gateHttp(port, env);
-    const execve = checkExecve(server.pid, server.logs());
+    const execve = checkExecve(server.pid, server.logs(), {
+      smtp: Boolean(env.SMTP_URL),
+    });
     const partial = checkPartialEnv(storeDir, env);
     return [
       'B',

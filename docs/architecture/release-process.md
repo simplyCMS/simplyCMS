@@ -186,7 +186,7 @@ remote незворотне, а автоматичний код на це пра
 ### Гейти релізу
 
 Той самий порядок, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
-у релізі НЕМАЄ `test:schema` і Є повний `pilot` (Gate A–D, SB, IP, CLI, TOOL).
+у релізі НЕМАЄ `test:schema` і Є повний `pilot` (Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL).
 
 ```
 install --frozen-lockfile → format:check → lint → build
@@ -201,8 +201,12 @@ install --frozen-lockfile → format:check → lint → build
 `database.ok: true`). Без Gate B дефект вклеєного `pg` (`UPSTREAM:START-IP-1`) сидів у
 0.7.0–0.13.0 непоміченим: `pilot:pack` без БД сервера скретча не піднімає. Тому гейт —
 `node scripts/release/pilot-full.mjs`: `pnpm harness:up` (ідемпотентно, потрібен Docker) →
-`pnpm db:demo --name release_pilot` (свіжа БД з демо-сідом) → `pnpm pilot` із цим DSN.
-Gate B не скорочується. Прогін ≈ 1 хв (вимір 2026-10-11, з харнесом і сідом) — не
+`pnpm db:demo --name release_pilot` (свіжа БД з демо-сідом) → `pnpm pilot` із цим DSN і
+групами драйверів з `.env.harness` (`PILOT_S3_*` на Garage, `PILOT_SMTP_URL` на Mailpit,
+`PILOT_MAIL_FROM=pilot@simplycms.test`). Gate MEDIA і Gate MAIL ганяють ЗАПАКОВАНЕ ядро
+(`simplycms/storage`, `simplycms/mail` з `node_modules` скретча) проти справжніх Garage і
+Mailpit; без цих груп вони дають явний SKIP, а в релізі групи задає сам `pilot-full`.
+Gate B не скорочується. Прогін ≈ 2 хв (вимір 2026-10-13, з харнесом, сідом і гейтами MEDIA/MAIL) — не
 привід робити його опційним. У CI він не ганяється: рішення 2026-08-01 (жива БД — зовнішній
 стан); реліз — єдине місце, де він обовʼязковий. Харнес після гейта лишається піднятим
 (`pnpm harness:down` прибирає його).
