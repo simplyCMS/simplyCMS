@@ -395,7 +395,7 @@
 - **Р20 / Р20′** Стеля тіла на ВСІ запити незалежно від шляху: 1 МіБ за замовчуванням, 26 МіБ лише
   для multipart на префікс serverFn; префікс береться з іменованого експорту бандла `SERVER_FN_BASE`
   (Start інлайнить `TSS_SERVER_FN_BASE` через `define`, у `process.env` його немає); експорту немає →
-  вихід 1 «онови host-файли: `simplycms update --write`», без фолбеку. `UPSTREAM:START-BODY-1` закрито.
+  вихід 1 «онови host-файли: `simplycms update --write`», без фолбеку. `UPSTREAM:START-BODY-1` лишається чинним: обхід посилено (стеля на всі запити в раннері).
 - **Р21** `simplycms update` після `pnpm add` передає керування НОВОМУ CLI (re-exec), щоб host-файли
   звірялися з каноном нової версії.
 - **Р22** `selectMediaDriver` бере `MEDIA_ROOT` лише з `resolveDriverEnv(env).media`.
