@@ -43,9 +43,9 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     );
   }
 
-  // Реальна semver-перевірка діапазону — warn-режим на 0.x (рішення Р5 плану
-  // Фази 3): невідповідність не валить тему, строгий фейл — політика
-  // реліз-потяга v1.0. Нерозбірливий діапазон — теж warn, з причиною.
+  // Реальна semver-перевірка діапазону — warn назавжди (Р32): невідповідність
+  // не валить тему і не цегли магазин оновленням ядра, а `simplycms doctor` №17
+  // показує її як error. Нерозбірливий діапазон — теж warn, з причиною.
   try {
     if (!satisfies(CORE_VERSION, engines.simplycms)) {
       console.warn(

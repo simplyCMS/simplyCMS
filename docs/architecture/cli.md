@@ -79,6 +79,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 14 | `nodemailer` — пряма залежність магазину (`dependencies`) у межах peer-діапазону ядра (`src/doctor-mail-check.mjs`, спільне читання стану — `src/pg-peer.mjs`; К3-Е8, Е8-Р11). Без декларації SMTP-драйвер порту `simplycms/mail` не працює. Ядра в `node_modules` ще немає — `skip` | error |
 | 15 | пошта (`checkMailConfigured`, `src/doctor-mail-check.mjs`; Е8-Р17): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
 | 16 | підтвердження пошти (`checkEmailVerification`, Р30): `--production` + драйвер не `smtp` → реєстрація без підтвердження пошти | warn |
+| 17 | `engines.simplycms` кожного плагіна й теми конфігу покриває встановлене ядро (`src/doctor-engines.mjs`; Р32). `satisfies` береться з ядра магазину (`simplycms/contracts/semver` через `importFromStore`) — npm-вирівняний, без копії semver у CLI; діапазон — `default.manifest.engines` зібраного пакета або літерал у сирцях локального `@plugins/*`/`@themes/*`. Не покриває → error з пакетом, діапазоном, версією ядра й дією «онови плагін або відкоти ядро»; `engines` відсутній чи нерозбірливий, модуль не вдалося прочитати → warn; ядра немає — `skip`. Ця ж перевірка входить у спільний список `status` | error / warn |
 
 **Режим (Е8-Р17).** `--production` АБО `isProductionRuntime(process.env)` з `simplycms/env` (CLI бере його через `importFromStore`; власної перевірки `NODE_ENV` немає, `.env*` магазину для режиму не читаються). Після Р16 `NODE_ENV=production` ставить лише `server.mjs`, тож разовий `doctor` (CI, `prod-run`) прод-режим задає прапорцем. Перший рядок звіту — «режим: production» або «режим: розробка (для перевірки проду — `--production`)». Коди виходу не змінюються: режим міняє лише серйозність перевірок, що від нього залежать.
 
@@ -339,6 +340,7 @@ pnpm build                       # активація/налаштування �
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
 | `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
 | `tests/cli-mail-driver.test.ts` | doctor №14 (немає nodemailer / не в dependencies / невідповідна версія / ок / ядро не встановлено) |
+| `tests/cli-doctor-engines.test.ts` | doctor №17 (engines: не покриває ядро / покриває / відсутній, плагін і тема; пакет у node_modules; проводка через `run()` з реальним `satisfies` ядра) |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
@@ -393,8 +395,9 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 перевірку модуля теми лишає за `validateThemeModule` на build/рантаймі);
 монтаж `adminRoutes` плагінів — рядок `physical()` у store-owned `routes.ts`
 за якір-коментарем (автоматичну вставку в `add` відкладено разом із
-`plugin:purge` і drizzle-композицією схем); СТРОГА semver-перевірка
-`engines.simplycms` — реліз-потяг v1.0 (warn-режим уже працює);
+`plugin:purge` і drizzle-композицією схем); перевірка
+`engines.simplycms` плагінів і тем — doctor №17 (error; bootstrap лишається
+warn назавжди, Р32);
 AST-редагування конфігу — усвідомлене спрощення (якірна вставка з чесним
 падінням), переглянути з ускладненням
 конфігу.

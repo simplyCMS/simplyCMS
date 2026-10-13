@@ -13,6 +13,7 @@ import {
   checkMailConfigured,
   checkMailDriver,
 } from './doctor-mail-check.mjs';
+import { checkEngines } from './doctor-engines.mjs';
 import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
@@ -163,5 +164,7 @@ export function runOfflineChecks(ctx) {
     checkMailConfigured(ctx),
     // №16 (Р30): без SMTP реєстрація не вимагає підтвердження пошти.
     checkEmailVerification(ctx),
+    // №17 (Р32): engines.simplycms плагінів і тем проти ядра — error, bootstrap лише warn.
+    checkEngines(ctx),
   ];
 }

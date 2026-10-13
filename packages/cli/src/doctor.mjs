@@ -10,6 +10,7 @@ import {
 import { schemaMigrationsPath } from './db-diff.mjs';
 import { runOfflineChecks } from './doctor-checks.mjs';
 import { runOnlineChecks } from './doctor-db-checks.mjs';
+import { collectEngines } from './doctor-engines.mjs';
 import { modeNotice, resolveDoctorMode } from './doctor-mail-check.mjs';
 import { importFromStore } from './store-core.mjs';
 import { CANON_HOST_DIR } from './host-drift.mjs';
@@ -99,6 +100,8 @@ export async function run(argv) {
     production,
     mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
     storeRoot,
+    // №17 (Р32): діапазони engines збирає async-шар, сама перевірка синхронна.
+    engines: await collectEngines(storeRoot),
     manifest: readStoreManifest(storeRoot),
     env,
     cliVersion: readCliVersion(),

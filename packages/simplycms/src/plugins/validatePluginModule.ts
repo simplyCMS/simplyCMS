@@ -13,8 +13,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * Мʼяку політику спеки §8 («ніяких падінь») забезпечує ВИКЛИКАЧ: bootstrap
  * ловить throw і пропускає модуль, не валячи застосунок. Несумісний
- * `engines.simplycms` — НЕ помилка, а попередження (рішення Р5 плану Фази 3:
- * warn-режим на 0.x; строгий фейл — політика реліз-потяга v1.0).
+ * `engines.simplycms` — НЕ помилка, а попередження НАЗАВЖДИ (Р32): магазин не
+ * цеглиться оновленням ядра, а невідповідність показує `simplycms doctor` №17
+ * (там це error) і `status`.
  */
 export function validatePluginModule(
   value: unknown,

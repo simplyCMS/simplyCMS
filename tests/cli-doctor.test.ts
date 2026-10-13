@@ -108,6 +108,8 @@ describe('cli doctor (оффлайн)', () => {
       'mail-configured': 'skip',
       // Те саме для підтвердження пошти (Р30, №16).
       'email-verification': 'skip',
+      // Без ядра версія для порівняння невідома (Р32, №17).
+      engines: 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);

@@ -86,8 +86,9 @@ export default definePlugin({
   `validateThemeModule`): порушення структури — throw → bootstrap логує і
   **пропускає модуль**; підозри (немає `engines`, несумісний діапазон, ключ
   без префікса) — `console.warn`, реєстрація триває. Несумісний
-  `engines.simplycms` на 0.x — навмисно warn, не фейл: строгість — рішення
-  реліз-потяга v1.0 (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
+  `engines.simplycms` — warn назавжди, не фейл (Р32): магазин не цеглиться
+  оновленням ядра, а невідповідність показує `simplycms doctor` №17 як error
+  (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
 
 ## 3. Рантайм-контур
 
