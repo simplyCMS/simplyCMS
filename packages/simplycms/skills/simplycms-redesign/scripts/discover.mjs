@@ -5,7 +5,7 @@
  * збір лінків — `lib/collect-links.mjs`, візит кандидата з контент-пробом —
  * `lib/visit-candidate.mjs`, побудова пропозиції (класифікація + перепідбір
  * при невдалому візиті) — `lib/sitemap.mjs`. Юзаж:
- * `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]`.
+ * `node .claude/skills/simplycms-redesign/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]`.
  */
 import { isCliEntry } from './lib/cli-entry.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -23,7 +23,7 @@ import { slugify } from './inspect.mjs';
 
 const DEFAULT_MAX_VISITS = 8;
 const USAGE =
-  'node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]';
+  'node .claude/skills/simplycms-redesign/scripts/discover.mjs <startUrl> [--out <file>] [--max-visits N]';
 
 /** Розбір argv: перший позиційний токен — стартовий URL, далі `--out <file>`/`--max-visits <N>`. */
 export function parseArgs(argv) {
@@ -80,7 +80,7 @@ async function main() {
       throw new Error(
         `HTTP ${response ? response.status() : '(без відповіді)'} від референсу — ` +
           'дискавері зупинено (доступ закритий або бот-захист; ' +
-          'див. «Чесна деградація» у скілі redesign-from-reference)',
+          'див. «Чесна деградація» у скілі simplycms-redesign)',
       );
     }
     await scrollThrough(page); // лінки з лінивих секцій/футера — теж мають потрапити в DOM-обхід

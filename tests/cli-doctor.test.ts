@@ -387,17 +387,17 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkSkillLinks({ storeRoot: store }).status).toBe('skip');
 
     const skills = join(store, 'node_modules/simplycms/skills');
-    mkdirSync(join(skills, 'redesign-from-reference'), { recursive: true });
+    mkdirSync(join(skills, 'simplycms-redesign'), { recursive: true });
     const missing = checkSkillLinks({ storeRoot: store });
     expect(missing.status).toBe('warn');
-    expect(missing.details).toContain('redesign-from-reference');
+    expect(missing.details).toContain('simplycms-redesign');
     expect(missing.details).toContain('simplycms update');
 
     for (const dir of ['.agents/skills', '.claude/skills']) {
       mkdirSync(join(store, dir), { recursive: true });
       symlinkSync(
-        '../../node_modules/simplycms/skills/redesign-from-reference',
-        join(store, dir, 'redesign-from-reference'),
+        '../../node_modules/simplycms/skills/simplycms-redesign',
+        join(store, dir, 'simplycms-redesign'),
       );
     }
     expect(checkSkillLinks({ storeRoot: store }).status).toBe('ok');

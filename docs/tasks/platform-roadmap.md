@@ -312,7 +312,7 @@ baseline+сід (B13), `alterenergy` — не чіпати (демо-магаз�
 | Плагіни | `definePlugin` + порти `simplycms/plugin-sdk`; референс — `@simplycms/plugin-faq` (🔴 з шаблону знято, ставиться `simplycms add`); межа довіри — dependency-lint |
 | Теми | контракт v3: v2.2 (tokens+components+messages+fonts) + опційні `views` пʼяти сторінок (`simplycms/contracts/views`); npm або copy-in; `bootstrapThemes` |
 | Conformance тем | `pnpm simplycms theme:conformance` + kit `simplycms/themes/conformance` (негативний контроль живим експериментом) |
-| Редизайн за референсом | скіл `redesign-from-reference` (дискавері → інспекція → мапінг → side-by-side → шліфування); доставка в магазини — симлінки на `node_modules/simplycms/skills/` |
+| Редизайн за референсом | скіл `simplycms-redesign` (дискавері → інспекція → мапінг → side-by-side → шліфування); доставка в магазини — симлінки на `node_modules/simplycms/skills/` |
 | Production-запуск | `pnpm build && pnpm start` (`server.mjs`) |
 | Вітринний стенд | `pnpm db:showcase` — `simplycms_showcase` з наповненням для ручного тесту (одноразова, перестворюється лише з позначкою); друкує env і команду запуску. Опис — `docs/development/TOOLING.md` § 2 |
 | ✅ **Магазин на чистому Postgres** | `pnpm db:demo` (покупний демо: доставка, СИСТЕМНА точка видачі, залишки, `decrease_on_order = true`) → `.env.local` (`DATABASE_URL`, `BETTER_AUTH_SECRET`) → `pnpm build && pnpm start`. Вітрина, вхід, кабінет, чекаут — працюють: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`. Покроково — [`v2-state-map.md`](./v2-state-map.md) §5 |
@@ -1864,7 +1864,7 @@ version-літералів знешкоджена.
 **Трек редизайну за референсом** (2026-08-15…18, PR #32 + інкременти):
 етап А — контракт теми v2.2 (типографічні токени `font-sans`/`font-heading`,
 `ThemeModule.fonts`, розчинення brand-*); етап Б — скіл
-`redesign-from-reference` зі скриптами (інспекція кольори/типографіка/
+`simplycms-redesign` зі скриптами (інспекція кольори/типографіка/
 motion, дискавері сторінок із діалогом, мапінг токенів, side-by-side);
 інкременти Б.1 (скрол/мультисторінковість), Б.2 (motion-капчер,
 side-by-side обовʼязковий, фаза шліфування; тема лайв-тесту стала
@@ -1885,7 +1885,7 @@ fan-out, контент-проба візиту, чесність reveal-кан�
 сателіти + `@themes`/`@plugins`); межу шарів, яку раніше тримала межа
 npm-пакета, повернуто eslint-тір-зонами (23 зони, дві форми специфікатора,
 негативний контроль `tests/tier-boundary.test.ts`); скіл
-`redesign-from-reference` переїхав байт-в-байт у `skills/` пакета й
+`simplycms-redesign` переїхав байт-в-байт у `skills/` пакета й
 доставляється магазинам симлінками (скаффолдер після install, `update`
 лагодить, `doctor` №12 звітує) — копії в шаблоні більше немає; шаблон
 магазину має ОДНУ залежність ядра, `plugin-faq` знято з преінсталу (ПК7).

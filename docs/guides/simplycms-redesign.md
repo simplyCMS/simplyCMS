@@ -2,9 +2,9 @@
 
 > Аудиторія: **розробник магазину**, який хоче зробити свій SimplyCMS-магазин
 > схожим на існуючий сайт. Це how-to по інструментах; методологію для
-> AI-агента тримає скіл `redesign-from-reference` (у монорепо —
-> [`.agents/skills/redesign-from-reference/SKILL.md`](../../.agents/skills/redesign-from-reference/SKILL.md),
-> у магазині-скаффолді — `.claude/skills/redesign-from-reference/SKILL.md`).
+> AI-агента тримає скіл `simplycms-redesign` (у монорепо —
+> [`.agents/skills/simplycms-redesign/SKILL.md`](../../.agents/skills/simplycms-redesign/SKILL.md),
+> у магазині-скаффолді — `.claude/skills/simplycms-redesign/SKILL.md`).
 > Механізм тем — [`../architecture/themes.md`](../architecture/themes.md),
 > практика автора теми — [`themes.md`](./themes.md).
 > Написано за підсумками етапу Б треку редизайну (2026-08-15); оновлено
@@ -35,9 +35,9 @@
 
 | Скрипт | Що робить |
 |---|---|
-| `.claude/skills/redesign-from-reference/scripts/discover.mjs` | стартовий URL → обхід лінків → `sitemap-proposal.json` (які сторінки сайту відповідають нашим канонічним типам) |
-| `.claude/skills/redesign-from-reference/scripts/inspect.mjs` | відкриває URL у headless Chromium → скріншоти + `inspection.json` |
-| `.claude/skills/redesign-from-reference/scripts/map-tokens.mjs` | один або кілька `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
+| `.claude/skills/simplycms-redesign/scripts/discover.mjs` | стартовий URL → обхід лінків → `sitemap-proposal.json` (які сторінки сайту відповідають нашим канонічним типам) |
+| `.claude/skills/simplycms-redesign/scripts/inspect.mjs` | відкриває URL у headless Chromium → скріншоти + `inspection.json` |
+| `.claude/skills/simplycms-redesign/scripts/map-tokens.mjs` | один або кілька `inspection.json` → `tokens-proposal.json` (токени + контраст + чесний `unmapped`) |
 
 ## 2. Передумова — Playwright у магазині
 
@@ -61,7 +61,7 @@ pnpm add -D playwright && pnpm exec playwright install chromium
 тип ↔ їхня сторінка». Тому спершу — дискаверер:
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/discover.mjs https://example.com \
+node .claude/skills/simplycms-redesign/scripts/discover.mjs https://example.com \
   --out docs/design-references/<slug>/sitemap-proposal.json [--max-visits 8]
 ```
 
@@ -133,7 +133,7 @@ WooCommerce `/product-category/x` → `/product/<slug>` індекс і карт
 ## 4. Крок 2 — інспекція підтверджених сторінок
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.com/products/x \
+node .claude/skills/simplycms-redesign/scripts/inspect.mjs https://example.com/products/x \
   --out docs/design-references/<slug>/product [--dark]
 ```
 
@@ -219,7 +219,7 @@ node .claude/skills/redesign-from-reference/scripts/inspect.mjs https://example.
 теж одні.
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs \
+node .claude/skills/simplycms-redesign/scripts/map-tokens.mjs \
   docs/design-references/<slug>/home/inspection.json \
   docs/design-references/<slug>/listing/inspection.json \
   docs/design-references/<slug>/product/inspection.json \
@@ -316,7 +316,7 @@ pnpm simplycms create theme <slug>
 
 ```bash
 pnpm build && pnpm start                      # або pnpm dev
-node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost:3000/catalog \
+node .claude/skills/simplycms-redesign/scripts/inspect.mjs http://localhost:3000/catalog \
   --out docs/design-references/<slug>/_ours/listing
 ```
 
@@ -397,13 +397,13 @@ view мусить пройти гейт `pnpm simplycms theme:conformance <slug>
 | Задача | Команда / дія |
 |---|---|
 | Поставити браузер у магазині | `pnpm add -D playwright && pnpm exec playwright install chromium` |
-| Знайти сторінки сайту | `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> --out docs/design-references/<slug>/sitemap-proposal.json` |
-| Зняти одну сторінку | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> --out docs/design-references/<slug>/<pageType> [--dark]` |
-| Отримати токени з кількох сторінок | `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs docs/design-references/<slug>/*/inspection.json --out docs/design-references/<slug>/tokens-proposal.json` |
+| Знайти сторінки сайту | `node .claude/skills/simplycms-redesign/scripts/discover.mjs <startUrl> --out docs/design-references/<slug>/sitemap-proposal.json` |
+| Зняти одну сторінку | `node .claude/skills/simplycms-redesign/scripts/inspect.mjs <url> --out docs/design-references/<slug>/<pageType> [--dark]` |
+| Отримати токени з кількох сторінок | `node .claude/skills/simplycms-redesign/scripts/map-tokens.mjs docs/design-references/<slug>/*/inspection.json --out docs/design-references/<slug>/tokens-proposal.json` |
 | Зробити тему | `pnpm simplycms create theme <slug>` → `tokens.ts` → `pnpm build` → `/admin/themes` |
-| Порівняти результат (пара на кожен тип) | `node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost:3000/catalog --out docs/design-references/<slug>/_ours/listing` |
+| Порівняти результат (пара на кожен тип) | `node .claude/skills/simplycms-redesign/scripts/inspect.mjs http://localhost:3000/catalog --out docs/design-references/<slug>/_ours/listing` |
 | Наповнити стенд даними для QA картки товару | `scripts/dev-stand/README.md` (дамп → `seed-demo.sql` → `psql` на локальний стек) |
-| Запустити весь пайплайн агентом | скіл `redesign-from-reference` (у монорепо — команда `/редизайн-за-референсом <url>`) |
+| Запустити весь пайплайн агентом | скіл `simplycms-redesign` (у монорепо — команда `/редизайн-за-референсом <url>`) |
 
 ## 10. Чого тут немає (свідомі межі)
 

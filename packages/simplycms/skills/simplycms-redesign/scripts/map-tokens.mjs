@@ -3,7 +3,7 @@
  * CLI мапінгу `inspection.json` → `tokens-proposal.json` (задача §2.B/§2.D,
  * план Р1/Р4/Р6b). Тонкий файл — аргументи + IO; кольорова/шрифтова логіка —
  * `lib/map.mjs`, злиття мультивходу — `lib/merge.mjs`. Юзаж:
- * `node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <file>]`.
+ * `node .claude/skills/simplycms-redesign/scripts/map-tokens.mjs <inspection.json>... [--out <file>]`.
  * 🔴 N=1 — merge-шлях ПОВНІСТЮ оминається (early return у `main`, Р6b): стара
  * поведінка байт-у-байт, без залежності від `lib/merge.mjs`. N>1 — `--out`
  * обовʼязковий (дефолт-здогадка з першої вхідної теки була б помилковою).
@@ -16,7 +16,7 @@ import { mapTokens } from './lib/map.mjs';
 import { mergeInspections } from './lib/merge.mjs';
 
 const USAGE =
-  'node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs <inspection.json>... [--out <tokens-proposal.json>]';
+  'node .claude/skills/simplycms-redesign/scripts/map-tokens.mjs <inspection.json>... [--out <tokens-proposal.json>]';
 
 /** Розбір argv: позиційні токени — шляхи до `inspection.json` (1..N), далі `--out <file>`. */
 export function parseArgs(argv) {

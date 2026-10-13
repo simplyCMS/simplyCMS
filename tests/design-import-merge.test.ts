@@ -5,7 +5,7 @@
  * «перестановка вхідних файлів дає той самий результат» (Р6).
  */
 import { describe, expect, it } from 'vitest';
-import { mergeInspections } from '../.agents/skills/redesign-from-reference/scripts/lib/merge.mjs';
+import { mergeInspections } from '../.agents/skills/simplycms-redesign/scripts/lib/merge.mjs';
 
 /** Мінімальна валідна `inspection`-подібна фікстура для тестів злиття. */
 function page(overrides = {}) {

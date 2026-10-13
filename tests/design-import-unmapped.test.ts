@@ -9,9 +9,9 @@
  * головним асертом файлу.
  */
 import { describe, expect, it } from 'vitest';
-import { clusterColors } from '../.agents/skills/redesign-from-reference/scripts/lib/cluster.mjs';
-import { mapColorTokens } from '../.agents/skills/redesign-from-reference/scripts/lib/color-tokens.mjs';
-import { collectUnmapped } from '../.agents/skills/redesign-from-reference/scripts/lib/unmapped.mjs';
+import { clusterColors } from '../.agents/skills/simplycms-redesign/scripts/lib/cluster.mjs';
+import { mapColorTokens } from '../.agents/skills/simplycms-redesign/scripts/lib/color-tokens.mjs';
+import { collectUnmapped } from '../.agents/skills/simplycms-redesign/scripts/lib/unmapped.mjs';
 
 interface UnmappedEntry {
   hex: string;

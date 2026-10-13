@@ -1,5 +1,5 @@
 ---
-name: redesign-from-reference
+name: simplycms-redesign
 description: Use when the user wants a SimplyCMS store redesigned to look like an existing website — "redesign my store like <url>", "make it look like this site", "build a theme from this reference", "clone the style of", "apply this site's colors and fonts" — or the same in Ukrainian ("редизайн за референсом", "зроби як у сайту", "тема за референсом", "перефарбуй магазин під"). Covers the full pipeline: clarify with legal limits, deterministic inspection (colors, type, motion), token mapping, theme scaffold, components from spec files, mandatory side-by-side verification, optional polishing pass.
 ---
 
@@ -17,9 +17,9 @@ description: Use when the user wants a SimplyCMS store redesigned to look like a
 немає — вони в репозиторії ядра.
 
 Інструменти скіла — три детерміністичні скрипти магазину:
-`.claude/skills/redesign-from-reference/scripts/discover.mjs`,
-`.claude/skills/redesign-from-reference/scripts/inspect.mjs` і
-`.claude/skills/redesign-from-reference/scripts/map-tokens.mjs`.
+`.claude/skills/simplycms-redesign/scripts/discover.mjs`,
+`.claude/skills/simplycms-redesign/scripts/inspect.mjs` і
+`.claude/skills/simplycms-redesign/scripts/map-tokens.mjs`.
 Вони не «вгадують» — вони міряють; судження лишається за тобою й користувачем.
 
 ---
@@ -61,7 +61,7 @@ description: Use when the user wants a SimplyCMS store redesigned to look like a
 ### 1.1 Дискавері
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> \
+node .claude/skills/simplycms-redesign/scripts/discover.mjs <startUrl> \
   --out docs/design-references/<slug>/sitemap-proposal.json [--max-visits 8]
 ```
 
@@ -160,7 +160,7 @@ pathname (блок «схожі товари» на картці `/products/<slu
 типу** (розкладку задає скіл через `--out`, дефолти CLI її не знають):
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> \
+node .claude/skills/simplycms-redesign/scripts/inspect.mjs <url> \
   --out docs/design-references/<slug>/<pageType> [--dark]
 ```
 
@@ -247,7 +247,7 @@ reveal-прапорці й ховер-дельти в артефактах Є; �
 магазині одна, і токени в ній теж одні.
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/map-tokens.mjs \
+node .claude/skills/simplycms-redesign/scripts/map-tokens.mjs \
   docs/design-references/<slug>/home/inspection.json \
   docs/design-references/<slug>/listing/inspection.json \
   docs/design-references/<slug>/product/inspection.json \
@@ -410,7 +410,7 @@ pnpm simplycms create theme <slug>
 підтверджений тип окремим запуском у теку `_ours/<pageType>/`:
 
 ```bash
-node .claude/skills/redesign-from-reference/scripts/inspect.mjs http://localhost:3000/catalog \
+node .claude/skills/simplycms-redesign/scripts/inspect.mjs http://localhost:3000/catalog \
   --out docs/design-references/<slug>/_ours/listing
 ```
 

@@ -174,8 +174,8 @@ describe('cli update', () => {
   it('reconcileSkillLinks: доробляє відсутні лінки й прибирає осиротілі', async () => {
     const store = await scaffoldStore('upd-skills');
     const skills = join(store, 'node_modules/simplycms/skills');
-    mkdirSync(join(skills, 'redesign-from-reference'), { recursive: true });
-    writeFileSync(join(skills, 'redesign-from-reference/SKILL.md'), '# r\n');
+    mkdirSync(join(skills, 'simplycms-redesign'), { recursive: true });
+    writeFileSync(join(skills, 'simplycms-redesign/SKILL.md'), '# r\n');
     // Осиротілий лінк: скіл із пакета зник (перейменували, прибрали), а лінк
     // магазину лишився й веде в порожнечу.
     mkdirSync(join(store, '.claude/skills'), { recursive: true });
@@ -186,8 +186,8 @@ describe('cli update', () => {
 
     const before = inspectSkillLinks(store);
     expect(before.missing).toEqual([
-      '.agents/skills/redesign-from-reference',
-      '.claude/skills/redesign-from-reference',
+      '.agents/skills/simplycms-redesign',
+      '.claude/skills/simplycms-redesign',
     ]);
     expect(before.orphaned).toEqual(['.claude/skills/gone']);
 
@@ -196,12 +196,42 @@ describe('cli update', () => {
     expect(removed).toEqual(['.claude/skills/gone']);
     expect(
       readFileSync(
-        join(store, '.claude/skills/redesign-from-reference/SKILL.md'),
+        join(store, '.claude/skills/simplycms-redesign/SKILL.md'),
         'utf8',
       ),
     ).toBe('# r\n');
     expect(inspectSkillLinks(store)).toEqual({
-      skills: ['redesign-from-reference'],
+      skills: ['simplycms-redesign'],
+      missing: [],
+      orphaned: [],
+    });
+  });
+
+  it('reconcileSkillLinks: перейменований скіл — старий лінк прибрано, новий створено', async () => {
+    const store = await scaffoldStore('upd-skills-rename');
+    const skills = join(store, 'node_modules/simplycms/skills');
+    mkdirSync(join(skills, 'simplycms-redesign'), { recursive: true });
+    writeFileSync(join(skills, 'simplycms-redesign/SKILL.md'), '# r\n');
+    // Магазин, створений до перейменування: лінки на скіл, якого пакет уже не везе.
+    for (const dir of ['.agents/skills', '.claude/skills']) {
+      mkdirSync(join(store, dir), { recursive: true });
+      symlinkSync(
+        '../../node_modules/simplycms/skills/redesign-from-reference',
+        join(store, dir, 'redesign-from-reference'),
+      );
+    }
+
+    const { created, removed } = reconcileSkillLinks(store);
+    expect(removed).toEqual([
+      '.agents/skills/redesign-from-reference',
+      '.claude/skills/redesign-from-reference',
+    ]);
+    expect(created).toEqual([
+      '.agents/skills/simplycms-redesign',
+      '.claude/skills/simplycms-redesign',
+    ]);
+    expect(inspectSkillLinks(store)).toEqual({
+      skills: ['simplycms-redesign'],
       missing: [],
       orphaned: [],
     });

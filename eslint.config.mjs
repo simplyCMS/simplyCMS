@@ -627,7 +627,7 @@ const eslintConfig = [
       // має ховатися від гейта.
       //
       // (Скрипти design-import жили тут синкованою копією до переїзду в
-      // `.claude/skills/redesign-from-reference/scripts/` — тепер та копія
+      // `.claude/skills/simplycms-redesign/scripts/` — тепер та копія
       // під загальним template-ігнором, а джерело лінтується в `.agents/`.)
       //
       // 🔴 Чому не одне `template/**` + `!template/scripts/**`: патерн, що

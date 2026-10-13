@@ -52,7 +52,7 @@
 
 ### C. Дискаверер сторінок (`scripts/discover.mjs` (у теці скіла))
 
-CLI: `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl> [--out …] [--max-visits N]`.
+CLI: `node .claude/skills/simplycms-redesign/scripts/discover.mjs <startUrl> [--out …] [--max-visits N]`.
 
 1. Той самий chromium (`lib/browser.mjs`): відкрити стартову, зібрати
    `a[href]` ПІСЛЯ рендера; нормалізувати (same-origin, без hash;
@@ -87,7 +87,7 @@ CLI: `node .claude/skills/redesign-from-reference/scripts/discover.mjs <startUrl
 3. Чесні межі: відповідники — для токенів/спек/QA-пар, НЕ для
    перенесення структури (D3/D4); сторінки за логіном — поза
    інспекцією; reverse-анімації — межа v1.
-4. Гайд `docs/guides/redesign-from-reference.md` — оновити кроки.
+4. Гайд `docs/guides/simplycms-redesign.md` — оновити кроки.
 
 ### F. Тести
 

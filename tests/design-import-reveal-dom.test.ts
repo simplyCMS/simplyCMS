@@ -12,7 +12,7 @@
  * наживо, чого jsdom не вміє.
  */
 import { describe, expect, it } from 'vitest';
-import { browserRevealSnapshot } from '../.agents/skills/redesign-from-reference/scripts/lib/browser-reveal.mjs';
+import { browserRevealSnapshot } from '../.agents/skills/simplycms-redesign/scripts/lib/browser-reveal.mjs';
 
 interface Snapshot {
   root: 'main' | 'body-fallback';

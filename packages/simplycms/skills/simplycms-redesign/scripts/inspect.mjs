@@ -15,7 +15,7 @@ import { inspectPage } from './lib/inspect-page.mjs';
 export { inspectPage };
 
 const USAGE =
-  'node .claude/skills/redesign-from-reference/scripts/inspect.mjs <url> [--out <dir>] [--dark]';
+  'node .claude/skills/simplycms-redesign/scripts/inspect.mjs <url> [--out <dir>] [--dark]';
 
 /** Розбір argv: перший позиційний токен — URL, далі `--out <dir>`/`--dark`. */
 export function parseArgs(argv) {
@@ -79,7 +79,7 @@ async function main() {
       throw new Error(
         `HTTP ${response ? response.status() : '(без відповіді)'} від референсу — ` +
           'інспекцію зупинено (доступ закритий або бот-захист; ' +
-          'див. «Чесна деградація» у скілі redesign-from-reference)',
+          'див. «Чесна деградація» у скілі simplycms-redesign)',
       );
     }
     const inspection = await inspectPage(page, {

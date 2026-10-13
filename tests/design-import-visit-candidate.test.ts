@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PROBED_TYPES,
   visitCandidate,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/visit-candidate.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/visit-candidate.mjs';
 
 const PROBE_RESULT = { jsonLdTypes: ['Product'], cardLinks: 0 };
 /** Маркер-функція проба: фейк упізнає її за посиланням, а не за вмістом. */

@@ -150,7 +150,7 @@ pnpm simplycms update   # доробить відсутні лінки, приб
 Перевірити, що агент бачить скіл:
 
 ```bash
-head -3 .claude/skills/redesign-from-reference/SKILL.md
+head -3 .claude/skills/simplycms-redesign/SKILL.md
 ```
 
 ## Драйвер БД (`pg`)

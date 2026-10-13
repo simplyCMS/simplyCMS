@@ -123,7 +123,7 @@ export function checkTemplateDeps(pkgDir) {
  * false. Хибним «✗» це не є: POSIX резолвить симлінк ліниво, тож після
  * першого install лінк оживає сам.
  */
-export function checkSkillLinks(storeDir, name = 'redesign-from-reference') {
+export function checkSkillLinks(storeDir, name = 'simplycms-redesign') {
   const details = [];
   for (const dir of SKILL_LINK_DIRS) {
     const path = join(storeDir, dir, name);

@@ -5,7 +5,7 @@
  * інжектують), а разом із нею — форма `schemaVersion: 2` з масивом `links`.
  */
 import { describe, expect, it } from 'vitest';
-import { buildSitemapProposal } from '../.agents/skills/redesign-from-reference/scripts/lib/sitemap.mjs';
+import { buildSitemapProposal } from '../.agents/skills/simplycms-redesign/scripts/lib/sitemap.mjs';
 
 const START = 'https://a.com/';
 

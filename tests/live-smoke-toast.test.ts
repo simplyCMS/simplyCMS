@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
+import { resolveChromium } from '../.agents/skills/simplycms-redesign/scripts/lib/browser.mjs';
 import {
   expectVisible,
   toastText,

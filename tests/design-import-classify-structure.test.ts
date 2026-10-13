@@ -8,7 +8,7 @@ import {
   analyzeStructure,
   FANOUT_MIN_CHILDREN,
   structuralEvidence,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/classify-structure.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/classify-structure.mjs';
 
 /** Мапа кандидатів у формі `classifyLinks` — для структури важливі лише ключі. */
 function candidatesOf(...pathnames: string[]) {

@@ -33,7 +33,7 @@ Open-source e-commerce CMS на **TanStack Start (Vite)** і чистому **Po
 - **Магазин — мінімумом кроків, далі агент веде за інструкціями.** Кожен ключовий етап створення
   й супроводу магазину (онбординг, налаштування, тема/редизайн, деплой, оновлення, міграції,
   діагностика) покривають скіли й скрипти, що їдуть РАЗОМ із магазином (у пакеті, як
-  `redesign-from-reference`). Зміна платформи, що міняє шлях власника магазину, без відповідної
+  `simplycms-redesign`). Зміна платформи, що міняє шлях власника магазину, без відповідної
   інструкції не завершена.
 - **Архітектурна коректність, не обхідні шляхи.** Пропонуй рішення з довгостроковим
   обґрунтуванням; явно порівнюй латку й знесення механізму, що породжує клас багів.
@@ -241,6 +241,6 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `upstream-workarounds`, `repository-layout`.
 - **`docs/development/`** — `TOOLING.md` (команди, гейти, лінт, CI), `ENVIRONMENT.md` (env, запуск),
   `CODEBASE_MEMORY.md` (код-шар пошуку).
-- **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/redesign-from-reference.md`** — редизайн за референсом.
+- **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/simplycms-redesign.md`** — редизайн за референсом.
 - **`docs/tasks/`** — роадмап (`platform-roadmap.md`), карта чинного стану (`v2-state-map.md`).
-- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `redesign-from-reference`.
+- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `simplycms-redesign`.

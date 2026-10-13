@@ -14,8 +14,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
-import { inspectPage } from '../.agents/skills/redesign-from-reference/scripts/inspect.mjs';
+import { resolveChromium } from '../.agents/skills/simplycms-redesign/scripts/lib/browser.mjs';
+import { inspectPage } from '../.agents/skills/simplycms-redesign/scripts/inspect.mjs';
 
 interface RevealMotion {
   motion: {

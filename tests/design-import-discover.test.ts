@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyLinks,
   normalizePathname,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/classify.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/classify.mjs';
 
 const REASON = 'no-candidate';
 
