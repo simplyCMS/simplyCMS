@@ -76,6 +76,7 @@ function run(
         FAKE_ROUTES: JSON.stringify(routes),
         FAKE_LOG: sb.log,
         PROD_RUN_POLL_MS: '10',
+        PROVISION_RETRY_MS: '1',
       },
     },
   );
@@ -152,6 +153,24 @@ describe('dokploy-env', () => {
     expect(save.body?.createEnvFile).toBe(false);
     expect(save.body?.applicationId).toBe('app1');
     expect(save.body?.env).toBe(ENV_BLOCK.replace('A=1', `A=${SECRET}`));
+  });
+
+  it('set зберігає buildArgs і buildSecrets застосунку', () => {
+    const sb = sandbox();
+    const routes = envRoutes();
+    routes['GET application.one'] = {
+      body: { env: ENV_BLOCK, buildArgs: 'X=1', buildSecrets: 'Y=2' },
+    };
+    run(
+      sb,
+      'dokploy-env.mjs',
+      ['set', 'A', '--confirm', ...ENV_ARGS, sb.secrets],
+      routes,
+      'v',
+    );
+    const [save] = nonGet(sb.log);
+    expect(save.body?.buildArgs).toBe('X=1');
+    expect(save.body?.buildSecrets).toBe('Y=2');
   });
 
   it('unset видаляє один ключ, решта незмінна', () => {
@@ -262,6 +281,18 @@ describe('secrets-file', () => {
     );
   });
 
+  it('pipe з TTY на stdout → код 2, значення не друкується', () => {
+    const sb = sandbox();
+    writeFileSync(join(sb.cwd, 's.env'), `DATABASE_URL=${SECRET}\n`);
+    const cmd = `node ${join(SKILL, 'scripts/secrets-file.mjs')} pipe s.env DATABASE_URL`;
+    const r = spawnSync('script', ['-qec', cmd, '/dev/null'], {
+      cwd: sb.cwd,
+      encoding: 'utf8',
+    });
+    expect(r.status).toBe(2);
+    expect(r.stdout).not.toContain(SECRET);
+  });
+
   it('init не перезаписує наявний файл; pipe віддає значення без нового рядка, gen не затирає', () => {
     const sb = sandbox();
     sf(sb.cwd, ['init', 's.env']);
@@ -287,19 +318,31 @@ describe('dokploy provision', () => {
     name: 'shop',
     environments: [{ ...env, ...extra }],
   });
-  const db = { name: 'shop-db', appName: 'shop-db-ab12', postgresId: 'pg1' };
+  const db = {
+    name: 'shop-db',
+    appName: 'shop-db-ab12',
+    postgresId: 'pg1',
+    applicationStatus: 'done',
+  };
   const web = { name: 'shop-web', applicationId: 'app1' };
-  const routes: Routes = {
+  const full = { body: [project({ postgres: [db], applications: [web] })] };
+  const created: Routes = {
     'GET project.all': [
       { body: [] },
       { body: [project()] },
       { body: [project({ postgres: [db] })] },
-      { body: [project({ postgres: [db], applications: [web] })] },
+      full,
     ],
     'POST project.create': { body: {} },
     'POST postgres.create': { body: {} },
+    'POST postgres.deploy': { body: {} },
     'POST application.create': { body: {} },
     'POST domain.create': { body: {} },
+  };
+  const existing: Routes = {
+    'GET project.all': full,
+    'GET domain.byApplicationId': { body: [{ host: 'shop.example.com' }] },
+    'POST postgres.deploy': { body: {} },
   };
   const args = (sb: ReturnType<typeof sandbox>, extra: string[] = []) => [
     'provision',
@@ -313,37 +356,102 @@ describe('dokploy provision', () => {
     sb.secrets,
     ...extra,
   ];
+  const DB_URLS =
+    'MIGRATION_DATABASE_URL=postgresql://postgres:p1@shop-db-ab12:5432/shop\nDATABASE_URL=postgresql://app_runtime:p2@shop-db-ab12:5432/shop\n';
+  const withSecrets = (sb: ReturnType<typeof sandbox>) =>
+    writeFileSync(sb.secrets, readFileSync(sb.secrets, 'utf8') + DB_URLS);
 
-  it('без --confirm → код 3 і жодного не-GET запиту', () => {
-    const sb = sandbox();
-    const r = run(sb, 'dokploy.mjs', args(sb), routes);
-    expect(r.code).toBe(3);
-    expect(r.out).toContain('Postgres 17');
-    expect(nonGet(sb.log)).toEqual([]);
-  });
-
-  it('створює ресурси (Postgres 17), пароль лише у файлі секретів, deploy.json зі значень Dokploy', async () => {
+  /** Магазин із шимом `node_modules/.bin/simplycms` → справжній CLI. */
+  async function store() {
     const roots: string[] = [];
-    const store = await scaffoldFakeStore('shop', roots);
+    const root = await scaffoldFakeStore('shop', roots);
     dirs.push(...roots);
-    mkdirSync(join(store, 'node_modules/.bin'), { recursive: true });
-    const shim = join(store, 'node_modules/.bin/simplycms');
+    mkdirSync(join(root, 'node_modules/.bin'), { recursive: true });
+    const shim = join(root, 'node_modules/.bin/simplycms');
     writeFileSync(shim, `#!/bin/sh\nexec node ${CLI_INDEX} "$@"\n`);
     chmodSync(shim, 0o755);
+    return root;
+  }
+  const record = (root: string) => join(root, '.simplycms/deploy.json');
+
+  it("без --confirm → код 3, жодного не-GET, прев'ю з сервером і записом deploy.json", async () => {
     const sb = sandbox();
+    const root = await store();
     const r = run(
       sb,
       'dokploy.mjs',
-      args(sb, ['--confirm']),
-      routes,
+      args(sb, ['--server', 'srv1']),
+      created,
       '',
-      store,
+      root,
+    );
+    expect(r.code).toBe(3);
+    expect(r.out).toContain('Postgres 17');
+    expect(r.out).toContain('на сервері srv1');
+    expect(r.out).toContain('.simplycms/deploy.json');
+    expect(nonGet(sb.log)).toEqual([]);
+    expect(existsSync(record(root))).toBe(false);
+  });
+
+  it("без --server прев'ю явно каже про хост панелі", async () => {
+    const sb = sandbox();
+    const r = run(sb, 'dokploy.mjs', args(sb), created, '', await store());
+    expect(r.out).toContain('на хості панелі Dokploy');
+  });
+
+  it('усе існує, без --confirm → код 3, deploy.json не створено', async () => {
+    const sb = sandbox();
+    withSecrets(sb);
+    const root = await store();
+    const r = run(sb, 'dokploy.mjs', args(sb), existing, '', root);
+    expect(r.code).toBe(3);
+    expect(nonGet(sb.log)).toEqual([]);
+    expect(existsSync(record(root))).toBe(false);
+  });
+
+  it('усе існує і запис є → код 0, нічого не створює', async () => {
+    const sb = sandbox();
+    withSecrets(sb);
+    const root = await store();
+    expect(
+      run(sb, 'dokploy.mjs', args(sb, ['--confirm']), existing, '', root).code,
+    ).toBe(0); // пише deploy.json
+    const again = run(
+      sb,
+      'dokploy.mjs',
+      args(sb, ['--confirm']),
+      existing,
+      '',
+      root,
+    );
+    expect(again.code).toBe(0);
+    expect(again.out).toContain('Усе вже створено');
+    expect(nonGet(sb.log)).toEqual([]);
+  });
+
+  it('створює ресурси на --server, запускає БД, пароль лише у файлі секретів, deploy.json зі значень Dokploy', async () => {
+    const sb = sandbox();
+    const root = await store();
+    const r = run(
+      sb,
+      'dokploy.mjs',
+      args(sb, ['--confirm', '--server', 'srv1']),
+      created,
+      '',
+      root,
     );
     expect(r.code).toBe(0);
-    const pg = nonGet(sb.log).find((q) => q.path === 'postgres.create')!;
+    const calls = nonGet(sb.log);
+    const pg = calls.find((q) => q.path === 'postgres.create')!;
     expect(pg.body?.dockerImage).toBe('postgres:17');
+    expect(pg.body?.serverId).toBe('srv1');
+    expect(
+      calls.find((q) => q.path === 'application.create')?.body?.serverId,
+    ).toBe('srv1');
+    expect(calls.find((q) => q.path === 'postgres.deploy')?.body).toEqual({
+      postgresId: 'pg1',
+    });
     const password = String(pg.body?.databasePassword);
-    expect(password.length).toBeGreaterThan(20);
     expect(r.out + r.err).not.toContain(password);
     const saved = readFileSync(sb.secrets, 'utf8');
     expect(saved).toContain(
@@ -353,9 +461,7 @@ describe('dokploy provision', () => {
       /^DATABASE_URL=postgresql:\/\/app_runtime:[0-9a-f]{48}@shop-db-ab12:5432\/shop$/m,
     );
     expect(statSync(sb.secrets).mode & 0o777).toBe(0o600);
-    expect(
-      JSON.parse(readFileSync(join(store, '.simplycms/deploy.json'), 'utf8')),
-    ).toEqual({
+    expect(JSON.parse(readFileSync(record(root), 'utf8'))).toEqual({
       version: 1,
       dokploy: {
         url: 'https://dok.example.com',
@@ -369,15 +475,106 @@ describe('dokploy provision', () => {
     });
   });
 
-  it('усе вже існує → нічого не створює (ідемпотентність)', () => {
+  it('без --server поле serverId у create не передається', async () => {
     const sb = sandbox();
-    const full = { body: [project({ postgres: [db], applications: [web] })] };
-    const r = run(sb, 'dokploy.mjs', args(sb, ['--confirm']), {
-      'GET project.all': full,
-      'GET domain.byApplicationId': { body: [{ host: 'shop.example.com' }] },
-    });
-    expect(r.out).toContain('Усе вже створено');
+    run(sb, 'dokploy.mjs', args(sb, ['--confirm']), created, '', await store());
+    const pg = nonGet(sb.log).find((q) => q.path === 'postgres.create')!;
+    expect(pg.body).not.toHaveProperty('serverId');
+  });
+
+  it("БД є, але не запущена (idle) → у прев'ю «запустити», з --confirm — postgres.deploy", async () => {
+    const sb = sandbox();
+    withSecrets(sb);
+    const idle = {
+      body: [
+        project({
+          postgres: [{ ...db, applicationStatus: 'idle' }],
+          applications: [web],
+        }),
+      ],
+    };
+    const routes = { ...existing, 'GET project.all': idle };
+    const root = await store();
+    const preview = run(sb, 'dokploy.mjs', args(sb), routes, '', root);
+    expect(preview.out).toContain('запустити Postgres');
     expect(nonGet(sb.log)).toEqual([]);
+    run(sb, 'dokploy.mjs', args(sb, ['--confirm']), routes, '', root);
+    expect(nonGet(sb.log).map((q) => q.path)).toContain('postgres.deploy');
+  });
+
+  it('обрив після postgres.create: пароль уже у файлі секретів, повтор доводить хост', async () => {
+    const sb = sandbox();
+    const root = await store();
+    const broken = {
+      ...created,
+      'POST postgres.create': { status: 500, body: {} },
+    };
+    expect(
+      run(sb, 'dokploy.mjs', args(sb, ['--confirm']), broken, '', root).code,
+    ).toBe(1);
+    const saved = readFileSync(sb.secrets, 'utf8');
+    expect(saved).toMatch(
+      /^MIGRATION_DATABASE_URL=postgresql:\/\/postgres:[0-9a-f]{48}@pending:5432\/shop$/m,
+    );
+    const retry = run(
+      sb,
+      'dokploy.mjs',
+      args(sb, ['--confirm']),
+      {
+        ...created,
+        'GET project.all': [{ body: [project({ postgres: [db] })] }, full],
+      },
+      '',
+      root,
+    );
+    expect(retry.code).toBe(0);
+    expect(readFileSync(sb.secrets, 'utf8')).toContain(
+      '@shop-db-ab12:5432/shop',
+    );
+    expect(readFileSync(sb.secrets, 'utf8')).not.toContain('@pending:');
+  });
+
+  it('БД є, а URL у файлі секретів немає → явна помилка з дією', async () => {
+    const sb = sandbox();
+    const r = run(
+      sb,
+      'dokploy.mjs',
+      args(sb, ['--confirm']),
+      existing,
+      '',
+      await store(),
+    );
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('пароль власника втрачено');
+    expect(r.err).toContain('MIGRATION_DATABASE_URL');
+    expect(nonGet(sb.log)).toEqual([]);
+  });
+
+  it('Dokploy не показує створену БД → зрозуміла помилка, не TypeError', async () => {
+    const sb = sandbox();
+    const blind = {
+      ...created,
+      'GET project.all': [{ body: [] }, { body: [project()] }],
+    };
+    const r = run(
+      sb,
+      'dokploy.mjs',
+      args(sb, ['--confirm']),
+      blind,
+      '',
+      await store(),
+    );
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('ще не показує shop-db');
+    expect(r.err).not.toContain('TypeError');
+  });
+
+  it('немає node_modules/.bin/simplycms → змістовна помилка', () => {
+    const sb = sandbox();
+    withSecrets(sb);
+    const r = run(sb, 'dokploy.mjs', args(sb), existing);
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('node_modules/.bin');
   });
 });
 
@@ -410,6 +607,26 @@ describe('тексти скіла', () => {
       expect(text).toContain('app_admin');
     },
   );
+
+  it.each(['SKILL.md', 'references/dokploy.md'])(
+    "%s: правило прев'ю → згода поширено на MCP, UI і скрипти",
+    (file) => {
+      const text = read(file);
+      expect(text).toMatch(/прев'ю → згода/);
+      expect(text).toMatch(/MCP/);
+    },
+  );
+
+  it('SKILL.md: правило діє на будь-яку мутацію', () => {
+    expect(read('SKILL.md')).toContain('БУДЬ-ЯКУ мутацію');
+  });
+
+  it('dokploy.md: RAILPACK_* через dokploy-env зі stdin, деплой і бекапи після згоди', () => {
+    const text = read('references/dokploy.md');
+    expect(text).toContain('`dokploy-env set` зі stdin');
+    expect(text).toMatch(/Деплой — теж мутація/);
+    expect(text).toMatch(/## 5\. Бекапи\n\nМутація: прев'ю → згода/);
+  });
 
   it('dokploy.md: стартова команда, Node 24, postgres:18, без --print-link', () => {
     const text = read('references/dokploy.md');

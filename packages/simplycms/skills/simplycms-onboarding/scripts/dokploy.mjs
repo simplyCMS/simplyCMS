@@ -2,16 +2,16 @@
 /**
  * Розгортання магазину в Dokploy: проєкт → власний Postgres 17 → застосунок → домен.
  *
- *   dokploy.mjs provision --name <імʼя> --domain <хост> --bucket <бакет> --secrets <файл> [--confirm]
+ *   dokploy.mjs provision --name <імʼя> --domain <хост> --bucket <бакет> [--server <serverId>]
+ *                         [--secrets <файл>] [--confirm]
  *
- * Ідемпотентно: кожен ресурс спершу шукається за імʼям (`<імʼя>`, `<імʼя>-db`,
- * `<імʼя>-web`), створюється лише відсутній. Без `--confirm` — прев'ю і код 3, жодного
- * не-GET запиту. Паролі БД генеруються тут і лягають ЛИШЕ у файл секретів
- * (`MIGRATION_DATABASE_URL` — власник схеми, `DATABASE_URL` — `app_runtime`); у вивід
- * вони не потрапляють. Запис `deploy.json` формується з відповідей Dokploy і параметрів
- * команди й пишеться через `simplycms deploy:record set`.
+ * Ідемпотентно: ресурс шукається за імʼям (`<імʼя>`, `<імʼя>-db`, `<імʼя>-web`), створюється
+ * лише відсутній. Без `--confirm` — прев'ю (разом із записом `deploy.json` і цільовим сервером)
+ * і код 3, жодного не-GET запиту, жодного файлу. Паролі БД лягають ЛИШЕ у файл секретів;
+ * `--server` — сервер застосунків (де потім працює `prod-run`), без нього ресурси стають
+ * на хості панелі. Запис `deploy.json` — з відповідей Dokploy через `simplycms deploy:record set`.
  */
-import { randomBytes } from 'node:crypto';
+import { resolve } from 'node:path';
 
 import {
   credentials,
@@ -22,27 +22,40 @@ import {
   takeFlag,
   writeDeployRecord,
 } from './dokploy-client.mjs';
-import { ensureGitignored, setSecret } from './secrets-store.mjs';
-import { resolve } from 'node:path';
+import {
+  assertDbSecrets,
+  bindDbHost,
+  reserveDbSecrets,
+} from './provision-secrets.mjs';
+
+// Узгоджено з PORT у server.mjs магазину (за замовчуванням 3000).
+const APP_PORT = 3000;
+const RETRIES = 5;
 
 const args = process.argv.slice(2);
 const confirm = takeFlag(args, '--confirm', false);
-const [name, domain, bucket] = ['--name', '--domain', '--bucket'].map((f) =>
-  takeFlag(args, f),
-);
+const [name, domain, bucket, serverId] = [
+  '--name',
+  '--domain',
+  '--bucket',
+  '--server',
+].map((f) => takeFlag(args, f));
 const secrets = takeFlag(args, '--secrets') ?? DEFAULT_SECRETS;
 if (args[0] !== 'provision' || !name || !domain || !bucket) {
   console.error(
-    'Використання: dokploy.mjs provision --name N --domain HOST --bucket B [--secrets ФАЙЛ] [--confirm]',
+    'Використання: dokploy.mjs provision --name N --domain HOST --bucket B [--server ID] [--secrets ФАЙЛ] [--confirm]',
   );
   process.exit(2);
 }
 const dbName = `${name}-db`;
 const webName = `${name}-web`;
+const dbSchema = name.replace(/\W/g, '_');
+const secretsPath = resolve(secrets);
 
 try {
   const creds = credentials(secrets);
   const call = (path, opts) => dokploy(creds, path, opts);
+  const post = (path, body) => call(path, { method: 'POST', body });
   const find = async () => {
     const project = (await call('project.all')).find((p) => p.name === name);
     const env =
@@ -55,70 +68,87 @@ try {
       web: env?.applications?.find((x) => x.name === webName),
     };
   };
+  // Dokploy може ще не показувати щойно створений ресурс: коротко повторюємо, далі — зрозуміла помилка.
+  const refresh = async (pick, what) => {
+    for (let i = 0; i < RETRIES; i++) {
+      const state = await find();
+      if (pick(state)) return state;
+      await new Promise((r) =>
+        setTimeout(r, Number(process.env.PROVISION_RETRY_MS ?? 1000)),
+      );
+    }
+    throw new Error(`Dokploy ще не показує ${what}: повтори команду`);
+  };
+
   let state = await find();
+  if (state.db) assertDbSecrets(secretsPath, dbName);
   const domains = state.web
     ? await call('domain.byApplicationId', {
         query: { applicationId: state.web.applicationId },
       })
     : [];
   const hasDomain = domains.some((d) => d.host === domain);
+  const hasRecord = readDeployRecord() !== null;
+  const target = serverId
+    ? `на сервері ${serverId}`
+    : 'на хості панелі Dokploy (без --server)';
+  const startDb = state.db?.applicationStatus === 'idle';
   const plan = [
     !state.project && `створити проєкт ${name}`,
     !state.db &&
-      `створити Postgres 17 ${dbName} (власний екземпляр магазину; паролі — лише у файл секретів)`,
-    !state.web && `створити застосунок ${webName}`,
-    !hasDomain && `додати домен ${domain} (https, letsencrypt, порт 3000)`,
+      `створити і запустити Postgres 17 ${dbName} ${target} (власний екземпляр магазину; паролі — лише у файл секретів)`,
+    startDb && `запустити Postgres ${dbName} (створений, але не запущений)`,
+    !state.web && `створити застосунок ${webName} ${target}`,
+    !hasDomain &&
+      `додати домен ${domain} (https, letsencrypt, порт ${APP_PORT})`,
+    !hasRecord && 'записати .simplycms/deploy.json (без секретів)',
   ].filter(Boolean);
-  if (plan.length === 0) console.log('Усе вже створено, нічого міняти.');
-  else requireConfirm(confirm, plan);
+  if (plan.length === 0) {
+    console.log('Усе вже створено, нічого міняти.');
+    process.exit(0);
+  }
+  requireConfirm(confirm, plan);
 
-  const password = {
-    owner: randomBytes(24).toString('hex'),
-    runtime: randomBytes(24).toString('hex'),
-  };
-  const post = (path, body) => call(path, { method: 'POST', body });
+  const createDb = !state.db;
+  const where = serverId ? { serverId } : {};
   if (!state.project) {
     await post('project.create', { name, description: 'SimplyCMS store' });
-    state = await find();
+    state = await refresh((s) => s.env, `проєкт ${name}`);
   }
-  if (!state.db) {
+  if (createDb) {
+    const ownerPassword = reserveDbSecrets(secretsPath, dbSchema);
     await post('postgres.create', {
       name: dbName,
-      databaseName: name.replace(/\W/g, '_'),
+      databaseName: dbSchema,
       databaseUser: 'postgres',
-      databasePassword: password.owner,
+      databasePassword: ownerPassword,
       dockerImage: 'postgres:17',
       environmentId: state.env.environmentId,
+      ...where,
     });
-    state = await find();
-    const dbUrl = (user, pw) =>
-      `postgresql://${user}:${pw}@${state.db.appName}:5432/${name.replace(/\W/g, '_')}`;
-    const path = resolve(secrets);
-    setSecret(
-      path,
-      'MIGRATION_DATABASE_URL',
-      dbUrl('postgres', password.owner),
-    );
-    setSecret(path, 'DATABASE_URL', dbUrl('app_runtime', password.runtime));
-    ensureGitignored(path);
+    state = await refresh((s) => s.db, dbName);
   }
+  bindDbHost(secretsPath, state.db.appName);
+  if (createDb || startDb)
+    await post('postgres.deploy', { postgresId: state.db.postgresId });
   if (!state.web) {
     await post('application.create', {
       name: webName,
       environmentId: state.env.environmentId,
+      ...where,
     });
-    state = await find();
+    state = await refresh((s) => s.web, webName);
   }
   if (!hasDomain)
     await post('domain.create', {
       host: domain,
       applicationId: state.web.applicationId,
-      port: 3000,
+      port: APP_PORT,
       https: true,
       certificateType: 'letsencrypt',
       domainType: 'application',
     });
-  if (!readDeployRecord())
+  if (!hasRecord)
     writeDeployRecord({
       version: 1,
       dokploy: {

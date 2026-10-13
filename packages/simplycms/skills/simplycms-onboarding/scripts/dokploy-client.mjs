@@ -66,10 +66,19 @@ export function requireConfirm(confirm, previewLines) {
 
 /** Єдиний носій схеми `.simplycms/deploy.json` — CLI магазину, а не прямий файл. */
 function cli(args, input) {
-  return spawnSync('node_modules/.bin/simplycms', ['deploy:record', ...args], {
-    input,
-    encoding: 'utf8',
-  });
+  const r = spawnSync(
+    'node_modules/.bin/simplycms',
+    ['deploy:record', ...args],
+    {
+      input,
+      encoding: 'utf8',
+    },
+  );
+  if (r.error)
+    throw new Error(
+      'simplycms не знайдено в node_modules/.bin: запускай з кореня магазину після pnpm install',
+    );
+  return r;
 }
 
 /** Запис розгортання або `null`, якщо його ще немає (код 3). */

@@ -6,11 +6,12 @@
 ## 1. Ресурси
 
 ```bash
-node .claude/skills/simplycms-onboarding/scripts/dokploy.mjs provision --name <slug> --domain <хост> --bucket <бакет>
+node .claude/skills/simplycms-onboarding/scripts/dokploy.mjs provision --name <slug> --domain <хост> --bucket <бакет> --server <serverId>
 ```
 
-Створює (лише відсутнє, пошук за іменем): проєкт `<slug>`, Postgres `<slug>-db`, застосунок `<slug>-web`,
-домен. Паролі БД лягають у файл секретів (`MIGRATION_DATABASE_URL`, `DATABASE_URL`), не у вивід.
+`--server` — сервер застосунків (той самий `serverId`, що й у `prod-run`): без нього ресурси стануть на
+хості панелі, і §7 не знайде контейнер. Створює (лише відсутнє, пошук за іменем): проєкт `<slug>`,
+Postgres `<slug>-db` (і запускає його), застосунок `<slug>-web`, домен. Паролі БД лягають у файл секретів (`MIGRATION_DATABASE_URL`, `DATABASE_URL`), не у вивід.
 Ідентифікатори йдуть у `.simplycms/deploy.json` через `pnpm simplycms deploy:record set`.
 
 - **Власний екземпляр Postgres на магазин**: ролі `app_runtime`/`app_admin` кластерні, синк пароля
@@ -21,7 +22,10 @@ node .claude/skills/simplycms-onboarding/scripts/dokploy.mjs provision --name <s
 
 ## 2. Збірка
 
-У застосунку: джерело — git-репозиторій, **Railpack**, autoDeploy на `main`. Змінні збірки:
+Кожен підпункт — мутація: прев'ю → згода → застосувати (MCP Dokploy або UI; `RAILPACK_*` — не там).
+У застосунку: джерело — git-репозиторій магазину (MCP application-saveGithubProvider або saveGitProvider),
+збірка — **Railpack** (`application-saveBuildType`), autoDeploy на `main` (`application-update`).
+Змінні збірки задаються через `dokploy-env set` зі stdin, не MCP:
 
 ```
 RAILPACK_START_CMD="node scripts/start.mjs"
@@ -51,12 +55,13 @@ node $S/secrets-file.mjs pipe .simplycms/secrets.env DATABASE_URL | node $S/dokp
 
 ## 5. Бекапи
 
-Бекап БД: сервіс Postgres → Backups, щоденно, у S3-destination, зберігати ≥14. Бекап тому/бакета —
-`references/backups-restore.md`. Вмикай ДО першого запису даних.
+Мутація: прев'ю → згода. Через MCP `backup-create` (destination — `destination-*`) або UI: сервіс Postgres →
+Backups, щоденно, S3-destination, зберігати ≥14. Бекап тому/бакета — `references/backups-restore.md`.
+Вмикай ДО першого запису даних.
 
 ## 6. Деплой і перевірка
 
-Запусти деплой у Dokploy, дочекайся `running`, тоді:
+Деплой — теж мутація (прев'ю → згода): MCP `application-deploy` або кнопка Deploy. Дочекайся `running`, тоді:
 
 ```bash
 pnpm simplycms doctor --online --production
@@ -66,7 +71,7 @@ pnpm simplycms smoke https://<домен>
 ## 7. Запрошення власника (ПІСЛЯ налаштування SMTP)
 
 Разовий скрипт на сервері через `prod-run.mjs` (контейнер застосунку знаходь за appName), `OWNER_EMAIL`
-з вимог, **без `--print-link`**: посилання з адмінським токеном не має потрапити у вивід, що йде в розмову
+з вимог, **без `--print-link`**; сам `prod-run`-скрипт не друкує секретів (його вивід іде в розмову агента): посилання з адмінським токеном не має потрапити у вивід, що йде в розмову
 агента. Лист із посиланням приходить власнику на пошту.
 
 ```bash

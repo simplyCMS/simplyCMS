@@ -27,13 +27,20 @@ const args = process.argv.slice(2);
 const confirm = takeFlag(args, '--confirm', false);
 const serverId = takeFlag(args, '--server');
 const secrets = takeFlag(args, '--secrets');
-const script = readFileSync(args[0] ?? 0, 'utf8');
-if (!serverId || !script.trim()) {
+const usage = (reason) => {
   console.error(
-    'Використання: prod-run --server ID [--confirm] [скрипт.sh | stdin]; скрипт не порожній',
+    `${reason}. Використання: prod-run --server ID [--confirm] [скрипт.sh | stdin]`,
   );
   process.exit(2);
+};
+if (!serverId) usage('Не задано --server');
+let script;
+try {
+  script = readFileSync(args[0] ?? 0, 'utf8');
+} catch {
+  usage('Скрипт не прочитано');
 }
+if (!script.trim()) usage('Скрипт порожній');
 requireConfirm(confirm, [
   `виконати на сервері ${serverId} скрипт:`,
   ...script

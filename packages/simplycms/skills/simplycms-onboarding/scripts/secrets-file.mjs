@@ -51,6 +51,11 @@ if (command === 'init') {
   setSecret(path, key, randomBytes(32).toString('hex'));
   console.log(`Згенеровано: ${key}`);
 } else if (command === 'pipe') {
+  // Секрет не друкуємо в термінал (він потрапив би в розмову агента): лише в конвеєр.
+  if (process.stdout.isTTY) {
+    console.error('pipe віддає значення лише в конвеєр: | dokploy-env set KEY');
+    process.exit(2);
+  }
   const value = readSecret(path, key);
   if (!value) {
     console.error(`${key} порожній або відсутній у ${rawPath}`);

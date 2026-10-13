@@ -72,8 +72,9 @@ try {
       body: {
         applicationId,
         env: serializeEnv(next),
-        buildArgs: null,
-        buildSecrets: null,
+        // Інші поля блоку збірки зберігаємо, а не затираємо.
+        buildArgs: app.buildArgs ?? null,
+        buildSecrets: app.buildSecrets ?? null,
         createEnvFile: false,
       },
     });
