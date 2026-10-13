@@ -12,9 +12,17 @@ import { I18nProvider, createTranslator } from 'simplycms/i18n';
 // Р30: зі SMTP signUp повертає `token: null` — чекаут не вважає покупця
 // залогованим; вхід непідтвердженого має власне повідомлення.
 
-const h = vi.hoisted(() => ({ signUp: vi.fn(), signIn: vi.fn() }));
+const h = vi.hoisted(() => ({
+  signUp: vi.fn(),
+  signIn: vi.fn(),
+  reset: vi.fn(),
+}));
 vi.mock('simplycms/core/lib/auth-client', () => ({
-  authClient: { signUp: { email: h.signUp }, signIn: { email: h.signIn } },
+  authClient: {
+    signUp: { email: h.signUp },
+    signIn: { email: h.signIn },
+    requestPasswordReset: h.reset,
+  },
 }));
 vi.mock('simplycms/ui/use-toast', () => ({
   useToast: () => ({ toast: vi.fn() }),
@@ -66,6 +74,45 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
     expect(
       screen.getByRole('button', { name: t('auth.forgot.link') }),
     ).toBeTruthy();
+  });
+
+  it('підказка -> «Забули пароль?»: email з реєстрації вже у вході, клік викликає скидання з ним', async () => {
+    h.signUp.mockResolvedValue({
+      data: { token: null, user: { id: 'u1' } },
+      error: null,
+    });
+    h.reset.mockResolvedValue({ data: { status: true }, error: null });
+    render(
+      <I18nProvider locale="uk">
+        <CheckoutAuthBlock defaultTab="register" storeContacts={CONTACTS} />
+      </I18nProvider>,
+    );
+    type('checkout-auth-first-name', 'Іван');
+    type('checkout-auth-last-name', 'Тест');
+    type('checkout-auth-register-email', 'a@x.test');
+    type('checkout-auth-register-password', 'secret1');
+    fireEvent.click(
+      screen
+        .getAllByRole('button', { name: t('auth.register.submit') })
+        .at(-1)!,
+    );
+    const hint = await screen.findByRole('button', {
+      name: t('auth.forgot.link'),
+    });
+    fireEvent.click(hint);
+    // Перенесення адреси: вдруге вводити не треба.
+    expect(
+      (document.getElementById('checkout-auth-email') as HTMLInputElement)
+        .value,
+    ).toBe('a@x.test');
+    fireEvent.click(
+      screen.getByRole('button', { name: t('auth.forgot.link') }),
+    );
+    await waitFor(() =>
+      expect(h.reset).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'a@x.test' }),
+      ),
+    );
   });
 
   it('вхід: EMAIL_NOT_VERIFIED -> окреме повідомлення, не «невірний пароль»', async () => {

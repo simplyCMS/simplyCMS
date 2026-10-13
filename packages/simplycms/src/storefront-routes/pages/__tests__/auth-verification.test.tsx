@@ -91,6 +91,31 @@ describe('Auth: підтвердження пошти (Р30)', () => {
     );
   });
 
+  it('підказка -> перехід на вхід переносить email з реєстрації', async () => {
+    h.tab = 'register';
+    h.signUp.mockResolvedValue({
+      data: { token: null, user: { id: 'u1' } },
+      error: null,
+    });
+    renderAuth();
+    type('firstName', 'Іван');
+    type('lastName', 'Тест');
+    type('register-email', 'a@x.test');
+    type('register-password', 'secret1');
+    type('confirmPassword', 'secret1');
+    fireEvent.click(
+      screen.getByRole('button', { name: t('auth.register.submit') }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: t('auth.forgot.link') }),
+    );
+    await waitFor(() =>
+      expect(
+        (document.getElementById('login-email') as HTMLInputElement).value,
+      ).toBe('a@x.test'),
+    );
+  });
+
   it('signUp з сесією (dev, драйвер log): навігація як і раніше', async () => {
     h.tab = 'register';
     h.signUp.mockResolvedValue({

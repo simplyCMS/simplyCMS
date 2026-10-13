@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { authClient } from 'simplycms/core/lib/auth-client';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
+import { useForgotPassword } from 'simplycms/core/hooks/useForgotPassword';
 import { bannedMessage } from 'simplycms/core/lib/banned-message';
 import {
   Eye,
@@ -34,6 +35,7 @@ export function CheckoutAuthBlock({
 }: CheckoutAuthBlockProps) {
   const { toast } = useToast();
   const t = useT();
+  const { requestReset, pending: forgotPending } = useForgotPassword();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -174,6 +176,8 @@ export function CheckoutAuthBlock({
               type="button"
               className="underline"
               onClick={() => {
+                // Адреса з реєстрації переходить у вхід: не вводити вдруге.
+                setLoginEmail(regEmail);
                 setActiveTab('login');
                 clearMessages();
               }}
@@ -288,6 +292,14 @@ export function CheckoutAuthBlock({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               {t('auth.login.submit')}
+            </button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline"
+              disabled={isLoading || forgotPending}
+              onClick={() => void requestReset(loginEmail)}
+            >
+              {t('auth.forgot.link')}
             </button>
           </div>
         )}

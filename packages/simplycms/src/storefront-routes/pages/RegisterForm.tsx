@@ -28,7 +28,11 @@ const buildRegisterSchema = (t: Translator) =>
  * `awaitingVerification` (Р30): зі SMTP `signUp` повертає `token: null`, і замість
  * форми показується «перевірте пошту».
  */
-export function RegisterForm({ onGoToLogin }: { onGoToLogin: () => void }) {
+export function RegisterForm({
+  onGoToLogin,
+}: {
+  onGoToLogin: (email: string) => void;
+}) {
   const t = useT();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -117,7 +121,11 @@ export function RegisterForm({ onGoToLogin }: { onGoToLogin: () => void }) {
       <p className="text-sm text-muted-foreground">
         {t('auth.register.noEmailHint')}
       </p>
-      <Button type="button" variant="link" onClick={onGoToLogin}>
+      <Button
+        type="button"
+        variant="link"
+        onClick={() => onGoToLogin(registerEmail)}
+      >
         {t('auth.forgot.link')}
       </Button>
     </div>

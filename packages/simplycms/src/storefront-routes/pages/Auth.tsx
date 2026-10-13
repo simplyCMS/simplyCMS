@@ -18,6 +18,7 @@ import { Eye, EyeOff, Mail, Lock, Loader2, Zap } from 'lucide-react';
 import { z } from 'zod';
 import { useT, type Translator } from 'simplycms/i18n';
 import { useStoreProfile } from 'simplycms/themes/store-profile';
+import { useForgotPassword } from 'simplycms/core/hooks/useForgotPassword';
 import { RegisterForm } from './RegisterForm';
 import { bannedMessage } from 'simplycms/core/lib/banned-message';
 
@@ -40,6 +41,7 @@ export default function Auth() {
   >;
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { requestReset, pending: forgotPending } = useForgotPassword();
 
   const [activeTab, setActiveTab] = useState<string>(search.tab || 'login');
   const [showPassword, setShowPassword] = useState(false);
@@ -117,28 +119,6 @@ export default function Auth() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Запит на скидання пароля.
-   *
-   * 🔴 Відповідь навмисно однакова для існуючої й неіснуючої пошти — так її
-   * будує сам Better Auth, і UI не має права цю рівність порушити: інакше
-   * форма перетворюється на перелічувач зареєстрованих адрес.
-   */
-  const handleForgotPassword = async () => {
-    if (!loginEmail) {
-      toast({ variant: 'destructive', title: t('auth.forgot.needEmail') });
-      return;
-    }
-
-    setIsLoading(true);
-    await authClient.requestPasswordReset({
-      email: loginEmail,
-      redirectTo: '/auth/set-password',
-    });
-    setIsLoading(false);
-    toast({ title: t('auth.forgot.sent') });
   };
 
   if (authLoading) {
@@ -264,8 +244,8 @@ export default function Auth() {
                     type="button"
                     variant="link"
                     className="w-full text-muted-foreground"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
+                    onClick={() => void requestReset(loginEmail)}
+                    disabled={isLoading || forgotPending}
                   >
                     {t('auth.forgot.link')}
                   </Button>
@@ -274,7 +254,13 @@ export default function Auth() {
 
               {/* Register Tab */}
               <TabsContent value="register" className="space-y-4">
-                <RegisterForm onGoToLogin={() => setActiveTab('login')} />
+                <RegisterForm
+                  onGoToLogin={(email) => {
+                    // Адреса з реєстрації переходить у вхід: не вводити вдруге.
+                    setLoginEmail(email);
+                    setActiveTab('login');
+                  }}
+                />
               </TabsContent>
             </Tabs>
 
