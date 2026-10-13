@@ -117,8 +117,8 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0005_mail_outbox (ЗАМОРОЖЕНО
-│   │   │                         #    для rc.1, `tests/migrations-frozen.test.ts`); джерело `simplycms db:diff`
+│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0005_mail_outbox (правило rc.1: застосовані не правляться;
+│   │   │                         #    `tests/migrations-frozen.test.ts`); джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг

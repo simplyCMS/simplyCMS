@@ -41,8 +41,8 @@
   індекси `orders(created_at)` і keyset покупців, колонка `user_category_history.source`
   (`'manual'|'rule'`), нова таблиця `mail_outbox` (`0005_mail_outbox.sql`). Базу без журналу міграцій
   платформа не адоптує: локальну — `pnpm db:demo`, іншу — новий екземпляр.
-- **Міграції заморожено:** `0000_prelude … 0005_mail_outbox` не правляться ніколи
-  (`tests/migrations-frozen.test.ts`); накочена, але змінена міграція → `MigrationChecksumError`, контейнер
+- **Міграції rc.1 не правляться:** з цього релізу застосовані `0000_prelude … 0005_mail_outbox`
+  лишаються як є (`tests/migrations-frozen.test.ts`); накочена, але змінена міграція → `MigrationChecksumError`, контейнер
   не стартує. Нова схема — лише `0006_*` і далі, кожен файл несе свої гранти й RLS.
 - **Накат міграцій — лише `simplycms db:apply` або старт контейнера:** `psql`-цикл знесено з усіх
   носіїв. Журнал `public.simplycms_migrations` (sha256, advisory-лок, кожен файл в одній транзакції);
