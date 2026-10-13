@@ -2,7 +2,7 @@
 /**
  * Підготовка релізу ядра однією командою.
  *
- *   pnpm release 0.2.0
+ *   pnpm release 0.2.0          (або пререліз: pnpm release 1.0.0-rc.1)
  *
  * Що робить:
  *   1. гарди — чисте дерево, коректна й більша версія, тег ще не існує;
@@ -17,8 +17,8 @@
  * останній погляд на діф має лишатися за нею.
  */
 import {
+  assertNewerVersion,
   bumpTo,
-  compareVersions,
   currentVersion,
   VERSION_RE,
 } from './release/bump.mjs';
@@ -41,19 +41,14 @@ const version = process.argv[2];
 try {
   if (!version || !VERSION_RE.test(version)) {
     fail(
-      `Вкажи версію у форматі X.Y.Z:  pnpm release 0.2.0\n` +
+      `Вкажи версію у форматі X.Y.Z або X.Y.Z-rc.N:  pnpm release 0.2.0\n` +
         `  Отримано: ${version ?? '(нічого)'}`,
     );
   }
 
   const from = currentVersion();
 
-  if (compareVersions(version, from) <= 0) {
-    fail(
-      `Версія ${version} не більша за поточну ${from}. ` +
-        `npm не дає перезаписати опубліковану версію — підніми номер.`,
-    );
-  }
+  assertNewerVersion(version, from);
 
   if (tagExists(version)) {
     fail(`Тег v${version} уже існує — цю версію вже випускали.`);

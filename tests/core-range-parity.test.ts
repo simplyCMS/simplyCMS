@@ -21,6 +21,8 @@ describe('coreRangeFor: паритет ядра і вбудованої копі
 
   it('обидві кидають на невалідному рядку', () => {
     expect(() => cliCoreRangeFor('abc')).toThrow();
+    expect(() => cliCoreRangeFor('1.0.0-beta.1')).toThrow();
+    expect(() => coreRangeFor('1.0.0-beta.1')).toThrow();
     expect(() => coreRangeFor('abc')).toThrow();
   });
 });

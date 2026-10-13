@@ -48,4 +48,11 @@ describe('validateThemeModule: engines.simplycms і мажорна межа', ()
     validateThemeModule(themeWith('^1.0.0'));
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it('ядро 1.0.0-rc.1 + ^1.0.0-0 — тиша (інакше RC відхилив би вшиті теми)', () => {
+    core.version = '1.0.0-rc.1';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    validateThemeModule(themeWith('^1.0.0-0'));
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

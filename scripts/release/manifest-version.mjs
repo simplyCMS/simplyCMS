@@ -29,7 +29,8 @@ const MANIFEST_SOURCES = [
  * точний, або гучна помилка. Вільніший regex мовчки зачепив би `engines`
  * чи версію в коментарі.
  */
-const MANIFEST_VERSION_RE = /^(\s*)version: '(\d+\.\d+\.\d+)',$/m;
+const MANIFEST_VERSION_RE =
+  /^(\s*)version: '(\d+\.\d+\.\d+(?:-rc\.(?:0|[1-9]\d*))?)',$/m;
 
 /**
  * Діапазон сумісності з ядром — рядок-літерал того ж маніфеста. Чесний semver
@@ -78,7 +79,7 @@ function readManifestVersion(path) {
   if (matches.length !== 1) {
     throw new Error(
       `У ${path} знайдено ${matches.length} version-літералів маніфесту ` +
-        `(очікувався рівно один вигляду "  version: 'X.Y.Z',"). Формат ` +
+        `(очікувався рівно один вигляду "  version: 'X.Y.Z',"; допустимий і суфікс -rc.N). Формат ` +
         `змінився — онови MANIFEST_VERSION_RE у ` +
         `scripts/release/manifest-version.mjs`,
     );

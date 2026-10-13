@@ -76,6 +76,20 @@ describe('validatePluginModule', () => {
     );
   });
 
+  it('ядро 1.0.0-rc.1 + engines ^1.0.0-0 — прийнято без попереджень', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const module = makeModule({
+      manifest: {
+        name: 'demo',
+        displayName: 'Demo',
+        version: '1.0.0-rc.1',
+        engines: { simplycms: '^1.0.0-0' },
+      },
+    });
+    expect(() => validatePluginModule(module, '1.0.0-rc.1')).not.toThrow();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('нерозбірливий діапазон — попередження з причиною', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({

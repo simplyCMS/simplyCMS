@@ -26,8 +26,8 @@ import {
   run,
   parseUpdateArgs,
   planCoreInstall,
-  resolveTargetVersion,
 } from '../packages/cli/src/update.mjs';
+import { resolveUpdateTarget } from '../packages/cli/src/update-target.mjs';
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
 // simplycms update (§4.3): версійна логіка — чистими функціями без мережі,
@@ -78,20 +78,35 @@ describe('cli update', () => {
     expect(() => parseUpdateArgs(['--wat'])).toThrow(/--wat/);
   });
 
-  it('resolveTargetVersion: --to як є; реєстр — лише без --to, відповідь тримається', () => {
+  it('resolveUpdateTarget: --to як є; реєстр — лише без --to', () => {
     const neverCalled = () => {
       throw new Error('не мав викликатися');
     };
-    expect(resolveTargetVersion('0.4.0', neverCalled)).toBe('0.4.0');
-    expect(resolveTargetVersion(undefined, () => '0.5.0\n')).toBe('0.5.0');
+    expect(
+      resolveUpdateTarget('0.4.0', { exec: neverCalled, current: '0.3.0' }),
+    ).toEqual({ version: '0.4.0', status: 'install' });
+    expect(
+      resolveUpdateTarget(undefined, {
+        exec: () => '{"latest":"0.5.0"}\n',
+        current: '0.4.0',
+      }),
+    ).toEqual({ version: '0.5.0', status: 'install' });
   });
 
-  it('resolveTargetVersion: реєстр недоступний або мовчить — падіння з підказкою --to', () => {
+  it('resolveUpdateTarget: реєстр недоступний або мовчить — падіння з підказкою --to', () => {
     const offline = () => {
       throw new Error('ENOTFOUND registry.npmjs.org');
     };
-    expect(() => resolveTargetVersion(undefined, offline)).toThrow(/--to/);
-    expect(() => resolveTargetVersion(undefined, () => '')).toThrow(/--to/);
+    const ctx = { current: '0.4.0' };
+    expect(() =>
+      resolveUpdateTarget(undefined, { ...ctx, exec: offline }),
+    ).toThrow(/--to/);
+    expect(() =>
+      resolveUpdateTarget(undefined, { ...ctx, exec: () => '' }),
+    ).toThrow(/--to/);
+    expect(() =>
+      resolveUpdateTarget(undefined, { ...ctx, exec: () => '{}' }),
+    ).toThrow(/--to/);
   });
 
   it('planCoreInstall: ядро + сателіти, deps і devDeps окремо, на цільову версію', () => {

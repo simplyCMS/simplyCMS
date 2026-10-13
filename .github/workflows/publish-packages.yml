@@ -86,8 +86,10 @@ jobs:
       # merge без бампа — no-op. `--access public`: scoped-пакети npm за
       # замовчуванням робить приватними, а це платний план.
       # `--no-git-checks`: у CI HEAD detached, і pnpm інакше відмовляється.
+      # `--tag`: пре-реліз (`1.0.0-rc.N`) йде під `next`, а не `latest` —
+      # інакше `npm i simplycms` і `simplycms update` схопили б RC як стабільний.
       - name: Publish
-        run: pnpm publish -r --access public --no-git-checks
+        run: pnpm publish -r --access public --no-git-checks --tag "$(node scripts/release/dist-tag.mjs --print)"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

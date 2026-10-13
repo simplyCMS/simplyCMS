@@ -12,6 +12,10 @@ import {
   writeHostFiles,
 } from './host-drift.mjs';
 import { pgUpdateHint } from './pg-peer.mjs';
+import {
+  readInstalledCoreVersion,
+  resolveUpdateTarget,
+} from './update-target.mjs';
 import { syncSkillLinks } from './skill-links.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
 
@@ -35,41 +39,6 @@ export function parseUpdateArgs(argv) {
   if (check && options.write)
     throw new Error('Прапорці --check і --write взаємовиключні');
   return options;
-}
-
-/** `pnpm view @simplycms/cli version` — останній опублікований реліз ядра. */
-function queryRegistryVersion() {
-  return execFileSync('pnpm', ['view', '@simplycms/cli', 'version'], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-}
-
-/**
- * Цільова версія: `--to` як є; без нього — запит реєстру. Недоступний реєстр
- * чи порожня відповідь — гучне падіння з підказкою `--to`, не «остання відома».
- * @param {string | undefined} to
- * @param {() => string} [query]
- */
-export function resolveTargetVersion(to, query = queryRegistryVersion) {
-  if (to) return to;
-  let raw;
-  try {
-    raw = query();
-  } catch (cause) {
-    throw new Error(
-      'Реєстр недоступний — цільову версію не зʼясувати. ' +
-        'Задай її явно: simplycms update --to <version>',
-      { cause },
-    );
-  }
-  const version = String(raw).trim();
-  if (!version)
-    throw new Error(
-      'Реєстр не повернув версію @simplycms/cli. ' +
-        'Задай її явно: simplycms update --to <version>',
-    );
-  return version;
 }
 
 /**
@@ -96,25 +65,48 @@ export function planCoreInstall(manifest, version) {
 export const hostDriftExitCode = (drifted, write) =>
   drifted.length > 0 && !write ? 1 : 0;
 
-/** @param {string[]} argv */
-export async function run(argv) {
+/** Справжнє виконання дочірньої команди — дефолт ін'єкційного шва `deps.exec`. */
+const defaultExec = (command, args, options) =>
+  execFileSync(command, args, options);
+
+/**
+ * @param {string[]} argv
+ * @param {{ exec?: (command: string, args: string[], options?: object) => unknown }} [deps]
+ *   `exec` — єдиний шов для `pnpm view` і `pnpm add`: тести й `--check` без
+ *   мережі підставляють фейк.
+ */
+export async function run(argv, deps = {}) {
+  const exec = deps.exec ?? defaultExec;
   const options = parseUpdateArgs(argv);
   begin('simplycms update');
   const storeRoot = findStoreRoot();
   if (options.install) {
-    const version = resolveTargetVersion(options.to);
-    const { deps, devDeps } = planCoreInstall(
-      readStoreManifest(storeRoot),
-      version,
-    );
-    say.step(`Оновлення ядра до ${version}`);
-    const add = (args) =>
-      execFileSync('pnpm', ['add', ...args], {
-        cwd: storeRoot,
-        stdio: 'inherit',
-      });
-    if (deps.length > 0) add(deps);
-    if (devDeps.length > 0) add(['-D', ...devDeps]);
+    const manifest = readStoreManifest(storeRoot);
+    const { version, status } = resolveUpdateTarget(options.to, {
+      exec,
+      current: readInstalledCoreVersion(storeRoot, manifest),
+    });
+    if (status === 'major') {
+      say.error(
+        `Доступна мажорна версія ${version} — містить зламані зміни, див. розділ ` +
+          `BREAKING у CHANGELOG; оновлення — \`simplycms update --to ${version}\``,
+      );
+      process.exitCode = 3;
+      finish('Мажорну межу без --to не перетинаю.');
+      return;
+    }
+    if (status === 'up-to-date') {
+      say.info(
+        `Новішого релізу немає (у реєстрі ${version}) — пакети не чіпаю.`,
+      );
+    } else {
+      const { deps: coreDeps, devDeps } = planCoreInstall(manifest, version);
+      say.step(`Оновлення ядра до ${version}`);
+      const add = (args) =>
+        exec('pnpm', ['add', ...args], { cwd: storeRoot, stdio: 'inherit' });
+      if (coreDeps.length > 0) add(coreDeps);
+      if (devDeps.length > 0) add(['-D', ...devDeps]);
+    }
   } else {
     say.info('--no-install: пакети не чіпаю, лише host-файли.');
   }

@@ -1,0 +1,113 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { run } from '../packages/cli/src/update.mjs';
+import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
+
+// update і канали релізів (T16): RC не даунгрейдиться до latest, мажорна межа
+// без --to не перетинається. Реєстр і `pnpm add` — фейковий `deps.exec`, мережі нема.
+type Tags = Record<string, string>;
+
+async function storeOn(version: string) {
+  const name = `upd-chan-${version.replace(/\W/g, '')}`;
+  const target = join(mkdtempSync(join(tmpdir(), 'cli-chan-')), name);
+  await scaffold({
+    templateDir: 'packages/create-simplycms-store/template',
+    targetDir: target,
+    storeName: name,
+    version,
+  });
+  // Поточну версію ядра читаємо зі встановленого пакета, як у справжньому магазині.
+  const installed = join(target, 'node_modules', 'simplycms');
+  mkdirSync(installed, { recursive: true });
+  writeFileSync(
+    join(installed, 'package.json'),
+    JSON.stringify({ name: 'simplycms', version }),
+  );
+  return target;
+}
+
+function fakeRegistry(tags: Tags) {
+  const calls: string[][] = [];
+  const exec = (command: string, args: string[]) => {
+    calls.push([command, ...args]);
+    if (args[0] === 'view') return JSON.stringify(tags);
+    return undefined;
+  };
+  const adds = () => calls.filter((c) => c[1] === 'add');
+  return { exec, calls, adds };
+}
+
+describe('simplycms update: канали релізів', () => {
+  const initialExitCode = process.exitCode;
+  afterEach(() => {
+    vi.restoreAllMocks();
+    process.exitCode = initialExitCode;
+  });
+
+  async function runUpdate(
+    store: string,
+    argv: string[],
+    registry: ReturnType<typeof fakeRegistry>,
+  ) {
+    let out = '';
+    vi.spyOn(process, 'cwd').mockReturnValue(store);
+    vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+      out += String(chunk);
+      return true;
+    });
+    process.exitCode = undefined;
+    await run(argv, { exec: registry.exec });
+    return { out, code: process.exitCode };
+  }
+
+  it('RC-магазин бере max(next, latest): rc.1 → rc.2', async () => {
+    const store = await storeOn('1.0.0-rc.1');
+    const reg = fakeRegistry({ latest: '0.14.0', next: '1.0.0-rc.2' });
+    await runUpdate(store, [], reg);
+    expect(reg.adds().length).toBeGreaterThan(0);
+    expect(reg.adds()[0].join(' ')).toContain('simplycms@1.0.0-rc.2');
+  });
+
+  it('RC не даунгрейдиться: latest 0.14.0, next = поточний → «новішого немає», pnpm add не викликано', async () => {
+    const store = await storeOn('1.0.0-rc.1');
+    const reg = fakeRegistry({ latest: '0.14.0', next: '1.0.0-rc.1' });
+    const { out } = await runUpdate(store, [], reg);
+    expect(reg.adds()).toEqual([]);
+    expect(out).toContain('Новішого релізу немає');
+  });
+
+  it('стабільний магазин бере latest, next ігнорує', async () => {
+    const store = await storeOn('0.14.0');
+    const reg = fakeRegistry({ latest: '0.14.1', next: '1.0.0-rc.2' });
+    await runUpdate(store, [], reg);
+    expect(reg.adds()[0].join(' ')).toContain('simplycms@0.14.1');
+  });
+
+  it('мажорна межа: 0.14.0 + latest 1.0.0 без --to → код 3, текст називає 1.0.0 і --to, pnpm add не викликано', async () => {
+    const store = await storeOn('0.14.0');
+    const reg = fakeRegistry({ latest: '1.0.0' });
+    const { out, code } = await runUpdate(store, [], reg);
+    expect(code).toBe(3);
+    expect(reg.adds()).toEqual([]);
+    expect(out).toContain('1.0.0');
+    expect(out).toContain('--to 1.0.0');
+    expect(out).toContain('BREAKING');
+  });
+
+  it('з --to 1.0.0 мажорну межу перетинає', async () => {
+    const store = await storeOn('0.14.0');
+    const reg = fakeRegistry({ latest: '1.0.0' });
+    const { code } = await runUpdate(store, ['--to', '1.0.0'], reg);
+    expect(code).not.toBe(3);
+    expect(reg.adds()[0].join(' ')).toMatch(/simplycms@1\.0\.0(\s|$)/);
+  });
+
+  it('1.0.0-rc.2 + latest 1.0.0 → ставить (RC → фінальний тієї ж мажорної не межа)', async () => {
+    const store = await storeOn('1.0.0-rc.2');
+    const reg = fakeRegistry({ latest: '1.0.0', next: '1.0.0-rc.2' });
+    await runUpdate(store, [], reg);
+    expect(reg.adds()[0].join(' ')).toMatch(/simplycms@1\.0\.0(\s|$)/);
+  });
+});

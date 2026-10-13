@@ -13,9 +13,19 @@ describe('coreRangeFor', () => {
     expect(coreRangeFor('0.14.7')).toBe('^0.14.0');
   });
 
+  it('RC → діапазон з нижньою межею -0, що приймає RC і фінальний реліз', () => {
+    expect(coreRangeFor('1.0.0-rc.1')).toBe('^1.0.0-0');
+    expect(coreRangeFor('1.0.0-rc.12')).toBe('^1.0.0-0');
+    expect(coreRangeFor('1.0.0')).toBe('^1.0.0');
+    const range = coreRangeFor('1.0.0-rc.1');
+    expect(satisfies('1.0.0-rc.1', range)).toBe(true);
+    expect(satisfies('1.0.0', range)).toBe(true);
+  });
+
   it('невалідний рядок — виняток', () => {
     expect(() => coreRangeFor('abc')).toThrow(/Невалідна/);
     expect(() => coreRangeFor('1.0')).toThrow(/Невалідна/);
+    expect(() => coreRangeFor('1.0.0-beta.1')).toThrow(/Невалідна/);
   });
 
   it('діапазон з 1.0.0 приймає 1.x і не приймає 2.0.0 та 0.x', () => {
