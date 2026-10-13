@@ -5,6 +5,7 @@ import { cleanup, render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { DiscountEnvironment } from 'simplycms/contracts';
 import { I18nProvider } from 'simplycms/i18n';
+import { AGGREGATE } from 'simplycms/contracts/entities';
 import { isViewerPricedQuery } from 'simplycms/react-query';
 import { TestEngineProvider } from '../../__tests__/engine-stub';
 import * as F from './support/card-fixtures';
@@ -232,19 +233,84 @@ describe('ключ і скидання прайсу глядача (Р29)', () =
     expect(leaked).toEqual([]);
   });
 
-  it('M5: збій середовища цін у покупця — гостьовий сегмент, запити вантажаться', async () => {
+  /** Кожен стан будь-якої гостьової комірки з гуртовою ціною — витік. */
+  const watchGuestLeaks = () => {
+    const leaked: string[] = [];
+    const stop = client.getQueryCache().subscribe(({ query }) => {
+      const data = JSON.stringify(query.state.data ?? null);
+      if (
+        query.queryKey[1] === 'guest' &&
+        data.includes(`"price_type_id":"${F.WHOLESALE}"`)
+      )
+        leaked.push(JSON.stringify(query.queryKey));
+    });
+    return { leaked, stop };
+  };
+
+  it('M5: збій середовища без відомого виду — сентинел, гуртового в гостьовій комірці немає ні до, ні після виходу', async () => {
     session.userId = USER;
     envState.fail = true;
     auth.state = { user: { id: USER }, isLoading: false };
-    mount();
-    // Поки середовище в дорозі — `null` (комірки без даних); після збою —
-    // усі шість запитів під 'guest' і з даними, а не вічне очікування.
+    loader.product = F.detailProduct; // SSR-лоадер рахував гуртового покупця
+    const watch = watchGuestLeaks();
+    const view = mount();
+    // Запити не висять вічно: шість комірок із даними (сегмент не `null`).
     await waitFor(() =>
       expect(
         priced().filter(
-          (q) => q.queryKey[1] === 'guest' && q.state.data !== undefined,
+          (q) => q.queryKey[1] !== null && q.state.data !== undefined,
         ),
       ).toHaveLength(6),
     );
+    // До виходу: жодна гостьова комірка не тримає гуртового прайсу…
+    expect(watch.leaked).toEqual([]);
+    // …бо покупець із невідомим видом — під сентинелом (комірка `null` —
+    // засів лоадером до розвʼязання виду, вона не ходить у мережу).
+    for (const q of priced().filter(
+      (q) => q.queryKey[1] !== null && q.state.data !== undefined,
+    ))
+      expect(q.queryKey[1]).toBe('unresolved');
+
+    session.userId = null;
+    envState.fail = false;
+    auth.state = { user: null, isLoading: false };
+    view.rerender(tree());
+    await waitFor(() => expect(router.invalidate).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(hasWholesale()).toBe(false));
+    watch.stop();
+    expect(watch.leaked).toEqual([]);
+  });
+
+  it('M5: невдалий фоновий перезапит середовища не міняє відомий вид покупця', async () => {
+    session.userId = USER;
+    auth.state = { user: { id: USER }, isLoading: false };
+    mount();
+    await waitFor(() =>
+      expect(
+        priced().filter(
+          (q) => q.queryKey[1] === F.WHOLESALE && q.state.data !== undefined,
+        ),
+      ).toHaveLength(6),
+    );
+    envState.fail = true;
+    await client.refetchQueries({
+      queryKey: AGGREGATE.discountEnvironment.key,
+    });
+    await waitFor(() =>
+      expect(
+        client
+          .getQueryCache()
+          .findAll({ queryKey: AGGREGATE.discountEnvironment.key })
+          .some((q) => q.state.status === 'error'),
+      ).toBe(true),
+    );
+    // Жодної нової комірки під іншим сегментом — вид лишився гуртовим.
+    await new Promise((r) => setTimeout(r, 20));
+    const segments = new Set(
+      priced()
+        .filter((q) => q.getObserversCount() > 0)
+        .map((q) => q.queryKey[1]),
+    );
+    expect([...segments]).toEqual([F.WHOLESALE]);
   });
 });
