@@ -10,6 +10,7 @@ import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironm
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
+import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import type {
   CatalogProductRow,
   OptionRow,
@@ -76,7 +77,8 @@ export default function PropertyPage({
         },
       }),
     enabled: !!propertySlug && !!optionSlug && view !== null,
-    initialData,
+    // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
+    initialData: useSeedableInitialData(initialData),
   });
 
   const property = data?.property ?? null;

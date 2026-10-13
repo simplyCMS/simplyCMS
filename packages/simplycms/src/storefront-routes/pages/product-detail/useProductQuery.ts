@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
+import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { getProduct } from '../../server/products';
 import type { ProductDetailProduct } from './types';
 
@@ -30,6 +31,7 @@ export function useProductQuery(
     queryFn: (): Promise<ProductDetailProduct | null> =>
       getProduct({ data: { slug: productSlug as string } }),
     enabled: !!productSlug && view !== null,
-    initialData: initialProduct,
+    // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
+    initialData: useSeedableInitialData(initialProduct),
   });
 }

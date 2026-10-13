@@ -5,11 +5,9 @@
 // JSON-LD не йдуть (К3-Е6в-1).
 import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
-import {
-  loadProduct,
-  quoteCartFor,
-  withViewerPricesDb,
-} from 'simplycms/storefront/loaders';
+import { loadProduct, quoteCartFor } from 'simplycms/storefront/loaders';
+// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';

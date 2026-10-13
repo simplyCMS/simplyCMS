@@ -8,8 +8,9 @@ import {
   loadHomePageData,
   quoteCartFor,
   withStorefrontDb,
-  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
+// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { loadProductListPayload } from 'simplycms/storefront-routes/server/product-list-payload';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';

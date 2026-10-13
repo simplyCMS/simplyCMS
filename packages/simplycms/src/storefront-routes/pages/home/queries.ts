@@ -5,6 +5,7 @@ import {
   VIEWER_PRICED_META,
 } from 'simplycms/react-query';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
+import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   getFeaturedProducts,
@@ -37,7 +38,7 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
     queryFn: (): Promise<HomeProduct[]> => getFeaturedProducts(),
-    initialData,
+    initialData: useSeedableInitialData(initialData),
   });
 }
 
@@ -49,7 +50,7 @@ export function useNewProducts(initialData?: HomeProduct[]) {
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
     queryFn: (): Promise<HomeProduct[]> => getNewProducts(),
-    initialData,
+    initialData: useSeedableInitialData(initialData),
   });
 }
 
@@ -85,7 +86,7 @@ export function useSectionProducts(
     queryKey: priceViewKey(catalogKeys.sectionProducts(section.id), view),
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
-    initialData: options?.initialData,
+    initialData: useSeedableInitialData(options?.initialData),
     staleTime: 60_000,
     queryFn: (): Promise<HomeProduct[]> =>
       getSectionProducts({ data: section }),

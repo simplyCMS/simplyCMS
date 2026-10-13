@@ -23,8 +23,9 @@ import {
   loadSections,
   loadSitemapData,
   withStorefrontDb,
-  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
+// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { resolveHarness } from '../up.mjs';
 import {
   applyCanon,
@@ -80,7 +81,9 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('каталог непорожній і не містить неактивного товару', async () => {
-    const rows = await withStorefrontDb((db) => loadProductList(db));
+    const rows = await withViewerPricesDb(null, (db, v) =>
+      loadProductList(db, v),
+    );
 
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.map((row) => row.slug)).not.toContain(HIDDEN_PRODUCT_SLUG);
@@ -110,7 +113,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
         const section = await loadSectionBySlug(db, 'sonyachni-paneli');
         return {
           hidden: await loadProduct(db, HIDDEN_PRODUCT_SLUG, v),
-          inSection: await loadProductList(db, section?.id),
+          inSection: await loadProductList(db, v, section?.id),
         };
       },
     );

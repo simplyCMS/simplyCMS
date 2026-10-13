@@ -63,13 +63,14 @@
   публічний запит несе предикат явно (`is_active = true`, `has_page = true`).
   Забутий предикат не падає — він виводить чернетки у вітрину.
 - 🔴 **Ціни — лише видів глядача (Р29).** Публічні лоадери з `product_prices`
-  (`loadProduct`, `loadCatalogProducts`/`loadCatalogProductsWhere`, `loadPropertyOption`,
+  (`loadProduct`, `loadProductList`, `loadCatalogProducts`/`loadCatalogProductsWhere`, `loadPropertyOption`,
   `loadHomePageData`/`loadHomeProducts`/`loadSectionProducts`) приймають
   `ViewerPriceTypes` і фільтрують ціни в SQL (`visibleToViewer`,
   `loadViewerPricesByProduct` з `simplycms/commerce`). Гість — види
   `loadGuestPriceTypes`; покупець — вид своєї ефективної категорії (правило
   `loadPricingContext`) + гостьові як фолбек. serverFn бере набір лише через
-  `withViewerDb` (глядач — з `readSessionSubject`, параметра від клієнта немає), а
+  `withViewerDb` (глядач — з `readSessionSubject`, параметра від клієнта немає; ядро без
+  сесії `withViewerPricesDb` з публічного бареля не експортується), а
   відповідь залогіненому дістає `Cache-Control: private, no-store` — і serverFn, і
   SSR-HTML (serverFn під час SSR виконується в тому самому запиті). Гостьова відповідь
   однакова для всіх і лишається без нього. Серверного кешу payload-ів сторінок
@@ -96,9 +97,9 @@
     .validator(z.object({ slug: z.string().min(1) }))
     .handler(async ({ data }) => {
       const { slug } = data as { slug: string };
-      return withStorefrontDb(async (db) => {
+      return withViewerDb(async (db, viewer) => {
         const section = await loadSectionBySlug(db, slug);
-        return section ? { section, products: await loadProductList(db, section.id) } : null;
+        return section ? { section, products: await loadProductList(db, viewer, section.id) } : null;
       });
     });
   ```
@@ -168,11 +169,15 @@
 - **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній таблиці.
 - **`priceViewKey(key, view)`** (`simplycms/react-query`) — публічний запит із цінами
   (Р29): сегмент 0 — з реєстру, як і раніше, сегмент 1 — вид цін глядача (`'guest'`
-  або id виду з середовища цін; `null` — ще невідомо, запит не ходить), 🔴 не
+  або id виду з середовища цін; `null` — ще невідомо, запит не ходить; збій середовища
+  цін — `'guest'`, гостьові ціни замість вічного очікування), 🔴 не
   `userId`. Такі запити несуть `meta: VIEWER_PRICED_META`; зміна власника сесії
   (`useViewerPriceSync` в `AuthProvider`) перезапускає лоадери роутів
   (`router.invalidate()` — їхні дані йдуть в `initialData`), видаляє неактивні
-  комірки й скидає активні: після виходу прайсу покупця в кеші немає. Гейт —
+  комірки й скидає активні: після виходу прайсу покупця в кеші немає. Поки
+  `router.invalidate()` у дорозі, дані лоадера належать попередньому глядачу, тож
+  `initialData` береться лише через `useSeedableInitialData` (`ViewerLoaderFreshContext`):
+  нова комірка в цьому вікні не засівається, а запитується з новою cookie. Гейт —
   `storefront-routes/pages/__tests__/viewer-price-cache.test.tsx`.
 
 Стережуть: `eslint-rules/query-key-from-entity.mjs` (зона — `core/`, `*-ui/`,

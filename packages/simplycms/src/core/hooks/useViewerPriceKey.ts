@@ -17,9 +17,12 @@ import { useDiscountEnvironment } from './useDiscountEnvironment';
  */
 export function useViewerPriceKey(): string | null {
   const { user, isLoading } = useAuth();
-  const { data: env } = useDiscountEnvironment();
+  const { data: env, isError } = useDiscountEnvironment();
   if (isLoading) return null;
   if (!user) return PRICE_VIEW_GUEST;
+  // Збій середовища (M5 рев'ю А6.3): гостьовий сегмент — покупець бачить
+  // гостьові ціни (деградація без витоку), а не вічно незавантажений каталог.
+  if (isError) return PRICE_VIEW_GUEST;
   if (!env || env.actor.userId !== user.id) return null;
   // Покупець без жодного виду цін бачить рівно гостьовий набір.
   return env.priceTypeId ?? PRICE_VIEW_GUEST;

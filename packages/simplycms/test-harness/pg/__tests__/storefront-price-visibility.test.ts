@@ -10,9 +10,11 @@ import {
   loadCatalogProducts,
   loadHomePageData,
   loadProduct,
+  loadProductList,
   loadPropertyOption,
-  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
+// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import type { ViewerPriceTypes } from 'simplycms/commerce';
 import * as F from './fixtures/commerce';
 import { useCommerceDb } from './fixtures/commerce-db';
@@ -21,7 +23,7 @@ const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
 const RETAIL_EMAIL = 'commerce-retail@example.test';
 const STATION_SLUG = 'stantsiya-nakopychennya-10kwh';
 
-/** Усі `product_prices` усіх чотирьох публічних лоадерів одним списком. */
+/** Усі `product_prices` усіх пʼяти публічних лоадерів одним списком. */
 async function allPublicPrices(
   db: ActorDb,
   viewer: ViewerPriceTypes,
@@ -30,6 +32,7 @@ async function allPublicPrices(
   const catalog = await loadCatalogProducts(db, viewer);
   const home = await loadHomePageData(db, viewer);
   const option = await loadPropertyOption(db, 'tip-paneli', 'mono', viewer);
+  const list = await loadProductList(db, viewer);
   expect(product).not.toBeNull();
   expect(option?.products.length).toBeGreaterThan(0);
   return [
@@ -41,6 +44,7 @@ async function allPublicPrices(
       .flat()
       .flatMap((row) => row.prices),
     ...(option?.products ?? []).flatMap((row) => row.product_prices),
+    ...list.flatMap((row) => row.product_prices),
   ];
 }
 
@@ -109,6 +113,24 @@ describe('ціни вітрини лише для виду глядача (Р29)
     const types = typesOf(rows.flatMap((row) => row.product_prices));
     expect(types.has(WHOLESALE_TYPE)).toBe(false);
     expect(types.has(guestTypeId)).toBe(true);
+  });
+
+  it('гість: loadProductList (публічний, README) без гуртового виду', async () => {
+    const rows = await withViewerPricesDb(null, (tx, v) =>
+      loadProductList(tx, v),
+    );
+    const types = typesOf(rows.flatMap((row) => row.product_prices));
+    expect(types.has(WHOLESALE_TYPE)).toBe(false);
+    expect(types.has(guestTypeId)).toBe(true);
+  });
+
+  it('покупець гуртової категорії: loadProductList несе його вид', async () => {
+    const rows = await withViewerPricesDb(db.wholesale, (tx, v) =>
+      loadProductList(tx, v),
+    );
+    expect(
+      typesOf(rows.flatMap((row) => row.product_prices)).has(WHOLESALE_TYPE),
+    ).toBe(true);
   });
 
   it('покупець гуртової категорії: його вид є, гостьовий як фолбек є', async () => {

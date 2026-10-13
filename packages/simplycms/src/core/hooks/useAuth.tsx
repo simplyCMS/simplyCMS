@@ -7,7 +7,10 @@ import {
   type AuthUser,
 } from '../lib/auth-client';
 import { fetchIsAdmin } from '../lib/auth-session';
-import { useViewerPriceSync } from './useViewerPriceSync';
+import {
+  useViewerPriceSync,
+  ViewerLoaderFreshContext,
+} from './useViewerPriceSync';
 
 /**
  * Контекст автентифікації вітрини (К1′б: Better Auth замість GoTrue).
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Р29: вхід і вихід скидають прайси попереднього глядача — і тут, а не в
   // кожній формі входу: сесію міняють кілька місць (вхід, реєстрація,
   // запрошення, чекаут, вихід), а атом сесії — одне джерело правди про неї.
-  useViewerPriceSync(user?.id ?? null, isPending);
+  const loadersFresh = useViewerPriceSync(user?.id ?? null, isPending);
 
   const signOut = useCallback(async () => {
     await authClient.signOut();
@@ -70,7 +73,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, session, isPending, isAdmin, signOut],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <ViewerLoaderFreshContext.Provider value={loadersFresh}>
+        {children}
+      </ViewerLoaderFreshContext.Provider>
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

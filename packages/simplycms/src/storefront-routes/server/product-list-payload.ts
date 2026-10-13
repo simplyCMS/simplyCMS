@@ -1,4 +1,4 @@
-import { loadGuestPriceTypes } from 'simplycms/commerce';
+import { loadGuestPriceTypes, loadViewerPriceTypes } from 'simplycms/commerce';
 import { loadProductList, type ActorDb } from 'simplycms/storefront/loaders';
 import {
   toProductListPayload,
@@ -14,6 +14,12 @@ export async function loadProductListPayload(
   sectionId?: string,
 ): Promise<ProductListPayload> {
   // Послідовно: транзакція живе на одному зʼєднанні (див. `storefront/loaders`).
-  const rows = await loadProductList(db, sectionId);
+  // SSR-список гостьовий за побудовою (DTO несе лише гостьову `price`), тож і
+  // прайс у рядках — гостьовий набір видів (Р29), незалежно від сесії.
+  const rows = await loadProductList(
+    db,
+    await loadViewerPriceTypes(db, null),
+    sectionId,
+  );
   return toProductListPayload(rows, await loadGuestPriceTypes(db));
 }

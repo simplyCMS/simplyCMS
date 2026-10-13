@@ -30,12 +30,17 @@ const auth = vi.hoisted(() => ({
   state: { user: null as { id: string } | null, isLoading: false },
 }));
 const router = vi.hoisted(() => ({ invalidate: vi.fn() }));
+/** Дані лоадера роуту картки — `initialData`; `router.invalidate` їх перераховує. */
+const loader = vi.hoisted(() => ({ product: undefined as unknown }));
+const envState = vi.hoisted(() => ({ fail: false }));
 const withPrices = <T extends { product_prices: unknown }>(row: T): T =>
   session.userId ? row : { ...row, product_prices: GUEST_ONLY };
 
 vi.mock('simplycms/core/lib/discounts', () => ({
-  getDiscountEnvironment: async () =>
-    session.userId ? wholesaleEnv : F.retailEnv,
+  getDiscountEnvironment: async () => {
+    if (envState.fail) throw new Error('env down');
+    return session.userId ? wholesaleEnv : F.retailEnv;
+  },
 }));
 vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => auth.state,
@@ -66,7 +71,11 @@ vi.mock('../../server/properties', () => ({
   }),
 }));
 
-import { useViewerPriceSync } from 'simplycms/core/hooks/useViewerPriceSync';
+import {
+  useViewerPriceSync,
+  ViewerLoaderFreshContext,
+} from 'simplycms/core/hooks/useViewerPriceSync';
+import type { ProductDetailProduct } from '../product-detail/types';
 import { useProductQuery } from '../product-detail/useProductQuery';
 import { useCatalogProductsQuery } from '../catalog/useCatalogProductsQuery';
 import {
@@ -79,8 +88,20 @@ import PropertyPage from '../PropertyPage';
 const SECTION = { id: 's1', name: 'Панелі', slug: 'panels' };
 
 function Surfaces() {
-  useViewerPriceSync(auth.state.user?.id ?? null, auth.state.isLoading);
-  useProductQuery('panel');
+  // Як `AuthProvider`: синк сесії + свіжість даних лоадерів для засіву.
+  const fresh = useViewerPriceSync(
+    auth.state.user?.id ?? null,
+    auth.state.isLoading,
+  );
+  return (
+    <ViewerLoaderFreshContext.Provider value={fresh}>
+      <Queries />
+    </ViewerLoaderFreshContext.Provider>
+  );
+}
+
+function Queries() {
+  useProductQuery('panel', loader.product as ProductDetailProduct | undefined);
   useCatalogProductsQuery(undefined);
   useFeaturedProducts();
   useNewProducts();
@@ -115,8 +136,13 @@ beforeEach(() => {
   });
   session.userId = null;
   auth.state = { user: null, isLoading: false };
+  envState.fail = false;
+  loader.product = undefined;
   router.invalidate.mockReset();
-  router.invalidate.mockResolvedValue(undefined);
+  // Перезапуск лоадерів: дані роуту рахуються вже для нової сесії.
+  router.invalidate.mockImplementation(async () => {
+    loader.product = withPrices(F.detailProduct);
+  });
 });
 afterEach(cleanup);
 
@@ -179,6 +205,46 @@ describe('ключ і скидання прайсу глядача (Р29)', () =
     // Гостьові комірки скинуто разом із рештою — лишились лише комірки виду покупця.
     await waitFor(() =>
       expect(priced().every((q) => q.queryKey[1] === F.WHOLESALE)).toBe(true),
+    );
+  });
+
+  it('M4: вихід з гуртовим initialData лоадера — гостьова комірка жодного разу не має гуртової ціни', async () => {
+    session.userId = USER;
+    auth.state = { user: { id: USER }, isLoading: false };
+    loader.product = F.detailProduct; // SSR-лоадер рахував гуртового покупця
+    const view = mount();
+    await waitFor(() => expect(hasWholesale()).toBe(true));
+
+    const leaked: unknown[] = [];
+    const unsubscribe = client.getQueryCache().subscribe(({ query }) => {
+      if (query.queryKey[1] === 'guest' && query.queryKey[2] === 'detail') {
+        const data = JSON.stringify(query.state.data ?? null);
+        if (data.includes(`"price_type_id":"${F.WHOLESALE}"`))
+          leaked.push(data);
+      }
+    });
+    session.userId = null;
+    auth.state = { user: null, isLoading: false };
+    view.rerender(tree());
+    await waitFor(() => expect(router.invalidate).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(hasWholesale()).toBe(false));
+    unsubscribe();
+    expect(leaked).toEqual([]);
+  });
+
+  it('M5: збій середовища цін у покупця — гостьовий сегмент, запити вантажаться', async () => {
+    session.userId = USER;
+    envState.fail = true;
+    auth.state = { user: { id: USER }, isLoading: false };
+    mount();
+    // Поки середовище в дорозі — `null` (комірки без даних); після збою —
+    // усі шість запитів під 'guest' і з даними, а не вічне очікування.
+    await waitFor(() =>
+      expect(
+        priced().filter(
+          (q) => q.queryKey[1] === 'guest' && q.state.data !== undefined,
+        ),
+      ).toHaveLength(6),
     );
   });
 });

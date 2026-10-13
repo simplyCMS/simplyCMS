@@ -158,15 +158,23 @@ describe('Е1б: deps агрегатів повні відносно факти�
     },
     propertyOptionPage: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withViewerPricesDb(null, (db, viewer) =>
-        m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer),
-      );
+      const v =
+        await import('../../../src/storefront/loaders/viewer-prices-db');
+      // Р29: гість і покупець — набір видів цін покупця читає ще й його
+      // профіль і категорію (`profiles`, `user_categories`).
+      for (const actor of [null, userId])
+        await v.withViewerPricesDb(actor, (db, viewer) =>
+          m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer),
+        );
     },
     catalogProducts: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withViewerPricesDb(null, (db, viewer) =>
-        m.loadCatalogProducts(db, viewer),
-      );
+      const v =
+        await import('../../../src/storefront/loaders/viewer-prices-db');
+      for (const actor of [null, userId])
+        await v.withViewerPricesDb(actor, (db, viewer) =>
+          m.loadCatalogProducts(db, viewer),
+        );
     },
   };
 
