@@ -10,11 +10,14 @@ import { expectVisible } from './wait.mjs';
  * `context` — окремий контекст без сесії, щоб посилання відкрилось «з нуля».
  */
 export async function runMailChecks({ browser, base, email, from, check }) {
-  const order = await waitForMail({ to: email, subject: 'прийнято' });
+  const { mail: order, error: orderError } = await waitForMail({
+    to: email,
+    subject: 'прийнято',
+  });
   check(
     'пошта: лист замовлення покупцю в Mailpit',
     order !== null && order.from === from,
-    order ? `From = ${order.from}` : 'листа немає',
+    order ? `From = ${order.from}` : `листа немає${orderError ? ` (${orderError})` : ''}`,
   );
 
   const res = await fetch(`${base}/api/auth/request-password-reset`, {
@@ -22,12 +25,17 @@ export async function runMailChecks({ browser, base, email, from, check }) {
     headers: { 'content-type': 'application/json', origin: base },
     body: JSON.stringify({ email, redirectTo: '/auth/set-password' }),
   });
-  const reset = await waitForMail({ to: email, subject: 'Скидання пароля' });
+  const { mail: reset, error: resetError } = await waitForMail({
+    to: email,
+    subject: 'Скидання пароля',
+  });
   const link = reset && firstLink(reset.text);
   check(
     'пошта: лист скидання пароля в Mailpit',
     res.ok && Boolean(link),
-    link ? 'лист знайдено, посилання є' : `запит ${res.status}, листа немає`,
+    link
+      ? 'лист знайдено, посилання є'
+      : `запит ${res.status}, листа немає${resetError ? ` (${resetError})` : ''}`,
   );
   if (!link) return;
 

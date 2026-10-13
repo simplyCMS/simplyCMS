@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, lt, notInArray, sql } from 'drizzle-orm';
-import { withActor, type ActorDb } from 'simplycms/db';
+import { asService } from 'simplycms/db';
 import { redactUrls } from 'simplycms/env';
 import { mailOutbox } from 'simplycms/schema';
 
@@ -7,15 +7,6 @@ import type { MailMessage, MailTransport } from './types';
 
 /** Хвіст молодший за цей вік не чіпаємо: його власник, імовірно, ще працює. */
 const OPPORTUNISTIC_MIN_AGE = sql`interval '1 minute'`;
-
-/**
- * Службова транзакція `app_admin` без `userId`. Дубль `asService` зі storage
- * свідомий: обидва модулі — сусіди одного тіра, спільний помічник мав би жити в
- * `simplycms/db` і розширювати його публічну поверхню заради трьох рядків.
- */
-export function asService<T>(fn: (db: ActorDb) => Promise<T>): Promise<T> {
-  return withActor({ role: 'app_admin' }, (db) => fn(db));
-}
 
 /** Домен без TLD теж адреса (`user@localhost`). Локальна частина без `*`, щоб не чіпати вже замасковане `scheme://***@host`. */
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?/g;

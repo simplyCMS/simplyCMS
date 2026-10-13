@@ -139,4 +139,34 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
       t('checkout.auth.invalidCredentials'),
     );
   });
+
+  it('вхід: адреса обрізається перед запитом, лише пробіли — запиту немає', async () => {
+    h.signIn.mockResolvedValue({ data: { token: 't' }, error: null });
+    render(
+      <I18nProvider locale="uk">
+        <CheckoutAuthBlock
+          defaultTab="login"
+          storeContacts={CONTACTS}
+          onAuthSuccess={vi.fn()}
+        />
+      </I18nProvider>,
+    );
+    // Перший «Увійти» — вкладка, останній — кнопка сабміту.
+    const submit = () =>
+      fireEvent.click(
+        screen.getAllByRole('button', { name: t('auth.login.submit') }).at(-1)!,
+      );
+    // jsdom для type=email сам зрізає пробіли й маскував би перевірку trim.
+    document
+      .getElementById('checkout-auth-email')!
+      .setAttribute('type', 'text');
+    type('checkout-auth-email', '   ');
+    type('checkout-auth-password', 'secret1');
+    submit();
+    expect(h.signIn).not.toHaveBeenCalled();
+    type('checkout-auth-email', '  a@x.test ');
+    submit();
+    await waitFor(() => expect(h.signIn).toHaveBeenCalled());
+    expect(h.signIn.mock.calls[0]![0].email).toBe('a@x.test');
+  });
 });

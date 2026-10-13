@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { asc, eq, inArray, lt, notInArray, and, sql } from 'drizzle-orm';
-import { withActor, type ActorDb } from 'simplycms/db';
+import { asService, type ActorDb } from 'simplycms/db';
 import { mediaErasures } from 'simplycms/schema';
 
 import type { MediaStorageDriver } from './driver';
@@ -17,18 +17,6 @@ export interface MediaErasure {
   readonly attempts: number;
   readonly lastError: string | null;
   readonly requestedAt: Date;
-}
-
-/**
- * Служба-актор outbox: коротка транзакція `app_admin` БЕЗ `userId`.
- *
- * 🔴 Системний актор, а не адмін-користувач (Е6д-20а): `withActor` не має
- * окремого `{ kind: 'system' }`, тож `app.user_id` лишається порожнім і дія
- * не приписується людині, чия транзакція породила хвіст. Грант на
- * `media_erasures` є лише в `app_admin`, тому роль одна.
- */
-function asService<T>(fn: (db: ActorDb) => Promise<T>): Promise<T> {
-  return withActor({ role: 'app_admin' }, (db) => fn(db));
 }
 
 function errorText(error: unknown): string {

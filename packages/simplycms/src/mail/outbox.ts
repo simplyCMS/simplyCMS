@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { asc } from 'drizzle-orm';
-import type { ActorDb } from 'simplycms/db';
+import { asService, type ActorDb } from 'simplycms/db';
 import { mailOutbox } from 'simplycms/schema';
 
-import { asService, errorText, runBatch } from './outbox-delivery';
+import { errorText, runBatch } from './outbox-delivery';
 import { getMailTransport } from './transport';
 import type { MailMessage, MailTransport } from './types';
 

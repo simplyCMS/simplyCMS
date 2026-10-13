@@ -58,13 +58,14 @@ export function CheckoutAuthBlock({
   };
 
   const handleLogin = async () => {
-    if (!loginEmail || loginPassword.length < 6) return;
+    const email = loginEmail.trim();
+    if (!email || loginPassword.length < 6) return;
     setIsLoading(true);
     clearMessages();
 
     try {
       const { error } = await authClient.signIn.email({
-        email: loginEmail.trim(),
+        email,
         password: loginPassword,
       });
 

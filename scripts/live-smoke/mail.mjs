@@ -31,14 +31,16 @@ export function mailpitApi() {
 /** Чистка скриньки на старті. */
 export const clearMailpit = () => clearMailbox(mailpitApi());
 
-/** Чекає лист на `to` із темою, що містить `subject`; `null` — вердикт у `check`. */
-export async function waitForMail({ to, subject, timeout }) {
-  const { mail } = await findMail({
+/**
+ * Чекає лист на `to` із темою, що містить `subject`. `mail: null` — вердикт у
+ * `check`; `error` (недоступний Mailpit) іде в факт кроку, а не губиться.
+ */
+export function waitForMail({ to, subject, timeout }) {
+  return findMail({
     api: mailpitApi(),
     match: toWithSubject(to, subject),
     timeout,
   });
-  return mail;
 }
 
 export { firstLink };
@@ -53,7 +55,12 @@ const VERIFY_SUBJECT = 'Підтвердіть пошту';
  * цього, який є в кожного виклику.
  */
 export async function confirmEmail(page, email) {
-  const mail = await waitForMail({ to: email, subject: VERIFY_SUBJECT });
+  const { mail, error } = await waitForMail({
+    to: email,
+    subject: VERIFY_SUBJECT,
+  });
+  // Збій самого Mailpit — не «листа немає»: причина потрібна в повідомленні.
+  if (!mail && error) throw new Error(`[live-smoke] ${error}`);
   const link = mail && firstLink(mail.text);
   if (!link) return false;
   const res = await page.goto(link, { waitUntil: 'networkidle' });

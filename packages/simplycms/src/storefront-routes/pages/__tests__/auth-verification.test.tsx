@@ -164,6 +164,8 @@ describe('Auth: підтвердження пошти (Р30)', () => {
     h.tab = 'login';
     h.signIn.mockResolvedValue({ data: { token: 't' }, error: null });
     renderAuth();
+    // jsdom для type=email сам зрізає пробіли й маскував би перевірку trim.
+    document.getElementById('login-email')!.setAttribute('type', 'text');
     type('login-email', '  a@x.test ');
     type('login-password', 'secret1');
     fireEvent.click(
