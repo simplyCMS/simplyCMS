@@ -1,5 +1,13 @@
 import { withActor } from 'simplycms/db';
+import type { MailTransport, scheduleMail } from 'simplycms/mail';
 import { readStoreProfile } from 'simplycms/site';
+
+/** Спільні залежності відправників листів auth (перевизначення для тестів). */
+export type MailDeps = {
+  readonly schedule?: typeof scheduleMail;
+  readonly mailTransport?: MailTransport;
+  readonly storeName?: string;
+};
 
 /** `profile.name || 'SimplyCMS'` — той самий фолбек, що й в owner:invite. */
 export const readStoreName = (): Promise<string> =>

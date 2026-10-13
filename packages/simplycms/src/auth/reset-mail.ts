@@ -3,17 +3,17 @@ import {
   deliverMail,
   renderPasswordResetMail,
   scheduleMail,
-  type MailTransport,
 } from 'simplycms/mail';
 import { getStoreLocale } from 'simplycms/site';
-import { logDeliveryFailure, readStoreName } from './mail-support';
+import {
+  logDeliveryFailure,
+  readStoreName,
+  type MailDeps,
+} from './mail-support';
 import type { ResetGuard } from './reset-guard';
 
-export type ResetMailDeps = {
+export type ResetMailDeps = MailDeps & {
   readonly resetGuard: ResetGuard;
-  readonly schedule?: typeof scheduleMail;
-  readonly mailTransport?: MailTransport;
-  readonly storeName?: string;
 };
 
 /**

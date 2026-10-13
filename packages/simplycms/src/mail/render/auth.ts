@@ -16,6 +16,13 @@ export type PasswordResetMailInput = {
   t: Translator;
 };
 
+export type EmailVerificationMailInput = {
+  to: string;
+  url: string;
+  storeName: string;
+  t: Translator;
+};
+
 export type OwnerInviteMailInput = PasswordResetMailInput & {
   ttlMs: number;
 };
@@ -48,7 +55,7 @@ export function renderPasswordResetMail(
 
 /** Лист підтвердження пошти при реєстрації (Р30): та сама форма, що й у скиданні. */
 export function renderEmailVerificationMail(
-  input: PasswordResetMailInput,
+  input: EmailVerificationMailInput,
 ): MailMessage {
   const { to, url, storeName, t } = input;
   const params = { storeName };

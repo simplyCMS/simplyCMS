@@ -20,6 +20,7 @@ export {
   renderPasswordResetMail,
 } from './render/auth';
 export type {
+  EmailVerificationMailInput,
   OwnerInviteMailInput,
   PasswordResetMailInput,
 } from './render/auth';

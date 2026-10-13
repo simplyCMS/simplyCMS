@@ -40,6 +40,7 @@ export const messages = {
   'admin.users.stats': 'Статистика',
   'admin.users.daysSince': 'Днів з реєстрації',
   'admin.users.emailDomain': 'Домен email',
+  'admin.users.emailDomainUnverified': '{domain} (не підтверджено)',
   'admin.users.recentOrders': 'Останні замовлення',
   'admin.users.ordersEmpty': 'Замовлень ще немає',
   'admin.users.orderNumber': 'Номер',

@@ -80,6 +80,11 @@ describe('Auth: підтвердження пошти (Р30)', () => {
       expect(screen.getByText(t('auth.register.checkEmail'))).toBeTruthy(),
     );
     expect(screen.getByText(t('auth.register.checkEmailHint'))).toBeTruthy();
+    // M8: підказка про скидання пароля — однакова для будь-якої адреси.
+    expect(screen.getByText(t('auth.register.noEmailHint'))).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: t('auth.forgot.link') }),
+    ).toBeTruthy();
     expect(h.navigate).not.toHaveBeenCalled();
     expect(h.toast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: t('auth.register.success') }),

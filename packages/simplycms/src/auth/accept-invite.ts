@@ -79,6 +79,9 @@ export async function acceptOwnerInvite(
 
   // Перехід за одноразовим посиланням і є доказом володіння поштою — саме
   // тому `issueOwnerInvite` заводив користувача з `emailVerified: false`.
+  // Основний механізм — хук `onPasswordReset` у `createAuth` (Р30); явний
+  // запис тут — страховка на випадок, якщо хук колись приберуть чи вимкнуть
+  // (паралель до явного `deleteUserSessions` вище).
   await context.internalAdapter.updateUser(verified.userId, {
     emailVerified: true,
   });

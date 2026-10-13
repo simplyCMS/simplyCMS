@@ -42,6 +42,7 @@ export const messages: Catalog = {
   'admin.users.stats': 'Statistics',
   'admin.users.daysSince': 'Days since sign-up',
   'admin.users.emailDomain': 'Email domain',
+  'admin.users.emailDomainUnverified': '{domain} (not confirmed)',
   'admin.users.recentOrders': 'Recent orders',
   'admin.users.ordersEmpty': 'No orders yet',
   'admin.users.orderNumber': 'Number',

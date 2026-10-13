@@ -153,6 +153,37 @@ describe('підтвердження пошти при реєстрації (Р3
     expect(sent).toHaveLength(0);
   }, 20_000);
 
+  it('страховка: хук onPasswordReset вимкнено — accept усе одно ставить emailVerified = true і вхід працює', async () => {
+    const email = 'owner-insurance@x.test';
+    const invite = await issueOwnerInvite({
+      store: ownerInviteStore,
+      schedule: async () => [],
+      email,
+      env: { VITE_SITE_URL: SITE },
+    });
+    // Тип опції звужено createAuth-ом — для тесту розширюємо (зразок (2б) з owner-invite-flow).
+    const { options } = await auth.$context;
+    const emailAndPassword = options.emailAndPassword as {
+      onPasswordReset?: unknown;
+    };
+    const saved = emailAndPassword.onPasswordReset;
+    emailAndPassword.onPasswordReset = undefined;
+    try {
+      const accepted = await acceptOwnerInvite({
+        auth,
+        store: ownerInviteStore,
+        email,
+        token: new URL(invite.url).searchParams.get('token')!,
+        password: PASSWORD,
+      });
+      expect(accepted.ok).toBe(true);
+    } finally {
+      emailAndPassword.onPasswordReset = saved;
+    }
+    expect(await verified(email)).toBe(true);
+    expect((await signIn(email)).status).toBe(200);
+  }, 20_000);
+
   it('непідтверджений покупець: requestPasswordReset -> resetPassword за посиланням -> emailVerified = true, вхід успішний', async () => {
     const email = 'verify-reset@x.test';
     await signUp(email);

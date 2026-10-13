@@ -5,22 +5,41 @@ import {
   scheduleMail,
 } from 'simplycms/mail';
 import { getStoreLocale } from 'simplycms/site';
-import { logDeliveryFailure, readStoreName } from './mail-support';
-import type { ResetMailDeps } from './reset-mail';
+import {
+  logDeliveryFailure,
+  readStoreName,
+  type MailDeps,
+} from './mail-support';
+
+/** Мінімум інстансу BA, потрібний мостові: лише `internalAdapter.updateUser`. */
+type BoundAuth = {
+  readonly $context: Promise<{
+    readonly internalAdapter: {
+      updateUser(
+        id: string,
+        data: { emailVerified: boolean },
+      ): Promise<unknown>;
+    };
+  }>;
+};
 
 /**
- * Колбек `emailVerification.sendVerificationEmail` (Р30): швидкий запис листа в
- * outbox -> доставка БЕЗ `await`, як у скиданні пароля (Е8-О1). `url` будує сам
- * Better Auth від `baseURL` з env (Р18), власного посилання тут немає.
+ * Усе, що Р30 додає до конфігу Better Auth: `emailVerification` (лист через
+ * outbox), хук `onPasswordReset` і місток `bind` до готового інстансу.
  *
- * BA кличе колбек при реєстрації й при спробі входу непідтвердженого акаунта;
- * затримка SMTP у відповіді видала б існування акаунта за часом.
+ * Лист — швидкий запис в outbox -> доставка БЕЗ `await`, як у скиданні пароля
+ * (Е8-О1): затримка SMTP у відповіді видала б існування акаунта за часом.
+ * `url` будує сам BA від `baseURL` з env (Р18), власного посилання тут немає.
+ *
+ * Хук скидання пароля ставить `emailVerified = true`: перехід за посиланням зі
+ * скриньки — такий самий доказ володіння поштою, як лист підтвердження. Інстанс
+ * BA ще не існує, коли збирається конфіг, тож хук іде через `bind(auth)`.
  */
-export function createVerificationSender(
-  deps: Pick<ResetMailDeps, 'schedule' | 'mailTransport' | 'storeName'>,
-) {
+export function createEmailVerification(deps: MailDeps) {
   const schedule = deps.schedule ?? scheduleMail;
-  return async ({
+  let bound: BoundAuth | undefined;
+
+  const sendVerificationEmail = async ({
     user,
     url,
   }: {
@@ -37,5 +56,28 @@ export function createVerificationSender(
     void deliverMail(ids, deps.mailTransport).catch(
       logDeliveryFailure('email_verification'),
     );
+  };
+
+  return {
+    emailVerification: {
+      // Непідтверджений акаунт (пошту змінив адмін, акаунт створено до SMTP)
+      // отримує новий лист на спробу входу.
+      sendOnSignIn: true,
+      sendVerificationEmail,
+    },
+    onPasswordReset: async ({
+      user,
+    }: {
+      user: { id: string; emailVerified: boolean };
+    }): Promise<void> => {
+      if (user.emailVerified || !bound) return;
+      const context = await bound.$context;
+      await context.internalAdapter.updateUser(user.id, {
+        emailVerified: true,
+      });
+    },
+    bind(auth: BoundAuth): void {
+      bound = auth;
+    },
   };
 }
