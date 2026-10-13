@@ -89,7 +89,10 @@ jobs:
       # `--tag`: пре-реліз (`1.0.0-rc.N`) йде під `next`, а не `latest` —
       # інакше `npm i simplycms` і `simplycms update` схопили б RC як стабільний.
       - name: Publish
-        run: pnpm publish -r --access public --no-git-checks --tag "$(node scripts/release/dist-tag.mjs --print)"
+        run: |
+          tag="$(node scripts/release/dist-tag.mjs --print)"
+          case "$tag" in latest|next) ;; *) echo "::error::dist-tag: '$tag'"; exit 1;; esac
+          pnpm publish -r --access public --no-git-checks --tag "$tag"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

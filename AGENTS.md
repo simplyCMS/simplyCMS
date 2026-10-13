@@ -191,7 +191,9 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 **Пакети й реліз** (`docs/architecture/release-process.md`, `cli.md`)
 
 - Semver з 1.0 (рішення власника): діапазон `engines.simplycms` референс-пакетів і `simplycms create`
-  — `^<мажорна>.0.0` (`coreRangeFor`), а не відкрите `>=`; його переписує крок бампу `pnpm release`.
+  — `^<мажорна>.0.0` (для 0.x — `^0.<мінорна>.0`; для RC `X.Y.Z-rc.N` — `^X.Y.Z-0`; `coreRangeFor`),
+  а не відкрите `>=`; його переписує крок бампу `pnpm release`. Пререліз `X.Y.Z-rc.N` публікується
+  під npm-тегом `next`; деталі — `release-process.md`.
 - Усі 5 пакетів завжди мають ОДНУ версію; реліз — рішення людини (`pnpm release`, далі PR у
   `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
   `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками

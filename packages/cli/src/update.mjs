@@ -86,6 +86,15 @@ export async function run(argv, deps = {}) {
       exec,
       current: readInstalledCoreVersion(storeRoot, manifest),
     });
+    if (status === 'unknown') {
+      say.error(
+        `Не вдалося визначити поточну версію ядра магазину (реєстр має ${version}). ` +
+          `Вкажи цільову явно: \`simplycms update --to ${version}\``,
+      );
+      process.exitCode = 3;
+      finish('Поточна версія невідома — без --to не ставлю.');
+      return;
+    }
     if (status === 'major') {
       say.error(
         `Доступна мажорна версія ${version} — містить зламані зміни, див. розділ ` +

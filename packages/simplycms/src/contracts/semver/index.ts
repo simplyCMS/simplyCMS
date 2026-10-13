@@ -37,6 +37,9 @@ function compare(a: Parsed, b: Parsed): number {
   return 0;
 }
 
+const sameTriple = (a: Parsed, b: Parsed): boolean =>
+  a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+
 const isPrerelease = (p: Parsed): boolean => p[3] !== RELEASE;
 
 /**
@@ -47,13 +50,11 @@ const isPrerelease = (p: Parsed): boolean => p[3] !== RELEASE;
  * `0.2.0` (перша ненульова компонента фіксується). Складені діапазони
  * (`>=0.1.0 <1.0.0`) не підтримуються.
  *
- * Пре-релізи: версія-пре-реліз підходить лише діапазону, чия база теж
- * пре-реліз (`^1.0.0-0` = «>= 1.0.0-0 і < 2.0.0-0» приймає `1.0.0-rc.1`,
- * `1.0.0` і `1.7.0`); `^1.0.0` пре-релізів НЕ приймає — як і npm-semver, згода
- * на пре-реліз має бути явною. Відмінність від npm: там пре-реліз іншої
- * трійки (`1.1.0-rc.1` проти `^1.0.0-0`) не підходить, у нас — підходить
- * (інтервал, без правила трійки): лінія релізів має лише `-rc.N`, і діапазон
- * `coreRangeFor(<rc>)` мусить приймати сам RC.
+ * Пре-релізи — рівно як у npm-semver (`includePrerelease: false`): пре-реліз
+ * проходить діапазон, лише якщо його трійка `[M,m,p]` збігається з трійкою
+ * пре-релізної бази компаратора. `^1.0.0-0` приймає `1.0.0-rc.1`, `1.0.0` і
+ * `1.7.0`, але не `1.1.0-rc.1` і не `2.0.0-rc.1`; `^1.0.0` пре-релізів не
+ * приймає взагалі. Паритет з npm стереже `tests/semver-npm-parity.test.ts`.
  *
  * Невалідні вхідні дані — виняток (а не мовчазне `false`): хто перевіряє,
  * той і вирішує, чи це warn (bootstrap) чи фейл (CLI).
@@ -64,7 +65,10 @@ export function satisfies(version: string, range: string): boolean {
 
   if (r.startsWith('^') || r.startsWith('~') || r.startsWith('>=')) {
     const base = parse(r.slice(r.startsWith('>=') ? 2 : 1), 'база діапазону');
-    if (isPrerelease(v) && !isPrerelease(base)) return false;
+    // Правило npm-semver: пре-реліз проходить, лише якщо база компаратора —
+    // пре-реліз ТІЄЇ САМОЇ трійки [M,m,p]; іншої трійки — ні.
+    if (isPrerelease(v) && !(isPrerelease(base) && sameTriple(v, base)))
+      return false;
     if (compare(v, base) < 0) return false;
     if (r.startsWith('>=')) return true;
     // Верхня межа ексклюзивна й сама пре-релізна (`-0`): тож `2.0.0-rc.1`

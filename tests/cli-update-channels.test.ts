@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -94,6 +100,20 @@ describe('simplycms update: канали релізів', () => {
     expect(out).toContain('1.0.0');
     expect(out).toContain('--to 1.0.0');
     expect(out).toContain('BREAKING');
+  });
+
+  it('поточна версія невідома (немає node_modules і піну) → код 3, порада --to, pnpm add не викликано', async () => {
+    const store = await storeOn('1.0.0');
+    rmSync(join(store, 'node_modules'), { recursive: true });
+    const manifestPath = join(store, 'package.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.dependencies.simplycms = 'workspace:*';
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    const reg = fakeRegistry({ latest: '1.0.1' });
+    const { out, code } = await runUpdate(store, [], reg);
+    expect(code).toBe(3);
+    expect(reg.adds()).toEqual([]);
+    expect(out).toContain('--to 1.0.1');
   });
 
   it('з --to 1.0.0 мажорну межу перетинає', async () => {

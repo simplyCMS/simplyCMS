@@ -23,5 +23,14 @@ if (
     console.error('Використання: node scripts/release/dist-tag.mjs --print');
     process.exit(1);
   }
-  console.log(distTagFor(currentVersion()));
+  // Тег друкується лише при успіху: помилка → ненульовий exit і ПОРОЖНІЙ stdout,
+  // щоб workflow не підставив сміття в `--tag` (guard у кроці Publish — другий замок).
+  let tag;
+  try {
+    tag = distTagFor(currentVersion());
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+  console.log(tag);
 }

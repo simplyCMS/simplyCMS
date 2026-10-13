@@ -19,10 +19,8 @@ export function coreRangeFor(version) {
     );
   }
   const major = Number(match[1]);
-  // Пре-реліз (`-rc.N`) дає діапазон з нижньою межею `-0`: він приймає і RC, і
-  // фінальний `M.x`; без `-0` пре-релізи в діапазон не потрапляють.
-  const floor = match[4] ? '-0' : '';
-  return major >= 1
-    ? `^${major}.0.0${floor}`
-    : `^0.${Number(match[2])}.0${floor}`;
+  // Пре-реліз (`-rc.N`): `^M.m.p-0` — npm-правило пре-релізів пускає RC лише у
+  // діапазон із пре-релізною базою тієї ж трійки, тож база = трійка самого RC.
+  if (match[4]) return `^${major}.${match[2]}.${match[3]}-0`;
+  return major >= 1 ? `^${major}.0.0` : `^0.${Number(match[2])}.0`;
 }

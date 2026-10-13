@@ -1,7 +1,6 @@
 // Вибір цільової версії для `simplycms update`: dist-tags реєстру, канал
 // пре-релізу і мажорна межа. Усе, що ходить у мережу, — через ін'єкційний
-// `exec` (див. `run(argv, deps)` в update.mjs), тож тести й `--check` без
-// мережі підставляють фейк.
+// `exec` (див. `run(argv, deps)` в update.mjs), тож тести підставляють фейк.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -103,19 +102,20 @@ export function pickTargetVersion(tags, current) {
  *   лише явним `--to`);
  * - `major` — ціль перетинає мажорну межу: чесний semver, тож без `--to`
  *   злам не ставимо (RC → фінальний тієї ж мажорної межу не перетинає);
+ * - `unknown` — поточна версія невідома: без `--to` не ставимо;
  * - `install` — ставимо.
  * @param {string | undefined} to
  * @param {{ exec: Function; current: string | null }} ctx
- * @returns {{ version: string; status: 'install' | 'up-to-date' | 'major' }}
+ * @returns {{ version: string; status: 'install' | 'up-to-date' | 'major' | 'unknown' }}
  */
 export function resolveUpdateTarget(to, { exec, current }) {
   if (to) return { version: to, status: 'install' };
   const version = pickTargetVersion(fetchDistTags(exec), current);
-  if (current) {
-    if (compareVersions(version, current) <= 0)
-      return { version, status: 'up-to-date' };
-    if (majorOf(version) > majorOf(current))
-      return { version, status: 'major' };
-  }
+  // Без відомої поточної версії не можна ні відрізнити даунгрейд, ні мажорну
+  // межу: мовчки ставити latest значить ризикнути обома — просимо явний --to.
+  if (!current) return { version, status: 'unknown' };
+  if (compareVersions(version, current) <= 0)
+    return { version, status: 'up-to-date' };
+  if (majorOf(version) > majorOf(current)) return { version, status: 'major' };
   return { version, status: 'install' };
 }

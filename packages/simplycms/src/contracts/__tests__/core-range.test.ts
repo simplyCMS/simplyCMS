@@ -16,6 +16,8 @@ describe('coreRangeFor', () => {
   it('RC → діапазон з нижньою межею -0, що приймає RC і фінальний реліз', () => {
     expect(coreRangeFor('1.0.0-rc.1')).toBe('^1.0.0-0');
     expect(coreRangeFor('1.0.0-rc.12')).toBe('^1.0.0-0');
+    expect(coreRangeFor('1.1.0-rc.1')).toBe('^1.1.0-0');
+    expect(satisfies('1.1.0-rc.1', coreRangeFor('1.1.0-rc.1'))).toBe(true);
     expect(coreRangeFor('1.0.0')).toBe('^1.0.0');
     const range = coreRangeFor('1.0.0-rc.1');
     expect(satisfies('1.0.0-rc.1', range)).toBe(true);

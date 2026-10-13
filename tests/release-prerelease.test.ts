@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   cpSync,
   mkdirSync,
@@ -159,6 +159,27 @@ describe('distTagFor', () => {
     );
     expect(out.trim()).toBe('next');
   });
+
+  it('dist-tag.mjs --print при помилці (розбіжні версії): ненульовий exit, порожній stdout', () => {
+    const root = mkdtempSync(join(tmpdir(), 'dist-tag-bad-'));
+    for (const [dir, version] of [
+      ['a', '1.0.0-rc.1'],
+      ['b', '0.14.0'],
+    ]) {
+      mkdirSync(join(root, 'packages', dir), { recursive: true });
+      writeFileSync(
+        join(root, 'packages', dir, 'package.json'),
+        JSON.stringify({ name: dir, version }),
+      );
+    }
+    const result = spawnSync(
+      process.execPath,
+      [join(REPO, 'scripts/release/dist-tag.mjs'), '--print'],
+      { cwd: root, encoding: 'utf8' },
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toBe('');
+  });
 });
 
 describe('workflow publish-packages: тег публікації', () => {
@@ -168,15 +189,33 @@ describe('workflow publish-packages: тег публікації', () => {
   ) as { jobs: Record<string, { steps: Step[] }> };
   const steps = Object.values(workflow.jobs).flatMap((job) => job.steps);
 
-  it('рівно один виклик pnpm publish — у кроці Publish — з --tag від dist-tag.mjs', () => {
+  it('рівно один виклик pnpm publish — у кроці Publish — з --tag "$tag" без підстановок', () => {
     const publishing = steps.filter((s) =>
       /pnpm\s+publish\b/.test(s.run ?? ''),
     );
     expect(publishing).toHaveLength(1);
     expect(publishing[0].name).toBe('Publish');
-    expect(publishing[0].run).toContain(
-      '--tag "$(node scripts/release/dist-tag.mjs --print)"',
+    const script = publishing[0].run ?? '';
+    const line = script.split('\n').find((l) => /pnpm\s+publish\b/.test(l));
+    expect(line).toContain('--tag "$tag"');
+    // Підстановка в аргументах publish проковтнула б збій dist-tag.mjs.
+    expect(line).not.toContain('$(');
+  });
+
+  it('тег обчислюється окремим присвоєнням і проходить guard allowlist до publish', () => {
+    const script = steps.find((s) => s.name === 'Publish')?.run ?? '';
+    const lines = script.split('\n').map((l) => l.trim());
+    const assign = lines.findIndex(
+      (l) => l === 'tag="$(node scripts/release/dist-tag.mjs --print)"',
     );
+    const guard = lines.findIndex((l) =>
+      l.startsWith('case "$tag" in latest|next) ;;'),
+    );
+    const publish = lines.findIndex((l) => /pnpm\s+publish\b/.test(l));
+    expect(assign).toBeGreaterThanOrEqual(0);
+    expect(guard).toBeGreaterThan(assign);
+    expect(publish).toBeGreaterThan(guard);
+    expect(lines[guard]).toContain('exit 1');
   });
 });
 
