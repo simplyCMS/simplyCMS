@@ -9,5 +9,6 @@ export * from './shipping';
 export * from './money';
 export * from './user-categories';
 export * from './slug';
+export * from './product-path';
 export * from './banner';
 export * from './css-value';

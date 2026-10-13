@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { productPath } from 'simplycms/domain';
 import { createTranslator } from 'simplycms/i18n';
 import { ENTITY } from 'simplycms/contracts/entities';
 import ReviewCardPage from '../card/ReviewCardPage';
@@ -56,6 +57,22 @@ describe('ReviewCardPage', () => {
     );
     expect(screen.getByText('Чудовий товар')).toBeTruthy();
     expect(screen.getByText(t('admin.reviews.internalNote'))).toBeTruthy();
+  });
+
+  it('Р25: посилання на товар = productPath (з розділом і без)', async () => {
+    const { unmount } = renderWithClient(<ReviewCardPage />);
+    const expected = productPath({ slug: 'kurtka', sectionSlug: 'odyag' }).href;
+    await waitFor(() =>
+      expect(document.querySelector(`a[href="${expected}"]`)).not.toBeNull(),
+    );
+    unmount();
+    mocks.getReviewCard.mockResolvedValue(card({ sectionSlug: null }));
+    renderWithClient(<ReviewCardPage />);
+    await waitFor(() =>
+      expect(
+        document.querySelector('a[href="/catalog/all/kurtka"]'),
+      ).not.toBeNull(),
+    );
   });
 
   it('«Відхилити» з приміткою шле adminComment і інвалідує [product_reviews]', async () => {

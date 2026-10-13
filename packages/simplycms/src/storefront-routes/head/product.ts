@@ -1,3 +1,4 @@
+import { productPath } from 'simplycms/domain';
 import {
   readStorefrontRoot,
   storefrontHead,
@@ -24,6 +25,10 @@ type OgMeta = { property: string; content: string };
  * `head()` картки товару: заголовок і опис через `storefrontHead`, Open Graph,
  * canonical і Product JSON-LD.
  *
+ * 🔴 Р25: canonical і `url` будуються від `productPath` реального розділу
+ * товару (`sectionSlug` — з даних, НЕ з URL запиту), тож для одного товару
+ * canonical один за будь-якого сегмента в адресі.
+ *
  * Без `siteUrl` (порожній `VITE_SITE_URL`) canonical і `url` у JSON-LD не
  * виводяться: відносний чи вигаданий хост гірший за жоден. `siteUrl` уже
  * нормалізований кореневим лоадером (без кінцевого `/`).
@@ -31,7 +36,7 @@ type OgMeta = { property: string; content: string };
 export function productHead(
   matches: ReadonlyArray<HeadMatch>,
   product: ProductHeadInput,
-  sectionSlug: string,
+  sectionSlug: string | null,
 ): {
   meta: Array<HeadMeta | OgMeta>;
   links: Array<{ rel: string; href: string }>;
@@ -50,7 +55,7 @@ export function productHead(
   });
 
   const canonicalUrl = siteUrl
-    ? `${siteUrl}/catalog/${sectionSlug}/${product.slug}`
+    ? `${siteUrl}${productPath({ slug: product.slug, sectionSlug }).href}`
     : null;
 
   // Гостьова ціна (F9): без неї `offers` не виводиться зовсім.

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SLUG_RE } from 'simplycms/domain';
 import { productModifications } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -22,7 +23,11 @@ export const productModificationsOps = defineAdminResource({
   // (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем) —
   // без рефайнменту insert `{}`/update `'str'` проходили б як валідний
   // `any`. Функція, не голий ZodType — `resource-schemas.ts` пояснює чому.
-  refine: { images: () => z.array(z.string()) },
+  // Д5: slug модифікації — частина URL, формат перевіряє й сервер.
+  refine: {
+    images: () => z.array(z.string()),
+    slug: (s: z.ZodString) => s.regex(SLUG_RE),
+  },
   writable: [
     'productId',
     'slug',

@@ -1,3 +1,4 @@
+import { productPath } from 'simplycms/domain';
 import type { SitemapData } from '../loaders/sitemap';
 
 /**
@@ -31,15 +32,11 @@ export function renderSitemapXml(data: SitemapData, baseUrl: string): string {
 
   /** Товари */
   for (const product of data.products) {
-    const sectionSlug = product.section_slug ?? 'products';
-    urls.push(
-      entry(
-        `${baseUrl}/catalog/${sectionSlug}/${product.slug}`,
-        product.updated_at,
-        'weekly',
-        0.7,
-      ),
-    );
+    const { href } = productPath({
+      slug: product.slug,
+      sectionSlug: product.section_slug,
+    });
+    urls.push(entry(`${baseUrl}${href}`, product.updated_at, 'weekly', 0.7));
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>

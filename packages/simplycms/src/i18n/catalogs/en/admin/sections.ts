@@ -22,5 +22,5 @@ export const messages: Catalog = {
     'Products in this section will be left without a section',
   'admin.sections.notFound': 'Section not found',
   'admin.sections.slugHint':
-    'Latin letters, digits and hyphens — for example, laptops-gaming',
+    'Latin letters, digits and hyphens — for example, laptops-gaming. The word "all" is reserved',
 };

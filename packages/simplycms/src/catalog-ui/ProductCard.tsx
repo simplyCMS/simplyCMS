@@ -3,6 +3,7 @@ import { ImageIcon, Star } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import type { ThresholdHint } from 'simplycms/contracts';
 import { useFormatPrice } from 'simplycms/react-query';
+import { productPath } from 'simplycms/domain';
 import { DiscountHints } from './DiscountHints';
 
 interface ProductCardProps {
@@ -30,13 +31,13 @@ export function ProductCard({ product, rating }: ProductCardProps) {
   const price = product.price ?? undefined;
   const oldPrice = product.old_price;
   const stockStatus = product.stock_status ?? 'in_stock';
-  const sectionSlug = product.section?.slug || '';
+  const path = productPath({
+    slug: product.slug,
+    sectionSlug: product.section?.slug,
+  });
 
   return (
-    <Link
-      to="/catalog/$sectionSlug/$productSlug"
-      params={{ sectionSlug, productSlug: product.slug }}
-    >
+    <Link to={path.to} params={path.params}>
       <div className="group h-full overflow-hidden rounded-lg border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
         <div className="aspect-square overflow-hidden bg-muted relative">
           {firstImage ? (

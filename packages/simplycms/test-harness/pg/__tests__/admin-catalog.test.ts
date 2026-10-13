@@ -209,6 +209,25 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     });
   });
 
+  it('Д5: slug товару й модифікації з пробілом/верхнім регістром → ValidationError', async () => {
+    await expect(
+      productsOps.insert({ data: [{ ...product(30), slug: 'Bad Slug' }] }),
+    ).rejects.toMatchObject({ name: 'ValidationError' });
+    const [p] = await productsOps.insert({ data: [product(31)] });
+    await expect(
+      productModificationsOps.insert({
+        data: [
+          {
+            id: crypto.randomUUID(),
+            productId: p!.id,
+            slug: 'Bad Slug',
+            name: 'M',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ name: 'ValidationError' });
+  });
+
   it('фільтр по недозволеній колонці відбито (allowlist ресурсу)', async () => {
     await expect(
       productsOps.list({

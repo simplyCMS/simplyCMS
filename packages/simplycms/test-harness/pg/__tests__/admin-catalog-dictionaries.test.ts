@@ -130,6 +130,18 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     expect((err as { constraint?: string }).constraint).toMatch(/slug/);
   });
 
+  it('розділ: зарезервований slug `all` відбивається схемою (Р25)', async () => {
+    const s = section({ slug: 'all' });
+    await expect(sectionsOps.insert({ data: [s] })).rejects.toMatchObject({
+      name: 'ValidationError',
+    });
+    expect(
+      await queryRows(dbUrl, `select 1 from public.sections where id = $1`, [
+        s.id,
+      ]),
+    ).toHaveLength(0);
+  });
+
   it('розділ: кириличний slug відбивається схемою до транзакції', async () => {
     const s = section({ slug: 'розділ' });
     await expect(sectionsOps.insert({ data: [s] })).rejects.toMatchObject({

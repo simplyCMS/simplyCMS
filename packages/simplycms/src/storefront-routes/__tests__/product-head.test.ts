@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
+import { productPath } from 'simplycms/domain';
 import { productHead, type ProductHeadInput } from '../head/product';
 
 /**
@@ -69,6 +70,24 @@ describe('productHead', () => {
   it('з siteUrl → canonical і url від нормалізованої адреси', () => {
     const head = productHead(matches('https://shop.example'), PRODUCT, 'solar');
     const url = 'https://shop.example/catalog/solar/panel';
+    expect(head.links).toEqual([{ rel: 'canonical', href: url }]);
+    expect(jsonLd(head).url).toBe(url);
+  });
+
+  it('Р25: canonical і url JSON-LD однакові для будь-якого сегмента в URL, = productPath', () => {
+    // Сегмент URL у head() більше не передається взагалі: canonical береться
+    // з розділу ТОВАРУ, тож `/catalog/foo/panel` і `/catalog/solar/panel` дають один.
+    const head = productHead(matches('https://shop.example'), PRODUCT, 'solar');
+    const href = productPath({ slug: 'panel', sectionSlug: 'solar' }).href;
+    expect(head.links).toEqual([
+      { rel: 'canonical', href: `https://shop.example${href}` },
+    ]);
+    expect(jsonLd(head).url).toBe(`https://shop.example${href}`);
+  });
+
+  it('Р25: товар без розділу → canonical і url на /catalog/all/<slug>', () => {
+    const head = productHead(matches('https://shop.example'), PRODUCT, null);
+    const url = 'https://shop.example/catalog/all/panel';
     expect(head.links).toEqual([{ rel: 'canonical', href: url }]);
     expect(jsonLd(head).url).toBe(url);
   });
