@@ -9,7 +9,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 
 | Пакет | Тека | Роль |
 |-------|------|------|
-| `simplycms` | `simplycms/` | Фреймворк: увесь T0–T5 (`src/*`), роут-теки (`routes/*`), core-міграції (`migrations/`), агентні скіли (`skills/`) |
+| `simplycms` | `simplycms/` | Фреймворк: увесь T0–T5 (`src/*`), роут-теки (`routes/*`), core-міграції (`migrations/`), агентні скіли (`skills/`), вступ агента магазину (`agent/`) |
 | `@simplycms/cli` | `cli/` | CLI магазину (bin `simplycms`): `doctor`/`add`/`create`/`update`/`db:diff`/`theme:conformance`. `host/` — канон host-файлів; виконується в магазині, поза тірами |
 | `@simplycms/theme-solarstore` | `simplycms-theme-solarstore/` | Референс-тема повного контуру: manifest + tokens + components + messages (Фаза 4) |
 | `@simplycms/plugin-faq` | `simplycms-plugin-faq/` | Референс-плагін повного контуру: `plg_faq_items`, `/admin/faq`, слот, Zod-settings, i18n |

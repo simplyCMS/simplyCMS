@@ -120,6 +120,7 @@ simplyCMS/
 │   │   ├── migrations/           # КАНОН core-міграцій: baseline 0000_prelude → 0004_functions;
 │   │   │                         #    джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
+│   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг
 │   │   └── tsdown.config.ts      # ДВІ збірки (клієнт/сервер); entry з dev-exports; група — за contracts/server-only
 │   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/

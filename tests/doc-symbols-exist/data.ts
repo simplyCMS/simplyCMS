@@ -58,7 +58,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   // --- Claude Code ---
   PreToolUse: 'подія хука Claude Code',
   PostToolUse: 'подія хука Claude Code',
-  SessionStart: 'подія хука Claude Code',
   SubagentStart: 'подія хука Claude Code',
   // --- API бібліотек і платформи, які код не імпортує поіменно ---
   allowBuilds: 'ключ pnpm-workspace, нова назва `onlyBuiltDependencies`',

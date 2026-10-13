@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  AGENT_SOURCE_DIR,
   CLI_HOST_DIR,
   SCHEMA_MIGRATIONS_DIR,
   SYNCED_DIRS,
@@ -38,6 +39,14 @@ describe('create-store template: парність із монорепо', () => 
       }
     },
   );
+
+  // Е8-Р5: CLAUDE.md шаблону — генерат із вступу ядра (блок AGENTS.md стереже
+  // managed-block.test.ts тією самою функцією рендеру, що й update).
+  it('CLAUDE.md шаблону байт-ідентичний agent/claude-md.md і імпортує AGENTS.md', () => {
+    const claude = read(join(TEMPLATE_DIR, 'CLAUDE.md'));
+    expect(claude).toBe(read(join(AGENT_SOURCE_DIR, 'claude-md.md')));
+    expect(claude.split('\n')[0]).toBe('@AGENTS.md');
+  });
 
   // Дзеркала §5 спеки CLI v1: ті самі джерела, той самий `pnpm template:sync`.
   // Канон host/ пакета CLI — джерело `simplycms update`; тека сама собі

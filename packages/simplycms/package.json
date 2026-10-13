@@ -566,6 +566,7 @@
     "src",
     "routes",
     "skills",
+    "agent",
     "migrations",
     "!src/**/__tests__/**"
   ],
