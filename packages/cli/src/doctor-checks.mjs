@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { coreDependencies } from './context.mjs';
 import {
+  checkAgentFiles,
   checkHostDrift,
   checkMigrations,
   checkSkillLinks,
@@ -175,5 +176,7 @@ export function runOfflineChecks(ctx) {
     checkEmailVerification(ctx),
     // №17 (Р32): engines.simplycms плагінів і тем проти ядра — error, bootstrap лише warn.
     checkEngines(ctx),
+    // №18 (Б §3.3): керований блок AGENTS.md і запис хука; дозволи — порадою в details.
+    checkAgentFiles(ctx),
   ];
 }

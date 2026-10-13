@@ -1,8 +1,13 @@
-// Файлові перевірки doctor №6–7 і №12 (§4.1): дрейф host-файлів,
-// відставання міграцій, лінки агентних скілів. Самі порівняння живуть у
-// host-drift.mjs, db-diff.mjs і skill-links.mjs — тут лише мапінг їхніх
-// результатів на Check, щоб реалізація кожного була одна.
+// Файлові перевірки doctor №6–7, №12 і №18 (§4.1): дрейф host-файлів,
+// відставання міграцій, лінки агентних скілів, файли агента. Самі порівняння
+// живуть у host-drift.mjs, db-diff.mjs, skill-links.mjs і agent-files.mjs — тут
+// лише мапінг їхніх результатів на Check, щоб реалізація кожного була одна.
 import { existsSync } from 'node:fs';
+import {
+  describeAgentDrift,
+  inspectAgentFiles,
+  readRecommendedPermissions,
+} from './agent-files.mjs';
 import {
   compareMigrationsMulti,
   missingStoreMigrationsDir,
@@ -108,4 +113,39 @@ export function checkSkillLinks({ storeRoot }) {
     return { id, title, status: 'warn', details };
   }
   return { id, title, status: 'ok' };
+}
+
+/**
+ * №18: керований блок `AGENTS.md` і запис хука старту сесії. Розбіжність — warn:
+ * лагодиться `simplycms update`. Дозволи Claude Code `update` не зливає (Б §3.2),
+ * тож рекомендовані показуються тут — власник переносить їх сам.
+ * @param {{ storeRoot: string }} ctx
+ * @returns {Check}
+ */
+export function checkAgentFiles({ storeRoot }) {
+  const id = 'agent-files';
+  const title = 'Файли агента: керований блок AGENTS.md і хук старту сесії';
+  const state = inspectAgentFiles(storeRoot);
+  if (state.block === null) {
+    const details =
+      'node_modules/simplycms/agent відсутня — ядро не встановлене або стара версія';
+    return { id, title, status: 'skip', details };
+  }
+  const problems = [
+    ...(state.hook.status === 'invalid' ? [state.hook.error] : []),
+    ...describeAgentDrift(state),
+  ];
+  const permissions = readRecommendedPermissions(storeRoot);
+  const lines = permissions
+    ? [
+        'Рекомендовані дозволи Claude Code — читання вільно, зміни через підтвердження ' +
+          '(update їх не зливає; перенеси в .claude/settings.json → permissions):',
+        `allow: ${permissions.allow.join(', ')}`,
+        `ask: ${permissions.ask.join(', ')}`,
+      ]
+    : [];
+  if (problems.length === 0)
+    return { id, title, status: 'ok', details: lines.join('\n') || undefined };
+  const fix = `${problems.join('; ')}. Полагодь: pnpm simplycms update`;
+  return { id, title, status: 'warn', details: [fix, ...lines].join('\n') };
 }

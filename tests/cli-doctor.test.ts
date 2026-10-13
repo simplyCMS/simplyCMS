@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   checkCoreVersions,
@@ -19,10 +19,12 @@ import {
   runOfflineChecks,
 } from '../packages/cli/src/doctor-checks.mjs';
 import {
+  checkAgentFiles,
   checkHostDrift,
   checkMigrations,
   checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
+import { ensureSessionStartHook } from '../packages/cli/src/hook-entry.mjs';
 import {
   checkEmailVerification,
   checkMailConfigured,
@@ -110,6 +112,8 @@ describe('cli doctor (оффлайн)', () => {
       'email-verification': 'skip',
       // Без ядра версія для порівняння невідома (Р32, №17).
       engines: 'skip',
+      // Без ядра вступу для керованого блоку немає (№18).
+      'agent-files': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -401,6 +405,43 @@ describe('cli doctor (оффлайн)', () => {
       );
     }
     expect(checkSkillLinks({ storeRoot: store }).status).toBe('ok');
+  });
+
+  it('№18 agent-files: skip без agent/, warn на блок і хук, ok — з дозволами в details', async () => {
+    const store = await scaffoldStore('doc-agent');
+    expect(checkAgentFiles({ storeRoot: store }).status).toBe('skip');
+
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    const permissions = JSON.parse(
+      readFileSync('packages/simplycms/agent/permissions.json', 'utf8'),
+    ).permissions;
+    // Свіжий скаффолд: блок збігається, а запису хука ще немає.
+    const noHook = checkAgentFiles({ storeRoot: store });
+    expect(noHook.status).toBe('warn');
+    expect(noHook.details).toContain('SessionStart');
+    expect(noHook.details).toContain('pnpm simplycms update');
+
+    mkdirSync(join(store, '.claude'), { recursive: true });
+    writeFileSync(
+      join(store, '.claude/settings.json'),
+      ensureSessionStartHook('{}').next,
+    );
+    const ok = checkAgentFiles({ storeRoot: store });
+    expect(ok.status).toBe('ok');
+    for (const rule of [...permissions.allow, ...permissions.ask])
+      expect(ok.details).toContain(rule);
+
+    const agents = join(store, 'AGENTS.md');
+    writeFileSync(
+      agents,
+      readFileSync(agents, 'utf8').replace('## Як працювати', '## Інакше'),
+    );
+    const drift = checkAgentFiles({ storeRoot: store });
+    expect(drift.status).toBe('warn');
+    expect(drift.details).toContain('керований блок AGENTS.md');
+    expect(drift.details).toContain(permissions.ask[0]);
   });
 
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {
