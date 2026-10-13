@@ -61,6 +61,12 @@ export interface IdentityProvider {
   signOut(): Promise<void>;
 }
 
+/**
+ * Порт посилань МАГАЗИНУ (реалізація — на боці магазину/теми). Канонічний шлях
+ * картки товару для самого ядра (sitemap, canonical, JSON-LD, адмінка) будує
+ * `productPath` з `simplycms/domain` (Р25): товар без розділу живе під
+ * `/catalog/all/<slug>`; реалізація `product` має віддавати той самий шлях.
+ */
 export interface LinkResolver {
   product(p: { slug: string; id: string; sectionSlug?: string }): string;
   section(s: { slug: string; id: string }): string;

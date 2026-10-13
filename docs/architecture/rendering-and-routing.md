@@ -66,6 +66,13 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - Списки товарів повні в SSR-HTML: DTO `ProductListItem` (`storefront-routes/server`) +
   `SsrProductGrid`; збагачення — на сервері, не в `useEffect`.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
+- **Канонічний шлях картки товару** — лише `productPath` (`simplycms/domain`, Р25): картка,
+  sitemap, адмінка, `canonical` і JSON-LD беруть його звідти. З розділом —
+  `/catalog/<розділ>/<slug>`, без розділу (FK `on delete set null` це дозволяє) —
+  `/catalog/all/<slug>`. Неканонічний сегмент у URL → 301 на канонічний; `canonical` і
+  `url` у JSON-LD будуються від даних товару, не від URL запиту. Сегмент `all`
+  **зарезервований**: розділ зі slug `all` форма й сервер відхиляють, а наявний такий
+  розділ треба перейменувати до збереження (інакше він перехопив би шлях товарів без розділу).
 - Корінь (`src/routes/__root.tsx`) має `errorComponent` і `notFoundComponent`.
 - **Auth** — cookie-сесії Better Auth (не localStorage JWT). Request-guard для `/admin` —
   middleware `adminRequestGuard` у `src/start.ts` (закриває первинний HTTP-запит,

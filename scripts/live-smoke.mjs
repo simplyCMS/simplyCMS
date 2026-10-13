@@ -51,6 +51,7 @@ import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { runErrorMaskChecks } from './live-smoke/error-mask.mjs';
 import { runSecurityHeaderChecks } from './live-smoke/security-headers.mjs';
+import { runProductPathChecks } from './live-smoke/product-path.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
 import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
@@ -204,6 +205,8 @@ async function main() {
       check,
     });
     await runSecurityHeaderChecks({ base, check });
+    // Р25: канонічний шлях товару (301 + canonical) на справжньому сервері.
+    await runProductPathChecks({ base, dbUrl, check });
 
     // 3б. Адмінка (Е3, Е4, Е5, Е5б, Е6а, Е6в, Е6б) — ОКРЕМИЙ context власника, та сама БД.
     const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };

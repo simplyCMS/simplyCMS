@@ -59,13 +59,15 @@ describe('ReviewCardPage', () => {
     expect(screen.getByText(t('admin.reviews.internalNote'))).toBeTruthy();
   });
 
-  it('Р25: посилання на товар = productPath (з розділом і без)', async () => {
-    const { unmount } = renderWithClient(<ReviewCardPage />);
+  it('Р25: посилання на товар з розділом = productPath', async () => {
+    renderWithClient(<ReviewCardPage />);
     const expected = productPath({ slug: 'kurtka', sectionSlug: 'odyag' }).href;
     await waitFor(() =>
       expect(document.querySelector(`a[href="${expected}"]`)).not.toBeNull(),
     );
-    unmount();
+  });
+
+  it('Р25: посилання на товар без розділу = /catalog/all/<slug>', async () => {
     mocks.getReviewCard.mockResolvedValue(card({ sectionSlug: null }));
     renderWithClient(<ReviewCardPage />);
     await waitFor(() =>

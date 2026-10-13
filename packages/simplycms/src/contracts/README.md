@@ -36,10 +36,11 @@ pnpm add simplycms
 
 ```ts
 import type { LinkResolver } from 'simplycms/contracts';
+import { productPath } from 'simplycms/domain';
 
 export const appLinks: LinkResolver = {
-  product: (p) =>
-    p.sectionSlug ? `/catalog/${p.sectionSlug}/${p.slug}` : `/catalog/${p.slug}`,
+  // Р25: канонічний шлях картки будує `productPath` (без розділу — `/catalog/all/<slug>`).
+  product: (p) => productPath({ slug: p.slug, sectionSlug: p.sectionSlug }).href,
   section: (s) => `/catalog/${s.slug}`,
   cart: () => '/cart',
   checkout: () => '/checkout',
