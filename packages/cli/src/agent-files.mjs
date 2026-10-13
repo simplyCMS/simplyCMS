@@ -19,6 +19,10 @@ const coreAgentDir = (storeRoot) =>
 const readOrNull = (path) =>
   existsSync(path) ? readFileSync(path, 'utf8') : null;
 
+/** Вступ ядра магазину (`simplycms/agent/intro.md`) або `null`, якщо ядро без `agent/`. */
+export const readCoreIntro = (storeRoot) =>
+  readOrNull(join(coreAgentDir(storeRoot), 'intro.md'));
+
 /**
  * Стан файлів агента. `block: null` — ядро без `agent/` (не встановлене чи старе):
  * звіряти нема з чим. `claude`: `missing` — файлу немає (update створить з
@@ -32,7 +36,7 @@ const readOrNull = (path) =>
  * }}
  */
 export function inspectAgentFiles(storeRoot) {
-  const intro = readOrNull(join(coreAgentDir(storeRoot), 'intro.md'));
+  const intro = readCoreIntro(storeRoot);
   const block =
     intro === null
       ? null

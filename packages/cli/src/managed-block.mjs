@@ -22,6 +22,21 @@ export function renderManagedBlock(introMd) {
   return [BLOCK_BEGIN, introMd.trim(), '', START_RULE, BLOCK_END].join('\n');
 }
 
+/**
+ * Вступ, який несе блок: текст між маркерами без правила старту. Єдина функція
+ * виділення — нею `status --hook` друкує той самий вступ, що лежить у `AGENTS.md`
+ * (паритет за побудовою, а не двома копіями рядка), нею ж його перевіряє тест.
+ * @param {string} block результат `renderManagedBlock`
+ */
+export function extractBlockIntro(block) {
+  if (!block.startsWith(BLOCK_BEGIN) || !block.endsWith(BLOCK_END))
+    throw new Error('Рядок не є керованим блоком: немає маркерів BEGIN/END');
+  return block
+    .slice(BLOCK_BEGIN.length, block.length - BLOCK_END.length)
+    .replace(START_RULE, '')
+    .trim();
+}
+
 /** Усі входження підрядка. */
 function indexesOf(text, needle) {
   const found = [];

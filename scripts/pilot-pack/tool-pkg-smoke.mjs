@@ -161,11 +161,13 @@ export async function toolPkgSmoke() {
     // випав із COMMANDS або з files, і смоук мусить це побачити.
     for (const command of [
       'doctor',
+      'status',
       'add',
       'create plugin',
       'create theme',
       'update',
       'db:diff',
+      'db:apply',
       'theme:conformance',
     ]) {
       if (!help.includes(command)) {

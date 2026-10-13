@@ -1,83 +1,29 @@
 import { spawnSync } from 'node:child_process';
-import {
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import ts from 'typescript';
 import { afterAll, describe, expect, it } from 'vitest';
 import { runOfflineChecks } from '../packages/cli/src/doctor-checks.mjs';
 import { checkEngines } from '../packages/cli/src/doctor-engines.mjs';
 import { satisfies } from '../packages/simplycms/src/contracts/semver';
-import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
+import {
+  CLI_INDEX,
+  CORE,
+  STORE_ENV,
+  scaffoldFakeStore,
+} from './lib/fake-core-store';
 
 // doctor №17 (Р32): `engines.simplycms` плагінів і тем проти встановленого ядра.
 // 🔴 Ядро в тесті — СПРАВЖНІЙ `simplycms/contracts/semver` (три TS-файли
 // транспільовано в `node_modules/simplycms` скаффолда), а не заглушка: саме npm-вирівняне
 // пререліз-правило (`>=0.3.0` НЕ покриває `1.0.0-rc.1`) робить кейси змістовними.
-const CORE = '1.0.0-rc.1';
-const INDEX = join(process.cwd(), 'packages/cli/src/index.mjs');
-const ENV = {
-  DATABASE_URL: 'postgresql://app_runtime:pw@localhost:5432/postgres',
-  BETTER_AUTH_SECRET: 'x'.repeat(32),
-};
+const INDEX = CLI_INDEX;
+const ENV = STORE_ENV;
 const roots: string[] = [];
 afterAll(() => {
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
 });
 
-function installCore(store: string) {
-  const dir = join(store, 'node_modules/simplycms');
-  mkdirSync(join(dir, 'semver'), { recursive: true });
-  writeFileSync(
-    join(dir, 'package.json'),
-    JSON.stringify({
-      name: 'simplycms',
-      version: CORE,
-      type: 'module',
-      exports: {
-        './env': { import: './env.mjs' },
-        './contracts/semver': { import: './semver/index.mjs' },
-      },
-    }),
-  );
-  writeFileSync(
-    join(dir, 'env.mjs'),
-    `export const isProductionRuntime = () => false;
-export const resolveDriverEnv = () => ({ mail: { driver: 'smtp' } });
-`,
-  );
-  const src = join(process.cwd(), 'packages/simplycms/src/contracts/semver');
-  for (const name of ['index', 'version', 'core-range']) {
-    const out = ts
-      .transpileModule(readFileSync(join(src, `${name}.ts`), 'utf8'), {
-        compilerOptions: {
-          module: ts.ModuleKind.ESNext,
-          target: ts.ScriptTarget.ES2022,
-        },
-      })
-      .outputText.replace(/from '\.\/([\w-]+)'/g, "from './$1.mjs'");
-    writeFileSync(join(dir, 'semver', `${name}.mjs`), out);
-  }
-}
-
-async function store(name: string) {
-  const root = mkdtempSync(join(tmpdir(), 'cli-eng-'));
-  roots.push(root);
-  const target = join(root, name);
-  await scaffold({
-    templateDir: 'packages/create-simplycms-store/template',
-    targetDir: target,
-    storeName: name,
-    version: CORE,
-  });
-  installCore(target);
-  return target;
-}
+const store = (name: string) => scaffoldFakeStore(name, roots);
 
 const PLUGIN = 'plugins/hello-world/index.ts';
 const THEME = 'themes/default/manifest.ts';

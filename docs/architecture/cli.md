@@ -104,6 +104,35 @@ read-only, ключ власника схеми не мусить лежати �
 Exit-коди: `1` — є хоч один error; самі warn → `0`; `--strict` — warn теж
 валить. Стан «не вдалося перевірити» на exit-код не впливає.
 
+### 3.1.1 `simplycms status [--json | --hook] [--production]`
+
+Етап магазину й наступний крок для людини та агента (Б §3.1). Каркас офлайн-частини
+(Task 19; онлайн-дані — БД, журнал, домен — додає `smoke`/Task 21):
+
+- **Етап** (`deriveStage`, `src/status-stage.mjs`): немає магазину → `not-created`;
+  магазин без `.simplycms/deploy.json` → `local`; із ним → `deployed`.
+- **Перевірки** — ті самі офлайн-перевірки, що в `doctor`: спільний список
+  `OFFLINE_CHECKS` і контекст ЛИШЕ з `buildOfflineContext`; власне складання контексту
+  загубило б `engines`, і №17 мовчки став би `skip`.
+- **Наступний скіл** (`nextSkill`) — перший збіг у таблиці зверху вниз; тест перевіряє КОЖЕН
+  рядок. `warn` помилкою не вважається; `unknown` на вибір скіла не впливає (лише на код виходу).
+
+  | # | Етап | Перевірки | `next.skill` |
+  |---|------|-----------|--------------|
+  | 1 | `not-created` | будь-які (навіть з error) | `simplycms-onboarding` |
+  | 2 | `local` / `deployed` | є хоч один `error` | `simplycms-diagnose` |
+  | 3 | `local` | без `error` (ok / warn) | `simplycms-onboarding` (крок деплою) |
+  | 4 | `deployed` | без `error` (ok / warn) | немає (`null`) |
+- **Коди виходу** (Е8-О8): `0` — гаразд, `3` — є що робити, `1` — стан невідомий
+  (`unknown` непорожній: перевірка кинула чи не вклалась у ~5 с; невідоме важить більше за
+  «є що робити»). Синхронну перевірку, що зависла наглухо, таймаут не перерве (потік один);
+  повільною буває лише асинхронна збірка контексту.
+- **`--json`**: `{ stage, checks, next, unknown }`. **`--hook`**: вступ агента (з
+  `node_modules/simplycms/agent/intro.md`; текст виділяє `extractBlockIntro` з
+  `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
+  ≤25 рядків. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
+  мовчазна зміна режиму змінила б серйозність перевірок.
+
 ### 3.2 `simplycms add <pkg> (--plugin | --theme) [--copy] [--name <key>] [--no-install] [--dry-run]`
 
 Build-time-встановлення плагіна/теми: `pnpm add <pkg>` → якірний запис у
@@ -368,6 +397,7 @@ pnpm build                       # активація/налаштування �
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
 | `tests/git-symlinks.test.ts` | жоден симлінк у git-індексі не має абсолютної цілі (`.claude/skills/tanstack-*` вилучено з індексу, S4-16) |
 | `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
+| `tests/cli-status.test.ts` | `status`: чисті `deriveStage`/`nextSkill`/`statusExitCode`; `collectStatus` (кидає → `unknown`, повільна перевірка 10 с → <6 с); CLI на скаффолді з фейковим ядром (`tests/lib/fake-core-store.ts`): етапи, `--json`, `--hook` (паритет вступу, ≤25 рядків), №17 `engines` у виводі, помилки аргументів |
 | `tests/cli-mail-driver.test.ts` | doctor №14 (немає nodemailer / не в dependencies / невідповідна версія / ок / ядро не встановлено) |
 | `tests/cli-doctor-engines.test.ts` | doctor №17 (engines: не покриває ядро / покриває / відсутній, плагін і тема; пакет у node_modules; проводка через `run()` з реальним `satisfies` ядра) |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |

@@ -7,6 +7,7 @@ import { readCliVersion } from './context.mjs';
 /** Динамічні імпорти команд — модуль команди вантажиться лише за викликом. */
 const COMMANDS = {
   doctor: () => import('./doctor.mjs'),
+  status: () => import('./status.mjs'),
   add: () => import('./add.mjs'),
   create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
@@ -24,6 +25,10 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   doctor    Read-only діагностика магазину; --strict — попередження теж валять,
             --online — ще й стан БД (журнал міграцій, з DATABASE_URL),
             --production — перевіряти як прод (log-драйвер пошти — error, не warn)
+  status    Етап магазину (не створено / локально / розгорнуто), стан перевірок і наступний скіл:
+              status [--json | --hook] [--production]
+              (код 0 — гаразд, 3 — є що робити, інше — стан невідомий;
+              --hook — вступ для агента + стан ≤25 рядків, без --production)
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
               --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається
