@@ -7,7 +7,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
@@ -22,6 +22,10 @@ const PACKED_PREFIX = 'package/skills/';
  * dot-імена) дала б магазину скіл-каліку, який виглядає встановленим. Обидві
  * сторони рівності беруться з диска й з артефакту, тож дрейф ловиться в
  * обидва боки — і зайвий файл у tarball теж.
+ *
+ * Тим самим tarball-ом перевіряється й `CHANGELOG.md`: скіл `simplycms-update`
+ * читає BREAKING з `node_modules/simplycms/CHANGELOG.md`, а копію в пакет кладе
+ * лише `prepack` — без цієї перевірки зникнення кроку не помітив би ніхто.
  */
 export function checkPackagedSkills(work) {
   const dest = join(work, 'simplycms-core.tgz');
@@ -53,9 +57,23 @@ export function checkPackagedSkills(work) {
       ],
     };
   }
+  const changelog = execFileSync(
+    'tar',
+    ['-xzOf', dest, 'package/CHANGELOG.md'],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+  ).toString();
+  if (changelog !== readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8')) {
+    return {
+      ok: false,
+      details: [
+        '✗ CHANGELOG.md у tarball simplycms відсутній або не збігається з кореневим',
+      ],
+    };
+  }
   return {
     ok: true,
     details: [
+      '✓ CHANGELOG.md у tarball simplycms збігається з кореневим',
       `✓ skills/ у tarball simplycms: ${packed.length} файлів — ` +
         'множина збігається з packages/simplycms/skills',
     ],

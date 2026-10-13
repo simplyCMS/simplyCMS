@@ -568,6 +568,7 @@
     "skills",
     "agent",
     "migrations",
+    "CHANGELOG.md",
     "!src/**/__tests__/**"
   ],
   "license": "MIT",
@@ -581,6 +582,7 @@
   },
   "scripts": {
     "build": "tsdown && tsc -p tsconfig.dts.json",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')\"",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },

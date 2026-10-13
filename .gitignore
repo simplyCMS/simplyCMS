@@ -10,6 +10,9 @@ dist-ssr
 .tanstack
 *.tsbuildinfo
 
+# Копія кореневого CHANGELOG.md, що її кладе prepack пакета simplycms у tarball
+packages/simplycms/CHANGELOG.md
+
 # Environment
 *.local
 .env

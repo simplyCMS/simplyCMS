@@ -2,21 +2,8 @@
 // Вхід CLI `simplycms` — диспетчер команд обслуговування магазину SimplyCMS.
 // Команди вантажаться динамічно: виклик doctor не тягне модулі add/update.
 import { log } from '@clack/prompts';
+import { COMMANDS } from './commands.mjs';
 import { readCliVersion } from './context.mjs';
-
-/** Динамічні імпорти команд — модуль команди вантажиться лише за викликом. */
-const COMMANDS = {
-  doctor: () => import('./doctor.mjs'),
-  status: () => import('./status.mjs'),
-  smoke: () => import('./smoke.mjs'),
-  'deploy:record': () => import('./deploy-record-cli.mjs'),
-  add: () => import('./add.mjs'),
-  create: () => import('./create.mjs'),
-  update: () => import('./update.mjs'),
-  'db:diff': () => import('./db-diff.mjs'),
-  'db:apply': () => import('./db-apply.mjs'),
-  'theme:conformance': () => import('./theme-conformance.mjs'),
-};
 
 const HELP = `simplycms — CLI обслуговування магазину SimplyCMS
 
