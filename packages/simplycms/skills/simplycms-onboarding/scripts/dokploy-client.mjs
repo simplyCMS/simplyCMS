@@ -18,6 +18,23 @@ export function takeFlag(args, name, hasValue = true) {
   return hasValue ? args.splice(i, 2)[1] : (args.splice(i, 1), true);
 }
 
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** Ключ API йде заголовком: поза TLS і не на loopback він летить відкритим текстом. */
+function warnIfInsecure(base) {
+  let u;
+  try {
+    u = new URL(base);
+  } catch {
+    return;
+  }
+  if (u.protocol === 'https:' || LOOPBACK.has(u.hostname)) return;
+  // Без URL і ключа у виводі: у URL може бути userinfo.
+  console.warn(
+    'DOKPLOY_URL не https — ключ іде відкритим текстом; використовуй домен панелі з TLS',
+  );
+}
+
 /** Облікові дані: оточення, інакше файл секретів. НЕ `~/.claude.json`. */
 export function credentials(secretsPath) {
   const path = resolve(secretsPath ?? DEFAULT_SECRETS);
@@ -29,6 +46,7 @@ export function credentials(secretsPath) {
       `Немає DOKPLOY_URL / DOKPLOY_API_KEY: заповни їх у файлі секретів (${secretsPath ?? DEFAULT_SECRETS}) або в оточенні`,
     );
   const base = url.replace(/\/+$/, '');
+  warnIfInsecure(base);
   return { url: base, api: base.endsWith('/api') ? base : `${base}/api`, key };
 }
 
@@ -48,7 +66,13 @@ export async function dokploy(
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`Dokploy ${path}: HTTP ${res.status}`);
-  return text ? JSON.parse(text) : null;
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    // SyntaxError V8 цитує уривок тексту відповіді — у повідомлення його не пускаємо.
+    throw new Error(`Dokploy ${path}: відповідь не JSON (HTTP ${res.status})`);
+  }
 }
 
 /**

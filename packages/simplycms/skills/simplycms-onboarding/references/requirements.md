@@ -8,6 +8,9 @@
 | Домен | `shop.example.com` | лише ім'я хоста, без схеми |
 | Сервер Dokploy | URL панелі + `serverId` | `serverId` потрібен `prod-run` |
 | Ключ API Dokploy | у файл секретів | власник вносить сам, не в чат |
+
+`DOKPLOY_URL` — домен панелі з TLS (`https://`): ключ API йде заголовком, поза TLS (крім loopback) скрипти
+друкують попередження «ключ іде відкритим текстом».
 | DNS | Cloudflare, «DNS only» | запис А/CNAME створює власник або з явної згоди |
 | SMTP | `SMTP_URL` + `MAIL_FROM` | `references/smtp.md`; без пошти запрошення власника не вийде |
 | Сховище S3 | ендпоінт, регіон, бакет, ключі | `references/garage-bucket.md`; будь-яке S3 |

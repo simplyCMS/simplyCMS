@@ -112,7 +112,8 @@
   секретів), керований блок `AGENTS.md` і `CLAUDE.md` у шаблоні, хук старту сесії
   (`.claude/hooks/session-start.mjs`, exec-форма через `${CLAUDE_PROJECT_DIR}`; Claude Code ≥ 2.1.139
   (поле `args` у хуках); перевірено на 2.1.296), doctor №17 (engines) і №18 (файли агента),
-  скіли `simplycms-onboarding`, `simplycms-update`, `simplycms-diagnose` (+ перейменований
+  скіли `simplycms-onboarding` (його скрипти попереджають, якщо `DOKPLOY_URL` не `https:` і не loopback, і не
+  цитують не-JSON відповідь Dokploy у помилці), `simplycms-update`, `simplycms-diagnose` (+ перейменований
   `simplycms-redesign`), скаффолдер із фінальним «одним реченням» для власника.
 - **Реліз:** `CHANGELOG.md` їде в tarball ядра (`simplycms-update` читає BREAKING між версіями), крок
   `pnpm release` `readme-tag`, пререліз `X.Y.Z-rc.N` під тегом `next`, гейт `schema` (`test:schema`

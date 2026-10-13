@@ -258,6 +258,46 @@ describe('dokploy-env', () => {
     expect(r.code).toBe(1);
     expect(r.err).toContain('DOKPLOY_API_KEY');
   });
+
+  const keysWithUrl = (url: string, routes: Routes = envRoutes()) => {
+    const sb = sandbox();
+    writeFileSync(
+      sb.secrets,
+      `DOKPLOY_URL=${url}\nDOKPLOY_API_KEY=${SECRET}\n`,
+    );
+    return run(
+      sb,
+      'dokploy-env.mjs',
+      ['keys', ...ENV_ARGS, sb.secrets],
+      routes,
+    );
+  };
+
+  it('http-панель не на loopback → одне попередження без ключа й URL', () => {
+    const r = keysWithUrl('http://203.0.113.7:3000');
+    expect(r.err.match(/DOKPLOY_URL не https/g)).toHaveLength(1);
+    expect(r.err + r.out).not.toContain(SECRET);
+    expect(r.err + r.out).not.toContain('203.0.113.7');
+  });
+
+  it.each([
+    'https://dok.example.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://[::1]:3000',
+  ])('%s → без попередження', (url) => {
+    expect(keysWithUrl(url).err).not.toContain('не https');
+  });
+
+  it('відповідь не JSON → помилка без уривка тіла', () => {
+    const MARK = 'LEAK-MARKER-42';
+    const r = keysWithUrl('https://dok.example.com', {
+      'GET application.one': { raw: `<html>${MARK}`, status: 200 },
+    });
+    expect(r.code).toBe(1);
+    expect(r.err).toContain('відповідь не JSON (HTTP 200)');
+    expect(r.err + r.out).not.toContain(MARK);
+  });
 });
 
 describe('prod-run', () => {

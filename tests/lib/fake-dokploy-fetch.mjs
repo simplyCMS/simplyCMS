@@ -1,6 +1,6 @@
 // Підміна глобального fetch для скриптів скіла онбордингу (`node --import …`).
 // FAKE_ROUTES: JSON { "METHOD path": відповідь | [відповіді по черзі] }, відповідь —
-// { status?, body? }; останній елемент черги повторюється. FAKE_LOG: файл, куди
+// { status?, body?, raw? } (raw — сире тіло не-JSON); останній елемент черги повторюється. FAKE_LOG: файл, куди
 // дописується кожен запит { method, path, body } (рядок JSON). Невідомий маршрут — 404.
 import { appendFileSync } from 'node:fs';
 
@@ -24,7 +24,7 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (!entry) return new Response('not found', { status: 404 });
   return new Response(
-    entry.body === undefined ? '' : JSON.stringify(entry.body),
+    entry.raw ?? (entry.body === undefined ? '' : JSON.stringify(entry.body)),
     {
       status: entry.status ?? 200,
     },

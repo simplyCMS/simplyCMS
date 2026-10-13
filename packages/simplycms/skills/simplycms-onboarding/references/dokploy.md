@@ -1,7 +1,8 @@
 # Dokploy
 
 Облікові дані — у файлі секретів (`secrets-file.mjs init .simplycms/secrets.env`, власник вносить
-`DOKPLOY_URL` і `DOKPLOY_API_KEY`). Усі команди нижче — без `--confirm` спершу (прев'ю).
+`DOKPLOY_URL` і `DOKPLOY_API_KEY`). `DOKPLOY_URL` — лише `https://` (крім loopback): інакше скрипти попереджають, що ключ іде
+відкритим текстом. Усі команди нижче — без `--confirm` спершу (прев'ю).
 
 ## 1. Ресурси
 
