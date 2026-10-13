@@ -107,7 +107,7 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
 ### 3.1.1 `simplycms status [--json | --hook] [--production]`
 
 Етап магазину й наступний крок для людини та агента (Б §3.1). Каркас офлайн-частини
-(Task 19; онлайн-дані — БД, журнал, домен — додає `smoke`/Task 21):
+(онлайн-дані — БД, журнал, домен — додає онлайн-частина разом зі `smoke`):
 
 - **Етап** (`deriveStage`, `src/status-stage.mjs`): немає магазину → `not-created`;
   магазин без `.simplycms/deploy.json` → `local`; із ним → `deployed`.
@@ -130,7 +130,7 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
 - **`--json`**: `{ stage, checks, next, unknown }`. **`--hook`**: вступ агента (з
   `node_modules/simplycms/agent/intro.md`; текст виділяє `extractBlockIntro` з
   `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
-  ≤25 рядків. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
+  ≤25 рядків. при обрізанні до 25 рядків рядки «не вдалося перевірити» не зрізаються, зрізаються проблеми. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
   мовчазна зміна режиму змінила б серйозність перевірок.
 
 ### 3.2 `simplycms add <pkg> (--plugin | --theme) [--copy] [--name <key>] [--no-install] [--dry-run]`

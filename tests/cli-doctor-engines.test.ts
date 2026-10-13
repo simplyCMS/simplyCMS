@@ -16,8 +16,6 @@ import {
 // 🔴 Ядро в тесті — СПРАВЖНІЙ `simplycms/contracts/semver` (три TS-файли
 // транспільовано в `node_modules/simplycms` скаффолда), а не заглушка: саме npm-вирівняне
 // пререліз-правило (`>=0.3.0` НЕ покриває `1.0.0-rc.1`) робить кейси змістовними.
-const INDEX = CLI_INDEX;
-const ENV = STORE_ENV;
 const roots: string[] = [];
 afterAll(() => {
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
@@ -35,9 +33,9 @@ function setEngines(root: string, file: string, line: string) {
 }
 
 function doctor(root: string) {
-  const r = spawnSync('node', [INDEX, 'doctor'], {
+  const r = spawnSync('node', [CLI_INDEX, 'doctor'], {
     cwd: root,
-    env: { ...process.env, ...ENV, NODE_ENV: '' },
+    env: { ...process.env, ...STORE_ENV, NODE_ENV: '' },
     encoding: 'utf8',
   });
   const out = `${r.stdout}${r.stderr}`;
@@ -127,7 +125,7 @@ describe('doctor №17 engines (проводка через run(), справж�
     const ids = runOfflineChecks({
       storeRoot: root,
       manifest: {},
-      env: ENV,
+      env: STORE_ENV,
       cliVersion: CORE,
       hostDir: join(root, 'no-canon'),
       schemaMigrationsDir: join(root, 'none'),

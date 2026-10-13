@@ -13,6 +13,7 @@ import {
   extractBlockIntro,
   renderManagedBlock,
 } from '../packages/cli/src/managed-block.mjs';
+import { renderHookState } from '../packages/cli/src/status-render.mjs';
 import { collectStatus } from '../packages/cli/src/status.mjs';
 import {
   deriveStage,
@@ -144,6 +145,47 @@ describe('collectStatus', () => {
   }, 15_000);
 });
 
+describe('таймаут контексту й обрізання --hook', () => {
+  it('повільний контекст (10 с): <6 с, запис у unknown, код 1', async () => {
+    const root = await store('st-slow-ctx');
+    const started = Date.now();
+    const report = await collectStatus(root, {
+      buildContext: (() =>
+        new Promise((resolve) =>
+          (setTimeout(resolve, 10_000) as unknown as { unref(): void }).unref(),
+        )) as never,
+    });
+    expect(Date.now() - started).toBeLessThan(6000);
+    expect(report.unknown).toHaveLength(1);
+    expect(report.unknown[0]).toContain('контекст перевірок');
+    expect(report.checks).toEqual([]);
+    expect(statusExitCode(report)).toBe(1);
+  }, 15_000);
+
+  it('≥30 проблем: стан ≤25 рядків, а unknown не зрізається', () => {
+    const checks = Array.from({ length: 30 }, (_, i) => ({
+      id: `c${i}`,
+      title: `проблема ${i}`,
+      status: i % 2 ? 'warn' : 'error',
+      details: `деталі ${i}`,
+    }));
+    const lines = renderHookState(
+      {
+        stage: 'local',
+        checks,
+        next: { skill: 'simplycms-diagnose', reason: 'r' },
+        unknown: ['deploy.json: збій'],
+      } as never,
+      false,
+    );
+    expect(lines.length).toBeLessThanOrEqual(25);
+    expect(lines.join('\n')).toContain('не вдалося перевірити: deploy.json');
+    expect(lines.at(-1)).toContain('… ще');
+    // error-и йдуть перед warn-ами, тож у зрізаному стані warn-ів немає.
+    expect(lines.join('\n')).not.toContain('проблема 1\n');
+  });
+});
+
 describe('simplycms status (CLI)', () => {
   it('тека без магазину → not-created, онбординг, код 3', () => {
     const empty = mkdtempSync(join(tmpdir(), 'cli-st-empty-'));
@@ -203,5 +245,18 @@ describe('simplycms status (CLI)', () => {
     expect(status(root, '--hook', '--production').code).toBe(1);
     expect(status(root, '--json', '--hook').code).toBe(1);
     expect(status(root, '--bogus').code).toBe(1);
+  });
+  it('битий deploy.json → unknown, stage local, код 1; --hook називає збій', async () => {
+    const root = await store('st-bad-deploy');
+    mkdirSync(join(root, '.simplycms'));
+    writeFileSync(join(root, '.simplycms/deploy.json'), '{bad');
+    const r = status(root, '--json');
+    const report = JSON.parse(r.out);
+    expect(report.stage).toBe('local');
+    expect(report.unknown).toHaveLength(1);
+    expect(r.code).toBe(1);
+    const hook = status(root, '--hook');
+    expect(hook.out).toContain('не вдалося перевірити');
+    expect(hook.code).toBe(1);
   });
 });

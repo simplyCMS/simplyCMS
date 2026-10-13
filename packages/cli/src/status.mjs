@@ -1,6 +1,6 @@
-// simplycms status — етап магазину, стан перевірок і наступний скіл (Б §3.1, Task 19).
+// simplycms status — етап магазину, стан перевірок і наступний скіл (Б §3.1).
 // Каркас офлайн-частини: ті самі перевірки, що в `doctor` (спільний список і спільний
-// `buildOfflineContext`), але з таймаутом на всю команду; онлайн-дані додасть Task 21.
+// `buildOfflineContext`), але з таймаутом на всю команду; онлайн-дані додаються окремо.
 // Коди виходу: 0 — гаразд, 3 — є що робити, інакше — стан невідомий (Е8-О8).
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,23 +10,14 @@ import { OFFLINE_CHECKS } from './doctor-checks.mjs';
 import { buildOfflineContext } from './doctor.mjs';
 import { extractBlockIntro, renderManagedBlock } from './managed-block.mjs';
 import { deriveStage, nextSkill, statusExitCode } from './status-stage.mjs';
-import {
-  formatCheck,
-  begin,
-  finish,
-  reportChecks,
-  say,
-  summarizeChecks,
-} from './ui.mjs';
+import { printHuman, renderHookState } from './status-render.mjs';
 
 /** Бюджет на всю команду: хук сесії не має гальмувати старт агента. */
-export const STATUS_TIMEOUT_MS = 5000;
-/** Стеля стану в `--hook`: агент читає його на початку кожної сесії. */
-const HOOK_STATE_MAX_LINES = 25;
+const STATUS_TIMEOUT_MS = 5000;
 const DEPLOY_RECORD = '.simplycms/deploy.json';
 
 /** @param {string[]} argv */
-export function parseStatusArgs(argv) {
+function parseStatusArgs(argv) {
   const flags = { json: false, hook: false, production: false };
   for (const arg of argv) {
     if (arg === '--json') flags.json = true;
@@ -80,13 +71,18 @@ function readDeployRecord(storeRoot, unknown) {
  * офлайн-перевірки читають лише локальні файли, а повільна частина — `import()`
  * модулів у `buildOfflineContext` — асинхронна.
  * @param {string | null} storeRoot `null` — теки магазину немає
- * @param {{ production?: boolean, checks?: typeof OFFLINE_CHECKS, timeoutMs?: number }} [opts]
+ * Гонка на кожну перевірку лишена для асинхронних (онлайн) перевірок, які додаються
+ * поверх цього каркаса: офлайн-список синхронний, тож ця гонка поки спрацьовує лише в
+ * тестах. `buildContext` — шов для тесту повільного контексту; продукт завжди дає
+ * `buildOfflineContext`.
+ * @param {{ production?: boolean, checks?: typeof OFFLINE_CHECKS, buildContext?: typeof buildOfflineContext, timeoutMs?: number }} [opts]
  */
 export async function collectStatus(
   storeRoot,
   {
     production = false,
     checks = OFFLINE_CHECKS,
+    buildContext = buildOfflineContext,
     timeoutMs = STATUS_TIMEOUT_MS,
   } = {},
 ) {
@@ -97,11 +93,9 @@ export async function collectStatus(
   if (storeRoot !== null) {
     const deadline = createDeadline(timeoutMs);
     try {
-      // 🔴 Контекст — ЛИШЕ через buildOfflineContext (спільний з doctor): власне складання
+      // 🔴 Контекст — за замовчуванням ЛИШЕ buildOfflineContext (спільний з doctor): власне складання
       // загубило б async-дані (`engines`), і №17 мовчки став би skip.
-      const ctx = await deadline.race(
-        buildOfflineContext(storeRoot, { production }),
-      );
+      const ctx = await deadline.race(buildContext(storeRoot, { production }));
       if (ctx === TIMED_OUT)
         unknown.push(`контекст перевірок: не вклався у ${timeoutMs} мс`);
       else {
@@ -141,45 +135,6 @@ export async function collectStatus(
   };
 }
 
-/** Стан для `--hook`: ≤25 рядків, проблеми першими, зайве зрізається з підказкою. */
-function hookState(report, introMissing) {
-  const { stage, checks, next, unknown } = report;
-  const head = [
-    `simplycms status — етап: ${stage}`,
-    next === null
-      ? 'Наступний скіл: не потрібен'
-      : `Наступний скіл: ${next.skill} — ${next.reason}`,
-    `Перевірки: ${summarizeChecks(checks)}`,
-  ];
-  if (introMissing)
-    head.push(
-      'УВАГА: node_modules/simplycms/agent/intro.md немає — pnpm install',
-    );
-  const order = { error: 0, warn: 1 };
-  const problems = checks
-    .filter((check) => check.status in order)
-    .sort((a, b) => order[a.status] - order[b.status])
-    .flatMap((check) => formatCheck(check).split('\n'));
-  const tail = unknown.map((item) => `? не вдалося перевірити: ${item}`);
-  const lines = [...head, ...problems, ...tail];
-  if (lines.length <= HOOK_STATE_MAX_LINES) return lines;
-  const kept = lines.slice(0, HOOK_STATE_MAX_LINES - 1);
-  return [
-    ...kept,
-    `… ще ${lines.length - kept.length} рядків — pnpm simplycms status`,
-  ];
-}
-
-function printHuman(report) {
-  begin('simplycms status');
-  say.info(`Етап: ${report.stage}`);
-  reportChecks(report.checks);
-  for (const item of report.unknown) say.warn(`Не вдалося перевірити: ${item}`);
-  if (report.next)
-    say.step(`Наступний скіл: ${report.next.skill} — ${report.next.reason}`);
-  finish(summarizeChecks(report.checks));
-}
-
 /** @param {string[]} argv */
 export async function run(argv) {
   const { json, hook, production } = parseStatusArgs(argv);
@@ -198,7 +153,7 @@ export async function run(argv) {
         ? ''
         : `${extractBlockIntro(renderManagedBlock(introMd))}\n\n`;
     console.log(
-      `${intro}${hookState(report, storeRoot !== null && introMd === null).join('\n')}`,
+      `${intro}${renderHookState(report, storeRoot !== null && introMd === null).join('\n')}`,
     );
   } else printHuman(report);
   const code = statusExitCode(report);
