@@ -9,14 +9,16 @@
   },
   "main": "./src/index.mjs",
   "exports": {
-    ".": "./src/index.mjs"
+    ".": "./src/index.mjs",
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org",
     "main": "./src/index.mjs",
     "exports": {
-      ".": "./src/index.mjs"
+      ".": "./src/index.mjs",
+      "./package.json": "./package.json"
     }
   },
   "files": [

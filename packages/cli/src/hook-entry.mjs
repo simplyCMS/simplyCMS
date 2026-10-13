@@ -3,7 +3,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 /** Шлях шима — за ним упізнається наш запис, навіть якщо команду змінили. */
-const HOOK_SCRIPT = '.claude/hooks/session-start.mjs';
+export const HOOK_SCRIPT = '.claude/hooks/session-start.mjs';
 
 /** Канонічний запис: та сама форма, що в шаблонному `settings.json` (Task 20). */
 const SESSION_START_ENTRY = {

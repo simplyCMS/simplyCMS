@@ -24,7 +24,6 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
-import { ensureSessionStartHook } from '../packages/cli/src/hook-entry.mjs';
 import {
   checkEmailVerification,
   checkMailConfigured,
@@ -417,17 +416,16 @@ describe('cli doctor (оффлайн)', () => {
     const permissions = JSON.parse(
       readFileSync('packages/simplycms/agent/permissions.json', 'utf8'),
     ).permissions;
-    // Свіжий скаффолд: блок збігається, а запису хука ще немає.
+    // Свіжий скаффолд несе і запис хука, і шим; без settings.json запису немає.
+    const settings = join(store, '.claude/settings.json');
+    const scaffolded = readFileSync(settings, 'utf8');
+    rmSync(settings);
     const noHook = checkAgentFiles({ storeRoot: store });
     expect(noHook.status).toBe('warn');
     expect(noHook.details).toContain('SessionStart');
     expect(noHook.details).toContain('pnpm simplycms update');
 
-    mkdirSync(join(store, '.claude'), { recursive: true });
-    writeFileSync(
-      join(store, '.claude/settings.json'),
-      ensureSessionStartHook('{}').next,
-    );
+    writeFileSync(settings, scaffolded);
     const ok = checkAgentFiles({ storeRoot: store });
     expect(ok.status).toBe('ok');
     for (const rule of [...permissions.allow, ...permissions.ask])
@@ -455,6 +453,19 @@ describe('cli doctor (оффлайн)', () => {
     expect(drift.status).toBe('warn');
     expect(drift.details).toContain('керований блок AGENTS.md');
     expect(drift.details).toContain(permissions.ask[0]);
+  });
+
+  it('№18 agent-files: запис хука є, а шима .claude/hooks/session-start.mjs немає → warn з update --write', async () => {
+    const store = await scaffoldStore('doc-shim');
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+    rmSync(join(store, '.claude/hooks/session-start.mjs'));
+    const missing = checkAgentFiles({ storeRoot: store });
+    expect(missing.status).toBe('warn');
+    expect(missing.details).toContain('session-start.mjs');
+    expect(missing.details).toContain('pnpm simplycms update --write');
   });
 
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {

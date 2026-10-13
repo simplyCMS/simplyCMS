@@ -78,8 +78,9 @@ export function checkStoreStructure(storeDir) {
  * мовчки: `pnpm install` оновлює пакет, а закомічену копію — ніхто.
  */
 export function checkNoSkillCopies(pkgDir) {
-  const stray = ['template/.claude', 'template/.agents'].filter((dir) =>
-    existsSync(join(pkgDir, dir)),
+  // `.claude/` у шаблоні є (хук і шим) — копією скілів вважаються лише `skills/`.
+  const stray = ['template/.claude/skills', 'template/.agents/skills'].filter(
+    (dir) => existsSync(join(pkgDir, dir)),
   );
   return stray.length === 0
     ? { ok: true, details: ['✓ tarball скаффолдера без копії скілів'] }

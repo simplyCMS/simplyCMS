@@ -17,6 +17,7 @@ import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
 import { gateImportProtection } from './gate-ip.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
+import { checkSessionHookOnScratch } from './session-hook-checks.mjs';
 import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
 
 /**
@@ -49,7 +50,13 @@ export async function runGates(opts) {
   results.push(['CLI', createPkgSmoke()]);
 
   step('Gate TOOL — tarball @simplycms/cli');
-  results.push(['TOOL', await toolPkgSmoke()]);
+  const tool = await toolPkgSmoke();
+  // Шим хука — на встановленому скретчі: лише там він доходить до справжнього CLI.
+  const hook = checkSessionHookOnScratch(opts.storeDir);
+  results.push([
+    'TOOL',
+    { ok: tool.ok && hook.ok, details: [...tool.details, ...hook.details] },
+  ]);
 
   // Gate E (bootstrap власника) знято разом із локальним стеком БД —
   // він жив на service-ключі сервісу автентифікації. Рядок лишається видимим, щоб звіт

@@ -81,6 +81,12 @@ export const SYNCED_FILES = [
   'src/theme-registry.ts',
 ];
 
+/**
+ * Host-файли, чиє джерело — САМ шаблон (у корені монорепо їх немає): шим хука старту
+ * сесії. У `packages/cli/host/` їде копія, тож `update` оновлює шим у наявних магазинах.
+ */
+export const TEMPLATE_HOST_FILES = ['.claude/hooks/session-start.mjs'];
+
 /** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
 export const SYNCED_DIRS = [
   // Канон ядра → тека міграцій магазину (`db/migrations`: зміст — чистий
@@ -120,6 +126,11 @@ export function syncTemplate(root = REPO_ROOT) {
     const target = join(hostRoot, file);
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(root, file), target);
+  }
+  for (const file of TEMPLATE_HOST_FILES) {
+    const target = join(hostRoot, file);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(join(root, TEMPLATE_DIR, file), target);
   }
 }
 

@@ -8,6 +8,7 @@ import {
   SYNCED_DIRS,
   SYNCED_FILES,
   TEMPLATE_DIR,
+  TEMPLATE_HOST_FILES,
 } from '../scripts/sync-create-store-template.mjs';
 import { ENV_PLACEHOLDERS } from '../packages/cli/src/env-placeholders.mjs';
 import { BUNDLED_SKILLS } from '../packages/create-simplycms-store/src/skill-links.mjs';
@@ -56,8 +57,20 @@ describe('create-store template: парність із монорепо', () => 
     expect(read(join(CLI_HOST_DIR, file))).toBe(read(file));
   });
 
-  it('канон host/ CLI складається рівно з SYNCED_FILES', () => {
-    expect(listFiles(CLI_HOST_DIR)).toEqual([...SYNCED_FILES].sort());
+  // Файли, чиє джерело — сам шаблон (шим хука): канон host/ несе їхню байт-копію.
+  it.each(TEMPLATE_HOST_FILES)(
+    'канон host/ CLI: %s = копія шаблону',
+    (file) => {
+      expect(read(join(CLI_HOST_DIR, file))).toBe(
+        read(join(TEMPLATE_DIR, file)),
+      );
+    },
+  );
+
+  it('канон host/ CLI складається рівно з SYNCED_FILES і файлів шаблону', () => {
+    expect(listFiles(CLI_HOST_DIR)).toEqual(
+      [...SYNCED_FILES, ...TEMPLATE_HOST_FILES].sort(),
+    );
   });
 
   // Канон міграцій ядра (B13) — baseline + сід, а не історія з 33 файлів.
@@ -212,8 +225,9 @@ describe('create-store template: парність із монорепо', () => 
   // (створює скаффолдер, лагодить `simplycms update`) — копії в шаблоні
   // більше немає, інакше магазин ніс би форк скіла, що старіє мовчки.
   it('шаблон не несе копії скілів', () => {
-    expect(existsSync(join(TEMPLATE_DIR, '.claude'))).toBe(false);
-    expect(existsSync(join(TEMPLATE_DIR, '.agents'))).toBe(false);
+    // `.claude/` у шаблоні є (хук і його шим), тож копією скілів вважаємо лише `skills/`.
+    expect(existsSync(join(TEMPLATE_DIR, '.claude/skills'))).toBe(false);
+    expect(existsSync(join(TEMPLATE_DIR, '.agents/skills'))).toBe(false);
     expect(SYNCED_DIRS.some(({ to }) => to.includes('skills'))).toBe(false);
   });
 
