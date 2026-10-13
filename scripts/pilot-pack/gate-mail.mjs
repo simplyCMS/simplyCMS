@@ -55,11 +55,11 @@ export async function gateMail(storeDir, env, { packOnly = false } = {}) {
     match: (m) => m.Subject === subject,
     timeout: 15_000,
   });
-  const delivered = mail !== null && mail.From.Address === from;
+  const delivered = mail !== null && mail.from === from;
   details.push(
     `${delivered ? 'OK  ' : 'FAIL'} запакований simplycms/mail → Mailpit — драйвер ${sent.report.driver}, ` +
       (mail
-        ? `From = ${mail.From.Address} (очікую ${from})`
+        ? `From = ${mail.from} (очікую ${from})`
         : `листа з темою немає (${error ?? 'лист пішов у лог, а не в SMTP?'})`),
   );
   return { ok: delivered, details };
