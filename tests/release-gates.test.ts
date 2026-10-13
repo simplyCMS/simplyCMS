@@ -18,8 +18,19 @@ describe('гейти релізу', () => {
       'build:packages',
       'typecheck:template',
       'test:packaging',
+      'schema',
       'pilot',
     ]);
+  });
+
+  // `test:schema` у релізі (1.0): повним харнесом, а не голим vitest — проєкти
+  // storage і mail без Garage/Mailpit не стартують.
+  it('гейт schema — test:schema після harness:up', () => {
+    const gate = GATES.find((g) => g.name === 'schema');
+    expect(gate?.cmd).toBe('node scripts/release/schema-full.mjs');
+    const script = readFileSync('scripts/release/schema-full.mjs', 'utf8');
+    expect(script).toContain('pnpm harness:up');
+    expect(script).toContain("run('pnpm test:schema')");
   });
 
   // Реліз ганяє ПОВНИЙ пілот із Gate B (К3-Е7, Task 11): `pilot:pack` без БД не піднімає

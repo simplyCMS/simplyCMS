@@ -185,13 +185,14 @@ remote незворотне, а автоматичний код на це пра
 
 ### Гейти релізу
 
-Той самий порядок, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
-у релізі НЕМАЄ `test:schema` і Є повний `pilot` (Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL).
+Той самий склад, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
+`test:schema` іде після `test:packaging` (гейт `schema`) і в кінці є повний `pilot`
+(Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL).
 
 ```
 install --frozen-lockfile → format:check → lint → build
 → typecheck → typecheck:showcase → test → build:packages → typecheck:template → test:packaging
-→ pilot
+→ schema → pilot
 ```
 
 🔴 `pilot` — останній і саме тут, а не в CI (трек T, 2026-09-02; з К3-Е7 — ПОВНИЙ, не
@@ -211,11 +212,14 @@ Gate B не скорочується. Прогін ≈ 2 хв (вимір 2026-1
 стан); реліз — єдине місце, де він обовʼязковий. Харнес після гейта лишається піднятим
 (`pnpm harness:down` прибирає його).
 
-🔴 `test:schema` у реліз НЕ входить, хоча в ланцюзі CLAUDE.md він є: гейт
-потребує Postgres на машині релізу, а реліз має лишатися запускним з
-ноутбука. Додавання — окреме рішення власника, не «забутий крок». Тому
-авторитетний для релізу саме цей список, а не ланцюг CLAUDE.md; його склад
-і порядок асертить `tests/release-gates.test.ts`.
+🔴 `test:schema` у релізі обов'язковий з 1.0 (Е8-В3): реліз обіцяє, що магазин із даними
+переживає наступну версію, а це доводить лише схемний контур — накат канону через журнал
+міграцій, `upgrade-1x.test.ts` (нові `0006`/`0007` поверх магазину з даними; змінений уже
+накочений файл → `MigrationChecksumError`, контейнер не стартує) і поведінка RLS. Гейт —
+`node scripts/release/schema-full.mjs`: `pnpm harness:up` (ідемпотентно; Postgres, Garage,
+Mailpit — проєкти `storage` і `mail` без них не стартують) → `pnpm test:schema`. Docker на
+машині релізу — вимога, а не побажання: реліз з ноутбука без Docker більше не запускний.
+Склад і порядок гейтів асертить `tests/release-gates.test.ts`.
 
 `install --frozen-lockfile` перший, бо це єдиний гейт, що ловить розсинхрон
 `pnpm-lock.yaml` з манифестами — у CI він дефолтний, тож розсинхрон валить
