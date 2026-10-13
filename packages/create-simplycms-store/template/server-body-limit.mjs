@@ -64,7 +64,7 @@ export function limitStream(source, limit, onExceed) {
  * читання тіла. Зʼєднання не закриваємо (поведінка Task 7): клієнт, що ще
  * шле тіло, читає 413, а не обрив. Повертає `true`, якщо відповідь віддано.
  */
-export function rejectOversizedBody(req, res, serverFnBase) {
+export function rejectOversizedBody(req, res, serverFnBase, extraHeaders = {}) {
   if (req.method === 'GET' || req.method === 'HEAD') return false;
   const raw = req.headers['content-length'];
   if (raw === undefined) return false;
@@ -76,7 +76,10 @@ export function rejectOversizedBody(req, res, serverFnBase) {
   ) {
     return false;
   }
-  res.writeHead(413, { 'content-type': 'text/plain; charset=utf-8' });
+  res.writeHead(413, {
+    ...extraHeaders,
+    'content-type': 'text/plain; charset=utf-8',
+  });
   res.end(PAYLOAD_TOO_LARGE_CODE);
   return true;
 }

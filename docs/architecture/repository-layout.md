@@ -73,6 +73,10 @@ simplyCMS/
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
 │   │   │                         #    server-only (К3-Е8)
+│   │   ├── src/server-guard/     # T2 Охорона серверного входу (Р23/Р27): maskUnexpectedError
+│   │   │                         #    (прод: загальне повідомлення + ідентифікатор клієнту, повна
+│   │   │                         #    помилка в лог), withSecurityHeaders (заголовки безпеки на
+│   │   │                         #    динаміці). Upward-виняток лише env. server-only (К3-Е8)
 │   │   ├── src/mail/             # T2 Порт пошти: getMailTransport() обирає драйвер за групою SMTP_URL+MAIL_FROM
 │   │   │                         #    (resolveDriverEnv): smtpTransport (peer nodemailer) і logTransport (у проді
 │   │   │                         #    без тіла листа). Upward лише env. server-only (К3-Е8)

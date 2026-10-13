@@ -10,6 +10,7 @@ import {
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
+import { withSecurityHeaders } from 'simplycms/server-guard';
 import { normalizeLocale } from 'simplycms/i18n';
 import {
   declareBuiltThemes,
@@ -69,6 +70,13 @@ const seoInterceptor = createSeoInterceptor({
   robots: buildRobotsTxt,
 });
 
+// Р27: заголовки безпеки на ВСІХ динамічних відповідях (SSR, server functions,
+// `/media`, sitemap/robots) — обгортка зовнішня, тож не залежить від того, хто
+// саме віддав відповідь. Статику `sirv` і власні відповіді раннера доповнює
+// `server.mjs`. HSTS лише для https-сайту: origin — з `VITE_SITE_URL` у рантаймі.
 export default createServerEntry({
-  fetch: withSeoInterceptor(seoInterceptor, startHandler),
+  fetch: withSecurityHeaders(
+    withSeoInterceptor(seoInterceptor, startHandler),
+    process.env.VITE_SITE_URL,
+  ),
 });

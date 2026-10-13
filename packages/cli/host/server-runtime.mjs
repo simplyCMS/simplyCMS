@@ -66,15 +66,19 @@ export function toWebRequest(req, res, options) {
 /**
  * Перші відмови до sirv і хендлера (одне джерело для `server.mjs` і тестів):
  * поганий request-target → 400 (Р18б), `Content-Length` понад стелю → 413
- * (Р20). Повертає `true`, якщо відповідь уже віддано.
+ * (Р20). `extraHeaders` — заголовки безпеки (Р27) для цих відповідей.
+ * Повертає `true`, якщо відповідь уже віддано.
  */
-export function rejectBadRequest(req, res, serverFnBase) {
+export function rejectBadRequest(req, res, serverFnBase, extraHeaders = {}) {
   if (requestPath(req.url) === null) {
-    res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+    res.writeHead(400, {
+      ...extraHeaders,
+      'content-type': 'text/plain; charset=utf-8',
+    });
     res.end('Bad Request');
     return true;
   }
-  return rejectOversizedBody(req, res, serverFnBase);
+  return rejectOversizedBody(req, res, serverFnBase, extraHeaders);
 }
 
 /**

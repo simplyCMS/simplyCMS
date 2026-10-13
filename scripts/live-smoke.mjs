@@ -49,6 +49,7 @@ import { applyProbe } from './pilot-pack/apply-probe.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
+import { runErrorMaskChecks } from './live-smoke/error-mask.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
 import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
@@ -190,6 +191,17 @@ async function main() {
 
     // 3a. CSRF: POST із чужим Origin на server function і server route → 403.
     await runCsrfChecks({ base, serverFnPaths, check });
+
+    // 3a′. Р23/Р27: помилки не течуть клієнту (SSR, server function, мертва БД),
+    // заголовки безпеки на всіх каналах. ПЕРЕД кроками власника: вони скидають
+    // профіль/теми й не повинні впливати на лог, з якого читаємо ідентифікатори.
+    await runErrorMaskChecks({
+      base,
+      server,
+      browser,
+      storeEnv: env,
+      check,
+    });
 
     // 3б. Адмінка (Е3, Е4, Е5, Е5б, Е6а, Е6в, Е6б) — ОКРЕМИЙ context власника, та сама БД.
     const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };

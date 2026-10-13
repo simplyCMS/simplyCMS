@@ -105,6 +105,7 @@ function layout(handlerSource = STUB_HANDLER) {
     'server-runtime.mjs',
     'server-origin.mjs',
     'server-body-limit.mjs',
+    'server-headers.mjs',
   ]) {
     copyFileSync(join(ROOT, file), join(dir, file));
   }

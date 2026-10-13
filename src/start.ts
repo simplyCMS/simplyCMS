@@ -4,6 +4,7 @@ import { readSessionSubject } from 'simplycms/auth';
 import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
 import { csrfMiddleware } from 'simplycms/runtime/csrf';
 import { bodyLimitMiddleware } from 'simplycms/runtime/body-limit';
+import { maskUnexpectedError } from 'simplycms/server-guard';
 
 /**
  * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
@@ -49,6 +50,25 @@ const adminRequestGuard = createMiddleware().server(
   },
 );
 
+/**
+ * Р23: непередбачена помилка server function не доходить до клієнта з текстом
+ * Postgres (`Failed query … params`) чи `connect ECONNREFUSED host:port`.
+ * Глобальна function-middleware стоїть ПЕРШОЮ в ланцюгу, тож `next()` кидає
+ * помилку будь-якого рівня (валідатор, обробник, внутрішні міддлвари) — і ту
+ * саму помилку, яку SSR-лоадер отримує від server function у процесі. Логіка
+ * (прод-предикат, ідентифікатор, лог через `redactUrls`, пропуск доменних
+ * помилок і керування потоком Start) — у ядрі; тут лише склейка.
+ */
+export const maskUnexpectedErrors = createMiddleware({
+  type: 'function',
+}).server(async ({ next }) => {
+  try {
+    return await next();
+  } catch (error) {
+    throw maskUnexpectedError(error);
+  }
+});
+
 // UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
 /**
  * `serializationAdapters` (Е3-20): без нього `@tanstack/router-core`'s
@@ -68,5 +88,6 @@ const adminRequestGuard = createMiddleware().server(
  */
 export const startInstance = createStart(() => ({
   serializationAdapters: [domainErrorAdapter],
+  functionMiddleware: [maskUnexpectedErrors],
   requestMiddleware: [csrfMiddleware, bodyLimitMiddleware, adminRequestGuard],
 }));

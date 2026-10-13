@@ -12,6 +12,7 @@
     "./contracts": "./src/contracts/index.ts",
     "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
+    "./contracts/masked-error": "./src/contracts/masked-error.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
     "./contracts/cart-limits": "./src/contracts/cart-limits.ts",
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
@@ -43,6 +44,7 @@
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
+    "./server-guard": "./src/server-guard/index.ts",
     "./env": "./src/env/index.ts",
     "./vite": "./src/vite/index.ts",
     "./migrate": "./src/migrate/index.ts",
@@ -138,6 +140,10 @@
       "./contracts/domain-errors": {
         "types": "./dist/contracts/domain-errors.d.ts",
         "import": "./dist/contracts/domain-errors.js"
+      },
+      "./contracts/masked-error": {
+        "types": "./dist/contracts/masked-error.d.ts",
+        "import": "./dist/contracts/masked-error.js"
       },
       "./contracts/order-status-codes": {
         "types": "./dist/contracts/order-status-codes.d.ts",
@@ -262,6 +268,10 @@
       "./site": {
         "types": "./dist/site/index.d.ts",
         "import": "./dist/site/index.js"
+      },
+      "./server-guard": {
+        "types": "./dist/server-guard/index.d.ts",
+        "import": "./dist/server-guard/index.js"
       },
       "./env": {
         "types": "./dist/env/index.d.ts",

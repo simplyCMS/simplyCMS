@@ -45,11 +45,13 @@ export const SYNCED_FILES = [
   'server-runtime.mjs',
   'server-origin.mjs',
   'server-body-limit.mjs',
+  'server-headers.mjs',
   'src/styles/globals.css',
   'src/routes/__root.tsx',
   'src/start.ts',
   'src/client.tsx',
   'src/router.tsx',
+  'src/route-error.tsx',
   'src/server.ts',
   'src/engine-provider.tsx',
   // 🔴 Увійшов у канон 0.4.1. Доти файл був поза синком «бо template-варіант

@@ -62,6 +62,13 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   // Резолвер груп env (Е8-Р7) — T2 без жодних upward-винятків: чиста функція
   // над переданим оточенням, `db` їй ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/env', 'simplycms/db', 'simplycms/contracts'],
+  // Охорона серверного входу (Е8, Р23/Р27) — T2, upward лише `env`: до БД їй
+  // діла нема, тож ловиться `db`.
+  [
+    'packages/simplycms/src/server-guard',
+    'simplycms/db',
+    'simplycms/contracts',
+  ],
   // Build-time плагіни Vite (Е8) — T2 без upward-винятків: Node-код збірки,
   // `db` йому ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/vite', 'simplycms/db', 'simplycms/contracts'],

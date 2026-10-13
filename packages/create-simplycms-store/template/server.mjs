@@ -16,6 +16,7 @@ import { dirname, join } from 'node:path';
 import { parseEnv } from 'node:util';
 import sirv from 'sirv';
 
+import { securityHeaders } from './server-headers.mjs';
 import { parseSiteOrigin } from './server-origin.mjs';
 import {
   rejectBadRequest,
@@ -100,6 +101,10 @@ if (typeof SERVER_FN_BASE !== 'string' || !SERVER_FN_BASE.startsWith('/')) {
   process.exit(1);
 }
 
+// Р27: заголовки безпеки на відповіді самого раннера (статика, 400/413/500);
+// динаміку доповнює обгортка fetch серверного входу.
+const SECURITY = securityHeaders(SITE_ORIGIN);
+
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -111,6 +116,9 @@ const serveStatic = sirv(join(ROOT, 'dist', 'client'), {
   gzip: true,
   brotli: true,
   setHeaders: (res, pathname) => {
+    for (const [name, value] of Object.entries(SECURITY)) {
+      res.setHeader(name, value);
+    }
     if (pathname.startsWith('/assets/')) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
@@ -120,7 +128,7 @@ const serveStatic = sirv(join(ROOT, 'dist', 'client'), {
 const server = createServer((req, res) => {
   // Р18б/Р20: поганий request-target (400) і `Content-Length` понад стелю
   // (413) — до sirv і хендлера, для ВСІХ шляхів.
-  if (rejectBadRequest(req, res, SERVER_FN_BASE)) return;
+  if (rejectBadRequest(req, res, SERVER_FN_BASE, SECURITY)) return;
   serveStatic(req, res, async () => {
     try {
       const response = await serverEntry.fetch(
@@ -135,7 +143,10 @@ const server = createServer((req, res) => {
       // Клієнт відпав (aborted request) — писати вже нікуди.
       if (res.destroyed || res.writableEnded) return;
       if (!res.headersSent) {
-        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.writeHead(500, {
+          ...SECURITY,
+          'content-type': 'text/plain; charset=utf-8',
+        });
       }
       res.end('Internal Server Error');
     }

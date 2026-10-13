@@ -104,3 +104,36 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - `resolve.dedupe` у `vite.config.ts` для `react`, `react-dom`, `@tanstack/react-query`.
 - Списки понад ~50 записів — пагінація; пошук і фільтри — debounce (~300 мс,
   `SEARCH_DEBOUNCE_MS` в `ProductSearchList.tsx`, `QUOTE_DEBOUNCE_MS` у чекауті).
+
+## 5. Помилки й заголовки серверного входу (К3-Е8, Р23/Р27)
+
+- **Непередбачені помилки не течуть клієнту.** У проді (`isProductionRuntime`)
+  клієнт отримує `Internal server error [ref <id>]`, а повна помилка (через
+  `redactUrls`, зі стеком і ланцюжком `cause`) пишеться в лог сервера з тим самим
+  ідентифікатором. Канали: (1) server function — глобальна function-middleware в
+  `createStart({ functionMiddleware })` (`src/start.ts`) ловить усе, що кидає
+  `next()`, і кличе `maskUnexpectedError` (`simplycms/server-guard`); SSR-лоадери
+  ходять у БД лише server functions, тож їхня помилка вже замаскована до того, як
+  потрапить у стан роуту й HTML-потік (скрипт дегідрації стану роутера); (2) екран помилки
+  (`src/route-error.tsx`) — і `errorComponent` кореня, і `defaultErrorComponent`
+  у `getRouter()` — друкує текст лише доменної помилки з кодом або в dev, інакше
+  загальну фразу й ідентифікатор (`describePublicError`, T0
+  `contracts/masked-error`). Поза продом поведінка не змінюється.
+- **Проходять немасковані:** уся родина `DOMAIN_ERROR_NAME` (предикат —
+  членство в ній, а не перелік класів), `redirect`, `notFound`, `Response`.
+  Статус відповіді server function виставляє межа операції, як і раніше.
+- 🔴 **Межа:** помилка, кинута НЕ server function (наприклад, прямим кодом
+  лоадера чи `beforeLoad`, а не викликом server function), у HTML-потік
+  серіалізується router-core як є (`ShallowErrorPlugin` несе `message`); екран її
+  текст не покаже, але payload — так. Усі лоадери вітрини ходять у БД через server
+  functions, тож сьогодні це правило тримає; новий прямий доступ у лоадері його б
+  порушив.
+- **Заголовки безпеки** (`X-Content-Type-Options`, `Referrer-Policy`,
+  `X-Frame-Options`, `Content-Security-Policy: frame-ancestors 'self'`,
+  `Permissions-Policy`; `Strict-Transport-Security` лише коли `VITE_SITE_URL` —
+  https): динаміка (SSR, server functions, `/media`, sitemap/robots) —
+  `withSecurityHeaders` навколо fetch-хендлера в `src/server.ts`; статика `sirv`
+  і власні 400/413/500 раннера — `server.mjs`, що ядро не імпортує й тримає копію
+  переліку в `server-headers.mjs` під тестом парності
+  (`tests/server-headers-parity.test.ts`). Магазин не можна вбудувати в `iframe`
+  чужого origin — скіли й теми цього не роблять.
