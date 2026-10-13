@@ -1,7 +1,10 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { isViewerPricedQuery } from 'simplycms/react-query';
+import {
+  isViewerPricedQuery,
+  PRICE_VIEW_UNRESOLVED,
+} from 'simplycms/react-query';
 
 /** Мінімум роутера, потрібний скиданню: перезапуск лоадерів роутів. */
 interface InvalidatableRouter {
@@ -16,12 +19,21 @@ interface InvalidatableRouter {
  * (гуртовим — у гостя після виходу). `onLoadersFresh` — мить, коли дані
  * лоадерів знову належать поточному глядачу. Далі неактивні комірки
  * видаляються, а активні скидаються й перезапитуються вже з новою cookie.
+ *
+ * 🔴 Комірки `'unresolved'` — ОДРАЗУ й незалежно від активності: сегмент
+ * спільний для всіх покупців із невідомим видом, тож при прямій зміні сесії
+ * A → B (вхід за запрошенням поверх чинної сесії) B, щойно його вид теж стане
+ * невідомим, прочитав би ще живу комірку A на час `router.invalidate()`.
  */
 export async function resetViewerPrices(
   queryClient: QueryClient,
   router: InvalidatableRouter | undefined,
   onLoadersFresh: () => void = () => {},
 ): Promise<void> {
+  queryClient.removeQueries({
+    predicate: (query) =>
+      isViewerPricedQuery(query) && query.queryKey[1] === PRICE_VIEW_UNRESOLVED,
+  });
   queryClient.removeQueries({
     predicate: isViewerPricedQuery,
     type: 'inactive',

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { DiscountEnvironment } from 'simplycms/contracts';
 import { I18nProvider } from 'simplycms/i18n';
@@ -34,6 +35,8 @@ const router = vi.hoisted(() => ({ invalidate: vi.fn() }));
 /** Дані лоадера роуту картки — `initialData`; `router.invalidate` їх перераховує. */
 const loader = vi.hoisted(() => ({ product: undefined as unknown }));
 const envState = vi.hoisted(() => ({ fail: false }));
+/** Чи був РЕНДЕР, що вже бачив збій середовища, — детермінований сигнал. */
+const envErrorRendered = vi.hoisted(() => vi.fn());
 const withPrices = <T extends { product_prices: unknown }>(row: T): T =>
   session.userId ? row : { ...row, product_prices: GUEST_ONLY };
 
@@ -102,6 +105,7 @@ function Surfaces() {
 }
 
 function Queries() {
+  if (useDiscountEnvironment().isError) envErrorRendered();
   useProductQuery('panel', loader.product as ProductDetailProduct | undefined);
   useCatalogProductsQuery(undefined);
   useFeaturedProducts();
@@ -138,6 +142,7 @@ beforeEach(() => {
   session.userId = null;
   auth.state = { user: null, isLoading: false };
   envState.fail = false;
+  envErrorRendered.mockClear();
   loader.product = undefined;
   router.invalidate.mockReset();
   // Перезапуск лоадерів: дані роуту рахуються вже для нової сесії.
@@ -292,20 +297,22 @@ describe('ключ і скидання прайсу глядача (Р29)', () =
         ),
       ).toHaveLength(6),
     );
-    envState.fail = true;
-    await client.refetchQueries({
-      queryKey: AGGREGATE.discountEnvironment.key,
+    // Кожна НОВА комірка з цінами після збою — ознака зміни виду.
+    const added: unknown[] = [];
+    const stop = client.getQueryCache().subscribe((event) => {
+      if (event.type === 'added' && isViewerPricedQuery(event.query))
+        added.push(event.query.queryKey);
     });
-    await waitFor(() =>
-      expect(
-        client
-          .getQueryCache()
-          .findAll({ queryKey: AGGREGATE.discountEnvironment.key })
-          .some((q) => q.state.status === 'error'),
-      ).toBe(true),
+    envState.fail = true;
+    await act(() =>
+      client.refetchQueries({ queryKey: AGGREGATE.discountEnvironment.key }),
     );
+    // Сповіщення спостерігачів React Query відкладене (`notifyManager`), тож
+    // чекаємо саме рендеру, який уже бачив збій, а не таймер.
+    await waitFor(() => expect(envErrorRendered).toHaveBeenCalled());
+    stop();
+    expect(added).toEqual([]);
     // Жодної нової комірки під іншим сегментом — вид лишився гуртовим.
-    await new Promise((r) => setTimeout(r, 20));
     const segments = new Set(
       priced()
         .filter((q) => q.getObserversCount() > 0)
