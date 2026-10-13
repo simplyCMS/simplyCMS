@@ -5,13 +5,29 @@ import { randomBytes } from 'node:crypto';
 
 import { ensureGitignored, readSecret, setSecret } from './secrets-store.mjs';
 
-const PENDING_HOST = 'pending';
+export const PENDING_HOST = 'pending';
 const KEYS = ['MIGRATION_DATABASE_URL', 'DATABASE_URL'];
 const url = (user, password, host, db) =>
   `postgresql://${user}:${password}@${host}:5432/${db}`;
 
-/** Генерує паролі власника схеми й `app_runtime`, пише обидва URL; повертає пароль власника. */
+/** `pending` — обидва URL з тимчасовим хостом (обрив provision), `custom` — внесені власником, `none`. */
+export function dbSecretsKind(path) {
+  const values = KEYS.map((key) => readSecret(path, key)).filter(Boolean);
+  if (values.length === 0) return 'none';
+  return values.length === KEYS.length &&
+    values.every((v) => v.includes(`@${PENDING_HOST}:`))
+    ? 'pending'
+    : 'custom';
+}
+
+/**
+ * Паролі власника схеми й `app_runtime` → обидва URL; повертає пароль власника.
+ * Тимчасові URL після обриву перевикористовуються (пароль, якого БД ще не бачила, не губиться
+ * і не перегенеровується); внесені власником перезаписуються лише тут — після `--confirm`.
+ */
 export function reserveDbSecrets(path, dbName) {
+  if (dbSecretsKind(path) === 'pending')
+    return /\/\/postgres:([^@]+)@/.exec(readSecret(path, KEYS[0]))[1];
   const owner = randomBytes(24).toString('hex');
   const runtime = randomBytes(24).toString('hex');
   setSecret(path, KEYS[0], url('postgres', owner, PENDING_HOST, dbName));

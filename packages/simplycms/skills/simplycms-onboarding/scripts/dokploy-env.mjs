@@ -4,7 +4,7 @@
  *
  *   dokploy-env.mjs keys                         # лише імена змінних
  *   dokploy-env.mjs set KEY --confirm < файл     # значення — ЛИШЕ зі stdin
- *   secrets-file.mjs pipe <файл> KEY | dokploy-env.mjs set KEY --confirm
+ *   dokploy-env.mjs set KEY --from-secrets <файл> --confirm   # значення з файлу секретів, не у вивід
  *   dokploy-env.mjs unset KEY --confirm
  *   --app <applicationId>  --secrets <файл>      # за замовчуванням — з deploy.json
  *
@@ -14,6 +14,7 @@
  * Без `--confirm` — прев'ю з іменем ключа і код 3.
  */
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   credentials,
@@ -22,12 +23,14 @@ import {
   resolveAppId,
   takeFlag,
 } from './dokploy-client.mjs';
-import { parseEnv, serializeEnv } from './secrets-store.mjs';
+import { PENDING_HOST } from './provision-secrets.mjs';
+import { parseEnv, readSecret, serializeEnv } from './secrets-store.mjs';
 
 const args = process.argv.slice(2);
 const confirm = takeFlag(args, '--confirm', false);
 const appFlag = takeFlag(args, '--app');
 const secrets = takeFlag(args, '--secrets');
+const fromSecrets = takeFlag(args, '--from-secrets');
 const [command, key] = args;
 const fail = (message, code) => {
   console.error(`dokploy-env: ${message}`);
@@ -39,20 +42,28 @@ if (
   (command !== 'keys' && !KEY_RE.test(key ?? ''))
 )
   fail(
-    'використання: keys | set KEY (значення зі stdin) | unset KEY [--confirm --app ID --secrets ФАЙЛ]',
+    'використання: keys | set KEY (значення зі stdin або --from-secrets ФАЙЛ) | unset KEY [--confirm --app ID --secrets ФАЙЛ]',
     2,
   );
 
 let value;
 if (command === 'set') {
-  if (process.stdin.isTTY)
-    fail(
-      'значення подається через stdin (pipe або < файл), не з клавіатури й не аргументом',
-      2,
-    );
-  value = readFileSync(0, 'utf8').replace(/\r?\n$/, '');
-  if (!value) fail('порожнє значення в stdin', 2);
+  if (fromSecrets) {
+    // Значення йде з файлу секретів напряму: у stdout/розмову агента воно не потрапляє.
+    value = readSecret(resolve(fromSecrets), key);
+    if (!value) fail(`${key} порожній або відсутній у файлі секретів`, 2);
+  } else {
+    if (process.stdin.isTTY)
+      fail(
+        'значення подається через stdin (pipe або < файл) або --from-secrets ФАЙЛ, не з клавіатури й не аргументом',
+        2,
+      );
+    value = readFileSync(0, 'utf8').replace(/\r?\n$/, '');
+    if (!value) fail('порожнє значення в stdin', 2);
+  }
   if (value.includes('\n')) fail('значення не може містити переносів рядка', 2);
+  if (value.includes(`@${PENDING_HOST}:`))
+    fail(`${key} має тимчасовий хост pending: спершу заверши provision`, 2);
 }
 if (command !== 'keys')
   requireConfirm(confirm, [

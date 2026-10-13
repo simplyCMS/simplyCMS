@@ -50,7 +50,7 @@ pnpm simplycms status --json
 | `secrets-file.mjs init <шлях>` | файл секретів `0600` з порожніми ключами, шлях у `.gitignore` |
 | `secrets-file.mjs gen <шлях> KEY` | випадкове значення в порожній ключ (напр. `BETTER_AUTH_SECRET`) |
 | `dokploy.mjs provision --name N --domain D --bucket B --server ID` | проєкт, власний Postgres 17 (запущений), застосунок, домен на сервері застосунків; пише `deploy.json` |
-| `secrets-file.mjs pipe <шлях> KEY \| dokploy-env.mjs set KEY --confirm` | один ключ у env застосунку, значення лише через конвеєр |
+| `dokploy-env.mjs set KEY --from-secrets <шлях> --confirm` | один ключ у env застосунку; значення читається з файлу секретів і не друкується |
 | `dokploy-env.mjs keys` / `unset KEY` | імена змінних / видалення одного ключа |
 | `prod-run.mjs --server ID скрипт.sh` | разовий скрипт на сервері без SSH; завдання видаляється завжди |
 
@@ -60,7 +60,7 @@ pnpm simplycms status --json
 ## Секрети
 
 - Значення секретів не друкуй, не проси в чаті, не клади аргументом команди й у коміт.
-  Власник вносить їх сам у файл секретів; далі лише `pipe` у `dokploy-env`.
+  Власник вносить їх сам у файл секретів; далі лише `dokploy-env set KEY --from-secrets`.
 - Що потрапило у вивід або розмову — вважай скомпрометованим і ротуй.
 - `application-saveEnvironment` через MCP не використовуй: він замінює весь блок і світить значення.
 

@@ -4,7 +4,7 @@
 Потрібні `SMTP_URL` (містить пароль — секрет) і `MAIL_FROM` — обидва або жоден.
 
 1. Власник обирає провайдера й створює SMTP-доступ; домен відправника підтверджує (SPF/DKIM) у DNS провайдера.
-2. `SMTP_URL` і `MAIL_FROM` — у файл секретів, далі `pipe` у `dokploy-env set` (по одному ключу, `--confirm`).
+2. `SMTP_URL` і `MAIL_FROM` — у файл секретів, далі `dokploy-env set KEY --from-secrets <файл> --confirm` (по одному ключу).
 3. Редеплой. `pnpm simplycms doctor --online --production` має показати драйвер пошти `smtp`
    (`log`-драйвер у проді — помилка).
 4. Лише тепер — запрошення власника (`references/dokploy.md`, п. 7).

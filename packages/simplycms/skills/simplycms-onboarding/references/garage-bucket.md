@@ -24,7 +24,7 @@
    <garage> bucket info <бакет>
    ```
 4. Змінні: `S3_ENDPOINT` (приватна адреса S3 API), `S3_REGION=garage`, `S3_BUCKET`, `S3_ACCESS_KEY` (`GK…`),
-   `S3_SECRET_KEY` (рядок `Secret key`). Власник вносить їх у файл секретів; далі — `pipe` у `dokploy-env`.
+   `S3_SECRET_KEY` (рядок `Secret key`). Власник вносить їх у файл секретів; далі — `dokploy-env set KEY --from-secrets`.
    Після запису — редеплой.
 5. Перевірка з контейнера застосунку:
    ```sh

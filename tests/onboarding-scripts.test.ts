@@ -155,6 +155,67 @@ describe('dokploy-env', () => {
     expect(save.body?.env).toBe(ENV_BLOCK.replace('A=1', `A=${SECRET}`));
   });
 
+  it('set --from-secrets: значення з файлу секретів, не у вивід; решта блоку незмінна', () => {
+    const sb = sandbox();
+    const vals = join(sb.cwd, 'vals.env');
+    writeFileSync(vals, `A=${SECRET}\nEMPTY=\n`);
+    const a = [
+      'set',
+      'A',
+      '--from-secrets',
+      vals,
+      '--confirm',
+      ...ENV_ARGS,
+      sb.secrets,
+    ];
+    const r = run(sb, 'dokploy-env.mjs', a, envRoutes());
+    expect(r.code).toBe(0);
+    expect(r.out + r.err).not.toContain(SECRET);
+    expect(nonGet(sb.log)[0].body?.env).toBe(
+      ENV_BLOCK.replace('A=1', `A=${SECRET}`),
+    );
+    for (const key of ['EMPTY', 'MISSING']) {
+      const bad = run(
+        sb,
+        'dokploy-env.mjs',
+        [
+          'set',
+          key,
+          '--from-secrets',
+          vals,
+          '--confirm',
+          ...ENV_ARGS,
+          sb.secrets,
+        ],
+        envRoutes(),
+      );
+      expect(bad.code).toBe(2);
+      expect(bad.err).toContain(key);
+    }
+  });
+
+  it.each(['stdin', 'from-secrets'])(
+    'set відмовляє на значенні з @pending: (%s)',
+    (way) => {
+      const sb = sandbox();
+      const url = 'postgresql://app_runtime:pw@pending:5432/shop';
+      const vals = join(sb.cwd, 'vals.env');
+      writeFileSync(vals, `DATABASE_URL=${url}\n`);
+      const extra = way === 'stdin' ? [] : ['--from-secrets', vals];
+      const r = run(
+        sb,
+        'dokploy-env.mjs',
+        ['set', 'DATABASE_URL', ...extra, '--confirm', ...ENV_ARGS, sb.secrets],
+        envRoutes(),
+        way === 'stdin' ? url : '',
+      );
+      expect(r.code).toBe(2);
+      expect(r.err).toContain('provision');
+      expect(r.err).not.toContain('pw@');
+      expect(nonGet(sb.log)).toEqual([]);
+    },
+  );
+
   it('set зберігає buildArgs і buildSecrets застосунку', () => {
     const sb = sandbox();
     const routes = envRoutes();
@@ -225,6 +286,20 @@ describe('prod-run', () => {
     expect(nonGet(sb.log)).toEqual([]);
   });
 
+  it('відсутній файл скрипта → зрозуміла помилка (код 2), не стек, запитів немає', () => {
+    const sb = sandbox();
+    const r = run(
+      sb,
+      'prod-run.mjs',
+      ['--server', 'srv', '--confirm', '--secrets', sb.secrets, 'немає.sh'],
+      ok,
+    );
+    expect(r.code).toBe(2);
+    expect(r.err).toContain('Скрипт не прочитано');
+    expect(r.err).not.toContain('at ');
+    expect(requests(sb.log)).toEqual([]);
+  });
+
   it('успіх: друкує вивід без службових рядків і видаляє завдання', () => {
     const sb = sandbox();
     const r = run(
@@ -281,19 +356,15 @@ describe('secrets-file', () => {
     );
   });
 
-  it('pipe з TTY на stdout → код 2, значення не друкується', () => {
+  it('підкоманди pipe немає: значення не друкується, код 2', () => {
     const sb = sandbox();
     writeFileSync(join(sb.cwd, 's.env'), `DATABASE_URL=${SECRET}\n`);
-    const cmd = `node ${join(SKILL, 'scripts/secrets-file.mjs')} pipe s.env DATABASE_URL`;
-    const r = spawnSync('script', ['-qec', cmd, '/dev/null'], {
-      cwd: sb.cwd,
-      encoding: 'utf8',
-    });
+    const r = sf(sb.cwd, ['pipe', 's.env', 'DATABASE_URL']);
     expect(r.status).toBe(2);
-    expect(r.stdout).not.toContain(SECRET);
+    expect(r.stdout + r.stderr).not.toContain(SECRET);
   });
 
-  it('init не перезаписує наявний файл; pipe віддає значення без нового рядка, gen не затирає', () => {
+  it('init не перезаписує наявний файл, gen не затирає заповнений ключ', () => {
     const sb = sandbox();
     sf(sb.cwd, ['init', 's.env']);
     const path = join(sb.cwd, 's.env');
@@ -301,11 +372,11 @@ describe('secrets-file', () => {
     chmodSync(path, 0o600);
     expect(sf(sb.cwd, ['init', 's.env']).stdout).not.toContain(SECRET);
     expect(readFileSync(path, 'utf8')).toContain(SECRET);
-    expect(sf(sb.cwd, ['pipe', 's.env', 'DATABASE_URL']).stdout).toBe(SECRET);
-    expect(sf(sb.cwd, ['pipe', 's.env', 'BETTER_AUTH_SECRET']).status).toBe(1);
-    expect(sf(sb.cwd, ['gen', 's.env', 'BETTER_AUTH_SECRET']).status).toBe(0);
-    expect(sf(sb.cwd, ['pipe', 's.env', 'BETTER_AUTH_SECRET']).stdout).toMatch(
-      /^[0-9a-f]{64}$/,
+    const gen = sf(sb.cwd, ['gen', 's.env', 'BETTER_AUTH_SECRET']);
+    expect(gen.status).toBe(0);
+    expect(gen.stdout).not.toMatch(/[0-9a-f]{64}/);
+    expect(readFileSync(path, 'utf8')).toMatch(
+      /^BETTER_AUTH_SECRET=[0-9a-f]{64}$/m,
     );
     expect(sf(sb.cwd, ['gen', 's.env', 'BETTER_AUTH_SECRET']).status).toBe(1);
   });
@@ -569,6 +640,63 @@ describe('dokploy provision', () => {
     expect(r.err).not.toContain('TypeError');
   });
 
+  const PENDING =
+    'MIGRATION_DATABASE_URL=postgresql://postgres:ownerpw@pending:5432/shop\nDATABASE_URL=postgresql://app_runtime:rtpw@pending:5432/shop\n';
+
+  it('обрив і повтор: паролі з тимчасових URL перевикористовуються, не перегенеровуються', async () => {
+    const sb = sandbox();
+    writeFileSync(sb.secrets, readFileSync(sb.secrets, 'utf8') + PENDING);
+    run(sb, 'dokploy.mjs', args(sb, ['--confirm']), created, '', await store());
+    const pg = nonGet(sb.log).find((q) => q.path === 'postgres.create')!;
+    expect(pg.body?.databasePassword).toBe('ownerpw');
+    expect(readFileSync(sb.secrets, 'utf8')).toContain(
+      'app_runtime:rtpw@shop-db-ab12',
+    );
+  });
+
+  it("внесені власником URL без БД: прев'ю називає ключі, перезапис лише з --confirm", async () => {
+    const sb = sandbox();
+    writeFileSync(
+      sb.secrets,
+      readFileSync(sb.secrets, 'utf8') +
+        'DATABASE_URL=postgresql://own:mine@host:5432/x\n',
+    );
+    const root = await store();
+    const preview = run(sb, 'dokploy.mjs', args(sb), created, '', root);
+    expect(preview.code).toBe(3);
+    expect(preview.out).toContain(
+      'перезаписати DATABASE_URL, MIGRATION_DATABASE_URL',
+    );
+    expect(preview.out).not.toContain('mine');
+    expect(readFileSync(sb.secrets, 'utf8')).toContain('own:mine@host');
+    run(sb, 'dokploy.mjs', args(sb, ['--confirm']), created, '', root);
+    expect(readFileSync(sb.secrets, 'utf8')).not.toContain('own:mine@host');
+  });
+
+  it.each([
+    ['running', false],
+    ['done', false],
+    ['error', true],
+    [undefined, true],
+  ])("статус БД %s: примітка у прев'ю = %s", async (status, noted) => {
+    const sb = sandbox();
+    withSecrets(sb);
+    const odd = { ...db, applicationStatus: status };
+    const routes = {
+      ...existing,
+      'GET project.all': {
+        body: [project({ postgres: [odd], applications: [web] })],
+      },
+    };
+    const r = run(sb, 'dokploy.mjs', args(sb), routes, '', await store());
+    expect(r.out.includes('статус БД')).toBe(noted);
+    if (noted)
+      expect(r.out).toContain(
+        `статус БД ${status ?? 'невідомий'}: перевір у Dokploy`,
+      );
+    expect(nonGet(sb.log)).toEqual([]);
+  });
+
   it('немає node_modules/.bin/simplycms → змістовна помилка', () => {
     const sb = sandbox();
     withSecrets(sb);
@@ -616,6 +744,18 @@ describe('тексти скіла', () => {
       expect(text).toMatch(/MCP/);
     },
   );
+
+  it('у текстах немає pipe, є --from-secrets', () => {
+    for (const file of [
+      'SKILL.md',
+      'references/dokploy.md',
+      'references/smtp.md',
+      'references/garage-bucket.md',
+    ])
+      expect(read(file)).not.toMatch(/\bpipe\b/);
+    expect(read('SKILL.md')).toContain('--from-secrets');
+    expect(read('references/dokploy.md')).toContain('--from-secrets');
+  });
 
   it('SKILL.md: правило діє на будь-яку мутацію', () => {
     expect(read('SKILL.md')).toContain('БУДЬ-ЯКУ мутацію');

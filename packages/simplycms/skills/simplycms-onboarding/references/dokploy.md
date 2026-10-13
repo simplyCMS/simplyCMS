@@ -41,7 +41,7 @@ RAILPACK_NODE_VERSION=24
 ```bash
 S=.claude/skills/simplycms-onboarding/scripts
 node $S/secrets-file.mjs gen .simplycms/secrets.env BETTER_AUTH_SECRET
-node $S/secrets-file.mjs pipe .simplycms/secrets.env DATABASE_URL | node $S/dokploy-env.mjs set DATABASE_URL --confirm
+node $S/dokploy-env.mjs set DATABASE_URL --from-secrets .simplycms/secrets.env --confirm
 ```
 
 Обовʼязкові: `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `BETTER_AUTH_SECRET`, `VITE_SITE_URL`
@@ -71,8 +71,8 @@ pnpm simplycms smoke https://<домен>
 ## 7. Запрошення власника (ПІСЛЯ налаштування SMTP)
 
 Разовий скрипт на сервері через `prod-run.mjs` (контейнер застосунку знаходь за appName), `OWNER_EMAIL`
-з вимог, **без `--print-link`**; сам `prod-run`-скрипт не друкує секретів (його вивід іде в розмову агента): посилання з адмінським токеном не має потрапити у вивід, що йде в розмову
-агента. Лист із посиланням приходить власнику на пошту.
+з вимог, **без `--print-link`**: посилання з адмінським токеном не має потрапити у вивід, що йде в розмову
+агента. Скрипт теж не друкує секретів. Лист із посиланням приходить власнику на пошту.
 
 ```bash
 # запрошення власника

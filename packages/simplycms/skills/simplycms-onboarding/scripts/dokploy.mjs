@@ -27,10 +27,15 @@ import {
   bindDbHost,
   reserveDbSecrets,
 } from './provision-secrets.mjs';
+import {
+  domainExists,
+  planLines,
+  readState,
+  awaitResource,
+} from './provision-state.mjs';
 
 // Узгоджено з PORT у server.mjs магазину (за замовчуванням 3000).
 const APP_PORT = 3000;
-const RETRIES = 5;
 
 const args = process.argv.slice(2);
 const confirm = takeFlag(args, '--confirm', false);
@@ -56,64 +61,34 @@ try {
   const creds = credentials(secrets);
   const call = (path, opts) => dokploy(creds, path, opts);
   const post = (path, body) => call(path, { method: 'POST', body });
-  const find = async () => {
-    const project = (await call('project.all')).find((p) => p.name === name);
-    const env =
-      project?.environments?.find((e) => e.name === 'production') ??
-      project?.environments?.[0];
-    return {
-      project,
-      env,
-      db: env?.postgres?.find((x) => x.name === dbName),
-      web: env?.applications?.find((x) => x.name === webName),
-    };
-  };
-  // Dokploy може ще не показувати щойно створений ресурс: коротко повторюємо, далі — зрозуміла помилка.
-  const refresh = async (pick, what) => {
-    for (let i = 0; i < RETRIES; i++) {
-      const state = await find();
-      if (pick(state)) return state;
-      await new Promise((r) =>
-        setTimeout(r, Number(process.env.PROVISION_RETRY_MS ?? 1000)),
-      );
-    }
-    throw new Error(`Dokploy ще не показує ${what}: повтори команду`);
-  };
-
-  let state = await find();
+  const names = { name, dbName, webName, domain };
+  let state = await readState(call, names);
   if (state.db) assertDbSecrets(secretsPath, dbName);
-  const domains = state.web
-    ? await call('domain.byApplicationId', {
-        query: { applicationId: state.web.applicationId },
-      })
-    : [];
-  const hasDomain = domains.some((d) => d.host === domain);
+  const hasDomain = await domainExists(call, state.web, domain);
   const hasRecord = readDeployRecord() !== null;
-  const target = serverId
-    ? `на сервері ${serverId}`
-    : 'на хості панелі Dokploy (без --server)';
+  const { actions, notes } = planLines(state, {
+    names,
+    hasRecord,
+    hasDomain,
+    secretsPath,
+    appPort: APP_PORT,
+    target: serverId
+      ? `на сервері ${serverId}`
+      : 'на хості панелі Dokploy (без --server)',
+  });
   const startDb = state.db?.applicationStatus === 'idle';
-  const plan = [
-    !state.project && `створити проєкт ${name}`,
-    !state.db &&
-      `створити і запустити Postgres 17 ${dbName} ${target} (власний екземпляр магазину; паролі — лише у файл секретів)`,
-    startDb && `запустити Postgres ${dbName} (створений, але не запущений)`,
-    !state.web && `створити застосунок ${webName} ${target}`,
-    !hasDomain &&
-      `додати домен ${domain} (https, letsencrypt, порт ${APP_PORT})`,
-    !hasRecord && 'записати .simplycms/deploy.json (без секретів)',
-  ].filter(Boolean);
-  if (plan.length === 0) {
+  if (actions.length === 0) {
     console.log('Усе вже створено, нічого міняти.');
+    for (const note of notes) console.log(`  - ${note}`);
     process.exit(0);
   }
-  requireConfirm(confirm, plan);
+  requireConfirm(confirm, [...actions, ...notes]);
 
   const createDb = !state.db;
   const where = serverId ? { serverId } : {};
   if (!state.project) {
     await post('project.create', { name, description: 'SimplyCMS store' });
-    state = await refresh((s) => s.env, `проєкт ${name}`);
+    state = await awaitResource(call, names, (s) => s.env, `проєкт ${name}`);
   }
   if (createDb) {
     const ownerPassword = reserveDbSecrets(secretsPath, dbSchema);
@@ -126,7 +101,7 @@ try {
       environmentId: state.env.environmentId,
       ...where,
     });
-    state = await refresh((s) => s.db, dbName);
+    state = await awaitResource(call, names, (s) => s.db, dbName);
   }
   bindDbHost(secretsPath, state.db.appName);
   if (createDb || startDb)
@@ -137,7 +112,7 @@ try {
       environmentId: state.env.environmentId,
       ...where,
     });
-    state = await refresh((s) => s.web, webName);
+    state = await awaitResource(call, names, (s) => s.web, webName);
   }
   if (!hasDomain)
     await post('domain.create', {
