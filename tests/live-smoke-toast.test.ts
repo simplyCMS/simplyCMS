@@ -95,18 +95,39 @@ describe.skipIf(skip !== '')(
   },
 );
 
+const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 describe('ратчет: тексти тостів лише через waitToast/toastText', () => {
   const DIR = resolve(import.meta.dirname, '../scripts/live-smoke');
   const files = readdirSync(DIR)
     .filter((f) => f.endsWith('.mjs'))
     .map((f) => [f, readFileSync(join(DIR, f), 'utf8')] as const);
 
+  /** Рядковий літерал у будь-яких лапках (одинарні, подвійні, шаблонні без `${}`). */
+  const LITERAL = String.raw`(['"\`])((?:(?!\1)[^\\\n]|\\.)*)\1`;
+  /** Перший літеральний текстовий аргумент виклику `fn(<будь-який вираз>, '…')`. */
+  const literals = (src: string, fn: string) =>
+    [
+      ...src.matchAll(
+        new RegExp(String.raw`\b${fn}\(\s*[\w.]+\s*,\s*${LITERAL}`, 'g'),
+      ),
+    ]
+      .map((m) => m[2])
+      .filter((t) => !t.includes('${'));
+
   /** Літерали, які крок чекає як тост (`waitToast(page, '…')`). */
-  const toastLiterals = (src: string) =>
-    [...src.matchAll(/waitToast\(\s*page,\s*'([^']+)'/g)].map((m) => m[1]);
-  /** `getByText('<літерал>'` поза хелпером. */
+  const toastLiterals = (src: string) => literals(src, 'waitToast');
+  /**
+   * Той самий текст поза хелпером: `getByText('…'` або `waitText(page, '…'` —
+   * `waitText` теж шукає голий `getByText` і дає ту саму неоднозначність.
+   */
   const rawUses = (src: string, texts: string[]) =>
-    texts.filter((t) => src.includes(`getByText('${t}'`));
+    texts.filter(
+      (t) =>
+        new RegExp(String.raw`getByText\(\s*(['"\`])${escapeRe(t)}\1`).test(
+          src,
+        ) || literals(src, 'waitText').includes(t),
+    );
 
   const texts = [...new Set(files.flatMap(([, s]) => toastLiterals(s)))];
 
@@ -121,9 +142,22 @@ describe('ратчет: тексти тостів лише через waitToast/
     expect(bad, 'використай waitToast/toastText з wait.mjs').toEqual([]);
   });
 
-  it('негативний контроль: голий getByText тосту ловиться', () => {
+  it.each([
+    ["page.getByText('Тему активовано')"],
+    ['page.getByText("Тему активовано")'],
+    ['page.getByText(`Тему активовано`)'],
+    ["waitText(page, 'Тему активовано')"],
+    ['waitText(page, "Тему активовано")'],
+    ['waitText(page, `Тему активовано`)'],
+    ["waitText(\n    pages.b,\n    'Тему активовано',\n  )"],
+  ])('негативний контроль: голий пошук тосту ловиться — %s', (src) => {
+    expect(rawUses(src, ['Тему активовано'])).toHaveLength(1);
+  });
+
+  it('позитивний контроль: waitToast і чужий текст не ловляться', () => {
     expect(
-      rawUses("page.getByText('Тему активовано')", ['Тему активовано']),
-    ).toHaveLength(1);
+      rawUses("waitToast(page, 'Тему активовано')", ['Тему активовано']),
+    ).toEqual([]);
+    expect(rawUses("waitText(page, 'Інший')", ['Тему активовано'])).toEqual([]);
   });
 });

@@ -97,7 +97,21 @@ const check = (label, passed, fact) => {
   rows.push([label, passed ? 'OK' : 'FAIL', fact]);
 };
 
+// Крок, що виконується зараз: виняток посеред сценарію (зокрема неоднозначний
+// локатор з `expect*`) без нього лишав лише повідомлення, і не було видно, ДЕ
+// саме прогін упав і що встиг пройти.
+let currentStep = 'старт';
+const stage = (name) => {
+  currentStep = name;
+};
+
+const printRows = () => {
+  console.log('\n| Перевірка | Результат | Факт |\n|---|---|---|');
+  for (const [l, r, f] of rows) console.log(`| ${l} | ${r} | ${f} |`);
+};
+
 async function main() {
+  stage('чиста демо-БД');
   // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
   execFileSync(
     'node',
@@ -134,6 +148,7 @@ async function main() {
   }
 
   try {
+    stage('збірка й старт сервера');
     execFileSync('pnpm', ['build'], {
       cwd: ROOT,
       stdio: 'inherit',
@@ -148,6 +163,7 @@ async function main() {
     });
     const base = `http://127.0.0.1:${port}`;
 
+    stage('http-гейт і sitemap');
     // 2. curl+SQL — гейт B пілота як є.
     const http = await gateHttp(port, { DATABASE_URL: dbUrl });
     for (const line of http.details) check('http', line.startsWith('OK'), line);
@@ -166,6 +182,7 @@ async function main() {
       `${lastmods.length} url, зразок ${lastmods[0] ?? '—'}`,
     );
 
+    stage('воронка покупця');
     // 3. Браузер: реєстрація → картка → кошик → чекаут → скасування.
     const { chromium } = await import('@playwright/test');
     browser = withClientIps(await chromium.launch());
@@ -181,6 +198,7 @@ async function main() {
     });
     const { email } = await runFunnel({ page, base, dbUrl, check });
 
+    stage('пошта');
     // 3.1. Пошта (К3-Е8): лист замовлення, скидання пароля, підтвердження
     // реєстрації (Р30) — через справжній SMTP-канал у Mailpit.
     await runMailChecks({
@@ -192,9 +210,11 @@ async function main() {
     });
     await runSignupConfirmation({ browser, base, signUp, check });
 
+    stage('CSRF');
     // 3a. CSRF: POST із чужим Origin на server function і server route → 403.
     await runCsrfChecks({ base, serverFnPaths, check });
 
+    stage('маскування помилок і заголовки безпеки');
     // 3a′. Р23/Р27: помилки не течуть клієнту (SSR, server function, мертва БД),
     // заголовки безпеки на всіх каналах. ПЕРЕД кроками власника: вони скидають
     // профіль/теми й не повинні впливати на лог, з якого читаємо ідентифікатори.
@@ -206,15 +226,19 @@ async function main() {
       check,
     });
     await runSecurityHeaderChecks({ base, check });
+    stage('канонічний шлях товару');
     // Р25: канонічний шлях товару (301 + canonical) на справжньому сервері.
     await runProductPathChecks({ base, dbUrl, check });
+    stage('видимість цін');
     // Р29: SSR-HTML гостя без гуртового виду; покупцю — його вид і private, no-store.
     await runPriceVisibilityChecks({ base, dbUrl, email, page, check });
 
+    stage('кроки власника (адмінка)');
     // 3б. Адмінка (Е3, Е4, Е5, Е5б, Е6а, Е6в, Е6б) — ОКРЕМИЙ context власника, та сама БД.
     const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };
     await runOwnerSteps({ ...owner, check });
 
+    stage('підсумок pageerror');
     // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
     // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на
     // межі RPC дав би тут `RangeError` (поведінковий гейт Е0-2).
@@ -227,8 +251,7 @@ async function main() {
     await shutdown();
   }
 
-  console.log('\n| Перевірка | Результат | Факт |\n|---|---|---|');
-  for (const [l, r, f] of rows) console.log(`| ${l} | ${r} | ${f} |`);
+  printRows();
   const failed = rows.filter(([, r]) => r === 'FAIL').length;
   console.log(
     `\n${failed === 0 ? 'live-smoke: ЗЕЛЕНИЙ' : `live-smoke: ${failed} FAIL`}`,
@@ -237,6 +260,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`\n[live-smoke] ${e.message}`);
+  printRows();
+  console.error(`\n[live-smoke] крок «${currentStep}»: ${e.message}`);
   process.exit(1);
 });
