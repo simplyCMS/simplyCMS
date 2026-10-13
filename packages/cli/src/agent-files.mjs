@@ -74,6 +74,10 @@ export function inspectAgentFiles(storeRoot) {
   };
 }
 
+/** Запис хука треба додати чи оновити в `settings.json`. */
+const needsHookWrite = ({ hook }) =>
+  hook.status === 'added' || hook.status === 'updated';
+
 /** Запис хука є, а шима немає: Claude Code на кожному старті сесії отримує помилку запуску. */
 export const isShimMissing = ({ hook, shimExists }) =>
   !shimExists && (hook?.status === 'ok' || hook?.status === 'updated');
@@ -84,10 +88,8 @@ export const isShimMissing = ({ hook, shimExists }) =>
  * @param {ReturnType<typeof inspectAgentFiles>} state
  * @param {boolean} shimComing цей виклик допише шим
  */
-export const isHookDeferred = ({ hook, shimExists }, shimComing) =>
-  (hook.status === 'added' || hook.status === 'updated') &&
-  !shimExists &&
-  !shimComing;
+export const isHookDeferred = (state, shimComing) =>
+  needsHookWrite(state) && !state.shimExists && !shimComing;
 
 /** Розбіжності файлів агента людською мовою (`--check`, doctor №18; частковий стан — теж). */
 export function describeAgentDrift(state) {
@@ -117,9 +119,9 @@ export function describeAgentDrift(state) {
 /**
  * Записати те, що `inspectAgentFiles` знайшов розбіжним. Блок `missing`/`damaged`,
  * `CLAUDE.md` без імпорту й невалідний JSON не пишуться — рішення за власником;
- * відсутній `CLAUDE.md` створюється (наявний не перезаписується ніколи).
+ * відсутній `CLAUDE.md` створюється (наявний не перезаписується ніколи). Запис хука
+ * підпорядковується `isHookDeferred`.
  * @param {string} storeRoot
- * Запис хука підпорядковується `isHookDeferred`.
  * @param {ReturnType<typeof inspectAgentFiles>} state
  * @param {boolean} shimComing цей виклик допише шим
  * @returns {string[]} записані файли
@@ -135,10 +137,7 @@ export function writeAgentFiles(storeRoot, state, shimComing) {
     writeFileSync(join(storeRoot, AGENTS_FILE), block.next);
     written.push(AGENTS_FILE);
   }
-  if (
-    (hook.status === 'added' || hook.status === 'updated') &&
-    !isHookDeferred(state, shimComing)
-  ) {
+  if (needsHookWrite(state) && !isHookDeferred(state, shimComing)) {
     const path = join(storeRoot, SETTINGS_FILE);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, hook.next);

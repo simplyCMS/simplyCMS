@@ -183,8 +183,9 @@ describe('шим як host-файл і запис у settings.json шаблон�
     const store = await scaffoldFakeStore('shim-defer', roots);
     rmSync(join(store, '.claude'), { recursive: true });
     const plain = cli(store);
+    // 1 — це дрейф host-файлів без --write (шима немає), а не помилка відкладення.
+    expect(plain.status).toBe(1);
     expect(existsSync(join(store, '.claude'))).toBe(false);
-    expect(plain.stdout).toContain('update --write');
     expect(plain.stdout).toContain('разом із шимом');
     expect(cli(store, '--write').status).toBe(0);
     expect(existsSync(join(store, '.claude/settings.json'))).toBe(true);
