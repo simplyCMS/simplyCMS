@@ -219,6 +219,8 @@ Gate B не скорочується. Прогін ≈ 2 хв (вимір 2026-1
 `node scripts/release/schema-full.mjs`: `pnpm harness:up` (ідемпотентно; Postgres, Garage,
 Mailpit — проєкти `storage` і `mail` без них не стартують) → `pnpm test:schema`. Docker на
 машині релізу — вимога, а не побажання: реліз з ноутбука без Docker більше не запускний.
+Порти харнесу перевизначаються змінними `HARNESS_*_PORT` (приклад: `HARNESS_GARAGE_PORT=4194`,
+коли типовий порт зайнятий); гейти `schema-full` і `pilot-full` успадковують їх з оточення.
 Склад і порядок гейтів асертить `tests/release-gates.test.ts`.
 
 `install --frozen-lockfile` перший, бо це єдиний гейт, що ловить розсинхрон
