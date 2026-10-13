@@ -659,6 +659,25 @@ Fix-раунд після Task 11b і до Task 12/13. Три дефекти, к
 
 ---
 
+### Task 16b: Engines плагінів і теми — warn у bootstrap, error у doctor (Р32)
+
+Рішення архітектора Р32 (2026-10-13) замість обіцянки «строгий фейл — політика реліз-потяга v1.0»: магазин не цеглиться оновленням ядра, а невідповідність видно в `doctor`/`status`. Будує поверх Task 15+16 (`contracts/semver.satisfies` вирівняний з npm-semver, `coreRangeFor`).
+
+**Files:**
+- Modify: `packages/simplycms/src/plugins/validatePluginModule.ts:17`, `packages/simplycms/src/themes/validateThemeModule.ts:47-48` (коментарі: рішення Р32 замість обіцянки; поведінка — warn), `packages/cli/src/doctor-fs-checks.mjs` (або сусідній модуль перевірок) — нова перевірка №17 `engines`, `docs/architecture/cli.md` (таблиця перевірок), `docs/architecture/{plugins.md:90,themes.md:636}`, `docs/guides/themes.md:191`, тести doctor
+- Носії старої обіцянки (grep «строгий фейл», «реліз-потяга v1.0» по `docs/` крім `docs/superpowers/research` і виконаних планів, `packages/`): кожен оновити на рішення Р32. Спека маркетплейсу Р-М3 (строгий фейл у CI-гейті маркетплейсу) — окреме рішення, лишається.
+
+**Interfaces:**
+- Перевірка `doctor` №17 `engines` (офлайнова, файлова): для кожного встановленого плагіна й активної теми `engines.simplycms` проти версії встановленого ядра через `contracts/semver.satisfies` → `error` з назвою пакета, його діапазоном, версією ядра і дією «онови плагін або відкоти ядро»; відсутній `engines` → `warn`, не `error`. Bootstrap — `console.warn` назавжди, без throw. `status --hook` показує цей `error` (перевір шлях doctor→status; якщо не доносить — додай).
+- Нумерація: №17 — `engines`; Task 18 `agent-files` → №18. Оновити в усіх носіях (план Task 18, `docs/architecture/cli.md`, тести doctor).
+
+- [ ] **Step 1: Тести.** Плагін з `engines.simplycms` `^2.0.0` при ядрі `1.0.0-rc.1` → doctor `error` (текст містить пакет, діапазон, версію ядра, дію), bootstrap `warn` і магазин стартує; плагін з `^1.0.0-0` → ok; без `engines` → `warn`; тема — ті самі три кейси; `status --hook` містить error.
+- [ ] **Step 2: Прогнати** → FAIL; **Step 3: Реалізувати.**
+- [ ] **Step 4: Прогнати** БЛ. Мутації: перевірка завжди ok → FAIL; bootstrap кидає на невідповідності → FAIL «магазин стартує»; відкат.
+- [ ] **Step 5: Commit** `feat(k3-e8): engines плагінів і теми — warn у bootstrap, error у doctor (Р32)`.
+
+---
+
 ## Хвиля А6 — знахідки аудиту
 
 Знахідки аудиту безпеки й рефакторингу 2026-10-12 (звіти S1–S4, R1–R3), які власник погодив у rc.1 (Р23–Р29). Хвиля йде після А4 (потрібні Р18 і `siteUrl` з Task 11, порт пошти) і до хвилі Ф. Від Б не залежить. Порядок усередині — за номерами: А6.1 вводить маскування помилок, а А6.4 додає до родини доменних помилок `NotFound`, яка має проходити крізь це маскування.
@@ -833,7 +852,7 @@ Fix-раунд після Task 11b і до Task 12/13. Три дефекти, к
 
 **Files:**
 - Create: `packages/simplycms/agent/{intro.md,claude-md.md,permissions.json}` (`permissions.json` — рекомендовані `permissions.allow`/`ask` Claude Code для магазину: читання й `pnpm simplycms status|doctor` — allow; `db:apply`, скрипти онбордингу, `git push` — ask) (джерело вступу і специфіки Claude Code; `files` пакета += `agent`), `packages/cli/src/managed-block.mjs`, `packages/cli/src/hook-entry.mjs`, `packages/create-simplycms-store/template/{AGENTS.md,CLAUDE.md}`, `tests/managed-block.test.ts`, `tests/hook-entry.test.ts`
-- Modify: `scripts/sync-create-store-template.mjs` (рендер блоку в шаблонний `AGENTS.md`), `tests/create-store-template-parity.test.ts`, `packages/cli/src/update.mjs` (блок, запис хука, Е8-Р12; re-exec нового CLI після `pnpm add` — Р21, `:99-128`), пакувальний кейс Р21 у Gate TOOL (`scripts/pilot-pack/tool-pkg-smoke.mjs`) або в `pilot-pack`, `packages/cli/src/doctor-fs-checks.mjs` (№17 `agent-files`; №15 `checkMailConfigured` (Е8-Р17) і №16 `checkEmailVerification` (Р30, Task 12b) зайняті: розбіжність блоку, відсутній запис хука → `warn`; у `details` — рекомендовані дозволи Claude Code «читання вільно, зміни через підтвердження» з `packages/simplycms/agent/permissions.json`, бо `update` дозволи не зливає)
+- Modify: `scripts/sync-create-store-template.mjs` (рендер блоку в шаблонний `AGENTS.md`), `tests/create-store-template-parity.test.ts`, `packages/cli/src/update.mjs` (блок, запис хука, Е8-Р12; re-exec нового CLI після `pnpm add` — Р21, `:99-128`), пакувальний кейс Р21 у Gate TOOL (`scripts/pilot-pack/tool-pkg-smoke.mjs`) або в `pilot-pack`, `packages/cli/src/doctor-fs-checks.mjs` (№18 `agent-files`; №15 `checkMailConfigured` (Е8-Р17), №16 `checkEmailVerification` (Р30, Task 12b) і №17 `engines` (Р32, Task 16b) зайняті: розбіжність блоку, відсутній запис хука → `warn`; у `details` — рекомендовані дозволи Claude Code «читання вільно, зміни через підтвердження» з `packages/simplycms/agent/permissions.json`, бо `update` дозволи не зливає)
 
 **Interfaces:**
 - Produces (`managed-block.mjs` — одна реалізація для синку і `update`, Е8-Р5):
