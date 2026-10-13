@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
-import { printNextSteps } from '../packages/create-simplycms-store/src/steps.mjs';
+import { describe, expect, it } from 'vitest';
 
 // Інструкція власнику про перший вхід — те, що людина читає ОДИН раз і
 // виконує буквально. Тому вона під тестом: розсинхрон тут не падає збіркою,
@@ -36,47 +35,8 @@ describe('create-store: інструкція «призначити власни
     expect(readme).not.toMatch(/invite\.html/);
   });
 
-  it('printNextSteps друкує ту саму команду й ті самі ключі', () => {
-    let out = '';
-    const spy = vi
-      .spyOn(process.stdout, 'write')
-      .mockImplementation((chunk: unknown) => {
-        out += String(chunk);
-        return true;
-      });
-    try {
-      printNextSteps({ dirLabel: 'my-shop', installed: true, hasEnv: true });
-    } finally {
-      spy.mockRestore();
-    }
-
-    expect(out).toContain('owner:invite');
-    // 🔴 Накат схеми — `simplycms db:apply` (ядро `simplycms/migrate`). Ні
-    // стара порада `supabase db push` (відхиляє нумеровані імена канону), ні
-    // ручний `psql`-цикл (повз журнал сум) не повертаються.
-    expect(out).toContain('db:apply');
-    expect(out).not.toContain('supabase/migrations');
-    expect(out).not.toContain('psql');
-    expect(out).not.toContain('for f in');
-    expect(out).not.toContain('supabase db push');
-    // 🔴 Накат канону НЕ під `DATABASE_URL` із .env.local: там роль
-    // `app_runtime` (`nosuperuser nocreatedb nocreaterole`), а
-    // `0000_prelude.sql` створює ролі й безумовно робить `alter role`. Порада
-    // `psql "$DATABASE_URL"` падала за будь-якого стану бази, тож накат
-    // іде підключенням власника з `MIGRATION_DATABASE_URL` — інакше
-    // регресія повернулась би мовчки.
-    expect(out).toContain('MIGRATION_DATABASE_URL');
-    expect(out).toContain('власник БД');
-    expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
-    expect(out).toContain('DATABASE_URL');
-    expect(out).toContain('BETTER_AUTH_SECRET');
-    expect(out).toContain('/auth/invite');
-  });
-
-  // 🔴 Вивід термінала прокручується, а README лишається в магазині назавжди —
-  // саме він для власника є інструкцією. Гард лише на `printNextSteps` давав би
-  // впевненість, якої немає: перший фікс цього дефекту закрив вивід CLI і
-  // пропустив README, який `scaffold()` фізично копіює в новий магазин.
+  // 🔴 README лишається в магазині назавжди — для власника без агента саме він
+  // є інструкцією (консоль друкує одне речення, див. create-store-next-steps).
   it('README шаблону не радить накат канону роллю рантайму', () => {
     expect(readme).toContain('pnpm simplycms db:apply');
     expect(readme).not.toContain('psql');

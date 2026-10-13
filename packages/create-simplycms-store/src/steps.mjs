@@ -99,52 +99,23 @@ export function installDeps(targetDir) {
   }
 }
 
-/** Наступні кроки — те саме, що в README згенерованого магазину. */
-export function printNextSteps({
-  dirLabel,
-  installed,
-  hasEnv,
-  skillsPending = false,
-}) {
-  const steps = [`cd ${dirLabel}`];
-  if (!installed) steps.push(`${STORE_MANAGER} install`);
-  // Windows без install: лінки скілів чекають на існуючу ціль (junction).
+/**
+ * Фінальне повідомлення — одне речення: решту (БД, S3, пошта, міграції,
+ * власник) веде агент за скілом `simplycms-onboarding`. Список команд у
+ * консолі прокручувався б і розходився з README, тож довідкові кроки для
+ * людини без агента лишаються в README магазину.
+ */
+export function printNextSteps({ dirLabel, skillsPending = false }) {
+  // Windows без install: лінки скілів чекають на існуючу ціль (junction), а
+  // без них агент не побачить скіл онбордингу.
   if (skillsPending)
-    steps.push(`${STORE_MANAGER} simplycms update   # лінки агентних скілів`);
-  if (!hasEnv)
-    steps.push('cp .env.example .env.local   # три обовʼязкові ключі магазину');
-  // 🔴 Накат схеми — `simplycms db:apply` (ядро `simplycms/migrate`, журнал
-  // контрольних сум): канон нумерований послідовно (`0000_prelude.sql`), файли
-  // йдуть у порядку імен.
-  //
-  // 🔴 Підключення — `MIGRATION_DATABASE_URL` (ПРИВІЛЕЙОВАНИЙ власник БД), а НЕ
-  // `DATABASE_URL` із `.env.local`. `0000_prelude.sql` створює ролі й безумовно
-  // робить `alter role app_runtime …`, а сама `app_runtime` — `nosuperuser
-  // nocreatedb nocreaterole`, тож під нею накат падає за будь-якого стану
-  // бази. Це bootstrap-крок людини, а не рантайм-ключ: змінна опційна поза
-  // накатом і в контракті «три ключі» магазину не значиться.
-  steps.push(
-    '# накат схеми — MIGRATION_DATABASE_URL (власник БД, не app_runtime) у .env.local або в env:\n' +
-      `${STORE_MANAGER} simplycms db:apply`,
-  );
-  // 🔴 service_role-ключа тут більше немає: запрошення власника випускається
-  // прямо в Postgres (контракт v2), тож потрібен лише DATABASE_URL із
-  // .env.local. Посилання скрипт друкує в консоль — SMTP магазин не має.
-  steps.push(`OWNER_EMAIL=you@example.com ${STORE_MANAGER} run owner:invite`);
-  // Перший крок діагностики: env, host-файли, міграції — до старту dev-сервера.
-  steps.push(`${STORE_MANAGER} simplycms doctor   # діагностика магазину`);
-  steps.push(`${STORE_MANAGER} run dev`);
-  note(steps.join('\n'), 'Наступні кроки');
-  // 🔴 Auth-налаштувань у Dashboard тут більше немає: вхід і запрошення
-  // працюють на Better Auth поверх самого Postgres, а не на GoTrue. Лишається
-  // рівно те, без чого owner:invite не запуститься — серверні ключі .env.local
-  // і той факт, що посилання доведеться взяти з консолі, а не з пошти.
-  log.info(
-    'Перед owner:invite заповни в .env.local серверні ключі:\n' +
-      '  DATABASE_URL       — підключення роллю app_runtime;\n' +
-      '  BETTER_AUTH_SECRET — openssl rand -base64 32.\n' +
-      'Лист магазин не шле (SMTP не налаштований) — одноразове посилання\n' +
-      'на /auth/invite скрипт надрукує в консоль. Воно дійсне 24 год,\n' +
-      'повторний прогін команди перевипускає його.',
+    log.warn(
+      `Лінки агентних скілів ще не створено — виконайте «cd ${dirLabel}», ` +
+        `«${STORE_MANAGER} install» і «${STORE_MANAGER} simplycms update».`,
+    );
+  note(
+    `Магазин створено в ${dirLabel}. Відкрийте агента (Claude Code чи Codex) ` +
+      'у цій теці й скажіть: «розгорни магазин».',
+    'Далі',
   );
 }

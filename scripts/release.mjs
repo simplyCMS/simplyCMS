@@ -22,6 +22,7 @@ import {
   currentVersion,
   VERSION_RE,
 } from './release/bump.mjs';
+import { bumpCreateReadmeTag } from './release/readme-tag.mjs';
 import { runGates } from './release/gates.mjs';
 import {
   assertCleanTree,
@@ -61,6 +62,7 @@ try {
   const branch = ensureReleaseBranch(version, { log });
 
   const { updated, skipped } = bumpTo(version);
+  bumpCreateReadmeTag(version);
   log(`Версію проставлено пакетам: ${updated.length}`);
   if (skipped.length) log(`  (пропущено, вже ${version}: ${skipped.length})`);
 

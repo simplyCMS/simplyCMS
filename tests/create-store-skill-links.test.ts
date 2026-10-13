@@ -117,18 +117,16 @@ describe('create-store: лінки агентних скілів', () => {
         return true;
       });
     try {
-      printNextSteps({ dirLabel: 'shop', installed: false, hasEnv: true });
-      expect(out).not.toContain('лінки агентних скілів');
+      printNextSteps({ dirLabel: 'shop' });
+      expect(out).not.toContain('Лінки агентних скілів');
       printNextSteps({
         dirLabel: 'shop',
-        installed: false,
-        hasEnv: true,
         skillsPending: true,
       });
     } finally {
       spy.mockRestore();
     }
     expect(out).toContain('simplycms update');
-    expect(out).toContain('лінки агентних скілів');
+    expect(out).toContain('Лінки агентних скілів');
   });
 });

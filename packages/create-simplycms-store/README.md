@@ -9,6 +9,21 @@ CLI проєкту [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — ві�
 e-commerce CMS на TanStack Start + Postgres. Це єдиний пакет, який ставиться
 окремо: він приводить усе ядро разом.
 
+## Для агента: з порожньої теки
+
+```bash
+pnpm create simplycms-store my-shop
+```
+
+Далі відкрийте агента (Claude Code чи Codex) у створеній теці й скажіть:
+«розгорни магазин». Хук старту сесії та `AGENTS.md` магазину ведуть агента на скіл
+`simplycms-onboarding`: той крок за кроком піднімає власну БД, сховище S3, пошту
+SMTP і накат міграцій, а кожну зміну показує наперед і виконує лише за згодою
+власника. Агент запускається з кореня магазину.
+
+Скаффолдер у консолі друкує лише це одне речення; довідкові кроки для людини без
+агента — у README згенерованого магазину.
+
 ## Встановлення
 
 ```bash
@@ -84,8 +99,9 @@ pnpm run dev
   власника працюють на Better Auth поверх самого Postgres, а не на GoTrue.
   Натомість обовʼязкові серверні ключі `.env.local` — `DATABASE_URL` і
   `BETTER_AUTH_SECRET`; без них сервер падає гучно, а не пускає всіх.
-- Листів магазин не шле: `owner:invite` друкує одноразове посилання на
-  `/auth/invite` у консоль — SMTP налаштовує вже власник.
+- Пошта — за вибором власника: зі `SMTP_URL`/`MAIL_FROM` лист із посиланням
+  на `/auth/invite` іде поштою; без SMTP посилання друкує лише `--print-link`
+  (скіл онбордингу налаштовує SMTP до запрошення).
 
 Дизайн — [спека bootstrap-у власника](https://github.com/simplyCMS/simplyCMS/blob/main/docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md).
 
