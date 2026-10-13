@@ -11,11 +11,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const REPO = resolve(import.meta.dirname, '..');
 const VITEST = join(REPO, 'node_modules/.bin/vitest');
 
-function probe(expected: string) {
+function probe(expected: string | undefined) {
+  const literal =
+    expected === undefined ? 'undefined' : JSON.stringify(expected);
   return `test('VITE_SITE_URL гейта', () => {
-  expect(process.env.VITE_SITE_URL).toBe(${JSON.stringify(expected)});
+  expect(process.env.VITE_SITE_URL).toBe(${literal});
   expect(process.env.VITE_GATE_LEAK).toBeUndefined();
-  expect(import.meta.env.VITE_SITE_URL).toBe(${JSON.stringify(expected)});
+  expect(import.meta.env.VITE_SITE_URL).toBe(${literal});
 });
 `;
 }
@@ -34,10 +36,9 @@ describe('гейти ізольовані від .env* розробника', ()
       writeFileSync(f, body);
     };
     // `unit`: звичайний гейт — з `.env.local` значення не приходить взагалі.
-    put(
-      'probe-unit.test.ts',
-      probe('undefined').replace(/"undefined"/g, 'undefined'),
-    );
+    put('probe-unit.test.ts', probe(undefined));
+    // `packaging`: жорсткий список include, тож проба лягає під одне з його імен.
+    put('tests/dist-import-meta.test.ts', probe(undefined));
     // `pg`: фіксоване тестове значення з test.env проєкту.
     put(
       'packages/simplycms/test-harness/pg/__tests__/probe.test.ts',
@@ -49,6 +50,7 @@ describe('гейти ізольовані від .env* розробника', ()
   function run(config: string, extra: string[]) {
     const env = { ...process.env };
     delete env.VITE_SITE_URL;
+    delete env.VITE_GATE_LEAK;
     return spawnSync(
       VITEST,
       [
@@ -72,6 +74,12 @@ describe('гейти ізольовані від .env* розробника', ()
 
   it('vitest.schema.config.ts, проєкт pg: VITE_SITE_URL = фіксоване, не leak.test', () => {
     const r = run('vitest.schema.config.ts', ['--project', 'pg']);
+    expect(r.stdout + r.stderr).toMatch(/1 passed/);
+    expect(r.status).toBe(0);
+  }, 130_000);
+
+  it('vitest.packaging.config.ts: VITE_SITE_URL з .env.local не потрапляє в тести', () => {
+    const r = run('vitest.packaging.config.ts', ['dist-import-meta']);
     expect(r.stdout + r.stderr).toMatch(/1 passed/);
     expect(r.status).toBe(0);
   }, 130_000);
