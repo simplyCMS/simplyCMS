@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { authClient } from 'simplycms/core/lib/auth-client';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import {
@@ -36,6 +37,7 @@ const REJECTION_MESSAGE: Record<AcceptInviteRejection, MessageKey> = {
 
 export default function AuthInvite() {
   const t = useT();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<
     string,
@@ -63,6 +65,12 @@ export default function AuthInvite() {
       );
       return;
     }
+
+    // Активна сесія ІНШОГО користувача (покупця) не має пережити вхід
+    // власника: штатний вихід скидає весь клієнтський стан попереднього
+    // глядача (кошик, кеші, прайси, форми), а `signIn` поверх неї лишив би
+    // його. Після відмови вище сесію не чіпаємо — запрошення не спрацювало.
+    if (user) await signOut();
 
     // Пароль щойно встановлено — вхід робиться ним же, а не окремим токеном:
     // так власник потрапляє в адмінку тим самим шляхом, яким потім заходить
