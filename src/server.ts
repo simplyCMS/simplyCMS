@@ -11,7 +11,11 @@ import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
 import { normalizeLocale } from 'simplycms/i18n';
-import { declareBuiltThemes, declareStoreLocale } from 'simplycms/site';
+import {
+  declareBuiltThemes,
+  declareStoreCurrency,
+  declareStoreLocale,
+} from 'simplycms/site';
 import config from '../simplycms.config';
 
 // Вшиті теми — ті, що зібрані з `config.themes` (Е6б-8). Сервер інакше про них
@@ -24,6 +28,11 @@ declareBuiltThemes(Object.keys(config.themes ?? {}));
 // не бачить, тож host повідомляє її тим самим каналом (Е8-Р8). Без декларації
 // ядро шле українською з одним попередженням.
 declareStoreLocale(normalizeLocale(config.locale));
+
+// Валюта сум у листах замовлення — з того самого `simplycms.config`, що й
+// вітрина: чек без валюти двозначний. Без декларації — дефолт ядра з
+// одним попередженням.
+declareStoreCurrency(config.currency);
 
 // Група драйвера env (S3, SMTP) — «все або нічого» (Е8-Р7′). Перевірка на
 // верхньому рівні, щоб помилка кинулась під час імпорту бандла в `server.mjs`

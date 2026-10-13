@@ -1,6 +1,5 @@
 import type { PlaceOrderInput, PlacedOrder } from 'simplycms/contracts';
-import { siteUrl } from 'simplycms/env';
-import { createTranslator } from 'simplycms/i18n';
+import { createTranslator, type Locale } from 'simplycms/i18n';
 import {
   enqueueMail,
   renderOrderCustomerMail,
@@ -8,7 +7,7 @@ import {
   type MailItem,
   type OrderMailData,
 } from 'simplycms/mail';
-import { getStoreLocale, readStoreProfile } from 'simplycms/site';
+import { readStoreProfile } from 'simplycms/site';
 import type { ActorDb } from './db';
 import type { NewOrderInput } from './entities/new-order';
 
@@ -38,6 +37,18 @@ export function toOrderMailData(
 }
 
 /**
+ * Усе, що лист бере з конфігурації, а не з БД. Збирається ДО транзакції
+ * (`place-order.ts`): збій конфігурації (немає `VITE_SITE_URL`) відмовляє одразу,
+ * а не відкочує вже виконану частину оформлення.
+ */
+export type OrderMailContext = {
+  /** `siteUrl('/admin/orders/')` — id замовлення дописується вже в транзакції. */
+  adminBase: string;
+  locale: Locale;
+  currency: string;
+};
+
+/**
  * Листи замовлення в outbox — у ТІЙ САМІЙ транзакції, що й `createOrder`
  * (Е8-Р10): відкат замовлення прибирає й листи, а збій запису листа відкочує
  * замовлення. Викликається під ескалацією `operator` (`app_admin`): покупець
@@ -52,17 +63,25 @@ export async function enqueueOrderMails(
   odb: ActorDb,
   data: OrderMailData,
   customerEmail: PlaceOrderInput['email'],
+  ctx: OrderMailContext,
 ): Promise<string[]> {
   const profile = await readStoreProfile(odb);
   const ownerEmail = profile.contacts.email?.trim() ?? '';
   const to = customerEmail.trim();
   const storeName = profile.name || 'SimplyCMS';
-  const t = createTranslator(getStoreLocale());
+  const t = createTranslator(ctx.locale);
+  const money = { locale: ctx.locale, currency: ctx.currency };
   const items: MailItem[] = [];
   if (to)
     items.push({
       kind: 'order_customer',
-      message: renderOrderCustomerMail({ to, order: data, storeName, t }),
+      message: renderOrderCustomerMail({
+        to,
+        order: data,
+        storeName,
+        t,
+        ...money,
+      }),
     });
   if (ownerEmail)
     items.push({
@@ -71,9 +90,10 @@ export async function enqueueOrderMails(
         to: ownerEmail,
         order: data,
         storeName,
-        // Р18(в): посилання лише з `VITE_SITE_URL`, не з запиту.
-        adminUrl: siteUrl(`/admin/orders/${data.id}`, process.env),
+        // Р18(в): база посилання лише з `VITE_SITE_URL` (ctx), не з запиту.
+        adminUrl: ctx.adminBase + data.id,
         t,
+        ...money,
       }),
     });
   return enqueueMail(odb, items);

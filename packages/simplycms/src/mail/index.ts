@@ -5,6 +5,7 @@ export { logTransport } from './log';
 export { smtpTransport } from './smtp';
 export { getMailTransport, selectMailTransport } from './transport';
 export {
+  MAIL_KINDS,
   MAIL_RETRY_BATCH,
   deliverMail,
   enqueueMail,
@@ -23,5 +24,6 @@ export type {
   OrderCustomerMailInput,
   OrderMailData,
   OrderMailItem,
+  OrderMailMoney,
   OrderOwnerMailInput,
 } from './render/order';

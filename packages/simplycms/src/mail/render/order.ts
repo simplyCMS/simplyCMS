@@ -1,11 +1,13 @@
+import { formatPrice } from 'simplycms/domain/money';
 import type { Translator } from 'simplycms/i18n';
 import type { MailMessage } from '../types';
 import { escapeHtml, layout, linkParagraph, paragraph } from './layout';
 
 /**
  * Чисті рендери листів про нове замовлення. Тексти — лише з каталогу `mail.*`.
- * Сум без символу валюти: валюта живе в `simplycms.config` збірки магазину,
- * якого серверний код не бачить (той самий мотив, що в `declareStoreLocale`).
+ * Суми з валютою: `locale` і `currency` приходять ззовні (host декларує їх у
+ * `src/server.ts`), форматує детермінований `formatPrice` — `Intl` у стилі
+ * `currency` дає різні символи на різних версіях ICU.
  */
 
 export type OrderMailItem = {
@@ -31,7 +33,10 @@ export type OrderMailData = {
   total: number;
 };
 
-export type OrderCustomerMailInput = {
+/** Локаль і валюта магазину для форматування сум. */
+export type OrderMailMoney = { locale: string; currency: string };
+
+export type OrderCustomerMailInput = OrderMailMoney & {
   /** Адреса покупця; викликач гарантує непорожню (Д2 — гілка без email не рендериться). */
   to: string;
   order: OrderMailData;
@@ -39,7 +44,7 @@ export type OrderCustomerMailInput = {
   t: Translator;
 };
 
-export type OrderOwnerMailInput = {
+export type OrderOwnerMailInput = OrderMailMoney & {
   to: string;
   order: OrderMailData;
   storeName: string;
@@ -48,10 +53,14 @@ export type OrderOwnerMailInput = {
   t: Translator;
 };
 
-const money = (value: number): string => value.toFixed(2);
+const moneyOf =
+  (cfg: OrderMailMoney) =>
+  (value: number): string =>
+    formatPrice(value, cfg, { minimumFractionDigits: 2 });
 
 /** Рядки складу й підсумків: однакові для обох листів. */
-function summary(order: OrderMailData, t: Translator) {
+function summary(order: OrderMailData, t: Translator, cfg: OrderMailMoney) {
+  const money = moneyOf(cfg);
   const lines = order.items.map((item) =>
     t('mail.order.line', {
       name: item.name,
@@ -77,7 +86,7 @@ export function renderOrderCustomerMail(
   const { to, order, storeName, t } = input;
   const params = { storeName, orderNumber: order.orderNumber };
   const intro = t('mail.order.customer.intro', params);
-  const { text, html } = summary(order, t);
+  const { text, html } = summary(order, t, input);
   return {
     to,
     kind: 'order_customer',
@@ -103,7 +112,7 @@ export function renderOrderOwnerMail(input: OrderOwnerMailInput): MailMessage {
     ? t('mail.order.owner.delivery', { address: delivery })
     : '';
   const open = t('mail.order.owner.openLink');
-  const { text, html } = summary(order, t);
+  const { text, html } = summary(order, t, input);
   const head = [customer, deliveryLine].filter(Boolean);
   return {
     to,

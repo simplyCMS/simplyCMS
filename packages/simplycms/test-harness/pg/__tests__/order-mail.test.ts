@@ -18,6 +18,7 @@ import {
   type MailMessage,
   type MailTransport,
 } from 'simplycms/mail';
+import { declareStoreCurrency } from 'simplycms/site';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -181,7 +182,10 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
     await setOwnerEmail('owner@shop.test');
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    declareStoreCurrency('UAH');
+  });
 
   it('гість: два листи (покупцю й власнику) доставлено, рядків немає', async () => {
     const result = await place();
@@ -198,6 +202,29 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
       `https://shop.example.test/admin/orders/${result.order.id}`,
     );
     expect(owner.text).toContain(result.order.orderNumber);
+  });
+
+  it('сума в листах — у валюті магазину (declareStoreCurrency), не ₴ за замовчуванням', async () => {
+    declareStoreCurrency('USD');
+    expect((await place()).ok).toBe(true);
+    await vi.waitFor(() => expect(sent).toHaveLength(2));
+    for (const mail of sent) {
+      expect(mail.text).toContain('$');
+      expect(mail.text).not.toContain('₴');
+    }
+  });
+
+  it('відсутній VITE_SITE_URL відмовляє ДО транзакції: замовлення немає, рядків немає', async () => {
+    const saved = process.env.VITE_SITE_URL;
+    delete process.env.VITE_SITE_URL;
+    const before = await ordersCount();
+    try {
+      await expect(place()).rejects.toThrow(/VITE_SITE_URL/);
+    } finally {
+      process.env.VITE_SITE_URL = saved;
+    }
+    expect(await ordersCount()).toBe(before);
+    expect(await outbox()).toEqual([]);
   });
 
   it('покупець (userId): листи теж доставлено', async () => {

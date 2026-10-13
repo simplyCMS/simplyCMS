@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
 import { applyCategoryRules } from 'simplycms/commerce';
 import { InsufficientStockError } from 'simplycms/inventory';
+import { siteUrl } from 'simplycms/env';
 import { deliverMail } from 'simplycms/mail';
+import { getStoreCurrency, getStoreLocale } from 'simplycms/site';
 import {
   withCustomerDb,
   withOrderTokenDb,
@@ -12,7 +14,11 @@ import {
 } from './db';
 import { prepareCheckout } from './prepare-checkout';
 import { createOrder } from './order-create';
-import { enqueueOrderMails, toOrderMailData } from './order-mail';
+import {
+  enqueueOrderMails,
+  toOrderMailData,
+  type OrderMailContext,
+} from './order-mail';
 import { resolveRecipient, toOrderInput } from './place-order-support';
 
 /**
@@ -37,6 +43,13 @@ export async function placeOrderFor(
   // (гвард живе там, спільний з квотою — рев'ю #9, докладніше в
   // `prepare-checkout.ts`), не тут: другий незалежний гвард на той самий
   // предикат — саме те дублювання, з яким весь розділ M бореться.
+  // 🔴 Конфігурація листа — ДО транзакції: відсутній `VITE_SITE_URL` має
+  // відмовити одразу (fail-loud, Р18), а не відкотити вже виконане оформлення.
+  const mailContext: OrderMailContext = {
+    adminBase: siteUrl('/admin/orders/', process.env),
+    locale: getStoreLocale(),
+    currency: getStoreCurrency(),
+  };
   const accessToken = userId === null ? randomUUID() : null;
   const run = <T>(
     fn: (db: ActorDb, operator: OperatorEscalation) => Promise<T>,
@@ -74,6 +87,7 @@ export async function placeOrderFor(
           odb,
           toOrderMailData(order, newOrder),
           newOrder.email,
+          mailContext,
         ),
       );
       return { ok: true, order } as const;
@@ -90,7 +104,13 @@ export async function placeOrderFor(
     // у дефолтному аргументі) теж не ламав уже закомічене замовлення.
     void Promise.resolve()
       .then(() => deliverMail(mailIds))
-      .catch(() => undefined);
+      .catch((error: unknown) => {
+        // Лише клас помилки: без адрес, тіла й посилань (як у auth/reset-mail); службовий лог англійською — i18n-зона вітрини кирилиці не пускає.
+        console.warn(
+          '[simplycms/storefront] background delivery of order emails failed:',
+          error instanceof Error ? error.name : typeof error,
+        );
+      });
     if (userId !== null) await applyRulesAfterOrder(userId);
   }
   return result;

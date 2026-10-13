@@ -14,8 +14,13 @@ export const MAIL_RETRY_BATCH = 5;
  * Набір видів розширюваний, тож `kind` у БД — просто `text` без CHECK
  * (рішення оркестратора): контракт — цей тип, а новий вид не потребує міграції.
  */
-export type MailKind =
-  'password_reset' | 'owner_invite' | 'order_customer' | 'order_owner';
+export const MAIL_KINDS = [
+  'password_reset',
+  'owner_invite',
+  'order_customer',
+  'order_owner',
+] as const;
+export type MailKind = (typeof MAIL_KINDS)[number];
 
 export type MailItem = { kind: MailKind; message: MailMessage };
 

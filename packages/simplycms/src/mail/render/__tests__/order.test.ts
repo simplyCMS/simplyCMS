@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { formatPrice } from 'simplycms/domain/money';
 import { createTranslator } from 'simplycms/i18n';
 import {
   renderOrderCustomerMail,
@@ -29,6 +30,7 @@ describe.each(['uk', 'en'] as const)(
   'рендер листів замовлення, %s',
   (locale) => {
     const t = createTranslator(locale);
+    const money = { locale, currency: 'UAH' };
 
     it('лист покупцю: номер у темі, склад і підсумки в тексті, каталог розв’язано', () => {
       const mail = renderOrderCustomerMail({
@@ -36,12 +38,16 @@ describe.each(['uk', 'en'] as const)(
         order: ORDER,
         storeName: STORE,
         t,
+        ...money,
       });
       expect(mail.kind).toBe('order_customer');
       expect(mail.to).toBe('buyer@example.test');
       expect(mail.subject).toContain(ORDER.orderNumber);
-      expect(mail.text).toContain('9600.00');
-      expect(mail.text).toContain('9750.50');
+      const fmt = (v: number) =>
+        formatPrice(v, money, { minimumFractionDigits: 2 });
+      expect(mail.text).toContain(fmt(9600));
+      expect(mail.text).toContain(fmt(9750.5));
+      expect(mail.text).toContain('₴');
       expect(mail.text).not.toContain('mail.order.');
       expect(mail.html).toContain('Панель &lt;450&gt;');
       expect(mail.html).not.toContain('<450>');
@@ -55,6 +61,7 @@ describe.each(['uk', 'en'] as const)(
         storeName: STORE,
         adminUrl,
         t,
+        ...money,
       });
       expect(mail.kind).toBe('order_owner');
       expect(mail.subject).not.toContain('https://');
@@ -65,6 +72,29 @@ describe.each(['uk', 'en'] as const)(
       expect(mail.html).toContain('вул. &lt;Хрещатик&gt;, 1');
     });
 
+    it('валюта береться з параметра: USD → $, а не ₴ (обидва листи)', () => {
+      const usd = { locale, currency: 'USD' };
+      const customer = renderOrderCustomerMail({
+        to: 'b@example.test',
+        order: ORDER,
+        storeName: STORE,
+        t,
+        ...usd,
+      });
+      const owner = renderOrderOwnerMail({
+        to: 'o@example.test',
+        order: ORDER,
+        storeName: STORE,
+        adminUrl: 'https://shop.example/admin/orders/x',
+        t,
+        ...usd,
+      });
+      for (const mail of [customer, owner]) {
+        expect(mail.text).toContain('$');
+        expect(mail.text).not.toContain('₴');
+      }
+    });
+
     it('лист власнику без email покупця не друкує порожній рядок', () => {
       const mail = renderOrderOwnerMail({
         to: 'owner@shop.test',
@@ -72,6 +102,7 @@ describe.each(['uk', 'en'] as const)(
         storeName: STORE,
         adminUrl: 'https://shop.example/admin/orders/x',
         t,
+        ...money,
       });
       expect(mail.text).toContain(t('mail.order.owner.noEmail'));
     });
