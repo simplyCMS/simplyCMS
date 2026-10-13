@@ -31,6 +31,16 @@ async function storeOn(version: string) {
     join(installed, 'package.json'),
     JSON.stringify({ name: 'simplycms', version }),
   );
+  // Після `pnpm add` update передає керування CLI магазину (Р21) — його bin потрібен.
+  const cli = join(target, 'node_modules', '@simplycms', 'cli');
+  mkdirSync(cli, { recursive: true });
+  writeFileSync(
+    join(cli, 'package.json'),
+    JSON.stringify({
+      name: '@simplycms/cli',
+      bin: { simplycms: 'src/index.mjs' },
+    }),
+  );
   return target;
 }
 

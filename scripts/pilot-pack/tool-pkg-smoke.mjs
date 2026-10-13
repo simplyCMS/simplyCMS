@@ -8,7 +8,8 @@
  * наявність непорожньої `host/` (канон для `simplycms update` — її втрата в
  * `files` зробила б команду пустушкою), запуск `--help` з розпакованого,
  * збіг `--version` із версією манифеста і `doctor` на свіжому скаффолді
- * шаблону (крок — tool-doctor-smoke.mjs, обіцянка спеки §6).
+ * шаблону (крок — tool-doctor-smoke.mjs, обіцянка спеки §6) і доставка host-файлів
+ * нової версії одним `update --write` (крок — tool-update-reexec.mjs, Р21).
  *
  * 🔴 `node_modules` розпакованого пакета — симлінк на теку пакета в репо: у
  * tarball залежностей немає, а `pnpm install` тут означав би похід у registry
@@ -30,6 +31,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { doctorSmoke } from './tool-doctor-smoke.mjs';
+import { updateReexecSmoke } from './tool-update-reexec.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const TOOL_PKG_DIR = join(REPO_ROOT, 'packages/cli');
@@ -202,6 +204,10 @@ export async function toolPkgSmoke() {
     const conformance = conformanceSmoke(pkgDir, join(work, 'doctor-store'));
     details.push(...conformance.details);
     if (!conformance.ok) return { ok: false, details };
+
+    const reexec = await updateReexecSmoke(work);
+    details.push(...reexec.details);
+    if (!reexec.ok) return { ok: false, details };
 
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
