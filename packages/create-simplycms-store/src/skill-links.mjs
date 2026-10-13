@@ -24,7 +24,7 @@ const packagedSkillsDir = (storeRoot) =>
  * Реліз скаффолдера синхронний із ядром, а дрейф списку проти теки пакета
  * ловить `tests/create-store-template-parity.test.ts`.
  */
-export const BUNDLED_SKILLS = ['simplycms-redesign'];
+export const BUNDLED_SKILLS = ['simplycms-onboarding', 'simplycms-redesign'];
 
 /** Імена скілів встановленого ядра; ядра ще немає → null (а не порожньо). */
 export function listPackagedSkills(storeRoot) {
