@@ -17,6 +17,7 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { QueryFailure } from '../components/QueryFailure';
 import { getMyOrders, getOrderStatuses } from '../server/profile-orders';
 
 /** Значення фільтра «усі статуси». */
@@ -46,7 +47,7 @@ export default function ProfileOrdersPage() {
    * Фільтр статусу їде параметром, бо він і є вибором користувача; чиї саме
    * замовлення показати — параметром НЕ їде і їхати не може.
    */
-  const { data: orders = [], isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: [...orderKeys.scoped('customer', user?.id ?? ''), selectedStatus],
     queryFn: () =>
       getMyOrders({
@@ -55,6 +56,8 @@ export default function ProfileOrdersPage() {
       }),
     enabled: !!user,
   });
+
+  const orders = data ?? [];
 
   // Форматування ціни — через конфіг магазину (locale/currency), а не
   // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
@@ -102,7 +105,10 @@ export default function ProfileOrdersPage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {isError && !data ? (
+        // Р26: збій запиту ≠ «немає замовлень».
+        <QueryFailure message="profile.loadFailed" onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32 w-full" />

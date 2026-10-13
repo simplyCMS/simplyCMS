@@ -17,6 +17,8 @@ export const DOMAIN_ERROR_NAME = {
   adminConflict: 'AdminConflictError',
   authz: 'AuthzError',
   validation: 'ValidationError',
+  /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
+  notFound: 'NotFoundError',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** `error.name` доменної помилки — значення `DOMAIN_ERROR_NAME`. */
@@ -38,6 +40,8 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   // `SerializableDomainError.issues` — крізь білий список
   // `sanitizeValidationIssues`, а не через `fields`.
   [DOMAIN_ERROR_NAME.validation]: [],
+  // Достатньо `name`: що саме не знайдено, видно з контексту виклику.
+  [DOMAIN_ERROR_NAME.notFound]: [],
 };
 
 /**
@@ -235,5 +239,16 @@ export function isDomainErrorName(value: unknown): value is DomainErrorName {
   return (
     typeof value === 'string' &&
     (Object.values(DOMAIN_ERROR_NAME) as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Чи це доменне «не знайдено» (Р26). Дукове за `name`: клієнт має `Error` з
+ * полями (адаптер serverFn), а не екземпляр серверного класу.
+ */
+export function isNotFoundError(error: unknown): boolean {
+  return (
+    (error as { name?: unknown } | null | undefined)?.name ===
+    DOMAIN_ERROR_NAME.notFound
   );
 }

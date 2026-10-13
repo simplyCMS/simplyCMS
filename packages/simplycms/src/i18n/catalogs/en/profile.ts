@@ -18,6 +18,8 @@ export const messages: Catalog = {
   'profile.order.notFound': 'Order not found',
   'profile.order.notFoundHint':
     'It may have been deleted, or you may not have access to it',
+  'profile.loadFailed':
+    'Could not load the data. This is a request failure, not missing data — please try again',
   'profile.order.items': 'Order items',
   'profile.order.shippingMethod': 'Shipping method',
   'profile.order.paymentMethod': 'Payment method',

@@ -5,6 +5,7 @@ import {
   discountTargets,
   discounts,
 } from 'simplycms/schema';
+import { AdminNotFoundError } from '../errors';
 import { runAdmin } from '../run';
 
 export const getDiscountInput = z.object({ id: z.uuid() });
@@ -28,7 +29,7 @@ export const getDiscountOp = async ({
       .from(discounts)
       .where(eq(discounts.id, data.id))
       .for('share');
-    if (!discount) throw new Error(`[admin-server] знижки ${data.id} не існує`);
+    if (!discount) throw new AdminNotFoundError(`знижки ${data.id}`);
     const targets = await db
       .select()
       .from(discountTargets)

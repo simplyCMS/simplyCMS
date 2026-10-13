@@ -200,6 +200,24 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(data.sectionProducts[filled!.id]).toHaveLength(PER_SECTION_LIMIT);
   });
 
+  it('головна: у banners лише розміщення home у межах розкладу (Р24)', async () => {
+    await queryRows(
+      dbUrl,
+      `insert into public.banners (id, title, image_url, placement, sort_order, is_active, date_from)
+       values
+         ('10000009-0000-4000-8000-0000000000f1'::uuid, 'Р24-каталог', 'data:,x', 'catalog', 0, true, null),
+         ('10000009-0000-4000-8000-0000000000f2'::uuid, 'Р24-майбутнє', 'data:,x', 'home', 0, true, now() + interval '1 year'),
+         ('10000009-0000-4000-8000-0000000000f3'::uuid, 'Р24-чинний', 'data:,x', 'home', 0, true, now() - interval '1 day')`,
+    );
+    const data = await withViewerPricesDb(null, (db, v) =>
+      loadHomePageData(db, v),
+    );
+    const titles = data.banners.map((b) => b.title);
+    expect(titles).toContain('Р24-чинний');
+    expect(titles).not.toContain('Р24-каталог');
+    expect(titles).not.toContain('Р24-майбутнє');
+  });
+
   it('головна: ціна картки — той самий резолв, що в каталозі (К2-Е0)', async () => {
     const { featured, panels } = await withViewerPricesDb(
       null,

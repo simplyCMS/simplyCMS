@@ -25,6 +25,7 @@ import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
+import { QueryFailure } from '../components/QueryFailure';
 import { getOrderView } from '../server/order-view';
 
 const orders = entityKey(ENTITY.orders);
@@ -61,7 +62,12 @@ export default function OrderSuccess() {
    * коли сесії немає — інакше залогінений із чужим токеном у URL відкрив би
    * чуже замовлення.
    */
-  const { data: order = null, isLoading } = useQuery({
+  const {
+    data: order = null,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [...orders.detail(orderId), token, user?.id],
     queryFn: () => getOrderView({ data: { orderId, token } }),
     enabled: !!orderId,
@@ -117,6 +123,19 @@ export default function OrderSuccess() {
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-48 w-full" />
         </div>
+      </div>
+    );
+  }
+
+  // Р26: збій мережі одразу після оформлення не є «замовлення не знайдено» —
+  // інакше покупець оформлює замовлення вдруге.
+  if (isError && !order) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <QueryFailure
+          message="checkout.success.loadFailed"
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }

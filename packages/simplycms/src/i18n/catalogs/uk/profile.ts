@@ -19,6 +19,8 @@ export const messages = {
   'profile.order.notFound': 'Замовлення не знайдено',
   'profile.order.notFoundHint':
     'Можливо, воно було видалено або ви не маєте до нього доступу',
+  'profile.loadFailed':
+    'Не вдалося завантажити дані. Це збій запиту, а не відсутність даних — спробуйте ще раз',
   'profile.order.items': 'Товари замовлення',
   'profile.order.shippingMethod': 'Спосіб доставки',
   'profile.order.paymentMethod': 'Спосіб оплати',

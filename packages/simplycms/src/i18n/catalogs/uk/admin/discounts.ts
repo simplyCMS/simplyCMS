@@ -73,6 +73,8 @@ export const messages = {
   'admin.discounts.toggleGroupLabel': 'Активність групи «{name}»',
   'admin.discounts.expandLabel': 'Згорнути або розгорнути «{name}»',
   'admin.discounts.notFound': 'Знижку не знайдено',
+  'admin.discounts.loadFailed': 'Не вдалося завантажити знижку',
+  'admin.discounts.retry': 'Повторити',
   'admin.discounts.groupNotFound': 'Групу не знайдено',
   'admin.discounts.valueInvalid':
     'Значення має бути більше нуля, відсоток — не більше 100',

@@ -1,8 +1,8 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
-import { banners, products, sections } from 'simplycms/schema';
+import { products, sections } from 'simplycms/schema';
 import type { Banner } from 'simplycms/contracts';
 import type { ActorDb } from './db';
-import { bannerColumns, toBanner } from './entities/banner';
+import { loadBanners } from './banners';
 import {
   homeProductColumns,
   toHomeProduct,
@@ -42,18 +42,15 @@ export async function loadHomePageData(
   db: ActorDb,
   viewer: ViewerPriceTypes,
 ): Promise<HomePageData> {
-  // Предикат видимості — див. коментар у `./sections`.
-  const bannerRows = await db
-    .select(bannerColumns)
-    .from(banners)
-    .where(eq(banners.isActive, true))
-    .orderBy(asc(banners.sortOrder));
+  // Р24: лише розміщення `home` і лише в межах розкладу — тема бере ПЕРШИЙ
+  // банер як hero, тож банер іншого місця чи з майбутнім розкладом не годиться.
+  const homeBanners = await loadBanners(db, { placement: 'home' });
   const featured = await loadHomeProducts(db, true, viewer);
   const newProducts = await loadHomeProducts(db, false, viewer);
   const rootSections = await loadRootSections(db);
 
   return {
-    banners: bannerRows.map(toBanner),
+    banners: homeBanners,
     featuredProducts: featured,
     newProducts,
     sections: rootSections,

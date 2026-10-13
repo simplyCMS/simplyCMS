@@ -16,6 +16,7 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { QueryFailure } from '../components/QueryFailure';
 import { getProfileOverview } from '../server/profile';
 
 /**
@@ -35,7 +36,7 @@ export default function ProfilePage() {
    * читались персональні дані, приходила з клієнта. Тепер її задає
    * `readSessionSubject`, і підставити чужий id нема куди: параметра немає.
    */
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     // 🔴 variant('overview', …), не scoped() (борг Е1а №6, Е3-12): це форма
     // (профіль + останні замовлення), а не FK-зріз.
     queryKey: profiles.variant('overview', user?.id ?? ''),
@@ -65,6 +66,17 @@ export default function ProfilePage() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-48 w-full" />
         <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  // Р26: збій запиту ≠ «немає замовлень»; уже завантажені дані збій фонового
+  // рефетчу не стирає.
+  if (isError && !data) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">{t('profile.title')}</h1>
+        <QueryFailure message="profile.loadFailed" onRetry={() => refetch()} />
       </div>
     );
   }

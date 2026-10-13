@@ -99,6 +99,15 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
+  it('NotFoundError (Р26): name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
+    const src = Object.assign(new Error('знижки не існує'), {
+      name: 'NotFoundError',
+    });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toBeInstanceOf(Error);
+    expect(out).toMatchObject({ name: 'NotFoundError' });
+  });
+
   it('контроль БЕЗ адаптера: ShallowErrorPlugin лишає голий Error(message) — фіксує механіку дефекту Start', async () => {
     const src = Object.assign(new Error('конфлікт'), {
       name: 'AdminConflictError',

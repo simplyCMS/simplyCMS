@@ -17,6 +17,7 @@ export const messages = {
   'common.edit': 'Редагувати',
   'common.activate': 'Активувати',
   'common.reset': 'Скинути',
+  'common.retry': 'Повторити',
 
   // Стани
   'common.loading': 'Завантаження...',

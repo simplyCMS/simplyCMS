@@ -10,6 +10,7 @@ import {
   useCollection,
 } from 'simplycms/admin-data';
 import { getDiscount, saveDiscount } from 'simplycms/admin-server';
+import { isNotFoundError } from 'simplycms/contracts/domain-errors';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
 import type { Discount } from 'simplycms/schema/types';
@@ -103,7 +104,11 @@ export function useDiscountCard(
   return {
     isNew,
     isLoading: !isNew && detail.isPending,
-    notFound: !isNew && detail.isError,
+    // Р26: «не знайдено» — лише доменна відповідь сервера; мережевий збій чи
+    // 500 — окремий стан помилки з повтором, а не «такої знижки немає».
+    notFound: !isNew && detail.isError && isNotFoundError(detail.error),
+    loadFailed: !isNew && detail.isError && !isNotFoundError(detail.error),
+    retry: () => void detail.refetch(),
     name: detail.data?.discount.name,
     form,
     onSubmit,

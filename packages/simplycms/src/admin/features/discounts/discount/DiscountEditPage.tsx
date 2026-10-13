@@ -23,15 +23,30 @@ export default function DiscountEditPage() {
     discountId?: string;
   };
   const { groupId } = useSearch({ strict: false }) as { groupId?: string };
-  const { isNew, isLoading, notFound, name, form, onSubmit } = useDiscountCard(
-    discountId,
-    groupId,
-  );
+  const {
+    isNew,
+    isLoading,
+    notFound,
+    loadFailed,
+    retry,
+    name,
+    form,
+    onSubmit,
+  } = useDiscountCard(discountId, groupId);
   const back = adminPath('discounts');
 
   if (notFound)
     return (
       <NotFoundState backTo={back} message={t('admin.discounts.notFound')} />
+    );
+  if (loadFailed)
+    return (
+      <div role="alert" className="space-y-4">
+        <p className="text-destructive">{t('admin.discounts.loadFailed')}</p>
+        <Button variant="outline" onClick={retry}>
+          {t('admin.discounts.retry')}
+        </Button>
+      </div>
     );
   if (isLoading)
     return <div className="p-8 text-center">{t('common.loading')}</div>;
