@@ -484,25 +484,26 @@ describe('cli doctor (оффлайн)', () => {
         { mode: 0o755 },
       );
     };
-    const savedPath = process.env.PATH;
-    process.env.PATH = bin;
-    try {
+    // Без claudeCheckEnv (як у status) бінарник не питається взагалі.
+    const check = () =>
+      checkAgentFiles({ storeRoot: store, claudeCheckEnv: { PATH: bin } });
+    {
       fake('2.1.138');
-      const old = checkAgentFiles({ storeRoot: store });
+      const old = check();
       expect(old.status).toBe('warn');
       expect(old.details).toContain('Claude Code ≥ 2.1.139');
       fake('2.1.139');
-      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      expect(check().status).toBe('ok');
       fake('2.2.0');
-      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      expect(check().status).toBe('ok');
       fake('1.99.999');
-      expect(checkAgentFiles({ storeRoot: store }).status).toBe('warn');
+      expect(check().status).toBe('warn');
       fake('не версія');
-      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+      expect(check().status).toBe('ok');
       rmSync(join(bin, 'claude'));
+      expect(check().status).toBe('ok');
+      fake('2.1.138');
       expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
-    } finally {
-      process.env.PATH = savedPath;
     }
   });
 

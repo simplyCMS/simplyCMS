@@ -4,13 +4,6 @@
 // лише мапінг їхніх результатів на Check, щоб реалізація кожного була одна.
 import { existsSync } from 'node:fs';
 import {
-  describeAgentDrift,
-  describeRecommendedPermissions,
-  inspectAgentFiles,
-  isShimMissing,
-} from './agent-files.mjs';
-import { claudeVersionWarning } from './claude-version.mjs';
-import {
   compareMigrationsMulti,
   missingStoreMigrationsDir,
   pluginMigrationSources,
@@ -117,38 +110,4 @@ export function checkSkillLinks({ storeRoot }) {
   return { id, title, status: 'ok' };
 }
 
-/**
- * №18: керований блок `AGENTS.md` і запис хука старту сесії. Розбіжність — warn:
- * лагодиться `simplycms update`. Дозволи Claude Code `update` не зливає (Б §3.2),
- * тож рекомендовані показуються тут — власник переносить їх сам.
- * @param {{ storeRoot: string }} ctx
- * @returns {Check}
- */
-export function checkAgentFiles({ storeRoot }) {
-  const id = 'agent-files';
-  const title = 'Файли агента: керований блок AGENTS.md і хук старту сесії';
-  const state = inspectAgentFiles(storeRoot);
-  if (state.block === null) {
-    const details =
-      'node_modules/simplycms/agent відсутня — ядро не встановлене або стара версія';
-    return { id, title, status: 'skip', details };
-  }
-  const problems = [
-    ...(state.hook.status === 'invalid' ? [state.hook.error] : []),
-    ...describeAgentDrift(state),
-  ];
-  const lines = describeRecommendedPermissions(storeRoot);
-  const outdated = claudeVersionWarning();
-  if (problems.length === 0 && outdated === null)
-    return { id, title, status: 'ok', details: lines.join('\n') || undefined };
-  // Шим — host-файл, його пише лише `--write`; решту доглядає й звичайний `update`.
-  const flag = isShimMissing(state) ? ' --write' : '';
-  const fix = `${problems.join('; ')}. Полагодь: pnpm simplycms update${flag}`;
-  const details = [problems.length > 0 ? fix : null, outdated, ...lines];
-  return {
-    id,
-    title,
-    status: 'warn',
-    details: details.filter(Boolean).join('\n'),
-  };
-}
+export { checkAgentFiles } from './doctor-agent-check.mjs';

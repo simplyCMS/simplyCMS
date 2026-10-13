@@ -197,5 +197,10 @@ describe('читання й запис', () => {
     expect(() => readDeployRecord(root)).not.toThrow(/hunter2/);
     writeFileSync(join(root, '.simplycms/deploy.json'), '{"version":1}');
     expect(() => readDeployRecord(root)).toThrow();
+    // Помилка читання (теки замість файлу) — не «не JSON»: причина не маскується.
+    rmSync(join(root, '.simplycms/deploy.json'));
+    mkdirSync(join(root, '.simplycms/deploy.json'));
+    expect(() => readDeployRecord(root)).toThrow(/EISDIR/);
+    expect(() => readDeployRecord(root)).not.toThrow('не JSON');
   });
 });

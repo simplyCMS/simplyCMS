@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -51,6 +52,19 @@ function status(cwd: string, ...args: string[]) {
     encoding: 'utf8',
   });
   return { out: r.stdout, err: r.stderr, code: r.status };
+}
+
+/** Фейковий `claude`, що лишає маркер при кожному запуску; повертає PATH з ним. */
+function fakeClaudeOnPath() {
+  const dir = mkdtempSync(join(tmpdir(), 'st-claude-'));
+  roots.push(dir);
+  const marker = join(dir, 'spawned');
+  writeFileSync(
+    join(dir, 'claude'),
+    `#!/bin/sh\necho spawned >> "${marker}"\necho "2.1.296 (Claude Code)"\n`,
+    { mode: 0o755 },
+  );
+  return { marker, PATH: `${dir}:${process.env.PATH}` };
 }
 
 const ok = { id: 'x', title: 'x', status: 'ok' } as const;
@@ -248,6 +262,22 @@ describe('simplycms status (CLI)', () => {
     const text = state.join('\n');
     expect(text).toContain('local');
     expect(text).toContain('simplycms-');
+  });
+
+  it('status (--hook і --json) не спавнить claude, а doctor спавнить', async () => {
+    const root = await store('st-no-claude');
+    const { marker, PATH } = fakeClaudeOnPath();
+    const run = (...args: string[]) =>
+      spawnSync('node', [CLI_INDEX, ...args], {
+        cwd: root,
+        env: { ...process.env, ...STORE_ENV, NODE_ENV: '', PATH },
+        encoding: 'utf8',
+      });
+    run('status', '--hook');
+    run('status', '--json');
+    expect(existsSync(marker)).toBe(false);
+    run('doctor');
+    expect(existsSync(marker)).toBe(true);
   });
 
   it('№17 engines: плагін, що не покриває ядро, видно в --hook, код 3', async () => {

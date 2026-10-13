@@ -4,7 +4,7 @@
 // недоступний бінарник чи нерозпізнаний вивід — не привід для попередження.
 import { spawnSync } from 'node:child_process';
 
-export const MIN_CLAUDE_VERSION = '2.1.139';
+const MIN_CLAUDE_VERSION = '2.1.139';
 const VERSION_TIMEOUT_MS = 2000;
 
 /** `2.1.296 (Claude Code)` → `[2, 1, 296]`; не розпізнано → `null`. */
@@ -14,8 +14,8 @@ export function parseClaudeVersion(output) {
 }
 
 /** Чиста функція: версія `[major, minor, patch]` строго менша за мінімальну. */
-export function isOlderThanMinimum(version, minimum = MIN_CLAUDE_VERSION) {
-  const min = parseClaudeVersion(minimum);
+export function isOlderThanMinimum(version) {
+  const min = parseClaudeVersion(MIN_CLAUDE_VERSION);
   for (let i = 0; i < 3; i++) {
     if (version[i] !== min[i]) return version[i] < min[i];
   }
@@ -25,10 +25,10 @@ export function isOlderThanMinimum(version, minimum = MIN_CLAUDE_VERSION) {
 /**
  * Попередження про застарілий Claude Code або `null` (бінарника немає, вивід
  * не розпізнано, версія достатня). Без shell: лише `claude --version` із таймаутом.
- * @param {NodeJS.ProcessEnv} [env]
+ * @param {NodeJS.ProcessEnv} env оточення пошуку бінарника (PATH)
  * @returns {string | null}
  */
-export function claudeVersionWarning(env = process.env) {
+export function claudeVersionWarning(env) {
   const run = spawnSync('claude', ['--version'], {
     env,
     encoding: 'utf8',

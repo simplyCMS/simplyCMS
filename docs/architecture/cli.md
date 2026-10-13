@@ -171,16 +171,14 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   Корінь магазину — `${CLAUDE_PROJECT_DIR}` (фолбек `process.cwd()`).
 - **Запис у `settings.json`** — exec-форма: `{ "type": "command", "command": "node",
   "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs"], "timeout": 10 }`
-  (matcher `startup|clear|compact`). Відносний шлях залежить від поточної теки процесу хука;
-  `${CLAUDE_PROJECT_DIR}` (корінь проєкту сесії) від неї не залежить, а плейсхолдер у
-  `args` не потребує лапок. Живий доказ (Claude Code 2.1.296): `claude -p` з кореня
-  магазину запускає SessionStart-хук; з підтеки `src/` Claude Code `.claude/settings.json`
-  кореня не знаходить і хук не запускається ні в якій формі — агента запускають з кореня. `update`
+  (matcher `startup|clear|compact`). Згідно з документацією Claude Code, cwd хука слідує за cwd агента: після `cd` агента відносний шлях на `clear|compact` пішов би не з кореня. `${CLAUDE_PROJECT_DIR}` (корінь проєкту сесії) від cwd не залежить, а плейсхолдер у `args` не потребує лапок. Живий доказ (Claude Code 2.1.296): `claude -p` з кореня магазину запускає SessionStart-хук; з підтеки `src/` проєктний `.claude/settings.json` не читається взагалі і хук не запускається ні в якій формі — агента запускають з кореня магазину (тека з `package.json` і `.claude/`). `update`
   розпізнає і старий відносний запис (`node .claude/hooks/session-start.mjs`), і новий та
   переводить старий у канонічний. **Мінімальна версія:** Claude Code ≥ 2.1.139 (поле
   `args` у хуках); перевірено на 2.1.296. doctor №18 дає `warn`, якщо `claude --version`
   (доступний у PATH) старіший; без бінарника перевірка мовчить (магазин може вести інший
-  агент).
+  агент). Версію питає лише `doctor`, не `status`/хук (хук уже запустився ⇒ версія достатня, а
+  spawn гальмував би старт сесії). На Windows `claude.cmd` без shell не спавниться — перевірка
+  теж мовчить.
 
 ### 3.1.2 `simplycms smoke <url>`
 

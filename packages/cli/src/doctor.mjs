@@ -126,7 +126,8 @@ export async function run(argv) {
   const checks = [
     modeNotice(production),
     { id: 'root', title: ROOT_TITLE, status: 'ok', details: storeRoot },
-    ...runOfflineChecks(ctx),
+    // Версію Claude Code питає лише doctor — `status --hook` не спавнить `claude`.
+    ...runOfflineChecks({ ...ctx, claudeCheckEnv: process.env }),
   ];
   if (online) checks.push(...(await runOnlineChecks(ctx)));
   else checks.push(offlineOnlyNotice());

@@ -158,9 +158,10 @@ head -3 .claude/skills/simplycms-redesign/SKILL.md
 `.claude/settings.json` запускає `.claude/hooks/session-start.mjs` на старті сесії
 (`startup|clear|compact`) і віддає агенту стан магазину (`simplycms status --hook`).
 Запис — exec-форма (`command: node`, `args` зі шляхом через `${CLAUDE_PROJECT_DIR}`),
-тож шлях шима не залежить від поточної теки процесу хука. Claude Code читає
-`.claude/settings.json` лише з теки, де стартувала сесія (вгору по теках не шукає) —
-запускай агента з кореня магазину.
+тож шлях шима не залежить від cwd: за документацією Claude Code cwd хука слідує за cwd
+агента, і після `cd` відносний шлях на `clear|compact` пішов би не з кореня. Claude Code
+читає `.claude/settings.json` лише з теки старту сесії (з підтеки він не читається
+взагалі) — запускай агента з кореня магазину.
 
 Потрібен Claude Code ≥ 2.1.139 (поле `args` у хуках); перевірено на 2.1.296. `pnpm
 simplycms doctor` (№18) попередить, якщо встановлено старішу версію.

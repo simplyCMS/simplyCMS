@@ -102,9 +102,11 @@ function validateDeployRecord(rec) {
 export function readDeployRecord(storeRoot) {
   const path = join(storeRoot, DEPLOY_RECORD_PATH);
   if (!existsSync(path)) return null;
+  // Читання поза try: помилка доступу (права, тека) має лишитись собою, а не «не JSON».
+  const text = readFileSync(path, 'utf8');
   let parsed;
   try {
-    parsed = JSON.parse(readFileSync(path, 'utf8'));
+    parsed = JSON.parse(text);
   } catch {
     // Фіксований текст: повідомлення `JSON.parse` цитує уривок файла, а файл може нести секрет.
     throw new Error('deploy.json: не JSON');
