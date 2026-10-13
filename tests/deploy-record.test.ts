@@ -1,5 +1,6 @@
 import {
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -10,7 +11,6 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   readDeployRecord,
-  validateDeployRecord,
   writeDeployRecord,
 } from '../packages/cli/src/deploy-record.mjs';
 
@@ -34,6 +34,12 @@ const tmp = () => {
   roots.push(dir);
   return dir;
 };
+// Валідатор не експортується: перевіряємо його через єдиний вхід запису.
+const validateDeployRecord = (rec: unknown) => {
+  const root = tmp();
+  writeDeployRecord(root, rec);
+  return readDeployRecord(root);
+};
 afterAll(() => {
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
 });
@@ -54,7 +60,7 @@ describe('валідатор deploy.json', () => {
 
   it('імʼя ресурсу зі словом secret — не секрет: "secret-shop" приймається', () => {
     expect(
-      validateDeployRecord({ ...record(), bucket: 'secret-shop' }).bucket,
+      validateDeployRecord({ ...record(), bucket: 'secret-shop' })!.bucket,
     ).toBe('secret-shop');
   });
 
@@ -89,6 +95,42 @@ describe('валідатор deploy.json', () => {
     expect(() => validateDeployRecord({ ...record(), ...patch })).toThrow();
   });
 
+  it('невідоме поле: відмова з НАЗВОЮ поля, без значення', () => {
+    const error = (() => {
+      try {
+        validateDeployRecord({ ...record(), apiToken: 'sekret-value' });
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(error!.message).toContain('apiToken');
+    expect(error!.message).not.toContain('sekret-value');
+  });
+
+  it('userinfo у БУДЬ-ЯКОМУ рядковому URL-полі → відмова з назвою поля', () => {
+    for (const patch of [
+      { bucket: 'https://u:p@s3.example.com/b' },
+      { domain: 'https://u:p@shop.example.com' },
+      { dokploy: { ...record().dokploy, projectId: 'postgres://u:p@h/db' } },
+    ])
+      expect(() => validateDeployRecord({ ...record(), ...patch })).toThrow(
+        /userinfo/,
+      );
+  });
+
+  it('createdAt: лише повний ISO-8601 — "2026" і дата без часу відхиляються', () => {
+    for (const createdAt of ['2026', '2026-10-13', '13 Oct 2026'])
+      expect(() => validateDeployRecord({ ...record(), createdAt })).toThrow(
+        /createdAt/,
+      );
+    expect(
+      validateDeployRecord({
+        ...record(),
+        createdAt: '2026-10-13T10:00:00+03:00',
+      }),
+    ).toBeTruthy();
+  });
+
   it('відсутнє поле → відмова; не обʼєкт → відмова', () => {
     const rest: Partial<ReturnType<typeof record>> = record();
     delete rest.bucket;
@@ -106,6 +148,19 @@ describe('читання й запис', () => {
     expect(readFileSync(join(root, '.simplycms/deploy.json'), 'utf8')).toMatch(
       /\n$/,
     );
+  });
+
+  it('запис атомарний: після успіху й відмови в теці немає tmp, старий файл не змінюється', () => {
+    const root = tmp();
+    writeDeployRecord(root, record());
+    const before = readFileSync(join(root, '.simplycms/deploy.json'), 'utf8');
+    expect(() =>
+      writeDeployRecord(root, { ...record(), bucket: '' }),
+    ).toThrow();
+    expect(readFileSync(join(root, '.simplycms/deploy.json'), 'utf8')).toBe(
+      before,
+    );
+    expect(readdirSync(join(root, '.simplycms'))).toEqual(['deploy.json']);
   });
 
   it('невалідний запис на диск не потрапляє', () => {

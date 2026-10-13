@@ -1,10 +1,8 @@
 // Спільний дедлайн `status`: усі асинхронні кроки гоняться з одним таймером, а крок,
 // що кинув чи не вклався, стає записом `unknown`, а не зникає.
+import { reason } from './online-state-checks.mjs';
 
 export const TIMED_OUT = Symbol('timed-out');
-
-export const reason = (error) =>
-  error instanceof Error ? error.message : String(error);
 
 /** Один спільний дедлайн на всі асинхронні кроки; таймер не тримає процес. */
 export function createDeadline(ms) {

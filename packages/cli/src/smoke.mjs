@@ -75,6 +75,7 @@ export async function runSmoke(base, fetchImpl = fetch) {
         return checkAdminRedirect({
           status: res.status,
           location: res.headers.get('location'),
+          base,
         });
       },
     ],

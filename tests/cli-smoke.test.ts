@@ -132,11 +132,16 @@ describe('чисті рішення smoke', () => {
   });
 
   it('checkAdminRedirect: потрібен редирект із Location', () => {
-    expect(checkAdminRedirect({ status: 302, location: '/auth' }).ok).toBe(
-      true,
-    );
-    expect(checkAdminRedirect({ status: 302, location: null }).ok).toBe(false);
-    expect(checkAdminRedirect({ status: 200, location: null }).ok).toBe(false);
+    const base = new URL('https://shop.example.com');
+    const check = (status: number, location: string | null) =>
+      checkAdminRedirect({ status, location, base }).ok;
+    expect(check(302, '/auth')).toBe(true);
+    expect(check(307, 'https://shop.example.com/auth')).toBe(true);
+    expect(check(302, null)).toBe(false);
+    expect(check(200, null)).toBe(false);
+    // 308 /admin → /admin/ — не вхід, а зламаний guard чи проксі.
+    expect(check(308, '/admin/')).toBe(false);
+    expect(check(302, 'https://evil.example.org/auth')).toBe(false);
   });
 
   it('checkBrotli, checkRobots, findEntryScript', () => {

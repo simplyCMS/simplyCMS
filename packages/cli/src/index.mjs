@@ -9,6 +9,7 @@ const COMMANDS = {
   doctor: () => import('./doctor.mjs'),
   status: () => import('./status.mjs'),
   smoke: () => import('./smoke.mjs'),
+  'deploy:record': () => import('./deploy-record-cli.mjs'),
   add: () => import('./add.mjs'),
   create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
@@ -33,6 +34,10 @@ const HELP = `simplycms — CLI обслуговування магазину Si
               онлайн-частина: БД, власник, профіль, листи; у етапі deployed ще й домен)
   smoke     Живий смоук розгорнутого магазину: smoke <url>
             (/api/health, сторінки, редирект /admin, robots, br, 413 на 3 МБ; код 1, якщо є ✗)
+  deploy:record
+            Запис розгортання .simplycms/deploy.json (без секретів) для скриптів скіла деплою:
+              deploy:record get   (друкує валідований JSON; код 3 — запису немає, 1 — невалідний)
+              deploy:record set   (JSON зі stdin; невалідне на диск не потрапляє)
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
               --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається

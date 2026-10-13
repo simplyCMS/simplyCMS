@@ -9,12 +9,8 @@ import { OFFLINE_CHECKS } from './doctor-checks.mjs';
 import { buildOfflineContext } from './doctor.mjs';
 import { extractBlockIntro, renderManagedBlock } from './managed-block.mjs';
 import { deriveStage, nextSkill, statusExitCode } from './status-stage.mjs';
-import {
-  createDeadline,
-  reason,
-  runRaced,
-  TIMED_OUT,
-} from './status-deadline.mjs';
+import { reason } from './online-state-checks.mjs';
+import { createDeadline, runRaced, TIMED_OUT } from './status-deadline.mjs';
 import { onlineTasks } from './status-online.mjs';
 import { printHuman, renderHookState } from './status-render.mjs';
 

@@ -1,13 +1,23 @@
 // Запис розгортання `.simplycms/deploy.json` — закомічений, без секретів (Е8-Б4).
 // Єдина схема: `status` по ньому визначає етап `deployed` і домен для /api/health,
 // скіл деплою його пише. Секрети (токен Dokploy, ключі S3, БД) лежать у `.env*`/Dokploy.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 
 export const DEPLOY_RECORD_PATH = '.simplycms/deploy.json';
 
 const TOP_KEYS = ['version', 'dokploy', 'domain', 'bucket', 'createdAt'];
 const DOKPLOY_KEYS = ['url', 'projectId', 'applicationId', 'postgresId'];
+// Строгий ISO-8601 з часом і поясом: `Date.parse` сам приймає і "2026", і неоднозначні рядки.
+const ISO_DATETIME =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const HOSTNAME = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i;
 
 const isRecord = (x) =>
@@ -42,15 +52,27 @@ function assertDokployUrl(value) {
     );
 }
 
+/** Облікові дані в URL (`scheme://user:pass@host`) заборонені в будь-якому рядковому полі. */
+const URL_USERINFO = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*@/i;
+
+function assertNoUserinfo(obj, where) {
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string' && URL_USERINFO.test(value))
+      throw new Error(`${where}${key}: URL з обліковими даними (userinfo)`);
+    if (isRecord(value)) assertNoUserinfo(value, `${where}${key}.`);
+  }
+}
+
 /**
  * Перевірити запис (перевірки лише форми, не слів на кшталт `secret`: імена ресурсів
  * дали б хибні спрацювання).
  * @param {unknown} rec
  * @returns {{ version: 1, dokploy: { url: string, projectId: string, applicationId: string, postgresId: string }, domain: string, bucket: string, createdAt: string }}
  */
-export function validateDeployRecord(rec) {
+function validateDeployRecord(rec) {
   if (!isRecord(rec)) throw new Error('очікується обʼєкт');
   assertKeys(rec, TOP_KEYS, 'deploy.json');
+  assertNoUserinfo(rec, '');
   if (rec.version !== 1) throw new Error('version: очікується 1');
   if (!isRecord(rec.dokploy)) throw new Error('dokploy: очікується обʼєкт');
   assertKeys(rec.dokploy, DOKPLOY_KEYS, 'dokploy');
@@ -61,7 +83,11 @@ export function validateDeployRecord(rec) {
   if (!nonEmpty(rec.domain) || !HOSTNAME.test(rec.domain))
     throw new Error('domain: очікується імʼя хоста без схеми й шляху');
   if (!nonEmpty(rec.bucket)) throw new Error('bucket: порожнє');
-  if (!nonEmpty(rec.createdAt) || Number.isNaN(Date.parse(rec.createdAt)))
+  if (
+    !nonEmpty(rec.createdAt) ||
+    !ISO_DATETIME.test(rec.createdAt) ||
+    Number.isNaN(Date.parse(rec.createdAt))
+  )
     throw new Error('createdAt: очікується дата ISO');
   return rec;
 }
@@ -76,10 +102,20 @@ export function readDeployRecord(storeRoot) {
   return validateDeployRecord(JSON.parse(readFileSync(path, 'utf8')));
 }
 
-/** Записати після валідації; невалідне на диск не потрапляє. */
+/**
+ * Записати після валідації. Атомарно: tmp у тій самій теці + rename, тож зупинений процес
+ * не лишає половини файла; невалідне на диск (навіть у tmp) не потрапляє.
+ */
 export function writeDeployRecord(storeRoot, rec) {
   const valid = validateDeployRecord(rec);
   const path = join(storeRoot, DEPLOY_RECORD_PATH);
+  const tmp = `${path}.${process.pid}.tmp`;
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(valid, null, 2)}\n`);
+  try {
+    writeFileSync(tmp, `${JSON.stringify(valid, null, 2)}\n`);
+    renameSync(tmp, path);
+  } catch (error) {
+    rmSync(tmp, { force: true });
+    throw error;
+  }
 }

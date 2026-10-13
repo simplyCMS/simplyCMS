@@ -1,4 +1,6 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { runOnlineChecks } from '../packages/cli/src/doctor-db-checks.mjs';
 import { collectStatus } from '../packages/cli/src/status.mjs';
 import {
@@ -82,6 +84,23 @@ describe('наповнення магазину (спільне для status і
     expect(c['migrations-journal']!.status).toBe('ok');
   });
 
+  it('журналу немає (null) → store-state = skip «база без журналу», без другої помилки', async () => {
+    const c = byId(
+      await runOnlineChecks(ctx, {
+        probe: async () => {},
+        core: {
+          ...core(new Error('relation does not exist')),
+          readJournal: async () => null,
+        },
+      }),
+    );
+    expect(c['migrations-journal']!.status).toBe('error');
+    expect(c['store-state']).toMatchObject({
+      status: 'skip',
+      details: 'база без журналу',
+    });
+  });
+
   it('БД недоступна → store-state = skip', async () => {
     const c = byId(
       await runOnlineChecks(ctx, {
@@ -148,6 +167,40 @@ describe('onlineTasks і collectStatus', () => {
   afterAll(async () => {
     const { rmSync } = await import('node:fs');
     for (const dir of roots) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('collectStatus → onlineTasks → healthCheck за справжнім deploy.json (fetch підмінено глобально)', async () => {
+    const root = await store('so-link');
+    mkdirSync(join(root, '.simplycms'));
+    writeFileSync(
+      join(root, '.simplycms/deploy.json'),
+      JSON.stringify({
+        version: 1,
+        dokploy: {
+          url: 'https://dokploy.example.com',
+          projectId: 'p',
+          applicationId: 'a',
+          postgresId: 'pg',
+        },
+        domain: 'shop.example.com',
+        bucket: 'b',
+        createdAt: '2026-10-13T10:00:00.000Z',
+      }),
+    );
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', async (url: unknown) => {
+      urls.push(String(url));
+      return new Response(JSON.stringify({ status: 'healthy', build: 'b-7' }));
+    });
+    try {
+      const report = await collectStatus(root, { checks: [] });
+      expect(urls).toEqual(['https://shop.example.com/api/health']);
+      expect(report.stage).toBe('deployed');
+      const health = report.checks.find((c: Row) => c.id === 'domain-health');
+      expect(health).toMatchObject({ status: 'ok', details: 'збірка b-7' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('онлайн-завдання, що не вклалось у бюджет, → unknown, решта працює, код 1', async () => {

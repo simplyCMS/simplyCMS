@@ -164,6 +164,7 @@ export async function toolPkgSmoke() {
       'doctor',
       'status',
       'smoke',
+      'deploy:record',
       'add',
       'create plugin',
       'create theme',

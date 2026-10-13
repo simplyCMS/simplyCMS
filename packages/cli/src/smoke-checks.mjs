@@ -26,12 +26,32 @@ export function checkPage({ status }) {
   return verdict(status === 200, `HTTP ${status}`);
 }
 
-/** @param {{ status: number, location: string | null }} res */
-export function checkAdminRedirect({ status, location }) {
+/** Сторінка входу: guard `/admin` у `src/start.ts` шле неавторизованого на `/auth`. */
+const LOGIN_PATH = '/auth';
+
+/**
+ * Редирект `/admin` має вести на вхід цього ж магазину. Будь-який інший 3xx
+ * (`308 → /admin/`, чужий хост) означає зламаний guard або проксі.
+ * @param {{ status: number, location: string | null, base: URL }} res
+ */
+export function checkAdminRedirect({ status, location, base }) {
   if (![301, 302, 303, 307, 308].includes(status))
     return verdict(false, `HTTP ${status}, очікувався редирект на вхід`);
   if (!location) return verdict(false, `HTTP ${status} без Location`);
-  return verdict(true, `HTTP ${status} → ${location}`);
+  let target;
+  try {
+    target = new URL(location, base);
+  } catch {
+    return verdict(false, `HTTP ${status}, Location не адреса`);
+  }
+  if (target.origin !== base.origin)
+    return verdict(false, `редирект на інший хост (${target.origin})`);
+  if (target.pathname !== LOGIN_PATH)
+    return verdict(
+      false,
+      `редирект на ${target.pathname}, очікувався ${LOGIN_PATH}`,
+    );
+  return verdict(true, `HTTP ${status} → ${target.pathname}`);
 }
 
 /** @param {{ status: number, text: string }} res */

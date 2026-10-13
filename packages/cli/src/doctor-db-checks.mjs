@@ -101,9 +101,16 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
     (async () => {
       try {
         const files = core.listMigrationFiles(storeMigrationsDir(storeRoot));
-        return journalCheck(await core.readJournal(url, options), files, core);
+        const rows = await core.readJournal(url, options);
+        return {
+          check: journalCheck(rows, files, core),
+          noJournal: rows === null,
+        };
       } catch (error) {
-        return check('migrations-journal', JOURNAL, 'error', reason(error));
+        return {
+          check: check('migrations-journal', JOURNAL, 'error', reason(error)),
+          noJournal: false,
+        };
       }
     })(),
     core
@@ -113,5 +120,9 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
       ]),
     clusterCheck(url, core, CONNECT_TIMEOUT_MS),
   ]);
-  return [reachable, journal, ...facts, cluster];
+  // Без журналу немає й схеми: факти впали б тим самим, друга помилка лише шумить.
+  const state = journal.noJournal
+    ? [check('store-state', FACTS, 'skip', 'база без журналу')]
+    : facts;
+  return [reachable, journal.check, ...state, cluster];
 }

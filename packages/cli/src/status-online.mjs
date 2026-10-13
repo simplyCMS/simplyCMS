@@ -50,17 +50,15 @@ export async function healthCheck(domain, fetchImpl = fetch) {
  * кожне гоняється з дедлайном команди окремо, тож повільна БД не ховає відповідь домену.
  * Домен — лише в етапі `deployed` (є запис розгортання).
  * @param {{ storeRoot: string, env: Record<string, string>, deployRecord: { domain: string } | null }} ctx
- * @param {{ runDb?: typeof runOnlineChecks, fetchImpl?: typeof fetch }} [deps] шви для тестів
  */
-export function onlineTasks(
-  { storeRoot, env, deployRecord },
-  { runDb = runOnlineChecks, fetchImpl } = {},
-) {
-  const tasks = [{ label: 'стан БД', run: () => runDb({ storeRoot, env }) }];
+export function onlineTasks({ storeRoot, env, deployRecord }) {
+  const tasks = [
+    { label: 'стан БД', run: () => runOnlineChecks({ storeRoot, env }) },
+  ];
   if (deployRecord)
     tasks.push({
       label: 'домен (/api/health)',
-      run: () => healthCheck(deployRecord.domain, fetchImpl),
+      run: () => healthCheck(deployRecord.domain),
     });
   return tasks;
 }

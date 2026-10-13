@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { applyMigrations, readStoreFacts } from 'simplycms/migrate';
 import { resolveHarness } from '../up.mjs';
 import { queryRows, withUser } from '../apply.mjs';
+import { withRuntimeAdminRead } from '../../../src/migrate/runtime-read';
 import { CANON_DIR, freshDb } from './fixtures/migrate';
 
 describe('readStoreFacts', () => {
@@ -87,6 +88,25 @@ describe('readStoreFacts', () => {
       );
       const facts = await readStoreFacts(withUser(db.url, 'app_runtime'));
       expect(facts.profile).toBeNull();
+    } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
+  // Канал читання — лише читання: app_admin має право запису, тож єдина гарантія
+  // read-only — `begin read only` до `set local role`.
+  it('канал withRuntimeAdminRead: UPDATE/INSERT → 25006 «read-only transaction»', async () => {
+    const db = await freshDb(harness.url);
+    try {
+      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      const runtime = withUser(db.url, 'app_runtime');
+      for (const sql of [
+        "update public.system_settings set description = 'x'",
+        "insert into public.mail_outbox (id, kind, message) values ('30000000-0000-4000-8000-0000000000aa', 'k', '{}')",
+      ])
+        await expect(
+          withRuntimeAdminRead(runtime, {}, (client) => client.query(sql)),
+        ).rejects.toMatchObject({ code: '25006' });
     } finally {
       await db.drop();
     }

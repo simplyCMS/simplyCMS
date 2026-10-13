@@ -38,8 +38,8 @@ const DEPLOY_RECORD = {
     applicationId: 'a',
     postgresId: 'pg',
   },
-  // `.invalid` (RFC 6761) не резолвиться: тест етапу не ходить у справжню мережу.
-  domain: 'shop.invalid',
+  // `localhost`: перевірка домену не виходить за межі машини (порт 443 закритий → error).
+  domain: 'localhost',
   bucket: 'shop-media',
   createdAt: '2026-10-13T10:00:00.000Z',
 };
