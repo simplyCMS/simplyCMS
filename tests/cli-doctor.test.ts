@@ -424,6 +424,8 @@ describe('cli doctor (оффлайн)', () => {
     expect(noHook.status).toBe('warn');
     expect(noHook.details).toContain('SessionStart');
     expect(noHook.details).toContain('pnpm simplycms update');
+    // Бракує лише запису — шим на місці, тож `--write` не потрібен.
+    expect(noHook.details).not.toContain('update --write');
 
     writeFileSync(settings, scaffolded);
     const ok = checkAgentFiles({ storeRoot: store });

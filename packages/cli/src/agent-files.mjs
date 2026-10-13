@@ -4,7 +4,7 @@
 // блок має відповідати версії ядра магазину, а не версії CLI.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ensureSessionStartHook } from './hook-entry.mjs';
+import { HOOK_SCRIPT, ensureSessionStartHook } from './hook-entry.mjs';
 import { applyManagedBlock, renderManagedBlock } from './managed-block.mjs';
 
 const AGENTS_FILE = 'AGENTS.md';
@@ -33,6 +33,7 @@ export const readCoreIntro = (storeRoot) =>
  *   block: { status: 'ok' | 'drift' | 'missing' | 'damaged'; next?: string } | null;
  *   claude: { status: 'ok' | 'no-import' } | { status: 'missing'; next: string } | null;
  *   hook: { status: 'ok' | 'added' | 'updated'; next: string } | { status: 'invalid'; error: string };
+ *   shimExists: boolean;
  * }}
  */
 export function inspectAgentFiles(storeRoot) {
@@ -65,11 +66,32 @@ export function inspectAgentFiles(storeRoot) {
   } catch (error) {
     hook = { status: 'invalid', error: error.message };
   }
-  return { block, claude, hook };
+  return {
+    block,
+    claude,
+    hook,
+    shimExists: existsSync(join(storeRoot, HOOK_SCRIPT)),
+  };
 }
 
+/** Запис хука є, а шима немає: Claude Code на кожному старті сесії отримує помилку запуску. */
+export const isShimMissing = ({ hook, shimExists }) =>
+  !shimExists && (hook?.status === 'ok' || hook?.status === 'updated');
+
+/**
+ * Інваріант «запис хука ⇒ шим» (одне місце): запис пишеться, лише якщо шим уже є або
+ * цей самий виклик його допише (`update --write` несе host-файли). Інакше — відкладено.
+ * @param {ReturnType<typeof inspectAgentFiles>} state
+ * @param {boolean} shimComing цей виклик допише шим
+ */
+export const isHookDeferred = ({ hook, shimExists }, shimComing) =>
+  (hook.status === 'added' || hook.status === 'updated') &&
+  !shimExists &&
+  !shimComing;
+
 /** Розбіжності файлів агента людською мовою (`--check`, doctor №18; частковий стан — теж). */
-export function describeAgentDrift({ block, claude, hook }) {
+export function describeAgentDrift(state) {
+  const { block, claude, hook } = state;
   const problems = [];
   if (block?.status === 'drift')
     problems.push('керований блок AGENTS.md розійшовся з версією ядра');
@@ -87,6 +109,8 @@ export function describeAgentDrift({ block, claude, hook }) {
     problems.push('немає запису хука SessionStart у .claude/settings.json');
   if (hook?.status === 'updated')
     problems.push('запис хука SessionStart у .claude/settings.json застарів');
+  if (isShimMissing(state))
+    problems.push(`запис хука є, шиму ${HOOK_SCRIPT} немає`);
   return problems;
 }
 
@@ -95,10 +119,13 @@ export function describeAgentDrift({ block, claude, hook }) {
  * `CLAUDE.md` без імпорту й невалідний JSON не пишуться — рішення за власником;
  * відсутній `CLAUDE.md` створюється (наявний не перезаписується ніколи).
  * @param {string} storeRoot
+ * Запис хука підпорядковується `isHookDeferred`.
  * @param {ReturnType<typeof inspectAgentFiles>} state
+ * @param {boolean} shimComing цей виклик допише шим
  * @returns {string[]} записані файли
  */
-export function writeAgentFiles(storeRoot, { block, claude, hook }) {
+export function writeAgentFiles(storeRoot, state, shimComing) {
+  const { block, claude, hook } = state;
   const written = [];
   if (claude?.status === 'missing') {
     writeFileSync(join(storeRoot, CLAUDE_FILE), claude.next);
@@ -108,7 +135,10 @@ export function writeAgentFiles(storeRoot, { block, claude, hook }) {
     writeFileSync(join(storeRoot, AGENTS_FILE), block.next);
     written.push(AGENTS_FILE);
   }
-  if (hook.status === 'added' || hook.status === 'updated') {
+  if (
+    (hook.status === 'added' || hook.status === 'updated') &&
+    !isHookDeferred(state, shimComing)
+  ) {
     const path = join(storeRoot, SETTINGS_FILE);
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, hook.next);
@@ -118,11 +148,19 @@ export function writeAgentFiles(storeRoot, { block, claude, hook }) {
 }
 
 /**
- * Рекомендовані дозволи Claude Code з ядра магазину; ядро без них → null.
+ * Рекомендовані дозволи Claude Code з ядра магазину рядками для звіту doctor №18;
+ * ядро без них → [].
  * @param {string} storeRoot
- * @returns {{ allow: string[]; ask: string[] } | null}
+ * @returns {string[]}
  */
-export function readRecommendedPermissions(storeRoot) {
+export function describeRecommendedPermissions(storeRoot) {
   const text = readOrNull(join(coreAgentDir(storeRoot), 'permissions.json'));
-  return text === null ? null : JSON.parse(text).permissions;
+  if (text === null) return [];
+  const { allow, ask } = JSON.parse(text).permissions;
+  return [
+    'Рекомендовані дозволи Claude Code — читання вільно, зміни через підтвердження ' +
+      '(update їх не зливає; перенеси в .claude/settings.json → permissions):',
+    `allow: ${allow.join(', ')}`,
+    `ask: ${ask.join(', ')}`,
+  ];
 }

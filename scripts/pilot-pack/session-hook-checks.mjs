@@ -9,6 +9,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import { envWithoutNodePath } from './env-without-node-path.mjs';
 import {
   BLOCK_BEGIN,
   BLOCK_END,
@@ -21,16 +22,12 @@ const AGENT_FILES = ['AGENTS.md', 'CLAUDE.md', '.claude/settings.json', SHIM];
 
 /**
  * Запуск шима як його запускає Claude Code: `node <шим>` у корені магазину.
- * NODE_PATH вирізається — pnpm ставить його на дерево монорепо, і «порожній»
- * скаффолд бачив би чужий CLI (у магазині користувача цієї змінної немає).
+ * Без NODE_PATH: «порожній» скаффолд інакше бачив би CLI монорепо.
  */
 function runShim(storeDir) {
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => name !== 'NODE_PATH'),
-  );
   const run = spawnSync('node', [join(storeDir, SHIM)], {
     cwd: storeDir,
-    env: { ...env, CLAUDE_PROJECT_DIR: storeDir },
+    env: { ...envWithoutNodePath(), CLAUDE_PROJECT_DIR: storeDir },
     encoding: 'utf8',
     timeout: 30_000,
   });

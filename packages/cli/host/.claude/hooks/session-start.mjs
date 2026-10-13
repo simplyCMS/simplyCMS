@@ -16,6 +16,8 @@ import { dirname, join } from 'node:path';
 
 const TIMEOUT_MS = 8000;
 
+const reason = (error) => error?.message ?? String(error);
+
 const unknown = (why) =>
   `УВАГА: стан невідомий (${why}). Виконай \`pnpm simplycms status\`.`;
 const NOT_INSTALLED =
@@ -59,14 +61,18 @@ function buildContext() {
     cli = resolveCli(root);
   } catch (error) {
     if (error?.code === 'MODULE_NOT_FOUND') return NOT_INSTALLED;
-    return unknown(error.message);
+    return unknown(reason(error));
   }
   if (cli === null) return unknown('у CLI немає bin.simplycms');
   const { run, text } = runStatus(root, cli);
   if (run.error?.code === 'ETIMEDOUT')
     return unknown(`таймаут ${TIMEOUT_MS / 1000} с`);
   if (run.error) return unknown(run.error.message);
-  // 0 — гаразд, 3 — є що робити; усе інше (Е8-О8) — стан не встановлено.
+  // 0 — гаразд, 3 — є що робити: текст як є. 1 — частину перевірок не виконано, але
+  // status усе одно друкує повний вступ і стан — ховати його було б гірше.
+  // Інші коди (Е8-О8) — стан не встановлено.
+  if (run.status === 1 && text !== '')
+    return `УВАГА: частину стану не перевірено.\n\n${text}`;
   if (run.status !== 0 && run.status !== 3)
     return unknown(`код виходу ${run.status ?? run.signal}`);
   return text === '' ? unknown('порожній вивід status') : text;
@@ -76,7 +82,7 @@ let additionalContext;
 try {
   additionalContext = buildContext();
 } catch (error) {
-  additionalContext = unknown(error.message);
+  additionalContext = unknown(reason(error));
 }
 process.stdout.write(
   `${JSON.stringify({

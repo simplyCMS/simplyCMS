@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -12,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { ensureSessionStartHook } from '../packages/cli/src/hook-entry.mjs';
+import { envWithoutNodePath } from '../scripts/pilot-pack/env-without-node-path.mjs';
 import { CLI_INDEX, STORE_ENV, scaffoldFakeStore } from './lib/fake-core-store';
 
 // Шим хука старту сесії (Б §3.2, Task 20): без логіки, завжди код 0, друкує JSON
@@ -48,12 +50,9 @@ function makeStore(cli?: { bin: string; files: Record<string, string> }) {
 function runShim(root: string) {
   const started = Date.now();
   // pnpm підставляє NODE_PATH на дерево монорепо — з ним «порожній» магазин бачив би чужий CLI.
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => name !== 'NODE_PATH'),
-  );
   const r = spawnSync('node', [join(root, '.claude/hooks/session-start.mjs')], {
     cwd: root,
-    env: { ...env, CLAUDE_PROJECT_DIR: root },
+    env: { ...envWithoutNodePath(), CLAUDE_PROJECT_DIR: root },
     encoding: 'utf8',
     timeout: 30_000,
   });
@@ -129,6 +128,15 @@ describe('шим session-start: контракт виходу', () => {
     expect(r.context).toContain('СТАН status --hook');
   });
 
+  it('CLI з кодом 1 і текстом → текст у additionalContext з префіксом УВАГА', () => {
+    const r = runShim(
+      makeStore(cliThat("console.log('СТАН З ПРОПУСКОМ'); process.exit(1);")),
+    );
+    expect(r.code).toBe(0);
+    expect(r.context).toMatch(/^УВАГА: частину стану не перевірено\./);
+    expect(r.context).toContain('СТАН З ПРОПУСКОМ');
+  });
+
   it('інша розкладка CLI (bin → dist/cli.mjs, src/ немає) → знайдено через package.json', () => {
     const r = runShim(
       makeStore({
@@ -169,6 +177,20 @@ describe('шим як host-файл і запис у settings.json шаблон�
     expect(readFileSync(path, 'utf8')).toBe('// старий шим\n');
     expect(cli(store, '--write').status).toBe(0);
     expect(readFileSync(path, 'utf8')).toBe(readFileSync(SHIM, 'utf8'));
+  });
+
+  it('наявний магазин без .claude: update без прапорців не пише запис без шиму, а --write — обидва', async () => {
+    const store = await scaffoldFakeStore('shim-defer', roots);
+    rmSync(join(store, '.claude'), { recursive: true });
+    const plain = cli(store);
+    expect(existsSync(join(store, '.claude'))).toBe(false);
+    expect(plain.stdout).toContain('update --write');
+    expect(plain.stdout).toContain('разом із шимом');
+    expect(cli(store, '--write').status).toBe(0);
+    expect(existsSync(join(store, '.claude/settings.json'))).toBe(true);
+    expect(existsSync(join(store, '.claude/hooks/session-start.mjs'))).toBe(
+      true,
+    );
   });
 
   it('магазин без запису і без шиму: один update --write дає і запис, і шим', async () => {

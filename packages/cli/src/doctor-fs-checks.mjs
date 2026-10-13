@@ -3,11 +3,11 @@
 // живуть у host-drift.mjs, db-diff.mjs, skill-links.mjs і agent-files.mjs — тут
 // лише мапінг їхніх результатів на Check, щоб реалізація кожного була одна.
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   describeAgentDrift,
+  describeRecommendedPermissions,
   inspectAgentFiles,
-  readRecommendedPermissions,
+  isShimMissing,
 } from './agent-files.mjs';
 import {
   compareMigrationsMulti,
@@ -15,7 +15,6 @@ import {
   pluginMigrationSources,
   storeMigrationsDir,
 } from './db-diff.mjs';
-import { HOOK_SCRIPT } from './hook-entry.mjs';
 import { findHostDrift } from './host-drift.mjs';
 import { inspectSkillLinks } from './skill-links.mjs';
 
@@ -137,23 +136,11 @@ export function checkAgentFiles({ storeRoot }) {
     ...(state.hook.status === 'invalid' ? [state.hook.error] : []),
     ...describeAgentDrift(state),
   ];
-  // Запис хука без шима — Claude Code на кожному старті сесії отримує помилку запуску; шим їде host-файлом, тож
-  // його дописує лише `update --write` (сам `update` host-файли не чіпає).
-  const hookPresent =
-    state.hook.status === 'ok' || state.hook.status === 'updated';
-  if (hookPresent && !existsSync(join(storeRoot, HOOK_SCRIPT)))
-    problems.push(`запис хука є, шиму ${HOOK_SCRIPT} немає`);
-  const permissions = readRecommendedPermissions(storeRoot);
-  const lines = permissions
-    ? [
-        'Рекомендовані дозволи Claude Code — читання вільно, зміни через підтвердження ' +
-          '(update їх не зливає; перенеси в .claude/settings.json → permissions):',
-        `allow: ${permissions.allow.join(', ')}`,
-        `ask: ${permissions.ask.join(', ')}`,
-      ]
-    : [];
+  const lines = describeRecommendedPermissions(storeRoot);
   if (problems.length === 0)
     return { id, title, status: 'ok', details: lines.join('\n') || undefined };
-  const fix = `${problems.join('; ')}. Полагодь: pnpm simplycms update --write`;
+  // Шим — host-файл, його пише лише `--write`; решту доглядає й звичайний `update`.
+  const flag = isShimMissing(state) ? ' --write' : '';
+  const fix = `${problems.join('; ')}. Полагодь: pnpm simplycms update${flag}`;
   return { id, title, status: 'warn', details: [fix, ...lines].join('\n') };
 }

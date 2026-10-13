@@ -44,8 +44,9 @@ export async function runGates(opts) {
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
 
-  // Gate CLI і Gate TOOL не залежать ні від БД, ні від скретча — тому в
-  // гілці, яка йде завжди, включно з `--pack-only`.
+  // Gate CLI і tarball-частина Gate TOOL не потребують ні БД, ні скретча; крок шима
+  // використовує встановлений скретч, але БД теж не потребує — тож гілка йде завжди,
+  // включно з `--pack-only`.
   step('Gate CLI — tarball скаффолдера');
   results.push(['CLI', createPkgSmoke()]);
 

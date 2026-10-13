@@ -7,6 +7,7 @@ import { readStoreManifest } from './context.mjs';
 import {
   describeAgentDrift,
   inspectAgentFiles,
+  isHookDeferred,
   writeAgentFiles,
 } from './agent-files.mjs';
 import {
@@ -14,6 +15,7 @@ import {
   findHostDrift,
   writeHostFiles,
 } from './host-drift.mjs';
+import { HOOK_SCRIPT } from './hook-entry.mjs';
 import { MANUAL_BLOCK_STEPS } from './managed-block.mjs';
 import { pgUpdateHint } from './pg-peer.mjs';
 import { inspectSkillLinks, syncSkillLinks } from './skill-links.mjs';
@@ -33,7 +35,7 @@ function linkProblems(storeRoot, check) {
 }
 
 /** Файли агента: запис (крім `--check`); те, що вирішує власник, — лише інструкція. */
-function agentStep(storeRoot, check) {
+function agentStep(storeRoot, check, shimComing) {
   const state = inspectAgentFiles(storeRoot);
   const failed = state.hook.status === 'invalid';
   if (failed) say.error(state.hook.error);
@@ -47,7 +49,12 @@ function agentStep(storeRoot, check) {
       'Керований блок AGENTS.md: update нічого не записав',
     );
   if (check) return { failed, problems: describeAgentDrift(state) };
-  const written = writeAgentFiles(storeRoot, state);
+  if (isHookDeferred(state, shimComing))
+    say.info(
+      'Запис хука додасть `pnpm simplycms update --write` разом із шимом ' +
+        '.claude/hooks/session-start.mjs — без шима хук падав би на кожному старті сесії.',
+    );
+  const written = writeAgentFiles(storeRoot, state, shimComing);
   if (written.length > 0)
     say.success(`Оновлено файли агента: ${written.join(', ')}`);
   // CLAUDE.md власника update не переписує — лише називає, чого бракує.
@@ -92,7 +99,9 @@ export function reconcileStore(storeRoot, { check, write }) {
     ]);
     exitCode = 1;
   }
-  const agent = agentStep(storeRoot, check);
+  // Шим їде host-файлом: його допише лише цей самий `--write`.
+  const shimComing = write && drifted.includes(HOOK_SCRIPT);
+  const agent = agentStep(storeRoot, check, shimComing);
   problems.push(...agent.problems);
   if (problems.length > 0) {
     say.error(`Розбіжності: ${problems.join('; ')}`);

@@ -30,6 +30,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { envWithoutNodePath } from './env-without-node-path.mjs';
 import { doctorSmoke } from './tool-doctor-smoke.mjs';
 import { updateReexecSmoke } from './tool-update-reexec.mjs';
 
@@ -237,13 +238,8 @@ export async function toolPkgSmoke() {
  * @returns {{ ok: boolean; details: string[] }}
  */
 function conformanceSmoke(pkgDir, storeDir) {
-  // 🔴 NODE_PATH вирізається: pnpm ставить його на `.pnpm/node_modules`
-  // монорепо, і з ним `jsdom`/`vite` резолвляться навіть у голому скаффолді —
-  // смоук був би зелений на брехні (у магазині користувача NODE_PATH немає).
-  // Той самий прийом, що вирізання ключів env магазину в doctor-кроці.
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => name !== 'NODE_PATH'),
-  );
+  // 🔴 Без NODE_PATH (див. env-without-node-path.mjs): інакше `jsdom` резолвився б із монорепо.
+  const env = envWithoutNodePath();
   const run = spawnSync(
     'node',
     [join(pkgDir, 'src/index.mjs'), 'theme:conformance', 'default'],
