@@ -24,17 +24,6 @@ export async function promptMissing(options) {
       }),
     );
   }
-  if (!result.databaseUrl) {
-    result.databaseUrl =
-      (await ask(() =>
-        text({
-          message: 'Підключення до Postgres, DATABASE_URL (Enter — пропустити)',
-          placeholder:
-            'postgresql://app_runtime:пароль@localhost:5432/postgres',
-          defaultValue: '',
-        }),
-      )) || undefined;
-  }
   if (result.install) {
     result.install = await ask(() =>
       confirm({ message: 'Встановити залежності зараз?', initialValue: true }),

@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { distTagFor } from './dist-tag.mjs';
 
-const CREATE_README = 'packages/create-simplycms-store/README.md';
+export const CREATE_README = 'packages/create-simplycms-store/README.md';
 // Лише команда створення: тег стоїть одразу після імені пакета.
-const CREATE_CMD_RE = /pnpm create simplycms-store(?:@[\w.-]+)?(?=[\s`.,)])/g;
+const CREATE_CMD_RE = /pnpm create simplycms-store(?:@[\w.-]+)?(?![\w@-])/g;
 
 /**
  * Проставити в тексті README тег команди `pnpm create simplycms-store` за
@@ -19,8 +19,8 @@ export function retagCreateReadme(text, version) {
 }
 
 /** Крок бампу: README пакета на npm іде за версією, а не за пам'яттю релізера. */
-export function bumpCreateReadmeTag(version) {
-  const source = readFileSync(CREATE_README, 'utf8');
+export function bumpCreateReadmeTag(version, path = CREATE_README) {
+  const source = readFileSync(path, 'utf8');
   const next = retagCreateReadme(source, version);
-  if (next !== source) writeFileSync(CREATE_README, next);
+  if (next !== source) writeFileSync(path, next);
 }

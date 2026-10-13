@@ -48,6 +48,12 @@ export function checkAgentScaffold(storeDir) {
   for (const file of AGENT_FILES)
     if (!existsSync(join(storeDir, file)))
       return { ok: false, details: [`✗ скаффолд без ${file}`] };
+  // Без --database-url скаффолд не пише env: далі його налаштовує агент.
+  if (existsSync(join(storeDir, '.env.local')))
+    return {
+      ok: false,
+      details: ['✗ скаффолд без --database-url має .env.local'],
+    };
   const agents = readFileSync(join(storeDir, 'AGENTS.md'), 'utf8');
   if (!agents.includes(BLOCK_BEGIN) || !agents.includes(BLOCK_END))
     return { ok: false, details: ['✗ в AGENTS.md немає керованого блоку'] };

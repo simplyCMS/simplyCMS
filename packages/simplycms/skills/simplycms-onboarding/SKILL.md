@@ -14,7 +14,9 @@ description: Use when the user wants to create, set up or deploy a SimplyCMS sto
 pnpm simplycms status --json
 ```
 
-Читай `stage` (`not-created` | `local` | `deployed`), `next.skill`, `checks`, `unknown`.
+Читай `stage` (`not-created` | `not-configured` | `local` | `deployed`), `next.skill`, `checks`, `unknown`.
+`not-configured` — магазин створено, але обов'язкових env-ключів ще немає: це вхідна точка
+свіжого скаффолда (далі — «Прийом вимог»), а не поломка для діагностики.
 `next.skill` іншого скіла — передай керування йому. Незрозумілий `unknown` — спершу
 `pnpm simplycms doctor`. Продовження після перерви — зі стану: `.simplycms/deploy.json`
 (читається лише через `pnpm simplycms deploy:record get`; код 3 = запису ще немає) і `status`.

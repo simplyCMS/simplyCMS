@@ -105,6 +105,15 @@ export function checkAllowBuilds({ storeRoot }) {
 }
 
 /**
+ * Обов'язкові серверні ключі, яких немає або які порожні. Одне джерело для №5 і
+ * для етапу `not-configured` у `status`: друга реалізація «чи заданий env» розійшлась би.
+ * @param {Record<string, string | undefined>} env
+ */
+export function missingRequiredEnv(env) {
+  return REQUIRED_ENV_VARS.filter((name) => !env[name]);
+}
+
+/**
  * №5: env несе серверний контракт магазину.
  *
  * Додатково error на відомих значеннях-заглушках (`env-placeholders.mjs`).
@@ -116,7 +125,7 @@ export function checkAllowBuilds({ storeRoot }) {
  */
 export function checkEnv({ env }) {
   const title = `env: ${REQUIRED_ENV_VARS.join(' + ')}`;
-  const missing = REQUIRED_ENV_VARS.filter((name) => !env[name]);
+  const missing = missingRequiredEnv(env);
   if (missing.length > 0) {
     const details = `Не задано: ${missing.join('; ')} (process.env, .env.local або .env)`;
     return check('env', title, 'error', details);

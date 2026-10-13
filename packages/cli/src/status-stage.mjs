@@ -2,19 +2,23 @@
 // Окремо від збирання перевірок (status.mjs): ці функції без I/O, тож їх таблично
 // перевіряє тест, а Task 21 додає онлайн-дані, не чіпаючи правил.
 
-/** @typedef {'not-created' | 'local' | 'deployed'} Stage */
+/** @typedef {'not-created' | 'not-configured' | 'local' | 'deployed'} Stage */
 /** @typedef {import('./ui.mjs').Check} Check */
 /** @typedef {{ skill: string; reason: string }} Next */
 
 /**
- * Етап за слідами на диску: немає магазину → `not-created`; є магазин без запису
- * розгортання → `local`; запис `.simplycms/deploy.json` є → `deployed`.
- * @param {{ hasStoreRoot: boolean; deployJson: object | null }} input
+ * Етап за слідами на диску: немає магазину → `not-created`; запис
+ * `.simplycms/deploy.json` є → `deployed`; без запису: обов'язкові env-ключі
+ * відсутні чи порожні → `not-configured` (свіжий скаффолд), інакше → `local`.
+ * Запис розгортання важить більше за локальний env: на чистому клоні вже
+ * розгорнутого магазину `.env.local` може бракувати, але він не «не налаштований».
+ * @param {{ hasStoreRoot: boolean; deployJson: object | null; envMissing?: boolean }} input
  * @returns {Stage}
  */
-export function deriveStage({ hasStoreRoot, deployJson }) {
+export function deriveStage({ hasStoreRoot, deployJson, envMissing = false }) {
   if (!hasStoreRoot) return 'not-created';
-  return deployJson === null ? 'local' : 'deployed';
+  if (deployJson !== null) return 'deployed';
+  return envMissing ? 'not-configured' : 'local';
 }
 
 /**
@@ -28,6 +32,14 @@ export function nextSkill({ stage, checks }) {
     return {
       skill: 'simplycms-onboarding',
       reason: 'магазин ще не створено — онбординг проведе від порожньої теки',
+    };
+  // Відсутній (не невалідний) env — це ще не поломка, а початок онбордингу:
+  // діагностувати нічого, агент має налаштувати магазин. Заглушка чи битий
+  // URL лишаються error → diagnose.
+  if (stage === 'not-configured')
+    return {
+      skill: 'simplycms-onboarding',
+      reason: "обов'язкові env-ключі не задано — онбординг налаштує магазин",
     };
   const failed = checks.filter((check) => check.status === 'error');
   if (failed.length > 0)

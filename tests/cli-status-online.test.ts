@@ -234,6 +234,11 @@ describe('onlineTasks і collectStatus', () => {
 
   it('error онлайн-перевірки веде до simplycms-diagnose, код 3', async () => {
     const root = await store('so-error');
+    // env задано: без нього етап був би `not-configured` (онбординг), а не поломка.
+    writeFileSync(
+      join(root, '.env.local'),
+      'DATABASE_URL=postgresql://u:p@h/db\nBETTER_AUTH_SECRET=s3cret-value-for-test\n',
+    );
     const report = await collectStatus(root, {
       checks: [],
       online: () => [

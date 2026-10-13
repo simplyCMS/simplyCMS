@@ -5,7 +5,7 @@
 import { readCoreIntro } from './agent-files.mjs';
 import { findStoreRoot } from './context.mjs';
 import { DEPLOY_RECORD_PATH, readDeployRecord } from './deploy-record.mjs';
-import { OFFLINE_CHECKS } from './doctor-checks.mjs';
+import { missingRequiredEnv, OFFLINE_CHECKS } from './doctor-checks.mjs';
 import { buildOfflineContext } from './doctor.mjs';
 import { extractBlockIntro, renderManagedBlock } from './managed-block.mjs';
 import { deriveStage, nextSkill, statusExitCode } from './status-stage.mjs';
@@ -68,6 +68,8 @@ export async function collectStatus(
   const unknown = [];
   /** @type {import('./ui.mjs').Check[]} */
   let results = [];
+  // Без контексту (збій чи таймаут) env невідомий: не вгадуємо `not-configured`.
+  let envMissing = false;
   const deployRecord =
     storeRoot === null ? null : loadDeployRecord(storeRoot, unknown);
   if (storeRoot !== null) {
@@ -79,6 +81,7 @@ export async function collectStatus(
       if (ctx === TIMED_OUT)
         unknown.push(`контекст перевірок: не вклався у ${timeoutMs} мс`);
       else {
+        envMissing = missingRequiredEnv(ctx.env).length > 0;
         const tasks = [
           ...checks,
           ...online({ storeRoot, env: ctx.env, deployRecord }),
@@ -96,6 +99,7 @@ export async function collectStatus(
   const stage = deriveStage({
     hasStoreRoot: storeRoot !== null,
     deployJson: deployRecord,
+    envMissing,
   });
   return {
     stage,

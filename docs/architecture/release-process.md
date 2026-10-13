@@ -148,7 +148,10 @@ npm для `create-*` CLI). Наслідки для реліз-потяга:
   крок `Publish` workflow викликає `pnpm publish … --tag "$(node
   scripts/release/dist-tag.mjs --print)"` (`distTagFor`). Без цього RC став би
   `latest`, і `npm i simplycms` віддав би його як стабільний. Git-тег
-  `v1.0.0-rc.1` ставиться тим самим механізмом.
+  `v1.0.0-rc.1` ставиться тим самим механізмом. Тег іде й у README пакета
+  `create-simplycms-store`: пререліз → `@next` у командах `pnpm create`,
+  стабільна → без тега (`scripts/release/readme-tag.mjs`; крок після `bumpTo`,
+  до гейтів і коміту).
 - **Діапазон.** `coreRangeFor('X.Y.Z-rc.N')` = `^X.Y.Z-0` (для `1.0.0-rc.N` —
   `^1.0.0-0`): «>= 1.0.0-0 і < 2.0.0-0» приймає RC, фінальний `1.0.0` і `1.x`;
   `^1.0.0` пререлізів не приймає. `satisfies` повторює правило npm-semver:
@@ -395,7 +398,7 @@ is required to publish packages.
 
 ## Пов'язане
 
-- `scripts/release.mjs` + `scripts/release/{bump,gates,git}.mjs` — реалізація
+- `scripts/release.mjs` + `scripts/release/{bump,gates,git,readme-tag}.mjs` — реалізація
 - `scripts/version-packages.mjs` — «сирий» бамп без гейтів і коміту
 - `.github/workflows/publish-packages.yml` — публікація + тег після неї
 - `tests/published-exports-parity.test.ts` — tarball-parity гейт

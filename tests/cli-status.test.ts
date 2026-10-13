@@ -81,6 +81,13 @@ describe('чисті функції етапу', () => {
     );
   });
 
+  it('deriveStage: порожній env без deploy.json → not-configured; запис розгортання важить більше; немає магазину — not-created', () => {
+    const input = { hasStoreRoot: true, deployJson: null, envMissing: true };
+    expect(deriveStage(input)).toBe('not-configured');
+    expect(deriveStage({ ...input, deployJson: {} })).toBe('deployed');
+    expect(deriveStage({ ...input, hasStoreRoot: false })).toBe('not-created');
+  });
+
   const warn = { id: 'w', title: 'w', status: 'warn' } as const;
   // Рядки таблиці `nextSkill` з docs/architecture/cli.md (розділ status), кожен окремо.
   it.each([
@@ -88,6 +95,12 @@ describe('чисті функції етапу', () => {
     [
       '1: not-created навіть з error',
       'not-created',
+      [bad],
+      'simplycms-onboarding',
+    ],
+    [
+      '1б: not-configured навіть з error (відсутній env — не поломка)',
+      'not-configured',
       [bad],
       'simplycms-onboarding',
     ],
@@ -225,6 +238,34 @@ describe('simplycms status (CLI)', () => {
     expect(report.next.skill).toBe('simplycms-onboarding');
     expect(report.checks).toEqual([]);
     expect(r.code).toBe(3);
+  });
+
+  it('свіжий магазин без env → not-configured, онбординг; заглушка замість значення → local і diagnose', async () => {
+    const root = await store('st-notcfg');
+    const run = (env: Record<string, string>) => {
+      const r = spawnSync('node', [CLI_INDEX, 'status', '--json'], {
+        cwd: root,
+        env: {
+          ...process.env,
+          DATABASE_URL: '',
+          BETTER_AUTH_SECRET: '',
+          ...env,
+        },
+        encoding: 'utf8',
+      });
+      return JSON.parse(r.stdout);
+    };
+    const fresh = run({});
+    expect(fresh.stage).toBe('not-configured');
+    expect(fresh.next.skill).toBe('simplycms-onboarding');
+    // Невалідне (відома заглушка), а не відсутнє — це поломка, не початок.
+    const bad = run({
+      DATABASE_URL:
+        'postgresql://app_runtime:your-password@localhost:5432/postgres',
+      BETTER_AUTH_SECRET: 'your-32-byte-random-secret',
+    });
+    expect(bad.stage).toBe('local');
+    expect(bad.next.skill).toBe('simplycms-diagnose');
   });
 
   it('магазин без .simplycms/deploy.json → local; з ним → deployed', async () => {

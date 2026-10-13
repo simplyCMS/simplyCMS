@@ -89,5 +89,31 @@ export async function doctorSmoke(pkgDir, work, version) {
     };
   }
   details.push(`✓ звіт doctor: усі ${REPORT_MARKERS.length} маркери на місці`);
+  // Свіжий скаффолд без env — початок онбордингу, а не поломка для diagnose:
+  // саме так агент потрапляє на скіл після `create-simplycms-store` без --database-url.
+  const state = spawnSync(
+    'node',
+    [join(pkgDir, 'src/index.mjs'), 'status', '--json'],
+    { cwd: storeDir, env, encoding: 'utf8' },
+  );
+  let report;
+  try {
+    report = JSON.parse(state.stdout);
+  } catch {
+    report = null;
+  }
+  if (
+    report?.stage !== 'not-configured' ||
+    report.next?.skill !== 'simplycms-onboarding'
+  ) {
+    return {
+      ok: false,
+      details: [
+        ...details,
+        `✗ status на свіжому скаффолді: етап ${report?.stage}, скіл ${report?.next?.skill}, очікувалось not-configured → simplycms-onboarding`,
+      ],
+    };
+  }
+  details.push('✓ status на свіжому скаффолді: not-configured → onboarding');
   return { ok: true, details };
 }

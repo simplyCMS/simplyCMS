@@ -1,12 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { printNextSteps } from '../packages/create-simplycms-store/src/steps.mjs';
+import {
+  printNextSteps,
+  promptMissing,
+} from '../packages/create-simplycms-store/src/steps.mjs';
 import { distTagFor } from '../scripts/release/dist-tag.mjs';
 
 // Власник бачить у консолі ОДНЕ речення: решту веде агент (скіл онбордингу),
 // а довідкові кроки для людини без агента живуть у README магазину. Тест
 // стереже обидва боки: консоль не повертається до списку команд, а README
 // пакета на npm відкривається входом для агента.
+// Промпти clack підміняємо цілком: справжній `text` у не-TTY зависнув би, а
+// нам потрібне лише чи його взагалі кликали.
+const textPrompt = vi.hoisted(() => vi.fn());
+vi.mock(
+  '../packages/create-simplycms-store/node_modules/@clack/prompts',
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    text: textPrompt,
+  }),
+);
+
 const PKG = 'packages/create-simplycms-store';
 const read = (p: string) => readFileSync(p, 'utf8');
 
@@ -49,6 +63,30 @@ describe('create-store: фінальне повідомлення', () => {
     ])
       expect(out).not.toContain(forbidden);
     expect(out.match(/Відкрийте агента/g)).toHaveLength(1);
+  });
+});
+
+describe('create-store: skillsPending і промпти', () => {
+  it('skillsPending додає попередження про лінки скілів', () => {
+    const out = captureNextSteps({ dirLabel: 'shop', skillsPending: true });
+    expect(out).toContain('Лінки агентних скілів');
+    expect(out).toContain('pnpm simplycms update');
+    expect(captureNextSteps({ dirLabel: 'shop' })).not.toContain('Лінки');
+  });
+
+  it('promptMissing не питає DATABASE_URL: це крок агента', async () => {
+    textPrompt.mockClear();
+    try {
+      const result = await promptMissing({
+        storeName: 'shop',
+        install: false,
+        git: true,
+      });
+      expect(textPrompt).not.toHaveBeenCalled();
+      expect(result.databaseUrl).toBeUndefined();
+    } finally {
+      textPrompt.mockClear();
+    }
   });
 });
 

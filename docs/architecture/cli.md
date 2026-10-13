@@ -120,7 +120,10 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
 Етап магазину й наступний крок для людини та агента (Б §3.1):
 
 - **Етап** (`deriveStage`, `src/status-stage.mjs`): немає магазину → `not-created`;
-  магазин без `.simplycms/deploy.json` → `local`; із ним → `deployed`.
+  є `.simplycms/deploy.json` → `deployed`; без нього обов'язкові env-ключі (ті самі, що гейтить
+  №5, `missingRequiredEnv`) відсутні чи порожні → `not-configured` (свіжий скаффолд без
+  `--database-url`); інакше → `local`. Порядок: `not-created` → `not-configured` → `local` →
+  `deployed`. Заглушка чи битий URL — не `not-configured`, а `error` №5.
 - **Перевірки** — ті самі офлайн-перевірки, що в `doctor`: спільний список
   `OFFLINE_CHECKS` і контекст ЛИШЕ з `buildOfflineContext`; власне складання контексту
   загубило б `engines`, і №17 мовчки став би `skip`.
@@ -149,6 +152,7 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   | # | Етап | Перевірки | `next.skill` |
   |---|------|-----------|--------------|
   | 1 | `not-created` | будь-які (навіть з error) | `simplycms-onboarding` |
+  | 1б | `not-configured` | будь-які (навіть з error: відсутній env — не поломка) | `simplycms-onboarding` |
   | 2 | `local` / `deployed` | є хоч один `error` | `simplycms-diagnose` |
   | 3 | `local` | без `error` (ok / warn) | `simplycms-onboarding` (крок деплою) |
   | 4 | `deployed` | без `error` (ok / warn) | немає (`null`) |
@@ -156,7 +160,7 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   (`unknown` непорожній: перевірка кинула чи не вклалась у ~5 с; невідоме важить більше за
   «є що робити»). Синхронну перевірку, що зависла наглухо, таймаут не перерве (потік один);
   повільною буває лише асинхронна збірка контексту.
-- **`--json`**: `{ stage, checks, next, unknown }`. **`--hook`**: вступ агента (з
+- **`--json`**: `{ stage, checks, next, unknown }`, `stage` ∈ `not-created | not-configured | local | deployed`. **`--hook`**: вступ агента (з
   `node_modules/simplycms/agent/intro.md`; текст виділяє `extractBlockIntro` з
   `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
   ≤25 рядків. при обрізанні до 25 рядків рядки «не вдалося перевірити» не зрізаються, зрізаються проблеми. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
