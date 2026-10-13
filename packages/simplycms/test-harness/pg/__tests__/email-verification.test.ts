@@ -34,19 +34,25 @@ describe('підтвердження пошти при реєстрації (Р3
       await new Promise((r) => setTimeout(r, 30));
     if (!cond()) throw new Error('waitFor: умова не виконалась');
   };
-  const post = (path: string, body: unknown, headers: HeadersInit = {}) =>
+  const post = (
+    path: string,
+    body: unknown,
+    headers: HeadersInit = {},
+    origin = SITE,
+  ) =>
     auth.handler(
-      new Request(`${SITE}/api/auth/${path}`, {
+      new Request(`${origin}/api/auth/${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...headers },
         body: JSON.stringify(body),
       }),
     );
-  const signUp = (email: string, headers: HeadersInit = {}) =>
+  const signUp = (email: string, headers: HeadersInit = {}, origin = SITE) =>
     post(
       'sign-up/email',
       { email, password: PASSWORD, name: 'Іван Тест' },
       headers,
+      origin,
     );
   const signIn = (email: string) =>
     post('sign-in/email', { email, password: PASSWORD });
@@ -76,10 +82,12 @@ describe('підтвердження пошти при реєстрації (Р3
   it('signUp зі SMTP: без сесії, лист email_verification, посилання від VITE_SITE_URL попри X-Forwarded-Host; вхід до переходу — 403; перехід підтверджує; вхід після — сесія', async () => {
     sent.length = 0;
     const email = 'verify-ok@x.test';
-    const response = await signUp(email, {
-      'x-forwarded-host': 'evil.example',
-      'x-forwarded-proto': 'https',
-    });
+    // URL запиту — чужий хост: без бази з env BA взяв би її саме звідти.
+    const response = await signUp(
+      email,
+      { host: 'evil.example', 'x-forwarded-host': 'evil.example' },
+      'http://evil.example',
+    );
     expect(response.status, await response.clone().text()).toBe(200);
     expect(((await response.json()) as { token: unknown }).token).toBeNull();
     expect(response.headers.getSetCookie()).toHaveLength(0);
