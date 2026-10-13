@@ -8,7 +8,8 @@
  * `addToCart` → `openCheckoutPrefilled` → `submitCheckout`.
  */
 import { orderIdByNumber } from './sql.mjs';
-import { FIELD, waitText } from './selectors.mjs';
+import { FIELD } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 /**
  * Картка товару → «Додати в кошик». Чекаємо тост `product.addedToCart`:
@@ -23,7 +24,7 @@ export async function addToCart({ page, base, section, productSlug }) {
     .getByRole('button', { name: /Додати в кошик/ })
     .first()
     .click();
-  if (!(await waitText(page, 'Додано в кошик')))
+  if (!(await waitToast(page, 'Додано в кошик')))
     throw new Error('[live-smoke] тост «Додано в кошик» не зʼявився');
 }
 

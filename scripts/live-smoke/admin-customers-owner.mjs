@@ -7,8 +7,7 @@
  * мережеву тишу; перемикач ролі — Radix `Switch` (`role=switch`), а діалог
  * видалення — `alertdialog`, діалог бану — `dialog`.
  */
-import { waitText } from './selectors.mjs';
-import { expectDisabled } from './wait.mjs';
+import { expectDisabled, waitToast } from './wait.mjs';
 import { pickOption } from './admin-shipping-owner.mjs';
 
 const card = (page, base, userId) =>
@@ -33,7 +32,7 @@ export async function saveContacts(page, { firstName, email }) {
   await page.locator('#cc-first').fill(firstName);
   await page.locator('#cc-email').fill(email);
   await page.getByRole('button', { name: 'Зберегти', exact: true }).click();
-  return waitText(page, 'Контакти збережено');
+  return waitToast(page, 'Контакти збережено');
 }
 
 /** Категорія вручну: вибір, закріплення, причина → «Призначити». */
@@ -43,14 +42,14 @@ export async function pinCategory(page, base, userId, name) {
   await page.locator('#cc-lock').click();
   await page.locator('#cc-reason').fill('Е6г: закріплено вручну');
   await page.getByRole('button', { name: 'Призначити', exact: true }).click();
-  return waitText(page, 'Категорію змінено');
+  return waitToast(page, 'Категорію змінено');
 }
 
 /** Перемикач «Доступ до адмін-панелі» на картці; чекає тост відповідної дії. */
 export async function toggleAdmin(page, base, userId, grant) {
   await card(page, base, userId);
   await page.locator('#access-admin').click();
-  return waitText(
+  return waitToast(
     page,
     grant ? 'Адміністратора призначено' : 'Роль адміністратора знято',
   );
@@ -62,7 +61,7 @@ export async function banFromCard(page, base, userId, reason) {
   await page.getByRole('button', { name: 'Заблокувати', exact: true }).click();
   await page.locator('#ban-reason').fill(reason);
   await page.getByRole('button', { name: 'Підтвердити блокування' }).click();
-  return waitText(page, 'Покупця заблоковано');
+  return waitToast(page, 'Покупця заблоковано');
 }
 
 /** Видалення акаунта: кнопка → введений email → «Видалити назавжди». */
@@ -74,5 +73,5 @@ export async function deleteFromCard(page, base, userId, email) {
   const disabledBefore = await expectDisabled(confirm);
   await page.locator('#delete-email').fill(email);
   await confirm.click();
-  return { disabledBefore, toast: await waitText(page, 'Акаунт видалено') };
+  return { disabledBefore, toast: await waitToast(page, 'Акаунт видалено') };
 }

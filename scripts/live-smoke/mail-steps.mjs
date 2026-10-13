@@ -3,7 +3,7 @@
  * Помічники Mailpit і вхід — `./mail.mjs`.
  */
 import { confirmEmail, firstLink, signIn, waitForMail } from './mail.mjs';
-import { expectVisible } from './wait.mjs';
+import { expectVisible, waitToast } from './wait.mjs';
 
 /**
  * Листи воронки: замовлення покупцю → скидання пароля → форма за посиланням.
@@ -68,10 +68,7 @@ export async function runSignupConfirmation({ browser, base, signUp, check }) {
     const page = await context.newPage();
     const email = await signUp(page, base);
     await signIn(page, base, email);
-    const refused = await expectVisible(
-      page.getByText('Пошту ще не підтверджено'),
-      10_000,
-    );
+    const refused = await waitToast(page, 'Пошту ще не підтверджено');
     check(
       'Р30: вхід до підтвердження пошти відмовлено',
       refused && page.url().includes('/auth'),

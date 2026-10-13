@@ -6,6 +6,7 @@
  * НЕ змінює статус, а після перечитування схвалення проходить.
  */
 import { poll, reviewByTitle } from './admin-content-sql.mjs';
+import { waitToast } from './wait.mjs';
 
 export async function editPart({ page, pages, base, dbUrl, check, fx, st }) {
   const buyer = pages.buyer;
@@ -34,12 +35,7 @@ export async function editPart({ page, pages, base, dbUrl, check, fx, st }) {
 
   // Застаріла картка: версія в браузері адміна — до правки покупця.
   await page.getByRole('button', { name: 'Відхилити' }).click();
-  const toast = await page
-    .getByText('Відгук змінився')
-    .first()
-    .waitFor({ timeout: 10_000 })
-    .then(() => true)
-    .catch(() => false);
+  const toast = await waitToast(page, 'Відгук змінився');
   const after = await reviewByTitle(dbUrl, fx.editedTitle);
   check(
     'контент: застаріла дія модератора → 409 «Відгук змінився», статус pending',

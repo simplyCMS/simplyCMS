@@ -25,6 +25,7 @@ import {
   verifyStorefront,
 } from './admin-catalog-verify.mjs';
 import { PNG } from './avatar.mjs';
+import { waitToast } from './wait.mjs';
 
 export async function runAdminCatalogStep({ context, base, dbUrl, check }) {
   const page = await context.newPage();
@@ -78,10 +79,12 @@ export async function runAdminCatalogStep({ context, base, dbUrl, check }) {
     // Тост успіху — детермінований сигнал, що мутація ДОЇХАЛА до БД: без
     // нього прямий SQL нижче races проти ще не завершеного serverFn-запиту
     // (виміряно живим прогоном — «залишок 3» читався як NULL).
-    await page.getByText('Ціни збережено').waitFor({ timeout: 10_000 });
+    if (!(await waitToast(page, 'Ціни збережено')))
+      throw new Error('[live-smoke] тост «Ціни збережено» не зʼявився');
     await page.locator('#stock-quantity').fill('3');
     await page.getByRole('button', { name: 'Зберегти залишки' }).click();
-    await page.getByText('Залишки збережено').waitFor({ timeout: 10_000 });
+    if (!(await waitToast(page, 'Залишки збережено')))
+      throw new Error('[live-smoke] тост «Залишки збережено» не зʼявився');
     const price = await productPrice(dbUrl, productId, retail.id);
     check(
       'адмін: ціна з комою збережена як 1234.50',

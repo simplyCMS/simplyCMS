@@ -10,7 +10,8 @@
  * миттєвим знімком DOM, у якому середовище ще не встигло прийти.
  */
 import { openCheckoutPrefilled, submitCheckout } from './place-order.mjs';
-import { FIELD, parseMoney, waitText } from './selectors.mjs';
+import { FIELD, parseMoney } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 const PRICE_BLOCK = '[data-simplycms-requisite="product-detail.price-block"]';
 const CART_ITEMS = '[data-simplycms-requisite="cart.items"]';
@@ -60,7 +61,7 @@ export async function putInCart(page, url, times) {
   const add = page.getByRole('button', { name: /Додати в кошик/ }).first();
   for (let i = 0; i < times; i++) {
     await add.click();
-    if (!(await waitText(page, 'Додано в кошик')))
+    if (!(await waitToast(page, 'Додано в кошик')))
       throw new Error('[live-smoke] тост «Додано в кошик» не зʼявився');
     // Додавання відкриває drawer кошика (`useCart`: `setIsOpen(true)`), а його
     // оверлей перехоплює наступний клік. Drawer — власна розмітка `cart-ui`

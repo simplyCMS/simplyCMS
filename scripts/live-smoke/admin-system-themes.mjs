@@ -12,7 +12,7 @@
  * роутера.
  */
 import { pollUntil } from './admin-shipping-sql.mjs';
-import { waitText } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 import * as q from './admin-system-sql.mjs';
 
 /** Шапка solarstore — `sticky top-0` (`simplycms-theme-solarstore` Header.tsx); у default її немає. */
@@ -30,7 +30,7 @@ async function activateViaUi({ page, dbUrl }, name) {
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Активувати' })
     .click();
-  await waitText(page, 'Тему активовано');
+  await waitToast(page, 'Тему активовано');
   return pollUntil(
     () => q.activeTheme(dbUrl),
     (v) => v === name,
