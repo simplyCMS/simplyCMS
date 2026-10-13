@@ -112,6 +112,11 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 скретча) і в packaging-сюїті через `tests/cli-pack.test.ts` (виключений із
 дефолтного `pnpm test`, як `create-store-pack.test.ts`).
 
+🔴 **Межа доказу doctor №17 (`tests/cli-doctor-engines.test.ts`).** Тест доводить
+поведінку на `satisfies`, транспільованому з СИРЦІВ `contracts/semver`; що
+опублікований пакет справді експортує `simplycms/contracts/semver` зі `satisfies`
+у `dist`, доводять packaging/Gate TOOL (парність `published-exports`), а не він.
+
 🔴 **FAQ-контур і скіл-лінки (трек К0)** — так само кроки конвеєра, а не
 гейти. З шаблону магазину знято референс-плагін FAQ (ПК7) і копію скілів
 (ПК9), тож скретч добирає їх сам: `install-faq.mjs` ставить

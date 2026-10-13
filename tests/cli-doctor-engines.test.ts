@@ -191,8 +191,14 @@ describe('doctor №17 engines (проводка через run(), справж�
 });
 
 describe('checkEngines (юніт)', () => {
-  const ctx = (items: { label: string; range?: string; error?: string }[]) => ({
-    engines: { coreVersion: CORE, satisfies, items },
+  const ctx = (
+    items: { label: string; kind?: string; range?: string; error?: string }[],
+  ) => ({
+    engines: {
+      coreVersion: CORE,
+      satisfies,
+      items: items.map((item) => ({ kind: 'plugin', ...item })),
+    },
   });
 
   it('без ядра — skip', () => {
@@ -211,6 +217,13 @@ describe('checkEngines (юніт)', () => {
     expect(r.details).toContain('тема «b»');
   });
 
+  it('error для теми несе примітку про можливу неактивність', () => {
+    const r = checkEngines(
+      ctx([{ label: 'тема «b»', kind: 'theme', range: '^2.0.0' }]),
+    );
+    expect(r.details).toContain('може бути неактивною');
+  });
+
   it('нерозбірливий діапазон — warn, а не error', () => {
     const r = checkEngines(ctx([{ label: 'x', range: '>=1.0.0 <2.0.0' }]));
     expect(r.status).toBe('warn');
@@ -219,5 +232,26 @@ describe('checkEngines (юніт)', () => {
 
   it('порожній набір модулів — ok', () => {
     expect(checkEngines(ctx([])).status).toBe('ok');
+  });
+});
+
+describe('buildOfflineContext (спільний для doctor і status)', () => {
+  it('повертає engines для магазину з плагіном; пошкоджений манифест ядра → null', async () => {
+    const { buildOfflineContext } =
+      await import('../packages/cli/src/doctor.mjs');
+    const root = await store('eng-ctx');
+    const ctx = await buildOfflineContext(root);
+    expect(ctx.engines?.coreVersion).toBe(CORE);
+    expect(ctx.engines?.items.map((i: { label: string }) => i.label)).toEqual(
+      expect.arrayContaining([expect.stringContaining('hello-world')]),
+    );
+    // Те саме ядро + контекст → №17 рахується, а не skip.
+    expect(
+      runOfflineChecks(ctx).find((c: { id: string }) => c.id === 'engines')
+        ?.status,
+    ).toBe('error');
+
+    writeFileSync(join(root, 'node_modules/simplycms/package.json'), '{oops');
+    expect((await buildOfflineContext(root)).engines).toBeNull();
   });
 });

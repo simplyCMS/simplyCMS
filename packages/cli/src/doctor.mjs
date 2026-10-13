@@ -72,6 +72,39 @@ function resolveMail(core, env) {
   }
 }
 
+/**
+ * Контекст офлайн-перевірок: ЄДИНЕ місце його збірки для `doctor` і `status` (Task 19),
+ * щоб async-дані (`engines`, пошта, режим) не губилися в одному з викликачів — без них
+ * №17 мовчки став би `skip`.
+ * @param {string} storeRoot
+ * @param {{ production?: boolean }} [opts] `production` — явний прапорець `--production`
+ */
+export async function buildOfflineContext(
+  storeRoot,
+  { production: flag = false } = {},
+) {
+  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP (Е8-Р17).
+  const core = await importFromStore(storeRoot, 'simplycms/env').catch(
+    () => null,
+  );
+  const env = readStoreEnv(storeRoot);
+  const production = resolveDoctorMode({ flag, env: process.env, core });
+  return {
+    production,
+    mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
+    storeRoot,
+    // №17 (Р32): діапазони engines збирає async-шар, сама перевірка синхронна.
+    engines: await collectEngines(storeRoot),
+    manifest: readStoreManifest(storeRoot),
+    env,
+    cliVersion: readCliVersion(),
+    // Канон дрейфу і шлях до міграцій ядра — спільні з update/db:diff:
+    // джерело шляху одне, реалізації порівнянь — теж (host-drift/db-diff).
+    hostDir: CANON_HOST_DIR,
+    schemaMigrationsDir: schemaMigrationsPath(storeRoot),
+  };
+}
+
 /** @param {string[]} argv */
 export async function run(argv) {
   const { strict, online, production: productionFlag } = parseDoctorArgs(argv);
@@ -86,30 +119,10 @@ export async function run(argv) {
     finish('Магазин не знайдено — решта перевірок не має сенсу.');
     return;
   }
-  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP (Е8-Р17).
-  const core = await importFromStore(storeRoot, 'simplycms/env').catch(
-    () => null,
-  );
-  const env = readStoreEnv(storeRoot);
-  const production = resolveDoctorMode({
-    flag: productionFlag,
-    env: process.env,
-    core,
+  const ctx = await buildOfflineContext(storeRoot, {
+    production: productionFlag,
   });
-  const ctx = {
-    production,
-    mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
-    storeRoot,
-    // №17 (Р32): діапазони engines збирає async-шар, сама перевірка синхронна.
-    engines: await collectEngines(storeRoot),
-    manifest: readStoreManifest(storeRoot),
-    env,
-    cliVersion: readCliVersion(),
-    // Канон дрейфу і шлях до міграцій ядра — спільні з update/db:diff:
-    // джерело шляху одне, реалізації порівнянь — теж (host-drift/db-diff).
-    hostDir: CANON_HOST_DIR,
-    schemaMigrationsDir: schemaMigrationsPath(storeRoot),
-  };
+  const { production } = ctx;
   const checks = [
     modeNotice(production),
     { id: 'root', title: ROOT_TITLE, status: 'ok', details: storeRoot },

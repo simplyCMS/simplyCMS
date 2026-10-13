@@ -71,7 +71,13 @@ export async function readEnginesRange(storeRoot, kind, spec) {
 export async function collectEngines(storeRoot) {
   const corePath = join(storeRoot, 'node_modules/simplycms/package.json');
   if (!existsSync(corePath)) return null;
-  const coreVersion = JSON.parse(readFileSync(corePath, 'utf8')).version;
+  let coreVersion;
+  try {
+    coreVersion = JSON.parse(readFileSync(corePath, 'utf8')).version;
+  } catch {
+    // Пошкоджений манифест ядра — версії для порівняння немає: skip, не крах doctor.
+    return null;
+  }
   const semver = await importFromStore(
     storeRoot,
     'simplycms/contracts/semver',
@@ -97,7 +103,11 @@ export async function collectEngines(storeRoot) {
   ];
   const items = [];
   for (const { kind, label, spec } of modules)
-    items.push({ label, ...(await readEnginesRange(storeRoot, kind, spec)) });
+    items.push({
+      label,
+      kind,
+      ...(await readEnginesRange(storeRoot, kind, spec)),
+    });
   return { coreVersion, satisfies: semver.satisfies, items };
 }
 
@@ -119,7 +129,7 @@ export function checkEngines({ engines }) {
   const { coreVersion, satisfies, items } = engines;
   const errors = [];
   const warns = [];
-  for (const { label, range, error } of items) {
+  for (const { label, kind, range, error } of items) {
     if (error) warns.push(`${label}: ${error}`);
     else if (range === undefined)
       warns.push(
@@ -129,7 +139,7 @@ export function checkEngines({ engines }) {
       try {
         if (!satisfies(coreVersion, range))
           errors.push(
-            `${label}: engines.simplycms «${range}» не покриває ядро ${coreVersion} — онови плагін або відкоти ядро`,
+            `${label}: engines.simplycms «${range}» не покриває ядро ${coreVersion} — онови плагін або відкоти ядро${kind === 'theme' ? ' (тема може бути неактивною — активна зберігається в БД)' : ''}`,
           );
       } catch (cause) {
         warns.push(
