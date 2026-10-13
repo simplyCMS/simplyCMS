@@ -1,5 +1,6 @@
 import pg from 'pg';
 import type { MigrationFile } from './files';
+import { withRuntimeAdminRead, type RuntimeReadOptions } from './runtime-read';
 
 /** Рядок журналу накату. */
 export type JournalRow = { name: string; checksum: string; appliedAt: Date };
@@ -50,19 +51,11 @@ export async function selectJournal(
 }
 
 /** Параметри читання журналу з рантайм-підключення. */
-export type ReadJournalOptions = {
-  /**
-   * Бюджет у мілісекундах і на з'єднання (`connectionTimeoutMillis`), і на
-   * запит (`statement_timeout` сесії). Без нього читач чекає скільки завгодно:
-   * для `doctor --online` і `status` недоступна БД не має підвішувати команду.
-   */
-  timeoutMs?: number;
-};
+export type ReadJournalOptions = RuntimeReadOptions;
 
 /**
- * Журнал із рантайм-підключення (`DATABASE_URL`, роль `app_runtime`).
- * `app_runtime` прямих прав не має (fail-closed), тож читання — у read-only
- * транзакції під `SET LOCAL ROLE app_admin` (членство дає `0000_prelude`).
+ * Журнал із рантайм-підключення (`DATABASE_URL`, роль `app_runtime`) — через
+ * `withRuntimeAdminRead` (прямого права `app_runtime` на журнал немає).
  *
  * @returns `null`, якщо журналу в базі немає.
  */
@@ -70,29 +63,15 @@ export async function readJournal(
   runtimeConnectionString: string,
   options: ReadJournalOptions = {},
 ): Promise<JournalRow[] | null> {
-  const { timeoutMs } = options;
-  const client = new pg.Client({
-    connectionString: runtimeConnectionString,
-    ...(timeoutMs
-      ? { connectionTimeoutMillis: timeoutMs, statement_timeout: timeoutMs }
-      : {}),
-  });
-  await client.connect();
   try {
-    await client.query('begin read only');
-    try {
-      await client.query('set local role app_admin');
-      const rows = await selectJournal(client);
-      await client.query('commit');
-      return rows;
-    } catch (err) {
-      // Мертве з'єднання не має підмінити першопричину помилкою rollback.
-      await client.query('rollback').catch(() => {});
-      if ((err as { code?: string }).code === '42P01') return null;
-      throw err;
-    }
-  } finally {
-    await client.end();
+    return await withRuntimeAdminRead(
+      runtimeConnectionString,
+      options,
+      selectJournal,
+    );
+  } catch (err) {
+    if ((err as { code?: string }).code === '42P01') return null;
+    throw err;
   }
 }
 

@@ -1,20 +1,25 @@
 // simplycms status — етап магазину, стан перевірок і наступний скіл (Б §3.1).
 // Каркас офлайн-частини: ті самі перевірки, що в `doctor` (спільний список і спільний
-// `buildOfflineContext`), але з таймаутом на всю команду; онлайн-дані додаються окремо.
+// `buildOfflineContext`) і онлайн-завдання (status-online.mjs), усе з одним таймаутом на команду.
 // Коди виходу: 0 — гаразд, 3 — є що робити, інакше — стан невідомий (Е8-О8).
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { readCoreIntro } from './agent-files.mjs';
 import { findStoreRoot } from './context.mjs';
+import { DEPLOY_RECORD_PATH, readDeployRecord } from './deploy-record.mjs';
 import { OFFLINE_CHECKS } from './doctor-checks.mjs';
 import { buildOfflineContext } from './doctor.mjs';
 import { extractBlockIntro, renderManagedBlock } from './managed-block.mjs';
 import { deriveStage, nextSkill, statusExitCode } from './status-stage.mjs';
+import {
+  createDeadline,
+  reason,
+  runRaced,
+  TIMED_OUT,
+} from './status-deadline.mjs';
+import { onlineTasks } from './status-online.mjs';
 import { printHuman, renderHookState } from './status-render.mjs';
 
 /** Бюджет на всю команду: хук сесії не має гальмувати старт агента. */
 const STATUS_TIMEOUT_MS = 5000;
-const DEPLOY_RECORD = '.simplycms/deploy.json';
 
 /** @param {string[]} argv */
 function parseStatusArgs(argv) {
@@ -33,34 +38,12 @@ function parseStatusArgs(argv) {
   return flags;
 }
 
-const TIMED_OUT = Symbol('timed-out');
-
-/** Один спільний дедлайн на всі асинхронні кроки; таймер не тримає процес. */
-function createDeadline(ms) {
-  let timer;
-  const expired = new Promise((resolve) => {
-    timer = setTimeout(resolve, ms, TIMED_OUT);
-    timer.unref();
-  });
-  return {
-    race: (promise) => Promise.race([promise, expired]),
-    clear: () => clearTimeout(timer),
-  };
-}
-
-const reason = (error) =>
-  error instanceof Error ? error.message : String(error);
-
-/** Запис розгортання або `null`; нечитний файл — у `unknown`, етап лишається `local`. */
-function readDeployRecord(storeRoot, unknown) {
-  const path = join(storeRoot, DEPLOY_RECORD);
-  if (!existsSync(path)) return null;
+/** Запис розгортання або `null`; нечитний чи невалідний файл — у `unknown`, етап лишається `local`. */
+function loadDeployRecord(storeRoot, unknown) {
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8'));
-    if (parsed !== null && typeof parsed === 'object') return parsed;
-    throw new Error('очікується обʼєкт');
+    return readDeployRecord(storeRoot);
   } catch (error) {
-    unknown.push(`${DEPLOY_RECORD}: ${reason(error)}`);
+    unknown.push(`${DEPLOY_RECORD_PATH}: ${reason(error)}`);
     return null;
   }
 }
@@ -68,14 +51,12 @@ function readDeployRecord(storeRoot, unknown) {
 /**
  * Зібрати звіт. Перевірка, що кинула чи не вклалась у бюджет, потрапляє в `unknown` —
  * не зникає. Синхронну перевірку, що зависла наглухо, таймаут не перерве (потік один):
- * офлайн-перевірки читають лише локальні файли, а повільна частина — `import()`
- * модулів у `buildOfflineContext` — асинхронна.
+ * офлайн-перевірки читають лише локальні файли, а повільне — `import()` модулів у
+ * `buildOfflineContext` та онлайн-завдання (БД, домен) — асинхронне.
  * @param {string | null} storeRoot `null` — теки магазину немає
- * Гонка на кожну перевірку лишена для асинхронних (онлайн) перевірок, які додаються
- * поверх цього каркаса: офлайн-список синхронний, тож ця гонка поки спрацьовує лише в
- * тестах. `buildContext` — шов для тесту повільного контексту; продукт завжди дає
- * `buildOfflineContext`.
- * @param {{ production?: boolean, checks?: typeof OFFLINE_CHECKS, buildContext?: typeof buildOfflineContext, timeoutMs?: number }} [opts]
+ * `buildContext` і `online` — шви для тестів (повільний контекст, фейкові онлайн-завдання);
+ * продукт завжди дає `buildOfflineContext` і `onlineTasks`.
+ * @param {{ production?: boolean, checks?: typeof OFFLINE_CHECKS, buildContext?: typeof buildOfflineContext, online?: (ctx: Parameters<typeof onlineTasks>[0]) => { label: string, run: () => unknown }[], timeoutMs?: number }} [opts]
  */
 export async function collectStatus(
   storeRoot,
@@ -83,13 +64,16 @@ export async function collectStatus(
     production = false,
     checks = OFFLINE_CHECKS,
     buildContext = buildOfflineContext,
+    online = onlineTasks,
     timeoutMs = STATUS_TIMEOUT_MS,
   } = {},
 ) {
   /** @type {string[]} */
   const unknown = [];
   /** @type {import('./ui.mjs').Check[]} */
-  const results = [];
+  let results = [];
+  const deployRecord =
+    storeRoot === null ? null : loadDeployRecord(storeRoot, unknown);
   if (storeRoot !== null) {
     const deadline = createDeadline(timeoutMs);
     try {
@@ -99,24 +83,13 @@ export async function collectStatus(
       if (ctx === TIMED_OUT)
         unknown.push(`контекст перевірок: не вклався у ${timeoutMs} мс`);
       else {
-        const settled = await Promise.all(
-          checks.map(async ({ label, run }) => {
-            try {
-              const result = await deadline.race(
-                Promise.resolve().then(() => run(ctx)),
-              );
-              return result === TIMED_OUT
-                ? { unknown: `${label}: не вклалась у ${timeoutMs} мс` }
-                : { check: result };
-            } catch (error) {
-              return { unknown: `${label}: ${reason(error)}` };
-            }
-          }),
-        );
-        for (const item of settled) {
-          if (item.check) results.push(item.check);
-          else unknown.push(item.unknown);
-        }
+        const tasks = [
+          ...checks,
+          ...online({ storeRoot, env: ctx.env, deployRecord }),
+        ];
+        const raced = await runRaced(tasks, ctx, deadline, timeoutMs);
+        results = raced.checks;
+        unknown.push(...raced.unknown);
       }
     } catch (error) {
       unknown.push(`контекст перевірок: ${reason(error)}`);
@@ -124,9 +97,10 @@ export async function collectStatus(
       deadline.clear();
     }
   }
-  const deployJson =
-    storeRoot === null ? null : readDeployRecord(storeRoot, unknown);
-  const stage = deriveStage({ hasStoreRoot: storeRoot !== null, deployJson });
+  const stage = deriveStage({
+    hasStoreRoot: storeRoot !== null,
+    deployJson: deployRecord,
+  });
   return {
     stage,
     checks: results,

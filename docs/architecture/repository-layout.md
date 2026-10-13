@@ -84,7 +84,7 @@ simplyCMS/
 │   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz). Без залежності
 │   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)
 │   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
-│   │   │                         #    readJournal): одна реалізація для проду, db:apply, test:schema і
+│   │   │                         #    readJournal, readStoreFacts): одна реалізація для проду, db:apply, test:schema і
 │   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків
 │   │   │                         #    немає. server-only (К3-Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext

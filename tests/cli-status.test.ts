@@ -30,6 +30,19 @@ afterAll(() => {
 });
 
 const store = (name: string) => scaffoldFakeStore(name, roots);
+const DEPLOY_RECORD = {
+  version: 1,
+  dokploy: {
+    url: 'https://dokploy.example.com',
+    projectId: 'p',
+    applicationId: 'a',
+    postgresId: 'pg',
+  },
+  // `.invalid` (RFC 6761) не резолвиться: тест етапу не ходить у справжню мережу.
+  domain: 'shop.invalid',
+  bucket: 'shop-media',
+  createdAt: '2026-10-13T10:00:00.000Z',
+};
 
 function status(cwd: string, ...args: string[]) {
   const r = spawnSync('node', [CLI_INDEX, 'status', ...args], {
@@ -97,6 +110,7 @@ describe('collectStatus', () => {
   it('перевірка, що кидає, потрапляє в unknown, а решта працює', async () => {
     const root = await store('st-throw');
     const report = await collectStatus(root, {
+      online: () => [],
       checks: [
         {
           label: 'boom',
@@ -121,6 +135,7 @@ describe('collectStatus', () => {
     const root = await store('st-slow');
     const started = Date.now();
     const report = await collectStatus(root, {
+      online: () => [],
       checks: [
         {
           label: 'slow',
@@ -203,7 +218,10 @@ describe('simplycms status (CLI)', () => {
     const local = JSON.parse(status(root, '--json').out);
     expect(local.stage).toBe('local');
     mkdirSync(join(root, '.simplycms'));
-    writeFileSync(join(root, '.simplycms/deploy.json'), '{"version":1}');
+    writeFileSync(
+      join(root, '.simplycms/deploy.json'),
+      JSON.stringify(DEPLOY_RECORD),
+    );
     const deployed = JSON.parse(status(root, '--json').out);
     expect(deployed.stage).toBe('deployed');
   });

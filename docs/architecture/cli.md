@@ -97,6 +97,17 @@ read-only, ключ власника схеми не мусить лежати �
 | `db-reachable` | `ok` / `error` / `skip` | з'єднання з `DATABASE_URL`; помилка — `error` (без пароля в тексті), немає `DATABASE_URL` — `skip` |
 | `shared-cluster` | `ok` / `warn` / `error` / `skip` | вимога «власний екземпляр Postgres на магазин»: ядро (`findForeignDatabases` у `simplycms/migrate`, read-only транзакція з `DATABASE_URL`) шукає в `pg_database` інші бази, до яких `app_runtime` має `CONNECT` (`has_database_privilege`); `postgres`, `template0`, `template1` і поточна не рахуються. Критерій «є таблиця `simplycms_migrations`» — підмножина `CONNECT` (журнал чужої бази без доступу не прочитати), тож окремого проходу по базах немає. Є такі бази — `warn` з іменами (без облікових даних); стоковий `PUBLIC CONNECT` дає `warn` на будь-яку сторонню базу — спільний кластер порушує вимогу. Немає `DATABASE_URL`/`pg`/БД недоступна — `skip` |
 | `migrations-journal` | `ok` / `warn` / `error` / `skip` | усе накочено — `ok`; є ненакочені — `warn` з іменами; змінений накочений файл або база без журналу — `error` («база без журналу»); БД недоступна — `skip` із причиною |
+| `store-owner` | `ok` / `warn` | `user_roles` має ≥1 запис `admin`; немає — `warn` «створи власника: `pnpm owner:invite`» (у щойно створеному магазині це крок онбордингу, а не поломка) |
+| `store-profile` | `ok` / `warn` | профіль (`system_settings['store_profile']`): порожня назва — `warn`; порожній `contacts.email` — `warn` «листи власнику про замовлення не надходитимуть»; рядка профілю немає — обидва |
+| `mail-outbox` | `ok` / `warn` | у `mail_outbox` є листи з `attempts > 0` (пробували слати, не доставили) — `warn` із кількістю, без тіл листів |
+| `store-state` | `error` / `skip` | замінює три рядки вище, коли факти прочитати не вдалося (`error`, без пароля) або БД/ядро недоступні (`skip`) |
+
+Факти (`store-owner`, `store-profile`, `mail-outbox`) читає ядро: `readStoreFacts` у
+`simplycms/migrate` — той самий канал, що й журнал (`withRuntimeAdminRead`: read-only
+транзакція під `SET LOCAL ROLE app_admin`). `simplycms/mail` CLI не імпортує: він тягне пул
+`simplycms/db` з `process.env`, а CLI env процесу не мутує. Три читання (журнал, факти,
+кластер) ідуть паралельно. Усі перевірки спільні з `status`: один модуль
+(`doctor-db-checks.mjs` + чисті будівники `online-state-checks.mjs`).
 
 Без `--online` звіт лишає видимий рядок `db-online` зі статусом `skip` і підказкою
 «увімкни `--online`» — мовчазне зникнення читалося б як «БД перевірено».
@@ -106,14 +117,24 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
 
 ### 3.1.1 `simplycms status [--json | --hook] [--production]`
 
-Етап магазину й наступний крок для людини та агента (Б §3.1). Каркас офлайн-частини
-(онлайн-дані — БД, журнал, домен — додає онлайн-частина разом зі `smoke`):
+Етап магазину й наступний крок для людини та агента (Б §3.1):
 
 - **Етап** (`deriveStage`, `src/status-stage.mjs`): немає магазину → `not-created`;
   магазин без `.simplycms/deploy.json` → `local`; із ним → `deployed`.
 - **Перевірки** — ті самі офлайн-перевірки, що в `doctor`: спільний список
   `OFFLINE_CHECKS` і контекст ЛИШЕ з `buildOfflineContext`; власне складання контексту
   загубило б `engines`, і №17 мовчки став би `skip`.
+- **Онлайн-частина** (`src/status-online.mjs`): ті самі перевірки БД, що в `doctor --online`
+  (`db-reachable`, `migrations-journal`, `store-owner`, `store-profile`, `mail-outbox`,
+  `shared-cluster`), а в етапі `deployed` ще й `domain-health` — `GET https://<domain>/api/health`
+  (таймаут 3 с; `healthy` → `ok` зі збіркою, інакше `error`). Кожне завдання (БД, домен) ганяється
+  з дедлайном команди окремо: що не вклалось у ~5 с — у `unknown`. Без `DATABASE_URL` чи драйвера `pg`
+  рядки БД — `skip`. Шим хука має таймаут 8 с, запис хука — 10 с, тому бюджет не збільшується.
+- **`.simplycms/deploy.json`** (`src/deploy-record.mjs`; закомічений, без секретів, Е8-Б4):
+  `{ "version": 1, "dokploy": { "url", "projectId", "applicationId", "postgresId" }, "domain", "bucket", "createdAt" }`.
+  Валідатор відкидає поле поза схемою, `dokploy.url` з userinfo/query/hash і домен зі схемою чи шляхом;
+  значення за словами на кшталт `secret` не перевіряються (хибні спрацювання на іменах ресурсів).
+  Нечитний чи невалідний файл — `unknown` (етап лишається `local`, код 1), а не мовчазне «не розгорнуто».
 - **Наступний скіл** (`nextSkill`) — перший збіг у таблиці зверху вниз; тест перевіряє КОЖЕН
   рядок. `warn` помилкою не вважається; `unknown` на вибір скіла не впливає (лише на код виходу).
 
@@ -132,6 +153,17 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
   ≤25 рядків. при обрізанні до 25 рядків рядки «не вдалося перевірити» не зрізаються, зрізаються проблеми. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
   мовчазна зміна режиму змінила б серйозність перевірок.
+
+### 3.1.2 `simplycms smoke <url>`
+
+Живий смоук розгорнутого магазину (`src/smoke.mjs` — тонкий мережевий шар; рішення «ок чи ні» —
+чисті функції `src/smoke-checks.mjs`). Перевірки по черзі, кожна друкує `✓|✗ назва — деталь`:
+`/api/health` (`status: 'healthy'`, `build` непорожній), `/`, `/catalog` (200), `/admin` (редирект
+з `Location` на вхід), `/robots.txt` (200 з `User-agent`), стиснення `br` на вхідному
+`/assets/*.js` (адреса береться з HTML головної), `POST` 3 МБ на `/_serverFn/x` → рівно `413`
+(`502` означає, що обрив з'єднання за стелею дійшов до проксі). Мережева помилка чи таймаут
+(10 с) однієї перевірки — її `✗`, а не падіння команди. Адреса з userinfo відхиляється.
+Код виходу: `0` — усе `✓`, `1` — хоч одне `✗` або помилка використання.
 
 ### 3.2 `simplycms add <pkg> (--plugin | --theme) [--copy] [--name <key>] [--no-install] [--dry-run]`
 

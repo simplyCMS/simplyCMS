@@ -21,6 +21,8 @@ export {
   type JournalRow,
   type ReadJournalOptions,
 } from './journal';
+export { readStoreFacts, type StoreFacts } from './store-facts';
+export type { RuntimeReadOptions } from './runtime-read';
 export { findForeignDatabases } from './cluster';
 export {
   MigrationChecksumError,

@@ -41,6 +41,11 @@ describe('cli doctor --online', () => {
   const core = (journal: unknown, foreign: string[] = []) => ({
     listMigrationFiles: () => files,
     readJournal: async () => journal,
+    readStoreFacts: async () => ({
+      owners: 1,
+      profile: { name: 'Shop', email: 'shop@example.com' },
+      failedMail: 0,
+    }),
     pendingMigrations,
     findForeignDatabases: async () => foreign,
   });

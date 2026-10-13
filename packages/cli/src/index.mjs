@@ -8,6 +8,7 @@ import { readCliVersion } from './context.mjs';
 const COMMANDS = {
   doctor: () => import('./doctor.mjs'),
   status: () => import('./status.mjs'),
+  smoke: () => import('./smoke.mjs'),
   add: () => import('./add.mjs'),
   create: () => import('./create.mjs'),
   update: () => import('./update.mjs'),
@@ -23,12 +24,15 @@ const HELP = `simplycms — CLI обслуговування магазину Si
 
 Команди:
   doctor    Read-only діагностика магазину; --strict — попередження теж валять,
-            --online — ще й стан БД (журнал міграцій, з DATABASE_URL),
+            --online — ще й стан БД (журнал міграцій, власник, профіль, листи; з DATABASE_URL),
             --production — перевіряти як прод (log-драйвер пошти — error, не warn)
   status    Етап магазину (не створено / локально / розгорнуто), стан перевірок і наступний скіл:
               status [--json | --hook] [--production]
               (код 0 — гаразд, 3 — є що робити, інше — стан невідомий;
-              --hook — вступ для агента + стан ≤25 рядків, без --production)
+              --hook — вступ для агента + стан ≤25 рядків, без --production;
+              онлайн-частина: БД, власник, профіль, листи; у етапі deployed ще й домен)
+  smoke     Живий смоук розгорнутого магазину: smoke <url>
+            (/api/health, сторінки, редирект /admin, robots, br, 413 на 3 МБ; код 1, якщо є ✗)
   add       Встановити плагін або тему:
               add <pkg> (--plugin | --theme) [--name <key>] [--no-install] [--dry-run]
               --copy (лише з --theme) — copy-in: сирці теми в themes/<key>, пакет знімається

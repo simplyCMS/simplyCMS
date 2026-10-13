@@ -163,6 +163,7 @@ export async function toolPkgSmoke() {
     for (const command of [
       'doctor',
       'status',
+      'smoke',
       'add',
       'create plugin',
       'create theme',
