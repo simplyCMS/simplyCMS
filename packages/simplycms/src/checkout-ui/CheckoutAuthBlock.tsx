@@ -39,6 +39,8 @@ export function CheckoutAuthBlock({
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  // Р30: після реєстрації зі SMTP сесії немає — підказка про скидання пароля.
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -48,6 +50,7 @@ export function CheckoutAuthBlock({
   const [regPassword, setRegPassword] = useState('');
 
   const clearMessages = () => {
+    setAwaitingVerification(false);
     setAuthError(null);
     setAuthSuccess(null);
   };
@@ -128,6 +131,7 @@ export function CheckoutAuthBlock({
         // Р30: підтвердження пошти ввімкнене — сесії немає, оформлення як
         // залогований не продовжуємо, доки пошту не підтверджено.
         setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
+        setAwaitingVerification(true);
         toast({ title: t('checkout.auth.checkEmailToast') });
       } else if (signUpData?.user) {
         setAuthSuccess(t('checkout.auth.registerSuccess'));
@@ -161,6 +165,21 @@ export function CheckoutAuthBlock({
           <div className="flex items-center gap-2 p-3 mb-4 border border-destructive/50 bg-destructive/10 rounded-md text-sm">
             <AlertCircle className="h-4 w-4 text-destructive" />
             {authError}
+          </div>
+        )}
+        {awaitingVerification && (
+          <div className="mb-4 space-y-1 text-sm text-muted-foreground">
+            <p>{t('auth.register.noEmailHint')}</p>
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                setActiveTab('login');
+                clearMessages();
+              }}
+            >
+              {t('auth.forgot.link')}
+            </button>
           </div>
         )}
         {authSuccess && (
