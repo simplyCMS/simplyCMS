@@ -44,7 +44,7 @@ export function createResetPasswordSender(deps: ResetMailDeps) {
     });
     const ids = await schedule([{ kind: 'password_reset', message }]);
     void deliverMail(ids, deps.mailTransport).catch(
-      logDeliveryFailure('скидання пароля'),
+      logDeliveryFailure('password_reset'),
     );
   };
 }

@@ -121,7 +121,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'super',
     reason: 'super(...) помилки — клієнт читає name/operation, не message',
   },
-  'packages/simplycms/src/auth/reset-mail.ts': {
+  'packages/simplycms/src/auth/mail-support.ts': {
     kind: 'console',
     reason: 'console.warn — лог доставки',
   },

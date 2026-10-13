@@ -35,7 +35,7 @@ export function createVerificationSender(
     });
     const ids = await schedule([{ kind: 'email_verification', message }]);
     void deliverMail(ids, deps.mailTransport).catch(
-      logDeliveryFailure('підтвердження пошти'),
+      logDeliveryFailure('email_verification'),
     );
   };
 }
