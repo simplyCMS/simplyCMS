@@ -128,6 +128,51 @@ describe('Auth: підтвердження пошти (Р30)', () => {
     expect(screen.getByText(t('auth.register.checkEmail'))).toBeTruthy();
   });
 
+  it('перемикання вкладок скидає «перевірте пошту»: форма реєстрації знову доступна', async () => {
+    h.tab = 'register';
+    h.signUp.mockResolvedValue({
+      data: { token: null, user: { id: 'u1' } },
+      error: null,
+    });
+    renderAuth();
+    type('firstName', 'Іван');
+    type('lastName', 'Тест');
+    type('register-email', 'a@x.test');
+    type('register-password', 'secret1');
+    type('confirmPassword', 'secret1');
+    fireEvent.click(
+      screen.getByRole('button', { name: t('auth.register.submit') }),
+    );
+    await screen.findByText(t('auth.register.checkEmail'));
+    fireEvent.mouseDown(
+      screen.getByRole('tab', { name: t('auth.login.tab') }),
+      {
+        button: 0,
+      },
+    );
+    fireEvent.mouseDown(
+      screen.getByRole('tab', { name: t('auth.register.title') }),
+      { button: 0 },
+    );
+    await waitFor(() =>
+      expect(document.getElementById('register-email')).not.toBeNull(),
+    );
+    expect(screen.queryByText(t('auth.register.checkEmail'))).toBeNull();
+  });
+
+  it('вхід: адреса з пробілами обрізається перед запитом', async () => {
+    h.tab = 'login';
+    h.signIn.mockResolvedValue({ data: { token: 't' }, error: null });
+    renderAuth();
+    type('login-email', '  a@x.test ');
+    type('login-password', 'secret1');
+    fireEvent.click(
+      screen.getByRole('button', { name: t('auth.login.submit') }),
+    );
+    await waitFor(() => expect(h.signIn).toHaveBeenCalled());
+    expect(h.signIn.mock.calls[0]![0].email).toBe('a@x.test');
+  });
+
   it('підказка -> перехід на вхід переносить email з реєстрації', async () => {
     h.tab = 'register';
     h.signUp.mockResolvedValue({

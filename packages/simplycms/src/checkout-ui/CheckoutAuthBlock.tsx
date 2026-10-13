@@ -64,7 +64,7 @@ export function CheckoutAuthBlock({
 
     try {
       const { error } = await authClient.signIn.email({
-        email: loginEmail,
+        email: loginEmail.trim(),
         password: loginPassword,
       });
 

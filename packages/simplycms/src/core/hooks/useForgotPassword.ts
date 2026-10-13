@@ -16,7 +16,9 @@ export function useForgotPassword() {
   const [pending, setPending] = useState(false);
 
   const requestReset = useCallback(
-    async (email: string): Promise<void> => {
+    async (rawEmail: string): Promise<void> => {
+      // Пробіли з вставленої адреси інакше стали б «іншою» поштою для запиту.
+      const email = rawEmail.trim();
       if (!email) {
         toast({ variant: 'destructive', title: t('auth.forgot.needEmail') });
         return;

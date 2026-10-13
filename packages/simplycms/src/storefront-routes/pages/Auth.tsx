@@ -69,7 +69,7 @@ export default function Auth() {
 
     try {
       const result = loginSchema.safeParse({
-        email: loginEmail,
+        email: loginEmail.trim(),
         password: loginPassword,
       });
 
@@ -86,7 +86,7 @@ export default function Auth() {
       }
 
       const { error } = await authClient.signIn.email({
-        email: loginEmail,
+        email: loginEmail.trim(),
         password: loginPassword,
       });
 
@@ -167,7 +167,13 @@ export default function Auth() {
           <CardContent>
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={(tab) => {
+                // Ручне перемикання вкладки скидає «перевірте пошту»: інакше після
+                // помилки в адресі до форми не повернутись без перезавантаження.
+                // Кнопка підказки перемикає вкладку сама (`setActiveTab`) і переносить email.
+                setAwaitingEmail(null);
+                setActiveTab(tab);
+              }}
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-2 mb-6">

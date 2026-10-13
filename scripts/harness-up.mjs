@@ -193,5 +193,6 @@ const lines = [
   `HARNESS_MAILPIT_URL=http://localhost:${MAILPIT.httpPort}`,
 ];
 writeFileSync(ENV_FILE, `${lines.join('\n')}\n`);
+// Секрети S3 у вивід не друкуємо: споживачі читають файл, а не stdout.
 console.log(`PG_HARNESS_URL=${PG_URL}`);
-console.log(lines.slice(1).join('\n'));
+console.log(`[harness] ключі сервісів записано в ${ENV_FILE}`);
