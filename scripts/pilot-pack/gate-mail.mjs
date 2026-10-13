@@ -11,7 +11,7 @@
  * env скретча (див. `gate-media.mjs`: випадіння ключів не має робити skip).
  */
 import { randomUUID } from 'node:crypto';
-import { setTimeout as sleep } from 'node:timers/promises';
+import { findMail } from '../mailpit.mjs';
 import { skippedGate } from './report.mjs';
 import { runInStore } from './store-child.mjs';
 
@@ -24,19 +24,6 @@ const transport = getMailTransport();
 await transport.send({ to: '${TO}', subject: ${JSON.stringify(subject)}, text: 'Gate MAIL', kind: 'gate' });
 console.log('${TAG} ' + JSON.stringify({ driver: transport.driver }));
 `;
-
-/** Лист із темою у Mailpit; `null` після таймауту. */
-async function findMail(api, subject) {
-  const deadline = Date.now() + 15_000;
-  do {
-    const res = await fetch(`${api}/api/v1/messages?limit=200`);
-    const { messages = [] } = await res.json();
-    const hit = messages.find((m) => m.Subject === subject);
-    if (hit) return hit;
-    await sleep(300);
-  } while (Date.now() < deadline);
-  return null;
-}
 
 /**
  * @param {string} storeDir
@@ -63,13 +50,17 @@ export async function gateMail(storeDir, env, { packOnly = false } = {}) {
         `FAIL запакований simplycms/mail: send без звіту (код ${sent.status}) — ${sent.error}`,
       ],
     };
-  const mail = await findMail(api, subject);
+  const { mail, error } = await findMail({
+    api,
+    match: (m) => m.Subject === subject,
+    timeout: 15_000,
+  });
   const delivered = mail !== null && mail.From.Address === from;
   details.push(
     `${delivered ? 'OK  ' : 'FAIL'} запакований simplycms/mail → Mailpit — драйвер ${sent.report.driver}, ` +
       (mail
         ? `From = ${mail.From.Address} (очікую ${from})`
-        : 'листа з темою немає (лист пішов у лог, а не в SMTP?)'),
+        : `листа з темою немає (${error ?? 'лист пішов у лог, а не в SMTP?'})`),
   );
   return { ok: delivered, details };
 }

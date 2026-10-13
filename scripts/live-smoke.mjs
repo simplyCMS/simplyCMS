@@ -52,11 +52,11 @@ import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
 import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
+import { clearMailpit } from './live-smoke/mail.mjs';
 import {
-  clearMailpit,
   runMailChecks,
   runSignupConfirmation,
-} from './live-smoke/mail.mjs';
+} from './live-smoke/mail-steps.mjs';
 import { signUp } from './live-smoke/register.mjs';
 import { withClientIps } from './live-smoke/client-ip.mjs';
 

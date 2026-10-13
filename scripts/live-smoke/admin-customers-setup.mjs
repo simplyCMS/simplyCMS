@@ -4,7 +4,7 @@
  * категорії з автоправилом — і доведення «контакти й email» та «ручна
  * категорія не зсувається автоправилом» (A) з контролем, що правило живе (B).
  */
-import { setTimeout } from 'node:timers/promises';
+import { rotateClientIp } from './client-ip.mjs';
 import { confirmEmail } from './mail.mjs';
 import { register } from './register.mjs';
 import { bumpStock } from './admin-discounts-sql.mjs';
@@ -72,9 +72,9 @@ export async function contactsPart({
     'Пошту ще не підтверджено',
   );
   const confirmed = await confirmEmail(pages.a, next);
-  // Better Auth: 3 входи за 10 с з одного клієнта — це вже третя спроба в цьому
-  // контексті, тож чекаємо кінця вікна ліміту, а не отримуємо 429.
-  await setTimeout(10_500);
+  // Better Auth: 3 входи за 10 с з одного клієнта — це третя спроба в цьому
+  // контексті, тож далі цей покупець приходить з іншого IP (без очікування вікна).
+  await rotateClientIp(pages.a.context());
   const ok = await buyer.loginAs(pages.a, base, next);
   const session = await buyer.sessionOf(pages.a);
   check(
