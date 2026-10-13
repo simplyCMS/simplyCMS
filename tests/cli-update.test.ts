@@ -21,8 +21,8 @@ import {
   inspectSkillLinks,
   reconcileSkillLinks,
 } from '../packages/cli/src/skill-links.mjs';
+import { AFTER_INSTALL } from '../packages/cli/src/update-handover.mjs';
 import {
-  AFTER_INSTALL,
   run,
   parseUpdateArgs,
   planCoreInstall,
@@ -434,13 +434,15 @@ describe('run: --check без мережі й передача керуванн�
   it('--after-install: ні install, ні повторного запуску; звірка своїм каноном', async () => {
     const store = await cleanStore('after');
     writeFileSync(join(store, 'server.mjs'), '// стара версія\n');
-    const { code } = await runIn(store, [
+    const { code, out } = await runIn(store, [
       '--write',
       '--to',
       '10.0.0',
       AFTER_INSTALL,
     ]);
     expect(code ?? 0).toBe(0);
+    // Заголовок друкує батьківський процес; дочірній його не дублює.
+    expect(out).not.toContain('┌');
     expect(readFileSync(join(store, 'server.mjs'), 'utf8')).toBe(
       readFileSync('packages/cli/host/server.mjs', 'utf8'),
     );
@@ -450,5 +452,57 @@ describe('run: --check без мережі й передача керуванн�
     const store = await cleanStore('noinst');
     const { code } = await runIn(store, ['--no-install', '--write']);
     expect(code ?? 0).toBe(0);
+  });
+
+  it('--check + дрейф host-файлів → код 3, файл не чіпано, порада --write один раз', async () => {
+    const store = await cleanStore('chk-host');
+    writeFileSync(join(store, 'server.mjs'), '// локальна правка\n');
+    const { code, out } = await runIn(store, ['--check']);
+    expect(code).toBe(3);
+    expect(out).toContain('дрейф host-файлів: server.mjs');
+    expect(out.split('update --write').length - 1).toBe(1);
+    expect(readFileSync(join(store, 'server.mjs'), 'utf8')).toBe(
+      '// локальна правка\n',
+    );
+  });
+
+  it('CLAUDE.md: відсутній — створено з agent/claude-md.md; без @AGENTS.md — не переписано, --check → 3', async () => {
+    const store = await cleanStore('claude');
+    const path = join(store, 'CLAUDE.md');
+    rmSync(path);
+    expect((await runIn(store, ['--check'])).code).toBe(3);
+    expect((await runIn(store, ['--no-install'])).code ?? 0).toBe(0);
+    expect(readFileSync(path, 'utf8')).toBe(
+      readFileSync('packages/simplycms/agent/claude-md.md', 'utf8'),
+    );
+    writeFileSync(path, '# мої правила без імпорту\n');
+    const { out } = await runIn(store, ['--no-install']);
+    expect(out).toContain('@AGENTS.md');
+    expect(readFileSync(path, 'utf8')).toBe('# мої правила без імпорту\n');
+    expect((await runIn(store, ['--check'])).code).toBe(3);
+  });
+
+  it('після install без CLI в node_modules — зрозуміла відмова з --no-install; bin рядком теж працює', async () => {
+    const store = await cleanStore('nocli');
+    const cli = join(store, 'node_modules', '@simplycms', 'cli');
+    const exec = () => undefined;
+    rmSync(join(cli, 'package.json'));
+    await expect(runIn(store, ['--to', '10.0.0'], exec)).rejects.toThrow(
+      /update --no-install/,
+    );
+    writeFileSync(
+      join(cli, 'package.json'),
+      JSON.stringify({ name: '@simplycms/cli', bin: 'cli.mjs' }),
+    );
+    const calls: string[][] = [];
+    await runIn(
+      store,
+      ['--to', '10.0.0'],
+      (command: string, args: string[]) => {
+        calls.push([command, ...args]);
+        return undefined;
+      },
+    );
+    expect(calls.at(-1)?.[1]).toBe(join(cli, 'cli.mjs'));
   });
 });

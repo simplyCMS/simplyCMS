@@ -30,8 +30,10 @@ const HELP = `simplycms — CLI обслуговування магазину Si
   create    Скаффолд плагіна або теми в самому магазині:
               create plugin <name> [--dry-run]
               create theme <name> [--dry-run]
-  update    Оновити ядро і host-файли:
+  update    Оновити ядро, host-файли й файли агента (AGENTS.md, CLAUDE.md, хук):
               update [--check | --write] [--to <version>] [--no-install]
+              --check: перевірка без мережі й install, нічого не пише
+                       (код 0 — збігається, 3 — розбіжність, 1 — помилка)
   db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
   db:apply  Накатити db/migrations на БД (MIGRATION_DATABASE_URL — власник схеми):
               db:apply [--dry-run | --check]   (--check: код 3, якщо є ненакочені)

@@ -4,18 +4,14 @@
 // пінить точні версії) і передати звірку новому CLI (Р21). Звірка теки магазину
 // (host-файли, лінки скілів, файли агента) — update-reconcile.mjs.
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
 import {
   readInstalledCoreVersion,
   resolveUpdateTarget,
 } from './update-target.mjs';
+import { AFTER_INSTALL, handOver } from './update-handover.mjs';
 import { reconcileStore } from './update-reconcile.mjs';
 import { begin, finish, say } from './ui.mjs';
-
-/** Маркер дочірнього процесу після install: новий CLI не ставить пакети вдруге (Р21). */
-export const AFTER_INSTALL = '--after-install';
 
 /**
  * `check` — чиста перевірка без мережі й install (Е8-Р12); `afterInstall` — запуск
@@ -110,29 +106,6 @@ function installCore(storeRoot, to, exec) {
 }
 
 /**
- * Р21: після `pnpm add` цей процес — СТАРИЙ CLI з каноном host/ своєї версії (Node
- * резолвить реальний шлях у `.pnpm/@simplycms+cli@<стара>`, і pnpm теку не прибирає).
- * Звірка тут дала б хибне «збігаються з каноном», тож перевірку й запис робить НОВИЙ
- * CLI магазину; маркер не дає йому ставити пакети вдруге. Код виходу — його.
- */
-function handOver(storeRoot, argv, exec) {
-  const cliDir = join(storeRoot, 'node_modules', '@simplycms', 'cli');
-  const manifest = JSON.parse(
-    readFileSync(join(cliDir, 'package.json'), 'utf8'),
-  );
-  // Точка входу — з `bin`, а не зашитий `src/index.mjs`: розкладка пакета може змінитись.
-  const entry = join(cliDir, manifest.bin.simplycms);
-  say.step('Пакети встановлено — звірку й запис веде нова версія CLI.');
-  const options = { cwd: storeRoot, stdio: 'inherit' };
-  try {
-    exec(process.execPath, [entry, 'update', AFTER_INSTALL, ...argv], options);
-  } catch (error) {
-    if (typeof error?.status !== 'number') throw error;
-    process.exitCode = error.status;
-  }
-}
-
-/**
  * @param {string[]} argv
  * @param {{ exec?: (command: string, args: string[], options?: object) => unknown }} [deps]
  *   `exec` — єдиний шов дочірніх процесів (`pnpm view`, `pnpm add`, запуск нового
@@ -141,7 +114,8 @@ function handOver(storeRoot, argv, exec) {
 export async function run(argv, deps = {}) {
   const exec = deps.exec ?? defaultExec;
   const options = parseUpdateArgs(argv);
-  begin('simplycms update');
+  // Дочірній процес Р21 продовжує вивід батька: другий заголовок був би дублем.
+  if (!options.afterInstall) begin('simplycms update');
   const storeRoot = findStoreRoot();
   if (options.install) {
     const installed = installCore(storeRoot, options.to, exec);

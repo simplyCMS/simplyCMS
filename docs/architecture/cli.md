@@ -80,7 +80,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 15 | пошта (`checkMailConfigured`, `src/doctor-mail-check.mjs`; Е8-Р17): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
 | 16 | підтвердження пошти (`checkEmailVerification`, Р30): `--production` + драйвер не `smtp` → реєстрація без підтвердження пошти | warn |
 | 17 | `engines.simplycms` кожного плагіна й теми конфігу покриває встановлене ядро (`src/doctor-engines.mjs`; Р32). `satisfies` береться з ядра магазину (`simplycms/contracts/semver` через `importFromStore`) — npm-вирівняний, без копії semver у CLI; діапазон — `default.manifest.engines` зібраного пакета або літерал у сирцях локального `@plugins/*`/`@themes/*`. Не покриває → error з пакетом, діапазоном, версією ядра й дією «онови плагін або відкоти ядро»; `engines` відсутній чи нерозбірливий, модуль не вдалося прочитати → warn; ядра немає — `skip`. Теми перевіряються всі з конфігу (активна зберігається в БД, офлайн невідома) — у details тема з пометкою «може бути неактивною». Для пакетів `doctor` ІМПОРТУЄ модуль плагіна/теми з магазину, тож виконуються його побічні ефекти верхнього рівня; збій імпорту → warn. Контекст перевірок збирає `buildOfflineContext` (`doctor.mjs`), спільний для `doctor` і `status` (`ctx.engines`). Ця ж перевірка входить у спільний список `status` | error / warn |
-| 18 | файли агента (`checkAgentFiles`, `src/agent-files.mjs`; Б §3.3): керований блок `AGENTS.md` = `renderManagedBlock(node_modules/simplycms/agent/intro.md)`, у `.claude/settings.json` є канонічний запис хука `SessionStart` (`node .claude/hooks/session-start.mjs`, matcher `startup\|clear\|compact`). Розбіжність, маркери відсутні/пошкоджені, запису немає → warn; `details` несе рекомендовані дозволи Claude Code з `simplycms/agent/permissions.json` («читання вільно, зміни через підтвердження») — `update` дозволи не зливає. Ядро без `agent/` — `skip` | warn → `update` |
+| 18 | файли агента (`checkAgentFiles`, `src/agent-files.mjs`; Б §3.3): керований блок `AGENTS.md` = `renderManagedBlock(node_modules/simplycms/agent/intro.md)`, `CLAUDE.md` є й містить рядок `@AGENTS.md` (Claude Code сам `AGENTS.md` не читає), у `.claude/settings.json` є канонічний запис хука `SessionStart` (`node .claude/hooks/session-start.mjs`, matcher `startup\|clear\|compact`). Розбіжність, маркери відсутні/пошкоджені, немає `CLAUDE.md` чи імпорту, запису немає → warn; `details` несе рекомендовані дозволи Claude Code з `simplycms/agent/permissions.json` («читання вільно, зміни через підтвердження») — `update` дозволи не зливає. Ядро без `agent/` — `skip` | warn → `update` |
 
 **Режим (Е8-Р17).** `--production` АБО `isProductionRuntime(process.env)` з `simplycms/env` (CLI бере його через `importFromStore`; власної перевірки `NODE_ENV` немає, `.env*` магазину для режиму не читаються). Після Р16 `NODE_ENV=production` ставить лише `server.mjs`, тож разовий `doctor` (CI, `prod-run`) прод-режим задає прапорцем. Перший рядок звіту — «режим: production» або «режим: розробка (для перевірки проду — `--production`)». Коди виходу не змінюються: режим міняє лише серйозність перевірок, що від нього залежать.
 
@@ -168,7 +168,10 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    `--check` (Е8-Р12) — чиста перевірка для CI: без мережі й install, нічого не пише;
    коди Е8-О8: `0` — збігається, `3` — будь-яка розбіжність (host-файли, лінки скілів,
    керований блок, запис хука), `1` — помилка (тека міграцій, невалідний
-   `.claude/settings.json`).
+   `.claude/settings.json`). Дочірній CLI Р21 у `--check` не запускається; у звичайному
+   режимі він продовжує вивід батька (без другого заголовка), а відсутній
+   `node_modules/@simplycms/cli/package.json` чи `bin` дає відмову з порадою
+   `pnpm simplycms update --no-install`.
 3. **Лінки скілів** (трек К0). Після кроку версій `update` звіряє
    `.agents/skills/`+`.claude/skills/` з текою `skills/` встановленого ядра:
    доробляє відсутні й биті, прибирає осиротілі (лінк у пакет, якому вже
@@ -180,7 +183,9 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    встановленого ядра (`simplycms/agent/intro.md`) тією самою функцією, що й
    шаблонний (`src/managed-block.mjs`, `pnpm template:sync`); текст поза маркерами
    байт-у-байт не чіпається. Маркерів немає (чи файлу) або вони пошкоджені —
-   `update` нічого не пише й друкує, які два рядки вставити. Запис хука `SessionStart`
+   `update` нічого не пише й друкує, які два рядки вставити. Відсутній `CLAUDE.md`
+   створюється з `simplycms/agent/claude-md.md` (той самий файл синк кладе в шаблон);
+   наявний не переписується ніколи — без рядка `@AGENTS.md` update лише попереджає. Запис хука `SessionStart`
    у `.claude/settings.json` (`src/hook-entry.mjs`) додається чи оновлюється; інші
    ключі й чужі хуки лишаються, дозволи не зливаються (їх показує doctor №18). Без
    прапорців і з `--write` — пишеться; `--check` — розбіжність, код 3.

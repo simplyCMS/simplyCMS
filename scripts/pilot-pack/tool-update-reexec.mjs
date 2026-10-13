@@ -7,13 +7,12 @@
  *
  * Обидва tarball-и — з поточних сирців (стара версія теж уміє передати керування:
  * це вимога саме до версії, З ЯКОЇ оновлюються); відрізняються версією і каноном
- * `host/server.mjs`. Віддає їх локальний реєстр лише для скоупу `@simplycms`
- * (`.npmrc` магазину): update кличе справжній `pnpm add -D @simplycms/cli@0.0.2`,
- * а overrides на `file:` прямий `add` не перехоплюють (заміряно: pnpm іде в npmjs).
+ * `host/server.mjs`. Усе, що ставить pnpm (обидва CLI і дерево їхніх залежностей
+ * з `node_modules` монорепо), віддає локальний реєстр — без мережі. Overrides на
+ * `file:` не годяться (заміряно): прямий `pnpm add` їх ігнорує й іде в npmjs.
  */
 
 import { execFile as execFileCb } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import {
   cpSync,
   mkdirSync,
@@ -21,12 +20,13 @@ import {
   readdirSync,
   writeFileSync,
 } from 'node:fs';
-import { createServer } from 'node:http';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { packInstalledTree, startLocalRegistry } from './local-registry.mjs';
 
 // Асинхронно: реєстр живе в цьому ж процесі, execFileSync заблокував би його.
 const execFile = promisify(execFileCb);
+const TIMEOUT = 180_000;
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const CLI_DIR = join(REPO_ROOT, 'packages/cli');
 const NEW_MARK = '\n// канон host/ нової версії CLI (Gate TOOL, Р21)\n';
@@ -39,62 +39,20 @@ async function packVariant(work, version, mark) {
     filter: (path) => !path.includes('node_modules'),
   });
   const manifestPath = join(dir, 'package.json');
-  const manifest = {
-    ...JSON.parse(readFileSync(manifestPath, 'utf8')),
-    version,
-  };
+  const source = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const manifest = { ...source, version };
   writeFileSync(manifestPath, JSON.stringify(manifest));
   if (mark) writeFileSync(join(dir, 'host/server.mjs'), mark, { flag: 'a' });
   const out = join(work, `tgz-${version}`);
-  await execFile('pnpm', ['--dir', dir, 'pack', '--pack-destination', out]);
+  await execFile('pnpm', ['--dir', dir, 'pack', '--pack-destination', out], {
+    timeout: TIMEOUT,
+  });
   const bytes = readFileSync(join(out, readdirSync(out)[0]));
   return { dir, manifest, bytes };
 }
 
-/** Мінімальний реєстр: packument `@simplycms/cli` і tarball-и обох версій. */
-async function startRegistry(variants) {
-  const server = createServer((req, res) => {
-    const base = `http://127.0.0.1:${server.address().port}`;
-    const tarball = variants.find(
-      (v) => req.url === `/cli-${v.manifest.version}.tgz`,
-    );
-    if (tarball) return res.end(tarball.bytes);
-    if (decodeURIComponent(req.url) !== '/@simplycms/cli') {
-      res.statusCode = 404;
-      return res.end('{}');
-    }
-    const versions = {};
-    const time = {};
-    for (const { manifest, bytes } of variants) {
-      const sha512 = createHash('sha512').update(bytes).digest('base64');
-      versions[manifest.version] = {
-        ...manifest,
-        dist: {
-          tarball: `${base}/cli-${manifest.version}.tgz`,
-          integrity: `sha512-${sha512}`,
-          shasum: createHash('sha1').update(bytes).digest('hex'),
-        },
-      };
-      // Давня дата публікації: інакше дефолтний minimumReleaseAge pnpm 11 відмовить.
-      time[manifest.version] = '2020-01-01T00:00:00.000Z';
-    }
-    const latest = variants.at(-1).manifest.version;
-    res.setHeader('content-type', 'application/json');
-    res.end(
-      JSON.stringify({
-        name: '@simplycms/cli',
-        'dist-tags': { latest },
-        versions,
-        time,
-      }),
-    );
-  });
-  await new Promise((done) => server.listen(0, '127.0.0.1', done));
-  return server;
-}
-
 /** Порожній магазин зі старим CLI: devDependency + host-файли його канону. */
-async function storeOnOld(store, registry, old) {
+async function storeOnOld(store, registryUrl, old) {
   mkdirSync(join(store, 'db/migrations'), { recursive: true });
   const template = readFileSync(
     join(
@@ -115,12 +73,9 @@ async function storeOnOld(store, registry, old) {
       devDependencies: { '@simplycms/cli': old.manifest.version },
     }),
   );
-  const port = registry.address().port;
-  writeFileSync(
-    join(store, '.npmrc'),
-    `@simplycms:registry=http://127.0.0.1:${port}/\n`,
-  );
-  await execFile('pnpm', ['install', '--prefer-offline'], { cwd: store });
+  // ВЕСЬ реєстр — локальний: пакет поза набором дає 404, а не похід у мережу.
+  writeFileSync(join(store, '.npmrc'), `registry=${registryUrl}\n`);
+  await execFile('pnpm', ['install'], { cwd: store, timeout: TIMEOUT });
   cpSync(join(old.dir, 'host'), store, { recursive: true });
 }
 
@@ -131,14 +86,22 @@ async function storeOnOld(store, registry, old) {
 export async function updateReexecSmoke(work) {
   const old = await packVariant(work, '0.0.1', '');
   const next = await packVariant(work, '0.0.2', NEW_MARK);
-  const registry = await startRegistry([old, next]);
+  const deps = [];
+  for (const name of Object.keys(old.manifest.dependencies ?? {}))
+    deps.push(
+      ...(await packInstalledTree(
+        join(CLI_DIR, 'node_modules', name),
+        join(work, 'deps'),
+      )),
+    );
+  const registry = await startLocalRegistry([old, next, ...deps]);
   try {
     const store = join(work, 'r21-store');
-    await storeOnOld(store, registry, old);
+    await storeOnOld(store, registry.url, old);
     const { stdout } = await execFile(
       'pnpm',
       ['exec', 'simplycms', 'update', '--write', '--to', '0.0.2'],
-      { cwd: store },
+      { cwd: store, timeout: TIMEOUT },
     );
     const actual = readFileSync(join(store, 'server.mjs'), 'utf8');
     if (actual !== readFileSync(join(next.dir, 'host/server.mjs'), 'utf8'))

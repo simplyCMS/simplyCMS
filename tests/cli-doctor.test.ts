@@ -438,6 +438,19 @@ describe('cli doctor (оффлайн)', () => {
       agents,
       readFileSync(agents, 'utf8').replace('## Як працювати', '## Інакше'),
     );
+    // CLAUDE.md: без нього (чи без рядка @AGENTS.md) Claude Code блоку не бачить.
+    const claude = join(store, 'CLAUDE.md');
+    const claudeText = readFileSync(claude, 'utf8');
+    writeFileSync(claude, '# без імпорту\n');
+    const noImport = checkAgentFiles({ storeRoot: store });
+    expect(noImport.status).toBe('warn');
+    expect(noImport.details).toContain('@AGENTS.md');
+    rmSync(claude);
+    expect(checkAgentFiles({ storeRoot: store }).details).toContain(
+      'немає CLAUDE.md',
+    );
+    writeFileSync(claude, claudeText);
+
     const drift = checkAgentFiles({ storeRoot: store });
     expect(drift.status).toBe('warn');
     expect(drift.details).toContain('керований блок AGENTS.md');

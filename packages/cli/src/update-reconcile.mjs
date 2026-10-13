@@ -32,13 +32,11 @@ function linkProblems(storeRoot, check) {
   ];
 }
 
-/** Файли агента: запис (крім `--check`); маркери без ремонту — інструкція власнику. */
+/** Файли агента: запис (крім `--check`); те, що вирішує власник, — лише інструкція. */
 function agentStep(storeRoot, check) {
   const state = inspectAgentFiles(storeRoot);
-  if (state.hook.status === 'invalid') {
-    say.error(state.hook.error);
-    return { failed: true, problems: [] };
-  }
+  const failed = state.hook.status === 'invalid';
+  if (failed) say.error(state.hook.error);
   if (state.block === null)
     say.info(
       'Встановлене ядро не везе agent/ — керований блок AGENTS.md не звіряю.',
@@ -48,11 +46,14 @@ function agentStep(storeRoot, check) {
       MANUAL_BLOCK_STEPS,
       'Керований блок AGENTS.md: update нічого не записав',
     );
-  if (check) return { failed: false, problems: describeAgentDrift(state) };
+  if (check) return { failed, problems: describeAgentDrift(state) };
   const written = writeAgentFiles(storeRoot, state);
   if (written.length > 0)
     say.success(`Оновлено файли агента: ${written.join(', ')}`);
-  return { failed: false, problems: [] };
+  // CLAUDE.md власника update не переписує — лише називає, чого бракує.
+  if (state.claude?.status === 'no-import')
+    say.warn(describeAgentDrift({ claude: state.claude }).join('; '));
+  return { failed, problems: [] };
 }
 
 /**
@@ -81,18 +82,21 @@ export function reconcileStore(storeRoot, { check, write }) {
       'git diff     # ревʼю перезаписаних host-файлів',
       'pnpm build   # перезбірка магазину',
     ]);
+  } else if (check) {
+    // У --check усе зібране звучить один раз — підсумком нижче.
+    problems.push(`дрейф host-файлів: ${drifted.join(', ')}`);
   } else {
     say.error(`Дрейф host-файлів проти канону: ${drifted.join(', ')}`);
     showSteps([
       'pnpm simplycms update --write   # перезаписати канонічними версіями',
     ]);
-    if (check) problems.push(`дрейф host-файлів: ${drifted.join(', ')}`);
-    else exitCode = 1;
+    exitCode = 1;
   }
   const agent = agentStep(storeRoot, check);
   problems.push(...agent.problems);
   if (problems.length > 0) {
     say.error(`Розбіжності: ${problems.join('; ')}`);
+    showSteps(['pnpm simplycms update --write   # привести магазин до канону']);
     exitCode = 3;
   }
   // Тека міграцій перевіряється на кожній гілці: жодна з них не мовчить про неї.
