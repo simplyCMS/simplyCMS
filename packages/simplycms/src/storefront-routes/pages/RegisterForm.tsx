@@ -24,13 +24,21 @@ const buildRegisterSchema = (t: Translator) =>
     });
 
 /**
- * Форма реєстрації вкладки «Реєстрація». Власний стан, зокрема
- * `awaitingVerification` (Р30): зі SMTP `signUp` повертає `token: null`, і замість
- * форми показується «перевірте пошту».
+ * Форма реєстрації вкладки «Реєстрація». Зі SMTP (Р30) `signUp` повертає
+ * `token: null`, і замість форми показується «перевірте пошту».
+ *
+ * 🔴 Стан «очікуємо лист» (`awaitingEmail`) належить батьківській сторінці, а не
+ * формі: після `signUp` Better Auth перезапитує сесію, `Auth` на мить показує
+ * спінер замість усього дерева, і форма розмонтовується — власний стан тоді
+ * губився, а покупець бачив порожню форму без жодного пояснення.
  */
 export function RegisterForm({
+  awaitingEmail,
+  onAwaitingVerification,
   onGoToLogin,
 }: {
+  awaitingEmail: string | null;
+  onAwaitingVerification: (email: string) => void;
   onGoToLogin: (email: string) => void;
 }) {
   const t = useT();
@@ -39,7 +47,6 @@ export function RegisterForm({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const registerSchema = useMemo(() => buildRegisterSchema(t), [t]);
 
@@ -92,7 +99,7 @@ export function RegisterForm({
       } else if (data?.token === null) {
         // Підтвердження пошти ввімкнене: акаунт створено без сесії. Навігація
         // «як залогіненого» повела б на сторінки, що вимагають входу.
-        setAwaitingVerification(true);
+        onAwaitingVerification(registerEmail);
       } else {
         toast({
           title: t('auth.register.success'),
@@ -111,7 +118,7 @@ export function RegisterForm({
     }
   };
 
-  return awaitingVerification ? (
+  return awaitingEmail !== null ? (
     <div role="status" className="space-y-2 text-center">
       <p className="font-medium">{t('auth.register.checkEmail')}</p>
       <p className="text-sm text-muted-foreground">
@@ -124,7 +131,7 @@ export function RegisterForm({
       <Button
         type="button"
         variant="link"
-        onClick={() => onGoToLogin(registerEmail)}
+        onClick={() => onGoToLogin(awaitingEmail)}
       >
         {t('auth.forgot.link')}
       </Button>

@@ -52,6 +52,8 @@ export default function Auth() {
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
+  // Р30: переживає спінер `authLoading` нижче, який розмонтовує форму реєстрації.
+  const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
 
   useEffect(() => {
@@ -255,9 +257,12 @@ export default function Auth() {
               {/* Register Tab */}
               <TabsContent value="register" className="space-y-4">
                 <RegisterForm
+                  awaitingEmail={awaitingEmail}
+                  onAwaitingVerification={setAwaitingEmail}
                   onGoToLogin={(email) => {
                     // Адреса з реєстрації переходить у вхід: не вводити вдруге.
                     setLoginEmail(email);
+                    setAwaitingEmail(null);
                     setActiveTab('login');
                   }}
                 />

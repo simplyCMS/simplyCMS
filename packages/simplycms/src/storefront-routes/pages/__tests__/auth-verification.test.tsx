@@ -20,6 +20,7 @@ const h = vi.hoisted(() => ({
   navigate: vi.fn(),
   toast: vi.fn(),
   tab: 'register',
+  loading: false,
 }));
 
 vi.mock('simplycms/core/lib/auth-client', () => ({
@@ -30,7 +31,7 @@ vi.mock('simplycms/core/lib/auth-client', () => ({
   },
 }));
 vi.mock('simplycms/core/hooks/useAuth', () => ({
-  useAuth: () => ({ user: null, isLoading: false }),
+  useAuth: () => ({ user: null, isLoading: h.loading }),
 }));
 vi.mock('simplycms/core/hooks/use-toast', () => ({
   useToast: () => ({ toast: h.toast }),
@@ -57,7 +58,10 @@ const renderAuth = () =>
   );
 
 describe('Auth: підтвердження пошти (Р30)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    h.loading = false;
+  });
   afterEach(cleanup);
 
   it('signUp -> { token: null }: показано «перевірте пошту», навігації немає', async () => {
@@ -89,6 +93,39 @@ describe('Auth: підтвердження пошти (Р30)', () => {
     expect(h.toast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: t('auth.register.success') }),
     );
+  });
+
+  it('«перевірте пошту» переживає спінер сесії, що розмонтовує форму', async () => {
+    h.tab = 'register';
+    h.signUp.mockResolvedValue({
+      data: { token: null, user: { id: 'u1' } },
+      error: null,
+    });
+    const view = renderAuth();
+    type('firstName', 'Іван');
+    type('lastName', 'Тест');
+    type('register-email', 'a@x.test');
+    type('register-password', 'secret1');
+    type('confirmPassword', 'secret1');
+    fireEvent.click(
+      screen.getByRole('button', { name: t('auth.register.submit') }),
+    );
+    await screen.findByText(t('auth.register.checkEmail'));
+    // Better Auth перезапитує сесію: `Auth` на мить віддає спінер замість дерева.
+    h.loading = true;
+    view.rerender(
+      <I18nProvider locale="uk">
+        <Auth />
+      </I18nProvider>,
+    );
+    expect(screen.queryByText(t('auth.register.checkEmail'))).toBeNull();
+    h.loading = false;
+    view.rerender(
+      <I18nProvider locale="uk">
+        <Auth />
+      </I18nProvider>,
+    );
+    expect(screen.getByText(t('auth.register.checkEmail'))).toBeTruthy();
   });
 
   it('підказка -> перехід на вхід переносить email з реєстрації', async () => {
