@@ -136,6 +136,13 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   гейта дрейф сигнатур ядер, якими пише сід, червонів би лише на живому запуску.
 - `test:schema` у ланцюгу, бо він єдиний перевіряє накат канону міграцій і ПОВЕДІНКУ RLS —
   інші гейти схему БД не виконують.
+- 🔴 Гейти `test`, `test:schema`, `test:packaging` **ізольовані від `.env*` розробника**: усі три
+  vitest-конфіги мають `envDir: false` (штатний вимикач Vite — Vite shared-options `envDir`),
+  інакше `VITE_*` з `.env.local` робили б гейт зеленим лише локально й червоним у CI. Проєкт `pg`
+  отримує фіксований `VITE_SITE_URL=http://store.test` у `test.env`. Ключі стенду (`HARNESS_SMTP_URL`,
+  `HARNESS_MAILPIT_URL`, `S3_*`, `PG_HARNESS_URL`) беруться з env, а `.env.harness` — лише запасний
+  шлях. Доводить `tests/gate-env-isolation.test.ts` (пробна `.env.local` у tmp-корені) і
+  `tests/harness-env.test.ts`.
 - `test:packaging` іде **після** `pnpm test` і `build:packages`: `tests/published-exports-parity.test.ts`
   виведено з дефолтного прогону (`test.exclude`), він працює по зібраних tarball-ах.
 - 🔴 `typecheck:template` — окремий гейт **після** `build:packages`: кореневий `tsconfig.json`

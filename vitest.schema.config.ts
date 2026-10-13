@@ -34,6 +34,9 @@ loadHarnessEnv(import.meta.dirname);
 const blankS3 = Object.fromEntries(
   [...SERVICE_KEYS, ...MAIL_KEYS].map((k) => [k, '']),
 );
+// Фіксована база посилань для листів: place-order fail-loud без VITE_SITE_URL (Р18),
+// а CI його не задає — значення не береться ні з оточення, ні з `.env.local`.
+const SITE_URL = 'http://store.test';
 const common = {
   environment: 'node',
   // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
@@ -44,6 +47,9 @@ const common = {
 } as const;
 
 export default defineConfig({
+  // 🔴 Гейт не читає `.env*` розробника (Р31): інакше `VITE_SITE_URL` з `.env.local`
+  // робив би його зеленим лише локально. Env проєктів — лише явний `test.env`.
+  envDir: false,
   resolve: {
     alias: {
       simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
@@ -61,7 +67,7 @@ export default defineConfig({
             'packages/simplycms/test-harness/storage/**',
             'packages/simplycms/test-harness/mail/**',
           ],
-          env: blankS3,
+          env: { ...blankS3, VITE_SITE_URL: SITE_URL },
         },
       },
       {

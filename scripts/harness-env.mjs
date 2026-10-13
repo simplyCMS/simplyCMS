@@ -87,7 +87,12 @@ export function harnessServicesEnv(root) {
 export function harnessMailEnv(root) {
   const fromFile = liveHarnessFile(root) ?? {};
   const pick = (k) => process.env[k] ?? fromFile[k];
-  const smtpUrl = process.env.SMTP_URL ?? fromFile.HARNESS_SMTP_URL;
+  // CI-job задає HARNESS_SMTP_URL у env (файлу `.env.harness` там немає); голий
+  // SMTP_URL на рівні job-а перемкнув би pg-крило на smtp, тому його не виносимо.
+  const smtpUrl =
+    process.env.SMTP_URL ??
+    process.env.HARNESS_SMTP_URL ??
+    fromFile.HARNESS_SMTP_URL;
   const mailpit = pick('HARNESS_MAILPIT_URL');
   return Object.fromEntries(
     Object.entries({

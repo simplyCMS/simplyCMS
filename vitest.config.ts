@@ -13,6 +13,11 @@ const pkg = (p: string) => resolve(import.meta.dirname, 'packages', p);
 // SSR-трансформує і ламає hook-тести) + дедуп React + ті самі workspace-аліаси,
 // що й у vite.config.ts.
 export default defineConfig({
+  // 🔴 Гейт не читає `.env*` розробника: Vite/Vitest інакше підтягують `VITE_*`
+  // з `.env.local` у `process.env`/`import.meta.env`, і тест зелений лише на
+  // машині власника та червоний у CI чи чистому дереві (Р31). `false` — штатний
+  // вимикач завантаження env-файлів (Vite `envDir`, shared-options).
+  envDir: false,
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],

@@ -12,6 +12,8 @@ import { defineConfig } from 'vitest/config';
 // React-плагін не потрібен: тести читають tarball-и, manifest-и й файли
 // `dist` напряму, без JSX. Alias нижче — виняток лише для гейту партиції.
 export default defineConfig({
+  // Гейт не читає `.env*` розробника (Р31): див. пояснення у vitest.config.ts.
+  envDir: false,
   // Один base-prefix ключ, як у vitest.config.ts: гейт партиції треку T
   // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
   // Тим самим специфікатором декларацію читає `tsdown.config.ts` ядра, а
