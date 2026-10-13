@@ -267,6 +267,12 @@ describe('create-store template: парність із монорепо', () => 
     expect(scripts.start).toBe('node server.mjs');
   });
 
+  it('gitignore шаблону ігнорує tmp атомарного запису deploy.json', () => {
+    const lines = read(join(TEMPLATE_DIR, 'gitignore')).split('\n');
+    expect(lines).toContain('.simplycms/*.tmp');
+    expect(lines).not.toContain('.simplycms/');
+  });
+
   it('README шаблону: прод-рецепт — node scripts/start.mjs, pnpm start позначений «не для проду»', () => {
     const readme = read(join(TEMPLATE_DIR, 'README.md'));
     expect(readme).toContain('node scripts/start.mjs');

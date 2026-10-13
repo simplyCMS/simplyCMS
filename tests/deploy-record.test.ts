@@ -118,6 +118,21 @@ describe('валідатор deploy.json', () => {
       );
   });
 
+  it("userinfo не прив'язано до початку рядка: пробіл чи префікс перед схемою не обходять перевірку", () => {
+    for (const bucket of [
+      ' https://u:p@x',
+      'x https://u:p@x',
+      '\thttps://u:p@x',
+    ])
+      expect(() => validateDeployRecord({ ...record(), bucket })).toThrow(
+        /userinfo/,
+      );
+    // `@` після шляху — не userinfo.
+    expect(
+      validateDeployRecord({ ...record(), bucket: 'https://h/path@x' }),
+    ).toBeTruthy();
+  });
+
   it('createdAt: лише повний ISO-8601 — "2026" і дата без часу відхиляються', () => {
     for (const createdAt of ['2026', '2026-10-13', '13 Oct 2026'])
       expect(() => validateDeployRecord({ ...record(), createdAt })).toThrow(
@@ -176,6 +191,10 @@ describe('читання й запис', () => {
     mkdirSync(join(root, '.simplycms'));
     writeFileSync(join(root, '.simplycms/deploy.json'), '{bad');
     expect(() => readDeployRecord(root)).toThrow();
+    // JSON.parse цитує уривок файла (Node 24) — у текст помилки він потрапити не має.
+    writeFileSync(join(root, '.simplycms/deploy.json'), 'password=hunter2 {');
+    expect(() => readDeployRecord(root)).toThrow('deploy.json: не JSON');
+    expect(() => readDeployRecord(root)).not.toThrow(/hunter2/);
     writeFileSync(join(root, '.simplycms/deploy.json'), '{"version":1}');
     expect(() => readDeployRecord(root)).toThrow();
   });

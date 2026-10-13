@@ -91,4 +91,21 @@ describe('deploy:record', () => {
     expect(cli(root, ['get']).code).toBe(1);
     expect(cli(root, []).code).toBe(1);
   });
+
+  it('get і status --json на битому файлі: «не JSON» без уривка вмісту (hunter2)', async () => {
+    const { writeFileSync } = await import('node:fs');
+    const root = await scaffoldFakeStore('dr-echo', roots);
+    cli(root, ['set'], JSON.stringify(RECORD));
+    writeFileSync(file(root), 'password=hunter2 {');
+    const get = cli(root, ['get']);
+    expect(get.code).toBe(1);
+    expect(get.err + get.out).toContain('deploy.json: не JSON');
+    expect(get.err + get.out).not.toContain('hunter2');
+    const status = spawnSync('node', [CLI_INDEX, 'status', '--json'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    expect(status.stdout).toContain('deploy.json: не JSON');
+    expect(status.stdout + status.stderr).not.toContain('hunter2');
+  });
 });

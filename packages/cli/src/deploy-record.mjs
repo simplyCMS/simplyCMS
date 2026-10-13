@@ -52,8 +52,11 @@ function assertDokployUrl(value) {
     );
 }
 
-/** Облікові дані в URL (`scheme://user:pass@host`) заборонені в будь-якому рядковому полі. */
-const URL_USERINFO = /^[a-z][a-z0-9+.-]*:\/\/[^/?#]*@/i;
+/**
+ * Облікові дані в URL (`scheme://user:pass@host`) заборонені в будь-якому рядковому полі.
+ * Не прив'язано до початку рядка: пробіл чи префікс перед схемою не мають обходити перевірку.
+ */
+const URL_USERINFO = /:\/\/[^/?#\s]*@/;
 
 function assertNoUserinfo(obj, where) {
   for (const [key, value] of Object.entries(obj)) {
@@ -99,7 +102,14 @@ function validateDeployRecord(rec) {
 export function readDeployRecord(storeRoot) {
   const path = join(storeRoot, DEPLOY_RECORD_PATH);
   if (!existsSync(path)) return null;
-  return validateDeployRecord(JSON.parse(readFileSync(path, 'utf8')));
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    // Фіксований текст: повідомлення `JSON.parse` цитує уривок файла, а файл може нести секрет.
+    throw new Error('deploy.json: не JSON');
+  }
+  return validateDeployRecord(parsed);
 }
 
 /**

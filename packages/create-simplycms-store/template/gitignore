@@ -20,3 +20,6 @@ src/routeTree.gen.ts
 
 # Локальне сховище медіа (драйвер local-fs, дефолт MEDIA_ROOT)
 .data/
+
+# Тимчасовий файл атомарного запису `simplycms deploy:record set` (лишається, якщо процес убито)
+.simplycms/*.tmp
