@@ -111,6 +111,17 @@ describe('cli doctor --online', () => {
     expect(c.details).not.toContain('hunter2');
   });
 
+  it('shared-cluster: findForeignDatabases отримує бюджет timeoutMs (3 с), як readJournal', async () => {
+    const findForeignDatabases = vi.fn(async () => [] as string[]);
+    await runOnlineChecks(ctx, {
+      probe: reachable,
+      core: { ...core([]), findForeignDatabases },
+    });
+    expect(findForeignDatabases).toHaveBeenCalledWith(URL_WITH_PASSWORD, {
+      timeoutMs: CONNECT_TIMEOUT_MS,
+    });
+  });
+
   it('shared-cluster: помилка запиту → error без пароля; БД недоступна → skip', async () => {
     const failing = {
       ...core([]),

@@ -5,6 +5,7 @@
 // нього лише через `SET ROLE app_admin` у read-only транзакції.
 import { storeMigrationsDir } from './db-diff.mjs';
 import { redactUrls } from './redact-urls.mjs';
+import { clusterCheck, clusterSkip } from './doctor-cluster-check.mjs';
 import { importFromStore } from './store-core.mjs';
 
 /** Бюджет на з'єднання й запит: недоступна БД не має підвішувати діагностику. */
@@ -12,7 +13,6 @@ export const CONNECT_TIMEOUT_MS = 3000;
 
 const REACHABLE = 'Доступність БД (DATABASE_URL)';
 const JOURNAL = 'Журнал міграцій';
-const CLUSTER = 'Окремий екземпляр Postgres';
 
 const check = (id, title, status, details) => ({ id, title, status, details });
 const reason = (error) =>
@@ -74,28 +74,6 @@ function journalCheck(rows, files, core) {
 }
 
 /**
- * Вимога платформи: кожному магазину — власний екземпляр Postgres. Ролі
- * `app_runtime`/`app_admin` кластерні, тож чужа база в кластері означає спільні
- * ролі. Текст називає бази, але не облікові дані.
- */
-async function clusterCheck(url, core) {
-  try {
-    const foreign = await core.findForeignDatabases(url, {
-      timeoutMs: CONNECT_TIMEOUT_MS,
-    });
-    if (foreign.length === 0) return check('shared-cluster', CLUSTER, 'ok');
-    return check(
-      'shared-cluster',
-      CLUSTER,
-      'warn',
-      `у кластері є інші бази (${foreign.join(', ')}) — магазину потрібен окремий екземпляр Postgres; спільний кластер ділить ролі app_runtime/app_admin між магазинами`,
-    );
-  } catch (error) {
-    return check('shared-cluster', CLUSTER, 'error', reason(error));
-  }
-}
-
-/**
  * @param {{ storeRoot: string; env: Record<string, string> }} ctx
  * @param {{
  *   core?: { readJournal: Function; listMigrationFiles: Function; pendingMigrations: Function; findForeignDatabases: Function };
@@ -110,7 +88,7 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
     return [
       check('db-reachable', REACHABLE, 'skip', why),
       check('migrations-journal', JOURNAL, 'skip', why),
-      check('shared-cluster', CLUSTER, 'skip', why),
+      clusterSkip(why),
     ];
   }
   try {
@@ -120,12 +98,12 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
       return [
         check('db-reachable', REACHABLE, 'skip', error.message),
         check('migrations-journal', JOURNAL, 'skip', 'немає драйвера pg'),
-        check('shared-cluster', CLUSTER, 'skip', 'немає драйвера pg'),
+        clusterSkip('немає драйвера pg'),
       ];
     return [
       check('db-reachable', REACHABLE, 'error', reason(error)),
       check('migrations-journal', JOURNAL, 'skip', 'БД недоступна'),
-      check('shared-cluster', CLUSTER, 'skip', 'БД недоступна'),
+      clusterSkip('БД недоступна'),
     ];
   }
   const reachable = check('db-reachable', REACHABLE, 'ok');
@@ -136,7 +114,7 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
     return [
       reachable,
       check('migrations-journal', JOURNAL, 'error', reason(error)),
-      check('shared-cluster', CLUSTER, 'skip', 'ядро магазину недоступне'),
+      clusterSkip('ядро магазину недоступне'),
     ];
   }
   let journal;
@@ -147,5 +125,9 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
   } catch (error) {
     journal = check('migrations-journal', JOURNAL, 'error', reason(error));
   }
-  return [reachable, journal, await clusterCheck(url, core)];
+  return [
+    reachable,
+    journal,
+    await clusterCheck(url, core, CONNECT_TIMEOUT_MS),
+  ];
 }

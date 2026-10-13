@@ -176,6 +176,18 @@ describe('cli doctor (оффлайн)', () => {
     expect(url.details).toContain('DATABASE_URL');
     expect(url.details).not.toContain('your-password');
 
+    // Заглушка-пароль як підрядок: інший хост не робить значення справжнім.
+    const otherHost = checkEnv({
+      env: {
+        ...ENV,
+        DATABASE_URL:
+          'postgresql://app_runtime:your-password@db.prod:5432/shop',
+      },
+    });
+    expect(otherHost.status).toBe('error');
+    expect(otherHost.details).toContain('DATABASE_URL');
+    expect(otherHost.details).not.toContain('db.prod');
+
     // Опційні ключі з прикладів теж не мають лишатися заглушками.
     const smtp = checkEnv({
       env: { ...ENV, SMTP_URL: 'smtps://user:password@smtp.example.com:465' },
