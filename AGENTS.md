@@ -198,6 +198,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
   `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками
   не правляться.
+- 🔴 Міграції `0000…0005` заморожено (журнал `simplycms_migrations` тримає їхні суми):
+  нова схема — лише новий `0006_*` і далі + його сума в `FROZEN` (`tests/migrations-frozen.test.ts`).
 - Агентні скіли, що їдуть у магазини, живуть у `packages/simplycms/skills/<name>`; `.agents/skills/`
   і `.claude/skills/` — прямі симлінки на нього (оригінал — у пакеті).
 

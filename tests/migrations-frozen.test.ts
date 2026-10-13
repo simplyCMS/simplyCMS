@@ -1,11 +1,15 @@
-// Заморожений baseline (К3-Е8): після Task 3 файли `0000…0004` не правляться
-// НІКОЛИ. Магазин, що вже накотив їх, має в журналі ці суми, і будь-яка правка
-// дала б `MigrationChecksumError` на старті контейнера. Нова схема — лише нові
-// файли `0005_*` і далі (кожен несе свої гранти й RLS у собі).
+// Заморожені міграції rc.1 (К3-Е8): файли `0000…0005` не правляться НІКОЛИ.
+// Магазин, що вже накотив їх, має в журналі ці суми, і будь-яка правка дала б
+// `MigrationChecksumError` на старті контейнера. Нова схема — лише нові файли
+// `0006_*` і далі (кожен несе свої гранти й RLS у собі).
+//
+// `FROZEN` охоплює ВСІ міграції, що їдуть у rc.1, а множина файлів канону мусить
+// збігатися з його ключами: новий файл поза списком — червоний тест, а не
+// мовчки нестережений. Додаючи `0006_*`, його суму вносять у `FROZEN` в тому ж
+// коміті — відтоді він заморожений для наступного релізу.
 //
 // Суми — ті самі, що пише журнал (`listMigrationFiles`: sha256 після
-// нормалізації CRLF→LF), зафіксовані від HEAD `56a12cda` (останні правки
-// baseline — Task 2, `632c0949`).
+// нормалізації CRLF→LF).
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { listMigrationFiles } from 'simplycms/migrate';
@@ -21,6 +25,8 @@ const FROZEN: Readonly<Record<string, string>> = {
     '37543db40a34793b2514ddba68d65117203cfed87d420f64afb61d6520000a21',
   '0004_functions.sql':
     '5cbf88a4e424de43b1cf6c48d76a0f39daeb0330df8a7b041bb9dcb99ee67230',
+  '0005_mail_outbox.sql':
+    '62faaf68e4f5eff44ffb2cedc06af03763ba0b163584ed00f4ef1d221996bc0f',
 };
 
 const ROOT = join(import.meta.dirname, '..');
@@ -31,12 +37,14 @@ const DIRS = [
   'packages/create-simplycms-store/template/db/migrations',
 ];
 
-describe('заморожений baseline міграцій', () => {
-  it.each(DIRS)('%s: кожен заморожений файл існує й має свою суму', (dir) => {
+describe('заморожені міграції rc.1', () => {
+  it.each(DIRS)('%s: множина файлів і суми збігаються з FROZEN', (dir) => {
+    // Без фільтра за ключами FROZEN: зайвий файл має валити тест.
     const actual = Object.fromEntries(
-      listMigrationFiles(join(ROOT, dir))
-        .filter((file) => file.name in FROZEN)
-        .map((file) => [file.name, file.checksum]),
+      listMigrationFiles(join(ROOT, dir)).map((file) => [
+        file.name,
+        file.checksum,
+      ]),
     );
     expect(actual).toEqual(FROZEN);
   });

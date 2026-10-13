@@ -124,17 +124,17 @@ pnpm db:pull / db:diff
 у `.gitignore`: лінки з абсолютними цілями (однієї машини) у репо не лежать, а тест
 `tests/git-symlinks.test.ts` стереже, що їх там немає. Щоб підключити скіли, створи ВІДНОСНІ лінки:
 
-Лінки `tanstack-db-core`, `tanstack-db-meta-framework`, `tanstack-router-core`, `tanstack-start-core`,
-`tanstack-start-server-core` не повертаються: скіли `db-*` жили в розпакованих тарболах у тимчасовій теці
-(`@tanstack/db` у `node_modules` скілів не несе), а `*-core` — у транзитивних залежностях за шляхом
-`.pnpm/<версія>/`, що змінюється з кожним бампом, тож стабільної відносної цілі в них немає. Скіл
-`tanstack-react-db` є прямою залежністю — його лінк відносний, як і два нижче.
-
 ```bash
 ln -s ../../node_modules/@tanstack/react-start/skills/react-start .claude/skills/tanstack-react-start
 ln -s ../../node_modules/@tanstack/virtual-file-routes/skills/virtual-file-routes .claude/skills/tanstack-virtual-file-routes
 ln -s ../../node_modules/@tanstack/react-db/skills/react-db .claude/skills/tanstack-react-db
 ```
+
+Лінки `tanstack-db-core`, `tanstack-db-meta-framework`, `tanstack-router-core`, `tanstack-start-core`,
+`tanstack-start-server-core` не повертаються: скіли `db-*` жили в розпакованих тарболах у тимчасовій теці
+(`@tanstack/db` у `node_modules` скілів не несе), а `*-core` — у транзитивних залежностях за шляхом
+`.pnpm/<версія>/`, що змінюється з кожним бампом, тож стабільної відносної цілі в них немає. Скіл
+`tanstack-react-db` є прямою залежністю; усі три лінки блоку вище — відносні.
 
 ## 3. Гейти (порядок і причини)
 

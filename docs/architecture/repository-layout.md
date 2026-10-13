@@ -117,13 +117,14 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: baseline 0000_prelude → 0004_functions;
-│   │   │                         #    джерело `simplycms db:diff`
+│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0005_mail_outbox (ЗАМОРОЖЕНО
+│   │   │                         #    для rc.1, `tests/migrations-frozen.test.ts`); джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг
 │   │   └── tsdown.config.ts      # ДВІ збірки (клієнт/сервер); entry з dev-exports; група — за contracts/server-only
-│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
+│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/status/smoke/
+│   │                                                 # deploy:record/db:apply/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
 │   │                                                 # theme:conformance (гейт views, контракт тем v3);
 │   │                                                 # чистий ESM без build; host/ — канон host-файлів,
@@ -137,7 +138,9 @@ simplyCMS/
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
 │   │                            # синхронізується `pnpm template:sync`). Під фільтри імені ядра
-│   │                            # не підпадає й у tarball-parity не рахується.
+│   │                            # не підпадає й у tarball-parity не рахується. Файли шаблону
+│   │                            # (не синк): `scripts/{start,start-core,owner-invite*}.mjs`,
+│   │                            # `AGENTS.md`, `CLAUDE.md`, `.claude/{settings.json,hooks/}`.
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу

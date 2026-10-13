@@ -76,12 +76,12 @@ pnpm db:diff <name>    # schema.ts → drizzle-staging → NNNN_<name>.sql ту�
 міняється (це асертить `simplycms db:diff` у магазині: спільне ім'я з іншим
 вмістом — помилка без запису).
 
-🔴 **Baseline заморожено (К3-Е8).** Файли `0000_prelude.sql` … `0004_functions.sql`
+🔴 **Міграції rc.1 заморожено (К3-Е8).** Файли `0000_prelude.sql` … `0005_mail_outbox.sql`
 не правляться ніколи: магазин, що вже накотив їх, тримає їхні sha256 у журналі
 `public.simplycms_migrations`, і будь-яка правка дала б `MigrationChecksumError`
-на старті контейнера. Нова схема — лише новий файл `0005_*` і далі; кожен несе
+на старті контейнера. Нова схема — лише новий файл `0006_*` і далі; кожен несе
 свої гранти й RLS у собі (окремого «оновлення `0002_grants.sql`» більше немає).
-Суми стереже `tests/migrations-frozen.test.ts`.
+Суми й повноту переліку стереже `tests/migrations-frozen.test.ts`.
 
 Накат іде через `simplycms/migrate` (`applyMigrations`): кожен файл — в одній
 транзакції разом зі своїм записом у журнал, тож `create index concurrently` і

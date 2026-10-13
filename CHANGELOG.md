@@ -21,6 +21,135 @@
 
 ---
 
+## [1.0.0-rc.1] — дата публікації вказується в день релізу
+
+Перший пререліз лінії 1.0 (npm-тег `next`; `1.0.0` — окремим рішенням після живого пілоту).
+К3-Е8 (частини А і Б): готовність до пілоту й агентний супровід магазину — спеки
+[А](docs/superpowers/specs/2026-10-12-pilot-readiness-design.md) і
+[Б](docs/superpowers/specs/2026-10-12-shop-agent-toolkit-design.md) (розділ «Амендмент (план,
+2026-10-12)»); план
+[`2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md).
+З цього релізу діє чесний semver: злам коду магазину, тем чи плагінів піднімає мажорну версію.
+
+### 🔴 BREAKING для магазинів
+
+- **Node ≥ 24 (Е8-Р1):** `engines.node` — `>=24` у всіх п'яти пакетах і в шаблоні магазину;
+  `scripts/start.mjs` без `process.execve` (Node < 23.11) падає з поясненням, фолбеку немає.
+  Магазин на Node 22 мусить перейти на 24.
+- **База перестворюється (baseline змінено перед заморожуванням, Е8-Р3):** `users` має
+  `CHECK (email = lower(email))`, `products`/`product_modifications.stock_status` — `NOT NULL`, нові
+  індекси `orders(created_at)` і keyset покупців, колонка `user_category_history.source`
+  (`'manual'|'rule'`), нова таблиця `mail_outbox` (`0005_mail_outbox.sql`). Базу без журналу міграцій
+  платформа не адоптує: локальну — `pnpm db:demo`, іншу — новий екземпляр.
+- **Міграції заморожено:** `0000_prelude … 0005_mail_outbox` не правляться ніколи
+  (`tests/migrations-frozen.test.ts`); накочена, але змінена міграція → `MigrationChecksumError`, контейнер
+  не стартує. Нова схема — лише `0006_*` і далі, кожен файл несе свої гранти й RLS.
+- **Накат міграцій — лише `simplycms db:apply` або старт контейнера:** `psql`-цикл знесено з усіх
+  носіїв. Журнал `public.simplycms_migrations` (sha256, advisory-лок, кожен файл в одній транзакції);
+  `concurrently` і власні `begin`/`commit` у файлі відкидаються. Файли плагінів — `<timestamp>_plg_*`
+  (шаблон `simplycms create plugin` кладе таку назву), інакше вони ставали б між `0001_init` і `0002_grants`.
+- **Прод-старт — `node scripts/start.mjs`** (накат під `MIGRATION_DATABASE_URL`, далі `process.execve` на
+  `server.mjs` БЕЗ цієї змінної). Скрипт `start:prod` прибрано, `pnpm start` — лише локальний запуск, не для
+  проду. `server.mjs` завжди виставляє `NODE_ENV=production` і `.env*` для `MIGRATION_DATABASE_URL` не читає.
+- **Групи env «все або нічого» (`simplycms/env`):** частково задана група `S3_*` (5 ключів) або
+  `SMTP_URL`+`MAIL_FROM` валить старт і називає відсутні ключі; обов'язкових ключів лишається рівно три.
+  `VITE_SITE_URL` має бути абсолютним `http(s):` URL, інакше `server.mjs` виходить з кодом 1.
+- **`nodemailer` — peer ядра** (точний пін `10.1.0`) і пряма залежність магазину: існуючий магазин
+  додає `pnpm add nodemailer@10.1.0` (doctor №14).
+- **Пошта на порту `simplycms/mail`:** типи `SendAuthEmail` і `SendInviteEmail` та заглушка
+  `stubSendAuthEmail` прибрано (`InviteEmail` → `MailMessage`); без `SMTP_URL`/`MAIL_FROM` працює драйвер
+  `log` (у проді друкує лише «Кому / Тема / тип листа», без тіла й посилань).
+- **`pnpm owner:invite` (Е8-С2):** посилання друкується лише з драйвером `log` поза продом або з
+  `--print-link`; зі SMTP — «лист надіслано»; у проді без SMTP і без прапорця — код 1. Без `VITE_SITE_URL`
+  — код 1 (фолбеку на `localhost` немає).
+- **`simplycms update --check` — чиста перевірка без install і мережі** (Е8-Р12); коди виходу
+  `status` і кожного `--check`: `0` гаразд, `3` є що робити, `1` помилка. `update` після `pnpm add`
+  передає керування новому CLI (host-файли звіряються з каноном НОВОЇ версії), не робить даунгрейду й
+  відмовляє без відомої цільової версії.
+- **Скіл `redesign-from-reference` → `simplycms-redesign`** (також `/редизайн-за-референсом`); `update`
+  прибирає старий лінк.
+- **Діапазони `engines.simplycms`** референс-пакетів і `simplycms create` — `^<мажорна>.0.0` (для RC —
+  `^X.Y.Z-0`), а не відкрите `>=`; `satisfies` вирівняно з npm на пререлізах. `engines.simplycms` плагіна
+  чи теми, що не покриває встановлене ядро, — error у `doctor` №17 (bootstrap лише попереджає).
+- **Host-файли змінено, потрібен `simplycms update --write`:** `src/server.ts` експортує `SERVER_FN_BASE`
+  (раннер без нього виходить з кодом 1), нові `server-origin.mjs`, `server-body-limit.mjs`,
+  `server-headers.mjs`, `src/route-error.tsx`; `src/start.ts` — маскування помилок; `src/router.tsx` —
+  `defaultErrorComponent`.
+- **Раннер будує URL запиту з `VITE_SITE_URL`** (Р18): `Host` і `X-Forwarded-*` ігноруються,
+  request-target `//…` → 400; Better Auth `baseURL` = `BETTER_AUTH_URL ?? VITE_SITE_URL` завжди.
+- **Лоадери вітрини `simplycms/storefront/loaders` вимагають `viewer`** (А6.3): ціни повертаються лише
+  для виду цін глядача; `loadProductList` теж вимагає `viewer`; персоналізовані відповіді —
+  `Cache-Control: private, no-store`.
+- **`CMSProvider` — проп `queryClient` обов'язковий** (А6.4): запасного `QueryClient` немає. Кастомний
+  хост мусить передати клієнт роутера.
+- **Канонічний шлях товару** (Р25): товар без розділу живе на `/catalog/all/<slug>`, slug розділу
+  `all` зарезервовано; інші сегменти → 301; sitemap і адмінка дають той самий `productPath`.
+- **Поведінка безпеки змінилась:** роль `admin` видається при ПРИЙНЯТТІ запрошення (раніше при
+  випуску); скидання пароля гасить усі сесії; зі SMTP реєстрація вимагає підтвердження пошти; правило
+  категорії `email_domain` довіряє лише підтвердженій пошті, `contains` для доменів → точний домен чи
+  `.піддомен`; у проді непередбачені помилки serverFn і SSR маскуються (`Internal server error [ref <id>]`);
+  `MEDIA_ROOT=""` означає «не задано».
+
+### Додано
+
+- **Журнал міграцій і `simplycms/migrate`** (server-only): `applyMigrations`, `listMigrationFiles`,
+  `readJournal`, `MigrationChecksumError`; пароль `app_runtime` синхронізується клієнтським верифікатором
+  SCRAM-SHA-256 (лише друкований ASCII; відкритий пароль на сервер не йде). `simplycms db:apply`
+  (`--dry-run`, `--check`) і `doctor --online` (журнал, `shared-cluster`: кожен магазин — власний
+  екземпляр Postgres).
+- **`simplycms/env`:** `resolveDriverEnv`, `checkDriverEnvOnStart`, `isProductionRuntime`.
+- **Прод-старт:** `scripts/start.mjs`, `/api/health` з ідентифікатором збірки (`BUILD_ID` → `SOURCE_COMMIT`
+  → git → час), сторож застарілих чанків (одне перезавантаження), прекомпресія статики (`.br`/`.gz`) і
+  413/411 без закриття з'єднання.
+- **Драйвер сховища `s3`** (`aws4fetch`; `S3_ENDPOINT/REGION/BUCKET/ACCESS_KEY/SECRET_KEY`), контрактний
+  набір для `local-fs` і `s3` проти Garage; збій драйвера в `/media/<key>` — 503 з одним логом, а не 404.
+- **Порт пошти `simplycms/mail`:** драйвери `smtp` (nodemailer) і `log`, outbox `mail_outbox` з доставкою
+  після COMMIT; листи скидання пароля, запрошення, підтвердження пошти, замовлення покупцю й власнику;
+  картка хвостів у налаштуваннях адмінки (повтор, право `settings.manage`); `doctor --production` і
+  перевірки №14–№16 (nodemailer, пошта, підтвердження пошти).
+- **Агентний супровід магазину:** `simplycms status` (етапи `not-created|not-configured|local|deployed`,
+  наступний скіл), `simplycms smoke <url>`, `simplycms deploy:record get|set` (`.simplycms/deploy.json` без
+  секретів), керований блок `AGENTS.md` і `CLAUDE.md` у шаблоні, хук старту сесії
+  (`.claude/hooks/session-start.mjs`, exec-форма через `${CLAUDE_PROJECT_DIR}`; Claude Code ≥ 2.1.139
+  (поле `args` у хуках); перевірено на 2.1.296), doctor №17 (engines) і №18 (файли агента),
+  скіли `simplycms-onboarding`, `simplycms-update`, `simplycms-diagnose` (+ перейменований
+  `simplycms-redesign`), скаффолдер із фінальним «одним реченням» для власника.
+- **Реліз:** `CHANGELOG.md` їде в tarball ядра (`simplycms-update` читає BREAKING між версіями), крок
+  `pnpm release` `readme-tag`, пререліз `X.Y.Z-rc.N` під тегом `next`, гейт `schema` (`test:schema`
+  обов'язковий у релізі) і доказ оновлюваності `upgrade-1x`.
+- **Безпека (аудит 2026-10-12):** базові заголовки на всіх відповідях (`nosniff`, `Referrer-Policy`,
+  `X-Frame-Options`/`frame-ancestors 'self'`, HSTS лише для https, `Permissions-Policy`), стеля тіла 1 МіБ
+  на всі запити (26 МіБ — multipart serverFn), `simplycms/server-guard`.
+
+### Змінено
+
+- Заглушки секретів в `env.example` — порожні значення; `doctor` вважає відомі заглушки помилкою.
+- Банер головної береться за розміщенням і розкладом; помилка запиту на вітрині (профіль, замовлення,
+  `OrderSuccess`) більше не показується як «порожньо».
+- Гейти ізольовані від `.env*` розробника (`envDir: false`); `HARNESS_SMTP_URL` береться з env CI.
+- Канон оновлено: `docs/architecture/{cli,storage,release-process,test-contours,data-layer,
+  repository-layout,upstream-workarounds}.md`, `docs/development/{ENVIRONMENT,TOOLING}.md`, `AGENTS.md`.
+
+### Видалено
+
+- `psql`-цикл накату, скрипт `start:prod`, `stubSendAuthEmail`, `SendAuthEmail`, `SendInviteEmail`,
+  запасний `QueryClient` у `CMSProvider`.
+- `UPSTREAM:START-BODY-1` закрито лічильником тіла в раннері.
+
+### Закрито борги
+
+- К3-Е6г-5, К3-Е6г-6, К3-Е6г-9, К3-Е6г-13, К2-Е0-1 (baseline); 0.4.1-6…9 (старт, накат, пароль
+  `app_runtime`). К3-Е6г-12 (повторний бан) лишається.
+
+### Відомі обмеження
+
+Пілот на Dokploy ще не проведено: `1.0.0-rc.1` — вхід для Е8; знайдене там закривається в `rc.2…`.
+Доставку у реальну поштову скриньку доводить лише Е8 (у CI — Mailpit). Стан помилок «не порожньо»
+(Р26) покриває вітрину, не весь адмін-інтерфейс (54 файли — планове посилення). Помилка, кинута поза
+serverFn (прямий код лоадера), не маскується в payload — усі лоадери вітрини ходять у БД через serverFn.
+
+---
+
 ## [0.14.0] — 2026-10-12
 
 К3-Е6д: контент — банери й відгуки на серверному шарі (спека

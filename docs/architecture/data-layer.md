@@ -276,8 +276,10 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
-- 🔴 Baseline `0000…0004` заморожено (`tests/migrations-frozen.test.ts`): нова схема —
-  лише новий файл `0005_*` і далі, що несе свої гранти й RLS у собі.
+- 🔴 Міграції rc.1 `0000…0005` заморожено (`tests/migrations-frozen.test.ts`: множина
+  файлів канону == ключі `FROZEN`, тож новий файл поза списком валить тест): нова схема —
+  лише новий файл `0006_*` і далі, що несе свої гранти й RLS у собі, а його сума
+  вноситься в `FROZEN` у тому ж коміті.
 - `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
