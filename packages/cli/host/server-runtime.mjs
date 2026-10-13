@@ -9,6 +9,7 @@
  * САМОДОСТАТНІЙ — імпортує лише `node:*`, тож його байт-у-байт копія лежить
  * поруч із шаблоном скретч-магазину (`tests/pilot/store-template/`).
  */
+import { randomBytes } from 'node:crypto';
 import { Readable, pipeline } from 'node:stream';
 
 import {
@@ -117,4 +118,29 @@ export function sendWebResponse(res, response) {
     console.error('[server] Помилка стріму відповіді:', error);
     res.destroy(error);
   });
+}
+
+/**
+ * Маскує userinfo в `scheme://userinfo@host` усередині тексту. Копія
+ * `redactUrls` ядра (`simplycms/env`): раннер ядро не імпортує (Е8-Р7′);
+ * парність стереже `tests/server-headers-parity.test.ts`.
+ */
+export function redactUrls(text) {
+  return text.replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/]*@/gi, '$1***@');
+}
+
+/**
+ * Р23 для самого раннера: необроблена помилка запиту (поза `fetch`-хендлером
+ * бандла) не віддається клієнту, а пишеться в лог з ідентифікатором і
+ * замаскованими URL-секретами. Повертає тіло 500 для клієнта — той самий формат
+ * `Internal server error [ref <id>]`, що й у ядрі (`contracts/masked-error`).
+ */
+export function logRequestError(error) {
+  const id = randomBytes(4).toString('hex');
+  const text =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error(
+    `[server] Необроблена помилка запиту ${id}: ${redactUrls(text)}`,
+  );
+  return `Internal server error [ref ${id}]`;
 }

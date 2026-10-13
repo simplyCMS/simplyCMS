@@ -19,6 +19,7 @@ import sirv from 'sirv';
 import { securityHeaders } from './server-headers.mjs';
 import { parseSiteOrigin } from './server-origin.mjs';
 import {
+  logRequestError,
   rejectBadRequest,
   sendWebResponse,
   toWebRequest,
@@ -139,7 +140,7 @@ const server = createServer((req, res) => {
       );
       sendWebResponse(res, response);
     } catch (error) {
-      console.error('[server] Необроблена помилка запиту:', error);
+      const body = logRequestError(error);
       // Клієнт відпав (aborted request) — писати вже нікуди.
       if (res.destroyed || res.writableEnded) return;
       if (!res.headersSent) {
@@ -148,7 +149,7 @@ const server = createServer((req, res) => {
           'content-type': 'text/plain; charset=utf-8',
         });
       }
-      res.end('Internal Server Error');
+      res.end(body);
     }
   });
 });

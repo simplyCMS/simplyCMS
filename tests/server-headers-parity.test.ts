@@ -10,7 +10,9 @@ import {
   SECURITY_HEADERS,
   securityHeaders,
 } from 'simplycms/server-guard';
+import { redactUrls } from 'simplycms/env';
 import * as runner from '../server-headers.mjs';
+import { redactUrls as runnerRedactUrls } from '../server-runtime.mjs';
 
 describe('server-headers.mjs ↔ simplycms/server-guard', () => {
   it('базовий перелік однаковий (імена, значення, порядок)', () => {
@@ -28,5 +30,15 @@ describe('server-headers.mjs ↔ simplycms/server-guard', () => {
     const fromRunner = runner.securityHeaders(new URL(site).origin);
     expect(fromRunner).toEqual(Object.fromEntries(securityHeaders(site)));
     expect('Strict-Transport-Security' in fromRunner).toBe(hsts);
+  });
+
+  it('redactUrls раннера = redactUrls ядра', () => {
+    for (const text of [
+      'connect postgres://app:s3cr3t@db.test:5432/shop',
+      'smtp://u:p@h та s3://k:s@bucket/x',
+      'без URL',
+    ]) {
+      expect(runnerRedactUrls(text)).toBe(redactUrls(text));
+    }
   });
 });

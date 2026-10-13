@@ -1,10 +1,18 @@
-import { createStart, createMiddleware } from '@tanstack/react-start';
-import { redirect } from '@tanstack/react-router';
+import {
+  createStart,
+  createMiddleware,
+  createIsomorphicFn,
+} from '@tanstack/react-start';
+import { createSerializationAdapter, redirect } from '@tanstack/react-router';
 import { readSessionSubject } from 'simplycms/auth';
 import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
 import { csrfMiddleware } from 'simplycms/runtime/csrf';
 import { bodyLimitMiddleware } from 'simplycms/runtime/body-limit';
-import { maskUnexpectedError } from 'simplycms/server-guard';
+import {
+  isMaskableError,
+  maskAround,
+  toMaskedPayload,
+} from 'simplycms/server-guard';
 
 /**
  * Чи веде шлях в адмінку. Винесено окремо, щоб межа роздiлу «що охороняємо»
@@ -59,14 +67,32 @@ const adminRequestGuard = createMiddleware().server(
  * (прод-предикат, ідентифікатор, лог через `redactUrls`, пропуск доменних
  * помилок і керування потоком Start) — у ядрі; тут лише склейка.
  */
-export const maskUnexpectedErrors = createMiddleware({
-  type: 'function',
-}).server(async ({ next }) => {
-  try {
-    return await next();
-  } catch (error) {
-    throw maskUnexpectedError(error);
-  }
+const maskUnexpectedErrors = createMiddleware({ type: 'function' }).server(
+  ({ next }) => maskAround(next),
+);
+
+/**
+ * Р23, канал SSR: помилка лоадера чи `beforeLoad`, кинута НЕ через server
+ * function, потрапляла б у payload дегідратації як є. Адаптери `createStart`
+ * йдуть у router-core ПЕРЕД `ShallowErrorPlugin` (а `domainErrorAdapter` — перед
+ * цим), тож сюди доходять лише непередбачені помилки. Серверна половина —
+ * `createIsomorphicFn().server(...)`: server-only ядро в клієнтський бандл не
+ * потрапляє, а клієнт нічого не маскує (`test` → `false`) і лише відновлює
+ * `Error` із замаскованим повідомленням.
+ */
+const isMaskable = createIsomorphicFn()
+  .server((value: unknown) => isMaskableError(value))
+  .client((): boolean => false);
+const maskedPayload = createIsomorphicFn()
+  .server((error: Error) => toMaskedPayload(error))
+  .client((error: Error) => ({ message: error.message }));
+
+const maskedErrorAdapter = createSerializationAdapter({
+  key: 'simplycms-masked-error',
+  test: (value): value is Error => isMaskable(value),
+  toSerializable: (error: Error) => maskedPayload(error),
+  fromSerializable: (value: { readonly message: string }) =>
+    new Error(value.message),
 });
 
 // UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
@@ -87,7 +113,7 @@ export const maskUnexpectedErrors = createMiddleware({
  * до читання сесії й до `formData()` обробника server function.
  */
 export const startInstance = createStart(() => ({
-  serializationAdapters: [domainErrorAdapter],
+  serializationAdapters: [domainErrorAdapter, maskedErrorAdapter],
   functionMiddleware: [maskUnexpectedErrors],
   requestMiddleware: [csrfMiddleware, bodyLimitMiddleware, adminRequestGuard],
 }));

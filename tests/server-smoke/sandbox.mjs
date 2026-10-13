@@ -36,6 +36,9 @@ export default {
     const { pathname } = new URL(request.url);
     // Гілка 500-хендлера: помилка ПІСЛЯ того, як sirv віддав запит далі.
     if (pathname === '/__boom') throw new Error('смок: навмисна помилка');
+    // Помилка з секретом у URL: лог раннера мусить його замаскувати.
+    if (pathname === '/__boom-url')
+      throw new Error('connect postgres://app:s3cr3t@db.test:5432/shop');
     // Дзеркало env процесу — джерело правди для перевірки наповнення.
     if (pathname === '/__env') {
       return Response.json({

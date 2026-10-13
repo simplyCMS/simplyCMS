@@ -17,10 +17,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { connect } from 'node:net';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import { rawExchange } from './server-smoke/raw-exchange.mjs';
 import {
   runSmokeExpectingExit,
   SMOKE_SITE_URL,
@@ -65,11 +62,23 @@ describe('server.mjs: production-runner піднімається й обслуг
     const boom = await fetch(`${server.baseUrl}/__boom`);
 
     expect(boom.status).toBe(500);
-    await expect(boom.text()).resolves.toBe('Internal Server Error');
+    // Р23: клієнт бачить лише загальний текст з ідентифікатором, не помилку.
+    const body = await boom.text();
+    const ref = /^Internal server error \[ref ([0-9a-f]{8})\]$/.exec(body)?.[1];
+    expect(ref).toBeTruthy();
+    expect(server.log()).toContain(`Необроблена помилка запиту ${ref}`);
+    expect(server.log()).toContain('смок: навмисна помилка');
 
     // Наступний запит мусить обслужитися — 500 не валить сервер.
     const after = await fetch(`${server.baseUrl}/`);
     expect(after.status).toBe(200);
+  });
+
+  it('500: секрет у URL помилки не потрапляє в лог (локальна редакція)', async () => {
+    const res = await fetch(`${server.baseUrl}/__boom-url`);
+    expect(res.status).toBe(500);
+    expect(server.log()).toContain('postgres://***@db.test:5432/shop');
+    expect(server.log()).not.toContain('s3cr3t');
   });
 
   it('env наповнюється лише для ВІДСУТНІХ ключів', async () => {
@@ -215,96 +224,3 @@ describe('server.mjs: origin запиту лише з VITE_SITE_URL (Р18б)', (
     },
   );
 });
-
-/**
- * Р27: базові заголовки безпеки на КОЖНОМУ каналі відповіді. Динаміку (SSR,
- * server functions, `/media`) стампує справжня обгортка ядра навколо стаба, а
- * статику `sirv` і власні відповіді раннера (400/413/500) — сам `server.mjs`;
- * тож канали рознесено навмисно: прибрана копія в `server-headers.mjs` червонить
- * статику й 4xx/5xx, прибрана обгортка ядра — динаміку.
- */
-const SECURITY_HEADERS_SRC = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'packages/simplycms/src/server-guard/security-headers.ts',
-);
-
-const WRAPPED_HANDLER = `export const SERVER_FN_BASE = '/_serverFn/';
-import { withSecurityHeaders } from ${JSON.stringify(SECURITY_HEADERS_SRC)};
-const inner = async (request) => {
-  if (new URL(request.url).pathname === '/__boom') throw new Error('boom');
-  return new Response('<!doctype html>', {
-    headers: { 'content-type': 'text/html; charset=utf-8' },
-  });
-};
-export default { fetch: withSecurityHeaders(inner, process.env.VITE_SITE_URL) };
-`;
-
-const EXPECTED_HEADERS = {
-  'x-content-type-options': 'nosniff',
-  'referrer-policy': 'strict-origin-when-cross-origin',
-  'x-frame-options': 'SAMEORIGIN',
-  'content-security-policy': "frame-ancestors 'self'",
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-};
-const HSTS = 'strict-transport-security';
-
-/** Усі п’ять заголовків є дослівно; HSTS — за очікуванням. */
-function expectSecurityHeaders(get, hsts) {
-  for (const [name, value] of Object.entries(EXPECTED_HEADERS)) {
-    expect(get(name), name).toBe(value);
-  }
-  expect(get(HSTS) ?? null).toBe(hsts ? 'max-age=31536000' : null);
-}
-
-describe.each([
-  ['https', 'https://shop.test', true],
-  ['http', 'http://shop.test', false],
-])(
-  'server.mjs: заголовки безпеки (Р27), сайт на %s',
-  (_name, siteUrl, hsts) => {
-    let server;
-    let port;
-
-    beforeAll(async () => {
-      server = await startSmokeServer(
-        { VITE_SITE_URL: siteUrl },
-        WRAPPED_HANDLER,
-      );
-      port = Number(new URL(server.baseUrl).port);
-    }, 30_000);
-
-    afterAll(() => server?.stop());
-
-    it.each([
-      ['SSR /', '/'],
-      ['server function /_serverFn/x', '/_serverFn/x'],
-      ['/media/<ключ>', '/media/ab/0123.webp'],
-      ['статика sirv /assets/*', '/assets/app-smoke123.js'],
-      ['статика sirv поза /assets', '/favicon.ico'],
-      ['500 раннера', '/__boom'],
-    ])('%s', async (_label, path) => {
-      const response = await fetch(`${server.baseUrl}${path}`);
-      expectSecurityHeaders((n) => response.headers.get(n), hsts);
-    });
-
-    it('400 раннера (поганий request-target)', async () => {
-      const { status, headers } = await rawExchange(
-        port,
-        'GET //evil//x HTTP/1.1\r\nHost: shop.test\r\n\r\n',
-      );
-      expect(status).toBe(400);
-      expectSecurityHeaders((n) => headers[n], hsts);
-    });
-
-    it('413 раннера (Content-Length понад стелю)', async () => {
-      const { status, headers } = await rawExchange(
-        port,
-        'POST /x HTTP/1.1\r\nHost: shop.test\r\nContent-Type: application/json\r\n' +
-          'Content-Length: 99999999\r\n\r\n',
-      );
-      expect(status).toBe(413);
-      expectSecurityHeaders((n) => headers[n], hsts);
-    });
-  },
-);

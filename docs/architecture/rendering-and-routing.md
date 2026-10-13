@@ -122,12 +122,16 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - **Проходять немасковані:** уся родина `DOMAIN_ERROR_NAME` (предикат —
   членство в ній, а не перелік класів), `redirect`, `notFound`, `Response`.
   Статус відповіді server function виставляє межа операції, як і раніше.
-- 🔴 **Межа:** помилка, кинута НЕ server function (наприклад, прямим кодом
-  лоадера чи `beforeLoad`, а не викликом server function), у HTML-потік
-  серіалізується router-core як є (`ShallowErrorPlugin` несе `message`); екран її
-  текст не покаже, але payload — так. Усі лоадери вітрини ходять у БД через server
-  functions, тож сьогодні це правило тримає; новий прямий доступ у лоадері його б
-  порушив.
+- **Помилка поза server function** (лоадер чи `beforeLoad` кидає сам) закрита
+  штатним серіалізаційним адаптером в `serializationAdapters` (`src/start.ts`):
+  адаптери застосунку йдуть у дегідратацію router-core ПЕРЕД `ShallowErrorPlugin`
+  (доменний — перед маскувальним), серверна половина — `createIsomorphicFn()`,
+  тож server-only ядро в клієнтський бандл не потрапляє. Гейт —
+  `tests/server-guard-domain-errors.test.ts` (дегідратація з реєстрації
+  `createStart`).
+- Статус відповіді server function при помилці виставляє межа операції
+  (`setResponseStatus` до кидка, як 403/409 для доменних); без нього Start віддає
+  серіалізовану помилку зі статусом за замовчуванням. Міддлвара статус не чіпає.
 - **Заголовки безпеки** (`X-Content-Type-Options`, `Referrer-Policy`,
   `X-Frame-Options`, `Content-Security-Policy: frame-ancestors 'self'`,
   `Permissions-Policy`; `Strict-Transport-Security` лише коли `VITE_SITE_URL` —

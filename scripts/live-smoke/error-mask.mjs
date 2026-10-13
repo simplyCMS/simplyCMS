@@ -1,6 +1,6 @@
 /**
- * Р23/Р27 на СПРАВЖНЬОМУ збереженому сервері: непередбачені помилки не течуть
- * клієнту, заголовки безпеки є на всіх каналах.
+ * Р23 на СПРАВЖНЬОМУ збереженому сервері: непередбачені помилки не течуть клієнту
+ * (заголовки Р27 — `security-headers.mjs`).
  *
  * Чому тут, а не юнітом: SSR серіалізує помилку роуту в HTML-потік
  * (`$_TSR`-скрипт) — юніт на компонент цього не бачить, тож асертимо ВЕСЬ HTML
@@ -15,14 +15,6 @@ import { join } from 'node:path';
 import { startStore, freePort } from '../pilot-pack/build.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-
-const HEADERS = {
-  'x-content-type-options': 'nosniff',
-  'referrer-policy': 'strict-origin-when-cross-origin',
-  'x-frame-options': 'SAMEORIGIN',
-  'content-security-policy': "frame-ancestors 'self'",
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
-};
 
 /** Фрагменти, яких у відповіді бути НЕ може (SQL, параметри, адреса БД, дефолт TanStack). */
 const LEAKS = [
@@ -151,30 +143,5 @@ export async function runErrorMaskChecks({
     );
   } finally {
     dead.stop();
-  }
-
-  // 4. Р27: заголовки на справжній відповіді (SSR, статика, 4xx). Сайт на http —
-  // HSTS мусить бути відсутній.
-  const css = /assets\/[^"']+\.css/.exec(
-    await (await fetch(`${base}/`)).text(),
-  );
-  const channels = [
-    ['SSR /', '/'],
-    ['статика sirv', css ? `/${css[0]}` : '/favicon.ico'],
-    ['SSR 404', '/catalog/немає-такого/ні-товару'],
-    ['sitemap', '/sitemap.xml'],
-  ];
-  for (const [label, path] of channels) {
-    const res = await fetch(`${base}${path}`);
-    const missing = Object.entries(HEADERS).filter(
-      ([name, value]) => res.headers.get(name) !== value,
-    );
-    check(
-      `Р27 заголовки: ${label}`,
-      missing.length === 0 && !res.headers.has('strict-transport-security'),
-      missing.length === 0
-        ? `${res.status}`
-        : missing.map(([n]) => n).join(', '),
-    );
   }
 }

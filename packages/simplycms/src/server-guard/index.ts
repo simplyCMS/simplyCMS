@@ -4,7 +4,13 @@
  * підключає її в `src/start.ts` (function-middleware) і `src/server.ts`
  * (обгортка fetch); логіка тут, у host лише склейка.
  */
-export { maskUnexpectedError, type MaskOptions } from './mask-errors';
+export {
+  isMaskableError,
+  maskAround,
+  maskUnexpectedError,
+  toMaskedPayload,
+  type MaskOptions,
+} from './mask-errors';
 export {
   HSTS_HEADER,
   SECURITY_HEADERS,

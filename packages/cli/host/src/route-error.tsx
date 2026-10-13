@@ -19,7 +19,8 @@ const t = createTranslator(normalizeLocale(config.locale));
  * (`defaultErrorComponent` у `getRouter()`).
  *
  * 🔴 Р23: текст помилки показуємо лише коли він безпечний — доменна помилка з
- * кодом або dev-збірка. Інакше (непередбачена помилка в проді) — загальна фраза
+ * кодом або не-прод. Предикат той самий, що на сервері (`isProductionRuntime`:
+ * `NODE_ENV === 'production'`); Vite підставляє його літералом в обох збірках. Інакше (непередбачена помилка в проді) — загальна фраза
  * й ідентифікатор для звернення до власника: справжній текст міг бути SQL чи
  * `host:port`. Без цього дочірні роути друкували б `error.message` як є.
  */
@@ -35,7 +36,10 @@ export function RouteError({ error }: ErrorComponentProps) {
       </div>
     );
   }
-  const { message, ref } = describePublicError(error, import.meta.env.DEV);
+  const { message, ref } = describePublicError(
+    error,
+    process.env.NODE_ENV !== 'production',
+  );
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
       <h1 className="text-4xl font-bold">{t('app.error.title')}</h1>

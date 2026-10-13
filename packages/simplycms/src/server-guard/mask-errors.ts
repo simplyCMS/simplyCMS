@@ -19,6 +19,14 @@ export interface MaskOptions {
  */
 const masked = new WeakSet<object>();
 
+/**
+ * Одна сирова помилка → один результат: серіалізаційний адаптер питає про ту
+ * саму помилку двічі (`test`, потім `toSerializable`), а seroval — ще й на
+ * кожному проході. Без пам'яті кожне питання давало б новий ідентифікатор і
+ * новий запис у лозі.
+ */
+const results = new WeakMap<object, Error>();
+
 const defaultId = () => crypto.randomUUID().replaceAll('-', '').slice(0, 8);
 
 /** Повний текст помилки для логу: стек + ланцюжок `cause` (Drizzle ховає pg-помилку там). */
@@ -33,7 +41,7 @@ function describe(error: unknown): string {
     );
     current = current instanceof Error ? current.cause : undefined;
   }
-  return parts.join('\nКвитка: ');
+  return parts.join('\nПричина: ');
 }
 
 /** Передається клієнту як є: керування потоком Start, готові відповіді, доменні помилки з кодом. */
@@ -59,13 +67,46 @@ export function maskUnexpectedError(
 ): unknown {
   const env = options.env ?? process.env;
   if (!isProductionRuntime(env) || isPassThrough(error)) return error;
-  if (typeof error === 'object' && error !== null && masked.has(error)) {
-    return error;
+  if (typeof error === 'object' && error !== null) {
+    if (masked.has(error)) return error;
+    const known = results.get(error);
+    if (known) return known;
   }
   const id = (options.newId ?? defaultId)();
   const log = options.log ?? ((line: string) => console.error(line));
   log(`[server] Непередбачена помилка ${id}: ${redactUrls(describe(error))}`);
   const result = new Error(maskedErrorMessage(id));
   masked.add(result);
+  if (typeof error === 'object' && error !== null) results.set(error, result);
   return result;
+}
+
+/**
+ * Серіалізаційний адаптер (I1): помилка, кинута в лоадері чи `beforeLoad` НЕ
+ * через server function, інакше потрапила б у payload дегідратації як є
+ * (`ShallowErrorPlugin` несе `message`). Адаптери застосунку йдуть у seroval
+ * ПЕРЕД ним, а доменний адаптер — перед цим, тож сюди доходять лише
+ * непередбачені; доменні, керування потоком і вже замасковані повертають
+ * `false`.
+ */
+export function isMaskableError(value: unknown): value is Error {
+  return value instanceof Error && maskUnexpectedError(value) !== value;
+}
+
+/** Форма, що їде на клієнт замість помилки: лише замасковане повідомлення. */
+export function toMaskedPayload(error: Error): { readonly message: string } {
+  return { message: (maskUnexpectedError(error) as Error).message };
+}
+
+/**
+ * Тіло глобальної function-middleware (Р23): `next()` кидає помилку будь-якого
+ * рівня ланцюга; непередбачена замінюється на замасковану. Винесено з host-у,
+ * щоб тестувати як звичайну функцію, а не лізти в `options` міддлвари Start.
+ */
+export async function maskAround<T>(next: () => Promise<T>): Promise<T> {
+  try {
+    return await next();
+  } catch (error) {
+    throw maskUnexpectedError(error);
+  }
 }
