@@ -1,5 +1,6 @@
 /**
- * Парність теки `skills/` між репозиторієм і tarball-ом пакета `simplycms`.
+ * Парність файлів, які магазин читає з tarball-а пакета `simplycms`: тека
+ * `skills/` і `CHANGELOG.md`.
  *
  * Окремий модуль, бо це твердження про ІНШИЙ пакет: решта кроків Gate CLI
  * дивиться на артефакт скаффолдера, а цей — на артефакт ядра, з якого
@@ -15,7 +16,7 @@ const CORE_PKG_DIR = join(REPO_ROOT, 'packages/simplycms');
 const PACKED_PREFIX = 'package/skills/';
 
 /**
- * (г) Tarball `simplycms` несе ТОЧНУ множину файлів `skills/`.
+ * (г) Tarball `simplycms` несе ТОЧНУ множину файлів `skills/` і `CHANGELOG.md`.
  *
  * 🔴 Саме рівність множин, а не «кілька grep-ів»: npm пакує теку за
  * `files`-глобою, і мовчазна втрата окремих файлів (типовий кандидат —
@@ -27,7 +28,7 @@ const PACKED_PREFIX = 'package/skills/';
  * читає BREAKING з `node_modules/simplycms/CHANGELOG.md`, а копію в пакет кладе
  * лише `prepack` — без цієї перевірки зникнення кроку не помітив би ніхто.
  */
-export function checkPackagedSkills(work) {
+export function checkPackagedCoreFiles(work) {
   const dest = join(work, 'simplycms-core.tgz');
   execFileSync('pnpm', ['--dir', CORE_PKG_DIR, 'pack', '--out', dest], {
     cwd: REPO_ROOT,

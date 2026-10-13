@@ -33,7 +33,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { checkAgentScaffold } from './session-hook-checks.mjs';
-import { checkPackagedSkills } from './core-skills-parity.mjs';
+import { checkPackagedCoreFiles } from './core-skills-parity.mjs';
 import {
   checkNoSkillCopies,
   checkSkillLinks,
@@ -121,7 +121,7 @@ export function createPkgSmoke() {
       checkTemplateDeps(pkgDir),
       checkSkillLinks(target),
       checkAgentScaffold(target),
-      checkPackagedSkills(work),
+      checkPackagedCoreFiles(work),
     ];
     for (const check of checks) details.push(...check.details);
     if (checks.some((check) => !check.ok)) return { ok: false, details };

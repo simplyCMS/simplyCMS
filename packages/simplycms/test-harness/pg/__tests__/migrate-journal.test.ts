@@ -51,7 +51,7 @@ describe('журнал simplycms_migrations', () => {
       }).catch((e: unknown) => e);
       expect(err).toBeInstanceOf(UnjournaledDatabaseError);
       expect((err as Error).message).toContain(
-        'перестворіть базу (`pnpm db:demo` локально); адопція бази без журналу не підтримується',
+        'перестворіть базу порожньою — міграції накотяться на неї зі старту застосунку або `simplycms db:apply`; адопція бази без журналу не підтримується',
       );
       expect(await exists(db.url, 'public.simplycms_migrations')).toBe(false);
       expect(await numberOf(db.url, TABLES)).toBe(before);

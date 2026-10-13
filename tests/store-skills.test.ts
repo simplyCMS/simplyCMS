@@ -6,14 +6,16 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMANDS } from '../packages/cli/src/commands.mjs';
+import {
+  MigrationChecksumError,
+  UnjournaledDatabaseError,
+} from '../packages/simplycms/src/migrate/errors';
 
 const ROOT = process.cwd();
 const SKILLS_DIR = join(ROOT, 'packages/simplycms/skills');
 const INTRO = join(ROOT, 'packages/simplycms/agent/intro.md');
-const TEMPLATE_PKG = join(
-  ROOT,
-  'packages/create-simplycms-store/template/package.json.tpl',
-);
+const TEMPLATE_DIR = join(ROOT, 'packages/create-simplycms-store/template');
+const TEMPLATE_PKG = join(TEMPLATE_DIR, 'package.json.tpl');
 /** Вбудовані команди pnpm, які скіли вправі згадувати. */
 const PNPM_BUILTIN = ['install', 'up', 'add', 'exec', 'create', 'dlx'];
 
@@ -51,13 +53,15 @@ const templateScripts = Object.keys(
 );
 
 describe('скіли магазину: форма', () => {
-  it('набір скілів етапу — чотири', () => {
-    expect(skillNames).toEqual([
-      'simplycms-diagnose',
-      'simplycms-onboarding',
-      'simplycms-redesign',
-      'simplycms-update',
-    ]);
+  it('скіли етапу на місці (новий скіл не вимагає правки тесту)', () => {
+    expect(skillNames).toEqual(
+      expect.arrayContaining([
+        'simplycms-diagnose',
+        'simplycms-onboarding',
+        'simplycms-redesign',
+        'simplycms-update',
+      ]),
+    );
   });
 
   it.each(skillNames)(
@@ -77,10 +81,19 @@ describe('скіли магазину: посилання на існуюче', 
   it('кожна `simplycms <cmd>` — ключ COMMANDS', () => {
     const used: string[] = [];
     for (const { file, text } of allTexts) {
+      // Голе `simplycms <cmd>` — лише в блоках коду: у прозі «simplycms» — назва.
+      const fenced = [...text.matchAll(/```[^\n]*\n([^]*?)```/g)].map(
+        (m) => m[1],
+      );
       for (const m of text.matchAll(
         /(?:pnpm\s+(?:exec\s+)?|\.bin\/|`)simplycms\s+([a-z][\w:-]*)/g,
       ))
         used.push(`${file}: ${m[1]}`);
+      for (const block of fenced)
+        for (const m of block.matchAll(
+          /(?:^|[\s$;&|(])simplycms\s+([a-z][\w:-]*)/gm,
+        ))
+          used.push(`${file}: ${m[1]}`);
     }
     expect(used.length).toBeGreaterThan(0);
     const unknown = used.filter(
@@ -106,16 +119,29 @@ describe('скіли магазину: посилання на існуюче', 
   });
 
   it.each(skillNames)(
-    '%s: кожен references/*.md і scripts/*.mjs зі SKILL.md існує',
+    '%s: кожен шлях references/scripts/scripts-монорепо у SKILL.md і references/*.md існує',
     (name) => {
-      const text = readFileSync(join(SKILLS_DIR, name, 'SKILL.md'), 'utf8');
       // Шлях із префіксом `simplycms-<інший>/` — посилання на сусідній скіл.
-      const refs = [
-        ...text.matchAll(
+      const dead: string[] = [];
+      for (const { file, text } of texts(name)) {
+        for (const m of text.matchAll(
           /(?<![\w.-])(?:(simplycms-[a-z]+)\/)?((?:references|scripts)\/[\w./-]+\.(?:md|mjs))/g,
-        ),
-      ].map((m) => join(SKILLS_DIR, m[1] ?? name, m[2]));
-      expect(refs.filter((p) => !existsSync(p))).toEqual([]);
+        ))
+          if (
+            !existsSync(join(SKILLS_DIR, m[1] ?? name, m[2])) &&
+            // `scripts/start.mjs` без префікса скіла — файл самого магазину.
+            !(
+              !m[1] &&
+              m[2].startsWith('scripts/') &&
+              existsSync(join(TEMPLATE_DIR, m[2]))
+            )
+          )
+            dead.push(`${file}: ${m[0]}`);
+        // `scripts/dev-stand/…` та інше з scripts/ монорепо в магазині не існує.
+        for (const m of text.matchAll(/scripts\/dev-stand\/[\w./-]+/g))
+          dead.push(`${file}: ${m[0]} (лише монорепо)`);
+      }
+      expect(dead).toEqual([]);
     },
   );
 
@@ -142,16 +168,55 @@ describe('скіли магазину: посилання на існуюче', 
 });
 
 describe('скіли магазину: залежності від пакета', () => {
-  it('simplycms-update читає CHANGELOG з node_modules: файл у files і кладеться prepack-ом', () => {
+  it('simplycms-update читає CHANGELOG з node_modules: файл у files і кладеться prepack-ом і прибирається postpack-ом', () => {
     const pkg = JSON.parse(
       readFileSync(join(ROOT, 'packages/simplycms/package.json'), 'utf8'),
     ) as { files: string[]; scripts: Record<string, string> };
     expect(pkg.files).toContain('CHANGELOG.md');
     expect(pkg.scripts.prepack).toContain('CHANGELOG.md');
+    // Без postpack копія лишається в дереві й тест реєстру обходів бачить у ній маркери.
+    expect(pkg.scripts.postpack).toContain('CHANGELOG.md');
     const update = texts('simplycms-update')
       .map((t) => t.text)
       .join('\n');
     expect(update).toContain('CHANGELOG.md');
+  });
+});
+
+describe('скіли магазину: тексти помилок збігаються з кодом', () => {
+  const flat = (t: string) => t.replace(/\s+/g, ' ');
+  const pitfalls = flat(
+    readFileSync(
+      join(SKILLS_DIR, 'simplycms-diagnose/references/pitfalls.md'),
+      'utf8',
+    ),
+  );
+
+  it.each([
+    ['UnjournaledDatabaseError', new UnjournaledDatabaseError().message],
+    [
+      'MigrationChecksumError',
+      new MigrationChecksumError(['x']).message.replace('x', '<файли>'),
+    ],
+  ])('pitfalls.md цитує %s повним текстом з коду', (_name, message) => {
+    expect(pitfalls).toContain(flat(message));
+  });
+
+  it('повідомлення ядра радять лише команди, що є в магазині', () => {
+    const message = new UnjournaledDatabaseError().message;
+    const bad = [...message.matchAll(/\bpnpm\s+([a-z][\w:-]*)/g)]
+      .map((m) => m[1])
+      .filter((w) => !PNPM_BUILTIN.includes(w) && !templateScripts.includes(w));
+    expect(bad).toEqual([]);
+  });
+
+  it('лог старту друкує лише текст помилки: скіли не шукають імені класу', () => {
+    const logs = readFileSync(
+      join(SKILLS_DIR, 'simplycms-diagnose/references/logs.md'),
+      'utf8',
+    );
+    expect(logs).not.toMatch(/MigrationChecksumError/);
+    expect(pitfalls).not.toMatch(/імʼя помилки/);
   });
 });
 

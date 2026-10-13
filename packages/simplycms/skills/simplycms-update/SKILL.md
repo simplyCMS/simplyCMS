@@ -21,11 +21,13 @@ pnpm simplycms update --check
 
 ## Ланцюжок етапів
 
-1. **Що змінилось** — `references/changelog.md`: розділ BREAKING у `node_modules/simplycms/CHANGELOG.md`
-   між поточною і цільовою версією; підсумок власнику списком, що вимагає дій магазину.
+1. **Що змінилось** — `references/changelog.md`: розділ BREAKING між поточною і цільовою версією.
+   Журнал цільової версії береться з її tarball (`node_modules/simplycms/CHANGELOG.md` — лише
+   журнал ВСТАНОВЛЕНОЇ версії); підсумок власнику списком, що вимагає дій магазину.
 2. **Оновлення пакетів і файлів** — `pnpm simplycms update`: ставить ядро і сателіти на цільову
    версію, далі звіряє host-файли, лінки скілів і файли агента. Мажорну межу сама не перетинає
-   (див. нижче). Після `--write` — `git diff` і ревʼю.
+   (див. нижче). Якщо звіт показав дрейф host-файлів, перепиши їх `update --write` лише після
+   прев'ю (`update --check`) і згоди власника; далі — `git diff` і ревʼю.
 3. **Міграції** — `pnpm simplycms db:diff`, потім `db:diff --write` лише після ревʼю SQL
    (`references/migrations.md`).
 4. **Локальна перевірка** — `pnpm simplycms db:apply` на локальній БД, `pnpm build`,

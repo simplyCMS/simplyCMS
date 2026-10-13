@@ -20,7 +20,8 @@
 
 ## Що шукати
 
-- Старт: рядок помилки `[simplycms/env]`, `[simplycms/migrate]` або `MigrationChecksumError`.
+- Старт: рядок помилки `[simplycms/env]` чи `[simplycms/migrate]` (напр. `[simplycms/migrate] Змінено вже накочені…`);
+  імені класу помилки в логу немає, шукай за текстом повідомлення.
   Це перша частина `references/pitfalls.md`.
 - `media driver open failed` / `media lookup failed` — сховище недоступне (503 / 500 на `/media`).
 - Збірка: де зупинилась (`Installing railpack`, `pnpm install`, `vite build`).

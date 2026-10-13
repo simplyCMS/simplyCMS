@@ -36,8 +36,9 @@ export class UnjournaledDatabaseError extends Error {
   constructor() {
     super(
       '[simplycms/migrate] База містить таблиці магазину, але не має журналу ' +
-        'міграцій (public.simplycms_migrations): перестворіть базу (`pnpm db:demo` ' +
-        'локально); адопція бази без журналу не підтримується.',
+        'міграцій (public.simplycms_migrations): перестворіть базу порожньою — ' +
+        'міграції накотяться на неї зі старту застосунку або `simplycms db:apply`; ' +
+        'адопція бази без журналу не підтримується.',
     );
     this.name = 'UnjournaledDatabaseError';
   }
