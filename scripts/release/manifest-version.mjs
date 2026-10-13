@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { coreRangeFor } from '../../packages/cli/src/core-range.mjs';
 
 const PACKAGES_DIR = 'packages';
 
@@ -31,6 +32,15 @@ const MANIFEST_SOURCES = [
 const MANIFEST_VERSION_RE = /^(\s*)version: '(\d+\.\d+\.\d+)',$/m;
 
 /**
+ * Діапазон сумісності з ядром — рядок-літерал того ж маніфеста. Чесний semver
+ * (Е8-В4): відкритий вгору `>=` прийняв би й 2.0 зі зламами, а руками `^1.0.0`
+ * не записати, поки ядро в монорепо ще 0.x (валідатори червоніли б). Тому
+ * діапазон, як і версію, переписує крок бампу. Той самий строгий клас: 0 або
+ * 2+ збіги — гучна помилка.
+ */
+const MANIFEST_ENGINES_RE = /^(\s*)engines: \{ simplycms: '([^']+)' \},$/m;
+
+/**
  * Файли маніфестів референс-пакетів, знайдені на диску.
  * @returns {string[]} шляхи відносно кореня репо
  */
@@ -59,7 +69,8 @@ export function manifestVersionFiles() {
  * Прочитати єдиний version-літерал маніфеста. Строгість тут і є перевіркою
  * формату: 0 або 2+ збіги — гучна помилка, а не тихий пропуск.
  * @param {string} path
- * @returns {{ source: string; indent: string; current: string }}
+ * @returns {{ source: string; indent: string; current: string;
+ *   enginesIndent: string; currentEngines: string }}
  */
 function readManifestVersion(path) {
   const source = readFileSync(path, 'utf8');
@@ -72,8 +83,18 @@ function readManifestVersion(path) {
         `scripts/release/manifest-version.mjs`,
     );
   }
+  const engines = source.match(new RegExp(MANIFEST_ENGINES_RE, 'gm')) ?? [];
+  if (engines.length !== 1) {
+    throw new Error(
+      `У ${path} знайдено ${engines.length} літералів engines маніфесту ` +
+        `(очікувався рівно один вигляду "  engines: { simplycms: '…' },"). ` +
+        `Формат змінився — онови MANIFEST_ENGINES_RE у ` +
+        `scripts/release/manifest-version.mjs`,
+    );
+  }
   const [, indent, current] = MANIFEST_VERSION_RE.exec(source);
-  return { source, indent, current };
+  const [, enginesIndent, currentEngines] = MANIFEST_ENGINES_RE.exec(source);
+  return { source, indent, current, enginesIndent, currentEngines };
 }
 
 /**
@@ -91,18 +112,25 @@ export function manifestVersionDrift(version) {
 }
 
 /**
- * Переписати version-літерали маніфестів референс-пакетів.
+ * Переписати version- і engines-літерали маніфестів референс-пакетів.
+ * Обходить ВСІ маніфести, а не лише дрейфові за версією: діапазон може
+ * розійтися сам по собі (версія вже та, а `engines` лишився `>=`).
  * @param {string} version
  * @returns {string[]} файли, які реально змінилися
  */
 export function bumpManifestVersions(version) {
+  const range = coreRangeFor(version);
   const changed = [];
-  for (const path of manifestVersionDrift(version)) {
-    const { source, indent } = readManifestVersion(path);
-    writeFileSync(
-      path,
-      source.replace(MANIFEST_VERSION_RE, `${indent}version: '${version}',`),
-    );
+  for (const path of manifestVersionFiles()) {
+    const { source, indent, enginesIndent } = readManifestVersion(path);
+    const next = source
+      .replace(MANIFEST_VERSION_RE, `${indent}version: '${version}',`)
+      .replace(
+        MANIFEST_ENGINES_RE,
+        `${enginesIndent}engines: { simplycms: '${range}' },`,
+      );
+    if (next === source) continue;
+    writeFileSync(path, next);
     changed.push(path);
   }
   return changed;

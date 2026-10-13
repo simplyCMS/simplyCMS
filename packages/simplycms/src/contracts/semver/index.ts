@@ -7,6 +7,7 @@
 // (`scripts/release/bump.mjs`, VERSION_RE).
 
 export { CORE_VERSION } from './version';
+export { coreRangeFor } from './core-range';
 
 const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 

@@ -60,6 +60,22 @@ describe('validatePluginModule', () => {
     );
   });
 
+  it('^1.0.0 проти ядра 2.0.0 — попередження (злам = нова мажорна)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const module = makeModule({
+      manifest: {
+        name: 'demo',
+        displayName: 'Demo',
+        version: '1.0.0',
+        engines: { simplycms: '^1.0.0' },
+      },
+    });
+    expect(() => validatePluginModule(module, '2.0.0')).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('не покриває ядро 2.0.0'),
+    );
+  });
+
   it('нерозбірливий діапазон — попередження з причиною', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({

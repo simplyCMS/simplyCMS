@@ -72,7 +72,7 @@ describe('release bump: version-літерали маніфестів', () => {
     mkdirSync(dir, { recursive: true });
     const path = join(dir, 'manifest.ts');
     const before =
-      "const manifest = {\n  name: 'aurora',\n  version: '0.3.0',\n};\n";
+      "const manifest = {\n  name: 'aurora',\n  version: '0.3.0',\n  engines: { simplycms: '>=0.3.0' },\n};\n";
     writeFileSync(path, before);
 
     process.chdir(root);
@@ -98,8 +98,55 @@ describe('release bump: version-літерали маніфестів', () => {
     ]);
     const source = readFileSync(path, 'utf8');
     expect(source).toContain("  version: '0.4.0',");
-    // Діапазон сумісності — не версія пакета: строгий патерн його не чіпає.
-    expect(source).toContain("engines: { simplycms: '>=0.3.0' }");
+    // Чесний semver: діапазон теж переписує бамп (0.x → ^0.m.0).
+    expect(source).toContain("  engines: { simplycms: '^0.4.0' },");
+  });
+
+  it('1.0.0: version і engines → ^1.0.0 (відкритий >= прийняв би 2.0)', () => {
+    const root = mkdtempSync(join(tmpdir(), 'bump-manifest-'));
+    const dir = join(root, 'packages', 'simplycms-plugin-faq', 'src');
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, 'index.ts');
+    writeFileSync(
+      path,
+      "export default {\n  version: '0.14.0',\n  engines: { simplycms: '>=0.3.0' },\n};\n",
+    );
+
+    process.chdir(root);
+    bumpManifestVersions('1.0.0');
+    const source = readFileSync(path, 'utf8');
+    expect(source).toContain("  version: '1.0.0',");
+    expect(source).toContain("  engines: { simplycms: '^1.0.0' },");
+  });
+
+  it('версія вже та, але engines розійшовся — бамп його все одно виправляє', () => {
+    const root = mkdtempSync(join(tmpdir(), 'bump-manifest-'));
+    const dir = join(root, 'packages', 'simplycms-plugin-faq', 'src');
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, 'index.ts');
+    writeFileSync(
+      path,
+      "export default {\n  version: '1.0.0',\n  engines: { simplycms: '>=0.3.0' },\n};\n",
+    );
+
+    process.chdir(root);
+    expect(bumpManifestVersions('1.0.0')).toHaveLength(1);
+    expect(readFileSync(path, 'utf8')).toContain("simplycms: '^1.0.0'");
+  });
+
+  it('маніфест без engines — гучна помилка', () => {
+    const root = mkdtempSync(join(tmpdir(), 'bump-manifest-'));
+    const dir = join(root, 'packages', 'simplycms-plugin-noeng', 'src');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'index.ts'),
+      "export default {\n  version: '0.3.0',\n};\n",
+    );
+
+    process.chdir(root);
+    expect(() => bumpManifestVersions('0.4.0')).toThrow(
+      /літералів engines маніфесту/,
+    );
   });
 
   it('немає літерала — гучна помилка, а не тихий пропуск', () => {

@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
+  createCoreRange,
   parseCreateArgs,
   renderPluginTemplate,
   scaffoldPlugin,
@@ -30,6 +31,18 @@ describe('cli create: парсер', () => {
       /Невалідне імʼя/,
     );
     expect(() => parseCreateArgs(['plugin', 'x', '--wat'])).toThrow(/--wat/);
+  });
+});
+
+describe('cli create: діапазон ядра (чесний semver)', () => {
+  it('CLI 1.0.0 → ^1.0.0; 0.14.0 → ^0.14.0 (а не відкрите >=)', () => {
+    expect(createCoreRange('1.0.0')).toBe('^1.0.0');
+    expect(createCoreRange('1.4.2')).toBe('^1.0.0');
+    expect(createCoreRange('0.14.0')).toBe('^0.14.0');
+  });
+
+  it('без аргументу бере версію власного CLI', () => {
+    expect(createCoreRange()).toMatch(/^\^\d+\.\d+\.0$/);
   });
 });
 

@@ -60,7 +60,7 @@ export default definePlugin({
   name: 'faq',                      // [a-z][a-z0-9-]*; ключ ВСЬОГО (див. §9)
   displayName: 'FAQ',
   version: '0.3.0',                 // для npm-пакета = version пакета (тест парності)
-  engines: { simplycms: '>=0.3.0' },// діапазон сумісності; `>=`, НЕ `^` (0.x!)
+  engines: { simplycms: '>=0.3.0' },// діапазон сумісності: `^M.0.0` (на 0.x — `^0.m.0`), НЕ `>=`
   description: '…англійською…',     // метадані реєстру: показуються з БД-рядка
   settings: z.object({ maxVisible: z.number().int().default(5).describe('…') }),
   slots: { 'product.detail.after': FaqSlot },   // компонент ← props.context
