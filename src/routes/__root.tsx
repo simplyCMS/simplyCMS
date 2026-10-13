@@ -111,7 +111,7 @@ function RootComponent() {
             enableSystem
             disableTransitionOnChange
           >
-            <CMSProvider customQueryClient={queryClient}>
+            <CMSProvider queryClient={queryClient}>
               <PluginBootstrap />
               <ThemeBootstrap />
               <ClientEngineProvider>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../hooks/useAuth';
 import { CartProvider } from '../hooks/useCart';
@@ -6,33 +6,21 @@ import { CartProvider } from '../hooks/useCart';
 interface CMSProviderProps {
   children: React.ReactNode;
   /**
-   * `QueryClient` ззовні — на практиці той самий інстанс, що `getRouter()`
+   * `QueryClient` роутера — той самий інстанс, що `getRouter()`
    * (`src/router.tsx`) поклав у router context: колекції TanStack DB (Е1б)
    * memoізуються по інстансу клієнта й потрібні в `loader` роуту, тобто поза
    * React-деревом, де клієнт, народжений усередині провайдера, недосяжний.
    *
-   * Якщо не передано — провайдер створює власний клієнт сам (тести,
-   * storybook-подібні точки входу без роутера).
+   * 🔴 Обовʼязковий, запасного власного клієнта немає: другий `QueryClient`
+   * на вітрині обходив би скидання кешу цін глядача (`useViewerPriceSync`,
+   * Р29) — його б не бачили ні лоадери, ні це скидання.
    */
-  customQueryClient?: QueryClient;
+  queryClient: QueryClient;
 }
 
-export function CMSProvider({ children, customQueryClient }: CMSProviderProps) {
-  const [client] = useState(
-    () =>
-      customQueryClient ||
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 5 * 60 * 1000,
-            retry: 1,
-          },
-        },
-      }),
-  );
-
+export function CMSProvider({ children, queryClient }: CMSProviderProps) {
   return (
-    <QueryClientProvider client={client}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>{children}</CartProvider>
       </AuthProvider>
