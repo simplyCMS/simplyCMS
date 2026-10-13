@@ -18,7 +18,7 @@ export const DOMAIN_ERROR_NAME = {
   authz: 'AuthzError',
   validation: 'ValidationError',
   /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
-  notFound: 'NotFoundError',
+  notFound: 'AdminNotFoundError',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** `error.name` доменної помилки — значення `DOMAIN_ERROR_NAME`. */

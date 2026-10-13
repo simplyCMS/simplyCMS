@@ -13,6 +13,7 @@ const calls = vi.hoisted(() => ({
   order: [] as string[],
   user: { current: null as { id: string } | null },
   accept: vi.fn(),
+  signOut: vi.fn(),
 }));
 const navigate = vi.hoisted(() => vi.fn());
 
@@ -24,13 +25,14 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({
     user: calls.user.current,
-    signOut: async () => {
-      calls.order.push('signOut');
-    },
   }),
 }));
 vi.mock('simplycms/core/lib/auth-client', () => ({
   authClient: {
+    signOut: async () => {
+      calls.order.push('signOut');
+      return calls.signOut();
+    },
     signIn: {
       email: async () => {
         calls.order.push('signIn');
@@ -59,6 +61,7 @@ async function submitInvite() {
 beforeEach(() => {
   calls.order.length = 0;
   calls.accept.mockReset();
+  calls.signOut.mockReset().mockReturnValue({ error: null });
   navigate.mockReset();
 });
 afterEach(() => cleanup());
@@ -86,4 +89,29 @@ describe('AuthInvite поверх чужої сесії', () => {
     expect(calls.order).toEqual([]);
     expect(screen.getByText(t('auth.invite.expired'))).toBeTruthy();
   });
+
+  it.each([
+    [
+      '{ error }',
+      () => calls.signOut.mockReturnValue({ error: { message: 'x' } }),
+    ],
+    [
+      'виняток',
+      () =>
+        calls.signOut.mockImplementation(() => {
+          throw new Error('net');
+        }),
+    ],
+  ])(
+    'збій виходу (%s) → signIn не кличемо, показуємо помилку',
+    async (_n, arm) => {
+      calls.user.current = { id: 'customer' };
+      calls.accept.mockResolvedValue({ ok: true });
+      arm();
+      await submitInvite();
+      expect(calls.order).toEqual(['signOut']);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(screen.getByText(t('auth.invite.signInFailed'))).toBeTruthy();
+    },
+  );
 });

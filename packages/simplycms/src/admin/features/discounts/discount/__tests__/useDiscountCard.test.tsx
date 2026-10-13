@@ -4,8 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from 'simplycms/i18n';
-import { stubDom } from '../../__tests__/render-support';
-import { DISCOUNTS, GROUPS } from '../../__tests__/render-support';
+import { DISCOUNTS, GROUPS, stubDom } from '../../__tests__/render-support';
 
 stubDom();
 
@@ -42,7 +41,7 @@ function makeWrapper() {
 
 /** Те, що клієнт бачить після `domainErrorAdapter`: `Error` з `name`. */
 const domainNotFound = () =>
-  Object.assign(new Error('знижки не існує'), { name: 'NotFoundError' });
+  Object.assign(new Error('знижки не існує'), { name: 'AdminNotFoundError' });
 
 beforeEach(() => {
   vi.clearAllMocks();

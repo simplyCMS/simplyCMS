@@ -354,10 +354,11 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 Відмова Zod на межі адмін-serverFn — НЕ сирий JSON у тості, а типізована доменна
 помилка, яку клієнт розкладає по полях форми.
 
-**Контракт.** `ValidationError` — четверта в закритому реєстрі
-`contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`;
-до реєстру додано `AdminNotFoundError` (Р26, `name` — «NotFoundError»): «рядка немає», без полів, `isNotFoundError` на клієнті —
-так картка відрізняє справжнє «не знайдено» від збою запиту).
+**Контракт.** `ValidationError` — одна з чотирьох у закритому реєстрі
+`contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`,
+`AdminNotFoundError`). Остання (Р26): «рядка немає», без полів; клієнт розпізнає її
+через `isNotFoundError` за `name`, тож картка відрізняє справжнє «не знайдено» від
+збою запиту.
 Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущені крізь
 БІЛИЙ СПИСОК `sanitizeValidationIssues` (T0): коди — `VALIDATION_ISSUE_CODES`
 (коди Zod + `invalid_decimal`, невідомий → `custom`), `params` — лише властивості

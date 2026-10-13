@@ -40,7 +40,9 @@ describe('DOMAIN_ERROR_FIELD_KEYS', () => {
 describe('isNotFoundError (Р26)', () => {
   it('впізнає лише доменне «не знайдено» за name', () => {
     expect(
-      isNotFoundError(Object.assign(new Error('x'), { name: 'NotFoundError' })),
+      isNotFoundError(
+        Object.assign(new Error('x'), { name: 'AdminNotFoundError' }),
+      ),
     ).toBe(true);
     expect(isNotFoundError(new Error('x'))).toBe(false);
     expect(isNotFoundError(new TypeError('Failed to fetch'))).toBe(false);

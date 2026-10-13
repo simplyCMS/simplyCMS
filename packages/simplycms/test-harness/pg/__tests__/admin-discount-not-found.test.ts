@@ -18,9 +18,9 @@ import { getDiscountOp } from 'simplycms/admin-server/impl';
 describe('admin: getDiscount — відсутня знижка (Р26)', () => {
   F.useDiscountsAdminDb('simplycms_admin_discount_not_found');
 
-  it('невідомий id → доменна помилка NotFoundError', async () => {
+  it('невідомий id → доменна помилка AdminNotFoundError', async () => {
     await expect(
       getDiscountOp({ data: { id: crypto.randomUUID() } }),
-    ).rejects.toMatchObject({ name: 'NotFoundError' });
+    ).rejects.toMatchObject({ name: 'AdminNotFoundError' });
   });
 });
