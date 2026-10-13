@@ -12,6 +12,7 @@ export const CONNECT_TIMEOUT_MS = 3000;
 
 const REACHABLE = 'Доступність БД (DATABASE_URL)';
 const JOURNAL = 'Журнал міграцій';
+const CLUSTER = 'Окремий екземпляр Postgres';
 
 const check = (id, title, status, details) => ({ id, title, status, details });
 const reason = (error) =>
@@ -73,9 +74,31 @@ function journalCheck(rows, files, core) {
 }
 
 /**
+ * Вимога платформи: кожному магазину — власний екземпляр Postgres. Ролі
+ * `app_runtime`/`app_admin` кластерні, тож чужа база в кластері означає спільні
+ * ролі. Текст називає бази, але не облікові дані.
+ */
+async function clusterCheck(url, core) {
+  try {
+    const foreign = await core.findForeignDatabases(url, {
+      timeoutMs: CONNECT_TIMEOUT_MS,
+    });
+    if (foreign.length === 0) return check('shared-cluster', CLUSTER, 'ok');
+    return check(
+      'shared-cluster',
+      CLUSTER,
+      'warn',
+      `у кластері є інші бази (${foreign.join(', ')}) — магазину потрібен окремий екземпляр Postgres; спільний кластер ділить ролі app_runtime/app_admin між магазинами`,
+    );
+  } catch (error) {
+    return check('shared-cluster', CLUSTER, 'error', reason(error));
+  }
+}
+
+/**
  * @param {{ storeRoot: string; env: Record<string, string> }} ctx
  * @param {{
- *   core?: { readJournal: Function; listMigrationFiles: Function; pendingMigrations: Function };
+ *   core?: { readJournal: Function; listMigrationFiles: Function; pendingMigrations: Function; findForeignDatabases: Function };
  *   probe?: (url: string) => Promise<void>;
  * }} [deps] ін'єкція для тестів
  * @returns {Promise<import('./ui.mjs').Check[]>}
@@ -87,6 +110,7 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
     return [
       check('db-reachable', REACHABLE, 'skip', why),
       check('migrations-journal', JOURNAL, 'skip', why),
+      check('shared-cluster', CLUSTER, 'skip', why),
     ];
   }
   try {
@@ -96,23 +120,32 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
       return [
         check('db-reachable', REACHABLE, 'skip', error.message),
         check('migrations-journal', JOURNAL, 'skip', 'немає драйвера pg'),
+        check('shared-cluster', CLUSTER, 'skip', 'немає драйвера pg'),
       ];
     return [
       check('db-reachable', REACHABLE, 'error', reason(error)),
       check('migrations-journal', JOURNAL, 'skip', 'БД недоступна'),
+      check('shared-cluster', CLUSTER, 'skip', 'БД недоступна'),
     ];
   }
   const reachable = check('db-reachable', REACHABLE, 'ok');
+  let core;
   try {
-    const core =
-      deps.core ?? (await importFromStore(storeRoot, 'simplycms/migrate'));
-    const files = core.listMigrationFiles(storeMigrationsDir(storeRoot));
-    const rows = await core.readJournal(url, { timeoutMs: CONNECT_TIMEOUT_MS });
-    return [reachable, journalCheck(rows, files, core)];
+    core = deps.core ?? (await importFromStore(storeRoot, 'simplycms/migrate'));
   } catch (error) {
     return [
       reachable,
       check('migrations-journal', JOURNAL, 'error', reason(error)),
+      check('shared-cluster', CLUSTER, 'skip', 'ядро магазину недоступне'),
     ];
   }
+  let journal;
+  try {
+    const files = core.listMigrationFiles(storeMigrationsDir(storeRoot));
+    const rows = await core.readJournal(url, { timeoutMs: CONNECT_TIMEOUT_MS });
+    journal = journalCheck(rows, files, core);
+  } catch (error) {
+    journal = check('migrations-journal', JOURNAL, 'error', reason(error));
+  }
+  return [reachable, journal, await clusterCheck(url, core)];
 }

@@ -73,6 +73,9 @@ scripts/dev-stand/seed-demo.sql
 
 # Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
 .claude/worktrees/
+# Скіли TanStack — локальні лінки розробника (docs/development/TOOLING.md § 2): їхні
+# цілі в node_modules, а частина колись вказувала абсолютними шляхами однієї машини.
+.claude/skills/tanstack-*
 
 # Локальний Postgres-харнес (pnpm harness:up)
 .env.harness

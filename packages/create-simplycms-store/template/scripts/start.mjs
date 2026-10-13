@@ -1,4 +1,4 @@
-// Прод-старт: `node scripts/start.mjs` (скрипт `start:prod`). Накочує міграції
+// Прод-старт: `node scripts/start.mjs` (єдина стартова команда платформи). Накочує міграції
 // під `MIGRATION_DATABASE_URL`, далі `process.execve` підміняє цей процес на
 // `server.mjs` без пароля власника схеми в оточенні.
 //

@@ -8,6 +8,7 @@ import {
   SYNCED_FILES,
   TEMPLATE_DIR,
 } from '../scripts/sync-create-store-template.mjs';
+import { ENV_PLACEHOLDERS } from '../packages/cli/src/env-placeholders.mjs';
 import { BUNDLED_SKILLS } from '../packages/create-simplycms-store/src/skill-links.mjs';
 
 // Шаблон create-simplycms-store — генерат: дрейф із монорепо лагодиться
@@ -219,5 +220,34 @@ describe('create-store template: парність із монорепо', () => 
       .sort();
     expect(packaged.length).toBeGreaterThan(0);
     expect([...BUNDLED_SKILLS].sort()).toEqual(packaged);
+  });
+
+  // Р28(в): заглушка в прикладі «працює» як значення. Список — той самий, що
+  // читає doctor; шукаємо у всьому файлі, включно із закоментованими рядками.
+  it('env.example не містить жодного значення зі списку заглушок', () => {
+    const example = read(join(TEMPLATE_DIR, 'env.example'));
+    const values = Object.values(ENV_PLACEHOLDERS).flat();
+    expect(values.length).toBeGreaterThan(0);
+    for (const value of values) expect(example).not.toContain(value);
+  });
+
+  // Р28(а): єдиний прод-старт — `node scripts/start.mjs`; `pnpm start`
+  // лишається локальним запуском бандла.
+  it('package.json.tpl: немає start:prod, start лишається локальним server.mjs', () => {
+    const scripts = JSON.parse(
+      read(join(TEMPLATE_DIR, 'package.json.tpl')).replaceAll(
+        '__SIMPLYCMS_VERSION__',
+        '1.0.0',
+      ),
+    ).scripts;
+    expect(scripts['start:prod']).toBeUndefined();
+    expect(scripts.start).toBe('node server.mjs');
+  });
+
+  it('README шаблону: прод-рецепт — node scripts/start.mjs, pnpm start позначений «не для проду»', () => {
+    const readme = read(join(TEMPLATE_DIR, 'README.md'));
+    expect(readme).toContain('node scripts/start.mjs');
+    expect(readme).toMatch(/pnpm start[^\n]*\n?[^\n]*не для проду/);
+    expect(readme).not.toContain('start:prod');
   });
 });

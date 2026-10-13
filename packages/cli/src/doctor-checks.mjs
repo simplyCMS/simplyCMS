@@ -14,6 +14,7 @@ import {
   checkMailDriver,
 } from './doctor-mail-check.mjs';
 import { checkEngines } from './doctor-engines.mjs';
+import { placeholderKeys } from './env-placeholders.mjs';
 import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
@@ -105,6 +106,8 @@ export function checkAllowBuilds({ storeRoot }) {
 /**
  * №5: env несе серверний контракт магазину.
  *
+ * Додатково error на відомих значеннях-заглушках (`env-placeholders.mjs`).
+ *
  * 🔴 Гейтяться саме ці два ключі, бо саме вони блокують старт: без
  * `DATABASE_URL` немає пулу `simplycms/db`, без `BETTER_AUTH_SECRET` сервер
  * відмовляється підписувати сесії. Інших ключів до БД магазин не має —
@@ -115,6 +118,12 @@ export function checkEnv({ env }) {
   const missing = REQUIRED_ENV_VARS.filter((name) => !env[name]);
   if (missing.length > 0) {
     const details = `Не задано: ${missing.join('; ')} (process.env, .env.local або .env)`;
+    return check('env', title, 'error', details);
+  }
+  // Заглушка з env.example — відомий усім «секрет»: називаємо ключ, не значення.
+  const placeholders = placeholderKeys(env);
+  if (placeholders.length > 0) {
+    const details = `Заглушка з прикладу замість значення: ${placeholders.join('; ')} — задай справжнє`;
     return check('env', title, 'error', details);
   }
   return check('env', title, 'ok');

@@ -107,9 +107,17 @@ pnpm dev      # розробка, http://localhost:3000
 Прод:
 
 ```bash
-pnpm build    # dist/client + dist/server
-pnpm start    # node server.mjs (порт — PORT, за замовчуванням 3000)
+pnpm build                  # dist/client + dist/server
+node scripts/start.mjs      # накат міграцій під MIGRATION_DATABASE_URL, далі execve на server.mjs
 ```
+
+`node scripts/start.mjs` — єдина стартова команда платформи (Dokploy тощо); порт — `PORT`,
+за замовчуванням 3000. `pnpm start` (`node server.mjs`) лишається локальним запуском
+зібраного бандла **не для проду**: він не накочує міграції.
+
+🔴 Кожному магазину — власний екземпляр Postgres (не лише база в спільному кластері): ролі
+`app_runtime`/`app_admin` кластерні, спільний кластер ділить їх між магазинами.
+`pnpm simplycms doctor --online` попередить, якщо це не так.
 
 ### 5. Перевірити себе
 

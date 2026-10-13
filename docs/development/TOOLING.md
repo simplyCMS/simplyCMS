@@ -41,7 +41,7 @@ PR #12803), а не відмовив. **Умова перегляду:** рел�
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
-pnpm start            # Run production server (node server.mjs, PORT=3000) — див. docs/development/ENVIRONMENT.md
+pnpm start            # Локальний запуск зібраного бандла (node server.mjs, PORT=3000), НЕ для проду (прод — node scripts/start.mjs) — див. docs/development/ENVIRONMENT.md
 pnpm typecheck        # TypeScript type check
 pnpm typecheck:showcase   # tsc сіду вітрини (tsconfig.showcase.json): tsx типів не перевіряє,
                       # а кореневий tsconfig scripts/showcase/*.mts не включає
@@ -118,6 +118,16 @@ pnpm db:pull / db:diff
 
 Команд `pnpm test:e2e` і `pnpm pilot:e2e` немає: прапорець `--e2e` падає з поясненням, а не
 мовчки ігнорується. Генератора типів БД (`db:generate-types`, `types:baseline`) теж немає.
+
+**Скіли TanStack для агента (локально, не в git).** Пакети `@tanstack/react-start` і
+`@tanstack/virtual-file-routes` постачають власні скіли в `node_modules`. `.claude/skills/tanstack-*`
+у `.gitignore`: лінки з абсолютними цілями (однієї машини) у репо не лежать, а тест
+`tests/git-symlinks.test.ts` стереже, що їх там немає. Щоб підключити скіли, створи ВІДНОСНІ лінки:
+
+```bash
+ln -s ../../node_modules/@tanstack/react-start/skills/react-start .claude/skills/tanstack-react-start
+ln -s ../../node_modules/@tanstack/virtual-file-routes/skills/virtual-file-routes .claude/skills/tanstack-virtual-file-routes
+```
 
 ## 3. Гейти (порядок і причини)
 

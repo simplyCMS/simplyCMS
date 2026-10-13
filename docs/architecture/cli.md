@@ -67,7 +67,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 2 | усі пакети ядра (`simplycms` + сателіти `@simplycms/*`) — одна версія; версія CLI збігається | error / warn |
 | 3 | `packageManager` — pnpm 11 | warn |
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
-| 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env` | error |
+| 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env`; значення, що дорівнює відомій заглушці з прикладів env (`src/env-placeholders.mjs` — єдиний список, його ж читає тест шаблону; `DATABASE_URL`, `BETTER_AUTH_SECRET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `SMTP_URL`, `MIGRATION_DATABASE_URL`) — теж error; повідомлення називає ключ, не значення | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
 | 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
@@ -94,6 +94,7 @@ read-only, ключ власника схеми не мусить лежати �
 | id | status | значення |
 |---|---|---|
 | `db-reachable` | `ok` / `error` / `skip` | з'єднання з `DATABASE_URL`; помилка — `error` (без пароля в тексті), немає `DATABASE_URL` — `skip` |
+| `shared-cluster` | `ok` / `warn` / `error` / `skip` | вимога «власний екземпляр Postgres на магазин»: ядро (`findForeignDatabases` у `simplycms/migrate`, read-only транзакція з `DATABASE_URL`) шукає в `pg_database` інші бази, до яких `app_runtime` має `CONNECT` (`has_database_privilege`); `postgres`, `template0`, `template1` і поточна не рахуються. Критерій «є таблиця `simplycms_migrations`» — підмножина `CONNECT` (журнал чужої бази без доступу не прочитати), тож окремого проходу по базах немає. Є такі бази — `warn` з іменами (без облікових даних); стоковий `PUBLIC CONNECT` дає `warn` на будь-яку сторонню базу — спільний кластер порушує вимогу. Немає `DATABASE_URL`/`pg`/БД недоступна — `skip` |
 | `migrations-journal` | `ok` / `warn` / `error` / `skip` | усе накочено — `ok`; є ненакочені — `warn` з іменами; змінений накочений файл або база без журналу — `error` («база без журналу»); БД недоступна — `skip` із причиною |
 
 Без `--online` звіт лишає видимий рядок `db-online` зі статусом `skip` і підказкою
@@ -338,6 +339,7 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/git-symlinks.test.ts` | жоден симлінк у git-індексі не має абсолютної цілі (`.claude/skills/tanstack-*` вилучено з індексу, S4-16) |
 | `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
 | `tests/cli-mail-driver.test.ts` | doctor №14 (немає nodemailer / не в dependencies / невідповідна версія / ок / ядро не встановлено) |
 | `tests/cli-doctor-engines.test.ts` | doctor №17 (engines: не покриває ядро / покриває / відсутній, плагін і тема; пакет у node_modules; проводка через `run()` з реальним `satisfies` ядра) |

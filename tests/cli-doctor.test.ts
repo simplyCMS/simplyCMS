@@ -157,6 +157,38 @@ describe('cli doctor (оффлайн)', () => {
     expect(stale.title).toMatch(/DATABASE_URL/);
   });
 
+  it('checkEnv: відома заглушка з env.example → error, що називає ключ, а не значення', () => {
+    const secret = checkEnv({
+      env: { ...ENV, BETTER_AUTH_SECRET: 'your-32-byte-random-secret' },
+    });
+    expect(secret.status).toBe('error');
+    expect(secret.details).toContain('BETTER_AUTH_SECRET');
+    expect(secret.details).not.toContain('your-32-byte-random-secret');
+
+    const url = checkEnv({
+      env: {
+        ...ENV,
+        DATABASE_URL:
+          'postgresql://app_runtime:your-password@localhost:5432/postgres',
+      },
+    });
+    expect(url.status).toBe('error');
+    expect(url.details).toContain('DATABASE_URL');
+    expect(url.details).not.toContain('your-password');
+
+    // Опційні ключі з прикладів теж не мають лишатися заглушками.
+    const smtp = checkEnv({
+      env: { ...ENV, SMTP_URL: 'smtps://user:password@smtp.example.com:465' },
+    });
+    expect(smtp.status).toBe('error');
+    expect(smtp.details).toContain('SMTP_URL');
+
+    // Згенерований секрет — без цієї помилки.
+    expect(
+      checkEnv({ env: { ...ENV, BETTER_AUTH_SECRET: 'k3j5Zq9xW1' } }).status,
+    ).toBe('ok');
+  });
+
   it('checkHostDrift: збіг із каноном — ok, локальна правка — warn', async () => {
     const store = await scaffoldStore('doc-drift');
     const hostDir = mkdtempSync(join(tmpdir(), 'cli-canon-'));

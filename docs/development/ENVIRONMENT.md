@@ -96,8 +96,9 @@ HTTP-сервер. Теки `.output/` немає.
   `max-age=31536000, immutable`), решта — `IncomingMessage → Request → fetch-handler →
   ServerResponse` зі стрімінгом в обидва боки (`Readable.toWeb` / `Readable.fromWeb`), тому
   SSR-стрімінг Start не ламається.
-- `pnpm start` = `node server.mjs` (локальний запуск); у проді — `pnpm start:prod` =
-  `node scripts/start.mjs`: спершу накат міграцій (`simplycms/migrate`) під
+- `pnpm start` = `node server.mjs` — лише локальний запуск зібраного бандла, **не для проду**
+  (без накату міграцій і без `execve`). У проді стартова команда платформи — рівно
+  `node scripts/start.mjs` (скрипта `start:prod` немає, `pnpm` у контейнері не потрібен): спершу накат міграцій (`simplycms/migrate`) під
   `MIGRATION_DATABASE_URL` (пароль власника схеми; не задано — накат пропущено), далі
   `process.execve` підміняє процес на `server.mjs` БЕЗ цієї змінної (потрібен Node ≥ 24).
   🔴 `start.mjs` читає лише `process.env` і `.env*` не читає (у проді env дає Dokploy); локальний
@@ -105,6 +106,16 @@ HTTP-сервер. Теки `.output/` немає.
   `MIGRATION_DATABASE_URL` з `.env*`. Часткова група `S3_*`/`SMTP_*` валить `start.mjs` до
   накату, а `server.mjs` — до слухання порту (`simplycms/env`). Порт — `PORT` (за замовчуванням `3000`), інтерфейс — `HOST`
   (за замовчуванням `0.0.0.0`).
+
+🔴 **Власний екземпляр Postgres на магазин (вимога платформи).** Кожен магазин має ВЛАСНИЙ
+екземпляр Postgres, а не лише власну базу в спільному кластері. Ролі `app_runtime` і `app_admin`
+кластерні: два магазини в одному кластері ділять їх — синк пароля `app_runtime` одним магазином
+(накат на старті) ламає вхід іншому, а `SET LOCAL ROLE app_admin` бачить чужу базу. Тому один
+екземпляр на магазин, а в Dokploy — окремий сервіс Postgres на проєкт. Порушення бачить
+`simplycms doctor --online`: рядок `shared-cluster` попереджає, якщо в кластері є інші бази, до
+яких `app_runtime` має `CONNECT` (службові `postgres`, `template0`, `template1` не рахуються).
+Заглушки секретів з прикладів (`your-password`, `your-32-byte-random-secret` тощо) `doctor` вважає
+помилкою: `env.example` постачає порожні значення з підказкою, як їх згенерувати.
 
 🔴 **Стеля тіла запиту (К3-Е6д-2, Е8-Р20).** Node-раннер (`server.mjs`) обмежує тіло ВСІХ запитів
 незалежно від шляху: `Content-Length` понад стелю → 413 до виклику хендлера (без читання тіла, зʼєднання

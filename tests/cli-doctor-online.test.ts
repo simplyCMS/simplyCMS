@@ -38,10 +38,11 @@ describe('cli doctor --online', () => {
         .map((f) => f.name),
     };
   };
-  const core = (journal: unknown) => ({
+  const core = (journal: unknown, foreign: string[] = []) => ({
     listMigrationFiles: () => files,
     readJournal: async () => journal,
     pendingMigrations,
+    findForeignDatabases: async () => foreign,
   });
   type Row = { id: string; status: string; details?: string };
   const byId = (checks: Row[]) =>
@@ -89,6 +90,50 @@ describe('cli doctor --online', () => {
     expect(checks['migrations-journal']!.details).toContain('база без журналу');
   });
 
+  it('shared-cluster: чужих баз немає → ok', async () => {
+    const checks = byId(
+      await runOnlineChecks(ctx, { probe: reachable, core: core([]) }),
+    );
+    expect(checks['shared-cluster']!.status).toBe('ok');
+  });
+
+  it('shared-cluster: є чужі бази → warn з іменами, текстом про окремий екземпляр і без пароля', async () => {
+    const checks = byId(
+      await runOnlineChecks(ctx, {
+        probe: reachable,
+        core: core([], ['other_shop', 'staging']),
+      }),
+    );
+    const c = checks['shared-cluster']!;
+    expect(c.status).toBe('warn');
+    expect(c.details).toContain('other_shop, staging');
+    expect(c.details).toContain('окремий екземпляр Postgres');
+    expect(c.details).not.toContain('hunter2');
+  });
+
+  it('shared-cluster: помилка запиту → error без пароля; БД недоступна → skip', async () => {
+    const failing = {
+      ...core([]),
+      findForeignDatabases: async () => {
+        throw new Error(`permission denied ${URL_WITH_PASSWORD}`);
+      },
+    };
+    const failed = byId(
+      await runOnlineChecks(ctx, { probe: reachable, core: failing }),
+    );
+    expect(failed['shared-cluster']!.status).toBe('error');
+    expect(failed['shared-cluster']!.details).not.toContain('hunter2');
+    const down = byId(
+      await runOnlineChecks(ctx, {
+        probe: async () => {
+          throw new Error('ECONNREFUSED');
+        },
+        core: core([]),
+      }),
+    );
+    expect(down['shared-cluster']!.status).toBe('skip');
+  });
+
   it('БД недоступна → db-reachable = error без пароля, журнал = skip із причиною', async () => {
     const readJournal = vi.fn();
     const checks = byId(
@@ -129,6 +174,7 @@ describe('cli doctor --online', () => {
     );
     expect(checks['db-reachable']!.status).toBe('skip');
     expect(checks['migrations-journal']!.status).toBe('skip');
+    expect(checks['shared-cluster']!.status).toBe('skip');
     expect(probe).not.toHaveBeenCalled();
   });
 
@@ -195,6 +241,7 @@ describe('cli doctor через index.mjs', () => {
     const out = spawnDoctor(['--online']);
     expect(out).toContain('Доступність БД');
     expect(out).toContain('Журнал міграцій');
+    expect(out).toContain('Окремий екземпляр Postgres');
     expect(out).not.toContain('вимкнені: doctor за замовчуванням оффлайн');
     expect(out).not.toContain('hunter2');
   });

@@ -21,6 +21,7 @@ export {
   type JournalRow,
   type ReadJournalOptions,
 } from './journal';
+export { findForeignDatabases } from './cluster';
 export {
   MigrationChecksumError,
   UnjournaledDatabaseError,

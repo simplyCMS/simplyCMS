@@ -31,7 +31,7 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 |---|---|
 | Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу К0) |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
-| Production-запуск | ✅ `pnpm build && pnpm start` |
+| Production-запуск | ✅ `pnpm build && node scripts/start.mjs` (накат міграцій + `execve`) |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
 | CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
 | Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
@@ -56,7 +56,7 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 ```bash
 pnpm create simplycms-store my-store
-cd my-store && pnpm install && pnpm build && pnpm start
+cd my-store && pnpm install && pnpm build && pnpm dev   # прод — node scripts/start.mjs, див. README магазину
 ```
 
 Скаффолдер розгортає повний каркас магазину (host-обвʼязка, міграції
@@ -112,7 +112,7 @@ Auth; файли — через порт `simplycms/storage`. Обов'язко�
 pnpm install
 cp .env.example .env.local     # заповнити DATABASE_URL, BETTER_AUTH_SECRET, VITE_SITE_URL
 pnpm dev                       # dev-сервер (Vite, порт 5173+)
-pnpm build && pnpm start       # production-запуск (порт 3000)
+pnpm build && pnpm start       # локальний запуск зібраного бандла (порт 3000), не для проду
 ```
 
 ### Перевірки
