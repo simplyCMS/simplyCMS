@@ -7,6 +7,13 @@ export const messages = {
   'mail.reset.action': 'Задати новий пароль',
   'mail.reset.ignore':
     'Якщо ви цього не робили — просто проігноруйте лист, пароль лишиться попереднім.',
+  'mail.verify.subject': 'Підтвердіть пошту — {storeName}',
+  'mail.verify.intro':
+    'Ви зареєструвалися в магазині «{storeName}». Підтвердіть, що ця пошта ваша.',
+  'mail.verify.openLink': 'Щоб підтвердити пошту, відкрийте посилання:',
+  'mail.verify.action': 'Підтвердити пошту',
+  'mail.verify.ignore':
+    'Якщо ви не реєструвалися — просто проігноруйте лист, акаунт не буде активовано.',
   'mail.invite.subject': 'Запрошення власника — {storeName}',
   'mail.invite.intro': 'Вас запрошено власником магазину «{storeName}».',
   'mail.invite.openLink': 'Щоб задати пароль і увійти, відкрийте посилання:',

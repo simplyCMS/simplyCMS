@@ -52,6 +52,11 @@ export const messages: Catalog = {
   'auth.register.failed': 'Could not sign up',
   'auth.register.success': 'Registration complete',
   'auth.register.created': 'Your account has been created!',
+  'auth.register.checkEmail': 'Check your email',
+  'auth.register.checkEmailHint':
+    'We sent you an email with a link. Open it to confirm your email and sign in.',
+  'auth.login.emailNotVerified':
+    'Your email is not confirmed yet. We sent a new email — open the link in it.',
 
   'auth.password': 'Password',
   'auth.passwordConfirm': 'Confirm password',

@@ -72,6 +72,7 @@ export const messages: Catalog = {
   'admin.settings.mail.ageHours': '{count} h',
   'admin.settings.mail.ageDays': '{count} d',
   'admin.settings.mail.kind.password_reset': 'Password reset',
+  'admin.settings.mail.kind.email_verification': 'Email confirmation',
   'admin.settings.mail.kind.owner_invite': 'Owner invitation',
   'admin.settings.mail.kind.order_customer': 'Order email to the customer',
   'admin.settings.mail.kind.order_owner': 'Order email to the owner',

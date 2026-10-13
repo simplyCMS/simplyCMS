@@ -24,6 +24,7 @@ import {
   checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
 import {
+  checkEmailVerification,
   checkMailConfigured,
   modeNotice,
   resolveDoctorMode,
@@ -105,6 +106,8 @@ describe('cli doctor (оффлайн)', () => {
       'mail-driver': 'skip',
       // Без ядра драйвер пошти невідомий (Е8-Р17).
       'mail-configured': 'skip',
+      // Те саме для підтвердження пошти (Р30, №16).
+      'email-verification': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -439,6 +442,25 @@ describe('cli doctor: режим production і пошта', () => {
       'skip',
     );
     expect(resolveDoctorMode({ flag: false, env: {}, core: null })).toBe(false);
+  });
+
+  it('Р30: --production + log → warn про підтвердження пошти; smtp і розробка → без warn', () => {
+    const prod = resolveDoctorMode({ flag: true, env: {}, core });
+    const warn = checkEmailVerification({ production: prod, mail: log });
+    expect(warn.status).toBe('warn');
+    expect(warn.details).toContain('підтвердження пошти');
+    expect(computeExitCode([warn])).toBe(0);
+    expect(
+      checkEmailVerification({ production: true, mail: { driver: 'smtp' } })
+        .status,
+    ).toBe('ok');
+    const dev = resolveDoctorMode({ flag: false, env: {}, core });
+    expect(checkEmailVerification({ production: dev, mail: log }).status).toBe(
+      'ok',
+    );
+    expect(
+      checkEmailVerification({ production: true, mail: null }).status,
+    ).toBe('skip');
   });
 
   it('перший рядок звіту називає режим', () => {

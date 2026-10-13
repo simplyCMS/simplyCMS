@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createTranslator } from 'simplycms/i18n';
-import { renderOwnerInviteMail, renderPasswordResetMail } from 'simplycms/mail';
+import {
+  renderEmailVerificationMail,
+  renderOwnerInviteMail,
+  renderPasswordResetMail,
+} from 'simplycms/mail';
 
 // Чисті рендери листів auth: тексти з каталогу `mail.*`, обидві локалі.
 
@@ -26,6 +30,21 @@ describe.each(['uk', 'en'] as const)('рендер листів, локаль %s
     // Каталог справді розв'язано, а не повернуто сирі ключі.
     expect(mail.text).not.toContain('mail.reset.');
     expect(mail.subject).toBe(t('mail.reset.subject', { storeName: STORE }));
+  });
+
+  it('підтвердження пошти: вид, storeName, url лише в тілі, текст з каталогу', () => {
+    const mail = renderEmailVerificationMail({
+      to: 'a@example.test',
+      url: URL_,
+      storeName: STORE,
+      t,
+    });
+    expect(mail.kind).toBe('email_verification');
+    expect(mail.subject).toContain(STORE);
+    expect(mail.subject).not.toContain('https://');
+    expect(mail.text).toContain(URL_);
+    expect(mail.text).not.toContain('mail.verify.');
+    expect(mail.html).toContain('&lt;тест&gt;');
   });
 
   it('запрошення: TTL у годинах, url і storeName в тексті', () => {

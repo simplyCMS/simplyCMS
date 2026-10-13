@@ -14,7 +14,11 @@ export {
   scheduleMail,
 } from './outbox';
 export type { MailItem, MailKind, MailOutboxRow } from './outbox';
-export { renderOwnerInviteMail, renderPasswordResetMail } from './render/auth';
+export {
+  renderEmailVerificationMail,
+  renderOwnerInviteMail,
+  renderPasswordResetMail,
+} from './render/auth';
 export type {
   OwnerInviteMailInput,
   PasswordResetMailInput,

@@ -16,6 +16,7 @@ export const MAIL_RETRY_BATCH = 5;
  */
 export const MAIL_KINDS = [
   'password_reset',
+  'email_verification',
   'owner_invite',
   'order_customer',
   'order_owner',

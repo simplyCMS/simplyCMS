@@ -9,6 +9,13 @@ export const messages: Catalog = {
   'mail.reset.action': 'Set a new password',
   'mail.reset.ignore':
     'If you did not ask for this, just ignore this email — your password stays the same.',
+  'mail.verify.subject': 'Confirm your email — {storeName}',
+  'mail.verify.intro':
+    'You signed up at the store "{storeName}". Please confirm this email address is yours.',
+  'mail.verify.openLink': 'To confirm your email, open this link:',
+  'mail.verify.action': 'Confirm email',
+  'mail.verify.ignore':
+    'If you did not sign up, just ignore this email — the account will not be activated.',
   'mail.invite.subject': 'Owner invitation — {storeName}',
   'mail.invite.intro':
     'You have been invited as the owner of the store "{storeName}".',

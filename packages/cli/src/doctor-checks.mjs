@@ -8,7 +8,11 @@ import {
   checkMigrations,
   checkSkillLinks,
 } from './doctor-fs-checks.mjs';
-import { checkMailConfigured, checkMailDriver } from './doctor-mail-check.mjs';
+import {
+  checkEmailVerification,
+  checkMailConfigured,
+  checkMailDriver,
+} from './doctor-mail-check.mjs';
 import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
@@ -157,5 +161,7 @@ export function runOfflineChecks(ctx) {
     checkMailDriver(ctx),
     // №15 (Е8-Р17): драйвер пошти; серйозність log залежить від режиму.
     checkMailConfigured(ctx),
+    // №16 (Р30): без SMTP реєстрація не вимагає підтвердження пошти.
+    checkEmailVerification(ctx),
   ];
 }

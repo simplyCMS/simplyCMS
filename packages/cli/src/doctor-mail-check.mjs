@@ -94,3 +94,26 @@ export function checkMailConfigured({ production = false, mail }) {
       'пошта не налаштована: у проді листи губляться в лозі. Задай SMTP_URL і MAIL_FROM',
   };
 }
+
+/**
+ * Підтвердження пошти при реєстрації (Р30): ядро вмикає його лише з драйвером `smtp`.
+ * У проді з `log` реєстрація йде без підтвердження — pre-hijack чужих адрес. Поза продом
+ * `log` — норма dev, тож рядок лишається `ok`.
+ * @param {{ production?: boolean; mail?: { driver?: string; error?: string } | null }} ctx
+ * @returns {import('./ui.mjs').Check}
+ */
+export function checkEmailVerification({ production = false, mail }) {
+  const base = {
+    id: 'email-verification',
+    title: 'Підтвердження пошти при реєстрації',
+  };
+  if (!mail || mail.error) return { ...base, status: 'skip' };
+  if (production && mail.driver !== 'smtp')
+    return {
+      ...base,
+      status: 'warn',
+      details:
+        'у проді реєстрація без підтвердження пошти: налаштуй SMTP_URL/MAIL_FROM (Р30)',
+    };
+  return { ...base, status: 'ok' };
+}

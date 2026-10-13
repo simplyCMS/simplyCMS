@@ -46,6 +46,29 @@ export function renderPasswordResetMail(
   };
 }
 
+/** Лист підтвердження пошти при реєстрації (Р30): та сама форма, що й у скиданні. */
+export function renderEmailVerificationMail(
+  input: PasswordResetMailInput,
+): MailMessage {
+  const { to, url, storeName, t } = input;
+  const params = { storeName };
+  const intro = t('mail.verify.intro', params);
+  const open = t('mail.verify.openLink');
+  const ignore = t('mail.verify.ignore');
+  return {
+    to,
+    kind: 'email_verification',
+    subject: t('mail.verify.subject', params),
+    text: `${intro}\n\n${open}\n${url}\n\n${ignore}`,
+    html: layout(
+      storeName,
+      paragraph(escapeHtml(intro)) +
+        linkParagraph(url, t('mail.verify.action')) +
+        paragraph(escapeHtml(ignore)),
+    ),
+  };
+}
+
 export function renderOwnerInviteMail(
   input: OwnerInviteMailInput,
 ): MailMessage {

@@ -1,4 +1,3 @@
-import { withActor } from 'simplycms/db';
 import { createTranslator } from 'simplycms/i18n';
 import {
   deliverMail,
@@ -6,22 +5,9 @@ import {
   scheduleMail,
   type MailTransport,
 } from 'simplycms/mail';
-import { getStoreLocale, readStoreProfile } from 'simplycms/site';
+import { getStoreLocale } from 'simplycms/site';
+import { logDeliveryFailure, readStoreName } from './mail-support';
 import type { ResetGuard } from './reset-guard';
-
-/** `profile.name || 'SimplyCMS'` — той самий фолбек, що й в owner:invite. */
-const readStoreName = (): Promise<string> =>
-  withActor({ role: 'app_admin' }, readStoreProfile).then(
-    (profile) => profile.name || 'SimplyCMS',
-  );
-
-/** Помилка фонової доставки без секретів: лише клас помилки, без тексту. */
-const logDeliveryFailure = (error: unknown): void => {
-  console.warn(
-    '[simplycms/auth] фонова доставка листа скидання пароля не вдалась:',
-    error instanceof Error ? error.name : typeof error,
-  );
-};
 
 export type ResetMailDeps = {
   readonly resetGuard: ResetGuard;
@@ -57,6 +43,8 @@ export function createResetPasswordSender(deps: ResetMailDeps) {
       t: createTranslator(getStoreLocale()),
     });
     const ids = await schedule([{ kind: 'password_reset', message }]);
-    void deliverMail(ids, deps.mailTransport).catch(logDeliveryFailure);
+    void deliverMail(ids, deps.mailTransport).catch(
+      logDeliveryFailure('скидання пароля'),
+    );
   };
 }

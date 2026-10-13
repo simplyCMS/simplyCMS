@@ -72,6 +72,7 @@ export const messages = {
   'admin.settings.mail.ageHours': '{count} год',
   'admin.settings.mail.ageDays': '{count} дн.',
   'admin.settings.mail.kind.password_reset': 'Скидання пароля',
+  'admin.settings.mail.kind.email_verification': 'Підтвердження пошти',
   'admin.settings.mail.kind.owner_invite': 'Запрошення власника',
   'admin.settings.mail.kind.order_customer': 'Лист покупцю про замовлення',
   'admin.settings.mail.kind.order_owner': 'Лист власнику про замовлення',

@@ -70,6 +70,8 @@ export function CheckoutAuthBlock({
           errorMessage = bannedMessage(t, storeContacts);
         } else if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
           errorMessage = t('checkout.auth.invalidCredentials');
+        } else if (error.code === 'EMAIL_NOT_VERIFIED') {
+          errorMessage = t('auth.login.emailNotVerified');
         }
         setAuthError(errorMessage);
         toast({
@@ -122,11 +124,12 @@ export function CheckoutAuthBlock({
           title: t('auth.register.failed'),
           description: errorMessage,
         });
+      } else if (signUpData?.token === null) {
+        // Р30: підтвердження пошти ввімкнене — сесії немає, оформлення як
+        // залогований не продовжуємо, доки пошту не підтверджено.
+        setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
+        toast({ title: t('checkout.auth.checkEmailToast') });
       } else if (signUpData?.user) {
-        // 🔴 Гілки «створено, але без сесії» більше немає: підтвердження
-        // пошти вимкнене, тож успішний signUp одразу дає сесію. Тримати
-        // мертву гілку «перевірте пошту» означало б показувати користувачу
-        // крок, якого в контурі не існує.
         setAuthSuccess(t('checkout.auth.registerSuccess'));
         toast({ title: t('checkout.auth.registerSuccess') });
         onAuthSuccess?.();

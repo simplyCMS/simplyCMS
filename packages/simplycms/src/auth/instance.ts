@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { resolveDriverEnv } from 'simplycms/env';
 import type { MailTransport, scheduleMail } from 'simplycms/mail';
 import { accounts, sessions, users, verifications } from 'simplycms/schema';
 import {
@@ -17,6 +18,7 @@ import { createUserCreateHook, type ProvisionUser } from './hooks';
 import { provisionUserInDb } from './provision';
 import { createResetPasswordSender } from './reset-mail';
 import { isResetStillValid, type ResetGuard } from './reset-guard';
+import { createVerificationSender } from './verification-mail';
 
 /**
  * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
@@ -52,6 +54,11 @@ export interface AuthDeps {
   readonly schedule?: typeof scheduleMail;
   /** Транспорт порту пошти. За замовчуванням — `getMailTransport()` за env. */
   readonly mailTransport?: MailTransport;
+  /**
+   * Вимагати підтвердження пошти (Р30). За замовчуванням — `true` лише з SMTP:
+   * з драйвером `log` лист нікуди не дійде, і реєстрація в dev ламалась би.
+   */
+  readonly requireEmailVerification?: boolean;
   /** Назва магазину в листі. За замовчуванням — з профілю магазину в БД. */
   readonly storeName?: string;
 }
@@ -61,6 +68,17 @@ export interface AuthDeps {
  */
 export function createAuth(deps: AuthDeps = {}) {
   const resetGuard = deps.resetGuard ?? isResetStillValid;
+  const requireEmailVerification =
+    deps.requireEmailVerification ??
+    resolveDriverEnv(process.env).mail.driver === 'smtp';
+  // `auth` ще не існує в момент побудови конфігу, а хук скидання пароля
+  // потребує його контексту: міст через замикання замість циклічного типу.
+  const verifier: { mark?: (userId: string) => Promise<void> } = {};
+  const mailDeps = {
+    schedule: deps.schedule,
+    mailTransport: deps.mailTransport,
+    storeName: deps.storeName,
+  };
   // Порожній чи некоректний `deps.baseURL` — гучна відмова з імʼям поля, а не
   // гола `TypeError` від `new URL` нижче.
   const baseURL =
@@ -68,7 +86,7 @@ export function createAuth(deps: AuthDeps = {}) {
       ? resolveAuthBaseUrl(process.env)
       : assertAuthBaseUrl(deps.baseURL, 'AuthDeps.baseURL');
 
-  return betterAuth({
+  const auth = betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
     // 🔴 Р18а: база посилань і trustedOrigins — ЗАВЖДИ з env (`BETTER_AUTH_URL`
     // або origin `VITE_SITE_URL`); без обох resolveAuthBaseUrl падає. Без бази
@@ -88,16 +106,25 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
+      // 🔴 Р30: без підтвердження пошти signUp одразу дає сесію, і чужу пошту
+      // можна зайняти до справжнього власника (pre-hijack).
+      requireEmailVerification,
       // 🔴 Р19: скидання пароля (і прийняття запрошення — воно йде тим самим
       // `resetPassword`) гасить усі сесії користувача. Без цього сесія, що
       // вже була в зловмисника, переживала б зміну пароля.
       revokeSessionsOnPasswordReset: true,
-      sendResetPassword: createResetPasswordSender({
-        resetGuard,
-        schedule: deps.schedule,
-        mailTransport: deps.mailTransport,
-        storeName: deps.storeName,
-      }),
+      // Перехід за посиланням зі скриньки — такий самий доказ володіння
+      // поштою, як і лист підтвердження (Р30).
+      onPasswordReset: async ({ user }) => {
+        if (!user.emailVerified) await verifier.mark?.(user.id);
+      },
+      sendResetPassword: createResetPasswordSender({ resetGuard, ...mailDeps }),
+    },
+    emailVerification: {
+      // Непідтверджений акаунт (пошту змінив адмін, акаунт створено до SMTP)
+      // отримує новий лист на спробу входу.
+      sendOnSignIn: true,
+      sendVerificationEmail: createVerificationSender(mailDeps),
     },
     advanced: {
       // Явно, а не за замовчуванням BA: інакше `isTest()` мовчки вимикає
@@ -126,6 +153,11 @@ export function createAuth(deps: AuthDeps = {}) {
       },
     },
   });
+  verifier.mark = async (userId) => {
+    const context = await auth.$context;
+    await context.internalAdapter.updateUser(userId, { emailVerified: true });
+  };
+  return auth;
 }
 
 /** Тип готового інстансу — для сигнатур споживачів К1′б. */
