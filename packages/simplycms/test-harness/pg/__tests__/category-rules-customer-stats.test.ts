@@ -113,6 +113,48 @@ describe('автоправила: статистика покупця з БД (�
     });
   });
 
+  it('Р30: непідтверджена пошта не дає домен — правило email_domain не спрацьовує, після підтвердження — спрацьовує', async () => {
+    const from = await F.seedCategory(url());
+    const to = await F.seedCategory(url());
+    const customer = await F.seedCustomer(url(), {
+      categoryId: from,
+      email: 'x@bigcorp.test',
+      verified: false,
+    });
+    await F.seedRule(url(), {
+      from,
+      to,
+      conditions: {
+        type: 'all',
+        rules: [
+          { field: 'email_domain', operator: '=', value: 'bigcorp.test' },
+        ],
+      },
+    });
+    expect(
+      (await asAdmin((tx) => loadCustomerStats(tx, customer, new Date())))!
+        .emailDomain,
+    ).toBeNull();
+    expect(await asAdmin((tx) => applyCategoryRules(tx, customer))).not.toBe(
+      'changed',
+    );
+    expect(await F.customerState(url(), customer)).toMatchObject({
+      category_id: from,
+    });
+
+    await F.rows(
+      url(),
+      `update public.users set email_verified = true where id = $1`,
+      [customer],
+    );
+    expect(await asAdmin((tx) => applyCategoryRules(tx, customer))).toBe(
+      'changed',
+    );
+    expect(await F.customerState(url(), customer)).toMatchObject({
+      category_id: to,
+    });
+  });
+
   it('F3: applyCategoryRules стоїть на локу покупця customer-category:<userId>; після release — переведено', async () => {
     const from = await F.seedCategory(url());
     const to = await F.seedCategory(url());

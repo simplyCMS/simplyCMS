@@ -78,14 +78,16 @@ export async function seedCustomer(
     locked?: boolean;
     utm?: Record<string, unknown>;
     email?: string;
+    /** За замовчуванням `true`; `false` — непідтверджена пошта (Р30). */
+    verified?: boolean;
   } = {},
 ): Promise<string> {
   const userId = crypto.randomUUID();
   const email = o.email ?? `e6v-${++seq}-${userId.slice(0, 8)}@example.test`;
   await rows(
     url,
-    `insert into public.users (id, name, email, email_verified) values ($1, 'Покупець Е6в', $2, true)`,
-    [userId, email],
+    `insert into public.users (id, name, email, email_verified) values ($1, 'Покупець Е6в', $2, $3)`,
+    [userId, email, o.verified ?? true],
   );
   await rows(
     url,
