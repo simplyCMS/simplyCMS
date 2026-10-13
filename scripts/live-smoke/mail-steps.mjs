@@ -17,7 +17,9 @@ export async function runMailChecks({ browser, base, email, from, check }) {
   check(
     'пошта: лист замовлення покупцю в Mailpit',
     order !== null && order.from === from,
-    order ? `From = ${order.from}` : `листа немає${orderError ? ` (${orderError})` : ''}`,
+    order
+      ? `From = ${order.from}`
+      : `листа немає${orderError ? ` (${orderError})` : ''}`,
   );
 
   const res = await fetch(`${base}/api/auth/request-password-reset`, {
