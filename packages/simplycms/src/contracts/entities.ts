@@ -235,6 +235,10 @@ export const AGGREGATE = {
     ENTITY.sections,
     ENTITY.productPrices,
     ENTITY.stockByPickupPoint,
+    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    ENTITY.priceTypes,
+    ENTITY.userCategories,
+    ENTITY.profiles,
   ]),
   /**
    * Вибірка каталогу (`useCatalogProductsQuery` →
@@ -257,6 +261,10 @@ export const AGGREGATE = {
     ENTITY.productPropertyValues,
     ENTITY.modificationPropertyValues,
     ENTITY.stockByPickupPoint,
+    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    ENTITY.priceTypes,
+    ENTITY.userCategories,
+    ENTITY.profiles,
   ]),
 } as const;
 

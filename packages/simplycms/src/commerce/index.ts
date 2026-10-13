@@ -24,9 +24,17 @@ export type {
 export { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
 export { loadGuestPriceTypes, resolvePriceTypes } from './price-types';
 export type { PriceTypes } from './price-types';
+// Р29: публічні лоадери вітрини віддають лише види цін глядача.
+export {
+  loadViewerPriceTypes,
+  loadViewerPricesByProduct,
+  visibleToViewer,
+} from './viewer-prices';
+export type { ViewerPriceTypes } from './viewer-prices';
 export {
   loadCategoryPriceTypeId,
   loadDefaultUserCategoryId,
+  loadEffectiveCategoryId,
   loadUserCategoryId,
 } from './categories';
 // Категорії покупців і автоправила (Е6в-15, Е6в-19, Е6в-20): спільні для

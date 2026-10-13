@@ -7,7 +7,11 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
-import { loadGuestPriceTypes, loadPricesByProduct } from 'simplycms/commerce';
+import {
+  loadGuestPriceTypes,
+  loadViewerPricesByProduct,
+  type ViewerPriceTypes,
+} from 'simplycms/commerce';
 
 /** Скільки товарів показує карусель одного розділу на головній. */
 const PER_SECTION_LIMIT = 8;
@@ -24,6 +28,7 @@ const PER_SECTION_LIMIT = 8;
 export async function loadSectionProducts(
   db: ActorDb,
   sections: SectionRef[],
+  viewer: ViewerPriceTypes,
 ): Promise<Record<string, HomeProductRow[]>> {
   const bySection: Record<string, HomeProductRow[]> = {};
   for (const section of sections) bySection[section.id] = [];
@@ -58,9 +63,11 @@ export async function loadSectionProducts(
     .where(lte(ranked.position, PER_SECTION_LIMIT))
     .orderBy(ranked.section_id, ranked.position);
 
-  const prices = await loadPricesByProduct(
+  // Лише види цін глядача (Р29), як і в добірках `./home`.
+  const prices = await loadViewerPricesByProduct(
     db,
     rows.map((row) => row.id),
+    viewer,
   );
   const guestPriceTypes = await loadGuestPriceTypes(db);
 
@@ -91,7 +98,8 @@ export async function loadSectionProducts(
 export async function loadOneSectionProducts(
   db: ActorDb,
   section: SectionRef,
+  viewer: ViewerPriceTypes,
 ): Promise<HomeProductRow[]> {
-  const bySection = await loadSectionProducts(db, [section]);
+  const bySection = await loadSectionProducts(db, [section], viewer);
   return bySection[section.id] ?? [];
 }

@@ -5,6 +5,7 @@ import {
   loadPropertyBySlug,
   loadPropertyOption,
   withStorefrontDb,
+  withViewerDb,
 } from 'simplycms/storefront/loaders';
 
 /** Отримати всі характеристики з публічною сторінкою. */
@@ -20,7 +21,7 @@ export const getPropertyBySlug = createServerFn({ method: 'GET' })
     return withStorefrontDb((db) => loadPropertyBySlug(db, slug));
   });
 
-/** Отримати опцію характеристики з повʼязаними товарами. */
+/** Опція характеристики з товарами; ціни — лише видів глядача (Р29). */
 export const getPropertyOption = createServerFn({ method: 'GET' })
   .validator(
     z.object({
@@ -33,7 +34,7 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
       propertySlug: string;
       optionSlug: string;
     };
-    return withStorefrontDb((db) =>
-      loadPropertyOption(db, propertySlug, optionSlug),
+    return withViewerDb((db, viewer) =>
+      loadPropertyOption(db, propertySlug, optionSlug, viewer),
     );
   });

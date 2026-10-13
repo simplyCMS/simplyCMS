@@ -8,7 +8,7 @@ import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import {
   loadProduct,
   quoteCartFor,
-  withStorefrontDb,
+  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
 import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
@@ -39,8 +39,10 @@ const matches = [
 describe('JSON-LD offers сторінки товару — гостьова ціна (F9)', () => {
   const db = useCommerceDb('simplycms_product_jsonld_offers');
 
-  const offersOf = async (slug: string) => {
-    const product = await withStorefrontDb((tx) => loadProduct(tx, slug));
+  const offersOf = async (slug: string, userId: string | null = null) => {
+    const product = await withViewerPricesDb(userId, (tx, v) =>
+      loadProduct(tx, slug, v),
+    );
     if (!product) throw new Error(`товару ${slug} немає`);
     const head = productHead(matches, product, 'any');
     const ld = JSON.parse(head.scripts[0]!.children) as Record<string, unknown>;
@@ -71,6 +73,15 @@ describe('JSON-LD offers сторінки товару — гостьова ці
         `update public.user_categories set price_type_id = (select id from public.price_types where code = 'retail') where id = '${DEFAULT_CATEGORY}'`,
       );
     }
+  });
+
+  it('Р29: покупець гуртової категорії — offers усе одно гостьова ціна', async () => {
+    const slug = 'stantsiya-nakopychennya-10kwh';
+    const guest = await guestBase(F.STATION_10KWH);
+    expect(guest).not.toBe(F.WHOLESALE_STATION_PRICE);
+    // Гуртовий вид у payload покупця Є (Р29) — але розмітка для пошуковика
+    // одна для всіх і рахується гостьовими видами.
+    expect((await offersOf(slug, db.wholesale))?.price).toBe(guest);
   });
 
   it('товар лише з ціною чужого типу → offers немає', async () => {

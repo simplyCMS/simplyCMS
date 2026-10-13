@@ -23,7 +23,12 @@ import { productColumns, toImageList } from './entities/product';
 const catalogProductColumns = Object.fromEntries(
   Object.entries(productColumns).filter(([key]) => key !== 'description'),
 ) as Omit<typeof productColumns, 'description'>;
-import { groupPricesByProduct, priceColumns } from 'simplycms/commerce';
+import {
+  groupPricesByProduct,
+  priceColumns,
+  visibleToViewer,
+  type ViewerPriceTypes,
+} from 'simplycms/commerce';
 import { sectionRefColumns } from './entities/section';
 import { loadModificationValues } from './modification-values';
 
@@ -40,13 +45,17 @@ import { loadModificationValues } from './modification-values';
  *
  * 🔴 Запити послідовні й по `inArray`: транзакція живе на одному зʼєднанні,
  * тож `Promise.all` дав би лише уявний паралелізм (див. `./products`).
+ *
+ * 🔴 Ціни — лише видів `viewer` (Р29, `withViewerDb`).
  */
 export async function loadCatalogProducts(
   db: ActorDb,
+  viewer: ViewerPriceTypes,
   sectionId?: string,
 ): Promise<CatalogProductRow[]> {
   return loadCatalogProductsWhere(
     db,
+    viewer,
     sectionId ? eq(products.sectionId, sectionId) : undefined,
   );
 }
@@ -61,6 +70,7 @@ export async function loadCatalogProducts(
  */
 export async function loadCatalogProductsWhere(
   db: ActorDb,
+  viewer: ViewerPriceTypes,
   extra?: SQL,
 ): Promise<CatalogProductRow[]> {
   const visible = extra
@@ -84,7 +94,7 @@ export async function loadCatalogProductsWhere(
   const priceRows = await db
     .select(priceColumns)
     .from(productPrices)
-    .where(inArray(productPrices.productId, ids));
+    .where(and(inArray(productPrices.productId, ids), visibleToViewer(viewer)));
   const valueRows = await db
     .select({
       product_id: productPropertyValues.productId,

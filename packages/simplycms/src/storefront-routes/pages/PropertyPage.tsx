@@ -8,6 +8,8 @@ import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
 import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { AGGREGATE } from 'simplycms/contracts/entities';
+import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
+import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import type {
   CatalogProductRow,
   OptionRow,
@@ -58,8 +60,14 @@ export default function PropertyPage({
         }
       : undefined;
 
+  // Вид цін глядача — сегмент ключа (Р29): товари сторінки несуть його прайс.
+  const view = useViewerPriceKey();
   const { data, isLoading } = useQuery({
-    queryKey: [...AGGREGATE.propertyOptionPage.key, propertySlug, optionSlug],
+    queryKey: priceViewKey(
+      [...AGGREGATE.propertyOptionPage.key, propertySlug, optionSlug],
+      view,
+    ),
+    meta: VIEWER_PRICED_META,
     queryFn: (): Promise<PropertyOptionPageData | null> =>
       getPropertyOption({
         data: {
@@ -67,7 +75,7 @@ export default function PropertyPage({
           optionSlug: optionSlug as string,
         },
       }),
-    enabled: !!propertySlug && !!optionSlug,
+    enabled: !!propertySlug && !!optionSlug && view !== null,
     initialData,
   });
 

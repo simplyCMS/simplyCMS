@@ -4,7 +4,7 @@ import {
   buildDiscountForest,
   type InvalidDiscountRow,
 } from 'simplycms/domain/discounts';
-import { loadDefaultUserCategoryId, loadUserCategoryId } from './categories';
+import { loadEffectiveCategoryId } from './categories';
 import { loadDiscountRules } from './discount-rules';
 import { resolvePriceTypes } from './price-types';
 
@@ -44,8 +44,7 @@ export async function loadPricingContext(
   userId: string | null,
   opts?: { includeInactive?: boolean },
 ): Promise<PricingContext> {
-  const userCategoryId = userId ? await loadUserCategoryId(db, userId) : null;
-  const categoryId = userCategoryId ?? (await loadDefaultUserCategoryId(db));
+  const categoryId = await loadEffectiveCategoryId(db, userId);
   const { priceTypeId, defaultPriceTypeId } = await resolvePriceTypes(
     db,
     categoryId,

@@ -6,21 +6,25 @@ import {
   loadOneSectionProducts,
   loadRootSections,
   withStorefrontDb,
+  withViewerDb,
 } from 'simplycms/storefront/loaders';
 
-/** Отримати дані головної сторінки — однією транзакцією вітрини. */
+/**
+ * Дані головної — однією транзакцією. Прайси карток у цьому файлі — лише
+ * видів глядача сесії, залогіненому `private, no-store` (Р29, `withViewerDb`).
+ */
 export const getHomePageData = createServerFn({ method: 'GET' }).handler(
-  async () => withStorefrontDb((db) => loadHomePageData(db)),
+  async () => withViewerDb((db, viewer) => loadHomePageData(db, viewer)),
 );
 
 /** Популярні товари (`is_featured`) — канонічна добірка головної. */
 export const getFeaturedProducts = createServerFn({ method: 'GET' }).handler(
-  async () => withStorefrontDb((db) => loadHomeProducts(db, true)),
+  async () => withViewerDb((db, viewer) => loadHomeProducts(db, true, viewer)),
 );
 
 /** Новинки — канонічна добірка головної. */
 export const getNewProducts = createServerFn({ method: 'GET' }).handler(
-  async () => withStorefrontDb((db) => loadHomeProducts(db, false)),
+  async () => withViewerDb((db, viewer) => loadHomeProducts(db, false, viewer)),
 );
 
 /** Кореневі розділи каталогу. */
@@ -45,5 +49,7 @@ export const getSectionProducts = createServerFn({ method: 'GET' })
   )
   .handler(async ({ data: input }) => {
     const section = input as { id: string; name: string; slug: string };
-    return withStorefrontDb((db) => loadOneSectionProducts(db, section));
+    return withViewerDb((db, viewer) =>
+      loadOneSectionProducts(db, section, viewer),
+    );
   });

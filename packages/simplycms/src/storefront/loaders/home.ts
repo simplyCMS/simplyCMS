@@ -10,7 +10,11 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
-import { loadGuestPriceTypes, loadPricesByProduct } from 'simplycms/commerce';
+import {
+  loadGuestPriceTypes,
+  loadViewerPricesByProduct,
+  type ViewerPriceTypes,
+} from 'simplycms/commerce';
 import { loadRootSections } from './sections';
 
 /** Скільки товарів у добірках «популярне» й «новинки». */
@@ -34,15 +38,18 @@ export interface HomePageData {
  * 🔴 Запити йдуть послідовно, і `Promise.all` тут нічого б не прискорив:
  * транзакція живе на одному зʼєднанні, тож паралелізм уявний (див. `./products`).
  */
-export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
+export async function loadHomePageData(
+  db: ActorDb,
+  viewer: ViewerPriceTypes,
+): Promise<HomePageData> {
   // Предикат видимості — див. коментар у `./sections`.
   const bannerRows = await db
     .select(bannerColumns)
     .from(banners)
     .where(eq(banners.isActive, true))
     .orderBy(asc(banners.sortOrder));
-  const featured = await loadHomeProducts(db, true);
-  const newProducts = await loadHomeProducts(db, false);
+  const featured = await loadHomeProducts(db, true, viewer);
+  const newProducts = await loadHomeProducts(db, false, viewer);
   const rootSections = await loadRootSections(db);
 
   return {
@@ -50,7 +57,7 @@ export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
     featuredProducts: featured,
     newProducts,
     sections: rootSections,
-    sectionProducts: await loadSectionProducts(db, rootSections),
+    sectionProducts: await loadSectionProducts(db, rootSections, viewer),
   };
 }
 
@@ -65,6 +72,7 @@ export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
 export async function loadHomeProducts(
   db: ActorDb,
   featuredOnly: boolean,
+  viewer: ViewerPriceTypes,
 ): Promise<HomeProductRow[]> {
   const visible = featuredOnly
     ? and(eq(products.isActive, true), eq(products.isFeatured, true))
@@ -81,9 +89,11 @@ export async function loadHomeProducts(
     .orderBy(desc(products.createdAt), asc(products.id))
     .limit(FEATURED_LIMIT);
 
-  const prices = await loadPricesByProduct(
+  // Прайс — лише види глядача (Р29); SSR-ціна нижче — за гостьовими.
+  const prices = await loadViewerPricesByProduct(
     db,
     rows.map((row) => row.id),
+    viewer,
   );
   const guestPriceTypes = await loadGuestPriceTypes(db);
   return rows.map((row) =>

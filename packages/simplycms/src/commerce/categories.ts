@@ -44,6 +44,20 @@ export async function loadDefaultUserCategoryId(
 }
 
 /**
+ * ЕФЕКТИВНА категорія покупця: персональна, а без неї (гість, профіль з
+ * `category_id NULL`) — дефолтна (Е6в-19). Одне правило на контекст цін
+ * (`loadPricingContext`) і на види цін глядача вітрини (`loadViewerPriceTypes`,
+ * Р29): друга копія розвела б ціну картки й набір цін, які сервер віддав.
+ */
+export async function loadEffectiveCategoryId(
+  db: ActorDb,
+  userId: string | null,
+): Promise<string | null> {
+  const own = userId ? await loadUserCategoryId(db, userId) : null;
+  return own ?? (await loadDefaultUserCategoryId(db));
+}
+
+/**
  * Тип ціни категорії або `null`, якщо категорії немає чи тип у ній не задано.
  *
  * 🔴 Приймає ЕФЕКТИВНУ категорію (`loadPricingContext`: персональна, для

@@ -46,6 +46,7 @@ import {
   loadSections,
   withCustomerDb,
   withStorefrontDb,
+  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
 
 /** Розмітка, у якій і корисний текст, і кілька класичних векторів. */
@@ -255,14 +256,14 @@ describe('санітизація HTML: запис і віддача проти �
     expect(section?.description).toBeTruthy();
     expect(section?.description).not.toMatch(FORBIDDEN);
 
-    const product = await withStorefrontDb((db) =>
-      loadProduct(db, 'raw-product'),
+    const product = await withViewerPricesDb(null, (db, viewer) =>
+      loadProduct(db, 'raw-product', viewer),
     );
     expect(product?.description).toBeTruthy();
     expect(product?.description).not.toMatch(FORBIDDEN);
 
-    const page = await withStorefrontDb((db) =>
-      loadPropertyOption(db, 'xss-prop', 'raw-option'),
+    const page = await withViewerPricesDb(null, (db, viewer) =>
+      loadPropertyOption(db, 'xss-prop', 'raw-option', viewer),
     );
     expect(page?.option.description).toBeTruthy();
     expect(page?.option.description).not.toMatch(FORBIDDEN);

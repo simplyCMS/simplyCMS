@@ -2,6 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { AGGREGATE } from 'simplycms/contracts/entities';
+import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
+import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import type { CatalogProductRow } from 'simplycms/storefront/loaders';
 import { getCatalogProducts } from '../../server/catalog';
 
@@ -27,19 +29,24 @@ import { getCatalogProducts } from '../../server/catalog';
  * `stock_by_pickup_point`. Розрізнення «усі товари» / «товари розділу»
  * лишається хвостовим сегментом ПІСЛЯ спільного префіксу агрегату — інакше
  * інвалідація по `AGGREGATE.catalogProducts.key` (Е1б) проминула б звужену
- * вибірку.
+ * вибірку. Вид цін глядача — сегмент 1 (Р29, `priceViewKey`): префікс агрегату
+ * він не ламає.
  */
 export function useCatalogProductsQuery(sectionId: string | null | undefined) {
+  const view = useViewerPriceKey();
   return useQuery({
-    queryKey:
+    queryKey: priceViewKey(
       sectionId === undefined
         ? [...AGGREGATE.catalogProducts.key, 'list']
         : [...AGGREGATE.catalogProducts.key, 'section', sectionId ?? ''],
+      view,
+    ),
+    meta: VIEWER_PRICED_META,
     queryFn: (): Promise<CatalogProductRow[]> =>
       getCatalogProducts({
         data: sectionId ? { sectionId } : {},
       }),
-    enabled: sectionId !== null,
+    enabled: sectionId !== null && view !== null,
   });
 }
 

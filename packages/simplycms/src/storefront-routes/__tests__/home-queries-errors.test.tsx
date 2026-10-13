@@ -26,6 +26,11 @@ function wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
+// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
+  useViewerPriceKey: () => 'guest',
+}));
+
 vi.mock('../server/home', () => {
   const fail = () => Promise.reject(new Error('permission denied'));
   return {

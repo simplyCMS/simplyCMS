@@ -21,7 +21,7 @@ pnpm add simplycms
 | Subpath | Експорти |
 |---------|----------|
 | `simplycms/storefront`          | Реекспорт `./loaders` і `./seo` |
-| `simplycms/storefront/loaders`  | `withStorefrontDb`, `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
+| `simplycms/storefront/loaders`  | `withStorefrontDb`, `withViewerDb` (ціни лише видів глядача сесії, Р29), `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 
 ## Як лоадери ходять у БД (В2-К1а)

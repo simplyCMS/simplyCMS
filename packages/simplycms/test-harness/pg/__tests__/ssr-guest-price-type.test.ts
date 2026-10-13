@@ -8,6 +8,7 @@ import {
   loadHomePageData,
   quoteCartFor,
   withStorefrontDb,
+  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
 import { loadProductListPayload } from 'simplycms/storefront-routes/server/product-list-payload';
 import * as F from './fixtures/commerce';
@@ -47,7 +48,9 @@ describe('SSR-ціна гостя = клієнтська ціна гостя (F5
   });
 
   it('головна: SSR-ціна добірки й розділу — як у гостя на клієнті', async () => {
-    const home = await withStorefrontDb((tx) => loadHomePageData(tx));
+    const home = await withViewerPricesDb(null, (tx, v) =>
+      loadHomePageData(tx, v),
+    );
     const featured = home.featuredProducts.find((p) => p.id === PRODUCT);
     expect(featured?.price).toBe(clientPrice);
     const inSections = Object.values(home.sectionProducts)

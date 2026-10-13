@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { catalogKeys } from 'simplycms/react-query';
+import {
+  catalogKeys,
+  priceViewKey,
+  VIEWER_PRICED_META,
+} from 'simplycms/react-query';
+import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   getFeaturedProducts,
@@ -19,12 +24,18 @@ const sections = entityKey(ENTITY.sections);
  * чистому Postgres PostgREST не існує, тож будь-який запит клієнтом БД
  * після гідрації просто нікуди не потрапляє. Форма даних збережена
  * дослівно — сторінка й картки не переписувались.
+ *
+ * 🔴 Запити з прайсом карток несуть вид цін глядача сегментом 1 (Р29,
+ * `priceViewKey`) і мітку `VIEWER_PRICED_META` — їх скидає вхід і вихід.
  */
 
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
+  const view = useViewerPriceKey();
   return useQuery({
-    queryKey: products.variant('featured'),
+    queryKey: priceViewKey(products.variant('featured'), view),
+    meta: VIEWER_PRICED_META,
+    enabled: view !== null,
     queryFn: (): Promise<HomeProduct[]> => getFeaturedProducts(),
     initialData,
   });
@@ -32,8 +43,11 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
+  const view = useViewerPriceKey();
   return useQuery({
-    queryKey: products.variant('new'),
+    queryKey: priceViewKey(products.variant('new'), view),
+    meta: VIEWER_PRICED_META,
+    enabled: view !== null,
     queryFn: (): Promise<HomeProduct[]> => getNewProducts(),
     initialData,
   });
@@ -63,11 +77,14 @@ export function useSectionProducts(
   section: HomeSection,
   options?: SectionProductsOptions,
 ) {
+  const view = useViewerPriceKey();
   return useQuery({
     // Іменований namespace `catalogKeys` — щоб добірка головної не ділила
     // ключ кешу з `useCatalogProductsQuery` (сторінка розділу): той самий
     // `sectionId` під різними формами вибірки колись підмінював дані.
-    queryKey: catalogKeys.sectionProducts(section.id),
+    queryKey: priceViewKey(catalogKeys.sectionProducts(section.id), view),
+    meta: VIEWER_PRICED_META,
+    enabled: view !== null,
     initialData: options?.initialData,
     staleTime: 60_000,
     queryFn: (): Promise<HomeProduct[]> =>

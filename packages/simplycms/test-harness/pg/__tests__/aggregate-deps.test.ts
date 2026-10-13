@@ -158,13 +158,15 @@ describe('Е1б: deps агрегатів повні відносно факти�
     },
     propertyOptionPage: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) =>
-        m.loadPropertyOption(db, 'tip-invertora', 'on-grid'),
+      await m.withViewerPricesDb(null, (db, viewer) =>
+        m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer),
       );
     },
     catalogProducts: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) => m.loadCatalogProducts(db));
+      await m.withViewerPricesDb(null, (db, viewer) =>
+        m.loadCatalogProducts(db, viewer),
+      );
     },
   };
 

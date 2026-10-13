@@ -23,6 +23,7 @@ import {
   loadSections,
   loadSitemapData,
   withStorefrontDb,
+  withViewerPricesDb,
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -90,8 +91,8 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('товар за slug приходить із розділом, цінами й характеристиками', async () => {
-    const product = await withStorefrontDb((db) =>
-      loadProduct(db, VISIBLE_PRODUCT_SLUG),
+    const product = await withViewerPricesDb(null, (db, v) =>
+      loadProduct(db, VISIBLE_PRODUCT_SLUG, v),
     );
 
     expect(product?.slug).toBe(VISIBLE_PRODUCT_SLUG);
@@ -103,13 +104,16 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('неактивний товар недосяжний ні за slug, ні через розділ', async () => {
-    const { hidden, inSection } = await withStorefrontDb(async (db) => {
-      const section = await loadSectionBySlug(db, 'sonyachni-paneli');
-      return {
-        hidden: await loadProduct(db, HIDDEN_PRODUCT_SLUG),
-        inSection: await loadProductList(db, section?.id),
-      };
-    });
+    const { hidden, inSection } = await withViewerPricesDb(
+      null,
+      async (db, v) => {
+        const section = await loadSectionBySlug(db, 'sonyachni-paneli');
+        return {
+          hidden: await loadProduct(db, HIDDEN_PRODUCT_SLUG, v),
+          inSection: await loadProductList(db, section?.id),
+        };
+      },
+    );
 
     expect(hidden).toBeNull();
     expect(inSection.map((row) => row.slug)).not.toContain(HIDDEN_PRODUCT_SLUG);
@@ -173,7 +177,9 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('головна: банери, добірки й товари розділів без неактивних', async () => {
-    const data = await withStorefrontDb((db) => loadHomePageData(db));
+    const data = await withViewerPricesDb(null, (db, v) =>
+      loadHomePageData(db, v),
+    );
     const filled = data.sections.find(
       (section) => section.slug === FILLED_SECTION_SLUG,
     );
@@ -192,16 +198,19 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('головна: ціна картки — той самий резолв, що в каталозі (К2-Е0)', async () => {
-    const { featured, panels } = await withStorefrontDb(async (db) => {
-      const section = await loadSectionBySlug(db, 'sonyachni-paneli');
-      return {
-        featured: await loadHomeProducts(db, true),
-        // Розділ панелей ДОЧІРНІЙ до `sonyachna-energetyka`, тож кореневі
-        // бакети `loadSectionProducts` цих товарів не містять — беремо його
-        // напряму, як клієнтський перезапит каруселі.
-        panels: await loadOneSectionProducts(db, section!),
-      };
-    });
+    const { featured, panels } = await withViewerPricesDb(
+      null,
+      async (db, v) => {
+        const section = await loadSectionBySlug(db, 'sonyachni-paneli');
+        return {
+          featured: await loadHomeProducts(db, true, v),
+          // Розділ панелей ДОЧІРНІЙ до `sonyachna-energetyka`, тож кореневі
+          // бакети `loadSectionProducts` цих товарів не містять — беремо його
+          // напряму, як клієнтський перезапит каруселі.
+          panels: await loadOneSectionProducts(db, section!, v),
+        };
+      },
+    );
 
     // П'ять сідових товарів мають `is_featured = true`; фікстурні наповнювачі
     // — ні, тож набір під лімітом 12 детермінований незалежно від порядку.
@@ -275,8 +284,8 @@ describe('лоадери вітрини проти живого Postgres', () =>
   });
 
   it('сторінка значення характеристики не показує неактивних товарів', async () => {
-    const data = await withStorefrontDb((db) =>
-      loadPropertyOption(db, PAGED_PROPERTY_SLUG, PAGED_OPTION_SLUG),
+    const data = await withViewerPricesDb(null, (db, v) =>
+      loadPropertyOption(db, PAGED_PROPERTY_SLUG, PAGED_OPTION_SLUG, v),
     );
 
     expect(data?.option.slug).toBe(PAGED_OPTION_SLUG);
