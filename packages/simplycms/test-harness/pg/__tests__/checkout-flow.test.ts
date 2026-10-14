@@ -392,6 +392,44 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(row.total).toBe('4900.00');
   });
 
+  it('самовивіз: сервер пише delivery_city = NULL, хоч вхід несе місто; курʼєр — лишає', async () => {
+    // Канон: у самовивозу міста немає; обнулення — на сервері, а не лише в клієнта.
+    // Товар без обліку: тест не з'їдає залишок, який читають сусідні кейси.
+    const items = [{ productId: untracked, modificationId: null, quantity: 1 }];
+    const cityOf = async (orderId: string): Promise<string | null> =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select delivery_city from public.orders where id = $1`,
+          [orderId],
+        )) as { delivery_city: string | null }[]
+      )[0].delivery_city;
+    const pick = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        deliveryCity: 'Львів',
+        items,
+      }),
+      null,
+    );
+    expect(pick.ok).toBe(true);
+    if (!pick.ok) return;
+    expect(await cityOf(pick.order.id)).toBeNull();
+    const cour = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: 'Одеса',
+        pickupPointId: null,
+        items,
+      }),
+      null,
+    );
+    expect(cour.ok).toBe(true);
+    if (!cour.ok) return;
+    expect(await cityOf(cour.order.id)).toBe('Одеса');
+  });
+
   // Д3/Д4/Д7: зона = основна або зона точки самовивозу; місто на неї не
   // впливає, а тариф ІНШОЇ зони не підставляється ніколи (fail-closed).
   const untrackedItems = () => [

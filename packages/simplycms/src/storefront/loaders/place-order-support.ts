@@ -74,7 +74,12 @@ export function toOrderInput(
     shippingSnapshot: prepared.shippingSnapshot,
     shippingZoneId: prepared.shippingZoneId,
     shippingRateId: prepared.shippingRateId,
-    deliveryCity: input.deliveryCity,
+    // Самовивіз міста не має: канон обіцяє NULL, тож правило на сервері (за
+    // тим самим знімком, що перевірив спосіб), а не лише в клієнта.
+    deliveryCity:
+      prepared.shippingSnapshot.destination.kind === 'pickup-point'
+        ? null
+        : input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,
     paymentMethod: input.paymentMethod,
