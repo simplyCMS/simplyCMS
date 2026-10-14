@@ -33,7 +33,7 @@ RAILPACK_START_CMD="node scripts/start.mjs"
 RAILPACK_NODE_VERSION=24
 ```
 
-`start.mjs` накочує міграції під `MIGRATION_DATABASE_URL`, далі підміняє процес на `server.mjs` без
+`start.mjs` (шим, логіка — у ядрі `simplycms/prod-start`) накочує міграції під `MIGRATION_DATABASE_URL`, далі підміняє процес на `server.mjs` без
 цієї змінної. Усе, що потрібно на старті, має бути в `dependencies`. `createEnvFile` — завжди `false`
 (інакше `.env` із секретами потрапить в образ); `dokploy-env` ставить його сам.
 

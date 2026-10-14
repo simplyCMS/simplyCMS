@@ -96,7 +96,7 @@ HTTP-сервер. Теки `.output/` немає.
   SSR-стрімінг Start не ламається.
 - `pnpm start` = `node server.mjs` — лише локальний запуск зібраного бандла, **не для проду**
   (без накату міграцій і без `execve`). У проді стартова команда платформи — рівно
-  `node scripts/start.mjs` (скрипта `start:prod` немає, `pnpm` у контейнері не потрібен): спершу накат міграцій (`simplycms/migrate`) під
+  `node scripts/start.mjs` (шим під `simplycms update`, логіка — `simplycms/prod-start`; скрипта `start:prod` немає, `pnpm` у контейнері не потрібен): спершу накат міграцій (`simplycms/migrate`) під
   `MIGRATION_DATABASE_URL` (пароль власника схеми; не задано — накат пропущено), далі
   `process.execve` підміняє процес на `server.mjs` БЕЗ цієї змінної (потрібен Node ≥ 24).
   🔴 `start.mjs` читає лише `process.env` і `.env*` не читає (у проді env дає Dokploy); локальний

@@ -402,6 +402,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | Джерело правди | Копія | Споживач |
 |---|---|---|
 | `SYNCED_FILES` (host-файли глю, корінь монорепо; усі файли `packages/cli/host/`) | `packages/cli/host/**` | `update`, `doctor` §6 |
+| `TEMPLATE_HOST_FILES` (шими, джерело — сам шаблон: `.claude/hooks/session-start.mjs`, `scripts/start.mjs`, `scripts/owner-invite.mjs`) | `packages/cli/host/**` | `update`, `doctor` §6 |
 | `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
@@ -416,7 +417,14 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
   `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
   `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
-  `src/styles/globals.css`). 🔴 `src/start.ts` несе CSRF-захист: першою в
+  `src/styles/globals.css`) плюс шими `TEMPLATE_HOST_FILES`: хук сесії й
+  `scripts/{start,owner-invite}.mjs`. 🔴 Шими прод-старту й запрошення власника —
+  кілька рядків без логіки (F5 рев'ю Е8, скасовує Е8-Р6 «файл лише шаблону»):
+  логіка живе в ядрі (`simplycms/prod-start`, `simplycms/auth/owner-invite-cli`) й
+  оновлюється разом із ним, а сам шим — host-файлом, тож його дрейф бачить doctor §6.
+  `update` пише відсутні й розійдені файли канону, але **не видаляє** файлів, яких у
+  каноні вже немає (осиротілий `scripts/owner-invite-core.mjs` 0.14 прибирає власник
+  за кроком CHANGELOG і скіла `simplycms-update`). 🔴 `src/start.ts` несе CSRF-захист: першою в
   `requestMiddleware` стоїть `csrfMiddleware` із `simplycms/runtime/csrf`
   (далі `bodyLimitMiddleware` із `simplycms/runtime/body-limit` — стеля тіла, К3-Е6д-2 — і `adminRequestGuard`). Дефолтний захист Start вмикається лише БЕЗ
   `startInstance`, тож `simplycms update` не повинен повертати магазину

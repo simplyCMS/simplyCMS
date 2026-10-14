@@ -15,7 +15,7 @@
 - **Що робити.** `dokploy-env.mjs keys` покаже, які імена є; додай відсутній ключ скриптом
   `simplycms-onboarding` (`dokploy-env set KEY --from-secrets <файл> --confirm`) або прибери
   решту ключів групи, якщо драйвер не потрібен; редеплой. Помилка називає лише імена ключів.
-- **Де.** `DriverEnvError` у `simplycms/env`; `runStart` у `scripts/start-core.mjs`.
+- **Де.** `DriverEnvError` у `simplycms/env`; `runStart` у `simplycms/prod-start` (шим `scripts/start.mjs`).
 
 ### Накат міграцій не вдався
 - **Симптом.** `[start] накат міграцій не вдався: <текст помилки>`, код виходу 1, контейнер
@@ -25,7 +25,7 @@
   початком повідомлення.
 - **Що робити.** Знайди пастку нижче за текстом; решту причин читай у самому повідомленні (URL
   і пароль власника схеми в ньому замасковано).
-- **Де.** `runStart` у `scripts/start-core.mjs`; `simplycms/migrate`.
+- **Де.** `runStart` у `simplycms/prod-start` (шим `scripts/start.mjs`); `simplycms/migrate`.
 
 ### `UnjournaledDatabaseError`
 - **Симптом.** `[simplycms/migrate] База містить таблиці магазину, але не має журналу міграцій
@@ -74,7 +74,7 @@
   Сервер цю змінну свідомо не бачить, тож у ньому її теж не знайти.
 - **Що робити.** Додай її скриптом `simplycms-onboarding` (з файлу секретів), редеплой; у лозі
   має з'явитися накат або `[start] міграції: нічого накочувати.`
-- **Де.** `runStart` у `scripts/start-core.mjs`.
+- **Де.** `runStart` у `simplycms/prod-start` (шим `scripts/start.mjs`).
 
 ### Postgres на `postgres:18` губить дані на рестарті
 - **Симптом.** Після перезапуску сервісу БД порожня, хоча дані були.

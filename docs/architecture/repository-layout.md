@@ -87,6 +87,9 @@ simplyCMS/
 │   │   │                         #    readJournal, readStoreFacts): одна реалізація для проду, db:apply, test:schema і
 │   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків
 │   │   │                         #    немає. server-only (К3-Е8)
+│   │   ├── src/prod-start/       # T2 Прод-старт магазину (runStart, startStore, STRIPPED_ENV): накат під
+│   │   │                         #    MIGRATION_DATABASE_URL → process.execve на server.mjs без нього; у магазині —
+│   │   │                         #    шим scripts/start.mjs (host-файл). Upward `env`, `migrate`. server-only (F5 Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
@@ -139,8 +142,10 @@ simplyCMS/
 │   │                            # шаблон магазину (`template/`, закомічена копія,
 │   │                            # синхронізується `pnpm template:sync`). Під фільтри імені ядра
 │   │                            # не підпадає й у tarball-parity не рахується. Файли шаблону
-│   │                            # (не синк): `scripts/{start,start-core,owner-invite*}.mjs`,
-│   │                            # `AGENTS.md`, `CLAUDE.md`, `.claude/{settings.json,hooks/}`.
+│   │                            # (джерело — сам шаблон): `AGENTS.md`, `CLAUDE.md`,
+│   │                            # `.claude/settings.json`; шими `scripts/{start,owner-invite}.mjs`
+│   │                            # і `.claude/hooks/session-start.mjs` — host-файли, їх копію
+│   │                            # `template:sync` кладе в `packages/cli/host/` (`TEMPLATE_HOST_FILES`).
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу

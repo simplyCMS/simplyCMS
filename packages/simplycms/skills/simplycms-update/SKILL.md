@@ -27,7 +27,10 @@ pnpm simplycms update --check
 2. **Оновлення пакетів і файлів** — `pnpm simplycms update`: ставить ядро і сателіти на цільову
    версію, далі звіряє host-файли, лінки скілів і файли агента. Мажорну межу сама не перетинає
    (див. нижче). Якщо звіт показав дрейф host-файлів, перепиши їх `update --write` лише після
-   прев'ю (`update --check`) і згоди власника; далі — `git diff` і ревʼю.
+   прев'ю (`update --check`) і згоди власника; далі — `git diff` і ревʼю. Шими `scripts/start.mjs`
+   і `scripts/owner-invite.mjs` — теж host-файли (логіка в ядрі), їх не правлять руками. `update`
+   файлів, яких у каноні вже немає, не видаляє: осиротілі файли, названі в BREAKING (напр.
+   `owner-invite-core.mjs` у теці `scripts` при переході на 0.15), видали за згодою власника.
 3. **Міграції** — `pnpm simplycms db:diff`, потім `db:diff --write` лише після ревʼю SQL
    (`references/migrations.md`).
 4. **Локальна перевірка** — `pnpm simplycms db:apply` на локальній БД, `pnpm build`,

@@ -55,6 +55,11 @@
 - **Прод-старт — `node scripts/start.mjs`** (накат під `MIGRATION_DATABASE_URL`, далі `process.execve` на
   `server.mjs` БЕЗ цієї змінної). Скрипт `start:prod` прибрано, `pnpm start` — лише локальний запуск, не для
   проду. `server.mjs` завжди виставляє `NODE_ENV=production` і `.env*` для `MIGRATION_DATABASE_URL` не читає.
+- **Прод-старт і запрошення власника — у пакеті, у магазині лише шими під `simplycms update`:** логіка
+  старту — `simplycms/prod-start` (`runStart`, `startStore`, `STRIPPED_ENV`), `owner:invite` —
+  `simplycms/auth/owner-invite-cli`; `scripts/start.mjs` і `scripts/owner-invite.mjs` — host-файли
+  (`update --write` їх пише, doctor №6 бачить дрейф). Крок магазину: `pnpm simplycms update --write`, далі
+  видалити осиротілий `scripts/owner-invite-core.mjs` — `update` файлів поза каноном не прибирає.
 - **Групи env «все або нічого» (`simplycms/env`):** частково задана група `S3_*` (5 ключів) або
   `SMTP_URL`+`MAIL_FROM` валить старт і називає відсутні ключі; обов'язкових ключів лишається рівно три.
   `VITE_SITE_URL` має бути абсолютним `http(s):` URL, інакше `server.mjs` виходить з кодом 1.
@@ -115,7 +120,7 @@
   (`--dry-run`, `--check`) і `doctor --online` (журнал, `shared-cluster`: кожен магазин — власний
   екземпляр Postgres).
 - **`simplycms/env`:** `resolveDriverEnv`, `checkDriverEnvOnStart`, `isProductionRuntime`.
-- **Прод-старт:** `scripts/start.mjs`, `/api/health` з ідентифікатором збірки (`BUILD_ID` → `SOURCE_COMMIT`
+- **Прод-старт:** `simplycms/prod-start` (server-only) і шим `scripts/start.mjs`, `/api/health` з ідентифікатором збірки (`BUILD_ID` → `SOURCE_COMMIT`
   → git → час), сторож застарілих чанків (одне перезавантаження), прекомпресія статики (`.br`/`.gz`) і
   413/411 без закриття з'єднання.
 - **Драйвер сховища `s3`** (`aws4fetch`; `S3_ENDPOINT/REGION/BUCKET/ACCESS_KEY/SECRET_KEY`), контрактний
