@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
-// вручну (6 у `0003_seed.sql`, 20 у `demo/demo-seed.sql`). Це не косметика:
+// вручну (7 у `0003_seed.sql`, 19 у `demo/demo-seed.sql`). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
 // негативним контролем нижче) — тобто скан «чи знайдено хоч один INSERT»
@@ -17,8 +17,8 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 // Точне число компенсує цю сліпу зону: розбіжність кількості валить тест
 // незалежно від того, чи всі ЗНАЙДЕНІ вставки формально мають `id`.
 const SEEDS = [
-  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 6],
-  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 20],
+  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 7],
+  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 19],
 ] as const;
 
 /**

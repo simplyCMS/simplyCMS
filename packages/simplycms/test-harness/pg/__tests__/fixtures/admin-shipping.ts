@@ -1,5 +1,6 @@
 // БД і сід харнес-тестів адмінки доставки (Е6а, Task 4): канон → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Канон доставки не везе — сід свій у кожному тесті.
+import pg from 'pg';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
@@ -138,3 +139,30 @@ export const snapshotShipping = async (url: string, methodId: string) => ({
     [methodId],
   ),
 });
+
+/**
+ * Робить `id` єдиною основною зоною ОДНІЄЮ транзакцією (зняти → поставити).
+ * Автокомітом знімати прапорець не можна: відкладений тригер БД відхилив би
+ * COMMIT без основної зони. Інші зони не чіпає, тож `id` має бути активною.
+ */
+export async function makeDefaultZone(url: string, id: string) {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query(
+      `update public.shipping_zones set is_default = false where is_default and id <> $1`,
+      [id],
+    );
+    await client.query(
+      `update public.shipping_zones set is_default = true where id = $1`,
+      [id],
+    );
+    await client.query('commit');
+  } catch (e) {
+    await client.query('rollback');
+    throw e;
+  } finally {
+    await client.end();
+  }
+}

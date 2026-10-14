@@ -25,11 +25,13 @@ const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
  * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
  * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
  *
- * 🔴 GLOBAL-кейс НЕ покладається на сід (перевірено: `shipping_zones` у
- * 0003_seed.sql відсутня взагалі, тож «другий» дефолт там пройшов би):
- * спершу reset (`is_default=false` усім), потім insert #1 (мусить пройти —
+ * 🔴 GLOBAL-кейс НЕ покладається на сід: спершу reset (`is_default=false` усім), потім insert #1 (мусить пройти —
  * доводить, що індекс не заважає першому), потім insert #2 → 23505.
  * Коди — унікальні відносно сіду (UNIQUE code у languages/user_categories).
+ *
+ * 🔴 `shipping_zones` у GLOBAL немає: сід тримає єдину основну зону, а
+ * reset автокомітом (зняти дефолт) відкладений тригер відхилив би — для неї
+ * окремий кейс нижче, без reset.
  */
 const U1 = 'a0000000-0000-4000-8000-000000000001';
 const U2 = 'a0000000-0000-4000-8000-000000000002';
@@ -52,11 +54,6 @@ const GLOBAL: Array<[table: string, first: string, second: string]> = [
     'languages',
     `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz1', 'Дефолт 1', true)`,
     `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz2', 'Дефолт 2', true)`,
-  ],
-  [
-    'shipping_zones',
-    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 1', true)`,
-    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`,
   ],
 ];
 
@@ -121,6 +118,15 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
       });
     },
   );
+
+  it('shipping_zones: сід уже тримає основну зону — друга основна → 23505', async () => {
+    await expect(
+      queryRows(
+        dbUrl,
+        `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`,
+      ),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
 
   it.each(SCOPED)(
     '%s: різні батьки — можна, той самий — 23505',

@@ -494,6 +494,9 @@ export const shippingZones = pgTable("shipping_zones", {
 	// К3-14: таблиця без parent-колонки — дефолт глобальний (перевірено —
 	// у ShippingZoneEdit.tsx unset-логіки взагалі немає, легасі-шлях мертвий).
 	uniqueIndex("idx_shipping_zones_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
+	// Інваріант «основна зона завжди активна» — на рівні БД, а не лише в
+	// операціях адмінки; «≥1 основна» стереже відкладений тригер з 0004.
+	check("shipping_zones_default_active", sql`not is_default or is_active`),
 ]);
 
 export const shippingRates = pgTable("shipping_rates", {
@@ -1093,3 +1096,6 @@ export const banners = pgTable("banners", {
 			name: "banners_section_id_fkey"
 		}).onDelete("set null"),
 ]);
+
+// Id рядка сіду (0003_seed.sql) — для коду й тестів, що посилаються на основну зону.
+export { MAIN_SHIPPING_ZONE_ID } from './seed-ids';

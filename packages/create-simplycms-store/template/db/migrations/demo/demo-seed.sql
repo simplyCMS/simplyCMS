@@ -41,7 +41,7 @@
 -- section_property_assignments 10000006, property_options 10000007,
 -- product_property_values 10000008, banners 10000009, shipping_methods
 -- 1000000a, pickup_points 1000000b, shipping_rates 1000000c,
--- stock_by_pickup_point 1000000d, shipping_zones 1000000e; суфікс —
+-- stock_by_pickup_point 1000000d; суфікс —
 -- порядковий номер рядка). Дані НЕ змінені, лише додано колонку id; посилання
 -- на батьківські рядки й далі резолвляться підзапитом/join-ом за натуральним
 -- ключем (slug/code), а не константою.
@@ -296,14 +296,9 @@ values ('1000000a-0000-4000-8000-000000000001'::uuid, 'pickup', 'Самовив�
         'Забрати зі складу у Києві', 'core:pickup', 'rates', true, 0)
 on conflict (code) do nothing;
 
--- 🔴 `shipping_rates.zone_id` — NOT NULL: одна дефолтна зона на всю країну;
--- `findShippingZoneIn` дефолтну зону пропускає й повертає її лише як fallback,
--- тож тариф застосовується без прив'язки до міста (правило домену, не сіду).
--- Дефолт — не більше одного (`idx_shipping_zones_single_default`), тому
--- конфлікт — по частковому індексу, а не по id.
-insert into public.shipping_zones (id, name, description, is_active, is_default, sort_order)
-values ('1000000e-0000-4000-8000-000000000001'::uuid, 'Україна', 'Дефолтна зона демо', true, true, 0)
-on conflict (is_default) where (is_default = true) do nothing;
+-- 🔴 `shipping_rates.zone_id` — NOT NULL: тариф вішається на основну зону
+-- (`is_default`), яку створює вже `0003_seed.sql` (інваріант БД «рівно одна
+-- основна»). Демо власної зони не вставляє, щоб не конфліктувати з нею.
 
 -- 🔴 `is_system = true` — не косметика, а опора write-side. Списання йде в
 -- точку самого замовлення (`orders.pickup_point_id`); якщо її немає (кур'єрська

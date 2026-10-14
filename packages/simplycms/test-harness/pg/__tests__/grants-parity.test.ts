@@ -134,11 +134,13 @@ describe('парність привілеїв: baseline v2', () => {
       privilege: string | null;
     }[];
     // Baseline v2 не везе жодної бізнес-функції — саме тому клас дірок
-    // «unguarded SECURITY DEFINER» у ньому структурно відсутній. Єдиний
-    // виняток — тригерна `refuse_banned_session` (Е6г-14, без SECDEF).
+    // «unguarded SECURITY DEFINER» у ньому структурно відсутній. Єдині
+    // винятки — тригерні `refuse_banned_session` (Е6г-14) і
+    // `require_default_shipping_zone` (К3-Е8), обидві без SECDEF.
     expect([...new Set(rows.map((r) => r.function_name))].sort()).toEqual([
       'app.current_user_id',
       'public.refuse_banned_session',
+      'public.require_default_shipping_zone',
     ]);
     expect(rows.every((r) => r.security_definer === false)).toBe(true);
     expect(rows.some((r) => r.role_name === 'PUBLIC')).toBe(false);

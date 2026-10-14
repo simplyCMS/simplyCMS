@@ -20,7 +20,9 @@ import {
 const ALLOWLIST = [
   'app.current_user_id',
   'public.refuse_banned_session',
+  'public.require_default_shipping_zone',
   'sessions_refuse_banned',
+  'shipping_zones_require_default',
 ];
 
 /** Усе користувацьке: функції (крім розширень) і нетехнічні тригери. */

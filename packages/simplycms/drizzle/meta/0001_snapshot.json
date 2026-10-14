@@ -4181,7 +4181,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "shipping_zones_default_active": {
+          "name": "shipping_zones_default_active",
+          "value": "not is_default or is_active"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.stock_by_pickup_point": {

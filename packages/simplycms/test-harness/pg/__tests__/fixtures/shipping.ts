@@ -9,8 +9,8 @@
 export const ACTIVE_METHOD_CODE = 'pickup';
 /** Вимкнений спосіб доставки — не має доїхати до вітрини. */
 export const HIDDEN_METHOD_CODE = 'hidden-courier';
-/** Активна зона за замовчуванням. */
-export const ACTIVE_ZONE_NAME = 'Уся Україна';
+/** Активна зона за замовчуванням — її створює канон (`0003_seed.sql`). */
+export const ACTIVE_ZONE_NAME = 'Основна зона';
 /** Вимкнена зона. */
 export const HIDDEN_ZONE_NAME = 'Вимкнена зона';
 /** Активна точка видачі. */
@@ -38,15 +38,14 @@ export const ACTIVE_SHIPPING_FIXTURES: string[] = [
      values (gen_random_uuid(), '${ACTIVE_METHOD_CODE}', 'Самовивіз', true, 1, 'core:pickup')
    on conflict (code) do nothing`,
 
-  `insert into public.shipping_zones (id, name, is_active, is_default, cities)
-     values (gen_random_uuid(), '${ACTIVE_ZONE_NAME}', true, true, '{}')
-   on conflict (is_default) where (is_default = true) do nothing`,
+  // Основну зону окремо не вставляємо: інваріант БД «рівно одна основна»
+  // віддає її сідом 0003 (і чистий канон, і демо), тож фікстура лише
+  // посилається на неї через `z.is_default`.
 
   // Тариф активний, але зона й метод у нього — активні: перевіряємо саме
   // власний `is_active` тарифу, а не побічний ефект від батьків.
-  // 🔴 Пошук зони — за `is_default`, а не за іменем: поверх демо-сіду власна
-  // '${ACTIVE_ZONE_NAME}' не вставиться (конфлікт по частковому індексу), а
-  // дефолтна зона сіду називається інакше.
+  // 🔴 Пошук зони — за `is_default`, а не за іменем: основна зона вже є
+  // в каноні, власної фікстура не вставляє.
   `insert into public.shipping_rates
      (id, method_id, zone_id, name, calculation_type, base_cost, free_from_amount, is_active)
    select gen_random_uuid(), m.id, z.id, 'Основний тариф', 'free_from', ${BASE_COST}, ${FREE_FROM_AMOUNT}, true
