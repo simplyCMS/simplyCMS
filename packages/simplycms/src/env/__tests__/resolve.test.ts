@@ -4,7 +4,6 @@ import {
   S3_KEYS,
   checkDriverEnvOnStart,
   isProductionRuntime,
-  describeDriverEnv,
   resolveDriverEnv,
 } from '../index';
 
@@ -124,26 +123,6 @@ describe('resolveDriverEnv: група SMTP', () => {
       url: 'smtps://u:p4ss@h:465',
       from: 'shop@example.test',
     });
-  });
-});
-
-describe('describeDriverEnv', () => {
-  it('s3 + log: бакет у тексті, без секретів', () => {
-    const text = describeDriverEnv(resolveDriverEnv(S3_FULL));
-    expect(text).toBe('медіа: s3 (бакет BUCKET-7f3a), пошта: log');
-    expect(text).not.toMatch(/SECRET|ACCESS/);
-  });
-
-  it('SMTP_URL (логін і пароль) у тексті відсутній', () => {
-    const text = describeDriverEnv(
-      resolveDriverEnv({
-        SMTP_URL: 'smtps://u:p4ss@h:465',
-        MAIL_FROM: 'shop@example.test',
-      }),
-    );
-    expect(text).toContain('smtp');
-    expect(text).not.toContain('p4ss');
-    expect(text).not.toContain('u:');
   });
 });
 

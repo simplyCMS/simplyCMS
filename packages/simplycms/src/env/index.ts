@@ -8,10 +8,8 @@ export {
   SMTP_KEYS,
   DriverEnvError,
   resolveDriverEnv,
-  describeDriverEnv,
-  checkDriverEnvOnStart,
-  isProductionRuntime,
 } from './resolve';
+export { checkDriverEnvOnStart, isProductionRuntime } from './runtime-mode';
 export { redactUrls } from './redact';
 export { siteUrl } from './site-url';
 export type { MediaEnv, MailEnv, DriverEnv } from './resolve';
