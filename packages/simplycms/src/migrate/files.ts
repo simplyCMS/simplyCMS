@@ -3,9 +3,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isCoreMigrationName } from './core-name';
 import { MigrationTransactionControlError } from './errors';
+import { findTransactionControl } from './transaction-control';
 
 export { isCoreMigrationName };
-import { findTransactionControl } from './transaction-control';
 
 /** Файл міграції теки: ім'я, шлях і сума нормалізованого вмісту. */
 export type MigrationFile = { name: string; path: string; checksum: string };
