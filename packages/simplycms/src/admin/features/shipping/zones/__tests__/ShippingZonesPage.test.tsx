@@ -59,7 +59,14 @@ describe('ShippingZonesPage', () => {
     expect(screen.queryByText('Бровари')).toBeNull();
     expect(screen.getByText(t('admin.shipping.zones.subtitle'))).toBeTruthy();
     expect(t('admin.shipping.zones.subtitle')).toBe(
-      "Основна зона — для доставки за адресою; інші зони — для точок самовивозу. Прив'язка до населених пунктів з'явиться з довідником.",
+      'Зони доставки й тарифи для них',
+    );
+    // Підказка Д6 — окремий текст у формі зони, а не дубль підзаголовка.
+    expect(t('admin.shipping.zones.hint')).toBe(
+      "Основна зона — для доставки за адресою; інші зони — для точок самовивозу; прив'язка до населених пунктів з'явиться з довідником.",
+    );
+    expect(t('admin.shipping.zones.hint')).not.toBe(
+      t('admin.shipping.zones.subtitle'),
     );
     expect(within(rowOf('Київ')).getByText(badge)).toBeTruthy();
   });

@@ -25,10 +25,9 @@ export const messages: Catalog = {
   'admin.shipping.methods.namePlaceholder': 'Courier delivery',
   'admin.shipping.methods.icon': 'Icon (Lucide)',
 
-  'admin.shipping.zones.subtitle':
-    'The main zone is for address delivery; other zones are for pickup points. Binding to localities will arrive with the locality directory.',
+  'admin.shipping.zones.subtitle': 'Shipping zones and their rates',
   'admin.shipping.zones.hint':
-    'The main zone is for address delivery; other zones are for pickup points. Binding to localities will arrive with the locality directory.',
+    'The main zone is for address delivery; other zones are for pickup points; binding to localities will arrive with the locality directory.',
   'admin.shipping.zones.add': 'Add a zone',
   'admin.shipping.zones.empty': 'No shipping zones found',
   'admin.shipping.zones.deleted': 'Zone deleted',
