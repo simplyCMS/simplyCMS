@@ -12,7 +12,7 @@
  * існує (перевірка SQL-ом). Відсутній запис пропускається з приміткою у факті,
  * а збій одного не зриває решту.
  */
-import { orderItemsStock, orderState } from './sql.mjs';
+import { orderItemsStock, orderState, statusIdByCode } from './sql.mjs';
 import { pollOrder } from './admin-orders-buyer.mjs';
 import {
   deleteStockRow,
@@ -33,7 +33,9 @@ async function cancelOrder(page, base, dbUrl, orderId) {
   await page.goto(`${base}/admin/orders/${orderId}`, {
     waitUntil: 'networkidle',
   });
-  await page.locator(STATUS_SELECT).selectOption({ label: 'Скасовано' });
+  await page
+    .locator(STATUS_SELECT)
+    .selectOption(await statusIdByCode(dbUrl, 'cancelled'));
   const dialog = page.getByRole('alertdialog');
   await dialog.waitFor({ timeout: 10_000 });
   await dialog.getByRole('button', { name: 'Скасувати замовлення' }).click();

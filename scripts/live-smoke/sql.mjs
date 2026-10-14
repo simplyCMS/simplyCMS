@@ -21,6 +21,20 @@ export async function sql(url, text, values = []) {
 }
 
 /**
+ * Id статусу замовлення за кодом: назву («Скасовано») адмін може перейменувати,
+ * а `option value` нативного селекта статусу — це id, тож кроки обирають за ним.
+ */
+export async function statusIdByCode(url, code) {
+  const [row] = await sql(
+    url,
+    `select id from public.order_statuses where code = $1`,
+    [code],
+  );
+  if (!row) throw new Error(`[live-smoke] немає статусу замовлення «${code}»`);
+  return row.id;
+}
+
+/**
  * Знімок наявності товару: статус + залишок ПО КОЖНІЙ точці видачі.
  *
  * 🔴 Мапа по точках, а не сума: списання й повернення йдуть в ОДНУ

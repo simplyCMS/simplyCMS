@@ -91,12 +91,17 @@ export const getCatalogProducts = createServerFn({ method: 'GET' })
     );
   });
 
-/** Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати. */
+/**
+ * Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати;
+ * без `sectionId` — корінь каталогу (усі товари).
+ */
 export const getSectionFilterProperties = createServerFn({ method: 'GET' })
-  .validator(z.object({ sectionId: z.string().min(1) }))
+  .validator(z.object({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }) => {
-    const { sectionId } = input as { sectionId: string };
-    return withStorefrontDb((db) => loadSectionFilterProperties(db, sectionId));
+    const { sectionId } = input as { sectionId?: string };
+    return withStorefrontDb((db) =>
+      loadSectionFilterProperties(db, sectionId ?? null),
+    );
   });
 
 /** Опції характеристик — назви для бейджів активних фільтрів. */

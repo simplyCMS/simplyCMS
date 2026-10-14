@@ -42,7 +42,6 @@ const FX = {
   category: { name: 'VIP Е6в', code: 'vip_e6v' },
   rule: {
     name: '2+ замовлення → VIP Е6в',
-    from: 'Роздріб',
     field: 'Кількість замовлень',
     value: 2,
   },

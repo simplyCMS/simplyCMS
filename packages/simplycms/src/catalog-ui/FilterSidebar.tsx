@@ -4,6 +4,7 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { X } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
+import { FilterCheckbox } from './FilterCheckbox';
 
 /**
  * 🔴 Панель читає `section_property_assignments` + `section_properties` +
@@ -69,6 +70,7 @@ export function FilterSidebar({
   priceRange,
   numericPropertyRanges = EMPTY_RANGES,
   products = EMPTY_PRODUCTS,
+  renderCheckbox,
 }: FilterSidebarProps) {
   const t = useT();
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([
@@ -89,10 +91,11 @@ export function FilterSidebar({
    * характеристики й опції приходять однією транзакцією.
    */
   const { data } = useQuery({
-    queryKey: sectionProperties.scoped('section', sectionId ?? ''),
-    queryFn: () =>
-      getSectionFilters({ data: { sectionId: sectionId as string } }),
-    enabled: !!sectionId,
+    // Без розділу — окремий scope кореня каталогу, не порожній id розділу.
+    queryKey: sectionId
+      ? sectionProperties.scoped('section', sectionId)
+      : sectionProperties.variant('section-filters-root'),
+    queryFn: () => getSectionFilters({ data: sectionId ? { sectionId } : {} }),
   });
 
   const filterableProperties: Property[] = data?.properties ?? [];
@@ -189,10 +192,6 @@ export function FilterSidebar({
     ).length;
   };
 
-  if (!sectionId) {
-    return null;
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -210,17 +209,16 @@ export function FilterSidebar({
 
       {/* In Stock Only filter */}
       <div className="flex items-center gap-2 py-2 border-b">
-        <input
-          type="checkbox"
+        <FilterCheckbox
           id="inStockOnly"
           checked={filters.inStockOnly === true}
-          onChange={(e) =>
+          onCheckedChange={(checked) =>
             onFilterChange({
               ...filters,
-              inStockOnly: e.target.checked ? true : undefined,
+              inStockOnly: checked ? true : undefined,
             })
           }
-          className="rounded"
+          renderCheckbox={renderCheckbox}
         />
         <label
           htmlFor="inStockOnly"
@@ -282,18 +280,17 @@ export function FilterSidebar({
                     const count = getOptionCount(option.id);
                     return (
                       <div key={option.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
+                        <FilterCheckbox
                           id={`${property.slug}-${option.id}`}
                           checked={selectedIds.includes(option.id)}
-                          onChange={(e) =>
+                          onCheckedChange={(checked) =>
                             handleCheckboxChange(
                               property.slug,
                               option.id,
-                              e.target.checked,
+                              checked,
                             )
                           }
-                          className="rounded"
+                          renderCheckbox={renderCheckbox}
                         />
                         {property.property_type === 'color' && (
                           <div
@@ -328,17 +325,16 @@ export function FilterSidebar({
             <div key={property.id} className="space-y-2 border-b pb-4">
               <h4 className="text-sm font-medium">{property.name}</h4>
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <FilterCheckbox
                   id={`${property.slug}-true`}
                   checked={filters[property.slug] === true}
-                  onChange={(e) =>
+                  onCheckedChange={(checked) =>
                     onFilterChange({
                       ...filters,
-                      [property.slug]: e.target.checked ? true : undefined,
+                      [property.slug]: checked ? true : undefined,
                     })
                   }
-                  className="rounded"
+                  renderCheckbox={renderCheckbox}
                 />
                 <label
                   htmlFor={`${property.slug}-true`}

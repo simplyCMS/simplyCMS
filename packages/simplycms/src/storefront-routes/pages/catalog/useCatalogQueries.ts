@@ -48,17 +48,28 @@ export function useSectionQuery(
   });
 }
 
-/** Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати. */
-export function useFilterPropertiesQuery(sectionId: string | null) {
+/**
+ * Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати.
+ * `null` — каталог без розділу: характеристики всього каталогу; `enabled:
+ * false` — сторінка розділу, чий розділ ще не приїхав (корінь тут був би
+ * хибним проміжним станом).
+ */
+export function useFilterPropertiesQuery(
+  sectionId: string | null,
+  enabled = true,
+) {
   return useQuery({
     // 🔴 variant('filterable', …), не scoped() (борг Е1а №6, Е3-12): це форма
-    // (лише властивості-фільтри), а не FK-зріз за розділом.
-    queryKey: sectionProperties.variant('filterable', sectionId ?? ''),
+    // (лише властивості-фільтри), а не FK-зріз за розділом. Корінь — власний
+    // qualifier, а не порожній id, що міг би збігтися з іншим ключем.
+    queryKey: sectionId
+      ? sectionProperties.variant('filterable', sectionId)
+      : sectionProperties.variant('filterable-root'),
     queryFn: () =>
       getSectionFilterProperties({
-        data: { sectionId: sectionId as string },
+        data: sectionId ? { sectionId } : {},
       }),
-    enabled: !!sectionId,
+    enabled,
   });
 }
 

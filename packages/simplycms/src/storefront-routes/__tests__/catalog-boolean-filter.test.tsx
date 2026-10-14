@@ -77,8 +77,8 @@ function Harness() {
   });
   return (
     <div>
+      {/* Без sectionId: корінь каталогу (sectionId у вибірці теж null). */}
       <FilterSidebar
-        sectionId="sec-1"
         filters={filters}
         onFilterChange={setFilters}
         numericPropertyRanges={noRanges}
@@ -109,7 +109,7 @@ describe('boolean-фільтр каталогу: ланцюг панель → �
 
     expect(screen.getByTestId('result').textContent).toBe('A,B,C');
 
-    fireEvent.click(await screen.findByLabelText('Так'));
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Так' }));
 
     expect(screen.getByTestId('result').textContent).toBe('A');
     const badge = screen.getByRole('button', { name: 'Wi-Fi: Так' });

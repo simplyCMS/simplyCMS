@@ -11,7 +11,12 @@
  * оформлення двох замовлень і перевірки кабінету/вітрини —
  * `./admin-orders-buyer.mjs` (канон 150 рядків).
  */
-import { orderItemsStock, orderState, stockSnapshot } from './sql.mjs';
+import {
+  orderItemsStock,
+  orderState,
+  statusIdByCode,
+  stockSnapshot,
+} from './sql.mjs';
 import { PRODUCT_SLUG, parseMoney } from './selectors.mjs';
 import {
   placeTwoOrders,
@@ -69,7 +74,9 @@ export async function runAdminOrdersStep({
 
     // 3. A → «Підтверджено»: облік не чіпається; у кабінеті — без «Скасувати».
     await card(A.orderId);
-    await page.locator(STATUS_SELECT).selectOption({ label: 'Підтверджено' });
+    await page
+      .locator(STATUS_SELECT)
+      .selectOption(await statusIdByCode(dbUrl, 'confirmed'));
     const stA = await pollOrder(dbUrl, A.orderId, 'confirmed');
     const afterA = await stockSnapshot(dbUrl, PRODUCT_SLUG);
     const itemsA2 = await orderItemsStock(dbUrl, A.orderId);
@@ -84,7 +91,9 @@ export async function runAdminOrdersStep({
 
     // 4. B → «Скасовано» → AlertDialog → підтвердити: повернення рівно B.
     await card(B.orderId);
-    await page.locator(STATUS_SELECT).selectOption({ label: 'Скасовано' });
+    await page
+      .locator(STATUS_SELECT)
+      .selectOption(await statusIdByCode(dbUrl, 'cancelled'));
     const dialog = page.getByRole('alertdialog');
     await dialog.waitFor({ timeout: 10_000 });
     const beforeConfirm = await orderState(dbUrl, B.orderId);

@@ -19,8 +19,9 @@ import {
  * причина та сама, що в `./price-type`.
  */
 export const getSectionFilters = createServerFn({ method: 'GET' })
-  .validator(z.object({ sectionId: z.string().min(1) }))
+  .validator(z.object({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }): Promise<SectionFilters> => {
-    const { sectionId } = input as { sectionId: string };
-    return withStorefrontDb((db) => loadSectionFilters(db, sectionId));
+    const { sectionId } = input as { sectionId?: string };
+    // Без розділу — корінь каталогу (усі товари), див. `loadSectionFilters`.
+    return withStorefrontDb((db) => loadSectionFilters(db, sectionId ?? null));
   });

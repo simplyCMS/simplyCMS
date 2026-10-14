@@ -151,6 +151,17 @@
 - Канон оновлено: `docs/architecture/{cli,storage,release-process,test-contours,data-layer,
   repository-layout,upstream-workarounds}.md`, `docs/development/{ENVIRONMENT,TOOLING}.md`, `AGENTS.md`.
 
+### Виправлено
+
+- Каталог без розділу показує бокові фільтри: `FilterSidebar` і лоадери `loadSectionFilters` /
+  `loadSectionFilterProperties` приймають `sectionId: string | null`; корінь — об'єднання
+  фільтровних характеристик активних розділів без дублів, лише тих, що мають значення в активних
+  товарах (або їхніх модифікаціях).
+- Чекбокси бокових фільтрів, оформлення замовлення й профілю — `Checkbox` з `simplycms/ui` у
+  кольорах теми (раніше сирий `<input type="checkbox">` фарбувався за `color-scheme` браузера й
+  виглядав чорним при темній системній схемі); проп `renderCheckbox` теми працює (контракт
+  `{ id, checked, onCheckedChange }`).
+
 ### Видалено
 
 - `psql`-цикл накату, скрипт `start:prod`, `stubSendAuthEmail`, `SendAuthEmail`, `SendInviteEmail`,

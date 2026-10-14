@@ -68,7 +68,11 @@ export function useCatalogController({
     useCatalogProductsQuery(sectionId);
   const priced = usePricedProducts(rawProducts);
   const { products } = priced;
-  const { data: filterProperties } = useFilterPropertiesQuery(activeSectionId);
+  const { data: filterProperties } = useFilterPropertiesQuery(
+    activeSectionId,
+    // Сторінка розділу, чий розділ ще не приїхав, не питає корінь.
+    !(scoped && sectionId === null),
+  );
   // Один канал: з нього похідні й діапазони (number/range), і «Так» (boolean).
   const numericProperties = useMemo(
     () =>

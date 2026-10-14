@@ -5,6 +5,7 @@
 import {
   anyProductSlug,
   assignmentsOfSection,
+  defaultPriceTypeName,
   priceCountByType,
   priceTypeCount,
   sectionsBySlug,
@@ -63,7 +64,9 @@ export async function runPriceTypesPart({ page, base, dbUrl, check }) {
 
   check(
     'адмін: видалення дефолтного retail — кнопка disabled',
-    await expectDisabled(deleteButtonOf(page, 'Роздрібна')),
+    await expectDisabled(
+      deleteButtonOf(page, await defaultPriceTypeName(dbUrl)),
+    ),
     '',
   );
 

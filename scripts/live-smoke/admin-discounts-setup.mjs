@@ -9,6 +9,7 @@
 import { pollUntil } from './admin-shipping-sql.mjs';
 import * as q from './admin-discounts-sql.mjs';
 import * as ui from './admin-discounts-owner.mjs';
+import { sql } from './sql.mjs';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -105,8 +106,15 @@ async function vipPart({ page, base, dbUrl, check, fx, st }) {
 
 /** Правило «2+ замовлення → VIP Е6в» з «Роздріб», `orders_count >= 2`. */
 async function rulePart({ page, base, dbUrl, check, fx, st }) {
+  // Початкова категорія — дефолтна (`is_default`), а не «Роздріб» за назвою:
+  // назву адмін може змінити.
+  const [{ name: from }] = await sql(
+    dbUrl,
+    `select name from public.user_categories where is_default`,
+  );
   const toast = await ui.createRule(page, base, {
     ...fx.rule,
+    from,
     to: fx.category.name,
   });
   const rule = await pollUntil(
@@ -118,7 +126,7 @@ async function rulePart({ page, base, dbUrl, check, fx, st }) {
   check(
     'знижки: правило «2+ замовлення → VIP Е6в» — з «Роздріб», orders_count >= 2',
     toast &&
-      rule?.from_name === fx.rule.from &&
+      rule?.from_name === from &&
       rule.to_name === fx.category.name &&
       c?.rules?.length === 1 &&
       c.rules[0].field === 'orders_count' &&
