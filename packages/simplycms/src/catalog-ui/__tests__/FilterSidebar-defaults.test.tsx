@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { Component, Profiler, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from 'simplycms/i18n';
 import { FilterSidebar } from '../FilterSidebar';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 vi.mock('simplycms/core/lib/section-filters', () => ({
   getSectionFilters: vi.fn(async () => ({

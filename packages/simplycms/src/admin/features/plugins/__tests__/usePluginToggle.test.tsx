@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
 import { createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -33,6 +33,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { usePluginToggle } from '../usePluginToggle';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 const t = createTranslator('uk');
 const KEY = entityKey(ENTITY.plugins).all();

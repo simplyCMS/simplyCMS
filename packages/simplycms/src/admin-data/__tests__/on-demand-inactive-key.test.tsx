@@ -6,8 +6,8 @@
  * обходу запис зрізу A не лишається стейл/обрізаним. Сервер зі станом
  * (`support/mutable-server.ts`): відповіді ревалідації авторитетні.
  */
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createCollection,
@@ -21,6 +21,9 @@ import { toSubsetPayload } from '../subset-payload';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 import { createMutableServer, type Payload } from './support/mutable-server';
 import { awaitRevalidation } from './support/revalidation';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 type Row = { id: string; name: string; order: number };
 const SEED: Row[] = Array.from({ length: 6 }, (_, i) => ({

@@ -8,7 +8,7 @@
  * довідник (розділи) — preload тягне `listSections({ data: {} })` один раз.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
@@ -73,6 +73,9 @@ import { priceTypesCollection } from '../collections/price-types';
 import { sectionPropertiesCollection } from '../collections/section-properties';
 import { propertyOptionsCollection } from '../collections/property-options';
 import { sectionPropertyAssignmentsCollection } from '../collections/section-property-assignments';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /** Мінімальна поверхня колекції, яку перевіряють тести запису. */
 type WritableCollection = {

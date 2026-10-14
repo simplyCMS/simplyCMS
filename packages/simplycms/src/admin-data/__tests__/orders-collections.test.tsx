@@ -7,8 +7,8 @@
  * дописує тай-брейкер `id` і застосовує `maxLimit` як сервер. Запис —
  * `orders-collections-write.test.tsx`.
  */
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { OrderItem } from 'simplycms/schema/types';
 import {
@@ -19,6 +19,9 @@ import {
   server,
 } from './support/orders-server-stub';
 import { ids, PAGE, SAME, setup } from './support/orders-setup';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 vi.mock('simplycms/admin-server', async () => {
   const stub = await import('./support/orders-server-stub');

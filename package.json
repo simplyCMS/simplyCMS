@@ -24,6 +24,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:schema": "vitest run --config vitest.schema.config.ts",
+    "test:race": "vitest run --config vitest.race.config.ts",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "pilot": "node scripts/pilot-pack.mjs",
     "pilot:pack": "node scripts/pilot-pack.mjs --pack-only",

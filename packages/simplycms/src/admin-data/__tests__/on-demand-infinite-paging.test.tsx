@@ -11,14 +11,17 @@
  * би відрізнити «сторінка довантажилась правильно» від «довантажилась
  * будь-як, бо queryFn ігнорує пагінацію» (рев'ю item 4).
  */
-import { describe, expect, it } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createCollection, useLiveInfiniteQuery } from '@tanstack/react-db';
 import { parseLoadSubsetOptions } from '@tanstack/query-db-collection';
 import type { LoadSubsetOptions } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 type Row = { id: string; order: number };
 const SEED: Row[] = Array.from({ length: 6 }, (_, i) => ({

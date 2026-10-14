@@ -76,6 +76,9 @@ export default defineConfig({
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —
       // явний, а не мовчазний збіг конвенцій.
       'tests/e2e/**',
+      // Контур `pnpm test:race`: вкладені прогони vitest у середовищі-форсері
+      // гонки teardown (секунди на прогін) — окремий конфіг, не `pnpm test`.
+      'tests/race-teardown/**/*.test.ts',
       // PG-харнес (Task 1, план В2-К1а): потребує живого Postgres
       // (`PG_HARNESS_URL` або ефемерний `initdb`+`pg_ctl` фолбек), тому в
       // `pnpm test` не входить — окремий гейт `pnpm test:schema`

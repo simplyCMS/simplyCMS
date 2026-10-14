@@ -12,8 +12,8 @@
  * свідомо НЕ вживається (схема властивостей — двома запитами, Task 10).
  * Червоне тут = бібліотека поводиться не так, як припускає план.
  */
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BTreeIndex,
@@ -25,6 +25,9 @@ import {
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { ReactNode } from 'react';
 import { toSubsetPayload } from '../subset-payload';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 type Row = { id: string; sectionId: string; createdAt: number; name: string };
 type Sec = { id: string; name: string };

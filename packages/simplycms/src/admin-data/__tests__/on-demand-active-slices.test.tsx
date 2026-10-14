@@ -9,14 +9,17 @@
  * показує ЛИШЕ свої рядки. Зафіксовано ЯК Є — не Е3-17 (стейл-кеш
  * НЕактивного зрізу), а суміжна поведінка тієї самої механіки.
  */
-import { describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createCollection, eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { createMutableServer } from './support/mutable-server';
 import { awaitRevalidation } from './support/revalidation';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 type Row = { id: string; name: string; modificationId: string | null };
 const SEED: Row[] = [

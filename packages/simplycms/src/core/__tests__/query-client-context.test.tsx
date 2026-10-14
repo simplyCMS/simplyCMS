@@ -7,10 +7,15 @@
 // другий створений провайдером) теж пройшла б його. Топологію доводить
 // інтеграційний `tests/router-query-client.test.ts` + живий браузерний
 // прогін (гідрація) — див. task-7-brief.md.
-import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { render, cleanup } from '@testing-library/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { CMSProvider } from '../providers/CMSProvider';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — дерево знімаємо в
+// afterEach, щоб жодна робота React не пережила тест (і щоб cleanup
+// виконувався навіть коли expect впаде).
+afterEach(cleanup);
 
 // 🔴 Справжній клієнт Better Auth тут не можна: атом сесії на монтуванні
 // ставить `setTimeout(0)` і б'є `fetch` у `/api/auth/get-session` (jsdom —
@@ -18,7 +23,7 @@ import { CMSProvider } from '../providers/CMSProvider';
 // вже ПІСЛЯ кінця тесту, і задача планувальника React (`window.event` у
 // відкладеному flush пасивних ефектів) могла виконатись після teardown jsdom →
 // unhandled `ReferenceError: window is not defined`, що валив `pnpm test`.
-// `unmount()` сам цього не закриває: nanostores знімає атом із затримкою
+// Самого cleanup для цього замало: nanostores знімає атом із затримкою
 // 1 с, і cleanup Better Auth (`window.removeEventListener`) так само
 // спрацьовує після teardown. Сесія для контракту QueryClient байдужа — гість.
 vi.mock('../lib/auth-client', () => ({
@@ -38,7 +43,7 @@ describe('CMSProvider: клієнт приходить ззовні', () => {
     const external = new QueryClient();
     let seen: QueryClient | null = null;
 
-    const { unmount } = render(
+    render(
       <CMSProvider queryClient={external}>
         <Probe
           onClient={(c) => {
@@ -52,8 +57,5 @@ describe('CMSProvider: клієнт приходить ззовні', () => {
     // QueryClient, і другий інстанс дав би другий набір колекцій —
     // тобто тихий розсинхрон між loader і компонентом.
     expect(seen).toBe(external);
-    // Авто-cleanup Testing Library без `globals: true` не реєструється —
-    // дерево знімаємо самі, щоб жодна робота React не пережила тест.
-    unmount();
   });
 });

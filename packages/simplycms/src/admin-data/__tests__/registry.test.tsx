@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 // (vitest.config: environment 'node' — без директиви renderHook упаде
 // на document is not defined; патерн — як у сусідніх hook-тестах репо)
-import { describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { renderHook, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { getCollection, useCollection, type CollectionDef } from '../registry';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 const probeDef: CollectionDef<{ marker: string }> = {
   id: 'probe',

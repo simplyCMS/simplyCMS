@@ -6,8 +6,8 @@
  * зрізу картки, і до сторінки списку. Ревалідація (TSDB-1) віддає стан
  * сервера, який уже несе новий статус.
  */
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import {
   listOrders,
@@ -17,6 +17,9 @@ import {
 } from './support/orders-server-stub';
 import { SAME, setup } from './support/orders-setup';
 import { awaitRevalidation } from './support/revalidation';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 vi.mock('simplycms/admin-server', async () => {
   const stub = await import('./support/orders-server-stub');

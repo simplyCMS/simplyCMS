@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  cleanup,
+} from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { I18nProvider } from 'simplycms/i18n';
 import { FilterSidebar } from '../../catalog-ui/FilterSidebar';
 import {
@@ -11,6 +17,9 @@ import {
 } from '../pages/catalog/filtering';
 import { useActiveFilters } from '../pages/catalog/useActiveFilters';
 import type { CatalogFiltersState } from '../pages/catalog/types';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * Ланцюг Ф2: клік «Так» у панелі → стан фільтрів → вибірка → бейдж → зняття.

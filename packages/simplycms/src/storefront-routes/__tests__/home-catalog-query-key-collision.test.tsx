@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { catalogKeys, priceViewKey } from 'simplycms/react-query';
 import { useSectionProducts } from '../pages/home/queries';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * Регрес фази 3 (пункт G): `useSectionProducts` (карусель головної) і

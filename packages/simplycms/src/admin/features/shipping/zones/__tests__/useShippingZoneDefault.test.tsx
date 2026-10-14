@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
@@ -20,6 +20,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { useShippingZoneDefault } from '../useShippingZoneDefault';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 const points = entityKey(ENTITY.pickupPoints);
 const KEYS = {

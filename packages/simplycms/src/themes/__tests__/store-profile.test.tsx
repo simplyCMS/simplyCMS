@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import type { ReactNode } from 'react';
-import { describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { renderHook, cleanup } from '@testing-library/react';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { StoreProfileProvider, useStoreProfile } from '../store-profile';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * Профіль магазину для тем (Е6б-12): провайдер монтує host над `Outlet`.

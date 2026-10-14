@@ -13,8 +13,8 @@
  * РЕАЛЬНІ `limit`/`offset` (не «всі рядки на будь-який запит», інакше
  * тест нічого не доводить — `on-demand-infinite-paging.test.tsx`, item 4).
  */
-import { describe, expect, it } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createCollection,
@@ -30,6 +30,9 @@ import type { LoadSubsetOptions } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { createMutableServer } from './support/mutable-server';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 type Row = { id: string; name: string };
 const SEED: Row[] = [
