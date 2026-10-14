@@ -33,8 +33,8 @@
 
 - **А — готовність до пілоту.** Node ≥ 24 і резолвер груп env `simplycms/env`; журнал міграцій
   `simplycms/migrate` (`public.simplycms_migrations`, sha256, advisory-лок, SCRAM-верифікатор пароля
-  `app_runtime`) з `simplycms db:apply`/`doctor --online`; правило **«з rc.1 застосовані міграції `0000…0005` не правляться»**
-  (`tests/migrations-frozen.test.ts`; до публікації baseline може змінитись рішенням власника); прод-старт `scripts/start.mjs` (накат + `process.execve`),
+  `app_runtime`) з `simplycms db:apply`/`doctor --online`; правило **«baseline `0000…0005` заморожується кроком релізу 1.0.0-rc.1»**
+  (до того — виняток baseline з попередженням у `CHANGELOG`); прод-старт `scripts/start.mjs` (накат + `process.execve`),
   `/api/health` з ідентифікатором збірки, прекомпресія статики, 413/411 без закриття зʼєднання;
   драйвер `s3` (Garage) і порт пошти `simplycms/mail` (`smtp`/`log`, outbox `mail_outbox` — `0005`,
   листи auth/замовлень, картка хвостів у налаштуваннях); доказ оновлюваності 1.0, пререлізний цикл,

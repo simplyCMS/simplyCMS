@@ -73,7 +73,7 @@ if (probe.error || probe.status !== 0)
   );
 
 if (process.argv[2] === 'down') {
-  for (const name of NAMES) docker('rm', '-f', name);
+  for (const name of NAMES) docker('rm', '-fv', name);
   // Застарілий файл змусив би споживачів ганятись за мертвим URL.
   rmSync(ENV_FILE, { force: true });
   console.log(`[harness] ${NAMES.join(', ')} зупинено, .env.harness видалено.`);
@@ -105,7 +105,7 @@ function ensure(name, runArgs, published) {
     }
     return;
   }
-  docker('rm', '-f', name);
+  docker('rm', '-fv', name);
   const run = docker('run', '-d', '--rm', '--name', name, ...runArgs);
   if (run.status !== 0)
     fail(`docker run ${name} не вдався: ${run.stderr.trim()}`);

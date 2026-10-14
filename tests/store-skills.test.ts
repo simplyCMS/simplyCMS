@@ -198,6 +198,13 @@ describe('скіли магазину: тексти помилок збігаю�
       'MigrationChecksumError',
       new MigrationChecksumError(['x']).message.replace('x', '<файли>'),
     ],
+    [
+      'MigrationChecksumError (файл ядра)',
+      new MigrationChecksumError(['0001_init.sql']).message.replace(
+        '0001_init.sql',
+        '<файли>',
+      ),
+    ],
   ])('pitfalls.md цитує %s повним текстом з коду', (_name, message) => {
     expect(pitfalls).toContain(flat(message));
   });

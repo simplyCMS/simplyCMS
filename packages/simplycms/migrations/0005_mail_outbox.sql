@@ -14,7 +14,7 @@ CREATE POLICY "mail_outbox_admin_all" ON "mail_outbox" AS PERMISSIVE FOR ALL TO 
 
 -- ── ручне: гранти й RLS ────────────────────────────────────────────────────
 -- drizzle-kit гранти не діфить (data-layer.md). Новий файл канону несе їх сам:
--- baseline заморожений, `0002_grants` нових таблиць не знає.
+-- `0002_grants` нових таблиць не знає.
 -- Лише `app_admin`: тіло листа скидання пароля — секрет, покупцеві (`app_user`)
 -- черга не потрібна взагалі; ескалація `operator` — це `set local role app_admin`.
 revoke all on table public.mail_outbox from public;

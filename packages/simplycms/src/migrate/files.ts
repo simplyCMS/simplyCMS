@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isCoreMigrationName } from './core-name';
 import { MigrationTransactionControlError } from './errors';
+
+export { isCoreMigrationName };
 import { findTransactionControl } from './transaction-control';
 
 /** Файл міграції теки: ім'я, шлях і сума нормалізованого вмісту. */

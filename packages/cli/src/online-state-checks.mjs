@@ -25,13 +25,22 @@ export function journalCheck(rows, files, core) {
       'база без журналу (public.simplycms_migrations): накоти схему — pnpm simplycms db:apply',
     );
   const { pending, changed } = core.pendingMigrations(rows, files);
-  if (changed.length > 0)
-    return check(
-      'migrations-journal',
-      JOURNAL,
-      'error',
-      `накочені файли змінено: ${changed.join(', ')} — застосований файл не правиться, зміна йде новою міграцією`,
-    );
+  if (changed.length > 0) {
+    // Дія залежить від власника файлу: ядро — baseline (базу створюють заново),
+    // решта — зміна новою міграцією. Той самий поділ, що в MigrationChecksumError.
+    const coreNames = changed.filter((name) => core.isCoreMigrationName(name));
+    const ownNames = changed.filter((name) => !core.isCoreMigrationName(name));
+    const parts = [];
+    if (coreNames.length > 0)
+      parts.push(
+        `baseline платформи змінився: ${coreNames.join(', ')} — до 1.0 базу створюють заново: локально — порожня локальна БД і pnpm simplycms db:apply (у монорепо платформи db:demo), на сервері — новий порожній екземпляр БД`,
+      );
+    if (ownNames.length > 0)
+      parts.push(
+        `накочені файли змінено: ${ownNames.join(', ')} — застосований файл не правиться, зміна йде новою міграцією`,
+      );
+    return check('migrations-journal', JOURNAL, 'error', parts.join('; '));
+  }
   if (pending.length > 0)
     return check(
       'migrations-journal',

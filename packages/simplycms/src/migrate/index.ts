@@ -7,7 +7,11 @@
  * власником схеми ще до того, як ролі й RLS існують, тож преамбула актора
  * тут неможлива за побудовою.
  */
-export { listMigrationFiles, type MigrationFile } from './files';
+export {
+  listMigrationFiles,
+  isCoreMigrationName,
+  type MigrationFile,
+} from './files';
 export {
   applyMigrations,
   MIGRATION_LOCK_KEY,

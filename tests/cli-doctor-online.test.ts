@@ -8,6 +8,7 @@ import {
   CONNECT_TIMEOUT_MS,
   runOnlineChecks,
 } from '../packages/cli/src/doctor-db-checks.mjs';
+import { isCoreMigrationName } from '../packages/simplycms/src/migrate/files';
 
 // `doctor --online` без живої БД: ядро й зонд підміняються ін'єкцією.
 
@@ -47,6 +48,7 @@ describe('cli doctor --online', () => {
       failedMail: 0,
     }),
     pendingMigrations,
+    isCoreMigrationName,
     findForeignDatabases: async () => foreign,
   });
   type Row = { id: string; status: string; details?: string };
@@ -85,6 +87,9 @@ describe('cli doctor --online', () => {
     );
     expect(checks['migrations-journal']!.status).toBe('error');
     expect(checks['migrations-journal']!.details).toContain('0001_init.sql');
+    expect(checks['migrations-journal']!.details).toContain(
+      'baseline платформи змінився',
+    );
   });
 
   it('журналу немає (null) → error «база без журналу»', async () => {
