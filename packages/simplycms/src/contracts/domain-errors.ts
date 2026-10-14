@@ -12,7 +12,12 @@
  * — `AdminConflictError`; `auth/authz.ts` — `AuthzError`) і клієнтський
  * адаптер (T2, `simplycms/runtime`) читають ОДИН перелік замість того, щоб
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
+ * Виняток: `CodedError` (нижче) — простий клас без залежностей, тож живе
+ * тут, у T0, а кидають його сервісні модулі media/avatar/review; саме
+ * членство в `DOMAIN_ERROR_NAME` пускає його крізь маскування Р23.
  */
+import { REVIEW_SUBMIT_ERROR } from './objects/review';
+
 export const DOMAIN_ERROR_NAME = {
   adminConflict: 'AdminConflictError',
   authz: 'AuthzError',
@@ -48,6 +53,32 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   [DOMAIN_ERROR_NAME.coded]: [],
 };
 
+/** Коди відмов медіа-завантаження (`admin-server/impl/media`). */
+export const MEDIA_ERROR = {
+  noFile: 'media/no-file',
+  noEntityType: 'media/no-entity-type',
+  badEntityType: 'media/bad-entity-type',
+  badFormat: 'media/bad-format',
+  tooLarge: 'media/too-large',
+} as const;
+
+/** Коди відмов завантаження аватара (`core/lib/profile-avatar`). */
+export const AVATAR_ERROR = {
+  badFormat: 'avatar/bad-format',
+  tooLarge: 'avatar/too-large',
+} as const;
+
+/**
+ * Єдиний реєстр кодів, які клієнт мапить у i18n: значення беруться з
+ * наявних констант (відгуки — `REVIEW_SUBMIT_ERROR`), літералів тут нема.
+ * Новий код = нове значення в одній із трьох груп; `CodedError` невідомого
+ * коду не скомпілюється.
+ */
+export type CodedErrorCode =
+  | (typeof MEDIA_ERROR)[keyof typeof MEDIA_ERROR]
+  | (typeof AVATAR_ERROR)[keyof typeof AVATAR_ERROR]
+  | (typeof REVIEW_SUBMIT_ERROR)[keyof typeof REVIEW_SUBMIT_ERROR];
+
 /**
  * Відмова з машинним кодом (`media/bad-format`, `review/already-submitted`…):
  * `message` — це КОД, а не текст, і клієнт порівнює його з каталогом i18n.
@@ -58,7 +89,7 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
  */
 export class CodedError extends Error {
   override readonly name = DOMAIN_ERROR_NAME.coded;
-  constructor(code: string) {
+  constructor(code: CodedErrorCode) {
     super(code);
   }
 }

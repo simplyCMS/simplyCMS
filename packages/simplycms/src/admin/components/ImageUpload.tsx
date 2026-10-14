@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { uploadMedia } from 'simplycms/admin-server';
+import { MEDIA_ERROR } from 'simplycms/contracts/domain-errors';
 import {
   MAX_UPLOAD_BYTES,
   PAYLOAD_TOO_LARGE_CODE,
@@ -65,7 +66,7 @@ export function ImageUpload({
         return ref;
       } catch (error) {
         const badFormat =
-          error instanceof Error && error.message === 'media/bad-format';
+          error instanceof Error && error.message === MEDIA_ERROR.badFormat;
         if (
           error instanceof Error &&
           error.message === PAYLOAD_TOO_LARGE_CODE

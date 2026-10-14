@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { CodedError } from 'simplycms/contracts/domain-errors';
+import { AVATAR_ERROR, CodedError } from 'simplycms/contracts/domain-errors';
 import {
   MAX_AVATAR_BYTES,
   MEDIA_URL_BASE,
@@ -13,13 +13,9 @@ import {
 } from 'simplycms/storefront/loaders';
 import { completeMediaErasures, inspectUpload } from 'simplycms/storage';
 
-/** Машинні коди відмов: клієнт мапить їх у рядки каталогу. */
-export const AVATAR_BAD_FORMAT = 'avatar/bad-format';
-export const AVATAR_TOO_LARGE = 'avatar/too-large';
-
 const REASON_CODE = {
-  unsupported_type: AVATAR_BAD_FORMAT,
-  too_large: AVATAR_TOO_LARGE,
+  unsupported_type: AVATAR_ERROR.badFormat,
+  too_large: AVATAR_ERROR.tooLarge,
 } as const;
 
 /**
@@ -47,7 +43,7 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<{ url: string }> => {
     const file = data.get('file');
-    if (!(file instanceof File)) throw new CodedError(AVATAR_BAD_FORMAT);
+    if (!(file instanceof File)) throw new CodedError(AVATAR_ERROR.badFormat);
 
     const checked = await inspectUpload(file, MAX_AVATAR_BYTES);
     if (!checked.ok) throw new CodedError(REASON_CODE[checked.reason]);
@@ -65,7 +61,7 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
     const url = resolveMediaUrl(ref, MEDIA_URL_BASE);
     // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок замість
     // `!` тримає межу чесною — тип звужується доказом, а не обіцянкою.
-    if (url === null) throw new CodedError(AVATAR_BAD_FORMAT);
+    if (url === null) throw new CodedError(AVATAR_ERROR.badFormat);
     return { url };
   });
 

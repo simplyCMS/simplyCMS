@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { AVATAR_ERROR } from 'simplycms/contracts/domain-errors';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import {
@@ -54,8 +55,8 @@ export function AvatarUpload({
   // серверний хендлер живе поза React і транслятора не має.
   const messageFor = (cause: unknown): string => {
     const code = cause instanceof Error ? cause.message : '';
-    if (code === 'avatar/bad-format') return t('profile.avatar.badFormat');
-    if (code === 'avatar/too-large') return t('profile.avatar.tooLarge');
+    if (code === AVATAR_ERROR.badFormat) return t('profile.avatar.badFormat');
+    if (code === AVATAR_ERROR.tooLarge) return t('profile.avatar.tooLarge');
     if (code === PAYLOAD_TOO_LARGE_CODE) return t('errors.payloadTooLarge');
     return t('profile.avatar.failed');
   };

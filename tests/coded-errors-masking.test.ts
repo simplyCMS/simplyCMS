@@ -1,12 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
-import { CodedError } from 'simplycms/contracts/domain-errors';
+import {
+  CodedError,
+  MEDIA_ERROR,
+  AVATAR_ERROR,
+  type CodedErrorCode,
+} from 'simplycms/contracts/domain-errors';
 import { MAX_REVIEW_IMAGES } from 'simplycms/domain/media';
 import { parseUploadForm } from 'simplycms/admin-server/impl';
 import { maskUnexpectedError } from 'simplycms/server-guard';
-import { updateProductReviewWithImages } from '../packages/simplycms/src/storefront/loaders/reviews-edit';
+import { updateProductReviewWithImages } from 'simplycms/storefront/loaders';
 
 const PROD = { NODE_ENV: 'production' } as const;
 const mask = (error: unknown) =>
@@ -36,8 +41,8 @@ describe('машинні коди serverFn переживають маскува
       return parseUploadForm(form);
     });
     for (const [error, code] of [
-      [noFile, 'media/no-file'],
-      [badType, 'media/bad-entity-type'],
+      [noFile, MEDIA_ERROR.noFile],
+      [badType, MEDIA_ERROR.badEntityType],
     ] as const) {
       const out = mask(error);
       expect(out).toBe(error);
@@ -58,9 +63,18 @@ describe('машинні коди serverFn переживають маскува
   });
 
   it('CodedError: ім’я з закритої родини, повідомлення — сам код', () => {
-    const error = new CodedError('avatar/bad-format');
+    const error = new CodedError(AVATAR_ERROR.badFormat);
     expect(mask(error)).toBe(error);
-    expect(error.message).toBe('avatar/bad-format');
+    expect(error.message).toBe(AVATAR_ERROR.badFormat);
+  });
+
+  it('CodedError приймає лише код із реєстру (тип)', () => {
+    // @ts-expect-error — невідомий код не належить CodedErrorCode
+    const unknown = new CodedError('щось/невідоме');
+    expect(unknown.message).toBe('щось/невідоме');
+    expectTypeOf<
+      ConstructorParameters<typeof CodedError>[0]
+    >().toEqualTypeOf<CodedErrorCode>();
   });
 
   it('звичайний Error з тим самим текстом маскується', () => {

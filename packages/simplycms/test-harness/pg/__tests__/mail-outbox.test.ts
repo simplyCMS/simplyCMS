@@ -218,24 +218,37 @@ describe('outbox пошти mail_outbox (Е8-Р10)', () => {
   });
 
   // Бронь `requested_at = now()` у claim: доки перший виклик шле лист, другий
-  // не бере той самий хвіст, тож лист не дублюється. Транспорт повільний, а
-  // другий виклик стартує ПІСЛЯ коміту броні першого.
+  // не бере той самий хвіст, тож лист не дублюється. Без таймінгів: перший
+  // `send` стоїть на бар'єрі, і тест відпускає його лише ПІСЛЯ того, як
+  // другий `deliverMail` повністю завершив свій claim (і весь добір).
   it('🔴 два паралельні добори старого хвоста → один send', async () => {
     await enqueue('dup@x.test');
     await queryRows(
       dbUrl,
       `update public.mail_outbox set requested_at = now() - interval '2 minutes'`,
     );
-    const slow: MailTransport = {
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => (release = resolve));
+    let entered!: () => void;
+    const firstInSend = new Promise<void>((resolve) => (entered = resolve));
+    let calls = 0;
+    const gated: MailTransport = {
       driver: 'log',
       send: async (m) => {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        calls += 1;
+        // Лише перший виклик чекає; решта (якщо бронь зламана) проходить одразу.
+        if (calls === 1) {
+          entered();
+          await barrier;
+        }
         sent.push(m);
       },
     };
-    const first = deliverMail([], slow);
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await Promise.all([first, deliverMail([], slow)]);
+    const first = deliverMail([], gated);
+    await firstInSend;
+    await deliverMail([], gated);
+    release();
+    await first;
     expect(sent.map((m) => m.to)).toEqual(['dup@x.test']);
     expect(await rows()).toEqual([]);
   });
