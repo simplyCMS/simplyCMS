@@ -51,7 +51,8 @@ vi.mock('simplycms/core/lib/shipping-directory', () => ({
         updated_at: new Date(0),
       },
     ],
-    zones: [],
+    // Основна зона: адресна доставка йде в неї, без неї тариф `rates` — відмова.
+    zones: [{ id: 'z1', name: 'Основна', is_active: true, is_default: true }],
     rates: [
       {
         id: 'r1',

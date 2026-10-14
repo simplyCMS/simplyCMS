@@ -1,8 +1,8 @@
 import type { PlaceOrderRejection } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
 import {
-  findShippingZoneIn,
   resolveShippingRate,
+  resolveShippingZone,
 } from 'simplycms/domain/shipping';
 import type {
   ShippingPricing,
@@ -24,7 +24,7 @@ export interface ShippingChoiceInput extends DestinationInput {
   methodId: string | null;
 }
 
-/** Провалідований вибір: метод, зона за містом і довідник, із якого брати тариф. */
+/** Провалідований вибір: метод, зона за призначенням (`null` — не визначена) і довідник, із якого брати тариф. */
 export interface ShippingChoice {
   method: ShippingMethodRow;
   zone: ShippingZoneRow | null;
@@ -63,7 +63,14 @@ export async function validateShippingChoice(
   const destination = await resolveDestination(db, method, input);
   if (typeof destination === 'string') return destination;
 
-  const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
+  // Зону задає призначення, а не місто: точка самовивозу несе власну
+  // (`zone_id`), адресна доставка йде в основну (Д3).
+  const zone = resolveShippingZone(
+    directory.zones,
+    destination.point
+      ? { kind: 'pickup-point', zoneId: destination.point.zone_id }
+      : { kind: 'address' },
+  );
   const snapshot: NewShippingSnapshot = {
     methodName: method.name,
     provider: method.provider,

@@ -29,6 +29,8 @@ describe('доставка commerce', () => {
     const choice = await check(ids.courier, 'Одеса', null);
     if (typeof choice === 'string') throw new Error(choice);
     expect(choice.method.code).toBe(F.COURIER_CODE);
+    // Зона адресної доставки — основна, місто її не вибирає (Д3).
+    expect(choice.zone?.is_default).toBe(true);
     expect(quoteShippingCost(choice, F.COURIER_FREE_FROM)).toEqual({
       cost: 0,
       pricing: 'rates',

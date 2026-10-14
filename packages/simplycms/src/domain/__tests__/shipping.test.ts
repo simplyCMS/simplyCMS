@@ -94,6 +94,11 @@ describe('calculateShippingCost', () => {
 });
 
 describe('calculateShipping', () => {
+  const withZone = (ctx: ShippingCalculationContext, id: string) =>
+    makeCtx({
+      ...ctx,
+      zone: { id, name: id, is_active: true, is_default: false } as never,
+    });
   const withPricing = (pricing: 'rates' | 'provider' | 'carrier') =>
     makeCtx({ method: { ...makeCtx().method, pricing } });
 
@@ -113,10 +118,27 @@ describe('calculateShipping', () => {
   });
 
   it('pricing rates → перший застосовний тариф, pricing rates', async () => {
-    const res = await calculateShipping(withPricing('rates'), [
+    const res = await calculateShipping(withZone(withPricing('rates'), 'z1'), [
       makeRate({ id: 'r1' }),
     ]);
     expect(res).toMatchObject({ rateId: 'r1', cost: 50, pricing: 'rates' });
+  });
+
+  // Д3/Д7: зону не визначено — для `rates` це відмова, а не «будь-який тариф»
+  // (раніше `!zone ||` віддавав перший-ліпший тариф довільної зони).
+  it('rates без зони (null) → null, навіть коли є тарифи інших зон', async () => {
+    const rates = [
+      makeRate({ id: 'rl', zone_id: 'L', base_cost: 50 }),
+      makeRate({ id: 'rk', zone_id: 'K', base_cost: 100 }),
+    ];
+    expect(await calculateShipping(withPricing('rates'), rates)).toBeNull();
+  });
+
+  it('rates: зона Z без тарифу способу, у зони K тариф є → null', async () => {
+    const rates = [makeRate({ id: 'rk', zone_id: 'K', base_cost: 100 })];
+    expect(
+      await calculateShipping(withZone(withPricing('rates'), 'Z'), rates),
+    ).toBeNull();
   });
 
   it('pricing rates без застосовного тарифу → null', async () => {

@@ -85,7 +85,10 @@ export function CheckoutDeliveryForm({
     pickupPoints,
     isLoading: methodsLoading,
     rateFor,
-  } = useShippingDirectory(currentCity, subtotal ?? 0);
+  } = useShippingDirectory(
+    String(values.pickupPointId || '') || null,
+    subtotal ?? 0,
+  );
   const { addresses: savedAddresses, save: saveAddress } =
     useAddressBook(!!user);
 
@@ -299,6 +302,8 @@ export function CheckoutDeliveryForm({
           <div className="grid gap-3">
             {methods.map((method) => {
               const IconComponent = getMethodIcon(method.icon);
+              // `undefined` після завантаження суми — самовивіз без обраної точки:
+              // зона, а отже й ціна, ще невідомі; це не «недоступно» (`null` → «—»).
               const rateInfo =
                 subtotal === null ? undefined : rateFor(method.id);
               return (
@@ -335,12 +340,12 @@ export function CheckoutDeliveryForm({
                   <div className="font-medium text-right">
                     {rateInfo === undefined && subtotalFailure ? (
                       '—'
-                    ) : rateInfo === undefined ? (
+                    ) : rateInfo === undefined && subtotal === null ? (
                       <span
                         aria-busy="true"
                         className="inline-block h-4 w-14 animate-pulse rounded bg-muted"
                       />
-                    ) : !rateInfo ? (
+                    ) : rateInfo === undefined ? null : rateInfo === null ? (
                       '—'
                     ) : rateInfo.pricing === 'carrier' ? (
                       t('checkout.shipping.carrier')

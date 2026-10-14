@@ -83,6 +83,19 @@ describe('CheckoutOrderSummary', () => {
     expect(submitButton().disabled).toBe(true);
   });
 
+  // Д4: причина відмови доставки видима покупцю, а не безіменний «—».
+  it('відмова shipping_unavailable — текст ключа checkout.rejected.shipping_unavailable', () => {
+    const { container } = renderSummary({
+      ok: false,
+      reason: 'shipping_unavailable',
+    });
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.textContent).toBe(
+      'Обраний спосіб доставки недоступний — оберіть інший',
+    );
+    expect(submitButton().disabled).toBe(true);
+  });
+
   it('з квотою — числа саме з неї, submit активний', () => {
     renderSummary(QUOTE);
     expect(document.getElementById('checkout-total')?.textContent).toBe('250₴');

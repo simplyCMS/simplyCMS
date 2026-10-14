@@ -69,6 +69,7 @@ export function useCheckoutQuote({
         shippingMethodId,
         pickupPointId,
         deliveryCity,
+        isPickup,
       });
       void quoteCheckout({ data }).then(
         (result) => {
@@ -93,6 +94,7 @@ export function useCheckoutQuote({
     shippingMethodId,
     pickupPointId,
     deliveryCity,
+    isPickup,
     key,
   ]);
 

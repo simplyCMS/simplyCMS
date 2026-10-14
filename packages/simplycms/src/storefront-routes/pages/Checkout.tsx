@@ -257,7 +257,8 @@ export default function Checkout() {
           email: data.email || '',
           phone: data.phone || '',
           shippingMethodId: data.shippingMethodId,
-          deliveryCity: data.deliveryCity || null,
+          // Самовивіз: прихований залишок міста сервер не читає й не пише (Д3).
+          deliveryCity: isPickupMethod ? null : data.deliveryCity || null,
           deliveryAddress: data.deliveryAddress || null,
           pickupPointId: data.pickupPointId || null,
           paymentMethod: data.paymentMethod,
