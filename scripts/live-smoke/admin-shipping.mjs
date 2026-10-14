@@ -46,7 +46,8 @@ const FX = {
     pricingLabel: 'За тарифами перевізника',
     sortOrder: 20,
   },
-  rate: { zone: 'Україна', name: 'Самовивіз Е6а — тариф', baseCost: '50' },
+  // `zone` — назва основної зони сіду, читається з БД на старті кроку.
+  rate: { zone: '', name: 'Самовивіз Е6а — тариф', baseCost: '50' },
   // Нова назва не містить старої: `getByText` шукає підрядок.
   point: {
     name: 'Точка Е6а',
@@ -86,9 +87,10 @@ export async function runAdminShippingStep({
   const onBuyerError = (e) => buyerErrors.push(String(e));
   buyerPage.on('pageerror', onBuyerError);
   const st = { orders: [], stockRowId: null };
+  FX.rate.zone = await sqlx.mainZoneName(dbUrl);
   const args = { page, buyerPage, base, dbUrl, check, fx: FX, st };
   try {
-    // setDefault — ДО замовлень: тариф самовивозу живе в зоні «Україна».
+    // setDefault — ДО замовлень: тариф самовивозу живе в основній зоні.
     await zoneDefaultPart(args);
     await createPart(args);
     await refusalPart(args);

@@ -22,6 +22,20 @@ export async function zonesByName(url, names) {
 }
 
 /** Спосіб доставки за кодом (провайдер, режим ціни, активність). */
+/**
+ * Назва основної зони сіду за її фіксованим id (`MAIN_SHIPPING_ZONE_ID`): зона
+ * впізнається за id, а не за назвою, яку власник може змінити.
+ */
+export async function mainZoneName(url) {
+  const rows = await sql(
+    url,
+    `select name from public.shipping_zones
+      where id = '00000007-0000-4000-8000-000000000001'`,
+  );
+  if (rows.length !== 1) throw new Error('основної зони сіду немає в БД');
+  return rows[0].name;
+}
+
 export async function methodByCode(url, code) {
   const [row] = await sql(
     url,

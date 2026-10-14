@@ -45,12 +45,12 @@ async function demoShippingShape(url) {
 }
 
 /**
- * Дефолт — «Україні», тестової зони немає. Кожна дія — лише якщо потрібна
+ * Дефолт — основній зоні, тестової зони немає. Кожна дія — лише якщо потрібна
  * (SQL перед UI), тож на зеленому прогоні це no-op. Дві дії — у двох
  * окремих try: збій зміни дефолту не має лишати тестову зону в демо-базі.
  */
 export async function restoreZones({ page, base, dbUrl, check, fx }) {
-  const label = 'прибирання: дефолт зони — «Україна», тестової зони немає';
+  const label = 'прибирання: дефолт зони — основна, тестової зони немає';
   const facts = [];
   const read = () =>
     sql(dbUrl, 'select name, is_default from public.shipping_zones');
@@ -113,7 +113,7 @@ export async function assertDemoShape({ dbUrl, check, fx, st }) {
   );
   const s = await demoShippingShape(dbUrl);
   check(
-    'прибирання: демо знову має рівно одну активну точку (системну), один спосіб самовивозу і одну дефолтну зону — «Україна», активну',
+    'прибирання: демо знову має рівно одну активну точку (системну), один спосіб самовивозу і одну дефолтну зону — основну, активну',
     s.points.length === 1 &&
       s.points[0].is_system === true &&
       s.pickupMethods === 1 &&

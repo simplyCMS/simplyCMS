@@ -37,7 +37,7 @@ export async function deleteRow(page, text) {
  * тосту може передувати їй (флейк «бейдж true/false» при правильній БД).
  */
 export function expectDefaultBadge(page, text, present, timeout = 5_000) {
-  // 🔴 Рядки з тим самим регексом можуть бути кількома («Україна» — префікс),
+  // 🔴 Рядки з тим самим регексом можуть бути кількома (назва однієї зони може бути префіксом іншої),
   // а `waitFor` строгий: беремо рядки, що вже мають бейдж, і `.first()`.
   return rowOf(page, text)
     .filter({ has: page.getByText('За замовчуванням') })
