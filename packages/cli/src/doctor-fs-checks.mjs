@@ -9,7 +9,7 @@ import {
   pluginMigrationSources,
   storeMigrationsDir,
 } from './db-diff.mjs';
-import { findHostDrift } from './host-drift.mjs';
+import { findHostDrift, findOrphanedHostFiles } from './host-drift.mjs';
 import { inspectSkillLinks } from './skill-links.mjs';
 
 /** @typedef {import('./ui.mjs').Check} Check */
@@ -29,9 +29,18 @@ export function checkHostDrift({ storeRoot, hostDir }) {
       'Канонічна тека host/ пакета CLI порожня — дрейф не перевірити';
     return { id, title, status: 'skip', details };
   }
-  if (drifted.length > 0) {
-    const details = `Розійшлися з каноном: ${drifted.join(', ')}. Онови: pnpm simplycms update --write`;
-    return { id, title, status: 'warn', details };
+  const orphaned = findOrphanedHostFiles(storeRoot);
+  if (drifted.length > 0 || orphaned.length > 0) {
+    const parts = [];
+    if (drifted.length > 0)
+      parts.push(
+        `Розійшлися з каноном: ${drifted.join(', ')}. Онови: pnpm simplycms update --write`,
+      );
+    if (orphaned.length > 0)
+      parts.push(
+        `Осиротілий файл старої версії — видали: ${orphaned.join(', ')} (логіка тепер у ядрі, шим лише кличе її)`,
+      );
+    return { id, title, status: 'warn', details: parts.join('. ') };
   }
   return { id, title, status: 'ok' };
 }

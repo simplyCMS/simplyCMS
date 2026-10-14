@@ -67,6 +67,28 @@ export function staleAllowlistKinds(
   return stale;
 }
 
+/** Записи з `strings`, чия кількість кириличних рядків у файлі розійшлась: `[файл, було, є]`. */
+export function pinnedMismatches(
+  entries: Record<string, { strings?: number }>,
+  findings: readonly { file: string }[],
+): string[] {
+  return Object.entries(entries)
+    .filter(([, e]) => e.strings !== undefined)
+    .map(
+      ([file, e]) =>
+        [
+          file,
+          e.strings!,
+          findings.filter((f) => f.file === file).length,
+        ] as const,
+    )
+    .filter(([, pinned, actual]) => pinned !== actual)
+    .map(
+      ([file, pinned, actual]) =>
+        `${file}: у записі ${pinned}, у файлі ${actual}`,
+    );
+}
+
 /**
  * Незалежне доведення повноти i18n-міграції.
  *
@@ -103,6 +125,19 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
       staleAllowlistKinds(ALLOWLIST, findings),
       'allowlist-запис без жодного збігу виду у файлі',
     ).toEqual([]);
+  });
+
+  it('закріплена кількість рядків у винятках збігається з файлом', () => {
+    expect(pinnedMismatches(ALLOWLIST, findings)).toEqual([]);
+  });
+
+  it('негативний контроль: зайвий рядок у закріпленому файлі червоніє', () => {
+    expect(
+      pinnedMismatches({ 'a.ts': { strings: 1 } }, [
+        { file: 'a.ts' },
+        { file: 'a.ts' },
+      ]),
+    ).toEqual(['a.ts: у записі 1, у файлі 2']);
   });
 
   it('негативний контроль: фіктивний запис allowlist червоніє', () => {

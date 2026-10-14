@@ -1,4 +1,4 @@
-import { appendFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -50,5 +50,30 @@ describe('doctor №6: шими scripts/ — host-файли під каноно
     expect(result.status).toBe('warn');
     expect(result.details).toContain(shim);
     expect(result.details).toContain('update --write');
+  });
+
+  it.each(['scripts/owner-invite-core.mjs', 'scripts/start-core.mjs'])(
+    'осиротілий %s старої версії — warn «видали»',
+    async (orphan) => {
+      const store = await scaffoldStore('shim-orphan');
+      writeFileSync(join(store, orphan), '// копія старої версії\n');
+      const result = checkHostDrift({
+        storeRoot: store,
+        hostDir: CANON_HOST_DIR,
+      });
+      expect(result.status).toBe('warn');
+      expect(result.details).toContain('Осиротілий');
+      expect(result.details).toContain(orphan);
+    },
+  );
+
+  it('негативний контроль: без осиротілих файлів «Осиротілий» не з’являється', async () => {
+    const store = await scaffoldStore('shim-no-orphan');
+    appendFileSync(join(store, SHIMS[0]), '\n// локальна правка\n');
+    const result = checkHostDrift({
+      storeRoot: store,
+      hostDir: CANON_HOST_DIR,
+    });
+    expect(result.details).not.toContain('Осиротілий');
   });
 });

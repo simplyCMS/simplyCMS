@@ -69,3 +69,19 @@ export function writeHostFiles(storeRoot, files, hostDir = CANON_HOST_DIR) {
     cpSync(join(hostDir, file), target);
   }
 }
+
+/**
+ * Файли магазину, які давніші версії платформи клали в `scripts/`, а нині
+ * логіка живе в ядрі (шими `start.mjs`/`owner-invite.mjs` її лише кличуть).
+ * `update` стару копію не видаляє, тож вона мовчки застарівала б — doctor №6
+ * просить прибрати. `start-core.mjs` у публікованому шаблоні не їхав, але в
+ * магазині міг з'явитись із монорепо-копії, тому теж у списку.
+ */
+export const ORPHANED_HOST_FILES = [
+  'scripts/owner-invite-core.mjs',
+  'scripts/start-core.mjs',
+];
+
+/** Які з осиротілих файлів старої версії ще лежать у магазині. */
+export const findOrphanedHostFiles = (storeRoot) =>
+  ORPHANED_HOST_FILES.filter((rel) => existsSync(join(storeRoot, rel)));

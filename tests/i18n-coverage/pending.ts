@@ -14,7 +14,17 @@
  * перевіряється окремо в `i18n-coverage.test.ts`.
  */
 export type DevKind = 'console' | 'throw' | 'super' | 'log-sink';
-export type AllowEntry = { kind: DevKind | DevKind[]; reason: string };
+export type AllowEntry = {
+  kind: DevKind | DevKind[];
+  reason: string;
+  /**
+   * Точна кількість дозволених кириличних рядків у файлі. Звужує виняток із
+   * «увесь файл» до «рівно ці рядки»: новий рядок (скажімо, текст для покупця
+   * у CLI-файлі) змінює кількість, червонить тест і вимагає свідомо
+   * переглянути запис, а не проходить повз під існуючим винятком.
+   */
+  strings?: number;
+};
 
 /**
  * Рядки, що не є інтерфейсом і лишаються українськими навмисно.
@@ -25,6 +35,10 @@ export type AllowEntry = { kind: DevKind | DevKind[]; reason: string };
  * тест окремо асертить, що кожен його кириличний рядок стоїть усередині
  * `console.*` або `throw new Error(...)` (див. `i18n-coverage.test.ts`).
  */
+// Кількість кириличних рядків CLI `owner:invite` (див. `AllowEntry.strings`).
+const RUN_STRINGS = 10;
+const CLI_STRINGS = 3;
+
 export const ALLOWLIST: Record<string, AllowEntry> = {
   // Логи сервера: дивиться розробник у терміналі.
   'packages/simplycms/src/storefront-routes/seo/interceptor.ts': {
@@ -135,10 +149,12 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
   'packages/simplycms/src/auth/owner-invite-cli/run.ts': {
     kind: ['throw', 'log-sink'],
     reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+    strings: RUN_STRINGS,
   },
   'packages/simplycms/src/auth/owner-invite-cli/cli.ts': {
     kind: ['throw', 'log-sink'],
     reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+    strings: CLI_STRINGS,
   },
   'packages/simplycms/src/mail/log.ts': {
     kind: 'log-sink',

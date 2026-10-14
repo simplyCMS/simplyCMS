@@ -91,9 +91,14 @@ export async function runStart({
     execve(execPath, [execPath, join(cwd, 'server.mjs')], serverEnv);
   } catch (error) {
     // EPERM тощо: текст системної помилки без оточення, яке ми передавали.
-    const code =
+    const rawCode =
       error && typeof error === 'object' && 'code' in error
-        ? String(error.code)
+        ? error.code
+        : undefined;
+    // `code` бувають порожні (`undefined`/`null`): рядок «(undefined)» не друкуємо.
+    const code =
+      typeof rawCode === 'string' || typeof rawCode === 'number'
+        ? String(rawCode)
         : undefined;
     log(
       `[start] process.execve не вдався${code ? ` (${code})` : ''}; сервер не запущено.`,

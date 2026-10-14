@@ -112,6 +112,16 @@ describe('runStart', () => {
     expect(out).not.toContain('s3cr3t-Pa55');
   });
 
+  it('execve кинув помилку з порожнім code → у лозі немає «(undefined)»', async () => {
+    const { deps, logs } = setup({
+      execve: vi.fn(() => {
+        throw Object.assign(new Error('boom'), { code: undefined });
+      }),
+    });
+    expect(await runStart(deps)).toBe(1);
+    expect(logs.join('\n')).not.toContain('undefined');
+  });
+
   it('нічого накочувати → окремий рядок у лозі', async () => {
     const { deps, logs } = setup({
       migrate: vi.fn(async () => ({ applied: [] })),

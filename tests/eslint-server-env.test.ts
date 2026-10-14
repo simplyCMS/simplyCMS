@@ -21,6 +21,12 @@ const SERVER_ENV_PATHS = [
   'packages/simplycms/src/storefront-routes/server/root.ts',
   'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
+  'packages/simplycms/src/prod-start/run-start.ts',
+  'packages/simplycms/src/prod-start/start-store.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/run.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/cli.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/env-files.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/main.ts',
 ];
 
 const CLEAN_CONTROL =
