@@ -75,6 +75,12 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   // Накат міграцій (Е8-Р2) — T2 без upward-винятків: `db` (withActor) йому
   // не потрібен, тож ловиться навіть він.
   ['packages/simplycms/src/migrate', 'simplycms/db', 'simplycms/contracts'],
+  // Пошта (Е8, Task 10/12) — T2, upward `env`, `db`, `schema`, `i18n`; `auth`
+  // кличе її, а не навпаки, тож зворотний імпорт ловиться (цикл auth ↔ mail).
+  ['packages/simplycms/src/mail', 'simplycms/auth', 'simplycms/db'],
+  // Кеш профілю й вшиті теми (Е6б-7; Е8 додав upward `i18n`) — T2, upward
+  // `db`, `i18n`; `auth` того ж тіру — поза винятком.
+  ['packages/simplycms/src/site', 'simplycms/auth', 'simplycms/i18n'],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

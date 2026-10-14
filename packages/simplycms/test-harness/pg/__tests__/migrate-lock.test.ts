@@ -78,6 +78,28 @@ describe('applyMigrations: advisory-лок', () => {
     }
   }, 120_000);
 
+  // Журнал читається ПІД локом: перша репліка створює його, друга бачить уже
+  // готовий. Якби перевірка бази йшла до лока, друга побачила б схему без
+  // журналу й відмовила б `UnjournaledDatabaseError` замість докату.
+  it('дві репліки на свіжій БД: обидві успішні, докочує лише одна', async () => {
+    const db = await freshDb(harness.url);
+    try {
+      const options = { connectionString: db.url, dir: CANON_DIR };
+      const results = await Promise.allSettled([
+        applyMigrations(options),
+        applyMigrations(options),
+      ]);
+      expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled']);
+      const applied = results.map((r) =>
+        r.status === 'fulfilled' ? r.value.applied.length : -1,
+      );
+      expect(applied.sort()).toEqual([0, canonNames().length]);
+      expect(await journalOf(db.url)).toHaveLength(canonNames().length);
+    } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
   it('помилка накату відпускає лок: наступний накат іде без очікування', async () => {
     const db = await freshDb(harness.url);
     const copy = canonCopy();

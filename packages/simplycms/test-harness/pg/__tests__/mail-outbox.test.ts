@@ -217,6 +217,29 @@ describe('outbox пошти mail_outbox (Е8-Р10)', () => {
     expect(await rows()).toHaveLength(1);
   });
 
+  // Бронь `requested_at = now()` у claim: доки перший виклик шле лист, другий
+  // не бере той самий хвіст, тож лист не дублюється. Транспорт повільний, а
+  // другий виклик стартує ПІСЛЯ коміту броні першого.
+  it('🔴 два паралельні добори старого хвоста → один send', async () => {
+    await enqueue('dup@x.test');
+    await queryRows(
+      dbUrl,
+      `update public.mail_outbox set requested_at = now() - interval '2 minutes'`,
+    );
+    const slow: MailTransport = {
+      driver: 'log',
+      send: async (m) => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        sent.push(m);
+      },
+    };
+    const first = deliverMail([], slow);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await Promise.all([first, deliverMail([], slow)]);
+    expect(sent.map((m) => m.to)).toEqual(['dup@x.test']);
+    expect(await rows()).toEqual([]);
+  });
+
   it('свіжий хвіст опортуністично НЕ чіпається, retryMail його бере', async () => {
     await enqueue('s@x.test');
     const fresh = await enqueue('t@x.test');
