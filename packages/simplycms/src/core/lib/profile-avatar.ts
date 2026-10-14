@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
+import { CodedError } from 'simplycms/contracts/domain-errors';
 import {
   MAX_AVATAR_BYTES,
   MEDIA_URL_BASE,
@@ -46,10 +47,10 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }): Promise<{ url: string }> => {
     const file = data.get('file');
-    if (!(file instanceof File)) throw new Error(AVATAR_BAD_FORMAT);
+    if (!(file instanceof File)) throw new CodedError(AVATAR_BAD_FORMAT);
 
     const checked = await inspectUpload(file, MAX_AVATAR_BYTES);
-    if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
+    if (!checked.ok) throw new CodedError(REASON_CODE[checked.reason]);
 
     // 🔴 `replaceAvatar` відкриває транзакцію САМА і сама ж прибирає орфана:
     // вікно «файл уже на диску, транзакція ще може впасти» закривається лише
@@ -64,7 +65,7 @@ export const uploadMyAvatar = createServerFn({ method: 'POST' })
     const url = resolveMediaUrl(ref, MEDIA_URL_BASE);
     // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок замість
     // `!` тримає межу чесною — тип звужується доказом, а не обіцянкою.
-    if (url === null) throw new Error(AVATAR_BAD_FORMAT);
+    if (url === null) throw new CodedError(AVATAR_BAD_FORMAT);
     return { url };
   });
 

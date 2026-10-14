@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CodedError } from 'simplycms/contracts/domain-errors';
 import { fieldIssue } from '../validation';
 import { runAdmin } from '../run';
 import {
@@ -62,14 +63,14 @@ export const uploadFormInput = (data: unknown): FormData => {
 
 export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const file = data.get('file');
-  if (!(file instanceof File)) throw new Error('media/no-file');
+  if (!(file instanceof File)) throw new CodedError('media/no-file');
 
   const entityTypeRaw = data.get('entityType');
   if (typeof entityTypeRaw !== 'string') {
-    throw new Error('media/no-entity-type');
+    throw new CodedError('media/no-entity-type');
   }
   const entityType = MEDIA_ENTITY_TYPES.find((t) => t === entityTypeRaw);
-  if (!entityType) throw new Error('media/bad-entity-type');
+  if (!entityType) throw new CodedError('media/bad-entity-type');
 
   // 🔴 Власник обовʼязковий (К3-Е6д-3): рядок `media` без `entity_id` не можна
   // стерти двофазно (умова власника одна для всіх), тож його не створюємо.
@@ -83,7 +84,7 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   else fieldIssue(['entityId'], 'invalid_type');
 
   const checked = await inspectUpload(file, MAX_UPLOAD_BYTES);
-  if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
+  if (!checked.ok) throw new CodedError(REASON_CODE[checked.reason]);
 
   return { bytes: checked.bytes, mime: checked.mime, entityType, entityId };
 }
@@ -129,7 +130,7 @@ export async function uploadMediaOp({
       const url = resolveMediaUrl(record.ref, MEDIA_URL_BASE);
       // Недосяжно: `mediaKey` не породжує порожнього референсу. Кидок
       // замість `!` тримає межу чесною — тип звужується доказом.
-      if (url === null) throw new Error('media/bad-format');
+      if (url === null) throw new CodedError('media/bad-format');
       return { ref: record.ref, url };
     }),
   );

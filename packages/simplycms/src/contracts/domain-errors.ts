@@ -19,6 +19,8 @@ export const DOMAIN_ERROR_NAME = {
   validation: 'ValidationError',
   /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
   notFound: 'AdminNotFoundError',
+  /** Машинний код відмови в `message` (`media/*`, `avatar/*`, `review/*`): клієнт мапить його в i18n. */
+  coded: 'CodedError',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** `error.name` доменної помилки — значення `DOMAIN_ERROR_NAME`. */
@@ -42,7 +44,24 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   [DOMAIN_ERROR_NAME.validation]: [],
   // Достатньо `name`: що саме не знайдено, видно з контексту виклику.
   [DOMAIN_ERROR_NAME.notFound]: [],
+  // Код їде самим `message`; додаткових полів немає.
+  [DOMAIN_ERROR_NAME.coded]: [],
 };
+
+/**
+ * Відмова з машинним кодом (`media/bad-format`, `review/already-submitted`…):
+ * `message` — це КОД, а не текст, і клієнт порівнює його з каталогом i18n.
+ * Звичайний `Error` у проді маскує Р23 (`Internal server error [ref …]`), і
+ * користувач бачив би загальне «не збережено» замість «невірний формат».
+ * Член закритої родини проходить маскування й серіалізацію без зміни коду.
+ * Для діагностики сервера (англійський текст, не код) лишається `Error`.
+ */
+export class CodedError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.coded;
+  constructor(code: string) {
+    super(code);
+  }
+}
 
 /**
  * Види `AdminConflictError.kind` (Е3-7, Е5-9). `state` — порушення доменного

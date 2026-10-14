@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import { CodedError } from 'simplycms/contracts/domain-errors';
 import {
   MAX_REVIEW_IMAGES,
   normalizeMediaRefs,
@@ -49,7 +50,7 @@ export async function updateProductReviewWithImages(
 ): Promise<{ id: string }> {
   const keep = [...new Set(input.keep)];
   if (keep.length + input.files.length > MAX_REVIEW_IMAGES)
-    throw new Error(REVIEW_SUBMIT_ERROR.tooManyImages);
+    throw new CodedError(REVIEW_SUBMIT_ERROR.tooManyImages);
   const discard = await withPublishedRollback(
     (track) =>
       withCustomerDb(userId, async (db, operator) => {
@@ -64,10 +65,10 @@ export async function updateProductReviewWithImages(
             ),
           )
           .for('update');
-        if (!row) throw new Error(REVIEW_SUBMIT_ERROR.notFound);
+        if (!row) throw new CodedError(REVIEW_SUBMIT_ERROR.notFound);
         const current = normalizeMediaRefs(row.images);
         if (!keep.every((ref) => current.includes(ref)))
-          throw new Error(REVIEW_SUBMIT_ERROR.imagesChanged);
+          throw new CodedError(REVIEW_SUBMIT_ERROR.imagesChanged);
         const owner = { entityType: REVIEW_MEDIA_ENTITY, entityId: input.id };
         for (const image of input.files) {
           const meta = { ...image, ...owner, uploadedBy: userId };

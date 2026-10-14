@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import { CodedError } from 'simplycms/contracts/domain-errors';
 import {
   normalizeMediaRefs,
   REVIEW_MEDIA_ENTITY,
@@ -91,7 +92,8 @@ export async function submitReviewWithImages(
             ),
           )
           .limit(1);
-        if (existing) throw new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted);
+        if (existing)
+          throw new CodedError(REVIEW_SUBMIT_ERROR.alreadySubmitted);
         const published: string[] = [];
         for (const image of images) {
           const meta = { ...image, ...owner, uploadedBy: userId };
@@ -102,7 +104,7 @@ export async function submitReviewWithImages(
         const full = { ...input, images: published };
         return insertProductReview(db, userId, full, id).catch((e: unknown) => {
           throw isDuplicateReview(e)
-            ? new Error(REVIEW_SUBMIT_ERROR.alreadySubmitted)
+            ? new CodedError(REVIEW_SUBMIT_ERROR.alreadySubmitted)
             : e;
         });
       }),
