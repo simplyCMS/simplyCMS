@@ -1,0 +1,523 @@
+-- 12_queries.sql — ЗГЕНЕРОВАНО gen_queries.py; шаблони запитів по моделях
+DROP TABLE IF EXISTS bench.q;
+CREATE TABLE bench.q (model text, test text, sql text, PRIMARY KEY (model, test));
+INSERT INTO bench.q VALUES ('A', 'pdp', $q$SELECT json_build_object(
+  'id', p.id, 'name', coalesce(t.name, p.name), 'slug', coalesce(t.slug, p.slug),
+  'short_description', coalesce(t.short_description, p.short_description), 'description', coalesce(t.description, p.description),
+  'meta_title', coalesce(t.meta_title, p.meta_title), 'meta_description', coalesce(t.meta_description, p.meta_description),
+  'images', p.images, 'sku', p.sku, 'stock_status', p.stock_status,
+  'section', (SELECT json_build_object('id', s.id, 'name', coalesce(st.name, s.name), 'slug', coalesce(st.slug, s.slug))
+              FROM a.sections s LEFT JOIN a.section_translations st ON st.section_id = s.id AND st.locale = %1$L WHERE s.id = p.section_id),
+  'modifications', (
+    SELECT json_agg(json_build_object('id', mo.id, 'slug', mo.slug, 'name', coalesce(mt.name, mo.name), 'price', pp.price,
+             'old_price', pp.old_price, 'stock_status', mo.stock_status,
+             'props', (SELECT json_agg(json_build_object('property', coalesce(spt.name, sp.name), 'value', coalesce(ot.name, o.name)) ORDER BY sp.sort_order)
+                       FROM core.modification_property_values v JOIN a.section_properties sp ON sp.id = v.property_id
+                       LEFT JOIN a.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+                       LEFT JOIN a.property_options o ON o.id = v.option_id
+                       LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+                       WHERE v.modification_id = mo.id)) ORDER BY mo.sort_order)
+    FROM a.product_modifications mo
+    LEFT JOIN a.product_modification_translations mt ON mt.modification_id = mo.id AND mt.locale = %1$L
+    LEFT JOIN core.product_prices pp ON pp.modification_id = mo.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001'
+    WHERE mo.product_id = p.id),
+  'properties', (
+    SELECT json_agg(json_build_object('property', coalesce(spt.name, sp.name), 'property_slug', coalesce(spt.slug, sp.slug),
+             'value', coalesce(coalesce(ot.name, o.name), v.value, v.numeric_value::text), 'option_slug', coalesce(ot.slug, o.slug)) ORDER BY sp.sort_order)
+    FROM core.product_property_values v JOIN a.section_properties sp ON sp.id = v.property_id
+    LEFT JOIN a.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+    LEFT JOIN a.property_options o ON o.id = v.option_id
+    LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+    WHERE v.product_id = p.id))
+FROM a.products p
+LEFT JOIN a.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.is_active AND p.id = (SELECT id FROM (
+      SELECT product_id AS id FROM a.product_translations WHERE locale = %1$L AND slug = %2$L
+      UNION ALL
+      SELECT p2.id FROM a.products p2 WHERE p2.slug = %2$L
+        AND NOT EXISTS (SELECT 1 FROM a.product_translations t2 WHERE t2.product_id = p2.id AND t2.locale = %1$L AND t2.slug IS NOT NULL)
+    ) s LIMIT 1)$q$);
+INSERT INTO bench.q VALUES ('B', 'pdp', $q$SELECT json_build_object(
+  'id', p.id, 'name', coalesce(t.name, td.name), 'slug', coalesce(t.slug, td.slug),
+  'short_description', coalesce(t.short_description, td.short_description), 'description', coalesce(t.description, td.description),
+  'meta_title', coalesce(t.meta_title, td.meta_title), 'meta_description', coalesce(t.meta_description, td.meta_description),
+  'images', p.images, 'sku', p.sku, 'stock_status', p.stock_status,
+  'section', (SELECT json_build_object('id', s.id, 'name', coalesce(st.name, std.name), 'slug', coalesce(st.slug, std.slug))
+              FROM b.sections s JOIN b.section_translations std ON std.section_id = s.id AND std.locale = 'uk' LEFT JOIN b.section_translations st ON st.section_id = s.id AND st.locale = %1$L WHERE s.id = p.section_id),
+  'modifications', (
+    SELECT json_agg(json_build_object('id', mo.id, 'slug', mo.slug, 'name', coalesce(mt.name, mtd.name), 'price', pp.price,
+             'old_price', pp.old_price, 'stock_status', mo.stock_status,
+             'props', (SELECT json_agg(json_build_object('property', coalesce(spt.name, sptd.name), 'value', coalesce(ot.name, otd.name)) ORDER BY sp.sort_order)
+                       FROM core.modification_property_values v JOIN b.section_properties sp ON sp.id = v.property_id
+                       JOIN b.section_property_translations sptd ON sptd.property_id = sp.id AND sptd.locale = 'uk' LEFT JOIN b.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+                       LEFT JOIN b.property_options o ON o.id = v.option_id
+                       LEFT JOIN b.property_option_translations otd ON otd.option_id = o.id AND otd.locale = 'uk' LEFT JOIN b.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+                       WHERE v.modification_id = mo.id)) ORDER BY mo.sort_order)
+    FROM b.product_modifications mo
+    JOIN b.product_modification_translations mtd ON mtd.modification_id = mo.id AND mtd.locale = 'uk' LEFT JOIN b.product_modification_translations mt ON mt.modification_id = mo.id AND mt.locale = %1$L
+    LEFT JOIN core.product_prices pp ON pp.modification_id = mo.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001'
+    WHERE mo.product_id = p.id),
+  'properties', (
+    SELECT json_agg(json_build_object('property', coalesce(spt.name, sptd.name), 'property_slug', coalesce(spt.slug, sptd.slug),
+             'value', coalesce(coalesce(ot.name, otd.name), v.value, v.numeric_value::text), 'option_slug', coalesce(ot.slug, otd.slug)) ORDER BY sp.sort_order)
+    FROM core.product_property_values v JOIN b.section_properties sp ON sp.id = v.property_id
+    JOIN b.section_property_translations sptd ON sptd.property_id = sp.id AND sptd.locale = 'uk' LEFT JOIN b.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+    LEFT JOIN b.property_options o ON o.id = v.option_id
+    LEFT JOIN b.property_option_translations otd ON otd.option_id = o.id AND otd.locale = 'uk' LEFT JOIN b.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+    WHERE v.product_id = p.id))
+FROM b.products p
+JOIN b.product_translations td ON td.product_id = p.id AND td.locale = 'uk' LEFT JOIN b.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.is_active AND p.id = (SELECT id FROM (
+      SELECT product_id AS id FROM b.product_translations WHERE locale = %1$L AND slug = %2$L
+      UNION ALL
+      SELECT t1.product_id FROM b.product_translations t1 WHERE t1.locale = 'uk' AND t1.slug = %2$L
+        AND NOT EXISTS (SELECT 1 FROM b.product_translations t2 WHERE t2.product_id = t1.product_id AND t2.locale = %1$L AND t2.slug IS NOT NULL)
+    ) s LIMIT 1)$q$);
+INSERT INTO bench.q VALUES ('D', 'pdp', $q$SELECT json_build_object(
+  'id', p.id, 'name', coalesce(p.name->>%1$L, p.name->>'uk'), 'slug', coalesce(p.slug->>%1$L, p.slug->>'uk'),
+  'short_description', coalesce(p.short_description->>%1$L, p.short_description->>'uk'), 'description', coalesce(p.description->>%1$L, p.description->>'uk'),
+  'meta_title', coalesce(p.meta_title->>%1$L, p.meta_title->>'uk'), 'meta_description', coalesce(p.meta_description->>%1$L, p.meta_description->>'uk'),
+  'images', p.images, 'sku', p.sku, 'stock_status', p.stock_status,
+  'section', (SELECT json_build_object('id', s.id, 'name', coalesce(s.name->>%1$L, s.name->>'uk'), 'slug', coalesce(s.slug->>%1$L, s.slug->>'uk'))
+              FROM d.sections s  WHERE s.id = p.section_id),
+  'modifications', (
+    SELECT json_agg(json_build_object('id', mo.id, 'slug', mo.slug, 'name', coalesce(mo.name->>%1$L, mo.name->>'uk'), 'price', pp.price,
+             'old_price', pp.old_price, 'stock_status', mo.stock_status,
+             'props', (SELECT json_agg(json_build_object('property', coalesce(sp.name->>%1$L, sp.name->>'uk'), 'value', coalesce(o.name->>%1$L, o.name->>'uk')) ORDER BY sp.sort_order)
+                       FROM core.modification_property_values v JOIN d.section_properties sp ON sp.id = v.property_id
+                       
+                       LEFT JOIN d.property_options o ON o.id = v.option_id
+                       
+                       WHERE v.modification_id = mo.id)) ORDER BY mo.sort_order)
+    FROM d.product_modifications mo
+    
+    LEFT JOIN core.product_prices pp ON pp.modification_id = mo.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001'
+    WHERE mo.product_id = p.id),
+  'properties', (
+    SELECT json_agg(json_build_object('property', coalesce(sp.name->>%1$L, sp.name->>'uk'), 'property_slug', coalesce(sp.slug->>%1$L, sp.slug->>'uk'),
+             'value', coalesce(coalesce(o.name->>%1$L, o.name->>'uk'), v.value, v.numeric_value::text), 'option_slug', coalesce(o.slug->>%1$L, o.slug->>'uk')) ORDER BY sp.sort_order)
+    FROM core.product_property_values v JOIN d.section_properties sp ON sp.id = v.property_id
+    
+    LEFT JOIN d.property_options o ON o.id = v.option_id
+    
+    WHERE v.product_id = p.id))
+FROM d.products p
+
+WHERE p.is_active AND p.id = (SELECT id FROM (
+      SELECT p2.id FROM d.products p2 WHERE (p2.slug->>%1$L) = %2$L AND p2.slug ? %1$L
+      UNION ALL
+      SELECT p2.id FROM d.products p2 WHERE (p2.slug->>'uk') = %2$L AND NOT p2.slug ? %1$L
+    ) s LIMIT 1)$q$);
+INSERT INTO bench.q VALUES ('D-gin', 'pdp', $q$SELECT json_build_object(
+  'id', p.id, 'name', coalesce(p.name->>%1$L, p.name->>'uk'), 'slug', coalesce(p.slug->>%1$L, p.slug->>'uk'),
+  'short_description', coalesce(p.short_description->>%1$L, p.short_description->>'uk'), 'description', coalesce(p.description->>%1$L, p.description->>'uk'),
+  'meta_title', coalesce(p.meta_title->>%1$L, p.meta_title->>'uk'), 'meta_description', coalesce(p.meta_description->>%1$L, p.meta_description->>'uk'),
+  'images', p.images, 'sku', p.sku, 'stock_status', p.stock_status,
+  'section', (SELECT json_build_object('id', s.id, 'name', coalesce(s.name->>%1$L, s.name->>'uk'), 'slug', coalesce(s.slug->>%1$L, s.slug->>'uk'))
+              FROM d.sections s  WHERE s.id = p.section_id),
+  'modifications', (
+    SELECT json_agg(json_build_object('id', mo.id, 'slug', mo.slug, 'name', coalesce(mo.name->>%1$L, mo.name->>'uk'), 'price', pp.price,
+             'old_price', pp.old_price, 'stock_status', mo.stock_status,
+             'props', (SELECT json_agg(json_build_object('property', coalesce(sp.name->>%1$L, sp.name->>'uk'), 'value', coalesce(o.name->>%1$L, o.name->>'uk')) ORDER BY sp.sort_order)
+                       FROM core.modification_property_values v JOIN d.section_properties sp ON sp.id = v.property_id
+                       
+                       LEFT JOIN d.property_options o ON o.id = v.option_id
+                       
+                       WHERE v.modification_id = mo.id)) ORDER BY mo.sort_order)
+    FROM d.product_modifications mo
+    
+    LEFT JOIN core.product_prices pp ON pp.modification_id = mo.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001'
+    WHERE mo.product_id = p.id),
+  'properties', (
+    SELECT json_agg(json_build_object('property', coalesce(sp.name->>%1$L, sp.name->>'uk'), 'property_slug', coalesce(sp.slug->>%1$L, sp.slug->>'uk'),
+             'value', coalesce(coalesce(o.name->>%1$L, o.name->>'uk'), v.value, v.numeric_value::text), 'option_slug', coalesce(o.slug->>%1$L, o.slug->>'uk')) ORDER BY sp.sort_order)
+    FROM core.product_property_values v JOIN d.section_properties sp ON sp.id = v.property_id
+    
+    LEFT JOIN d.property_options o ON o.id = v.option_id
+    
+    WHERE v.product_id = p.id))
+FROM d.products p
+
+WHERE p.is_active AND p.id = (SELECT id FROM (
+      SELECT p2.id FROM d.products p2 WHERE p2.slug @> jsonb_build_object(%1$L, %2$L)
+      UNION ALL
+      SELECT p2.id FROM d.products p2 WHERE p2.slug @> jsonb_build_object('uk', %2$L) AND NOT p2.slug ? %1$L
+    ) s LIMIT 1)$q$);
+INSERT INTO bench.q VALUES ('A+slugreg', 'pdp', $q$SELECT json_build_object(
+  'id', p.id, 'name', coalesce(t.name, p.name), 'slug', coalesce(t.slug, p.slug),
+  'short_description', coalesce(t.short_description, p.short_description), 'description', coalesce(t.description, p.description),
+  'meta_title', coalesce(t.meta_title, p.meta_title), 'meta_description', coalesce(t.meta_description, p.meta_description),
+  'images', p.images, 'sku', p.sku, 'stock_status', p.stock_status,
+  'section', (SELECT json_build_object('id', s.id, 'name', coalesce(st.name, s.name), 'slug', coalesce(st.slug, s.slug))
+              FROM a.sections s LEFT JOIN a.section_translations st ON st.section_id = s.id AND st.locale = %1$L WHERE s.id = p.section_id),
+  'modifications', (
+    SELECT json_agg(json_build_object('id', mo.id, 'slug', mo.slug, 'name', coalesce(mt.name, mo.name), 'price', pp.price,
+             'old_price', pp.old_price, 'stock_status', mo.stock_status,
+             'props', (SELECT json_agg(json_build_object('property', coalesce(spt.name, sp.name), 'value', coalesce(ot.name, o.name)) ORDER BY sp.sort_order)
+                       FROM core.modification_property_values v JOIN a.section_properties sp ON sp.id = v.property_id
+                       LEFT JOIN a.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+                       LEFT JOIN a.property_options o ON o.id = v.option_id
+                       LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+                       WHERE v.modification_id = mo.id)) ORDER BY mo.sort_order)
+    FROM a.product_modifications mo
+    LEFT JOIN a.product_modification_translations mt ON mt.modification_id = mo.id AND mt.locale = %1$L
+    LEFT JOIN core.product_prices pp ON pp.modification_id = mo.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001'
+    WHERE mo.product_id = p.id),
+  'properties', (
+    SELECT json_agg(json_build_object('property', coalesce(spt.name, sp.name), 'property_slug', coalesce(spt.slug, sp.slug),
+             'value', coalesce(coalesce(ot.name, o.name), v.value, v.numeric_value::text), 'option_slug', coalesce(ot.slug, o.slug)) ORDER BY sp.sort_order)
+    FROM core.product_property_values v JOIN a.section_properties sp ON sp.id = v.property_id
+    LEFT JOIN a.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+    LEFT JOIN a.property_options o ON o.id = v.option_id
+    LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+    WHERE v.product_id = p.id))
+FROM a.products p
+LEFT JOIN a.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.is_active AND p.id = (SELECT product_id FROM r2.cat_text WHERE locale = %1$L AND slug = %2$L)$q$);
+INSERT INTO bench.q VALUES ('A', 'list_price', $q$SELECT x.id, coalesce(t.name, p.name) AS name, coalesce(t.slug, p.slug) AS slug, p.images->>0 AS image, x.price_min
+FROM (
+  SELECT p.id, pr.price_min FROM a.products p
+  CROSS JOIN LATERAL (SELECT min(pp.price) AS price_min FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') pr
+  WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+  ORDER BY pr.price_min, p.id LIMIT 24) x
+JOIN a.products p ON p.id = x.id
+LEFT JOIN a.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+ORDER BY x.price_min, x.id$q$);
+INSERT INTO bench.q VALUES ('A', 'list_name', $q$SELECT p.id, coalesce(t.name, p.name) AS name, coalesce(t.slug, p.slug) AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM a.products p
+LEFT JOIN a.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM a.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+ORDER BY coalesce(t.name, p.name), p.id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('A', 'facets', $q$WITH base AS (SELECT p.id FROM a.products p WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active),
+po AS (
+  SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN base ON base.id = v.product_id WHERE v.option_id IS NOT NULL
+  UNION
+  SELECT mo.product_id, v.property_id, v.option_id FROM base JOIN a.product_modifications mo ON mo.product_id = base.id
+  JOIN core.modification_property_values v ON v.modification_id = mo.id),
+fm AS (SELECT product_id,
+         (%3$L::uuid[] IS NULL OR bool_or(option_id = ANY(%3$L::uuid[]))) AS m1,
+         (%4$L::uuid[] IS NULL OR bool_or(option_id = ANY(%4$L::uuid[]))) AS m2,
+         (%5$L::uuid[] IS NULL OR bool_or(option_id = ANY(%5$L::uuid[]))) AS m3
+       FROM po GROUP BY product_id),
+cnt AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN fm USING (product_id)
+        WHERE po.property_id = ANY(%9$L::uuid[])
+          AND (fm.m1 OR po.property_id = %6$L::uuid) AND (fm.m2 OR po.property_id = %7$L::uuid) AND (fm.m3 OR po.property_id = %8$L::uuid)
+        GROUP BY 1, 2)
+SELECT cnt.property_id, coalesce(spt.name, sp.name) AS property, cnt.option_id, coalesce(ot.name, o.name) AS option,
+       coalesce(ot.slug, o.slug) AS option_slug, cnt.n, (SELECT count(*) FROM fm WHERE m1 AND m2 AND m3) AS total
+FROM cnt JOIN a.section_properties sp ON sp.id = cnt.property_id
+LEFT JOIN a.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+JOIN a.property_options o ON o.id = cnt.option_id
+LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+ORDER BY sp.sort_order, o.sort_order$q$);
+INSERT INTO bench.q VALUES ('B', 'list_price', $q$SELECT x.id, coalesce(t.name, td.name) AS name, coalesce(t.slug, td.slug) AS slug, p.images->>0 AS image, x.price_min
+FROM (
+  SELECT p.id, pr.price_min FROM b.products p
+  CROSS JOIN LATERAL (SELECT min(pp.price) AS price_min FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') pr
+  WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+  ORDER BY pr.price_min, p.id LIMIT 24) x
+JOIN b.products p ON p.id = x.id
+JOIN b.product_translations td ON td.product_id = p.id AND td.locale = 'uk' LEFT JOIN b.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+ORDER BY x.price_min, x.id$q$);
+INSERT INTO bench.q VALUES ('B', 'list_name', $q$SELECT p.id, coalesce(t.name, td.name) AS name, coalesce(t.slug, td.slug) AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM b.products p
+JOIN b.product_translations td ON td.product_id = p.id AND td.locale = 'uk' LEFT JOIN b.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM b.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+ORDER BY coalesce(t.name, td.name), p.id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('B', 'facets', $q$WITH base AS (SELECT p.id FROM b.products p WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active),
+po AS (
+  SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN base ON base.id = v.product_id WHERE v.option_id IS NOT NULL
+  UNION
+  SELECT mo.product_id, v.property_id, v.option_id FROM base JOIN b.product_modifications mo ON mo.product_id = base.id
+  JOIN core.modification_property_values v ON v.modification_id = mo.id),
+fm AS (SELECT product_id,
+         (%3$L::uuid[] IS NULL OR bool_or(option_id = ANY(%3$L::uuid[]))) AS m1,
+         (%4$L::uuid[] IS NULL OR bool_or(option_id = ANY(%4$L::uuid[]))) AS m2,
+         (%5$L::uuid[] IS NULL OR bool_or(option_id = ANY(%5$L::uuid[]))) AS m3
+       FROM po GROUP BY product_id),
+cnt AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN fm USING (product_id)
+        WHERE po.property_id = ANY(%9$L::uuid[])
+          AND (fm.m1 OR po.property_id = %6$L::uuid) AND (fm.m2 OR po.property_id = %7$L::uuid) AND (fm.m3 OR po.property_id = %8$L::uuid)
+        GROUP BY 1, 2)
+SELECT cnt.property_id, coalesce(spt.name, sptd.name) AS property, cnt.option_id, coalesce(ot.name, otd.name) AS option,
+       coalesce(ot.slug, otd.slug) AS option_slug, cnt.n, (SELECT count(*) FROM fm WHERE m1 AND m2 AND m3) AS total
+FROM cnt JOIN b.section_properties sp ON sp.id = cnt.property_id
+JOIN b.section_property_translations sptd ON sptd.property_id = sp.id AND sptd.locale = 'uk' LEFT JOIN b.section_property_translations spt ON spt.property_id = sp.id AND spt.locale = %1$L
+JOIN b.property_options o ON o.id = cnt.option_id
+JOIN b.property_option_translations otd ON otd.option_id = o.id AND otd.locale = 'uk' LEFT JOIN b.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+ORDER BY sp.sort_order, o.sort_order$q$);
+INSERT INTO bench.q VALUES ('D', 'list_price', $q$SELECT x.id, coalesce(p.name->>%1$L, p.name->>'uk') AS name, coalesce(p.slug->>%1$L, p.slug->>'uk') AS slug, p.images->>0 AS image, x.price_min
+FROM (
+  SELECT p.id, pr.price_min FROM d.products p
+  CROSS JOIN LATERAL (SELECT min(pp.price) AS price_min FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') pr
+  WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+  ORDER BY pr.price_min, p.id LIMIT 24) x
+JOIN d.products p ON p.id = x.id
+
+ORDER BY x.price_min, x.id$q$);
+INSERT INTO bench.q VALUES ('D', 'list_name', $q$SELECT p.id, coalesce(p.name->>%1$L, p.name->>'uk') AS name, coalesce(p.slug->>%1$L, p.slug->>'uk') AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM d.products p
+
+WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active
+    AND (%3$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%3$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%3$L::uuid[])))
+    AND (%4$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%4$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%4$L::uuid[])))
+    AND (%5$L::uuid[] IS NULL
+      OR EXISTS (SELECT 1 FROM core.product_property_values v WHERE v.product_id = p.id AND v.option_id = ANY(%5$L::uuid[]))
+      OR EXISTS (SELECT 1 FROM d.product_modifications m JOIN core.modification_property_values v ON v.modification_id = m.id
+                 WHERE m.product_id = p.id AND v.option_id = ANY(%5$L::uuid[])))
+ORDER BY coalesce(p.name->>%1$L, p.name->>'uk'), p.id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('D', 'facets', $q$WITH base AS (SELECT p.id FROM d.products p WHERE p.section_id = ANY(%2$L::uuid[]) AND p.is_active),
+po AS (
+  SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN base ON base.id = v.product_id WHERE v.option_id IS NOT NULL
+  UNION
+  SELECT mo.product_id, v.property_id, v.option_id FROM base JOIN d.product_modifications mo ON mo.product_id = base.id
+  JOIN core.modification_property_values v ON v.modification_id = mo.id),
+fm AS (SELECT product_id,
+         (%3$L::uuid[] IS NULL OR bool_or(option_id = ANY(%3$L::uuid[]))) AS m1,
+         (%4$L::uuid[] IS NULL OR bool_or(option_id = ANY(%4$L::uuid[]))) AS m2,
+         (%5$L::uuid[] IS NULL OR bool_or(option_id = ANY(%5$L::uuid[]))) AS m3
+       FROM po GROUP BY product_id),
+cnt AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN fm USING (product_id)
+        WHERE po.property_id = ANY(%9$L::uuid[])
+          AND (fm.m1 OR po.property_id = %6$L::uuid) AND (fm.m2 OR po.property_id = %7$L::uuid) AND (fm.m3 OR po.property_id = %8$L::uuid)
+        GROUP BY 1, 2)
+SELECT cnt.property_id, coalesce(sp.name->>%1$L, sp.name->>'uk') AS property, cnt.option_id, coalesce(o.name->>%1$L, o.name->>'uk') AS option,
+       coalesce(o.slug->>%1$L, o.slug->>'uk') AS option_slug, cnt.n, (SELECT count(*) FROM fm WHERE m1 AND m2 AND m3) AS total
+FROM cnt JOIN d.section_properties sp ON sp.id = cnt.property_id
+
+JOIN d.property_options o ON o.id = cnt.option_id
+
+ORDER BY sp.sort_order, o.sort_order$q$);
+INSERT INTO bench.q VALUES ('R', 'list_price', $q$SELECT ce.product_id, ce.name, ce.slug, ce.image, ce.price_min FROM r.catalog_entries ce
+WHERE ce.locale = %1$L AND ce.is_active AND ce.section_id = ANY(%2$L::uuid[])
+    AND (%3$L::uuid[] IS NULL OR ce.option_ids && %3$L::uuid[])
+    AND (%4$L::uuid[] IS NULL OR ce.option_ids && %4$L::uuid[])
+    AND (%5$L::uuid[] IS NULL OR ce.option_ids && %5$L::uuid[])
+ORDER BY ce.price_min, ce.product_id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('R', 'list_name', $q$SELECT ce.product_id, ce.name, ce.slug, ce.image, ce.price_min FROM r.catalog_entries ce
+WHERE ce.locale = %1$L AND ce.is_active AND ce.section_id = ANY(%2$L::uuid[])
+    AND (%3$L::uuid[] IS NULL OR ce.option_ids && %3$L::uuid[])
+    AND (%4$L::uuid[] IS NULL OR ce.option_ids && %4$L::uuid[])
+    AND (%5$L::uuid[] IS NULL OR ce.option_ids && %5$L::uuid[])
+ORDER BY ce.name, ce.product_id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('R2', 'list_price', $q$SELECT x.product_id, t.name, t.slug, x.image, x.price_min FROM (
+  SELECT f.product_id, f.image, f.price_min FROM r2.cat_facts f
+  WHERE f.is_active AND f.section_id = ANY(%2$L::uuid[])
+    AND (%3$L::uuid[] IS NULL OR f.option_ids && %3$L::uuid[])
+    AND (%4$L::uuid[] IS NULL OR f.option_ids && %4$L::uuid[])
+    AND (%5$L::uuid[] IS NULL OR f.option_ids && %5$L::uuid[])
+  ORDER BY f.price_min, f.product_id LIMIT 24) x
+JOIN r2.cat_text t ON t.product_id = x.product_id AND t.locale = %1$L
+ORDER BY x.price_min, x.product_id$q$);
+INSERT INTO bench.q VALUES ('R2', 'list_name', $q$SELECT f.product_id, t.name, t.slug, f.image, f.price_min FROM r2.cat_facts f
+JOIN r2.cat_text t ON t.product_id = f.product_id AND t.locale = %1$L
+WHERE f.is_active AND f.section_id = ANY(%2$L::uuid[])
+    AND (%3$L::uuid[] IS NULL OR f.option_ids && %3$L::uuid[])
+    AND (%4$L::uuid[] IS NULL OR f.option_ids && %4$L::uuid[])
+    AND (%5$L::uuid[] IS NULL OR f.option_ids && %5$L::uuid[])
+ORDER BY t.name, f.product_id LIMIT 24$q$);
+INSERT INTO bench.q VALUES ('R', 'facets', $q$WITH base AS (SELECT ce.product_id, ce.option_ids FROM r.catalog_entries ce WHERE ce.locale = %1$L AND ce.is_active AND ce.section_id = ANY(%2$L::uuid[])),
+fm AS (SELECT product_id, option_ids,
+         (%3$L::uuid[] IS NULL OR option_ids && %3$L::uuid[]) AS m1,
+         (%4$L::uuid[] IS NULL OR option_ids && %4$L::uuid[]) AS m2,
+         (%5$L::uuid[] IS NULL OR option_ids && %5$L::uuid[]) AS m3 FROM base),
+-- спершу агрегуємо за (опція, маски фільтрів), і лише потім — мітки/властивості:
+-- так пошук у r.facet_labels робиться на кожну РІЗНУ опцію, а не на кожен елемент масиву
+c AS (SELECT x.option_id, fm.m1, fm.m2, fm.m3, count(*) AS n
+      FROM fm CROSS JOIN LATERAL unnest(fm.option_ids) AS x(option_id) GROUP BY 1, 2, 3, 4),
+cnt AS (SELECT fl.property_id, c.option_id, sum(c.n) AS n
+        FROM c JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = c.option_id
+        WHERE fl.property_id = ANY(%9$L::uuid[])
+          AND (c.m1 OR fl.property_id = %6$L::uuid) AND (c.m2 OR fl.property_id = %7$L::uuid) AND (c.m3 OR fl.property_id = %8$L::uuid)
+        GROUP BY 1, 2)
+SELECT cnt.property_id, fl.property_name, cnt.option_id, fl.option_name, fl.option_slug, cnt.n,
+       (SELECT count(*) FROM fm WHERE m1 AND m2 AND m3) AS total
+FROM cnt JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = cnt.option_id
+ORDER BY fl.property_sort, fl.option_sort$q$);
+INSERT INTO bench.q VALUES ('R2', 'facets', $q$WITH base AS (SELECT f.product_id, f.option_ids FROM r2.cat_facts f WHERE f.is_active AND f.section_id = ANY(%2$L::uuid[])),
+fm AS (SELECT product_id, option_ids,
+         (%3$L::uuid[] IS NULL OR option_ids && %3$L::uuid[]) AS m1,
+         (%4$L::uuid[] IS NULL OR option_ids && %4$L::uuid[]) AS m2,
+         (%5$L::uuid[] IS NULL OR option_ids && %5$L::uuid[]) AS m3 FROM base),
+-- спершу агрегуємо за (опція, маски фільтрів), і лише потім — мітки/властивості:
+-- так пошук у r.facet_labels робиться на кожну РІЗНУ опцію, а не на кожен елемент масиву
+c AS (SELECT x.option_id, fm.m1, fm.m2, fm.m3, count(*) AS n
+      FROM fm CROSS JOIN LATERAL unnest(fm.option_ids) AS x(option_id) GROUP BY 1, 2, 3, 4),
+cnt AS (SELECT fl.property_id, c.option_id, sum(c.n) AS n
+        FROM c JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = c.option_id
+        WHERE fl.property_id = ANY(%9$L::uuid[])
+          AND (c.m1 OR fl.property_id = %6$L::uuid) AND (c.m2 OR fl.property_id = %7$L::uuid) AND (c.m3 OR fl.property_id = %8$L::uuid)
+        GROUP BY 1, 2)
+SELECT cnt.property_id, fl.property_name, cnt.option_id, fl.option_name, fl.option_slug, cnt.n,
+       (SELECT count(*) FROM fm WHERE m1 AND m2 AND m3) AS total
+FROM cnt JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = cnt.option_id
+ORDER BY fl.property_sort, fl.option_sort$q$);
+INSERT INTO bench.q VALUES ('A', 'search', $q$WITH q AS (SELECT to_tsquery('simple', %2$L) AS tq),
+cand AS (SELECT s.entity_id AS id, s.tsv FROM core.search_documents s, q WHERE s.locale = %1$L AND s.entity_type = 'product' AND s.tsv @@ q.tq LIMIT 1000),
+fts AS (SELECT cand.id, row_number() OVER (ORDER BY ts_rank_cd(cand.tsv, q.tq) DESC, cand.id) AS rnk FROM cand, q),
+trg AS (SELECT z.id, row_number() OVER (ORDER BY z.d, z.id) AS rnk FROM (
+          SELECT s.entity_id AS id, %3$L <<-> s.title_norm AS d FROM core.search_documents s
+          WHERE s.locale = %1$L AND s.entity_type = 'product' AND %3$L <%% s.title_norm ORDER BY d LIMIT 100) z),
+fused AS (SELECT u.id, sum(1.0 / (60 + u.rnk)) AS score FROM (SELECT * FROM fts UNION ALL SELECT * FROM trg) u GROUP BY u.id),
+hits AS (SELECT f.id AS product_id, f.score FROM fused f JOIN a.products p ON p.id = f.id AND p.is_active),
+po AS (SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN hits ON hits.product_id = v.product_id WHERE v.option_id IS NOT NULL
+        UNION SELECT mo.product_id, v.property_id, v.option_id FROM hits JOIN a.product_modifications mo ON mo.product_id = hits.product_id
+        JOIN core.modification_property_values v ON v.modification_id = mo.id),
+facets AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN a.section_properties sp ON sp.id = po.property_id AND sp.is_filterable GROUP BY 1, 2)
+SELECT 'hit' AS kind, h.product_id AS id, NULL::text AS label, h.score AS v FROM (SELECT * FROM hits ORDER BY score DESC, product_id LIMIT 24) h
+UNION ALL SELECT 'facet', f.option_id, coalesce(ot.name, o.name), f.n FROM facets f JOIN a.property_options o ON o.id = f.option_id
+  LEFT JOIN a.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+UNION ALL SELECT 'total', NULL, NULL, count(*) FROM hits$q$);
+INSERT INTO bench.q VALUES ('A', 'hydrate', $q$SELECT p.id, coalesce(t.name, p.name) AS name, coalesce(t.slug, p.slug) AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM a.products p LEFT JOIN a.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.id = ANY(%2$L::uuid[])$q$);
+INSERT INTO bench.q VALUES ('B', 'search', $q$WITH q AS (SELECT to_tsquery('simple', %2$L) AS tq),
+cand AS (SELECT s.entity_id AS id, s.tsv FROM core.search_documents s, q WHERE s.locale = %1$L AND s.entity_type = 'product' AND s.tsv @@ q.tq LIMIT 1000),
+fts AS (SELECT cand.id, row_number() OVER (ORDER BY ts_rank_cd(cand.tsv, q.tq) DESC, cand.id) AS rnk FROM cand, q),
+trg AS (SELECT z.id, row_number() OVER (ORDER BY z.d, z.id) AS rnk FROM (
+          SELECT s.entity_id AS id, %3$L <<-> s.title_norm AS d FROM core.search_documents s
+          WHERE s.locale = %1$L AND s.entity_type = 'product' AND %3$L <%% s.title_norm ORDER BY d LIMIT 100) z),
+fused AS (SELECT u.id, sum(1.0 / (60 + u.rnk)) AS score FROM (SELECT * FROM fts UNION ALL SELECT * FROM trg) u GROUP BY u.id),
+hits AS (SELECT f.id AS product_id, f.score FROM fused f JOIN b.products p ON p.id = f.id AND p.is_active),
+po AS (SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN hits ON hits.product_id = v.product_id WHERE v.option_id IS NOT NULL
+        UNION SELECT mo.product_id, v.property_id, v.option_id FROM hits JOIN b.product_modifications mo ON mo.product_id = hits.product_id
+        JOIN core.modification_property_values v ON v.modification_id = mo.id),
+facets AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN b.section_properties sp ON sp.id = po.property_id AND sp.is_filterable GROUP BY 1, 2)
+SELECT 'hit' AS kind, h.product_id AS id, NULL::text AS label, h.score AS v FROM (SELECT * FROM hits ORDER BY score DESC, product_id LIMIT 24) h
+UNION ALL SELECT 'facet', f.option_id, coalesce(ot.name, otd.name), f.n FROM facets f JOIN b.property_options o ON o.id = f.option_id
+  JOIN b.property_option_translations otd ON otd.option_id = o.id AND otd.locale = 'uk' LEFT JOIN b.property_option_translations ot ON ot.option_id = o.id AND ot.locale = %1$L
+UNION ALL SELECT 'total', NULL, NULL, count(*) FROM hits$q$);
+INSERT INTO bench.q VALUES ('B', 'hydrate', $q$SELECT p.id, coalesce(t.name, td.name) AS name, coalesce(t.slug, td.slug) AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM b.products p JOIN b.product_translations td ON td.product_id = p.id AND td.locale = 'uk' LEFT JOIN b.product_translations t ON t.product_id = p.id AND t.locale = %1$L
+WHERE p.id = ANY(%2$L::uuid[])$q$);
+INSERT INTO bench.q VALUES ('D', 'search', $q$WITH q AS (SELECT to_tsquery('simple', %2$L) AS tq),
+cand AS (SELECT s.entity_id AS id, s.tsv FROM core.search_documents s, q WHERE s.locale = %1$L AND s.entity_type = 'product' AND s.tsv @@ q.tq LIMIT 1000),
+fts AS (SELECT cand.id, row_number() OVER (ORDER BY ts_rank_cd(cand.tsv, q.tq) DESC, cand.id) AS rnk FROM cand, q),
+trg AS (SELECT z.id, row_number() OVER (ORDER BY z.d, z.id) AS rnk FROM (
+          SELECT s.entity_id AS id, %3$L <<-> s.title_norm AS d FROM core.search_documents s
+          WHERE s.locale = %1$L AND s.entity_type = 'product' AND %3$L <%% s.title_norm ORDER BY d LIMIT 100) z),
+fused AS (SELECT u.id, sum(1.0 / (60 + u.rnk)) AS score FROM (SELECT * FROM fts UNION ALL SELECT * FROM trg) u GROUP BY u.id),
+hits AS (SELECT f.id AS product_id, f.score FROM fused f JOIN d.products p ON p.id = f.id AND p.is_active),
+po AS (SELECT v.product_id, v.property_id, v.option_id FROM core.product_property_values v JOIN hits ON hits.product_id = v.product_id WHERE v.option_id IS NOT NULL
+        UNION SELECT mo.product_id, v.property_id, v.option_id FROM hits JOIN d.product_modifications mo ON mo.product_id = hits.product_id
+        JOIN core.modification_property_values v ON v.modification_id = mo.id),
+facets AS (SELECT po.property_id, po.option_id, count(*) AS n FROM po JOIN d.section_properties sp ON sp.id = po.property_id AND sp.is_filterable GROUP BY 1, 2)
+SELECT 'hit' AS kind, h.product_id AS id, NULL::text AS label, h.score AS v FROM (SELECT * FROM hits ORDER BY score DESC, product_id LIMIT 24) h
+UNION ALL SELECT 'facet', f.option_id, coalesce(o.name->>%1$L, o.name->>'uk'), f.n FROM facets f JOIN d.property_options o ON o.id = f.option_id
+  
+UNION ALL SELECT 'total', NULL, NULL, count(*) FROM hits$q$);
+INSERT INTO bench.q VALUES ('D', 'hydrate', $q$SELECT p.id, coalesce(p.name->>%1$L, p.name->>'uk') AS name, coalesce(p.slug->>%1$L, p.slug->>'uk') AS slug, p.images->>0 AS image,
+       (SELECT min(pp.price) FROM core.product_prices pp WHERE pp.product_id = p.id AND pp.price_type_id = '00000000-0000-4000-8000-000000000001') AS price_min
+FROM d.products p 
+WHERE p.id = ANY(%2$L::uuid[])$q$);
+INSERT INTO bench.q VALUES ('R', 'search', $q$WITH q AS (SELECT to_tsquery('simple', %2$L) AS tq),
+cand AS (SELECT s.product_id AS id, s.tsv FROM r.catalog_entries s, q WHERE s.locale = %1$L AND s.is_active AND s.tsv @@ q.tq LIMIT 1000),
+fts AS (SELECT cand.id, row_number() OVER (ORDER BY ts_rank_cd(cand.tsv, q.tq) DESC, cand.id) AS rnk FROM cand, q),
+trg AS (SELECT z.id, row_number() OVER (ORDER BY z.d, z.id) AS rnk FROM (
+          SELECT s.product_id AS id, %3$L <<-> s.title_norm AS d FROM r.catalog_entries s
+          WHERE s.locale = %1$L AND s.is_active AND %3$L <%% s.title_norm ORDER BY d LIMIT 100) z),
+fused AS (SELECT u.id, sum(1.0 / (60 + u.rnk)) AS score FROM (SELECT * FROM fts UNION ALL SELECT * FROM trg) u GROUP BY u.id),
+hits AS (SELECT f.id AS product_id, f.score, ce.option_ids, ce.name, ce.slug, ce.image, ce.price_min FROM fused f JOIN r.catalog_entries ce ON ce.product_id = f.id AND ce.locale = %1$L),
+po AS (SELECT hits.product_id, x.option_id FROM hits CROSS JOIN LATERAL unnest(hits.option_ids) AS x(option_id)),
+facets AS (SELECT fl.property_id, c.option_id, fl.option_name, c.n FROM (SELECT po.option_id, count(*) AS n FROM po GROUP BY 1) c JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = c.option_id AND fl.is_filterable)
+SELECT 'hit' AS kind, h.product_id AS id, h.name AS label, h.score AS v, h.slug, h.image, h.price_min FROM (SELECT * FROM hits ORDER BY score DESC, product_id LIMIT 24) h
+UNION ALL SELECT 'facet', f.option_id, f.option_name, f.n, NULL, NULL, NULL FROM facets f
+UNION ALL SELECT 'total', NULL, NULL, count(*), NULL, NULL, NULL FROM hits$q$);
+INSERT INTO bench.q VALUES ('R2', 'search', $q$WITH q AS (SELECT to_tsquery('simple', %2$L) AS tq),
+cand AS (SELECT s.entity_id AS id, s.tsv FROM core.search_documents s, q WHERE s.locale = %1$L AND s.entity_type = 'product' AND s.tsv @@ q.tq LIMIT 1000),
+fts AS (SELECT cand.id, row_number() OVER (ORDER BY ts_rank_cd(cand.tsv, q.tq) DESC, cand.id) AS rnk FROM cand, q),
+trg AS (SELECT z.id, row_number() OVER (ORDER BY z.d, z.id) AS rnk FROM (
+          SELECT s.entity_id AS id, %3$L <<-> s.title_norm AS d FROM core.search_documents s
+          WHERE s.locale = %1$L AND s.entity_type = 'product' AND %3$L <%% s.title_norm ORDER BY d LIMIT 100) z),
+fused AS (SELECT u.id, sum(1.0 / (60 + u.rnk)) AS score FROM (SELECT * FROM fts UNION ALL SELECT * FROM trg) u GROUP BY u.id),
+hits AS (SELECT f.id AS product_id, f.score, cf.option_ids, cf.image, cf.price_min FROM fused f JOIN r2.cat_facts cf ON cf.product_id = f.id AND cf.is_active),
+po AS (SELECT hits.product_id, x.option_id FROM hits CROSS JOIN LATERAL unnest(hits.option_ids) AS x(option_id)),
+facets AS (SELECT fl.property_id, c.option_id, fl.option_name, c.n FROM (SELECT po.option_id, count(*) AS n FROM po GROUP BY 1) c JOIN r.facet_labels fl ON fl.locale = %1$L AND fl.option_id = c.option_id AND fl.is_filterable)
+SELECT 'hit' AS kind, h.product_id AS id, t.name AS label, h.score AS v, t.slug, h.image, h.price_min
+   FROM (SELECT * FROM hits ORDER BY score DESC, product_id LIMIT 24) h JOIN r2.cat_text t ON t.product_id = h.product_id AND t.locale = %1$L
+UNION ALL SELECT 'facet', f.option_id, f.option_name, f.n, NULL, NULL, NULL FROM facets f
+UNION ALL SELECT 'total', NULL, NULL, count(*), NULL, NULL, NULL FROM hits$q$);
+INSERT INTO bench.q VALUES ('A', 'sitemap', $q$SELECT p.id, coalesce(tr.slugs->>%1$L, p.slug) AS slug, jsonb_build_object('uk', p.slug) || coalesce(tr.slugs, '{}') AS alternates, p.updated_at
+FROM a.products p
+LEFT JOIN (SELECT product_id, jsonb_object_agg(locale, slug) AS slugs FROM a.product_translations WHERE slug IS NOT NULL GROUP BY product_id) tr ON tr.product_id = p.id
+WHERE p.is_active$q$);
+INSERT INTO bench.q VALUES ('B', 'sitemap', $q$SELECT p.id, coalesce(tr.slugs->>%1$L, tr.slugs->>'uk') AS slug, tr.slugs AS alternates, p.updated_at
+FROM b.products p
+JOIN (SELECT product_id, jsonb_object_agg(locale, slug) AS slugs FROM b.product_translations WHERE slug IS NOT NULL GROUP BY product_id) tr ON tr.product_id = p.id
+WHERE p.is_active$q$);
+INSERT INTO bench.q VALUES ('D', 'sitemap', $q$SELECT p.id, coalesce(p.slug->>%1$L, p.slug->>'uk') AS slug, p.slug AS alternates, p.updated_at FROM d.products p WHERE p.is_active$q$);
+INSERT INTO bench.q VALUES ('R', 'sitemap', $q$SELECT ce.product_id, max(ce.slug) FILTER (WHERE ce.locale = %1$L) AS slug, jsonb_object_agg(ce.locale, ce.slug) AS alternates
+FROM r.catalog_entries ce WHERE ce.is_active GROUP BY ce.product_id$q$);
+INSERT INTO bench.q VALUES ('R2', 'sitemap', $q$SELECT t.product_id, max(t.slug) FILTER (WHERE t.locale = %1$L) AS slug, jsonb_object_agg(t.locale, t.slug) AS alternates
+FROM r2.cat_text t JOIN r2.cat_facts f ON f.product_id = t.product_id AND f.is_active GROUP BY t.product_id$q$);
