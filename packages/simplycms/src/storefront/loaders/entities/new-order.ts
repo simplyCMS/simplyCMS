@@ -10,6 +10,9 @@ export interface NewOrderInput {
   shippingMethodId: string;
   /** Знімок доставки з `prepareCheckout` (Е6а-8) — пишеться в `orders.shipping_data`. */
   shippingSnapshot: NewShippingSnapshot;
+  /** Зона й тариф з `prepareCheckout`: перерахунок позицій в адмінці бере їх як записані. */
+  shippingZoneId: string | null;
+  shippingRateId: string | null;
   deliveryCity: string | null;
   deliveryAddress: string | null;
   pickupPointId: string | null;

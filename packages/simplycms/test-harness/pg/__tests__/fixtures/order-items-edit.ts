@@ -92,5 +92,5 @@ export function useOrderItemsEditDb(prefix: string) {
   });
 
   const helpers = editHelpers({ ids, rows, one, id });
-  return { ids, db, rows, ...helpers };
+  return { ids, db, rows, one, ...helpers };
 }

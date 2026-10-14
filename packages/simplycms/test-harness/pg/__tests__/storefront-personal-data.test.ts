@@ -46,6 +46,8 @@ const orderInput = (name: string): NewOrderInput => ({
   email: `${name}@example.test`,
   phone: '+380000000000',
   shippingMethodId: SHIPPING_METHOD_ID,
+  shippingZoneId: null,
+  shippingRateId: null,
   shippingSnapshot: {
     methodName: 'Тест',
     provider: 'core:address',

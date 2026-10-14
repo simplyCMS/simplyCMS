@@ -31,9 +31,10 @@ describe('доставка commerce', () => {
     expect(choice.method.code).toBe(F.COURIER_CODE);
     // Зона адресної доставки — основна, місто її не вибирає (Д3).
     expect(choice.zone?.is_default).toBe(true);
-    expect(quoteShippingCost(choice, F.COURIER_FREE_FROM)).toEqual({
+    expect(quoteShippingCost(choice, F.COURIER_FREE_FROM)).toMatchObject({
       cost: 0,
       pricing: 'rates',
+      zoneId: choice.zone?.id,
     });
     expect(quoteShippingCost(choice, 5000)?.cost).toBe(F.COURIER_BASE);
     expect(quoteShippingCost(choice, F.COURIER_MIN_ORDER - 1)).toBeNull();

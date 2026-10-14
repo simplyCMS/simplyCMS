@@ -55,7 +55,7 @@ export function assertWithin(cents: number, max: number): void {
  *
  * 6. `subtotal = Σ order_items.total` SQL-сумою (рядок) → центи.
  * 7. Доставка за правилами чекауту (Е5б-2): `validateShippingChoice` з
- *    методом, містом і точкою замовлення + `quoteShippingCost` від нового
+ *    методом, містом, точкою і ЗАПИСАНОЮ зоною замовлення + `quoteShippingCost` від нового
  *    `subtotal`. Будь-яка відмова (метод вимкнено/`NULL`, точка недійсна,
  *    тарифу немає, мінімум/максимум суми) → 409 `order_shipping_unavailable`.
  * 8. Межі всіх трьох колонок — ДО `update orders set subtotal,
@@ -81,6 +81,7 @@ export async function recomputeOrderTotals(
     deliveryCity: order.deliveryCity,
     pickupPointId: order.pickupPointId,
     deliveryAddress: order.deliveryAddress,
+    recordedZoneId: order.shippingZoneId,
   });
   // Той самий рушій, що в чекауті: `carrier` дає 0, `rates` — тариф (Е6а-10).
   const quote =
@@ -102,6 +103,9 @@ export async function recomputeOrderTotals(
     .set({
       subtotal: fromCents(subtotal),
       shippingCost: fromCents(shipping),
+      // Зона й поточний тариф способу в ній (Д5): `NULL`-зона визначена наново.
+      shippingZoneId: quote.zoneId,
+      shippingRateId: quote.rateId,
       total: fromCents(total),
       ...(snapshot && {
         shippingData: { ...snapshot, pricing: quote.pricing },

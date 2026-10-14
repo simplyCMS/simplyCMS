@@ -61,6 +61,8 @@ export function toOrderInput(
     shippingCost: number;
     total: number;
     shippingSnapshot: NewShippingSnapshot;
+    shippingZoneId: string | null;
+    shippingRateId: string | null;
   },
 ): NewOrderInput {
   return {
@@ -70,6 +72,8 @@ export function toOrderInput(
     phone: input.phone,
     shippingMethodId: input.shippingMethodId,
     shippingSnapshot: prepared.shippingSnapshot,
+    shippingZoneId: prepared.shippingZoneId,
+    shippingRateId: prepared.shippingRateId,
     deliveryCity: input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,

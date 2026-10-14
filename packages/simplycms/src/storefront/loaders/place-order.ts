@@ -72,6 +72,8 @@ export async function placeOrderFor(
         shippingCost: prepared.shippingCost,
         total: prepared.total,
         shippingSnapshot: prepared.shippingSnapshot,
+        shippingZoneId: prepared.shippingZoneId,
+        shippingRateId: prepared.shippingRateId,
       });
       const order = await createOrder(
         db,

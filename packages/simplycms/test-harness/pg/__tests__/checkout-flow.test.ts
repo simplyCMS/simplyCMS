@@ -465,6 +465,87 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(result.ok).toBe(true);
   });
 
+  const recorded = async (
+    orderId: string,
+  ): Promise<{ zone: string | null; rate: string | null }> =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select shipping_zone_id as zone, shipping_rate_id as rate from public.orders where id = $1`,
+        [orderId],
+      )) as { zone: string | null; rate: string | null }[]
+    )[0]!;
+  const zoneId = async (name: string): Promise<string> =>
+    one(`select id from public.shipping_zones where name = $1`, [name]);
+  const rateOf = async (code: string, zone: string): Promise<string> =>
+    one(
+      `select r.id from public.shipping_rates r
+         join public.shipping_methods m on m.id = r.method_id
+        where m.code = $1 and r.zone_id = $2 and r.is_active`,
+      [code, zone],
+    );
+
+  it("замовлення пам'ятає зону й тариф: самовивіз точкою K → зона K і її тариф", async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickupK,
+        pickupPointId: pointK,
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const k = await zoneId('Зона K');
+    expect(await recorded(result.order.id)).toEqual({
+      zone: k,
+      rate: await rateOf('pickup-k', k),
+    });
+  });
+
+  it("замовлення пам'ятає зону й тариф: курʼєр → основна зона й її тариф", async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: 'Київ',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const main = one(`select id from public.shipping_zones where is_default`);
+    expect(await recorded(result.order.id)).toEqual({
+      zone: await main,
+      rate: await rateOf('courier', await main),
+    });
+  });
+
+  it("замовлення пам'ятає зону: carrier → основна зона, shipping_rate_id NULL (А2)", async () => {
+    await queryRows(
+      dbUrl,
+      `insert into public.shipping_methods (id, code, name, is_active, provider, pricing)
+       values (gen_random_uuid(), 'carrier-m', 'Перевізник', true, 'core:address', 'carrier')`,
+    );
+    const carrier = await one(
+      `select id from public.shipping_methods where code = 'carrier-m'`,
+    );
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: carrier,
+        deliveryCity: 'Київ',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(await recorded(result.order.id)).toEqual({
+      zone: await one(`select id from public.shipping_zones where is_default`),
+      rate: null,
+    });
+  });
+
   it('точка з неактивною зоною (Р6) → shipping_unavailable', async () => {
     const before = await ordersCount();
     const result = await placeOrderFor(

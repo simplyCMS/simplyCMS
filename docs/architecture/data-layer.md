@@ -519,6 +519,14 @@ email в іншому регістрі — не конфлікт, записує
   `resolveShippingRate`: його ділять показ (`useShippingDirectory.rateFor`) і запис
   (`quoteShippingCost`, `recomputeOrderTotals`). `carrier` — `shipping_cost = 0`,
   `total = subtotal`, підпис «За тарифами перевізника».
+- 🔴 **Замовлення пам'ятає зону й тариф (Д5).** `placeOrder` пише `orders.shipping_zone_id`
+  (для `rates` і `carrier`) та `shipping_rate_id` (лише `rates`; для `carrier` — `NULL`).
+  Перерахунок позицій в адмінці (`recomputeOrderTotals`) НЕ визначає зону за містом чи
+  призначенням, а бере записану: зона серед активних → вона, поточний тариф способу в ній
+  оновлює обидві колонки; записана зона неактивна → 409 `order_shipping_unavailable`
+  (транзакція відкочується); `NULL` (зону видалено за `SET NULL` або замовлення до релізу)
+  → зона визначається наново (`resolveShippingZone`) і записується. Призначення замовлення
+  адмінка не міняє (ресурс `orders` — `writable: []`), тож записаної зони досить.
 - 🔴 **Замовлення зберігає знімок, а не посилання.** `createOrder` пише в
   `orders.shipping_data` тип `ShippingSnapshot` (`simplycms/contracts/shipping-providers`):
   `methodName`, `provider`, `pricing` і `destination`. `destination` — або адреса
@@ -745,7 +753,8 @@ email в іншому регістрі — не конфлікт, записує
   `destination` з непорожнім `city`, тест «чекаут відхиляє порожнє місто» це стереже.
 - **Стерте замовлення не редагується (Е6г-16).** `lockEditableOrder` відмовляє позиціям
   409 `order_personal_data_erased` (поруч з `order_cancelled_final`): перерахунок
-  доставки читав би `orders.delivery_city = NULL` і дав би `shipping_unavailable`.
+  доставки читав би `orders.delivery_city = NULL` (місто обов'язкове для адресної доставки)
+  і дав би `shipping_unavailable`.
   Зміна статусу й скасування дозволені. `loadOrderDetail` фільтра стертих НЕ має
   (Е6г-17): стерте замовлення недосяжне за побудовою (`user_id NULL`, `access_token
   NULL`), доступ вирішує RLS-роль. Адмінка показує «Видалений покупець» (картка,
