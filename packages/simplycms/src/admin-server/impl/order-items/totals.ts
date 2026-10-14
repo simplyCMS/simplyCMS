@@ -104,7 +104,9 @@ export async function recomputeOrderTotals(
       subtotal: fromCents(subtotal),
       shippingCost: fromCents(shipping),
       // Зона й поточний тариф способу в ній (Д5): `NULL`-зона визначена наново.
-      shippingZoneId: quote.zoneId,
+      // `carrier`: ціна від зони не залежить, тож записана зона лишається
+      // історичним фактом (навіть неактивна чи `NULL`), а тарифу немає.
+      ...(quote.pricing === 'carrier' ? {} : { shippingZoneId: quote.zoneId }),
       shippingRateId: quote.rateId,
       total: fromCents(total),
       ...(snapshot && {

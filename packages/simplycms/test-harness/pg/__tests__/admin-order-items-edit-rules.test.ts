@@ -178,6 +178,38 @@ describe('admin: правила редагування позицій (К3-Е5б
     );
   });
 
+  it('carrier: перерахунок не чіпає записану зону (неактивну теж), тарифу немає, доставка 0', async () => {
+    await f.rows(
+      `insert into public.shipping_methods (id, code, name, is_active, provider, pricing)
+       values (gen_random_uuid(), 'e5b-carrier', 'Перевізник', true, 'core:address', 'carrier')`,
+    );
+    const carrier = (
+      await f.one<{ id: string }>(
+        `select id from public.shipping_methods where code = 'e5b-carrier'`,
+      )
+    ).id;
+    const zone = async (name: string, active: boolean) =>
+      (
+        await f.one<{ id: string }>(
+          `insert into public.shipping_zones (id, name, is_active, is_default)
+           values (gen_random_uuid(), $1, $2, false) returning id`,
+          [name, active],
+        )
+      ).id;
+    for (const active of [false, true]) {
+      const z = await zone(`Зона carrier ${active}`, active);
+      const o = await f.place([{ productId: ids.panel, quantity: 1 }], {
+        method: 'courier',
+      });
+      await f.rows(
+        `update public.orders set shipping_method_id = $2, shipping_zone_id = $3, shipping_rate_id = null where id = $1`,
+        [o, carrier, z],
+      );
+      await f.add(o, ids.battery, 1);
+      expect(await recorded(o)).toEqual({ zone: z, rate: null, cost: '0.00' });
+    }
+  });
+
   it('будь-яка операція на скасованому → 409 order_cancelled_final', async () => {
     // Кожен виклик без гварду впав би ІНШОЮ відмовою: недоступний товар,
     // нестача залишку, остання позиція — тож гвард мусить іти ПЕРШИМ.
