@@ -401,7 +401,7 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 
 | Джерело правди | Копія | Споживач |
 |---|---|---|
-| `SYNCED_FILES` (11 host-файлів глю, корінь монорепо) | `packages/cli/host/**` | `update`, `doctor` §6 |
+| `SYNCED_FILES` (host-файли глю, корінь монорепо; усі файли `packages/cli/host/`) | `packages/cli/host/**` | `update`, `doctor` §6 |
 | `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
@@ -411,8 +411,8 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 несе потік у зворотний бік: канон → копія в шаблоні.
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
-  обхід теки, дубльованого списку немає. Це ті самі 10 файлів, що
-  `template:sync` кладе в шаблон скаффолдера (`server.mjs`,
+  обхід теки, дубльованого списку немає. Це ті самі файли, що
+  `template:sync` кладе в шаблон скаффолдера (зокрема `server.mjs`,
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
   `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
   `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,

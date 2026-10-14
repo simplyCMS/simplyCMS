@@ -79,7 +79,7 @@ Tailwind v4 + shadcn/ui · react-hook-form + Zod 4 · Tiptap v3 · Vitest + Test
 pnpm dev                 # dev-сервер (Vite + TanStack Start)
 pnpm typecheck && pnpm lint && pnpm format:check   # перед PR
 pnpm test                # юніти (packaging-suite виключено)
-pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (Docker не потрібен)
+pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (проєкт pg — без Docker; storage і mail — Garage і Mailpit з pnpm harness:up)
 pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обовʼязкове)
 pnpm build:packages      # збірка публікованих пакетів
 pnpm template:sync       # синк закомічених копій з монорепо (шаблон, host CLI, міграції)

@@ -69,8 +69,9 @@ pnpm harness:up       # Postgres-харнес однією командою: к�
                       # pnpm harness:down — прибрати контейнер і .env.harness
 pnpm test:schema      # СХЕМНИЙ контур: накат канону міграцій на чистий Postgres + парність
                       # політик і грантів + ПОВЕДІНКОВА матриця RLS.
-                      # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
-                      # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
+                      # 🔴 Проєкт `pg` — без Docker: або готовий кластер через PG_HARNESS_URL,
+                      # або ефемерний initdb/pg_ctl (не від root). Проєкти `storage` і `mail`
+                      # потребують Garage і Mailpit (`pnpm harness:up`). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
 pnpm pilot:pack       # tarball-пілот: гейти A/C/SB/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і

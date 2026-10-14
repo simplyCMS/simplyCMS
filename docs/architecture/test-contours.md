@@ -52,7 +52,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | Контур | Команда | Доходить до | Потребує |
 |---|---|---|---|
 | Юніти | `pnpm test` | сирців | — |
-| Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (без Docker) |
+| Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (проєкт `pg` — без Docker); проєкти `storage` і `mail` — Garage і Mailpit (`pnpm harness:up`) |
 | Пакувальність | `pnpm pilot:pack` | локальних tarball-ів | — |
 | Проти живої БД | `pnpm pilot` | + HTTP-відповіді; **обовʼязковий у релізі** (`scripts/release/pilot-full.mjs`: харнес + `db:demo` → `pnpm pilot`) | `DATABASE_URL` у `.env.local` або `PILOT_DATABASE_URL`; у релізі — Docker (`pnpm harness:up`) |
 | Сховище й пошта запакованого ядра | Gate MEDIA, Gate MAIL у `pnpm pilot` (повний режим) | + `s3`-драйвер проти Garage і `smtp`-драйвер проти Mailpit з `node_modules` скретча | `PILOT_S3_*`, `PILOT_SMTP_URL`, `PILOT_MAIL_FROM`, `PILOT_MAILPIT_URL` (їх задає `pilot-full` з `.env.harness`); без них — SKIP з причиною |
@@ -646,11 +646,13 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 `schema` у CI — з тієї самої причини, що й `packaging`: у нього є передумова
 (запущений Postgres), і в дефолтному `pnpm test` він мовчки скіпався б.
 
-**Docker не потрібен** — і це принципово, бо саме Docker тримав пілот поза CI
-(борг №2 роадмапу). Харнес резолвить підключення двома шляхами:
+**Проєкт `pg` не потребує Docker** — і це принципово, бо саме Docker тримав пілот
+поза CI (борг №2 роадмапу). Харнес резолвить підключення двома шляхами:
 `PG_HARNESS_URL` (готовий кластер: CI-service `postgres:17`, локальний інстанс
 розробника) або ефемерний `initdb`+`pg_ctl` у tmp-теці. 🔴 `initdb` не
 запускається від root — фолбек це ловить і каже, що робити, а не крешить.
+Проєкти `storage` і `mail` потребують Garage і Mailpit (`pnpm harness:up`): без них вони
+падають, а не скіпаються.
 
 ### Що доводить
 

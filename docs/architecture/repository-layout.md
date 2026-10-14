@@ -161,7 +161,7 @@ simplyCMS/
 │                                        # funnel.mjs (Playwright-воронка) + avatar.mjs (ЄДИНИЙ
 │                                        # живий доказ порту сховища: завантаження, роздача /media,
 │                                        # референс у БД, видалення)
-├── packages/simplycms/test-harness/pg/  # контур `pnpm test:schema` — підйом Postgres без Docker
+├── packages/simplycms/test-harness/pg/  # контур `pnpm test:schema` — підйом Postgres без Docker (проєкт `pg`; `storage` і `mail` — Garage і Mailpit з `pnpm harness:up`)
 │                                     # (PG_HARNESS_URL або ефемерний initdb), накат канону,
 │                                     # інтроспекція ACL/політик, актори
 ├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);
