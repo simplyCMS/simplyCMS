@@ -26,14 +26,63 @@ export async function applyCanon(connectionString) {
 }
 
 /**
+ * 🔴 Стеля одночасних ОДНОРАЗОВИХ з'єднань харнесу на процес (Е8, фікс D).
+ *
+ * Кожен хелпер нижче відкриває власний `pg.Client` і закриває його після
+ * запиту. Поки виклики йдуть послідовно, це одне з'єднання; але фікстура, що
+ * мапить N id через `Promise.all` (так робить `items()` у `fixtures/reviews.ts`
+ * для 101 id), відкриває N з'єднань за мілісекунди — і `max_connections`
+ * кластера (100 у дефолтному образі) падає випадково, залежно від того, як
+ * швидко попередні встигли закритись. Стеля тут, а не послідовність у
+ * кожній фікстурі: тоді паралельний мап у новому тесті безпечний за
+ * побудовою, а семантика «запит = окреме з'єднання» не змінюється.
+ *
+ * Чому 4: файл додатково тримає пул ядра (`simplycms/db`, дефолт `pg` — 10)
+ * і явних тримачів блокувань; із цією стелею проєкт `pg` зелений на кластері
+ * з `max_connections=20`, заміряний пік — 5 з'єднань (звіт фіксу D Е8).
+ * Тримачі, яким треба жити довго (`advisory-lock`, `holder` у `migrate-*`),
+ * стелю НЕ беруть — інакше заблокований запит міг би чекати слота, який
+ * тримає він сам.
+ */
+const SHORT_CONNECTIONS_MAX = 4;
+let shortActive = 0;
+/** @type {Array<() => void>} */
+const shortWaiters = [];
+
+/**
+ * Виконати `fn` з одноразовим клієнтом під стелею `SHORT_CONNECTIONS_MAX`.
+ * Слот передається наступному в черзі напряму (FIFO), без гонки за лічильник.
+ *
+ * @template T
+ * @param {string} connectionString
+ * @param {(client: pg.Client) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+async function withShortClient(connectionString, fn) {
+  if (shortActive < SHORT_CONNECTIONS_MAX) shortActive++;
+  else await new Promise((resolve) => shortWaiters.push(resolve));
+  try {
+    const client = new pg.Client({ connectionString });
+    await client.connect();
+    try {
+      return await fn(client);
+    } finally {
+      await client.end();
+    }
+  } finally {
+    const next = shortWaiters.shift();
+    if (next) next();
+    else shortActive--;
+  }
+}
+
+/**
  * Накатує SQL-файли по черзі в ОДНОМУ з'єднанні. `ON_ERROR_STOP`-семантика:
  * перша помилка кидає виняток з іменем файлу, що впав, — решта не котиться.
  * Лише для НЕ-міграційного SQL (демо-сід, фікстури); канон — `applyCanon`.
  */
 export async function applySqlFiles(connectionString, filePaths) {
-  const client = new pg.Client({ connectionString });
-  await client.connect();
-  try {
+  await withShortClient(connectionString, async (client) => {
     for (const filePath of filePaths) {
       const sql = readFileSync(filePath, 'utf8');
       try {
@@ -46,9 +95,7 @@ export async function applySqlFiles(connectionString, filePaths) {
         });
       }
     }
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 /** Унікальне імʼя тимчасової БД для одного тестового прогону. */
@@ -58,32 +105,24 @@ export function randomDbName(prefix = 'simplycms_test') {
 
 /** Створити тимчасову БД через адмін-з'єднання (зазвичай — до `postgres`). */
 export async function createTempDatabase(adminUrl, dbName) {
-  const client = new pg.Client({ connectionString: adminUrl });
-  await client.connect();
-  try {
+  await withShortClient(adminUrl, async (client) => {
     // `dbName` — завжди наш randomDbName() зсередини тестів, не зовнішній
     // вхід, тож інтерполяція в DDL тут безпечна (параметризувати CREATE
     // DATABASE неможливо — pg їх не приймає).
     await client.query(`create database "${dbName}"`);
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 /** Дропнути тимчасову БД, розірвавши перед тим активні з'єднання до неї. */
 export async function dropTempDatabase(adminUrl, dbName) {
-  const client = new pg.Client({ connectionString: adminUrl });
-  await client.connect();
-  try {
+  await withShortClient(adminUrl, async (client) => {
     await client.query(
       `select pg_terminate_backend(pid) from pg_stat_activity
        where datname = $1 and pid <> pg_backend_pid()`,
       [dbName],
     );
     await client.query(`drop database if exists "${dbName}"`);
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 /** Той самий кластер, інша БД у шляху підключення. */
@@ -113,17 +152,13 @@ export function withUser(connectionString, user) {
  * @returns {Promise<any[]>} рядки останнього стейтмента (див. нижче про тип)
  */
 export async function queryInTransaction(connectionString, statements) {
-  const client = new pg.Client({ connectionString });
-  await client.connect();
-  try {
+  return withShortClient(connectionString, async (client) => {
     await client.query('begin');
     let rows = [];
     for (const sql of statements) rows = (await client.query(sql)).rows;
     await client.query('rollback');
     return rows;
-  } finally {
-    await client.end();
-  }
+  });
 }
 
 /**
@@ -141,14 +176,10 @@ export async function queryInTransaction(connectionString, statements) {
  * @returns {Promise<any[]>}
  */
 export async function queryRows(connectionString, sql, params = []) {
-  const client = new pg.Client({ connectionString });
-  await client.connect();
-  try {
-    const { rows } = await client.query(sql, params);
-    return rows;
-  } finally {
-    await client.end();
-  }
+  return withShortClient(
+    connectionString,
+    async (client) => (await client.query(sql, params)).rows,
+  );
 }
 
 /** Чи вдається підключитись до `connectionString` (для негативних тестів). */
