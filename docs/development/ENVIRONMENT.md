@@ -142,8 +142,7 @@ Start): POST на server function із `Content-Length` понад стелю �
 Прапорця «довіряти проксі» немає. Без валідного `VITE_SITE_URL` (абсолютний `http(s)`-URL)
 раннер завершується з кодом 1 до слухання порту, у повідомленні — лише імʼя ключа. Request-target
 мусить починатися рівно з одного `/`: `//evil/x` і `/\evil` → 400 (інакше Start відповів би 308 на
-чужий хост); absolute-form (`http://h/p?q`) зводиться до шляху й query. `X-Forwarded-For` (IP для
-rate-limit) це не зачіпає.
+чужий хост); absolute-form (`http://h/p?q`) зводиться до шляху й query.
 
 **Deploy:** на прод кладуться `dist/`, `server.mjs`, `package.json` + production-`node_modules`
 (потрібен рівно один рантайм-пакет — `sirv`, він у `dependencies`). `VITE_*` для КЛІЄНТСЬКОГО
