@@ -54,13 +54,21 @@ interface FilterSidebarProps {
   renderAccordion?: (props: Record<string, unknown>) => React.ReactNode;
 }
 
+/**
+ * Стабільні default-и пропсів: панель порівнює `numericPropertyRanges` за
+ * посиланням (синхронізація стану під час рендеру), тож свіжий `{}`/`[]` на
+ * кожен рендер зациклив би її, якщо тема опустить проп.
+ */
+const EMPTY_RANGES: Record<string, { min: number; max: number }> = {};
+const EMPTY_PRODUCTS: ProductForCounting[] = [];
+
 export function FilterSidebar({
   sectionId,
   filters,
   onFilterChange,
   priceRange,
-  numericPropertyRanges = {},
-  products = [],
+  numericPropertyRanges = EMPTY_RANGES,
+  products = EMPTY_PRODUCTS,
 }: FilterSidebarProps) {
   const t = useT();
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>([
