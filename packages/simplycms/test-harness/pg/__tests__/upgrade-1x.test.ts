@@ -14,7 +14,7 @@ import { closeDbPool, withActor } from 'simplycms/db';
 import { applyMigrations, MigrationChecksumError } from 'simplycms/migrate';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import { localFsDriver, writeMedia } from 'simplycms/storage';
-import { runStart } from '../../../../create-simplycms-store/template/scripts/start-core.mjs';
+import { runStart } from 'simplycms/prod-start';
 import { resolveDriverEnv } from 'simplycms/env';
 import { resolveHarness } from '../up.mjs';
 import {

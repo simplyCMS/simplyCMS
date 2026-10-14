@@ -34,10 +34,12 @@ import {
 // ротація серверних ключів (`DATABASE_URL`, `BETTER_AUTH_SECRET`) =
 // перезапуск процесу, без перезбірки.
 //
-// 🔴 Ключі, які start.mjs прибирає з оточення сервера (пароль власника схеми),
-// з файлів НЕ підтягуються: інакше `.env.local` повернув би їх у процес, що
-// пережив `execve`. Дубль списку з `scripts/start-core.mjs` (`STRIPPED_ENV`) —
-// парність двох списків стереже `tests/start-core.test.ts`.
+// 🔴 Ключі, які прод-старт (`scripts/start.mjs` → `simplycms/prod-start`) прибирає
+// з оточення сервера (пароль власника схеми), з файлів НЕ підтягуються: інакше
+// `.env.local` повернув би їх у процес, що пережив `execve`. Літерал — свідомий
+// дубль `STRIPPED_ENV` ядра (Е8-Р7′: тут ядро не імпортується, бо фільтр іде ДО
+// бандла); парність розбором цього файлу стережуть
+// `tests/stripped-env-parity.test.ts` і Gate C пілота.
 const STRIPPED_ENV = ['MIGRATION_DATABASE_URL'];
 for (const file of ['.env.local', '.env']) {
   if (!existsSync(file)) continue;

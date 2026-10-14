@@ -82,10 +82,17 @@ export const SYNCED_FILES = [
 ];
 
 /**
- * Host-файли, чиє джерело — САМ шаблон (у корені монорепо їх немає): шим хука старту
- * сесії. У `packages/cli/host/` їде копія, тож `update` оновлює шим у наявних магазинах.
+ * Host-файли, чиє джерело — САМ шаблон (у корені монорепо їх немає): шими хука старту
+ * сесії, прод-старту й запрошення власника (логіка двох останніх — у ядрі,
+ * `simplycms/prod-start` і `simplycms/auth/owner-invite-cli`, F5 рев'ю Е8). У
+ * `packages/cli/host/` їде копія, тож `update` оновлює шим у наявних магазинах, а
+ * doctor №6 бачить його дрейф.
  */
-export const TEMPLATE_HOST_FILES = ['.claude/hooks/session-start.mjs'];
+export const TEMPLATE_HOST_FILES = [
+  '.claude/hooks/session-start.mjs',
+  'scripts/start.mjs',
+  'scripts/owner-invite.mjs',
+];
 
 /** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
 export const SYNCED_DIRS = [

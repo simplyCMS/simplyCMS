@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { inviteIdentifier, verifyOwnerInvite } from 'simplycms/auth';
 import type { OwnerInviteStore } from 'simplycms/auth';
 import type { MailItem, MailMessage, MailTransport } from 'simplycms/mail';
-import { runOwnerInvite } from '../packages/create-simplycms-store/template/scripts/owner-invite-core.mjs';
-import { runOwnerInviteCli } from '../packages/create-simplycms-store/template/scripts/owner-invite-cli.mjs';
+import { runOwnerInvite } from '../run';
+import { runOwnerInviteCli } from '../cli';
 
-// Юніт скрипта `owner:invite` із шаблону магазину.
+// Юніт `owner:invite` (логіка в ядрі; у магазині — шим `scripts/owner-invite.mjs`).
 //
 // 🔴 Мока клієнта БД тут більше немає: скрипт більше не кличе GoTrue, а
 // перевикористовує `issueOwnerInvite` ядра. Підмінюється тому не клієнт, а

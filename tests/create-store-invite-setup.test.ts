@@ -47,13 +47,16 @@ describe('create-store: інструкція «призначити власни
 
   // 🔴 Р18г: фолбеку на localhost немає. Раніше дефолт мусив збігатися з портом
   // dev-сервера; тепер без `VITE_SITE_URL` команда відмовляє (поведінку доводить
-  // `tests/owner-invite.test.ts`), а тут стережемо, що літерал не повернувся.
+  // `simplycms/src/auth/owner-invite-cli/__tests__/owner-invite.test.ts`), а тут стережемо, що літерал не повернувся.
+  // Логіка — у ядрі (`simplycms/auth/owner-invite-cli`), у шаблоні — шим.
   it('owner-invite не має дефолтної адреси сайту', () => {
+    const CORE = 'packages/simplycms/src/auth/owner-invite-cli';
     for (const file of [
-      'owner-invite.mjs',
-      'owner-invite-core.mjs',
-      'owner-invite-cli.mjs',
+      `${TEMPLATE}/scripts/owner-invite.mjs`,
+      ...['run.ts', 'cli.ts', 'main.ts', 'env-files.ts'].map(
+        (name) => `${CORE}/${name}`,
+      ),
     ])
-      expect(read(`${TEMPLATE}/scripts/${file}`)).not.toMatch(/localhost/);
+      expect(read(file)).not.toMatch(/localhost/);
   });
 });

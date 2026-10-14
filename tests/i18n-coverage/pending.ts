@@ -129,6 +129,17 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'super',
     reason: 'super(...) помилки — діагностика',
   },
+  // `owner:invite` (F5 рев'ю Е8: логіка переїхала з файлів магазину в ядро):
+  // вивід CLI власнику магазину в терміналі — лог-синк і відмови помилкою, не
+  // текст для покупця; сам лист запрошення — лише з каталогу `mail.*`.
+  'packages/simplycms/src/auth/owner-invite-cli/run.ts': {
+    kind: ['throw', 'log-sink'],
+    reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+  },
+  'packages/simplycms/src/auth/owner-invite-cli/cli.ts': {
+    kind: ['throw', 'log-sink'],
+    reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+  },
   'packages/simplycms/src/mail/log.ts': {
     kind: 'log-sink',
     reason: 'лог-драйвер: рядок для оператора в лозі процесу',

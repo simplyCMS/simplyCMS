@@ -2,7 +2,7 @@
  * Парність переліку заголовків безпеки (Р27): `server.mjs` ядро не імпортує
  * (Е8-Р7′) і тримає копію в `server-headers.mjs`; ядро — джерело
  * (`simplycms/server-guard`). Розбіжність дала б різні заголовки на статиці й
- * на SSR. Зразок — `STRIPPED_ENV` ↔ `start-core` (`tests/start-core.test.ts`).
+ * на SSR. Зразок — `STRIPPED_ENV` ↔ `server.mjs` (`tests/stripped-env-parity.test.ts`).
  */
 import { describe, expect, it } from 'vitest';
 import {

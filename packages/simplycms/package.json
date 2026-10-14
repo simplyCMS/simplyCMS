@@ -39,6 +39,7 @@
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./auth/owner-invite-cli": "./src/auth/owner-invite-cli/index.ts",
     "./storage": "./src/storage/index.ts",
     "./mail": "./src/mail/index.ts",
     "./inventory": "./src/inventory/index.ts",
@@ -48,6 +49,7 @@
     "./env": "./src/env/index.ts",
     "./vite": "./src/vite/index.ts",
     "./migrate": "./src/migrate/index.ts",
+    "./prod-start": "./src/prod-start/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
@@ -249,6 +251,10 @@
         "types": "./dist/auth/index.d.ts",
         "import": "./dist/auth/index.js"
       },
+      "./auth/owner-invite-cli": {
+        "types": "./dist/auth/owner-invite-cli/index.d.ts",
+        "import": "./dist/auth/owner-invite-cli/index.js"
+      },
       "./storage": {
         "types": "./dist/storage/index.d.ts",
         "import": "./dist/storage/index.js"
@@ -284,6 +290,10 @@
       "./migrate": {
         "types": "./dist/migrate/index.d.ts",
         "import": "./dist/migrate/index.js"
+      },
+      "./prod-start": {
+        "types": "./dist/prod-start/index.d.ts",
+        "import": "./dist/prod-start/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",

@@ -1,12 +1,12 @@
 // Прод-старт на справжньому накаті (К3-Е8, Е8-Р6): `runStart` зі справжнім
 // `applyMigrations` і фейковим `execve` на чистій БД → журнал повний, а
 // `execve` отримує оточення без пароля власника схеми. Юніт порядку кроків
-// на фейках — `tests/start-core.test.ts`; реальний `execve` — Gate B пілота.
+// на фейках — `prod-start/__tests__/run-start.test.ts`; реальний `execve` — Gate B пілота.
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { resolveDriverEnv } from 'simplycms/env';
 import { applyMigrations } from 'simplycms/migrate';
-import { runStart } from '../../../../create-simplycms-store/template/scripts/start-core.mjs';
+import { runStart } from 'simplycms/prod-start';
 import { resolveHarness } from '../up.mjs';
 import { canonNames, freshDb, journalOf } from './fixtures/migrate';
 

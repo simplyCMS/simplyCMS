@@ -1,14 +1,11 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  runStart,
-  STRIPPED_ENV,
-} from '../packages/create-simplycms-store/template/scripts/start-core.mjs';
+import { runStart } from '../run-start';
 
 // Юніт ядра прод-старту на фейках: перевіряємо ПОРЯДОК кроків і те, що
 // пароль власника схеми не доходить ні до execve, ні до виводу. Справжній
-// накат + execve доводять start-migrate.test.ts (test:schema) і Gate B пілота.
+// накат + execve доводять start-migrate.test.ts (test:schema), шим —
+// tests/start-script.test.ts, процес у проді — Gate B пілота (/proc/<pid>/environ).
+// Парність STRIPPED_ENV із server.mjs — tests/stripped-env-parity.test.ts.
 
 const OWNER_URL = 'postgres://owner:s3cr3t-Pa55@db:5432/shop';
 const baseEnv = {
@@ -128,15 +125,5 @@ describe('runStart', () => {
     expect(await runStart(deps)).toBe(1);
     expect(migrate).not.toHaveBeenCalled();
     expect(logs.join('\n')).toContain('Node ≥ 24');
-  });
-});
-
-describe('STRIPPED_ENV', () => {
-  it('парність зі списком у server.mjs', () => {
-    const source = readFileSync(join(__dirname, '..', 'server.mjs'), 'utf8');
-    const match = /const STRIPPED_ENV = \[([^\]]*)\]/.exec(source);
-    expect(match).not.toBeNull();
-    const keys = [...match![1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
-    expect(keys).toEqual(STRIPPED_ENV);
   });
 });

@@ -183,6 +183,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   mail: 'Лист НЕ надіслано (SMTP не налаштовано)',
   vite: 'simplycms-build-info',
   migrate: 'адопція бази без журналу не підтримується',
+  'prod-start': '[start] MIGRATION_DATABASE_URL не задано — накат пропущено.',
   sanitize: 'nofollow ugc noopener noreferrer',
 };
 

@@ -35,6 +35,8 @@ const EXPECTED_FILES = [
   'src/routes/__root.tsx',
   'themes/default/index.ts',
   'db/migrations/0000_prelude.sql',
+  // Шими прод-старту й запрошення власника (host-файли; логіка — у ядрі).
+  'scripts/start.mjs',
   'scripts/owner-invite.mjs',
   // 🔴 Без нього pnpm 11 обриває install (`ERR_PNPM_IGNORED_BUILDS`), а
   // `pnpm build` перезапускає install і теж падає — магазин не збереться.

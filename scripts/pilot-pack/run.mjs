@@ -11,6 +11,7 @@ import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
 import { checkExecve, checkPartialEnv, gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
+import { checkStrippedEnvParity } from './stripped-env.mjs';
 import { gateMedia } from './gate-media.mjs';
 import { gateMail } from './gate-mail.mjs';
 import { gateServerBundle } from './gate-sb.mjs';
@@ -36,7 +37,17 @@ export async function runGates(opts) {
   results.push(['A', gateRoutes(opts.storeDir)]);
 
   step('Gate C — bundle-guard + splitting');
-  results.push(['C', gateBundle(opts.storeDir)]);
+  // Межа клієнт/сервер і парність `STRIPPED_ENV` (server.mjs скретча ↔ ядро з
+  // tarball-а): обидва про те, що server-only знання не розходяться в магазині.
+  const bundle = gateBundle(opts.storeDir);
+  const stripped = checkStrippedEnvParity(opts.storeDir);
+  results.push([
+    'C',
+    {
+      ok: bundle.ok && stripped.ok,
+      details: [...bundle.details, ...stripped.details],
+    },
+  ]);
 
   step('Gate SB — що вклеєно в серверний бандл');
   results.push(['SB', gateServerBundle(opts.storeDir)]);

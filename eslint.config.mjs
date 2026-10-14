@@ -124,6 +124,10 @@ const SERVER_ENV_FILES = [
   'packages/simplycms/src/storefront-routes/server/root.ts',
   'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
+  // Проводки шимів магазину (F5 рев'ю Е8): читають `process.env` процесу старту
+  // й `owner:invite`, а не збірки.
+  'packages/simplycms/src/prod-start/start-store.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/main.ts',
 ];
 
 // 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти

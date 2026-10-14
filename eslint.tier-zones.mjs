@@ -152,6 +152,9 @@ const TIER_ZONES = [
   // (до ролей і RLS `withActor` неможливий), тож upward-винятків немає, і
   // `db` йому теж ні до чого.
   ['src/migrate', 2, 'migrate', []],
+  // Прод-старт магазину (К3-Е8, F5 рев'ю) — T2. Upward `env` (перевірка груп до
+  // накату) і `migrate` (сам накат); БД актора й auth йому ні до чого.
+  ['src/prod-start', 2, 'prod-start', ['env', 'migrate']],
   // Санітизація rich-HTML (Тема 9) — T2. Чиста функція над рядком: upward-
   // винятків немає; тип `SanitizedHtml` бере з T0 (`contracts`).
   ['src/sanitize', 2, 'sanitize', []],
