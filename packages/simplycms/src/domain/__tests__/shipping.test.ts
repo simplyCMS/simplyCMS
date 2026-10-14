@@ -142,7 +142,11 @@ describe('calculateShipping', () => {
   });
 
   it('pricing rates без застосовного тарифу → null', async () => {
-    expect(await calculateShipping(withPricing('rates'), [])).toBeNull();
+    // Зона задана, тарифів немає: null через відсутність тарифу, а не через
+    // запобіжник `zone === null` (він окремо в тесті вище).
+    expect(
+      await calculateShipping(withZone(withPricing('rates'), 'z1'), []),
+    ).toBeNull();
   });
 
   it('pricing provider → null (вбудовані провайдери не рахують)', async () => {
