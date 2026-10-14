@@ -41,9 +41,16 @@ export function compareVersions(a, b) {
   return Math.sign(pa.rc - pb.rc);
 }
 
-/** Мажорна складова версії. @param {string} value */
-export function majorOf(value) {
+/**
+ * Межа сумісності: мажорна цифра з 1.0, `0.<мінорна>` для 0.x. Semver для 0.x
+ * не обіцяє нічого між мінорними (так само `coreRangeFor` дає `^0.<мінорна>.0`),
+ * тож `simplycms update` без `--to` не перетинає й мінорну межу лінії 0.x.
+ * @param {string} value
+ * @returns {string}
+ */
+export function compatBoundaryOf(value) {
   const parsed = parseVersion(value);
   if (!parsed) throw new Error(`Невалідна версія: "${value}"`);
-  return parsed.core[0];
+  const [major, minor] = parsed.core;
+  return major === 0 ? `0.${minor}` : String(major);
 }

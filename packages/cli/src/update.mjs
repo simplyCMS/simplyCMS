@@ -6,6 +6,8 @@
 import { execFileSync } from 'node:child_process';
 import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
 import {
+  DATABASE_RECREATION_NOTE,
+  needsDatabaseRecreation,
   readInstalledCoreVersion,
   resolveUpdateTarget,
 } from './update-target.mjs';
@@ -66,32 +68,35 @@ const defaultExec = (command, args, options) =>
   execFileSync(command, args, options);
 
 /**
- * Поставити пакети ядра на цільову версію. `stop` — рішення не ставити (мажорна
- * межа, невідома поточна), код виходу вже виставлено; `installed` — `pnpm add` був.
+ * Поставити пакети ядра на цільову версію. `stop` — рішення не ставити (межа
+ * сумісності, невідома поточна), код виходу вже виставлено; `installed` — `pnpm add` був.
  * @returns {'stop' | 'none' | 'installed'}
  */
 function installCore(storeRoot, to, exec) {
   const manifest = readStoreManifest(storeRoot);
-  const { version, status } = resolveUpdateTarget(to, {
-    exec,
-    current: readInstalledCoreVersion(storeRoot, manifest),
-  });
-  if (status === 'unknown' || status === 'major') {
+  const current = readInstalledCoreVersion(storeRoot, manifest);
+  const { version, status } = resolveUpdateTarget(to, { exec, current });
+  const recreateDb =
+    current !== null && needsDatabaseRecreation(current, version);
+  if (status === 'unknown' || status === 'boundary') {
     say.error(
       status === 'unknown'
         ? `Не вдалося визначити поточну версію ядра магазину (реєстр має ${version}). ` +
             `Вкажи цільову явно: \`simplycms update --to ${version}\``
-        : `Доступна мажорна версія ${version} — містить зламані зміни, див. розділ ` +
-            `BREAKING у CHANGELOG; оновлення — \`simplycms update --to ${version}\``,
+        : `Доступна версія ${version} поза межею сумісності ${current} — містить ` +
+            `зламані зміни, див. розділ BREAKING у CHANGELOG; оновлення — ` +
+            `\`simplycms update --to ${version}\`` +
+            (recreateDb ? `\n${DATABASE_RECREATION_NOTE}` : ''),
     );
     process.exitCode = 3;
     finish(
       status === 'unknown'
         ? 'Поточна версія невідома — без --to не ставлю.'
-        : 'Мажорну межу без --to не перетинаю.',
+        : 'Межу сумісності без --to не перетинаю.',
     );
     return 'stop';
   }
+  if (recreateDb && status === 'install') say.warn(DATABASE_RECREATION_NOTE);
   if (status === 'up-to-date') {
     say.info(`Новішого релізу немає (у реєстрі ${version}) — пакети не чіпаю.`);
     return 'none';

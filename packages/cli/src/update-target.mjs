@@ -1,12 +1,12 @@
 // Вибір цільової версії для `simplycms update`: dist-tags реєстру, канал
-// пре-релізу і мажорна межа. Усе, що ходить у мережу, — через ін'єкційний
+// пре-релізу і межа сумісності (мажорна з 1.0, мінорна для 0.x). Усе, що ходить у мережу, — через ін'єкційний
 // `exec` (див. `run(argv, deps)` в update.mjs), тож тести підставляють фейк.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   compareVersions,
   isPrereleaseVersion,
-  majorOf,
+  compatBoundaryOf,
   parseVersion,
 } from './versions.mjs';
 
@@ -100,22 +100,48 @@ export function pickTargetVersion(tags, current) {
  * - `--to X` — як є, без перевірок (явне рішення власника);
  * - `up-to-date` — ціль не новіша за поточну: нічого не ставимо (даунгрейд
  *   лише явним `--to`);
- * - `major` — ціль перетинає мажорну межу: чесний semver, тож без `--to`
- *   злам не ставимо (RC → фінальний тієї ж мажорної межу не перетинає);
+ * - `boundary` — ціль перетинає межу сумісності (мажорну з 1.0, мінорну для 0.x):
+ *   чесний semver, тож без `--to` злам не ставимо (RC → фінальний тієї ж межі
+ *   її не перетинає);
  * - `unknown` — поточна версія невідома: без `--to` не ставимо;
  * - `install` — ставимо.
  * @param {string | undefined} to
  * @param {{ exec: Function; current: string | null }} ctx
- * @returns {{ version: string; status: 'install' | 'up-to-date' | 'major' | 'unknown' }}
+ * @returns {{ version: string; status: 'install' | 'up-to-date' | 'boundary' | 'unknown' }}
  */
 export function resolveUpdateTarget(to, { exec, current }) {
   if (to) return { version: to, status: 'install' };
   const version = pickTargetVersion(fetchDistTags(exec), current);
-  // Без відомої поточної версії не можна ні відрізнити даунгрейд, ні мажорну
-  // межу: мовчки ставити latest значить ризикнути обома — просимо явний --to.
+  // Без відомої поточної версії не можна ні відрізнити даунгрейд, ні межу сумісності
+  // : мовчки ставити latest значить ризикнути обома — просимо явний --to.
   if (!current) return { version, status: 'unknown' };
   if (compareVersions(version, current) <= 0)
     return { version, status: 'up-to-date' };
-  if (majorOf(version) > majorOf(current)) return { version, status: 'major' };
+  if (compatBoundaryOf(version) !== compatBoundaryOf(current))
+    return { version, status: 'boundary' };
   return { version, status: 'install' };
 }
+
+/** Версія, з якої магазин має журнал міграцій (`simplycms_migrations`). */
+const JOURNAL_SINCE = '0.15.0';
+
+/**
+ * Чи доведеться створити базу заново: база магазину до 0.15.0 не має журналу
+ * міграцій, і контейнер 0.15.0+ відмовляє їй (`UnjournaledDatabaseError`) —
+ * адопції немає за рішенням, тож це зламана зміна, а не тихий апгрейд.
+ * @param {string} current
+ * @param {string} target
+ */
+export function needsDatabaseRecreation(current, target) {
+  return (
+    compareVersions(current, JOURNAL_SINCE) < 0 &&
+    compareVersions(target, JOURNAL_SINCE) >= 0
+  );
+}
+
+/** Попередження про базу без журналу: дія, а не лише факт (див. BREAKING у CHANGELOG). */
+export const DATABASE_RECREATION_NOTE =
+  'База 0.14 (без журналу міграцій) не підніметься на 0.15+: контейнер упаде з ' +
+  '`UnjournaledDatabaseError`. Створи базу заново: локально — порожня БД і ' +
+  '`pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД; ' +
+  'деталі — розділ BREAKING у CHANGELOG.';

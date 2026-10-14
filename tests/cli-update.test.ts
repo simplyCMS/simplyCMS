@@ -100,10 +100,17 @@ describe('cli update', () => {
     ).toEqual({ version: '0.4.0', status: 'install' });
     expect(
       resolveUpdateTarget(undefined, {
+        exec: () => '{"latest":"0.4.1"}\n',
+        current: '0.4.0',
+      }),
+    ).toEqual({ version: '0.4.1', status: 'install' });
+    // 0.x: мінорна цифра — межа сумісності, без --to її не перетинаємо.
+    expect(
+      resolveUpdateTarget(undefined, {
         exec: () => '{"latest":"0.5.0"}\n',
         current: '0.4.0',
       }),
-    ).toEqual({ version: '0.5.0', status: 'install' });
+    ).toEqual({ version: '0.5.0', status: 'boundary' });
   });
 
   it('resolveUpdateTarget: реєстр недоступний або мовчить — падіння з підказкою --to', () => {
