@@ -528,6 +528,18 @@ email в іншому регістрі — не конфлікт, записує
   → зона визначається наново (`resolveShippingZone`) і записується. Виняток `carrier`: ціна від зони не залежить, тож перерахунок записану зону не чіпає
   (навіть неактивну чи `NULL`), `shipping_rate_id` лишається `NULL`. Призначення замовлення
   адмінка не міняє (ресурс `orders` — `writable: []`), тож записаної зони досить.
+- 🔴 **Зона доставки (К3-Е8, Д1–Д4).** Зона не залежить від тексту: `shipping_zones.cities`/`regions`
+  зносено, місто з адреси покупця на вибір зони не впливає. Єдина функція `resolveShippingZone`
+  (`simplycms/domain/shipping`): кур'єр (`core:address`) → основна зона; самовивіз → `pickup_points.zone_id`
+  точки, `NULL` → основна, неактивна зона точки → відмова. Рівно одна основна зона — інваріант БД, а не
+  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), сід
+  `0003_seed.sql` («Основна зона», `00000007-0000-4000-8000-000000000001`) і відкладений constraint-тригер
+  `shipping_zones_require_default` (не менше однієї, перевірка на COMMIT — заміну основної двома UPDATE в
+  одній транзакції він пропускає), `CHECK (NOT is_default OR is_active)` (основна завжди активна). Для
+  режиму `rates` немає активного тарифу в визначеній зоні → `shipping_unavailable`; тариф іншої зони не
+  береться ніколи (fail-open `!zone ||` зносено). Режими `provider` і `carrier` зону для ціни не читають.
+  Для самовивозу `orders.delivery_city` — `NULL`. Гейти: `test:schema` (`shipping-zone-invariant`, усі шляхи
+  запису), юніти `resolveShippingZone`, харнес-кейси чекауту.
 - 🔴 **Замовлення зберігає знімок, а не посилання.** `createOrder` пише в
   `orders.shipping_data` тип `ShippingSnapshot` (`simplycms/contracts/shipping-providers`):
   `methodName`, `provider`, `pricing` і `destination`. `destination` — або адреса
