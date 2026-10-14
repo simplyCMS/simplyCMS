@@ -4,12 +4,14 @@
 
 import type { CatalogSortOption } from '../../views/slots/CatalogToolbarSlots';
 import {
+  matchesBooleanFilters,
   matchesNumericFilters,
   matchesOptionFilters,
   matchesPriceFilter,
   type FilterableProduct,
 } from './filter-predicates';
 import type {
+  BooleanProperty,
   CatalogFiltersState,
   NumericProperty,
   NumericRange,
@@ -24,6 +26,7 @@ export interface FilterAndSortOptions {
   /** Розділ поточної вибірки; `null` — усі товари. */
   sectionId: string | null;
   numericProperties: NumericProperty[] | undefined;
+  booleanProperties?: readonly BooleanProperty[];
 }
 
 /** Межі цін вибірки — початкові значення слайдера фільтра. */
@@ -101,7 +104,13 @@ function sortProducts<T extends FilterableProduct>(
 /** Вибірка після всіх фільтрів і сортування. */
 export function filterAndSortProducts<T extends FilterableProduct>(
   products: T[] | undefined,
-  { filters, sortBy, sectionId, numericProperties }: FilterAndSortOptions,
+  {
+    filters,
+    sortBy,
+    sectionId,
+    numericProperties,
+    booleanProperties,
+  }: FilterAndSortOptions,
 ): T[] {
   if (!products) return [];
 
@@ -110,6 +119,7 @@ export function filterAndSortProducts<T extends FilterableProduct>(
       (!filters.inStockOnly || product.isAvailable) &&
       matchesOptionFilters(product, filters) &&
       matchesNumericFilters(product, filters, numericProperties) &&
+      matchesBooleanFilters(product, filters, booleanProperties) &&
       matchesPriceFilter(product, filters),
   );
 

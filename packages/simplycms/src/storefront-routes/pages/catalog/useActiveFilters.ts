@@ -23,6 +23,7 @@ export function useActiveFilters({
   priceRange,
   numericRanges,
   numericProperties,
+  booleanProperties,
   propertyOptions,
 }: UseActiveFiltersOptions) {
   const t = useT();
@@ -33,9 +34,18 @@ export function useActiveFilters({
         priceRange,
         numericRanges,
         numericProperties,
+        booleanProperties,
         propertyOptions,
       }),
-    [filters, t, priceRange, numericRanges, numericProperties, propertyOptions],
+    [
+      filters,
+      t,
+      priceRange,
+      numericRanges,
+      numericProperties,
+      booleanProperties,
+      propertyOptions,
+    ],
   );
 
   const onRemoveFilter = useCallback(
@@ -48,6 +58,8 @@ export function useActiveFilters({
       } else if (filter.type === 'range') {
         delete next[`${filter.key}Min`];
         delete next[`${filter.key}Max`];
+      } else if (filter.type === 'boolean') {
+        delete next[filter.key];
       } else if (filter.type === 'option' && filter.optionId) {
         const current = (next[filter.key] as string[]) || [];
         const updated = current.filter((id) => id !== filter.optionId);

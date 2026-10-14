@@ -4,7 +4,7 @@ import {
   loadCatalogProducts,
   loadFilterOptions,
   loadSectionBySlug,
-  loadSectionNumericProperties,
+  loadSectionFilterProperties,
   loadSections,
   withStorefrontDb,
   withViewerDb,
@@ -91,14 +91,12 @@ export const getCatalogProducts = createServerFn({ method: 'GET' })
     );
   });
 
-/** Числові характеристики розділу, за якими можна фільтрувати. */
-export const getSectionNumericProperties = createServerFn({ method: 'GET' })
+/** Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати. */
+export const getSectionFilterProperties = createServerFn({ method: 'GET' })
   .validator(z.object({ sectionId: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { sectionId } = input as { sectionId: string };
-    return withStorefrontDb((db) =>
-      loadSectionNumericProperties(db, sectionId),
-    );
+    return withStorefrontDb((db) => loadSectionFilterProperties(db, sectionId));
   });
 
 /** Опції характеристик — назви для бейджів активних фільтрів. */

@@ -16,7 +16,7 @@ import {
   loadPropertyOption,
   loadSectionBySlug,
   loadSectionFilters,
-  loadSectionNumericProperties,
+  loadSectionFilterProperties,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
 // Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
@@ -186,7 +186,7 @@ describe('вибірки вітрини, знятi з браузера', () => {
       const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
       return {
         filters: await loadSectionFilters(db, section!.id),
-        numeric: await loadSectionNumericProperties(db, section!.id),
+        numeric: await loadSectionFilterProperties(db, section!.id),
         options: await loadFilterOptions(db),
       };
     });

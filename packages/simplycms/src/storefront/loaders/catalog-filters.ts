@@ -6,10 +6,11 @@ import {
 } from 'simplycms/schema';
 import type { ActorDb } from './db';
 
-/** Числова характеристика розділу, придатна для фільтра-діапазону. */
-export interface NumericPropertyRow {
+/** Характеристика розділу для фільтра: діапазон (number/range) або «Так» (boolean). */
+export interface SectionFilterPropertyRow {
   id: string;
   slug: string;
+  name: string;
   property_type: string;
   is_filterable: boolean;
 }
@@ -26,19 +27,20 @@ export interface FilterOptionRow {
 }
 
 /**
- * Числові характеристики розділу, за якими можна фільтрувати.
+ * Характеристики розділу (number/range/boolean), за якими фільтрує клієнт.
  *
  * 🔴 Відбір `is_filterable` + тип робиться ЗАПИТОМ, а не після вибірки в
  * браузері: старий код тягнув усі призначення розділу й відсіював їх у JS,
  * тобто платив трафіком за рядки, які одразу викидав.
  */
-export async function loadSectionNumericProperties(
+export async function loadSectionFilterProperties(
   db: ActorDb,
   sectionId: string,
-): Promise<NumericPropertyRow[]> {
+): Promise<SectionFilterPropertyRow[]> {
   return db
     .select({
       id: sectionProperties.id,
+      name: sectionProperties.name,
       slug: sectionProperties.slug,
       property_type: sectionProperties.propertyType,
       is_filterable: sectionProperties.isFilterable,
@@ -55,6 +57,7 @@ export async function loadSectionNumericProperties(
         or(
           eq(sectionProperties.propertyType, 'number'),
           eq(sectionProperties.propertyType, 'range'),
+          eq(sectionProperties.propertyType, 'boolean'),
         ),
       ),
     )
@@ -94,9 +97,7 @@ export async function loadFilterOptions(
 }
 
 /** Характеристика розділу в панелі фільтрів. */
-export interface FilterPropertyRow extends NumericPropertyRow {
-  name: string;
-}
+export interface FilterPropertyRow extends SectionFilterPropertyRow {}
 
 /** Панель фільтрів розділу: характеристики + опції тих, що з переліком. */
 export interface SectionFilters {

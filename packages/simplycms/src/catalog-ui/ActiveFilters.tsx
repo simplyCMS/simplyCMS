@@ -5,7 +5,7 @@ interface ActiveFilter {
   key: string;
   label: string;
   value: string;
-  type: 'option' | 'range' | 'price';
+  type: 'option' | 'range' | 'price' | 'boolean';
   optionId?: string;
 }
 

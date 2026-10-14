@@ -26,6 +26,7 @@ export const messages = {
   'catalog.filters.removeAria': 'Видалити фільтр {label}: {value}',
   'catalog.filters.clearAll': 'Скинути всі',
   'catalog.filters.inStockOnly': 'Тільки в наявності',
+  'catalog.filters.booleanYes': 'Так',
   'catalog.filters.noOptions': 'Немає опцій',
 
   // Числові діапазони без видимого лейбла (К2-Е0, Е0-4) — доступні імена

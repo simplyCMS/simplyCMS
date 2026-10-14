@@ -19,7 +19,7 @@ import type { CatalogFiltersState } from './types';
 import { useActiveFilters } from './useActiveFilters';
 import { useCatalogProductsQuery } from './useCatalogProductsQuery';
 import {
-  useNumericPropertiesQuery,
+  useFilterPropertiesQuery,
   usePropertyOptionsQuery,
   useSectionsQuery,
   type CatalogSectionRow,
@@ -68,8 +68,19 @@ export function useCatalogController({
     useCatalogProductsQuery(sectionId);
   const priced = usePricedProducts(rawProducts);
   const { products } = priced;
-  const { data: numericProperties } =
-    useNumericPropertiesQuery(activeSectionId);
+  const { data: filterProperties } = useFilterPropertiesQuery(activeSectionId);
+  // Один канал: з нього похідні й діапазони (number/range), і «Так» (boolean).
+  const numericProperties = useMemo(
+    () =>
+      filterProperties?.filter(
+        (p) => p.property_type === 'number' || p.property_type === 'range',
+      ),
+    [filterProperties],
+  );
+  const booleanProperties = useMemo(
+    () => filterProperties?.filter((p) => p.property_type === 'boolean'),
+    [filterProperties],
+  );
   const { data: propertyOptions } = usePropertyOptionsQuery();
 
   const ratingProductIds = useMemo(
@@ -90,8 +101,16 @@ export function useCatalogController({
         sortBy,
         sectionId: activeSectionId,
         numericProperties,
+        booleanProperties,
       }),
-    [products, filters, sortBy, activeSectionId, numericProperties],
+    [
+      products,
+      filters,
+      sortBy,
+      activeSectionId,
+      numericProperties,
+      booleanProperties,
+    ],
   );
   const sectionProducts = useMemo(
     () => filterBySection(products, activeSectionId),
@@ -104,6 +123,7 @@ export function useCatalogController({
     priceRange,
     numericRanges,
     numericProperties,
+    booleanProperties,
     propertyOptions,
   });
 
