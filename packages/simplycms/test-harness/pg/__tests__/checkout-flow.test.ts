@@ -159,14 +159,14 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     point = await one(
       `select id from public.pickup_points where name = 'Склад у Києві'`,
     );
-    // Д3/Д7: неосновна зона K (cities ще існує до Task 7), самовивіз і курʼєр
+    // Д3/Д7: неосновна зона K, самовивіз і курʼєр
     // з тарифом ЛИШЕ в K; точка зі знесеною зоною (SET NULL) і точка з
     // неактивною зоною. Окремі методи, щоб не зачепити решту кейсів файлу.
     await queryRows(
       dbUrl,
-      `insert into public.shipping_zones (id, name, is_active, is_default, cities, regions)
-       values (gen_random_uuid(), 'Зона K', true, false, '{Київ}', '{}'),
-              (gen_random_uuid(), 'Зона D', true, false, '{}', '{}')`,
+      `insert into public.shipping_zones (id, name, is_active, is_default)
+       values (gen_random_uuid(), 'Зона K', true, false),
+              (gen_random_uuid(), 'Зона D', true, false)`,
     );
     await queryRows(
       dbUrl,
@@ -353,7 +353,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
 
   it('НЕ-pickup метод без міста — shipping_unavailable (M7)', async () => {
     // Курʼєр БЕЗ міста інакше мовчки поїхав би на ДЕФОЛТНУ зону
-    // (`findShippingZoneIn(zones, '')`) — тариф обирала б відсутність даних.
+    // (вибір зони за порожнім містом) — тариф обирала б відсутність даних.
     const before = await ordersCount();
     const result = await placeOrderFor(
       input({
@@ -421,20 +421,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(await shippingCostOf(result.order.id)).toBe('0.00');
   });
 
-  it('самовивіз: місто збігається з cities зони K — теж ok (місто не впливає)', async () => {
-    const result = await placeOrderFor(
-      input({
-        shippingMethodId: pickupK,
-        pickupPointId: pointK,
-        deliveryCity: 'Київ',
-        items: untrackedItems(),
-      }),
-      null,
-    );
-    expect(result.ok).toBe(true);
-  });
-
-  it('курʼєр з тарифом лише в неосновній зоні → shipping_unavailable, навіть коли місто в cities зони', async () => {
+  it('курʼєр з тарифом лише в неосновній зоні → shipping_unavailable (місто зону не обирає)', async () => {
     const before = await ordersCount();
     const result = await placeOrderFor(
       input({

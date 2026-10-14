@@ -3,7 +3,6 @@ import {
   calculateShippingCost,
   calculateShipping,
   formatShippingCost,
-  findShippingZoneIn,
 } from '../shipping';
 import type { ShippingRate, ShippingCalculationContext } from '../shipping';
 
@@ -182,18 +181,5 @@ describe('formatShippingCost', () => {
     );
 
     expect(out.join(' ')).not.toMatch(/[А-Яа-яЇїІіЄєҐґ]/);
-  });
-});
-
-describe('findShippingZoneIn', () => {
-  const zones = [
-    { id: 'kyiv', cities: ['Київ'], regions: [], is_default: false },
-    { id: 'default', cities: [], regions: [], is_default: true },
-  ];
-  it('matches by city (normalized)', () => {
-    expect(findShippingZoneIn(zones, ' київ ')?.id).toBe('kyiv');
-  });
-  it('falls back to default zone', () => {
-    expect(findShippingZoneIn(zones, 'Львів')?.id).toBe('default');
   });
 });

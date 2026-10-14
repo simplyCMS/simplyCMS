@@ -204,36 +204,3 @@ export function formatShippingCost(
   }
   return formatPrice(cost, config);
 }
-
-/**
- * Знаходить найбільш специфічну зону доставки для міста клієнта
- * серед уже завантажених зон (pure-частина findShippingZone).
- * IO (запит зон) виконує CatalogRepository.getShippingZones.
- */
-export function findShippingZoneIn<
-  Z extends {
-    cities?: string[];
-    regions?: string[];
-    is_default: boolean;
-  },
->(zones: Z[], customerCity: string): Z | null {
-  const normalized = normalizeString(customerCity);
-
-  for (const zone of zones) {
-    if (zone.is_default) continue;
-    const cities = zone.cities || [];
-    if (cities.some((city) => normalizeString(city) === normalized)) {
-      return zone;
-    }
-    const regions = zone.regions || [];
-    if (regions.some((region) => normalizeString(region) === normalized)) {
-      return zone;
-    }
-  }
-
-  return zones.find((z) => z.is_default) || null;
-}
-
-function normalizeString(str: string): string {
-  return str.toLowerCase().trim().replace(/\s+/g, ' ');
-}

@@ -16,8 +16,6 @@ const zone = (id: string, is_default: boolean) => ({
   id,
   name: id,
   description: null,
-  cities: [],
-  regions: [],
   is_active: true,
   is_default,
   sort_order: 0,

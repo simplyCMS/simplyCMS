@@ -435,8 +435,6 @@ CREATE TABLE "shipping_zones" (
 	"is_default" boolean DEFAULT false NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"cities" text[] DEFAULT '{""}',
-	"regions" text[] DEFAULT '{""}',
 	CONSTRAINT "shipping_zones_default_active" CHECK (not is_default or is_active)
 );
 --> statement-breakpoint

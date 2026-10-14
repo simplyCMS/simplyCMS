@@ -25,8 +25,9 @@ const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
  * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
  * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
  *
- * 🔴 GLOBAL-кейс НЕ покладається на сід: спершу reset (`is_default=false` усім), потім insert #1 (мусить пройти —
- * доводить, що індекс не заважає першому), потім insert #2 → 23505.
+ * 🔴 GLOBAL-кейс НЕ покладається на сід: спершу reset (`is_default=false`
+ * усім), потім insert #1 (мусить пройти — доводить, що індекс не заважає
+ * першому), потім insert #2 → 23505.
  * Коди — унікальні відносно сіду (UNIQUE code у languages/user_categories).
  *
  * 🔴 `shipping_zones` у GLOBAL немає: сід тримає єдину основну зону, а

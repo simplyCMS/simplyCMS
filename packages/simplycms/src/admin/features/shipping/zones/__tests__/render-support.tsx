@@ -8,8 +8,6 @@ const base = {
   description: null,
   sortOrder: 0,
   createdAt: new Date(),
-  cities: ['Київ', 'Бровари'],
-  regions: [],
 };
 
 /** Київ — дефолтна, Львів — активна, Одеса — вимкнена. */

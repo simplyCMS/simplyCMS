@@ -65,8 +65,8 @@ export const HIDDEN_SHIPPING_FIXTURES: string[] = [
      values (gen_random_uuid(), '${HIDDEN_METHOD_CODE}', 'Вимкнений курʼєр', false, 2, 'core:address')
    on conflict (code) do nothing`,
 
-  `insert into public.shipping_zones (id, name, is_active, is_default, cities)
-     values (gen_random_uuid(), '${HIDDEN_ZONE_NAME}', false, false, '{}')`,
+  `insert into public.shipping_zones (id, name, is_active, is_default)
+     values (gen_random_uuid(), '${HIDDEN_ZONE_NAME}', false, false)`,
 
   `insert into public.shipping_rates
      (id, method_id, zone_id, name, calculation_type, base_cost, is_active)

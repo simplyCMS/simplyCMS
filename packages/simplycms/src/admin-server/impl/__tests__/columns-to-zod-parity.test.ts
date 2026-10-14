@@ -33,7 +33,7 @@ const resources = [
 const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),
 );
-// Е6а: + `PgArray` (`shipping_zones.cities/regions`, text[]) — десятий тип.
+// Е6а: + `PgArray` (`banners.schedule_days`, integer[]) — десятий тип.
 // Е6д: + `PgTime` (`banners.schedule_time_from/to`) — одинадцятий.
 const TYPES = [
   'PgArray',

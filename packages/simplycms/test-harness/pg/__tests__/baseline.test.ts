@@ -71,6 +71,18 @@ describe('канон міграцій: накат на чисту БД', () => {
     }
   });
 
+  it('shipping_zones без cities і regions (зона за назвою міста знесена, Д1)', async () => {
+    const cols = await queryRows(
+      dbUrl,
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'shipping_zones'`,
+    );
+    const names = cols.map((c) => c.column_name as string);
+    expect(names).toContain('is_default');
+    expect(names).not.toContain('cities');
+    expect(names).not.toContain('regions');
+  });
+
   it('жоден файл канону не згадує auth.* чи storage.* (доказ B13)', async () => {
     const { readFileSync } = await import('node:fs');
     for (const file of canonFiles()) {

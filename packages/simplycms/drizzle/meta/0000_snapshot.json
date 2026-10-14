@@ -4142,20 +4142,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "cities": {
-          "name": "cities",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{\"\"}'"
-        },
-        "regions": {
-          "name": "regions",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{\"\"}'"
         }
       },
       "indexes": {

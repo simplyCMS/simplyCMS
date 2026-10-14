@@ -25,20 +25,16 @@ export const messages = {
 
   // Зони доставки
   'admin.shipping.zones.subtitle':
-    'Географічні зони з різними тарифами доставки',
+    "Основна зона — для доставки за адресою; інші зони — для точок самовивозу. Прив'язка до населених пунктів з'явиться з довідником.",
+  'admin.shipping.zones.hint':
+    "Основна зона — для доставки за адресою; інші зони — для точок самовивозу. Прив'язка до населених пунктів з'явиться з довідником.",
   'admin.shipping.zones.add': 'Додати зону',
   'admin.shipping.zones.empty': 'Зони доставки не знайдено',
-  'admin.shipping.zones.cities': 'Міста',
   'admin.shipping.zones.deleted': 'Зону видалено',
   'admin.shipping.zones.created': 'Зону створено',
   'admin.shipping.zones.new': 'Нова зона доставки',
   'admin.shipping.zones.namePlaceholder': 'Київ і передмістя',
   'admin.shipping.zones.priority': 'Пріоритет (порядок)',
-  'admin.shipping.zones.citiesPlaceholder': 'Київ, Бровари, Вишневе, Ірпінь',
-  'admin.shipping.zones.citiesHint':
-    'Введіть назви міст через кому або кожне місто з нового рядка',
-  'admin.shipping.zones.regions': 'Регіони (опціонально)',
-  'admin.shipping.zones.regionsPlaceholder': 'Київська область',
 
   // Тарифи
   'admin.shipping.rates.title': 'Тарифи доставки',

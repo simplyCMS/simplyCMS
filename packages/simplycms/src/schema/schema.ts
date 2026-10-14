@@ -488,8 +488,6 @@ export const shippingZones = pgTable("shipping_zones", {
 	isDefault: boolean("is_default").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	cities: text().array().default([""]),
-	regions: text().array().default([""]),
 }, (table) => [
 	// К3-14: таблиця без parent-колонки — дефолт глобальний (перевірено —
 	// у ShippingZoneEdit.tsx unset-логіки взагалі немає, легасі-шлях мертвий).

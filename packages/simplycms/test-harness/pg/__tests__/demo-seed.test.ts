@@ -48,9 +48,10 @@ describe('демо-сід: накат поверх канону', () => {
       await queryRows(dbUrl, 'select id from public.product_modifications')
     ).length,
     banners: (await queryRows(dbUrl, 'select id from public.banners')).length,
-    // К2-Е0: доставка й залишки — п'ять нових вставок секції 10, чиї
-    // нетривіальні форми `on conflict` (часткові індекси зон і залишків)
-    // саме тут і доводять ідемпотентність (кейс нижче).
+    // К2-Е0: доставка й залишки — вставки секції 10 з нетривіальними
+    // формами `on conflict` (частковий індекс залишків) доводять тут
+    // ідемпотентність (кейс нижче). Зону доставки демо-сід не вставляє:
+    // основну дає `0003_seed`, тож `shippingZones` лишається сталим.
     shippingMethods: (
       await queryRows(dbUrl, 'select id from public.shipping_methods')
     ).length,

@@ -26,20 +26,16 @@ export const messages: Catalog = {
   'admin.shipping.methods.icon': 'Icon (Lucide)',
 
   'admin.shipping.zones.subtitle':
-    'Geographic zones with different shipping rates',
+    'The main zone is for address delivery; other zones are for pickup points. Binding to localities will arrive with the locality directory.',
+  'admin.shipping.zones.hint':
+    'The main zone is for address delivery; other zones are for pickup points. Binding to localities will arrive with the locality directory.',
   'admin.shipping.zones.add': 'Add a zone',
   'admin.shipping.zones.empty': 'No shipping zones found',
-  'admin.shipping.zones.cities': 'Cities',
   'admin.shipping.zones.deleted': 'Zone deleted',
   'admin.shipping.zones.created': 'Zone created',
   'admin.shipping.zones.new': 'New shipping zone',
   'admin.shipping.zones.namePlaceholder': 'Kyiv and suburbs',
   'admin.shipping.zones.priority': 'Priority (order)',
-  'admin.shipping.zones.citiesPlaceholder': 'Kyiv, Brovary, Vyshneve, Irpin',
-  'admin.shipping.zones.citiesHint':
-    'Enter city names separated by commas or one city per line',
-  'admin.shipping.zones.regions': 'Regions (optional)',
-  'admin.shipping.zones.regionsPlaceholder': 'Kyiv oblast',
 
   'admin.shipping.rates.title': 'Shipping rates',
   'admin.shipping.rates.add': 'Add a rate',
