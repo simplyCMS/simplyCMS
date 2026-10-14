@@ -246,8 +246,13 @@ describe('outbox пошти mail_outbox (Е8-Р10)', () => {
     };
     const first = deliverMail([], gated);
     await firstInSend;
-    await deliverMail([], gated);
-    release();
+    // `finally`: якщо другий добір кине, перший має відпуститись одразу, інакше
+    // тест висітиме до таймауту замість показати справжню помилку.
+    try {
+      await deliverMail([], gated);
+    } finally {
+      release();
+    }
     await first;
     expect(sent.map((m) => m.to)).toEqual(['dup@x.test']);
     expect(await rows()).toEqual([]);
