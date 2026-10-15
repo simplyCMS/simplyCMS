@@ -60,7 +60,7 @@
 | Д6 | Узгодженість процесних кешів між репліками (прийнято архітектором 2026-10-15) | ОДИН механізм: `createReadCache` сам стає поколіннєвим через таблицю `cache_generations(key text PRIMARY KEY, generation bigint NOT NULL)`. Ключі — константа ядра `CACHE_KEYS` (`storeProfile`, `activeTheme`, `languages`), рядки сіду — у `0003_seed.sql` (перекладної пари немає, B1 не порушено). Мутація збільшує покоління у СВОЇЙ транзакції. Усі покоління читаються ОДНИМ запитом на HTTP-запит і мемоізуються в per-request контексті ядра `simplycms/site/request-context`; поза запитом (CLI, фонові задачі) — запит на `get`. LISTEN/NOTIFY не беремо: прив'язаний до з'єднання й ненадійний за пулерами. Задача — Task 5а |
 | Д3 | Як `output` rewrite знає поточну мову | `input` записує мову розібраного URL у стан, створений у `getRouter()`. Стан per-router: на сервері роутер створюється на запит, на клієнті — один. Це обчислене значення `resolveRequestLocale`, а не друге джерело мови |
 | Д4 | Виконавець і старий `runAdmin` | `runAdmin`/`runAdminTransactions` лишаються для ще не перенесених 125 serverFn до М3. Нові операції йдуть лише через `executeOperation`. Лінт І25 тримає явний legacy-перелік, який лише скорочується |
-| Д5 | Права операцій мов і токенів | `languages.*` → `settings.manage`; `apiTokens.*` → нова операція `apiToken.manage` в `AUTHZ_MATRIX` (`{ admin: 'any' }`): видача токена — окрема ділянка безпеки, а не налаштування |
+| Д5 | Права операцій мов і токенів | `languages.*` → `settings.manage`; `api-tokens.*` → нова операція `apiToken.manage` в `AUTHZ_MATRIX` (`{ admin: 'any' }`): видача токена — окрема ділянка безпеки, а не налаштування |
 
 ---
 
@@ -530,11 +530,11 @@
   - `storeIdempotentResponse(db, req, status, body)` — `UPDATE` того самого рядка перед комітом, лише 2xx. Не-2xx відкочує транзакцію разом із рядком ключа;
   - прибирання протухлих — порцією 100 у тій самій транзакції;
   - операції токенів (`permission: 'apiToken.manage'`):
-    - `apiTokens.create { id, userId, name, scopes, expiresAt? }` → `{ token }` — ОДИН раз. `userId` дозволено лише двох видів: власний (`subject.userId`) або сервісного облікового запису (користувач без рядка `accounts`). Інакше `AuthzError` — адмін не випускає токен від імені іншої людини, і атрибуція дій не фальсифікується;
-    - `apiTokens.revoke { id }`;
-    - `apiTokens.list` → без хешів;
-    - `serviceAccounts.create { id, name, role }` — користувач без рядка `accounts`;
-    - 🔴 усі `apiTokens.*` і `serviceAccounts.*` позначені `sessionOnly: true` і виконуються ЛИШЕ з cookie-сесії. Bearer → 403 `forbidden`, навіть якщо scope дозволяє: витеклий токен не може сам себе розмножити. Поле `sessionOnly?: true` додається в `OperationDef` (Task 6), а `handleApiRequest` перевіряє його до виконання;
+    - `api-tokens.create { id, userId, name, scopes, expiresAt? }` → `{ token }` — ОДИН раз. `userId` дозволено лише двох видів: власний (`subject.userId`) або сервісного облікового запису (рядок у `service_accounts`). Інакше `AuthzError` — адмін не випускає токен від імені іншої людини, і атрибуція дій не фальсифікується;
+    - `api-tokens.revoke { id }`;
+    - `api-tokens.list` → без хешів;
+    - `service-accounts.create { name, role }` — користувач (`id` кладе БД: `users` — Категорія B) + рядок у `service_accounts` в одній транзакції;
+    - 🔴 усі `api-tokens.*` і `service-accounts.*` позначені `sessionOnly: true` і виконуються ЛИШЕ з cookie-сесії. Bearer → 403 `forbidden`, навіть якщо scope дозволяє: витеклий токен не може сам себе розмножити. Поле `sessionOnly?: true` додається в `OperationDef` (Task 6), а `handleApiRequest` перевіряє його до виконання;
   - `buildOpenApi(ops: readonly OperationDef[]): OpenApiDocument` — `z.toJSONSchema(def.input, { target: 'draft-2020-12', io: 'input' })`, вихід — `io: 'output'`, Date-поля в схемах заборонені (дротова форма), `$schema` вкладених прибрано, `openapi: '3.1.0'`.
 - CSRF. Факт: `runtime/csrf.ts:22` `shouldValidateCsrf(method, pathname)` перевіряє ВСІ не-безпечні запити, крім `/api/auth/`, і стоїть першим у `requestMiddleware` (`src/start.ts:118`). Bearer-запит без `Origin` впав би з 403 ще до адаптера. Тому:
   - сигнатура стає `shouldValidateCsrf(method, pathname, headers: Headers)`: для `pathname.startsWith('/api/v1/')` з `Authorization: Bearer …` перевірки немає; cookie-запит на `/api/v1/` перевіряється, як і досі;
@@ -555,8 +555,8 @@
     - права = роль ∩ scopes: токен адміна зі scopes `['languages.list']` на `languages.add` → 403;
     - сервісний обліковий запис не має рядка в `accounts`;
     - дія атрибутується суб'єкту токена (`changed_by`/`userId` у GUC = `user_id` токена);
-    - `apiTokens.create` від адміна з `userId` іншого адміна-людини → 403; з власним `userId` і з `userId` сервісного запису → ок;
-    - Bearer-токен зі scope `apiTokens.create` на `POST /api/v1/apiTokens.create` → 403 (session-only).
+    - `api-tokens.create` від адміна з `userId` іншого адміна-людини → 403; з власним `userId` і з `userId` сервісного запису → ок;
+    - Bearer-токен зі scope `api-tokens.create` на `POST /api/v1/api-tokens.create` → 403 (session-only).
   - `idempotency.test.ts` (І28, Review Focus 3) через `handleApiRequest` на `languages.add`:
     - повтор → той самий статус і тіло, мова одна;
     - інший відбиток → 422;
@@ -578,8 +578,8 @@
   - (б) зберігати 4xx → тест «після 400» червоний;
   - (в) віддати `error.message` у 500 → `http-problem` червоний;
   - (г) ігнорувати `revoked_at` → `api-tokens` червоний;
-  - (д) прибрати перевірку `userId` у `apiTokens.create` → кейс «від імені іншого адміна» червоний;
-  - (е) прибрати перевірку `sessionOnly` → кейс Bearer на `apiTokens.create` червоний;
+  - (д) прибрати перевірку `userId` у `api-tokens.create` → кейс «від імені іншого адміна» червоний;
+  - (е) прибрати перевірку `sessionOnly` → кейс Bearer на `api-tokens.create` червоний;
   - (є) пропустити `storeIdempotentResponse` → кейс «повтор отримує справжнє тіло» червоний;
   - (ж) прибрати `SET LOCAL lock_timeout` → кейс утриманої транзакції висне (таймаут тесту) → червоний;
   - (з) адаптер падає назад на cookie за невалідного Bearer → кейс «невалідний Bearer + валідний cookie → 401» червоний.

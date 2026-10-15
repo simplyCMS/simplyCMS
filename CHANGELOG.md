@@ -40,7 +40,7 @@
   тригер `languages_require_lock` (`0004_functions.sql`): запис у `languages` лише під ексклюзивним замком `languages-set`;
   `0003_seed.sql` бере цей замок перед вставкою основної мови;
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`;
-  нові таблиці `api_tokens` (лише sha256-хеш токена) і `idempotency_keys` (складений PK, без `id`), права лише `app_admin`; Локально — порожня БД і
+  нові таблиці `api_tokens` (лише sha256-хеш токена), `idempotency_keys` (складений PK, без `id`) і `service_accounts` (PK `user_id`), права лише `app_admin`; тригери `accounts_refuse_service`/`service_accounts_refuse_human` (`0004_functions.sql`); Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`
   імпортуються з `simplycms/contracts/domain-errors` (раніше `simplycms/admin-server/impl`, звідки реекспорт прибрано).
@@ -73,7 +73,7 @@
   `buildOpenApi`. Токени `Authorization: Bearer scms_<prefix>_<secret>` (у БД лише хеш; права = роль ∩ scopes;
   `last_used_at` з тротлінгом), операції `api-tokens.{create,revoke,list}` і `service-accounts.create` (лише з
   cookie-сесії, право `apiToken.manage`). Ідемпотентність — рядок ключа в транзакції команди (К5, лише 2xx, 24 год).
-  `languages.add` має `idempotent: 'create'`. Id операцій токенів — з дефісом (`api-tokens.*`): формат id майстра
+  `GET /api/v1/openapi.json`: валідний Bearer або cookie-сесія з `admin.access`. Сервісний запис — рядок `service_accounts`; `OwnerInviteError('email_taken')` для пошти сервісного запису. `languages.add` має `idempotent: 'create'`. Id операцій токенів — з дефісом (`api-tokens.*`): формат id майстра
   (`^[a-z][a-z-]*(\.…)`) не допускає великої літери в першому сегменті.
 - `simplycms/operations` (server-only) — реєстр операцій і виконавець з явним суб'єктом
   (`defineOperation`, `executeOperation`, `assertVersionThenHash`), `simplycms/operations/server` —
