@@ -297,7 +297,7 @@
 - Produces (`simplycms/addressing`, серверне, всі функції в транзакції викликача `db: ActorDb`):
   - `type AddressTarget = { kind: 'product'; id: string }` (М2 розширює union);
   - `type TokenTarget = { kind: 'modification'; id: string; scopeId: string }`;
-  - `createPathsForEntity(db, target, baseSlug: string, locales: readonly string[]): Promise<Map<string, string>>` — для кожної мови `allocateSlug` проти `url_paths` мови й `RESERVED_SEGMENTS`/`publicNames()`; спершу бере `advisoryXactLockShared(db, LOCK_KEYS.languagesSet)`;
+  - `createPathsForEntity(db, target, baseSlug: string): Promise<Map<string, string>>` — бере спільний `advisoryXactLockShared(db, LOCK_KEYS.languagesSet)` першим запитом і ПІСЛЯ нього, в тій самій транзакції, сама читає коди мов `draft`/`published` (набір мов викликач не передає: прочитаний до замка пропустив би конкурентну `languages.add`, Review Focus 1); для кожної такої мови `allocateSlug` проти `url_paths` мови й `RESERVED_SEGMENTS`/`publicNames()`;
   - `setExplicitPath(db, target, locale, path): Promise<void>`:
     - чужий поточний чи історичний → `AdminConflictError('unique', 'path_taken')`;
     - власний історичний → він знову поточний, старий поточний → історія;
@@ -305,7 +305,7 @@
   - `copyPathsForLocale(db, locale, limit: number): Promise<number>` — пакетне ідемпотентне заповнення для нової мови: копія поточного шляху основної мови з `allocateSlug` при колізії. Повертає кількість вставлених рядків (0 = завершено);
   - `resolvePath(db, locale, path): Promise<{ target: AddressTarget; currentPath: string; isCurrent: boolean } | null>`;
   - `currentPaths(db, target): Promise<Map<string, string>>`;
-  - `createTokensForEntity`, `setExplicitToken`, `copyTokensForLocale`, `resolveToken(db, locale, scopeId, slug)` — дзеркальні, у просторі `(locale, scope_id)`;
+  - `createTokensForEntity(db, target, baseSlug)` (так само без `locales`: замок, потім мови `draft`/`published`), `setExplicitToken`, `copyTokensForLocale`, `resolveToken(db, locale, scopeId, slug)` — дзеркальні, у просторі `(locale, scope_id)`;
   - `publicNames(): readonly string[]` — верхньорівневі імена `public/` зі збірки: маніфест `dist/client/.simplycms-public.json` пише плагін `simplycms/vite`; без маніфесту (dev, тест) → `[]`. Маніфест генерує Task 5 Step 4.
 
 - [ ] **Step 1: Тести БД і модуля.**
@@ -766,7 +766,7 @@
 
   Rich-text поля санітизуються ДО хешування (`sanitizeRichHtml`, наявний `admin-server/impl/rich-html.ts`).
 - Produces (операції; `permission: 'catalog.write'`, читання — `'catalog.read'`):
-  - `products.create` (`idempotent: 'create'`, `versioned`): вхід `{ id, sectionId?, sku?, isActive, isFeatured, hasModifications, stockStatus, texts: { [locale]: Partial<ProductTexts> } (основна обов'язкова з name), path?: string }` → `{ id, version: 1, paths: Record<string,string> }`. Шлях основної мови = `path ?? slugify(name)`; для нелатинського письма без пакета `path` обов'язковий (`ValidationError('path_required')`). Адреси для всіх мов у `draft`/`published` — спільним замком;
+  - `products.create` (`idempotent: 'create'`, `versioned`): вхід `{ id, sectionId?, sku?, isActive, isFeatured, hasModifications, stockStatus, texts: { [locale]: Partial<ProductTexts> } (основна обов'язкова з name), path?: string }` → `{ id, version: 1, paths: Record<string,string> }`. Шлях основної мови = `path ?? slugify(name)`; для нелатинського письма без пакета `path` обов'язковий (`ValidationError('path_required')`). Адреси для всіх мов у `draft`/`published` — `createPathsForEntity(db, target, baseSlug)` сама бере спільний замок і читає набір мов після нього (мов не передавати);
   - `products.get` `{ id }` → `{ id, version, base, texts: Record<locale, Row & { status: FieldStatus; fieldStatus: Record<field, FieldStatus> }>, paths: Record<locale, string> }`;
   - `products.saveDescription` (`versioned`): `{ id, expectedVersion, base?: Partial<ProductBase>, texts?: { [locale]: Partial<ProductTexts> } }` → `{ version }`. Сценарії 1–2 майстра §3.4. Шлях не чіпає (І17);
   - `products.saveTranslation` (`versioned`): `{ id, locale, expectedVersion, fields, expectedSourceHashes }` → `{ version }` — сценарій 3. `expectedVersion` ОБОВ'ЯЗКОВИЙ (спека §18.3: кожна команда агрегата), інакше дві правки перекладу з тим самим хешем джерела перезаписали б одна одну;
