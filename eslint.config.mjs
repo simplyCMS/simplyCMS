@@ -39,7 +39,8 @@ const CYRILLIC_JSX_ATTRIBUTE =
 // в зоні вітрини: інакше одна адреса віддавала б різні мови, а кеші й індекс
 // пошукача мусили б розрізняти їх за `Vary`. Селектор у спільному списку, бо
 // блоки зони (env, плагіни) розгортають його явно, а flat config не доливає опції.
-const ACCEPT_LANGUAGE_HEADER = 'Literal[value=/^accept-language$/i]';
+const ACCEPT_LANGUAGE_HEADER =
+  ':matches(Literal[value=/^accept-language$/i], TemplateElement[value.cooked=/^accept-language$/i])';
 
 const i18nRestrictedSyntax = [
   {
@@ -104,6 +105,11 @@ const I18N_MIGRATED_FILES = [
   // розбору мови (`locale/*.ts`, `seo/*.ts`), а не лише JSX. JSX-селектори в
   // `.ts` інертні.
   'packages/simplycms/src/storefront-routes/**/*.ts',
+  // Серверні лоадери вітрини, її роут-файли й серверний вхід host-а: саме там
+  // заголовки запиту доступні, тож заборона І30 має стояти й тут.
+  'packages/simplycms/src/storefront/**/*.ts',
+  'packages/simplycms/routes/storefront/**/*.ts',
+  'src/server.ts',
   'packages/simplycms/src/admin/**/*.tsx',
   'packages/simplycms/src/cart-ui/**/*.tsx',
   'packages/simplycms/src/catalog-ui/**/*.tsx',

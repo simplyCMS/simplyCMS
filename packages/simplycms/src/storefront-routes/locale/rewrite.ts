@@ -34,6 +34,9 @@ export function createLocaleRewrite(
       const resolved = resolveRequestLocale(url.pathname, set);
       state.current = resolved.locale;
       if (!resolved.prefixed) return undefined;
+      // Префікс мови над невітринним шляхом не знімаємо: `/en/api/health` не
+      // має стати дублем `/api/health` — роутер дасть 404.
+      if (!isStorefrontPath(resolved.rest)) return undefined;
       url.pathname = resolved.rest;
       return url;
     },

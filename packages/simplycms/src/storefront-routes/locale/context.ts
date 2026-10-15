@@ -1,5 +1,6 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestContext } from 'simplycms/site/request-context';
+import { loadLocaleSet } from 'simplycms/storefront/loaders';
 import type { LocaleSet } from './resolve';
 import { readClientLocaleSet } from './script';
 
@@ -20,3 +21,12 @@ import { readClientLocaleSet } from './script';
 export const readLocaleSet = createIsomorphicFn()
   .server((): LocaleSet | undefined => getRequestContext()?.storefront?.locales)
   .client((): LocaleSet | undefined => readClientLocaleSet());
+
+/**
+ * Набір мов, дочитаний ЛІНИВО з кешу мов (ті самі покоління, що в нормалізації),
+ * для сторінки, яку нормалізація не готувала: 404 під `/api` чи `/assets`,
+ * адмінка. Лише сервер: клієнт завжди має глобал із `<head>`.
+ */
+export const loadLocaleSetLazily = createIsomorphicFn()
+  .server((): Promise<LocaleSet> => loadLocaleSet())
+  .client((): Promise<LocaleSet> => Promise.resolve(readClientLocaleSet()));

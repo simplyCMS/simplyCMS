@@ -75,10 +75,19 @@ describe('createLocaleRewrite', () => {
     expect(state.current).toBe('en');
   });
 
-  it('/en/admin: перший сегмент мова, тож це вітринний шлях, а не адмінка', () => {
-    const { rewrite } = setup();
-    expect(input(rewrite, '/en/admin')).toBe('/admin');
-  });
+  it.each([
+    '/en/admin',
+    '/en/api/health',
+    '/en/media/x.png',
+    '/en/assets/a.js',
+    '/en/_serverFn/x',
+  ])(
+    'префікс мови над невітринним %s не знімається (без дубля адреси)',
+    (path) => {
+      const { rewrite } = setup();
+      expect(input(rewrite, path)).toBe(path);
+    },
+  );
 
   it('output∘input — тотожне на 10 канонічних URL', () => {
     const urls = [

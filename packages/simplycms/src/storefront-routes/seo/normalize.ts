@@ -52,10 +52,26 @@ function notFound(): Response {
 }
 
 /**
+ * Захисний інваріант виходу (відкритий редирект): `Location` будь-якого кроку
+ * — шлях на ТОМУ САМОМУ origin. Після зняття префікса мови `rest` міг би
+ * початися з `//` (`/uk//evil.example` → `//evil.example`), а браузер читає
+ * це як адресу іншого сайту. Тому `/` і `\` (URL-парсер трактує `\` як `/`)
+ * схлопуються в один `/`, а результат, що все ж не є «один `/`, далі не `/` і
+ * не `\`», не віддається взагалі (404). Інваріант на виході, а не латка
+ * окремого кроку: він захищає й кроки, які дописує Task 15.
+ */
+function sameOriginPath(pathname: string): string | null {
+  const collapsed = pathname.replace(/[\\/]{2,}/g, '/').replace(/\\/g, '/');
+  return /^\/(?![\\/])/.test(collapsed) || collapsed === '/' ? collapsed : null;
+}
+
+/**
  * Відповідь нормалізації або `null` (запит іде далі в роутер).
  *
  * - префікс відомої, але неопублікованої мови → 404;
- * - префікс основної мови, завершальний слеш → 301 на кінцеву адресу;
+ * - префікс мови над невітринним шляхом (`/en/api/…`, `/uk/media/…`) → 404:
+ *   інакше той самий ресурс мав би дубль адреси під кожною мовою;
+ * - префікс основної мови, завершальний слеш, зайві слеші → 301 на кінцеву адресу;
  * - query зберігається як є (байт у байт: порядок і `utm_*`).
  */
 export function normalizeStorefrontRequest(
@@ -68,15 +84,18 @@ export function normalizeStorefrontRequest(
   if (resolved.prefixed && !set.published.includes(resolved.locale)) {
     return notFound();
   }
+  if (resolved.prefixed && !isStorefrontPath(resolved.rest)) return notFound();
 
-  const target = STEPS.reduce<Target>((acc, step) => step(acc, set), {
+  const stepped = STEPS.reduce<Target>((acc, step) => step(acc, set), {
     pathname: url.pathname,
   });
-  if (target.pathname === url.pathname) return null;
+  const safe = sameOriginPath(stepped.pathname);
+  if (safe === null) return notFound();
+  if (safe === url.pathname) return null;
 
   return new Response(null, {
     status: 301,
-    headers: { location: target.pathname + url.search },
+    headers: { location: safe + url.search },
   });
 }
 
@@ -86,35 +105,32 @@ export type StorefrontDelegate<TArgs extends unknown[]> = (
   ...args: TArgs
 ) => Promise<Response> | Response;
 
-// Запити без сторінки: Start створює для них роутер (`getRouter()`), але мови
-// їм не потрібні, а читати кеш мов на кожне зображення чи виклик API —
-// зайвий запит до БД (поколіннєвий `select`). Такі запити йдуть далі без набору.
-const NO_ROUTER_PREFIXES = ['/_serverFn/', '/api/', '/assets/', '/media/'];
-
-function isRouterRequest(pathname: string): boolean {
-  return !NO_ROUTER_PREFIXES.some((p) => pathname.startsWith(p));
-}
-
 /**
  * Обгортка серверного входу: мови з кешу з поколіннями → нормалізація
  * (301/404) → набір мов у контекст запиту → делегат (SEO-інтерсептор і Start).
  * Стоїть ВСЕРЕДИНІ `withRequestContext`, інакше нікуди писати.
  *
  * Нормалізують лише GET/HEAD: редірект перетворив би POST на GET і загубив
- * тіло. Набір мов у контекст пишемо завжди, коли запит дійде до роутера.
+ * тіло.
  */
 export function withStorefrontNormalize<TArgs extends unknown[]>(
   delegate: StorefrontDelegate<TArgs>,
 ): (request: Request, ...args: TArgs) => Promise<Response> {
   return async (request, ...args) => {
     const url = new URL(request.url);
-    if (!isRouterRequest(url.pathname)) return delegate(request, ...args);
+    // Сторінку рендерять лише GET/HEAD вітринних шляхів. Решта (POST, server
+    // functions, API, медіа, статика, адмінка) іде далі БЕЗ читання мов: CSRF
+    // і авторизація спрацьовують раніше за БД, а набір мов для сторінки, що
+    // все ж відрендериться (404 під `/api`, адмінка), роутер дочитає лінивo
+    // (`resolveRouterLocales` у `beforeLoad` кореня).
+    const isPageRequest =
+      (request.method === 'GET' || request.method === 'HEAD') &&
+      isStorefrontPath(url.pathname);
+    if (!isPageRequest) return delegate(request, ...args);
 
     const locales = await loadLocaleSet();
-    if (request.method === 'GET' || request.method === 'HEAD') {
-      const response = normalizeStorefrontRequest(url, locales);
-      if (response !== null) return response;
-    }
+    const response = normalizeStorefrontRequest(url, locales);
+    if (response !== null) return response;
     const ctx = getRequestContext();
     if (ctx) ctx.storefront = { locales };
     return delegate(request, ...args);

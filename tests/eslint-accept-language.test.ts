@@ -20,12 +20,16 @@ const ZONE_PATHS = [
   'packages/simplycms/src/storefront-routes/locale/resolve.ts',
   'packages/simplycms/src/storefront-routes/seo/normalize.ts',
   'packages/simplycms/src/storefront-routes/pages/Home.tsx',
+  'packages/simplycms/src/storefront/loaders/products.ts',
+  'packages/simplycms/routes/storefront/api/x.ts',
+  'src/server.ts',
 ];
 const OUTSIDE = 'packages/simplycms/src/admin-server/impl/x.ts';
 
 const VIOLATIONS = [
   "export const a = (r: Request) => r.headers.get('Accept-Language');\n",
   "export const b = (h: Record<string, string>) => h['accept-language'];\n",
+  'export const c = (r: Request) => r.headers.get(`Accept-Language`);\n',
 ];
 
 let eslint: ESLint;

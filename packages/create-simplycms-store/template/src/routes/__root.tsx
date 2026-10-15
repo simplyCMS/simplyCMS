@@ -21,7 +21,10 @@ import { ClientEngineProvider } from '../engine-provider';
 import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
 import { homeHead } from 'simplycms/storefront-routes/head/head';
-import { loadStorefrontRoot } from 'simplycms/storefront-routes/locale/root-data';
+import {
+  loadStorefrontRoot,
+  resolveRouterLocales,
+} from 'simplycms/storefront-routes/locale/root-data';
 import { RootNotFound } from 'simplycms/storefront-routes/locale/RootNotFound';
 import { htmlLangAttrs } from 'simplycms/storefront-routes/locale/lang-attrs';
 import { serializeLocalesScript } from 'simplycms/storefront-routes/locale/script';
@@ -48,6 +51,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   // профіль магазину, URL сайту, мову сторінки й набір мов читає `head()` кожного
   // роуту ядра через `matches` — іншого каналу від host-а до ядра немає. Мова —
   // з префікса URL (`location.publicHref`), набір мов — з контексту роутера.
+  // Набір мов для запиту без нормалізації (404 під /api, адмінка) дочитується тут.
+  beforeLoad: async ({ context }) => ({
+    locales: await resolveRouterLocales(context.locales),
+  }),
   loader: ({ location, context }) =>
     loadStorefrontRoot(location.publicHref, context.locales),
   notFoundComponent: RootNotFound,

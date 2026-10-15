@@ -107,6 +107,22 @@ describe('host src/server.ts: мовний контекст запиту', () =>
     expect(seen.called).toBe(1);
   });
 
+  it('POST на сторінку (CSRF) іде до Start БЕЗ читання мов: помилка БД не маскує 403', async () => {
+    const res = await fetchEntry('/catalog', {
+      method: 'POST',
+      headers: { origin: 'https://evil.example' },
+    });
+    expect(res.status).toBe(200);
+    expect(seen.called).toBe(1);
+    expect(seen.loadSet).toBe(0);
+  });
+
+  it('/uk//evil.example → 301 на шлях того ж origin, не //evil.example', async () => {
+    const res = await fetchEntry('/uk//evil.example');
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('/evil.example');
+  });
+
   it('server functions, API, статика й медіа не ходять по мови', async () => {
     for (const path of [
       '/_serverFn/abc',

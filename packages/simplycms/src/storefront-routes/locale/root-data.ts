@@ -1,6 +1,7 @@
+import { loadLocaleSetLazily } from './context';
 import { getStorefrontRoot } from '../server/root';
 import type { StorefrontRootData } from '../head/head';
-import { resolveRequestLocale, type LocaleSet } from './resolve';
+import { NO_LOCALES, resolveRequestLocale, type LocaleSet } from './resolve';
 
 /**
  * Мова сторінки з публічного href роутера (`location.publicHref`: шлях + query +
@@ -10,6 +11,18 @@ import { resolveRequestLocale, type LocaleSet } from './resolve';
 export function localeOfHref(publicHref: string, locales: LocaleSet): string {
   const { pathname } = new URL(publicHref, 'http://localhost');
   return resolveRequestLocale(pathname, locales).locale;
+}
+
+/**
+ * `beforeLoad` кореня: якщо запит прийшов без набору мов (нормалізація не
+ * читала кеш мов — невітринний шлях, на якому все ж рендериться сторінка:
+ * 404 під `/api`, `/assets`, адмінка), дочитати його з кешу мов. Контекст
+ * роутера отримує справжній набір, тож лоадер і екрани помилок говорять мовою.
+ */
+export async function resolveRouterLocales(
+  locales: LocaleSet,
+): Promise<LocaleSet> {
+  return locales === NO_LOCALES ? loadLocaleSetLazily() : locales;
 }
 
 /**
@@ -27,7 +40,7 @@ export async function loadStorefrontRoot(
   if (locales.primary === '') {
     throw new Error(
       'simplycms: the root loader ran without a storefront locale set — the ' +
-        'host server entry (src/server.ts) must wrap its handler in withStorefrontNormalize',
+        'host root route must call resolveRouterLocales in beforeLoad',
     );
   }
   return {

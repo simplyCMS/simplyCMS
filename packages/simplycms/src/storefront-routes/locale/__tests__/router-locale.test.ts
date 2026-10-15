@@ -53,7 +53,7 @@ describe('createRouterLocale (сервер)', () => {
 describe('loadStorefrontRoot без мовного контексту', () => {
   it('документ без набору мов відмовляє гучно, а не віддає мову ""', async () => {
     await expect(loadStorefrontRoot('/x', NO_LOCALES)).rejects.toThrow(
-      /withStorefrontNormalize/,
+      /resolveRouterLocales/,
     );
   });
 });

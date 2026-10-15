@@ -11,10 +11,10 @@ import {
 } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { dirOf, htmlLangAttrs } from '../locale/lang-attrs';
-import { loadStorefrontRoot } from '../locale/root-data';
+import { loadStorefrontRoot, resolveRouterLocales } from '../locale/root-data';
 import { RootNotFound } from '../locale/RootNotFound';
 import { createLocaleRewrite } from '../locale/rewrite';
-import type { LocaleSet } from '../locale/resolve';
+import { NO_LOCALES, type LocaleSet } from '../locale/resolve';
 
 // `getStorefrontRoot` — serverFn з БД; тут важлива лише мова, тож його дані
 // підмінено порожнім коренем.
@@ -23,6 +23,14 @@ vi.mock('../server/root', () => ({
     activeThemeName: 'default',
     storeProfile: { name: 'Shop' },
     siteUrl: '',
+  }),
+}));
+
+vi.mock('simplycms/storefront/loaders', () => ({
+  loadLocaleSet: async () => ({
+    primary: 'uk',
+    published: ['uk', 'en', 'ar'],
+    known: ['uk', 'en', 'ar'],
   }),
 }));
 
@@ -93,6 +101,23 @@ describe('NotFound і мова запиту поза I18nProvider', () => {
   it('404 на /x — мова магазину', async () => {
     renderAt('/x');
     expect(await screen.findByText('Сторінку не знайдено')).toBeTruthy();
+  });
+
+  it('запит без нормалізації (404 під /api, /assets): набір мов дочитано лінивo, текст перекладений', async () => {
+    const root = createRootRouteWithContext<RouterContext>()({
+      beforeLoad: async ({ context }) => ({
+        locales: await resolveRouterLocales(context.locales),
+      }),
+      notFoundComponent: RootNotFound,
+    });
+    const router = createRouter({
+      routeTree: root.addChildren([]),
+      history: createMemoryHistory({ initialEntries: ['/api/nope'] }),
+      context: { locales: NO_LOCALES } as RouterContext,
+    });
+    render(<RouterProvider router={router} />);
+    expect(await screen.findByText('Сторінку не знайдено')).toBeTruthy();
+    expect(screen.getByText('На головну')).toBeTruthy();
   });
 
   it('посилання «на головну» веде на головну тієї ж мови', async () => {

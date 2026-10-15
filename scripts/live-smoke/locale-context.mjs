@@ -92,6 +92,41 @@ export async function runLocaleChecks({ base, dbUrl, browser, check }) {
       `${r.status} ${r.location ?? '—'}`,
     );
   }
+  // Відкритий редирект: Location завжди шлях того ж origin.
+  for (const path of [
+    '/uk//evil.example',
+    '/uk/\\evil.example',
+    '/uk/%2F%2Fevil.example',
+  ]) {
+    const r = await probe(base, path);
+    check(
+      `мова: ${path} не веде на чужий origin`,
+      !r.location || /^\/(?![/\\])/.test(r.location),
+      `${r.status} ${r.location ?? '—'}`,
+    );
+  }
+  // Невітринні 404 рендеряться сторінкою магазину, а не 500 із сирими ключами.
+  for (const path of ['/api/nope', '/api/v1/a/b', '/assets/nope.js']) {
+    const r = await probe(base, path);
+    check(
+      `мова: ${path} → 404 зі сторінкою <html lang="uk"> і перекладеним текстом`,
+      r.status === 404 &&
+        /<html[^>]*lang="uk"/.test(r.html) &&
+        /Сторінку не знайдено/.test(r.html),
+      `${r.status} ${htmlTag(r.html)}`,
+    );
+  }
+  // CSRF спрацьовує раніше за читання мов.
+  const csrf = await fetch(`${base}/catalog`, {
+    method: 'POST',
+    headers: { origin: 'https://evil.example' },
+  });
+  check(
+    'мова: POST /catalog із чужим Origin → 403 (CSRF до мов)',
+    csrf.status === 403,
+    `${csrf.status}`,
+  );
+
   const noEn = await probe(base, '/en/catalog');
   check(
     'мова: /en/… без мови en — звичайний шлях, 404 основною мовою',
@@ -138,6 +173,14 @@ export async function runLocaleChecks({ base, dbUrl, browser, check }) {
         /href="\/en"/.test(missing.html),
       `${missing.status}`,
     );
+    for (const path of ['/en/api/health', '/en/media/x.png']) {
+      const r = await probe(base, path);
+      check(
+        `мова: ${path} → 404 (без дубля адреси)`,
+        r.status === 404,
+        `${r.status}`,
+      );
+    }
     const draft = await probe(base, '/pl/catalog');
     check(
       'мова: /pl/catalog (чернетка) → 404 без рендеру вітрини',

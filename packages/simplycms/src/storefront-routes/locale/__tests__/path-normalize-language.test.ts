@@ -66,6 +66,49 @@ describe('normalizeStorefrontRequest', () => {
     expect(run(path)).toBeNull();
   });
 
+  describe('відкритий редирект: Location завжди шлях на тому самому origin', () => {
+    const ATTACKS = [
+      '/uk//evil.example',
+      '/uk//evil.example/',
+      '/uk/\\evil.example',
+      '/uk/%2F%2Fevil.example',
+      '/en//catalog',
+      '//evil.example',
+      '/en/\\evil.example',
+      '/uk///evil.example//x',
+    ];
+    it.each(ATTACKS)('%s', (path) => {
+      const res = run(path);
+      const location = res?.headers.get('location') ?? null;
+      if (location !== null) {
+        expect(location).toMatch(/^\/(?![/\\])/);
+        expect(new URL(location, 'http://localhost').origin).toBe(
+          'http://localhost',
+        );
+      } else {
+        // Без редіректу — або пропуск до роутера (шлях і так безпечний), або 404.
+        expect(res === null || res.status === 404).toBe(true);
+      }
+    });
+
+    it('/uk//evil.example → 301 /evil.example (схлопнуто, не //evil.example)', () => {
+      expect(run('/uk//evil.example')?.headers.get('location')).toBe(
+        '/evil.example',
+      );
+    });
+
+    it('/en//catalog → 301 /en/catalog', () => {
+      expect(run('/en//catalog')?.headers.get('location')).toBe('/en/catalog');
+    });
+  });
+
+  it.each(['/uk/api/health', '/en/api/health', '/en/media/x.png', '/uk/admin'])(
+    'префікс мови над невітринним %s → 404 (без дубля адреси)',
+    (path) => {
+      expect(run(path)?.status).toBe(404);
+    },
+  );
+
   it('регістр сегмента: /UK/x — не мова, тож без редіректу', () => {
     expect(run('/UK/x')).toBeNull();
   });
