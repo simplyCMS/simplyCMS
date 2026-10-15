@@ -4,8 +4,9 @@
 //
 // 🔴 Відкладений тригер стріляє на COMMIT, тож кожен кейс іде через `withActor`
 // (BEGIN → set_config → SET LOCAL ROLE → … → COMMIT): відмову кидає саме
-// `commit`, і лише так видно, що функція читає `languages` та probe-таблиці
-// під правами актора, а не власника.
+// `commit`. Що функція читає під правами актора, а не власника, фіксує окремий
+// кейс «права актора» (власник забирає SELECT → commit дає 42501): решта кейсів
+// пройшла б і під власником.
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
@@ -199,6 +200,36 @@ describe.each(Object.entries(ACTORS))(
       await expect(run(base(cond, randomUUID(), 'text'))).rejects.toMatchObject(
         REFUSED,
       );
+    });
+
+    it('умова [5]: UPDATE колонки умови на text вимагає перекладу', async () => {
+      const id = randomUUID();
+      await run(base(cond, id, 'number'));
+      const toText = `update public.${cond.baseSql} set kind = 'text' where id = '${id}'`;
+      await expect(run(toText)).rejects.toMatchObject(REFUSED);
+      // Позитивний контроль: той самий UPDATE разом із перекладом комітиться.
+      await run(toText, tr(cond, id, 'uk', 'Назва'));
+      const rows = await queryRows(
+        dbUrl,
+        `select kind from public.${cond.baseSql} where id = $1`,
+        [id],
+      );
+      expect(rows).toEqual([{ kind: 'text' }]);
+    });
+
+    it('права актора: без SELECT на переклади commit дає 42501', async () => {
+      const id = randomUUID();
+      const table = `public.${main.translationsSql}`;
+      await queryRows(dbUrl, `revoke select on ${table} from ${actor.role}`);
+      try {
+        await expect(
+          run(base(main, id), tr(main, id, 'uk', 'Назва')),
+        ).rejects.toMatchObject({ code: '42501' });
+      } finally {
+        await queryRows(dbUrl, `grant select on ${table} to ${actor.role}`);
+      }
+      // Грант повернуто — той самий набір стейтментів знову комітиться.
+      await run(base(main, id), tr(main, id, 'uk', 'Назва'));
     });
 
     it('ідентифікатор із лапкою в TG_ARGV не ламає SQL', async () => {

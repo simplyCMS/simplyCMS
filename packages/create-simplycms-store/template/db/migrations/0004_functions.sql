@@ -133,11 +133,14 @@ FOR EACH ROW EXECUTE FUNCTION public.languages_guard();
 -- лапок: `probe_q"x` не ламає SQL), значення — лише параметрами `USING`.
 --
 -- Без `SECURITY DEFINER` (як усі функції канону, гейт `grants-parity`):
--- перекладні таблиці пишуть лише `app_admin` (політики бачать усі рядки) і
--- власник міграцій (поза RLS), `languages` без RLS і читається обома ролями.
--- Доказ — `source-translation-required.test.ts` під `app_user` і `app_admin`.
--- Якщо писарем колись стане роль із вужчим RLS, хибна відмова тут означатиме
--- саме це, і тоді рішення переглядається разом із цим тестом.
+-- функція читає `languages`, базу й переклади з правами того, хто пише
+-- (відкладений тригер на COMMIT ще працює під `SET LOCAL ROLE` актора; доказ —
+-- кейс «права актора» в `source-translation-required.test.ts`).
+-- 🔴 Конвенція для кожної пари, у т.ч. для плагінного хелпера М2: таблиці під
+-- цим тригером не мають RLS, що ховає рядки від ролі-писаря. Перекладні
+-- таблиці ядра і `languages` RLS не мають зовсім. Інакше RLS, який ховає
+-- БАЗОВИЙ рядок, дав би не відмову, а ТИХИЙ ПРОПУСК (гілка «бази немає»), а
+-- RLS, який ховає рядок ПЕРЕКЛАДУ, — хибну відмову.
 CREATE OR REPLACE FUNCTION public.require_source_translation() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public AS $$
@@ -232,12 +235,22 @@ REVOKE ALL ON FUNCTION public.require_source_translation() FROM PUBLIC;
 -- Кличуть міграції ядра, probe-хелпер тестів і (М2) плагінний хелпер; EXECUTE
 -- ролям застосунку не потрібен — це DDL власника міграцій.
 --
--- Тригер на базі — лише `AFTER INSERT`: рядок перекладу основною мовою
--- обовʼязковий із першого коміту сутності. На перекладах — `DELETE` і `UPDATE
--- OF` обовʼязкових колонок, `locale` та FK (зміна будь-якої з них може
--- прибрати рядок основної мови зі сутності). Колонки перевіряються за
--- `pg_attribute`: помилка називає колонку, а не падає "column does not
--- exist" з глибини DDL.
+-- Тригер на базі: `AFTER INSERT` — рядок перекладу основною мовою обовʼязковий
+-- із першого коміту сутності; коли задано умову, ще й `UPDATE OF <колонка
+-- умови>` — інакше UPDATE, що робить умову істинною, мовчки порушив би І4/І5.
+-- На перекладах — `DELETE` і `UPDATE OF` обовʼязкових колонок, `locale` та FK
+-- (зміна будь-якої з них може прибрати рядок основної мови зі сутності).
+--
+-- Припущення функції перевіряються тут, а не падають у рантаймі на COMMIT:
+-- база має `id uuid`; FK-колонка — `uuid` і входить до зовнішнього ключа на
+-- `base(id)` (одноколонкового чи складеного, як `(product_id, id)`);
+-- обовʼязкові колонки текстові (`btrim` не приймає інших). Усі помилки —
+-- `invalid_parameter_value` і називають колонку, а не "column does not exist"
+-- з глибини DDL.
+--
+-- Імена тригерів `<таблиця>_src_base` / `<таблиця>_src_tr`: довге імʼя
+-- таблиці (`modification_property_value_translations`) з довшим суфіксом
+-- перевищило б 63 байти, тож імʼя таблиці обрізається детерміновано.
 -- Ідемпотентно: constraint-тригер не має `CREATE OR REPLACE`, тож DROP + CREATE.
 CREATE OR REPLACE PROCEDURE public.attach_source_translation_triggers(
   base regclass,
@@ -252,9 +265,15 @@ DECLARE
   v_base       text;
   v_trans      text;
   v_col        text;
+  v_cond_col   text;
   v_cond_pos   int;
+  v_id_att     smallint;
+  v_fk_att     smallint;
   v_update_of  text;
   v_tail       text;
+  v_base_evt   text := 'INSERT';
+  v_base_trg   text;
+  v_trans_trg  text;
 BEGIN
   SELECT c.relname INTO v_base FROM pg_class c
    WHERE c.oid = base AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
@@ -262,38 +281,73 @@ BEGIN
    WHERE c.oid = translations AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
   IF v_base IS NULL OR v_trans IS NULL THEN
     RAISE EXCEPTION 'attach_source_translation_triggers: % і % мають бути звичайними таблицями схеми public',
-      base, translations;
+      base, translations USING ERRCODE = 'invalid_parameter_value';
   END IF;
 
   IF required IS NULL OR cardinality(required) = 0 THEN
-    RAISE EXCEPTION 'attach_source_translation_triggers: потрібна хоча б одна обовʼязкова колонка';
+    RAISE EXCEPTION 'attach_source_translation_triggers: потрібна хоча б одна обовʼязкова колонка'
+      USING ERRCODE = 'invalid_parameter_value';
   END IF;
   FOREACH v_col IN ARRAY required || ARRAY[fk, 'locale'] LOOP
     IF v_col IS NULL OR position(',' IN v_col) > 0 THEN
-      RAISE EXCEPTION 'attach_source_translation_triggers: хибна назва колонки "%" (порожня чи з комою)', v_col;
+      RAISE EXCEPTION 'attach_source_translation_triggers: хибна назва колонки "%" (порожня чи з комою)', v_col
+        USING ERRCODE = 'invalid_parameter_value';
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_attribute a
                     WHERE a.attrelid = translations AND a.attname = v_col
                       AND a.attnum > 0 AND NOT a.attisdropped) THEN
       RAISE EXCEPTION 'attach_source_translation_triggers: у %.% немає колонки "%"',
-        'public', v_trans, v_col;
+        'public', v_trans, v_col USING ERRCODE = 'invalid_parameter_value';
     END IF;
   END LOOP;
+
+  FOREACH v_col IN ARRAY required LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_attribute a
+                    WHERE a.attrelid = translations AND a.attname = v_col
+                      AND a.atttypid IN ('text'::regtype, 'varchar'::regtype)) THEN
+      RAISE EXCEPTION 'attach_source_translation_triggers: обовʼязкова колонка "%" у %.% має бути text або varchar',
+        v_col, 'public', v_trans USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+  END LOOP;
+
+  SELECT a.attnum INTO v_id_att FROM pg_attribute a
+   WHERE a.attrelid = base AND a.attname = 'id' AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_id_att IS NULL THEN
+    RAISE EXCEPTION 'attach_source_translation_triggers: у %.% немає колонки id типу uuid',
+      'public', v_base USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  SELECT a.attnum INTO v_fk_att FROM pg_attribute a
+   WHERE a.attrelid = translations AND a.attname = fk AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_fk_att IS NULL THEN
+    RAISE EXCEPTION 'attach_source_translation_triggers: колонка "%" у %.% має бути типу uuid',
+      fk, 'public', v_trans USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint k,
+                              unnest(k.conkey, k.confkey) AS u(src, dst)
+                  WHERE k.contype = 'f' AND k.conrelid = translations
+                    AND k.confrelid = base AND u.src = v_fk_att AND u.dst = v_id_att) THEN
+    RAISE EXCEPTION 'attach_source_translation_triggers: колонка "%" у %.% має бути зовнішнім ключем на %.%(id)',
+      fk, 'public', v_trans, 'public', v_base USING ERRCODE = 'invalid_parameter_value';
+  END IF;
 
   v_tail := format('%L, %L, %L, %L', v_base, v_trans, fk, array_to_string(required, ','));
   IF coalesce(condition, '') <> '' THEN
     v_cond_pos := position('=' IN condition);
     IF v_cond_pos < 2 OR v_cond_pos = length(condition) THEN
-      RAISE EXCEPTION 'attach_source_translation_triggers: умова має вигляд col=value, отримано "%"', condition;
+      RAISE EXCEPTION 'attach_source_translation_triggers: умова має вигляд col=value, отримано "%"', condition
+        USING ERRCODE = 'invalid_parameter_value';
     END IF;
-    v_col := left(condition, v_cond_pos - 1);
+    v_cond_col := left(condition, v_cond_pos - 1);
     IF NOT EXISTS (SELECT 1 FROM pg_attribute a
-                    WHERE a.attrelid = base AND a.attname = v_col
+                    WHERE a.attrelid = base AND a.attname = v_cond_col
                       AND a.attnum > 0 AND NOT a.attisdropped) THEN
       RAISE EXCEPTION 'attach_source_translation_triggers: у %.% немає колонки умови "%"',
-        'public', v_base, v_col;
+        'public', v_base, v_cond_col USING ERRCODE = 'invalid_parameter_value';
     END IF;
     v_tail := v_tail || format(', %L', condition);
+    v_base_evt := format('INSERT OR UPDATE OF %I', v_cond_col);
   END IF;
 
   -- Перелік `UPDATE OF` без дублів і в стабільному порядку: обовʼязкові,
@@ -303,22 +357,22 @@ BEGIN
             FROM unnest(required || ARRAY['locale', fk]) WITH ORDINALITY AS u(c, pos)
            GROUP BY c) cols;
 
-  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I',
-                 v_base || '_require_source_translation', v_base);
+  v_base_trg  := left(v_base, 63 - length('_src_base')) || '_src_base';
+  v_trans_trg := left(v_trans, 63 - length('_src_tr')) || '_src_tr';
+
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_base_trg, v_base);
   EXECUTE format(
-    'CREATE CONSTRAINT TRIGGER %I AFTER INSERT ON public.%I '
+    'CREATE CONSTRAINT TRIGGER %I AFTER %s ON public.%I '
     || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
     || 'EXECUTE FUNCTION public.require_source_translation(%L, %s)',
-    v_base || '_require_source_translation', v_base, 'base', v_tail);
+    v_base_trg, v_base_evt, v_base, 'base', v_tail);
 
-  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I',
-                 v_trans || '_require_source_translation', v_trans);
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_trans_trg, v_trans);
   EXECUTE format(
     'CREATE CONSTRAINT TRIGGER %I AFTER DELETE OR UPDATE OF %s ON public.%I '
     || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
     || 'EXECUTE FUNCTION public.require_source_translation(%L, %s)',
-    v_trans || '_require_source_translation', v_update_of, v_trans,
-    'translation', v_tail);
+    v_trans_trg, v_update_of, v_trans, 'translation', v_tail);
 END;
 $$;
 
