@@ -70,7 +70,7 @@
 
 **Files:**
 - Create: `scripts/rebaseline-drizzle.mjs`, `tests/rebaseline-drizzle.test.ts`
-- Modify: `package.json` (скрипт `db:rebaseline`), `packages/simplycms/drizzle/**` (регенерат), `packages/simplycms/migrations/0001_init.sql` (+ вміст `0005`), `packages/simplycms/migrations/README.md`, `docs/architecture/{data-layer.md,repository-layout.md,test-contours.md}`, `packages/simplycms/test-harness/pg/__tests__/baseline.test.ts:151` (коментар лічильника)
+- Modify: `package.json` (скрипт `db:rebaseline`), `packages/simplycms/drizzle/**` (регенерат), `packages/simplycms/migrations/0001_init.sql` (+ вміст `0005`), `packages/simplycms/migrations/README.md`, `docs/architecture/{data-layer.md,repository-layout.md,test-contours.md}`, `packages/simplycms/test-harness/pg/__tests__/baseline.test.ts:151` (коментар лічильника), `tests/schema-sources-parity.test.ts:128-134` (очікування — лише `['0000_init.sql']`), `packages/simplycms/migrations/0002_grants.sql` + `test-harness/pg/__tests__/fixtures/grants.ts` (ручні `revoke all … from public` і `grant select, insert, update, delete … to app_admin` для `mail_outbox` переїжджають з `0005_mail_outbox.sql:15-21`: регенерат зі схеми їх не відновить)
 - Delete: `packages/simplycms/migrations/0005_mail_outbox.sql`, `packages/simplycms/drizzle/0001_mail_outbox.sql`, `packages/simplycms/drizzle/meta/0001_snapshot.json`
 - Sync: `pnpm template:sync` (копії `template/db/migrations/`, `packages/cli/host/`)
 
@@ -90,7 +90,7 @@
   - збирає `migrations/0001_init.sql` за правилом з Interfaces.
 
   Без мережі й БД. Потім злиття: файли `0005`/`drizzle/0001*` видаляються, `mail_outbox` уже в `schema.ts` (`export * from "./mail"`) і потрапляє в `0000`.
-- [ ] **Step 4:** `pnpm db:rebaseline && git diff --stat` — у дифі лише `drizzle/**`, `0001_init.sql` і видалені файли. Повторний `pnpm db:rebaseline && git diff --exit-code -- packages/simplycms/drizzle packages/simplycms/migrations` → код 0.
+- [ ] **Step 4:** `pnpm db:rebaseline && git diff --stat` — у дифі лише `drizzle/**`, `0001_init.sql`, `0002_grants.sql` і видалені файли. Детермінізм: `find packages/simplycms/drizzle packages/simplycms/migrations -type f | sort | xargs sha256sum > /tmp/a` → повторний `pnpm db:rebaseline` → те саме в `/tmp/b` → `diff /tmp/a /tmp/b` порожній (порівняння між прогонами, а не з HEAD).
 - [ ] **Step 5:** `pnpm vitest run tests/rebaseline-drizzle.test.ts tests/schema-sources-parity.test.ts` → PASS. `pnpm template:sync`, потім `pnpm vitest run tests/create-store-template-parity.test.ts` → PASS. `pnpm test:schema baseline` → PASS.
 - [ ] **Step 6: Доки.**
   - `migrations/README.md`: склад канону `0000…0004`, процедура «правка `schema.ts` → `pnpm db:rebaseline` → ручні файли → `template:sync`»;
@@ -104,7 +104,7 @@
 **Files:**
 - Modify: `packages/simplycms/src/schema/schema.ts:155-167` (`languages`), `schema/types.ts:150` (`Language`), `migrations/0003_seed.sql:34`, `migrations/0004_functions.sql` (тригер), `test-harness/pg/__tests__/functions-allowlist.test.ts`, `test-harness/pg/__tests__/single-default.test.ts`
 - Create: `packages/simplycms/src/db/lock-keys.ts`, `packages/simplycms/src/db/__tests__/lock-keys.test.ts`, `packages/simplycms/test-harness/pg/__tests__/languages-invariants.test.ts`, `packages/simplycms/test-harness/pg/__tests__/lock-keys-disjoint.test.ts`
-- Modify: `packages/simplycms/src/db/advisory-lock.ts` (+ `advisoryXactLockShared`), `src/db/index.ts`, `src/migrate/apply.ts:28` (`MIGRATION_LOCK_KEY` переїжджає в `lock-keys.ts`, тут — імпорт)
+- Modify: `packages/simplycms/src/db/advisory-lock.ts` (+ `advisoryXactLockShared`), `src/db/index.ts`, `src/migrate/apply.ts:28` (`MIGRATION_LOCK_KEY` переїжджає в `lock-keys.ts`, тут — імпорт), `src/migrate/index.ts:15-20` (публічний реекспорт `MIGRATION_LOCK_KEY` — тепер з `simplycms/db/lock-keys`, ім'я не змінюється)
 
 **Interfaces:**
 - Produces (схема): `languages` за майстром §3.1 + enum `language_status`. Сід рядка `('00000002-0000-4000-8000-000000000001','uk','Українська','published',true,0)` лишається в `0003` до М2 (`bootstrapStore`).
@@ -241,7 +241,7 @@
   - визначає `entity_id` (`NEW.id` для бази, `OLD.<fk>`/`NEW.<fk>` для перекладу);
   - якщо базового рядка вже немає → `RETURN NULL` (каскад);
   - якщо умова `[5]` задана й не виконується → `RETURN NULL`;
-  - інакше вимагає рядок `locale = (select code from languages where is_default)` з усіма обов'язковими колонками `IS NOT NULL`, інакше `check_violation` «<таблиця>: потрібен переклад основною мовою (<поля>)».
+  - інакше вимагає рядок `locale = (select code from languages where is_default)` з усіма обов'язковими колонками непорожніми — `nullif(btrim(col), '') IS NOT NULL` (К3: порожній рядок і пробіли — це «немає»; операція нормалізує першою, тригер — страховка для прямого SQL), інакше `check_violation` «<таблиця>: потрібен переклад основною мовою (<поля>)».
 
   Ідентифікатори — лише `format('%I')`, значення — лише параметрами `EXECUTE … USING`.
 - Produces (харнес): `createTranslatableProbe(client, name)` — створює в транзакції тесту `probe_<name>(id uuid pk, kind text)` + `probe_<name>_translations(probe_id uuid references … on delete cascade, locale text references languages(code), name text, note text, primary key(probe_id, locale))` і вішає тригери (`CREATE CONSTRAINT TRIGGER … DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.require_source_translation('base', …)` на `AFTER INSERT` бази; `('translation', …)` на `AFTER DELETE OR UPDATE OF <обов'язкові>, locale, <fk>` перекладів). Підключення робить ОДНА SQL-процедура `public.attach_source_translation_triggers(base regclass, translations regclass, fk text, required text[], condition text DEFAULT NULL)`: вона будує обидва `CREATE CONSTRAINT TRIGGER` з тих самих аргументів, тож перелік колонок `UPDATE OF` і `TG_ARGV[4]` не можуть розійтися. Її кличуть probe-хелпер, `0004_functions.sql` (Task 17) і в М2 плагінний хелпер.
@@ -252,6 +252,7 @@
   - `'рядок лише іншої мови — відмова'`;
   - `'видалення рядка основної мови — відмова'`;
   - `'очищення обов\'язкового поля — відмова'`;
+  - `'прямий SQL: name = \'\' і name = \'   \' у рядку основної мови — відмова'` (К3);
   - `'зміна locale рядка основної мови на en — відмова'`;
   - `'перенесення рядка основної мови на іншу сутність (зміна FK) — відмова для старої'`;
   - `'видалення бази каскадом — коміт'`;
@@ -280,7 +281,13 @@
   - `packages/simplycms/test-harness/pg/__tests__/{url-paths.test.ts,slug-tokens.test.ts}`.
 
 **Interfaces:**
-- Produces (схема): `url_paths` і `slug_tokens` за майстром §3.1. У М1 у `url_paths` лише `product_id`, у `slug_tokens` лише `modification_id`. CHECK `num_nonnulls(...) = 1` пишеться з поточним набором колонок; М2 розширює його.
+- Produces (схема): `url_paths` і `slug_tokens` за майстром §3.1, включно з явними CHECK області й згенерованою `token_kind` у ключі унікальності (К2). У М1 у `url_paths` лише `product_id`, у `slug_tokens` лише `modification_id`. CHECK `num_nonnulls(...) = 1` пишеться з поточним набором колонок; М2 розширює його.
+- Produces (БД, К4): `public.require_current_address()` — функція відкладеного constraint-тригера, конвенції як у Task 4, ідентифікатори лише через `format('%I')`.
+  - Підключення: `public.attach_current_address_triggers(base regclass, registry regclass, fk text)`.
+  - Тригер на реєстрі (`AFTER DELETE OR UPDATE OF is_current, path`) перевіряє лише (сутність, ТА мова): якщо мова в `draft`/`published` і сутність існує, має лишитись рівно одна поточна адреса. Вмикається в ЦІЙ задачі.
+  - Тригер на `AFTER INSERT` бази перевіряє всі мови `draft`/`published` зі знімка своєї транзакції. Вмикається в Task 17 разом з І4: до Task 10 тести й сіди вставляють товари без адрес.
+  - Вставка рядка мови тригер не запускає.
+  - Дзеркально — `require_current_token()` і `public.attach_current_token_triggers(base regclass, registry regclass, fk text)` для `slug_tokens` (тригер бази — на `product_modifications`, теж у Task 17); перевірка поточного токена — в області `(token_kind, scope_id)`.
   - Гранти: `select` для `app_user`, `select, insert, update, delete` для `app_admin`.
   - RLS — як у таблиць каталогу: читання вітрини лише для мов у `published` пишеться в КОДІ (`is_active`-подібно), RLS не ускладнюємо.
 - Produces (`simplycms/addressing`, серверне, всі функції в транзакції викликача `db: ActorDb`):
@@ -309,8 +316,13 @@
     - `'setExplicitPath на чужий історичний → path_taken'`;
     - `'setExplicitPath на власний історичний → він поточний, колишній — історія'` (І18 б);
     - `'зарезервований сегмент і код мови → path_reserved'` (І19);
-    - `'resolvePath історичного повертає currentPath'`.
-  - `slug-tokens.test.ts` — те саме для `(locale, scope_id)`; однаковий slug у різних товарів дозволений; складений FK відхиляє модифікацію чужого товару.
+    - `'resolvePath історичного повертає currentPath'`;
+    - `'видалення поточної адреси без заміни — відмова на коміті; заміна в тій самій транзакції — коміт'` (К4, тригер реєстру).
+  - `slug-tokens.test.ts` — те саме для `(locale, token_kind, scope_id)`:
+    - однаковий slug у різних товарів дозволений;
+    - складений FK відхиляє модифікацію чужого товару;
+    - токен модифікації з `scope_id IS NULL` → `check_violation` (К2: `MATCH SIMPLE` такий рядок не перевіряє);
+    - однаковий slug і `scope_id` у токена модифікації та токена опції не конфліктують (різний `token_kind`).
   - `public-names.test.ts`: читає маніфест із тимчасової теки; без файлу → `[]`.
 - [ ] **Step 2:** `pnpm test:schema url-paths slug-tokens` → FAIL.
 - [ ] **Step 3:** Схема → `pnpm db:rebaseline` → гранти й фікстура грантів → `pnpm template:sync`. Модуль `addressing` (≤150 рядків на файл). Нова тека — у тір-зони (T2, upward `db` → реальний шар уже T2; винятків немає), `exports`, `server-only`.
@@ -320,7 +332,9 @@
   - прибрати `UNIQUE(locale, path)` → І15 червоний;
   - `allocateSlug` без суфікса → `'однакова назва'` червоний;
   - власний історичний → 409 → І18 б червоний;
-  - прибрати перевірку `RESERVED_SEGMENTS` в `setExplicitPath` → І19 червоний.
+  - прибрати перевірку `RESERVED_SEGMENTS` в `setExplicitPath` → І19 червоний;
+  - прибрати CHECK `modification_id IS NULL OR scope_id IS NOT NULL` → кейс «без області» червоний (К2);
+  - прибрати тригер реєстру → кейс «видалення поточної адреси без заміни» червоний (К4).
 
   Commit `feat(multilingual): реєстри адрес і мовних токенів`.
 
@@ -332,6 +346,7 @@
   - `packages/simplycms/test-harness/pg/__tests__/cache-generations.test.ts`.
 - Modify:
   - `packages/simplycms/src/site/read-cache.ts`;
+  - тести, що кличуть чи мокають `invalidate()`: `site/__tests__/read-cache.test.ts`, `storefront/loaders/__tests__/theme-record-cache.test.ts`, `admin-server/impl/__tests__/system-cache-invalidation.test.ts` — переводяться на покоління (кількість кейсів не зменшується);
   - `schema/schema.ts` (`cache_generations`), `migrations/0003_seed.sql` (три рядки), `0002_grants.sql` + `fixtures/grants.ts` (`select` — `app_user`, `app_admin`; `update` — `app_admin`), `seed-determinism.test.ts`;
   - `admin-server/impl/settings/save-profile.ts:104`, `admin-server/impl/site-themes/{activate.ts:63,save-settings.ts:61}` (замість `invalidate()` після COMMIT — `bumpCacheGeneration` у транзакції);
   - `storefront/loaders/{store-profile.ts,theme-record.ts}`;
@@ -404,8 +419,11 @@
     readonly db: ActorDb;                      // транзакція виконавця
   }
   export function defineOperation<I, O>(def: OperationDef<I, O>): OperationDef<I, O>;
+  export type ExecuteResult<O> = { readonly replayed: false; readonly output: O }
+    | { readonly replayed: true; readonly status: number; readonly body: unknown };
   export function executeOperation<I, O>(def: OperationDef<I, O>, raw: unknown, subject: AuthzSubject,
-    hooks?: { inTransaction?: (db: ActorDb) => Promise<void> }): Promise<O>;
+    opts?: { idempotency?: IdempotencyRequest }): Promise<ExecuteResult<O>>;
+  export interface IdempotencyRequest { readonly subjectKey: string; readonly key: string; readonly fingerprint: Buffer }
   export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[];
   export function getOperation(id: string): OperationDef<unknown, unknown> | undefined;
   ```
@@ -413,7 +431,7 @@
     1. `requireOperation(subject, def.permission, def.id)` → `AuthzError`;
     2. `def.input.safeParse` → `ValidationError` з `issues` (`path`, `code`);
     3. `withActor({ role: dbRoleForSubject(subject), userId }, db => def.run(…))` + `toAdminConflict`.
-  - Статусів НЕ ставить. `hooks.inTransaction` — точка для ідемпотентності (Task 7).
+  - Статусів НЕ ставить. `opts.idempotency` у Task 6 лише проходить у сигнатурі; механіку реалізує Task 7 (`operations/http/idempotency.ts`). Виконавець кличе її першою дією ВСЕРЕДИНІ транзакції: вона або повертає збережену відповідь (`replayed: true`), або дає виконати `run` і зберегти відповідь 2xx у тій самій транзакції.
 - Produces (`simplycms/operations/server`): `invokeFromServerFn<I, O>(def: OperationDef<I, O>, data: unknown): Promise<O>` — `subjectFromCookie()` → `executeOperation` → у catch `setResponseStatus` за картою помилок: 403 / 400 / 409 / 412. Обгортка serverFn має рівно форму:
   ```ts
   export const addLanguage = createServerFn({ method: 'POST' })
@@ -434,7 +452,7 @@
   - `languages.setStatus` `{ code, status }` за таблицею майстра §3.5. `draft|disabled → published` вимагає `completeness(code).complete`, інакше `ValidationError('language_incomplete')`;
   - `languages.fill` `{ code, batch? }` → `{ inserted, done }` — пакетне заповнення: адреси, токени, а з Task 14 — ще й проєкція;
   - `languages.reorder` `{ codes: string[] }`;
-  - `languages.remove` `{ code }` → FK `RESTRICT` перекладів → `InUseError('language_in_use')`.
+  - `languages.remove` `{ code }` → БУДЬ-ЯКЕ `foreign_key_violation`, що посилається на `languages` (переклади зараз, з М2 — `orders`, `profiles`, `product_reviews`), → `InUseError('language_in_use')` (К1). Мапінг — за `error.table = 'languages'` / іменем FK, а не за переліком таблиць, щоб нове посилання не потребувало правки.
 
   Кожна мутація мов у своїй транзакції кличе `bumpCacheGeneration(db, CACHE_KEYS.languages)` (Task 5а). Кейс `languages` додається в `it.each` тесту «дві репліки» Task 5а. `completeness(db, code): Promise<{ complete: boolean; missingPaths: number; missingTokens: number; missingProjection: number }>` (`missingProjection` = 0, доки Task 14 не додасть проєкцію).
 
@@ -491,7 +509,14 @@
   - `handleApiRequest(request: Request, op: string): Promise<Response>` (`simplycms/operations/server`), конверт майстра §3.3;
   - `subjectFromToken(authorization: string): Promise<AuthzSubject | 'invalid'>` — sha256 від усього рядка токена → пошук за `token_hash`; `revoked_at`/`expires_at` → `'invalid'`; ролі — з `user_roles` (як `readSessionSubject`); `scopes`, `tokenId`; тротлінг `last_used_at`. Час відповіді невдалої автентифікації не залежить від того, знайдено префікс чи ні: пошук лише за повним хешем, без пошуку за префіксом;
   - `toProblem(error: unknown, operation: string): { status: number; body: ProblemBody }` — 500 без `message`;
-  - `withIdempotency(db, { subjectKey, operation, key, fingerprint }, run: () => Promise<{ status: number; body: unknown }>)` — у транзакції операції (`hooks.inTransaction`): INSERT ключа першим → на `unique_violation` читання збереженого (інший відбиток → 422); прибирання протухлих порцією 100; зберігає лише 2xx;
+  - `reserveIdempotencyKey(db, req: IdempotencyRequest & { operation: string }): Promise<{ kind: 'fresh' } | { kind: 'replay'; status: number; body: unknown } | { kind: 'mismatch' }>`:
+    - `INSERT … ON CONFLICT DO NOTHING RETURNING` — НЕ ловити `unique_violation`: Postgres абортує транзакцію після помилки;
+    - конкурент чекає на незакомічений рядок першої транзакції;
+    - 0 рядків → SELECT збереженого: інший відбиток → `mismatch` (422), інакше `replay`;
+    - перша транзакція відкотилась → вставка проходить, `fresh`;
+    - перевищення `lock_timeout` → 409 `idempotency_in_flight`;
+  - `storeIdempotentResponse(db, req, status, body)` — `UPDATE` того самого рядка перед комітом, лише 2xx. Не-2xx відкочує транзакцію разом із рядком ключа;
+  - прибирання протухлих — порцією 100 у тій самій транзакції;
   - операції токенів (`permission: 'apiToken.manage'`):
     - `apiTokens.create { id, userId, name, scopes, expiresAt? }` → `{ token }` — ОДИН раз. `userId` дозволено лише двох видів: власний (`subject.userId`) або сервісного облікового запису (користувач без рядка `accounts`). Інакше `AuthzError` — адмін не випускає токен від імені іншої людини, і атрибуція дій не фальсифікується;
     - `apiTokens.revoke { id }`;
@@ -499,13 +524,17 @@
     - `serviceAccounts.create { id, name, role }` — користувач без рядка `accounts`;
     - 🔴 усі `apiTokens.*` і `serviceAccounts.*` позначені `sessionOnly: true` і виконуються ЛИШЕ з cookie-сесії. Bearer → 403 `forbidden`, навіть якщо scope дозволяє: витеклий токен не може сам себе розмножити. Поле `sessionOnly?: true` додається в `OperationDef` (Task 6), а `handleApiRequest` перевіряє його до виконання;
   - `buildOpenApi(ops: readonly OperationDef[]): OpenApiDocument` — `z.toJSONSchema(def.input, { target: 'draft-2020-12', io: 'input' })`, вихід — `io: 'output'`, Date-поля в схемах заборонені (дротова форма), `$schema` вкладених прибрано, `openapi: '3.1.0'`.
-- CSRF: cookie-запит без коректного `Origin` (порівняння з `VITE_SITE_URL`) → 403 `forbidden`; Bearer — без перевірки.
+- CSRF. Факт: `runtime/csrf.ts:22` `shouldValidateCsrf(method, pathname)` перевіряє ВСІ не-безпечні запити, крім `/api/auth/`, і стоїть першим у `requestMiddleware` (`src/start.ts:118`). Bearer-запит без `Origin` впав би з 403 ще до адаптера. Тому:
+  - сигнатура стає `shouldValidateCsrf(method, pathname, headers: Headers)`: для `pathname.startsWith('/api/v1/')` з `Authorization: Bearer …` перевірки немає; cookie-запит на `/api/v1/` перевіряється, як і досі;
+  - адаптер за наявності заголовка `Authorization` НІКОЛИ не падає назад на cookie-сесію: невалідний Bearer → 401, навіть якщо cookie валідний;
+  - тест `runtime/__tests__/csrf.test.ts`: Bearer без Origin → не перевіряється; cookie без Origin → 403; `Authorization: Basic` → перевіряється. Мутація: виняток за префіксом без перевірки Bearer → кейс «cookie без Origin на /api/v1» червоний.
+  - `runtime/csrf.ts` — у Files задачі.
 
 - [ ] **Step 1: Юніти.**
   - `http-problem.test.ts` (І29): `toProblem(new Error('pg: relation x'))` → `{status:500, body:{kind:'internal'}}` і `JSON.stringify(body)` не містить `relation`; кожен `kind` майстра → свій статус (`it.each`); 405 → `method_not_allowed` з `Allow`.
   - `wire.test.ts`: вихід з `Date` серіалізується ISO; вхід з ISO-рядком → `Date` у `run`.
   - `openapi-snapshot.test.ts`: `buildOpenApi(CORE_OPERATIONS)` deep-equal `api/openapi.core.json`; документ валідний 3.1 за структурою (`openapi`, `paths['/api/v1/languages.add'].post`).
-  - `http-auth.test.ts` (з моками): без заголовка й без cookie → 401; відкликаний → 401; scopes без операції → 403; cookie без `Origin` → 403.
+  - `http-auth.test.ts` (з моками): без заголовка й без cookie → 401; відкликаний → 401; scopes без операції → 403; cookie без `Origin` → 403; невалідний Bearer разом із валідним cookie → 401 (адаптер не падає назад на сесію).
 - [ ] **Step 2: Інтеграційні.**
   - `api-tokens.test.ts` (І27):
     - у БД лише хеш (`select token_hash` ≠ токен, 32 байти);
@@ -522,7 +551,9 @@
     - два паралельні запити з одним ключем → обидва 200 з однаковим тілом, мова одна;
     - другий токен того самого користувача з тим самим ключем → окрема область (у `languages.add` другий запит отримує `conflict`, бо мова вже є, і цей 409 НЕ зберігається);
     - перший запит 400 → виправлене тіло з тим самим ключем виконується;
-    - рядок старший за 24 год ігнорується й прибирається.
+    - рядок старший за 24 год ігнорується й прибирається;
+    - placeholder не комітиться: після успішної команди повтор отримує справжнє тіло, а не placeholder (К5);
+    - перша транзакція утримана (не комітиться) → дубль чекає й за `IDEMPOTENCY_LOCK_TIMEOUT_MS` (константа поруч із механізмом) отримує 409 `idempotency_in_flight`.
 - [ ] **Step 3:** FAIL обох наборів.
 - [ ] **Step 4: Реалізація.**
   - Роут `$op.tsx`: `server.handlers` `POST` → `handleApiRequest`, `ANY` → 405 problem (урок `start-route-handlers-methods`: метод без хендлера йде в SSR);
@@ -536,7 +567,10 @@
   - (в) віддати `error.message` у 500 → `http-problem` червоний;
   - (г) ігнорувати `revoked_at` → `api-tokens` червоний;
   - (д) прибрати перевірку `userId` у `apiTokens.create` → кейс «від імені іншого адміна» червоний;
-  - (е) прибрати перевірку `sessionOnly` → кейс Bearer на `apiTokens.create` червоний.
+  - (е) прибрати перевірку `sessionOnly` → кейс Bearer на `apiTokens.create` червоний;
+  - (є) пропустити `storeIdempotentResponse` → кейс «повтор отримує справжнє тіло» червоний;
+  - (ж) прибрати `SET LOCAL lock_timeout` → кейс утриманої транзакції висне (таймаут тесту) → червоний;
+  - (з) адаптер падає назад на cookie за невалідного Bearer → кейс «невалідний Bearer + валідний cookie → 401» червоний.
 
   Commit `feat(multilingual): HTTP-адаптер /api/v1, токени, ідемпотентність, OpenAPI`.
 
@@ -548,7 +582,8 @@
 
 **Interfaces:**
 - `simplycms-ops/thin-server-fn`: у зоні кожен `createServerFn(...)` ланцюжок закінчується `.handler(<ідентифікатор>)` або `.handler(({ data }) => invokeFromServerFn(<ідентифікатор операції>, data))`. Будь-яке інше тіло — помилка.
-  - Виняток — імена з `legacy-admin-server-fns.json`: масив імен експортованих констант, знятий на старті задачі (`grep -o "^export const [A-Za-z]* = createServerFn" …`), мінус перенесені Task 6/7.
+  - Виняток — імена з `legacy-admin-server-fns.json`: мапа `файл → імена експортованих констант`, знята на старті задачі з УСІХ чотирьох файлів зони (`admin-server/index.ts` — 125, `plugin-sdk/server/index.ts` — 6 з inline-тілами, `plugins/server/index.ts` — 3, `themes/server/index.ts` — 2; разом 136, мінус перенесені Task 6/7).
+  - Форма `.handler(<ідентифікатор>)` дозволена ЛИШЕ legacy-іменам. Нова обгортка — тільки `.handler(({ data }) => invokeFromServerFn(<операція>, data))`, інакше обхід І25 проходив би лінт.
   - Правило також падає, якщо ім'я з legacy-переліку більше не існує: перелік лише скорочується.
 - `simplycms-ops/no-core-outside-operation`: виклик `withActor(`, `runAdmin(`, `runAdminTransactions(` або ідентифікатора `/In$/`, імпортованого з `simplycms/admin-server/impl`, заборонено в `routes/**`, `src/admin/**`, `src/storefront-routes/server/**` і в зоні serverFn поза legacy-переліком. Дозволено всередині `run` операції (файли `**/operations.ts`, `**/operations/**`).
 - Паритет (І24): для кожного `def` з `CORE_OPERATIONS`:
@@ -611,7 +646,7 @@
   Нормалізацію історії адрес і `?mod=` додасть Task 15 у ЦЮ Ж функцію, щоб редирект лишався одним.
 - Результат інтерсептора (набір мов і, з Task 15, резолв адреси) кладеться в per-request контекст ядра з Task 5а (`simplycms/site/request-context`, поле `storefront`). На сервері його читають `getRouter()` (через `createIsomorphicFn`, перевірити API на context7) і лоадер `$`-роуту. Так адреса резолвиться ОДИН раз на запит. Клієнтська навігація резолвить через serverFn. Якщо Start не пропускає ALS-контекст до лоадера без обходу, це записується як прийнятий компроміс (два запити) з виміром у М5.
 - `src/server.ts` лише вставляє її в ланцюг перед Start-хендлером (`withStorefrontNormalize(normalize, …)`, поруч із `withSeoInterceptor`).
-- Root: лоадер повертає `{ …, locale, languages: { primary, published } }`; `<html lang={locale} dir={dirOf(locale)}>`, де `dirOf = (c) => new Intl.Locale(c).getTextInfo?.().direction ?? 'ltr'`; `<I18nProvider locale={locale} fallback={primary}>`. Модульна константа `locale` у `__root.tsx` зноситься.
+- Root: лоадер повертає `{ …, locale, languages: { primary, published } }`; `<html lang={locale} dir={dirOf(locale)}>`, де `dirOf = (c) => new Intl.Locale(c).getTextInfo?.().direction ?? 'ltr'`; `<I18nProvider locale={locale} fallback={primary}>`. Модульна константа `locale` у `__root.tsx` зноситься разом із модульним `t` (`__root.tsx:51`): `NotFound` і `errorComponent` рендеряться поза провайдером і отримують `createTranslator(resolveRequestLocale(...).locale, primary)` від вихідного pathname (на клієнті — `window.location.pathname` і `__SCMS_LOCALES__`). Тест у `lang-attrs.test.tsx`: 404 на `/en/x` має англійський текст.
 - Кеші: `createReadCache` (Task 5а) отримує варіант `get(load, { variant: locale })` — окремий запис на мову під тим самим поколінням ключа; зміна покоління скидає всі варіанти; ключі вітрини `entityKey`/`aggregateKey` отримують сегмент локалі — `locale` додається ПЕРШИМ після сегмента сутності: `[entity, locale, …]`. Реєстр сегмента 0 не змінюється.
 - Клієнт: `window.__SCMS_LOCALES__` (Д2), `getRouter()` читає його (на сервері — з `languagesCache`) і передає в `createLocaleRewrite`.
 - **Факти дорозвідки** (router-core 1.171.34, start-server-core 1.169.39; перевірити на lockfile на старті задачі):
@@ -722,12 +757,16 @@
   - `products.create` (`idempotent: 'create'`, `versioned`): вхід `{ id, sectionId?, sku?, isActive, isFeatured, hasModifications, stockStatus, texts: { [locale]: Partial<ProductTexts> } (основна обов'язкова з name), path?: string }` → `{ id, version: 1, paths: Record<string,string> }`. Шлях основної мови = `path ?? slugify(name)`; для нелатинського письма без пакета `path` обов'язковий (`ValidationError('path_required')`). Адреси для всіх мов у `draft`/`published` — спільним замком;
   - `products.get` `{ id }` → `{ id, version, base, texts: Record<locale, Row & { status: FieldStatus; fieldStatus: Record<field, FieldStatus> }>, paths: Record<locale, string> }`;
   - `products.saveDescription` (`versioned`): `{ id, expectedVersion, base?: Partial<ProductBase>, texts?: { [locale]: Partial<ProductTexts> } }` → `{ version }`. Сценарії 1–2 майстра §3.4. Шлях не чіпає (І17);
-  - `products.saveTranslation` (`versioned`): `{ id, locale, expectedVersion?, fields, expectedSourceHashes }` → `{ version }` — сценарій 3;
+  - `products.saveTranslation` (`versioned`): `{ id, locale, expectedVersion, fields, expectedSourceHashes }` → `{ version }` — сценарій 3. `expectedVersion` ОБОВ'ЯЗКОВИЙ (спека §18.3: кожна команда агрегата), інакше дві правки перекладу з тим самим хешем джерела перезаписали б одна одну;
   - `products.deleteTranslation` `{ id, locale, expectedVersion }`;
   - `products.setPath` `{ id, locale, path, expectedVersion }` → `setExplicitPath`; ЗБІЛЬШУЄ `version` (адреса — частина агрегата для ETag); те саме для `products.setModificationToken` (Task 12);
   - `products.remove` `{ id, expectedVersion }`.
 
-  Порядок у кожній команді: `SELECT … FOR UPDATE` кореня → `assertVersionThenHash` → запис → `version = version + 1`. До Task 17 — дзеркалення тексту основної мови в старі колонки (`// М1-TEMP`).
+  Порядок у кожній команді: `SELECT … FOR UPDATE` кореня → `assertVersionThenHash` → запис → `version = version + 1`. До Task 17 — дзеркалення в старі колонки (`// М1-TEMP`):
+  - текст основної мови → `products.*`;
+  - поточний шлях основної мови → `products.slug` (NOT NULL до Task 17, без дзеркала create упав би).
+
+  Кейс у `product-aggregate.test.ts`: `'дві правки перекладу en з тим самим хешем джерела і тією самою версією — друга 412'`.
 
 - [ ] **Step 1: Тести.**
   - `translations-hash-keys.test.ts` (І10): після кожної операції ключі `source_hashes` усіх рядків ⊆ `spec.fields` — `select distinct jsonb_object_keys(source_hashes)`.
@@ -761,7 +800,8 @@
 - Create: `admin-server/impl/products/aggregate/{modifications.ts,property-values.ts,images.ts}`, `admin-server/impl/{product-prices,stock}/operations.ts`, `test-harness/pg/__tests__/{product-aggregate-children.test.ts,product-images-media.test.ts}`
 - Modify:
   - `domain/media.ts:200` (`MEDIA_COLUMNS`: + `product_images.storage_key` text `'product'`, + `product_image_translations.storage_key` text `'product'`; рядки `products.images`/`product_modifications.images` прибираються в Task 17);
-  - `storage/references.ts` (без змін логіки — нові рядки реєстру);
+  - `storage/references.ts`. Факт: `findMediaReferences` робить `select id::text as id` у кожній таблиці гілки (`:80`), а в `product_image_translations` колонки `id` немає. Тому запис `MEDIA_COLUMNS` отримує опційне поле `idExpression` (для цієї таблиці — `image_id::text || ':' || locale`), і запит будує ідентифікатор з нього. Тип `MediaReference.id` лишається `string`;
+  - `test-harness/pg/__tests__/media-references.test.ts:86` — `SEEDERS` для `product_images.storage_key` і `product_image_translations.storage_key` (тест парності вимагає сіятеля на кожен запис реєстру);
   - `tests/media-columns-coverage.test.ts`;
   - `scripts/showcase/{catalog-products.mts,catalog.mts,images.mts}` (через команди);
   - `admin-server/index.ts`, `operations/registry.ts`.
@@ -772,7 +812,12 @@
   - `propertyValues?: { upsert?: Array<{ id; propertyId; kind: PropertyType; optionId?; number?; bool?; color?; text?: { [locale]: string | null }; modificationId?: string }>; remove?: string[] }`;
   - `images?: { upsert?: Array<{ id; storageKey; sortOrder; modificationId?; alt?: { [locale]: string | null }; overrides?: { [locale]: string | null } }>; remove?: string[] }`.
 
-  Колекції ніколи не видаляються неявно — лише явним `remove`. Нова модифікація отримує токени для мов `draft`/`published` (І21). Видалення фото — «об'єкт → рядок» за наявним медіа-контуром.
+  Колекції ніколи не видаляються неявно — лише явним `remove`. До Task 17 (`// М1-TEMP`) команда дзеркалить:
+  - фото → jsonb `products.images` / `product_modifications.images`;
+  - текст основної мови text-значень → `*_property_values.value`;
+  - поточний токен основної мови → `product_modifications.slug` (NOT NULL до Task 17).
+
+  Інакше старі читачі до Task 15/16 не побачать запис через команду. Нова модифікація отримує токени для мов `draft`/`published` (І21). Видалення фото — «об'єкт → рядок» за наявним медіа-контуром.
 - `products.setModificationToken` `{ modificationId, locale, slug, expectedVersion }`.
 - `products.savePrices` / `products.saveStock` — тонкі операції над наявними ядрами `saveProductPrices` / `saveStock`. `version` НЕ збільшують (Р14).
 
@@ -883,9 +928,11 @@
 - Modify:
   - `storefront/loaders/{product-detail.ts,entities/product.ts,entities/modification.ts,property-values.ts,modification-values.ts}` (читання з проєкції + `withFallback`);
   - `storefront-routes/server/products.ts` (`getProduct({ locale, path })`);
+  - `storefront-routes/pages/ProductDetail.tsx` і `pages/product-detail/useProductQuery.ts:23-30` — ключ і запит за `(locale, path)` замість `productSlug`, інакше запит вимкнений і навігація між товарами показує попередні дані;
+  - `storefront-routes/head/product.ts:48` — опис у `meta description` і `og:description` без HTML-тегів (спека §7.4);
   - `storefront-routes/head/product.ts` (meta_*, canonical, hreflang, noindex, og:locale);
   - `storefront-routes/locale/normalize.ts` (історія адрес + `?mod=` історичний токен в одній функції);
-  - `storefront/seo/sitemap.ts` + `loaders/sitemap.ts` (товари: по рядку на опубліковану мову з `is_translated`, `xhtml:link` alternates);
+  - `storefront/seo/sitemap.ts` + `loaders/sitemap.ts` — товари ЛИШЕ через результат `indexPolicy` (спека §18.6): рядок на опубліковану мову, де `indexable`, `xhtml:link` alternates = її `hreflang`;
   - `domain/product-path.ts` (`productPath({ path, locale, primary })`; `NO_SECTION_SLUG`, `productRedirectTarget` зносяться);
   - `contracts/ports/index.ts:67-70` (`LinkResolver.product({ path })`);
   - host `src/engine.shared.ts:11-16` → `product: (p) => productPath(p)` з ядра;
@@ -893,13 +940,13 @@
   - `catalog-ui/ProductCharacteristics.tsx` (значення за `kind`);
   - `storefront-routes/pages/catalog/filter-predicates.ts:87` (boolean за `bool_value`).
 - Delete: `packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx`, `domain/__tests__/product-redirect.test.ts`
-- Modify (live-smoke): `scripts/live-smoke/{product-path.mjs,funnel.mjs,place-order.mjs,price-visibility.mjs,sql.mjs,selectors.mjs,stock-labels.mjs}` — шлях `/<path>`, slug із `url_paths`
+- Modify (live-smoke): УСІ сценарії, що відкривають товар за `/catalog/…`. На знімку це 13 файлів: `scripts/live-smoke/{admin-orders-buyer,price-visibility,admin-customers-delete,admin-discounts,funnel,product-path,body-limit,security-headers,review-xss,admin-content,error-mask,place-order,admin-catalog-verify}.mjs`, плюс `sql.mjs`, `selectors.mjs`, `stock-labels.mjs`. Шлях — `/<path>` зі `url_paths`. Перевірка: `grep -rn "/catalog/" scripts/live-smoke` → лише сторінки розділів (до М2)
 
 **Interfaces:**
 - `indexPolicy(input: { locale; primary; isTranslated: boolean; robots?: string | null; canonicalOverride?: string | null; languages: Array<{ code; isTranslated; path }> }): { indexable: boolean; robots: string; canonical: string; hreflang: Array<{ hrefLang: string; href: string }> }`.
   - Неперекладене → `noindex`, canonical на основну, без hreflang.
   - hreflang — лише опубліковані перекладені версії взаємно + `x-default` на основну.
-- `normalizeStorefrontRequest` (з Task 9) доповнюється:
+- `normalizeStorefrontRequest` (з Task 9) серіалізує query ТИМ САМИМ `defaultParseSearch`/`defaultStringifySearch` (`@tanstack/router-core`), що й роутер. Інакше її 301 і роутерний 307 розійдуться в кодуванні й дадуть цикл. Доповнюється:
   - історичний шлях → поточний;
   - історичний `?mod=` → поточний токен;
   - завершальний слеш.
@@ -913,19 +960,24 @@
     - `/en/old-en/` → один 301 на `/en/new-en`;
     - `/x?mod=<старий токен>` → один 301 на `/x?mod=<новий>`;
     - видалений товар → 404;
-    - `/x` → `null`.
+    - `/x` → `null`;
+    - закодований (`?utm=%31`) і повторений (`?a=1&a=2`) невідомий параметр → рівно ОДИН редирект, після якого роутер не дає 307 (перевірка: `buildLocation` роутера на цільовому URL = цільовий URL);
+    - `/en` і `/en/` — корінь мови: `/en/` → один 301 на `/en`.
   - `index-policy.test.ts` (І33): неперекладене; ручний `robots=index` не перекриває noindex неперекладеного; `x-default` = основна; canonical-override на інший URL → поза hreflang.
   - `product-page-html.test.tsx` (Review Focus 5, тест на відрендереному HTML через SSR-хелпер, як `catalog-ssr.test.tsx`):
     - `/en/x` неперекладеного → `<meta name="robots" content="noindex`, canonical `https://…/x`, текст опису основною мовою всередині `lang="uk"`, кнопки інтерфейсу англійською, `<html lang="en">`;
     - перекладеного → self-canonical, hreflang `uk`, `en`, `x-default`;
-    - `meta_title` використано в `<title>`.
-  - `sitemap.test.ts` (наявний): товар із перекладом en — дві `<url>` з alternates; без перекладу — лише основна.
+    - `meta_title` використано в `<title>`;
+    - опис із HTML (`<p>Опис <b>x</b></p>`) у `meta description` і `og:description` — без тегів.
+  - `sitemap.test.ts` (наявний): товар із перекладом en — дві `<url>` з alternates; без перекладу — лише основна; паритет — кожен URL sitemap = self-canonical сторінки й є в її hreflang.
 - [ ] **Step 2:** FAIL → реалізація → PASS.
 - [ ] **Step 3:** `pnpm build && pnpm typecheck && pnpm template:sync`; `pnpm live:smoke` → PASS.
 - [ ] **Step 4:** БЛ. Мутації:
   - (а) два послідовні редиректи (окремо мова й історія) → `path-normalize` червоний;
   - (б) hreflang на неперекладену версію → `index-policy` червоний;
-  - (в) прибрати `lang` у `FallbackText` → HTML-тест червоний.
+  - (в) прибрати `lang` у `FallbackText` → HTML-тест червоний;
+  - (г) серіалізувати query в інтерсепторі власним кодом → кейс `%31` червоний;
+  - (д) sitemap з `is_translated` в обхід `indexPolicy` → паритет-тест червоний.
 
   Commit `feat(multilingual): сторінка товару за адресою з реєстру, SEO товару`.
 
@@ -936,7 +988,8 @@
   - `storefront/loaders/{catalog-products.ts,products.ts,entities/home-product.ts,home.ts,home-sections.ts,property-option.ts}` (назва, шлях, фото з проєкції або `withFallback`);
   - `storefront-routes/server/{product-list-item.ts,product-list-payload.ts,catalog.ts}`;
   - `catalog-ui/ProductCard.tsx`;
-  - `commerce/price-cart-catalog.ts:30-71` (назва мовою запиту; локаль приходить параметром `locale` у `loadCatalog`, а кошик і чекаут передають мову запиту);
+  - `commerce/{price-cart-catalog.ts:30-71,price-cart.ts,price-items.ts}` — параметр `locale` наскрізно: кошик і чекаут → `priceItems` → `priceCart` → `loadCatalog`;
+  - до Task 17 переходять на `url_paths` / `slug_tokens`: `scripts/showcase/prices.mts:72` і сирий SQL `p.slug` у `scripts/live-smoke/{admin-discounts-sql,admin-order-edit-sql,admin-dictionaries-sql,admin-shipping-sql,body-limit,product-path}.mjs`;
   - `storefront/loaders/{quote-cart.ts,prepare-checkout.ts,order-create.ts}`;
   - `admin-server/impl/{order-items/add.ts,price-diagnosis/diagnose.ts,products/search-for-order.ts,reviews/list.ts,reviews/card.ts}` (назва основною мовою; пошук для замовлення — за назвою будь-якою мовою й артикулом через `product_translations`);
   - `admin/features/reviews/card/ReviewCardPage.tsx` (`productPath`);
@@ -959,7 +1012,7 @@
 **Files:**
 - Modify:
   - `schema/schema.ts` — знос `products.{slug,name,short_description,description,meta_title,meta_description,images,return_policy,shipping_details}`, `product_modifications.{slug,name,images}`, `*_property_values.value`; `value_kind` NOT NULL; складені FK і CHECK Р18; частковий UNIQUE; `option_id` FK `ON DELETE CASCADE`;
-  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`);
+  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`; і тригери НАЯВНОСТІ адреси й токена на `AFTER INSERT` бази — `attach_current_address_triggers(products, url_paths, 'product_id')`, `attach_current_token_triggers(product_modifications, slug_tokens, 'modification_id')` з Task 5, К4);
   - `domain/media.ts` (`MEDIA_COLUMNS` без `products.images`, `product_modifications.images`);
   - `fixtures/product-graph.ts` (без `// М1-TEMP`); команди Task 11/12 (без дзеркалення);
   - `admin-server/impl/products/resource.ts` і `product-modifications/resource.ts` (лишається лише читання для колекцій), `property-values/resources.ts`;
@@ -978,16 +1031,21 @@
     - товар без перекладу основної мови → відмова на коміті під `app_admin`;
     - видалення товару каскадом → коміт;
     - модифікація без перекладу → відмова.
+  - `url-paths.test.ts` + `describe('наявність на коміті')` (К4):
+    - товар без поточної адреси в `draft`-мові → відмова на коміті;
+    - товар, створений операцією в транзакції, що конкурує з `languages.add` під спільним замком, комітиться без хибної відмови: тригер бачить лише мови свого знімка, нову мову дозаповнює `fill`;
+    - модифікація без поточного токена → відмова.
   - `grep`-перевірка в кроці 3.
 - [ ] **Step 2:** FAIL → реалізація → PASS.
-- [ ] **Step 3:** `git grep -n "М1-TEMP"` → порожньо; `git grep -nE "products\.(slug|name|shortDescription|description|metaTitle|metaDescription|images|returnPolicy|shippingDetails)\b" packages src scripts` → порожньо (typecheck це теж доводить).
+- [ ] **Step 3:** `git grep -n "М1-TEMP"` → порожньо; `git grep -nE "products\.(slug|name|shortDescription|description|metaTitle|metaDescription|images|returnPolicy|shippingDetails)\b" packages src scripts` → порожньо (typecheck це теж доводить); сирий SQL: `git grep -nE "\bp\.(slug|name)\b|product_modifications\.(slug|name)" scripts packages/simplycms/test-harness` → порожньо, крім розділів (`s.slug`, М2).
 - [ ] **Step 4:** БЛ + `pnpm live:smoke` + `pnpm db:showcase` на чистій БД. Мутації:
   - (а) прибрати складений FK `(property_id, value_kind)` → І6 червоний;
   - (б) прибрати CHECK колонки → І6 червоний;
   - (в) простий FK `option_id` → І7 червоний;
   - (г) прибрати частковий UNIQUE → І8 червоний;
   - (д) прибрати умову `value_kind=text` → І5 червоний;
-  - (е) прибрати тригер на `product_translations` → І4 червоний.
+  - (е) прибрати тригер на `product_translations` → І4 червоний;
+  - (є) не підключати тригер наявності адреси на `products` → кейс «без адреси» червоний (І16).
 
   Commit `feat(multilingual): товар — знос старих колонок, обмеження значень, обов'язкове джерело`.
 
