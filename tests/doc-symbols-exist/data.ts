@@ -78,6 +78,7 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   innerText: 'властивість DOM-елемента / метод Playwright',
   isVisible: 'метод Playwright Locator (описано заборону миттєвих перевірок)',
   waitFor: 'утиліта Testing Library',
+  renderHook: 'утиліта Testing Library (гард cleanup у test-contours)',
   expectTypeOf: 'утиліта Vitest',
   globalSetup: 'опція Playwright/Vitest',
   createPluginSetupTasks: 'внутрішнє імʼя Playwright',
