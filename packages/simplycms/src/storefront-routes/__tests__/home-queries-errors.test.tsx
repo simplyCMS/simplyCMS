@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nProvider } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 import {
   useFeaturedProducts,
@@ -26,7 +27,11 @@ function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+  return (
+    <I18nProvider locale="uk">
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    </I18nProvider>
+  );
 }
 
 // Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).

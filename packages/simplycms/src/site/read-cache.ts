@@ -22,9 +22,18 @@ export interface ThemeRecord {
   updated_at: Date;
 }
 
+/** Параметри читання: `variant` — окремий запис під тим самим поколінням ключа. */
+export type ReadCacheGetOptions = {
+  /** Мова (чи інша вісь) запису: дві мови не діляться значенням (І36). */
+  variant?: string;
+};
+
 export type ReadCache<T> = {
-  /** Віддати кешоване значення, якщо покоління в БД не змінилось, інакше прочитати `load`. */
-  get(load: () => Promise<T>): Promise<T>;
+  /**
+   * Віддати кешоване значення, якщо покоління в БД не змінилось, інакше прочитати `load`.
+   * `variant` розводить записи (мови) під ОДНИМ поколінням ключа.
+   */
+  get(load: () => Promise<T>, opts?: ReadCacheGetOptions): Promise<T>;
 };
 
 /**
@@ -45,6 +54,9 @@ export type ReadCache<T> = {
  * бекапу при живому процесі (запис 7, у БД знову 3 — кеш мовчав би до 4 bump-ів
  * і віддавав дані до відновлення). Повільне читання зі старішим поколінням
  * коштує одного зайвого перечитування, не помилки. Помилку `load` не кешуємо.
+ *
+ * `get(load, { variant })` — запис на мову (І36): `load` кличеться для кожного
+ * варіанта окремо, а зміна покоління скидає всі варіанти.
  */
 export function createReadCache<T>(
   key: CacheKey,
@@ -54,12 +66,19 @@ export function createReadCache<T>(
   if (ttlMs !== undefined && !(ttlMs > 0)) {
     throw new RangeError('[simplycms/site] TTL кешу має бути додатним числом');
   }
-  let entry: { data: T; at: number; generation: bigint } | null = null;
+  // Запис на варіант (мову) під спільним поколінням ключа: зміна покоління
+  // робить застарілими ВСІ варіанти одразу, бо кожен порівнює своє покоління
+  // з поточним. Варіантів стільки, скільки мов — Map не росте без меж.
+  const entries = new Map<
+    string,
+    { data: T; at: number; generation: bigint }
+  >();
 
   return {
-    async get(load) {
+    async get(load, { variant = '' } = {}) {
       const generation = (await readGenerations()).get(key) ?? ZERO;
       const now = Date.now();
+      const entry = entries.get(variant);
       if (
         entry &&
         entry.generation === generation &&
@@ -68,7 +87,7 @@ export function createReadCache<T>(
         return entry.data;
 
       const data = await load();
-      entry = { data, at: now, generation };
+      entries.set(variant, { data, at: now, generation });
       return data;
     },
   };

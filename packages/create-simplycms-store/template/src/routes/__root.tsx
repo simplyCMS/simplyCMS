@@ -1,6 +1,5 @@
 import {
   HeadContent,
-  Link,
   Outlet,
   Scripts,
   createRootRouteWithContext,
@@ -17,40 +16,21 @@ import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import {
-  I18nProvider,
-  createTranslator,
-  languageOfConfigLocale,
-} from 'simplycms/i18n';
+import { I18nProvider } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
-import { getStorefrontRoot } from 'simplycms/storefront-routes/server/root';
-import {
-  homeHead,
-  type StorefrontRootData,
-} from 'simplycms/storefront-routes/head/head';
+import { homeHead } from 'simplycms/storefront-routes/head/head';
+import { loadStorefrontRoot } from 'simplycms/storefront-routes/locale/root-data';
+import { RootNotFound } from 'simplycms/storefront-routes/locale/RootNotFound';
+import { htmlLangAttrs } from 'simplycms/storefront-routes/locale/lang-attrs';
+import { serializeLocalesScript } from 'simplycms/storefront-routes/locale/script';
 import { StoreProfileProvider } from 'simplycms/themes/store-profile';
 import { serializeActiveThemeScript } from 'simplycms/storefront-routes/active-theme';
 import appCss from '../styles/globals.css?url';
 
 // Side-effect: реєстрація тем в ThemeRegistry (ізоморфно)
 import '../theme-registry';
-
-// Локаль магазину — build-time вибір власника, тож резолвиться один раз на модуль.
-const locale = languageOfConfigLocale(config.locale);
-
-/**
- * Транслятор каркаса — створюється напряму, а НЕ через `useT()`.
- *
- * 🔴 Причина: `errorComponent` кореневого роуту рендериться замість
- * `RootComponent`, тобто поза `I18nProvider`. `useT()` там кинув би — помилка
- * всередині обробника помилок. `createTranslator` — чисте замикання без
- * контексту, тож працює в обох випадках однаково.
- *
- * М1-TEMP: Task 9 — мова запиту й основна мова магазину замість конфіга.
- */
-const t = createTranslator(locale, 'uk');
 
 /**
  * Контекст кореневого роуту: `QueryClient`, народжений у `getRouter()`
@@ -65,11 +45,12 @@ export type { RouterContext };
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Корінь вітрини одним викликом (Е6б-10): назву активної теми інлайн-скриптом
   // прокидаємо клієнту, щоб той прогрів саме цю тему ДО гідрації (без suspend);
-  // профіль магазину, URL сайту й локаль читає `head()` кожного роуту ядра
-  // через `matches` — іншого каналу від host-а до ядра немає.
-  loader: async () =>
-    ({ ...(await getStorefrontRoot()), locale }) satisfies StorefrontRootData,
-  notFoundComponent: NotFound,
+  // профіль магазину, URL сайту, мову сторінки й набір мов читає `head()` кожного
+  // роуту ядра через `matches` — іншого каналу від host-а до ядра немає. Мова —
+  // з префікса URL (`location.publicHref`), набір мов — з контексту роутера.
+  loader: ({ location, context }) =>
+    loadStorefrontRoot(location.publicHref, context.locales),
+  notFoundComponent: RootNotFound,
   errorComponent: RouteError,
   head: ({ loaderData }) => ({
     meta: [
@@ -90,11 +71,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
-  const { activeThemeName, storeProfile } = Route.useLoaderData();
+  const { activeThemeName, storeProfile, locale, languages } =
+    Route.useLoaderData();
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html {...htmlLangAttrs(locale)} suppressHydrationWarning>
       <head>
         {/* Назва активної теми для клієнта (прогрів кешу до гідрації) */}
         <script
@@ -102,11 +84,17 @@ function RootComponent() {
             __html: serializeActiveThemeScript(activeThemeName),
           }}
         />
+        {/* Набір мов для клієнтського rewrite: роутер створюється ДО гідрації */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: serializeLocalesScript(languages),
+          }}
+        />
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
         {/* I18nProvider — над усіма групами роутів (storefront, auth, protected) */}
-        <I18nProvider locale={locale}>
+        <I18nProvider locale={locale} fallback={languages.primary}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -169,19 +157,4 @@ function ThemeBootstrap() {
   }, [isAdmin]);
 
   return null;
-}
-
-/** 404 — сторінку не знайдено */
-function NotFound() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-6xl font-bold">{t('app.notFound.title')}</h1>
-      <p className="mt-4 text-xl text-muted-foreground">
-        {t('app.notFound.message')}
-      </p>
-      <Link to="/" className="mt-8 underline hover:text-foreground">
-        {t('app.backHome')}
-      </Link>
-    </div>
-  );
 }

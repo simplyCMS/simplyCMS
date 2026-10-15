@@ -2,19 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { describePublicError } from 'simplycms/contracts/masked-error';
-import { createTranslator, languageOfConfigLocale } from 'simplycms/i18n';
-import config from '../simplycms.config';
-
-/**
- * Транслятор каркаса — створюється напряму, а НЕ через `useT()`.
- *
- * 🔴 Причина: екран помилки рендериться замість `RootComponent`, тобто поза
- * `I18nProvider`. `useT()` там кинув би — помилка всередині обробника помилок.
- * `createTranslator` — чисте замикання без контексту, тож працює однаково.
- *
- * М1-TEMP: Task 9 — мова запиту замість мови з конфіга.
- */
-const t = createTranslator(languageOfConfigLocale(config.locale), 'uk');
+import { useRequestTranslator } from 'simplycms/storefront-routes/locale/useRequestTranslator';
 
 /**
  * Єдиний екран помилки вітрини: корінь (`errorComponent`) і всі дочірні роути
@@ -27,6 +15,11 @@ const t = createTranslator(languageOfConfigLocale(config.locale), 'uk');
  * `host:port`. Без цього дочірні роути друкували б `error.message` як є.
  */
 export function RouteError({ error }: ErrorComponentProps) {
+  // 🔴 Не `useT()`: екран помилки рендериться замість `RootComponent`, тобто
+  // поза `I18nProvider`, і `useT()` там кинув би — помилка всередині обробника
+  // помилок. Мова — з адреси запиту (`/en/x` → англійська), основна — з контексту
+  // роутера.
+  const t = useRequestTranslator();
   // Застарілий чанк після деплою: лікує перезавантаження, а не екран помилки.
   const recovering = useStaleChunkRecovery(error);
   if (recovering) {

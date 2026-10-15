@@ -1,11 +1,16 @@
 import { useCallback } from 'react';
-import { interpolate, useLocale, type MessageParams } from 'simplycms/i18n';
+import {
+  interpolate,
+  useFallbackLocale,
+  useLocale,
+  type MessageParams,
+} from 'simplycms/i18n';
 import type { PluginMessages } from './types';
 
 /**
  * Транслятор каталогу ПЛАГІНА (не ядра) — двійник `useThemeT`.
  *
- * Ланцюжок fallback — `messages[locale][key] → messages.uk[key] → сам key`;
+ * Ланцюжок fallback — `messages[locale][key] → messages[основна][key] → сам key`;
  * підстановка `{param}` — та сама `interpolate` з `simplycms/i18n`.
  *
  * Каталог передається АРГУМЕНТОМ (компонент плагіна імпортує власний
@@ -22,14 +27,14 @@ export function usePluginT<K extends string = string>(
   messages: PluginMessages | undefined,
 ): (key: K, params?: MessageParams) => string {
   const locale = useLocale();
+  const fallback = useFallbackLocale();
 
   return useCallback(
     (key: K, params?: MessageParams): string => {
-      // М1-TEMP: Task 9 — фолбек стане основною мовою магазину (з контексту
-      // `I18nProvider`), а не захардкодженою `uk`.
-      const template = messages?.[locale]?.[key] ?? messages?.uk?.[key] ?? key;
+      const template =
+        messages?.[locale]?.[key] ?? messages?.[fallback]?.[key] ?? key;
       return interpolate(template, params);
     },
-    [messages, locale],
+    [messages, locale, fallback],
   );
 }

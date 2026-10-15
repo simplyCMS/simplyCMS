@@ -35,7 +35,18 @@ const CYRILLIC_JSX_TEXT = 'JSXText[value=/[\\u0400-\\u04FF]/]';
 const CYRILLIC_JSX_ATTRIBUTE =
   'JSXAttribute[name.name=/^(placeholder|title|aria-)/] > Literal[value=/[\\u0400-\\u04FF]/]';
 
+// І30: мова вітрини ЛИШЕ з URL. Заголовок `Accept-Language` не читається ніде
+// в зоні вітрини: інакше одна адреса віддавала б різні мови, а кеші й індекс
+// пошукача мусили б розрізняти їх за `Vary`. Селектор у спільному списку, бо
+// блоки зони (env, плагіни) розгортають його явно, а flat config не доливає опції.
+const ACCEPT_LANGUAGE_HEADER = 'Literal[value=/^accept-language$/i]';
+
 const i18nRestrictedSyntax = [
+  {
+    selector: ACCEPT_LANGUAGE_HEADER,
+    message:
+      'Заголовок Accept-Language у зоні вітрини заборонено (І30): мова сторінки визначається лише першим сегментом URL через resolveRequestLocale.',
+  },
   {
     selector: CYRILLIC_JSX_TEXT,
     message:
@@ -89,6 +100,10 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms/routes/storefront/**/*.tsx',
   'packages/simplycms/routes/admin/**/*.tsx',
   'packages/simplycms/src/storefront-routes/**/*.tsx',
+  // `.ts` вітрини теж: заборона `Accept-Language` (І30) стосується логіки
+  // розбору мови (`locale/*.ts`, `seo/*.ts`), а не лише JSX. JSX-селектори в
+  // `.ts` інертні.
+  'packages/simplycms/src/storefront-routes/**/*.ts',
   'packages/simplycms/src/admin/**/*.tsx',
   'packages/simplycms/src/cart-ui/**/*.tsx',
   'packages/simplycms/src/catalog-ui/**/*.tsx',

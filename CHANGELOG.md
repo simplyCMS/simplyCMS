@@ -63,6 +63,17 @@
   `createTranslator(languageOfConfigLocale(x), 'uk')`.
   Файли `src/routes/__root.tsx`, `src/route-error.tsx`, `src/server.ts` у шаблоні магазину вже
   оновлено. `ThemeMessages` і `PluginMessages` тепер з ключем-рядком (раніше `'uk' | 'en'`).
+- **Мовний контекст запиту вітрини** (Task 9): мова — лише з першого сегмента URL. Host-файли
+  `src/server.ts` (обгортка `withStorefrontNormalize` усередині `withRequestContext`), `src/router.tsx`
+  (`createRouterLocale()`: `rewrite` + `context.locales`), `src/routes/__root.tsx`
+  (`loadStorefrontRoot`, `RootNotFound`, `<html {...htmlLangAttrs(locale)}>`, скрипт
+  `serializeLocalesScript`, `fallback` у `I18nProvider`) і `src/route-error.tsx` (`useRequestTranslator`)
+  оновлено в шаблоні; магазин без цих правок падає на старті роутера. `RouterContext` має обов'язкове
+  `locales`; `StorefrontRootData` — `languages`, а `locale` тепер код мови сторінки (не тег `uk-UA`);
+  `I18nProvider` приймає `fallback` (основна мова), `useFallbackLocale()`. Ключі кешу вітрини з
+  мовою: `entityKey(entity, locale)`, `AGGREGATE.<x>.keyFor(locale)`, `catalogKeys.sectionProducts(id,
+  locale, q)`; `createReadCache.get(load, { variant })`. `/<основна>/x` і `/x/` віддають 301, префікс
+  неопублікованої мови — 404. Лінт забороняє літерал `accept-language` у зоні вітрини.
 
 ### Додано
 

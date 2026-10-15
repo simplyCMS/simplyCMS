@@ -61,7 +61,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `reviews-ui/` | `simplycms/reviews-ui` | T4 | Відгуки: `ProductReviews`, `StarRating` |
 | `core/` | `simplycms/core` | T5 | Власні провайдери/хуки/компоненти (`CMSProvider`, `useAuth`, `useCart`, `useBanners`…). 🔴 Фасадну роль розчинено К0 — реекспорти чужого прибрано, споживачів переведено на джерела; повне розселення власних модулів по тірах свідомо ПОЗА К0 |
 | `admin/` | `simplycms/admin` | T5 | Лейаути, сторінки й компоненти адмінки |
-| `storefront-routes/` | `simplycms/storefront-routes` | T5 | Канонічні сторінки: `pages/` (container-и) і `views/` (канонічні view + `views/slots/` — прибінджені реквізити, контракт тем v3), `shells/`, `server/`, `seo/` |
+| `storefront-routes/` | `simplycms/storefront-routes` | T5 | Канонічні сторінки: `pages/` (container-и) і `views/` (канонічні view + `views/slots/` — прибінджені реквізити, контракт тем v3), `shells/`, `server/`, `seo/` (server-only; `seo/normalize` — `withStorefrontNormalize`: 301/404 і набір мов у контекст запиту), `locale/` (клієнтобезпечне: `resolveRequestLocale` — єдине джерело мови запиту, `createLocaleRewrite`, `createRouterLocale`, `loadStorefrontRoot`, `RootNotFound`, `useRequestTranslator`, `serializeLocalesScript`, `htmlLangAttrs`) |
 
 Дві теки роутів лежать НЕ в `src/` — вони монтуються `physical()`-ом як
 файли, а не імпортуються як модулі:

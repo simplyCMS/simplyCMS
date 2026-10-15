@@ -1,6 +1,6 @@
 import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
-import { createTranslator, languageOfConfigLocale } from 'simplycms/i18n';
+import { createTranslator } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 
 /**
@@ -10,9 +10,9 @@ import type { Translator } from 'simplycms/i18n';
  * (`contracts/server-only.ts`), а `head()` виконується і в клієнтському
  * бандлі роуту. Тому тут нуль серверних імпортів — лише i18n і типи.
  *
- * Назва магазину й локаль приходять із кореневого лоадера host-а: ядро не має
- * іншого доступу до конфігу магазину, а `head()` — звичайна функція поза
- * React-контекстом, де `useT()` непридатний.
+ * Назва магазину, мова запиту й основна мова приходять із кореневого лоадера
+ * host-а: `head()` — звичайна функція поза React-контекстом, де `useT()`
+ * непридатний.
  */
 
 /** Дані кореневого лоадера host-а (`src/routes/__root.tsx`). */
@@ -20,7 +20,10 @@ export type StorefrontRootData = {
   activeThemeName: string;
   storeProfile: StorefrontProfile;
   siteUrl: string;
+  /** Мова сторінки (з префікса URL): `<html lang>` і тексти `head()`. */
   locale: string;
+  /** Мови магазину в HTML: основна — кінцева ланка fallback, опубліковані — для hreflang. */
+  languages: { primary: string; published: readonly string[] };
 };
 
 /** Мінімум від `RouteMatch`, потрібний хелперам: типи матчів у `head()` вузькі. */
@@ -41,6 +44,9 @@ function isRootData(x: unknown): x is StorefrontRootData {
     typeof x.activeThemeName === 'string' &&
     typeof x.siteUrl === 'string' &&
     typeof x.locale === 'string' &&
+    isRecord(x.languages) &&
+    typeof x.languages.primary === 'string' &&
+    Array.isArray(x.languages.published) &&
     isRecord(x.storeProfile) &&
     typeof x.storeProfile.name === 'string'
   );
@@ -57,7 +63,7 @@ export function readStorefrontRoot(
   if (!isRootData(data)) {
     throw new Error(
       'simplycms: кореневий лоадер host-а (src/routes/__root.tsx) має ' +
-        'повертати StorefrontRootData — `{ ...(await getStorefrontRoot()), locale }`',
+        'повертати StorefrontRootData — `loadStorefrontRoot(location.publicHref, context.locales)` (обгортка getStorefrontRoot)',
     );
   }
   return data;
@@ -84,9 +90,8 @@ export function storefrontHead(
   matches: ReadonlyArray<HeadMatch>,
   page: (t: Translator) => PageHead,
 ): { meta: HeadMeta[] } {
-  const { storeProfile, locale } = readStorefrontRoot(matches);
-  // М1-TEMP: Task 9 — мова запиту замість мови з кореневого лоадера.
-  const own = page(createTranslator(languageOfConfigLocale(locale), 'uk'));
+  const { storeProfile, locale, languages } = readStorefrontRoot(matches);
+  const own = page(createTranslator(locale, languages.primary));
   return {
     meta: toMeta(
       composeTitle(own.title, storeProfile.name),

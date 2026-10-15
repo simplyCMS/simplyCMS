@@ -1,13 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useT } from 'simplycms/i18n';
+import { useLocale, useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Loader2, ChevronRight, Tag } from 'lucide-react';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { PropertyWithOptions } from 'simplycms/storefront/loaders';
 import { getProperties } from '../server/properties';
-
-const sectionProperties = entityKey(ENTITY.sectionProperties);
 
 export interface PropertiesPageProps {
   properties?: PropertyWithOptions[];
@@ -17,6 +15,7 @@ export default function PropertiesPage({
   properties: initialProperties,
 }: PropertiesPageProps = {}) {
   const t = useT();
+  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
 
   /**
    * 🔴 Один запит замість двох. Кількість значень більше не окремий похід у

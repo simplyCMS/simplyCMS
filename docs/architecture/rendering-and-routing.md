@@ -148,3 +148,25 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   переліку в `server-headers.mjs` під тестом парності
   (`tests/server-headers-parity.test.ts`). Магазин не можна вбудувати в `iframe`
   чужого origin — скіли й теми цього не роблять.
+
+## 6. Мовний контекст запиту (Мультимовність М1, Task 9)
+
+- **URL:** основна мова — без префікса, інші — `/<lower(code)>/…` для всіх вітринних роутів;
+  `/admin`, `/api`, `/_serverFn`, `/assets`, `/media` мови не мають (`NON_STOREFRONT_SEGMENTS`).
+  Мова лише з першого сегмента (`resolveRequestLocale`), без cookie й `Accept-Language`.
+- **Серверний вхід** (`src/server.ts`): `withRequestContext(withSecurityHeaders(withStorefrontNormalize(…)))`.
+  `withStorefrontNormalize` (`simplycms/storefront-routes/seo/normalize`, server-only) читає набір мов
+  із `languagesCache` (покоління в БД), віддає ОДИН 301 (префікс основної мови, завершальний слеш) або
+  404 (відома, але не опублікована мова), інакше пише `{ locales }` у `RequestContext.storefront`.
+  Роутерна канонізація router-core дає лише 307 без опцій — вона лишається страховкою; тому
+  інтерсептор віддає рівно той шлях, який роутер вважає канонічним (без слеша), і циклу немає.
+  Task 15 дописує в ту саму функцію історію адрес і `?mod=` кроками тієї ж кінцевої адреси.
+- **Роутер:** `getRouter()` кличе `createRouterLocale()`: набір мов — з контексту запиту (сервер)
+  або `window.__SCMS_LOCALES__` (клієнт; скрипт у `<head>` пише кореневий роут). Набір їде в
+  `router.options.context.locales`, `rewrite` (`createLocaleRewrite`) знімає префікс на вході й
+  додає на виході; стан «поточна мова» — per-router (на сервері роутер на запит). До ALS ні
+  лоадер, ні екрани не звертаються: ALS читається один раз, у `getRouter()`.
+- **Корінь:** лоадер `loadStorefrontRoot(location.publicHref, context.locales)` повертає
+  `locale` і `languages: { primary, published }`; `<html {...htmlLangAttrs(locale)}>`
+  (`lang` + `dir` з `Intl.Locale.getTextInfo()`), `<I18nProvider locale fallback={primary}>`.
+

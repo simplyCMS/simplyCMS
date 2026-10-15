@@ -22,12 +22,13 @@ const PROFILE: StorefrontProfile = {
   socials: [],
 };
 
-function rootMatches(profile: StorefrontProfile, locale = 'uk-UA') {
+function rootMatches(profile: StorefrontProfile, locale = 'uk') {
   const data: StorefrontRootData = {
     activeThemeName: 'default',
     storeProfile: profile,
     siteUrl: 'https://shop.example',
     locale,
+    languages: { primary: 'uk', published: ['uk', 'en'] },
   };
   return [
     { routeId: '__root__', loaderData: data },
@@ -66,7 +67,7 @@ describe('storefrontHead', () => {
   });
 
   it('локаль із кореня: en-каталог дає англійську назву сторінки', () => {
-    const head = storefrontHead(rootMatches(PROFILE, 'en-US'), (t) => ({
+    const head = storefrontHead(rootMatches(PROFILE, 'en'), (t) => ({
       title: t('cart.title'),
     }));
     expect(titleOf(head)).toBe('Cart — Крамниця');

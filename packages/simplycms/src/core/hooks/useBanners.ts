@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useLocale } from 'simplycms/i18n';
 import { getBanners } from '../lib/banners';
 
 export type { Banner, BannerButton } from 'simplycms/contracts';
-
-const banners = entityKey(ENTITY.banners);
 
 /**
  * Банери одного місця розміщення.
@@ -16,6 +15,7 @@ const banners = entityKey(ENTITY.banners);
  * відвідувачів, а не по локальному часу кожного.
  */
 export function useBanners(placement: string, sectionId?: string) {
+  const banners = entityKey(ENTITY.banners, useLocale());
   const query = useQuery({
     queryKey: banners.variant(placement, sectionId ?? undefined),
     queryFn: () =>

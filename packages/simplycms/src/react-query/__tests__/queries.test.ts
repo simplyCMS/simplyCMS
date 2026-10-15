@@ -13,18 +13,19 @@ import { catalogKeys } from '../queries';
 // оновлення кешу в одному місці проминає записи в іншому.
 describe('catalogKeys', () => {
   it('починається з імені сутності', () => {
-    expect(catalogKeys.sectionProducts('s1')[0]).toBe(ENTITY.products);
+    expect(catalogKeys.sectionProducts('s1', 'uk')[0]).toBe(ENTITY.products);
   });
 
   it('розділяє добірку секції за id і за запитом', () => {
-    expect(catalogKeys.sectionProducts('s1')).toEqual([
+    expect(catalogKeys.sectionProducts('s1', 'uk')).toEqual([
       ENTITY.products,
+      'uk',
       'section',
       's1',
       null,
     ]);
-    expect(catalogKeys.sectionProducts('s1', { page: 2 })).not.toEqual(
-      catalogKeys.sectionProducts('s1'),
+    expect(catalogKeys.sectionProducts('s1', 'uk', { page: 2 })).not.toEqual(
+      catalogKeys.sectionProducts('s1', 'uk'),
     );
   });
 });

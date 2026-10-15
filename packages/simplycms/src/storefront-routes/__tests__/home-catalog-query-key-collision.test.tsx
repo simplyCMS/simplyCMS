@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { I18nProvider } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { catalogKeys, priceViewKey } from 'simplycms/react-query';
@@ -77,7 +78,11 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     qc.setQueryData(CATALOG_PAGE_SECTION_KEY, catalogPageCacheSentinel);
 
     function wrapper({ children }: { children: ReactNode }) {
-      return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+      return (
+        <I18nProvider locale="uk">
+          <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+        </I18nProvider>
+      );
     }
 
     const { result } = renderHook(
@@ -99,7 +104,7 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     // Іменований ключ хука — фабрика react-query, не сирий рядок каталогу.
     expect(
       qc.getQueryData(
-        priceViewKey(catalogKeys.sectionProducts(SECTION_ID), 'guest'),
+        priceViewKey(catalogKeys.sectionProducts(SECTION_ID, 'uk'), 'guest'),
       ),
     ).toEqual(result.current.data);
   });

@@ -1,11 +1,16 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { LocaleSet } from 'simplycms/i18n';
 
 /**
- * Стан вітрини в межах одного HTTP-запиту. Тип полів наповнює Task 9
- * (мовний контекст запиту); тут лише місце під нього, щоб контекст не
- * змінював форму в наступній задачі.
+ * Стан вітрини в межах одного HTTP-запиту, який виставляє нормалізація на
+ * вході (`withStorefrontNormalize`) і читають `getRouter()` та інші споживачі
+ * замість повторного розбору адреси. Поля додає той, хто резолвить раніше
+ * за роутер (Task 15 — адресу сутності).
  */
-export type StorefrontRequestState = Readonly<Record<string, unknown>>;
+export type StorefrontRequestState = {
+  /** Набір мов цього запиту: з кешу мов, прочитаний один раз. */
+  readonly locales: LocaleSet;
+};
 
 /**
  * Контекст запиту ядра. Поля ліниві: їх виставляє той, хто першим потребує

@@ -60,7 +60,8 @@ const TIER_ZONES = [
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
   ['src/auth', 2, 'auth', ['db', 'mail', 'site', 'i18n', 'env']],
   ['src/react-query', 2, 'react-query', []],
-  ['src/runtime', 2, 'runtime', []],
+  // `i18n` у винятку: `RouterContext.locales` типізується `LocaleSet` (type-only).
+  ['src/runtime', 2, 'runtime', ['i18n']],
   ['src/i18n', 2, 'i18n', []],
   // SSR-лоадери вітрини (В2-К1а) — T2, і `db` у винятку `upward` з тієї
   // самої причини, що в `auth`: єдиний канал до Postgres — `withActor`, тож

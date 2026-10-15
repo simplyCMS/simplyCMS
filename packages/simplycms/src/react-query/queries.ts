@@ -8,8 +8,6 @@
 import type { ProductQuery } from 'simplycms/contracts';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 
-const products = entityKey(ENTITY.products);
-
 /**
  * Ключі каталогу. 🔴 Сегмент 0 — імʼя таблиці з ENTITY, не рядок
  * `'catalog'`: інакше вітрина й адмінка адресують ту саму сутність
@@ -24,8 +22,11 @@ const products = entityKey(ENTITY.products);
  * ключ під різні типи payload при двох заданих id.
  */
 export const catalogKeys = {
-  sectionProducts: (sectionId: string, q?: ProductQuery) =>
-    [...products.scoped('section', sectionId), q ?? null] as const,
+  sectionProducts: (sectionId: string, locale: string, q?: ProductQuery) =>
+    [
+      ...entityKey(ENTITY.products, locale).scoped('section', sectionId),
+      q ?? null,
+    ] as const,
 };
 
 /** Сегмент ключа для ГОСТЯ — гість бачить лише гостьові види цін (Р29). */

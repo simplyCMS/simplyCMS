@@ -7,6 +7,7 @@ import {
   createSeoInterceptor,
   withSeoInterceptor,
 } from 'simplycms/storefront-routes/seo/interceptor';
+import { withStorefrontNormalize } from 'simplycms/storefront-routes/seo/normalize';
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
@@ -79,10 +80,15 @@ const seoInterceptor = createSeoInterceptor({
 // Д6: `withRequestContext` — найзовнішня: кожен запит біжить у власному контексті,
 // де покоління кешів читаються одним запитом (`simplycms/site/request-context`).
 // Логіка в ядрі, host лише обгортає.
+//
+// Мовний контекст: `withStorefrontNormalize` стоїть ВСЕРЕДИНІ `withRequestContext`
+// (пише набір мов у контекст запиту) і ДО SEO-інтерсептора та Start: 301 на
+// префікс основної мови, 301 на завершальний слеш і 404 неопублікованої мови
+// віддаються раніше за роутер. Заголовки безпеки лягають і на ці відповіді.
 export default createServerEntry({
   fetch: withRequestContext(
     withSecurityHeaders(
-      withSeoInterceptor(seoInterceptor, startHandler),
+      withStorefrontNormalize(withSeoInterceptor(seoInterceptor, startHandler)),
       process.env.VITE_SITE_URL,
     ),
   ),

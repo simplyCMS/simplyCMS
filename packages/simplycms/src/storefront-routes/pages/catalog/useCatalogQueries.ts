@@ -7,6 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useLocale } from 'simplycms/i18n';
 import {
   getCatalogSection,
   getCatalogSections,
@@ -18,12 +19,11 @@ import type { SectionRow } from 'simplycms/storefront/loaders';
 /** Рядок розділу у формі, яку віддає SSR-лоадер і споживають чипси. */
 export type CatalogSectionRow = SectionRow;
 
-const sections = entityKey(ENTITY.sections);
-const sectionProperties = entityKey(ENTITY.sectionProperties);
-const propertyOptions = entityKey(ENTITY.propertyOptions);
+// Ключі несуть мову запиту (І36): назви розділів і характеристик залежать від мови.
 
 /** Усі активні розділи — чипси над списком товарів. */
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
+  const sections = entityKey(ENTITY.sections, useLocale());
   return useQuery({
     // 🔴 variant('storefront'), не list() (Е3-15): admin-data заводить
     // eager-колекцію sections під голим list() — там усі розділи в
@@ -39,6 +39,7 @@ export function useSectionQuery(
   sectionSlug: string | undefined,
   initialSection?: CatalogSectionRow,
 ) {
+  const sections = entityKey(ENTITY.sections, useLocale());
   return useQuery({
     queryKey: sections.detail(sectionSlug ?? ''),
     queryFn: (): Promise<CatalogSectionRow | null> =>
@@ -58,6 +59,7 @@ export function useFilterPropertiesQuery(
   sectionId: string | null,
   enabled = true,
 ) {
+  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
   return useQuery({
     // 🔴 variant('filterable', …), не scoped() (борг Е1а №6, Е3-12): це форма
     // (лише властивості-фільтри), а не FK-зріз за розділом. Корінь — власний
@@ -81,6 +83,7 @@ export function useFilterPropertiesQuery(
  * перемикання чипсів (так було до спліту, окремими ключами на двох сторінках).
  */
 export function usePropertyOptionsQuery() {
+  const propertyOptions = entityKey(ENTITY.propertyOptions, useLocale());
   return useQuery({
     // 🔴 variant('storefront'), не list() (Е3-15) — той самий префікс, що
     // й on-demand колекція propertyOptions в admin-data.

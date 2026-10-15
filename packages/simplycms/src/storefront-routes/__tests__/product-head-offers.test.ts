@@ -21,7 +21,8 @@ const matches = () => {
     activeThemeName: 'default',
     storeProfile: PROFILE,
     siteUrl: '',
-    locale: 'uk-UA',
+    locale: 'uk',
+    languages: { primary: 'uk', published: ['uk'] },
   };
   return [{ routeId: '__root__', loaderData: data }];
 };

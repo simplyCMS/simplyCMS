@@ -13,7 +13,7 @@ export {
   activeThemeCache,
   languagesCache,
 } from './read-cache';
-export type { ReadCache, ThemeRecord } from './read-cache';
+export type { ReadCache, ReadCacheGetOptions, ThemeRecord } from './read-cache';
 export {
   CACHE_KEYS,
   bumpCacheGeneration,
@@ -24,6 +24,6 @@ export { readStoreProfile, toStorefrontProfile } from './store-profile';
 export { declareBuiltThemes, isBuiltTheme } from './built-themes';
 export { declareStoreLocale, getStoreLocale } from './store-locale';
 export { declareStoreCurrency, getStoreCurrency } from './store-currency';
-export { readLanguages } from './languages';
+export { readLanguages, toLocaleSet } from './languages';
 export type { LanguageSummary } from './languages';
 export { hasLanguagePack } from './language-pack';

@@ -17,7 +17,9 @@ const messages: PluginMessages = {
 const wrap =
   (locale: 'uk' | 'en') =>
   ({ children }: { children: ReactNode }) => (
-    <I18nProvider locale={locale}>{children}</I18nProvider>
+    <I18nProvider locale={locale} fallback="uk">
+      {children}
+    </I18nProvider>
   );
 
 afterEach(cleanup);

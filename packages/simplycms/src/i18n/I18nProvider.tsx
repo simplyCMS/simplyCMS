@@ -6,6 +6,8 @@ import type { Locale, Translator } from './types';
 interface I18nContextValue {
   t: Translator;
   locale: Locale;
+  /** Основна мова магазину: кінцева ланка fallback каталогів ядра, теми й плагінів. */
+  fallback: Locale;
 }
 
 /**
@@ -19,21 +21,26 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  *
  * Транслятор мемоїзується по локалі й живе рівно стільки, скільки дерево
  * рендера — жодного глобального стану, тож SSR кількох запитів безпечний.
- * Локаль лежить у тому самому значенні контексту (не окремий провайдер) —
- * `useThemeT` (`simplycms/themes`) потребує саме її для ланцюжка fallback
- * каталогу теми, а заводити другий контекст заради одного рядка зайве.
+ * Локаль і fallback лежать у тому самому значенні контексту (не окремі
+ * провайдери) — `useThemeT`/`usePluginT` потребують їх для ланцюжка fallback
+ * каталогів теми й плагіна, а заводити другий контекст заради двох рядків зайве.
+ *
+ * `fallback` — основна мова магазину. Host передає її завжди; без пропа
+ * fallback дорівнює самій локалі (каталог лише власної мови, далі ключ), а не
+ * тихій `uk`: англомовному магазину українські рядки шкодять більше за ключ.
  */
 export function I18nProvider({
   locale,
+  fallback = locale,
   children,
 }: {
   locale: Locale;
+  fallback?: Locale;
   children: ReactNode;
 }) {
   const value = useMemo<I18nContextValue>(
-    // М1-TEMP: Task 9 — фолбек стане основною мовою магазину (проп `fallback`).
-    () => ({ t: createTranslator(locale, 'uk'), locale }),
-    [locale],
+    () => ({ t: createTranslator(locale, fallback), locale, fallback }),
+    [locale, fallback],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
@@ -58,4 +65,12 @@ export function useT(): Translator {
  */
 export function useLocale(): Locale {
   return useI18nContext('useLocale()').locale;
+}
+
+/**
+ * Основна мова магазину поточного рендера — кінцева ланка fallback каталогів
+ * теми й плагіна (їхні хуки не знають, яка мова основна). Кидає поза провайдером.
+ */
+export function useFallbackLocale(): Locale {
+  return useI18nContext('useFallbackLocale()').fallback;
 }

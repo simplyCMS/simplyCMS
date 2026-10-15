@@ -40,6 +40,14 @@ vi.mock('simplycms/storefront-routes/seo/sitemap', () => ({
   buildSitemapXml: vi.fn(),
 }));
 vi.mock('simplycms/env', () => ({ checkDriverEnvOnStart: vi.fn() }));
+// Мови читає окремий кеш (`languages`); цей тест рахує лише запити поколінь.
+vi.mock('simplycms/storefront/loaders', () => ({
+  loadLocaleSet: async () => ({
+    primary: 'uk',
+    published: ['uk'],
+    known: ['uk'],
+  }),
+}));
 vi.mock('../simplycms.config', () => ({ default: { locale: 'uk-UA' } }));
 vi.mock('simplycms/db', () => ({
   withActor: async (_actor: unknown, fn: (d: unknown) => Promise<unknown>) =>

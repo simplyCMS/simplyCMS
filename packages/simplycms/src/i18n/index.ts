@@ -9,9 +9,15 @@ export {
   interpolate,
 } from './translator';
 export { LANGUAGE_PACKS, getLanguagePack } from './packs';
-export { I18nProvider, useT, useLocale } from './I18nProvider';
+export {
+  I18nProvider,
+  useT,
+  useLocale,
+  useFallbackLocale,
+} from './I18nProvider';
 export type {
   Locale,
+  LocaleSet,
   MessageKey,
   MessageParams,
   Catalog,

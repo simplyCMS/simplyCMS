@@ -3,12 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
+import { useLocale } from 'simplycms/i18n';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { getProduct } from '../../server/products';
 import type { ProductDetailProduct } from './types';
-
-const products = entityKey(ENTITY.products);
 
 /**
  * Товар з усіма приєднаними даними. SSR-значення приходить `initialData` —
@@ -18,13 +17,15 @@ const products = entityKey(ENTITY.products);
  * форма приєднаних гілок і фільтри живуть в одному місці, а не в двох
  * схожих запитах (клієнтський колись віддавав інше, ніж серверний).
  *
- * 🔴 Ключ несе вид цін глядача (Р29): прайс у payload залежить від сесії.
+ * 🔴 Ключ несе вид цін глядача (Р29): прайс у payload залежить від сесії,
+ * і мову запиту (І36): текст товару залежить від мови.
  */
 export function useProductQuery(
   productSlug: string | undefined,
   initialProduct?: ProductDetailProduct,
 ) {
   const view = useViewerPriceKey();
+  const products = entityKey(ENTITY.products, useLocale());
   return useQuery({
     queryKey: priceViewKey(products.detail(productSlug ?? ''), view),
     meta: VIEWER_PRICED_META,

@@ -2,7 +2,7 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 import { useMemo } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useT } from 'simplycms/i18n';
+import { useLocale, useT } from 'simplycms/i18n';
 import { ProductCard } from 'simplycms/core/components/catalog/ProductCard';
 import { Loader2, ChevronRight } from 'lucide-react';
 import { Button } from 'simplycms/ui/button';
@@ -63,9 +63,14 @@ export default function PropertyPage({
 
   // Вид цін глядача — сегмент ключа (Р29): товари сторінки несуть його прайс.
   const view = useViewerPriceKey();
+  const locale = useLocale();
   const { data, isLoading } = useQuery({
     queryKey: priceViewKey(
-      [...AGGREGATE.propertyOptionPage.key, propertySlug, optionSlug],
+      [
+        ...AGGREGATE.propertyOptionPage.keyFor(locale),
+        propertySlug,
+        optionSlug,
+      ],
       view,
     ),
     meta: VIEWER_PRICED_META,

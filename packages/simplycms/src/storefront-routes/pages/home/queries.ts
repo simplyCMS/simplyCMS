@@ -4,6 +4,7 @@ import {
   priceViewKey,
   VIEWER_PRICED_META,
 } from 'simplycms/react-query';
+import { useLocale } from 'simplycms/i18n';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -15,9 +16,6 @@ import {
 } from '../../server/home';
 import type { HomeProduct, HomeSection } from './types';
 
-const products = entityKey(ENTITY.products);
-const sections = entityKey(ENTITY.sections);
-
 /**
  * Запити головної.
  *
@@ -28,11 +26,15 @@ const sections = entityKey(ENTITY.sections);
  *
  * 🔴 Запити з прайсом карток несуть вид цін глядача сегментом 1 (Р29,
  * `priceViewKey`) і мітку `VIEWER_PRICED_META` — їх скидає вхід і вихід.
+ *
+ * 🔴 Усі ключі несуть мову запиту (І36): `entityKey(…, locale)` ставить її
+ * першою після сутності, тож дві мови не ділять комірку кешу.
  */
 
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
+  const products = entityKey(ENTITY.products, useLocale());
   return useQuery({
     queryKey: priceViewKey(products.variant('featured'), view),
     meta: VIEWER_PRICED_META,
@@ -45,6 +47,7 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
+  const products = entityKey(ENTITY.products, useLocale());
   return useQuery({
     queryKey: priceViewKey(products.variant('new'), view),
     meta: VIEWER_PRICED_META,
@@ -56,6 +59,7 @@ export function useNewProducts(initialData?: HomeProduct[]) {
 
 /** Кореневі категорії каталогу */
 export function useRootSections(initialData?: HomeSection[]) {
+  const sections = entityKey(ENTITY.sections, useLocale());
   return useQuery({
     queryKey: sections.variant('root'),
     queryFn: (): Promise<HomeSection[]> => getRootSections(),
@@ -79,11 +83,15 @@ export function useSectionProducts(
   options?: SectionProductsOptions,
 ) {
   const view = useViewerPriceKey();
+  const locale = useLocale();
   return useQuery({
     // Іменований namespace `catalogKeys` — щоб добірка головної не ділила
     // ключ кешу з `useCatalogProductsQuery` (сторінка розділу): той самий
     // `sectionId` під різними формами вибірки колись підмінював дані.
-    queryKey: priceViewKey(catalogKeys.sectionProducts(section.id), view),
+    queryKey: priceViewKey(
+      catalogKeys.sectionProducts(section.id, locale),
+      view,
+    ),
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
     initialData: useSeedableInitialData(options?.initialData),

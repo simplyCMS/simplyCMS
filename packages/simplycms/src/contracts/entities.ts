@@ -64,12 +64,20 @@ export type EntityName = (typeof ENTITY)[keyof typeof ENTITY];
  * `admin-data` — див. `collectionKey` нижче. Поза `admin-data` — `variant()`
  * (скоуп/форма тієї самої сутності) або `scoped()` (FK-зріз).
  */
-export function entityKey(entity: EntityName) {
+export function entityKey(entity: EntityName, locale?: string) {
+  // Мова (І36) — ПЕРШИЙ сегмент після сутності: `[entity, locale, …]`. Сегмент 0
+  // лишається сутністю, тож інвалідація по `all()` зачіпає всі мови, а дві мови
+  // одного id не ділять запис кешу (текст сутності залежить від мови запиту).
+  const head: readonly string[] =
+    locale === undefined ? [entity] : [entity, locale];
   return {
     all: () => [entity] as const,
-    detail: (id: string) => [entity, 'detail', id] as const,
-    scoped: (relation: string, parentId: string) =>
-      [entity, relation, parentId] as const,
+    detail: (id: string): readonly string[] => [...head, 'detail', id],
+    scoped: (relation: string, parentId: string): readonly string[] => [
+      ...head,
+      relation,
+      parentId,
+    ],
     /** Варіант форми/скоупу тієї самої сутності (не FK-зріз): окремий
      *  сегмент 'variant' — не зіткнеться ні з колекцією (`collectionKey`),
      *  ні з FK-relation тієї самої назви (борг Е1а №6, розвʼязаний Е3-15).
@@ -77,10 +85,10 @@ export function entityKey(entity: EntityName) {
      *  і eager-колекція без demand-суфікса пише РІВНО в `[entity,'list']`
      *  — вітринний запит під тим самим голим ключем читав би чужу форму
      *  рядка (camelCase проти snake_case, усі розділи проти активних). */
-    variant: (qualifier: string, id?: string) =>
-      (id === undefined
-        ? [entity, 'variant', qualifier]
-        : [entity, 'variant', qualifier, id]) as readonly string[],
+    variant: (qualifier: string, id?: string): readonly string[] =>
+      id === undefined
+        ? [...head, 'variant', qualifier]
+        : [...head, 'variant', qualifier, id],
   };
 }
 
@@ -120,8 +128,17 @@ export function collectionKey(
 export function aggregateKey(
   name: string,
   deps: readonly EntityName[],
-): { key: readonly [string]; deps: readonly EntityName[] } {
-  return { key: [name] as const, deps };
+): {
+  key: readonly [string];
+  /** Ключ агрегата з мовою (І36): `[name, locale]` — префікс `key` зберігається. */
+  keyFor: (locale: string) => readonly [string, string];
+  deps: readonly EntityName[];
+} {
+  return {
+    key: [name] as const,
+    keyFor: (locale) => [name, locale] as const,
+    deps,
+  };
 }
 
 /** Агрегати вітрини — єдине місце, де вони оголошені. */

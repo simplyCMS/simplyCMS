@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
+import { useLocale } from 'simplycms/i18n';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import type { CatalogProductRow } from 'simplycms/storefront/loaders';
 import { getCatalogProducts } from '../../server/catalog';
@@ -34,11 +35,13 @@ import { getCatalogProducts } from '../../server/catalog';
  */
 export function useCatalogProductsQuery(sectionId: string | null | undefined) {
   const view = useViewerPriceKey();
+  // Мова запиту (І36) — перший сегмент агрегату: `[name, locale, …]`.
+  const key = AGGREGATE.catalogProducts.keyFor(useLocale());
   return useQuery({
     queryKey: priceViewKey(
       sectionId === undefined
-        ? [...AGGREGATE.catalogProducts.key, 'list']
-        : [...AGGREGATE.catalogProducts.key, 'section', sectionId ?? ''],
+        ? [...key, 'list']
+        : [...key, 'section', sectionId ?? ''],
       view,
     ),
     meta: VIEWER_PRICED_META,

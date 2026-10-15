@@ -8,6 +8,20 @@ import type { messages as ukMessages } from './catalogs/uk/index';
 export type Locale = string;
 
 /**
+ * Набір мов магазину в розрізі запиту. Єдина форма для сервера (кеш мов з
+ * поколіннями), клієнта (`window.__SCMS_LOCALES__`) і розбору URL.
+ *
+ * `published` містить і основну (вона завжди опублікована); `known` — усі мови
+ * в БД, зокрема чернетки й вимкнені: лише так сервер відрізняє «мову, якої
+ * немає» (сегмент — звичайний шлях) від «мови, що ще не опублікована» (404).
+ */
+export type LocaleSet = {
+  readonly primary: Locale;
+  readonly published: readonly Locale[];
+  readonly known: readonly Locale[];
+};
+
+/**
  * Ключі повідомлень. Виводяться з українського каталогу — він повний, решта
  * каталогів часткові, тож `keyof` саме uk дає замкнений і чесний union.
  */
