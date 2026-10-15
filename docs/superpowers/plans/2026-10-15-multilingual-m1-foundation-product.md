@@ -138,6 +138,45 @@
 - [ ] **Step 5:** `pnpm test:schema languages-invariants lock-keys-disjoint single-default baseline` → PASS. `pnpm vitest run packages/simplycms/src/db` → PASS.
 - [ ] **Step 6:** БЛ + `pnpm template:sync`. Мутації: (а) прибрати гілку `is_default` у тригері → `'основна незмінна'` червоний; (б) прибрати гілку DELETE → `'основну не видалити'` червоний; (в) прибрати `languages_code_lower_key` → кейс `'регістронезалежний дубль'` червоний. Commit `feat(multilingual): мови — машина станів у БД, реєстр ключів замків`.
 
+### Task 1б: Маніфест видалених файлів канону й прибирання в магазині (рішення архітектора 2026-10-15, варіант б′)
+
+Причина: Task 1 уперше ВИДАЛИВ файл канону ядра (`0005_mail_outbox.sql`). `simplycms db:diff --write` лише докопіює
+нові файли канону в `db/migrations` магазину (`packages/cli/src/db-diff.mjs`), а видалених не прибирає. Магазин
+0.15.0, що перестворює БД, отримає старий `0005` поряд із новим `0001_init.sql` (де `mail_outbox` уже є) →
+`db:apply` падає 42P07 на CREATE TABLE.
+
+Чому не евристика за іменем: `isCoreMigrationName` (`^\d{4}_[a-z0-9_]+\.sql$`) розпізнає ядро лише за конвенцією.
+Власна міграція магазину, яку власник назвав `0006_x.sql`, загинула б на `--write`. Видаляти чужий файл за
+евристикою неприйнятно. Тому маніфест закритий: лише явно перелічені файли з точним хешем.
+
+**Files:**
+- Create: `packages/simplycms/migrations/removed.json`, тести в `tests/cli-db-diff.test.ts` (новий `describe`) і `tests/cli-doctor*.test.ts` (за наявним патерном doctor-тестів), тест маніфесту `tests/removed-migrations-manifest.test.ts`
+- Modify: `packages/cli/src/db-diff.mjs` (звіт і `--write`), `packages/cli/src/doctor-fs-checks.mjs` (warn), `packages/cli/src/index.mjs` (help, якщо описує `db:diff`), `CHANGELOG.md` `[Unreleased]` (крок `db:diff --write`), `packages/simplycms/skills/simplycms-update/**` (крок оновлення), `docs/architecture/cli.md`, `docs/architecture/release-process.md` (правило поповнення), `package.json` `files` пакета `simplycms` (якщо `migrations/` уже їде цілком — перевірити, що `removed.json` потрапляє в tarball: `pnpm test:packaging`)
+- Sync: `pnpm template:sync`, якщо маніфест має їхати в шаблон магазину (визначити за тим, як шаблон отримує канон; якщо шаблон бере канон із пакета — не копіювати)
+
+**Interfaces:**
+- `packages/simplycms/migrations/removed.json`: масив `[{ "name": string, "sha256": string, "removedIn": string, "reason": string }]`. Перший і єдиний запис: `{ "name": "0005_mail_outbox.sql", "sha256": "fc5b714b963732218da7b39a4808ab87067dadf62c27b2ac6d039bb26346bb95", "removedIn": "<наступна версія з package.json + опис 'baseline-виняток М1'>", "reason": "mail_outbox злито в 0001_init.sql (baseline-виняток до 1.0.0-rc.1)" }`. Хеш узято з тега `v0.15.0` (`git show v0.15.0:packages/simplycms/migrations/0005_mail_outbox.sql | sha256sum`), не з робочої копії.
+- `db-diff.mjs`: функція `findRemovedCoreMigrations(storeDir, manifest): Array<{ name; status: 'match' | 'modified' }>` — розглядає ЛИШЕ імена з маніфесту, присутні в `db/migrations`; `match` = sha256 вмісту збігся.
+  - Без `--write`: звіт обох статусів.
+  - З `--write`: видаляє лише `match`. `modified` — НЕ видаляє, друкує чітку відмову: «файл <name> прибрано з канону ядра у <removedIn>, але в магазині він змінений (хеш інший) — перенеси свої зміни в нову міграцію й видали файл вручну».
+  - Плагінні (`<14 цифр>_plg_*`) і будь-які файли поза маніфестом не розглядаються взагалі.
+- `doctor`: warn на кожен присутній у `db/migrations` файл із маніфесту (з підказкою `simplycms db:diff --write` для `match`, ручної дії — для `modified`).
+- Правило поповнення: маніфест поповнюють лише baseline-винятки до `1.0.0-rc.1`; після заморожування канон файлів не видаляє — рядок у `release-process.md`.
+
+- [ ] **Step 1: Тести CLI** (`tests/cli-db-diff.test.ts`, тимчасова тека магазину за наявним патерном файла):
+  - `'файл з маніфесту з правильним хешем — без --write лише звіт, файл лишився'`;
+  - `'--write: збіг імені й хешу → видалено'`;
+  - `'--write: ім\'я збіглось, хеш ні → не видалено, відмова з інструкцією'`;
+  - `'файл поза маніфестом з ім\'ям 0006_x.sql → не чіпається ні звітом, ні --write'`;
+  - `'плагінний файл → не розглядається'`.
+  `removed-migrations-manifest.test.ts`: кожен запис має 64-hex `sha256`, жодного з імен немає в поточному каноні `packages/simplycms/migrations/`; хеш `0005_mail_outbox.sql` = sha256 файла з тега `v0.15.0` (`git show`).
+  Doctor: `'присутній файл з маніфесту → warn'`.
+- [ ] **Step 2:** FAIL (RED-доказ у звіт).
+- [ ] **Step 3:** Реалізація.
+- [ ] **Step 4:** PASS; `pnpm test:packaging` (маніфест у tarball).
+- [ ] **Step 5:** Носії: CHANGELOG `[Unreleased]` BREAKING — «після оновлення: `simplycms db:diff --write` прибере `db/migrations/0005_mail_outbox.sql`; якщо ти його змінював — перенеси зміни й видали вручну»; скіл `simplycms-update`; `cli.md`; `release-process.md`.
+- [ ] **Step 6:** БЛ. Мутація: видаляти за іменем без перевірки хешу → `'хеш ні → не видалено'` червоний. Commit `feat(cli): маніфест видалених файлів канону, прибирання в db:diff --write`.
+
 ### Task 3: Чисті модулі перекладів і адрес, мовні пакети (І12 чиста частина, І18, І19, І22)
 
 **Files:**
