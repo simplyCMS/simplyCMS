@@ -10,7 +10,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { adminInput, parseAdminInput } from '../validation';
-import { ValidationError } from '../errors';
+import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { saveStockInput } from '../stock/save';
 
 const PRODUCT = '0e300000-0000-4000-8000-000000000011';

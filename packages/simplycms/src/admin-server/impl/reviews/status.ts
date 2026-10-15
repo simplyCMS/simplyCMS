@@ -1,11 +1,13 @@
 import { inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { REVIEW_STATUSES } from 'simplycms/contracts';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import { productReviews } from 'simplycms/schema';
 import { isoVersion } from '../sql-timestamps';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 

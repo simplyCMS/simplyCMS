@@ -6,7 +6,11 @@ import {
 } from 'simplycms/auth';
 import { setResponseStatus } from '@tanstack/react-start/server';
 import { withActor, type ActorDb } from 'simplycms/db';
-import { AdminConflictError, ValidationError, toAdminConflict } from './errors';
+import { toAdminConflict } from './errors';
+import {
+  AdminConflictError,
+  ValidationError,
+} from 'simplycms/contracts/domain-errors';
 
 /** Окрема транзакція під актором гранта (мапінг конфліктів БД у 409). */
 export type AdminTransaction = <T>(

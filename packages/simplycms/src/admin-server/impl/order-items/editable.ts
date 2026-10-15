@@ -1,11 +1,13 @@
 import { and, eq } from 'drizzle-orm';
 import { orderItems, orders } from 'simplycms/schema';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { InsufficientStockError } from 'simplycms/inventory';
 import type { ActorDb } from 'simplycms/db';
 import { pickColumns } from '../resource';
-import { stateConflict } from '../errors';
 import { ORDERS_OMIT, type OrderRow } from '../orders/resource';
 import { statusCode } from '../orders/change-status';
 

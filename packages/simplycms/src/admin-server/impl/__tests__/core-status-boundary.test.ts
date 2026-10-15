@@ -5,13 +5,13 @@
 // справжній `setResponseStatus` поза запитом кидає власний виняток, і
 // повернення його виклику в ядро цей тест ловить.
 import { describe, expect, it } from 'vitest';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import {
+  ADMIN_STATE_CONSTRAINT,
   AdminConflictError,
   ValidationError,
   stateConflict,
-  toAdminConflict,
-} from '../errors';
+} from 'simplycms/contracts/domain-errors';
+import { toAdminConflict } from '../errors';
 import { fieldIssue } from '../validation';
 
 const pgError = (code: string, constraint: string) =>

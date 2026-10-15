@@ -1,9 +1,11 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { shippingZones } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { lockCatalogTarget } from '../catalog-lock';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
 

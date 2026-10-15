@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { slugTokens } from 'simplycms/schema';
-import { AdminConflictError } from 'simplycms/admin-server/impl';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import {

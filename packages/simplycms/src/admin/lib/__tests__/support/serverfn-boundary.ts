@@ -29,7 +29,7 @@ export async function throughServerFnBoundary(
   return fromCrossJSON<Error>(node, { plugins, refs: new Map() });
 }
 
-/** Те, що кидає сервер (`admin-server/impl/errors.ts` → `ValidationError`). */
+/** Те, що кидає сервер (`contracts/domain-errors.ts` → `ValidationError`). */
 export function serverValidationError(
   issues: readonly ValidationIssue[],
 ): Error {

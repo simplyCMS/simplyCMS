@@ -1,5 +1,8 @@
 import { and, eq } from 'drizzle-orm';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import {
   STORE_PROFILE_KEY,
   type StoreProfile,
@@ -14,7 +17,6 @@ import { readStoreProfile, storeProfileCache } from 'simplycms/site';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { storeProfileInput, type StoreProfileInput } from './profile-schema';

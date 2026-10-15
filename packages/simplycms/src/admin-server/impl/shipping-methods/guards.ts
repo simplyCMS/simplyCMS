@@ -1,13 +1,15 @@
 import { inArray } from 'drizzle-orm';
 import { shippingMethods } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import {
   SHIPPING_PROVIDERS,
   isShippingProviderId,
   type ShippingPricing,
 } from 'simplycms/contracts/shipping-providers';
 import type { ActorDb } from 'simplycms/db';
-import { stateConflict } from '../errors';
 import type { ResourceGuardWrite } from '../resource-config';
 
 type MethodWrite = ResourceGuardWrite<

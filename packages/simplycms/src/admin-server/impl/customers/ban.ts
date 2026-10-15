@@ -1,11 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { customerCategoryLock } from 'simplycms/commerce';
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import { sessions, users } from 'simplycms/schema';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';

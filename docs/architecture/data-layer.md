@@ -371,7 +371,11 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 
 **Контракт.** `ValidationError` — одна з п'яти у закритому реєстрі
 `contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`,
-`AdminNotFoundError`, `CodedError`). `AdminNotFoundError` (Р26): «рядка немає», без полів;
+`AdminNotFoundError`, `CodedError`); усі класи (крім `AuthzError` з `auth/authz.ts`) і чистий
+throw-хелпер `stateConflict` живуть у цьому T0-файлі, бо їх кидають і `admin-server`, і T2-модулі
+(`addressing`), і чиста логіка T1 (`domain/translations`), а залежність T2 від `admin-server` заборонена;
+серверним лишається лише `toAdminConflict` (`admin-server/impl/errors.ts`, мапінг кодів PG).
+`AdminNotFoundError` (Р26): «рядка немає», без полів;
 клієнт розпізнає її через `isNotFoundError` за `name`, тож картка відрізняє справжнє
 «не знайдено» від збою запиту. `CodedError`: `message` — машинний код (`media/*`,
 `avatar/*`, `review/*`), який клієнт мапить в i18n; звичайний `Error(<код>)` у проді

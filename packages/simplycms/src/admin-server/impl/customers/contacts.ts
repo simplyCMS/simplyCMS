@@ -1,10 +1,13 @@
 import { eq, ne, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { profiles, users } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  AdminConflictError,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock } from 'simplycms/db';
 import { customerCategoryLock } from 'simplycms/commerce';
-import { AdminConflictError, stateConflict } from '../errors';
 import { runAdminTransactions } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { revokeUserVerifications } from './verifications';

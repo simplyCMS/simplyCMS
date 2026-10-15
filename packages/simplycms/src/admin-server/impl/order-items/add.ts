@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderItems } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { priceItems } from 'simplycms/commerce';
 import { reserveNewOrderItemStock } from 'simplycms/inventory';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import {

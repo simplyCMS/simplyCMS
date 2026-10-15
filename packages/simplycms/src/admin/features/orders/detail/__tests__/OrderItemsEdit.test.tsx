@@ -121,7 +121,7 @@ describe('OrderDetailPage: редагування позицій', () => {
   it('409 order_insufficient_stock → тост, поле повертається до серверного', async () => {
     reset([makeOrder(1, at)], [makeItem(1), makeItem(2)]);
     const { AdminConflictError } =
-      await import('../../../../../admin-server/impl/errors');
+      await import('simplycms/contracts/domain-errors');
     mocks.updateOrderItemQuantity.mockRejectedValue(
       new AdminConflictError('state', 'order_insufficient_stock'),
     );

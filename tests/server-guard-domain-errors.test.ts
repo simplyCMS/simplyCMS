@@ -9,8 +9,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createRequire } from 'node:module';
 import { domainErrorAdapter } from 'simplycms/runtime/domain-error-adapter';
 import { AuthzError } from 'simplycms/auth';
-import { stateConflict } from '../packages/simplycms/src/admin-server/impl/errors';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { maskAround } from 'simplycms/server-guard';
 import { startInstance } from '../src/start';
 

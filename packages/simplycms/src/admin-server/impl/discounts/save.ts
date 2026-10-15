@@ -6,13 +6,15 @@ import {
   discounts,
   userCategories,
 } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import type { JsonValue } from 'simplycms/schema/types';
 import { lockCatalogTarget } from '../catalog-lock';
 import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
 import { DISCOUNT_CONFIG_LOCK } from '../discount-lock';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { saveDiscountInput, type SaveDiscountInput } from './save-input';

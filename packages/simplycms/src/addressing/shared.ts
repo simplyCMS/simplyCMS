@@ -1,6 +1,6 @@
 import { sql, type SQL } from 'drizzle-orm';
 import { SLUG_FORMAT, allocateSlug } from 'simplycms/domain/slugs';
-import { ValidationError } from 'simplycms/admin-server/impl';
+import { ValidationError } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 
 // Спільне для реєстрів адрес і токенів (І22): обидва алокують slug ОДНОЮ

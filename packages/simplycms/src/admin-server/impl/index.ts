@@ -177,7 +177,6 @@ export {
 export type { AssignCustomerCategoryInput } from './customers/assign-category';
 export { findCustomersInput, findCustomersOp } from './customers/find';
 export type { CustomerHit } from './customers/find';
-export { AdminConflictError, ValidationError } from './errors';
 // С-15: актор ядер, яких кличуть поза операцією (сід, порти).
 export type { CoreActor } from './core-actor';
 export { adminInput } from './validation';

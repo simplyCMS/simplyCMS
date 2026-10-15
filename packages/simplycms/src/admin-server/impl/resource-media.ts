@@ -1,5 +1,8 @@
 import { and, asc, eq, inArray, type Table } from 'drizzle-orm';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import {
   normalizeMediaRefs,
@@ -7,7 +10,6 @@ import {
 } from 'simplycms/domain/media';
 import { media as mediaTable } from 'simplycms/schema';
 import { eraseMediaRows } from 'simplycms/storage';
-import { stateConflict } from './errors';
 import type { ResourceWriteContext } from './resource-write';
 
 /**

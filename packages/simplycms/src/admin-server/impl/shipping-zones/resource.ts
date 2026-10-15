@@ -1,9 +1,11 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { shippingZones } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { ENTITY } from 'simplycms/contracts/entities';
 import type { ActorDb } from 'simplycms/db';
-import { stateConflict } from '../errors';
 import { defineAdminResource } from '../resource';
 import type { ResourceGuardWrite } from '../resource-config';
 import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';

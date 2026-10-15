@@ -5,7 +5,10 @@ import {
   customerCategoryLock,
   eraseOrderPersonalData,
 } from 'simplycms/commerce';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import {
   normalizeMediaRefs,
@@ -14,7 +17,6 @@ import {
 import { productReviews, profiles, users } from 'simplycms/schema';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
 import { actorOfGrant, type CoreActor } from '../core-actor';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';

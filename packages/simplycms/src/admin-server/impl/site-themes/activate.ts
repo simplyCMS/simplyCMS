@@ -1,11 +1,13 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { themes } from 'simplycms/schema';
 import { activeThemeCache, isBuiltTheme } from 'simplycms/site';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { selectThemeRows, type ThemeRow } from './list';

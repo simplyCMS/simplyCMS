@@ -95,7 +95,7 @@ simplyCMS/
 │   │   │                         #    шим scripts/start.mjs (host-файл). Upward `env`, `migrate`. server-only (F5 Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
-│   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
+│   │   │                         #    T0-реєстр доменних помилок і їхні класи (contracts/domain-errors) +
 │   │   │                         #    клієнтський seroval-адаптер межі serverFn (реєструється в
 │   │   │                         #    src/start.ts serializationAdapters)
 │   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe

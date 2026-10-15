@@ -5,7 +5,7 @@ import {
   discountTargets,
   discounts,
 } from 'simplycms/schema';
-import { AdminNotFoundError } from '../errors';
+import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import { runAdmin } from '../run';
 
 export const getDiscountInput = z.object({ id: z.uuid() });

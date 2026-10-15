@@ -129,7 +129,7 @@ describe('OrderDetailPage', () => {
   it('409 state → тост orderCancelledFinal, стан колекції незмінний', async () => {
     reset([makeOrder(1, at)]);
     const { AdminConflictError } =
-      await import('../../../../../admin-server/impl/errors');
+      await import('simplycms/contracts/domain-errors');
     changeOrderStatus.mockRejectedValue(
       new AdminConflictError('state', 'order_cancelled_final'),
     );

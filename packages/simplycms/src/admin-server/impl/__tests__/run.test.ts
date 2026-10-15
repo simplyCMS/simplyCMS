@@ -22,7 +22,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 import { runAdmin } from '../run';
-import { AdminConflictError } from '../errors';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 
 const pgError = (code: string, constraint: string) =>
   Object.assign(new Error('Failed query: insert …'), {

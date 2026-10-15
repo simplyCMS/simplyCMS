@@ -1,11 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import { orderItems, orders } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { quoteShippingCost, validateShippingChoice } from 'simplycms/commerce';
 import type { ActorDb } from 'simplycms/db';
 import { parseShippingSnapshot } from 'simplycms/domain';
 import type { OrderRow } from '../orders/resource';
-import { stateConflict } from '../errors';
 import { orderProjection } from './editable';
 
 /**

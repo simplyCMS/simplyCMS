@@ -39,8 +39,8 @@ import {
   productModificationsOps,
   productPricesOps,
   sectionsOps,
-  AdminConflictError,
 } from 'simplycms/admin-server/impl';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 // 🔴 requireGrant тут — вже ЗМОКАНА функція (vi.fn з блоку вище); resolveGrant
 // і AuthzError — реальні, бо фабрика мока робить `...(await orig())` і
 // перекриває лише requireGrant. Потрібні для Е3-6 нижче.

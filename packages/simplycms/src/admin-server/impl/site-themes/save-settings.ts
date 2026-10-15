@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { themes } from 'simplycms/schema';
 import { activeThemeCache } from 'simplycms/site';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { THEME_COLUMNS, toThemeRow, type ThemeRow } from './list';

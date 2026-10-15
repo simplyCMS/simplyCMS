@@ -23,6 +23,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { setResponseStatus } from '@tanstack/react-start/server';
 import { withActor, type ActorDb } from 'simplycms/db';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 import * as A from 'simplycms/admin-server/impl';
 
 const asAdmin = <T>(fn: (db: ActorDb) => Promise<T>) =>
@@ -127,7 +128,7 @@ describe('ядра адмін-операцій поза запитом (showcase
       asAdmin((tx) =>
         A.changeOrderStatus(tx, { orderId, statusId: CONFIRMED }),
       ),
-    ).rejects.toBeInstanceOf(A.AdminConflictError);
+    ).rejects.toBeInstanceOf(AdminConflictError);
     expect(setResponseStatus).not.toHaveBeenCalled();
   });
 });

@@ -27,7 +27,7 @@ import {
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { AdminConflictError } from '../../../../../admin-server/impl/errors';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 

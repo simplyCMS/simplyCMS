@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { advisoryXactLock } from 'simplycms/db';
 import { userRoles, users } from 'simplycms/schema';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { countAdmins, isAdminUser } from './guards';

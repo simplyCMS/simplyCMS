@@ -6,11 +6,13 @@ import {
   profiles,
   userCategories,
 } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import { lockCatalogTarget } from '../catalog-lock';
 import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { assertAllFound } from '../shipping-lock';
 import { parseAdminInput } from '../validation';

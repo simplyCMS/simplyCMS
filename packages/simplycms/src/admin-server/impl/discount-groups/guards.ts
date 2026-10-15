@@ -1,8 +1,10 @@
 import { inArray, sql } from 'drizzle-orm';
 import { discountGroups } from 'simplycms/schema';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
-import { stateConflict } from '../errors';
 import type { ResourceGuardWrite } from '../resource-config';
 
 interface GroupFields {

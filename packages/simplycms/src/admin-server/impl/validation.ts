@@ -3,8 +3,8 @@ import type { z } from 'zod';
 import {
   sanitizeValidationIssues,
   type ValidationIssueCode,
+  ValidationError,
 } from 'simplycms/contracts/domain-errors';
-import { ValidationError } from './errors';
 
 /**
  * Zod-відмова → `ValidationError` (400). 🔴 ЄДИНЕ місце такого перетворення

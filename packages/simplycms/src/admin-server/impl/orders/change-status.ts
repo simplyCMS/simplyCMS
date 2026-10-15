@@ -2,13 +2,15 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, orderStatuses } from 'simplycms/schema';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { releaseOrderStock } from 'simplycms/inventory';
 import type { ActorDb } from 'simplycms/db';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { pickColumns } from '../resource';
-import { stateConflict } from '../errors';
 import { ORDERS_OMIT, type OrderRow } from './resource';
 
 export const changeOrderStatusInput = z.object({

@@ -1,74 +1,7 @@
-import {
-  DOMAIN_ERROR_NAME,
-  type AdminConflictKind,
-  type AdminStateConstraint,
-  type ValidationIssue,
-} from 'simplycms/contracts/domain-errors';
+import { AdminConflictError } from 'simplycms/contracts/domain-errors';
 
-/**
- * Помилка валідації вводу адмін-операції (Тема 12): Zod-відмова на межі
- * serverFn → типізована доменна помилка з issues крізь БІЛИЙ СПИСОК
- * (`sanitizeValidationIssues`: path + код + параметри схеми, без сирих
- * повідомлень Zod і без відлуння вводу). Клієнт показує її помилками
- * полів (`applyServerValidation`), а не сирим JSON у тості.
- *
- * `message` навмисно загальний: вміст issues — не для користувача, а
- * `issues` переживає межу `domainErrorAdapter` окремим каналом.
- */
-export class ValidationError extends Error {
-  override readonly name = DOMAIN_ERROR_NAME.validation;
-  readonly issues: readonly ValidationIssue[];
-  constructor(issues: readonly ValidationIssue[]) {
-    super('[admin-server] помилка валідації вводу');
-    this.issues = issues;
-  }
-}
-
-/**
- * Запитаного рядка немає (Р26). Окремий клас потрібен, щоб клієнт відрізнив
- * справжнє «не знайдено» від збою запиту: plain `Error` летів би так само,
- * як відмова БД, і картка показувала б «не знайдено» на будь-який збій.
- * Член закритої родини, тож маскування помилок його не чіпає.
- */
-export class AdminNotFoundError extends Error {
-  override readonly name = DOMAIN_ERROR_NAME.notFound;
-  constructor(what: string) {
-    super(`[admin-server] ${what} не існує`);
-  }
-}
-
-/**
- * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль
- * унікального значення, посилання, що тримає рядок, або (Е5-9, `state`)
- * заборонений перехід доменного стану — його кидає іменована операція
- * сама (409 ставить межа операції, С-10). Окремий клас — щоб
- * клієнт показав зрозумілий тост за `error.name`. `name` і поля
- * (`kind`/`constraint`) — за T0-переліком `contracts/domain-errors`: його
- * читає й клієнтський `domainErrorAdapter` (Е3-20), що зберігає instanceof
- * і поля через межу serverFn (раніше seroval губив усе, крім `.message`,
- * як і в `AuthzError` — К3-13).
- */
-export class AdminConflictError extends Error {
-  override readonly name = DOMAIN_ERROR_NAME.adminConflict;
-  constructor(
-    readonly kind: AdminConflictKind,
-    readonly constraint: string | null,
-  ) {
-    super(
-      `[admin-server] конфлікт ${kind}: ${constraint ?? 'невідоме обмеження'}`,
-    );
-  }
-}
-
-/**
- * Конфлікт правила стану (Е5б-10, Е6а-12). Спільний для іменованих операцій
- * і guard-хуків фабрики (Е6а-16). 🔴 Лише throw: статус 409 ставить межа
- * операції (`runAdminTransactions`, С-10), бо ядро кличуть і поза
- * HTTP-запитом (сід, порти), де `setResponseStatus` сам кидає виняток.
- */
-export function stateConflict(constraint: AdminStateConstraint): never {
-  throw new AdminConflictError('state', constraint);
-}
+// Класи доменних помилок живуть у T0 (`contracts/domain-errors`); тут лишився
+// лише серверний мапінг кодів Postgres (UPSTREAM:DRZ-1).
 
 const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {
   '23505': 'unique',

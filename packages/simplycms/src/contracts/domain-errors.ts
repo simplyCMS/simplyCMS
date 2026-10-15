@@ -8,13 +8,16 @@
  * (`admin/lib/admin-error.ts`) не впізнає конфлікт (доведено `live:smoke`).
  * `simplycms/runtime/domain-error-adapter` лікує це — читає ЦЕЙ перелік.
  *
- * T0: нуль рантайм-залежностей. Серверні класи (`admin-server/impl/errors.ts`
- * — `AdminConflictError`; `auth/authz.ts` — `AuthzError`) і клієнтський
- * адаптер (T2, `simplycms/runtime`) читають ОДИН перелік замість того, щоб
+ * T0: нуль рантайм-залежностей. Тут живе уся родина класів доменних помилок
+ * (`ValidationError`, `AdminConflictError`, `AdminNotFoundError`, `CodedError`)
+ * і чистий throw-хелпер `stateConflict`: їх кидають і `admin-server`, і
+ * T2-модулі (`addressing`), і чиста логіка T1, а T2 не може залежати від
+ * `admin-server`. Лише `AuthzError` лишається в `auth/authz.ts`. Клієнтський
+ * адаптер (T2, `simplycms/runtime`) читає ОДИН перелік замість того, щоб
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
- * Виняток: `CodedError` (нижче) — простий клас без залежностей, тож живе
- * тут, у T0, а кидають його сервісні модулі media/avatar/review; саме
- * членство в `DOMAIN_ERROR_NAME` пускає його крізь маскування Р23.
+ * Серверним лишається мапінг кодів PG у конфлікт — `toAdminConflict`
+ * (`admin-server/impl/errors.ts`, UPSTREAM:DRZ-1). Членство в
+ * `DOMAIN_ERROR_NAME` пускає клас крізь маскування Р23.
  */
 import { REVIEW_SUBMIT_ERROR } from './objects/review';
 
@@ -158,6 +161,71 @@ export const ADMIN_STATE_CONSTRAINT = {
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */
 export type AdminStateConstraint =
   (typeof ADMIN_STATE_CONSTRAINT)[keyof typeof ADMIN_STATE_CONSTRAINT];
+
+/**
+ * Помилка валідації вводу адмін-операції (Тема 12): Zod-відмова на межі
+ * serverFn → типізована доменна помилка з issues крізь БІЛИЙ СПИСОК
+ * (`sanitizeValidationIssues`: path + код + параметри схеми, без сирих
+ * повідомлень Zod і без відлуння вводу). Клієнт показує її помилками
+ * полів (`applyServerValidation`), а не сирим JSON у тості.
+ *
+ * `message` навмисно загальний: вміст issues — не для користувача, а
+ * `issues` переживає межу `domainErrorAdapter` окремим каналом.
+ */
+export class ValidationError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.validation;
+  readonly issues: readonly ValidationIssue[];
+  constructor(issues: readonly ValidationIssue[]) {
+    super('[admin-server] помилка валідації вводу');
+    this.issues = issues;
+  }
+}
+
+/**
+ * Запитаного рядка немає (Р26). Окремий клас потрібен, щоб клієнт відрізнив
+ * справжнє «не знайдено» від збою запиту: plain `Error` летів би так само,
+ * як відмова БД, і картка показувала б «не знайдено» на будь-який збій.
+ * Член закритої родини, тож маскування помилок його не чіпає.
+ */
+export class AdminNotFoundError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.notFound;
+  constructor(what: string) {
+    super(`[admin-server] ${what} не існує`);
+  }
+}
+
+/**
+ * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль
+ * унікального значення, посилання, що тримає рядок, або (Е5-9, `state`)
+ * заборонений перехід доменного стану — його кидає іменована операція
+ * сама (409 ставить межа операції, С-10). Окремий клас — щоб
+ * клієнт показав зрозумілий тост за `error.name`. `name` і поля
+ * (`kind`/`constraint`) — за T0-переліком `contracts/domain-errors`: його
+ * читає й клієнтський `domainErrorAdapter` (Е3-20), що зберігає instanceof
+ * і поля через межу serverFn (раніше seroval губив усе, крім `.message`,
+ * як і в `AuthzError` — К3-13).
+ */
+export class AdminConflictError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.adminConflict;
+  constructor(
+    readonly kind: AdminConflictKind,
+    readonly constraint: string | null,
+  ) {
+    super(
+      `[admin-server] конфлікт ${kind}: ${constraint ?? 'невідоме обмеження'}`,
+    );
+  }
+}
+
+/**
+ * Конфлікт правила стану (Е5б-10, Е6а-12). Спільний для іменованих операцій
+ * і guard-хуків фабрики (Е6а-16). 🔴 Лише throw: статус 409 ставить межа
+ * операції (`runAdminTransactions`, С-10), бо ядро кличуть і поза
+ * HTTP-запитом (сід, порти), де `setResponseStatus` сам кидає виняток.
+ */
+export function stateConflict(constraint: AdminStateConstraint): never {
+  throw new AdminConflictError('state', constraint);
+}
 
 /** Форма, що фактично летить через мережу (адаптер бере/віддає її ціле). */
 export interface SerializableDomainError {

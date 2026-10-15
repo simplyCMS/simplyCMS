@@ -1,6 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import {
   normalizeMediaRefs,
@@ -8,7 +11,6 @@ import {
 } from 'simplycms/domain/media';
 import { productReviews } from 'simplycms/schema';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
-import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 
