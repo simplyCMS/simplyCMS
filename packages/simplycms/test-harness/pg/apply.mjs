@@ -162,6 +162,37 @@ export async function queryInTransaction(connectionString, statements) {
 }
 
 /**
+ * Замок, під яким тригер `languages_require_lock` пускає запис у `languages`
+ * (М1, І16). Той самий вираз, що в `advisoryXactLock` ядра; ключ дзеркалить
+ * `LOCK_KEYS.languagesSet` (парність — `languages-lock.test.ts`).
+ */
+export const LANGUAGES_LOCK_SQL =
+  "select pg_advisory_xact_lock(hashtextextended('languages-set', 0))";
+
+/**
+ * Параметризований запис у `languages` власником: транзакція з замком. Простий
+ * `queryRows` не годиться — замок `xact` живе лише в транзакції.
+ */
+export async function queryRowsLockingLanguages(
+  connectionString,
+  sql,
+  params = [],
+) {
+  return withShortClient(connectionString, async (client) => {
+    await client.query('begin');
+    try {
+      await client.query(LANGUAGES_LOCK_SQL);
+      const rows = (await client.query(sql, params)).rows;
+      await client.query('commit');
+      return rows;
+    } catch (err) {
+      await client.query('rollback').catch(() => {});
+      throw err;
+    }
+  });
+}
+
+/**
  * Одноразовий запит: підключитись, виконати, віддати рядки, відключитись.
  *
  * 🔴 Тип результату виписаний ЯВНО, і це не формальність. `checkJs` вимкнено,

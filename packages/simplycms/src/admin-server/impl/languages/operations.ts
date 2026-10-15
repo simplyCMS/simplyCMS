@@ -3,65 +3,17 @@ import { z } from 'zod';
 import {
   AdminNotFoundError,
   InUseError,
-  ValidationError,
 } from 'simplycms/contracts/domain-errors';
-import {
-  advisoryXactLock,
-  isForeignKeyViolation,
-  type ActorDb,
-} from 'simplycms/db';
-import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { defineOperation } from 'simplycms/operations';
+import { isForeignKeyViolation } from 'simplycms/db';
 import { languages } from 'simplycms/schema';
-import type { Language } from 'simplycms/schema/types';
-import {
-  CACHE_KEYS,
-  bumpCacheGeneration,
-  hasLanguagePack,
-} from 'simplycms/site';
-import { completeness } from './completeness';
+import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
 import { FILL_BATCH, fillBatch } from './fill';
+import { code, invalid, load, lockLanguageSet, toView, view } from './view';
 
 // Операції мов (М1, Task 6): перші живі споживачі реєстру операцій. Усі під
 // `settings.manage` (Д5). Машина станів — майстер §3.5; інваріанти основної мови
 // тримає БД (`languages_guard`), операції лише дають зрозумілі відмови.
-
-const status = z.enum(['draft', 'published', 'disabled']);
-const code = z.string().regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/);
-const view = z.object({
-  code: z.string(),
-  name: z.string(),
-  status,
-  isDefault: z.boolean(),
-  sortOrder: z.number().int(),
-  hasPack: z.boolean(),
-});
-type View = z.infer<typeof view>;
-
-const toView = (r: Language): View => ({
-  code: r.code,
-  name: r.name,
-  status: r.status,
-  isDefault: r.isDefault,
-  sortOrder: r.sortOrder,
-  hasPack: hasLanguagePack(r.code),
-});
-
-async function load(db: ActorDb, c: string): Promise<Language> {
-  const [row] = await db.select().from(languages).where(eq(languages.code, c));
-  if (!row) throw new AdminNotFoundError('мова');
-  return row;
-}
-
-/** Дозволені переходи не-основної мови (§3.5); основна не переходить ніде. */
-const TRANSITIONS: Readonly<Record<Language['status'], readonly string[]>> = {
-  draft: ['published', 'disabled'],
-  published: ['disabled'],
-  disabled: ['draft', 'published'],
-};
-
-const invalid = (field: string) =>
-  new ValidationError([{ path: [field], code: 'invalid_value' }]);
 
 export const languagesList = defineOperation({
   id: 'languages.list',
@@ -89,7 +41,7 @@ export const languagesAdd = defineOperation({
   async run({ db }, input) {
     // Ексклюзивно ПЕРШИМ запитом: чекаємо транзакції, що створюють адреси під
     // спільним замком, і бачимо всі їхні закомічені сутності (Review Focus 1).
-    await advisoryXactLock(db, LOCK_KEYS.languagesSet);
+    await lockLanguageSet(db);
     const next = await db.execute<{ n: number }>(
       sql`select coalesce(max(sort_order), 0) + 1 as n from public.languages`,
     );
@@ -106,37 +58,6 @@ export const languagesAdd = defineOperation({
       .returning();
     await bumpCacheGeneration(db, CACHE_KEYS.languages);
     return toView(row!);
-  },
-});
-
-export const languagesSetStatus = defineOperation({
-  id: 'languages.setStatus',
-  permission: 'settings.manage',
-  input: z.object({ code, status }),
-  output: view,
-  async run({ db }, input) {
-    // Публікація — під ексклюзивним замком: повноту міряємо, коли жодна
-    // транзакція з адресами ще не закомічується.
-    if (input.status === 'published')
-      await advisoryXactLock(db, LOCK_KEYS.languagesSet);
-    const row = await load(db, input.code);
-    if (row.status === input.status) return toView(row);
-    if (row.isDefault || !TRANSITIONS[row.status].includes(input.status))
-      throw invalid('status');
-    if (input.status === 'published') {
-      const c = await completeness(db, input.code);
-      if (!c.complete)
-        throw new ValidationError([
-          { path: ['status'], code: 'language_incomplete' },
-        ]);
-    }
-    const [updated] = await db
-      .update(languages)
-      .set({ status: input.status })
-      .where(eq(languages.code, input.code))
-      .returning();
-    await bumpCacheGeneration(db, CACHE_KEYS.languages);
-    return toView(updated!);
   },
 });
 
@@ -161,6 +82,7 @@ export const languagesReorder = defineOperation({
   input: z.object({ codes: z.array(code).min(1).max(200) }),
   output: z.array(view),
   async run({ db }, input) {
+    await lockLanguageSet(db);
     // Порядок задається ЦІЛИМ набором: частковий лишив би невказані мови зі
     // старими номерами, які збіглися б з новими.
     const total = await db.select({ c: languages.code }).from(languages);
@@ -192,7 +114,11 @@ export const languagesRemove = defineOperation({
   input: z.object({ code }),
   output: z.object({ code: z.string() }),
   async run({ db }, input) {
-    await load(db, input.code);
+    await lockLanguageSet(db);
+    const row = await load(db, input.code);
+    // Основну мову не видаляємо ще до DELETE: тригер `languages_guard` лишається
+    // страховкою, але віддав би сирий 23514 (500), а не зрозумілу відмову.
+    if (row.isDefault) throw invalid('code');
     try {
       await db.delete(languages).where(eq(languages.code, input.code));
     } catch (error) {

@@ -16,6 +16,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { executeOperation } from 'simplycms/operations';
 import type { OperationDef } from 'simplycms/operations';
+import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
 import {
   ADMIN,
   pathHelpers,
@@ -202,9 +203,42 @@ describe('операції мов (M1, Task 6)', () => {
     ).toHaveLength(0);
   });
 
-  it('remove основної → помилка тригера', async () => {
-    await expect(exec(languagesRemove, { code: 'uk' })).rejects.toMatchObject({
-      cause: { code: '23514' },
-    });
+  it('remove основної → доменна відмова (тригер лишається страховкою)', async () => {
+    const err = await exec(languagesRemove, { code: 'uk' }).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(ValidationError);
+    expect((err as ValidationError).issues).toEqual([
+      { path: ['code'], code: 'invalid_value' },
+    ]);
+    // Доказ тригера: пряме видалення основної мимо операції все одно відмовляє.
+    await expect(
+      db.tx(
+        LANGUAGES_LOCK_SQL,
+        `delete from public.languages where is_default`,
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+  });
+
+  it('setStatus, reorder і remove піднімають покоління кешу мов', async () => {
+    const gen = async () =>
+      Number(
+        (
+          await db.q(
+            `select generation from public.cache_generations where key = 'languages'`,
+          )
+        )[0]?.generation,
+      );
+    await add('el');
+    let before = await gen();
+    await exec(languagesSetStatus, { code: 'el', status: 'disabled' });
+    expect(await gen()).toBe(before + 1);
+    before = await gen();
+    const codes = (await exec(languagesList, {})).map((l) => l.code);
+    await exec(languagesReorder, { codes });
+    expect(await gen()).toBe(before + 1);
+    before = await gen();
+    await exec(languagesRemove, { code: 'el' });
+    expect(await gen()).toBe(before + 1);
   });
 });

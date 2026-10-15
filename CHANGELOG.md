@@ -37,6 +37,8 @@
   `is_active`, `sort_order`, `UNIQUE(lower(code))`, тригер `languages_guard`);
   нові таблиці `url_paths` і `slug_tokens` (+ `UNIQUE(product_id, id)` на `product_modifications`, функції й тригери наявності
   поточної адреси/токена в `0004_functions.sql`);
+  тригер `languages_require_lock` (`0004_functions.sql`): запис у `languages` лише під ексклюзивним замком `languages-set`;
+  `0003_seed.sql` бере цей замок перед вставкою основної мови;
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`. Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`

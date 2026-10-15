@@ -9,6 +9,7 @@ import {
   setExplicitToken,
 } from 'simplycms/addressing';
 import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
 
 const CHECK = { code: '23514' };
 const UNIQUE = { code: '23505' };
@@ -201,7 +202,10 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
         await tok('uk', `lang-del-${i}`, t);
         await tok('de', `lang-del-${i}`, t);
       }
-      await tx(`delete from public.languages where code = 'de'`);
+      await tx(
+        LANGUAGES_LOCK_SQL,
+        `delete from public.languages where code = 'de'`,
+      );
       expect(
         await q(`select 1 from public.slug_tokens where locale = 'de'`),
       ).toEqual([]);
@@ -221,6 +225,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
       await tok('uk', 'dis-a', t);
       await tok('fr', 'dis-a', t);
       await tx(
+        LANGUAGES_LOCK_SQL,
         `update public.languages set status = 'disabled' where code = 'fr'`,
       );
       expect((await rows(t.id)).filter((r) => r.locale === 'fr')).toHaveLength(

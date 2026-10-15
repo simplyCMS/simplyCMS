@@ -110,6 +110,50 @@ CREATE TRIGGER languages_guard
 BEFORE UPDATE OR DELETE ON public.languages
 FOR EACH ROW EXECUTE FUNCTION public.languages_guard();
 
+-- ── languages: запис лише під ексклюзивним замком `languages-set` (М1, І16) ──
+-- Правило: КОЖЕН запис у `languages` (INSERT, UPDATE, DELETE) береться під
+-- ексклюзивним advisory-замком `languages-set` — його творці адрес і токенів
+-- беруть спільним, тож зміна набору мов (додавання, статус, видалення) чекає їх
+-- і не ламає їхній коміт відкладеною перевіркою наявності адреси. Тригер
+-- тримає правило в БД, а не лише в коді операцій: пряма вставка мимо замка
+-- відмовляє окремим SQLSTATE `SC001`.
+-- Ключ береться тим самим виразом, що й TS (`advisoryXactLock`):
+-- `hashtextextended('languages-set', 0)`. Для 64-бітного ключа Postgres кладе в
+-- `pg_locks` старшу половину в `classid`, молодшу в `objid`, `objsubid = 1`.
+-- Парність літерала з `LOCK_KEYS.languagesSet` доводить `languages-lock.test.ts`.
+CREATE OR REPLACE FUNCTION public.languages_require_lock() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_catalog AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_catalog.pg_locks l
+     WHERE l.locktype = 'advisory'
+       AND l.pid = pg_backend_pid()
+       AND l.mode = 'ExclusiveLock'
+       AND l.granted
+       AND l.database = (SELECT d.oid FROM pg_catalog.pg_database d
+                          WHERE d.datname = current_database())
+       AND l.objsubid = 1
+       AND ((l.classid::bigint << 32) | l.objid::bigint)
+           = hashtextextended('languages-set', 0)
+  ) THEN
+    RAISE EXCEPTION 'languages: запис без ексклюзивного замка languages-set'
+      USING ERRCODE = 'SC001';
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.languages_require_lock() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS languages_require_lock ON public.languages;
+CREATE TRIGGER languages_require_lock
+BEFORE INSERT OR UPDATE OR DELETE ON public.languages
+FOR EACH ROW EXECUTE FUNCTION public.languages_require_lock();
+
 -- ── перекладні сутності: обовʼязковий рядок основної мови (М1, І4–І5) ────────
 -- ОДНА функція на всі перекладні пари (товар, розділ, банер, плагінні таблиці
 -- `plg_*_translations`): тригер на кожну пару окремо розходився б у деталях

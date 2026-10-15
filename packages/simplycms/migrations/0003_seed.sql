@@ -34,6 +34,9 @@ on conflict (code) do nothing;
 -- мова — `published`, її код і прапорець далі не змінюються (тригер
 -- `languages_guard`, `0004_functions.sql`). Рядок живе тут до підхвилі М2, коли
 -- його створення переїде в `bootstrapStore`.
+-- Запис у `languages` — лише під ексклюзивним замком `languages-set` (тригер
+-- `languages_require_lock`, `0004_functions.sql`); файл накату — одна транзакція.
+select pg_advisory_xact_lock(hashtextextended('languages-set', 0));
 insert into public.languages (id, code, name, status, is_default, sort_order)
 values ('00000002-0000-4000-8000-000000000001', 'uk', 'Українська', 'published', true, 0)
 on conflict (code) do nothing;

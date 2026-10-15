@@ -72,7 +72,8 @@ export function useAddressingDb(prefix: string): AddressingDb {
       return id;
     },
     language: async (code, status = 'published') => {
-      await q(
+      await H.queryRowsLockingLanguages(
+        dbUrl,
         `insert into public.languages (id, code, name, status, is_default, sort_order)
          values (gen_random_uuid(), $1::text, $1::text, $2::language_status, false, 5)`,
         [code, status],

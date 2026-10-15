@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
 
 const CHECK = { code: '23514' };
 const INVALID = { code: '22023' };
@@ -91,6 +92,7 @@ describe.each(VARIANTS)('тригер наявності поточного: $na
 
   it('вставка рядка мови тригер не запускає (товари без адреси в новій мові комітяться)', async () => {
     await tx(
+      LANGUAGES_LOCK_SQL,
       `insert into public.languages (id, code, name, status, is_default, sort_order)
        values (gen_random_uuid(), 'sk', 'sk', 'draft', false, 9)`,
     );

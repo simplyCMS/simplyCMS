@@ -136,7 +136,7 @@ describe('парність привілеїв: baseline v2', () => {
     // Baseline v2 не везе жодної бізнес-функції — саме тому клас дірок
     // «unguarded SECURITY DEFINER» у ньому структурно відсутній. Єдині
     // винятки — тригерні `refuse_banned_session` (Е6г-14),
-    // `require_default_shipping_zone` (К3-Е8), `languages_guard` і
+    // `require_default_shipping_zone` (К3-Е8), `languages_guard`, `languages_require_lock` і
     // `require_source_translation` (М1) та процедура підключення останньої
     // `attach_source_translation_triggers` (DDL власника міграцій), а також
     // `require_current_address|token` і їхні процедури підключення (М1), усі без SECDEF.
@@ -146,6 +146,7 @@ describe('парність привілеїв: baseline v2', () => {
       'public.attach_current_token_triggers',
       'public.attach_source_translation_triggers',
       'public.languages_guard',
+      'public.languages_require_lock',
       'public.refuse_banned_session',
       'public.require_current_address',
       'public.require_current_token',

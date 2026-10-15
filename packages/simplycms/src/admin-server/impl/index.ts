@@ -243,6 +243,6 @@ export {
   languagesList,
   languagesRemove,
   languagesReorder,
-  languagesSetStatus,
 } from './languages/operations';
+export { languagesSetStatus } from './languages/status';
 export { CORE_OPERATIONS, getOperation } from './operations-registry';

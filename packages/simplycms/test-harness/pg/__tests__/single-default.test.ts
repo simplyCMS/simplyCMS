@@ -10,6 +10,8 @@ import {
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
+  LANGUAGES_LOCK_SQL,
+  queryInTransaction,
   queryRows,
   randomDbName,
   withDbName,
@@ -129,10 +131,10 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
     // `published` обовʼязковий: основна не в `published` упала б раніше на
     // CHECK `languages_default_published` (23514), а не на індексі.
     await expect(
-      queryRows(
-        dbUrl,
+      queryInTransaction(dbUrl, [
+        LANGUAGES_LOCK_SQL,
         `insert into public.languages (id, code, name, status, is_default) values (gen_random_uuid(), 'pl', 'Polski', 'published', true)`,
-      ),
+      ]),
     ).rejects.toMatchObject({
       code: '23505',
       constraint: 'idx_languages_single_default',

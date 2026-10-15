@@ -17,6 +17,7 @@ import {
 } from 'simplycms/addressing';
 import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
 import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
 import { hold, sleep, until } from './fixtures/lock-holders';
 
 const CHECK = { code: '23514' };
@@ -271,7 +272,10 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
         await addr('uk', `lang-del-${i}`, p);
         await addr('de', `lang-del-${i}`, p);
       }
-      await tx(`delete from public.languages where code = 'de'`);
+      await tx(
+        LANGUAGES_LOCK_SQL,
+        `delete from public.languages where code = 'de'`,
+      );
       expect(
         await q(`select 1 from public.url_paths where locale = 'de'`),
       ).toEqual([]);
@@ -291,6 +295,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       await addr('uk', 'dis-a', p);
       await addr('fr', 'dis-a', p);
       await tx(
+        LANGUAGES_LOCK_SQL,
         `update public.languages set status = 'disabled' where code = 'fr'`,
       );
       expect((await rows(p)).filter((r) => r.locale === 'fr')).toHaveLength(1);

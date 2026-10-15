@@ -7,6 +7,7 @@ import {
   applyCanon,
   createTempDatabase,
   dropTempDatabase,
+  LANGUAGES_LOCK_SQL,
   queryInTransaction,
   randomDbName,
   withDbName,
@@ -25,7 +26,9 @@ describe('мови: інваріанти в БД (І1–І3)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_languages_invariants');
   let dbUrl: string;
-  const tx = (...statements: string[]) => queryInTransaction(dbUrl, statements);
+  // Усі записи в `languages` — під замком `languages-set` (тригер `languages_require_lock`).
+  const tx = (...statements: string[]) =>
+    queryInTransaction(dbUrl, [LANGUAGES_LOCK_SQL, ...statements]);
 
   beforeAll(async () => {
     harness = await resolveHarness();

@@ -9,6 +9,7 @@ import {
   applyCanon,
   createTempDatabase,
   dropTempDatabase,
+  LANGUAGES_LOCK_SQL,
   queryInTransaction,
   randomDbName,
   withDbName,
@@ -208,6 +209,7 @@ describe('підключення тригера обовʼязкового ря�
       commit(
         attach(OK),
         'alter table public.languages disable trigger languages_guard',
+        LANGUAGES_LOCK_SQL,
         'update public.languages set is_default = false where is_default',
         `insert into public.t_b (id) values ('${ID}')`,
       ),

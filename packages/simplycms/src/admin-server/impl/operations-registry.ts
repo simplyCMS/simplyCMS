@@ -5,8 +5,8 @@ import {
   languagesList,
   languagesRemove,
   languagesReorder,
-  languagesSetStatus,
 } from './languages/operations';
+import { languagesSetStatus } from './languages/status';
 
 /**
  * Реєстр операцій ядра (І24): перелік тут, бо саме `admin-server` визначає

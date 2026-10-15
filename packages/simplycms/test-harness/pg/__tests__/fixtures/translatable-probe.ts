@@ -8,6 +8,7 @@
 // інакше тест міряв би власний DDL, а перелік `UPDATE OF` і `TG_ARGV[4]`
 // могли б розійтися з тим, що отримає прод.
 import pg from 'pg';
+import { LANGUAGES_LOCK_SQL } from '../../apply.mjs';
 
 /** Мінімум, потрібний хелперові від зʼєднання (`pg.Client`, пул чи обгортка). */
 export interface SqlClient {
@@ -140,6 +141,7 @@ export async function installProbeSet(dbUrl: string): Promise<ProbeSet> {
   await owner.connect();
   try {
     await owner.query('begin');
+    await owner.query(LANGUAGES_LOCK_SQL);
     await owner.query(
       `insert into public.languages (id, code, name, status, is_default, sort_order)
        values (gen_random_uuid(), 'en', 'English', 'published', false, 1)`,
