@@ -80,7 +80,8 @@ pnpm dev                 # dev-сервер (Vite + TanStack Start)
 pnpm typecheck && pnpm lint && pnpm format:check   # перед PR
 pnpm test                # юніти (packaging-suite виключено)
 pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (проєкт pg — без Docker; storage і mail — Garage і Mailpit з pnpm harness:up)
-pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обовʼязкове)
+pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обовʼязкове); після 1.0.0-rc.1
+pnpm db:rebaseline       # до 1.0.0-rc.1: перегенерація baseline (drizzle/ + 0001_init.sql), детермінована
 pnpm build:packages      # збірка публікованих пакетів
 pnpm template:sync       # синк закомічених копій з монорепо (шаблон, host CLI, міграції)
 pnpm release X.Y.Z       # реліз (гарди + бамп + гейти + коміт); push і PR — вручну
@@ -148,7 +149,9 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `collectionKey` (`[entity,'list']`) — лише для колекцій `admin-data`.
 - Дати в застосунку — `Date`; рядком лише на межі виводу.
 - Серверні функції: `createServerFn` лише топ-рівневою константою; валідатор — `.validator(…)`.
-- Схема БД: правка `schema.ts` → `pnpm db:diff` → ревʼю SQL → `pnpm test:schema`. Міграції
+- Схема БД: до `1.0.0-rc.1` (baseline не заморожено, виняток baseline) — правка `schema.ts` →
+  `pnpm db:rebaseline` → ручні файли (`0002_grants`, `0003_seed`, `0004_functions`) → `pnpm template:sync` →
+  ревʼю SQL → `pnpm test:schema`; після rc.1 — `pnpm db:diff`. Міграції
   **не** через Supabase MCP (він лише для інспекції). Генератора типів БД немає — типи нового
   коду з `simplycms/schema/types`.
 - Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `@supabase/*` у репо

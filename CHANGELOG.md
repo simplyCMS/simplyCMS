@@ -21,6 +21,28 @@
 
 ---
 
+## [Unreleased]
+
+Хвиля мультимовності даних (М1, фундамент): спека
+[`2026-10-14-multilingual-wave-design.md`](docs/superpowers/specs/2026-10-14-multilingual-wave-design.md),
+майстер-план
+[`2026-10-15-multilingual-wave-master.md`](docs/superpowers/plans/2026-10-15-multilingual-wave-master.md).
+Магазинів на SimplyCMS немає — без зворотної сумісності.
+
+### 🔴 BREAKING для магазинів
+
+- **Baseline змінено — базу перестворити** (до `1.0.0-rc.1` baseline `0000…0004` не заморожено):
+  `mail_outbox` злито в `0001_init.sql`, окремий `0005_mail_outbox.sql` прибрано;
+  `languages` перебудовано (`code text` з CHECK формату BCP 47, `status` замість
+  `is_active`, `sort_order`, `UNIQUE(lower(code))`, тригер `languages_guard`);
+  `0002_grants.sql` видає `app_admin` права на `mail_outbox`. Локально — порожня БД і
+  `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
+  🔴 У магазині, що вже накотив 0.15.0, видалити `db/migrations/0005_mail_outbox.sql`:
+  інакше `db:apply` після перестворення бази падає на повторному `CREATE TABLE "mail_outbox"`
+  (таблиця вже є в `0001_init.sql`).
+
+---
+
 ## [0.15.0] — 2026-10-15
 
 Мінорний реліз лінії 0.x (npm-тег `latest`): до 1.0 злам сумісності піднімає мінорну версію, а

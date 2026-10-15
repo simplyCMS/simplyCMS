@@ -37,11 +37,6 @@ export const LOCK_KEYS = {
   languagesSet: 'languages-set',
   /** Ролі адміна (Е6г-4, Е6г-19): «не останній адмін», бан, видалення, invite. */
   adminRoles: 'admin-roles',
-  /**
-   * Префікс цілі каталогу (`catalog:<id>`). Зарезервовано за контрактом М1;
-   * наявні цілі `lockCatalogTarget` ключуються `stock:`/`prices:`/`mod-default:`.
-   */
-  catalogPrefix: 'catalog:',
   /** Префікс замка покупця (`customer-category:<userId>`): категорія й бан. */
   customerCategoryPrefix: 'customer-category:',
   /** Конфігурація покупців (Е6в-15): категорії, автоправила, setDefault. */

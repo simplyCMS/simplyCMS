@@ -113,7 +113,7 @@
   - основна з `status <> 'published'` → та сама помилка;
   - DELETE основної → «languages: основну мову не видалити».
 - Produces (TS):
-  - `LOCK_KEYS: { readonly migration: bigint; readonly languagesSet: 'languages-set'; readonly adminRoles: string; readonly catalogPrefix: 'catalog:'; readonly customerCategoryPrefix: string }` — значення наявних ключів переносяться без зміни;
+  - `LOCK_KEYS` (`as const`): `migration: bigint` (= `MIGRATION_LOCK_KEY`), `languagesSet: 'languages-set'`, `adminRoles`, `customerConfig`, `discountConfig`, `shippingConfig`, `siteTheme`, `storeProfile`, `priceTypeDefault` (рядкові ключі) і префікси `customerCategoryPrefix: 'customer-category:'`, `stockPrefix: 'stock:'`, `pricesPrefix: 'prices:'`, `modDefaultPrefix: 'mod-default:'` — РЕЄСТР УСІХ наявних ключів, значення переносяться без зміни; префікса `catalog:` немає (його не мав жоден споживач);
   - `advisoryXactLockShared(db: ActorDb, key: string): Promise<void>` (`pg_advisory_xact_lock_shared(hashtextextended(key, 0))`).
 
 - [ ] **Step 1: Тести.** `languages-invariants.test.ts`, кожен — окрема транзакція з `expect(...).rejects.toThrow(<текст>)`:

@@ -22,7 +22,6 @@ describe('реєстр ключів advisory-замків', () => {
     expect(strings).toEqual({
       languagesSet: 'languages-set',
       adminRoles: 'admin-roles',
-      catalogPrefix: 'catalog:',
       customerCategoryPrefix: 'customer-category:',
       customerConfig: 'customer-config',
       discountConfig: 'discount-config',
