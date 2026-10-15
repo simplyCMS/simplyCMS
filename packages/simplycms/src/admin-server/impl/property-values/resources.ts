@@ -6,6 +6,12 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
+ * Expand М1 (Р18): `valueKind`/`boolValue`/`colorValue` пише команда агрегата
+ * (Task 12); складеного FK і CHECK ще немає, тож узагальнений CRUD їх не чіпає.
+ */
+const VALUE_SERVER_COLUMNS = ['valueKind', 'boolValue', 'colorValue'] as const;
+
+/**
  * Значення властивостей — автозбереження на зміну (Е3-11): фабричні
  * insert/update/remove. Унікальність тримає БД: (власник, властивість,
  * опція) NULLS NOT DISTINCT — скалярна властивість має рівно один рядок
@@ -18,19 +24,8 @@ export const productPropertyValuesOps = defineAdminResource({
   mode: 'on-demand',
   filterable: ['productId', 'propertyId'],
   sortable: ['createdAt'],
-  // Expand М1 (Р18): `valueKind`/`boolValue`/`colorValue` NULLABLE до Task 17; діалог
-  // їх ще не шле — пише команда агрегата (Task 11+).
-  writable: [
-    'productId',
-    'propertyId',
-    'value',
-    'numericValue',
-    'optionId',
-    'valueKind',
-    'boolValue',
-    'colorValue',
-  ],
-  readonly: ['id', 'createdAt'],
+  writable: ['productId', 'propertyId', 'value', 'numericValue', 'optionId'],
+  readonly: [...VALUE_SERVER_COLUMNS, 'id', 'createdAt'],
 });
 
 export const modificationPropertyValuesOps = defineAdminResource({
@@ -46,9 +41,6 @@ export const modificationPropertyValuesOps = defineAdminResource({
     'value',
     'numericValue',
     'optionId',
-    'valueKind',
-    'boolValue',
-    'colorValue',
   ],
-  readonly: ['id', 'createdAt'],
+  readonly: [...VALUE_SERVER_COLUMNS, 'id', 'createdAt'],
 });

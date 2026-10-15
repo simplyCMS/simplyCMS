@@ -49,8 +49,10 @@ const NOT_MEDIA: readonly string[] = [
   'themes.preview_image',
   // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`
   // (М1 Task 10), не файл. Самі файли (`product_images.storage_key`,
-  // `product_image_translations.storage_key`) реєстр отримає, коли зображення
-  // переїдуть із jsonb у ці таблиці (Task 17): до того їх дзеркалить старий `images`.
+  // `product_image_translations.storage_key`) у `MEDIA_COLUMNS` додає Task 12, коли
+  // команди пишуть зображення в ці таблиці; до того їх дзеркалить старий `images`.
+  // 🔴 `LOOKS_LIKE_MEDIA` колонку `storage_key` НЕ бачить, тож гейт про її
+  // відсутність у реєстрі мовчить — Task 12 мусить розширити евристику.
   'product_image_translations.image_id',
 ];
 

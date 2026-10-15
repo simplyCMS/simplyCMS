@@ -296,7 +296,7 @@ CREATE TABLE "product_images" (
 	"product_id" uuid NOT NULL,
 	"modification_id" uuid,
 	"storage_key" text NOT NULL,
-	"sort_order" integer DEFAULT 0 NOT NULL,
+	"sort_order" integer NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint

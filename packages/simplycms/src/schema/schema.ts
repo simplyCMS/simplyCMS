@@ -545,7 +545,7 @@ export const productImages = pgTable("product_images", {
 	productId: uuid("product_id").notNull(),
 	modificationId: uuid("modification_id"),
 	storageKey: text("storage_key").notNull(),
-	sortOrder: integer("sort_order").default(0).notNull(),
+	sortOrder: integer("sort_order").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	foreignKey({

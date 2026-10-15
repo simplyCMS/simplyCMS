@@ -264,10 +264,21 @@ describe('insertProductGraph (М1 Task 10)', () => {
 // реєстрів — їм потрібні рядки довільної (хибної) форми для негативних контролів.
 describe('єдиний записувач графа товару', () => {
   const HARNESS = join(import.meta.dirname, '../..');
-  const PRODUCT_TABLES =
-    /insert into (public\.)?(products|product_modifications|product_property_values|modification_property_values)\b|insert\((products|productModifications|productPropertyValues|modificationPropertyValues)\)/;
+  const T =
+    'products|product_modifications|product_property_values|modification_property_values';
+  const O =
+    'products|productModifications|productPropertyValues|modificationPropertyValues';
+  // Регістронезалежно, `\s+` (перенос рядка, подвійний пробіл), кваліфікований `schema.x`.
+  const PRODUCT_TABLES = new RegExp(
+    `insert\\s+into\\s+(public\\.)?(${T})\\b|insert\\(\\s*[\\w.]*(${O})\\b|insertInto\\(\\s*['"](${T})['"]`,
+    'i',
+  );
   const REGISTRIES =
-    /insert into (public\.)?(url_paths|slug_tokens)\b|insert\((urlPaths|slugTokens)\)/;
+    /insert\s+into\s+(public\.)?(url_paths|slug_tokens)\b|insert\(\s*[\w.]*(urlPaths|slugTokens)\b|insertInto\(\s*['"](url_paths|slug_tokens)['"]/i;
+  const BUILDERS = (f: string) =>
+    f.startsWith('pg/__tests__/fixtures/product-graph');
+  // Цей файл містить зразки заборонених форм як дані.
+  const SELF = 'pg/__tests__/product-graph-fixture.test.ts';
   const REGISTRY_TESTS = new Set([
     'pg/__tests__/url-paths.test.ts',
     'pg/__tests__/slug-tokens.test.ts',
@@ -286,7 +297,10 @@ describe('єдиний записувач графа товару', () => {
       .map((f) => relative(HARNESS, f))
       .filter(
         (f) =>
-          !allowed.has(f) && re.test(readFileSync(join(HARNESS, f), 'utf8')),
+          !allowed.has(f) &&
+          f !== SELF &&
+          !BUILDERS(f) &&
+          re.test(readFileSync(join(HARNESS, f), 'utf8')),
       )
       .sort();
 
@@ -296,5 +310,24 @@ describe('єдиний записувач графа товару', () => {
 
   it('вставки в url_paths/slug_tokens — лише тести реєстрів', () => {
     expect(offenders(REGISTRIES, REGISTRY_TESTS)).toEqual([]);
+  });
+
+  // Негативний контроль самого гарда: кожна заборонена форма впізнається.
+  it.each([
+    'INSERT INTO public.products (id) values (1)',
+    'insert into\n  public.products (id) values (1)',
+    'insert  into   product_modifications (id)',
+    'db.insert(schema.products).values(x)',
+    'db.insert(\n productPropertyValues)',
+    "insertInto('modification_property_values', row)",
+  ])('гард впізнає форму %j', (sample) => {
+    expect(PRODUCT_TABLES.test(sample)).toBe(true);
+  });
+
+  it('гард ловить insertInto в іншій фікстурі (реальний прогін)', () => {
+    const fake = 'pg/__tests__/fixtures/other-fixture.ts';
+    const text = "insertInto('products', {})";
+    const hit = [fake].filter((f) => !BUILDERS(f) && PRODUCT_TABLES.test(text));
+    expect(hit).toEqual([fake]);
   });
 });

@@ -112,7 +112,7 @@ const TABLES = drizzleTables();
  *   • `.insert(<таблиця>)…values(<payload>)`, де `<таблиця>` є
  *     експортом Drizzle-схеми (звірка з мапою відсікає `.insert(payload)`
  *     адмінки — там `payload` не таблиця). Приймається кваліфікована форма
- *     `.insert(schema.products)` і локальний АЛІАС імпорту
+ *     `.insert(schema.<таблиця>)` і локальний АЛІАС імпорту
  *     (`import { orders as ordersTable }` → `.insert(ordersTable)`),
  *     резолвлений `aliasMap`.
  *
