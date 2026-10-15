@@ -50,6 +50,7 @@ async function healthResponse(bodyless: boolean): Promise<Response> {
   let error: string | null = null;
 
   try {
+    // eslint-disable-next-line simplycms-ops/no-core-outside-operation -- liveness-проба `select 1`, не бізнес-операція
     await withActor({ role: 'app_user' }, (db) => db.execute(sql`select 1`));
     ok = true;
   } catch (err) {

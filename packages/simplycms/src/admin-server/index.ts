@@ -131,6 +131,10 @@ import {
   languagesRemove,
   languagesReorder,
   languagesSetStatus,
+  apiTokensCreate,
+  apiTokensList,
+  apiTokensRevoke,
+  serviceAccountsCreate,
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
@@ -752,3 +756,21 @@ export const reorderLanguages = createServerFn({ method: 'POST' })
 export const removeLanguage = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(languagesRemove, data));
+
+// М1, Task 8: токени й сервісні записи — та сама форма обгортки. Усі чотири
+// операції `sessionOnly`: Bearer на них дає 403, працює лише cookie адміна.
+export const createApiToken = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(apiTokensCreate, data));
+
+export const listApiTokens = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(apiTokensList, data));
+
+export const revokeApiToken = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(apiTokensRevoke, data));
+
+export const createServiceAccount = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(serviceAccountsCreate, data));

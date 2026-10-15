@@ -16,6 +16,9 @@ import noDangerouslySetInnerHtml from './eslint-rules/no-dangerously-set-inner-h
 import noInputValidator from './eslint-rules/no-input-validator.mjs';
 import noServerOnlyInClient from './eslint-rules/no-server-only-in-client.mjs';
 import noCollectionKeyOutsideAdminData from './eslint-rules/no-collection-key-outside-admin-data.mjs';
+import thinServerFn from './eslint-rules/thin-server-fn.mjs';
+import noCoreOutsideOperation from './eslint-rules/no-core-outside-operation.mjs';
+import { readFileSync } from 'node:fs';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 // 🔴 Розширення `.ts` обовʼязкове: конфіг вантажить Node без транспіляції
 // (type stripping), а він резолвить лише явні розширення.
@@ -56,6 +59,14 @@ const i18nRestrictedSyntax = [
 // 🔴 Розширено 2026-08-09 з двох пакетів на всю воронку покупки, host і теми:
 // доти `checkout-ui`/`profile-ui`/`catalog-ui`/`reviews-ui`/`cart-ui` не
 // бачив ЖОДЕН гейт, і 293 хардкоджені рядки прожили там усю Фазу 1.
+// Legacy-перелік serverFn (Д4): файл → імена, що ще не на реєстрі операцій.
+const LEGACY_SERVER_FNS = JSON.parse(
+  readFileSync(
+    new URL('./eslint-rules/legacy-admin-server-fns.json', import.meta.url),
+    'utf8',
+  ),
+);
+
 const I18N_MIGRATED_FILES = [
   'src/**/*.tsx',
   // К0: тіри вітрини й адмінки живуть теками флагмана. Зона перелічує саме
@@ -401,6 +412,41 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
+  },
+  // І25 (М1, Task 8): serverFn адмін-зони — тонкі обгортки операцій реєстру.
+  // Окреме імʼя плагіна `simplycms-ops` і ОКРЕМИЙ блок на файл: flat config
+  // замінює опції правила цілком, а legacy-перелік у кожного файла свій.
+  // Перелік лише скорочується (правило падає на зниклому імені); М3 його знесе.
+  ...Object.entries(LEGACY_SERVER_FNS).map(([file, legacy]) => ({
+    files: [file],
+    plugins: {
+      'simplycms-ops': {
+        rules: {
+          'thin-server-fn': thinServerFn,
+          'no-core-outside-operation': noCoreOutsideOperation,
+        },
+      },
+    },
+    rules: {
+      'simplycms-ops/thin-server-fn': ['error', { legacy }],
+      'simplycms-ops/no-core-outside-operation': ['error', { legacy }],
+    },
+  })),
+  // Роути, адмінка й вітринні серверні модулі не ходять у дані повз операцію.
+  // `health.tsx` — liveness-проба, не бізнес-операція: виняток точковий,
+  // з причиною, прямо в файлі.
+  {
+    files: [
+      'packages/simplycms/routes/**/*.{ts,tsx}',
+      'packages/simplycms/src/admin/**/*.{ts,tsx}',
+      'packages/simplycms/src/storefront-routes/server/**/*.ts',
+    ],
+    plugins: {
+      'simplycms-ops': {
+        rules: { 'no-core-outside-operation': noCoreOutsideOperation },
+      },
+    },
+    rules: { 'simplycms-ops/no-core-outside-operation': 'error' },
   },
   // `.inputValidator()` — @deprecated-аліас `.validator()` у TanStack Start.
   // Зона — увесь код репозиторію (ігнори верхнього рівня — шаблон і канон
