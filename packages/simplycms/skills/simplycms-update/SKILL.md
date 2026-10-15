@@ -34,6 +34,8 @@ pnpm simplycms update --check
 3. **Міграції** — `pnpm simplycms db:diff`, потім `db:diff --write` лише після ревʼю SQL
    (`references/migrations.md`). `--write` також прибирає файли, які ядро видалило з канону;
    змінений власником файл не видаляє — його переносять у нову міграцію й видаляють вручну.
+   Зупинка «Спільні міграції розійшлися вмістом» до `1.0.0-rc.1` — це baseline-виняток:
+   `db:diff --write --rebaseline` + перестворити БД (за згодою власника; `references/migrations.md`).
 4. **Локальна перевірка** — `pnpm simplycms db:apply` на локальній БД, `pnpm build`,
    `pnpm simplycms doctor --online`.
 5. **Бекап перед ризиковою міграцією** — ручний, до деплою (`references/migrations.md`).

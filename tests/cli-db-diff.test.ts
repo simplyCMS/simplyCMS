@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   assertSchemaMigrations,
@@ -58,8 +58,15 @@ function makeSchemaDir(store: string) {
 
 describe('cli db:diff', () => {
   it('parseDbDiffArgs: --write приймається, невідомий аргумент — помилка', () => {
-    expect(parseDbDiffArgs([])).toEqual({ write: false });
-    expect(parseDbDiffArgs(['--write'])).toEqual({ write: true });
+    expect(parseDbDiffArgs([])).toEqual({ write: false, rebaseline: false });
+    expect(parseDbDiffArgs(['--write'])).toEqual({
+      write: true,
+      rebaseline: false,
+    });
+    expect(parseDbDiffArgs(['--write', '--rebaseline'])).toEqual({
+      write: true,
+      rebaseline: true,
+    });
     expect(() => parseDbDiffArgs(['--wat'])).toThrow(/--wat/);
   });
 
@@ -316,6 +323,49 @@ describe('cli db:diff: відсутня тека міграцій магазин
   });
 });
 
+const STALE = '0005_mail_outbox.sql';
+const STALE_SQL = 'create table mail_outbox ();\n';
+const sha = (text: string) =>
+  createHash('sha256').update(text, 'utf8').digest('hex');
+const entry = (name: string, sql: string) => ({
+  name,
+  sha256: sha(sql),
+  removedIn: '0.16.0 (baseline-виняток М1)',
+  reason: 'mail_outbox злито в 0001_init.sql',
+});
+
+/** `run` у корені магазину; вивід збирається й нормалізується (рамки clack). */
+async function runCaptured(store: string, argv: string[]) {
+  const cwd = process.cwd();
+  let output = '';
+  const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+    output += String(chunk);
+    return true;
+  });
+  try {
+    process.chdir(store);
+    await run(argv);
+  } finally {
+    process.chdir(cwd);
+    spy.mockRestore();
+  }
+  return {
+    exitCode: process.exitCode,
+    output: output.replace(/[│\s]+/g, ' '),
+  };
+}
+
+/** Файли теки (без підтек) → вміст: порівняння «до/після» для «нічого не записано». */
+const snapshot = (dir: string): Record<string, string> =>
+  Object.fromEntries(
+    readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => [
+        entry.name,
+        readFileSync(join(dir, entry.name), 'utf8'),
+      ]),
+  );
+
 // Файли, ПРИБРАНІ з канону ядра (baseline-винятки до 1.0.0-rc.1): `db:diff --write`
 // лише докопіює нове й сам не видалив би застарілий файл, а той ламає накат
 // (CREATE TABLE вдруге). Прибирання йде за ЗАКРИТИМ маніфестом `removed.json` —
@@ -326,17 +376,6 @@ describe('cli db:diff: файли, прибрані з канону ядра', (
     process.exitCode = undefined;
   });
 
-  const STALE = '0005_mail_outbox.sql';
-  const STALE_SQL = 'create table mail_outbox ();\n';
-  const sha = (text: string) =>
-    createHash('sha256').update(text, 'utf8').digest('hex');
-  const entry = (name: string, sql: string) => ({
-    name,
-    sha256: sha(sql),
-    removedIn: '0.16.0 (baseline-виняток М1)',
-    reason: 'mail_outbox злито в 0001_init.sql',
-  });
-
   /** Магазин зі «встановленим ядром», маніфест якого називає STALE. */
   async function storeWithManifest(name: string) {
     const store = await scaffoldStore(name);
@@ -344,29 +383,6 @@ describe('cli db:diff: файли, прибрані з канону ядра', (
     const manifest = [entry(STALE, STALE_SQL)];
     writeFileSync(join(schemaDir, 'removed.json'), JSON.stringify(manifest));
     return { store, schemaDir, manifest, storeDir: storeMigrationsDir(store) };
-  }
-
-  /** `run` у корені магазину; вивід збирається й нормалізується (рамки clack). */
-  async function runCaptured(store: string, argv: string[]) {
-    const cwd = process.cwd();
-    let output = '';
-    const spy = vi
-      .spyOn(process.stdout, 'write')
-      .mockImplementation((chunk) => {
-        output += String(chunk);
-        return true;
-      });
-    try {
-      process.chdir(store);
-      await run(argv);
-    } finally {
-      process.chdir(cwd);
-      spy.mockRestore();
-    }
-    return {
-      exitCode: process.exitCode,
-      output: output.replace(/[│\s]+/g, ' '),
-    };
   }
 
   it('файл з маніфесту з правильним хешем — без --write лише звіт, файл лишився', async () => {
@@ -465,12 +481,25 @@ describe('cli db:diff: файли, прибрані з канону ядра', (
   ])(
     'маніфест з небезпечним імʼям (%s) → відхиляється до будь-якого запису',
     async (_label, name) => {
-      const { schemaDir } = await storeWithManifest('rm-bad-name');
+      const { store, schemaDir, storeDir } =
+        await storeWithManifest('rm-bad-name');
       writeFileSync(
         join(schemaDir, 'removed.json'),
         JSON.stringify([entry(name, STALE_SQL)]),
       );
       expect(() => readRemovedManifest(schemaDir)).toThrow(/removed\.json/);
+
+      // Зіпсований маніфест не повинен зупинити `run` ПІСЛЯ часткового запису:
+      // нова міграція ядра, яку `--write` скопіював би, лежить у каноні.
+      writeFileSync(
+        join(schemaDir, '99999999999999_core_new.sql'),
+        'select 1;\n',
+      );
+      const before = snapshot(storeDir);
+      await expect(runCaptured(store, ['--write'])).rejects.toThrow(
+        /removed\.json/,
+      );
+      expect(snapshot(storeDir)).toEqual(before);
     },
   );
 
@@ -479,5 +508,217 @@ describe('cli db:diff: файли, прибрані з канону ядра', (
     rmSync(join(schemaDir, 'removed.json'));
     expect(readRemovedManifest(schemaDir)).toEqual([]);
     expect(findRemovedCoreMigrations(storeDir, [])).toEqual([]);
+  });
+});
+
+// Ребазлайн магазину (рішення архітектора 2026-10-15): baseline-виняток змінює
+// `0001…0004` ядра, і без цього режиму `db:diff --write` зупинявся на «Спільні
+// міграції розійшлися вмістом» — до прибирання застарілих файлів не доходив.
+// Один прохід по порядку: прибрати файли з маніфесту → замінити змінені файли
+// ядра вмістом канону → докопіювати відсутні. Власні й плагінні — не чіпає.
+describe('cli db:diff: --rebaseline', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  const BASELINE = ['0001_init.sql', '0003_seed.sql'];
+
+  /**
+   * Магазин у стані 0.15.0: baseline-файли `0001`/`0003` старі (відрізняються від
+   * канону), застарілий `0005` на місці; «встановлене ядро» — канон + маніфест.
+   * `version: null` — без `package.json` ядра.
+   */
+  async function oldStore(name: string, version: string | null = '0.15.0') {
+    const store = await scaffoldStore(name);
+    const schemaDir = makeSchemaDir(store);
+    writeFileSync(
+      join(schemaDir, 'removed.json'),
+      JSON.stringify([entry(STALE, STALE_SQL)]),
+    );
+    if (version !== null)
+      writeFileSync(
+        join(dirname(schemaDir), 'package.json'),
+        JSON.stringify({ name: 'simplycms', version }),
+      );
+    const storeDir = storeMigrationsDir(store);
+    for (const file of BASELINE)
+      writeFileSync(
+        join(storeDir, file),
+        `${readFileSync(join(schemaDir, file), 'utf8')}-- baseline 0.15.0\n`,
+      );
+    writeFileSync(join(storeDir, STALE), STALE_SQL);
+    return { store, schemaDir, storeDir };
+  }
+
+  const sqlOf = (dir: string) =>
+    Object.fromEntries(
+      Object.entries(snapshot(dir)).filter(([name]) => name.endsWith('.sql')),
+    );
+
+  it('--rebaseline: змінений файл ядра замінено вмістом канону, перелік і рядок про перестворення БД надруковано', async () => {
+    const { store, storeDir, schemaDir } = await oldStore('rb-replace');
+
+    const { exitCode, output } = await runCaptured(store, [
+      '--write',
+      '--rebaseline',
+    ]);
+    expect(exitCode).toBeUndefined();
+    for (const file of BASELINE) {
+      expect(readFileSync(join(storeDir, file), 'utf8')).toBe(
+        readFileSync(join(schemaDir, file), 'utf8'),
+      );
+      expect(output).toContain(file);
+    }
+    expect(output).toContain('базу даних треба перестворити');
+    expect(output).toContain('`simplycms_migrations`');
+    // Незмінений файл ядра в переліку заміни не названо.
+    expect(output).not.toContain('0002_grants.sql');
+  });
+
+  it('власний 2026…_x.sql і власний 0006_x.sql поза каноном, плагінний <14 цифр>_plg_* — не чіпаються', async () => {
+    const { store, storeDir } = await oldStore('rb-own');
+    const own = {
+      '20260101120000_x.sql': 'select 1;\n',
+      '0006_x.sql': 'select 2;\n',
+      '20260814120000_plg_faq_items.sql': 'select 3;\n',
+    };
+    for (const [name, sql] of Object.entries(own))
+      writeFileSync(join(storeDir, name), sql);
+
+    await runCaptured(store, ['--write', '--rebaseline']);
+    expect(snapshot(storeDir)).toMatchObject(own);
+    // Ребазлайн справді відпрацював: без цього «не чіпаються» було б вакуумним.
+    expect(snapshot(storeDir)['0001_init.sql']).not.toContain(
+      'baseline 0.15.0',
+    );
+  });
+
+  it('видалення файла з маніфесту в тому самому проході: шлях власника 0.15.0 → усе в каноні', async () => {
+    const { store, storeDir, schemaDir } = await oldStore('rb-one-pass');
+
+    const { exitCode } = await runCaptured(store, ['--write', '--rebaseline']);
+    expect(exitCode).toBeUndefined();
+    expect(existsSync(join(storeDir, STALE))).toBe(false);
+    // Теки *.sql магазину й ядра тотожні за іменами й вмістом.
+    expect(sqlOf(storeDir)).toEqual(sqlOf(schemaDir));
+  });
+
+  it('змінений файл з маніфесту — відмова, решта плану виконується', async () => {
+    const { store, storeDir, schemaDir } = await oldStore('rb-modified');
+    const edited = `${STALE_SQL}-- власна правка\n`;
+    writeFileSync(join(storeDir, STALE), edited);
+
+    const { exitCode, output } = await runCaptured(store, [
+      '--write',
+      '--rebaseline',
+    ]);
+    expect(exitCode).toBe(1);
+    expect(readFileSync(join(storeDir, STALE), 'utf8')).toBe(edited);
+    expect(output).toContain('видали файл вручну');
+    for (const file of BASELINE)
+      expect(readFileSync(join(storeDir, file), 'utf8')).toBe(
+        readFileSync(join(schemaDir, file), 'utf8'),
+      );
+  });
+
+  it.each(['1.0.0-rc.1', '1.0.0-rc.12', '1.0.0', '2.3.1'])(
+    'встановлене ядро %s → відмова «канон заморожено», нічого не записано',
+    async (version) => {
+      const { store, storeDir } = await oldStore(
+        `rb-frozen-${version}`,
+        version,
+      );
+      const before = snapshot(storeDir);
+
+      const { exitCode, output } = await runCaptured(store, [
+        '--write',
+        '--rebaseline',
+      ]);
+      expect(exitCode).toBe(1);
+      expect(output).toContain('канон заморожено');
+      expect(snapshot(storeDir)).toEqual(before);
+    },
+  );
+
+  it('версію встановленого ядра не визначено → відмова (не довести, що канон не заморожено)', async () => {
+    const { store, storeDir } = await oldStore('rb-no-version', null);
+    const before = snapshot(storeDir);
+
+    const { exitCode, output } = await runCaptured(store, [
+      '--write',
+      '--rebaseline',
+    ]);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('версію встановленого ядра');
+    expect(snapshot(storeDir)).toEqual(before);
+  });
+
+  it('без --rebaseline → зупинка з підказкою про --rebaseline і названим файлом з маніфесту', async () => {
+    const { store, storeDir } = await oldStore('rb-hint');
+    const before = snapshot(storeDir);
+
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('Спільні міграції розійшлися вмістом');
+    expect(output).toContain('baseline-виняток');
+    expect(output).toContain('simplycms db:diff --write --rebaseline');
+    expect(output).toContain('перестворити БД');
+    // Власник за один прогін бачить і застарілий файл з маніфесту.
+    expect(output).toContain(STALE);
+    expect(snapshot(storeDir)).toEqual(before);
+  });
+
+  it('змінений файл ПЛАГІНА лишається зупинкою навіть з --rebaseline, нічого не записано', async () => {
+    const { store, storeDir } = await oldStore('rb-plugin-changed');
+    // Установлюємо плагін faq: запис у конфігу + його канон у node_modules.
+    const configPath = join(store, 'simplycms.config.ts');
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        'plugins: [',
+        "plugins: [\n    { name: 'faq', module: () => import('@simplycms/plugin-faq') },",
+      ),
+    );
+    const faqDir = join(store, 'node_modules/@simplycms/plugin-faq/migrations');
+    mkdirSync(faqDir, { recursive: true });
+    const file = '20260814120000_plg_faq_items.sql';
+    writeFileSync(join(faqDir, file), 'create table plg_faq_items ();\n');
+    // У магазині той самий файл змінено: плагінні міграції immutable.
+    writeFileSync(
+      join(storeDir, file),
+      'create table plg_faq_items (id int);\n',
+    );
+    const before = snapshot(storeDir);
+
+    const { exitCode, output } = await runCaptured(store, [
+      '--write',
+      '--rebaseline',
+    ]);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('Спільні міграції розійшлися вмістом');
+    expect(output).toContain(file);
+    // Зупинка нічого не пише — навіть заміну файлів ядра, яку ребазлайн виконав би.
+    expect(snapshot(storeDir)).toEqual(before);
+  });
+
+  it('після заморожування зупинка не радить --rebaseline', async () => {
+    const { store } = await oldStore('rb-hint-frozen', '1.0.0');
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('Спільні міграції розійшлися вмістом');
+    expect(output).not.toContain('--rebaseline');
+  });
+
+  it('--rebaseline без --write → лише звіт, файли не змінено', async () => {
+    const { store, storeDir } = await oldStore('rb-report');
+    const before = snapshot(storeDir);
+
+    const { exitCode, output } = await runCaptured(store, ['--rebaseline']);
+    expect(exitCode).toBeUndefined();
+    expect(snapshot(storeDir)).toEqual(before);
+    for (const file of BASELINE) expect(output).toContain(file);
+    expect(output).toContain(STALE);
+    expect(output).toContain('базу даних треба перестворити');
+    expect(output).toContain('db:diff --write --rebaseline');
   });
 });

@@ -10,10 +10,11 @@ import {
   storeMigrationsDir,
 } from './db-diff.mjs';
 import { findHostDrift, findOrphanedHostFiles } from './host-drift.mjs';
+import { REBASELINE_COMMAND, rebaselineHint } from './rebaseline.mjs';
 import {
   findRemovedCoreMigrations,
   readRemovedManifest,
-  removedNotice,
+  removedNotices,
 } from './removed-migrations.mjs';
 import { inspectSkillLinks } from './skill-links.mjs';
 
@@ -85,9 +86,38 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
     const details = `Колізія канонів (одне імʼя, різний вміст): ${collisions.join(', ')} — розберися вручну`;
     return { id, title, status: 'error', details };
   }
+  // Маніфест читається до розгалуження: файли з нього звітуються і в error
+  // зупинки, і в warn — власник бачить їх за один прогін.
+  let manifest;
+  let removed;
+  try {
+    manifest = readRemovedManifest(schemaMigrationsDir);
+    removed = findRemovedCoreMigrations(
+      storeMigrationsDir(storeRoot),
+      manifest,
+    );
+  } catch (error) {
+    // Зіпсований маніфест — стан магазину не визначити; doctor не падає.
+    return { id, title, status: 'error', details: error.message };
+  }
   const changed = perSource.flatMap((s) => s.changed);
   if (changed.length > 0) {
-    const details = `Спільні міграції змінені локально: ${changed.join(', ')} — міграції immutable, розберися вручну`;
+    // Підказка ребазлайну — лише коли змінений файл ядра й режим ще доступний.
+    const hint =
+      perSource[0].changed.length > 0
+        ? rebaselineHint(schemaMigrationsDir)
+        : '';
+    const details = [
+      `Спільні міграції змінені локально: ${changed.join(', ')} — міграції immutable, розберися вручну`,
+      hint.replace(/\.$/, ''),
+      ...removedNotices(
+        manifest,
+        removed,
+        hint ? `pnpm ${REBASELINE_COMMAND}` : undefined,
+      ),
+    ]
+      .filter(Boolean)
+      .join('. ');
     return { id, title, status: 'error', details };
   }
   const warnings = [];
@@ -96,23 +126,7 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
     warnings.push(
       `Нові міграції канонів: ${missing.join(', ')}. Забери: pnpm simplycms db:diff --write`,
     );
-  try {
-    const manifest = readRemovedManifest(schemaMigrationsDir);
-    const storeDir = storeMigrationsDir(storeRoot);
-    for (const { name, status } of findRemovedCoreMigrations(
-      storeDir,
-      manifest,
-    ))
-      warnings.push(
-        removedNotice(
-          manifest.find((e) => e.name === name),
-          status,
-        ),
-      );
-  } catch (error) {
-    // Зіпсований маніфест — стан магазину не визначити; doctor не падає.
-    return { id, title, status: 'error', details: error.message };
-  }
+  warnings.push(...removedNotices(manifest, removed));
   if (warnings.length > 0)
     return { id, title, status: 'warn', details: warnings.join('. ') };
   return { id, title, status: 'ok' };

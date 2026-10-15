@@ -21,6 +21,12 @@ import { configPluginEntries, stripPrefixes } from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { fileDiffers } from './host-drift.mjs';
 import {
+  REBASELINE_COMMAND,
+  applyReplacement,
+  refuseRebaseline,
+  reportContentConflict,
+} from './rebaseline.mjs';
+import {
   applyRemovedCore,
   findRemovedCoreMigrations,
   readRemovedManifest,
@@ -255,16 +261,18 @@ export function copyMigrations(storeDir, schemaDir, names) {
 /** @param {string[]} argv */
 export function parseDbDiffArgs(argv) {
   let write = false;
+  let rebaseline = false;
   for (const arg of argv) {
     if (arg === '--write') write = true;
+    else if (arg === '--rebaseline') rebaseline = true;
     else throw new Error(`Невідомий аргумент db:diff: ${arg}`);
   }
-  return { write };
+  return { write, rebaseline };
 }
 
 /** @param {string[]} argv */
 export async function run(argv) {
-  const { write } = parseDbDiffArgs(argv);
+  const { write, rebaseline } = parseDbDiffArgs(argv);
   begin('simplycms db:diff');
   const storeRoot = findStoreRoot();
   // 🔴 До будь-якої генерації: інакше `--write` через `copyMigrations`
@@ -288,12 +296,15 @@ export async function run(argv) {
     },
     ...pluginMigrationSources(storeRoot),
   ];
+  const coreDir = sources[0].dir;
+  // Ребазлайн після заморожування канону — відмова до будь-якого читання чи запису.
+  if (rebaseline && refuseRebaseline(coreDir)) return;
   const { perSource, own, collisions } = compareMigrationsMulti(
     storeDir,
     sources,
   );
   // Маніфест читається ДО будь-якого запису: зіпсований — гучна помилка.
-  const manifest = readRemovedManifest(sources[0].dir);
+  const manifest = readRemovedManifest(coreDir);
   const removed = findRemovedCoreMigrations(storeDir, manifest);
   const matched = removed.filter((r) => r.status === 'match');
 
@@ -307,12 +318,21 @@ export async function run(argv) {
     return;
   }
 
-  const changed = perSource.flatMap((s) => s.changed);
+  // З --rebaseline змінені файли ЯДРА — не конфлікт, а план заміни; змінені
+  // файли плагінів (immutable) лишаються зупинкою.
+  const replace = rebaseline ? perSource[0].changed : [];
+  const changed = perSource.flatMap((s, i) =>
+    rebaseline && i === 0 ? [] : s.changed,
+  );
   if (changed.length > 0) {
-    say.error(
-      `Спільні міграції розійшлися вмістом: ${changed.join(', ')}.\n` +
-        'Міграції immutable — нічого не записано, розберися вручну.',
-    );
+    reportContentConflict({
+      changed,
+      coreChanged: perSource[0].changed,
+      rebaseline,
+      coreDir,
+      manifest,
+      removed,
+    });
     process.exitCode = 1;
     finish('Конфлікт вмісту міграцій.');
     return;
@@ -351,12 +371,24 @@ export async function run(argv) {
     );
 
   const totalMissing = perSource.reduce((n, s) => n + s.missing.length, 0);
-  if (totalMissing === 0 && removed.length === 0) {
+  if (totalMissing === 0 && removed.length === 0 && replace.length === 0) {
     say.success('Нових міграцій немає — магазин не відстає від канонів.');
     finish('Вже зроблено.');
     return;
   }
 
+  // Порядок проходу: прибрати файли з маніфесту → замінити змінені файли ядра
+  // вмістом канону (лише --rebaseline) → докопіювати відсутні.
+  const { refused } = applyRemovedCore({
+    storeDir,
+    manifest,
+    found: removed,
+    write,
+    // У режимі ребазлайну звичайний `--write` зупинився б на зміненому baseline.
+    fix: rebaseline ? `pnpm ${REBASELINE_COMMAND}` : undefined,
+  });
+  if (replace.length > 0)
+    applyReplacement({ storeDir, coreDir, names: replace, write });
   for (const source of perSource) {
     if (source.missing.length === 0) continue;
     const label = source.name === null ? 'ядра' : `плагіна '${source.name}'`;
@@ -372,23 +404,17 @@ export async function run(argv) {
     }
   }
 
-  const { refused } = applyRemovedCore({
-    storeDir,
-    manifest,
-    found: removed,
-    write,
-  });
-
   // `--write` має що зробити, лише якщо є що копіювати або що прибрати без
   // відмови; один лише змінений файл потребує ручної дії, а не `--write`.
   const actionable = [
     totalMissing > 0 && 'скопіювати нові міграції в db/migrations/',
     matched.length > 0 && 'прибрати файли, видалені з канону ядра',
+    replace.length > 0 && 'замінити змінені файли ядра вмістом канону',
   ].filter(Boolean);
   if (!write) {
     if (actionable.length > 0) {
       showSteps([
-        `pnpm simplycms db:diff --write   # ${actionable.join(' і ')}`,
+        `pnpm simplycms db:diff --write${replace.length > 0 ? ' --rebaseline' : ''}   # ${actionable.join(' і ')}`,
       ]);
       finish('Є що забрати (--write).');
     } else {
@@ -407,7 +433,12 @@ export async function run(argv) {
   // Накат — команда самого CLI (ядро `simplycms/migrate`, журнал сум): після
   // людського ревʼю SQL, у порядку імен, лише файли без запису в журналі.
   showSteps([
-    'git diff                        # ревʼю доданих і прибраних міграцій',
+    'git diff                        # ревʼю доданих, замінених і прибраних міграцій',
+    ...(replace.length > 0
+      ? [
+          'перестворити базу даних         # порожня БД (локально) або новий екземпляр (сервер)',
+        ]
+      : []),
     'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — власник схеми)',
   ]);
   finish('Готово.');

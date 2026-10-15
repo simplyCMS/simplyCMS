@@ -69,7 +69,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
 | 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env`; значення, що дорівнює відомій заглушці з прикладів env (`src/env-placeholders.mjs` — єдиний список, його ж читає тест шаблону; `DATABASE_URL`, `BETTER_AUTH_SECRET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `SMTP_URL`, `MIGRATION_DATABASE_URL`) — теж error; повідомлення називає ключ, не значення | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
-| 7 | міграції: відставання від `simplycms/migrations`; присутній у `db/migrations` файл із `migrations/removed.json` (прибраний з канону ядра) | warn → `db:diff --write` (для збігу хешу; змінений у магазині — ручна дія без `--write`); змінений спільний файл — error; зіпсований `removed.json` — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
+| 7 | міграції: відставання від `simplycms/migrations`; присутній у `db/migrations` файл із `migrations/removed.json` (прибраний з канону ядра) | warn → `db:diff --write` (для збігу хешу; змінений у магазині — ручна дія без `--write`); змінений спільний файл — error (з підказкою `db:diff --write --rebaseline`, поки режим доступний, і з названими файлами з `removed.json`); зіпсований `removed.json` — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
@@ -289,7 +289,7 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 4. **Драйвер `pg` (К3-Е7).** Після кроку версій `update` порівнює `pg` магазину з peer-діапазоном щойно встановленого ядра і, якщо вони розійшлися, лише ДРУКУЄ, що оновити (`pnpm add pg@<peer>`): версію `pg` у `package.json` магазину `update` не переписує — пін належить магазину (спільна реалізація з doctor №13).
 5. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
 
-### 3.4 `simplycms db:diff [--write]`
+### 3.4 `simplycms db:diff [--write] [--rebaseline]`
 
 Доносить нові міграції **канонів** у магазин. Канонів із Фази 3 — N:
 `node_modules/simplycms/migrations/` (ядро, обовʼязковий) плюс тека
@@ -317,7 +317,22 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
   запису. Правило поповнення маніфесту — `release-process.md`.
 - 🔴 спільне ім'я з різним вмістом (канон↔магазин або канон↔канон) →
   **error, нічого не пишеться** (міграції immutable; розходження — привід
-  для ручного розбору);
+  для ручного розбору). Для файлів ЯДРА до `1.0.0-rc.1` це зазвичай baseline-виняток, і текст
+  зупинки радить `db:diff --write --rebaseline` + перестворити БД (підказки немає, коли
+  ребазлайн недоступний); файли з маніфесту `removed.json`, що присутні в магазині, названо
+  в тій самій зупинці — і в `db:diff`, і в doctor №7;
+- 🔴 **`--rebaseline`** (`rebaseline.mjs`; baseline-виняток до `1.0.0-rc.1`, рішення 2026-10-15):
+  ОДИН прохід по порядку — (1) прибрати файли з `removed.json` за правилами вище (змінений —
+  відмова, решта плану виконується, код 1), (2) ЗАМІНИТИ вмістом канону файли ядра, що є в
+  каноні встановленого пакета й відрізняються вмістом, (3) докопіювати відсутні. Перед заміною
+  друкується перелік і червоний рядок «базу даних треба перестворити: журнал накату
+  `simplycms_migrations` відхилить змінений вміст» — гарантію дає sha256-журнал, сам `db:diff` до БД
+  не звертається. Власні (будь-які імена поза каноном, зокрема `0006_x.sql`) і плагінні
+  (`<14 цифр>_plg_*`) файли не розглядаються; змінений файл ПЛАГІНА лишається зупинкою.
+  `--rebaseline` без `--write` — лише звіт того самого плану. Після заморожування — відмова
+  «канон заморожено»: перевірка за версією ВСТАНОВЛЕНОГО ядра (`node_modules/simplycms/package.json`,
+  semver `>= 1.0.0-rc.1`, пререліз теж заморожений), окремого прапорця чи константи немає; версію
+  не визначено — теж відмова (довести, що не заморожено, не вдалося);
 - 🔴 міграції ПЛАГІНІВ перед копіюванням проходять SQL-лінт межі довіри
   (спека §7/§9): `CREATE TABLE`/`ALTER`/`POLICY`/`INDEX`/`REFERENCES` лише на
   `plg_<name>_*` — порушення валить команду без запису. Лінт — regexp-гард

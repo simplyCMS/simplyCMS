@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { hashMigrationText } from '../packages/cli/src/removed-migrations.mjs';
 import { SCHEMA_MIGRATIONS_DIR } from '../scripts/sync-create-store-template.mjs';
 
 // Маніфест файлів, прибраних з канону ядра, — ЗАКРИТИЙ перелік: CLI видаляє в
@@ -58,11 +58,11 @@ describe('маніфест видалених файлів канону (removed
       const released = execFileSync(
         'git',
         ['show', 'v0.15.0:packages/simplycms/migrations/0005_mail_outbox.sql'],
-        { encoding: 'buffer' },
+        { encoding: 'utf8' },
       );
-      expect(entry?.sha256).toBe(
-        createHash('sha256').update(released).digest('hex'),
-      );
+      // Та сама функція, що рахує хеш у CLI (нормалізовані кінці рядків): інакше
+      // гейт хешував би сирі байти, а CLI — текст, і на CRLF вони розійшлися б.
+      expect(entry?.sha256).toBe(hashMigrationText(released));
     },
   );
 
@@ -72,6 +72,11 @@ describe('маніфест видалених файлів канону (removed
     expect(
       manifest.find((e) => e.name === '0005_mail_outbox.sql')?.sha256,
     ).toBe('fc5b714b963732218da7b39a4808ab87067dadf62c27b2ac6d039bb26346bb95');
+  });
+
+  it('hashMigrationText: CRLF і LF дають один хеш (так само нормалізує журнал міграцій)', () => {
+    expect(hashMigrationText('a\r\nb\r\n')).toBe(hashMigrationText('a\nb\n'));
+    expect(hashMigrationText('a\nb\n')).not.toBe(hashMigrationText('a\nc\n'));
   });
 
   it('канон ядра дійсно не містить 0005_mail_outbox.sql', () => {

@@ -65,14 +65,20 @@ export function readRemovedManifest(coreDir) {
 }
 
 /**
- * sha256 вмісту з нормалізованими кінцями рядків: той самий файл, витягнутий
- * git-ом на Windows із `\r\n`, не повинен ставати «зміненим» (так само
- * нормалізує суму журналу міграцій у ядрі — `readMigrationSql`).
+ * sha256 тексту міграції з нормалізованими кінцями рядків: той самий файл,
+ * витягнутий git-ом на Windows із `\r\n`, не повинен ставати «зміненим» (так
+ * само нормалізує суму журналу міграцій у ядрі — `readMigrationSql`). Єдина
+ * функція і для CLI, і для гейта маніфесту (`removed-migrations-manifest.test.ts`):
+ * хеш запису в `removed.json` — саме цей, а не сирих байтів.
+ * @param {string} text
  */
-function contentHash(path) {
-  const text = readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
-  return createHash('sha256').update(text, 'utf8').digest('hex');
+export function hashMigrationText(text) {
+  return createHash('sha256')
+    .update(text.replace(/\r\n/g, '\n'), 'utf8')
+    .digest('hex');
 }
+
+const contentHash = (path) => hashMigrationText(readFileSync(path, 'utf8'));
 
 /**
  * Які файли з маніфесту лежать у `db/migrations` магазину. Розглядаються ЛИШЕ
@@ -98,28 +104,52 @@ export function findRemovedCoreMigrations(storeDir, manifest) {
  * Повідомлення про один знайдений файл — спільне для `db:diff` і doctor.
  * @param {RemovedEntry} entry
  * @param {'match' | 'modified'} status
+ * @param {string} [fix] команда, що прибере збіжний файл (за замовчуванням `db:diff --write`;
+ *   у зупинці на зміненому baseline — ребазлайн, бо звичайний `--write` не дійде до прибирання)
  */
-export function removedNotice({ name, removedIn, reason }, status) {
+export function removedNotice(
+  { name, removedIn, reason },
+  status,
+  fix = 'pnpm simplycms db:diff --write',
+) {
   const head = `Файл ${name} прибрано з канону ядра у ${removedIn}`;
   return status === 'match'
-    ? `${head}; причина: ${reason}. У магазині він збігається з відомою версією — забери: pnpm simplycms db:diff --write`
+    ? `${head}; причина: ${reason}. У магазині він збігається з відомою версією — забери: ${fix}`
     : `${head}, але в магазині він змінений (хеш інший) — перенеси свої зміни в нову міграцію й видали файл вручну`;
+}
+
+/**
+ * Повідомлення про всі знайдені файли — для зупинок і doctor, де файли з
+ * маніфесту звітуються поруч з іншою проблемою.
+ * @param {RemovedEntry[]} manifest
+ * @param {RemovedFinding[]} found
+ * @param {string} [fix] див. `removedNotice`
+ * @returns {string[]}
+ */
+export function removedNotices(manifest, found, fix) {
+  return found.map(({ name, status }) =>
+    removedNotice(
+      manifest.find((entry) => entry.name === name),
+      status,
+      fix,
+    ),
+  );
 }
 
 /**
  * Звіт і (з `write`) прибирання. Видаляється лише `match`; `modified` —
  * відмова: чужі правки не губимо.
- * @param {{ storeDir: string; manifest: RemovedEntry[]; found: RemovedFinding[]; write: boolean }} args
+ * @param {{ storeDir: string; manifest: RemovedEntry[]; found: RemovedFinding[]; write: boolean; fix?: string }} args
  * @returns {{ removed: string[]; refused: string[] }}
  */
-export function applyRemovedCore({ storeDir, manifest, found, write }) {
+export function applyRemovedCore({ storeDir, manifest, found, write, fix }) {
   const removed = [];
   const refused = [];
   for (const { name, status } of found) {
     const entry = manifest.find((e) => e.name === name);
     if (status === 'modified') {
       refused.push(name);
-      const text = removedNotice(entry, status);
+      const text = removedNotice(entry, status, fix);
       if (write) say.error(text);
       else say.warn(text);
     } else if (write) {
@@ -129,7 +159,7 @@ export function applyRemovedCore({ storeDir, manifest, found, write }) {
         `Видалено ${name}: прибрано з канону ядра у ${entry.removedIn}; причина: ${entry.reason}.`,
       );
     } else {
-      say.warn(removedNotice(entry, status));
+      say.warn(removedNotice(entry, status, fix));
     }
   }
   return { removed, refused };

@@ -251,10 +251,17 @@ describe('cli doctor (оффлайн)', () => {
     const STALE_SQL = 'create table mail_outbox ();\n';
 
     /** Магазин + «ядро» з копією його міграцій і маніфестом, що називає STALE. */
-    async function withManifest(name: string) {
+    async function withManifest(name: string, coreVersion = '0.15.0') {
       const store = await scaffoldStore(name);
       const storeDir = join(store, 'db', 'migrations');
-      const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+      // Як у магазині: `<ядро>/migrations` поруч із `<ядро>/package.json`.
+      const coreDir = mkdtempSync(join(tmpdir(), 'cli-core-'));
+      const schemaDir = join(coreDir, 'migrations');
+      mkdirSync(schemaDir);
+      writeFileSync(
+        join(coreDir, 'package.json'),
+        JSON.stringify({ name: 'simplycms', version: coreVersion }),
+      );
       for (const file of readdirSync(storeDir).filter((n) =>
         n.endsWith('.sql'),
       ))
@@ -296,6 +303,35 @@ describe('cli doctor (оффлайн)', () => {
       expect(res.details).toContain(STALE);
       expect(res.details).toContain('видали файл вручну');
       expect(res.details).not.toContain('db:diff --write');
+    });
+
+    it('змінений baseline + файл з маніфесту → error називає і файл, і --rebaseline', async () => {
+      const { store, storeDir, schemaDir } = await withManifest('doc-rm-stop');
+      appendFileSync(join(storeDir, '0001_init.sql'), '-- baseline 0.15.0\n');
+      writeFileSync(join(storeDir, STALE), STALE_SQL);
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('error');
+      expect(res.details).toContain('0001_init.sql');
+      expect(res.details).toContain('db:diff --write --rebaseline');
+      expect(res.details).toContain(STALE);
+    });
+
+    it('після заморожування error не радить --rebaseline', async () => {
+      const { store, storeDir, schemaDir } = await withManifest(
+        'doc-rm-stop-frozen',
+        '1.0.0',
+      );
+      appendFileSync(join(storeDir, '0001_init.sql'), '-- інша правка\n');
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('error');
+      expect(res.details).toContain('0001_init.sql');
+      expect(res.details).not.toContain('--rebaseline');
     });
 
     it('файла з маніфесту в магазині немає → ok', async () => {

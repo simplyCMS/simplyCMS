@@ -35,8 +35,10 @@ const HELP = `simplycms — CLI обслуговування магазину Si
               update [--check | --write] [--to <version>] [--no-install]
               --check: перевірка без мережі й install, нічого не пише
                        (код 0 — збігається, 3 — розбіжність, 1 — помилка)
-  db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
+  db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write] [--rebaseline]
               --write: докопіювати нові й прибрати файли, видалені з канону ядра
+              --rebaseline: до 1.0.0-rc.1 замінити змінені файли ядра вмістом канону
+                            (baseline-виняток; базу після цього перестворюють); без --write — звіт
   db:apply  Накатити db/migrations на БД (MIGRATION_DATABASE_URL — власник схеми):
               db:apply [--dry-run | --check]   (--check: код 3, якщо є ненакочені)
   theme:conformance
