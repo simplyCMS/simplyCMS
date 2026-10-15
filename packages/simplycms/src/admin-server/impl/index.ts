@@ -245,4 +245,10 @@ export {
   languagesReorder,
 } from './languages/operations';
 export { languagesSetStatus } from './languages/status';
+export {
+  apiTokensCreate,
+  apiTokensList,
+  apiTokensRevoke,
+} from './api-tokens/operations';
+export { serviceAccountsCreate } from './api-tokens/service-accounts';
 export { CORE_OPERATIONS, getOperation } from './operations-registry';

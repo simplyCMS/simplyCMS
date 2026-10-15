@@ -109,7 +109,8 @@ simplyCMS/
 │   │   │                         #    помилок — з T0. server-only (Мультимовність М1, Task 5)
 │   │   ├── src/operations/       # T2 Опис операції (defineOperation), виконавець з явним суб'єктом
 │   │   │                         #    (executeOperation), assertVersionThenHash; /server — invokeFromServerFn.
-│   │   │                         #    Реєстр CORE_OPERATIONS — у admin-server/impl. server-only (М1, Task 6)
+│   │   │                         #    Реєстр CORE_OPERATIONS — у admin-server/impl. http/ — адаптер /api/v1
+│   │   │                         #    (handleApiRequest, токени, Idempotency-Key, OpenAPI). server-only (М1, Task 6–7)
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
 │   │   ├── src/themes/           # T4 ThemeRegistry, bootstrapThemes, applyTokens,

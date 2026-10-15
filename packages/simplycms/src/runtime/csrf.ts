@@ -14,13 +14,31 @@ export const CSRF_EXEMPT_PREFIXES = ['/api/auth/'] as const;
 /** Методи, що за семантикою HTTP не змінюють стан — CSRF-перевірці не підлягають. */
 const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/** HTTP API операцій (М1): тут Bearer-запит — не браузерний, CSRF до нього не застосовний. */
+const API_PREFIX = '/api/v1/';
+
 /**
  * Чи треба перевіряти запит. Чиста функція (юніт без підйому Start): метод
  * поза безпечними І шлях не під винятком. Тип обробника (server function чи
  * server route) не розрізняється — захист однаковий для обох.
+ *
+ * 🔴 Виняток для `/api/v1/` вузький: лише запит із `Authorization: Bearer …`.
+ * CSRF — атака на ambient-автентифікацію (cookie), яку браузер додає сам;
+ * заголовок `Authorization` чужий сайт виставити не може. Cookie-запит на
+ * `/api/v1/` і `Authorization: Basic` перевіряються як і досі, а адаптер за
+ * наявності `Authorization` НІКОЛИ не падає назад на cookie.
  */
-export function shouldValidateCsrf(method: string, pathname: string): boolean {
+export function shouldValidateCsrf(
+  method: string,
+  pathname: string,
+  headers: Headers,
+): boolean {
   if (SAFE_METHODS.has(method.toUpperCase())) return false;
+  if (
+    pathname.startsWith(API_PREFIX) &&
+    /^Bearer\s/i.test(headers.get('authorization') ?? '')
+  )
+    return false;
   return !CSRF_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
@@ -40,5 +58,9 @@ export function shouldValidateCsrf(method: string, pathname: string): boolean {
  */
 export const csrfMiddleware = createCsrfMiddleware({
   filter: ({ request }) =>
-    shouldValidateCsrf(request.method, new URL(request.url).pathname),
+    shouldValidateCsrf(
+      request.method,
+      new URL(request.url).pathname,
+      request.headers,
+    ),
 });

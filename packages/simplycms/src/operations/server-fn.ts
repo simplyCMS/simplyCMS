@@ -1,29 +1,17 @@
 import { setResponseStatus } from '@tanstack/react-start/server';
-import { subjectFromCookie, AuthzError } from 'simplycms/auth';
-import {
-  AdminConflictError,
-  AdminNotFoundError,
-  InUseError,
-  SourceChangedError,
-  ValidationError,
-  VersionMismatchError,
-} from 'simplycms/contracts/domain-errors';
+import { subjectFromCookie } from 'simplycms/auth';
 import type { OperationDef } from './define';
 import { executeOperation } from './execute';
+import { toProblem } from './http/problem';
 
-/** Статус відповіді для доменної помилки; `undefined` — не наша (500). */
+/**
+ * Статус відповіді для доменної помилки; `undefined` — не наша (500). НЕ власна
+ * карта: статус ОБЧИСЛЮЄТЬСЯ з `toProblem`, єдиної таблиці HTTP-шару, щоб serverFn
+ * і `/api/v1` не розійшлися.
+ */
 function statusOf(error: unknown): number | undefined {
-  if (error instanceof AuthzError) return 403;
-  if (error instanceof ValidationError) return 400;
-  if (error instanceof VersionMismatchError) return 412;
-  if (error instanceof AdminNotFoundError) return 404;
-  if (
-    error instanceof AdminConflictError ||
-    error instanceof InUseError ||
-    error instanceof SourceChangedError
-  )
-    return 409;
-  return undefined;
+  const { status } = toProblem(error, '');
+  return status === 500 ? undefined : status;
 }
 
 /**

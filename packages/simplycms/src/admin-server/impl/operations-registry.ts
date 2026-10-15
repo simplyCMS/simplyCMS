@@ -1,5 +1,11 @@
 import type { OperationDef } from 'simplycms/operations';
 import {
+  apiTokensCreate,
+  apiTokensList,
+  apiTokensRevoke,
+} from './api-tokens/operations';
+import { serviceAccountsCreate } from './api-tokens/service-accounts';
+import {
   languagesAdd,
   languagesFill,
   languagesList,
@@ -22,6 +28,10 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   languagesFill,
   languagesReorder,
   languagesRemove,
+  apiTokensCreate,
+  apiTokensRevoke,
+  apiTokensList,
+  serviceAccountsCreate,
 ] as readonly OperationDef<unknown, unknown>[];
 
 const BY_ID: ReadonlyMap<string, OperationDef<unknown, unknown>> = new Map(

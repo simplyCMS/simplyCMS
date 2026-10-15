@@ -13,3 +13,9 @@ export type {
   OperationDef,
 } from './define';
 export { executeOperation } from './execute';
+export { generateToken } from './http/token-auth';
+export { wireDate } from './http/wire';
+export {
+  IDEMPOTENCY_LOCK_TIMEOUT_MS,
+  IDEMPOTENCY_TTL_HOURS,
+} from './http/idempotency';

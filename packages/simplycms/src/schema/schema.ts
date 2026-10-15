@@ -1,4 +1,4 @@
-import { customType, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, bigint, pgEnum } from "drizzle-orm/pg-core"
+import { customType, primaryKey, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, bigint, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 // Схема ядра SimplyCMS — SSOT моделі даних v2 (рішення B3′/B5″/B13,
@@ -631,6 +631,62 @@ export const cacheGenerations = pgTable("cache_generations", {
 	key: text().primaryKey().notNull(),
 	generation: bigint({ mode: 'bigint' }).default(sql`0`).notNull(),
 });
+
+// bytea у застосунку — `Buffer`: sha256-хеш токена й відбиток запиту.
+const bytea = customType<{ data: Buffer }>({
+	dataType() {
+		return 'bytea';
+	},
+});
+
+// Токени HTTP API (М1, І27). У БД лише sha256 високоентропійного секрету
+// (пошук за повним хешем, UNIQUE); сам токен показується один раз. `user_id` —
+// суб'єкт, від імені якого токен діє (атрибуція дій); сервісний обліковий запис —
+// користувач без рядка `accounts`. Доступ лише в `app_admin`: токен читає
+// серверний шлях автентифікації до того, як відомий актор.
+export const apiTokens = pgTable("api_tokens", {
+	id: uuid().primaryKey().notNull(),
+	userId: uuid("user_id").notNull(),
+	name: text().notNull(),
+	tokenPrefix: text("token_prefix").notNull(),
+	tokenHash: bytea("token_hash").notNull(),
+	scopes: text().array().notNull(),
+	expiresAt: timestamp("expires_at", { withTimezone: true, mode: 'date' }),
+	revokedAt: timestamp("revoked_at", { withTimezone: true, mode: 'date' }),
+	lastUsedAt: timestamp("last_used_at", { withTimezone: true, mode: 'date' }),
+	createdBy: uuid("created_by"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	unique("api_tokens_token_hash_key").on(table.tokenHash),
+	index("idx_api_tokens_user_id").using("btree", table.userId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "api_tokens_user_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [users.id],
+			name: "api_tokens_created_by_fkey"
+		}).onDelete("set null"),
+]);
+
+// Ключі ідемпотентності HTTP API (М1, І28). Складений природний PK без `id`:
+// сам PK і є область (`subject_key` = `token:<id>` | `user:<uuid>`, операція,
+// ключ клієнта), тож "Категорія A" з її явним `id` тут не застосовна. Рядок
+// пишеться в транзакції команди і зникає разом з нею при відкаті (лише 2xx).
+export const idempotencyKeys = pgTable("idempotency_keys", {
+	subjectKey: text("subject_key").notNull(),
+	operation: text().notNull(),
+	key: text().notNull(),
+	fingerprint: bytea().notNull(),
+	status: integer().notNull(),
+	response: jsonb().$type<JsonValue>().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.subjectKey, table.operation, table.key], name: "idempotency_keys_pkey" }),
+	index("idx_idempotency_keys_created_at").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+]);
 
 export const pickupPoints = pgTable("pickup_points", {
 	id: uuid().primaryKey().notNull(),

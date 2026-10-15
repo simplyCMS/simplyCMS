@@ -7,6 +7,21 @@ CREATE TYPE "public"."property_type" AS ENUM('text', 'number', 'select', 'multis
 CREATE TYPE "public"."shipping_calculation_type" AS ENUM('flat', 'weight', 'order_total', 'free_from');--> statement-breakpoint
 CREATE TYPE "public"."shipping_pricing" AS ENUM('rates', 'provider', 'carrier');--> statement-breakpoint
 CREATE TYPE "public"."stock_status" AS ENUM('in_stock', 'out_of_stock', 'on_order');--> statement-breakpoint
+CREATE TABLE "api_tokens" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"user_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"token_prefix" text NOT NULL,
+	"token_hash" "bytea" NOT NULL,
+	"scopes" text[] NOT NULL,
+	"expires_at" timestamp with time zone,
+	"revoked_at" timestamp with time zone,
+	"last_used_at" timestamp with time zone,
+	"created_by" uuid,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "api_tokens_token_hash_key" UNIQUE("token_hash")
+);
+--> statement-breakpoint
 CREATE TABLE "banners" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"title" text NOT NULL,
@@ -104,6 +119,17 @@ CREATE TABLE "discounts" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"price_type_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "idempotency_keys" (
+	"subject_key" text NOT NULL,
+	"operation" text NOT NULL,
+	"key" text NOT NULL,
+	"fingerprint" "bytea" NOT NULL,
+	"status" integer NOT NULL,
+	"response" jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "idempotency_keys_pkey" PRIMARY KEY("subject_key","operation","key")
 );
 --> statement-breakpoint
 CREATE TABLE "languages" (
@@ -659,6 +685,8 @@ CREATE TABLE "mail_outbox" (
 );
 --> statement-breakpoint
 ALTER TABLE "mail_outbox" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "api_tokens" ADD CONSTRAINT "api_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "api_tokens" ADD CONSTRAINT "api_tokens_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -728,6 +756,7 @@ ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_user_id_fkey" FOREIGN KEY ("us
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "media" ADD CONSTRAINT "media_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_api_tokens_user_id" ON "api_tokens" USING btree ("user_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_banners_placement" ON "banners" USING btree ("placement" text_ops);--> statement-breakpoint
 CREATE INDEX "idx_banners_section_id" ON "banners" USING btree ("section_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_category_rules_from_category_id" ON "category_rules" USING btree ("from_category_id");--> statement-breakpoint
@@ -738,6 +767,7 @@ CREATE INDEX "idx_discount_groups_parent" ON "discount_groups" USING btree ("par
 CREATE INDEX "idx_discount_targets_discount" ON "discount_targets" USING btree ("discount_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_group" ON "discounts" USING btree ("group_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_price_type_id" ON "discounts" USING btree ("price_type_id");--> statement-breakpoint
+CREATE INDEX "idx_idempotency_keys_created_at" ON "idempotency_keys" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "languages_code_lower_key" ON "languages" USING btree (lower("code"));--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_mod" ON "modification_property_values" USING btree ("modification_id" uuid_ops);--> statement-breakpoint

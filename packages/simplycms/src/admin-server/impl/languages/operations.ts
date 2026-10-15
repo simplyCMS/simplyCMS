@@ -33,6 +33,8 @@ export const languagesList = defineOperation({
 export const languagesAdd = defineOperation({
   id: 'languages.add',
   permission: 'settings.manage',
+  // Повтор із тим самим `Idempotency-Key` не створює другу мову (І28).
+  idempotent: 'create',
   input: z.object({
     id: z.uuid(),
     code,

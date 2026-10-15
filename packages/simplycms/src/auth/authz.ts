@@ -45,6 +45,7 @@ export type Operation =
   | 'review.moderate'
   | 'user.role.assign'
   | 'media.write'
+  | 'apiToken.manage'
   | 'admin.access';
 
 /** Хто робить операцію. `userId: null` — анонім (гість вітрини). */
@@ -121,6 +122,9 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   // Одна операція на upload і delete: прибрати власне завантаження — той
   // самий акт, а не окреме право.
   'media.write': { admin: 'any' },
+  // М1 Д5: видача й відкликання токенів API та сервісних облікових записів —
+  // окрема ділянка безпеки, а не «налаштування» (`settings.manage`).
+  'apiToken.manage': { admin: 'any' },
   'admin.access': { admin: 'any' },
 };
 

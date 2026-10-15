@@ -54,6 +54,8 @@ import { Route as AdminUserCategoriesCategoryIdRouteImport } from './../packages
 import { Route as AdminUsersIndexRouteImport } from './../packages/simplycms/routes/admin/admin/users/index'
 import { Route as AdminUsersUserIdRouteImport } from './../packages/simplycms/routes/admin/admin/users/$userId'
 import { Route as ApiAuthSplatRouteImport } from './../packages/simplycms/routes/storefront/api/auth/$'
+import { Route as ApiV1OpRouteImport } from './../packages/simplycms/routes/storefront/api/v1/$op'
+import { Route as ApiV1OpenapiChar91DotChar93jsonRouteImport } from './../packages/simplycms/routes/storefront/api/v1/openapi[.]json'
 import { Route as ProtectedProfileOrdersIndexRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/index'
 import { Route as ProtectedProfileOrdersOrderIdRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/$orderId'
 import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index'
@@ -305,6 +307,17 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1OpRoute = ApiV1OpRouteImport.update({
+  id: '/api/v1/$op',
+  path: '/api/v1/$op',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1OpenapiChar91DotChar93jsonRoute =
+  ApiV1OpenapiChar91DotChar93jsonRouteImport.update({
+    id: '/api/v1/openapi.json',
+    path: '/api/v1/openapi.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ProtectedProfileOrdersIndexRoute =
   ProtectedProfileOrdersIndexRouteImport.update({
     id: '/profile/orders/',
@@ -442,6 +455,8 @@ export interface FileRoutesByFullPath {
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/$op': typeof ApiV1OpRoute
+  '/api/v1/openapi.json': typeof ApiV1OpenapiChar91DotChar93jsonRoute
   '/profile/': typeof ProtectedProfileIndexRoute
   '/catalog/': typeof StorefrontCatalogIndexRoute
   '/properties/': typeof StorefrontPropertiesIndexRoute
@@ -505,6 +520,8 @@ export interface FileRoutesByTo {
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/$op': typeof ApiV1OpRoute
+  '/api/v1/openapi.json': typeof ApiV1OpenapiChar91DotChar93jsonRoute
   '/profile': typeof ProtectedProfileIndexRoute
   '/catalog': typeof StorefrontCatalogIndexRoute
   '/properties': typeof StorefrontPropertiesIndexRoute
@@ -572,6 +589,8 @@ export interface FileRoutesById {
   '/admin/user-categories/$categoryId': typeof AdminUserCategoriesCategoryIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/v1/$op': typeof ApiV1OpRoute
+  '/api/v1/openapi.json': typeof ApiV1OpenapiChar91DotChar93jsonRoute
   '/_protected/profile/': typeof ProtectedProfileIndexRoute
   '/_storefront/catalog/': typeof StorefrontCatalogIndexRoute
   '/_storefront/properties/': typeof StorefrontPropertiesIndexRoute
@@ -638,6 +657,8 @@ export interface FileRouteTypes {
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
     | '/api/auth/$'
+    | '/api/v1/$op'
+    | '/api/v1/openapi.json'
     | '/profile/'
     | '/catalog/'
     | '/properties/'
@@ -701,6 +722,8 @@ export interface FileRouteTypes {
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
     | '/api/auth/$'
+    | '/api/v1/$op'
+    | '/api/v1/openapi.json'
     | '/profile'
     | '/catalog'
     | '/properties'
@@ -767,6 +790,8 @@ export interface FileRouteTypes {
     | '/admin/user-categories/$categoryId'
     | '/admin/users/$userId'
     | '/api/auth/$'
+    | '/api/v1/$op'
+    | '/api/v1/openapi.json'
     | '/_protected/profile/'
     | '/_storefront/catalog/'
     | '/_storefront/properties/'
@@ -819,6 +844,8 @@ export interface RootRouteChildren {
   MediaSplatRoute: typeof MediaSplatRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiV1OpRoute: typeof ApiV1OpRoute
+  ApiV1OpenapiChar91DotChar93jsonRoute: typeof ApiV1OpenapiChar91DotChar93jsonRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1138,6 +1165,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/$op': {
+      id: '/api/v1/$op'
+      path: '/api/v1/$op'
+      fullPath: '/api/v1/$op'
+      preLoaderRoute: typeof ApiV1OpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/openapi.json': {
+      id: '/api/v1/openapi.json'
+      path: '/api/v1/openapi.json'
+      fullPath: '/api/v1/openapi.json'
+      preLoaderRoute: typeof ApiV1OpenapiChar91DotChar93jsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected/profile/orders/': {
       id: '/_protected/profile/orders/'
       path: '/profile/orders'
@@ -1427,6 +1468,8 @@ const rootRouteChildren: RootRouteChildren = {
   MediaSplatRoute: MediaSplatRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiV1OpRoute: ApiV1OpRoute,
+  ApiV1OpenapiChar91DotChar93jsonRoute: ApiV1OpenapiChar91DotChar93jsonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

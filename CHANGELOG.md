@@ -39,13 +39,17 @@
   поточної адреси/токена в `0004_functions.sql`);
   тригер `languages_require_lock` (`0004_functions.sql`): запис у `languages` лише під ексклюзивним замком `languages-set`;
   `0003_seed.sql` бере цей замок перед вставкою основної мови;
-  `0002_grants.sql` видає `app_admin` права на `mail_outbox`. Локально — порожня БД і
+  `0002_grants.sql` видає `app_admin` права на `mail_outbox`;
+  нові таблиці `api_tokens` (лише sha256-хеш токена) і `idempotency_keys` (складений PK, без `id`), права лише `app_admin`; Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`
   імпортуються з `simplycms/contracts/domain-errors` (раніше `simplycms/admin-server/impl`, звідки реекспорт прибрано).
   Новий код поля `reserved` (`VALIDATION_ISSUE_CODES`) для зарезервованої адреси.
 - **`createPathsForEntity`/`createTokensForEntity` без параметра `locales`:** самі беруть спільний замок
   `languages-set` і читають мови `draft`/`published` після нього (Review Focus 1).
+- **`shouldValidateCsrf(method, pathname, headers)`:** запит `/api/v1/` з `Authorization: Bearer` CSRF не
+  перевіряє (cookie-запит і `Authorization: Basic` — як і раніше). Статус помилки serverFn обчислюється з
+  `toProblem` (єдина карта «доменна помилка → (status, kind)»): `CodedError` тепер дає 400.
 - **`toAdminConflict` переїхав у `simplycms/db`** (`pg-errors`: також `isUniqueViolation`,
   `isForeignKeyViolation`; єдиний розбір `.cause`, UPSTREAM:DRZ-1); `admin-server/impl/errors.ts` видалено.
   Тип `CoreActor` — з `simplycms/auth` (раніше з `simplycms/admin-server/impl`).
@@ -62,6 +66,15 @@
 
 ### Додано
 
+- HTTP API операцій `/api/v1`: `POST /api/v1/<op>` (конверт майстра §3.3: `application/problem+json`, `If-Match` ↔
+  `expectedVersion`, `Idempotency-Key`), `GET /api/v1/openapi.json` (OpenAPI 3.1 з реєстру; лише автентифікованому
+  адміну; знімок ядра — `packages/simplycms/api/openapi.core.json`, регенерація `pnpm api:snapshot`).
+  `simplycms/operations/server`: `handleApiRequest(request, op, lookup)` — реєстр передає роут, `subjectFromToken`,
+  `buildOpenApi`. Токени `Authorization: Bearer scms_<prefix>_<secret>` (у БД лише хеш; права = роль ∩ scopes;
+  `last_used_at` з тротлінгом), операції `api-tokens.{create,revoke,list}` і `service-accounts.create` (лише з
+  cookie-сесії, право `apiToken.manage`). Ідемпотентність — рядок ключа в транзакції команди (К5, лише 2xx, 24 год).
+  `languages.add` має `idempotent: 'create'`. Id операцій токенів — з дефісом (`api-tokens.*`): формат id майстра
+  (`^[a-z][a-z-]*(\.…)`) не допускає великої літери в першому сегменті.
 - `simplycms/operations` (server-only) — реєстр операцій і виконавець з явним суб'єктом
   (`defineOperation`, `executeOperation`, `assertVersionThenHash`), `simplycms/operations/server` —
   `invokeFromServerFn`; `AuthzSubject.scopes`/`tokenId`, `requireOperation(subject, op, operationId?)`,

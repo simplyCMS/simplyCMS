@@ -137,12 +137,17 @@ grant select, insert on table public.media to app_user;
 -- ── 5. app_admin: доменні таблиці адмінки ──────────────────────────────────
 -- Вмикається лише ПІСЛЯ типізованої перевірки в TS (перший рубіж B5″).
 grant select, insert, update, delete on table
+  -- Токени API й ключі ідемпотентності (М1, І27–І28): лише app_admin. Токен
+  -- читає серверний шлях автентифікації ДО того, як відомий актор; покупцю
+  -- ні хеші токенів, ні чужі відповіді не потрібні.
+  public.api_tokens,
   public.banners,
   public.category_rules,
   public.discount_conditions,
   public.discount_groups,
   public.discount_targets,
   public.discounts,
+  public.idempotency_keys,
   public.languages,
   -- Outbox пошти (Е8-Р10): тіло листа скидання пароля — секрет, тож лише
   -- `app_admin` (ескалація `operator` теж йде через нього); покупцеві черга не
