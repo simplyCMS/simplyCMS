@@ -74,7 +74,7 @@
   відповідь залогіненому дістає `Cache-Control: private, no-store` — і serverFn, і
   SSR-HTML (serverFn під час SSR виконується в тому самому запиті). Гостьова відповідь
   однакова для всіх і лишається без нього. Серверного кешу payload-ів сторінок
-  платформа не має (`createReadCache` — лише профіль і тема, `QueryClient` — на запит);
+  платформа не має (`createReadCache` — лише профіль, тема й мови, `QueryClient` — на запит);
   спільний кеш можливий лише зовнішній (CDN/проксі), і саме від нього захищає
   `private`. JSON-LD `offers` рахується гостьовими видами для будь-якого глядача.
   Гейти — `test-harness/pg/__tests__/storefront-price-visibility.test.ts`,
@@ -111,9 +111,10 @@
 - Типи рядків для нового серверного коду — з `simplycms/schema/types` (виведені з
   Drizzle). Генератора типів БД немає, ручних дзеркал схеми в репо теж.
 - Cross-request кеш серверних даних — `createReadCache` модуля **`simplycms/site`**
-  (§12): TTL 5 хв + лічильник поколінь. ISR і `revalidatePath` не існують;
-  інвалідація — скидання кешу САМОЮ операцією адмінки після COMMIT +
-  `router.invalidate()` у клієнті + `staleTime` лоадера.
+  (§12): покоління в таблиці `cache_generations` + необовʼязковий TTL як верхня межа.
+  ISR і `revalidatePath` не існують; інвалідація — збільшення покоління САМОЮ
+  операцією адмінки у її транзакції (`bumpCacheGeneration`) + `router.invalidate()`
+  у клієнті + `staleTime` лоадера.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
 
 ## 3. Адмінка
@@ -585,27 +586,42 @@ email в іншому регістрі — не конфлікт, записує
   500-ю. Суворість — лише на записі (`saveStoreProfileOp`, межі
   `STORE_PROFILE_LIMITS`, соцмережі лише `https:`).
 - **`simplycms/site`** — server-only модуль T2 (upward-виняток лише `db`) з ОДНИМ
-  модульним станом для вітрини (читає) і адмінки (скидає): `storeProfileCache`,
-  `activeThemeCache` (`createReadCache`, TTL 5 хв + лічильник поколінь),
+  модульним станом для вітрини (читає) і адмінки (піднімає покоління): `storeProfileCache`,
+  `activeThemeCache` (`createReadCache(key)` — поколіннєвий, TTL 5 хв лише верхня
+  межа), `CACHE_KEYS`, `bumpCacheGeneration(db, key)`, `readGenerations()`,
   `readStoreProfile(db)`, `toStorefrontProfile`, `declareBuiltThemes`/`isBuiltTheme`.
-  Власного каналу до БД модуль не відкриває — кожна функція приймає `ActorDb`.
+  Читання профілю приймає `ActorDb`; покоління читає `readGenerations` через
+  `withActor` (роль `app_user`).
   Вітрина ходить у нього лише через `storefront/loaders` (`loadStoreProfile`,
   `loadActiveTheme`); `admin-server` імпортує його напряму (тір-зони не дають
   адмінці імпортувати лоадери вітрини).
-- 🔴 **Скидання — ПІСЛЯ COMMIT, а не в транзакції.** Операції адмінки
+- 🔴 **Покоління піднімає сама мутація, у СВОЇЙ транзакції (Д6).** Операції адмінки
   (`saveStoreProfileOp`, `activateThemeOp`, `saveThemeSettingsOp`) кличуть
-  `invalidate()` після повернення `runAdmin`. Покоління не дає читанню, що
-  стартувало до COMMIT і завершилось після скидання, покласти старе значення в
-  кеш ще на 5 хв (Е6б-9). Клієнт адмінки додатково кличе `router.invalidate()`:
-  лоадер `_storefront` має `staleTime` 5 хв (Е6б-22).
-- 🔴 **SQL оминає кеш.** Прямий `update system_settings`/`themes` (ручний фікс,
-  відновлення знімка в `live:smoke`) вітрина того самого процесу побачить лише
-  після TTL. Багатоінстансної інвалідації немає: кожен процес тримає свій кеш.
+  `bumpCacheGeneration(db, CACHE_KEYS.*)` усередині `runAdmin`: відкат не піднімає
+  покоління, COMMIT піднімає атомарно з даними. Процесного `invalidate()` немає —
+  він скидав би кеш лише в одному процесі. Запис кешу несе покоління, прочитане ДО
+  `load`: читання, що стартувало до мутації й завершилось після, лягає під старим
+  поколінням, і наступний `get` його перечитує (Е6б-9); повільне читання
+  старішого покоління не перезаписує свіжіше. Клієнт адмінки додатково кличе
+  `router.invalidate()`: лоадер `_storefront` має `staleTime` 5 хв (Е6б-22).
+- 🔴 **Покоління читаються ОДНИМ запитом на HTTP-запит.** Host загортає fetch-handler
+  у `withRequestContext` (`simplycms/site/request-context`, `AsyncLocalStorage`);
+  `readGenerations()` мемоізує проміс у контексті запиту, тож три кеші дають один
+  `select` із `cache_generations`. Поза запитом (CLI, фонові задачі) — запит на
+  кожен `get`. Рядки `cache_generations` (`store-profile`, `active-theme`,
+  `languages`) засіяні `0003_seed.sql`; `bumpCacheGeneration` незасіяного ключа
+  кидає `Error`. LISTEN/NOTIFY не береться: прив'язаний до зʼєднання й ненадійний
+  за пулерами.
+- 🔴 **SQL оминає кеш лише якщо не піднімає покоління.** Прямий
+  `update system_settings`/`themes` (ручний фікс, відновлення знімка в `live:smoke`)
+  без `update cache_generations set generation = generation + 1 where key = …`
+  вітрина побачить після TTL.
 - Вшиті теми знає СЕРВЕР: host `src/server.ts` кличе
   `declareBuiltThemes(Object.keys(config.themes))` на рівні модуля; без декларації
   активація відмовляє `theme_not_built` (fail-closed, Е6б-8).
 - Гейти: юніт `createReadCache` (детермінована гонка «читання в польоті +
-  скидання»), харнес `readStoreProfile` на відсутньому й зіпсованому рядку і
+  зміна покоління»), `request-context.test.ts` (один запит поколінь на HTTP-запит),
+  харнес `cache-generations.test.ts` («дві репліки» на окремих графах модулів), харнес `readStoreProfile` на відсутньому й зіпсованому рядку і
   операцій під локами `store-profile`/`site-theme`, `live:smoke` (крок
   `admin-system.mjs` на прогрітому кеші) — єдиний доказ, що адмін-serverFn і
   вітринний serverFn ділять один екземпляр модуля (Е6б-23).

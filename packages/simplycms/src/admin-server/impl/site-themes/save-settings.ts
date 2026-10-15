@@ -5,7 +5,7 @@ import {
   stateConflict,
 } from 'simplycms/contracts/domain-errors';
 import { themes } from 'simplycms/schema';
-import { activeThemeCache } from 'simplycms/site';
+import { bumpCacheGeneration, CACHE_KEYS } from 'simplycms/site';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { THEME_COLUMNS, toThemeRow, type ThemeRow } from './list';
@@ -42,8 +42,8 @@ export const saveThemeSettingsInput = z.object({
 
 /**
  * Зберегти налаштування теми (Е6б-16). Тема без рядка → `theme_unknown`, 409.
- * Кеш активної теми скидається ПІСЛЯ `runAdmin` (після COMMIT, Е6б-9) —
- * незалежно від того, чи тема активна: зайве скидання дешевше за розсинхрон.
+ * Покоління кешу активної теми збільшується в цій же транзакції (Д6) —
+ * незалежно від того, чи тема активна: зайве перечитування дешевше за розсинхрон.
  */
 export const saveThemeSettingsOp = async ({
   data,
@@ -58,8 +58,8 @@ export const saveThemeSettingsOp = async ({
       .where(eq(themes.name, name))
       .returning(THEME_COLUMNS);
     if (!updated) stateConflict(ADMIN_STATE_CONSTRAINT.themeUnknown);
+    await bumpCacheGeneration(db, CACHE_KEYS.activeTheme);
     return toThemeRow(updated);
   });
-  activeThemeCache.invalidate();
   return row;
 };

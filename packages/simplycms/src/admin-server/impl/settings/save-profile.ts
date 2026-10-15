@@ -13,7 +13,11 @@ import {
   type MediaEntityType,
 } from 'simplycms/domain/media';
 import { media, systemSettings } from 'simplycms/schema';
-import { readStoreProfile, storeProfileCache } from 'simplycms/site';
+import {
+  bumpCacheGeneration,
+  CACHE_KEYS,
+  readStoreProfile,
+} from 'simplycms/site';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
@@ -69,7 +73,7 @@ async function isStoreLogo(db: ActorDb, ref: string): Promise<boolean> {
  *    Власник `store_logo/STORE_LOGO_OWNER_ID` звіряється самим стиранням:
  *    зіпсований ручним SQL профіль не має права стерти фото товару.
  *
- * Кеш вітрини скидається ПІСЛЯ `runAdmin` (після COMMIT, Е6б-9).
+ * Покоління кешу профілю збільшується в цій же транзакції (Д6).
  */
 export const saveStoreProfileOp = async ({
   data,
@@ -102,9 +106,11 @@ export const saveStoreProfileOp = async ({
             entityId: STORE_LOGO_OWNER_ID,
           })
         : [];
+    // Покоління зростає в ТІЙ ЖЕ транзакції (Д6): відкат не піднімає його, COMMIT
+    // піднімає атомарно з даними — кеші всіх реплік побачать зміну.
+    await bumpCacheGeneration(db, CACHE_KEYS.storeProfile);
     return { saved: profile, erased };
   });
-  storeProfileCache.invalidate();
   await completeMediaErasures(erased);
   return saved;
 };

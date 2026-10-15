@@ -185,6 +185,13 @@ to app_admin;
 -- політик на запис для нього немає — грант це дзеркалить.
 grant select on table public.user_addresses, public.user_recipients to app_admin;
 
+-- Покоління процесних кешів (Мультимовність М1, Д6): вітрина лише читає
+-- (`app_user`), мутація адмінки збільшує лічильник у своїй транзакції
+-- (`app_admin`). INSERT/DELETE не потрібні нікому: ключі фіксовані й
+-- засіваються в `0003_seed.sql`, а не створюються з коду.
+grant select on table public.cache_generations to app_user;
+grant select, update on table public.cache_generations to app_admin;
+
 -- 🔴 `comparisons` і `wishlists` адміну не видані взагалі: політик `app_admin`
 -- на них немає, а список бажань покупця адмінці не потрібен ні для чого.
 

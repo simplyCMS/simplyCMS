@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
-// вручну (7 у `0003_seed.sql`, 19 у `demo/demo-seed.sql`). Це не косметика:
+// вручну (8 у `0003_seed.sql`, 19 у `demo/demo-seed.sql`). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
 // негативним контролем нижче) — тобто скан «чи знайдено хоч один INSERT»
@@ -17,9 +17,17 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 // Точне число компенсує цю сліпу зону: розбіжність кількості валить тест
 // незалежно від того, чи всі ЗНАЙДЕНІ вставки формально мають `id`.
 const SEEDS = [
-  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 7],
+  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 8],
   ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 19],
 ] as const;
+
+/**
+ * Таблиці з ПРИРОДНИМ первинним ключем: колонки `id` у них немає взагалі, тож
+ * вимога «сід називає id» до них безпредметна. Список фіксований і короткий:
+ * нова таблиця без `id` — свідоме рішення, а не спосіб обійти гейт.
+ * `cache_generations` (М1, Д6): PK — `key` (константа `CACHE_KEYS`).
+ */
+const NATURAL_KEY_TABLES = new Set(['public.cache_generations']);
 
 /**
  * Вирізає список колонок кожного `insert into … ( … )`. Дивитись треба
@@ -56,6 +64,7 @@ describe('Е0: сід детермінований', () => {
           ' (точне число — компенсаційний контроль сліпої зони `insert … select` без списку колонок)',
       ).toBe(expectedInserts);
       for (const { table, columns } of inserts) {
+        if (NATURAL_KEY_TABLES.has(table)) continue;
         expect(
           columns,
           `${label}: insert into ${table} без колонки id → покладається на DEFAULT`,

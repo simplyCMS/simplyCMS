@@ -7,10 +7,10 @@ import {
 import { withStorefrontDb } from './db';
 
 /**
- * Профіль магазину для вітрини крізь спільний кеш (TTL 5 хв + покоління).
+ * Профіль магазину для вітрини крізь спільний кеш (покоління в БД + TTL 5 хв як верхня межа).
  *
  * Звичайна функція, не `createServerFn`: її кличуть серверні лоадери й
- * тести. Скидає кеш адмінка (`storeProfileCache.invalidate()` після COMMIT).
+ * тести. Кеш узгоджує адмінка: `bumpCacheGeneration` у транзакції збереження.
  */
 export function loadStoreProfile(): Promise<StorefrontProfile> {
   return storeProfileCache.get(() =>

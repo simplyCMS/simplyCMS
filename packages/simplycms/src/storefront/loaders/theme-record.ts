@@ -46,7 +46,7 @@ async function readActiveTheme(): Promise<ThemeRecord | null> {
 
 /**
  * Прочитати запис активної теми крізь спільний кеш (`activeThemeCache`:
- * TTL 5 хв + покоління) — ЗВИЧАЙНА функція.
+ * покоління в БД + TTL 5 хв як верхня межа) — ЗВИЧАЙНА функція.
  *
  * Доступна server-route handler-ам і тестам, де контексту `createServerFn`
  * немає. Живе окремо від `./themes` навмисно — з тієї самої причини, що й

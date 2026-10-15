@@ -48,6 +48,7 @@
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
+    "./site/request-context": "./src/site/request-context.ts",
     "./server-guard": "./src/server-guard/index.ts",
     "./env": "./src/env/index.ts",
     "./vite": "./src/vite/index.ts",
@@ -291,6 +292,10 @@
       "./site": {
         "types": "./dist/site/index.d.ts",
         "import": "./dist/site/index.js"
+      },
+      "./site/request-context": {
+        "types": "./dist/site/request-context.d.ts",
+        "import": "./dist/site/request-context.js"
       },
       "./server-guard": {
         "types": "./dist/server-guard/index.d.ts",

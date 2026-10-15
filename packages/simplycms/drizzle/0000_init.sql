@@ -33,6 +33,11 @@ CREATE TABLE "banners" (
 	"mobile_image_url" text
 );
 --> statement-breakpoint
+CREATE TABLE "cache_generations" (
+	"key" text PRIMARY KEY NOT NULL,
+	"generation" bigint DEFAULT 0 NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "category_rules" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,

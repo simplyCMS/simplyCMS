@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { activeThemeCache } from 'simplycms/site';
 
 // Кеш активної теми — спільний `activeThemeCache`; тут міряємо саме
 // обгортку `loadActiveTheme`: скільки разів вона реально ходить у БД.
+// Покоління — «БД» у змінній: мутація адмінки = збільшення лічильника.
 let reads = 0;
+const gens = vi.hoisted(() => ({ active: 0 }));
+
+vi.mock('../../../site/cache-generations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../site/cache-generations')>()),
+  readGenerations: async () => new Map([['active-theme', BigInt(gens.active)]]),
+}));
 
 vi.mock('../db', () => ({
   withStorefrontDb: async () => {
@@ -28,7 +34,7 @@ import { loadActiveTheme } from '../theme-record';
 
 beforeEach(() => {
   reads = 0;
-  activeThemeCache.invalidate();
+  gens.active += 1;
 });
 
 describe('loadActiveTheme і спільний кеш теми', () => {
@@ -38,9 +44,9 @@ describe('loadActiveTheme і спільний кеш теми', () => {
     expect(reads).toBe(1);
   });
 
-  it('після activeThemeCache.invalidate() читання йде в БД', async () => {
+  it('після збільшення покоління активної теми читання йде в БД', async () => {
     await loadActiveTheme();
-    activeThemeCache.invalidate();
+    gens.active += 1;
     const next = await loadActiveTheme();
     expect(reads).toBe(2);
     expect(next?.name).toBe('theme-2');

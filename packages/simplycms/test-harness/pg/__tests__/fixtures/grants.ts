@@ -92,6 +92,9 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   media_erasures: { app_admin: CRUD },
   // Outbox пошти (Е8-Р10): тіло листа скидання — секрет, лише `app_admin`.
   mail_outbox: { app_admin: CRUD },
+  // Покоління кешів (М1, Д6): вітрина читає, адмінка збільшує; INSERT/DELETE
+  // не видаються — ключі засіває `0003_seed.sql`.
+  cache_generations: { app_user: ['SELECT'], app_admin: ['SELECT', 'UPDATE'] },
   // Журнал накату (Е8-Р2): пише лише власник схеми під час накату; `app_admin`
   // читає (`doctor --online`, `status` через `SET ROLE app_admin`).
   simplycms_migrations: { app_admin: ['SELECT'] },

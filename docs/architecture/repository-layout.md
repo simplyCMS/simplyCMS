@@ -67,8 +67,8 @@ simplyCMS/
 │   │   ├── src/inventory/        # T2 Спільний облік залишків — гвардований перехід stock_status
 │   │   │                         #    (одна копія для вітрини й адмінки), lockTargetStock/
 │   │   │                         #    servingQuantity. server-only
-│   │   ├── src/site/             # T2 Стан сайту для вітрини й адмінки: процесний кеш профілю
-│   │   │                         #    й активної теми (createReadCache: TTL + покоління),
+│   │   ├── src/site/             # T2 Стан сайту для вітрини й адмінки: кеш профілю й
+│   │   │                         #    активної теми (createReadCache: покоління в БД, Д6),
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
 │   │   │                         #    з host-а). Без власного каналу до БД (приймає ActorDb);
 │   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)

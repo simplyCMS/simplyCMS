@@ -1,4 +1,4 @@
-import { customType, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, pgEnum } from "drizzle-orm/pg-core"
+import { customType, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, bigint, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 // Схема ядра SimplyCMS — SSOT моделі даних v2 (рішення B3′/B5″/B13,
@@ -622,6 +622,15 @@ export const systemSettings = pgTable("system_settings", {
 }, (table) => [
 	unique("system_settings_key_key").on(table.key),
 ]);
+
+// Покоління процесних кешів читання (Мультимовність М1, Д6): мутація збільшує
+// лічильник у СВОЇЙ транзакції, інші репліки бачать це одним запитом на
+// HTTP-запит. Ключ — природний PK (`CACHE_KEYS` ядра), а не uuid: рядки
+// фіксовані й засіваються в `0003_seed.sql`, перекладної пари немає.
+export const cacheGenerations = pgTable("cache_generations", {
+	key: text().primaryKey().notNull(),
+	generation: bigint({ mode: 'bigint' }).default(sql`0`).notNull(),
+});
 
 export const pickupPoints = pgTable("pickup_points", {
 	id: uuid().primaryKey().notNull(),

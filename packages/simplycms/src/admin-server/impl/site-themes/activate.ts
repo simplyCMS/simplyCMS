@@ -5,7 +5,7 @@ import {
   stateConflict,
 } from 'simplycms/contracts/domain-errors';
 import { themes } from 'simplycms/schema';
-import { activeThemeCache, isBuiltTheme } from 'simplycms/site';
+import { bumpCacheGeneration, CACHE_KEYS, isBuiltTheme } from 'simplycms/site';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
 import { runAdmin } from '../run';
@@ -37,7 +37,7 @@ export const SITE_THEME_LOCK = LOCK_KEYS.siteTheme;
  *    би два `true` під індексом → 23505.
  *
  * Повертає ВЕСЬ список (зміна зачіпає два рядки) — write-back без refetch.
- * Кеш активної теми скидається ПІСЛЯ `runAdmin` (після COMMIT, Е6б-9).
+ * Покоління кешу активної теми збільшується в цій же транзакції (Д6).
  */
 export const activateThemeOp = async ({
   data,
@@ -61,8 +61,10 @@ export const activateThemeOp = async ({
         .set({ isActive: true, updatedAt: new Date() })
         .where(eq(themes.name, name));
     }
+    // Покоління зростає в цій же транзакції (Д6) — і при no-op (уже активна):
+    // зайве перечитування дешевше за розсинхрон.
+    await bumpCacheGeneration(db, CACHE_KEYS.activeTheme);
     return selectThemeRows(db);
   });
-  activeThemeCache.invalidate();
   return rows;
 };

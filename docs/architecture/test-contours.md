@@ -481,9 +481,9 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 хвилин показував стару тему, а тост стверджував «Зміни застосовані на сайті».
 Ловилось лише hard-refresh-ем. Фікс тоді — `useRevalidateStorefront()` (знесено)
 (`admin/lib/revalidateTheme.ts`), що робив обидва кроки. 🔴 Е6б знесла і його, і
-`/api/revalidate-theme`: серверний кеш тепер скидає сама операція після COMMIT
-(`activeThemeCache.invalidate()` в `admin-server/impl/site-themes/activate.ts`,
-`storeProfileCache.invalidate()` у `impl/settings/save-profile.ts`), а клієнтський —
+`/api/revalidate-theme`: серверний кеш тепер узгоджує сама операція, піднімаючи покоління у своїй
+транзакції (`bumpCacheGeneration` в `admin-server/impl/site-themes/activate.ts` і
+`impl/settings/save-profile.ts`, Д6), а клієнтський —
 `router.invalidate()` в `admin/features/themes/useThemes.ts` і
 `admin/features/settings/useSystemSettings.ts` (Е6б-22). Гард — юніти
 `admin/features/{themes,settings}/__tests__` і живий підкрок 4б кроку «система»
@@ -857,8 +857,8 @@ expectTypeOf і рев'ю.
 ### 11.4. К3-Е6б (система): спільний екземпляр `simplycms/site` — лише `live:smoke`
 
 Кеш профілю й активної теми (`storeProfileCache`, `activeThemeCache`) і реєстр
-вшитих тем (`declareBuiltThemes`) — модульний стан `simplycms/site`. Скидає його
-адмін-serverFn, читає — вітринний serverFn. 🔴 Що це ОДИН екземпляр модуля, а
+вшитих тем (`declareBuiltThemes`) — модульний стан `simplycms/site`. Покоління
+піднімає адмін-serverFn, читає — вітринний serverFn. 🔴 Що це ОДИН екземпляр модуля, а
 декларація host-а (`src/server.ts`) виконана до першої активації, доводить
 **лише** `pnpm live:smoke` (крок `scripts/live-smoke/admin-system.mjs`): він
 працює на зібраному `server.mjs`. Юніт і харнес імпортують модуль один раз за
@@ -871,15 +871,16 @@ expectTypeOf і рев'ю.
 `router.invalidate()` після активації, а не повне перезавантаження. `finally`
 відновлює знімок SQL-ом, а SQL оминає кеш процесу (Е6б-9), тому після кроку в
 тому самому сервері нічого не ганяється. Негативні контролі (2026-10-06): без
-`storeProfileCache.invalidate()` у `saveStoreProfileOp` червоніє підкрок 1, без
+`bumpCacheGeneration` у `saveStoreProfileOp` червоніє підкрок 1, без
 `router.invalidate()` в активації теми — підкрок 4б.
 
 🔴 **Непокрита зона — `pnpm dev` і `vite preview`.** У dev Vite SSR може
 завантажити модуль `site` окремо для різних графів (адмінка й вітрина), і тоді
-скидання кешу з адмінки вітрину не зачепить. Жоден гейт цього не перевіряє:
-`live:smoke` ганяється лише на production-збірці. Симптом у dev — «зберіг, а
-вітрина до 5 хв показує старе». Перевірка руками — зберегти профіль і
-перезавантажити головну.
+скидання кешу з адмінки вітрину не зачепить. З поколіннями в БД (Д6) це
+більше не ламає узгодження: два графи бачать одне покоління, тож розбіжність
+екземплярів кешу зникає. Гейт — харнес `cache-generations.test.ts` («дві
+репліки» на окремих графах модулів). Декларація вшитих тем (`declareBuiltThemes`)
+лишається модульним станом, і її спільність доводить лише `live:smoke`.
 
 ### 11.5. К3-Е7 (знос Supabase): ратчети проти повернення
 
