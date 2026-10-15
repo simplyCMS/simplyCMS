@@ -4,12 +4,12 @@
 // живого SQL, а не читання декларації.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { join } from 'node:path';
-import { readdirSync } from 'node:fs';
 import pg from 'pg';
 import { AGGREGATE, ENTITY } from 'simplycms/contracts/entities';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -20,11 +20,6 @@ import {
 } from '../apply.mjs';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-const canonFiles = () =>
-  readdirSync(MIGRATIONS)
-    .filter((n) => n.endsWith('.sql'))
-    .sort()
-    .map((n) => join(MIGRATIONS, n));
 const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
 
 /**
@@ -87,7 +82,8 @@ describe('Е1б: deps агрегатів повні відносно факти�
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, [...canonFiles(), DEMO_SEED]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [DEMO_SEED]);
     for (const sql of FIXTURES) await queryRows(dbUrl, sql);
     const [u] = await queryRows(
       dbUrl,
@@ -162,13 +158,23 @@ describe('Е1б: deps агрегатів повні відносно факти�
     },
     propertyOptionPage: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) =>
-        m.loadPropertyOption(db, 'tip-invertora', 'on-grid'),
-      );
+      const v =
+        await import('../../../src/storefront/loaders/viewer-prices-db');
+      // Р29: гість і покупець — набір видів цін покупця читає ще й його
+      // профіль і категорію (`profiles`, `user_categories`).
+      for (const actor of [null, userId])
+        await v.withViewerPricesDb(actor, (db, viewer) =>
+          m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer),
+        );
     },
     catalogProducts: async () => {
       const m = await import('simplycms/storefront/loaders');
-      await m.withStorefrontDb((db) => m.loadCatalogProducts(db));
+      const v =
+        await import('../../../src/storefront/loaders/viewer-prices-db');
+      for (const actor of [null, userId])
+        await v.withViewerPricesDb(actor, (db, viewer) =>
+          m.loadCatalogProducts(db, viewer),
+        );
     },
   };
 

@@ -4,8 +4,6 @@
 // серверну поверхню, а питання, яке насправді вирішує безпеку, — чи справді
 // БД відмовляє не-адміну в записі й чи резолвиться активна тема тим самим
 // шляхом, яким її бачить SSR. Обидві відповіді дає лише реальна база.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { withStorefrontDb } from 'simplycms/storefront/loaders';
@@ -24,21 +22,13 @@ import {
 import { loadActiveTheme } from '../../../src/storefront/loaders/theme-record';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   randomDbName,
   withDbName,
   withUser,
 } from '../apply.mjs';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
-
-const canonFiles = (): string[] =>
-  readdirSync(CANON_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(CANON_DIR, name));
 
 describe('реєстри теми й плагіна проти живого Postgres', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -49,7 +39,7 @@ describe('реєстри теми й плагіна проти живого Post
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     // Як у проді: застосунок конектиться `app_runtime`, права дає лише
     // `SET LOCAL ROLE` всередині `withActor`.
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');

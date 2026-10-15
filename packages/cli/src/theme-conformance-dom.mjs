@@ -1,7 +1,7 @@
 // DOM для `theme:conformance` поза тестовим рушієм. Доктрина репо: важкий
 // тулчейн не їде в кожен магазин — jsdom ставиться on-demand за гучною
 // інструкцією (та сама модель, що Playwright у `inspect.mjs` скіла редизайну).
-import { importFromStore } from './theme-conformance-env.mjs';
+import { importFromStore } from './store-core.mjs';
 
 /** Точна команда донавантаження — друкується, а не обходиться мовчки. */
 export const JSDOM_HINT = 'pnpm add -D jsdom';

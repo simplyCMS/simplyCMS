@@ -5,8 +5,6 @@
 // — тобто чужу адресу міг стерти будь-хто, хто знав її uuid. Тепер актора
 // задає сервер, і єдиний спосіб це довести — виконати ті САМІ лоадери двома
 // різними акторами на одній базі.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import {
@@ -22,7 +20,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -30,8 +28,6 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 const addressOf = (name: string) => ({
   name,
@@ -71,13 +67,7 @@ describe('книга адрес і отримувачів під актором'
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     userA = await createUser('alice@example.test');
     userB = await createUser('bob@example.test');
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');

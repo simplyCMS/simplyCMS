@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(pnpm simplycms status)",
+      "Bash(pnpm simplycms status *)",
+      "Bash(pnpm simplycms doctor)",
+      "Bash(pnpm simplycms doctor *)"
+    ],
+    "ask": [
+      "Bash(pnpm simplycms db:apply)",
+      "Bash(pnpm simplycms db:apply *)",
+      "Bash(node .claude/skills/simplycms-onboarding/scripts/*)",
+      "Bash(git push)",
+      "Bash(git push *)"
+    ]
+  }
+}

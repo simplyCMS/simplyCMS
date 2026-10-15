@@ -5,7 +5,6 @@
 // САМЕ на A (`waitForBlockedBy` за pid A); після коміту A — B бачить 0.
 // Без `for update` B читає снапшот із `stock_reserved > 0`, чекає лише на
 // UPDATE і повертає залишок удруге (негативний контроль — у звіті хвилі).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -14,6 +13,7 @@ import { releaseOrderStock } from 'simplycms/inventory';
 import { withCustomerDb } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -48,13 +48,8 @@ describe('releaseOrderStock: FOR UPDATE серіалізує паралельн�
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS, n)),
-      join(MIGRATIONS, 'demo/demo-seed.sql'),
-    ]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [join(MIGRATIONS, 'demo/demo-seed.sql')]);
     const id = async (text: string, p: unknown[] = []) =>
       (await one<{ id: string }>(text, p)).id;
     ids.method = await id(

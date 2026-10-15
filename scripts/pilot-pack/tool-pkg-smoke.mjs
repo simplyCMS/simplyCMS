@@ -8,7 +8,8 @@
  * наявність непорожньої `host/` (канон для `simplycms update` — її втрата в
  * `files` зробила б команду пустушкою), запуск `--help` з розпакованого,
  * збіг `--version` із версією манифеста і `doctor` на свіжому скаффолді
- * шаблону (крок — tool-doctor-smoke.mjs, обіцянка спеки §6).
+ * шаблону (крок — tool-doctor-smoke.mjs, обіцянка спеки §6) і доставка host-файлів
+ * нової версії одним `update --write` (крок — tool-update-reexec.mjs, Р21).
  *
  * 🔴 `node_modules` розпакованого пакета — симлінк на теку пакета в репо: у
  * tarball залежностей немає, а `pnpm install` тут означав би похід у registry
@@ -29,7 +30,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { envWithoutNodePath } from './env-without-node-path.mjs';
 import { doctorSmoke } from './tool-doctor-smoke.mjs';
+import { updateReexecSmoke } from './tool-update-reexec.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
 const TOOL_PKG_DIR = join(REPO_ROOT, 'packages/cli');
@@ -159,11 +162,15 @@ export async function toolPkgSmoke() {
     // випав із COMMANDS або з files, і смоук мусить це побачити.
     for (const command of [
       'doctor',
+      'status',
+      'smoke',
+      'deploy:record',
       'add',
       'create plugin',
       'create theme',
       'update',
       'db:diff',
+      'db:apply',
       'theme:conformance',
     ]) {
       if (!help.includes(command)) {
@@ -203,6 +210,10 @@ export async function toolPkgSmoke() {
     details.push(...conformance.details);
     if (!conformance.ok) return { ok: false, details };
 
+    const reexec = await updateReexecSmoke(work);
+    details.push(...reexec.details);
+    if (!reexec.ok) return { ok: false, details };
+
     rmSync(work, { recursive: true, force: true });
     return { ok: true, details };
   } catch (error) {
@@ -229,13 +240,8 @@ export async function toolPkgSmoke() {
  * @returns {{ ok: boolean; details: string[] }}
  */
 function conformanceSmoke(pkgDir, storeDir) {
-  // 🔴 NODE_PATH вирізається: pnpm ставить його на `.pnpm/node_modules`
-  // монорепо, і з ним `jsdom`/`vite` резолвляться навіть у голому скаффолді —
-  // смоук був би зелений на брехні (у магазині користувача NODE_PATH немає).
-  // Той самий прийом, що вирізання ключів env магазину в doctor-кроці.
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => name !== 'NODE_PATH'),
-  );
+  // 🔴 Без NODE_PATH (див. env-without-node-path.mjs): інакше `jsdom` резолвився б із монорепо.
+  const env = envWithoutNodePath();
   const run = spawnSync(
     'node',
     [join(pkgDir, 'src/index.mjs'), 'theme:conformance', 'default'],

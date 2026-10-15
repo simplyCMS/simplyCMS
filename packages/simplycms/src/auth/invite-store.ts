@@ -41,8 +41,8 @@ export const ownerInviteStore: OwnerInviteStore = {
   async issueAdminInvite({ userId, identifier, valueHash, expiresAt }) {
     return withActor({ role: 'app_admin' }, async (db) => {
       // Лок ПЕРШИМ запитом: серіалізує invite з видачею/зняттям ролі, баном
-      // і видаленням покупця. Для порядку «invite першим» він обов'язковий:
-      // `FOR SHARE` не бачить незакоміченої ролі конкурента (Е6г-4).
+      // і видаленням покупця (Е6г-4/Е6г-19). Роль тут НЕ видається (Р19) —
+      // лок і перевірка бану лишаються, щоб забанений не отримав токена.
       await advisoryXactLock(db, ADMIN_ROLES_LOCK);
       // Безумовний `FOR SHARE` за id (умова в WHERE ламає блокування), а
       // значення бану перевіряємо після читання.
@@ -52,12 +52,6 @@ export const ownerInviteStore: OwnerInviteStore = {
         .where(eq(users.id, userId))
         .for('share');
       if (user?.bannedAt) return 'banned' as const;
-      await db
-        .insert(userRoles)
-        .values({ id: randomUUID(), userId, role: 'admin' })
-        .onConflictDoNothing({
-          target: [userRoles.userId, userRoles.role],
-        });
       // Старий токен тієї ж пошти знищується: «надішли ще раз» мусить робити
       // попереднє посилання недійсним, інакше в обігу живуть два ключі.
       await db
@@ -67,6 +61,40 @@ export const ownerInviteStore: OwnerInviteStore = {
         .insert(verifications)
         .values({ identifier, value: valueHash, expiresAt });
       return 'issued' as const;
+    });
+  },
+
+  async grantAdminRole({ userId }) {
+    return withActor({ role: 'app_admin' }, async (db) => {
+      // Той самий інваріант, що раніше жив у `issueAdminInvite`: лок першим
+      // запитом (`FOR SHARE` не бачить незакоміченої ролі конкурента), далі
+      // `FOR SHARE` на користувача й перевірка бану — забанений адміном не
+      // стає (Е6г-4/Е6г-19).
+      await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+      const [user] = await db
+        .select({ bannedAt: users.bannedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for('share');
+      if (!user || user.bannedAt) return 'banned' as const;
+      await db
+        .insert(userRoles)
+        .values({ id: randomUUID(), userId, role: 'admin' })
+        .onConflictDoNothing({
+          target: [userRoles.userId, userRoles.role],
+        });
+      return 'granted' as const;
+    });
+  },
+
+  async isEmailVerified(userId) {
+    return withActor({ role: 'app_admin' }, async (db) => {
+      const rows = await db
+        .select({ verified: users.emailVerified })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return rows[0]?.verified ?? false;
     });
   },
 
@@ -86,14 +114,3 @@ export const ownerInviteStore: OwnerInviteStore = {
     });
   },
 };
-
-/** Чи є в магазині хоч один адмін — потрібно CLI, щоб не слати invite двічі. */
-export const hasAnyAdmin = async (): Promise<boolean> =>
-  withActor({ role: 'app_admin' }, async (db) => {
-    const rows = await db
-      .select({ id: userRoles.id })
-      .from(userRoles)
-      .where(eq(userRoles.role, 'admin'))
-      .limit(1);
-    return rows.length > 0;
-  });

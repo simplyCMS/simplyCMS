@@ -22,8 +22,8 @@
  * наступного sync-коміту (@tanstack/db 0.8.6, collection/state.js:686-745);
  * сторінки завжди підписані — тест відтворює їхню форму (Е4-13).
  */
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
@@ -131,6 +131,9 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { getCollection } from '../registry';
 import { sectionPropertiesCollection } from '../collections/section-properties';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 function seed(): Prop[] {
   const base = {

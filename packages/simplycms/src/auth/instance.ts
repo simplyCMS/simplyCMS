@@ -1,5 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { resolveDriverEnv } from 'simplycms/env';
+import type { MailTransport, scheduleMail } from 'simplycms/mail';
 import { accounts, sessions, users, verifications } from 'simplycms/schema';
 import {
   createSessionBanHook,
@@ -7,12 +9,16 @@ import {
   type IsUserBanned,
 } from './ban';
 import { createAuthDb } from './drizzle-proxy';
-import { resolveAuthBaseUrl, resolveAuthSecret } from './env';
+import {
+  assertAuthBaseUrl,
+  resolveAuthBaseUrl,
+  resolveAuthSecret,
+} from './auth-env';
 import { createUserCreateHook, type ProvisionUser } from './hooks';
-import { renderResetPasswordEmail } from './invite-email';
 import { provisionUserInDb } from './provision';
+import { createResetPasswordSender } from './reset-mail';
 import { isResetStillValid, type ResetGuard } from './reset-guard';
-import { stubSendAuthEmail, type SendAuthEmail } from './send-email';
+import { createEmailVerification } from './verification-mail';
 
 /**
  * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
@@ -44,12 +50,16 @@ export interface AuthDeps {
   readonly resetGuard?: ResetGuard;
   readonly secret?: string;
   readonly baseURL?: string;
+  /** Постановка листа в outbox. За замовчуванням — `scheduleMail` (власна транзакція). */
+  readonly schedule?: typeof scheduleMail;
+  /** Транспорт порту пошти. За замовчуванням — `getMailTransport()` за env. */
+  readonly mailTransport?: MailTransport;
   /**
-   * Канал доставки листів. За замовчуванням — заглушка з логом
-   * (`./send-email`): SMTP лишається справою магазину, ядро лише КЛИЧЕ канал.
+   * Вимагати підтвердження пошти (Р30). За замовчуванням — `true` лише з SMTP:
+   * з драйвером `log` лист нікуди не дійде, і реєстрація в dev ламалась би.
    */
-  readonly sendEmail?: SendAuthEmail;
-  /** Назва магазину в темі листа. */
+  readonly requireEmailVerification?: boolean;
+  /** Назва магазину в листі. За замовчуванням — з профілю магазину в БД. */
   readonly storeName?: string;
 }
 
@@ -57,13 +67,31 @@ export interface AuthDeps {
  * Створює інстанс. Env читається ТУТ, у рантаймі — не на модуль-рівні.
  */
 export function createAuth(deps: AuthDeps = {}) {
-  const sendEmail = deps.sendEmail ?? stubSendAuthEmail;
-  const storeName = deps.storeName ?? 'SimplyCMS';
   const resetGuard = deps.resetGuard ?? isResetStillValid;
+  const requireEmailVerification =
+    deps.requireEmailVerification ??
+    resolveDriverEnv(process.env).mail.driver === 'smtp';
+  const mailDeps = {
+    schedule: deps.schedule,
+    mailTransport: deps.mailTransport,
+    storeName: deps.storeName,
+  };
+  const verification = createEmailVerification(mailDeps);
+  // Порожній чи некоректний `deps.baseURL` — гучна відмова з імʼям поля, а не
+  // гола `TypeError` від `new URL` нижче.
+  const baseURL =
+    deps.baseURL === undefined
+      ? resolveAuthBaseUrl(process.env)
+      : assertAuthBaseUrl(deps.baseURL, 'AuthDeps.baseURL');
 
-  return betterAuth({
+  const auth = betterAuth({
     secret: deps.secret ?? resolveAuthSecret(process.env),
-    baseURL: deps.baseURL ?? resolveAuthBaseUrl(process.env),
+    // 🔴 Р18а: база посилань і trustedOrigins — ЗАВЖДИ з env (`BETTER_AUTH_URL`
+    // або origin `VITE_SITE_URL`); без обох resolveAuthBaseUrl падає. Без бази
+    // BA брав би їх із `request.url`, і підроблений `Host`/`X-Forwarded-Host`
+    // отруював би посилання скидання пароля.
+    baseURL,
+    trustedOrigins: [new URL(baseURL).origin],
     database:
       deps.database ??
       drizzleAdapter(createAuthDb(), {
@@ -76,20 +104,22 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
-      // 🔴 Колбек прибіндований ЗАВЖДИ, навіть коли транспорт — заглушка.
-      // Інакше `requestPasswordReset` мовчки повертав би 200 без жодного
-      // сліду, і «лист не прийшов» неможливо було б відрізнити від
-      // «магазин не налаштував пошту».
-      sendResetPassword: async ({ user, url, token }) => {
-        // Токен BA уже вставив окремим запитом: якщо email змінився або
-        // акаунт видалено між пошуком і вставкою, guard його прибирає (Е6г-18).
-        if (!(await resetGuard(user.id, user.email, token))) return;
-        await sendEmail(
-          renderResetPasswordEmail({ to: user.email, url, storeName }),
-        );
-      },
+      // 🔴 Р30: без підтвердження пошти signUp одразу дає сесію, і чужу пошту
+      // можна зайняти до справжнього власника (pre-hijack).
+      requireEmailVerification,
+      // 🔴 Р19: скидання пароля (і прийняття запрошення — воно йде тим самим
+      // `resetPassword`) гасить усі сесії користувача. Без цього сесія, що
+      // вже була в зловмисника, переживала б зміну пароля.
+      revokeSessionsOnPasswordReset: true,
+      onPasswordReset: verification.onPasswordReset,
+      sendResetPassword: createResetPasswordSender({ resetGuard, ...mailDeps }),
     },
+    emailVerification: verification.emailVerification,
     advanced: {
+      // Явно, а не за замовчуванням BA: інакше `isTest()` мовчки вимикає
+      // перевірку origin/redirectTo у Vitest, і trustedOrigins лишається без
+      // негативного контролю.
+      disableOriginCheck: false,
       database: {
         // 🔴 `'uuid'` — єдине значення, коректне для ОБОХ адаптерів. Драйвер
         // drizzle-pg оголошує `supportsUUIDs`, тож id генерує сама БД
@@ -112,6 +142,8 @@ export function createAuth(deps: AuthDeps = {}) {
       },
     },
   });
+  verification.bind(auth);
+  return auth;
 }
 
 /** Тип готового інстансу — для сигнатур споживачів К1′б. */

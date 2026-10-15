@@ -16,7 +16,10 @@ export interface StockByPointRow {
   quantity: number;
 }
 
-/** Наявність товару або модифікації — те, що малює блок наявності. */
+/**
+ * Наявність товару або модифікації — те, що малює блок наявності.
+ * `stockStatus: null` — лише «цілі немає взагалі» (`EMPTY`), не «статус не заданий».
+ */
 export interface StockInfoRow {
   totalQuantity: number;
   isAvailable: boolean;
@@ -88,12 +91,12 @@ export async function loadStockInfo(
 
 /**
  * Статус наявності цілі: `undefined` — рядка немає взагалі (тоді питати
- * залишки нема про що), `null` — рядок є, статус не заданий.
+ * залишки нема про що). Колонка NOT NULL (Е8-Р3): наявний рядок статус має.
  */
 async function loadStockStatus(
   db: ActorDb,
   target: StockTarget,
-): Promise<StockStatus | null | undefined> {
+): Promise<StockStatus | undefined> {
   if (target.modificationId) {
     const [row] = await db
       .select({ status: productModifications.stockStatus })

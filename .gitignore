@@ -10,6 +10,9 @@ dist-ssr
 .tanstack
 *.tsbuildinfo
 
+# Копія кореневого CHANGELOG.md, що її кладе prepack пакета simplycms у tarball
+packages/simplycms/CHANGELOG.md
+
 # Environment
 *.local
 .env
@@ -58,7 +61,7 @@ blob-report/
 playwright/.cache/
 
 # Артефакти інспекцій редизайну (скріншоти + JSON лайв-тестів скіла
-# redesign-from-reference) — робочий процес, не код (рішення власника
+# simplycms-redesign) — робочий процес, не код (рішення власника
 # 2026-08-17). Скіл каже комітити їх У МАГАЗИНІ як аудитований слід —
 # це стосується магазинів; у монорепо вони лишаються локально.
 docs/design-references/
@@ -73,6 +76,9 @@ scripts/dev-stand/seed-demo.sql
 
 # Ізольовані git worktree агентних сесій (Claude Code) — чужі копії репо
 .claude/worktrees/
+# Скіли TanStack — локальні лінки розробника (docs/development/TOOLING.md § 2): їхні
+# цілі в node_modules, а частина колись вказувала абсолютними шляхами однієї машини.
+.claude/skills/tanstack-*
 
 # Локальний Postgres-харнес (pnpm harness:up)
 .env.harness

@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import { routeTree } from './routeTree.gen';
+import { RouteError } from './route-error';
 
 /**
  * 🔴 `QueryClient` народжується ТУТ, а не в `CMSProvider`.
@@ -23,6 +24,8 @@ export function getRouter() {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Р23: без цього дочірні роути показують дефолт TanStack з повним `error.message`.
+    defaultErrorComponent: RouteError,
   });
 }
 

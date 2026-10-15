@@ -24,7 +24,7 @@ export function priceCatalogRow<T extends CatalogProductRow>(
     : null;
   const stockStatus = row.has_modifications
     ? (defaultMod?.stock_status ?? 'in_stock')
-    : (row.stock_status ?? 'in_stock');
+    : row.stock_status;
   return {
     ...row,
     ...cardPrice(row.product_prices, env, {

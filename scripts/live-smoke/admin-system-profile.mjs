@@ -7,10 +7,9 @@
  * кешу операцією, а не холодний чи протухлий кеш.
  */
 import { PNG } from './avatar.mjs';
-import { waitText } from './selectors.mjs';
 import { pollUntil } from './admin-shipping-sql.mjs';
 import * as q from './admin-system-sql.mjs';
-import { expectSome } from './wait.mjs';
+import { expectSome, waitToast } from './wait.mjs';
 
 const LOGO_INPUT = 'input[type="file"]';
 
@@ -27,7 +26,7 @@ async function uploadLogo(page, name) {
 /** «Зберегти» форми профілю → тост; повертає профіль із БД після запису. */
 async function saveProfile(page, dbUrl, pred) {
   await page.getByRole('button', { name: 'Зберегти', exact: true }).click();
-  await waitText(page, 'Налаштування збережено');
+  await waitToast(page, 'Налаштування збережено');
   return pollUntil(() => q.profileValue(dbUrl), pred);
 }
 

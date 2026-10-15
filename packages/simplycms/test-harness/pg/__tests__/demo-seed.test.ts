@@ -5,11 +5,11 @@
 // стереже це число), тож тут своя тимчасова БД і свій накат: канон + демо
 // одним списком. Ідемпотентність — та сама вимога, що й для канону: докат
 // файлу вдруге не має міняти лічильники (демо-файл теж описує це в шапці).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -21,15 +21,6 @@ import {
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 const DEMO_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
 
-/** Канон у порядку імен + демо-сід останнім — той самий порядок, що й `demo-db.mjs`. */
-const filesToApply = (): string[] => [
-  ...readdirSync(MIGRATIONS_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS_DIR, name)),
-  DEMO_FILE,
-];
-
 describe('демо-сід: накат поверх канону', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_demo_seed');
@@ -39,7 +30,8 @@ describe('демо-сід: накат поверх канону', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, filesToApply());
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [DEMO_FILE]);
   }, 120_000);
 
   afterAll(async () => {
@@ -56,9 +48,10 @@ describe('демо-сід: накат поверх канону', () => {
       await queryRows(dbUrl, 'select id from public.product_modifications')
     ).length,
     banners: (await queryRows(dbUrl, 'select id from public.banners')).length,
-    // К2-Е0: доставка й залишки — п'ять нових вставок секції 10, чиї
-    // нетривіальні форми `on conflict` (часткові індекси зон і залишків)
-    // саме тут і доводять ідемпотентність (кейс нижче).
+    // К2-Е0: доставка й залишки — вставки секції 10 з нетривіальними
+    // формами `on conflict` (частковий індекс залишків) доводять тут
+    // ідемпотентність (кейс нижче). Зону доставки демо-сід не вставляє:
+    // основну дає `0003_seed`, тож `shippingZones` лишається сталим.
     shippingMethods: (
       await queryRows(dbUrl, 'select id from public.shipping_methods')
     ).length,

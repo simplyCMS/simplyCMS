@@ -91,7 +91,6 @@ export default function ShippingZonesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('common.name')}</TableHead>
-                <TableHead>{t('admin.shipping.zones.cities')}</TableHead>
                 <TableHead className="text-center">
                   {t('common.activeF')}
                 </TableHead>
@@ -113,7 +112,7 @@ export default function ShippingZonesPage() {
               {zones.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={3}
                     className="text-center text-muted-foreground"
                   >
                     {t('admin.shipping.zones.empty')}

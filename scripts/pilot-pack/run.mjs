@@ -9,12 +9,16 @@ import { startStore } from './build.mjs';
 import { prepareStore } from './prepare-store.mjs';
 import { skippedGate, step } from './report.mjs';
 import { gateRoutes } from './gate-a.mjs';
-import { gateHttp } from './gate-b.mjs';
+import { checkExecve, checkPartialEnv, gateHttp } from './gate-b.mjs';
 import { gateBundle } from './gate-c.mjs';
+import { checkStrippedEnvParity } from './stripped-env.mjs';
+import { gateMedia } from './gate-media.mjs';
+import { gateMail } from './gate-mail.mjs';
 import { gateServerBundle } from './gate-sb.mjs';
 import { gateTailwind } from './gate-d.mjs';
 import { gateImportProtection } from './gate-ip.mjs';
 import { createPkgSmoke } from './create-pkg-smoke.mjs';
+import { checkSessionHookOnScratch } from './session-hook-checks.mjs';
 import { toolPkgSmoke } from './tool-pkg-smoke.mjs';
 
 /**
@@ -33,7 +37,17 @@ export async function runGates(opts) {
   results.push(['A', gateRoutes(opts.storeDir)]);
 
   step('Gate C — bundle-guard + splitting');
-  results.push(['C', gateBundle(opts.storeDir)]);
+  // Межа клієнт/сервер і парність `STRIPPED_ENV` (server.mjs скретча ↔ ядро з
+  // tarball-а): обидва про те, що server-only знання не розходяться в магазині.
+  const bundle = gateBundle(opts.storeDir);
+  const stripped = checkStrippedEnvParity(opts.storeDir);
+  results.push([
+    'C',
+    {
+      ok: bundle.ok && stripped.ok,
+      details: [...bundle.details, ...stripped.details],
+    },
+  ]);
 
   step('Gate SB — що вклеєно в серверний бандл');
   results.push(['SB', gateServerBundle(opts.storeDir)]);
@@ -41,13 +55,20 @@ export async function runGates(opts) {
   step('Gate D — Tailwind бачить пакети');
   results.push(['D', gateTailwind(opts.storeDir)]);
 
-  // Gate CLI і Gate TOOL не залежать ні від БД, ні від скретча — тому в
-  // гілці, яка йде завжди, включно з `--pack-only`.
+  // Gate CLI і tarball-частина Gate TOOL не потребують ні БД, ні скретча; крок шима
+  // використовує встановлений скретч, але БД теж не потребує — тож гілка йде завжди,
+  // включно з `--pack-only`.
   step('Gate CLI — tarball скаффолдера');
   results.push(['CLI', createPkgSmoke()]);
 
   step('Gate TOOL — tarball @simplycms/cli');
-  results.push(['TOOL', await toolPkgSmoke()]);
+  const tool = await toolPkgSmoke();
+  // Шим хука — на встановленому скретчі: лише там він доходить до справжнього CLI.
+  const hook = checkSessionHookOnScratch(opts.storeDir);
+  results.push([
+    'TOOL',
+    { ok: tool.ok && hook.ok, details: [...tool.details, ...hook.details] },
+  ]);
 
   // Gate E (bootstrap власника) знято разом із локальним стеком БД —
   // він жив на service-ключі сервісу автентифікації. Рядок лишається видимим, щоб звіт
@@ -62,6 +83,14 @@ export async function runGates(opts) {
 
   // Gate B потребує живого сервера і живої БД, тож у `--pack-only` не існує.
   if (!opts.packOnly) results.push(await gateServer(opts));
+
+  // MEDIA і MAIL — запаковане ядро проти Garage і Mailpit (К3-Е8, Task 13). Після
+  // B, бо їм потрібен лише скретч, а не живий сервер; у `--pack-only` — skip із
+  // причиною, щоб звіт показував, що їх не ганяли.
+  step('Gate MEDIA — драйвер s3 запакованого ядра проти Garage');
+  results.push(['MEDIA', await gateMedia(opts.storeDir, opts.env, opts)]);
+  step('Gate MAIL — SMTP-драйвер запакованого ядра проти Mailpit');
+  results.push(['MAIL', await gateMail(opts.storeDir, opts.env, opts)]);
 
   // 🔴 Останнім: кожна червона збірка спорожнює dist скретча, а Gate C/D і
   // Gate B читають його. Гейт сам перезбирає скретч наприкінці.
@@ -78,9 +107,31 @@ export async function runGates(opts) {
  */
 async function gateServer({ storeDir, port, env }) {
   step(`Gate B — production-запуск на порту ${port}`);
-  const server = await startStore(storeDir, port);
+  // Старт — через прод-скрипт магазину (Е8-Р6): накат під «паролем власника»
+  // (тут це той самий DSN) і execve на server.mjs без нього.
+  const server = await startStore(
+    storeDir,
+    port,
+    // start.mjs `.env` не читає, тож усі три ключі скретча йдуть через env процесу.
+    {
+      ...env,
+      MIGRATION_DATABASE_URL: env.DATABASE_URL,
+    },
+    { entry: 'scripts/start.mjs' },
+  );
   try {
-    return ['B', await gateHttp(port, env)];
+    const http = await gateHttp(port, env);
+    const execve = checkExecve(server.pid, server.logs(), {
+      smtp: Boolean(env.SMTP_URL),
+    });
+    const partial = checkPartialEnv(storeDir, env);
+    return [
+      'B',
+      {
+        ok: http.ok && execve.ok && partial.ok,
+        details: [...http.details, ...execve.details, ...partial.details],
+      },
+    ];
   } finally {
     server.stop();
   }

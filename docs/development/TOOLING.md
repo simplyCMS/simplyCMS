@@ -11,7 +11,7 @@
   `pnpm-workspace.yaml`: поле `pnpm` у `package.json` мовчки ігнорується, `.npmrc` читається
   лише для auth і registry. Workspace: `packages/*`, `themes/*`, `plugins/*`, `apps/*`
   (`apps/*` — private-застосунки платформи, не пакети ядра: реліз-потяг їх не чіпає).
-- Версії залежностей — у `package.json`; `Node >=22.12` стоїть у ВСІХ пʼяти публікованих пакетах
+- Версії залежностей — у `package.json`; `Node >=24` стоїть у ВСІХ пʼяти публікованих пакетах
   і в `packages/create-simplycms-store/template/package.json.tpl` під тестом-піном парності.
 
 Стек (версії — у `package.json`, тут лише те, що визначає рішення):
@@ -41,7 +41,7 @@ PR #12803), а не відмовив. **Умова перегляду:** рел�
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (Vite + TanStack Start)
 pnpm build            # Production build (vite build)
-pnpm start            # Run production server (node server.mjs, PORT=3000) — див. docs/development/ENVIRONMENT.md
+pnpm start            # Локальний запуск зібраного бандла (node server.mjs, PORT=3000), НЕ для проду (прод — node scripts/start.mjs) — див. docs/development/ENVIRONMENT.md
 pnpm typecheck        # TypeScript type check
 pnpm typecheck:showcase   # tsc сіду вітрини (tsconfig.showcase.json): tsx типів не перевіряє,
                       # а кореневий tsconfig scripts/showcase/*.mts не включає
@@ -69,8 +69,9 @@ pnpm harness:up       # Postgres-харнес однією командою: к�
                       # pnpm harness:down — прибрати контейнер і .env.harness
 pnpm test:schema      # СХЕМНИЙ контур: накат канону міграцій на чистий Postgres + парність
                       # політик і грантів + ПОВЕДІНКОВА матриця RLS.
-                      # 🔴 Docker НЕ потрібен: або готовий кластер через PG_HARNESS_URL,
-                      # або ефемерний initdb/pg_ctl (не від root). У CI — job `schema`
+                      # 🔴 Проєкт `pg` — без Docker: або готовий кластер через PG_HARNESS_URL,
+                      # або ефемерний initdb/pg_ctl (не від root). Проєкти `storage` і `mail`
+                      # потребують Garage і Mailpit (`pnpm harness:up`). У CI — job `schema`
                       # із service-контейнером postgres:17. Межі — test-contours.md §10
 pnpm pilot:pack       # tarball-пілот: гейти A/C/SB/D/IP + CLI/TOOL — БЕЗ БД (Gate B відсутній)
 pnpm pilot            # той самий пілот + Gate B проти живої БД: DATABASE_URL і
@@ -119,6 +120,23 @@ pnpm db:pull / db:diff
 Команд `pnpm test:e2e` і `pnpm pilot:e2e` немає: прапорець `--e2e` падає з поясненням, а не
 мовчки ігнорується. Генератора типів БД (`db:generate-types`, `types:baseline`) теж немає.
 
+**Скіли TanStack для агента (локально, не в git).** Пакети `@tanstack/react-start` і
+`@tanstack/virtual-file-routes` постачають власні скіли в `node_modules`. `.claude/skills/tanstack-*`
+у `.gitignore`: лінки з абсолютними цілями (однієї машини) у репо не лежать, а тест
+`tests/git-symlinks.test.ts` стереже, що їх там немає. Щоб підключити скіли, створи ВІДНОСНІ лінки:
+
+```bash
+ln -s ../../node_modules/@tanstack/react-start/skills/react-start .claude/skills/tanstack-react-start
+ln -s ../../node_modules/@tanstack/virtual-file-routes/skills/virtual-file-routes .claude/skills/tanstack-virtual-file-routes
+ln -s ../../node_modules/@tanstack/react-db/skills/react-db .claude/skills/tanstack-react-db
+```
+
+Лінки `tanstack-db-core`, `tanstack-db-meta-framework`, `tanstack-router-core`, `tanstack-start-core`,
+`tanstack-start-server-core` не повертаються: скіли `db-*` жили в розпакованих тарболах у тимчасовій теці
+(`@tanstack/db` у `node_modules` скілів не несе), а `*-core` — у транзитивних залежностях за шляхом
+`.pnpm/<версія>/`, що змінюється з кожним бампом, тож стабільної відносної цілі в них немає. Скіл
+`tanstack-react-db` є прямою залежністю; усі три лінки блоку вище — відносні.
+
 ## 3. Гейти (порядок і причини)
 
 Порядок: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
@@ -136,6 +154,13 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   гейта дрейф сигнатур ядер, якими пише сід, червонів би лише на живому запуску.
 - `test:schema` у ланцюгу, бо він єдиний перевіряє накат канону міграцій і ПОВЕДІНКУ RLS —
   інші гейти схему БД не виконують.
+- 🔴 Гейти `test`, `test:schema`, `test:packaging` **ізольовані від `.env*` розробника**: усі три
+  vitest-конфіги мають `envDir: false` (штатний вимикач Vite — Vite shared-options `envDir`),
+  інакше `VITE_*` з `.env.local` робили б гейт зеленим лише локально й червоним у CI. Проєкт `pg`
+  отримує фіксований `VITE_SITE_URL=http://store.test` у `test.env`. Ключі стенду (`HARNESS_SMTP_URL`,
+  `HARNESS_MAILPIT_URL`, `S3_*`, `PG_HARNESS_URL`) беруться з env, а `.env.harness` — лише запасний
+  шлях. Доводить `tests/gate-env-isolation.test.ts` (пробна `.env.local` у tmp-корені) і
+  `tests/harness-env.test.ts`.
 - `test:packaging` іде **після** `pnpm test` і `build:packages`: `tests/published-exports-parity.test.ts`
   виведено з дефолтного прогону (`test.exclude`), він працює по зібраних tarball-ах.
 - 🔴 `typecheck:template` — окремий гейт **після** `build:packages`: кореневий `tsconfig.json`

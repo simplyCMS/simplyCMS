@@ -33,6 +33,8 @@ export const messages = {
   'checkout.success.notFound': 'Замовлення не знайдено',
   'checkout.success.notFoundHint':
     'Можливо, посилання недійсне або термін доступу вичерпано',
+  'checkout.success.loadFailed':
+    'Не вдалося завантажити замовлення. Воно, найімовірніше, оформлене — не оформлюйте повторно, а спробуйте ще раз',
   'checkout.success.toHome': 'На головну',
   'checkout.success.details': 'Деталі замовлення',
   'checkout.success.recipient': 'Отримувач',

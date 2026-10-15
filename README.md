@@ -31,7 +31,7 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 |---|---|
 | Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу К0) |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
-| Production-запуск | ✅ `pnpm build && pnpm start` |
+| Production-запуск | ✅ `pnpm build && node scripts/start.mjs` (накат міграцій + `execve`) |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
 | CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
 | Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
@@ -56,7 +56,7 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 ```bash
 pnpm create simplycms-store my-store
-cd my-store && pnpm install && pnpm build && pnpm start
+cd my-store && pnpm install && pnpm build && pnpm dev   # прод — node scripts/start.mjs, див. README магазину
 ```
 
 Скаффолдер розгортає повний каркас магазину (host-обвʼязка, міграції
@@ -87,7 +87,7 @@ pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
 pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
-                                  # for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done)
+                                  # pnpm simplycms db:apply — з MIGRATION_DATABASE_URL власника схеми)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —
@@ -98,8 +98,9 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 ### Потрібен PostgreSQL 17
 
 Ядро працює поверх чистого PostgreSQL 17 (Drizzle) з автентифікацією на Better
-Auth; файли — через порт `simplycms/storage`. Контракт env магазину — рівно три
-ключі: `DATABASE_URL`, `BETTER_AUTH_SECRET` і `VITE_SITE_URL`. Схема ядра — 40
+Auth; файли — через порт `simplycms/storage`. Обов'язкових env-ключів рівно три:
+`DATABASE_URL`, `BETTER_AUTH_SECRET` і `VITE_SITE_URL`; опційні йдуть групами драйверів
+за правилом «все або нічого» (`simplycms/env`). Схема ядра — 40
 таблиць із RLS; канон міграцій лежить у
 [`packages/simplycms/migrations/`](packages/simplycms/migrations/).
 
@@ -111,7 +112,7 @@ Auth; файли — через порт `simplycms/storage`. Контракт e
 pnpm install
 cp .env.example .env.local     # заповнити DATABASE_URL, BETTER_AUTH_SECRET, VITE_SITE_URL
 pnpm dev                       # dev-сервер (Vite, порт 5173+)
-pnpm build && pnpm start       # production-запуск (порт 3000)
+pnpm build && pnpm start       # локальний запуск зібраного бандла (порт 3000), не для проду
 ```
 
 ### Перевірки

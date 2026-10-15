@@ -10,7 +10,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
-import { expectVisible } from './wait.mjs';
+import { expectVisible, waitToast } from './wait.mjs';
 
 export const SEEDED = 55;
 export const PAGE = 50;
@@ -57,7 +57,8 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
     await page.locator('tr', { hasText: `Мод ${tag}` }).click();
     await page.locator('#stock-quantity').fill('5');
     await page.getByRole('button', { name: 'Зберегти залишки' }).click();
-    await page.getByText('Залишки збережено').waitFor({ timeout: 10_000 });
+    if (!(await waitToast(page, 'Залишки збережено')))
+      throw new Error('[live-smoke] тост «Залишки збережено» не зʼявився');
     const [mod] = await sql(
       dbUrl,
       `select m.stock_status, s.quantity from public.product_modifications m
@@ -78,7 +79,8 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
     // (а) перейменування товару → назад до списку.
     await page.locator('#product-name').fill(renamed);
     await page.getByRole('button', { name: 'Зберегти' }).first().click();
-    await page.getByText('Товар оновлено').waitFor({ timeout: 10_000 });
+    if (!(await waitToast(page, 'Товар оновлено')))
+      throw new Error('[live-smoke] тост «Товар оновлено» не зʼявився');
     await page.goBack();
     await page.waitForURL(`${base}/admin/products`);
     await waitRows(page, PAGE);

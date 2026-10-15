@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
-import { render } from '@testing-library/react';
-import { describe, it, vi } from 'vitest';
+import { render, cleanup } from '@testing-library/react';
+import { describe, it, vi, afterEach } from 'vitest';
 import { I18nProvider } from 'simplycms/i18n';
 import { CheckoutContactForm } from '../CheckoutContactForm';
 import { expectLabelledControls } from './accessible-controls';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 describe('CheckoutContactForm', () => {
   it('чотири поля контактів мають id і label[for] — селектори live-smoke і скрінрідери', () => {

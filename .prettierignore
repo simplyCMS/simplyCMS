@@ -29,7 +29,7 @@ packages/simplycms/drizzle
 # відступи вкладених блоків) без жодної користі для коду.
 *.md
 
-# ── Артефакти дизайн-імпорту (скіл redesign-from-reference) ─────────────────
+# ── Артефакти дизайн-імпорту (скіл simplycms-redesign) ─────────────────
 # Автор — скрипти `scripts/design-import` (inspect/discover/map-tokens):
 # `JSON.stringify(…, null, 2)` завжди розгортає масиви в стовпчик, prettier
 # короткі — схлопує (`"spacing": [4, 8, 16, 32, 40]`), і фінального переводу

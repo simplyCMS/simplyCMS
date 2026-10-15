@@ -25,7 +25,9 @@ import {
   loadGuestPriceTypes,
   priceColumns,
   toPriceEntry,
+  visibleToViewer,
   type PriceTypes,
+  type ViewerPriceTypes,
 } from 'simplycms/commerce';
 import { sectionRefColumns, type SectionRef } from './entities/section';
 import { propertyValueColumns, toPropertyValueRow } from './property-values';
@@ -35,12 +37,14 @@ import type { ProductPropertyValueRow } from './property-values';
 export type ProductDetailRow = ProductRow & {
   sections: SectionRef | null;
   product_modifications: ModificationRow[];
+  /** Лише види цін глядача (Р29): гість — гостьові, покупець — свій + гостьові. */
   product_prices: PriceEntry[];
   product_property_values: ProductPropertyValueRow[];
   /**
    * Типи ціни ГОСТЯ (F9): JSON-LD `offers` рахує ними ту саму базу, що SSR-
-   * списки й картка гостя після гідрації. Персональний тип сюди не йде —
-   * сторінка кешується гостьовою (К3-Е6в-1).
+   * списки й картка гостя після гідрації. Персональний тип сюди не йде:
+   * розмітка для пошуковика одна для всіх (К3-Е6в-1), а гостьові види є в
+   * `product_prices` і в покупця — як фолбек (Р29).
    */
   guest_price_types: PriceTypes;
 };
@@ -52,10 +56,14 @@ export type ProductDetailRow = ProductRow & {
  * без нього чернетка товару відкривалася прямим посиланням і потрапляла в
  * JSON-LD. Клієнтський запит картки цей предикат мав завжди — тобто SSR і
  * гідрація давали різний результат на тому самому URL.
+ *
+ * 🔴 Ціни — лише видів `viewer` (Р29): гість гуртового прайсу не дістає ні в
+ * payload, ні в SSR-HTML. Набір рахує `withViewerDb` із серверної сесії.
  */
 export async function loadProduct(
   db: ActorDb,
   slug: string,
+  viewer: ViewerPriceTypes,
 ): Promise<ProductDetailRow | null> {
   const [row] = await db
     .select({ product: productColumns, section: sectionRefColumns })
@@ -75,7 +83,9 @@ export async function loadProduct(
   const priceRows = await db
     .select(priceColumns)
     .from(productPrices)
-    .where(eq(productPrices.productId, productId));
+    .where(
+      and(eq(productPrices.productId, productId), visibleToViewer(viewer)),
+    );
   const propertyValueRows = await db
     .select(propertyValueColumns)
     .from(productPropertyValues)

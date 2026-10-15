@@ -21,7 +21,21 @@ Open-source e-commerce CMS на **TanStack Start (Vite)** і чистому **Po
 
 ## Принципи
 
-- **Клієнтів і реальних магазинів немає** — зміни роби БЕЗ зворотної сумісності.
+- **Клієнтів і реальних магазинів немає** — зміни роби БЕЗ зворотної сумісності. 🔴 З запуском
+  пілотного магазину (після `1.0.0-rc.1`, що заморожує baseline) це правило діє для КОДУ, але не для
+  ДАНИХ: схема змінюється лише новими міграціями, застосовану міграцію (і baseline) не правлять. До
+  того baseline правлять як виняток (див. «Пакети й реліз»). 🔴 «Без зворотної сумісності» = не
+  тримаємо старого API й шимів, але злам чесно піднімає **мажорну** версію (semver з 1.0): злам
+  коду магазину, тем чи плагінів → мажорна + BREAKING у `CHANGELOG`; нове без зламу → minor;
+  виправлення → patch.
+- **Платформа ≠ магазин.** Тут пишемо ПЛАТФОРМУ; реальний магазин — незалежний проєкт зі своєю
+  інфраструктурою (БД, сховище, пошта, деплой), що живе окремо від цього монорепо. Платформа
+  постачає порти, драйвери, CLI й інструкції — і гарантує, що все це працює в магазині.
+- **Магазин — мінімумом кроків, далі агент веде за інструкціями.** Кожен ключовий етап створення
+  й супроводу магазину (онбординг, налаштування, тема/редизайн, деплой, оновлення, міграції,
+  діагностика) покривають скіли й скрипти, що їдуть РАЗОМ із магазином (у пакеті, як
+  `simplycms-redesign`). Зміна платформи, що міняє шлях власника магазину, без відповідної
+  інструкції не завершена.
 - **Архітектурна коректність, не обхідні шляхи.** Пропонуй рішення з довгостроковим
   обґрунтуванням; явно порівнюй латку й знесення механізму, що породжує клас багів.
 - **Невизначеність — привід запитати**, а не вгадати. Бібліотечні API перевіряй через
@@ -65,7 +79,7 @@ Tailwind v4 + shadcn/ui · react-hook-form + Zod 4 · Tiptap v3 · Vitest + Test
 pnpm dev                 # dev-сервер (Vite + TanStack Start)
 pnpm typecheck && pnpm lint && pnpm format:check   # перед PR
 pnpm test                # юніти (packaging-suite виключено)
-pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (Docker не потрібен)
+pnpm test:schema         # накат канону міграцій на чистий Postgres + поведінка RLS (проєкт pg — без Docker; storage і mail — Garage і Mailpit з pnpm harness:up)
 pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обовʼязкове)
 pnpm build:packages      # збірка публікованих пакетів
 pnpm template:sync       # синк закомічених копій з монорепо (шаблон, host CLI, міграції)
@@ -160,8 +174,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 - Server-only дерево задає `simplycms/contracts/server-only`; статичний імпорт server-only
   субшляху з клієнтського коду заборонено (лінт + Gate C пілота).
-- Контракт магазину — рівно **три** env-ключі: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
-  `VITE_SITE_URL`. Серверний код читає **лише** `process.env` і лише в рантаймі; `import.meta.env`
+- Обов'язкових env-ключів рівно **три**: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `VITE_SITE_URL`. Опційні — групами драйверів за правилом «все або нічого» (`simplycms/env`). Серверний код читає **лише** `process.env` і лише в рантаймі; `import.meta.env`
   у серверних модулях заборонено лінтом.
 
 **i18n** (`docs/architecture/i18n.md`)
@@ -177,10 +191,17 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 **Пакети й реліз** (`docs/architecture/release-process.md`, `cli.md`)
 
+- Semver з 1.0 (рішення власника): діапазон `engines.simplycms` референс-пакетів і `simplycms create`
+  — `^<мажорна>.0.0` (для 0.x — `^0.<мінорна>.0`; для RC `X.Y.Z-rc.N` — `^X.Y.Z-0`; `coreRangeFor`),
+  а не відкрите `>=`; його переписує крок бампу `pnpm release`. Пререліз `X.Y.Z-rc.N` публікується
+  під npm-тегом `next`; деталі — `release-process.md`.
 - Усі 5 пакетів завжди мають ОДНУ версію; реліз — рішення людини (`pnpm release`, далі PR у
   `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
   `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками
   не правляться.
+- 🔴 До `1.0.0-rc.1` baseline `0000…0005` ще не заморожено: його правлять як виняток baseline
+  (`data-layer.md`), і кожна така правка в релізі дає в `CHANGELOG` попередження «перестворити БД».
+  Заморожування — крок релізу 1.0.0-rc.1.
 - Агентні скіли, що їдуть у магазини, живуть у `packages/simplycms/skills/<name>`; `.agents/skills/`
   і `.claude/skills/` — прямі симлінки на нього (оригінал — у пакеті).
 
@@ -224,6 +245,6 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `upstream-workarounds`, `repository-layout`.
 - **`docs/development/`** — `TOOLING.md` (команди, гейти, лінт, CI), `ENVIRONMENT.md` (env, запуск),
   `CODEBASE_MEMORY.md` (код-шар пошуку).
-- **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/redesign-from-reference.md`** — редизайн за референсом.
+- **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/simplycms-redesign.md`** — редизайн за референсом.
 - **`docs/tasks/`** — роадмап (`platform-roadmap.md`), карта чинного стану (`v2-state-map.md`).
-- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `redesign-from-reference`.
+- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `simplycms-redesign`.

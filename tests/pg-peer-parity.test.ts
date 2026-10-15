@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Парність версії `pg`: peer ядра ↔ шаблон магазину ↔ пілотний оверлей ↔ корінь монорепо
+ * Парність версії `pg` і `nodemailer` (К3-Е8, Task 9): peer ядра ↔ шаблон магазину ↔ пілотний оверлей ↔ корінь монорепо
  * (К3-Е7, Task 11). Драйвер постачає ХОСТ (магазин), ядро його лише очікує: один екземпляр
  * `pg` у магазині — один пул і одна ідентичність типів, а вклеєний у бандл `pg` ламає старт
  * (`UPSTREAM:START-IP-1`). Точний пін має причину: форма помилок драйвера (`.cause` із
@@ -26,29 +26,32 @@ const template = read(
 const pilot = read('tests/pilot/store-template/package.json');
 const root = read('package.json');
 
-describe('pg: peer ядра ↔ магазин', () => {
-  const peer = core.peerDependencies?.pg;
+describe.each(['pg', 'nodemailer'] as const)(
+  '%s: peer ядра ↔ магазин',
+  (pkg) => {
+    const peer = core.peerDependencies?.[pkg];
 
-  it('ядро оголошує pg як peer, а не як власну залежність', () => {
-    expect(peer, 'peerDependencies.pg відсутній').toBeTruthy();
-    expect(
-      core.dependencies?.pg,
-      'pg лишився в dependencies ядра',
-    ).toBeUndefined();
-  });
+    it('ядро оголошує пакет як peer, а не як власну залежність', () => {
+      expect(peer, `peerDependencies.${pkg} відсутній`).toBeTruthy();
+      expect(
+        core.dependencies?.[pkg],
+        `${pkg} лишився в dependencies ядра`,
+      ).toBeUndefined();
+    });
 
-  it.each([
-    ['шаблон магазину', template.dependencies?.pg],
-    ['пілотний оверлей', pilot.dependencies?.pg],
-    ['корінь монорепо', root.devDependencies?.pg],
-    ['devDependencies ядра', core.devDependencies?.pg],
-  ])('%s: версія pg = peer ядра', (_label, version) => {
-    expect(version, 'pg не оголошено').toBeTruthy();
-    expect(version).toBe(peer);
-  });
+    it.each([
+      ['шаблон магазину', template.dependencies?.[pkg]],
+      ['пілотний оверлей', pilot.dependencies?.[pkg]],
+      ['корінь монорепо', root.devDependencies?.[pkg]],
+      ['devDependencies ядра', core.devDependencies?.[pkg]],
+    ])(`%s: версія ${pkg} = peer ядра`, (_label, version) => {
+      expect(version, `${pkg} не оголошено`).toBeTruthy();
+      expect(version).toBe(peer);
+    });
 
-  it('магазин декларує pg ПРЯМОЮ залежністю (а не лише dev)', () => {
-    expect(template.dependencies?.pg).toBeTruthy();
-    expect(template.devDependencies?.pg).toBeUndefined();
-  });
-});
+    it('магазин декларує пакет ПРЯМОЮ залежністю (а не лише dev)', () => {
+      expect(template.dependencies?.[pkg]).toBeTruthy();
+      expect(template.devDependencies?.[pkg]).toBeUndefined();
+    });
+  },
+);

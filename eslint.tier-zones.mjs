@@ -49,11 +49,14 @@ const TIER_ZONES = [
   // і теж стоїть над схемою (T1). Що саме йому вільно, задає шар:
   // `contracts`, `domain`, `schema` — і більше нічого.
   ['src/db', 2, 'db', []],
+  // Е8-Т11: auth кличе пошту (`mail` — outbox і рендер листів), читає назву
+  // магазину й локаль з `site`, тексти з `i18n` і базу посилань з `env`
+  // (`siteUrl`). Зворотних імпортів немає: `mail` про `auth` не знає.
   // Auth-контур v2 (Task 7, В2-К1а) — T2 поруч із `db`: він теж серверний і
   // теж стоїть над схемою. `db` у винятку `upward` навмисно: єдиний канал до
   // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
-  ['src/auth', 2, 'auth', ['db']],
+  ['src/auth', 2, 'auth', ['db', 'mail', 'site', 'i18n', 'env']],
   ['src/react-query', 2, 'react-query', []],
   ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
@@ -69,11 +72,25 @@ const TIER_ZONES = [
   // `inventory` (Е3-5) — облік залишків: спільний домен, класифікація дерева.
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з адмінкою.
   // `site` (Е6б-7) — спільний кеш профілю/теми: вітрина читає, адмінка скидає.
+  // `mail`, `env`, `i18n` (Е8, Task 12): лист замовлення ставиться в outbox у
+  // транзакції оформлення; посилання в листі — лише `siteUrl` (Р18в), тексти —
+  // каталог `mail.*`.
   [
     'src/storefront',
     2,
     'storefront',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
+    [
+      'db',
+      'auth',
+      'storage',
+      'inventory',
+      'commerce',
+      'sanitize',
+      'site',
+      'mail',
+      'env',
+      'i18n',
+    ],
   ],
   // Серверний шар адмінки (Е1б) — T2. Виняток upward той самий, що в
   // storefront: єдиний канал до Postgres — withActor (db), перший рубіж —
@@ -85,17 +102,29 @@ const TIER_ZONES = [
   // `commerce` (Е5б-5) — ціноутворення й доставка, спільні з вітриною.
   // `site` (Е6б-7) — спільний кеш профілю/теми: адмінка скидає після COMMIT,
   // а `storefront` їй імпортувати не можна (той самий тір).
+  // `mail` (Е8, Task 12): картка хвостів пошти читає/повторює outbox.
   [
     'src/admin-server',
     2,
     'admin-server',
-    ['db', 'auth', 'storage', 'inventory', 'commerce', 'sanitize', 'site'],
+    [
+      'db',
+      'auth',
+      'storage',
+      'inventory',
+      'commerce',
+      'sanitize',
+      'site',
+      'mail',
+    ],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
   // `storefront`: рядок `media` пишеться через `withActor`, іншого каналу
   // до Postgres немає. `auth` НЕ у винятку — грант перевіряє викликач
   // (serverFn), а не сам порт.
-  ['src/storage', 2, 'storage', ['db']],
+  // `env` (Е8-Р7): вибір драйвера за групами S3_*/MEDIA_ROOT — чиста функція
+  // `resolveDriverEnv`, власного читання `process.env` у сховищі немає.
+  ['src/storage', 2, 'storage', ['db', 'env']],
   // Облік залишків (Е3-5) — T2. Upward `db`: гвард пише через ActorDb
   // (withActor — єдиний канал до Postgres), як у `storage`.
   ['src/inventory', 2, 'inventory', ['db']],
@@ -104,7 +133,28 @@ const TIER_ZONES = [
   ['src/commerce', 2, 'commerce', ['db']],
   // Кеш профілю магазину й теми, вшиті теми (Е6б-7) — T2. Upward лише `db`
   // (тип `ActorDb`): власного каналу до Postgres модуль не відкриває.
-  ['src/site', 2, 'site', ['db']],
+  ['src/site', 2, 'site', ['db', 'i18n']],
+  // Резолвер груп env драйверів (Е8-Р7) — T2. Чиста функція над переданим
+  // оточенням: upward-винятків немає, імпортів поза `contracts` теж.
+  ['src/env', 2, 'env', []],
+  // Охорона серверного входу (Е8, Р23/Р27) — T2. Upward лише `env`: прод-
+  // предикат і `redactUrls` беруться з нього, власного читання env тут немає.
+  ['src/server-guard', 2, 'server-guard', ['env']],
+  // Порт пошти (Е8, Task 9) — T2. Upward `env`: вибір драйвера за групою SMTP_* і
+  // прод-предикат беруться з резолвера, власного читання груп env немає.
+  // `db` і `schema` — для outbox `mail_outbox` (Task 10): запис лише через
+  // `withActor`. `auth` свідомо НЕ в списку: auth кличе пошту, не навпаки.
+  ['src/mail', 2, 'mail', ['env', 'db', 'schema', 'i18n']],
+  // Build-time плагіни Vite (К3-Е8) — T2: Node-код збірки, жодних імпортів з
+  // інших тек ядра, upward-винятків немає.
+  ['src/vite', 2, 'vite', []],
+  // Накат міграцій (Е8-Р2) — T2. Власне зʼєднання `pg` під власником схеми
+  // (до ролей і RLS `withActor` неможливий), тож upward-винятків немає, і
+  // `db` йому теж ні до чого.
+  ['src/migrate', 2, 'migrate', []],
+  // Прод-старт магазину (К3-Е8, F5 рев'ю) — T2. Upward `env` (перевірка груп до
+  // накату) і `migrate` (сам накат); БД актора й auth йому ні до чого.
+  ['src/prod-start', 2, 'prod-start', ['env', 'migrate']],
   // Санітизація rich-HTML (Тема 9) — T2. Чиста функція над рядком: upward-
   // винятків немає; тип `SanitizedHtml` бере з T0 (`contracts`).
   ['src/sanitize', 2, 'sanitize', []],

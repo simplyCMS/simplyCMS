@@ -91,7 +91,7 @@ export function columnSchema(column: Column): z.ZodType {
   // допускає суворішу схему лише для numeric (`parity-diff.ts`).
   if (is(column, PgTime)) return z.string();
   if (is(column, PgJsonb)) return jsonSchema;
-  // Е6а: `shipping_zones.cities/regions` (text[]). Дзеркало drizzle-zod
+  // `banners.schedule_days` (integer[]). Дзеркало drizzle-zod
   // (`PgArray` → масив схеми базової колонки, `size` → точна довжина).
   if (is(column, PgArray)) {
     const items = z.array(columnSchema(column.baseColumn));

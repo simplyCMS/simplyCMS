@@ -5,12 +5,10 @@
 // чисту БД функції схем `public`/`app` (без належних розширенням) і
 // користувацькі тригери дорівнюють явному allowlist. Нова функція чи тригер
 // без запису тут червонить `test:schema` — як і прихований SECURITY DEFINER.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -18,13 +16,13 @@ import {
   withDbName,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
-
 /** Функції — `схема.імʼя`, тригери — голе імʼя. */
 const ALLOWLIST = [
   'app.current_user_id',
   'public.refuse_banned_session',
+  'public.require_default_shipping_zone',
   'sessions_refuse_banned',
+  'shipping_zones_require_default',
 ];
 
 /** Усе користувацьке: функції (крім розширень) і нетехнічні тригери. */
@@ -56,13 +54,7 @@ describe('канон міграцій: множина функцій і триг
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(CANON_DIR, n)),
-    );
+    await applyCanon(dbUrl);
   }, 120_000);
 
   afterAll(async () => {

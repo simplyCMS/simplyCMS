@@ -8,7 +8,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const directory = vi.hoisted(() => ({
   methods: [] as unknown[],
   pickupPoints: [] as unknown[],
-  rate: { cost: 0, pricing: 'rates' } as { cost: number; pricing: string },
+  rate: { cost: 0, pricing: 'rates' } as
+    { cost: number; pricing: string } | null | undefined,
 }));
 vi.mock('simplycms/core/hooks/useShippingDirectory', () => ({
   useShippingDirectory: () => ({
@@ -150,5 +151,21 @@ describe('CheckoutDeliveryForm', () => {
     renderForm({ shippingMethodId: 'm1' });
     expect(screen.getByText('За тарифами перевізника')).toBeTruthy();
     expect(screen.queryByText('Безкоштовно')).toBeNull();
+  });
+
+  // А4: самовивіз без обраної точки — `rateFor` дає `undefined` (ціни не
+  // видно), і це НЕ «недоступно» (`null` → «—») та не вічний скелет.
+  it('rateFor undefined (точку не обрано) — ні «—», ні скелета; null — «—»', () => {
+    directory.methods = [PICKUP];
+    directory.pickupPoints = [POINT, { ...POINT, id: 'p2', name: 'Магазин' }];
+    directory.rate = undefined;
+    renderForm({ shippingMethodId: 'm1' });
+    expect(document.body.textContent).not.toContain('—');
+    expect(document.body.querySelector('[aria-busy="true"]')).toBeNull();
+    cleanup();
+
+    directory.rate = null;
+    renderForm({ shippingMethodId: 'm1' });
+    expect(document.body.textContent).toContain('—');
   });
 });

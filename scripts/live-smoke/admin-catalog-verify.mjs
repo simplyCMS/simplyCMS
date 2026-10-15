@@ -5,6 +5,7 @@
  */
 import { productCountBySlug } from './admin-sql.mjs';
 import { parseMoney } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 /**
  * @param {{page: import('@playwright/test').Page, base: string,
@@ -63,13 +64,9 @@ export async function verifyDuplicateSlugToast({
   // ігнорується (Playwright не чекає появи, читає DOM ОДРАЗУ) — гонка
   // проти асинхронного 409+тосту, спіймана живим прогоном Е3-20.
   // `.waitFor({ state: 'visible' })` реально чекає й ретраїть.
-  const toast = page.getByText('Такий URL (slug) уже зайнятий');
   check(
     'адмін: дубль slug → тост i18n',
-    await toast
-      .waitFor({ state: 'visible', timeout: 10_000 })
-      .then(() => true)
-      .catch(() => false),
+    await waitToast(page, 'Такий URL (slug) уже зайнятий'),
     '',
   );
 }

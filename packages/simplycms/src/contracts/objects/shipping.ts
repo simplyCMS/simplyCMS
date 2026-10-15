@@ -27,8 +27,6 @@ export interface ShippingZone {
   id: string;
   name: string;
   description: string | null;
-  cities: string[];
-  regions: string[];
   is_active: boolean;
   is_default: boolean;
   sort_order: number;

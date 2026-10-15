@@ -97,6 +97,53 @@ describe('useCheckoutQuote — blocked не шле запит', () => {
     expect(quoteCheckoutMock).not.toHaveBeenCalled();
   });
 
+  // А1/Д3: прихований `deliveryCity` самовивозу в запит квоти не йде — зону
+  // задає точка; для кур'єра місто їде як є.
+  it('самовивіз: у квоту йде deliveryCity null, навіть коли поле міста не порожнє', async () => {
+    quoteCheckoutMock.mockResolvedValue({
+      ok: true,
+      quote: { items: [], subtotal: 100, shippingCost: 0, total: 100 },
+    });
+    renderHook(
+      () =>
+        useCheckoutQuote({
+          items: ITEMS,
+          shippingMethodId: 'm1',
+          pickupPointId: 'pt1',
+          deliveryCity: 'Львів',
+          isPickup: true,
+          userKey: null,
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenCalledTimes(1));
+    expect(quoteCheckoutMock.mock.calls[0][0].data).toMatchObject({
+      deliveryCity: null,
+      pickupPointId: 'pt1',
+    });
+  });
+
+  it('курʼєр: місто йде в квоту як є', async () => {
+    quoteCheckoutMock.mockResolvedValue({
+      ok: true,
+      quote: { items: [], subtotal: 100, shippingCost: 0, total: 100 },
+    });
+    renderHook(
+      () =>
+        useCheckoutQuote({
+          items: ITEMS,
+          shippingMethodId: 'm1',
+          pickupPointId: '',
+          deliveryCity: 'Львів',
+          isPickup: false,
+          userKey: null,
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(quoteCheckoutMock).toHaveBeenCalledTimes(1));
+    expect(quoteCheckoutMock.mock.calls[0][0].data.deliveryCity).toBe('Львів');
+  });
+
   it('усе заповнено — НЕ blocked, запит іде', async () => {
     quoteCheckoutMock.mockResolvedValue({
       ok: true,

@@ -5,13 +5,11 @@
 // БАЗУ незалежним еталоном форми транзакції (щоб поламаний `withActor` не
 // перевіряв сам себе в гейті RLS), а цей файл міряє ОБГОРТКУ проти тієї самої
 // бази. Розʼїзд між ними впаде тут — і це знахідка, а не шум.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool, withActor, type Actor } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -28,8 +26,6 @@ import {
   USER_A,
   USER_B,
 } from './fixtures/rls-actors';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 const AS_A: Actor = { role: 'app_user', userId: USER_A };
 const AS_B: Actor = { role: 'app_user', userId: USER_B };
@@ -61,13 +57,7 @@ describe('withActor: транзакційна обгортка актора', ()
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     for (const statement of SEED_STATEMENTS) await queryRows(dbUrl, statement);
     // Рантайм резолвить `DATABASE_URL` сам — і саме як `app_runtime`: під
     // власником таблиць фейл-клоуз не міряється взагалі.

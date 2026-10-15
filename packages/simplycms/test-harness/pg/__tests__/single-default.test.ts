@@ -2,11 +2,11 @@
 // інваріант «не більше одного дефолту» тримає БД, а не два нетранзакційні
 // запити з браузера (unset-усіх → insert нового), які й досі лишаються
 // єдиним записувачем на v2-стеку (легасі-клієнт БД без HTTP-посередника).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -20,23 +20,19 @@ const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 // момент цього завдання; шлях той самий, що використає той файл пізніше.
 const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
 
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
-
 /**
  * 🔴 Параметризовано на ВСІ 7 індексів (рев'ю р3: два кейси доводили 2 з
  * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
  * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
  *
- * 🔴 GLOBAL-кейс НЕ покладається на сід (перевірено: `shipping_zones` у
- * 0003_seed.sql відсутня взагалі, тож «другий» дефолт там пройшов би):
- * спершу reset (`is_default=false` усім), потім insert #1 (мусить пройти —
- * доводить, що індекс не заважає першому), потім insert #2 → 23505.
+ * 🔴 GLOBAL-кейс НЕ покладається на сід: спершу reset (`is_default=false`
+ * усім), потім insert #1 (мусить пройти — доводить, що індекс не заважає
+ * першому), потім insert #2 → 23505.
  * Коди — унікальні відносно сіду (UNIQUE code у languages/user_categories).
+ *
+ * 🔴 `shipping_zones` у GLOBAL немає: сід тримає єдину основну зону, а
+ * reset автокомітом (зняти дефолт) відкладений тригер відхилив би — для неї
+ * окремий кейс нижче, без reset.
  */
 const U1 = 'a0000000-0000-4000-8000-000000000001';
 const U2 = 'a0000000-0000-4000-8000-000000000002';
@@ -59,11 +55,6 @@ const GLOBAL: Array<[table: string, first: string, second: string]> = [
     'languages',
     `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz1', 'Дефолт 1', true)`,
     `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz2', 'Дефолт 2', true)`,
-  ],
-  [
-    'shipping_zones',
-    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 1', true)`,
-    `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`,
   ],
 ];
 
@@ -100,7 +91,7 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     // Демо-сід — для товарів (P1/P2); користувачі — власна фікстура.
     await applySqlFiles(dbUrl, [DEMO_SEED]);
     await queryRows(
@@ -128,6 +119,15 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
       });
     },
   );
+
+  it('shipping_zones: сід уже тримає основну зону — друга основна → 23505', async () => {
+    await expect(
+      queryRows(
+        dbUrl,
+        `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`,
+      ),
+    ).rejects.toMatchObject({ code: '23505' });
+  });
 
   it.each(SCOPED)(
     '%s: різні батьки — можна, той самий — 23505',

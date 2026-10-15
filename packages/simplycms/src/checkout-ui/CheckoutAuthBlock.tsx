@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { authClient } from 'simplycms/core/lib/auth-client';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
+import { useForgotPassword } from 'simplycms/core/hooks/useForgotPassword';
 import { bannedMessage } from 'simplycms/core/lib/banned-message';
 import {
   Eye,
@@ -34,11 +35,14 @@ export function CheckoutAuthBlock({
 }: CheckoutAuthBlockProps) {
   const { toast } = useToast();
   const t = useT();
+  const { requestReset, pending: forgotPending } = useForgotPassword();
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
+  // Р30: після реєстрації зі SMTP сесії немає — підказка про скидання пароля.
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -48,18 +52,20 @@ export function CheckoutAuthBlock({
   const [regPassword, setRegPassword] = useState('');
 
   const clearMessages = () => {
+    setAwaitingVerification(false);
     setAuthError(null);
     setAuthSuccess(null);
   };
 
   const handleLogin = async () => {
-    if (!loginEmail || loginPassword.length < 6) return;
+    const email = loginEmail.trim();
+    if (!email || loginPassword.length < 6) return;
     setIsLoading(true);
     clearMessages();
 
     try {
       const { error } = await authClient.signIn.email({
-        email: loginEmail,
+        email,
         password: loginPassword,
       });
 
@@ -70,6 +76,8 @@ export function CheckoutAuthBlock({
           errorMessage = bannedMessage(t, storeContacts);
         } else if (error.code === 'INVALID_EMAIL_OR_PASSWORD') {
           errorMessage = t('checkout.auth.invalidCredentials');
+        } else if (error.code === 'EMAIL_NOT_VERIFIED') {
+          errorMessage = t('auth.login.emailNotVerified');
         }
         setAuthError(errorMessage);
         toast({
@@ -122,11 +130,13 @@ export function CheckoutAuthBlock({
           title: t('auth.register.failed'),
           description: errorMessage,
         });
+      } else if (signUpData?.token === null) {
+        // Р30: підтвердження пошти ввімкнене — сесії немає, оформлення як
+        // залогований не продовжуємо, доки пошту не підтверджено.
+        setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
+        setAwaitingVerification(true);
+        toast({ title: t('checkout.auth.checkEmailToast') });
       } else if (signUpData?.user) {
-        // 🔴 Гілки «створено, але без сесії» більше немає: підтвердження
-        // пошти вимкнене, тож успішний signUp одразу дає сесію. Тримати
-        // мертву гілку «перевірте пошту» означало б показувати користувачу
-        // крок, якого в контурі не існує.
         setAuthSuccess(t('checkout.auth.registerSuccess'));
         toast({ title: t('checkout.auth.registerSuccess') });
         onAuthSuccess?.();
@@ -158,6 +168,23 @@ export function CheckoutAuthBlock({
           <div className="flex items-center gap-2 p-3 mb-4 border border-destructive/50 bg-destructive/10 rounded-md text-sm">
             <AlertCircle className="h-4 w-4 text-destructive" />
             {authError}
+          </div>
+        )}
+        {awaitingVerification && (
+          <div className="mb-4 space-y-1 text-sm text-muted-foreground">
+            <p>{t('auth.register.noEmailHint')}</p>
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                // Адреса з реєстрації переходить у вхід: не вводити вдруге.
+                setLoginEmail(regEmail);
+                setActiveTab('login');
+                clearMessages();
+              }}
+            >
+              {t('auth.forgot.link')}
+            </button>
           </div>
         )}
         {authSuccess && (
@@ -266,6 +293,14 @@ export function CheckoutAuthBlock({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               {t('auth.login.submit')}
+            </button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline"
+              disabled={isLoading || forgotPending}
+              onClick={() => void requestReset(loginEmail)}
+            >
+              {t('auth.forgot.link')}
             </button>
           </div>
         )}

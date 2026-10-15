@@ -69,11 +69,34 @@ simplyCMS/
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
 │   │   │                         #    з host-а). Без власного каналу до БД (приймає ActorDb);
 │   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)
+│   │   ├── src/env/              # T2 Резолвер груп env драйверів (S3, SMTP) за правилом «все або
+│   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
+│   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
+│   │   │                         #    server-only (К3-Е8)
+│   │   ├── src/server-guard/     # T2 Охорона серверного входу (Р23/Р27): maskUnexpectedError
+│   │   │                         #    (прод: загальне повідомлення + ідентифікатор клієнту, повна
+│   │   │                         #    помилка в лог), withSecurityHeaders (заголовки безпеки на
+│   │   │                         #    динаміці). Upward-виняток лише env. server-only (К3-Е8)
+│   │   ├── src/mail/             # T2 Порт пошти: getMailTransport() обирає драйвер за групою SMTP_URL+MAIL_FROM
+│   │   │                         #    (resolveDriverEnv): smtpTransport (peer nodemailer) і logTransport (у проді
+│   │   │                         #    без тіла листа). Upward лише env. server-only (К3-Е8)
+│   │   ├── src/vite/             # T2 Build-time плагіни Vite для збірки магазину: resolveBuildId +
+│   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz). Без залежності
+│   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)
+│   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
+│   │   │                         #    readJournal, readStoreFacts): одна реалізація для проду, db:apply, test:schema і
+│   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків
+│   │   │                         #    немає. server-only (К3-Е8)
+│   │   ├── src/prod-start/       # T2 Прод-старт магазину (runStart, startStore, STRIPPED_ENV): накат під
+│   │   │                         #    MIGRATION_DATABASE_URL → process.execve на server.mjs без нього; у магазині —
+│   │   │                         #    шим scripts/start.mjs (host-файл). Upward `env`, `migrate`. server-only (F5 Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок (AdminConflictError/AuthzError) +
 │   │   │                         #    клієнтський seroval-адаптер межі serverFn (реєструється в
 │   │   │                         #    src/start.ts serializationAdapters)
+│   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
+│   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
 │   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
@@ -97,12 +120,14 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: baseline 0000_prelude → 0004_functions;
-│   │   │                         #    джерело `simplycms db:diff`
+│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0005_mail_outbox (baseline до 1.0.0-rc.1 не заморожено:
+│   │   │                         #    виняток baseline, `data-layer.md`); джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
+│   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи
 │   │   ├── drizzle/ + drizzle.config.ts + seed-migrations/     # schema-тулінг
 │   │   └── tsdown.config.ts      # ДВІ збірки (клієнт/сервер); entry з dev-exports; група — за contracts/server-only
-│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/add/
+│   ├── cli/                @simplycms/cli            # CLI магазину (bin `simplycms`): doctor/status/smoke/
+│   │                                                 # deploy:record/db:apply/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
 │   │                                                 # theme:conformance (гейт views, контракт тем v3);
 │   │                                                 # чистий ESM без build; host/ — канон host-файлів,
@@ -116,7 +141,11 @@ simplyCMS/
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
 │   │                            # шаблон магазину (`template/`, закомічена копія,
 │   │                            # синхронізується `pnpm template:sync`). Під фільтри імені ядра
-│   │                            # не підпадає й у tarball-parity не рахується.
+│   │                            # не підпадає й у tarball-parity не рахується. Файли шаблону
+│   │                            # (джерело — сам шаблон): `AGENTS.md`, `CLAUDE.md`,
+│   │                            # `.claude/settings.json`; шими `scripts/{start,owner-invite}.mjs`
+│   │                            # і `.claude/hooks/session-start.mjs` — host-файли, їх копію
+│   │                            # `template:sync` кладе в `packages/cli/host/` (`TEMPLATE_HOST_FILES`).
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
 ├── scripts/                          # Тулчейн міграцій, пакування, релізу
@@ -137,7 +166,7 @@ simplyCMS/
 │                                        # funnel.mjs (Playwright-воронка) + avatar.mjs (ЄДИНИЙ
 │                                        # живий доказ порту сховища: завантаження, роздача /media,
 │                                        # референс у БД, видалення)
-├── packages/simplycms/test-harness/pg/  # контур `pnpm test:schema` — підйом Postgres без Docker
+├── packages/simplycms/test-harness/pg/  # контур `pnpm test:schema` — підйом Postgres без Docker (проєкт `pg`; `storage` і `mail` — Garage і Mailpit з `pnpm harness:up`)
 │                                     # (PG_HARNESS_URL або ефемерний initdb), накат канону,
 │                                     # інтроспекція ACL/політик, актори
 ├── themes/default/                   # Локальна тема-еталон (контракт v3, із власними views);

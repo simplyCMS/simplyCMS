@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { ThemeProvider } from '../ThemeContext';
 import { useTheme } from '../theme-context';
 import { ThemeRegistry } from '../ThemeRegistry';
 import type { ThemeModule } from '../types';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * 🔴 Доказ, а не переказ: `loadTheme` у `ThemeContext.tsx` робить

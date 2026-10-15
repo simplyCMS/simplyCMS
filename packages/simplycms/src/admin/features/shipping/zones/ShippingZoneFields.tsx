@@ -49,23 +49,9 @@ export function ShippingZoneFields({ form, lockedActive }: Props) {
         <Label htmlFor="sz-desc">{t('common.description')}</Label>
         <Textarea id="sz-desc" {...register('description')} />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="sz-cities">{t('admin.shipping.zones.cities')}</Label>
-        <Textarea
-          id="sz-cities"
-          placeholder={t('admin.shipping.zones.citiesPlaceholder')}
-          {...register('cities')}
-        />
-        <p className="text-xs text-muted-foreground">
-          {t('admin.shipping.zones.citiesHint')}
-        </p>
-      </div>
-      <TextField
-        id="sz-regions"
-        label={t('admin.shipping.zones.regions')}
-        placeholder={t('admin.shipping.zones.regionsPlaceholder')}
-        registration={register('regions')}
-      />
+      <p className="text-xs text-muted-foreground">
+        {t('admin.shipping.zones.hint')}
+      </p>
       <SortOrderField
         id="sz-sort"
         label={t('admin.shipping.zones.priority')}

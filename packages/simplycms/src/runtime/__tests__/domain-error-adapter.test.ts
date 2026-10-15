@@ -99,6 +99,26 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
+  it('CodedError: name і код-повідомлення переживають межу', async () => {
+    const src = Object.assign(new Error('media/bad-format'), {
+      name: 'CodedError',
+    });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toMatchObject({
+      name: 'CodedError',
+      message: 'media/bad-format',
+    });
+  });
+
+  it('NotFoundError (Р26): name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
+    const src = Object.assign(new Error('знижки не існує'), {
+      name: 'AdminNotFoundError',
+    });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toBeInstanceOf(Error);
+    expect(out).toMatchObject({ name: 'AdminNotFoundError' });
+  });
+
   it('контроль БЕЗ адаптера: ShallowErrorPlugin лишає голий Error(message) — фіксує механіку дефекту Start', async () => {
     const src = Object.assign(new Error('конфлікт'), {
       name: 'AdminConflictError',

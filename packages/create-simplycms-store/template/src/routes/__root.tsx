@@ -5,7 +5,6 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router';
-import type { ErrorComponentProps } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { useEffect } from 'react';
 import { ThemeProvider } from 'next-themes';
@@ -24,6 +23,7 @@ import {
   normalizeLocale,
 } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
+import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
 import { getStorefrontRoot } from 'simplycms/storefront-routes/server/root';
 import {
@@ -68,7 +68,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   loader: async () =>
     ({ ...(await getStorefrontRoot()), locale }) satisfies StorefrontRootData,
   notFoundComponent: NotFound,
-  errorComponent: ErrorBoundary,
+  errorComponent: RouteError,
   head: ({ loaderData }) => ({
     meta: [
       { charSet: 'utf-8' },
@@ -111,7 +111,7 @@ function RootComponent() {
             enableSystem
             disableTransitionOnChange
           >
-            <CMSProvider customQueryClient={queryClient}>
+            <CMSProvider queryClient={queryClient}>
               <PluginBootstrap />
               <ThemeBootstrap />
               <ClientEngineProvider>
@@ -176,30 +176,6 @@ function NotFound() {
       <h1 className="text-6xl font-bold">{t('app.notFound.title')}</h1>
       <p className="mt-4 text-xl text-muted-foreground">
         {t('app.notFound.message')}
-      </p>
-      <Link to="/" className="mt-8 underline hover:text-foreground">
-        {t('app.backHome')}
-      </Link>
-    </div>
-  );
-}
-
-/** Глобальний error boundary */
-function ErrorBoundary({ error }: ErrorComponentProps) {
-  // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що, не лише
-  // `Error`. Повідомлення беремо лише рядком; інакше — fallback-ключ.
-  const message =
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-      ? error.message
-      : undefined;
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">{t('app.error.title')}</h1>
-      <p className="mt-4 text-muted-foreground">
-        {message ?? t('app.error.fallback')}
       </p>
       <Link to="/" className="mt-8 underline hover:text-foreground">
         {t('app.backHome')}

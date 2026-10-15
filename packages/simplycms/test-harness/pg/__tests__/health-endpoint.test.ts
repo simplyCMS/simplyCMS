@@ -4,22 +4,18 @@
 // що застосунок ДІЙСНО дістає базу. Мок конекту перевіряв би мок. Тому обидва
 // кейси — 200 на живому харнесі й 503 на завідомо битому `DATABASE_URL` —
 // живуть у схемному контурі.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { Route } from '../../../routes/storefront/api/health';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   randomDbName,
   withDbName,
   withUser,
 } from '../apply.mjs';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 /** Хост, якого гарантовано немає на лінії, — конект відбивається одразу. */
 const BROKEN_URL = 'postgresql://app_runtime@127.0.0.1:1/simplycms_absent';
@@ -47,13 +43,7 @@ describe('/api/health: пінг Postgres', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     // Той самий користувач, під яким ходить магазин: під власником таблиць
     // `SET LOCAL ROLE` не міряється взагалі.
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');

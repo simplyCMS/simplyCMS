@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CSRF_EXEMPT_PREFIXES, shouldValidateCsrf } from '../csrf';
+import {
+  CSRF_EXEMPT_PREFIXES,
+  csrfMiddleware,
+  shouldValidateCsrf,
+} from '../csrf';
 
 describe('shouldValidateCsrf — які запити перевіряються', () => {
   it.each(['GET', 'HEAD', 'OPTIONS', 'get', 'options'])(
@@ -31,5 +35,39 @@ describe('shouldValidateCsrf — які запити перевіряються'
 
   it('список винятків — рівно Better Auth', () => {
     expect([...CSRF_EXEMPT_PREFIXES]).toEqual(['/api/auth/']);
+  });
+});
+
+describe('csrfMiddleware — origin запиту з конфігу сайту (Р18б)', () => {
+  type ServerFn = (ctx: {
+    request: Request;
+    next: () => unknown;
+  }) => Promise<unknown>;
+  const server = (
+    csrfMiddleware as unknown as { options: { server: ServerFn } }
+  ).options.server;
+
+  it('request.url на origin сайту, Origin чужий, без Sec-Fetch-Site → 403', async () => {
+    const result = await server({
+      request: new Request('https://shop.test/_serverFn/x', {
+        method: 'POST',
+        headers: { origin: 'https://evil.example' },
+        body: '{}',
+      }),
+      next: () => 'next',
+    });
+    expect((result as Response).status).toBe(403);
+  });
+
+  it('контроль: Origin сайту проходить', async () => {
+    const result = await server({
+      request: new Request('https://shop.test/_serverFn/x', {
+        method: 'POST',
+        headers: { origin: 'https://shop.test' },
+        body: '{}',
+      }),
+      next: () => 'next',
+    });
+    expect(result).toBe('next');
   });
 });

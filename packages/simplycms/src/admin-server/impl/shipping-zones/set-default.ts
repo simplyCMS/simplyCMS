@@ -10,8 +10,9 @@ import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
 export const setDefaultShippingZoneInput = z.object({ id: z.uuid() });
 
 /**
- * Дефолтна зона доставки рівно одна й завжди активна (Е6а-12, Е6а-20) —
- * fallback для міст поза зонами (`domain/shipping.ts`).
+ * Дефолтна (основна) зона доставки рівно одна й завжди активна (Е6а-12, Е6а-20;
+ * інваріант тримає й БД — тригер `shipping_zones_require_default`): її бере
+ * доставка за адресою і точка самовивозу без зони (`resolveShippingZone`).
  *
  * Порядок — патерн `price-types/set-default.ts`:
  *  1. `SHIPPING_CONFIG_LOCK` — ПЕРШИЙ запит транзакції; той самий беруть

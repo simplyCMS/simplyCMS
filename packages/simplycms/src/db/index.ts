@@ -9,6 +9,7 @@
  * повернулися б.
  */
 export { withActor, type ActorDb } from './with-actor';
+export { asService } from './as-service';
 export { advisoryXactLock } from './advisory-lock';
 export type { Actor, ActorRole } from './actor';
 export { closeDbPool } from './client';

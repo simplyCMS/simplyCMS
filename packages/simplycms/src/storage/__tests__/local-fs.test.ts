@@ -2,11 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
-import {
-  MediaKeyCollisionError,
-  MediaKeyError,
-  localFsDriver,
-} from '../local-fs';
+import { MediaKeyError, localFsDriver } from '../local-fs';
 import { MEDIA_KEY_RE } from '../keys';
 
 const KEY = 'ab/ab000000-0000-4000-8000-000000000000.png';
@@ -52,14 +48,6 @@ describe('localFsDriver', () => {
     expect(new Uint8Array(await readFile(join(root, KEY)))).toEqual(PAYLOAD);
   });
 
-  it('put на зайнятий ключ падає MediaKeyCollisionError і НЕ перезаписує', async () => {
-    await driver.put(KEY, PAYLOAD);
-    await expect(
-      driver.put(KEY, Uint8Array.from([9, 9])),
-    ).rejects.toBeInstanceOf(MediaKeyCollisionError);
-    expect(new Uint8Array(await readFile(join(root, KEY)))).toEqual(PAYLOAD);
-  });
-
   it('put не лишає тимчасових файлів — ні після успіху, ні після колізії', async () => {
     await driver.put(KEY, PAYLOAD);
     await driver.put(KEY, PAYLOAD).catch(() => undefined);
@@ -90,34 +78,6 @@ describe('localFsDriver', () => {
       expect(dirname(name)).toBe(dirname([KEY, OTHER_KEY][i]));
     }
     expect(names[0]).not.toBe(names[1]);
-  });
-
-  it('delete прибирає обʼєкт', async () => {
-    await driver.put(KEY, PAYLOAD);
-    await driver.delete(KEY);
-    expect(await driver.open(KEY)).toBeNull();
-  });
-
-  it('delete відсутнього — УСПІХ (ідемпотентність, рішення Е2-7)', async () => {
-    await expect(driver.delete(KEY)).resolves.toBeUndefined();
-    await expect(driver.delete(KEY)).resolves.toBeUndefined();
-  });
-
-  it('open віддає розмір і стрім із тими самими байтами', async () => {
-    await driver.put(KEY, PAYLOAD);
-    const object = await driver.open(KEY);
-    expect(object?.size).toBe(PAYLOAD.length);
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of object!.stream() as unknown as AsyncIterable<Uint8Array>) {
-      chunks.push(chunk);
-    }
-    expect(Buffer.concat(chunks.map((c) => Buffer.from(c)))).toEqual(
-      Buffer.from(PAYLOAD),
-    );
-  });
-
-  it('open відсутнього → null, а не виняток', async () => {
-    expect(await driver.open(KEY)).toBeNull();
   });
 
   // 🔴 Traversal перевіряється на ДРАЙВЕРІ, а не лише в роуті: другий

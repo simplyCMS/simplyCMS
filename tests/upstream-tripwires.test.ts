@@ -20,6 +20,7 @@ import {
   startBody,
   startFnBase,
   startFormBeforeHandler,
+  startHandlerType,
   startImportProtectionNoKind,
   subsetOptionsNotReexported,
   tsEslintPeer,
@@ -94,6 +95,24 @@ describe('негативний контроль: підмінений текст
     const rpc = readInstalledFile(SSC, 'dist/esm/createServerRpc.js');
     expect(
       startFnBase(rpc.replaceAll('TSS_SERVER_FN_BASE', 'SOMETHING_ELSE')),
+    ).not.toEqual([]);
+  });
+
+  it('START-BODY-1: handlerType зник або виводиться не з нормалізованого шляху', () => {
+    const start = readInstalledFile(SSC, 'dist/esm/createStartHandler.js');
+    expect(startHandlerType(start)).toEqual([]);
+    expect(
+      startHandlerType(
+        start.replace('pathname: url.pathname,', 'pathname: 1,'),
+      ),
+    ).not.toEqual([]);
+    expect(
+      startHandlerType(
+        start.replace('url.pathname.startsWith(SERVER_FN_BASE)', 'true'),
+      ),
+    ).not.toEqual([]);
+    expect(
+      startHandlerType(start.replaceAll('"serverFn"', '"fn"')),
     ).not.toEqual([]);
   });
 

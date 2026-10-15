@@ -14,7 +14,7 @@
  * | Режим              | Команда           | Гейти              | Джерело даних     |
  * |--------------------|-------------------|--------------------|-------------------|
  * | пакувальність      | `pnpm pilot:pack` | A, C, SB, D, IP, CLI, TOOL | нічого (без БД) |
- * | повний (проти БД)  | `pnpm pilot`      | A-D, SB, IP, CLI, TOOL | `.env.local`      |
+ * | повний (проти БД)  | `pnpm pilot`      | A-D, SB, IP, CLI, TOOL, MEDIA, MAIL | `.env.local`; MEDIA/MAIL — лише з `PILOT_S3_*`/`PILOT_SMTP_URL` (їх задає `pilot-full`) |
  *
  * 🔴 Режиму `--e2e` більше немає: він піднімав локальний стек БД, а
  * магазин контракту v2 ходить у чистий Postgres — стек не був би ні джерелом
@@ -36,6 +36,7 @@
  *   node scripts/pilot-pack.mjs --reuse       # без pack/install, лише гейти
  */
 
+import { randomBytes } from 'node:crypto';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -69,8 +70,8 @@ function describeMode() {
 /** Набір гейтів режиму — той самий рядок у шапці й у підсумку. */
 function describeScope() {
   return packOnly
-    ? 'гейти A/C/SB/D/IP + CLI/TOOL'
-    : 'гейти A-D/SB/IP + CLI/TOOL (E знято)';
+    ? 'гейти A/C/SB/D/IP + CLI/TOOL (MEDIA/MAIL — skip)'
+    : 'гейти A-D/SB/IP + CLI/TOOL + MEDIA/MAIL (E знято)';
 }
 
 async function main() {
@@ -83,6 +84,12 @@ async function main() {
         '— bootstrap власника на Better Auth) повертає трек К6. Доступні ' +
         'режими: `pnpm pilot:pack` і `pnpm pilot`.',
     );
+  }
+
+  // Ідентифікатор збірки скретча (Е8): Gate B звіряє з ним `/api/health.build`.
+  // У `--reuse` збірки немає — id лишається тим, що вшито раніше.
+  if (!reuse) {
+    process.env.BUILD_ID ||= `e8-${randomBytes(4).toString('hex')}`;
   }
 
   const port = packOnly ? PACK_ONLY_PORT : await freePort();

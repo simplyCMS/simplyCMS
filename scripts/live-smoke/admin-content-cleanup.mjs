@@ -15,13 +15,13 @@ import { mediaKeysOf } from './admin-content-sql.mjs';
 import { sql } from './sql.mjs';
 
 /**
- * Корінь сховища сервера — те саме правило, що `mediaRoot()` у
- * `simplycms/storage` (`.data/media`, якщо `MEDIA_ROOT` не задано):
+ * Корінь сховища сервера — те саме правило, що корінь `local-fs` у
+ * `simplycms/storage` (`.data/media`, якщо `MEDIA_ROOT` не задано чи порожній):
  * `server.mjs` стартує з кореня репо й успадковує `process.env` (`startStore`).
  */
 const MEDIA_DIR = resolve(
   join(import.meta.dirname, '..', '..'),
-  process.env.MEDIA_ROOT ?? '.data/media',
+  process.env.MEDIA_ROOT?.trim() || '.data/media',
 );
 
 async function attempt(facts, what, action) {

@@ -73,6 +73,8 @@ export const messages: Catalog = {
   'admin.discounts.toggleGroupLabel': 'Group "{name}" is active',
   'admin.discounts.expandLabel': 'Collapse or expand "{name}"',
   'admin.discounts.notFound': 'Discount not found',
+  'admin.discounts.loadFailed': 'Could not load the discount',
+  'admin.discounts.retry': 'Retry',
   'admin.discounts.groupNotFound': 'Group not found',
   'admin.discounts.valueInvalid':
     'The value must be above zero, a percentage at most 100',

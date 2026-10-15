@@ -46,6 +46,7 @@ function compareText(
   statValue: string | null,
   operator: CategoryRuleOperator,
   rawValue: string,
+  containsMode: 'substring' | 'domain' = 'substring',
 ): boolean {
   if (statValue === null) return false;
   const stat = normalizeRuleText(statValue);
@@ -54,7 +55,12 @@ function compareText(
     case '=':
       return stat === value;
     case 'contains':
-      return stat.includes(value);
+      // 🔴 Р30: для домену `contains` — точний збіг або піддомен (`.corp.com`).
+      // Підрядок пускав би `evilcorp.com` і `corp.com.attacker.net` у категорію
+      // «корпоративні» — а це знижки.
+      return containsMode === 'domain'
+        ? stat === value || stat.endsWith(`.${value}`)
+        : stat.includes(value);
     default:
       return false;
   }
@@ -72,7 +78,12 @@ function evaluateCondition(
     case 'orders_count':
       return compareNumeric(stats.ordersCount, item.operator, item.value);
     case 'email_domain':
-      return compareText(stats.emailDomain, item.operator, item.value);
+      return compareText(
+        stats.emailDomain,
+        item.operator,
+        item.value,
+        'domain',
+      );
     case 'utm_source':
       return compareText(stats.utmSource, item.operator, item.value);
     case 'utm_campaign':

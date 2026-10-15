@@ -7,12 +7,10 @@
 // ACL чистої БД звіряється з декларацією `fixtures/grants.ts`. Нова таблиця
 // без гранта, зайвий грант, `GRANT … TO PUBLIC`, право в `app_runtime` —
 // кожне з цього червонить файл.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryInTransaction,
@@ -32,8 +30,6 @@ import {
   expectedGrantMatrix,
   GRANTED_ROLES,
 } from './fixtures/grants';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 /** Таблиці з увімкненим RLS — на них гранти мусять збігатися з політиками. */
 const RLS_TABLES = [
@@ -63,13 +59,7 @@ describe('парність привілеїв: baseline v2', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     // Власника таблиць фільтруємо: у різних оточеннях він зветься по-різному
     // (`postgres`, `pgtest`, роль деплою) і до контракту не належить.
     actual = (await tableGrants(dbUrl, [
@@ -144,11 +134,13 @@ describe('парність привілеїв: baseline v2', () => {
       privilege: string | null;
     }[];
     // Baseline v2 не везе жодної бізнес-функції — саме тому клас дірок
-    // «unguarded SECURITY DEFINER» у ньому структурно відсутній. Єдиний
-    // виняток — тригерна `refuse_banned_session` (Е6г-14, без SECDEF).
+    // «unguarded SECURITY DEFINER» у ньому структурно відсутній. Єдині
+    // винятки — тригерні `refuse_banned_session` (Е6г-14) і
+    // `require_default_shipping_zone` (К3-Е8), обидві без SECDEF.
     expect([...new Set(rows.map((r) => r.function_name))].sort()).toEqual([
       'app.current_user_id',
       'public.refuse_banned_session',
+      'public.require_default_shipping_zone',
     ]);
     expect(rows.every((r) => r.security_definer === false)).toBe(true);
     expect(rows.some((r) => r.role_name === 'PUBLIC')).toBe(false);

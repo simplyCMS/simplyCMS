@@ -71,11 +71,28 @@ export async function acceptOwnerInvite(
   });
   if (!response.ok) return { ok: false, reason: 'password-rejected' };
 
+  // 🔴 Р19: сесії користувача гасить `resetPassword` Better Auth за опцією
+  // `revokeSessionsOnPasswordReset` (див. `createAuth`). Явне видалення —
+  // страховка на випадок, якщо опцію колись вимкнуть: сесії самореєстрації
+  // зловмисника не мають пережити прийняття запрошення.
+  await context.internalAdapter.deleteUserSessions(verified.userId);
+
   // Перехід за одноразовим посиланням і є доказом володіння поштою — саме
   // тому `issueOwnerInvite` заводив користувача з `emailVerified: false`.
+  // Основний механізм — хук `onPasswordReset` у `createAuth` (Р30); явний
+  // запис тут — страховка на випадок, якщо хук колись приберуть чи вимкнуть
+  // (паралель до явного `deleteUserSessions` вище).
   await context.internalAdapter.updateUser(verified.userId, {
     emailVerified: true,
   });
+
+  // 🔴 Р19: роль — ЛИШЕ тепер, після `response.ok` (пароль задано, сесії
+  // погашено). Забанений між випуском і прийняттям отримує наявну причину
+  // `not-found`: пароль уже змінено, але ролі немає, а вхід спиняє хук бану.
+  const granted = await input.store.grantAdminRole({
+    userId: verified.userId,
+  });
+  if (granted === 'banned') return { ok: false, reason: 'not-found' };
 
   return { ok: true, userId: verified.userId };
 }

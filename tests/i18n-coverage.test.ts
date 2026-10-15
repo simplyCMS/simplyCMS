@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { SCANNED_ROOTS, scanAll, sourceFiles } from './i18n-coverage/scan';
-import { ALLOWLIST, PENDING_FILES } from './i18n-coverage/pending';
+import {
+  ALLOWLIST,
+  PENDING_FILES,
+  type DevKind,
+} from './i18n-coverage/pending';
 
 const REPO = resolve(__dirname, '..');
 
@@ -17,11 +21,72 @@ const REPO = resolve(__dirname, '..');
  * тим, що виняток діє лише для файлів, явно перелічених в `ALLOWLIST`, — а
  * там немає жодного JSX.
  */
-function insideDevDiagnostic(file: string, line: number): boolean {
+const KIND_PATTERNS: Record<DevKind, (line: string) => boolean> = {
+  console: (l) => l.includes('console.'),
+  throw: (l) => /throw new \w*Error\(/.test(l),
+  // Конструктор підкласу Error: те саме повідомлення, що й `throw new Error`.
+  super: (l) => /\bsuper\(/.test(l),
+  // Ін'єкційний лог-синк драйвера пошти (`log(...)`): рядок читає оператор.
+  'log-sink': (l) => /\blog\(/.test(l),
+};
+
+const kindsOf = (file: string, entries = ALLOWLIST): DevKind[] => {
+  const raw = entries[file]!.kind;
+  return Array.isArray(raw) ? raw : [raw];
+};
+
+/** Чи збігається вікно рядків навколо `line` із видом `kind`. */
+function matchesKind(file: string, line: number, kind: DevKind): boolean {
   const lines = readFileSync(resolve(REPO, file), 'utf8').split('\n');
   return lines
     .slice(Math.max(0, line - 3), line)
-    .some((l) => l.includes('console.') || /throw new \w*Error\(/.test(l));
+    .some((l) => KIND_PATTERNS[kind](l));
+}
+
+function insideDevDiagnostic(file: string, line: number): boolean {
+  return kindsOf(file).some((kind) => matchesKind(file, line, kind));
+}
+
+/**
+ * Записи allowlist без жодного кириличного рядка заявленого виду у файлі:
+ * `[файл, вид]`. Виняток без предмета — вигадка, що ховає майбутній регрес.
+ */
+export function staleAllowlistKinds(
+  entries: Record<string, { kind: DevKind | DevKind[] }>,
+  findings: readonly { file: string; line: number }[],
+): string[] {
+  const stale: string[] = [];
+  for (const file of Object.keys(entries)) {
+    for (const kind of kindsOf(file, entries as typeof ALLOWLIST)) {
+      const used = findings.some(
+        (f) => f.file === file && matchesKind(file, f.line, kind),
+      );
+      if (!used) stale.push(`${file} [${kind}]`);
+    }
+  }
+  return stale;
+}
+
+/** Записи з `strings`, чия кількість кириличних рядків у файлі розійшлась: `[файл, було, є]`. */
+export function pinnedMismatches(
+  entries: Record<string, { strings?: number }>,
+  findings: readonly { file: string }[],
+): string[] {
+  return Object.entries(entries)
+    .filter(([, e]) => e.strings !== undefined)
+    .map(
+      ([file, e]) =>
+        [
+          file,
+          e.strings!,
+          findings.filter((f) => f.file === file).length,
+        ] as const,
+    )
+    .filter(([, pinned, actual]) => pinned !== actual)
+    .map(
+      ([file, pinned, actual]) =>
+        `${file}: у записі ${pinned}, у файлі ${actual}`,
+    );
 }
 
 /**
@@ -53,6 +118,39 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
     const stale = PENDING_FILES.filter((f) => !withStrings.has(f));
 
     expect(stale, 'мігровані файли, забуті в PENDING_FILES').toEqual([]);
+  });
+
+  it('реєстр ALLOWLIST не містить записів без збігу заявленого виду', () => {
+    expect(
+      staleAllowlistKinds(ALLOWLIST, findings),
+      'allowlist-запис без жодного збігу виду у файлі',
+    ).toEqual([]);
+  });
+
+  it('закріплена кількість рядків у винятках збігається з файлом', () => {
+    expect(pinnedMismatches(ALLOWLIST, findings)).toEqual([]);
+  });
+
+  it('негативний контроль: зайвий рядок у закріпленому файлі червоніє', () => {
+    expect(
+      pinnedMismatches({ 'a.ts': { strings: 1 } }, [
+        { file: 'a.ts' },
+        { file: 'a.ts' },
+      ]),
+    ).toEqual(['a.ts: у записі 1, у файлі 2']);
+  });
+
+  it('негативний контроль: фіктивний запис allowlist червоніє', () => {
+    const fake = {
+      ...ALLOWLIST,
+      'packages/simplycms/src/plugin-sdk/usePluginTable.ts': {
+        kind: 'throw' as const,
+        reason: 'фіктивний',
+      },
+    };
+    expect(staleAllowlistKinds(fake, findings)).toEqual([
+      'packages/simplycms/src/plugin-sdk/usePluginTable.ts [throw]',
+    ]);
   });
 
   it('усі шляхи в реєстрі існують', () => {

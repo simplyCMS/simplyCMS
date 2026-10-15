@@ -12,11 +12,20 @@
  * — `AdminConflictError`; `auth/authz.ts` — `AuthzError`) і клієнтський
  * адаптер (T2, `simplycms/runtime`) читають ОДИН перелік замість того, щоб
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
+ * Виняток: `CodedError` (нижче) — простий клас без залежностей, тож живе
+ * тут, у T0, а кидають його сервісні модулі media/avatar/review; саме
+ * членство в `DOMAIN_ERROR_NAME` пускає його крізь маскування Р23.
  */
+import { REVIEW_SUBMIT_ERROR } from './objects/review';
+
 export const DOMAIN_ERROR_NAME = {
   adminConflict: 'AdminConflictError',
   authz: 'AuthzError',
   validation: 'ValidationError',
+  /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
+  notFound: 'AdminNotFoundError',
+  /** Машинний код відмови в `message` (`media/*`, `avatar/*`, `review/*`): клієнт мапить його в i18n. */
+  coded: 'CodedError',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** `error.name` доменної помилки — значення `DOMAIN_ERROR_NAME`. */
@@ -38,7 +47,52 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   // `SerializableDomainError.issues` — крізь білий список
   // `sanitizeValidationIssues`, а не через `fields`.
   [DOMAIN_ERROR_NAME.validation]: [],
+  // Достатньо `name`: що саме не знайдено, видно з контексту виклику.
+  [DOMAIN_ERROR_NAME.notFound]: [],
+  // Код їде самим `message`; додаткових полів немає.
+  [DOMAIN_ERROR_NAME.coded]: [],
 };
+
+/** Коди відмов медіа-завантаження (`admin-server/impl/media`). */
+export const MEDIA_ERROR = {
+  noFile: 'media/no-file',
+  noEntityType: 'media/no-entity-type',
+  badEntityType: 'media/bad-entity-type',
+  badFormat: 'media/bad-format',
+  tooLarge: 'media/too-large',
+} as const;
+
+/** Коди відмов завантаження аватара (`core/lib/profile-avatar`). */
+export const AVATAR_ERROR = {
+  badFormat: 'avatar/bad-format',
+  tooLarge: 'avatar/too-large',
+} as const;
+
+/**
+ * Єдиний реєстр кодів, які клієнт мапить у i18n: значення беруться з
+ * наявних констант (відгуки — `REVIEW_SUBMIT_ERROR`), літералів тут нема.
+ * Новий код = нове значення в одній із трьох груп; `CodedError` невідомого
+ * коду не скомпілюється.
+ */
+export type CodedErrorCode =
+  | (typeof MEDIA_ERROR)[keyof typeof MEDIA_ERROR]
+  | (typeof AVATAR_ERROR)[keyof typeof AVATAR_ERROR]
+  | (typeof REVIEW_SUBMIT_ERROR)[keyof typeof REVIEW_SUBMIT_ERROR];
+
+/**
+ * Відмова з машинним кодом (`media/bad-format`, `review/already-submitted`…):
+ * `message` — це КОД, а не текст, і клієнт порівнює його з каталогом i18n.
+ * Звичайний `Error` у проді маскує Р23 (`Internal server error [ref …]`), і
+ * користувач бачив би загальне «не збережено» замість «невірний формат».
+ * Член закритої родини проходить маскування й серіалізацію без зміни коду.
+ * Для діагностики сервера (англійський текст, не код) лишається `Error`.
+ */
+export class CodedError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.coded;
+  constructor(code: CodedErrorCode) {
+    super(code);
+  }
+}
 
 /**
  * Види `AdminConflictError.kind` (Е3-7, Е5-9). `state` — порушення доменного
@@ -235,5 +289,16 @@ export function isDomainErrorName(value: unknown): value is DomainErrorName {
   return (
     typeof value === 'string' &&
     (Object.values(DOMAIN_ERROR_NAME) as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Чи це доменне «не знайдено» (Р26). Дукове за `name`: клієнт має `Error` з
+ * полями (адаптер serverFn), а не екземпляр серверного класу.
+ */
+export function isNotFoundError(error: unknown): boolean {
+  return (
+    (error as { name?: unknown } | null | undefined)?.name ===
+    DOMAIN_ERROR_NAME.notFound
   );
 }

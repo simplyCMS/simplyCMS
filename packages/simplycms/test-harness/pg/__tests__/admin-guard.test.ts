@@ -8,8 +8,6 @@
 // реального користувача за реальною cookie — і чи змінюється відповідь, коли
 // роль зʼявляється. Саме на цій відповіді стоїть `adminRequestGuard`
 // (`src/start.ts`), тому вона перевіряється проти живої БД, а не мока.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   getAuth,
@@ -21,7 +19,7 @@ import {
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -30,7 +28,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const PASSWORD = 'super-secret-password';
 
 describe('допуск в адмінку по сесії Better Auth', () => {
@@ -44,13 +41,7 @@ describe('допуск в адмінку по сесії Better Auth', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
 
     // 🔴 Env виставляється ДО першого `getAuth()`: guard ходить саме через
     // синглтон процесу, тож тест мусить міряти той самий інстанс, а не

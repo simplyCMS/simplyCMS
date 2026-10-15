@@ -14,6 +14,7 @@ import {
   type AddressRow,
 } from 'simplycms/core/hooks/useAddressBook';
 import { useT } from 'simplycms/i18n';
+import { Checkbox } from 'simplycms/ui/checkbox';
 
 /**
  * Адреси доставки покупця — список і CRUD.
@@ -282,12 +283,12 @@ export function AddressesList() {
                 className="flex items-center justify-between rounded-lg border p-3 cursor-pointer"
               >
                 <span className="text-sm">{t('common.byDefault')}</span>
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="address-default"
                   checked={formIsDefault}
-                  onChange={(e) => setFormIsDefault(e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(checked) =>
+                    setFormIsDefault(checked === true)
+                  }
                 />
               </label>
               <div className="flex justify-end gap-2">

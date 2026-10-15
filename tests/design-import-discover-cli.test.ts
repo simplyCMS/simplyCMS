@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
+import { resolveChromium } from '../.agents/skills/simplycms-redesign/scripts/lib/browser.mjs';
 
 const execFileAsync = promisify(execFile);
 const SITE_DIR = join(process.cwd(), 'tests/fixtures/design-import/site');
@@ -26,7 +26,7 @@ const SINGULAR_DIR = join(
 );
 const DISCOVER_CLI = join(
   process.cwd(),
-  '.claude/skills/redesign-from-reference/scripts/discover.mjs',
+  '.claude/skills/simplycms-redesign/scripts/discover.mjs',
 );
 
 /** Сторінки фікстурного «сайту» за pathname — `/about` НАВМИСНО відсутній (404, кейс visit-failed). */

@@ -6,12 +6,12 @@
  * інтерпретація розведені по різних експортах одного модуля.
  */
 import { describe, expect, it } from 'vitest';
-import { FANOUT_MIN_CHILDREN } from '../.agents/skills/redesign-from-reference/scripts/lib/classify-structure.mjs';
+import { FANOUT_MIN_CHILDREN } from '../.agents/skills/simplycms-redesign/scripts/lib/classify-structure.mjs';
 import {
   detectVisitMismatch,
   GRID_CARDS_MIN,
   SPARSE_CARDS_MAX,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/visit-probe.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/visit-probe.mjs';
 
 describe('lib/visit-probe.mjs — detectVisitMismatch: тип product', () => {
   it('сітка карток без Product-розмітки — mismatch (кейс deo)', () => {

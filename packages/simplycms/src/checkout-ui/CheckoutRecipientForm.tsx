@@ -7,6 +7,7 @@ import {
 } from 'simplycms/core/hooks/useRecipientBook';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT } from 'simplycms/i18n';
+import { Checkbox } from 'simplycms/ui/checkbox';
 import { RecipientCard } from './RecipientCard';
 import { RecipientSelectorPopup } from './RecipientSelectorPopup';
 import { RecipientSaveDialog } from './RecipientSaveDialog';
@@ -227,14 +228,13 @@ export function CheckoutRecipientForm({
             htmlFor="checkout-different-recipient"
             className="flex items-start gap-3 cursor-pointer"
           >
-            <input
-              type="checkbox"
+            <Checkbox
               id="checkout-different-recipient"
               checked={!!hasDifferentRecipient}
-              onChange={(e) =>
-                onChange('hasDifferentRecipient', e.target.checked)
+              onCheckedChange={(checked) =>
+                onChange('hasDifferentRecipient', checked === true)
               }
-              className="rounded mt-0.5"
+              className="mt-0.5"
             />
             <div>
               <span className="font-medium text-sm">

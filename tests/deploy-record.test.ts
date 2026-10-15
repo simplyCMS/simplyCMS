@@ -1,0 +1,206 @@
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
+import {
+  readDeployRecord,
+  writeDeployRecord,
+} from '../packages/cli/src/deploy-record.mjs';
+
+// `.simplycms/deploy.json` (К3-Е8, Task 21): закомічений запис без секретів.
+const record = () => ({
+  version: 1,
+  dokploy: {
+    url: 'https://dokploy.example.com',
+    projectId: 'proj_1',
+    applicationId: 'app_1',
+    postgresId: 'pg_1',
+  },
+  domain: 'shop.example.com',
+  bucket: 'shop-media',
+  createdAt: '2026-10-13T10:00:00.000Z',
+});
+
+const roots: string[] = [];
+const tmp = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'deploy-record-'));
+  roots.push(dir);
+  return dir;
+};
+// Валідатор не експортується: перевіряємо його через єдиний вхід запису.
+const validateDeployRecord = (rec: unknown) => {
+  const root = tmp();
+  writeDeployRecord(root, rec);
+  return readDeployRecord(root);
+};
+afterAll(() => {
+  for (const dir of roots) rmSync(dir, { recursive: true, force: true });
+});
+
+describe('валідатор deploy.json', () => {
+  it('коректний запис приймається', () => {
+    expect(validateDeployRecord(record())).toEqual(record());
+  });
+
+  it('поле поза схемою (apiKey) на верхньому рівні й у dokploy → відмова', () => {
+    expect(() => validateDeployRecord({ ...record(), apiKey: 'k' })).toThrow(
+      /apiKey/,
+    );
+    const nested = record();
+    Object.assign(nested.dokploy, { apiKey: 'k' });
+    expect(() => validateDeployRecord(nested)).toThrow(/apiKey/);
+  });
+
+  it('імʼя ресурсу зі словом secret — не секрет: "secret-shop" приймається', () => {
+    expect(
+      validateDeployRecord({ ...record(), bucket: 'secret-shop' })!.bucket,
+    ).toBe('secret-shop');
+  });
+
+  it('dokploy.url з userinfo, query чи hash → відмова без значення в тексті', () => {
+    for (const url of [
+      'https://u:p@dokploy.x',
+      'https://dokploy.x/?token=abc',
+      'https://dokploy.x/#abc',
+    ]) {
+      const bad = record();
+      bad.dokploy.url = url;
+      const error = (() => {
+        try {
+          validateDeployRecord(bad);
+        } catch (e) {
+          return e as Error;
+        }
+      })();
+      expect(error, url).toBeInstanceOf(Error);
+      expect(error!.message).not.toMatch(/u:p|abc/);
+    }
+  });
+
+  it.each([
+    ['version', { version: 2 }],
+    ['порожній projectId', { dokploy: { ...record().dokploy, projectId: '' } }],
+    ['домен зі схемою', { domain: 'https://shop.example.com' }],
+    ['домен зі шляхом', { domain: 'shop.example.com/x' }],
+    ['порожній bucket', { bucket: ' ' }],
+    ['createdAt не дата', { createdAt: 'вчора' }],
+  ])('%s → відмова', (_name, patch) => {
+    expect(() => validateDeployRecord({ ...record(), ...patch })).toThrow();
+  });
+
+  it('невідоме поле: відмова з НАЗВОЮ поля, без значення', () => {
+    const error = (() => {
+      try {
+        validateDeployRecord({ ...record(), apiToken: 'sekret-value' });
+      } catch (e) {
+        return e as Error;
+      }
+    })();
+    expect(error!.message).toContain('apiToken');
+    expect(error!.message).not.toContain('sekret-value');
+  });
+
+  it('userinfo у БУДЬ-ЯКОМУ рядковому URL-полі → відмова з назвою поля', () => {
+    for (const patch of [
+      { bucket: 'https://u:p@s3.example.com/b' },
+      { domain: 'https://u:p@shop.example.com' },
+      { dokploy: { ...record().dokploy, projectId: 'postgres://u:p@h/db' } },
+    ])
+      expect(() => validateDeployRecord({ ...record(), ...patch })).toThrow(
+        /userinfo/,
+      );
+  });
+
+  it("userinfo не прив'язано до початку рядка: пробіл чи префікс перед схемою не обходять перевірку", () => {
+    for (const bucket of [
+      ' https://u:p@x',
+      'x https://u:p@x',
+      '\thttps://u:p@x',
+    ])
+      expect(() => validateDeployRecord({ ...record(), bucket })).toThrow(
+        /userinfo/,
+      );
+    // `@` після шляху — не userinfo.
+    expect(
+      validateDeployRecord({ ...record(), bucket: 'https://h/path@x' }),
+    ).toBeTruthy();
+  });
+
+  it('createdAt: лише повний ISO-8601 — "2026" і дата без часу відхиляються', () => {
+    for (const createdAt of ['2026', '2026-10-13', '13 Oct 2026'])
+      expect(() => validateDeployRecord({ ...record(), createdAt })).toThrow(
+        /createdAt/,
+      );
+    expect(
+      validateDeployRecord({
+        ...record(),
+        createdAt: '2026-10-13T10:00:00+03:00',
+      }),
+    ).toBeTruthy();
+  });
+
+  it('відсутнє поле → відмова; не обʼєкт → відмова', () => {
+    const rest: Partial<ReturnType<typeof record>> = record();
+    delete rest.bucket;
+    expect(() => validateDeployRecord(rest)).toThrow(/bucket/);
+    expect(() => validateDeployRecord([])).toThrow();
+  });
+});
+
+describe('читання й запис', () => {
+  it('файлу немає → null; запис → читання дає той самий обʼєкт', () => {
+    const root = tmp();
+    expect(readDeployRecord(root)).toBeNull();
+    writeDeployRecord(root, record());
+    expect(readDeployRecord(root)).toEqual(record());
+    expect(readFileSync(join(root, '.simplycms/deploy.json'), 'utf8')).toMatch(
+      /\n$/,
+    );
+  });
+
+  it('запис атомарний: після успіху й відмови в теці немає tmp, старий файл не змінюється', () => {
+    const root = tmp();
+    writeDeployRecord(root, record());
+    const before = readFileSync(join(root, '.simplycms/deploy.json'), 'utf8');
+    expect(() =>
+      writeDeployRecord(root, { ...record(), bucket: '' }),
+    ).toThrow();
+    expect(readFileSync(join(root, '.simplycms/deploy.json'), 'utf8')).toBe(
+      before,
+    );
+    expect(readdirSync(join(root, '.simplycms'))).toEqual(['deploy.json']);
+  });
+
+  it('невалідний запис на диск не потрапляє', () => {
+    const root = tmp();
+    expect(() => writeDeployRecord(root, { ...record(), apiKey: 'k' })).toThrow(
+      /apiKey/,
+    );
+    expect(readDeployRecord(root)).toBeNull();
+  });
+
+  it('битий JSON і невалідний файл кидають (status кладе це в unknown)', () => {
+    const root = tmp();
+    mkdirSync(join(root, '.simplycms'));
+    writeFileSync(join(root, '.simplycms/deploy.json'), '{bad');
+    expect(() => readDeployRecord(root)).toThrow();
+    // JSON.parse цитує уривок файла (Node 24) — у текст помилки він потрапити не має.
+    writeFileSync(join(root, '.simplycms/deploy.json'), 'password=hunter2 {');
+    expect(() => readDeployRecord(root)).toThrow('deploy.json: не JSON');
+    expect(() => readDeployRecord(root)).not.toThrow(/hunter2/);
+    writeFileSync(join(root, '.simplycms/deploy.json'), '{"version":1}');
+    expect(() => readDeployRecord(root)).toThrow();
+    // Помилка читання (теки замість файлу) — не «не JSON»: причина не маскується.
+    rmSync(join(root, '.simplycms/deploy.json'));
+    mkdirSync(join(root, '.simplycms/deploy.json'));
+    expect(() => readDeployRecord(root)).toThrow(/EISDIR/);
+    expect(() => readDeployRecord(root)).not.toThrow('не JSON');
+  });
+});

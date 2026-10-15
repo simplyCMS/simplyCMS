@@ -8,13 +8,11 @@
 // харнеса; клієнтський код його не імпортує НІКОЛИ — Gate C стереже це
 // payload-маркером). setResponseStatus теж мокається — поза HTTP-запитом
 // Start-контексту немає, і toAdminConflict інакше кинув би сам.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -48,15 +46,6 @@ import {
 // перекриває лише requireGrant. Потрібні для Е3-6 нижче.
 import { requireGrant, resolveGrant, AuthzError } from 'simplycms/auth';
 
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
-
 const SECTION = '0e300000-0000-4000-8000-000000000001';
 const at = new Date('2026-09-01T00:00:00Z');
 
@@ -76,7 +65,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
 
     // Фікстура розділу — ПРИВІЛЕЙОВАНИМ підключенням (dbUrl), не операцією:
@@ -218,6 +207,25 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       kind: 'unique',
       constraint: 'product_modifications_product_slug_unique',
     });
+  });
+
+  it('Д5: slug товару й модифікації з пробілом/верхнім регістром → ValidationError', async () => {
+    await expect(
+      productsOps.insert({ data: [{ ...product(30), slug: 'Bad Slug' }] }),
+    ).rejects.toMatchObject({ name: 'ValidationError' });
+    const [p] = await productsOps.insert({ data: [product(31)] });
+    await expect(
+      productModificationsOps.insert({
+        data: [
+          {
+            id: crypto.randomUUID(),
+            productId: p!.id,
+            slug: 'Bad Slug',
+            name: 'M',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
   it('фільтр по недозволеній колонці відбито (allowlist ресурсу)', async () => {

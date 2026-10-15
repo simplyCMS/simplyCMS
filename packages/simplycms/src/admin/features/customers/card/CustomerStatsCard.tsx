@@ -17,6 +17,7 @@ export default function CustomerStatsCard({
   // Момент рендера фіксуємо один раз: чиста функція від пропсів і стану.
   const [now] = useState(() => Date.now());
   const days = Math.floor((now - card.createdAt.getTime()) / DAY_MS);
+  const emailDomain = card.email.split('@')[1];
   const rows: Array<[string, string]> = [
     [
       t('admin.users.ordersCount'),
@@ -27,7 +28,14 @@ export default function CustomerStatsCard({
       card.stats ? formatPrice(card.stats.totalPurchasesCents / 100) : '—',
     ],
     [t('admin.users.daysSince'), String(days)],
-    [t('admin.users.emailDomain'), card.email.split('@')[1] ?? '—'],
+    [
+      t('admin.users.emailDomain'),
+      // Правило `email_domain` бачить домен лише підтвердженої пошти (Р30):
+      // позначка пояснює адміну, чому правило не спрацювало.
+      emailDomain && !card.emailVerified
+        ? t('admin.users.emailDomainUnverified', { domain: emailDomain })
+        : (emailDomain ?? '—'),
+    ],
   ];
   return (
     <Card>

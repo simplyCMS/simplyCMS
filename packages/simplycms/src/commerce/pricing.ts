@@ -24,7 +24,7 @@ export async function loadDefaultPriceTypeId(
   return row?.id ?? null;
 }
 
-/** Ціни кількох товарів одним запитом — для головної й серверного резолву позицій чекауту. */
+/** Ціни кількох товарів одним запитом — для серверного резолву позицій кошика й чекауту (`price-cart-catalog`). */
 export async function loadPricesByProduct(
   db: ActorDb,
   productIds: string[],

@@ -4,7 +4,8 @@
 -- підняття БД: непорожній каталог, кілька товарів із цінами й
 -- модифікаціями, банери. Канон (`0000_prelude.sql` … `0003_seed.sql`)
 -- лишається мінімальним навмисно (рішення B13) — цей файл котиться ОКРЕМО,
--- поверх канону, вручну або скриптом `pnpm db:demo` (`scripts/demo-db.mjs`),
+-- поверх канону: у монорепо скриптом `pnpm db:demo` (`scripts/demo-db.mjs`), у
+-- магазині — вручну (`db:demo` там немає),
 -- і НІКОЛИ не бере участі в `simplycms db:diff` чи в складі канону, який
 -- звіряє `pnpm test:schema` (доказ — `demo-seed.test.ts` того ж контуру).
 --
@@ -32,7 +33,7 @@
 -- що файлів статики демо не везе НІ монорепо (`public/` має рівно
 -- `favicon.ico` і `placeholder.svg`), НІ шаблон магазину — теки
 -- `template/public/` не існує взагалі. Тобто `/demo/banners/*.jpg` були
--- гарантованим 404 у кожному магазині, піднятому `pnpm db:demo`.
+-- гарантованим 404 у кожному магазині з накоченим демо.
 --
 -- 🔴 Е0 (контракт id, В2-К3): id проставлені явно статичними UUID (префікс
 -- на таблицю: sections 10000001, products 10000002, product_modifications
@@ -40,7 +41,7 @@
 -- section_property_assignments 10000006, property_options 10000007,
 -- product_property_values 10000008, banners 10000009, shipping_methods
 -- 1000000a, pickup_points 1000000b, shipping_rates 1000000c,
--- stock_by_pickup_point 1000000d, shipping_zones 1000000e; суфікс —
+-- stock_by_pickup_point 1000000d; суфікс —
 -- порядковий номер рядка). Дані НЕ змінені, лише додано колонку id; посилання
 -- на батьківські рядки й далі резолвляться підзапитом/join-ом за натуральним
 -- ключем (slug/code), а не константою.
@@ -295,14 +296,9 @@ values ('1000000a-0000-4000-8000-000000000001'::uuid, 'pickup', 'Самовив�
         'Забрати зі складу у Києві', 'core:pickup', 'rates', true, 0)
 on conflict (code) do nothing;
 
--- 🔴 `shipping_rates.zone_id` — NOT NULL: одна дефолтна зона на всю країну;
--- `findShippingZoneIn` дефолтну зону пропускає й повертає її лише як fallback,
--- тож тариф застосовується без прив'язки до міста (правило домену, не сіду).
--- Дефолт — не більше одного (`idx_shipping_zones_single_default`), тому
--- конфлікт — по частковому індексу, а не по id.
-insert into public.shipping_zones (id, name, description, is_active, is_default, sort_order)
-values ('1000000e-0000-4000-8000-000000000001'::uuid, 'Україна', 'Дефолтна зона демо', true, true, 0)
-on conflict (is_default) where (is_default = true) do nothing;
+-- 🔴 `shipping_rates.zone_id` — NOT NULL: тариф вішається на основну зону
+-- (`is_default`), яку створює вже `0003_seed.sql` (інваріант БД «рівно одна
+-- основна»). Демо власної зони не вставляє, щоб не конфліктувати з нею.
 
 -- 🔴 `is_system = true` — не косметика, а опора write-side. Списання йде в
 -- точку самого замовлення (`orders.pickup_point_id`); якщо її немає (кур'єрська
@@ -354,7 +350,7 @@ on conflict (pickup_point_id, product_id) where product_id is not null and modif
 -- `true`, не пише НІЧОГО — та сама ідемпотентність, що й `on conflict do
 -- nothing` вище. 🔴 Межа, названа чесно: власника, який вимкнув облік уже
 -- ПІСЛЯ сіду, повторний накат демо поверне до `true` — від цього предикат
--- не рятує. Прийнятно саме тому, що файл — ДЕМО (`pnpm db:demo` піднімає
+-- не рятує. Прийнятно саме тому, що файл — ДЕМО (його кладуть на
 -- НОВУ базу), а не міграція чинного магазину. Канон не чіпаємо: чистий
 -- магазин і далі стартує з обліком вимкненим.
 update public.system_settings

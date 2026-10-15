@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   MAX_AVATAR_BYTES,
   MAX_REQUEST_BODY_BYTES,
@@ -9,7 +9,13 @@ import {
   MULTIPART_OVERHEAD_BYTES,
   PAYLOAD_TOO_LARGE_CODE,
 } from '../../domain/media';
-import { checkBodyLimit } from '../body-limit';
+import { checkBodyLimit as check } from '../body-limit';
+
+/** Тип обробника дає Start; за замовчуванням тести — server function. */
+const checkBodyLimit = (
+  request: Request,
+  handlerType: 'serverFn' | 'router' = 'serverFn',
+) => check(request, handlerType);
 
 const MULTIPART = 'multipart/form-data; boundary=----x';
 
@@ -130,32 +136,29 @@ describe('checkBodyLimit', () => {
       ),
     ).toBeNull();
   });
-  it('POST не на /_serverFn/ → пропуск', () => {
+  it("handlerType 'router' (POST на роут) → пропуск", () => {
     expect(
       checkBodyLimit(
         req('POST', '/api/auth/x', {
           'content-length': String(MAX_REQUEST_BODY_BYTES + 1),
         }),
+        'router',
       ),
     ).toBeNull();
+  });
+  it("handlerType 'serverFn' з закодованим шляхом /%5FserverFn/ → 413 (Р20)", () => {
+    const res = checkBodyLimit(
+      req('POST', '/%5FserverFn/x', {
+        'content-length': String(MAX_REQUEST_BODY_BYTES + 1),
+      }),
+      'serverFn',
+    );
+    expect(res?.status).toBe(413);
   });
   it('нечисловий content-length → 413 (не пропускаємо сміття)', () => {
     const res = checkBodyLimit(
       req('POST', '/_serverFn/x', { 'content-length': 'abc' }),
     );
     expect(res?.status).toBe(413);
-  });
-});
-
-describe('checkBodyLimit — база server functions із рантайму', () => {
-  afterEach(() => vi.unstubAllEnvs());
-
-  it('TSS_SERVER_FN_BASE з basepath: стеля на новій базі, не на старій', () => {
-    vi.stubEnv('TSS_SERVER_FN_BASE', '/shop/_serverFn/');
-    const headers = { 'content-length': String(MAX_REQUEST_BODY_BYTES + 1) };
-    expect(
-      checkBodyLimit(req('POST', '/shop/_serverFn/x', headers))?.status,
-    ).toBe(413);
-    expect(checkBodyLimit(req('POST', '/_serverFn/x', headers))).toBeNull();
   });
 });

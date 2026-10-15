@@ -8,6 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasPackage, insertEntry } from './config-edit.mjs';
 import { findScaffoldRoot, readCliVersion } from './context.mjs';
+import { coreRangeFor } from './core-range.mjs';
 import {
   scaffoldPlugin,
   scaffoldTheme,
@@ -34,6 +35,16 @@ const KINDS = {
   plugin: { dir: 'plugins', spec: (name) => `@plugins/${name}` },
   theme: { dir: 'themes', spec: (name) => `@themes/${name}/index` },
 };
+
+/**
+ * Діапазон `engines.simplycms` для нового модуля: чесний semver від версії ядра
+ * (= версія CLI, модель синхронна). Відкрите `>=` з 1.0 прийняло б і 2.0 зі
+ * зламами, а `^M.0.0` ні (на 0.x — `^0.m.0`, caret фіксує мінор).
+ * @param {string} [cliVersion]
+ */
+export function createCoreRange(cliVersion = readCliVersion()) {
+  return coreRangeFor(cliVersion);
+}
 
 /**
  * Розбір аргументів create. Перший позиційний токен — суб-команда
@@ -106,10 +117,7 @@ export async function run(argv) {
     ? null
     : insertEntry(source, { type: kind, key: name, pkg: spec });
 
-  // Мінімальний діапазон сумісності — поточна версія ядра (= версія CLI,
-  // модель синхронна). `>=`, а не `^`: на 0.x caret фіксує мінор і зіпсував
-  // би сумісність першим же релізом (див. semver-тести objects).
-  const coreRange = `>=${readCliVersion()}`;
+  const coreRange = createCoreRange();
 
   if (dryRun) {
     say.info(

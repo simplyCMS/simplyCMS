@@ -60,6 +60,9 @@ export async function writeCategoryChange(
     toCategoryName: categoryName(change.toCategoryId),
     reason: change.reason,
     ruleId: change.ruleId,
+    // Е8-Р3 (Е6г-6): джерело пишеться явно. `rule_id` після видалення правила
+    // стає NULL (SET NULL), а `source` лишається — історія не бреше «вручну».
+    source: change.ruleId === null ? 'manual' : 'rule',
     changedBy: change.changedBy,
   });
 }

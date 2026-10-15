@@ -10,12 +10,19 @@
  * доводиться префіл чекауту з профілю (`auth/provision.ts`).
  */
 import { randomUUID } from 'node:crypto';
+import { MAIL_STEP_PASSWORD, confirmEmail, signIn } from './mail.mjs';
 
 /** Пароль покупців прогону — експортується для кроків, що входять повторно. */
-export const PASSWORD = 'live-smoke-2026';
+export const PASSWORD = MAIL_STEP_PASSWORD;
 
-/** @returns {Promise<string>} email нового покупця (для читабельності логів). */
-export async function register(page, base) {
+/**
+ * Лише форма реєстрації (без підтвердження пошти): зі SMTP (Р30) `signUp` не
+ * дає сесії, форма показує «Перевірте пошту». Окремо від `register`, бо Р30-крок
+ * (`mail.mjs`) перевіряє саме проміжний стан.
+ *
+ * @returns {Promise<string>} email нового покупця
+ */
+export async function signUp(page, base) {
   const email = `live-smoke-${randomUUID().slice(0, 8)}@example.test`;
   await page.goto(`${base}/auth`, { waitUntil: 'networkidle' });
   await page.getByRole('tab', { name: 'Реєстрація' }).click();
@@ -25,7 +32,24 @@ export async function register(page, base) {
   await page.locator('#register-password').fill(PASSWORD);
   await page.locator('#confirmPassword').fill(PASSWORD);
   await page.getByRole('button', { name: /Зареєструватися/ }).click();
-  // Успішна реєстрація логінить і веде на головну (`Auth.tsx`).
+  await page
+    .getByText('Перевірте пошту')
+    .waitFor({ state: 'visible', timeout: 15_000 });
+  return email;
+}
+
+/**
+ * Реєстрація повним шляхом продукції: форма → лист підтвердження з Mailpit →
+ * посилання → вхід. Кінець — залогінений покупець на головній, як і раніше.
+ *
+ * @returns {Promise<string>} email нового покупця (для читабельності логів)
+ */
+export async function register(page, base) {
+  const email = await signUp(page, base);
+  if (!(await confirmEmail(page, email)))
+    throw new Error(`[live-smoke] немає листа підтвердження для ${email}`);
+  await signIn(page, base, email);
+  // Успішний вхід веде на головну (`Auth.tsx`).
   await page.waitForURL(`${base}/`, { timeout: 15_000 });
   return email;
 }

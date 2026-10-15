@@ -18,7 +18,7 @@ import {
   browserVisitProbe,
   detectVisitMismatch,
   GRID_CARDS_MIN,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/visit-probe.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/visit-probe.mjs';
 
 /** 1×1 gif — щоб `img` був справжнім вузлом, а не мережевим запитом. */
 const PIXEL =

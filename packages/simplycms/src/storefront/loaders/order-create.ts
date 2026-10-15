@@ -66,6 +66,8 @@ export async function createOrder(
     total: input.total.toFixed(2),
     shippingMethodId: input.shippingMethodId,
     shippingCost: input.shippingCost.toFixed(2),
+    shippingZoneId: input.shippingZoneId,
+    shippingRateId: input.shippingRateId,
     pickupPointId: input.pickupPointId,
     // Знімок, а не посилання: замовлення читається після перейменування чи
     // видалення точки або способу (Е6а-8). Spread — щоб interface став JSON.

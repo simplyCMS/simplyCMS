@@ -10,7 +10,7 @@
 ## Агентний тулінг
 
 Процесний тулінг. Джерело правди скілів — `.agents/skills/`; `.claude/skills/*` — симлінки
-на нього. 🔴 Скіли, що їдуть у магазини (зараз `redesign-from-reference`), живуть у
+на нього. 🔴 Скіли, що їдуть у магазини (зараз `simplycms-redesign`), живуть у
 `packages/simplycms/skills/<name>`, а `.agents/skills/<name>` і `.claude/skills/<name>` — ПРЯМІ
 симлінки на нього (обидва в пакет, не ланцюжком): прав ОРИГІНАЛ у пакеті. Магазин отримує їх
 симлінками на `node_modules/simplycms/skills/<name>` (скаффолдер після `installDeps`,
@@ -20,7 +20,7 @@
 |-----|-------|
 | `.agents/skills/codebase-research/` | Як шукати в репо: `orient` (`--map`, символи, `--plan`, `--doctor`), дві поверхні, формат звіту-дельти |
 | `.agents/skills/code-review/` | Як рев'ювити: шкала `blocker/major/minor` × confidence з порогом 80, шість лінз, обов'язковий adversarial-крок |
-| `packages/simplycms/skills/redesign-from-reference/` | Редизайн магазину за референс-сайтом, фази 0-6; посібник — `docs/guides/redesign-from-reference.md` |
+| `packages/simplycms/skills/simplycms-redesign/` | Редизайн магазину за референс-сайтом, фази 0-6; посібник — `docs/guides/simplycms-redesign.md` |
 | `.claude/agents/` | Субагенти `codebase-research` (єдиний із MCP код-шару), `code-review` (одна лінза за виклик), `code-review-verifier` (скептик) |
 | `.claude/commands/` | `/виконай-задачу` (головна), `/перевір-роботу-агента-кодування`, `/проведи-додаткове-дослідження`, `/поділи-задачу-на-етапи`, `/перевір-нову-версію-задачі`, `/проаналізуй-кларіфай-питання`, `/перевір-скіли`, `/редизайн-за-референсом` |
 

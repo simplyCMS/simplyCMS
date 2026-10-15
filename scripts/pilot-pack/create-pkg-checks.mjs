@@ -26,12 +26,17 @@ const EXPECTED_FILES = [
   'package.json',
   '.gitignore',
   '.env.example',
+  // `*.sql text eol=lf` (Е8-О4): сума журналу накату не має залежати від ОС.
+  // npm/pnpm pack dot-файл не ріжуть (виміряно), тож він їде без RENAMES.
+  '.gitattributes',
   'routes.ts',
   'vite.config.ts',
   'simplycms.config.ts',
   'src/routes/__root.tsx',
   'themes/default/index.ts',
   'db/migrations/0000_prelude.sql',
+  // Шими прод-старту й запрошення власника (host-файли; логіка — у ядрі).
+  'scripts/start.mjs',
   'scripts/owner-invite.mjs',
   // 🔴 Без нього pnpm 11 обриває install (`ERR_PNPM_IGNORED_BUILDS`), а
   // `pnpm build` перезапускає install і теж падає — магазин не збереться.
@@ -75,8 +80,9 @@ export function checkStoreStructure(storeDir) {
  * мовчки: `pnpm install` оновлює пакет, а закомічену копію — ніхто.
  */
 export function checkNoSkillCopies(pkgDir) {
-  const stray = ['template/.claude', 'template/.agents'].filter((dir) =>
-    existsSync(join(pkgDir, dir)),
+  // `.claude/` у шаблоні є (хук і шим) — копією скілів вважаються лише `skills/`.
+  const stray = ['template/.claude/skills', 'template/.agents/skills'].filter(
+    (dir) => existsSync(join(pkgDir, dir)),
   );
   return stray.length === 0
     ? { ok: true, details: ['✓ tarball скаффолдера без копії скілів'] }
@@ -120,7 +126,7 @@ export function checkTemplateDeps(pkgDir) {
  * false. Хибним «✗» це не є: POSIX резолвить симлінк ліниво, тож після
  * першого install лінк оживає сам.
  */
-export function checkSkillLinks(storeDir, name = 'redesign-from-reference') {
+export function checkSkillLinks(storeDir, name = 'simplycms-redesign') {
   const details = [];
   for (const dir of SKILL_LINK_DIRS) {
     const path = join(storeDir, dir, name);

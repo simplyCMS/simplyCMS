@@ -13,6 +13,11 @@ const pkg = (p: string) => resolve(import.meta.dirname, 'packages', p);
 // SSR-трансформує і ламає hook-тести) + дедуп React + ті самі workspace-аліаси,
 // що й у vite.config.ts.
 export default defineConfig({
+  // 🔴 Гейт не читає `.env*` розробника: Vite/Vitest інакше підтягують `VITE_*`
+  // з `.env.local` у `process.env`/`import.meta.env`, і тест зелений лише на
+  // машині власника та червоний у CI чи чистому дереві (Р31). `false` — штатний
+  // вимикач завантаження env-файлів (Vite `envDir`, shared-options).
+  envDir: false,
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-query'],
@@ -63,11 +68,17 @@ export default defineConfig({
       // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:
       // `entryFiles()` на порожньому dist дає `[]`, і перетин теж `[]`.
       'tests/dist-server-boundary.test.ts',
+      // Справжня збірка застосунку з нестандартним `serverFns.base` (~хвилина):
+      // місце в packaging-сюїті.
+      'tests/server-fn-base-build.test.ts',
       // Playwright-специ (`*.e2e.ts`) — окремий раннер `pnpm test:e2e`
       // (`playwright.config.ts`), не vitest. Розширення `.e2e.ts` vitest і так
       // не підхоплює (include матчить лише `.test.`/`.spec.`), запис тут —
       // явний, а не мовчазний збіг конвенцій.
       'tests/e2e/**',
+      // Контур `pnpm test:race`: вкладені прогони vitest у середовищі-форсері
+      // гонки teardown (секунди на прогін) — окремий конфіг, не `pnpm test`.
+      'tests/race-teardown/**/*.test.ts',
       // PG-харнес (Task 1, план В2-К1а): потребує живого Postgres
       // (`PG_HARNESS_URL` або ефемерний `initdb`+`pg_ctl` фолбек), тому в
       // `pnpm test` не входить — окремий гейт `pnpm test:schema`

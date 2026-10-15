@@ -124,6 +124,11 @@ const SERVER_ENV_FILES = [
   'packages/simplycms/src/storefront-routes/server/root.ts',
   'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
+  // Прод-старт і CLI `owner:invite` (F5 рев'ю Е8): усі модулі теки читають
+  // `process.env` процесу, а не збірки, тож зона — тека (глоб), а не вибір
+  // файлів: новий файл поруч не випаде з межі.
+  'packages/simplycms/src/prod-start/*.ts',
+  'packages/simplycms/src/auth/owner-invite-cli/*.ts',
 ];
 
 // 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
@@ -627,7 +632,7 @@ const eslintConfig = [
       // має ховатися від гейта.
       //
       // (Скрипти design-import жили тут синкованою копією до переїзду в
-      // `.claude/skills/redesign-from-reference/scripts/` — тепер та копія
+      // `.claude/skills/simplycms-redesign/scripts/` — тепер та копія
       // під загальним template-ігнором, а джерело лінтується в `.agents/`.)
       //
       // 🔴 Чому не одне `template/**` + `!template/scripts/**`: патерн, що

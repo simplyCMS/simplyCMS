@@ -1,7 +1,13 @@
 import { MEDIA_URL_BASE } from 'simplycms/domain/media';
 import type { MediaStorageDriver } from './driver';
 import { MEDIA_KEY_RE, MIME_BY_EXT } from './keys';
-import { getMediaDriver } from './local-fs';
+import { getMediaDriver } from './select';
+import {
+  describeDriverError,
+  notFound,
+  serverError,
+  unavailable,
+} from './serve-responses';
 
 /**
  * Префікс роздачі — ВИВЕДЕНИЙ з `MEDIA_URL_BASE` (рішення Е2-11), а не
@@ -22,28 +28,6 @@ export type MediaServeVerdict = 'missing' | 'hidden' | { personal: boolean };
 export interface ServeMediaDeps {
   lookup: (key: string, request: Request) => Promise<MediaServeVerdict>;
 }
-
-/** Одна відповідь «немає» на всі відмови (див. докблок нижче). */
-const notFound = (): Response =>
-  new Response('Not found', {
-    status: 404,
-    // 🔴 `no-store`: 404 прихованого файлу (pending-фото) інакше осів би в
-    // CDN за URL і віддавався б автору, а після схвалення — усім.
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
-
-/** Збій `lookup` (БД недоступна): 500 без деталей, не кешується. */
-const serverError = (): Response =>
-  new Response('Internal error', {
-    status: 500,
-    headers: {
-      'content-type': 'text/plain; charset=utf-8',
-      'cache-control': 'no-store',
-    },
-  });
 
 /**
  * GET `/media/<key>` — роздача обʼєктів драйвера сховища.
@@ -108,7 +92,7 @@ export async function serveMedia(
   // почав би відповідати на POST/PUT/DELETE. Явний `HEAD:` лишає allowlist
   // методів закритим. Не «спрощувати».
   //
-  // 🔴 `null`-тіло переживає Node-runner: `server-runtime.mjs:87-89` має
+  // 🔴 `null`-тіло переживає Node-runner: `sendWebResponse` у `server-runtime.mjs` має
   // явну гілку `if (!response.body) { res.end(); return; }` — перевірено,
   // бо `Readable.fromWeb(null)` тут падав би.
   const bodyless = ctx.request.method === 'HEAD';
@@ -154,8 +138,17 @@ export async function serveMedia(
   let object;
   try {
     object = await driver.open(key);
-  } catch {
-    return notFound();
+  } catch (error) {
+    // 🔴 Збій драйвера (мережа S3, права диска) — НЕ «файла немає» (Е8-Р14):
+    // 404 `immutable`-кешували б CDN і браузер, а оператор не бачив би причини.
+    // Лог — ключ і `describeDriverError` (імʼя/код + повідомлення з замаскованими
+    // обліковими даними URL): сторонній драйвер може покласти в `message` URL з
+    // ключами, а сам `error` цілком (стек, `cause`) у лог не йде.
+    console.error(
+      `[simplycms] media driver open failed: ${key}`,
+      describeDriverError(error),
+    );
+    return unavailable();
   }
   if (!object) return notFound();
 

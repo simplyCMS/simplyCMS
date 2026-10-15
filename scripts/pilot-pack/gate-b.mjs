@@ -13,6 +13,9 @@
  * знайшлася хоч одна назва: більшого про чужі дані сказати не можна.
  */
 
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { get } from 'node:http';
 import pg from 'pg';
 
 /** Товари з БД — очікувані рядки для SSR-перевірок. */
@@ -156,13 +159,164 @@ export async function gateHttp(port, env) {
 
   const health = await fetch(`${base}/api/health`);
   const healthJson = await health.json();
+  // 🔴 `build` доводить, що `define` __SIMPLYCMS_BUILD_ID__ з vite.config магазину
+  // дійшов до коду ЯДРА в node_modules (а не лише до коду самого магазину):
+  // без нього там лишився б guard-дефолт 'dev'. Очікуване значення пілот задає
+  // сам перед збіркою (`BUILD_ID=e8-…`); у `--reuse` збірка стара, тож
+  // вимагаємо хоча б «не dev».
+  const expectedBuild = process.env.BUILD_ID?.slice(0, 12);
+  const buildOk = expectedBuild
+    ? healthJson.build === expectedBuild
+    : typeof healthJson.build === 'string' && healthJson.build !== 'dev';
   check(
     'GET /api/health',
     health.status === 200 &&
       healthJson.status === 'healthy' &&
-      healthJson.checks?.database?.ok === true,
-    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}`,
+      healthJson.checks?.database?.ok === true &&
+      buildOk,
+    `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}, build=${healthJson.build} (очікую ${expectedBuild ?? 'не dev'})`,
+  );
+
+  // Стиснення статики (Task 7): `server.mjs` лише ВІДДАЄ `.br`/`.gz` через
+  // sirv, а кладе їх плагін `precompressAssets` у збірці. Без нього вимір
+  // показував нуль. Заголовок `Accept-Encoding` ставимо сирим `http.get`:
+  // `fetch` додає свій і не дає перевірити «без заголовка».
+  const entry = /\/assets\/[^"']+\.js/.exec(
+    await (await fetch(`${base}/`)).text(),
+  )?.[0];
+  const brHead = entry ? await headOf(port, entry, 'br') : null;
+  const plainHead = entry ? await headOf(port, entry, null) : null;
+  check(
+    'GET /assets/<entry>.js (стиснення)',
+    brHead?.['content-encoding'] === 'br' &&
+      plainHead !== null &&
+      plainHead['content-encoding'] === undefined,
+    `${entry ?? 'entry не знайдено в HTML'}: br → ${brHead?.['content-encoding'] ?? '—'}, без заголовка → ${plainHead?.['content-encoding'] ?? '—'}`,
   );
 
   return { ok, details };
+}
+
+/** Заголовки відповіді на GET зі вказаним (або без) `Accept-Encoding`. */
+function headOf(port, path, acceptEncoding) {
+  return new Promise((resolveHead, reject) => {
+    const request = get(
+      {
+        host: '127.0.0.1',
+        port,
+        path,
+        headers: acceptEncoding ? { 'accept-encoding': acceptEncoding } : {},
+      },
+      (response) => {
+        response.resume();
+        resolveHead(response.headers);
+      },
+    );
+    request.on('error', reject);
+  });
+}
+
+/**
+ * Доказ, що `scripts/start.mjs` справді замінив процес (Е8-Р6): PID той самий
+ * (`execve` міняє образ, не процес), `cmdline` — вже `server.mjs`, а в
+ * `environ` немає пароля власника схеми. Лише Linux (`/proc`); на інших ОС —
+ * явний skip із причиною, а не мовчазний «зелений».
+ *
+ * @param {number} pid PID дитини, якого запустив гейт
+ * @param {string} startLogs лог старту (накат мусить сказати, що нічого не робить)
+ * @param {{ smtp?: boolean }} [opts] `smtp` — прогін задав SMTP (К3-Е8): попередження про лог не очікується
+ * @returns {{ ok: boolean; skipped?: boolean; details: string[] }}
+ */
+export function checkExecve(pid, startLogs, { smtp = false } = {}) {
+  const details = [];
+  let ok = true;
+  const check = (label, passed, fact) => {
+    details.push(`${passed ? 'OK  ' : 'FAIL'} ${label} — ${fact}`);
+    if (!passed) ok = false;
+  };
+
+  check(
+    'лог старту',
+    startLogs.includes('нічого накочувати'),
+    'очікую «нічого накочувати» (БД уже накочена db:demo)',
+  );
+  // Р7′ п.3: log-драйвер у проді — попередження рівно ОДИН раз (друкує лише бандл).
+  // З SMTP (повний прогін `pilot-full`) драйвер smtp, і попередження не має бути.
+  const warnings = startLogs.split('пошта не налаштована').length - 1;
+  const expected = smtp ? 0 : 1;
+  check(
+    smtp
+      ? 'без попередження про пошту (SMTP задано)'
+      : 'попередження про пошту',
+    warnings === expected,
+    `разів: ${warnings}`,
+  );
+  if (process.platform !== 'linux') {
+    details.push(
+      `SKIP /proc/<pid>/environ і cmdline — перевірка лише на Linux (тут ${process.platform})`,
+    );
+    return { ok, skipped: true, details };
+  }
+  const environ = readFileSync(`/proc/${pid}/environ`, 'utf8').split('\0');
+  check(
+    'environ без MIGRATION_DATABASE_URL',
+    !environ.some((entry) => entry.startsWith('MIGRATION_DATABASE_URL=')),
+    `${environ.length} змінних`,
+  );
+  const cmdline = readFileSync(`/proc/${pid}/cmdline`, 'utf8').split('\0');
+  check(
+    'cmdline — server.mjs',
+    cmdline.some((arg) => arg.endsWith('server.mjs')),
+    cmdline.join(' ').trim(),
+  );
+  return { ok, details };
+}
+
+/**
+ * Перевірка env у ЗІБРАНОМУ бандлі (Е8-Р7′): виклик у `src/server.ts` мусить
+ * пережити збірку, і часткова група S3 валить `server.mjs` ДО listen. Окремий
+ * процес зі штучним порожнім портом: слухання довело б, що перевірка не спрацювала.
+ *
+ * @param {string} storeDir
+ * @param {Record<string,string>} env env скретча (три ключі + групи драйверів, якщо задані)
+ */
+export function checkPartialEnv(storeDir, env) {
+  const secret = 'pilot-partial-bucket-value';
+  // Повний прогін несе всю групу S3 (К3-Е8) у `.env` скретча, а `server.mjs`
+  // наповнює з нього ВІДСУТНІ ключі. Порожній рядок — «присутній, але порожній»:
+  // і блокує наповнення, і читається групою як відсутній, тож лишається
+  // тільки `S3_BUCKET` — інакше група була б повною, і перевірка нічого б не довела.
+  const emptyS3 = Object.fromEntries(
+    ['S3_ENDPOINT', 'S3_REGION', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'].map((k) => [
+      k,
+      '',
+    ]),
+  );
+  const run = spawnSync('node', ['server.mjs'], {
+    cwd: storeDir,
+    env: {
+      ...process.env,
+      ...env,
+      ...emptyS3,
+      S3_BUCKET: secret,
+      PORT: '0',
+      HOST: '127.0.0.1',
+    },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  const out = `${run.stdout}${run.stderr}`;
+  const passed =
+    run.status !== null &&
+    run.status !== 0 &&
+    out.includes('S3_ENDPOINT') &&
+    !out.includes(secret) &&
+    !out.includes('слухає');
+  return {
+    ok: passed,
+    details: [
+      `${passed ? 'OK  ' : 'FAIL'} часткова група S3 у зібраному бандлі — код ${run.status}, ` +
+        `називає S3_ENDPOINT: ${out.includes('S3_ENDPOINT')}, слухав: ${out.includes('слухає')}`,
+    ],
+  };
 }

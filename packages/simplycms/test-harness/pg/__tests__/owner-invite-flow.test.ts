@@ -5,22 +5,22 @@
 // токена — без БД, форма сторінки — без сервера), але «власник справді
 // увійшов у щойно піднятий магазин» доводиться лише тут: на живій схемі, тим
 // самим кодом, що виконує роут `/auth/invite`.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   acceptOwnerInvite,
+  createAuth,
   getAuth,
   isAdminRequest,
   issueOwnerInvite,
   ownerInviteStore,
+  readSessionSubject,
   resetAuth,
 } from 'simplycms/auth';
-import type { InviteEmail } from 'simplycms/auth';
+import type { MailMessage } from 'simplycms/mail';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -29,7 +29,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const OWNER = 'owner@example.test';
 const SHOPPER = 'shopper@example.test';
 const PASSWORD = 'owner-password-not-a-real-one';
@@ -39,7 +38,7 @@ describe('запрошення власника наскрізь', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_invite');
   let dbUrl: string;
-  const letters: InviteEmail[] = [];
+  const letters: MailMessage[] = [];
   let inviteUrl: string;
   let userId: string;
 
@@ -57,13 +56,7 @@ describe('запрошення власника наскрізь', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
 
     // Як у проді: застосунок конектиться `app_runtime`, а інстанс auth
     // береться синглтоном `getAuth()` — тим самим, що обслуговує `/api/auth/$`.
@@ -86,11 +79,12 @@ describe('запрошення власника наскрізь', () => {
   it('посилання з листа веде на /auth/invite і несе пошту з токеном', async () => {
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        letters.push(message);
+      schedule: async (items) => {
+        letters.push(...items.map((item) => item.message));
+        return [];
       },
       email: OWNER,
-      siteUrl: SITE,
+      env: { VITE_SITE_URL: SITE },
     });
     inviteUrl = invite.url;
     userId = invite.userId;
@@ -169,5 +163,176 @@ describe('запрошення власника наскрізь', () => {
       { email: OWNER, role: 'admin' },
       { email: SHOPPER, role: 'user' },
     ]);
+  });
+  describe('Р19: роль лише після прийняття, сесії гаснуть', () => {
+    const NEW_PASSWORD = 'owner-new-password-after-accept';
+    const schedule = async (items: readonly { message: MailMessage }[]) => {
+      letters.push(...items.map((item) => item.message));
+      return [];
+    };
+    const roleRows = (id: string) =>
+      queryRows(
+        dbUrl,
+        `select role::text as role from public.user_roles where user_id = $1`,
+        [id],
+      );
+    const adminRoleCount = async (id: string) =>
+      (await roleRows(id)).filter((r) => r.role === 'admin').length;
+    const tokenOf = (url: string) => new URL(url).searchParams.get('token')!;
+    const headersOf = (response: Response) =>
+      new Headers({ cookie: cookieOf(response) });
+
+    /** Самореєстрація зловмисника на пошту власника + випуск запрошення. */
+    const hijackedInvite = async (email: string) => {
+      const signUp = await getAuth().api.signUpEmail({
+        body: { email, password: PASSWORD, name: 'Зловмисник' },
+        asResponse: true,
+      });
+      expect(signUp.status).toBe(200);
+      const session = headersOf(signUp);
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email,
+        env: { VITE_SITE_URL: SITE },
+      });
+      return { session, invite };
+    };
+
+    it('(1) пошту зайнято самореєстрацією: випуск запрошення НЕ дає ролі живій сесії', async () => {
+      const { session, invite } = await hijackedInvite('hijack@example.test');
+      expect(invite.created).toBe(false);
+      expect(invite.existingUnverified).toBe(true);
+
+      const subject = await readSessionSubject(session);
+      expect(subject?.userId).toBe(invite.userId);
+      expect(subject?.roles).not.toContain('admin');
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+    });
+
+    it('(2) прийняття гасить сесію самореєстрації, новий вхід дає admin', async () => {
+      const email = 'hijack-accept@example.test';
+      const { session, invite } = await hijackedInvite(email);
+      const accepted = await acceptOwnerInvite({
+        auth: getAuth(),
+        store: ownerInviteStore,
+        email,
+        token: tokenOf(invite.url),
+        password: NEW_PASSWORD,
+      });
+      expect(accepted).toEqual({ ok: true, userId: invite.userId });
+
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
+      // Старий пароль зловмисника теж не діє.
+      expect((await signIn(email, PASSWORD)).status).not.toBe(200);
+
+      const fresh = await signIn(email, NEW_PASSWORD);
+      expect(fresh.status).toBe(200);
+      const subject = await readSessionSubject(headersOf(fresh));
+      expect(subject?.roles).toContain('admin');
+    });
+
+    it('(2б) страховка: опцію BA вимкнено — явне deleteUserSessions у accept усе одно гасить сесію', async () => {
+      const email = 'hijack-insurance@example.test';
+      const { session, invite } = await hijackedInvite(email);
+      const { options } = await getAuth().$context;
+      // Тип опції звужено до `true` (createAuth ставить літерал) — для тесту розширюємо.
+      const emailAndPassword = options.emailAndPassword as {
+        revokeSessionsOnPasswordReset?: boolean;
+      };
+      const saved = emailAndPassword.revokeSessionsOnPasswordReset;
+      emailAndPassword.revokeSessionsOnPasswordReset = false;
+      try {
+        const accepted = await acceptOwnerInvite({
+          auth: getAuth(),
+          store: ownerInviteStore,
+          email,
+          token: tokenOf(invite.url),
+          password: NEW_PASSWORD,
+        });
+        expect(accepted.ok).toBe(true);
+      } finally {
+        emailAndPassword.revokeSessionsOnPasswordReset = saved;
+      }
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
+    });
+
+    it('(3) звичайне скидання пароля гасить живі сесії', async () => {
+      const email = 'reset-revokes@example.test';
+      await getAuth().api.signUpEmail({
+        body: { email, password: PASSWORD, name: 'Покупець' },
+      });
+      const session = headersOf(await signIn(email, PASSWORD));
+      expect(
+        await getAuth().api.getSession({ headers: session }),
+      ).not.toBeNull();
+
+      const resetMails: MailMessage[] = [];
+      const auth = createAuth({
+        schedule: async (items) => {
+          resetMails.push(...items.map((item) => item.message));
+          return [];
+        },
+        mailTransport: { driver: 'smtp', send: async () => {} },
+      });
+      await auth.api.requestPasswordReset({ body: { email } });
+      expect(resetMails).toHaveLength(1);
+      const token = /reset-password\/([^?\s"]+)/.exec(resetMails[0]!.text)![1];
+
+      await auth.api.resetPassword({
+        body: { newPassword: 'another-password-after-reset', token },
+      });
+      expect(await getAuth().api.getSession({ headers: session })).toBeNull();
+    });
+
+    it('(6) BA відхиляє пароль: ролі admin немає, токен спожито', async () => {
+      const email = 'weak-password@example.test';
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email,
+        env: { VITE_SITE_URL: SITE },
+      });
+      const token = tokenOf(invite.url);
+      const args = {
+        auth: getAuth(),
+        store: ownerInviteStore,
+        email,
+        token,
+      };
+      expect(await acceptOwnerInvite({ ...args, password: 'short' })).toEqual({
+        ok: false,
+        reason: 'password-rejected',
+      });
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+      expect(
+        await acceptOwnerInvite({ ...args, password: NEW_PASSWORD }),
+      ).toEqual({ ok: false, reason: 'not-found' });
+    });
+
+    it('(7) бан між випуском і прийняттям: not-found, ролі admin немає', async () => {
+      const email = 'banned-between@example.test';
+      const invite = await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule,
+        email,
+        env: { VITE_SITE_URL: SITE },
+      });
+      await queryRows(
+        dbUrl,
+        `update public.users set banned_at = now() where id = $1`,
+        [invite.userId],
+      );
+      expect(
+        await acceptOwnerInvite({
+          auth: getAuth(),
+          store: ownerInviteStore,
+          email,
+          token: tokenOf(invite.url),
+          password: NEW_PASSWORD,
+        }),
+      ).toEqual({ ok: false, reason: 'not-found' });
+      expect(await adminRoleCount(invite.userId)).toBe(0);
+    });
   });
 });

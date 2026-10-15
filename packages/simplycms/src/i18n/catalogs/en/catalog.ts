@@ -26,6 +26,7 @@ export const messages: Catalog = {
   'catalog.filters.removeAria': 'Remove filter {label}: {value}',
   'catalog.filters.clearAll': 'Clear all',
   'catalog.filters.inStockOnly': 'In stock only',
+  'catalog.filters.booleanYes': 'Yes',
   'catalog.filters.noOptions': 'No options available',
 
   'catalog.filters.priceMinAria': 'Price from',

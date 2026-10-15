@@ -8,6 +8,11 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 
+// Скрипт — чистий node без збірки, TS-модуль він не імпортує. Рівність із
+// `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema/seed-ids`) стереже тест
+// `seed-ids.test.ts`.
+const MAIN_SHIPPING_ZONE_ID = '00000007-0000-4000-8000-000000000001';
+
 /** Демо-товар з обліком залишку, на якому крок оформлює обидва замовлення. */
 export const SHIPPING_PRODUCT_SLUG = 'sonyachna-panel-550w-mono';
 
@@ -19,6 +24,21 @@ export async function zonesByName(url, names) {
       where name = any($1) order by name`,
     [names],
   );
+}
+
+/**
+ * Назва основної зони сіду за її фіксованим id (`MAIN_SHIPPING_ZONE_ID`): зона
+ * впізнається за id, а не за назвою, яку власник може змінити.
+ */
+export async function mainZoneName(url) {
+  const rows = await sql(
+    url,
+    `select name from public.shipping_zones
+      where id = $1`,
+    [MAIN_SHIPPING_ZONE_ID],
+  );
+  if (rows.length !== 1) throw new Error('основної зони сіду немає в БД');
+  return rows[0].name;
 }
 
 /** Спосіб доставки за кодом (провайдер, режим ціни, активність). */

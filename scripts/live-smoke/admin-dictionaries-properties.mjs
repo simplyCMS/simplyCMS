@@ -4,8 +4,7 @@
  * канон 150 рядків.
  */
 import { optionBySlug, propertyBySlug } from './admin-dictionaries-sql.mjs';
-import { waitText } from './selectors.mjs';
-import { expectCount, expectSome } from './wait.mjs';
+import { expectCount, expectSome, waitToast } from './wait.mjs';
 
 export const PROP = { slug: 'live-dict-prop', name: 'Жива властивість Е4' };
 const OPT = { slug: 'live-dict-opt', name: 'Жива опція Е4' };
@@ -25,7 +24,7 @@ export async function createPropertyWithOption({ page, base, dbUrl, check }) {
   await dialog.locator('#property-new-hasPage').click();
   await dialog.locator('#property-new-isFilterable').click();
   await dialog.getByRole('button', { name: 'Створити' }).click();
-  await waitText(page, 'Властивість створено');
+  await waitToast(page, 'Властивість створено');
   const prop = await propertyBySlug(dbUrl, PROP.slug);
   check(
     'адмін: властивість select, hasPage, isFilterable, глобальна',

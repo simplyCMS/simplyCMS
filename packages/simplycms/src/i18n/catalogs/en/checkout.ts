@@ -32,6 +32,8 @@ export const messages: Catalog = {
   'checkout.success.notFound': 'Order not found',
   'checkout.success.notFoundHint':
     'The link may be invalid or the access period has expired',
+  'checkout.success.loadFailed':
+    'Could not load the order. It was most likely placed — do not place it again, just retry',
   'checkout.success.toHome': 'Go to home page',
   'checkout.success.details': 'Order details',
   'checkout.success.recipient': 'Recipient',

@@ -28,6 +28,12 @@ export function useDiscountEnvironment(): {
   data: DiscountEnvironment | undefined;
   isLoading: boolean;
   isError: boolean;
+  /**
+   * Останнє УСПІШНЕ середовище, навіть якщо фоновий перезапит упав. Лише для
+   * ідентичності виду цін у ключі кешу (`useViewerPriceKey`, Р29): збій
+   * фонового перезапиту не міняє вид цін покупця. Ціни ним не рахуються.
+   */
+  lastKnown: DiscountEnvironment | undefined;
   refetch: () => void;
 } {
   const { user } = useAuth();
@@ -40,6 +46,7 @@ export function useDiscountEnvironment(): {
     data: isError ? undefined : data,
     isLoading,
     isError,
+    lastKnown: data,
     refetch: () => void refetch(),
   };
 }

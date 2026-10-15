@@ -21,13 +21,14 @@ import { updateCustomerContactsOp } from 'simplycms/admin-server/impl';
 describe('скидання пароля: guard і відкликання токенів (Е6г-2/18)', () => {
   const db = F.useCustomersDb('simplycms_reset_guard');
   const url = () => db.url();
-  const sendEmail = vi.fn(async () => {});
+  const sendEmail = vi.fn(async () => [] as string[]);
   let auth: ReturnType<typeof createAuth>;
   beforeAll(() => {
     auth = createAuth({
       secret: 'integration-secret-not-a-real-one',
       baseURL: 'http://localhost:3000',
-      sendEmail,
+      schedule: sendEmail,
+      mailTransport: { driver: 'log', send: async () => {} },
     });
   });
   afterAll(() => closeDbPool());

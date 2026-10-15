@@ -7,7 +7,7 @@
  * опція за роллю (`pickOption` кроку доставки). Назва дочірньої групи має
  * батьківську префіксом — підписи кнопок дерева шукаються `exact`.
  */
-import { waitText } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 import { pickOption } from './admin-shipping-owner.mjs';
 
 const go = (page, base, path) =>
@@ -19,7 +19,7 @@ export async function createGroup(page, base, name, parentId) {
   await go(page, base, `discounts/groups/new${query}`);
   await page.locator('#dg-name').fill(name);
   await page.getByRole('button', { name: 'Створити', exact: true }).click();
-  return waitText(page, 'Групу створено');
+  return waitToast(page, 'Групу створено');
 }
 
 /**
@@ -47,7 +47,7 @@ export async function createDiscount(page, base, d) {
   if (d.category)
     await page.getByRole('button', { name: d.category, exact: true }).click();
   await page.getByRole('button', { name: 'Створити', exact: true }).click();
-  return waitText(page, 'Скидку створено');
+  return waitToast(page, 'Скидку створено');
 }
 
 /** Нова категорія покупців (тип ціни — «за замовчуванням»). */
@@ -56,7 +56,7 @@ export async function createCategory(page, base, name, code) {
   await page.locator('#uc-name').fill(name);
   await page.locator('#uc-code').fill(code);
   await page.getByRole('button', { name: 'Створити', exact: true }).click();
-  return waitText(page, 'Категорію створено');
+  return waitToast(page, 'Категорію створено');
 }
 
 /** Нове правило «з → в» з однією числовою умовою (`>=` — перший оператор поля). */
@@ -70,7 +70,7 @@ export async function createRule(page, base, r) {
   await page.getByRole('option', { name: r.field, exact: true }).click();
   await page.locator('input[aria-label="Значення"]').fill(String(r.value));
   await page.getByRole('button', { name: 'Створити', exact: true }).click();
-  return waitText(page, 'Правило створено');
+  return waitToast(page, 'Правило створено');
 }
 
 /** Перемикач активності групи в дереві; чекає тост операції. */
@@ -79,7 +79,7 @@ export async function toggleGroup(page, base, name) {
   await page
     .getByRole('switch', { name: `Активність групи «${name}»`, exact: true })
     .click();
-  return waitText(page, 'Статус оновлено');
+  return waitToast(page, 'Статус оновлено');
 }
 
 /** Видалення групи з дерева: діалог з каскадом → «Видалити»; текст діалогу — у факт. */
@@ -91,7 +91,7 @@ export async function deleteGroup(page, base, name) {
   const dialog = page.getByRole('alertdialog');
   const warning = (await dialog.textContent()) ?? '';
   await dialog.getByRole('button', { name: 'Видалити', exact: true }).click();
-  const toast = await waitText(page, 'Групу видалено');
+  const toast = await waitToast(page, 'Групу видалено');
   return { toast, cascade: warning.match(/груп: \d+, знижок: \d+/)?.[0] };
 }
 
@@ -103,5 +103,5 @@ export async function deleteFromCard(page, base, path, toastText) {
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Видалити', exact: true })
     .click();
-  return waitText(page, toastText);
+  return waitToast(page, toastText);
 }

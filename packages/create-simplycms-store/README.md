@@ -9,6 +9,21 @@ CLI проєкту [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — ві�
 e-commerce CMS на TanStack Start + Postgres. Це єдиний пакет, який ставиться
 окремо: він приводить усе ядро разом.
 
+## Для агента: з порожньої теки
+
+```bash
+pnpm create simplycms-store my-shop
+```
+
+Далі відкрийте агента (Claude Code чи Codex) у створеній теці й скажіть:
+«розгорни магазин». Хук старту сесії та `AGENTS.md` магазину ведуть агента на скіл
+`simplycms-onboarding`: той крок за кроком піднімає власну БД, сховище S3, пошту
+SMTP і накат міграцій, а кожну зміну показує наперед і виконує лише за згодою
+власника. Агент запускається з кореня магазину.
+
+Скаффолдер у консолі друкує лише це одне речення; довідкові кроки для людини без
+агента — у README згенерованого магазину.
+
 ## Встановлення
 
 ```bash
@@ -17,7 +32,7 @@ pnpm create simplycms-store my-shop
 
 Позиційний аргумент — **тека призначення** (може бути шляхом, напр.
 `../shops/my-shop`); імʼя npm-пакета магазину — її `basename`. Версія
-ядра в згенерованому маніфесті = версія самого скаффолдера. Node ≥ 20.
+ядра в згенерованому маніфесті = версія самого скаффолдера. Node ≥ 24.
 
 | Прапорець        | Значення                                                 |
 | ---------------- | -------------------------------------------------------- |
@@ -67,7 +82,8 @@ ls dist/client/assets/*.js | wc -l   # одиниці → вас стосуєт�
 pnpm create simplycms-store my-shop \
   --database-url postgresql://app_runtime:пароль@localhost:5432/postgres --yes
 cd my-shop
-for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done
+# MIGRATION_DATABASE_URL (власник схеми) — у .env.local або в env процесу
+pnpm simplycms db:apply
 OWNER_EMAIL=you@example.com pnpm run owner:invite
 pnpm run dev
 ```
@@ -83,8 +99,9 @@ pnpm run dev
   власника працюють на Better Auth поверх самого Postgres, а не на GoTrue.
   Натомість обовʼязкові серверні ключі `.env.local` — `DATABASE_URL` і
   `BETTER_AUTH_SECRET`; без них сервер падає гучно, а не пускає всіх.
-- Листів магазин не шле: `owner:invite` друкує одноразове посилання на
-  `/auth/invite` у консоль — SMTP налаштовує вже власник.
+- Пошта — за вибором власника: зі `SMTP_URL`/`MAIL_FROM` лист із посиланням
+  на `/auth/invite` іде поштою; без SMTP посилання друкує лише `--print-link`
+  (скіл онбордингу налаштовує SMTP до запрошення).
 
 Дизайн — [спека bootstrap-у власника](https://github.com/simplyCMS/simplyCMS/blob/main/docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md).
 

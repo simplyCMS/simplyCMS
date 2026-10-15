@@ -6,7 +6,7 @@
  * 🔴 Select форм доставки — Radix (`SelectField`), не нативний: тригер за
  * `id`, далі опція за роллю. `exact`, бо «Самовивіз» — префікс «Самовивіз Е6а».
  */
-import { waitText } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 const go = (page, base, path) =>
   page.goto(`${base}/admin/shipping/${path}`, { waitUntil: 'networkidle' });
@@ -37,7 +37,7 @@ export async function deleteRow(page, text) {
  * тосту може передувати їй (флейк «бейдж true/false» при правильній БД).
  */
 export function expectDefaultBadge(page, text, present, timeout = 5_000) {
-  // 🔴 Рядки з тим самим регексом можуть бути кількома («Україна» — префікс),
+  // 🔴 Рядки з тим самим регексом можуть бути кількома (назва однієї зони може бути префіксом іншої),
   // а `waitFor` строгий: беремо рядки, що вже мають бейдж, і `.first()`.
   return rowOf(page, text)
     .filter({ has: page.getByText('За замовчуванням') })
@@ -61,7 +61,7 @@ export async function makeDefault(page, name) {
   await rowOf(page, name)
     .getByRole('button', { name: 'Зробити дефолтною' })
     .click();
-  return waitText(page, 'Дефолтну зону змінено');
+  return waitToast(page, 'Дефолтну зону змінено');
 }
 
 /**
@@ -76,7 +76,7 @@ export async function createMethod(page, base, m) {
   await page.locator('#sm-sort').fill(String(m.sortOrder));
   if (m.pricingLabel) await pickOption(page, 'sm-pricing', m.pricingLabel);
   await page.getByRole('button', { name: 'Створити' }).click();
-  return waitText(page, 'Службу створено');
+  return waitToast(page, 'Службу створено');
 }
 
 /** На картці способу: «Додати тариф» → зона, назва, вартість → «Зберегти». */
@@ -114,14 +114,14 @@ export async function renamePoint(page, base, pointId, from, to) {
   );
   await page.locator('#pp-name').fill(to);
   await page.getByRole('button', { name: 'Зберегти' }).click();
-  return waitText(page, 'Зміни збережено');
+  return waitToast(page, 'Зміни збережено');
 }
 
 /** Спроба видалення зі списку → чи зʼявився тост відмови `toast`. */
 export async function tryDelete(page, base, list, rowText, toast) {
   await go(page, base, list);
   await deleteRow(page, rowText);
-  return waitText(page, toast);
+  return waitToast(page, toast);
 }
 
 /**
@@ -133,16 +133,16 @@ export async function deactivateAndDelete(page, base, list, rowText, done) {
   const sw = rowOf(page, rowText).getByRole('switch', { name: 'Активна' });
   if ((await sw.getAttribute('aria-checked')) === 'true') {
     await sw.click();
-    await waitText(page, 'Статус оновлено');
+    await waitToast(page, 'Статус оновлено');
   }
   await deleteRow(page, rowText);
   await rowOf(page, rowText).waitFor({ state: 'detached', timeout: 10_000 });
-  return waitText(page, done);
+  return waitToast(page, done);
 }
 
 /** Видалити тариф у блоці «Тарифи» картки способу. */
 export async function deleteRate(page, base, methodId, rateName) {
   await go(page, base, `methods/${methodId}`);
   await deleteRow(page, rateName);
-  return waitText(page, 'Тариф видалено');
+  return waitToast(page, 'Тариф видалено');
 }

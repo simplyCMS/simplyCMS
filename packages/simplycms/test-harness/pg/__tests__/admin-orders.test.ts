@@ -4,7 +4,6 @@
 // closeDbPool() ПЕРШИМ). Замовлення оформлюються `placeOrderFor` — тим самим
 // шляхом, що й вітрина. 🔴 Увесь файл іде під КОЛОНКОВИМ SELECT `app_admin`
 // на `orders` без `access_token` (SQL-доказ `omit`, Е5-7).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -12,6 +11,7 @@ import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { cancelOwnOrder, withCustomerDb } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -88,14 +88,8 @@ describe('admin: замовлення (Е5, Task 4)', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    const canon = readdirSync(MIGRATIONS)
-      .filter((n) => n.endsWith('.sql'))
-      .sort()
-      .map((n) => join(MIGRATIONS, n));
-    await applySqlFiles(dbUrl, [
-      ...canon,
-      join(MIGRATIONS, 'demo/demo-seed.sql'),
-    ]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [join(MIGRATIONS, 'demo/demo-seed.sql')]);
     const id = async (sql: string, p: unknown[] = []) =>
       (await one<{ id: string }>(sql, p)).id;
     ids.method = await id(

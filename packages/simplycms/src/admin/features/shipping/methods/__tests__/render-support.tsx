@@ -59,8 +59,6 @@ export const ZONES = [
     isDefault: true,
     sortOrder: 0,
     createdAt: new Date(),
-    cities: [],
-    regions: [],
   },
 ];
 

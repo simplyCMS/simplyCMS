@@ -42,3 +42,31 @@ REVOKE ALL ON FUNCTION public.refuse_banned_session() FROM PUBLIC;
 
 CREATE OR REPLACE TRIGGER sessions_refuse_banned BEFORE INSERT ON public.sessions
 FOR EACH ROW EXECUTE FUNCTION public.refuse_banned_session();
+
+-- ── shipping_zones: «≥1 основна зона» ───────────────────────────────────────
+-- «Не більше однієї» стереже частковий унікальний індекс, «основна активна» —
+-- CHECK. «Принаймні одна» рядковим обмеженням не виразити: перевіряємо після
+-- транзакції. 🔴 Відкладений (DEFERRED) обовʼязково: заміна основної — це два
+-- UPDATE в одній транзакції (зняти, поставити), між якими основної немає.
+-- Видалення й зняття прапорця поодинці відхиляються на COMMIT. TRUNCATE
+-- рядкові тригери не викликає — так тести чистять таблицю.
+CREATE OR REPLACE FUNCTION public.require_default_shipping_zone() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.shipping_zones WHERE is_default) THEN
+    RAISE EXCEPTION 'shipping_zones: потрібна рівно одна основна зона'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_default_shipping_zone() FROM PUBLIC;
+
+-- `CREATE OR REPLACE` для constraint-тригерів Postgres не підтримує —
+-- ідемпотентність через DROP.
+DROP TRIGGER IF EXISTS shipping_zones_require_default ON public.shipping_zones;
+CREATE CONSTRAINT TRIGGER shipping_zones_require_default
+AFTER INSERT OR UPDATE OF is_default OR DELETE ON public.shipping_zones
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION public.require_default_shipping_zone();

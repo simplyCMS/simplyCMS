@@ -24,6 +24,12 @@ export default defineConfig({
   dbCredentials: { url: process.env.DATABASE_URL! },
   // Схема одна — `public`; ані GoTrue, ані storage у v2 більше немає (B13).
   schemaFilter: ['public'],
+  // Журнал накату `simplycms_migrations` створює `simplycms/migrate`, а не
+  // `schema.ts` (Е8-Р2): без виключення `db:pull` з живої бази затягнув би його
+  // в схему Drizzle, і наступний `db:diff` згенерував би міграцію журналу
+  // поверх уже наявної таблиці. Заперечний патерн лишає всі інші таблиці
+  // (фільтр drizzle-kit 0.31: `!` відкидає збіг, решта проходить).
+  tablesFilter: ['!simplycms_migrations'],
   // 🔴 Ролі drizzle-kit НЕ веде: `app_runtime`/`app_user`/`app_admin`
   // створює `migrations/0000_prelude.sql` ДО таблиць, бо на них посилаються
   // і політики (`to app_user`), і гранти. Провайдера ролей хмарної платформи тут

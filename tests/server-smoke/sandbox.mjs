@@ -21,11 +21,24 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** Заглушка `dist/server/server.js`: той самий контракт `{ fetch(Request) }`. */
-const STUB_HANDLER = `export default {
+const STUB_HANDLER = `// Імітація перевірки env у серверному бандлі (src/server.ts, Е8-Р7′):
+// кидає під час ІМПОРТУ, як справжній бандл при частковій групі.
+if (process.env.SMOKE_DRIVER_ENV_ERROR) {
+  throw Object.assign(new Error(process.env.SMOKE_DRIVER_ENV_ERROR), {
+    code: 'SIMPLYCMS_DRIVER_ENV',
+  });
+}
+if (process.env.SMOKE_OTHER_ERROR) throw new Error(process.env.SMOKE_OTHER_ERROR);
+// Іменований експорт бази, як у справжньому бандлі (src/server.ts, Р20′).
+export const SERVER_FN_BASE = process.env.SMOKE_SERVER_FN_BASE ?? '/_serverFn/';
+export default {
   async fetch(request) {
     const { pathname } = new URL(request.url);
     // Гілка 500-хендлера: помилка ПІСЛЯ того, як sirv віддав запит далі.
     if (pathname === '/__boom') throw new Error('смок: навмисна помилка');
+    // Помилка з секретом у URL: лог раннера мусить його замаскувати.
+    if (pathname === '/__boom-url')
+      throw new Error('connect postgres://app:s3cr3t@db.test:5432/shop');
     // Дзеркало env процесу — джерело правди для перевірки наповнення.
     if (pathname === '/__env') {
       return Response.json({
@@ -35,12 +48,38 @@ const STUB_HANDLER = `export default {
         SMOKE_ONLY_ENV: process.env.SMOKE_ONLY_ENV ?? null,
       });
     }
+    // NODE_ENV, яким бандл побачив процес (Р16).
+    // URL, який раннер дав Request (Р18б): origin має бути з VITE_SITE_URL.
+    if (pathname === '/__url') return Response.json(request.url);
+    if (pathname === '/__node_env')
+      return Response.json(process.env.NODE_ENV ?? null);
+    // Імена ключів env (значень немає навмисно): доводить, що server.mjs не
+    // повернув STRIPPED_ENV з файлу .env.local.
+    if (pathname === '/__keys') return Response.json(Object.keys(process.env));
     return new Response('<!doctype html><html><body>смок</body></html>', {
       headers: { 'content-type': 'text/html; charset=utf-8' },
     });
   },
 };
 `;
+
+/** Origin сайту за замовчуванням у пісочниці (`VITE_SITE_URL`). */
+export const SMOKE_SITE_URL = 'https://shop.test';
+
+/** Env процесу пісочниці: `undefined` у `extraEnv` прибирає ключ (напр. VITE_SITE_URL). */
+function sandboxEnv(port, extraEnv, base = {}) {
+  const env = {
+    PATH: process.env.PATH ?? '',
+    PORT: String(port),
+    HOST: '127.0.0.1',
+    VITE_SITE_URL: SMOKE_SITE_URL,
+    ...base,
+    ...extraEnv,
+  };
+  for (const key of Object.keys(env))
+    if (env[key] === undefined) delete env[key];
+  return env;
+}
 
 /** Вільний порт: піднімаємо й одразу віддаємо (гонка тут неістотна). */
 const freePort = () =>
@@ -53,7 +92,7 @@ const freePort = () =>
   });
 
 /** Розкладає пісочницю на диску й повертає її шлях. */
-function layout() {
+function layout(handlerSource = STUB_HANDLER) {
   const dir = join(
     ROOT,
     'node_modules',
@@ -64,11 +103,17 @@ function layout() {
   mkdirSync(join(dir, 'dist', 'client', 'assets'), { recursive: true });
 
   // Обидва файли runner-а — реальні, з кореня репо.
-  for (const file of ['server.mjs', 'server-runtime.mjs']) {
+  for (const file of [
+    'server.mjs',
+    'server-runtime.mjs',
+    'server-origin.mjs',
+    'server-body-limit.mjs',
+    'server-headers.mjs',
+  ]) {
     copyFileSync(join(ROOT, file), join(dir, file));
   }
   writeFileSync(join(dir, 'package.json'), '{ "type": "module" }\n');
-  writeFileSync(join(dir, 'dist', 'server', 'server.js'), STUB_HANDLER);
+  writeFileSync(join(dir, 'dist', 'server', 'server.js'), handlerSource);
   writeFileSync(
     join(dir, 'dist', 'client', 'assets', 'app-smoke123.js'),
     'export const smoke = true;\n',
@@ -78,7 +123,9 @@ function layout() {
   // Пріоритет контракту: process.env > .env.local > .env.
   writeFileSync(
     join(dir, '.env.local'),
-    'SMOKE_FROM_PROCESS=from-env-local\nSMOKE_SHARED=from-env-local\nSMOKE_ONLY_LOCAL=from-env-local\n',
+    'SMOKE_FROM_PROCESS=from-env-local\nSMOKE_SHARED=from-env-local\nSMOKE_ONLY_LOCAL=from-env-local\n' +
+      // Пароль власника схеми не має повернутися в сервер із файлу.
+      'MIGRATION_DATABASE_URL=postgres://owner:s3cr3t@x/db\n',
   );
   writeFileSync(
     join(dir, '.env'),
@@ -87,20 +134,19 @@ function layout() {
   return dir;
 }
 
-/** Піднімає `node server.mjs` у пісочниці; віддає базовий URL і стоп-функцію. */
-export async function startSmokeServer() {
-  const dir = layout();
+/**
+ * Піднімає `node server.mjs` у пісочниці; віддає базовий URL і стоп-функцію.
+ * `handlerSource` підміняє заглушку fetch-handler-а (тест 413/411 вантажить
+ * справжній `checkBodyLimit` ядра).
+ */
+export async function startSmokeServer(extraEnv = {}, handlerSource) {
+  const dir = layout(handlerSource);
   const port = await freePort();
   const child = spawn(process.execPath, ['server.mjs'], {
     cwd: dir,
     // 🔴 Env НЕ успадковуємо: реальні ключі розробника зробили б перевірку
     // пріоритету недетерміністичною.
-    env: {
-      PATH: process.env.PATH ?? '',
-      PORT: String(port),
-      HOST: '127.0.0.1',
-      SMOKE_FROM_PROCESS: 'from-process',
-    },
+    env: sandboxEnv(port, extraEnv, { SMOKE_FROM_PROCESS: 'from-process' }),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -133,4 +179,27 @@ export async function startSmokeServer() {
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+/**
+ * Старт, який МУСИТЬ завершитися помилкою до слухання порту (бандл кинув під час
+ * імпорту). Повертає код виходу, stdout і stderr.
+ */
+export async function runSmokeExpectingExit(extraEnv, handlerSource) {
+  const dir = layout(handlerSource);
+  try {
+    const child = spawn(process.execPath, ['server.mjs'], {
+      cwd: dir,
+      env: sandboxEnv(await freePort(), extraEnv),
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stderr = '';
+    let stdout = '';
+    child.stdout.on('data', (chunk) => (stdout += chunk));
+    child.stderr.on('data', (chunk) => (stderr += chunk));
+    const code = await new Promise((done) => child.once('exit', done));
+    return { code, stdout, stderr };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }

@@ -3,17 +3,45 @@ import { join } from 'node:path';
 import { bumpManifestVersions } from './manifest-version.mjs';
 
 const PACKAGES_DIR = 'packages';
-/** semver без пре-релізів: цього достатньо для синхронної моделі версій. */
-export const VERSION_RE = /^\d+\.\d+\.\d+$/;
+/**
+ * `X.Y.Z` або пре-реліз `X.Y.Z-rc.N` (N без провідних нулів — вимога semver до
+ * числових ідентифікаторів). Інших пре-релізів лінія не має: ширший regex
+ * прийняв би `1.0.0-beta` без правил порядку.
+ */
+export const VERSION_RE = /^\d+\.\d+\.\d+(-rc\.(0|[1-9]\d*))?$/;
 
-/** Порівняння semver: -1 / 0 / 1. */
+/**
+ * Порівняння semver: -1 / 0 / 1. Пре-реліз менший за реліз тієї ж трійки
+ * (`1.0.0-rc.1 < 1.0.0`), номери RC порівнюються числово (`rc.10 > rc.9`).
+ */
 export function compareVersions(a, b) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  const [coreA, preA] = a.split('-rc.');
+  const [coreB, preB] = b.split('-rc.');
+  const pa = coreA.split('.').map(Number);
+  const pb = coreB.split('.').map(Number);
   for (let i = 0; i < 3; i += 1) {
     if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
   }
-  return 0;
+  if (preA === undefined && preB === undefined) return 0;
+  if (preA === undefined) return 1;
+  if (preB === undefined) return -1;
+  return Math.sign(Number(preA) - Number(preB));
+}
+
+/**
+ * Гард релізу: нова версія мусить бути строго більшою за поточну (npm не дає
+ * перезаписати опубліковану). Винесено з `release.mjs`, щоб порядок пре-релізів
+ * мав один тестований шлях.
+ * @param {string} next
+ * @param {string} current
+ */
+export function assertNewerVersion(next, current) {
+  if (compareVersions(next, current) <= 0) {
+    throw new Error(
+      `Версія ${next} не більша за поточну ${current}. ` +
+        `npm не дає перезаписати опубліковану версію — підніми номер.`,
+    );
+  }
 }
 
 /**
@@ -73,7 +101,8 @@ const CORE_VERSION_FILE = join(
   'semver',
   'version.ts',
 );
-const CORE_VERSION_RE = /export const CORE_VERSION = '(\d+\.\d+\.\d+)';/;
+const CORE_VERSION_RE =
+  /export const CORE_VERSION = '(\d+\.\d+\.\d+(?:-rc\.(?:0|[1-9]\d*))?)';/;
 
 function bumpCoreVersionConstant(version) {
   const source = readFileSync(CORE_VERSION_FILE, 'utf8');

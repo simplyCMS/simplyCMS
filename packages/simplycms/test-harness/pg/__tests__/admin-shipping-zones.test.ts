@@ -3,6 +3,7 @@
 // напряму з `simplycms/admin-server/impl`, requireGrant мокається модульно);
 // лок доводиться хелперами Е4-12 (`holdAdvisoryLock`/`stillPending`).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MAIN_SHIPPING_ZONE_ID } from 'simplycms/schema';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/admin-shipping';
 
@@ -43,16 +44,11 @@ describe('admin: доставка — зони (Е6а, Task 4)', () => {
       )
     )[0];
 
-  // Кожен кейс стартує з власної свіжої дефолтної зони — двома кроками
-  // (частковий unique-індекс перевіряється негайно).
+  // Кожен кейс стартує з основної зони сіду як дефолтної: попередній кейс міг
+  // замінити її (заміна — одна транзакція, див. makeDefaultZone).
   beforeEach(async () => {
-    await F.rows(url(), `update public.shipping_zones set is_default = false`);
-    DEFAULT = await F.seedZone(url());
-    await F.rows(
-      url(),
-      `update public.shipping_zones set is_default = true where id = $1`,
-      [DEFAULT],
-    );
+    DEFAULT = MAIN_SHIPPING_ZONE_ID;
+    await F.makeDefaultZone(url(), DEFAULT);
   });
 
   it('update зони { isActive: false } для дефолтної → shipping_zone_default; setDefault неактивної → shipping_zone_inactive', async () => {

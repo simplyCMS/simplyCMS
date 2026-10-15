@@ -58,4 +58,22 @@ export const messages: Catalog = {
   'admin.settings.storage.sweepText':
     'Files older than a day that are not used anywhere will be erased. This cannot be undone',
   'admin.settings.storage.swept': 'Files removed: {count}',
+  // Пошта: хвости outbox (Е8-Р10).
+  'admin.settings.mail.title': 'Mail',
+  'admin.settings.mail.hint':
+    'Emails that could not be sent. The body is not shown here — it may contain a sign-in link',
+  'admin.settings.mail.empty': 'All emails were sent',
+  'admin.settings.mail.count': 'Emails in the queue: {count}',
+  'admin.settings.mail.attempts': 'Attempts: {count}, queued {age}',
+  'admin.settings.mail.retry': 'Retry sending',
+  'admin.settings.mail.retried': 'Sent: {sent}, failed: {failed}',
+  'admin.settings.mail.loadError': 'Failed to load the email queue',
+  'admin.settings.mail.ageMinutes': '{count} min',
+  'admin.settings.mail.ageHours': '{count} h',
+  'admin.settings.mail.ageDays': '{count} d',
+  'admin.settings.mail.kind.password_reset': 'Password reset',
+  'admin.settings.mail.kind.email_verification': 'Email confirmation',
+  'admin.settings.mail.kind.owner_invite': 'Owner invitation',
+  'admin.settings.mail.kind.order_customer': 'Order email to the customer',
+  'admin.settings.mail.kind.order_owner': 'Order email to the owner',
 };

@@ -1,22 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { join } from 'node:path';
-import { readdirSync } from 'node:fs';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
   randomDbName,
   withDbName,
 } from '../apply.mjs';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
-const canonFiles = (): string[] =>
-  readdirSync(CANON_DIR)
-    .filter((n) => n.endsWith('.sql'))
-    .sort()
-    .map((n) => join(CANON_DIR, n));
 
 /**
  * Категорія B — лише таблиці Better Auth: `generateId:'uuid'` +
@@ -57,7 +48,7 @@ describe('Е0: DEFAULT на id лише в Категорії B', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
   }, 120_000);
 
   afterAll(async () => {

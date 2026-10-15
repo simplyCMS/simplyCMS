@@ -77,8 +77,6 @@ async function main() {
 
   printNextSteps({
     dirLabel: options.storeName,
-    installed,
-    hasEnv: Boolean(options.databaseUrl),
     skillsPending: skills.pending,
   });
   outro('Готово.');

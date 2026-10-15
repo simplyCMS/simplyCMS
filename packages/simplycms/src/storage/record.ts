@@ -6,7 +6,7 @@ import { media } from 'simplycms/schema';
 import type { MediaStorageDriver } from './driver';
 import { mediaKey, type MediaMime } from './keys';
 import { enqueueMediaErasures } from './erasures';
-import { getMediaDriver } from './local-fs';
+import { getMediaDriver } from './select';
 
 export interface WriteMediaInput {
   readonly bytes: Uint8Array;

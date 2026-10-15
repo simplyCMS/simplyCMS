@@ -24,7 +24,8 @@ function emailDomain(email: string): string | null {
  * - Сума й кількість — замовлення покупця, крім `cancelled`. `LEFT JOIN`
  *   статусів: замовлення з `status_id NULL` РАХУЄТЬСЯ (внутрішній join тихо
  *   викинув би його, і поріг «2 замовлення» спрацьовував би пізніше).
- * - Email — `users.email` (джерело Better Auth), не копія в `profiles`.
+ * - Email — `users.email` (джерело Better Auth), не копія в `profiles`; домен
+ *   рахується лише для підтвердженої пошти (`users.email_verified`, Р30).
  * - Провайдери входу — усі `accounts.provider_id` (умова «будь-який рядок має X»).
  * - UTM — `registration_utm->>'utm_source'`/`'utm_campaign'` (ред.3): порожній
  *   рядок, відсутній ключ чи не-обʼєкт → `null`.
@@ -42,6 +43,7 @@ export async function loadCustomerStats(
     .select({
       createdAt: profiles.createdAt,
       email: users.email,
+      emailVerified: users.emailVerified,
       utmSource: sql<
         string | null
       >`nullif(${profiles.registrationUtm} ->> 'utm_source', '')`,
@@ -83,7 +85,9 @@ export async function loadCustomerStats(
       0,
       Math.floor((now.getTime() - profile.createdAt.getTime()) / DAY_MS),
     ),
-    emailDomain: emailDomain(profile.email),
+    // 🔴 Р30: домен непідтвердженої пошти — не доказ; інакше реєстрація на
+    // чужий корпоративний домен дарує знижки категорії.
+    emailDomain: profile.emailVerified ? emailDomain(profile.email) : null,
     authProviders: providers.map((p) => p.providerId),
     utmSource: profile.utmSource,
     utmCampaign: profile.utmCampaign,

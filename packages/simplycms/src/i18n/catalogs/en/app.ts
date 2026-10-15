@@ -10,5 +10,7 @@ export const messages = {
   'app.notFound.message': 'Page not found',
   'app.error.title': 'Something went wrong',
   'app.error.fallback': 'An unexpected error occurred.',
+  'app.error.reference': 'Error reference: {id}',
+  'app.error.reloading': 'Updating the page…',
   'app.backHome': 'Back to home',
 } as const;

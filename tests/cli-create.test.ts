@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
+  createCoreRange,
   parseCreateArgs,
   renderPluginTemplate,
   scaffoldPlugin,
@@ -30,6 +31,18 @@ describe('cli create: парсер', () => {
       /Невалідне імʼя/,
     );
     expect(() => parseCreateArgs(['plugin', 'x', '--wat'])).toThrow(/--wat/);
+  });
+});
+
+describe('cli create: діапазон ядра (чесний semver)', () => {
+  it('CLI 1.0.0 → ^1.0.0; 0.14.0 → ^0.14.0 (а не відкрите >=)', () => {
+    expect(createCoreRange('1.0.0')).toBe('^1.0.0');
+    expect(createCoreRange('1.4.2')).toBe('^1.0.0');
+    expect(createCoreRange('0.14.0')).toBe('^0.14.0');
+  });
+
+  it('без аргументу бере версію власного CLI', () => {
+    expect(createCoreRange()).toMatch(/^\^\d+\.\d+\.0$/);
   });
 });
 
@@ -83,11 +96,9 @@ describe('cli create: скаффолд', () => {
       coreRange: '>=0.3.0',
     });
 
-    expect(created).toContain('migrations/0001_plg_my_faq_init.sql');
-    const migration = readFileSync(
-      join(target, 'migrations/0001_plg_my_faq_init.sql'),
-      'utf8',
-    );
+    const file = created.find((rel) => rel.startsWith('migrations/'))!;
+    expect(file).toMatch(/^migrations\/\d{14}_plg_my_faq_init\.sql$/);
+    const migration = readFileSync(join(target, file), 'utf8');
     expect(migration).toContain('plg_my_faq_items');
     expect(migration).not.toContain('default gen_random_uuid()');
   });
@@ -132,6 +143,28 @@ describe('cli create: скаффолд', () => {
 
     // Жодних прав рантайм-ролі: вона їх дістає через SET LOCAL ROLE (B5″).
     expect(sql).not.toMatch(/to\s+app_runtime/i);
+  });
+
+  it('Е8-Р4: імʼя міграції зі скаффолду — таймстамп UTC, `plg_<name>_init`', () => {
+    const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
+    const created = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: target,
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+      now: new Date('2026-10-12T13:05:09.987Z'),
+    });
+    expect(created).toContain('migrations/20261012130509_plg_my_faq_init.sql');
+    // Без фіксованого `now` — реальний годинник, але форма та сама.
+    const live = scaffoldPlugin({
+      templateDir: templatePluginDir(),
+      targetDir: join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'x'),
+      pluginName: 'my-faq',
+      coreRange: '>=0.3.0',
+    });
+    expect(live.find((rel) => rel.startsWith('migrations/'))).toMatch(
+      /^migrations\/\d{14}_plg_[a-z0-9_]+_init\.sql$/,
+    );
   });
 
   it('імена міграцій скаффолду не колізують із каноном ядра', () => {

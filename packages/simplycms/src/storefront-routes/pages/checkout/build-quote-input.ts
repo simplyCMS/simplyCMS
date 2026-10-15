@@ -19,6 +19,8 @@ export interface QuoteMoneyInput {
   shippingMethodId: string;
   pickupPointId: string;
   deliveryCity: string;
+  /** Самовивіз: місто не надсилається — зону задає точка (Д3). */
+  isPickup: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ export function buildQuoteInput(input: QuoteMoneyInput): PlaceOrderInput {
     email: '',
     phone: '',
     shippingMethodId: input.shippingMethodId,
-    deliveryCity: input.deliveryCity || null,
+    deliveryCity: input.isPickup ? null : input.deliveryCity || null,
     deliveryAddress: null,
     pickupPointId: input.pickupPointId || null,
     paymentMethod: 'cash',

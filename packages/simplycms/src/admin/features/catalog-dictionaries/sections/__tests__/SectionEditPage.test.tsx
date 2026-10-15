@@ -120,6 +120,16 @@ describe('SectionEditPage', () => {
     expect(insertSections).not.toHaveBeenCalled();
   });
 
+  it('Р25: зарезервований slug `all` → помилка, insert не викликано', async () => {
+    render(<SectionEditPage />, { wrapper });
+    fill('Усе', 'all');
+    fireEvent.click(screen.getByRole('button', { name: 'Створити' }));
+    await screen.findByText(t('admin.sections.slugHint'), {
+      selector: '[role="alert"]',
+    });
+    expect(insertSections).not.toHaveBeenCalled();
+  });
+
   it('створення: insert з crypto id, parentId null, imageUrl з першого референсу', async () => {
     render(<SectionEditPage />, { wrapper });
     fill('Планшети', 'tablets');

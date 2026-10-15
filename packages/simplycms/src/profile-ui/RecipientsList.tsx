@@ -17,6 +17,7 @@ import {
   type RecipientRow,
 } from 'simplycms/core/hooks/useRecipientBook';
 import { useT } from 'simplycms/i18n';
+import { Checkbox } from 'simplycms/ui/checkbox';
 
 /**
  * Книга отримувачів покупця — список і CRUD.
@@ -386,12 +387,12 @@ export function RecipientsList() {
                 <span className="text-sm">
                   {t('profile.recipients.defaultCheckboxLabel')}
                 </span>
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="recipient-default"
                   checked={formIsDefault}
-                  onChange={(e) => setFormIsDefault(e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(checked) =>
+                    setFormIsDefault(checked === true)
+                  }
                 />
               </label>
               <div className="flex justify-end gap-2">

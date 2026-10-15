@@ -1,7 +1,11 @@
 // Предикати фільтрів вибірки каталогу (контракт тем v3, Фаза 4).
 // Чисті функції «товар × стан фільтрів → чи лишається товар у вибірці».
 
-import type { CatalogFiltersState, NumericProperty } from './types';
+import type {
+  BooleanProperty,
+  CatalogFiltersState,
+  NumericProperty,
+} from './types';
 
 /** Мінімум полів товару, потрібний фільтрам і сортуванню. */
 export interface FilterableProduct {
@@ -11,6 +15,8 @@ export interface FilterableProduct {
   section: { id: string } | null;
   propertyValues: Array<{
     property_id: string;
+    /** Текстове значення; для boolean — `'true'` / `'false'`. */
+    value: string | null;
     numeric_value: number | null;
     option_id: string | null;
   }>;
@@ -53,14 +59,33 @@ export function matchesOptionFilters(
     if (key === 'priceMin' || key === 'priceMax' || key === 'inStockOnly')
       return true;
     if (key.endsWith('Min') || key.endsWith('Max')) return true;
-    if (!value || (Array.isArray(value) && value.length === 0)) return true;
+    // Не-масив (boolean-фільтр) — не опція: його перевіряє
+    // `matchesBooleanFilters`, а тут він не мусить валити вибірку.
+    if (!Array.isArray(value) || value.length === 0) return true;
 
     return product.propertyValues.some((pv) => {
-      if (!pv.option_id || !Array.isArray(value)) return false;
+      if (!pv.option_id) return false;
       // Мультивибір зберігає кілька option_id через кому.
       const productOptionIds = pv.option_id.split(',').filter(Boolean);
       return productOptionIds.some((id: string) => value.includes(id));
     });
+  });
+}
+
+/**
+ * Boolean-фільтри («Так»): ключ стану — slug, зіставлення — за `property_id`.
+ * Значення можуть прийти з товару й з модифікацій — досить одного `'true'`.
+ */
+export function matchesBooleanFilters(
+  product: FilterableProduct,
+  filters: CatalogFiltersState,
+  booleanProperties: readonly BooleanProperty[] | undefined,
+): boolean {
+  return (booleanProperties ?? []).every((prop) => {
+    if (filters[prop.slug] !== true) return true;
+    return product.propertyValues.some(
+      (pv) => pv.property_id === prop.id && pv.value === 'true',
+    );
   });
 }
 

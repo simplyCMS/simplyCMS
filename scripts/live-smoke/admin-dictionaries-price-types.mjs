@@ -5,13 +5,13 @@
 import {
   anyProductSlug,
   assignmentsOfSection,
+  defaultPriceTypeName,
   priceCountByType,
   priceTypeCount,
   sectionsBySlug,
   seedPricedType,
 } from './admin-dictionaries-sql.mjs';
-import { waitText } from './selectors.mjs';
-import { expectDisabled } from './wait.mjs';
+import { expectDisabled, waitToast } from './wait.mjs';
 
 const NEW_TYPE = { code: 'live_dict_type', name: 'Живий тип Е4' };
 const PRICED = { code: 'live_dict_priced', name: 'Ціновий тип Е4' };
@@ -64,12 +64,14 @@ export async function runPriceTypesPart({ page, base, dbUrl, check }) {
 
   check(
     'адмін: видалення дефолтного retail — кнопка disabled',
-    await expectDisabled(deleteButtonOf(page, 'Роздрібна')),
+    await expectDisabled(
+      deleteButtonOf(page, await defaultPriceTypeName(dbUrl)),
+    ),
     '',
   );
 
   await confirmDelete(page, PRICED.name);
-  const conflictToast = await waitText(page, 'Запис використовується');
+  const conflictToast = await waitToast(page, 'Запис використовується');
   const typeLeft = await priceTypeCount(dbUrl, PRICED.code);
   const pricesAfter = await priceCountByType(dbUrl, pricedId);
   check(

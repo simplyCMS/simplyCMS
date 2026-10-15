@@ -59,7 +59,7 @@ export function SimpleProductPanel({ productId }: Props) {
             </div>
             {row && (
               <StockStatusSelect
-                value={row.stockStatus ?? 'in_stock'}
+                value={row.stockStatus}
                 onChange={(v) => {
                   // 🔴 Item 2: без .catch — відхилена мутація тихо
                   // відкочується (бібліотека сама) і лишає unhandled

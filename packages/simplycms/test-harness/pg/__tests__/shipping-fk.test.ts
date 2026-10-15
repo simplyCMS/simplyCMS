@@ -5,27 +5,16 @@
 //
 // 🔴 Привілейоване підключення: перевіряється сам DDL, як у
 // catalog-dictionaries-schema.test.ts.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
   randomDbName,
   withDbName,
 } from '../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 const METHOD = 'e6a10000-0000-4000-8000-000000000001';
 const POINT_STOCK = 'e6a10000-0000-4000-8000-000000000002';
@@ -51,7 +40,7 @@ describe('доставка: FK RESTRICT (Е6а-17)', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
 
     await queryRows(
       dbUrl,

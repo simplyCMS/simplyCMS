@@ -59,6 +59,31 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
+  // Резолвер груп env (Е8-Р7) — T2 без жодних upward-винятків: чиста функція
+  // над переданим оточенням, `db` їй ні до чого — тож ловиться навіть він.
+  ['packages/simplycms/src/env', 'simplycms/db', 'simplycms/contracts'],
+  // Охорона серверного входу (Е8, Р23/Р27) — T2, upward лише `env`: до БД їй
+  // діла нема, тож ловиться `db`.
+  [
+    'packages/simplycms/src/server-guard',
+    'simplycms/db',
+    'simplycms/contracts',
+  ],
+  // Build-time плагіни Vite (Е8) — T2 без upward-винятків: Node-код збірки,
+  // `db` йому ні до чого — тож ловиться навіть він.
+  ['packages/simplycms/src/vite', 'simplycms/db', 'simplycms/contracts'],
+  // Накат міграцій (Е8-Р2) — T2 без upward-винятків: `db` (withActor) йому
+  // не потрібен, тож ловиться навіть він.
+  ['packages/simplycms/src/migrate', 'simplycms/db', 'simplycms/contracts'],
+  // Прод-старт (К3-Е8, F5) — T2, upward лише `env` і `migrate`: `db` (withActor)
+  // старту не потрібен, тож ловиться.
+  ['packages/simplycms/src/prod-start', 'simplycms/db', 'simplycms/migrate'],
+  // Пошта (Е8, Task 10/12) — T2, upward `env`, `db`, `schema`, `i18n`; `auth`
+  // кличе її, а не навпаки, тож зворотний імпорт ловиться (цикл auth ↔ mail).
+  ['packages/simplycms/src/mail', 'simplycms/auth', 'simplycms/db'],
+  // Кеш профілю й вшиті теми (Е6б-7; Е8 додав upward `i18n`) — T2, upward
+  // `db`, `i18n`; `auth` того ж тіру — поза винятком.
+  ['packages/simplycms/src/site', 'simplycms/auth', 'simplycms/i18n'],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

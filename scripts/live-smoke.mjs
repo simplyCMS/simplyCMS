@@ -45,12 +45,24 @@ import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
+import { applyProbe } from './pilot-pack/apply-probe.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
+import { runErrorMaskChecks } from './live-smoke/error-mask.mjs';
+import { runSecurityHeaderChecks } from './live-smoke/security-headers.mjs';
+import { runProductPathChecks } from './live-smoke/product-path.mjs';
+import { runPriceVisibilityChecks } from './live-smoke/price-visibility.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
-import { loadHarnessEnv } from './harness-env.mjs';
+import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
+import { clearMailpit } from './live-smoke/mail.mjs';
+import {
+  runMailChecks,
+  runSignupConfirmation,
+} from './live-smoke/mail-steps.mjs';
+import { signUp } from './live-smoke/register.mjs';
+import { withClientIps } from './live-smoke/client-ip.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -69,12 +81,37 @@ if (!adminUrl)
     '[live-smoke] потрібен PG_HARNESS_URL (адмін-доступ до кластера): виконай `pnpm harness:up`',
   );
 
+// Пошта стенду (Mailpit): `SMTP_URL`/`MAIL_FROM` — лише в явний env СЕРВЕРА нижче,
+// у `process.env` скрипта потрапляє тільки HTTP-API Mailpit для читання листів.
+// Без нього гучна відмова (`mailpitApi`), не skip.
+const mailEnv = harnessMailEnv(ROOT);
+if (mailEnv.HARNESS_MAILPIT_URL)
+  process.env.HARNESS_MAILPIT_URL = mailEnv.HARNESS_MAILPIT_URL;
+if (!mailEnv.SMTP_URL)
+  throw new Error(
+    '[live-smoke] потрібен SMTP_URL (Mailpit): виконай `pnpm harness:up`',
+  );
+
 const rows = [];
 const check = (label, passed, fact) => {
   rows.push([label, passed ? 'OK' : 'FAIL', fact]);
 };
 
+// Крок, що виконується зараз: виняток посеред сценарію (зокрема неоднозначний
+// локатор з `expect*`) без нього лишав лише повідомлення, і не було видно, ДЕ
+// саме прогін упав і що встиг пройти.
+let currentStep = 'старт';
+const stage = (name) => {
+  currentStep = name;
+};
+
+const printRows = () => {
+  console.log('\n| Перевірка | Результат | Факт |\n|---|---|---|');
+  for (const [l, r, f] of rows) console.log(`| ${l} | ${r} | ${f} |`);
+};
+
 async function main() {
+  stage('чиста демо-БД');
   // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
   execFileSync(
     'node',
@@ -82,6 +119,9 @@ async function main() {
     { cwd: ROOT, stdio: 'inherit' },
   );
   const dbUrl = withDbName(adminUrl, DB_NAME);
+  // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
+  // про серверний sanitize-html червоніє (демо-сід чистий).
+  await applyProbe(dbUrl);
   const port = await freePort();
   // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
   // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
@@ -108,14 +148,22 @@ async function main() {
   }
 
   try {
+    stage('збірка й старт сервера');
     execFileSync('pnpm', ['build'], {
       cwd: ROOT,
       stdio: 'inherit',
       env: { ...process.env, ...env },
     });
-    server = await startStore(ROOT, port, env);
+    // Чиста скринька ДО старту: листи цього прогону — єдині в ній.
+    await clearMailpit();
+    server = await startStore(ROOT, port, {
+      ...env,
+      SMTP_URL: mailEnv.SMTP_URL,
+      MAIL_FROM: mailEnv.MAIL_FROM,
+    });
     const base = `http://127.0.0.1:${port}`;
 
+    stage('http-гейт і sitemap');
     // 2. curl+SQL — гейт B пілота як є.
     const http = await gateHttp(port, { DATABASE_URL: dbUrl });
     for (const line of http.details) check('http', line.startsWith('OK'), line);
@@ -134,9 +182,10 @@ async function main() {
       `${lastmods.length} url, зразок ${lastmods[0] ?? '—'}`,
     );
 
+    stage('воронка покупця');
     // 3. Браузер: реєстрація → картка → кошик → чекаут → скасування.
     const { chromium } = await import('@playwright/test');
-    browser = await chromium.launch();
+    browser = withClientIps(await chromium.launch());
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -147,15 +196,49 @@ async function main() {
       if (r.method() === 'POST' && pathname.startsWith('/_serverFn/'))
         serverFnPaths.add(pathname);
     });
-    await runFunnel({ page, base, dbUrl, check });
+    const { email } = await runFunnel({ page, base, dbUrl, check });
 
+    stage('пошта');
+    // 3.1. Пошта (К3-Е8): лист замовлення, скидання пароля, підтвердження
+    // реєстрації (Р30) — через справжній SMTP-канал у Mailpit.
+    await runMailChecks({
+      browser,
+      base,
+      email,
+      from: mailEnv.MAIL_FROM,
+      check,
+    });
+    await runSignupConfirmation({ browser, base, signUp, check });
+
+    stage('CSRF');
     // 3a. CSRF: POST із чужим Origin на server function і server route → 403.
     await runCsrfChecks({ base, serverFnPaths, check });
 
+    stage('маскування помилок і заголовки безпеки');
+    // 3a′. Р23/Р27: помилки не течуть клієнту (SSR, server function, мертва БД),
+    // заголовки безпеки на всіх каналах. ПЕРЕД кроками власника: вони скидають
+    // профіль/теми й не повинні впливати на лог, з якого читаємо ідентифікатори.
+    await runErrorMaskChecks({
+      base,
+      server,
+      browser,
+      storeEnv: env,
+      check,
+    });
+    await runSecurityHeaderChecks({ base, check });
+    stage('канонічний шлях товару');
+    // Р25: канонічний шлях товару (301 + canonical) на справжньому сервері.
+    await runProductPathChecks({ base, dbUrl, check });
+    stage('видимість цін');
+    // Р29: SSR-HTML гостя без гуртового виду; покупцю — його вид і private, no-store.
+    await runPriceVisibilityChecks({ base, dbUrl, email, page, check });
+
+    stage('кроки власника (адмінка)');
     // 3б. Адмінка (Е3, Е4, Е5, Е5б, Е6а, Е6в, Е6б) — ОКРЕМИЙ context власника, та сама БД.
     const owner = { browser, buyerPage: page, base, dbUrl, storeEnv: env };
     await runOwnerSteps({ ...owner, check });
 
+    stage('підсумок pageerror');
     // 4. Нуль pageerror — у КІНЦІ, коли пройдено всі сторінки: `order-success`
     // і кабінет форматують `Date` через `Intl`, тож рядок замість `Date` на
     // межі RPC дав би тут `RangeError` (поведінковий гейт Е0-2).
@@ -168,8 +251,7 @@ async function main() {
     await shutdown();
   }
 
-  console.log('\n| Перевірка | Результат | Факт |\n|---|---|---|');
-  for (const [l, r, f] of rows) console.log(`| ${l} | ${r} | ${f} |`);
+  printRows();
   const failed = rows.filter(([, r]) => r === 'FAIL').length;
   console.log(
     `\n${failed === 0 ? 'live-smoke: ЗЕЛЕНИЙ' : `live-smoke: ${failed} FAIL`}`,
@@ -178,6 +260,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`\n[live-smoke] ${e.message}`);
+  printRows();
+  console.error(`\n[live-smoke] крок «${currentStep}»: ${e.message}`);
   process.exit(1);
 });

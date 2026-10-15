@@ -10,9 +10,7 @@ import { adminPath } from '../../../lib/adminLinks';
 import { reportTxError } from '../../../lib/report-tx-error';
 import { useSeedOnce } from '../../catalog-dictionaries/useSeedOnce';
 import {
-  joinList,
   shippingZoneFormSchema,
-  splitList,
   type ShippingZoneFormInput,
   type ShippingZoneFormValues,
 } from './shipping-zone-form-schema';
@@ -20,20 +18,13 @@ import {
 const EMPTY: ShippingZoneFormInput = {
   name: '',
   description: '',
-  cities: '',
-  regions: '',
   sortOrder: 0,
   isActive: true,
 };
 
-const sameList = (a: readonly string[] | null, b: readonly string[]) =>
-  (a ?? []).join('\n') === b.join('\n');
-
 /**
  * Стан картки зони. `isDefault` у формі немає (readonly для фабрики):
- * дефолт ставить кнопка списку. Update кладе в patch лише змінене, тож
- * незмінні масиви не перезаписуються (порівняння за вмістом, не за
- * посиланням).
+ * дефолт ставить кнопка списку.
  */
 export function useShippingZoneCard(zoneId: string | undefined) {
   const t = useT();
@@ -56,8 +47,6 @@ export function useShippingZoneCard(zoneId: string | undefined) {
       reset({
         name: row.name,
         description: row.description ?? '',
-        cities: joinList(row.cities),
-        regions: joinList(row.regions),
         sortOrder: row.sortOrder,
         isActive: row.isActive,
       });
@@ -70,15 +59,11 @@ export function useShippingZoneCard(zoneId: string | undefined) {
 
   const onSubmit = async (v: ShippingZoneFormValues) => {
     const id = row?.id ?? crypto.randomUUID(); // Е0: ключ генерує клієнт
-    const cities = splitList(v.cities);
-    const regions = splitList(v.regions);
     const description = v.description.trim() || null;
     const tx = row
       ? collection.update(id, (d) => {
           d.name = v.name;
           d.description = description;
-          if (!sameList(d.cities, cities)) d.cities = cities;
-          if (!sameList(d.regions, regions)) d.regions = regions;
           d.sortOrder = v.sortOrder;
           d.isActive = v.isActive;
         })
@@ -86,8 +71,6 @@ export function useShippingZoneCard(zoneId: string | undefined) {
           id,
           name: v.name,
           description,
-          cities,
-          regions,
           sortOrder: v.sortOrder,
           isActive: v.isActive,
           isDefault: false,

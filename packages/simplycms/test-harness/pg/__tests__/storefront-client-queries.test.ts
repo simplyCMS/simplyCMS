@@ -4,7 +4,6 @@
 // сам `createServerFn` тут не викликається — поза HTTP-контекстом у нього
 // немає запиту, — але весь SQL, предикати видимості й нормалізація живуть у
 // лоадерах, і довести їх можна лише на живій БД.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -17,11 +16,14 @@ import {
   loadPropertyOption,
   loadSectionBySlug,
   loadSectionFilters,
-  loadSectionNumericProperties,
+  loadSectionFilterProperties,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
+// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -52,13 +54,8 @@ interface IdRow {
   id: string;
 }
 
-const filesToApply = (): string[] => [
-  ...readdirSync(MIGRATIONS_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS_DIR, name)),
-  join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-];
+/** Не-міграційний SQL поверх канону (канон котить `applyCanon`). */
+const DEMO_SEED_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
 
 describe('вибірки вітрини, знятi з браузера', () => {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -69,7 +66,8 @@ describe('вибірки вітрини, знятi з браузера', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, filesToApply());
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [DEMO_SEED_FILE]);
     for (const statement of [
       ...FIXTURE_STATEMENTS,
       ...CLIENT_FIXTURE_STATEMENTS,
@@ -87,11 +85,11 @@ describe('вибірки вітрини, знятi з браузера', () => {
   });
 
   it('каталог із фільтром розділу: лише товари цього розділу', async () => {
-    const { all, scoped } = await withStorefrontDb(async (db) => {
+    const { all, scoped } = await withViewerPricesDb(null, async (db, v) => {
       const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
       return {
-        all: await loadCatalogProducts(db),
-        scoped: await loadCatalogProducts(db, section!.id),
+        all: await loadCatalogProducts(db, v),
+        scoped: await loadCatalogProducts(db, v, section!.id),
       };
     });
 
@@ -107,18 +105,22 @@ describe('вибірки вітрини, знятi з браузера', () => {
   });
 
   it('🔴 неактивний товар не потрапляє у вибірку каталогу — ні цілком, ні в розділі', async () => {
-    const { all, scoped, byOption } = await withStorefrontDb(async (db) => {
-      const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
-      return {
-        all: await loadCatalogProducts(db),
-        scoped: await loadCatalogProducts(db, section!.id),
-        byOption: await loadPropertyOption(
-          db,
-          PAGED_PROPERTY_SLUG,
-          PAGED_OPTION_SLUG,
-        ),
-      };
-    });
+    const { all, scoped, byOption } = await withViewerPricesDb(
+      null,
+      async (db, v) => {
+        const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
+        return {
+          all: await loadCatalogProducts(db, v),
+          scoped: await loadCatalogProducts(db, v, section!.id),
+          byOption: await loadPropertyOption(
+            db,
+            PAGED_PROPERTY_SLUG,
+            PAGED_OPTION_SLUG,
+            v,
+          ),
+        };
+      },
+    );
 
     for (const rows of [all, scoped, byOption!.products]) {
       expect(rows.map((row) => row.slug)).not.toContain(HIDDEN_PRODUCT_SLUG);
@@ -126,7 +128,9 @@ describe('вибірки вітрини, знятi з браузера', () => {
   });
 
   it('вибірка каталогу несе наявність, а не складські рядки', async () => {
-    const rows = await withStorefrontDb((db) => loadCatalogProducts(db));
+    const rows = await withViewerPricesDb(null, (db, v) =>
+      loadCatalogProducts(db, v),
+    );
     const modified = rows.find((row) => row.slug === MODIFIED_PRODUCT_SLUG);
 
     // Товар доступний, бо доступна ХОЧ ОДНА його модифікація.
@@ -182,7 +186,7 @@ describe('вибірки вітрини, знятi з браузера', () => {
       const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
       return {
         filters: await loadSectionFilters(db, section!.id),
-        numeric: await loadSectionNumericProperties(db, section!.id),
+        numeric: await loadSectionFilterProperties(db, section!.id),
         options: await loadFilterOptions(db),
       };
     });

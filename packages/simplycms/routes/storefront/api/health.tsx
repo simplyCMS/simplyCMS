@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
+import { BUILD_ID } from 'simplycms/runtime/build-id';
 
 /**
  * Health-ендпоінт магазину: пінг Postgres під роллю вітрини.
@@ -64,6 +65,9 @@ async function healthResponse(bodyless: boolean): Promise<Response> {
     {
       status: ok ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
+      // Збірка, що віддала відповідь: після деплою доводить, що трафік уже на
+      // новому контейнері (і що `define` дійшов до коду ядра в node_modules).
+      build: BUILD_ID,
       checks: {
         database: { ok, error: ok ? null : 'database unavailable' },
       },

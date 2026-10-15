@@ -11,6 +11,7 @@ export const messages: Catalog = {
   'common.edit': 'Edit',
   'common.activate': 'Activate',
   'common.reset': 'Reset',
+  'common.retry': 'Retry',
 
   'common.loading': 'Loading...',
   'common.error': 'Error',

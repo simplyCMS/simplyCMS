@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { useLiveQuery } from '@tanstack/react-db';
 import { priceTypesCollection, useCollection } from 'simplycms/admin-data';
 import { ROWS, wrapper } from './render-support';
@@ -16,6 +16,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { usePriceTypeDefault } from '../usePriceTypeDefault';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 beforeEach(() => {
   vi.clearAllMocks();

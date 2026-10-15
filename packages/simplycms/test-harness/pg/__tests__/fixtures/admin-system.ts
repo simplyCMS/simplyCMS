@@ -1,7 +1,6 @@
 // БД, сховище й сід харнес-тестів системних налаштувань адмінки (К3-Е6б, Task 3):
 // канон → app_runtime → afterAll із closeDbPool() ПЕРШИМ; `MEDIA_ROOT` — власна
 // tmp-тека файла, бо операції адмінки беруть дефолтний драйвер сховища.
-import { readdirSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -14,8 +13,6 @@ import { localFsDriver, mediaKey } from 'simplycms/storage';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 
-const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
-
 /** Реєструє хуки БД і сховища; `url()` — привілейоване підключення. */
 export function useSystemAdminDb(prefix: string) {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -26,13 +23,7 @@ export function useSystemAdminDb(prefix: string) {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(
-      dbUrl,
-      readdirSync(MIGRATIONS)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS, n)),
-    );
+    await H.applyCanon(dbUrl);
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
     root = await mkdtemp(join(tmpdir(), 'simplycms-admin-system-'));
     process.env.MEDIA_ROOT = root;

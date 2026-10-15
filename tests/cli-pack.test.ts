@@ -18,11 +18,14 @@ import { toolPkgSmoke } from '../scripts/pilot-pack/tool-pkg-smoke.mjs';
 // (залежності беруться симлінком, а їхня ДЕКЛАРАЦІЯ — асертом по манифесту з
 // tarball; doctor ганяється на власному скаффолді шаблону з вирізаними
 // ключами env магазину, а онлайн-перевірок у нього більше немає взагалі).
+// Крок Р21 (`tool-update-reexec.mjs`) ставить два tarball-и CLI справжнім pnpm, але
+// з локального реєстру (`local-registry.mjs`), куди дерево залежностей CLI
+// запаковано з `node_modules` монорепо, — теж без мережі.
 // збірки пакет не має, тож смоук самодостатній — свіжий
 // `pnpm build:packages` йому не потрібен.
 
 describe('@simplycms/cli: смоук опублікованого tarball', () => {
-  it('bin відпрацьовує, host/ і обидва шаблони у tarball, deps оголошені, версія збігається, doctor живий на скаффолді', async () => {
+  it('bin відпрацьовує, host/ і обидва шаблони у tarball, deps оголошені, версія збігається, doctor живий на скаффолді, update доставляє канон нової версії (Р21)', async () => {
     const { ok, details } = await toolPkgSmoke();
     expect(ok, details.join('\n')).toBe(true);
   });

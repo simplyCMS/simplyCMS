@@ -1,5 +1,6 @@
 /**
- * Парність теки `skills/` між репозиторієм і tarball-ом пакета `simplycms`.
+ * Парність файлів, які магазин читає з tarball-а пакета `simplycms`: тека
+ * `skills/` і `CHANGELOG.md`.
  *
  * Окремий модуль, бо це твердження про ІНШИЙ пакет: решта кроків Gate CLI
  * дивиться на артефакт скаффолдера, а цей — на артефакт ядра, з якого
@@ -7,7 +8,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dirname, '../..');
@@ -15,15 +16,19 @@ const CORE_PKG_DIR = join(REPO_ROOT, 'packages/simplycms');
 const PACKED_PREFIX = 'package/skills/';
 
 /**
- * (г) Tarball `simplycms` несе ТОЧНУ множину файлів `skills/`.
+ * (г) Tarball `simplycms` несе ТОЧНУ множину файлів `skills/` і `CHANGELOG.md`.
  *
  * 🔴 Саме рівність множин, а не «кілька grep-ів»: npm пакує теку за
  * `files`-глобою, і мовчазна втрата окремих файлів (типовий кандидат —
  * dot-імена) дала б магазину скіл-каліку, який виглядає встановленим. Обидві
  * сторони рівності беруться з диска й з артефакту, тож дрейф ловиться в
  * обидва боки — і зайвий файл у tarball теж.
+ *
+ * Тим самим tarball-ом перевіряється й `CHANGELOG.md`: скіл `simplycms-update`
+ * читає BREAKING з `node_modules/simplycms/CHANGELOG.md`, а копію в пакет кладе
+ * лише `prepack` — без цієї перевірки зникнення кроку не помітив би ніхто.
  */
-export function checkPackagedSkills(work) {
+export function checkPackagedCoreFiles(work) {
   const dest = join(work, 'simplycms-core.tgz');
   execFileSync('pnpm', ['--dir', CORE_PKG_DIR, 'pack', '--out', dest], {
     cwd: REPO_ROOT,
@@ -53,9 +58,23 @@ export function checkPackagedSkills(work) {
       ],
     };
   }
+  const changelog = execFileSync(
+    'tar',
+    ['-xzOf', dest, 'package/CHANGELOG.md'],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+  ).toString();
+  if (changelog !== readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8')) {
+    return {
+      ok: false,
+      details: [
+        '✗ CHANGELOG.md у tarball simplycms відсутній або не збігається з кореневим',
+      ],
+    };
+  }
   return {
     ok: true,
     details: [
+      '✓ CHANGELOG.md у tarball simplycms збігається з кореневим',
       `✓ skills/ у tarball simplycms: ${packed.length} файлів — ` +
         'множина збігається з packages/simplycms/skills',
     ],

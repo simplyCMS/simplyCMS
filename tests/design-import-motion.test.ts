@@ -14,10 +14,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { browserKeyframes } from '../.agents/skills/redesign-from-reference/scripts/lib/browser-keyframes.mjs';
-import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
-import { sweepHover } from '../.agents/skills/redesign-from-reference/scripts/lib/hover-sweep.mjs';
-import { inspectPage } from '../.agents/skills/redesign-from-reference/scripts/inspect.mjs';
+import { browserKeyframes } from '../.agents/skills/simplycms-redesign/scripts/lib/browser-keyframes.mjs';
+import { resolveChromium } from '../.agents/skills/simplycms-redesign/scripts/lib/browser.mjs';
+import { sweepHover } from '../.agents/skills/simplycms-redesign/scripts/lib/hover-sweep.mjs';
+import { inspectPage } from '../.agents/skills/simplycms-redesign/scripts/inspect.mjs';
 
 interface TransitionCluster {
   property: string;

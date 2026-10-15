@@ -1,13 +1,10 @@
 // БД і сід харнес-тестів адмінки доставки (Е6а, Task 4): канон → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Канон доставки не везе — сід свій у кожному тесті.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import pg from 'pg';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
 
 /** Реєструє хуки БД у describe, що кличе; `url()` — привілейоване підключення. */
 export function useShippingAdminDb(prefix: string): { url: () => string } {
@@ -18,13 +15,7 @@ export function useShippingAdminDb(prefix: string): { url: () => string } {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(
-      dbUrl,
-      readdirSync(MIGRATIONS)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS, n)),
-    );
+    await H.applyCanon(dbUrl);
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
   }, 120_000);
   afterAll(async () => {
@@ -148,3 +139,30 @@ export const snapshotShipping = async (url: string, methodId: string) => ({
     [methodId],
   ),
 });
+
+/**
+ * Робить `id` єдиною основною зоною ОДНІЄЮ транзакцією (зняти → поставити).
+ * Автокомітом знімати прапорець не можна: відкладений тригер БД відхилив би
+ * COMMIT без основної зони. Інші зони не чіпає, тож `id` має бути активною.
+ */
+export async function makeDefaultZone(url: string, id: string) {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query(
+      `update public.shipping_zones set is_default = false where is_default and id <> $1`,
+      [id],
+    );
+    await client.query(
+      `update public.shipping_zones set is_default = true where id = $1`,
+      [id],
+    );
+    await client.query('commit');
+  } catch (e) {
+    await client.query('rollback');
+    throw e;
+  } finally {
+    await client.end();
+  }
+}

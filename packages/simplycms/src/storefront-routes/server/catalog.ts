@@ -4,9 +4,10 @@ import {
   loadCatalogProducts,
   loadFilterOptions,
   loadSectionBySlug,
-  loadSectionNumericProperties,
+  loadSectionFilterProperties,
   loadSections,
   withStorefrontDb,
+  withViewerDb,
   type SectionRow,
 } from 'simplycms/storefront/loaders';
 import type { ProductListPayload } from './product-list-item';
@@ -78,22 +79,28 @@ export const getCatalogSection = createServerFn({ method: 'GET' })
  * Вибірка каталогу з модифікаціями, цінами, характеристиками й наявністю.
  *
  * `sectionId` відсутній — сторінка каталогу (розділ обирається чипсами на
- * клієнті); заданий — сторінка розділу, вибірка звужена запитом.
+ * клієнті); заданий — сторінка розділу, вибірка звужена запитом. Ціни —
+ * лише видів глядача сесії (Р29, `withViewerDb`).
  */
 export const getCatalogProducts = createServerFn({ method: 'GET' })
   .validator(z.object({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }) => {
     const { sectionId } = input as { sectionId?: string };
-    return withStorefrontDb((db) => loadCatalogProducts(db, sectionId));
+    return withViewerDb((db, viewer) =>
+      loadCatalogProducts(db, viewer, sectionId),
+    );
   });
 
-/** Числові характеристики розділу, за якими можна фільтрувати. */
-export const getSectionNumericProperties = createServerFn({ method: 'GET' })
-  .validator(z.object({ sectionId: z.string().min(1) }))
+/**
+ * Характеристики розділу (число, діапазон, «Так»), за якими можна фільтрувати;
+ * без `sectionId` — корінь каталогу (усі товари).
+ */
+export const getSectionFilterProperties = createServerFn({ method: 'GET' })
+  .validator(z.object({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }) => {
-    const { sectionId } = input as { sectionId: string };
+    const { sectionId } = input as { sectionId?: string };
     return withStorefrontDb((db) =>
-      loadSectionNumericProperties(db, sectionId),
+      loadSectionFilterProperties(db, sectionId ?? null),
     );
   });
 

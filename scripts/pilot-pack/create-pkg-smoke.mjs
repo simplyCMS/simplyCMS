@@ -32,7 +32,8 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { checkPackagedSkills } from './core-skills-parity.mjs';
+import { checkAgentScaffold } from './session-hook-checks.mjs';
+import { checkPackagedCoreFiles } from './core-skills-parity.mjs';
 import {
   checkNoSkillCopies,
   checkSkillLinks,
@@ -113,13 +114,14 @@ export function createPkgSmoke() {
     details.push(...structure.details);
     if (!structure.ok) return { ok: false, details };
 
-    // Інваріанти К0 — усі чотири мусять відпрацювати, щоб звіт показав
+    // Інваріанти К0 і файли агента — усі мусять відпрацювати, щоб звіт показав
     // повну картину, тому результати збираються, а не рвуть прогін першим ✗.
     const checks = [
       checkNoSkillCopies(pkgDir),
       checkTemplateDeps(pkgDir),
       checkSkillLinks(target),
-      checkPackagedSkills(work),
+      checkAgentScaffold(target),
+      checkPackagedCoreFiles(work),
     ];
     for (const check of checks) details.push(...check.details);
     if (checks.some((check) => !check.ok)) return { ok: false, details };

@@ -1,15 +1,13 @@
-import { and, asc, eq, inArray, or } from 'drizzle-orm';
-import {
-  propertyOptions,
-  sectionProperties,
-  sectionPropertyAssignments,
-} from 'simplycms/schema';
+import { asc, eq, inArray } from 'drizzle-orm';
+import { propertyOptions, sectionProperties } from 'simplycms/schema';
+import { selectScopedFilterProperties } from './catalog-filter-scope';
 import type { ActorDb } from './db';
 
-/** Числова характеристика розділу, придатна для фільтра-діапазону. */
-export interface NumericPropertyRow {
+/** Характеристика розділу для фільтра: діапазон (number/range) або «Так» (boolean). */
+export interface SectionFilterPropertyRow {
   id: string;
   slug: string;
+  name: string;
   property_type: string;
   is_filterable: boolean;
 }
@@ -26,39 +24,22 @@ export interface FilterOptionRow {
 }
 
 /**
- * Числові характеристики розділу, за якими можна фільтрувати.
+ * Характеристики розділу (number/range/boolean), за якими фільтрує клієнт;
+ * `null` — корінь каталогу (див. `selectScopedFilterProperties`).
  *
  * 🔴 Відбір `is_filterable` + тип робиться ЗАПИТОМ, а не після вибірки в
  * браузері: старий код тягнув усі призначення розділу й відсіював їх у JS,
  * тобто платив трафіком за рядки, які одразу викидав.
  */
-export async function loadSectionNumericProperties(
+export async function loadSectionFilterProperties(
   db: ActorDb,
-  sectionId: string,
-): Promise<NumericPropertyRow[]> {
-  return db
-    .select({
-      id: sectionProperties.id,
-      slug: sectionProperties.slug,
-      property_type: sectionProperties.propertyType,
-      is_filterable: sectionProperties.isFilterable,
-    })
-    .from(sectionPropertyAssignments)
-    .innerJoin(
-      sectionProperties,
-      eq(sectionPropertyAssignments.propertyId, sectionProperties.id),
-    )
-    .where(
-      and(
-        eq(sectionPropertyAssignments.sectionId, sectionId),
-        eq(sectionProperties.isFilterable, true),
-        or(
-          eq(sectionProperties.propertyType, 'number'),
-          eq(sectionProperties.propertyType, 'range'),
-        ),
-      ),
-    )
-    .orderBy(asc(sectionPropertyAssignments.sortOrder));
+  sectionId: string | null,
+): Promise<SectionFilterPropertyRow[]> {
+  return selectScopedFilterProperties(db, sectionId, [
+    'number',
+    'range',
+    'boolean',
+  ]);
 }
 
 /**
@@ -94,9 +75,7 @@ export async function loadFilterOptions(
 }
 
 /** Характеристика розділу в панелі фільтрів. */
-export interface FilterPropertyRow extends NumericPropertyRow {
-  name: string;
-}
+export interface FilterPropertyRow extends SectionFilterPropertyRow {}
 
 /** Панель фільтрів розділу: характеристики + опції тих, що з переліком. */
 export interface SectionFilters {
@@ -118,28 +97,9 @@ const OPTION_TYPES = ['select', 'multiselect'];
  */
 export async function loadSectionFilters(
   db: ActorDb,
-  sectionId: string,
+  sectionId: string | null,
 ): Promise<SectionFilters> {
-  const rows = await db
-    .select({
-      id: sectionProperties.id,
-      name: sectionProperties.name,
-      slug: sectionProperties.slug,
-      property_type: sectionProperties.propertyType,
-      is_filterable: sectionProperties.isFilterable,
-    })
-    .from(sectionPropertyAssignments)
-    .innerJoin(
-      sectionProperties,
-      eq(sectionPropertyAssignments.propertyId, sectionProperties.id),
-    )
-    .where(
-      and(
-        eq(sectionPropertyAssignments.sectionId, sectionId),
-        eq(sectionProperties.isFilterable, true),
-      ),
-    )
-    .orderBy(asc(sectionPropertyAssignments.sortOrder));
+  const rows = await selectScopedFilterProperties(db, sectionId);
 
   const byId = new Map<string, FilterPropertyRow>();
   for (const row of rows) if (!byId.has(row.id)) byId.set(row.id, row);

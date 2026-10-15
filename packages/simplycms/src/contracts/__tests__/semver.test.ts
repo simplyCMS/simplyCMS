@@ -42,6 +42,44 @@ describe('satisfies', () => {
   });
 });
 
+describe('satisfies: пре-релізи лінії rc', () => {
+  it('^1.0.0-0 приймає RC, фінальний 1.0.0 і 1.x', () => {
+    expect(satisfies('1.0.0-rc.1', '^1.0.0-0')).toBe(true);
+    expect(satisfies('1.0.0-rc.10', '^1.0.0-0')).toBe(true);
+    expect(satisfies('1.0.0', '^1.0.0-0')).toBe(true);
+    expect(satisfies('1.7.0', '^1.0.0-0')).toBe(true);
+  });
+
+  it('^1.0.0-0 відкидає наступну мажорну (і її RC) та 0.x', () => {
+    expect(satisfies('2.0.0-rc.1', '^1.0.0-0')).toBe(false);
+    expect(satisfies('2.0.0', '^1.0.0-0')).toBe(false);
+    expect(satisfies('0.14.0', '^1.0.0-0')).toBe(false);
+  });
+
+  it('^1.0.0 без -0 пре-релізів НЕ приймає (згода на RC — явна)', () => {
+    expect(satisfies('1.0.0-rc.1', '^1.0.0')).toBe(false);
+    expect(satisfies('1.0.0', '^1.0.0')).toBe(true);
+  });
+
+  it('~ і >= теж не пускають пре-реліз без пре-релізної бази', () => {
+    expect(satisfies('1.0.0-rc.1', '~1.0.0')).toBe(false);
+    expect(satisfies('1.0.0-rc.1', '>=0.1.0')).toBe(false);
+    expect(satisfies('1.0.0-rc.2', '>=1.0.0-rc.1')).toBe(true);
+  });
+
+  it('порядок: -0 < rc.1 < rc.2 < rc.10 < реліз; точний збіг', () => {
+    expect(satisfies('1.0.0-rc.1', '>=1.0.0-0')).toBe(true);
+    expect(satisfies('1.0.0-rc.9', '>=1.0.0-rc.10')).toBe(false);
+    expect(satisfies('1.0.0-rc.1', '1.0.0-rc.1')).toBe(true);
+    expect(satisfies('1.0.0-rc.2', '1.0.0-rc.1')).toBe(false);
+  });
+
+  it('інші пре-релізи й провідні нулі — невалідні', () => {
+    expect(() => satisfies('1.0.0-beta.1', '^1.0.0-0')).toThrow(/Невалідна/);
+    expect(() => satisfies('1.0.0-rc.01', '^1.0.0-0')).toThrow(/Невалідна/);
+  });
+});
+
 describe('CORE_VERSION', () => {
   it('дорівнює version у package.json пакета (синхронна модель версій)', () => {
     // Розсинхрон означає, що бамп пройшов повз scripts/release/bump.mjs —

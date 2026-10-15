@@ -35,6 +35,7 @@ import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
+import { QueryFailure } from '../components/QueryFailure';
 import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
 
 const orders = entityKey(ENTITY.orders);
@@ -67,7 +68,12 @@ export default function ProfileOrderDetailPage() {
    * повертається як `null` — не тому, що код його відфільтрував, а тому що
    * політика `orders_select_own_or_token` не віддала рядок актору.
    */
-  const { data: order, isLoading } = useQuery({
+  const {
+    data: order,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [...orders.detail(orderId ?? ''), user?.id],
     queryFn: () => getMyOrder({ data: { orderId: orderId as string } }),
     enabled: !!user && !!orderId,
@@ -140,6 +146,14 @@ export default function ProfileOrderDetailPage() {
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-48 w-full" />
       </div>
+    );
+  }
+
+  // Р26: «не знайдено» лише для успішної відповіді `null`; збій запиту —
+  // окремий стан з повтором.
+  if (isError && !order) {
+    return (
+      <QueryFailure message="profile.loadFailed" onRetry={() => refetch()} />
     );
   }
 

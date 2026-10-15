@@ -5,7 +5,7 @@
 > мінімум, для популярних CMS-платформ» + структурні сигнали в кроці
 > дослідження каталогу і картки), верифіковане веб-розвідкою по 20+
 > платформах; (2) вісім знахідок валідації живого прогону №2 скіла
-> `redesign-from-reference` (V-1…V-8, зафіксовані з якорями в notes.md
+> `simplycms-redesign` (V-1…V-8, зафіксовані з якорями в notes.md
 > прогону — продубльовані нижче, бо артефакти прогону поза git).
 > Роадмап: трек редизайну, інкремент Б.3.
 
@@ -187,8 +187,8 @@ WooCommerce-конфігурації і Next.js-шаблони — корінь 
   фікстура `tests/fixtures/design-import/site/`),
   `tests/design-import-inspect.test.ts`, `tests/design-import-map-tokens*.
   test.ts`.
-- Скіл: `.agents/skills/redesign-from-reference/SKILL.md` (фази 1 і 5),
-  гайд `docs/guides/redesign-from-reference.md`, команда
+- Скіл: `.agents/skills/simplycms-redesign/SKILL.md` (фази 1 і 5),
+  гайд `docs/guides/simplycms-redesign.md`, команда
   `.claude/commands/редизайн-за-референсом.md`.
 - 🔴 Канон 150 рядків/файл: `classify.mjs` 132, `discover.mjs` 135 —
   розширення несуть НОВІ модулі, не роздування наявних.

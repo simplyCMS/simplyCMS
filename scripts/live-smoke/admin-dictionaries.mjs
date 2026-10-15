@@ -24,7 +24,7 @@ import {
   runPriceTypesPart,
   removeSectionPart,
 } from './admin-dictionaries-price-types.mjs';
-import { waitText } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 const SECTION = { slug: 'live-dict-section', name: 'Живий розділ Е4' };
 
@@ -78,7 +78,7 @@ export async function runAdminDictionariesStep({
 
     // 2. Дубль slug → тост admin.errors.slugTaken, другого рядка немає.
     await submitNewSection(page, base, false);
-    const dupToast = await waitText(page, 'Такий URL (slug) уже зайнятий');
+    const dupToast = await waitToast(page, 'Такий URL (slug) уже зайнятий');
     const sections = await sectionsBySlug(dbUrl, SECTION.slug);
     check(
       'адмін: дубль slug розділу → тост i18n, рядок один',
@@ -102,7 +102,7 @@ export async function runAdminDictionariesStep({
       .getByRole('dialog')
       .getByRole('button', { name: 'Додати' })
       .click();
-    await waitText(page, 'Властивість додано');
+    await waitToast(page, 'Властивість додано');
     const assigned = await assignmentsOfSection(dbUrl, section?.id);
     check(
       'адмін: призначення applies_to = product',

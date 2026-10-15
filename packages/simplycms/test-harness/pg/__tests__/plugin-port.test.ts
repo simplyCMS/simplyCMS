@@ -8,8 +8,6 @@
 // 🔴 Таблиці `plg_*` у канон-схемі немає за побудовою: їх докочують міграції
 // плагінів. Тому тест створює свою руками — рівно так, як це зробила б
 // міграція плагіна (таблиця + гранти ролям, модель B5″).
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { AuthzError, requireGrant, resolveGrant } from 'simplycms/auth';
@@ -36,7 +34,7 @@ import {
 } from '../../../src/plugin-sdk/server/config-db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -45,7 +43,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const PLUGIN = 'testkit';
 const TABLE = 'plg_testkit_notes';
 
@@ -72,13 +69,7 @@ describe('порт даних плагіна проти живого Postgres', 
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     await queryRows(dbUrl, PLUGIN_MIGRATION);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);

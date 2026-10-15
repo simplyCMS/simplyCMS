@@ -4,7 +4,6 @@
 // тариф «відсоток від суми», гуртова ціна й знижка панелі. Оформлення —
 // воронкою вітрини, редагування — іменованими операціями адмінки
 // (хелпери — `./order-items-edit-helpers`).
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -44,13 +43,8 @@ export function useOrderItemsEditDb(prefix: string) {
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     db.url = H.withDbName(harness.url, dbName);
-    await H.applySqlFiles(db.url, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await H.applyCanon(db.url);
+    await H.applySqlFiles(db.url, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     for (const s of [
       ...COMMERCE_FIXTURE_STATEMENTS,
       ...EDIT_FIXTURE_STATEMENTS,
@@ -98,5 +92,5 @@ export function useOrderItemsEditDb(prefix: string) {
   });
 
   const helpers = editHelpers({ ids, rows, one, id });
-  return { ids, db, rows, ...helpers };
+  return { ids, db, rows, one, ...helpers };
 }

@@ -28,7 +28,7 @@ export interface ProductCardViewModel {
   short_description: string | null;
   /** Розділ потрібен для href картки; null — товар поза розділом. */
   section: { slug: string } | null;
-  stock_status: string | null;
+  stock_status: string;
   price: number | null;
   old_price: number | null;
   /**

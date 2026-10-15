@@ -42,7 +42,8 @@ type CardRow = {
  *
  * `loadCustomerStats` лишається в гривнях (на ньому пороги автоправил) —
  * центи тут, на межі (Е6г-12). Історія — знімок назв (К3-Е6в-5), новіші
- * зверху; `byRule` — запис зроблено правилом (`rule_id`).
+ * зверху; `byRule` — запис зроблено правилом (`source`, а не `rule_id`: той
+ * обнуляється видаленням правила).
  */
 export const getCustomerCardOp = async ({
   data,
@@ -79,7 +80,7 @@ export const getCustomerCardOp = async ({
       ).rows.map((p) => p.providerId);
     const history = await db.execute<HistoryRaw>(sql`
       select h.id, h.from_category_name as "fromName", h.to_category_name as "toName",
-             h.reason, (h.rule_id is not null) as "byRule",
+             h.reason, (h.source = 'rule') as "byRule",
              a.email as "changedByEmail", ${isoTs(sql`h.created_at`)} as "createdAt"
         from public.user_category_history h
         left join public.users a on a.id = h.changed_by

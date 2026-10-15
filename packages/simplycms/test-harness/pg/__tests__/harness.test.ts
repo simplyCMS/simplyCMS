@@ -45,4 +45,32 @@ describe('pg harness (up.mjs + apply.mjs)', () => {
     // Після дропу підключення до тієї самої БД мусить впасти.
     expect(await canConnect(dbUrl)).toBe(false);
   });
+
+  // Е8, фікс D: `Promise.all` по одноразових хелперах не має відкривати N
+  // з'єднань разом — інакше `max_connections` кластера падає випадково
+  // («too many clients», `admin-reviews-moderate` зі 101 id). Кожен запит
+  // спершу спить, а потім рахує живі з'єднання до своєї БД: без стелі тут
+  // було б ~24, під стелею — не більше 4.
+  it("🔴 паралельні queryRows не перевищують стелю одноразових з'єднань", async () => {
+    const dbName = `simplycms_harness_ceiling_${Date.now()}`;
+    await createTempDatabase(harness.url, dbName);
+    const dbUrl = withDbName(harness.url, dbName);
+    try {
+      const seen = await Promise.all(
+        Array.from({ length: 24 }, () =>
+          queryRows(
+            dbUrl,
+            `select (select count(*)::int from pg_stat_activity
+                      where datname = current_database()) as n
+               from pg_sleep(0.1)`,
+          ),
+        ),
+      );
+      expect(
+        Math.max(...seen.map((r) => r[0].n as number)),
+      ).toBeLessThanOrEqual(4);
+    } finally {
+      await dropTempDatabase(harness.url, dbName);
+    }
+  });
 });

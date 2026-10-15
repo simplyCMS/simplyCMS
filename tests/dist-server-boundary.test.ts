@@ -178,6 +178,12 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   inventory: '[simplycms/inventory] ціль залишку без товару й модифікації',
   commerce: '[simplycms/commerce] extraCartTotal — невідʼємне число',
   site: '[simplycms/site] TTL кешу має бути додатним числом',
+  env: 'задана не повністю: ',
+  'server-guard': '[server] Непередбачена помилка ',
+  mail: 'Лист НЕ надіслано (SMTP не налаштовано)',
+  vite: 'simplycms-build-info',
+  migrate: 'адопція бази без журналу не підтримується',
+  'prod-start': '[start] MIGRATION_DATABASE_URL не задано — накат пропущено.',
   sanitize: 'nofollow ugc noopener noreferrer',
 };
 

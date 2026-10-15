@@ -6,6 +6,7 @@ import {
   loadProduct,
   loadProductModificationValues,
   withStorefrontDb,
+  withViewerDb,
   type ModificationStockRow,
 } from 'simplycms/storefront/loaders';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
@@ -16,12 +17,15 @@ export interface ModificationDataPayload {
   stock: Record<string, ModificationStockRow>;
 }
 
-/** Отримати товар за slug (для сторінки товару). */
+/**
+ * Отримати товар за slug (для сторінки товару). Ціни — лише видів глядача
+ * сесії; залогіненому — `private, no-store` (Р29, `withViewerDb`).
+ */
 export const getProduct = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const { slug } = input as { slug: string };
-    return withStorefrontDb((db) => loadProduct(db, slug));
+    return withViewerDb((db, viewer) => loadProduct(db, slug, viewer));
   });
 
 /**

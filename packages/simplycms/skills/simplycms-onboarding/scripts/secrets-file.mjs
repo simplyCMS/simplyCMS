@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+/**
+ * Файл секретів магазину, значення якого не потрапляють у розмову агента.
+ *
+ *   secrets-file.mjs init <шлях>            # файл 0600 з порожніми ключами, шлях у .gitignore
+ *   secrets-file.mjs gen <шлях> KEY         # випадкове значення (hex) у порожній ключ
+ *
+ * Значень скрипт не друкує ніколи (stdout агента потрапляє в розмову): в Dokploy
+ * їх переносить `dokploy-env.mjs set KEY --from-secrets <шлях>`. Виводить імена ключів і шлях.
+ */
+import { randomBytes } from 'node:crypto';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+
+import {
+  ensureGitignored,
+  readSecret,
+  SECRET_KEYS,
+  setSecret,
+} from './secrets-store.mjs';
+
+const [command, rawPath, key] = process.argv.slice(2);
+const usage = () => {
+  console.error('Використання: secrets-file init <шлях> | gen <шлях> KEY ');
+  process.exit(2);
+};
+if (!rawPath || (command !== 'init' && !key)) usage();
+const path = resolve(rawPath);
+
+if (command === 'init') {
+  const existed = existsSync(path);
+  // Існуючий файл не перезаписуємо: у ньому можуть бути вже внесені секрети.
+  if (!existed) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, `${SECRET_KEYS.map((k) => `${k}=`).join('\n')}\n`, {
+      mode: 0o600,
+    });
+  }
+  const ignored = ensureGitignored(path);
+  console.log(`${existed ? 'Файл уже існує' : 'Створено'}: ${rawPath} (0600)`);
+  if (ignored) console.log('Додано в .gitignore');
+  console.log(`Ключі: ${SECRET_KEYS.join(', ')}`);
+} else if (command === 'gen') {
+  if (readSecret(path, key)) {
+    console.error(`${key} уже заповнений — не перезаписую`);
+    process.exit(1);
+  }
+  setSecret(path, key, randomBytes(32).toString('hex'));
+  console.log(`Згенеровано: ${key}`);
+} else usage();

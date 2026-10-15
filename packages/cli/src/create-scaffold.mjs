@@ -30,14 +30,29 @@ export const templatePluginDir = () => templateDir('template-plugin');
 export const templateThemeDir = () => templateDir('template-theme');
 
 /**
+ * `YYYYMMDDHHmmss` (UTC) для імені міграції плагіна (Е8-Р4). Канон ядра
+ * нумерується `0000…0005` і далі `0006…`; таймстамп сортується ПІСЛЯ будь-якого
+ * чотирицифрового префікса, тож плагінна міграція ніколи не стане між
+ * `0001_init` і `0002_grants` (той робить `revoke all … from public`).
+ * @param {Date} [now]
+ */
+export function migrationTimestamp(now = new Date()) {
+  return now.toISOString().slice(0, 19).replace(/\D/g, '');
+}
+
+/**
  * Підстановка плейсхолдерів шаблону плагіна. Окремий плейсхолдер префікса
  * таблиць: для імен із дефісом (`my-faq`) SQL-префікс — `plg_my_faq_`
  * (підкреслення), і скласти його з `__PLUGIN_NAME__` у README не можна.
  * @param {string} tpl
- * @param {{ pluginName: string; coreRange: string }} vars
+ * @param {{ pluginName: string; coreRange: string; migrationTs?: string }} vars
  */
-export function renderPluginTemplate(tpl, { pluginName, coreRange }) {
+export function renderPluginTemplate(
+  tpl,
+  { pluginName, coreRange, migrationTs = migrationTimestamp() },
+) {
   return tpl
+    .replaceAll('__MIGRATION_TS__', migrationTs)
     .replaceAll(
       '__PLUGIN_TABLE_PREFIX__',
       `plg_${pluginName.replace(/-/g, '_')}_`,
@@ -114,18 +129,23 @@ export function scaffoldTree({ templateDir: from, targetDir, render }) {
 
 /**
  * @param {{ templateDir: string; targetDir: string; pluginName: string;
- *   coreRange: string }} input
+ *   coreRange: string; now?: Date }} input
  */
 export function scaffoldPlugin({
   templateDir: from,
   targetDir,
   pluginName,
   coreRange,
+  now,
 }) {
+  // Один таймстамп на весь скаффолд: ім'я файла й вміст рендеряться окремими
+  // викликами, і секунда між ними розвела б їх.
+  const migrationTs = migrationTimestamp(now);
   return scaffoldTree({
     templateDir: from,
     targetDir,
-    render: (source) => renderPluginTemplate(source, { pluginName, coreRange }),
+    render: (source) =>
+      renderPluginTemplate(source, { pluginName, coreRange, migrationTs }),
   });
 }
 

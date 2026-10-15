@@ -15,8 +15,6 @@ interface Props {
   readonly onDelete: () => void;
 }
 
-const CITIES_SHOWN = 3;
-
 /**
  * Рядок списку зон. Дефолтна зона (Е6а-20) завжди активна й невидалювана:
  * кнопка видалення вимкнена; «Зробити дефолтною» вимкнена для неактивної —
@@ -30,7 +28,6 @@ export function ShippingZoneRow({
 }: Props) {
   const t = useT();
   const navigate = useNavigate();
-  const cities = zone.cities ?? [];
   const lockedHintId = `sz-locked-${zone.id}`;
   const stop = (fn: () => void) => (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
@@ -49,14 +46,6 @@ export function ShippingZoneRow({
             <Badge variant="secondary">{t('common.byDefault')}</Badge>
           )}
         </div>
-      </TableCell>
-      <TableCell className="max-w-[240px] truncate text-sm text-muted-foreground">
-        {cities.length > 0
-          ? cities.slice(0, CITIES_SHOWN).join(', ') +
-            (cities.length > CITIES_SHOWN
-              ? ` +${cities.length - CITIES_SHOWN}`
-              : '')
-          : '—'}
       </TableCell>
       <TableCell className="text-center">
         <Switch

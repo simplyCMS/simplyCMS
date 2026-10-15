@@ -53,7 +53,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
           # 🔴 Без `registry-url` setup-node не створює `.npmrc`, і
           # `NODE_AUTH_TOKEN` мовчки ігнорується → 401 при публікації.
@@ -86,8 +86,13 @@ jobs:
       # merge без бампа — no-op. `--access public`: scoped-пакети npm за
       # замовчуванням робить приватними, а це платний план.
       # `--no-git-checks`: у CI HEAD detached, і pnpm інакше відмовляється.
+      # `--tag`: пре-реліз (`1.0.0-rc.N`) йде під `next`, а не `latest` —
+      # інакше `npm i simplycms` і `simplycms update` схопили б RC як стабільний.
       - name: Publish
-        run: pnpm publish -r --access public --no-git-checks
+        run: |
+          tag="$(node scripts/release/dist-tag.mjs --print)"
+          case "$tag" in latest|next) ;; *) echo "::error::dist-tag: '$tag'"; exit 1;; esac
+          pnpm publish -r --access public --no-git-checks --tag "$tag"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

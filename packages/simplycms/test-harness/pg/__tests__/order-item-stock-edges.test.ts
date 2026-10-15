@@ -22,6 +22,12 @@ describe('облік позиції: межові гілки (Е5-11, Е5б-7′
     warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(() => warn.mockRestore());
+  // Оформлення замовлення тепер ставить листи в outbox і доставляє їх (log-драйвер
+  // друкує warn «SMTP не налаштовано»): рахуємо лише попередження обліку.
+  const inventoryWarns = () =>
+    warn.mock.calls.filter((c: unknown[]) =>
+      String(c[0]).startsWith('[simplycms/inventory]'),
+    );
 
   /** Замовлення з однією обліковою позицією `qty` одиниць панелі (залишок 10). */
   const placed = async (qty: number) => {
@@ -50,7 +56,7 @@ describe('облік позиції: межові гілки (Е5-11, Е5б-7′
       stockReserved: 0,
     });
     expect(await f.stock(ids.panel)).toBe(7);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(inventoryWarns()).toHaveLength(1);
   });
 
   it('🔴 releaseOrderStock: рядка залишку на точці вже немає — released не рахує позицію без фактичного повернення', async () => {
@@ -75,7 +81,7 @@ describe('облік позиції: межові гілки (Е5-11, Е5б-7′
     ).toEqual({ reserved: 1 });
     expect((await f.item(itemId)).stockReserved).toBe(1);
     expect(await f.stock(ids.panel)).toBe(7);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(inventoryWarns()).toHaveLength(1);
   });
 
   it('releaseOrderItemStock при видаленій точці: warn, released 0, лічильник 0', async () => {
@@ -86,7 +92,7 @@ describe('облік позиції: межові гілки (Е5-11, Е5б-7′
     ).toEqual({ released: 0 });
     expect((await f.item(itemId)).stockReserved).toBe(0);
     expect(await f.stock(ids.panel)).toBe(6);
-    expect(warn).toHaveBeenCalledTimes(1);
+    expect(inventoryWarns()).toHaveLength(1);
   });
 
   it('releaseOrderItemStock: рядка залишку немає — released 0, лічильник 0', async () => {

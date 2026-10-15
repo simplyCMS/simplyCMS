@@ -57,7 +57,7 @@ pnpm simplycms doctor
 
 ## 3. Команди
 
-### 3.1 `simplycms doctor [--strict]`
+### 3.1 `simplycms doctor [--strict] [--online] [--production]`
 
 Read-only діагностика. Оффлайн-перевірки (завжди):
 
@@ -67,7 +67,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 2 | усі пакети ядра (`simplycms` + сателіти `@simplycms/*`) — одна версія; версія CLI збігається | error / warn |
 | 3 | `packageManager` — pnpm 11 | warn |
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
-| 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env` | error |
+| 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env`; значення, що дорівнює відомій заглушці з прикладів env (`src/env-placeholders.mjs` — єдиний список, його ж читає тест шаблону; `DATABASE_URL`, `BETTER_AUTH_SECRET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `SMTP_URL`, `MIGRATION_DATABASE_URL`) — теж error; повідомлення називає ключ, не значення | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
 | 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
@@ -76,17 +76,124 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
+| 14 | `nodemailer` — пряма залежність магазину (`dependencies`) у межах peer-діапазону ядра (`src/doctor-mail-check.mjs`, спільне читання стану — `src/pg-peer.mjs`; К3-Е8, Е8-Р11). Без декларації SMTP-драйвер порту `simplycms/mail` не працює. Ядра в `node_modules` ще немає — `skip` | error |
+| 15 | пошта (`checkMailConfigured`, `src/doctor-mail-check.mjs`; Е8-Р17): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
+| 16 | підтвердження пошти (`checkEmailVerification`, Р30): `--production` + драйвер не `smtp` → реєстрація без підтвердження пошти | warn |
+| 17 | `engines.simplycms` кожного плагіна й теми конфігу покриває встановлене ядро (`src/doctor-engines.mjs`; Р32). `satisfies` береться з ядра магазину (`simplycms/contracts/semver` через `importFromStore`) — npm-вирівняний, без копії semver у CLI; діапазон — `default.manifest.engines` зібраного пакета або літерал у сирцях локального `@plugins/*`/`@themes/*`. Не покриває → error з пакетом, діапазоном, версією ядра й дією «онови плагін або відкоти ядро»; `engines` відсутній чи нерозбірливий, модуль не вдалося прочитати → warn; ядра немає — `skip`. Теми перевіряються всі з конфігу (активна зберігається в БД, офлайн невідома) — у details тема з пометкою «може бути неактивною». Для пакетів `doctor` ІМПОРТУЄ модуль плагіна/теми з магазину, тож виконуються його побічні ефекти верхнього рівня; збій імпорту → warn. Контекст перевірок збирає `buildOfflineContext` (`doctor.mjs`), спільний для `doctor` і `status` (`ctx.engines`). Ця ж перевірка входить у спільний список `status` | error / warn |
+| 18 | файли агента (`checkAgentFiles`, `src/agent-files.mjs`; Б §3.3): керований блок `AGENTS.md` = `renderManagedBlock(node_modules/simplycms/agent/intro.md)`, `CLAUDE.md` є й містить рядок `@AGENTS.md` (Claude Code сам `AGENTS.md` не читає), у `.claude/settings.json` є канонічний запис хука `SessionStart` (exec-форма: `node` + `args` `${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs`, matcher `startup\|clear\|compact`; `claude --version` < 2.1.139 → warn) і шим `.claude/hooks/session-start.mjs` (host-файл: байт-копія шаблону в `host/`, тож `update --write` пише його разом із записом; запис є, а шиму немає → warn із дією `update --write`). Розбіжність, маркери відсутні/пошкоджені, немає `CLAUDE.md` чи імпорту, запису немає → warn; `details` несе рекомендовані дозволи Claude Code з `simplycms/agent/permissions.json` («читання вільно, зміни через підтвердження») — `update` дозволи не зливає. Ядро без `agent/` — `skip` | warn → `update --write` |
 
-🔴 Онлайн-перевірки знято в `0.4.1`: вони ходили в REST зовнішнього BaaS, а магазин
-контракту v2 сервер-first — HTTP-API до бази в нього немає взагалі. Замість
-мовчазного зникнення рядка звіт лишає видиму позначку `skip`:
+**Режим (Е8-Р17).** `--production` АБО `isProductionRuntime(process.env)` з `simplycms/env` (CLI бере його через `importFromStore`; власної перевірки `NODE_ENV` немає, `.env*` магазину для режиму не читаються). Після Р16 `NODE_ENV=production` ставить лише `server.mjs`, тож разовий `doctor` (CI, `prod-run`) прод-режим задає прапорцем. Перший рядок звіту — «режим: production» або «режим: розробка (для перевірки проду — `--production`)». Коди виходу не змінюються: режим міняє лише серйозність перевірок, що від нього залежать.
 
-| id | title | status | details |
-|---|---|---|---|
-| `db-online` | Перевірки стану БД | `skip` | недоступні: магазин сервер-first, HTTP-API до БД немає; повернуться контуром К3 |
+Онлайн-перевірки (лише з `--online`, К3-Е8, `src/doctor-db-checks.mjs`) ходять у БД
+з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor
+read-only, ключ власника схеми не мусить лежати на кожній машині. Журнал читає ядро
+(`simplycms/migrate` через `importFromStore`, Е8-Р13) у read-only транзакції під
+`SET ROLE app_admin`. Бюджет 3 с і на з'єднання, і на запит: ядро приймає його як
+`readJournal(url, { timeoutMs })` (`connectionTimeoutMillis` + `statement_timeout` сесії). Немає
+пакета `pg` у магазині — окремий `skip` з підказкою, а не «Cannot find module».
+
+| id | status | значення |
+|---|---|---|
+| `db-reachable` | `ok` / `error` / `skip` | з'єднання з `DATABASE_URL`; помилка — `error` (без пароля в тексті), немає `DATABASE_URL` — `skip` |
+| `shared-cluster` | `ok` / `warn` / `error` / `skip` | вимога «власний екземпляр Postgres на магазин»: ядро (`findForeignDatabases` у `simplycms/migrate`, read-only транзакція з `DATABASE_URL`) шукає в `pg_database` інші бази, до яких `app_runtime` має `CONNECT` (`has_database_privilege`); `postgres`, `template0`, `template1` і поточна не рахуються. Критерій «є таблиця `simplycms_migrations`» — підмножина `CONNECT` (журнал чужої бази без доступу не прочитати), тож окремого проходу по базах немає. Є такі бази — `warn` з іменами (без облікових даних); стоковий `PUBLIC CONNECT` дає `warn` на будь-яку сторонню базу — спільний кластер порушує вимогу. Немає `DATABASE_URL`/`pg`/БД недоступна — `skip` |
+| `migrations-journal` | `ok` / `warn` / `error` / `skip` | усе накочено — `ok`; є ненакочені — `warn` з іменами; змінений накочений файл або база без журналу — `error` («база без журналу»); БД недоступна — `skip` із причиною |
+| `store-owner` | `ok` / `warn` | `user_roles` має ≥1 запис `admin`; немає — `warn` «створи власника: `pnpm owner:invite`» (у щойно створеному магазині це крок онбордингу, а не поломка) |
+| `store-profile` | `ok` / `warn` | профіль (`system_settings['store_profile']`): порожня назва — `warn`; порожній `contacts.email` — `warn` «листи власнику про замовлення не надходитимуть»; рядка профілю немає — обидва |
+| `mail-outbox` | `ok` / `warn` | у `mail_outbox` є листи з `attempts > 0` (пробували слати, не доставили) — `warn` із кількістю, без тіл листів. 🔴 Відомий пробіл: рядок із `attempts = 0`, що застряг (процес помер між COMMIT і першою спробою), перевірка не бачить — відрізнити «ще не пробували» від «застряг» без віку рядка неможливо, а поведінку свідомо не змінено |
+| `store-state` | `error` / `skip` | замінює три рядки вище, коли факти прочитати не вдалося (`error`, без пароля) або БД/ядро недоступні чи бази без журналу немає (`skip`, друга помилка поруч з `migrations-journal` не потрібна) |
+
+Факти (`store-owner`, `store-profile`, `mail-outbox`) читає ядро: `readStoreFacts` у
+`simplycms/migrate` — той самий канал, що й журнал (`withRuntimeAdminRead`: read-only
+транзакція під `SET LOCAL ROLE app_admin`). `simplycms/mail` CLI не імпортує: він тягне пул
+`simplycms/db` з `process.env`, а CLI env процесу не мутує. Три читання (журнал, факти,
+кластер) ідуть паралельно. Усі перевірки спільні з `status`: один модуль
+(`doctor-db-checks.mjs` + чисті будівники `online-state-checks.mjs`).
+
+Без `--online` звіт лишає видимий рядок `db-online` зі статусом `skip` і підказкою
+«увімкни `--online`» — мовчазне зникнення читалося б як «БД перевірено».
 
 Exit-коди: `1` — є хоч один error; самі warn → `0`; `--strict` — warn теж
 валить. Стан «не вдалося перевірити» на exit-код не впливає.
+
+### 3.1.1 `simplycms status [--json | --hook] [--production]`
+
+Етап магазину й наступний крок для людини та агента (Б §3.1):
+
+- **Етап** (`deriveStage`, `src/status-stage.mjs`): немає магазину → `not-created`;
+  є `.simplycms/deploy.json` → `deployed`; без нього обов'язкові env-ключі (ті самі, що гейтить
+  №5, `missingRequiredEnv`) відсутні чи порожні → `not-configured` (свіжий скаффолд без
+  `--database-url`); інакше → `local`. Порядок: `not-created` → `not-configured` → `local` →
+  `deployed`. Заглушка чи битий URL — не `not-configured`, а `error` №5.
+- **Перевірки** — ті самі офлайн-перевірки, що в `doctor`: спільний список
+  `OFFLINE_CHECKS` і контекст ЛИШЕ з `buildOfflineContext`; власне складання контексту
+  загубило б `engines`, і №17 мовчки став би `skip`.
+- **Онлайн-частина** (`src/status-online.mjs`): ті самі перевірки БД, що в `doctor --online`
+  (`db-reachable`, `migrations-journal`, `store-owner`, `store-profile`, `mail-outbox`,
+  `shared-cluster`), а в етапі `deployed` ще й `domain-health` — `GET https://<domain>/api/health`
+  (таймаут 3 с; `healthy` → `ok` зі збіркою, інакше `error`). Кожне завдання (БД, домен) ганяється
+  з дедлайном команди окремо: що не вклалось у ~5 с — у `unknown`. Без `DATABASE_URL` чи драйвера `pg`
+  рядки БД — `skip`. Шим хука має таймаут 8 с, запис хука — 10 с, тому бюджет не збільшується.
+- **`.simplycms/deploy.json`** (`src/deploy-record.mjs`; закомічений, без секретів, Е8-Б4):
+  `{ "version": 1, "dokploy": { "url", "projectId", "applicationId", "postgresId" }, "domain", "bucket", "createdAt" }`.
+  Валідатор відкидає поле поза схемою, `dokploy.url` з userinfo/query/hash і домен зі схемою чи шляхом;
+  значення за словами на кшталт `secret` не перевіряються (хибні спрацювання на іменах ресурсів).
+  Нечитний чи невалідний файл — `unknown` (етап лишається `local`, код 1), а не мовчазне «не розгорнуто».
+- **Запис і читання `deploy.json`: `simplycms deploy:record get|set`** (`src/deploy-record-cli.mjs`).
+  Єдиний шлях скриптів скіла деплою (вони живуть у пакеті ядра, а CLI експортує лише `.`):
+  схему й валідатор тримає лише `deploy-record.mjs`. `get` друкує валідований JSON (код `3` — запису
+  ще немає, `1` — файл невалідний); `set` читає JSON зі stdin (на TTY — відмова), валідує тим самим
+  валідатором і пише атомарно (tmp у `.simplycms/` + rename; невалідне — файл не змінюється, tmp не
+  лишається). Схема — allowlist: невідоме поле — відмова з НАЗВОЮ поля, userinfo (`scheme://user:pass@`)
+  у будь-якому рядковому полі — відмова; `createdAt` — повний ISO-8601. Значення ні в stdout, ні в stderr
+  не потрапляють — лише назви полів.
+- **Наступний скіл** (`nextSkill`) — перший збіг у таблиці зверху вниз; тест перевіряє КОЖЕН
+  рядок. `warn` помилкою не вважається; `unknown` на вибір скіла не впливає (лише на код виходу).
+
+  | # | Етап | Перевірки | `next.skill` |
+  |---|------|-----------|--------------|
+  | 1 | `not-created` | будь-які (навіть з error) | `simplycms-onboarding` |
+  | 1б | `not-configured` | будь-які (навіть з error: відсутній env — не поломка) | `simplycms-onboarding` |
+  | 2 | `local` / `deployed` | є хоч один `error` | `simplycms-diagnose` |
+  | 3 | `local` | без `error` (ok / warn) | `simplycms-onboarding` (крок деплою) |
+  | 4 | `deployed` | без `error` (ok / warn) | немає (`null`) |
+- **Коди виходу** (Е8-О8): `0` — гаразд, `3` — є що робити, `1` — стан невідомий
+  (`unknown` непорожній: перевірка кинула чи не вклалась у ~5 с; невідоме важить більше за
+  «є що робити»). Синхронну перевірку, що зависла наглухо, таймаут не перерве (потік один);
+  повільною буває лише асинхронна збірка контексту.
+- **`--json`**: `{ stage, checks, next, unknown }`, `stage` ∈ `not-created | not-configured | local | deployed`. **`--hook`**: вступ агента (з
+  `node_modules/simplycms/agent/intro.md`; текст виділяє `extractBlockIntro` з
+  `managed-block.mjs` — та сама функція, що в тесті паритету з керованим блоком) і стан
+  ≤25 рядків. при обрізанні до 25 рядків рядки «не вдалося перевірити» не зрізаються, зрізаються проблеми. `--hook` несумісний з `--json` і `--production`: хук запускає сесія, і
+  мовчазна зміна режиму змінила б серйозність перевірок.
+- **Шим хука** (`.claude/hooks/session-start.mjs`; host-файл, байт-копія шаблону) кличе
+  `status --hook` CLI магазину (`@simplycms/cli` з `node_modules`) і віддає агенту
+  результат як додатковий контекст сесії. Поведінка за кодом виходу: `0`/`3` — текст як є;
+  `1` з непорожнім stdout — «УВАГА: частину стану не перевірено.» + повний текст; інші
+  коди, порожній вивід, таймаут 8 с — «УВАГА: стан невідомий …»; немає CLI в
+  `node_modules` — «УВАГА: стан магазину невідомий — залежності не встановлено»
+  + `pnpm install`. Сам шим завжди завершується кодом `0`: збій хука не блокує сесію.
+  Корінь магазину — `${CLAUDE_PROJECT_DIR}` (фолбек `process.cwd()`).
+- **Запис у `settings.json`** — exec-форма: `{ "type": "command", "command": "node",
+  "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.mjs"], "timeout": 10 }`
+  (matcher `startup|clear|compact`). Згідно з документацією Claude Code, cwd хука слідує за cwd агента: після `cd` агента відносний шлях на `clear|compact` пішов би не з кореня. `${CLAUDE_PROJECT_DIR}` (корінь проєкту сесії) від cwd не залежить, а плейсхолдер у `args` не потребує лапок. Живий доказ (Claude Code 2.1.296): `claude -p` з кореня магазину запускає SessionStart-хук; з підтеки `src/` проєктний `.claude/settings.json` не читається взагалі і хук не запускається ні в якій формі — агента запускають з кореня магазину (тека з `package.json` і `.claude/`). `update`
+  розпізнає і старий відносний запис (`node .claude/hooks/session-start.mjs`), і новий та
+  переводить старий у канонічний. **Мінімальна версія:** Claude Code ≥ 2.1.139 (поле
+  `args` у хуках); перевірено на 2.1.296. doctor №18 дає `warn`, якщо `claude --version`
+  (доступний у PATH) старіший; без бінарника перевірка мовчить (магазин може вести інший
+  агент). Версію питає лише `doctor`, не `status`/хук (хук уже запустився ⇒ версія достатня, а
+  spawn гальмував би старт сесії). На Windows `claude.cmd` без shell не спавниться — перевірка
+  теж мовчить.
+
+### 3.1.2 `simplycms smoke <url>`
+
+Живий смоук розгорнутого магазину (`src/smoke.mjs` — тонкий мережевий шар; рішення «ок чи ні» —
+чисті функції `src/smoke-checks.mjs`). Перевірки по черзі, кожна друкує `✓|✗ назва — деталь`:
+`/api/health` (`status: 'healthy'`, `build` непорожній), `/`, `/catalog` (200), `/admin` (редирект
+на вхід цього ж магазину: `Location` резолвиться на той самий origin і шлях `/auth` — саме туди веде guard `src/start.ts`; `308 → /admin/` чи чужий хост — `✗`), `/robots.txt` (200 з `User-agent`), стиснення `br` на вхідному
+`/assets/*.js` (адреса береться з HTML головної), `POST` 3 МБ на `/_serverFn/x` → рівно `413`
+(`502` означає, що обрив з'єднання за стелею дійшов до проксі). Мережева помилка чи таймаут
+(10 с) однієї перевірки — її `✗`, а не падіння команди. Адреса з userinfo відхиляється.
+Код виходу: `0` — усе `✓`, `1` — хоч одне `✗` або помилка використання.
 
 ### 3.2 `simplycms add <pkg> (--plugin | --theme) [--copy] [--name <key>] [--no-install] [--dry-run]`
 
@@ -125,23 +232,60 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 
 1. **Версії.** Магазин пінить точні версії, тож звичайний `pnpm update` — no-op.
    Команда бере цільову версію з `--to` або питає реєстр
-   (`pnpm view @simplycms/cli version`); реєстр недоступний → exit 1 із
+   (`pnpm view @simplycms/cli dist-tags --json`): магазин на пререлізі
+   (`1.0.0-rc.N`) іде за `max(next, latest)`, стабільний — за `latest`; ціль не
+   новіша за поточну → «новішого релізу немає», без даунгрейду. Межу сумісності
+   (`compatBoundaryOf`: мажорна з 1.0, мінорна для 0.x — `0.14 → 0.15`, `0.x → 1.x`, `1.x → 2.x`)
+   без `--to` команда не перетинає: пише про BREAKING і виходить з кодом 3 (`rc → фінальний`
+   тієї ж межі — не межа). Перехід через `0.15.0` знизу (`needsDatabaseRecreation`) додає
+   попередження: база без журналу міграцій не підніметься (`UnjournaledDatabaseError`), її
+   створюють заново — і в тексті зупинки, і при явному `--to`. Реєстр і `pnpm add`
+   йдуть через ін'єкційний шов `run(argv, { exec })` — той самий шов запускає й новий
+   CLI (крок 1а). Реєстр недоступний → exit 1 із
    підказкою `--to`. Далі `pnpm add` для **всіх** пакетів ядра з `package.json`
    магазину — unscoped `simplycms` і сателітів `@simplycms/*`, dependencies і
    devDependencies окремо — на цільову версію (`isCorePackage`: точне імʼя
    `simplycms` 🔴 плюс scope-префікс; префіксом `simplycms` зачепило б сторонні
-   `simplycms-theme-*` з власним циклом релізу). `--no-install` пропускає цей
-   крок.
-2. **Host-файли.** Канон — тека `host/` пакета CLI (див. §4). `--check`
-   (дефолт) — перелік файлів, що розійшлися, exit 1 при дрейфі (придатне для
-   CI магазину); `--write` — перезапис канонічними версіями. Магазин —
-   git-репозиторій: ревʼю дрейфу = `git diff`.
+   `simplycms-theme-*` з власним циклом релізу). `--no-install` і `--check`
+   пропускають цей крок.
+1а. **Передача керування новому CLI (Р21).** Після `pnpm add` процес лишається
+   СТАРИМ CLI: Node резолвить реальний шлях біна в `.pnpm/@simplycms+cli@<стара>`,
+   pnpm цю теку не прибирає, і канон `host/` (від `import.meta.url`) — старий. Тож
+   звірку й запис (кроки 2–6) робить новий CLI магазину:
+   `node node_modules/@simplycms/cli/<bin.simplycms> update --after-install <той самий argv>`.
+   Маркер `--after-install` вимикає install (інакше — нескінченний цикл); код виходу
+   дочірнього = код `update`. Доказ — Gate TOOL (`tool-update-reexec.mjs`: два tarball-и
+   CLI з різними канонами, один `update --write`).
+2. **Host-файли.** Канон — тека `host/` пакета CLI (див. §4). Без прапорців —
+   перелік файлів, що розійшлися, exit 1 при дрейфі; `--write` — перезапис
+   канонічними версіями. Магазин — git-репозиторій: ревʼю дрейфу = `git diff`.
+   `--check` (Е8-Р12) — чиста перевірка для CI: без мережі й install, нічого не пише;
+   коди Е8-О8: `0` — збігається, `3` — будь-яка розбіжність (host-файли, лінки скілів,
+   керований блок, запис хука), `1` — помилка (тека міграцій, невалідний
+   `.claude/settings.json`). Дочірній CLI Р21 у `--check` не запускається; у звичайному
+   режимі він продовжує вивід батька (без другого заголовка), а відсутній
+   `node_modules/@simplycms/cli/package.json` чи `bin` дає відмову з порадою
+   `pnpm simplycms update --no-install`.
 3. **Лінки скілів** (трек К0). Після кроку версій `update` звіряє
    `.agents/skills/`+`.claude/skills/` з текою `skills/` встановленого ядра:
    доробляє відсутні й биті, прибирає осиротілі (лінк у пакет, якому вже
    нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не
    чіпається взагалі — форк сильніший за пакетний скіл. Нічого лагодити —
-   мовчить. Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
+   мовчить (`--check` лише звітує). Спільна реалізація з doctor №12 (`src/skill-links.mjs`).
+3а. **Файли агента** (Б §3.2–3.3). Керований блок `AGENTS.md` між маркерами
+   `<!-- simplycms:begin … -->`/`<!-- simplycms:end -->` рендериться з вступу
+   встановленого ядра (`simplycms/agent/intro.md`) тією самою функцією, що й
+   шаблонний (`src/managed-block.mjs`, `pnpm template:sync`); текст поза маркерами
+   байт-у-байт не чіпається. Маркерів немає (чи файлу) або вони пошкоджені —
+   `update` нічого не пише й друкує, які два рядки вставити. Відсутній `CLAUDE.md`
+   створюється з `simplycms/agent/claude-md.md` (той самий файл синк кладе в шаблон);
+   наявний не переписується ніколи — без рядка `@AGENTS.md` update лише попереджає. Запис хука `SessionStart`
+   у `.claude/settings.json` (`src/hook-entry.mjs`) додається чи оновлюється; інші
+   ключі й чужі хуки лишаються, дозволи не зливаються (їх показує doctor №18). Запис
+   іде лише разом із шимом `.claude/hooks/session-start.mjs` (інваріант «запис ⇒ шим»;
+   шим — host-файл, його пише `--write`): із `--write` — обидва в одному виклику; без
+   прапорців шим є — запис пишеться, шима немає — запис відкладено з поясненням
+   «додасть `update --write` разом із шимом»; `--check` — розбіжність, код 3.
 4. **Драйвер `pg` (К3-Е7).** Після кроку версій `update` порівнює `pg` магазину з peer-діапазоном щойно встановленого ядра і, якщо вони розійшлися, лише ДРУКУЄ, що оновити (`pnpm add pg@<peer>`): версію `pg` у `package.json` магазину `update` не переписує — пін належить магазину (спільна реалізація з doctor №13).
 5. **Тека міграцій магазину.** Наприкінці `update` перевіряє наявність `db/migrations`: відсутня — гучна помилка й exit ≥ 1 (без неї doctor №7 і `db:diff` брехали б «усе гаразд»); стара `supabase/migrations` отримує підказку `git mv supabase/migrations db/migrations`. Зворотної сумісності немає — лише спосіб переїхати.
 
@@ -170,16 +314,37 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
   скопійованої міграції (обовʼязковий крок конвеєра).
 
 Конвенція імені плагінної міграції — `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql`
-(унеможливлює колізії імен між канонами). 🔴 Таймстамп запечений автором
+(унеможливлює колізії імен між канонами). 🔴 Таймстамп обовʼязковий і з іншої
+причини: накат іде за порядком імен, а `0002_grants` робить `revoke all on all
+tables … from public`, тож файл `0001_plg_*` ліг би перед ним і втратив гранти.
+`simplycms create plugin <name>` кладе `<UTC на момент скаффолду>_plg_<name>_init.sql`;
+жодна плагінна міграція не сортується перед `0002_grants.sql`
+(`tests/plugin-migration-order.test.ts`). 🔴 Таймстамп запечений автором
 плагіна: докопійована пізніше міграція може стати «в минуле» відносно вже
-накачених у `db/migrations/`. Оскільки накат — прямий `psql -f`
-(жодного CLI, що сам відстежує застосовані файли, немає), це не блокує:
-оператор накочує РІВНО ті файли, які `db:diff --write` позначив як нові, у
-порядку імен. Перейменування-при-копіюванні відкладено (колонку
+накачених у `db/migrations/`. Це не блокує: `pnpm simplycms db:apply` (§3.4.1)
+накочує за журналом усі файли без запису, ім'я «з минулого» теж.
+Перейменування-при-копіюванні відкладено (колонку
 `plugins.migrations_applied` прибрано в Е6б: її ніхто не писав).
 
 Режим перегляду (без `--write`) — завжди exit 0; CI-семантику має
 `update --check`.
+
+### 3.4.1 `simplycms db:apply [--dry-run | --check]`
+
+Накочує `db/migrations/` магазину на БД — єдиний друкований шлях накату (ручного
+`psql`-циклу немає). Робота ядра `simplycms/migrate` (Е8-Р2): журнал
+`public.simplycms_migrations` із sha256 файлів, `pg_advisory_lock`, кожен файл в
+одній транзакції зі своїм записом. Команда лише розбирає env, делегує й друкує.
+
+- Підключення — **лише** `MIGRATION_DATABASE_URL` (власник схеми; `process.env` >
+  `.env.local` > `.env`). Назад на `DATABASE_URL` команда не падає ніколи: без
+  `MIGRATION_DATABASE_URL` — exit 1 з назвою змінної. `DATABASE_URL`, якщо заданий,
+  іде як `runtimeUrl` — ядро синхронізує пароль `app_runtime` (лише друкований ASCII).
+- `--dry-run` — список ненакочених, базу не змінює, exit 0. `--check` — те саме, але
+  exit `3`, якщо ненакочені є (контракт кодів Е8-О8: `0` гаразд, `3` є що робити,
+  `1` помилка).
+- Помилка ядра друкується як `name`, `code` і `message`, пропущене через `redactUrls`
+  (`scheme://user:***@host`); режиму «повний текст» немає — вивід потрапляє в лог деплою.
 
 ### 3.5 `simplycms create (plugin | theme) <name> [--dry-run]`
 
@@ -236,7 +401,8 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 
 | Джерело правди | Копія | Споживач |
 |---|---|---|
-| `SYNCED_FILES` (11 host-файлів глю, корінь монорепо) | `packages/cli/host/**` | `update`, `doctor` §6 |
+| `SYNCED_FILES` (host-файли глю, корінь монорепо; усі файли `packages/cli/host/`) | `packages/cli/host/**` | `update`, `doctor` §6 |
+| `TEMPLATE_HOST_FILES` (шими, джерело — сам шаблон: `.claude/hooks/session-start.mjs`, `scripts/start.mjs`, `scripts/owner-invite.mjs`) | `packages/cli/host/**` | `update`, `doctor` §6 |
 | `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
@@ -246,12 +412,19 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 несе потік у зворотний бік: канон → копія в шаблоні.
 
 - Тека `host/` — **сама собі маніфест**: множина файлів `update` = рекурсивний
-  обхід теки, дубльованого списку немає. Це ті самі 10 файлів, що
-  `template:sync` кладе в шаблон скаффолдера (`server.mjs`,
+  обхід теки, дубльованого списку немає. Це ті самі файли, що
+  `template:sync` кладе в шаблон скаффолдера (зокрема `server.mjs`,
   `server-runtime.mjs`, `src/routes/__root.tsx`, `src/start.ts`,
   `src/client.tsx`, `src/router.tsx`, `src/server.ts`,
   `src/engine-provider.tsx`, `src/engine.shared.ts`, `src/theme-registry.ts`,
-  `src/styles/globals.css`). 🔴 `src/start.ts` несе CSRF-захист: першою в
+  `src/styles/globals.css`) плюс шими `TEMPLATE_HOST_FILES`: хук сесії й
+  `scripts/{start,owner-invite}.mjs`. 🔴 Шими прод-старту й запрошення власника —
+  кілька рядків без логіки (F5 рев'ю Е8, скасовує Е8-Р6 «файл лише шаблону»):
+  логіка живе в ядрі (`simplycms/prod-start`, `simplycms/auth/owner-invite-cli`) й
+  оновлюється разом із ним, а сам шим — host-файлом, тож його дрейф бачить doctor §6.
+  `update` пише відсутні й розійдені файли канону, але **не видаляє** файлів, яких у
+  каноні вже немає (осиротілий `scripts/owner-invite-core.mjs` 0.14 прибирає власник
+  за кроком CHANGELOG і скіла `simplycms-update`). 🔴 `src/start.ts` несе CSRF-захист: першою в
   `requestMiddleware` стоїть `csrfMiddleware` із `simplycms/runtime/csrf`
   (далі `bodyLimitMiddleware` із `simplycms/runtime/body-limit` — стеля тіла, К3-Е6д-2 — і `adminRequestGuard`). Дефолтний захист Start вмикається лише БЕЗ
   `startInstance`, тож `simplycms update` не повинен повертати магазину
@@ -272,10 +445,10 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 
 ```bash
 pnpm simplycms doctor            # стартова діагностика
-pnpm simplycms update            # бамп пакетів ядра до latest + лінки скілів + звіт дрейфу
+pnpm simplycms update            # бамп пакетів ядра + лінки скілів + файли агента + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done   # накатити (після ревʼю!; URL власника БД)
+pnpm simplycms db:apply          # накатити (після ревʼю!; MIGRATION_DATABASE_URL — власник схеми)
 pnpm build && pnpm start         # rebuild
 ```
 
@@ -298,6 +471,12 @@ pnpm build                       # активація/налаштування �
 | `tests/cli-*.test.ts` (дефолтний `pnpm test`) | юніти команд на скаффолді шаблону в tmp, без мережі й БД: якірна вставка (всі три форми), дрейф, дифф міграцій, exit-коди |
 | `tests/create-store-template-parity.test.ts` | байт-парність канонів `host/` і `schema/migrations` із джерелами |
 | **Gate TOOL** (`tests/cli-pack.test.ts`, packaging-suite + крок пілота) | смоук **упакованого** tarball-а: bin-мапінг, `--help`/`--version`, `host/` доїхав, `doctor` запускається з tarball-а проти скаффолда без крашу | 
+| `tests/git-symlinks.test.ts` | жоден симлінк у git-індексі не має абсолютної цілі (`.claude/skills/tanstack-*` вилучено з індексу, S4-16) |
+| `tests/cli-db-apply.test.ts`, `cli-doctor-online`, `cli-store-core`, `cli-redact-urls` | `db:apply` і `doctor --online` з фейковим ядром (ін'єкція): `MIGRATION_DATABASE_URL` без падіння на `DATABASE_URL`, коди виходу `0/3/1` (і спавн через `index.mjs`, де `process.exitCode` виставляється), `redactUrls`, `importFromStore` за умовою `import`; живу БД доводять `test:schema` ядра й живий прогін на харнесі |
+| `tests/cli-status.test.ts` | `status`: чисті `deriveStage`/`nextSkill`/`statusExitCode`; `collectStatus` (кидає → `unknown`, повільна перевірка 10 с → <6 с); CLI на скаффолді з фейковим ядром (`tests/lib/fake-core-store.ts`): етапи, `--json`, `--hook` (паритет вступу, ≤25 рядків), №17 `engines` у виводі, помилки аргументів |
+| `tests/cli-mail-driver.test.ts` | doctor №14 (немає nodemailer / не в dependencies / невідповідна версія / ок / ядро не встановлено) |
+| `tests/store-skills.test.ts` | усі скіли магазину `packages/simplycms/skills/simplycms-*`: frontmatter, `## Межі`, `SKILL.md` ≤150 рядків; кожна `simplycms <cmd>` — ключ реєстру `COMMANDS` (`packages/cli/src/commands.mjs`, окремий модуль, бо `index.mjs` запускає `main()` на імпорті), кожен `pnpm <script>` — скрипт шаблону чи вбудована команда; відносні шляхи `references/`/`scripts/` існують; таблиця «намір → скіл» в `intro.md` = теки скілів; жодних `@latest` для пакетів SimplyCMS і `secrets-file pipe`; `CHANGELOG.md` у `files` ядра |
+| `tests/cli-doctor-engines.test.ts` | doctor №17 (engines: не покриває ядро / покриває / відсутній, плагін і тема; пакет у node_modules; проводка через `run()` з реальним `satisfies` ядра) |
 | `tests/cli-pg-driver.test.ts` | doctor №13 (немає pg / не в dependencies / невідповідна версія / ок / ядро не встановлено) і підказка `update` про pg без переписування `package.json` |
 | `tests/create-store-skill-links.test.ts` + скіл-кейси `cli-doctor`/`cli-update` | доставка скілів: скаффолдер створює обидва лінки з очікуваною ціллю, doctor №12 бачить відсутній/осиротілий, `update` лагодить |
 | eslint-гард `import.meta.env` | серверні модулі контракту env читають лише `process.env` — регрес валить `pnpm lint` (див. §7) |
@@ -352,8 +531,9 @@ CLI-доктор перевіряє env, а `update`-цикл спираєтьс
 перевірку модуля теми лишає за `validateThemeModule` на build/рантаймі);
 монтаж `adminRoutes` плагінів — рядок `physical()` у store-owned `routes.ts`
 за якір-коментарем (автоматичну вставку в `add` відкладено разом із
-`plugin:purge` і drizzle-композицією схем); СТРОГА semver-перевірка
-`engines.simplycms` — реліз-потяг v1.0 (warn-режим уже працює);
+`plugin:purge` і drizzle-композицією схем); перевірка
+`engines.simplycms` плагінів і тем — doctor №17 (error; bootstrap лишається
+warn назавжди, Р32);
 AST-редагування конфігу — усвідомлене спрощення (якірна вставка з чесним
 падінням), переглянути з ускладненням
 конфігу.

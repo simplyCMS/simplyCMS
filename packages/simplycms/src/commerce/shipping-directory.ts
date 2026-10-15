@@ -83,7 +83,7 @@ export async function loadShippingMethods(
   );
 }
 
-/** Активні зони доставки — за ними домен резолвить місто покупця. */
+/** Активні зони доставки — з них домен обирає основну або зону точки самовивозу. */
 export async function loadShippingZones(
   db: ActorDb,
 ): Promise<ShippingZoneRow[]> {
@@ -97,8 +97,6 @@ export async function loadShippingZones(
     id: row.id,
     name: row.name,
     description: row.description,
-    cities: row.cities ?? [],
-    regions: row.regions ?? [],
     is_active: row.isActive,
     is_default: row.isDefault,
     sort_order: row.sortOrder,

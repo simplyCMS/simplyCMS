@@ -2,12 +2,10 @@
 // посилаються на `users(id)`, коли покупця видаляють. Без FK видалення лишало
 // б сиріт (адреси, відгуки) або падало на `orders_user_id_fkey`.
 // Видалення йде під `app_admin` — ролью, якою його виконає адмін-операція.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -18,7 +16,6 @@ import {
 import { withActor } from '../actors.mjs';
 import { findOrphans } from './fixtures/orphans';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 import {
   ADMIN,
   BUYER,
@@ -45,13 +42,7 @@ describe('граф користувача: видалення users', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(CANON_DIR, n)),
-    );
+    await applyCanon(dbUrl);
     for (const stmt of SEED) await q(stmt);
   }, 120_000);
 

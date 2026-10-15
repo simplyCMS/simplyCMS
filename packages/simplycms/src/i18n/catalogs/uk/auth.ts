@@ -59,6 +59,13 @@ export const messages = {
   'auth.register.failed': 'Помилка реєстрації',
   'auth.register.success': 'Реєстрація успішна',
   'auth.register.created': 'Ваш акаунт створено!',
+  'auth.register.checkEmail': 'Перевірте пошту',
+  'auth.register.checkEmailHint':
+    'Ми надіслали лист із посиланням. Перейдіть за ним, щоб підтвердити пошту й увійти.',
+  'auth.register.noEmailHint':
+    'Не отримали лист? Якщо ця адреса вже зареєстрована — скористайтесь «Забули пароль» на вкладці входу.',
+  'auth.login.emailNotVerified':
+    'Пошту ще не підтверджено. Ми надіслали новий лист — перейдіть за посиланням у ньому.',
 
   'auth.password': 'Пароль',
   'auth.passwordConfirm': 'Підтвердити пароль',

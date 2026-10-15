@@ -1,6 +1,12 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
-import { loadHarnessEnv } from './scripts/harness-env.mjs';
+import {
+  harnessMailEnv,
+  harnessServicesEnv,
+  loadHarnessEnv,
+  MAIL_KEYS,
+  SERVICE_KEYS,
+} from './scripts/harness-env.mjs';
 
 // Окремий конфіг для schema-гейта `test:schema` (Task 1, план В2-К1а).
 //
@@ -20,19 +26,68 @@ import { loadHarnessEnv } from './scripts/harness-env.mjs';
 // і контейнер запущений (див. scripts/harness-env.mjs).
 loadHarnessEnv(import.meta.dirname);
 
+// 🔴 Два проєкти, бо `S3_*` змінюють поведінку ядра: `getMediaDriver()` бере s3, коли
+// група повна. Усе pg-крило (`diskKeys()`, стирання файлів на диску) побудоване на
+// `local-fs`, тож воно бачить `S3_*` порожніми (порожнє = «не задано» для
+// `resolveDriverEnv`), а ключі Garage отримує лише контрактний набір драйверів.
+// Так само `SMTP_URL`/`MAIL_FROM` (Task 9): pg-крило лишається на драйвері пошти `log`.
+const blankS3 = Object.fromEntries(
+  [...SERVICE_KEYS, ...MAIL_KEYS].map((k) => [k, '']),
+);
+// Фіксована база посилань для листів: place-order fail-loud без VITE_SITE_URL (Р18),
+// а CI його не задає — значення не береться ні з оточення, ні з `.env.local`.
+const SITE_URL = 'http://store.test';
+const common = {
+  environment: 'node',
+  // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
+  // файли билися б за той самий вільний порт і tmp-теку.
+  fileParallelism: false,
+  testTimeout: 60_000,
+  hookTimeout: 60_000,
+} as const;
+
 export default defineConfig({
+  // 🔴 Гейт не читає `.env*` розробника (Р31): інакше `VITE_SITE_URL` з `.env.local`
+  // робив би його зеленим лише локально. Env проєктів — лише явний `test.env`.
+  envDir: false,
   resolve: {
     alias: {
       simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
     },
   },
   test: {
-    environment: 'node',
-    include: ['packages/simplycms/test-harness/**/*.test.ts'],
-    // Ефемерний фолбек-кластер піднімається й гаситься на файл — паралельні
-    // файли билися б за той самий вільний порт і tmp-теку.
-    fileParallelism: false,
-    testTimeout: 60_000,
-    hookTimeout: 60_000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'pg',
+          include: ['packages/simplycms/test-harness/**/*.test.ts'],
+          exclude: [
+            'packages/simplycms/test-harness/storage/**',
+            'packages/simplycms/test-harness/mail/**',
+          ],
+          env: { ...blankS3, VITE_SITE_URL: SITE_URL },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'storage',
+          include: ['packages/simplycms/test-harness/storage/**/*.test.ts'],
+          env: harnessServicesEnv(import.meta.dirname),
+        },
+      },
+      {
+        extends: true,
+        test: {
+          ...common,
+          name: 'mail',
+          include: ['packages/simplycms/test-harness/mail/**/*.test.ts'],
+          env: harnessMailEnv(import.meta.dirname),
+        },
+      },
+    ],
   },
 });

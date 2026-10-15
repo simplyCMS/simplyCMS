@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { renderInviteEmail } from '../invite-email';
-import type { InviteEmail } from '../invite-email';
+import type { MailItem, MailMessage } from 'simplycms/mail';
 import {
   inviteIdentifier,
   issueOwnerInvite,
@@ -26,6 +25,7 @@ function createFakeStore() {
   const tokens = new Map<string, TokenRow>();
   const adminRoles = new Set<string>();
   const banned = new Set<string>();
+  const verified = new Set<string>();
   let nextId = 1;
 
   const store: OwnerInviteStore = {
@@ -35,13 +35,18 @@ function createFakeStore() {
       usersByEmail.set(email, id);
       return id;
     },
-    // Е6г-19: роль і токен — ОДИН метод; на бані не лягає нічого.
-    issueAdminInvite: async ({ userId, identifier, valueHash, expiresAt }) => {
+    // Р19: випуск лишає лише токен; на бані не лягає нічого.
+    issueAdminInvite: async ({ identifier, userId, valueHash, expiresAt }) => {
       if (banned.has(userId)) return 'banned';
-      adminRoles.add(userId);
       tokens.set(identifier, { valueHash, expiresAt });
       return 'issued';
     },
+    grantAdminRole: async ({ userId }) => {
+      if (banned.has(userId)) return 'banned';
+      adminRoles.add(userId);
+      return 'granted';
+    },
+    isEmailVerified: async (userId) => verified.has(userId),
     consumeToken: async (identifier) => {
       const row = tokens.get(identifier) ?? null;
       tokens.delete(identifier);
@@ -49,17 +54,18 @@ function createFakeStore() {
     },
   };
 
-  return { store, usersByEmail, tokens, adminRoles, banned };
+  return { store, usersByEmail, tokens, adminRoles, banned, verified };
 }
 
 const NOW = new Date('2026-08-23T10:00:00Z');
-const SITE = 'https://shop.example/';
+const ENV = { VITE_SITE_URL: 'https://shop.example/' };
 
 describe('issueOwnerInvite', () => {
   let fake: ReturnType<typeof createFakeStore>;
-  const sent: InviteEmail[] = [];
-  const sendEmail = async (message: InviteEmail) => {
-    sent.push(message);
+  const sent: MailMessage[] = [];
+  const schedule = async (items: readonly MailItem[]) => {
+    sent.push(...items.map((item) => item.message));
+    return items.map((_, i) => `mail-${i}`);
   };
 
   beforeEach(() => {
@@ -67,12 +73,12 @@ describe('issueOwnerInvite', () => {
     sent.length = 0;
   });
 
-  it('створює користувача, закріплює admin і шле лист із токеном', async () => {
+  it('створює користувача й шле лист із токеном; ролі admin від випуску немає', async () => {
     const result = await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'Owner@Example.Test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-abc',
     });
@@ -81,7 +87,9 @@ describe('issueOwnerInvite', () => {
     // Пошта нормалізується в нижній регістр — інакше `Owner@` і `owner@`
     // дали б двох різних власників.
     expect(fake.usersByEmail.has('owner@example.test')).toBe(true);
-    expect(fake.adminRoles.has(result.userId)).toBe(true);
+    // Р19: роль видає лише прийняття запрошення.
+    expect(fake.adminRoles.size).toBe(0);
+    expect(result.existingUnverified).toBe(false);
     expect(result.url).toBe(
       'https://shop.example/auth/invite?email=owner%40example.test&token=tok-abc',
     );
@@ -92,9 +100,9 @@ describe('issueOwnerInvite', () => {
   it('у БД лягає ХЕШ, а не сам токен', async () => {
     await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-abc',
     });
@@ -109,17 +117,17 @@ describe('issueOwnerInvite', () => {
   it('повторний invite наявного користувача НЕ дублює його', async () => {
     const first = await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-1',
     });
     const second = await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-2',
     });
@@ -127,26 +135,43 @@ describe('issueOwnerInvite', () => {
     expect(second.userId).toBe(first.userId);
     expect(second.created).toBe(false);
     expect(fake.usersByEmail.size).toBe(1);
-    expect(fake.adminRoles.size).toBe(1);
+    expect(fake.adminRoles.size).toBe(0);
+  });
+
+  it('existingUnverified: лише для наявного непідтвердженого акаунта', async () => {
+    const run = (token: string) =>
+      issueOwnerInvite({
+        store: fake.store,
+        schedule,
+        email: 'owner@example.test',
+        env: ENV,
+        now: NOW,
+        token,
+      });
+    expect((await run('tok-1')).existingUnverified).toBe(false); // новий
+    expect((await run('tok-2')).existingUnverified).toBe(true); // наявний, не підтверджений
+    fake.verified.add(fake.usersByEmail.get('owner@example.test')!);
+    expect((await run('tok-3')).existingUnverified).toBe(false); // підтверджений
   });
 });
 
 describe('issueOwnerInvite: забанений (Е6г-19)', () => {
   it('відмова OwnerInviteError(banned): URL немає, листа немає, ролі й токена немає', async () => {
     const fake = createFakeStore();
-    const sent: InviteEmail[] = [];
-    const sendEmail = async (message: InviteEmail) => {
-      sent.push(message);
+    const sent: MailMessage[] = [];
+    const schedule = async (items: readonly MailItem[]) => {
+      sent.push(...items.map((item) => item.message));
+      return [];
     };
     const first = await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-1',
     });
-    // Свіжий стан: роль і токен прибираємо, бан ставимо.
+    // Свіжий стан: токен прибираємо, бан ставимо.
     fake.adminRoles.clear();
     fake.tokens.clear();
     fake.banned.add(first.userId);
@@ -154,9 +179,9 @@ describe('issueOwnerInvite: забанений (Е6г-19)', () => {
 
     const attempt = issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token: 'tok-2',
     });
@@ -170,15 +195,15 @@ describe('issueOwnerInvite: забанений (Е6г-19)', () => {
 });
 
 describe('verifyOwnerInvite', () => {
-  const sendEmail = async () => {};
+  const schedule = async () => [];
 
   const issued = async (token: string, ttlMs?: number) => {
     const fake = createFakeStore();
     await issueOwnerInvite({
       store: fake.store,
-      sendEmail,
+      schedule,
       email: 'owner@example.test',
-      siteUrl: SITE,
+      env: ENV,
       now: NOW,
       token,
       ttlMs,
@@ -225,28 +250,5 @@ describe('verifyOwnerInvite', () => {
         now: new Date(NOW.getTime() + 2 * 3_600_000),
       }),
     ).toEqual({ ok: false, reason: 'expired' });
-  });
-});
-
-describe('renderInviteEmail', () => {
-  it('посилання ціле, TTL у годинах, HTML екранований', () => {
-    const email = renderInviteEmail({
-      to: 'owner@example.test',
-      url: 'https://shop.example/auth/invite?email=a&token=b',
-      storeName: 'Магазин "Сонце" <тест>',
-      ttlMs: 24 * 3_600_000,
-    });
-
-    expect(email.to).toBe('owner@example.test');
-    expect(email.subject).toContain('Магазин "Сонце" <тест>');
-    expect(email.text).toContain(
-      'https://shop.example/auth/invite?email=a&token=b',
-    );
-    expect(email.text).toContain('24 год');
-    // 🔴 Ім'я магазину — вільний рядок із конфігу; неекранований він розʼїхав
-    // би розмітку листа, а в поштовому клієнті це виглядало б як «лист битий».
-    expect(email.html).toContain('&quot;Сонце&quot;');
-    expect(email.html).toContain('&lt;тест&gt;');
-    expect(email.html).not.toContain('<тест>');
   });
 });

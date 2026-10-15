@@ -7,8 +7,6 @@
 // РЕАЛЬНОЇ сесії, дійсно замикає ланцюг на реальній БД. Тут signUp іде проти
 // накатаного baseline, id береться саме із сесії (не з insert-у), і саме він
 // їде у `withActor`.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createAuth,
@@ -16,11 +14,11 @@ import {
   ownerInviteStore,
   verifyOwnerInvite,
 } from 'simplycms/auth';
-import type { InviteEmail } from 'simplycms/auth';
+import type { MailMessage } from 'simplycms/mail';
 import { closeDbPool, withActor } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -29,7 +27,6 @@ import {
   withUser,
 } from '../apply.mjs';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const PRODUCT = '44444444-4444-4444-8444-444444444444';
 const PASSWORD = 'super-secret-password';
 
@@ -48,7 +45,7 @@ describe('Better Auth над реальним Postgres', () => {
   const dbName = randomDbName('simplycms_auth');
   let dbUrl: string;
   let auth: ReturnType<typeof createAuth>;
-  const sentEmails: InviteEmail[] = [];
+  const sentEmails: MailMessage[] = [];
 
   /** Реєстрація + id, узятий САМЕ із сесії, а не з відповіді signUp. */
   const signUpAndReadSession = async (email: string): Promise<string> => {
@@ -73,13 +70,7 @@ describe('Better Auth над реальним Postgres', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     await queryRows(
       dbUrl,
       `insert into public.products (id, slug, name)
@@ -170,15 +161,16 @@ describe('Better Auth над реальним Postgres', () => {
     ).toEqual([first.id]);
   });
 
-  it('invite власника: токен випускається, гаситься й дає роль admin', async () => {
+  it('invite власника: токен випускається й гаситься; роль admin від випуску/перевірки не видається (Р19)', async () => {
     const email = 'owner@example.test';
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        sentEmails.push(message);
+      schedule: async (items) => {
+        sentEmails.push(...items.map((item) => item.message));
+        return [];
       },
       email,
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
 
     expect(invite.created).toBe(true);
@@ -204,18 +196,20 @@ describe('Better Auth над реальним Postgres', () => {
       `select role::text from public.user_roles where user_id = $1`,
       [invite.userId],
     );
-    expect(roles).toEqual([{ role: 'admin' }]);
+    // Р19: роль видає лише прийняття запрошення (`acceptOwnerInvite`).
+    expect(roles).toEqual([]);
   });
 
-  it('повторний invite не дублює ні користувача, ні роль', async () => {
+  it('повторний invite не дублює користувача й не видає ролі', async () => {
     const email = 'owner@example.test';
     const again = await issueOwnerInvite({
       store: ownerInviteStore,
-      sendEmail: async (message) => {
-        sentEmails.push(message);
+      schedule: async (items) => {
+        sentEmails.push(...items.map((item) => item.message));
+        return [];
       },
       email,
-      siteUrl: 'https://shop.example',
+      env: { VITE_SITE_URL: 'https://shop.example' },
     });
 
     expect(again.created).toBe(false);
@@ -227,6 +221,6 @@ describe('Better Auth над реальним Postgres', () => {
            where user_id = $2 and role = 'admin') as roles`,
       [email, again.userId],
     );
-    expect(counts).toEqual({ users: 1, roles: 1 });
+    expect(counts).toEqual({ users: 1, roles: 0 });
   });
 });

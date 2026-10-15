@@ -61,6 +61,8 @@ export function toOrderInput(
     shippingCost: number;
     total: number;
     shippingSnapshot: NewShippingSnapshot;
+    shippingZoneId: string | null;
+    shippingRateId: string | null;
   },
 ): NewOrderInput {
   return {
@@ -70,7 +72,14 @@ export function toOrderInput(
     phone: input.phone,
     shippingMethodId: input.shippingMethodId,
     shippingSnapshot: prepared.shippingSnapshot,
-    deliveryCity: input.deliveryCity,
+    shippingZoneId: prepared.shippingZoneId,
+    shippingRateId: prepared.shippingRateId,
+    // Самовивіз міста не має: канон обіцяє NULL, тож правило на сервері (за
+    // тим самим знімком, що перевірив спосіб), а не лише в клієнта.
+    deliveryCity:
+      prepared.shippingSnapshot.destination.kind === 'pickup-point'
+        ? null
+        : input.deliveryCity,
     deliveryAddress: input.deliveryAddress,
     pickupPointId: input.pickupPointId,
     paymentMethod: input.paymentMethod,

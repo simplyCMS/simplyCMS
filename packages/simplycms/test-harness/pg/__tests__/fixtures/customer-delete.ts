@@ -92,8 +92,8 @@ export function useDeleteDb(prefix: string) {
       [other, `other-${other.slice(0, 8)}@example.test`],
     );
     await f.rows(
-      `insert into public.user_category_history (id, user_id, changed_by, to_category_id, to_category_name)
-       select gen_random_uuid(), u, c, (select id from public.user_categories where is_default limit 1), 'X'
+      `insert into public.user_category_history (id, user_id, changed_by, to_category_id, to_category_name, source)
+       select gen_random_uuid(), u, c, (select id from public.user_categories where is_default limit 1), 'X', 'manual'
          from (values ($1::uuid, null::uuid), ($2::uuid, $1::uuid)) v(u, c)`,
       [userId, other],
     );

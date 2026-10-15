@@ -23,6 +23,7 @@ import { badgeTextFor, jsonLdAvailabilityFor } from './stock-labels.mjs';
 import { FIELD, PRODUCT_SLUG, parseMoney } from './selectors.mjs';
 
 /**
+ * Повертає `{ email }` покупця — на нього перевіряються листи (`./mail.mjs`).
  * Уся воронка одним викликом: `page` — сторінка Playwright, `base` — URL
  * піднятого магазину, `dbUrl` — та сама БД прямим SQL, `check` — збирач
  * фактів оркестрації (вердикт + ФАКТ, як у гейтах пілота).
@@ -30,7 +31,7 @@ import { FIELD, PRODUCT_SLUG, parseMoney } from './selectors.mjs';
 export async function runFunnel({ page, base, dbUrl, check }) {
   const goto = (path) =>
     page.goto(`${base}${path}`, { waitUntil: 'networkidle' });
-  await register(page, base);
+  const email = await register(page, base);
   await runAvatarStep({ page, base, dbUrl, check });
   await runReviewXssStep({ page, base, dbUrl, check });
   const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
@@ -140,4 +141,5 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   const returned = JSON.stringify(released) === JSON.stringify(before);
   const returnFact = `${placed.total} → ${released.total}, stock_status ${placed.status} → ${released.status}`;
   check('повернення залишку і статусу', returned, returnFact);
+  return { email };
 }

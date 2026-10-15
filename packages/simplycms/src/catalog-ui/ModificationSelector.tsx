@@ -15,7 +15,7 @@ interface Modification {
   id: string;
   name: string;
   slug: string;
-  stock_status?: StockStatus | null;
+  stock_status?: StockStatus;
   sku?: string | null;
 }
 
@@ -58,7 +58,7 @@ export function ModificationSelector({
     return {
       // 🔴 Те саме доменне правило, що в бейджі й у лоадерах: окрема копія
       // формули тут була четвертим місцем, де ухвалювалось те саме рішення.
-      isAvailable: isPurchasable(mod.stock_status),
+      isAvailable: mod.stock_status ? isPurchasable(mod.stock_status) : true,
       totalQuantity: 0,
       isOnOrder: mod.stock_status === 'on_order',
     };

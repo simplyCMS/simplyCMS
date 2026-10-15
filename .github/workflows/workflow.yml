@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -81,7 +81,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -109,7 +109,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -166,19 +166,58 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+    # Ті самі ключі, що пише `pnpm harness:up` у `.env.harness` (scripts/harness-up.mjs):
+    # контрактний набір драйвера s3 читає S3_*, а не знає про CI.
     env:
       PG_HARNESS_URL: postgresql://pgtest@localhost:5432/postgres
+      S3_ENDPOINT: http://localhost:4192
+      S3_REGION: garage
+      S3_BUCKET: simplycms-harness
+      S3_ACCESS_KEY: GK73696d706c79636d73303030
+      S3_SECRET_KEY: eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+      HARNESS_SMTP_URL: smtp://localhost:54325
+      HARNESS_MAILPIT_URL: http://localhost:54326
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
+      # Не `services`: GitHub не приймає `command`, а Garage без `--single-node
+      # --default-bucket` не створить ні розкладки, ні ключа, ні бакета. Образ
+      # scratch (без shell) — готовність по рядку в логах, а не по healthcheck.
+      # Порт 4192, не 4190: UPSTREAM:FETCH-BAD-PORT-1.
+      - name: Garage (S3)
+        run: |
+          docker run -d --name garage -p 4192:3900 \
+            -v "$GITHUB_WORKSPACE/docker/garage/garage.dev.toml:/etc/garage.toml:ro" \
+            -e GARAGE_RPC_SECRET=0000000000000000000000000000000000000000000000000000000000000000 \
+            -e GARAGE_DEFAULT_ACCESS_KEY="$S3_ACCESS_KEY" \
+            -e GARAGE_DEFAULT_SECRET_KEY="$S3_SECRET_KEY" \
+            -e GARAGE_DEFAULT_BUCKET="$S3_BUCKET" \
+            dxflrs/garage:v2.4.1 /garage server --single-node --default-bucket
+          for _ in $(seq 1 60); do
+            docker logs garage 2>&1 | grep -q 'S3 API server listening' && exit 0
+            sleep 1
+          done
+          echo "::error::Garage не стартував за 60 с"; docker logs garage; exit 1
+
+      # Пошту (SMTP-драйвер) ганяють тести наступних задач; приймач піднімається вже
+      # тут, щоб env job-а і стенд збігались. Тег — той самий, що в harness-up.mjs.
+      - name: Mailpit (SMTP)
+        run: |
+          docker run -d --name mailpit -p 54325:1025 -p 54326:8025 axllent/mailpit:v1.31.3
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:54326/api/v1/info >/dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::Mailpit не стартував за 60 с"; docker logs mailpit; exit 1
+
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies

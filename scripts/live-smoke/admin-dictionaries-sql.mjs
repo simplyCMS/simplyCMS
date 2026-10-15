@@ -45,6 +45,15 @@ export async function assignmentsOfSection(url, sectionId) {
   );
 }
 
+/** Назва дефолтного типу ціни: адмін може її змінити, ключ — `is_default`. */
+export async function defaultPriceTypeName(url) {
+  const [row] = await sql(
+    url,
+    `select name from public.price_types where is_default`,
+  );
+  return row.name;
+}
+
 /** Скільки типів цін із цим кодом — 0 після видалення, 1 після відмови. */
 export async function priceTypeCount(url, code) {
   const [{ n }] = await sql(

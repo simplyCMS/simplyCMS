@@ -3,7 +3,10 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { useAuth } from './useAuth';
 import { useToast } from 'simplycms/ui/use-toast';
 import { useT, type MessageKey } from 'simplycms/i18n';
-import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import {
+  REVIEW_SUBMIT_ERROR,
+  type ReviewSubmitError,
+} from 'simplycms/contracts';
 import { PAYLOAD_TOO_LARGE_CODE } from 'simplycms/domain/media';
 import {
   deleteMyProductReview,
@@ -16,7 +19,10 @@ import type { ProductReviewRow } from '../lib/reviews';
 export type ProductReview = ProductReviewRow;
 
 /** Коди відмови сервера -> ключі каталогу. */
-const SUBMIT_ERROR_KEY: Record<string, MessageKey> = {
+const SUBMIT_ERROR_KEY: Record<
+  ReviewSubmitError | typeof PAYLOAD_TOO_LARGE_CODE,
+  MessageKey
+> = {
   [REVIEW_SUBMIT_ERROR.badImage]: 'reviews.errors.imageBadFormat',
   [REVIEW_SUBMIT_ERROR.imageTooLarge]: 'reviews.errors.imageTooLarge',
   [REVIEW_SUBMIT_ERROR.tooManyImages]: 'reviews.errors.tooManyImages',
@@ -73,7 +79,11 @@ export function useProductReviews(productId: string | undefined) {
   // каталогу, невідоме — загальний текст, а не сира серверна діагностика.
   // Власну відмову авторизації хук кидає вже перекладеною — її лишаємо.
   const onFailure = (err: Error) => {
-    const key = SUBMIT_ERROR_KEY[err.message];
+    // Повнота реєстру тримається типом `SUBMIT_ERROR_KEY`; тут message —
+    // довільний рядок, тож пошук через розширений вигляд.
+    const key = (
+      SUBMIT_ERROR_KEY as Readonly<Record<string, MessageKey | undefined>>
+    )[err.message];
     const own = err.message === t('product.review.notAuthorized');
     toast({
       variant: 'destructive',

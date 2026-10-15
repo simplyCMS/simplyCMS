@@ -30,8 +30,9 @@ export function shouldValidateCsrf(method: string, pathname: string): boolean {
  * Start вмикає свій дефолтний захист лише коли `startInstance` відсутній; у
  * магазині він є, тож без цього модуля server functions і POST-роути лишались
  * б відкритими. Решта опцій — дефолти Start: `Sec-Fetch-Site: same-origin`,
- * далі `Origin` проти origin запиту (за проксі — з `x-forwarded-*`), далі
- * `Referer`; жодного заголовка — 403.
+ * далі `Origin` проти origin запиту, далі `Referer`; жодного заголовка — 403.
+ * Origin запиту задає не проксі: раннер магазину (`server-origin.mjs`) будує
+ * URL запиту з `VITE_SITE_URL`, а `x-forwarded-*` не читає.
  *
  * Client-safe: серверних імпортів немає, а `createCsrfMiddleware` — це
  * `createIsomorphicFn().server(...)`, тож у клієнтському бандлі виклик

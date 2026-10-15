@@ -4,6 +4,7 @@
 import type { Translator } from 'simplycms/i18n';
 import type {
   ActiveFilterChip,
+  BooleanProperty,
   CatalogFiltersState,
   NumericProperty,
   NumericRange,
@@ -21,6 +22,7 @@ export interface ChipSources {
   priceRange: NumericRange | undefined;
   numericRanges: NumericRanges;
   numericProperties: NumericProperty[] | undefined;
+  booleanProperties?: readonly BooleanProperty[];
   propertyOptions: PropertyOptionRow[] | undefined;
 }
 
@@ -81,6 +83,17 @@ export function buildActiveFilterChips(
         sources.numericRanges[prop.slug],
       ),
     );
+  });
+
+  // Бейдж «<назва>: Так»; ключ стану — slug властивості, значення лише `true`.
+  sources.booleanProperties?.forEach((prop) => {
+    if (filters[prop.slug] !== true) return;
+    chips.push({
+      key: prop.slug,
+      label: prop.name || prop.slug,
+      value: t('catalog.filters.booleanYes'),
+      type: 'boolean',
+    });
   });
 
   Object.entries(filters).forEach(([key, value]) => {

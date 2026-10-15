@@ -12,7 +12,7 @@ export interface ProductDetailBindings {
   pluginContext: Record<string, unknown>;
   /** Контекст хука плагінів після вмісту сторінки (з характеристиками). */
   pluginAfterContext: Record<string, unknown>;
-  stockStatus: StockStatus | null;
+  stockStatus: StockStatus;
   price: number | undefined;
   oldPrice: number | null | undefined;
   /** Порогові підказки знижок для блоку ціни (Е6в-12). */

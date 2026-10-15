@@ -19,6 +19,11 @@
  * пишеться руками й `pnpm db:diff`), а копія в шаблоні — похідна від нього.
  * Кореневої теки міграцій більше не існує.
  *
+ * Файли агента (Е8-Р5): керований блок шаблонного `AGENTS.md` рендериться з
+ * вступу ядра (`packages/simplycms/agent/intro.md`) ТІЄЮ САМОЮ функцією, що й у
+ * `simplycms update`; текст поза маркерами — статичний, його джерело сам шаблон.
+ * `CLAUDE.md` — байт-копія `packages/simplycms/agent/claude-md.md`.
+ *
  * Статичні файли шаблону (`package.json.tpl`, `vite.config.ts`, `routes.ts`,
  * `README.md` тощо) скрипт НЕ чіпає — їхнє джерело
  * правди сам шаблон.
@@ -26,8 +31,18 @@
  * Використання: node scripts/sync-create-store-template.mjs
  */
 
-import { cpSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import {
+  applyManagedBlock,
+  renderManagedBlock,
+} from '../packages/cli/src/managed-block.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..');
 
@@ -39,15 +54,22 @@ export const CLI_HOST_DIR = 'packages/cli/host';
 /** Канон міграцій ядра в tarball `simplycms` — джерело `simplycms db:diff`. */
 export const SCHEMA_MIGRATIONS_DIR = 'packages/simplycms/migrations';
 
+/** Джерело вступу й специфіки Claude Code для файлів агента магазину. */
+export const AGENT_SOURCE_DIR = 'packages/simplycms/agent';
+
 /** Host-файли: байт-ідентичні кореню монорепо (та сама 10-ка, що в пілоті). */
 export const SYNCED_FILES = [
   'server.mjs',
   'server-runtime.mjs',
+  'server-origin.mjs',
+  'server-body-limit.mjs',
+  'server-headers.mjs',
   'src/styles/globals.css',
   'src/routes/__root.tsx',
   'src/start.ts',
   'src/client.tsx',
   'src/router.tsx',
+  'src/route-error.tsx',
   'src/server.ts',
   'src/engine-provider.tsx',
   // 🔴 Увійшов у канон 0.4.1. Доти файл був поза синком «бо template-варіант
@@ -57,6 +79,19 @@ export const SYNCED_FILES = [
   // жоден гейт.
   'src/engine.shared.ts',
   'src/theme-registry.ts',
+];
+
+/**
+ * Host-файли, чиє джерело — САМ шаблон (у корені монорепо їх немає): шими хука старту
+ * сесії, прод-старту й запрошення власника (логіка двох останніх — у ядрі,
+ * `simplycms/prod-start` і `simplycms/auth/owner-invite-cli`, F5 рев'ю Е8). У
+ * `packages/cli/host/` їде копія, тож `update` оновлює шим у наявних магазинах, а
+ * doctor №6 бачить його дрейф.
+ */
+export const TEMPLATE_HOST_FILES = [
+  '.claude/hooks/session-start.mjs',
+  'scripts/start.mjs',
+  'scripts/owner-invite.mjs',
 ];
 
 /** Теки: байт-ідентичні монорепо (snapshot на момент релізу). */
@@ -88,6 +123,7 @@ export function syncTemplate(root = REPO_ROOT) {
     rmSync(target, { recursive: true, force: true });
     cpSync(join(root, from), target, { recursive: true });
   }
+  syncAgentFiles(root);
   // Канон host/ пакета CLI: та сама множина SYNCED_FILES зі збереженням
   // відносних шляхів. Теку пересоздаємо цілком — застарілий чи зайвий файл
   // (включно з .gitkeep) не переживає синк.
@@ -98,6 +134,29 @@ export function syncTemplate(root = REPO_ROOT) {
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(root, file), target);
   }
+  for (const file of TEMPLATE_HOST_FILES) {
+    const target = join(hostRoot, file);
+    mkdirSync(dirname(target), { recursive: true });
+    cpSync(join(root, TEMPLATE_DIR, file), target);
+  }
+}
+
+/** Керований блок шаблонного `AGENTS.md` і `CLAUDE.md` — з вступу ядра. */
+function syncAgentFiles(root) {
+  const agentsPath = join(root, TEMPLATE_DIR, 'AGENTS.md');
+  const intro = readFileSync(join(root, AGENT_SOURCE_DIR, 'intro.md'), 'utf8');
+  const { status, next } = applyManagedBlock(
+    readFileSync(agentsPath, 'utf8'),
+    renderManagedBlock(intro),
+  );
+  // Без пари маркерів синк не вгадує місце блоку — так само, як update у магазині.
+  if (next === undefined)
+    throw new Error(`${TEMPLATE_DIR}/AGENTS.md: керований блок ${status}`);
+  writeFileSync(agentsPath, next);
+  cpSync(
+    join(root, AGENT_SOURCE_DIR, 'claude-md.md'),
+    join(root, TEMPLATE_DIR, 'CLAUDE.md'),
+  );
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

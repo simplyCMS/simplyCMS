@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
+import { CodedError } from 'simplycms/contracts/domain-errors';
 import {
   MAX_REVIEW_IMAGE_BYTES,
   MAX_REVIEW_IMAGES,
@@ -43,13 +44,13 @@ async function inspectImages(
   entries: FormDataEntryValue[],
 ): Promise<ReviewImageBytes[]> {
   if (!entries.every((e) => e instanceof File))
-    throw new Error(REVIEW_SUBMIT_ERROR.badImage);
+    throw new CodedError(REVIEW_SUBMIT_ERROR.badImage);
   if (entries.length > MAX_REVIEW_IMAGES)
-    throw new Error(REVIEW_SUBMIT_ERROR.tooManyImages);
+    throw new CodedError(REVIEW_SUBMIT_ERROR.tooManyImages);
   const images: ReviewImageBytes[] = [];
   for (const file of entries as File[]) {
     const checked = await inspectUpload(file, MAX_REVIEW_IMAGE_BYTES);
-    if (!checked.ok) throw new Error(REASON_CODE[checked.reason]);
+    if (!checked.ok) throw new CodedError(REASON_CODE[checked.reason]);
     images.push({ bytes: checked.bytes, mime: checked.mime });
   }
   return images;

@@ -23,9 +23,9 @@ export const SEED = [
   `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address)
      values (gen_random_uuid(), '${BUYER}', 'О', 'Т', '+380000000002', 'Київ', 'вул. 3')`,
   // Свій рядок покупця + рядок ІНШОГО покупця, де покупець — `changed_by`.
-  `insert into public.user_category_history (id, user_id, changed_by, to_category_id, to_category_name)
-     values (gen_random_uuid(), '${BUYER}', null, ${CATEGORY}, ${CATEGORY_NAME}),
-            (gen_random_uuid(), '${OTHER}', '${BUYER}', ${CATEGORY}, ${CATEGORY_NAME})`,
+  `insert into public.user_category_history (id, user_id, changed_by, to_category_id, to_category_name, source)
+     values (gen_random_uuid(), '${BUYER}', null, ${CATEGORY}, ${CATEGORY_NAME}, 'manual'),
+            (gen_random_uuid(), '${OTHER}', '${BUYER}', ${CATEGORY}, ${CATEGORY_NAME}, 'manual')`,
   `insert into public.product_reviews (id, product_id, user_id, rating, status)
      values (gen_random_uuid(), '${PRODUCT}', '${BUYER}', 5, 'approved')`,
   `insert into public.wishlists (id, user_id, product_id)

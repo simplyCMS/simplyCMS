@@ -17,7 +17,7 @@
 ```bash
 pnpm simplycms add @simplycms/plugin-faq --plugin
 pnpm simplycms db:diff --write   # міграція плагіна → db/migrations (ревʼю!)
-psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f db/migrations/<нова>.sql
+pnpm simplycms db:apply          # MIGRATION_DATABASE_URL — власник схеми; накочує лише нові файли
 pnpm build
 ```
 

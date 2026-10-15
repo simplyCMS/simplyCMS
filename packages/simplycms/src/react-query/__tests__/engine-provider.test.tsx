@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, it, expect, afterEach } from 'vitest';
+import { renderHook, cleanup } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { EngineContext } from 'simplycms/contracts';
 import { EngineProvider, useEngine } from '../EngineProvider';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 // 🔴 V2: EngineContext звужений до двох чистих провайдерів — репозиторії й
 // порт-хуки знесені в 0.4.1 (браузер у БД не ходить).

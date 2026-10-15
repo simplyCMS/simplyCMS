@@ -89,6 +89,32 @@ describe('bootstrapPlugins', () => {
     );
   });
 
+  it('несумісний engines.simplycms → warn назавжди, без throw: плагін усе одно підключається (Р32)', async () => {
+    seedRow('future-plugin', true);
+    const module = makeModule('future-plugin');
+    // Діапазон, якого жодна версія ядра не покриває: магазин не цеглиться
+    // оновленням ядра, невідповідність показує `simplycms doctor` (№17).
+    module.manifest = {
+      ...module.manifest!,
+      engines: { simplycms: '^99.0.0' },
+    };
+
+    await expect(
+      bootstrapPlugins(
+        [{ name: 'future-plugin', module: async () => ({ default: module }) }],
+        true,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('^99.0.0'),
+    );
+    expect(console.error).not.toHaveBeenCalled();
+    expect(hookRegistry.getPluginsForHook('admin.dashboard.widgets')).toContain(
+      'future-plugin',
+    );
+  });
+
   it('активний у БД, але невідомий → без падіння + console.error', async () => {
     seedRow('ghost-plugin', true);
 

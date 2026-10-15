@@ -33,7 +33,7 @@ function toFormValues(row: Product): ProductFormValues {
     isFeatured: row.isFeatured,
     hasModifications: row.hasModifications ?? false,
     sku: row.sku ?? '',
-    stockStatus: row.stockStatus ?? 'in_stock',
+    stockStatus: row.stockStatus,
     images: row.images ?? [],
   };
 }

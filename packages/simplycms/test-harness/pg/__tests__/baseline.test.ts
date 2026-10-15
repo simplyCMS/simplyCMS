@@ -6,14 +6,17 @@
 // сервісу автентифікації й сховища не існує як класу. Поява такої залежності знову зробить
 // цей файл червоним.
 //
-// Другий сенс — довести ідемпотентність: `0000_prelude`, `0003_seed` і `0004_functions`
-// котяться повторно (докат канону в магазині, що вже стартував), тому
-// прогін «двічі поспіль» тут обовʼязковий, а не косметичний.
+// Другий сенс — довести ідемпотентність рукописних файлів: `0000_prelude`
+// створює КЛАСТЕРНІ ролі, тож друга база того самого кластера котить його
+// поверх наявних; `0003_seed` і `0004_functions` — так само. Журнал накату
+// (`simplycms/migrate`, Е8) повторний накат файлу в одній базі прибрав, але
+// від кластерних об'єктів не рятує.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -41,7 +44,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
   }, 120_000);
 
   afterAll(async () => {
@@ -49,14 +52,35 @@ describe('канон міграцій: накат на чисту БД', () => {
     await harness?.teardown();
   });
 
-  it('канон складається рівно з пʼяти упорядкованих файлів', () => {
-    expect(canonFiles().map((p) => p.split('/').pop())).toEqual([
+  // Перші п'ять — baseline (до 1.0.0-rc.1 не заморожений, але порядок
+  // фіксований). Нові файли — `NNNN_<імʼя>.sql`, що сортуються ПІСЛЯ `0004`:
+  // інакше накат на свіжу базу йшов би іншим порядком, ніж на базу, що жила з
+  // baseline.
+  it('канон: baseline першим, далі нумеровані файли після 0004', () => {
+    const names = canonFiles().map((p) => p.split('/').pop()!);
+    expect(names.slice(0, 5)).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
       '0002_grants.sql',
       '0003_seed.sql',
       '0004_functions.sql',
     ]);
+    for (const name of names.slice(5)) {
+      expect(name).toMatch(/^\d{4}_[a-z0-9_]+\.sql$/);
+      expect(name > '0004_functions.sql').toBe(true);
+    }
+  });
+
+  it('shipping_zones без cities і regions (зона за назвою міста знесена, Д1)', async () => {
+    const cols = await queryRows(
+      dbUrl,
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'shipping_zones'`,
+    );
+    const names = cols.map((c) => c.column_name as string);
+    expect(names).toContain('is_default');
+    expect(names).not.toContain('cities');
+    expect(names).not.toContain('regions');
   });
 
   it('жоден файл канону не згадує auth.* чи storage.* (доказ B13)', async () => {
@@ -123,8 +147,11 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 45 → 44: Е6б прибрала мертву `plugin_events`.
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
     // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
-    expect(tables.length).toBe(43);
+    // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
+    // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (перша міграція `0005`).
+    expect(tables.length).toBe(45);
     for (const expected of [
+      'simplycms_migrations',
       'users',
       'sessions',
       'accounts',
@@ -164,12 +191,14 @@ describe('канон міграцій: накат на чисту БД', () => {
         where schemaname = 'public'`,
     );
     // 24 → 25: службова `media_erasures_admin_all` (лише app_admin, Е6д-20).
-    expect(rows.length).toBe(25);
+    // 25 → 26: `mail_outbox_admin_all` (лише app_admin, Е8 Task 10).
+    expect(rows.length).toBe(26);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
     ].sort();
     expect(tables).toEqual([
       'comparisons',
+      'mail_outbox',
       'media_erasures',
       'order_items',
       'orders',
@@ -306,6 +335,63 @@ describe('канон міграцій: накат на чисту БД', () => {
           `update public.product_reviews set ${change}`,
         ]),
       ).rejects.toMatchObject({ code: '23514' });
+    }
+  }, 120_000);
+
+  // Е8-Р3: борги схеми, внесені в baseline на місці (виняток baseline).
+  it('борги схеми Е8-Р3: CHECK, NOT NULL, індекси, source', async () => {
+    const checks = await queryRows(
+      dbUrl,
+      `select conname from pg_constraint
+        where conname in ('users_email_lowercase', 'user_category_history_source_check')
+        order by conname`,
+    );
+    expect(checks.map((row) => row.conname)).toEqual([
+      'user_category_history_source_check',
+      'users_email_lowercase',
+    ]);
+    const notNull = await queryRows(
+      dbUrl,
+      `select table_name, is_nullable from information_schema.columns
+        where table_schema = 'public' and column_name = 'stock_status'
+          and table_name in ('products', 'product_modifications')
+        order by table_name`,
+    );
+    expect(notNull).toEqual([
+      { table_name: 'product_modifications', is_nullable: 'NO' },
+      { table_name: 'products', is_nullable: 'NO' },
+    ]);
+    const indexes = await queryRows(
+      dbUrl,
+      `select indexname from pg_indexes
+        where indexname in ('orders_created_at_idx', 'users_created_ms_id_idx')
+        order by indexname`,
+    );
+    expect(indexes.map((row) => row.indexname)).toEqual([
+      'orders_created_at_idx',
+      'users_created_ms_id_idx',
+    ]);
+
+    // Джерело історії — лише 'manual' | 'rule'.
+    const user = '77777777-7777-4777-8777-777777777777';
+    await queryRows(
+      dbUrl,
+      `insert into public.users (id, email, name) values ($1, 'src@example.test', 'S')`,
+      [user],
+    );
+    for (const [source, ok] of [
+      ['manual', true],
+      ['rule', true],
+      ['auto', false],
+    ] as const) {
+      const insert = queryRows(
+        dbUrl,
+        `insert into public.user_category_history (id, user_id, to_category_name, source)
+         values (gen_random_uuid(), $1, 'X', $2)`,
+        [user, source],
+      );
+      if (ok) await insert;
+      else await expect(insert).rejects.toMatchObject({ code: '23514' });
     }
   }, 120_000);
 });

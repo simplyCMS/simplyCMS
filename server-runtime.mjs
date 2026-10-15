@@ -2,12 +2,22 @@
  * Node-шар production-runner-а: `IncomingMessage → Request` і стрімінг
  * web-`Response` назад у `ServerResponse`.
  *
+ * Origin/request-target — `server-origin.mjs`, стеля тіла — `server-body-limit.mjs`.
+ *
  * Винесено з `server.mjs` окремим модулем, щоб покрити регресійними тестами
  * без збірки (`server.mjs` імпортує `dist/server/server.js`). Модуль
  * САМОДОСТАТНІЙ — імпортує лише `node:*`, тож його байт-у-байт копія лежить
  * поруч із шаблоном скретч-магазину (`tests/pilot/store-template/`).
  */
+import { randomBytes } from 'node:crypto';
 import { Readable, pipeline } from 'node:stream';
+
+import {
+  bodyLimitFor,
+  limitStream,
+  rejectOversizedBody,
+} from './server-body-limit.mjs';
+import { requestPath, toRequestUrl } from './server-origin.mjs';
 
 /** `IncomingMessage.headers` → web `Headers` (масиви розкладаємо в append). */
 export function toWebHeaders(nodeHeaders) {
@@ -23,38 +33,53 @@ export function toWebHeaders(nodeHeaders) {
   return headers;
 }
 
-/** Абсолютний URL запиту з урахуванням reverse-proxy заголовків. */
-export function toRequestUrl(req) {
-  const proto = req.headers['x-forwarded-proto'] ?? 'http';
-  const host =
-    req.headers['x-forwarded-host'] ??
-    req.headers.host ??
-    `localhost:${req.socket?.localPort ?? 80}`;
-  return new URL(req.url ?? '/', `${proto}://${host}`).toString();
-}
-
 /**
- * `IncomingMessage` → web `Request` (тіло — стрімом, без буферизації).
+ * `IncomingMessage` → web `Request` (тіло — стрімом, з лічильником байтів).
  *
  * 🔴 `signal` обовʼязковий: `renderRouterToStream` віддає його React-у
  * (`renderToReadableStream({ signal })`). Без нього розрив зʼєднання клієнтом
  * не зупиняє SSR-рендер — сервер догенеровує сторінку «в нікуди».
  * Слухаємо `close` саме на відповіді: `close` на запиті прилітає одразу після
  * зчитування (у GET — тіла немає взагалі), тож абортив би живий рендер.
+ *
+ * `options.origin` — з `parseSiteOrigin`; `options.serverFnBase` — префікс
+ * server functions — іменований експорт `SERVER_FN_BASE` бандла (Start
+ * інлайнить базу Vite define-ом, у `process.env` її немає).
  */
-export function toWebRequest(req, res) {
+export function toWebRequest(req, res, options) {
   const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
   const controller = new AbortController();
   res.on('close', () => {
     if (!res.writableFinished) controller.abort();
   });
-  return new Request(toRequestUrl(req), {
+  const limit = bodyLimitFor(req, options.serverFnBase);
+  return new Request(toRequestUrl(req, options.origin), {
     method: req.method,
     headers: toWebHeaders(req.headers),
-    body: hasBody ? Readable.toWeb(req) : undefined,
+    body: hasBody
+      ? limitStream(Readable.toWeb(req), limit, () => req.socket?.destroy())
+      : undefined,
     duplex: hasBody ? 'half' : undefined,
     signal: controller.signal,
   });
+}
+
+/**
+ * Перші відмови до sirv і хендлера (одне джерело для `server.mjs` і тестів):
+ * поганий request-target → 400 (Р18б), `Content-Length` понад стелю → 413
+ * (Р20). `extraHeaders` — заголовки безпеки (Р27) для цих відповідей.
+ * Повертає `true`, якщо відповідь уже віддано.
+ */
+export function rejectBadRequest(req, res, serverFnBase, extraHeaders = {}) {
+  if (requestPath(req.url) === null) {
+    res.writeHead(400, {
+      ...extraHeaders,
+      'content-type': 'text/plain; charset=utf-8',
+    });
+    res.end('Bad Request');
+    return true;
+  }
+  return rejectOversizedBody(req, res, serverFnBase, extraHeaders);
 }
 
 /**
@@ -93,4 +118,29 @@ export function sendWebResponse(res, response) {
     console.error('[server] Помилка стріму відповіді:', error);
     res.destroy(error);
   });
+}
+
+/**
+ * Маскує userinfo в `scheme://userinfo@host` усередині тексту. Копія
+ * `redactUrls` ядра (`simplycms/env`): раннер ядро не імпортує (Е8-Р7′);
+ * парність стереже `tests/server-headers-parity.test.ts`.
+ */
+export function redactUrls(text) {
+  return text.replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/]*@/gi, '$1***@');
+}
+
+/**
+ * Р23 для самого раннера: необроблена помилка запиту (поза `fetch`-хендлером
+ * бандла) не віддається клієнту, а пишеться в лог з ідентифікатором і
+ * замаскованими URL-секретами. Повертає тіло 500 для клієнта — той самий формат
+ * `Internal server error [ref <id>]`, що й у ядрі (`contracts/masked-error`).
+ */
+export function logRequestError(error) {
+  const id = randomBytes(4).toString('hex');
+  const text =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error(
+    `[server] Необроблена помилка запиту ${id}: ${redactUrls(text)}`,
+  );
+  return `Internal server error [ref ${id}]`;
 }

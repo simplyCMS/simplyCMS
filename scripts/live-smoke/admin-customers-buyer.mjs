@@ -10,7 +10,7 @@ import {
   openCheckoutPrefilled,
   submitCheckout,
 } from './place-order.mjs';
-import { waitText } from './selectors.mjs';
+import { waitToast } from './wait.mjs';
 
 /** Сесія очима сторінки: `null` — гість; інакше `{ user: { email } }`. */
 export const sessionOf = (page) =>
@@ -37,7 +37,7 @@ export async function loginAs(page, base, email, failureText) {
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Увійти', exact: true }).click();
-  if (failureText) return waitText(page, failureText);
+  if (failureText) return waitToast(page, failureText);
   await page.waitForURL(`${base}/`, { timeout: 15_000 });
   return true;
 }

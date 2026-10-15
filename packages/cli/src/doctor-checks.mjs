@@ -4,10 +4,18 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { coreDependencies } from './context.mjs';
 import {
+  checkAgentFiles,
   checkHostDrift,
   checkMigrations,
   checkSkillLinks,
 } from './doctor-fs-checks.mjs';
+import {
+  checkEmailVerification,
+  checkMailConfigured,
+  checkMailDriver,
+} from './doctor-mail-check.mjs';
+import { checkEngines } from './doctor-engines.mjs';
+import { placeholderKeys } from './env-placeholders.mjs';
 import { checkPgDriver } from './doctor-pg-check.mjs';
 import { checkThemes } from './doctor-theme-checks.mjs';
 
@@ -97,7 +105,18 @@ export function checkAllowBuilds({ storeRoot }) {
 }
 
 /**
+ * Обов'язкові серверні ключі, яких немає або які порожні. Одне джерело для №5 і
+ * для етапу `not-configured` у `status`: друга реалізація «чи заданий env» розійшлась би.
+ * @param {Record<string, string | undefined>} env
+ */
+export function missingRequiredEnv(env) {
+  return REQUIRED_ENV_VARS.filter((name) => !env[name]);
+}
+
+/**
  * №5: env несе серверний контракт магазину.
+ *
+ * Додатково error на відомих значеннях-заглушках (`env-placeholders.mjs`).
  *
  * 🔴 Гейтяться саме ці два ключі, бо саме вони блокують старт: без
  * `DATABASE_URL` немає пулу `simplycms/db`, без `BETTER_AUTH_SECRET` сервер
@@ -106,51 +125,86 @@ export function checkAllowBuilds({ storeRoot }) {
  */
 export function checkEnv({ env }) {
   const title = `env: ${REQUIRED_ENV_VARS.join(' + ')}`;
-  const missing = REQUIRED_ENV_VARS.filter((name) => !env[name]);
+  const missing = missingRequiredEnv(env);
   if (missing.length > 0) {
     const details = `Не задано: ${missing.join('; ')} (process.env, .env.local або .env)`;
+    return check('env', title, 'error', details);
+  }
+  // Заглушка з env.example — відомий усім «секрет»: називаємо ключ, не значення.
+  const placeholders = placeholderKeys(env);
+  if (placeholders.length > 0) {
+    const details = `Заглушка з прикладу замість значення: ${placeholders.join('; ')} — задай справжнє`;
     return check('env', title, 'error', details);
   }
   return check('env', title, 'ok');
 }
 
-/** Усі оффлайн-перевірки в порядку таблиці §4.1 (п.1 робить doctor.mjs). */
+/**
+ * Усі оффлайн-перевірки в порядку таблиці §4.1 (п.1 робить doctor.mjs). Це ЄДИНИЙ
+ * список для `doctor` і `status`; `label` потрібен `status`, щоб назвати перевірку, що
+ * впала чи не вклалась у таймаут (у `Check.id` вона тоді не потрапила).
+ * @type {{ label: string; run: (ctx: DoctorContext) => Check }[]}
+ */
+export const OFFLINE_CHECKS = [
+  { label: 'versions', run: checkCoreVersions },
+  { label: 'packageManager', run: checkPackageManager },
+  { label: 'allowBuilds', run: checkAllowBuilds },
+  { label: 'env', run: checkEnv },
+  { label: 'host-drift', run: checkHostDrift },
+  { label: 'migrations', run: checkMigrations },
+  // №8–10: якірні файли каркаса — без них магазин не збереться коректно.
+  // 🔴 Роут-теки ядра — підшляхи ОДНОГО пакета (`simplycms/routes/*`), і
+  // обидві монтуються через realpathSync: без нього роути мовчки втрачають
+  // code-splitting (магазин їде одним initial-чанком).
+  {
+    label: 'routes.ts',
+    run: ({ storeRoot }) =>
+      checkFileContains(
+        storeRoot,
+        'routes.ts',
+        ['realpathSync', "coreRoutes('storefront')", "coreRoutes('admin')"],
+        'routes.ts монтує роут-теки ядра через realpathSync',
+      ),
+  },
+  {
+    label: 'tailwind.config.ts',
+    run: ({ storeRoot }) =>
+      checkFileContains(
+        storeRoot,
+        'tailwind.config.ts',
+        ['node_modules/simplycms/dist', 'node_modules/simplycms/routes'],
+        'tailwind.config.ts сканує пакет ядра в node_modules',
+      ),
+  },
+  {
+    label: 'simplycms.config.ts',
+    run: ({ storeRoot }) =>
+      checkFileContains(
+        storeRoot,
+        'simplycms.config.ts',
+        ['plugins: [', 'themes: {'],
+        'simplycms.config.ts має якорі plugins/themes',
+      ),
+  },
+  // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
+  { label: 'themes', run: checkThemes },
+  // №12 (трек К0): скіли ядра підключені лінками.
+  { label: 'skill-links', run: checkSkillLinks },
+  // №13 (К3-Е7): драйвер БД — залежність магазину в межах peer ядра.
+  { label: 'pg-driver', run: checkPgDriver },
+  // №14 (К3-Е8): пошта — nodemailer у залежностях магазину в межах peer ядра.
+  { label: 'mail-driver', run: checkMailDriver },
+  // №15 (Е8-Р17): драйвер пошти; серйозність log залежить від режиму.
+  { label: 'mail-configured', run: checkMailConfigured },
+  // №16 (Р30): без SMTP реєстрація не вимагає підтвердження пошти.
+  { label: 'email-verification', run: checkEmailVerification },
+  // №17 (Р32): engines.simplycms плагінів і тем проти ядра — error, bootstrap лише warn.
+  { label: 'engines', run: checkEngines },
+  // №18 (Б §3.3): керований блок AGENTS.md і запис хука; дозволи — порадою в details.
+  { label: 'agent-files', run: checkAgentFiles },
+];
+
+/** Усі оффлайн-перевірки послідовно (`doctor`); `status` ганяє той самий список з таймаутом. */
 export function runOfflineChecks(ctx) {
-  const { storeRoot } = ctx;
-  return [
-    checkCoreVersions(ctx),
-    checkPackageManager(ctx),
-    checkAllowBuilds(ctx),
-    checkEnv(ctx),
-    checkHostDrift(ctx),
-    checkMigrations(ctx),
-    // №8–10: якірні файли каркаса — без них магазин не збереться коректно.
-    // 🔴 Роут-теки ядра — підшляхи ОДНОГО пакета (`simplycms/routes/*`), і
-    // обидві монтуються через realpathSync: без нього роути мовчки втрачають
-    // code-splitting (магазин їде одним initial-чанком).
-    checkFileContains(
-      storeRoot,
-      'routes.ts',
-      ['realpathSync', "coreRoutes('storefront')", "coreRoutes('admin')"],
-      'routes.ts монтує роут-теки ядра через realpathSync',
-    ),
-    checkFileContains(
-      storeRoot,
-      'tailwind.config.ts',
-      ['node_modules/simplycms/dist', 'node_modules/simplycms/routes'],
-      'tailwind.config.ts сканує пакет ядра в node_modules',
-    ),
-    checkFileContains(
-      storeRoot,
-      'simplycms.config.ts',
-      ['plugins: [', 'themes: {'],
-      'simplycms.config.ts має якорі plugins/themes',
-    ),
-    // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
-    checkThemes(ctx),
-    // №12 (трек К0): скіли ядра підключені лінками.
-    checkSkillLinks(ctx),
-    // №13 (К3-Е7): драйвер БД — залежність магазину в межах peer ядра.
-    checkPgDriver(ctx),
-  ];
+  return OFFLINE_CHECKS.map(({ run }) => run(ctx));
 }

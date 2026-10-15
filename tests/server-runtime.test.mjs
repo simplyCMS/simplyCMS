@@ -7,7 +7,14 @@
 import { createServer } from 'node:http';
 import { describe, expect, it } from 'vitest';
 
+import {
+  parseSiteOrigin,
+  requestPath,
+  toRequestUrl,
+} from '../server-origin.mjs';
 import { sendWebResponse, toWebRequest } from '../server-runtime.mjs';
+
+const OPTIONS = { origin: 'https://shop.test', serverFnBase: '/_serverFn/' };
 
 const encoder = new TextEncoder();
 
@@ -101,7 +108,7 @@ describe('toWebRequest', () => {
     });
 
     const { url, close } = await startServer((req, res) => {
-      const request = toWebRequest(req, res);
+      const request = toWebRequest(req, res, OPTIONS);
       request.signal.addEventListener('abort', () => markAborted(true));
       const body = new ReadableStream({
         start: (controller) => controller.enqueue(encoder.encode('чанк')),
@@ -124,7 +131,7 @@ describe('toWebRequest', () => {
   it('не аборт-ить signal на нормально завершеній відповіді', async () => {
     let wasAborted = false;
     const { url, close } = await startServer((req, res) => {
-      const request = toWebRequest(req, res);
+      const request = toWebRequest(req, res, OPTIONS);
       request.signal.addEventListener('abort', () => {
         wasAborted = true;
       });
@@ -137,5 +144,80 @@ describe('toWebRequest', () => {
     } finally {
       await close();
     }
+  });
+});
+
+describe('toRequestUrl — origin лише з конфігу (Р18б)', () => {
+  const ORIGIN = 'https://shop.test';
+
+  it('підроблені Host / X-Forwarded-Host / X-Forwarded-Proto ігноруються', () => {
+    const url = toRequestUrl(
+      {
+        url: '/cart?x=1',
+        headers: {
+          host: 'evil.example',
+          'x-forwarded-host': 'evil.example',
+          'x-forwarded-proto': 'http',
+        },
+      },
+      ORIGIN,
+    );
+    expect(url).toBe('https://shop.test/cart?x=1');
+  });
+
+  it('absolute-form: береться лише шлях і query', () => {
+    expect(
+      toRequestUrl({ url: 'http://evil.example/p?q=1', headers: {} }, ORIGIN),
+    ).toBe('https://shop.test/p?q=1');
+  });
+
+  it.each(['//evil.example/x', '/\\evil.example', 'http://h//x', '*', ''])(
+    'request-target %j неприйнятний: requestPath → null, toRequestUrl кидає',
+    (target) => {
+      expect(requestPath(target)).toBeNull();
+      expect(() =>
+        toRequestUrl({ url: target, headers: {} }, ORIGIN),
+      ).toThrow();
+    },
+  );
+
+  it('справжній Request несе origin сайту, а не заголовків клієнта', async () => {
+    let seen;
+    const { url, close } = await startServer((req, res) => {
+      seen = toWebRequest(req, res, OPTIONS).url;
+      sendWebResponse(res, new Response('ок'));
+    });
+    try {
+      await fetch(`${url}/a/b?c=d`, {
+        headers: { 'x-forwarded-host': 'evil.example' },
+      });
+      expect(seen).toBe('https://shop.test/a/b?c=d');
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('parseSiteOrigin', () => {
+  it('http(s) → origin без шляху', () => {
+    expect(parseSiteOrigin('https://shop.test/some/path')).toBe(
+      'https://shop.test',
+    );
+    expect(parseSiteOrigin('http://127.0.0.1:3000')).toBe(
+      'http://127.0.0.1:3000',
+    );
+  });
+
+  it.each([undefined, '', '/relative', 'ftp://x', 'shop.test'])(
+    '%j → помилка з іменем ключа, без значення',
+    (raw) => {
+      expect(() => parseSiteOrigin(raw)).toThrow(/VITE_SITE_URL/);
+    },
+  );
+
+  it('облікові дані з userinfo в текст помилки не потрапляють', () => {
+    const parse = () => parseSiteOrigin('ftp://user:s3cr3t@x');
+    expect(parse).toThrow(/VITE_SITE_URL/);
+    expect(parse).not.toThrow(/s3cr3t/);
   });
 });

@@ -21,31 +21,42 @@ pnpm add simplycms
 | Subpath | Експорти |
 |---------|----------|
 | `simplycms/storefront`          | Реекспорт `./loaders` і `./seo` |
-| `simplycms/storefront/loaders`  | `withStorefrontDb`, `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
+| `simplycms/storefront/loaders`  | `withStorefrontDb`, `withViewerDb` (ціни лише видів глядача сесії, Р29), `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 
 ## Як лоадери ходять у БД (В2-К1а)
 
 Лоадери — **server-only** і працюють на Drizzle поверх чистого Postgres.
 Перший аргумент кожного — `ActorDb`, тобто drizzle-інстанс, прибіндований до
-транзакції конкретного актора. Транзакцію відкриває `withStorefrontDb`:
+транзакції конкретного актора. Публічне читання БЕЗ цін відкриває
+`withStorefrontDb` (`app_user` без `userId`). Лоадери з цінами (`loadProduct`,
+`loadProductList`, `loadCatalogProducts`, `loadPropertyOption`, `loadHomePageData`,
+`loadHomeProducts`, `loadSectionProducts`) приймають обовʼязковий `viewer` —
+набір видів цін глядача (Р29) — і відкриваються лише через `withViewerDb`:
 
 ```ts
 import {
   loadSectionBySlug,
   loadProductList,
-  withStorefrontDb,
+  withViewerDb,
 } from 'simplycms/storefront/loaders';
 
-const data = await withStorefrontDb(async (db) => {
+const data = await withViewerDb(async (db, viewer) => {
   const section = await loadSectionBySlug(db, slug);
-  return section ? loadProductList(db, section.id) : [];
+  return section ? loadProductList(db, viewer, section.id) : [];
 });
 ```
 
 🔴 Обгортка приймає функцію навмисно: усі запити однієї сторінки мають лягти в
-**одну** транзакцію, інакше сторінка збирається з різних знімків БД. Роль
-актора — завжди `app_user` і без `userId`: вітрина рендериться анонімно.
+**одну** транзакцію, інакше сторінка збирається з різних знімків БД.
+
+🔴 `viewer` береться **лише** із серверної сесії: `withViewerDb` читає
+`readSessionSubject`, гостю дає гостьові види цін (`app_user` без `userId`),
+покупцю — вид його категорії + гостьові (`app_user` з його `userId`), а
+відповідь залогіненому позначає `Cache-Control: private, no-store`. Параметра,
+яким клієнт назвав би свій вид чи категорію, немає й не має бути: хто називає
+свою категорію, той називає й свій прайс. Ядро без сесії (`withViewerPricesDb`)
+свідомо не експортується.
 
 ## 🔴 Видимість фільтрує КОД, а не база
 

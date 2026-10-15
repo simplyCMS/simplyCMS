@@ -22,7 +22,6 @@
 // записане» — курʼєр із тарифом, знижка за кількістю (квота НЕ дорівнює
 // подвоєній ціні картки з quantity:1/cartTotal:0) і три відмови, ОДНАКОВІ
 // для квоти й оформлення на тих самих входах.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -30,6 +29,7 @@ import type { PlaceOrderInput, PlaceOrderRejection } from 'simplycms/contracts';
 import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
+  applyCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -40,6 +40,7 @@ import {
 } from '../apply.mjs';
 import {
   HIDDEN_METHOD_CODE,
+  HIDDEN_ZONE_NAME,
   HIDDEN_SHIPPING_FIXTURES,
 } from './fixtures/shipping';
 import { percentDiscountStatements } from './fixtures/discounts';
@@ -95,6 +96,11 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
   let hidden = '';
   let courier = '';
   let norate = '';
+  let pickupK = '';
+  let courierK = '';
+  let pointK = '';
+  let pointGone = '';
+  let pointInactive = '';
   let point = '';
   let panel = '';
   let outOfStock = '';
@@ -117,13 +123,8 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, [
-      ...readdirSync(MIGRATIONS_DIR)
-        .filter((n) => n.endsWith('.sql'))
-        .sort()
-        .map((n) => join(MIGRATIONS_DIR, n)),
-      join(MIGRATIONS_DIR, 'demo/demo-seed.sql'),
-    ]);
+    await applyCanon(dbUrl);
+    await applySqlFiles(dbUrl, [join(MIGRATIONS_DIR, 'demo/demo-seed.sql')]);
     // Негативна частина фікстури поверх сіду: вимкнений метод, зона, тариф, закрита точка.
     for (const statement of HIDDEN_SHIPPING_FIXTURES)
       await queryRows(dbUrl, statement);
@@ -157,6 +158,64 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     );
     point = await one(
       `select id from public.pickup_points where name = 'Склад у Києві'`,
+    );
+    // Д3/Д7: неосновна зона K, самовивіз і курʼєр
+    // з тарифом ЛИШЕ в K; точка зі знесеною зоною (SET NULL) і точка з
+    // неактивною зоною. Окремі методи, щоб не зачепити решту кейсів файлу.
+    await queryRows(
+      dbUrl,
+      `insert into public.shipping_zones (id, name, is_active, is_default)
+       values (gen_random_uuid(), 'Зона K', true, false),
+              (gen_random_uuid(), 'Зона D', true, false)`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.shipping_methods (id, code, name, is_active, provider)
+       values (gen_random_uuid(), 'pickup-k', 'Самовивіз K', true, 'core:pickup'),
+              (gen_random_uuid(), 'courier-k', 'Курʼєр K', true, 'core:address')`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
+       select gen_random_uuid(), m.id, z.id, 'Тариф K', 'flat', 0, true, 0
+         from public.shipping_methods m, public.shipping_zones z
+        where m.code in ('pickup-k', 'courier-k') and z.name = 'Зона K'`,
+    );
+    await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, zone_id, name, address, city, is_active)
+       select gen_random_uuid(), m.id, z.id, p.name, 'вул. K, 1', 'Київ', true
+         from (values ('pickup-k', 'Точка K', 'Зона K'), ('pickup', 'Точка D', 'Зона D')) as p(code, name, zone)
+         join public.shipping_methods m on m.code = p.code
+         join public.shipping_zones z on z.name = p.zone`,
+    );
+    // Точка основного самовивозу з неактивною зоною (Р6): тариф основної зони
+    // є, але точка вказує на зону поза активними.
+    await queryRows(
+      dbUrl,
+      `insert into public.pickup_points (id, method_id, zone_id, name, address, city, is_active)
+       select gen_random_uuid(), m.id, z.id, 'Точка неактивної зони', 'вул. 3', 'Київ', true
+         from public.shipping_methods m, public.shipping_zones z
+        where m.code = 'pickup' and z.name = '${HIDDEN_ZONE_NAME}'`,
+    );
+    await queryRows(
+      dbUrl,
+      `delete from public.shipping_zones where name = 'Зона D'`,
+    );
+    pickupK = await one(
+      `select id from public.shipping_methods where code = 'pickup-k'`,
+    );
+    courierK = await one(
+      `select id from public.shipping_methods where code = 'courier-k'`,
+    );
+    pointK = await one(
+      `select id from public.pickup_points where name = 'Точка K'`,
+    );
+    pointGone = await one(
+      `select id from public.pickup_points where name = 'Точка D'`,
+    );
+    pointInactive = await one(
+      `select id from public.pickup_points where name = 'Точка неактивної зони'`,
     );
     panel = await one(`select id from public.products where slug = $1`, [
       PANEL_SLUG,
@@ -294,7 +353,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
 
   it('НЕ-pickup метод без міста — shipping_unavailable (M7)', async () => {
     // Курʼєр БЕЗ міста інакше мовчки поїхав би на ДЕФОЛТНУ зону
-    // (`findShippingZoneIn(zones, '')`) — тариф обирала б відсутність даних.
+    // (вибір зони за порожнім містом) — тариф обирала б відсутність даних.
     const before = await ordersCount();
     const result = await placeOrderFor(
       input({
@@ -331,6 +390,212 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(row.subtotal).toBe('4800.00');
     expect(row.shipping_cost).toBe('100.00');
     expect(row.total).toBe('4900.00');
+  });
+
+  it('самовивіз: сервер пише delivery_city = NULL, хоч вхід несе місто; курʼєр — лишає', async () => {
+    // Канон: у самовивозу міста немає; обнулення — на сервері, а не лише в клієнта.
+    // Товар без обліку: тест не з'їдає залишок, який читають сусідні кейси.
+    const items = [{ productId: untracked, modificationId: null, quantity: 1 }];
+    const cityOf = async (orderId: string): Promise<string | null> =>
+      (
+        (await queryRows(
+          dbUrl,
+          `select delivery_city from public.orders where id = $1`,
+          [orderId],
+        )) as { delivery_city: string | null }[]
+      )[0].delivery_city;
+    const pick = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        deliveryCity: 'Львів',
+        items,
+      }),
+      null,
+    );
+    expect(pick.ok).toBe(true);
+    if (!pick.ok) return;
+    expect(await cityOf(pick.order.id)).toBeNull();
+    const cour = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: 'Одеса',
+        pickupPointId: null,
+        items,
+      }),
+      null,
+    );
+    expect(cour.ok).toBe(true);
+    if (!cour.ok) return;
+    expect(await cityOf(cour.order.id)).toBe('Одеса');
+  });
+
+  // Д3/Д4/Д7: зона = основна або зона точки самовивозу; місто на неї не
+  // впливає, а тариф ІНШОЇ зони не підставляється ніколи (fail-closed).
+  const untrackedItems = () => [
+    { productId: untracked, modificationId: null, quantity: 1 },
+  ];
+  const shippingCostOf = async (orderId: string): Promise<string> =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select shipping_cost from public.orders where id = $1`,
+        [orderId],
+      )) as { shipping_cost: string }[]
+    )[0].shipping_cost;
+
+  it('самовивіз: тариф зони точки, приховане місто ігнорується (verify/pickup)', async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickupK,
+        pickupPointId: pointK,
+        deliveryCity: 'Львів',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(await shippingCostOf(result.order.id)).toBe('0.00');
+  });
+
+  it('курʼєр з тарифом лише в неосновній зоні → shipping_unavailable (місто зону не обирає)', async () => {
+    const before = await ordersCount();
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: courierK,
+        deliveryCity: 'Київ',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
+    expect(await ordersCount()).toBe(before);
+  });
+
+  it('точка зі знесеною зоною (SET NULL) → основна зона, ok', async () => {
+    const [row] = (await queryRows(
+      dbUrl,
+      `select zone_id from public.pickup_points where id = $1`,
+      [pointGone],
+    )) as { zone_id: string | null }[];
+    expect(row.zone_id).toBeNull();
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: pointGone,
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('точка основного самовивозу з NULL-зоною → основна, ok з тарифом основної зони', async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: point,
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  const recorded = async (
+    orderId: string,
+  ): Promise<{ zone: string | null; rate: string | null }> =>
+    (
+      (await queryRows(
+        dbUrl,
+        `select shipping_zone_id as zone, shipping_rate_id as rate from public.orders where id = $1`,
+        [orderId],
+      )) as { zone: string | null; rate: string | null }[]
+    )[0]!;
+  const zoneId = async (name: string): Promise<string> =>
+    one(`select id from public.shipping_zones where name = $1`, [name]);
+  const rateOf = async (code: string, zone: string): Promise<string> =>
+    one(
+      `select r.id from public.shipping_rates r
+         join public.shipping_methods m on m.id = r.method_id
+        where m.code = $1 and r.zone_id = $2 and r.is_active`,
+      [code, zone],
+    );
+
+  it("замовлення пам'ятає зону й тариф: самовивіз точкою K → зона K і її тариф", async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickupK,
+        pickupPointId: pointK,
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const k = await zoneId('Зона K');
+    expect(await recorded(result.order.id)).toEqual({
+      zone: k,
+      rate: await rateOf('pickup-k', k),
+    });
+  });
+
+  it("замовлення пам'ятає зону й тариф: курʼєр → основна зона й її тариф", async () => {
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: courier,
+        deliveryCity: 'Київ',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const main = one(`select id from public.shipping_zones where is_default`);
+    expect(await recorded(result.order.id)).toEqual({
+      zone: await main,
+      rate: await rateOf('courier', await main),
+    });
+  });
+
+  it("замовлення пам'ятає зону: carrier → основна зона, shipping_rate_id NULL (А2)", async () => {
+    await queryRows(
+      dbUrl,
+      `insert into public.shipping_methods (id, code, name, is_active, provider, pricing)
+       values (gen_random_uuid(), 'carrier-m', 'Перевізник', true, 'core:address', 'carrier')`,
+    );
+    const carrier = await one(
+      `select id from public.shipping_methods where code = 'carrier-m'`,
+    );
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: carrier,
+        deliveryCity: 'Київ',
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(await recorded(result.order.id)).toEqual({
+      zone: await one(`select id from public.shipping_zones where is_default`),
+      rate: null,
+    });
+  });
+
+  it('точка з неактивною зоною (Р6) → shipping_unavailable', async () => {
+    const before = await ordersCount();
+    const result = await placeOrderFor(
+      input({
+        shippingMethodId: pickup,
+        pickupPointId: pointInactive,
+        items: untrackedItems(),
+      }),
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
+    expect(await ordersCount()).toBe(before);
   });
 
   it('гість отримує знижку категорії за замовчуванням — як у getDiscountEnvironment', async () => {

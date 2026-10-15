@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "vite dev",
@@ -66,6 +66,7 @@
     "input-otp": "^1.5.0",
     "lucide-react": "^1.51.0",
     "next-themes": "^0.4.6",
+    "nodemailer": "10.1.0",
     "pg": "8.23.1",
     "react": "^19.3.0",
     "react-day-picker": "^9.13.2",

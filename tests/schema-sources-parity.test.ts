@@ -125,11 +125,12 @@ describe('парність джерел схеми: schema.ts ↔ meta-знім�
     expect(generateResult.stdout).toContain('No schema changes');
   });
 
+  // Журнал Drizzle веде лише `db:diff` (нумерація своя): baseline + `mail_outbox`.
   it('жодного НОВОГО файла міграції в копії не зʼявилось', () => {
     const sqlFiles = readdirSync(tmpDrizzleDir)
       .filter((f) => f.endsWith('.sql'))
       .sort();
-    expect(sqlFiles).toEqual(['0000_init.sql']);
+    expect(sqlFiles).toEqual(['0000_init.sql', '0001_mail_outbox.sql']);
   });
 });
 

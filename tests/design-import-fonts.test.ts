@@ -13,12 +13,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { afterAll, describe, expect, it } from 'vitest';
-import { resolveChromium } from '../.agents/skills/redesign-from-reference/scripts/lib/browser.mjs';
+import { resolveChromium } from '../.agents/skills/simplycms-redesign/scripts/lib/browser.mjs';
 import {
   samplePalette,
   VIEWPORTS,
   VIEWPORT_HEIGHT,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/sample.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/sample.mjs';
 
 // `sample.mjs` — чистий .mjs без пофіледних JSDoc-типів, тож TS інферить
 // `any`-ланцюжок від `Page.evaluate`; каст лише на те, що читає тест.

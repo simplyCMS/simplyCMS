@@ -13,6 +13,10 @@ import { roundMoney } from './pricing';
 // Е6а-21: читачі знімка беруть парсер із наявного субшляху `simplycms/domain/shipping`.
 export { parseShippingSnapshot } from './shipping-snapshot';
 
+// Д3: зона за пунктом призначення — окремий файл заради ~150 рядків на модуль,
+// споживачі беруть її з того ж субшляху `simplycms/domain/shipping`.
+export { resolveShippingZone, type ZoneDestination } from './shipping-zone';
+
 export type {
   ShippingMethod,
   ShippingCalculationType,
@@ -122,9 +126,13 @@ export function resolveShippingRate(
   }
 
   // `rates`: перший застосовний тариф способу
+  // 🔴 Fail-closed: без зони (`null`) тариф не обирається. Раніше `!zone ||`
+  // віддавав перший-ліпший тариф довільної зони, тобто ціну обирала
+  // відсутність даних. Тариф іншої зони не застосовується ніколи.
+  if (!zone) return null;
   const applicableRates = rates
     .filter((r) => r.method_id === method.id && r.is_active)
-    .filter((r) => !zone || r.zone_id === zone.id)
+    .filter((r) => r.zone_id === zone.id)
     .sort((a, b) => a.sort_order - b.sort_order);
 
   if (applicableRates.length === 0) {
@@ -195,37 +203,4 @@ export function formatShippingCost(
     return labels.free;
   }
   return formatPrice(cost, config);
-}
-
-/**
- * Знаходить найбільш специфічну зону доставки для міста клієнта
- * серед уже завантажених зон (pure-частина findShippingZone).
- * IO (запит зон) виконує CatalogRepository.getShippingZones.
- */
-export function findShippingZoneIn<
-  Z extends {
-    cities?: string[];
-    regions?: string[];
-    is_default: boolean;
-  },
->(zones: Z[], customerCity: string): Z | null {
-  const normalized = normalizeString(customerCity);
-
-  for (const zone of zones) {
-    if (zone.is_default) continue;
-    const cities = zone.cities || [];
-    if (cities.some((city) => normalizeString(city) === normalized)) {
-      return zone;
-    }
-    const regions = zone.regions || [];
-    if (regions.some((region) => normalizeString(region) === normalized)) {
-      return zone;
-    }
-  }
-
-  return zones.find((z) => z.is_default) || null;
-}
-
-function normalizeString(str: string): string {
-  return str.toLowerCase().trim().replace(/\s+/g, ' ');
 }

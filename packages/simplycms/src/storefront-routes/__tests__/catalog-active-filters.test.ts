@@ -79,4 +79,24 @@ describe('buildActiveFilterChips', () => {
       [],
     );
   });
+
+  it('boolean-фільтр дає бейдж «назва: Так» з типом boolean', () => {
+    const chips = buildActiveFilterChips({ 'has-wifi': true }, t, {
+      ...sources,
+      booleanProperties: [{ id: 'pB', slug: 'has-wifi', name: 'Wi-Fi' }],
+    });
+
+    expect(chips).toEqual([
+      { key: 'has-wifi', label: 'Wi-Fi', value: 'Так', type: 'boolean' },
+    ]);
+  });
+
+  it('знятий boolean-фільтр (undefined) бейджа не дає', () => {
+    const chips = buildActiveFilterChips({ 'has-wifi': undefined }, t, {
+      ...sources,
+      booleanProperties: [{ id: 'pB', slug: 'has-wifi', name: 'Wi-Fi' }],
+    });
+
+    expect(chips).toEqual([]);
+  });
 });

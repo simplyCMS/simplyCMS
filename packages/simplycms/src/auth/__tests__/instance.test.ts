@@ -121,3 +121,19 @@ describe('Better Auth: email+password на memory-адаптері', () => {
     expect(await ctx.auth.api.getSession({ headers })).toBeNull();
   });
 });
+
+describe('createAuth: база посилань (хвіст A)', () => {
+  it.each(['', 'not a url', '/relative', 'foo:bar'])(
+    'deps.baseURL=%j — гучна відмова з імʼям поля, а не гола TypeError',
+    (baseURL) => {
+      const attempt = () =>
+        createAuth({
+          database: memoryAdapter({}),
+          secret: 'test-secret-not-a-real-one',
+          baseURL,
+        });
+      expect(attempt).toThrow(/AuthDeps\.baseURL/);
+      expect(attempt).not.toThrow(TypeError);
+    },
+  );
+});

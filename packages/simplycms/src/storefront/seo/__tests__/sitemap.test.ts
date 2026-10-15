@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { productPath } from 'simplycms/domain';
 import { renderSitemapXml } from '../sitemap';
 import type { SitemapData } from '../../loaders/sitemap';
 
@@ -40,12 +41,13 @@ describe('renderSitemapXml', () => {
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
   });
 
-  it('товар без розділу отримує технічний префікс, а не порожній сегмент', () => {
+  it('товар без розділу отримує зарезервований сегмент `all` (productPath), а не порожній', () => {
     // `/catalog//orphan` був би 404-ю з подвійним слешем — саме той випадок,
     // який робот запамʼятовує надовго.
     expect(xml).toContain(
-      '<loc>https://shop.test/catalog/products/orphan</loc>',
+      `<loc>https://shop.test${productPath({ slug: 'orphan', sectionSlug: null }).href}</loc>`,
     );
+    expect(xml).toContain('<loc>https://shop.test/catalog/all/orphan</loc>');
     expect(xml).not.toContain('/catalog//');
   });
 

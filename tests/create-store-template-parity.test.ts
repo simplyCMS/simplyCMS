@@ -2,12 +2,15 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  AGENT_SOURCE_DIR,
   CLI_HOST_DIR,
   SCHEMA_MIGRATIONS_DIR,
   SYNCED_DIRS,
   SYNCED_FILES,
   TEMPLATE_DIR,
+  TEMPLATE_HOST_FILES,
 } from '../scripts/sync-create-store-template.mjs';
+import { ENV_PLACEHOLDERS } from '../packages/cli/src/env-placeholders.mjs';
 import { BUNDLED_SKILLS } from '../packages/create-simplycms-store/src/skill-links.mjs';
 
 // Шаблон create-simplycms-store — генерат: дрейф із монорепо лагодиться
@@ -38,6 +41,14 @@ describe('create-store template: парність із монорепо', () => 
     },
   );
 
+  // Е8-Р5: CLAUDE.md шаблону — генерат із вступу ядра (блок AGENTS.md стереже
+  // managed-block.test.ts тією самою функцією рендеру, що й update).
+  it('CLAUDE.md шаблону байт-ідентичний agent/claude-md.md і імпортує AGENTS.md', () => {
+    const claude = read(join(TEMPLATE_DIR, 'CLAUDE.md'));
+    expect(claude).toBe(read(join(AGENT_SOURCE_DIR, 'claude-md.md')));
+    expect(claude.split('\n')[0]).toBe('@AGENTS.md');
+  });
+
   // Дзеркала §5 спеки CLI v1: ті самі джерела, той самий `pnpm template:sync`.
   // Канон host/ пакета CLI — джерело `simplycms update`; тека сама собі
   // маніфест, тож окрім вмісту стережемо і точний склад (зайвий чи застарілий
@@ -46,8 +57,20 @@ describe('create-store template: парність із монорепо', () => 
     expect(read(join(CLI_HOST_DIR, file))).toBe(read(file));
   });
 
-  it('канон host/ CLI складається рівно з SYNCED_FILES', () => {
-    expect(listFiles(CLI_HOST_DIR)).toEqual([...SYNCED_FILES].sort());
+  // Файли, чиє джерело — сам шаблон (шим хука): канон host/ несе їхню байт-копію.
+  it.each(TEMPLATE_HOST_FILES)(
+    'канон host/ CLI: %s = копія шаблону',
+    (file) => {
+      expect(read(join(CLI_HOST_DIR, file))).toBe(
+        read(join(TEMPLATE_DIR, file)),
+      );
+    },
+  );
+
+  it('канон host/ CLI складається рівно з SYNCED_FILES і файлів шаблону', () => {
+    expect(listFiles(CLI_HOST_DIR)).toEqual(
+      [...SYNCED_FILES, ...TEMPLATE_HOST_FILES].sort(),
+    );
   });
 
   // Канон міграцій ядра (B13) — baseline + сід, а не історія з 33 файлів.
@@ -57,13 +80,14 @@ describe('create-store template: парність із монорепо', () => 
   // 🔴 `demo/demo-seed.sql` тут теж є, але НЕ входить у канон: readdir у
   // каноні (`db-diff.mjs`, `apply.mjs`) нерекурсивний і бере лише `*.sql`
   // верхнього рівня, тож піддиректорія `demo/` для накату канону невидима.
-  it('канон міграцій ядра — 0000_prelude → 0004_functions + README + demo/', () => {
+  it('канон міграцій ядра — 0000_prelude → 0005_mail_outbox + README + demo/', () => {
     expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
       '0002_grants.sql',
       '0003_seed.sql',
       '0004_functions.sql',
+      '0005_mail_outbox.sql',
       'README.md',
       'demo/demo-seed.sql',
     ]);
@@ -201,8 +225,9 @@ describe('create-store template: парність із монорепо', () => 
   // (створює скаффолдер, лагодить `simplycms update`) — копії в шаблоні
   // більше немає, інакше магазин ніс би форк скіла, що старіє мовчки.
   it('шаблон не несе копії скілів', () => {
-    expect(existsSync(join(TEMPLATE_DIR, '.claude'))).toBe(false);
-    expect(existsSync(join(TEMPLATE_DIR, '.agents'))).toBe(false);
+    // `.claude/` у шаблоні є (хук і його шим), тож копією скілів вважаємо лише `skills/`.
+    expect(existsSync(join(TEMPLATE_DIR, '.claude/skills'))).toBe(false);
+    expect(existsSync(join(TEMPLATE_DIR, '.agents/skills'))).toBe(false);
     expect(SYNCED_DIRS.some(({ to }) => to.includes('skills'))).toBe(false);
   });
 
@@ -218,5 +243,40 @@ describe('create-store template: парність із монорепо', () => 
       .sort();
     expect(packaged.length).toBeGreaterThan(0);
     expect([...BUNDLED_SKILLS].sort()).toEqual(packaged);
+  });
+
+  // Р28(в): заглушка в прикладі «працює» як значення. Список — той самий, що
+  // читає doctor; шукаємо у всьому файлі, включно із закоментованими рядками.
+  it('env.example не містить жодного значення зі списку заглушок', () => {
+    const example = read(join(TEMPLATE_DIR, 'env.example'));
+    const values = Object.values(ENV_PLACEHOLDERS).flat();
+    expect(values.length).toBeGreaterThan(0);
+    for (const value of values) expect(example).not.toContain(value);
+  });
+
+  // Р28(а): єдиний прод-старт — `node scripts/start.mjs`; `pnpm start`
+  // лишається локальним запуском бандла.
+  it('package.json.tpl: немає start:prod, start лишається локальним server.mjs', () => {
+    const scripts = JSON.parse(
+      read(join(TEMPLATE_DIR, 'package.json.tpl')).replaceAll(
+        '__SIMPLYCMS_VERSION__',
+        '1.0.0',
+      ),
+    ).scripts;
+    expect(scripts['start:prod']).toBeUndefined();
+    expect(scripts.start).toBe('node server.mjs');
+  });
+
+  it('gitignore шаблону ігнорує tmp атомарного запису deploy.json', () => {
+    const lines = read(join(TEMPLATE_DIR, 'gitignore')).split('\n');
+    expect(lines).toContain('.simplycms/*.tmp');
+    expect(lines).not.toContain('.simplycms/');
+  });
+
+  it('README шаблону: прод-рецепт — node scripts/start.mjs, pnpm start позначений «не для проду»', () => {
+    const readme = read(join(TEMPLATE_DIR, 'README.md'));
+    expect(readme).toContain('node scripts/start.mjs');
+    expect(readme).toMatch(/pnpm start[^\n]*\n?[^\n]*не для проду/);
+    expect(readme).not.toContain('start:prod');
   });
 });

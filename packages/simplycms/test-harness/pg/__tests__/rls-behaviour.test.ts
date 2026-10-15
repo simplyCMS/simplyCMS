@@ -10,12 +10,10 @@
 // (`app_admin`), гість із `app.order_token`. Усі — через `withActor`
 // (`../actors.mjs`), тобто через ту саму транзакційну форму, яку зобовʼязаний
 // ставити рантайм: BEGIN → set_config(local) → SET LOCAL ROLE → … → COMMIT.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -38,8 +36,6 @@ import {
   USER_ADMIN,
   USER_B,
 } from './fixtures/rls-actors';
-
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
 interface Actor {
   userId?: string;
@@ -77,13 +73,7 @@ describe('поведінка RLS: матриця акторів', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     for (const statement of SEED_STATEMENTS) await queryRows(dbUrl, statement);
     // Застосунок ЛОГІНИТЬСЯ саме як `app_runtime` — інакше негативні контролі
     // міряли б `SET ROLE` з-під власника, який обходить і гранти, і RLS.

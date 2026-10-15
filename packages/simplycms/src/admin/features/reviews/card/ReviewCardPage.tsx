@@ -1,5 +1,6 @@
 import { useParams } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
+import { productPath } from 'simplycms/domain';
 import { useT } from 'simplycms/i18n';
 import { StarRating } from 'simplycms/reviews-ui';
 import { Button } from 'simplycms/ui/button';
@@ -41,8 +42,10 @@ export default function ReviewCardPage() {
       <NotFoundState backTo={back} message={t('admin.reviews.notFound')} />
     );
 
-  // Вітрина резолвить розділ сама; 'all' — як у легасі для товару без розділу.
-  const productUrl = `/catalog/${review.sectionSlug ?? 'all'}/${review.productSlug}`;
+  const productUrl = productPath({
+    slug: review.productSlug,
+    sectionSlug: review.sectionSlug,
+  }).href;
   return (
     <div className="max-w-3xl space-y-6">
       <CardPageHeader

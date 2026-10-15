@@ -62,6 +62,23 @@
   всю таблицю, бо «активність» — правило показу, а не право доступу. Кожен
   публічний запит несе предикат явно (`is_active = true`, `has_page = true`).
   Забутий предикат не падає — він виводить чернетки у вітрину.
+- 🔴 **Ціни — лише видів глядача (Р29).** Публічні лоадери з `product_prices`
+  (`loadProduct`, `loadProductList`, `loadCatalogProducts`/`loadCatalogProductsWhere`, `loadPropertyOption`,
+  `loadHomePageData`/`loadHomeProducts`/`loadSectionProducts`) приймають
+  `ViewerPriceTypes` і фільтрують ціни в SQL (`visibleToViewer`,
+  `loadViewerPricesByProduct` з `simplycms/commerce`). Гість — види
+  `loadGuestPriceTypes`; покупець — вид своєї ефективної категорії (правило
+  `loadPricingContext`) + гостьові як фолбек. serverFn бере набір лише через
+  `withViewerDb` (глядач — з `readSessionSubject`, параметра від клієнта немає; ядро без
+  сесії `withViewerPricesDb` з публічного бареля не експортується), а
+  відповідь залогіненому дістає `Cache-Control: private, no-store` — і serverFn, і
+  SSR-HTML (serverFn під час SSR виконується в тому самому запиті). Гостьова відповідь
+  однакова для всіх і лишається без нього. Серверного кешу payload-ів сторінок
+  платформа не має (`createReadCache` — лише профіль і тема, `QueryClient` — на запит);
+  спільний кеш можливий лише зовнішній (CDN/проксі), і саме від нього захищає
+  `private`. JSON-LD `offers` рахується гостьовими видами для будь-якого глядача.
+  Гейти — `test-harness/pg/__tests__/storefront-price-visibility.test.ts`,
+  `storefront/loaders/__tests__/viewer.test.ts`, `storefront-routes/__tests__/priced-server-fns.test.ts`.
 - 🔴 **Гранти й RLS: колонковий грант не звужує INSERT.** Drizzle `insert()` називає в
   запиті ВСІ колонки таблиці (відсутні значення — як `default`), тож колонковий грант
   INSERT дав би `42501`: вставку звужує політика RLS `WITH CHECK`, грант лишається
@@ -80,9 +97,9 @@
     .validator(z.object({ slug: z.string().min(1) }))
     .handler(async ({ data }) => {
       const { slug } = data as { slug: string };
-      return withStorefrontDb(async (db) => {
+      return withViewerDb(async (db, viewer) => {
         const section = await loadSectionBySlug(db, slug);
-        return section ? { section, products: await loadProductList(db, section.id) } : null;
+        return section ? { section, products: await loadProductList(db, viewer, section.id) } : null;
       });
     });
   ```
@@ -150,6 +167,26 @@
   таблиць: `.key` — стабільний префікс для інвалідації, `.deps` — повний список
   читаних таблиць (саме звідси інвалідація бере, що скидати).
 - **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній таблиці.
+- **`priceViewKey(key, view)`** (`simplycms/react-query`) — публічний запит із цінами
+  (Р29): сегмент 0 — з реєстру, як і раніше, сегмент 1 — вид цін глядача (`'guest'`
+  або id виду з середовища цін — останній успішно прочитаний, невдалий фоновий перезапит
+  його не міняє; `'unresolved'` — покупець, чий вид клієнту не відомий (збій середовища
+  без жодного успішного читання): 🔴 НІКОЛИ не `'guest'`, бо serverFn фільтрує за видом
+  із сесії й поклав би прайс покупця в гостьову комірку; `null` — ще невідомо, запит не
+  ходить; свідома ціна `lastKnown`: якщо адмін змінив покупцю категорію, а фоновий
+  перезапит середовища впав, покупець тимчасово читає комірку зі СТАРИМ id виду — лише
+  власну, бо сервер усе одно фільтрує за поточною сесією, а вихід її скидає), 🔴 не
+  `userId`. Такі запити несуть `meta: VIEWER_PRICED_META` (скидання — за міткою, з
+  будь-яким сегментом; комірки `'unresolved'` — одразу, ще до перезапуску лоадерів, бо
+  сегмент спільний для покупців і пряма зміна сесії A → B можлива — вхід за запрошенням
+  `/auth/invite` поверх чинної сесії); зміна власника сесії
+  (`useViewerPriceSync` в `AuthProvider`) перезапускає лоадери роутів
+  (`router.invalidate()` — їхні дані йдуть в `initialData`), видаляє неактивні
+  комірки й скидає активні: після виходу прайсу покупця в кеші немає. Поки
+  `router.invalidate()` у дорозі, дані лоадера належать попередньому глядачу, тож
+  `initialData` береться лише через `useSeedableInitialData` (`ViewerLoaderFreshContext`):
+  нова комірка в цьому вікні не засівається, а запитується з новою cookie. Гейт —
+  `storefront-routes/pages/__tests__/viewer-price-cache.test.tsx`.
 
 Стережуть: `eslint-rules/query-key-from-entity.mjs` (зона — `core/`, `*-ui/`,
 `react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета ядра; адмінку
@@ -226,8 +263,27 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
 - Копію канону для магазину везе шаблон скаффолдера
   (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
-- 🔴 Накат у магазині — `psql -f` по `db/migrations`
-  (`simplycms db:diff` дописує в цю теку, далі ревʼю й накат вручну). **Не** застосовуй
+- 🔴 Накат — лише `applyMigrations` із `simplycms/migrate` (Е8-Р2): одна реалізація
+  для проду, харнесу `test:schema` і `pnpm db:demo`. Журнал
+  `public.simplycms_migrations` тримає імʼя й sha256 (після CRLF→LF) кожного
+  накоченого файлу; змінений накочений файл — `MigrationChecksumError` до будь-якого
+  DDL, база зі схемою без журналу — `UnjournaledDatabaseError` (адопції немає),
+  паралельні накати однієї бази серіалізує `pg_advisory_lock`. У магазині накат —
+  `pnpm simplycms db:apply` (`MIGRATION_DATABASE_URL` власника схеми); ручний
+  накат повз журнал лишає базу, яку наступний накат відмовиться чіпати.
+- 🔴 Файл міграції виконується в ОДНІЙ транзакції накату разом зі своїм записом у
+  журнал: файл, що впав, відкочується цілком. Тому `concurrently` і власні
+  `begin`/`commit` у файлі відкидаються ще до накату
+  (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
+  а не тихий провал.
+- 🔴 До `1.0.0-rc.1` baseline `0000…0005` ще не заморожено: його правлять як **виняток
+  baseline** (синхронно `schema.ts`, `migrations/{0001_init,0003_seed,0004_functions}.sql`,
+  `drizzle/0000_init.sql` і знімки `drizzle/meta`), і кожна така правка в релізі дає в
+  `CHANGELOG` попередження «перестворити БД». Журнал `simplycms_migrations` і
+  `MigrationChecksumError` чинні: розбіжність суми файлу ядра повідомляє «baseline платформи
+  змінився» і називає дію (базу створюють заново), чужого файла — «зміна новою міграцією».
+  Заморожування baseline — крок релізу 1.0.0-rc.1.
+- `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
 - `DATABASE_URL` (з `.env.local`) — джерело тулінгу `db:pull`/`db:diff` і рантайм-пул
@@ -303,8 +359,13 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 Відмова Zod на межі адмін-serverFn — НЕ сирий JSON у тості, а типізована доменна
 помилка, яку клієнт розкладає по полях форми.
 
-**Контракт.** `ValidationError` — четверта в закритому реєстрі
-`contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`).
+**Контракт.** `ValidationError` — одна з п'яти у закритому реєстрі
+`contracts/domain-errors` (`AdminConflictError`, `AuthzError`, `ValidationError`,
+`AdminNotFoundError`, `CodedError`). `AdminNotFoundError` (Р26): «рядка немає», без полів;
+клієнт розпізнає її через `isNotFoundError` за `name`, тож картка відрізняє справжнє
+«не знайдено» від збою запиту. `CodedError`: `message` — машинний код (`media/*`,
+`avatar/*`, `review/*`), який клієнт мапить в i18n; звичайний `Error(<код>)` у проді
+маскує Р23, тож код, що мапиться на клієнті, кидають лише через `CodedError`.
 Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущені крізь
 БІЛИЙ СПИСОК `sanitizeValidationIssues` (T0): коди — `VALIDATION_ISSUE_CODES`
 (коди Zod + `invalid_decimal`, невідомий → `custom`), `params` — лише властивості
@@ -460,6 +521,27 @@ email в іншому регістрі — не конфлікт, записує
   `resolveShippingRate`: його ділять показ (`useShippingDirectory.rateFor`) і запис
   (`quoteShippingCost`, `recomputeOrderTotals`). `carrier` — `shipping_cost = 0`,
   `total = subtotal`, підпис «За тарифами перевізника».
+- 🔴 **Замовлення пам'ятає зону й тариф (Д5).** `placeOrder` пише `orders.shipping_zone_id`
+  (для `rates` і `carrier`) та `shipping_rate_id` (лише `rates`; для `carrier` — `NULL`).
+  Перерахунок позицій в адмінці (`recomputeOrderTotals`) НЕ визначає зону за містом чи
+  призначенням, а бере записану: зона серед активних → вона, поточний тариф способу в ній
+  оновлює обидві колонки; записана зона неактивна → 409 `order_shipping_unavailable`
+  (транзакція відкочується); `NULL` (зону видалено за `SET NULL` або замовлення до релізу)
+  → зона визначається наново (`resolveShippingZone`) і записується. Виняток `carrier`: ціна від зони не залежить, тож перерахунок записану зону не чіпає
+  (навіть неактивну чи `NULL`), `shipping_rate_id` лишається `NULL`. Призначення замовлення
+  адмінка не міняє (ресурс `orders` — `writable: []`), тож записаної зони досить.
+- 🔴 **Зона доставки (К3-Е8, Д1–Д4).** Зона не залежить від тексту: `shipping_zones.cities`/`regions`
+  зносено, місто з адреси покупця на вибір зони не впливає. Єдина функція `resolveShippingZone`
+  (`simplycms/domain/shipping`): кур'єр (`core:address`) → основна зона; самовивіз → `pickup_points.zone_id`
+  точки, `NULL` → основна, неактивна зона точки → відмова. Рівно одна основна зона — інваріант БД, а не
+  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), сід
+  `0003_seed.sql` («Основна зона», `00000007-0000-4000-8000-000000000001`) і відкладений constraint-тригер
+  `shipping_zones_require_default` (не менше однієї, перевірка на COMMIT — заміну основної двома UPDATE в
+  одній транзакції він пропускає), `CHECK (NOT is_default OR is_active)` (основна завжди активна). Для
+  режиму `rates` немає активного тарифу в визначеній зоні → `shipping_unavailable`; тариф іншої зони не
+  береться ніколи (fail-open `!zone ||` зносено). Режими `provider` і `carrier` зону для ціни не читають.
+  Для самовивозу `orders.delivery_city` — `NULL`. Гейти: `test:schema` (`shipping-zone-invariant`, усі шляхи
+  запису), юніти `resolveShippingZone`, харнес-кейси чекауту.
 - 🔴 **Замовлення зберігає знімок, а не посилання.** `createOrder` пише в
   `orders.shipping_data` тип `ShippingSnapshot` (`simplycms/contracts/shipping-providers`):
   `methodName`, `provider`, `pricing` і `destination`. `destination` — або адреса
@@ -553,7 +635,8 @@ email в іншому регістрі — не конфлікт, записує
   категорія (ручна й автоправила), контакти, бан, видалення; першим у порядку
   `customer-category` → `admin-roles`; `admin-roles` — будь-яка зміна «хто адмін»
   і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
-  `setCustomerBan`, `deleteCustomer` і invite власника (`issueAdminInvite`). Ключ
+  `setCustomerBan`, `deleteCustomer`, випуск invite власника (`issueAdminInvite`, лише токен) і видача
+  ролі після прийняття (`grantAdminRole`, Р19). Ключ
   `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (invite — auth і не може імпортувати
   адмінку), адмінка імпортує його звідти. Перевірки «не адмін», «не я», «не
   останній адмін» і «не забанений» виконуються лише під ним.
@@ -601,11 +684,13 @@ email в іншому регістрі — не конфлікт, записує
   так відповідає однаково). Новий випадок цього класу закривається так само —
   `FOR SHARE` у точці запису, а не ще одна перевірка перед нею.
 - 🔴 **Invite власника і бан: лок закриває одне, `FOR SHARE` — інше.**
-  `issueAdminInvite` (одна транзакція `app_admin`) бере `admin-roles`, потім
-  `select banned_at from users where id = $1 for share`. Лок закриває порядок
-  «invite першим»: роль без коміту невидима для бану, а лок змушує бан зачекати й
+  `grantAdminRole` (видача ролі ПІСЛЯ прийняття запрошення, Р19; одна
+  транзакція `app_admin`) бере `admin-roles`, потім
+  `select banned_at from users where id = $1 for share` (`issueAdminInvite` теж
+  бере обидва, але лише щоб забанений не отримав токена — роль він не видає). Лок закриває порядок
+  «видача ролі першою» (`grantAdminRole`): роль без коміту невидима для бану, а лок змушує бан зачекати й
   побачити видану роль (бан адміна відмовляє). `FOR SHARE` закриває лише порядок «бан
-  першим»: забанений не отримує ні ролі, ні токена (`banned`, нічого не записано).
+  першим»: забанений не отримує ролі (`banned`, нічого не записано; а `issueAdminInvite` на бані не лишає й токена).
   Одне не замінює другого. CLI `owner:invite` на `banned` друкує «спершу
   розблокуйте покупця».
 - 🔴 **Межа узгодженості розрахунків поверх кількох агрегатів** (канон для ВСІХ
@@ -683,7 +768,8 @@ email в іншому регістрі — не конфлікт, записує
   `destination` з непорожнім `city`, тест «чекаут відхиляє порожнє місто» це стереже.
 - **Стерте замовлення не редагується (Е6г-16).** `lockEditableOrder` відмовляє позиціям
   409 `order_personal_data_erased` (поруч з `order_cancelled_final`): перерахунок
-  доставки читав би `orders.delivery_city = NULL` і дав би `shipping_unavailable`.
+  доставки читав би `orders.delivery_city = NULL` (місто обов'язкове для адресної доставки)
+  і дав би `shipping_unavailable`.
   Зміна статусу й скасування дозволені. `loadOrderDetail` фільтра стертих НЕ має
   (Е6г-17): стерте замовлення недосяжне за побудовою (`user_id NULL`, `access_token
   NULL`), доступ вирішує RLS-роль. Адмінка показує «Видалений покупець» (картка,

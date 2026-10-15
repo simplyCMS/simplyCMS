@@ -6,7 +6,7 @@
 
 > Джерело скоупу — роадмап, «Інкремент Б.2 (трек C)» (рішення власника
 > 2026-08-17) + підсумки лайв-тесту 2026-08-15/16 (повний пайплайн скіла
-> `redesign-from-reference` проти реального референсу; результат-тема стала
+> `simplycms-redesign` проти реального референсу; результат-тема стала
 > новою `themes/default`). Порядок треків — спека v3, рішення V5:
 > ця задача йде ПЕРЕД треком A (контракт v3).
 >
@@ -42,7 +42,7 @@
 
 ### Блок A — фаза 5 скіла: обовʼязковий side-by-side по кожному типу
 
-- Скіл (`.agents/skills/redesign-from-reference/SKILL.md`, фаза 5) вимагає:
+- Скіл (`.agents/skills/simplycms-redesign/SKILL.md`, фаза 5) вимагає:
   на КОЖЕН підтверджений тип зі `sitemap-proposal.json` — пара «інспекція
   референсу ↔ інспекція нашого стенда» тим самим `inspect.mjs`
   (`docs/design-references/<slug>/_ours/<pageType>/`), і по кожній парі —
@@ -164,7 +164,7 @@
 
 ## 6. Якорі коду
 
-- Скіл і скрипти: `.agents/skills/redesign-from-reference/` (`SKILL.md`,
+- Скіл і скрипти: `.agents/skills/simplycms-redesign/` (`SKILL.md`,
   `scripts/inspect.mjs`, `scripts/discover.mjs`, `scripts/map-tokens.mjs`,
   `scripts/lib/{browser,browser-sample,merge,classify,color,cli-entry}.mjs`).
 - Тести: `tests/design-import-*.test.ts`, `tests/fixtures/design-import/`.
@@ -174,5 +174,5 @@
   `scripts/pilot-pack/seed-fixtures.mjs`, `scripts/pilot-seed.mjs`.
 - Синк шаблону: `scripts/sync-create-store-template.mjs`
   (скіл їде парою `.agents/... → .claude/...`).
-- Гайд і команда: `docs/guides/redesign-from-reference.md`,
+- Гайд і команда: `docs/guides/simplycms-redesign.md`,
   `.claude/commands/редизайн-за-референсом.md`.

@@ -94,10 +94,12 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
     });
   });
 
-  it('збережений email у змішаному регістрі — переписано в нижній БЕЗ скидання підтвердження й токенів', async () => {
-    const id = await F.seedCustomer(url(), { email: 'Mixed@X.test' });
+  it('той самий email в іншому регістрі — БЕЗ скидання підтвердження й токенів', async () => {
+    // Збережений змішаний регістр після Е8-Р3 неможливий (CHECK
+    // `users_email_lowercase`), тож регістр міняється лише на вході.
+    const id = await F.seedCustomer(url(), { email: 'mixed@x.test' });
     await token('owner-invite:mixed@x.test', 'hash');
-    await call(id, { email: 'mixed@x.test' });
+    await call(id, { email: 'Mixed@X.test' });
     expect(await user(id)).toMatchObject({
       email: 'mixed@x.test',
       email_verified: true,

@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import {
   appendFileSync,
   cpSync,
@@ -10,18 +11,25 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { join, resolve } from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
 import {
   checkCoreVersions,
   checkEnv,
   runOfflineChecks,
 } from '../packages/cli/src/doctor-checks.mjs';
 import {
+  checkAgentFiles,
   checkHostDrift,
   checkMigrations,
   checkSkillLinks,
 } from '../packages/cli/src/doctor-fs-checks.mjs';
+import {
+  checkEmailVerification,
+  checkMailConfigured,
+  modeNotice,
+  resolveDoctorMode,
+} from '../packages/cli/src/doctor-mail-check.mjs';
 import { checkThemes } from '../packages/cli/src/doctor-theme-checks.mjs';
 import {
   computeExitCode,
@@ -42,8 +50,18 @@ const ENV = {
   BETTER_AUTH_SECRET: 'x'.repeat(32),
 };
 
+// Тимчасові скаффолди файлу прибираються разом наприкінці: кожен кейс
+// створює магазин у власній теці tmpdir.
+const scaffoldRoots: string[] = [];
+afterAll(() => {
+  for (const dir of scaffoldRoots)
+    rmSync(dir, { recursive: true, force: true });
+});
+
 async function scaffoldStore(name: string) {
-  const target = join(mkdtempSync(join(tmpdir(), 'cli-doc-')), name);
+  const root = mkdtempSync(join(tmpdir(), 'cli-doc-'));
+  scaffoldRoots.push(root);
+  const target = join(root, name);
   await scaffold({
     templateDir: 'packages/create-simplycms-store/template',
     targetDir: target,
@@ -85,6 +103,16 @@ describe('cli doctor (оффлайн)', () => {
       'skill-links': 'skip',
       // Ядра в node_modules ще немає — peer-діапазон pg невідомий (деталі — cli-pg-driver).
       'pg-driver': 'skip',
+      // Те саме для nodemailer (К3-Е8, №14).
+      'mail-driver': 'skip',
+      // Без ядра драйвер пошти невідомий (Е8-Р17).
+      'mail-configured': 'skip',
+      // Те саме для підтвердження пошти (Р30, №16).
+      'email-verification': 'skip',
+      // Без ядра версія для порівняння невідома (Р32, №17).
+      engines: 'skip',
+      // Без ядра вступу для керованого блоку немає (№18).
+      'agent-files': 'skip',
     });
     // skip не впливає на exit-код навіть під --strict.
     expect(computeExitCode(checks)).toBe(0);
@@ -130,6 +158,50 @@ describe('cli doctor (оффлайн)', () => {
     const stale = checkEnv({ env: outsideContract });
     expect(stale.status).toBe('error');
     expect(stale.title).toMatch(/DATABASE_URL/);
+  });
+
+  it('checkEnv: відома заглушка з env.example → error, що називає ключ, а не значення', () => {
+    const secret = checkEnv({
+      env: { ...ENV, BETTER_AUTH_SECRET: 'your-32-byte-random-secret' },
+    });
+    expect(secret.status).toBe('error');
+    expect(secret.details).toContain('BETTER_AUTH_SECRET');
+    expect(secret.details).not.toContain('your-32-byte-random-secret');
+
+    const url = checkEnv({
+      env: {
+        ...ENV,
+        DATABASE_URL:
+          'postgresql://app_runtime:your-password@localhost:5432/postgres',
+      },
+    });
+    expect(url.status).toBe('error');
+    expect(url.details).toContain('DATABASE_URL');
+    expect(url.details).not.toContain('your-password');
+
+    // Заглушка-пароль як підрядок: інший хост не робить значення справжнім.
+    const otherHost = checkEnv({
+      env: {
+        ...ENV,
+        DATABASE_URL:
+          'postgresql://app_runtime:your-password@db.prod:5432/shop',
+      },
+    });
+    expect(otherHost.status).toBe('error');
+    expect(otherHost.details).toContain('DATABASE_URL');
+    expect(otherHost.details).not.toContain('db.prod');
+
+    // Опційні ключі з прикладів теж не мають лишатися заглушками.
+    const smtp = checkEnv({
+      env: { ...ENV, SMTP_URL: 'smtps://user:password@smtp.example.com:465' },
+    });
+    expect(smtp.status).toBe('error');
+    expect(smtp.details).toContain('SMTP_URL');
+
+    // Згенерований секрет — без цієї помилки.
+    expect(
+      checkEnv({ env: { ...ENV, BETTER_AUTH_SECRET: 'k3j5Zq9xW1' } }).status,
+    ).toBe('ok');
   });
 
   it('checkHostDrift: збіг із каноном — ok, локальна правка — warn', async () => {
@@ -318,20 +390,121 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkSkillLinks({ storeRoot: store }).status).toBe('skip');
 
     const skills = join(store, 'node_modules/simplycms/skills');
-    mkdirSync(join(skills, 'redesign-from-reference'), { recursive: true });
+    mkdirSync(join(skills, 'simplycms-redesign'), { recursive: true });
     const missing = checkSkillLinks({ storeRoot: store });
     expect(missing.status).toBe('warn');
-    expect(missing.details).toContain('redesign-from-reference');
+    expect(missing.details).toContain('simplycms-redesign');
     expect(missing.details).toContain('simplycms update');
 
     for (const dir of ['.agents/skills', '.claude/skills']) {
       mkdirSync(join(store, dir), { recursive: true });
       symlinkSync(
-        '../../node_modules/simplycms/skills/redesign-from-reference',
-        join(store, dir, 'redesign-from-reference'),
+        '../../node_modules/simplycms/skills/simplycms-redesign',
+        join(store, dir, 'simplycms-redesign'),
       );
     }
     expect(checkSkillLinks({ storeRoot: store }).status).toBe('ok');
+  });
+
+  it('№18 agent-files: skip без agent/, warn на блок і хук, ok — з дозволами в details', async () => {
+    const store = await scaffoldStore('doc-agent');
+    expect(checkAgentFiles({ storeRoot: store }).status).toBe('skip');
+
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    const permissions = JSON.parse(
+      readFileSync('packages/simplycms/agent/permissions.json', 'utf8'),
+    ).permissions;
+    // Свіжий скаффолд несе і запис хука, і шим; без settings.json запису немає.
+    const settings = join(store, '.claude/settings.json');
+    const scaffolded = readFileSync(settings, 'utf8');
+    rmSync(settings);
+    const noHook = checkAgentFiles({ storeRoot: store });
+    expect(noHook.status).toBe('warn');
+    expect(noHook.details).toContain('SessionStart');
+    expect(noHook.details).toContain('pnpm simplycms update');
+    // Бракує лише запису — шим на місці, тож `--write` не потрібен.
+    expect(noHook.details).not.toContain('update --write');
+
+    writeFileSync(settings, scaffolded);
+    const ok = checkAgentFiles({ storeRoot: store });
+    expect(ok.status).toBe('ok');
+    for (const rule of [...permissions.allow, ...permissions.ask])
+      expect(ok.details).toContain(rule);
+
+    const agents = join(store, 'AGENTS.md');
+    writeFileSync(
+      agents,
+      readFileSync(agents, 'utf8').replace('## Як працювати', '## Інакше'),
+    );
+    // CLAUDE.md: без нього (чи без рядка @AGENTS.md) Claude Code блоку не бачить.
+    const claude = join(store, 'CLAUDE.md');
+    const claudeText = readFileSync(claude, 'utf8');
+    writeFileSync(claude, '# без імпорту\n');
+    const noImport = checkAgentFiles({ storeRoot: store });
+    expect(noImport.status).toBe('warn');
+    expect(noImport.details).toContain('@AGENTS.md');
+    rmSync(claude);
+    expect(checkAgentFiles({ storeRoot: store }).details).toContain(
+      'немає CLAUDE.md',
+    );
+    writeFileSync(claude, claudeText);
+
+    const drift = checkAgentFiles({ storeRoot: store });
+    expect(drift.status).toBe('warn');
+    expect(drift.details).toContain('керований блок AGENTS.md');
+    expect(drift.details).toContain(permissions.ask[0]);
+  });
+
+  it('№18 agent-files: запис хука є, а шима .claude/hooks/session-start.mjs немає → warn з update --write', async () => {
+    const store = await scaffoldStore('doc-shim');
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+    rmSync(join(store, '.claude/hooks/session-start.mjs'));
+    const missing = checkAgentFiles({ storeRoot: store });
+    expect(missing.status).toBe('warn');
+    expect(missing.details).toContain('session-start.mjs');
+    expect(missing.details).toContain('pnpm simplycms update --write');
+  });
+
+  it('№18 agent-files: Claude Code старіший за 2.1.139 → warn; новіший чи відсутній → без warn', async () => {
+    const store = await scaffoldStore('doc-claude-ver');
+    const core = join(store, 'node_modules/simplycms');
+    mkdirSync(core, { recursive: true });
+    symlinkSync(resolve('packages/simplycms/agent'), join(core, 'agent'));
+    const bin = mkdtempSync(join(tmpdir(), 'fake-claude-'));
+    scaffoldRoots.push(bin);
+    const fake = (version: string) => {
+      writeFileSync(
+        join(bin, 'claude'),
+        `#!/bin/sh\necho "${version} (Claude Code)"\n`,
+        { mode: 0o755 },
+      );
+    };
+    // Без claudeCheckEnv (як у status) бінарник не питається взагалі.
+    const check = () =>
+      checkAgentFiles({ storeRoot: store, claudeCheckEnv: { PATH: bin } });
+    {
+      fake('2.1.138');
+      const old = check();
+      expect(old.status).toBe('warn');
+      expect(old.details).toContain('Claude Code ≥ 2.1.139');
+      fake('2.1.139');
+      expect(check().status).toBe('ok');
+      fake('2.2.0');
+      expect(check().status).toBe('ok');
+      fake('1.99.999');
+      expect(check().status).toBe('warn');
+      fake('не версія');
+      expect(check().status).toBe('ok');
+      rmSync(join(bin, 'claude'));
+      expect(check().status).toBe('ok');
+      fake('2.1.138');
+      expect(checkAgentFiles({ storeRoot: store }).status).toBe('ok');
+    }
   });
 
   it('computeExitCode: error → 1, warn → 0, warn під --strict → 1', () => {
@@ -342,20 +515,179 @@ describe('cli doctor (оффлайн)', () => {
     expect(computeExitCode(warn, { strict: true })).toBe(1);
   });
 
-  it('parseDoctorArgs: --strict приймається, невідомий аргумент — помилка', () => {
-    expect(parseDoctorArgs(['--strict'])).toEqual({ strict: true });
-    expect(parseDoctorArgs([])).toEqual({ strict: false });
+  it('parseDoctorArgs: --strict і --online приймаються, невідомий аргумент — помилка', () => {
+    expect(parseDoctorArgs(['--strict'])).toEqual({
+      strict: true,
+      online: false,
+      production: false,
+    });
+    expect(parseDoctorArgs([])).toEqual({
+      strict: false,
+      online: false,
+      production: false,
+    });
+    expect(parseDoctorArgs(['--online'])).toEqual({
+      strict: false,
+      online: true,
+      production: false,
+    });
+    expect(parseDoctorArgs(['--production']).production).toBe(true);
     expect(() => parseDoctorArgs(['--wat'])).toThrow(/--wat/);
   });
 
-  // Онлайн-перевірки знято, але зникнути мовчки вони не мають: звіт друкує
-  // окремий рядок зі статусом skip і причиною — інакше читач вирішить, що
-  // стан БД перевірено.
-  it('offlineOnlyNotice: видимий skip замість тихої відсутності', () => {
+  // Без `--online` рядок про стан БД не зникає мовчки: окремий skip із
+  // підказкою — інакше читач вирішить, що стан БД перевірено.
+  it('без --online: рядок db-online = skip і називає --online', () => {
     const notice = offlineOnlyNotice();
+    expect(notice.id).toBe('db-online');
     expect(notice.status).toBe('skip');
-    expect(notice.details).toMatch(/сервер-first/);
-    expect(notice.details).toMatch(/К3/);
+    expect(notice.details).toContain('--online');
     expect(computeExitCode([notice], { strict: true })).toBe(0);
+  });
+});
+
+// Е8-Р17: режим doctor — `--production` або `isProductionRuntime` ядра; від нього залежить
+// лише серйозність log-драйвера пошти.
+describe('cli doctor: режим production і пошта', () => {
+  const log = { driver: 'log' };
+  const core = {
+    isProductionRuntime: (e: Record<string, string>) =>
+      e.NODE_ENV === 'production',
+  };
+
+  it('log + --production → error і exit 1', () => {
+    const production = resolveDoctorMode({ flag: true, env: {}, core });
+    const check = checkMailConfigured({ production, mail: log });
+    expect(check.status).toBe('error');
+    expect(computeExitCode([check])).toBe(1);
+  });
+
+  it('log без прапорця і без NODE_ENV → warn і exit 0', () => {
+    const production = resolveDoctorMode({ flag: false, env: {}, core });
+    const check = checkMailConfigured({ production, mail: log });
+    expect(check.status).toBe('warn');
+    expect(computeExitCode([check])).toBe(0);
+  });
+
+  it('NODE_ENV=production без прапорця → error (предикат ядра)', () => {
+    const production = resolveDoctorMode({
+      flag: false,
+      env: { NODE_ENV: 'production' },
+      core,
+    });
+    expect(production).toBe(true);
+    expect(checkMailConfigured({ production, mail: log }).status).toBe('error');
+  });
+
+  it('smtp → ok у будь-якому режимі; часткова група → error; без ядра → skip', () => {
+    expect(
+      checkMailConfigured({ production: true, mail: { driver: 'smtp' } })
+        .status,
+    ).toBe('ok');
+    expect(
+      checkMailConfigured({ production: false, mail: { error: 'MAIL_FROM' } })
+        .status,
+    ).toBe('error');
+    expect(checkMailConfigured({ production: true, mail: null }).status).toBe(
+      'skip',
+    );
+    expect(resolveDoctorMode({ flag: false, env: {}, core: null })).toBe(false);
+  });
+
+  it('Р30: --production + log → warn про підтвердження пошти; smtp і розробка → без warn', () => {
+    const prod = resolveDoctorMode({ flag: true, env: {}, core });
+    const warn = checkEmailVerification({ production: prod, mail: log });
+    expect(warn.status).toBe('warn');
+    expect(warn.details).toContain('підтвердження пошти');
+    expect(computeExitCode([warn])).toBe(0);
+    expect(
+      checkEmailVerification({ production: true, mail: { driver: 'smtp' } })
+        .status,
+    ).toBe('ok');
+    const dev = resolveDoctorMode({ flag: false, env: {}, core });
+    expect(checkEmailVerification({ production: dev, mail: log }).status).toBe(
+      'ok',
+    );
+    expect(
+      checkEmailVerification({ production: true, mail: null }).status,
+    ).toBe('skip');
+  });
+
+  it('перший рядок звіту називає режим', () => {
+    expect(modeNotice(true).title).toBe('режим: production');
+    expect(modeNotice(false).title).toContain('режим: розробка');
+    expect(modeNotice(false).title).toContain('--production');
+  });
+});
+
+// Проводка режиму в `doctor.run` (рев'ю Task 9, I1): справжній процес CLI проти
+// скаффолда з фейковим ядром у `node_modules` — перевіряє те, чого не бачать юніти
+// (`importFromStore('simplycms/env')`, `production`/`mail` у ctx, рядок режиму першим).
+// Обрано спавн, а не рефакторинг у чисту функцію: чиста збірка списку не довела б
+// саме імпорт ядра з магазину й передачу ctx.
+describe('cli doctor: проводка режиму в run()', () => {
+  const INDEX = join(process.cwd(), 'packages/cli/src/index.mjs');
+
+  async function storeWithFakeCore(name: string) {
+    const store = await scaffoldStore(name);
+    const dir = join(store, 'node_modules/simplycms');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'simplycms',
+        version: '9.9.9-sentinel',
+        type: 'module',
+        exports: { './env': { import: './env.mjs' } },
+      }),
+    );
+    writeFileSync(
+      join(dir, 'env.mjs'),
+      `export const isProductionRuntime = (env) => env.NODE_ENV === 'production';
+export const resolveDriverEnv = (env) => ({
+  mail: env.SMTP_URL ? { driver: 'smtp' } : { driver: 'log' },
+});
+`,
+    );
+    return store;
+  }
+
+  function doctor(store: string, args: string[], nodeEnv?: string) {
+    const env: Record<string, string | undefined> = { ...process.env, ...ENV };
+    delete env.NODE_ENV;
+    delete env.SMTP_URL;
+    if (nodeEnv) env.NODE_ENV = nodeEnv;
+    const r = spawnSync('node', [INDEX, 'doctor', ...args], {
+      cwd: store,
+      env,
+      encoding: 'utf8',
+    });
+    const out = `${r.stdout}${r.stderr}`;
+    return { out, status: r.status, lines: out.split('\n') };
+  }
+  const mailLine = (lines: string[]) =>
+    lines.find((l) => l.includes('Пошта налаштована')) ?? '';
+
+  it('--production: режим першим рядком, log-пошта = error, exit 1', async () => {
+    const r = doctor(await storeWithFakeCore('wire-prod'), ['--production']);
+    const mode = r.lines.findIndex((l) => l.includes('режим:'));
+    const root = r.lines.findIndex((l) => l.includes('Корінь магазину'));
+    expect(r.out).toContain('режим: production');
+    expect(mode).toBeGreaterThanOrEqual(0);
+    expect(mode).toBeLessThan(root);
+    expect(mailLine(r.lines)).toContain('✗ Пошта налаштована');
+    expect(r.status).toBe(1);
+  });
+
+  it('NODE_ENV=production без прапорця → режим production (предикат ядра)', async () => {
+    const r = doctor(await storeWithFakeCore('wire-env'), [], 'production');
+    expect(r.out).toContain('режим: production');
+  });
+
+  it('без прапорця: розробка, log-пошта = warn, режим називає --production', async () => {
+    const r = doctor(await storeWithFakeCore('wire-dev'), []);
+    expect(r.out).toContain('режим: розробка');
+    expect(r.out).toContain('--production');
+    expect(mailLine(r.lines)).toContain('! Пошта налаштована');
   });
 });

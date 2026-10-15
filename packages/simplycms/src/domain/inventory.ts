@@ -19,14 +19,17 @@ export type { ProductAvailabilityInput, StockData } from 'simplycms/contracts';
  * Правдивість статусу при обліку тримає write-side: `createOrder` списує
  * залишок під `FOR UPDATE` і переводить статус в `out_of_stock` на нулі
  * (`storefront/loaders/order-create.ts`).
+ *
+ * Колонка `stock_status` NOT NULL (Е8-Р3): «статус не заданий» більше не
+ * існує, тож `null`/`undefined` сюди не приймаються.
  */
-export function isPurchasable(status: StockStatus | null | undefined): boolean {
+export function isPurchasable(status: StockStatus): boolean {
   return status !== 'out_of_stock';
 }
 
 /** Значення `availability` для schema.org Offer — з того самого статусу. */
 export function schemaOrgAvailability(
-  status: StockStatus | null | undefined,
+  status: StockStatus,
 ):
   | 'https://schema.org/InStock'
   | 'https://schema.org/BackOrder'

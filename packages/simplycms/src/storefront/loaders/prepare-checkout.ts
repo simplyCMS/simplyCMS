@@ -31,6 +31,9 @@ export interface PreparedCheckout {
   shippingCost: number;
   /** Режим ціни способу — їде в квоту, щоб підсумок не показав `carrier` як «Безкоштовно» (Е6а-18). */
   shippingPricing: ShippingPricing;
+  /** Зона й тариф, що дали ціну доставки, — їх пише замовлення (А2: `rateId` лише для `rates`). */
+  shippingZoneId: string | null;
+  shippingRateId: string | null;
   /** Знімок доставки для `orders.shipping_data` (Е6а-8). */
   shippingSnapshot: NewShippingSnapshot;
   /**
@@ -112,6 +115,8 @@ export async function prepareCheckout(
     subtotal,
     shippingCost,
     shippingPricing: shipping.pricing,
+    shippingZoneId: shipping.zoneId,
+    shippingRateId: shipping.rateId,
     shippingSnapshot: choice.snapshot,
     total: (subtotalCents + toCents(shippingCost)) / 100,
   };

@@ -1,8 +1,8 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
-import { banners, products, sections } from 'simplycms/schema';
+import { products, sections } from 'simplycms/schema';
 import type { Banner } from 'simplycms/contracts';
 import type { ActorDb } from './db';
-import { bannerColumns, toBanner } from './entities/banner';
+import { loadBanners } from './banners';
 import {
   homeProductColumns,
   toHomeProduct,
@@ -10,7 +10,11 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
-import { loadGuestPriceTypes, loadPricesByProduct } from 'simplycms/commerce';
+import {
+  loadGuestPriceTypes,
+  loadViewerPricesByProduct,
+  type ViewerPriceTypes,
+} from 'simplycms/commerce';
 import { loadRootSections } from './sections';
 
 /** Скільки товарів у добірках «популярне» й «новинки». */
@@ -34,23 +38,23 @@ export interface HomePageData {
  * 🔴 Запити йдуть послідовно, і `Promise.all` тут нічого б не прискорив:
  * транзакція живе на одному зʼєднанні, тож паралелізм уявний (див. `./products`).
  */
-export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
-  // Предикат видимості — див. коментар у `./sections`.
-  const bannerRows = await db
-    .select(bannerColumns)
-    .from(banners)
-    .where(eq(banners.isActive, true))
-    .orderBy(asc(banners.sortOrder));
-  const featured = await loadHomeProducts(db, true);
-  const newProducts = await loadHomeProducts(db, false);
+export async function loadHomePageData(
+  db: ActorDb,
+  viewer: ViewerPriceTypes,
+): Promise<HomePageData> {
+  // Р24: лише розміщення `home` і лише в межах розкладу — тема бере ПЕРШИЙ
+  // банер як hero, тож банер іншого місця чи з майбутнім розкладом не годиться.
+  const homeBanners = await loadBanners(db, { placement: 'home' });
+  const featured = await loadHomeProducts(db, true, viewer);
+  const newProducts = await loadHomeProducts(db, false, viewer);
   const rootSections = await loadRootSections(db);
 
   return {
-    banners: bannerRows.map(toBanner),
+    banners: homeBanners,
     featuredProducts: featured,
     newProducts,
     sections: rootSections,
-    sectionProducts: await loadSectionProducts(db, rootSections),
+    sectionProducts: await loadSectionProducts(db, rootSections, viewer),
   };
 }
 
@@ -65,6 +69,7 @@ export async function loadHomePageData(db: ActorDb): Promise<HomePageData> {
 export async function loadHomeProducts(
   db: ActorDb,
   featuredOnly: boolean,
+  viewer: ViewerPriceTypes,
 ): Promise<HomeProductRow[]> {
   const visible = featuredOnly
     ? and(eq(products.isActive, true), eq(products.isFeatured, true))
@@ -81,9 +86,11 @@ export async function loadHomeProducts(
     .orderBy(desc(products.createdAt), asc(products.id))
     .limit(FEATURED_LIMIT);
 
-  const prices = await loadPricesByProduct(
+  // Прайс — лише види глядача (Р29); SSR-ціна нижче — за гостьовими.
+  const prices = await loadViewerPricesByProduct(
     db,
     rows.map((row) => row.id),
+    viewer,
   );
   const guestPriceTypes = await loadGuestPriceTypes(db);
   return rows.map((row) =>

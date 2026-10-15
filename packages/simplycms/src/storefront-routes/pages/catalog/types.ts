@@ -27,6 +27,17 @@ export interface NumericProperty {
   is_filterable: boolean;
 }
 
+/**
+ * Boolean-характеристика розділу для фільтра «Так». Ключ стану фільтрів —
+ * `slug`, а зіставлення зі значеннями товару — за `id`: slug не лежить у
+ * значеннях товару. `name` — підпис бейджа активного фільтра.
+ */
+export interface BooleanProperty {
+  id: string;
+  slug: string;
+  name?: string;
+}
+
 /** Межі числового діапазону поточної вибірки. */
 export interface NumericRange {
   min: number;
@@ -41,6 +52,6 @@ export interface ActiveFilterChip {
   key: string;
   label: string;
   value: string;
-  type: 'option' | 'range' | 'price';
+  type: 'option' | 'range' | 'price' | 'boolean';
   optionId?: string;
 }

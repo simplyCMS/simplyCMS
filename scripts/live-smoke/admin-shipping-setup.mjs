@@ -7,7 +7,7 @@
 import * as sqlx from './admin-shipping-sql.mjs';
 import * as ui from './admin-shipping-owner.mjs';
 
-/** setDefault: тестова зона стає дефолтною (бейдж і БД), потім дефолт повертається «Україні». */
+/** setDefault: тестова зона стає дефолтною (бейдж і БД), потім дефолт повертається основній зоні. */
 export async function zoneDefaultPart({ page, base, dbUrl, check, fx: FX }) {
   const names = [FX.zone, FX.rate.zone];
   const read = () => sqlx.zonesByName(dbUrl, names);
@@ -27,7 +27,7 @@ export async function zoneDefaultPart({ page, base, dbUrl, check, fx: FX }) {
   await ui.deleteRow(page, FX.zone);
   const db3 = await sqlx.pollUntil(read, (r) => r.length === 1);
   check(
-    'доставка: setDefault — бейдж і is_default переходять на «Е6а-тест» і назад на «Україна», тестову зону видалено',
+    'доставка: setDefault — бейдж і is_default переходять на «Е6а-тест» і назад на основну зону, тестову зону видалено',
     t1 &&
       t2 &&
       badge1 &&

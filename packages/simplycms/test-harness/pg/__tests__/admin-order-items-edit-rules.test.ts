@@ -85,6 +85,131 @@ describe('admin: правила редагування позицій (К3-Е5б
     expect(await f.snapshot(b)).toEqual(snap);
   });
 
+  /** Неосновна зона з двома тарифами курʼєра контуру: T1 (50) і T2 (60), обидва активні. */
+  const zoneWithRates = async (name: string) => {
+    const zone = (
+      await f.one<{ id: string }>(
+        `insert into public.shipping_zones (id, name, is_active, is_default)
+         values (gen_random_uuid(), $1, true, false) returning id`,
+        [name],
+      )
+    ).id;
+    const rate = async (label: string, cost: number, order: number) =>
+      (
+        await f.one<{ id: string }>(
+          `insert into public.shipping_rates (id, method_id, zone_id, name, calculation_type, base_cost, is_active, sort_order)
+           values (gen_random_uuid(), $1, $2, $3, 'flat', $4, true, $5) returning id`,
+          [ids.courier, zone, label, cost, order],
+        )
+      ).id;
+    return {
+      zone,
+      t1: await rate(`${name} T1`, 50, 0),
+      t2: await rate(`${name} T2`, 60, 1),
+    };
+  };
+  const recorded = (orderId: string) =>
+    f.one<{ zone: string | null; rate: string | null; cost: string }>(
+      `select shipping_zone_id as zone, shipping_rate_id as rate, shipping_cost::text as cost
+         from public.orders where id = $1`,
+      [orderId],
+    );
+  const mainZone = async () =>
+    (
+      await f.one<{ id: string }>(
+        `select id from public.shipping_zones where is_default`,
+      )
+    ).id;
+
+  it('записана зона K, а не основна: перерахунок бере поточний тариф способу в K і лишає зону (Д5)', async () => {
+    const k = await zoneWithRates('Зона K запису');
+    const o = await f.place([{ productId: ids.panel, quantity: 1 }], {
+      method: 'courier',
+    });
+    await f.rows(
+      `update public.orders set shipping_zone_id = $2, shipping_rate_id = $3 where id = $1`,
+      [o, k.zone, k.t1],
+    );
+    await f.rows(
+      `update public.shipping_rates set is_active = false where id = $1`,
+      [k.t1],
+    );
+    await f.add(o, ids.battery, 1);
+    expect(await recorded(o)).toEqual({
+      zone: k.zone,
+      rate: k.t2,
+      cost: '60.00',
+    });
+  });
+
+  it('shipping_zone_id NULL (оформлене до релізу) → зона визначена наново (основна) і записана', async () => {
+    const o = await f.place([{ productId: ids.panel, quantity: 1 }], {
+      method: 'courier',
+    });
+    await f.rows(
+      `update public.orders set shipping_zone_id = null, shipping_rate_id = null where id = $1`,
+      [o],
+    );
+    await f.add(o, ids.battery, 1);
+    const row = await recorded(o);
+    expect(row.zone).toBe(await mainZone());
+    expect(row.rate).not.toBeNull();
+  });
+
+  it('записану зону деактивовано → 409 order_shipping_unavailable, транзакцію відкочено', async () => {
+    const k = await zoneWithRates('Зона K вимкнена');
+    const o = await f.place([{ productId: ids.panel, quantity: 1 }], {
+      method: 'courier',
+    });
+    await f.rows(
+      `update public.orders set shipping_zone_id = $2, shipping_rate_id = $3 where id = $1`,
+      [o, k.zone, k.t1],
+    );
+    await f.rows(
+      `update public.shipping_zones set is_active = false where id = $1`,
+      [k.zone],
+    );
+    const before = { snap: await f.snapshot(o), rec: await recorded(o) };
+    await expect(f.add(o, ids.battery, 1)).rejects.toMatchObject(
+      conflict('order_shipping_unavailable'),
+    );
+    expect({ snap: await f.snapshot(o), rec: await recorded(o) }).toEqual(
+      before,
+    );
+  });
+
+  it('carrier: перерахунок не чіпає записану зону (неактивну теж), тарифу немає, доставка 0', async () => {
+    await f.rows(
+      `insert into public.shipping_methods (id, code, name, is_active, provider, pricing)
+       values (gen_random_uuid(), 'e5b-carrier', 'Перевізник', true, 'core:address', 'carrier')`,
+    );
+    const carrier = (
+      await f.one<{ id: string }>(
+        `select id from public.shipping_methods where code = 'e5b-carrier'`,
+      )
+    ).id;
+    const zone = async (name: string, active: boolean) =>
+      (
+        await f.one<{ id: string }>(
+          `insert into public.shipping_zones (id, name, is_active, is_default)
+           values (gen_random_uuid(), $1, $2, false) returning id`,
+          [name, active],
+        )
+      ).id;
+    for (const active of [false, true]) {
+      const z = await zone(`Зона carrier ${active}`, active);
+      const o = await f.place([{ productId: ids.panel, quantity: 1 }], {
+        method: 'courier',
+      });
+      await f.rows(
+        `update public.orders set shipping_method_id = $2, shipping_zone_id = $3, shipping_rate_id = null where id = $1`,
+        [o, carrier, z],
+      );
+      await f.add(o, ids.battery, 1);
+      expect(await recorded(o)).toEqual({ zone: z, rate: null, cost: '0.00' });
+    }
+  });
+
   it('будь-яка операція на скасованому → 409 order_cancelled_final', async () => {
     // Кожен виклик без гварду впав би ІНШОЮ відмовою: недоступний товар,
     // нестача залишку, остання позиція — тож гвард мусить іти ПЕРШИМ.

@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -12,6 +12,7 @@
     "./contracts": "./src/contracts/index.ts",
     "./contracts/entities": "./src/contracts/entities.ts",
     "./contracts/domain-errors": "./src/contracts/domain-errors.ts",
+    "./contracts/masked-error": "./src/contracts/masked-error.ts",
     "./contracts/order-status-codes": "./src/contracts/order-status-codes.ts",
     "./contracts/cart-limits": "./src/contracts/cart-limits.ts",
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
@@ -38,10 +39,17 @@
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
     "./auth": "./src/auth/index.ts",
+    "./auth/owner-invite-cli": "./src/auth/owner-invite-cli/index.ts",
     "./storage": "./src/storage/index.ts",
+    "./mail": "./src/mail/index.ts",
     "./inventory": "./src/inventory/index.ts",
     "./commerce": "./src/commerce/index.ts",
     "./site": "./src/site/index.ts",
+    "./server-guard": "./src/server-guard/index.ts",
+    "./env": "./src/env/index.ts",
+    "./vite": "./src/vite/index.ts",
+    "./migrate": "./src/migrate/index.ts",
+    "./prod-start": "./src/prod-start/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
@@ -49,6 +57,9 @@
     "./runtime/domain-error-adapter": "./src/runtime/domain-error-adapter.ts",
     "./runtime/csrf": "./src/runtime/csrf.ts",
     "./runtime/body-limit": "./src/runtime/body-limit.ts",
+    "./runtime/build-id": "./src/runtime/build-id.ts",
+    "./runtime/stale-chunk": "./src/runtime/stale-chunk.ts",
+    "./runtime/stale-chunk-react": "./src/runtime/stale-chunk-react.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
@@ -131,6 +142,10 @@
       "./contracts/domain-errors": {
         "types": "./dist/contracts/domain-errors.d.ts",
         "import": "./dist/contracts/domain-errors.js"
+      },
+      "./contracts/masked-error": {
+        "types": "./dist/contracts/masked-error.d.ts",
+        "import": "./dist/contracts/masked-error.js"
       },
       "./contracts/order-status-codes": {
         "types": "./dist/contracts/order-status-codes.d.ts",
@@ -236,9 +251,17 @@
         "types": "./dist/auth/index.d.ts",
         "import": "./dist/auth/index.js"
       },
+      "./auth/owner-invite-cli": {
+        "types": "./dist/auth/owner-invite-cli/index.d.ts",
+        "import": "./dist/auth/owner-invite-cli/index.js"
+      },
       "./storage": {
         "types": "./dist/storage/index.d.ts",
         "import": "./dist/storage/index.js"
+      },
+      "./mail": {
+        "types": "./dist/mail/index.d.ts",
+        "import": "./dist/mail/index.js"
       },
       "./inventory": {
         "types": "./dist/inventory/index.d.ts",
@@ -251,6 +274,26 @@
       "./site": {
         "types": "./dist/site/index.d.ts",
         "import": "./dist/site/index.js"
+      },
+      "./server-guard": {
+        "types": "./dist/server-guard/index.d.ts",
+        "import": "./dist/server-guard/index.js"
+      },
+      "./env": {
+        "types": "./dist/env/index.d.ts",
+        "import": "./dist/env/index.js"
+      },
+      "./vite": {
+        "types": "./dist/vite/index.d.ts",
+        "import": "./dist/vite/index.js"
+      },
+      "./migrate": {
+        "types": "./dist/migrate/index.d.ts",
+        "import": "./dist/migrate/index.js"
+      },
+      "./prod-start": {
+        "types": "./dist/prod-start/index.d.ts",
+        "import": "./dist/prod-start/index.js"
       },
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",
@@ -279,6 +322,18 @@
       "./runtime/body-limit": {
         "types": "./dist/runtime/body-limit.d.ts",
         "import": "./dist/runtime/body-limit.js"
+      },
+      "./runtime/build-id": {
+        "types": "./dist/runtime/build-id.d.ts",
+        "import": "./dist/runtime/build-id.js"
+      },
+      "./runtime/stale-chunk": {
+        "types": "./dist/runtime/stale-chunk.d.ts",
+        "import": "./dist/runtime/stale-chunk.js"
+      },
+      "./runtime/stale-chunk-react": {
+        "types": "./dist/runtime/stale-chunk-react.d.ts",
+        "import": "./dist/runtime/stale-chunk-react.js"
       },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
@@ -521,12 +576,14 @@
     "src",
     "routes",
     "skills",
+    "agent",
     "migrations",
+    "CHANGELOG.md",
     "!src/**/__tests__/**"
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "repository": {
     "type": "git",
@@ -535,6 +592,8 @@
   },
   "scripts": {
     "build": "tsdown && tsc -p tsconfig.dts.json",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../../CHANGELOG.md', 'CHANGELOG.md')\"",
+    "postpack": "node -e \"require('node:fs').rmSync('CHANGELOG.md', { force: true })\"",
     "db:pull": "drizzle-kit pull --config ./drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
@@ -584,6 +643,7 @@
     "input-otp": "^1.0.0",
     "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
+    "nodemailer": "10.1.0",
     "pg": "8.23.1",
     "react": "^18.0.0 || ^19.0.0",
     "react-day-picker": "^9.0.0",
@@ -601,12 +661,14 @@
     "@types/sanitize-html": "^2.16.2",
     "dotenv": "^18.0.5",
     "drizzle-zod": "0.8.3",
+    "nodemailer": "10.1.0",
     "pg": "8.23.1",
     "seroval": "^1.6.8"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.31.4",
     "@tiptap/extension-text-align": "^3.31.4",
+    "aws4fetch": "1.0.20",
     "better-auth": "1.7.7",
     "clsx": "^2.1.1",
     "sanitize-html": "^2.18.0",

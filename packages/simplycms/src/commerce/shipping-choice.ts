@@ -1,8 +1,8 @@
 import type { PlaceOrderRejection } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
 import {
-  findShippingZoneIn,
   resolveShippingRate,
+  resolveShippingZone,
 } from 'simplycms/domain/shipping';
 import type {
   ShippingPricing,
@@ -22,9 +22,16 @@ import type {
 /** Вибір доставки, який покупець (чекаут) або замовлення (адмінка) зробили. */
 export interface ShippingChoiceInput extends DestinationInput {
   methodId: string | null;
+  /**
+   * Зона, записана в замовленні (`orders.shipping_zone_id`). Лише адмінка:
+   * перерахунок бере її, а не визначає наново. Заданий, але поза активними →
+   * зона `null` (Р6); `null`/не передано (чекаут, замовлення до релізу або зона
+   * видалена за `SET NULL`) → зона за призначенням (Д5).
+   */
+  recordedZoneId?: string | null;
 }
 
-/** Провалідований вибір: метод, зона за містом і довідник, із якого брати тариф. */
+/** Провалідований вибір: метод, зона за призначенням (`null` — не визначена) і довідник, із якого брати тариф. */
 export interface ShippingChoice {
   method: ShippingMethodRow;
   zone: ShippingZoneRow | null;
@@ -63,7 +70,18 @@ export async function validateShippingChoice(
   const destination = await resolveDestination(db, method, input);
   if (typeof destination === 'string') return destination;
 
-  const zone = findShippingZoneIn(directory.zones, input.deliveryCity ?? '');
+  // Зону задає призначення, а не місто: точка самовивозу несе власну
+  // (`zone_id`), адресна доставка йде в основну (Д3).
+  // Записана зона замовлення важливіша: адмінка не змінює призначення, а зону
+  // «з нуля» могли б зсунути правки довідника після оформлення.
+  const zone = input.recordedZoneId
+    ? (directory.zones.find((z) => z.id === input.recordedZoneId) ?? null)
+    : resolveShippingZone(
+        directory.zones,
+        destination.point
+          ? { kind: 'pickup-point', zoneId: destination.point.zone_id }
+          : { kind: 'address' },
+      );
   const snapshot: NewShippingSnapshot = {
     methodName: method.name,
     provider: method.provider,
@@ -84,10 +102,23 @@ export async function validateShippingChoice(
 export function quoteShippingCost(
   choice: ShippingChoice,
   subtotal: number,
-): { cost: number; pricing: ShippingPricing } | null {
+): {
+  cost: number;
+  pricing: ShippingPricing;
+  /** Зона й тариф, що дали ціну: їх пише замовлення (`rateId` — лише для `rates`, А2). */
+  zoneId: string | null;
+  rateId: string | null;
+} | null {
   const rate = resolveShippingRate(
     { method: choice.method, zone: choice.zone, cart: { items: [], subtotal } },
     choice.directory.rates,
   );
-  return rate === null ? null : { cost: rate.cost, pricing: rate.pricing };
+  return rate === null
+    ? null
+    : {
+        cost: rate.cost,
+        pricing: rate.pricing,
+        zoneId: rate.zoneId,
+        rateId: rate.rateId,
+      };
 }

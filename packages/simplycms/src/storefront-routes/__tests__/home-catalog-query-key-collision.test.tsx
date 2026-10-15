@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { AGGREGATE } from 'simplycms/contracts/entities';
-import { catalogKeys } from 'simplycms/react-query';
+import { catalogKeys, priceViewKey } from 'simplycms/react-query';
 import { useSectionProducts } from '../pages/home/queries';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * Регрес фази 3 (пункт G): `useSectionProducts` (карусель головної) і
@@ -32,11 +35,10 @@ import { useSectionProducts } from '../pages/home/queries';
 const SECTION_ID = 'sec-1';
 
 /** Чинний ключ сторінки розділу — див. коментар вище. */
-const CATALOG_PAGE_SECTION_KEY = [
-  ...AGGREGATE.catalogProducts.key,
-  'section',
-  SECTION_ID,
-];
+const CATALOG_PAGE_SECTION_KEY = priceViewKey(
+  [...AGGREGATE.catalogProducts.key, 'section', SECTION_ID],
+  'guest',
+);
 
 /**
  * 🔴 Мокається серверна функція, а не клієнт БД: карусель головної
@@ -51,6 +53,11 @@ const freshRow = {
   stock_status: 'in_stock',
   section: { slug: 'panels' },
 };
+
+// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
+  useViewerPriceKey: () => 'guest',
+}));
 
 vi.mock('../server/home', () => ({
   getFeaturedProducts: vi.fn(),
@@ -90,8 +97,10 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     expect(result.current.data).not.toEqual(catalogPageCacheSentinel);
 
     // Іменований ключ хука — фабрика react-query, не сирий рядок каталогу.
-    expect(qc.getQueryData(catalogKeys.sectionProducts(SECTION_ID))).toEqual(
-      result.current.data,
-    );
+    expect(
+      qc.getQueryData(
+        priceViewKey(catalogKeys.sectionProducts(SECTION_ID), 'guest'),
+      ),
+    ).toEqual(result.current.data);
   });
 });

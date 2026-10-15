@@ -74,11 +74,20 @@ export function freePort() {
  * shell/CI перекрив би тестову БД скрипта. Явний третій аргумент іде ПІСЛЯ
  * `process.env` у мерджі — виграє завжди; пілот кличе без нього.
  *
- * @returns {Promise<{ stop: () => void; logs: () => string }>}
+ * `entry` — що саме запускати: `server.mjs` (дефолт, монорепо й live-smoke) або
+ * `scripts/start.mjs` (прод-старт магазину; Gate B пілота, Е8-Р6). У другому
+ * випадку `pid` лишається тим самим: `process.execve` замінює образ, не процес.
+ *
+ * @returns {Promise<{ stop: () => void; logs: () => string; pid: number }>}
  */
-export async function startStore(storeDir, port, extraEnv = {}) {
+export async function startStore(
+  storeDir,
+  port,
+  extraEnv = {},
+  { entry = 'server.mjs' } = {},
+) {
   let logs = '';
-  const child = spawn('node', ['server.mjs'], {
+  const child = spawn('node', [entry], {
     cwd: storeDir,
     env: { ...process.env, ...extraEnv, PORT: String(port), HOST: '127.0.0.1' },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -89,12 +98,12 @@ export async function startStore(storeDir, port, extraEnv = {}) {
   const stop = () => child.kill('SIGTERM');
   const exited = new Promise((_, reject) =>
     child.once('exit', (code) =>
-      reject(new Error(`server.mjs вийшов з кодом ${code}\n${logs}`)),
+      reject(new Error(`${entry} вийшов з кодом ${code}\n${logs}`)),
     ),
   );
 
   await Promise.race([waitReady(port), exited]);
-  return { stop, logs: () => logs };
+  return { stop, logs: () => logs, pid: child.pid };
 }
 
 /** Опитує порт, доки сервер не почне відповідати (до ~30 с). */

@@ -2,14 +2,17 @@
 
 /**
  * Підняти демо-БД однією командою: канон `packages/simplycms/migrations/`
- * (0000 → 0004) + `demo/demo-seed.sql` на СВІЖІЙ named-БД того самого
+ * + `demo/demo-seed.sql` на СВІЖІЙ named-БД того самого
  * кластера — щоб магазин було ВИДНО (непорожній каталог), а не доводити
  * це порожнім чистим сідом (рішення B13, `0003_seed.sql`).
  *
  * «Одна команда» = гарантований чистий старт: БД дропається (якщо існує) і
- * створюється заново, а не докочується поверх невідомого стану. Сам SQL
- * канону + демо-сіду ідемпотентний (доказ — `test:schema`), тож повторний
- * накат на вже наповнену БД так само безпечний, якби колись знадобився.
+ * створюється заново, а не докочується поверх невідомого стану.
+ *
+ * Канон котить `applyMigrations` із `simplycms/migrate` — та сама реалізація
+ * накату з журналом, що й прод і харнес (Е8-Р2): демо-база має журнал, тож
+ * `db:apply`/`status` над нею бачать те саме, що над справжнім магазином.
+ * Демо-сід — не міграція: він котиться поза журналом, як і раніше.
  *
  * Використання:
  *   pnpm db:demo                                   # PG_HARNESS_URL, simplycms_demo
@@ -31,10 +34,11 @@
  * довести «міграція впала → позначка вже стоїть»; без env — канон пакета.
  */
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { tsImport } from 'tsx/esm/api';
 import { loadHarnessEnv } from './harness-env.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -62,13 +66,22 @@ function withDbName(connectionString, dbName) {
   return url.toString();
 }
 
-/** SQL-файли канону в порядку імен (порядок накату) + демо-сід останнім. */
-function migrationFiles() {
-  const canon = readdirSync(MIGRATIONS_DIR)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS_DIR, name));
-  return [...canon, DEMO_FILE];
+/**
+ * Канон — через `applyMigrations`. Модуль ядра — TypeScript, а скрипт
+ * запускають чистим `node` (`pnpm db:demo`, `live-smoke`, дочірній процес
+ * `db:showcase`), тож ядро вантажиться через `tsImport` — лише цей модуль, без
+ * глобальної реєстрації завантажувача.
+ */
+async function applyCanon(dbUrl) {
+  const { applyMigrations } = await tsImport(
+    '../packages/simplycms/src/migrate/index.ts',
+    import.meta.url,
+  );
+  await applyMigrations({
+    connectionString: dbUrl,
+    dir: MIGRATIONS_DIR,
+    log: (line) => console.log(`[demo-db] ${line}`),
+  });
 }
 
 /**
@@ -97,7 +110,7 @@ async function recreateDatabase(adminUrl, name, comment) {
   }
 }
 
-/** Накатити файли по черзі в одному з'єднанні (просте query-протокол). */
+/** Не-міграційний SQL (демо-сід) — по черзі в одному з'єднанні, поза журналом. */
 async function applyFiles(dbUrl, files) {
   const client = new pg.Client({ connectionString: dbUrl });
   await client.connect();
@@ -155,8 +168,11 @@ async function main() {
   await recreateDatabase(args.url, args.name, args.comment);
 
   const dbUrl = withDbName(args.url, args.name);
-  console.log('[demo-db] накат канону (0000→0004) + demo/demo-seed.sql…');
-  await applyFiles(dbUrl, migrationFiles());
+  console.log(
+    '[demo-db] накат канону (simplycms/migrate) + demo/demo-seed.sql…',
+  );
+  await applyCanon(dbUrl);
+  await applyFiles(dbUrl, [DEMO_FILE]);
 
   const stats = await summarize(dbUrl);
   console.log('\n[demo-db] готово:');

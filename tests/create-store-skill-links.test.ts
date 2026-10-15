@@ -35,11 +35,11 @@ function makeStore(skills: string[]) {
 
 describe('create-store: лінки агентних скілів', () => {
   it('createSkillLinks: обидві теки, лінк резолвиться у файл скіла', () => {
-    const storeRoot = makeStore(['redesign-from-reference', 'other-skill']);
+    const storeRoot = makeStore(['simplycms-redesign', 'other-skill']);
     const created = createSkillLinks(storeRoot);
     expect(created.length).toBe(4);
     for (const dir of LINK_DIRS) {
-      for (const name of ['redesign-from-reference', 'other-skill']) {
+      for (const name of ['simplycms-redesign', 'other-skill']) {
         const link = join(storeRoot, dir, name);
         expect(lstatSync(link).isSymbolicLink()).toBe(true);
         // 🔴 Ціль ВІДНОСНА: магазин переносять текою, а абсолютний шлях
@@ -55,7 +55,7 @@ describe('create-store: лінки агентних скілів', () => {
   });
 
   it('createSkillLinks: повторний виклик — не падає й не дублює', () => {
-    const storeRoot = makeStore(['redesign-from-reference']);
+    const storeRoot = makeStore(['simplycms-redesign']);
     expect(createSkillLinks(storeRoot).length).toBe(2);
     expect(createSkillLinks(storeRoot)).toEqual([]);
   });
@@ -72,12 +72,12 @@ describe('create-store: лінки агентних скілів', () => {
   });
 
   it('createSkillLinks: наявний файл/теку з тим самим іменем не чіпає', () => {
-    const storeRoot = makeStore(['redesign-from-reference']);
-    const own = join(storeRoot, '.claude/skills/redesign-from-reference');
+    const storeRoot = makeStore(['simplycms-redesign']);
+    const own = join(storeRoot, '.claude/skills/simplycms-redesign');
     mkdirSync(own, { recursive: true });
     writeFileSync(join(own, 'SKILL.md'), '# власний форк\n');
     const created = createSkillLinks(storeRoot);
-    expect(created).toEqual(['.agents/skills/redesign-from-reference']);
+    expect(created).toEqual(['.agents/skills/simplycms-redesign']);
     expect(readFileSync(join(own, 'SKILL.md'), 'utf8')).toBe(
       '# власний форк\n',
     );
@@ -117,18 +117,16 @@ describe('create-store: лінки агентних скілів', () => {
         return true;
       });
     try {
-      printNextSteps({ dirLabel: 'shop', installed: false, hasEnv: true });
-      expect(out).not.toContain('лінки агентних скілів');
+      printNextSteps({ dirLabel: 'shop' });
+      expect(out).not.toContain('Лінки агентних скілів');
       printNextSteps({
         dirLabel: 'shop',
-        installed: false,
-        hasEnv: true,
         skillsPending: true,
       });
     } finally {
       spy.mockRestore();
     }
     expect(out).toContain('simplycms update');
-    expect(out).toContain('лінки агентних скілів');
+    expect(out).toContain('Лінки агентних скілів');
   });
 });

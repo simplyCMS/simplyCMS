@@ -80,7 +80,24 @@ describe('conditionsMatch — текстові поля (=, contains)', () => {
       );
     expect(match('=', 'corp.example.com')).toBe(true);
     expect(match('=', 'example.com')).toBe(false);
-    expect(match('contains', 'example')).toBe(true);
+    expect(match('contains', 'example.com')).toBe(true);
+    // Р30: не підрядок — лише домен або піддомен.
+    expect(match('contains', 'example')).toBe(false);
+  });
+
+  it('email_domain contains: домен і піддомен — так, схожі чужі домени — ні (Р30)', () => {
+    const match = (emailDomain: string | null) =>
+      conditionsMatch(
+        conditions([
+          { field: 'email_domain', operator: 'contains', value: 'corp.com' },
+        ]),
+        { ...baseStats, emailDomain },
+      );
+    expect(match('corp.com')).toBe(true);
+    expect(match('mail.corp.com')).toBe(true);
+    expect(match('evilcorp.com')).toBe(false);
+    expect(match('corp.com.attacker.net')).toBe(false);
+    expect(match(null)).toBe(false);
   });
 
   it('utm_source/utm_campaign: = і contains; мітки немає (null) → false', () => {

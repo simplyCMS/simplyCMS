@@ -9,7 +9,12 @@ import type { PriceEntry } from 'simplycms/contracts';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
 import { listModificationColumns } from './entities/modification';
-import { groupPricesByProduct, priceColumns } from 'simplycms/commerce';
+import {
+  groupPricesByProduct,
+  priceColumns,
+  visibleToViewer,
+  type ViewerPriceTypes,
+} from 'simplycms/commerce';
 
 /** Модифікація в рядку списку — рівно те, чим обирається ціна за замовчуванням. */
 export interface ProductListModification {
@@ -45,9 +50,13 @@ export interface ProductListRow {
  * 🔴 `is_active = true` — обовʼязковий предикат видимості (пояснення — у
  * `./sections`). Розділ у фільтрі не робить його зайвим: неактивний товар
  * лишається в активному розділі.
+ *
+ * 🔴 Ціни — лише видів `viewer` (Р29): лоадер публічний (його радить README
+ * магазинам), тож контракт той самий, що в `loadProduct`/`loadCatalogProducts`.
  */
 export async function loadProductList(
   db: ActorDb,
+  viewer: ViewerPriceTypes,
   sectionId?: string,
 ): Promise<ProductListRow[]> {
   const visible = sectionId
@@ -81,7 +90,7 @@ export async function loadProductList(
   const priceRows = await db
     .select(priceColumns)
     .from(productPrices)
-    .where(inArray(productPrices.productId, ids));
+    .where(and(inArray(productPrices.productId, ids), visibleToViewer(viewer)));
 
   const modificationsByProduct: Record<string, ProductListModification[]> = {};
   for (const modification of modificationRows) {

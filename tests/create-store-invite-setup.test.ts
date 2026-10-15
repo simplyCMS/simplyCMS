@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
-import { printNextSteps } from '../packages/create-simplycms-store/src/steps.mjs';
+import { describe, expect, it } from 'vitest';
 
 // Інструкція власнику про перший вхід — те, що людина читає ОДИН раз і
 // виконує буквально. Тому вона під тестом: розсинхрон тут не падає збіркою,
@@ -25,9 +24,10 @@ describe('create-store: інструкція «призначити власни
     // 🔴 Найдорожча помилка тут — лишити стару команду: вона просить ключ,
     // якого магазин уже не використовує, і власник шукатиме його в Dashboard.
     expect(readme).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
-    // Доставки листа немає — якщо README про це змовчить, власник чекатиме
-    // пошту, якої не буде.
-    expect(readme).toMatch(/консоль/);
+    // Три гілки доставки (Е8-С2): якщо README змовчить про пошту й
+    // `--print-link`, власник чекатиме лист, якого не буде, або не знайде посилання.
+    expect(readme).toMatch(/SMTP_URL/);
+    expect(readme).toMatch(/--print-link/);
   });
 
   it('README не обіцяє неіснуючих сторінок GoTrue', () => {
@@ -35,66 +35,28 @@ describe('create-store: інструкція «призначити власни
     expect(readme).not.toMatch(/invite\.html/);
   });
 
-  it('printNextSteps друкує ту саму команду й ті самі ключі', () => {
-    let out = '';
-    const spy = vi
-      .spyOn(process.stdout, 'write')
-      .mockImplementation((chunk: unknown) => {
-        out += String(chunk);
-        return true;
-      });
-    try {
-      printNextSteps({ dirLabel: 'my-shop', installed: true, hasEnv: true });
-    } finally {
-      spy.mockRestore();
-    }
-
-    expect(out).toContain('owner:invite');
-    // 🔴 Накат схеми — psql по канону міграцій. Стара порада `supabase db push`
-    // не просто застаріла: вона відхиляє нумеровані імена канону, тож власник
-    // упирався б у помилку CLI замість накоченої схеми.
-    expect(out).toContain('db/migrations/*.sql');
-    expect(out).not.toContain('supabase/migrations');
-    expect(out).toContain('psql');
-    expect(out).not.toContain('supabase db push');
-    // 🔴 Накат канону НЕ під `DATABASE_URL` із .env.local: там роль
-    // `app_runtime` (`nosuperuser nocreatedb nocreaterole`), а
-    // `0000_prelude.sql` створює ролі й безумовно робить `alter role`. Порада
-    // `psql "$DATABASE_URL"` падала за будь-якого стану бази, тож гард саме на
-    // неї — інакше регресія повернулась би мовчки.
-    expect(out).not.toContain('psql "$DATABASE_URL"');
-    expect(out).toContain('ВЛАСНИКА БД');
-    expect(out).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
-    expect(out).toContain('DATABASE_URL');
-    expect(out).toContain('BETTER_AUTH_SECRET');
-    expect(out).toContain('/auth/invite');
-  });
-
-  // 🔴 Вивід термінала прокручується, а README лишається в магазині назавжди —
-  // саме він для власника є інструкцією. Гард лише на `printNextSteps` давав би
-  // впевненість, якої немає: перший фікс цього дефекту закрив вивід CLI і
-  // пропустив README, який `scaffold()` фізично копіює в новий магазин.
+  // 🔴 README лишається в магазині назавжди — для власника без агента саме він
+  // є інструкцією (консоль друкує одне речення, див. create-store-next-steps).
   it('README шаблону не радить накат канону роллю рантайму', () => {
-    expect(readme).toContain('db/migrations/*.sql');
-    expect(readme).not.toContain('psql "$DATABASE_URL"');
+    expect(readme).toContain('pnpm simplycms db:apply');
+    expect(readme).not.toContain('psql');
+    expect(readme).not.toContain('for f in');
+    expect(readme).toContain('MIGRATION_DATABASE_URL');
     expect(readme).toContain('власника БД');
   });
 
-  // Посилання запрошення будується з `VITE_SITE_URL`, а без нього — з дефолту
-  // скрипта. Дефолт мусить збігатися з портом, на якому магазин реально
-  // піднімається, інакше лінк веде на порожній порт.
-  it('дефолт site URL у owner-invite = порт dev-сервера й `pnpm start`', () => {
-    const invite = read(`${TEMPLATE}/scripts/owner-invite.mjs`);
-    const port = /'http:\/\/localhost:(\d+)'/.exec(invite)?.[1];
-
-    expect(port).toBe('3000');
-    for (const config of [
-      `${TEMPLATE}/vite.config.ts`,
-      'tests/pilot/store-template/vite.config.ts',
-    ]) {
-      expect(read(config)).toMatch(
-        new RegExp(`server: \\{ port: ${port}, strictPort: true \\}`),
-      );
-    }
+  // 🔴 Р18г: фолбеку на localhost немає. Раніше дефолт мусив збігатися з портом
+  // dev-сервера; тепер без `VITE_SITE_URL` команда відмовляє (поведінку доводить
+  // `simplycms/src/auth/owner-invite-cli/__tests__/owner-invite.test.ts`), а тут стережемо, що літерал не повернувся.
+  // Логіка — у ядрі (`simplycms/auth/owner-invite-cli`), у шаблоні — шим.
+  it('owner-invite не має дефолтної адреси сайту', () => {
+    const CORE = 'packages/simplycms/src/auth/owner-invite-cli';
+    for (const file of [
+      `${TEMPLATE}/scripts/owner-invite.mjs`,
+      ...['run.ts', 'cli.ts', 'main.ts', 'env-files.ts'].map(
+        (name) => `${CORE}/${name}`,
+      ),
+    ])
+      expect(read(file)).not.toMatch(/localhost/);
   });
 });

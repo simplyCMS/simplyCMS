@@ -47,7 +47,9 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - 🔴 **Стеля тіла POST на server functions** — `bodyLimitMiddleware` (`simplycms/runtime/body-limit`,
   другою в `requestMiddleware` після CSRF): `Content-Length` понад `MAX_REQUEST_BODY_BYTES` → 413,
   без нього → 411 для всього, що не JSON (і для всього, що Start читає як форму;
-  `UPSTREAM:START-BODY-1`).
+  `UPSTREAM:START-BODY-1`). Перший рубіж — Node-раннер `server.mjs`: стеля 1 МіБ на ВСІ шляхи
+  (26 МіБ лише для multipart на serverFn), лічильник байтів для chunked; міддлвара розрізняє
+  server function за `handlerType`, а не за сирим шляхом.
 - 🔴 **Мутуючий запит захищений від CSRF за замовчуванням.** `csrfMiddleware`
   (`simplycms/runtime/csrf`, першою в `requestMiddleware` у `src/start.ts`)
   перевіряє КОЖЕН запит із методом поза GET/HEAD/OPTIONS — і server function, і
@@ -64,6 +66,13 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - Списки товарів повні в SSR-HTML: DTO `ProductListItem` (`storefront-routes/server`) +
   `SsrProductGrid`; збагачення — на сервері, не в `useEffect`.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
+- **Канонічний шлях картки товару** — лише `productPath` (`simplycms/domain`, Р25): картка,
+  sitemap, адмінка, `canonical` і JSON-LD беруть його звідти. З розділом —
+  `/catalog/<розділ>/<slug>`, без розділу (FK `on delete set null` це дозволяє) —
+  `/catalog/all/<slug>`. Неканонічний сегмент у URL → 301 на канонічний; `canonical` і
+  `url` у JSON-LD будуються від даних товару, не від URL запиту. Сегмент `all`
+  **зарезервований**: розділ зі slug `all` форма й сервер відхиляють, а наявний такий
+  розділ треба перейменувати до збереження (інакше він перехопив би шлях товарів без розділу).
 - Корінь (`src/routes/__root.tsx`) має `errorComponent` і `notFoundComponent`.
 - **Auth** — cookie-сесії Better Auth (не localStorage JWT). Request-guard для `/admin` —
   middleware `adminRequestGuard` у `src/start.ts` (закриває первинний HTTP-запит,
@@ -102,3 +111,40 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - `resolve.dedupe` у `vite.config.ts` для `react`, `react-dom`, `@tanstack/react-query`.
 - Списки понад ~50 записів — пагінація; пошук і фільтри — debounce (~300 мс,
   `SEARCH_DEBOUNCE_MS` в `ProductSearchList.tsx`, `QUOTE_DEBOUNCE_MS` у чекауті).
+
+## 5. Помилки й заголовки серверного входу (К3-Е8, Р23/Р27)
+
+- **Непередбачені помилки не течуть клієнту.** У проді (`isProductionRuntime`)
+  клієнт отримує `Internal server error [ref <id>]`, а повна помилка (через
+  `redactUrls`, зі стеком і ланцюжком `cause`) пишеться в лог сервера з тим самим
+  ідентифікатором. Канали: (1) server function — глобальна function-middleware в
+  `createStart({ functionMiddleware })` (`src/start.ts`) ловить усе, що кидає
+  `next()`, і кличе `maskUnexpectedError` (`simplycms/server-guard`); SSR-лоадери
+  ходять у БД лише server functions, тож їхня помилка вже замаскована до того, як
+  потрапить у стан роуту й HTML-потік (скрипт дегідрації стану роутера); (2) екран помилки
+  (`src/route-error.tsx`) — і `errorComponent` кореня, і `defaultErrorComponent`
+  у `getRouter()` — друкує текст лише доменної помилки з кодом або в dev, інакше
+  загальну фразу й ідентифікатор (`describePublicError`, T0
+  `contracts/masked-error`). Поза продом поведінка не змінюється.
+- **Проходять немасковані:** уся родина `DOMAIN_ERROR_NAME` (предикат —
+  членство в ній, а не перелік класів), `redirect`, `notFound`, `Response`.
+  Статус відповіді server function виставляє межа операції, як і раніше.
+- **Помилка поза server function** (лоадер чи `beforeLoad` кидає сам) закрита
+  штатним серіалізаційним адаптером в `serializationAdapters` (`src/start.ts`):
+  адаптери застосунку йдуть у дегідратацію router-core ПЕРЕД `ShallowErrorPlugin`
+  (доменний — перед маскувальним), серверна половина — `createIsomorphicFn()`,
+  тож server-only ядро в клієнтський бандл не потрапляє. Гейт —
+  `tests/server-guard-domain-errors.test.ts` (дегідратація з реєстрації
+  `createStart`).
+- Статус відповіді server function при помилці виставляє межа операції
+  (`setResponseStatus` до кидка, як 403/409 для доменних); без нього Start віддає
+  серіалізовану помилку зі статусом за замовчуванням. Міддлвара статус не чіпає.
+- **Заголовки безпеки** (`X-Content-Type-Options`, `Referrer-Policy`,
+  `X-Frame-Options`, `Content-Security-Policy: frame-ancestors 'self'`,
+  `Permissions-Policy`; `Strict-Transport-Security` лише коли `VITE_SITE_URL` —
+  https): динаміка (SSR, server functions, `/media`, sitemap/robots) —
+  `withSecurityHeaders` навколо fetch-хендлера в `src/server.ts`; статика `sirv`
+  і власні 400/413/500 раннера — `server.mjs`, що ядро не імпортує й тримає копію
+  переліку в `server-headers.mjs` під тестом парності
+  (`tests/server-headers-parity.test.ts`). Магазин не можна вбудувати в `iframe`
+  чужого origin — скіли й теми цього не роблять.

@@ -52,25 +52,21 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('ShippingZoneEditPage', () => {
-  it('створення: міста й області рядком → text[], id від клієнта, isDefault=false', async () => {
+  it('створення: id від клієнта, isDefault=false, без полів міст і областей', async () => {
     render(<ShippingZoneEditPage />, { wrapper });
     fireEvent.change(screen.getByLabelText('Назва'), {
       target: { value: 'Дніпро' },
     });
-    fireEvent.change(screen.getByLabelText(t('admin.shipping.zones.cities')), {
-      target: { value: 'Дніпро, Камʼянське\nПавлоград' },
-    });
+    expect(screen.queryByLabelText(/Міст|Регіон/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Створити' }));
     await waitFor(() => expect(m.insertShippingZones).toHaveBeenCalled());
     const [{ data }] = m.insertShippingZones.mock.calls[0] as [
       { data: Array<Record<string, unknown>> },
     ];
     expect(data[0]!.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(data[0]).toMatchObject({
-      name: 'Дніпро',
-      cities: ['Дніпро', 'Камʼянське', 'Павлоград'],
-      regions: [],
-    });
+    expect(data[0]).toMatchObject({ name: 'Дніпро' });
+    expect(data[0]).not.toHaveProperty('cities');
+    expect(data[0]).not.toHaveProperty('regions');
     expect(data[0]).toMatchObject({ isDefault: false });
   });
 

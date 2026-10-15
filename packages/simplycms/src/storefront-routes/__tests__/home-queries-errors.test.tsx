@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
@@ -9,6 +9,9 @@ import {
   useRootSections,
   useSectionProducts,
 } from '../pages/home/queries';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 /**
  * Task 0.1: помилка шару даних не повинна ковтатись — хук має перейти в
@@ -25,6 +28,11 @@ function wrapper({ children }: { children: ReactNode }) {
   });
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
+
+// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
+  useViewerPriceKey: () => 'guest',
+}));
 
 vi.mock('../server/home', () => {
   const fail = () => Promise.reject(new Error('permission denied'));

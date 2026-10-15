@@ -22,6 +22,7 @@ export const ENTITY = {
   discounts: 'discounts',
   languages: 'languages',
   media: 'media',
+  mailOutbox: 'mail_outbox',
   mediaErasures: 'media_erasures',
   modificationPropertyValues: 'modification_property_values',
   orderItems: 'order_items',
@@ -234,6 +235,10 @@ export const AGGREGATE = {
     ENTITY.sections,
     ENTITY.productPrices,
     ENTITY.stockByPickupPoint,
+    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    ENTITY.priceTypes,
+    ENTITY.userCategories,
+    ENTITY.profiles,
   ]),
   /**
    * Вибірка каталогу (`useCatalogProductsQuery` →
@@ -256,6 +261,10 @@ export const AGGREGATE = {
     ENTITY.productPropertyValues,
     ENTITY.modificationPropertyValues,
     ENTITY.stockByPickupPoint,
+    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    ENTITY.priceTypes,
+    ENTITY.userCategories,
+    ENTITY.profiles,
   ]),
 } as const;
 

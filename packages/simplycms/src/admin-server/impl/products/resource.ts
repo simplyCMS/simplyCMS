@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SLUG_RE } from 'simplycms/domain';
 import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
 import {
   productModifications,
@@ -25,7 +26,11 @@ export const productsOps = defineAdminResource({
   touch: 'updatedAt',
   // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в генераторі схем,
   // те саме, що й у product-modifications/resource.ts.
-  refine: { images: () => z.array(z.string()) },
+  // Д5: slug товару — частина URL, формат перевіряє й сервер (як у розділу).
+  refine: {
+    images: () => z.array(z.string()),
+    slug: (s: z.ZodString) => s.regex(SLUG_RE),
+  },
   writable: [
     'sectionId',
     'slug',

@@ -13,12 +13,12 @@ import { describe, expect, it } from 'vitest';
 import {
   assertSupportedVersion,
   SUPPORTED_INSPECTION_VERSIONS,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/inspection-version.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/inspection-version.mjs';
 import { sampleInspection } from './fixtures/design-import/inspection.fixture.mjs';
 
 const cli = fileURLToPath(
   new URL(
-    '../.claude/skills/redesign-from-reference/scripts/map-tokens.mjs',
+    '../.claude/skills/simplycms-redesign/scripts/map-tokens.mjs',
     import.meta.url,
   ),
 );

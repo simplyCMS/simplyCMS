@@ -15,8 +15,8 @@
 export { createAuth, getAuth, resetAuth } from './instance';
 export type { AuthDeps, SimplyAuth } from './instance';
 
-export { resolveAuthSecret, resolveAuthBaseUrl } from './env';
-export type { AuthEnv } from './env';
+export { resolveAuthSecret, resolveAuthBaseUrl } from './auth-env';
+export type { AuthEnv } from './auth-env';
 
 export {
   buildUserProvision,
@@ -55,18 +55,7 @@ export type {
   VerifyOwnerInviteResult,
 } from './invite';
 
-export { ownerInviteStore, hasAnyAdmin } from './invite-store';
-
-export { renderInviteEmail, renderResetPasswordEmail } from './invite-email';
-export type {
-  InviteEmail,
-  InviteEmailInput,
-  ResetPasswordEmailInput,
-  SendInviteEmail,
-} from './invite-email';
-
-export { stubSendAuthEmail } from './send-email';
-export type { SendAuthEmail } from './send-email';
+export { ownerInviteStore } from './invite-store';
 
 export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
 export type { SessionSubject } from './session';

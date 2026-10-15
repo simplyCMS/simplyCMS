@@ -60,7 +60,7 @@ export default definePlugin({
   name: 'faq',                      // [a-z][a-z0-9-]*; ключ ВСЬОГО (див. §9)
   displayName: 'FAQ',
   version: '0.3.0',                 // для npm-пакета = version пакета (тест парності)
-  engines: { simplycms: '>=0.3.0' },// діапазон сумісності; `>=`, НЕ `^` (0.x!)
+  engines: { simplycms: '^0.3.0' },// діапазон сумісності: `^M.0.0` (на 0.x — `^0.m.0`), НЕ `>=`
   description: '…англійською…',     // метадані реєстру: показуються з БД-рядка
   settings: z.object({ maxVisible: z.number().int().default(5).describe('…') }),
   slots: { 'product.detail.after': FaqSlot },   // компонент ← props.context
@@ -86,8 +86,9 @@ export default definePlugin({
   `validateThemeModule`): порушення структури — throw → bootstrap логує і
   **пропускає модуль**; підозри (немає `engines`, несумісний діапазон, ключ
   без префікса) — `console.warn`, реєстрація триває. Несумісний
-  `engines.simplycms` на 0.x — навмисно warn, не фейл: строгість — рішення
-  реліз-потяга v1.0 (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
+  `engines.simplycms` — warn назавжди, не фейл (Р32): магазин не цеглиться
+  оновленням ядра, а невідповідність показує `simplycms doctor` №17 як error
+  (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
 
 ## 3. Рантайм-контур
 
@@ -222,7 +223,9 @@ React або віддає на очищення ядру окремим ріше
   лише в таблиці: канон ядра нумерується `0000_prelude` … `0004_functions`, тож
   імʼя без префікса (класика — `0001_init.sql`) дає колізію канонів, і
   `db:diff` не скопіює в магазин узагалі нічого. Скаффолд
-  `simplycms create plugin <name>` тому кладе `0001_plg_<name>_init.sql`.
+  `simplycms create plugin <name>` тому кладе `<YYYYMMDDHHmmss>_plg_<name>_init.sql`
+  (таймстамп UTC, не `0001_`: `0001_plg_*` сортувався б перед `0002_grants`, який
+  відкликає `public`-гранти, — див. `cli.md`).
 - Доставка в магазин — `simplycms db:diff [--write]`: N канонів (ядро +
   кожен плагін конфігу з migrations/), `own` рахується по **обʼєднанню**
   канонів, спільне імʼя з різним вмістом — error без запису (immutable).
@@ -234,11 +237,9 @@ React або віддає на очищення ядру окремим ріше
   останнє слово за людським ревʼю скопійованої міграції.
 - Імʼя для лінта — **канонічне зі специфікатора пакета** (`stripPrefixes`),
   а не конфіг-ключ: `--name`-аліас у конфізі не збиває перевірку.
-- Накат: `git diff` (ревʼю) → пряме `psql`, файл за файлом (жодного CLI, що сам
-  відстежує застосовані міграції — таймстамп «у минуле» нічого
-  не блокує):
-  `for f in db/migrations/*.sql; do psql "postgresql://<owner>:<pass>@<host>:5432/<db>" -v ON_ERROR_STOP=1 -f "$f"; done`
-  (URL власника БД: `app_runtime` не має прав на `create table`).
+- Накат: `git diff` (ревʼю) → `pnpm simplycms db:apply` (журнал сам накочує лише
+  файли без запису, таймстамп «у минуле» нічого не блокує; підключення —
+  `MIGRATION_DATABASE_URL` власника схеми: `app_runtime` не має прав на `create table`).
   🔴 Генератора типів магазину немає (0.4.1) —
   плагінні таблиці типізуються ЛИШЕ через власний generic плагіна
   (`usePluginTable<Row>`), не через автогенерат.

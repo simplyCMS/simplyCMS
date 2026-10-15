@@ -6,27 +6,16 @@
 //
 // 🔴 app_runtime не потрібен: перевіряється сам DDL — привілейоване
 // підключення dbUrl, як у property-values-multiselect.test.ts.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
   randomDbName,
   withDbName,
 } from '../apply.mjs';
-
-const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-
-/** Канон у порядку імен — той самий список, що й у baseline.test.ts. */
-const canonFiles = (): string[] =>
-  readdirSync(MIGRATIONS)
-    .filter((name) => name.endsWith('.sql'))
-    .sort()
-    .map((name) => join(MIGRATIONS, name));
 
 const S1 = 'e4010000-0000-4000-8000-000000000001';
 const S2 = 'e4010000-0000-4000-8000-000000000002';
@@ -44,7 +33,7 @@ describe('довідники каталогу: інваріанти baseline (Е
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(dbUrl, canonFiles());
+    await applyCanon(dbUrl);
 
     await queryRows(
       dbUrl,

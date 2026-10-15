@@ -15,29 +15,16 @@ import {
  * сервер буферизувати гігабайти. Request-міддлвара виконується ДО обробника
  * server function, тож відмовляє за заголовком, не читаючи тіла.
  *
- * 🔴 Це перевірка `Content-Length`, а не підрахунок байтів потоку: Node-раннер
- * (`server.mjs`) обмежує тіло саме заявленою довжиною. Тому POST БЕЗ
- * `Content-Length` (chunked) проходить лише з медіатипом `application/json`,
- * який Start НЕ читає як форму; усе, що Start прочитав би як форму, і будь-що
- * не-JSON → 411. Інший рантайм або проксі без цієї гарантії — привід
- * переглянути.
- *
- * 🔴 Відкрите вікно: chunked JSON не має стелі, а Start буферизує
- * `request.json()` повністю. Це свідомо прийнятий архітектором залишковий
- * ризик (не «обмежене аргументами server function»: клієнт сам обирає розмір).
+ * 🔴 Це другий рубіж, а не єдиний: першу стелю (1 МіБ усюди, 26 МіБ лише для
+ * multipart на serverFn) тримає Node-раннер `server.mjs` на ВСІ шляхи —
+ * за `Content-Length` і лічильником байтів chunked-потоку. Тут тип обробника
+ * дає сам Start (`handlerType`), а не сирий шлях: `/%5FserverFn/…` Start
+ * нормалізує до server function, тож предикат за `pathname` його б пропустив.
+ * POST БЕЗ `Content-Length` проходить лише з `application/json`, який Start НЕ
+ * читає як форму; усе, що Start прочитав би як форму, і будь-що не-JSON → 411.
+ * Chunked JSON більше не безмежний: його обмежує лічильник раннера. Інший
+ * рантайм (не `server.mjs`) цієї гарантії не має — переглянути.
  */
-const DEFAULT_SERVER_FN_BASE = '/_serverFn/';
-
-/**
- * База шляху server functions. Start виводить її з `basepath` і
- * `serverFns.base` та віддає в рантаймі як `process.env.TSS_SERVER_FN_BASE`
- * (із завершальним `/`). Читається лише в момент запиту, на сервері: модуль
- * потрапляє й у клієнтський граф через `start.ts`. Літерал мовчки вимкнув би
- * стелю в магазині з власним `basepath`.
- */
-function serverFnBase(): string {
-  return process.env.TSS_SERVER_FN_BASE || DEFAULT_SERVER_FN_BASE;
-}
 
 /** Текстове тіло з `content-type`: без нього клієнт Start не прочитає код. */
 function reject(status: number, code: string): Response {
@@ -68,9 +55,12 @@ function isUnboundedJsonAllowed(request: Request): boolean {
 }
 
 /** Чиста функція (юніт без підйому Start): `Response` відмови або `null`. */
-export function checkBodyLimit(request: Request): Response | null {
+export function checkBodyLimit(
+  request: Request,
+  handlerType: 'serverFn' | 'router',
+): Response | null {
   if (request.method.toUpperCase() !== 'POST') return null;
-  if (!new URL(request.url).pathname.startsWith(serverFnBase())) return null;
+  if (handlerType !== 'serverFn') return null;
 
   const raw = request.headers.get('content-length');
   if (raw === null) {
@@ -91,5 +81,6 @@ export function checkBodyLimit(request: Request): Response | null {
 
 /** Request-міддлвара для `createStart({ requestMiddleware })`, після CSRF. */
 export const bodyLimitMiddleware = createMiddleware().server(
-  ({ next, request }) => checkBodyLimit(request) ?? next(),
+  ({ next, request, handlerType }) =>
+    checkBodyLimit(request, handlerType) ?? next(),
 );

@@ -3,22 +3,8 @@
 // раннер vite, який уміє в TS/TSX. React, react-dom і vite у магазині вже є —
 // донавантажується лише jsdom (див. theme-conformance-dom.mjs).
 import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-
-/**
- * Імпорт пакета З МАГАЗИНУ, а не з місця, де лежить сам CLI. Під pnpm
- * `@simplycms/cli` живе в ізольованому сторі, і звичайний `import('vite')`
- * звідти не резолвиться взагалі — резолв мусить іти від `package.json`
- * магазину.
- * @param {string} storeRoot
- * @param {string} spec
- */
-export function importFromStore(storeRoot, spec) {
-  const require = createRequire(join(storeRoot, 'package.json'));
-  return import(pathToFileURL(require.resolve(spec)).href);
-}
+import { importFromStore } from './store-core.mjs';
 
 /**
  * Аліаси магазину з `compilerOptions.paths` його `tsconfig.json` — єдине

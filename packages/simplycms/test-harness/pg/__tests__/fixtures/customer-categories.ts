@@ -2,7 +2,6 @@
 // канон (+ опційно демо-сід для оформлення замовлень) → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Покупці, категорії й правила сідяться
 // привілейованим підключенням — повз guard: це сід, а не перевірка.
-import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -37,12 +36,9 @@ export function useCustomersDb(
     harness = await resolveHarness();
     await H.createTempDatabase(harness.url, dbName);
     dbUrl = H.withDbName(harness.url, dbName);
-    const files = readdirSync(MIGRATIONS)
-      .filter((n) => n.endsWith('.sql'))
-      .sort()
-      .map((n) => join(MIGRATIONS, n));
-    if (opts.demo) files.push(join(MIGRATIONS, 'demo/demo-seed.sql'));
-    await H.applySqlFiles(dbUrl, files);
+    await H.applyCanon(dbUrl);
+    if (opts.demo)
+      await H.applySqlFiles(dbUrl, [join(MIGRATIONS, 'demo/demo-seed.sql')]);
     // Автор ручних призначень: `user_category_history.changed_by` — FK на users.
     await H.queryRows(
       dbUrl,
@@ -82,14 +78,16 @@ export async function seedCustomer(
     locked?: boolean;
     utm?: Record<string, unknown>;
     email?: string;
+    /** За замовчуванням `true`; `false` — непідтверджена пошта (Р30). */
+    verified?: boolean;
   } = {},
 ): Promise<string> {
   const userId = crypto.randomUUID();
   const email = o.email ?? `e6v-${++seq}-${userId.slice(0, 8)}@example.test`;
   await rows(
     url,
-    `insert into public.users (id, name, email, email_verified) values ($1, 'Покупець Е6в', $2, true)`,
-    [userId, email],
+    `insert into public.users (id, name, email, email_verified) values ($1, 'Покупець Е6в', $2, $3)`,
+    [userId, email, o.verified ?? true],
   );
   await rows(
     url,

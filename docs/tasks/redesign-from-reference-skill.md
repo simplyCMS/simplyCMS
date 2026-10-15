@@ -1,4 +1,4 @@
-# Task: Скіл «редизайн за референсом» (redesign-from-reference)
+# Task: Скіл «редизайн за референсом» (simplycms-redesign)
 
 > **Джерело рішення:** ресерч
 > [`2026-08-15-website-cloner-tools.md`](../superpowers/research/2026-08-15-website-cloner-tools.md)
@@ -65,7 +65,7 @@
 2. **Артефакти інспекції:** `docs/design-references/<slug>/` магазину
    (скріншоти + `inspection.json` + `tokens-proposal.json`), КОМІТЯТЬСЯ —
    аудитований слід рішень (модель клонера). Тека створюється скриптом.
-3. **Імʼя/мова:** імʼя скіла — англійське `redesign-from-reference`
+3. **Імʼя/мова:** імʼя скіла — англійське `simplycms-redesign`
    (їде кінцевим користувачам скаффолда, які можуть не знати української;
    конвенція імен пакетів/CLI репо теж англійська); ТІЛО скіла — українською
    (мова проєкту, як усі skills/commands). У монорепо додається і
@@ -121,9 +121,9 @@ CLI: `node scripts/design-import/map-tokens.mjs <inspection.json> [--out tokens-
    contrastWarnings, unmapped }` — `unmapped` чесно перелічує кольори, які
    нікуди не лягли.
 
-### C. Скіл `.agents/skills/redesign-from-reference/SKILL.md`
+### C. Скіл `.agents/skills/simplycms-redesign/SKILL.md`
 
-Джерело правди методології (+ симлінк `.claude/skills/redesign-from-reference`).
+Джерело правди методології (+ симлінк `.claude/skills/simplycms-redesign`).
 Розділи (стисло; повний зміст — за ресерчем §4 і дисциплінами клонера §1.2):
 
 1. **Фаза 0 — кларіфай:** обовʼязкові питання (URL/сторінки; глибина:
@@ -163,15 +163,15 @@ CLI: `node scripts/design-import/map-tokens.mjs <inspection.json> [--out tokens-
 
 1. `scripts/sync-create-store-template.mjs`: розширити `SYNCED_DIRS` парами
    `scripts/design-import` → `scripts/design-import` і
-   `.agents/skills/redesign-from-reference` →
-   `.claude/skills/redesign-from-reference` (у шаблоні — РЕАЛЬНА КОПІЯ, не
+   `.agents/skills/simplycms-redesign` →
+   `.claude/skills/simplycms-redesign` (у шаблоні — РЕАЛЬНА КОПІЯ, не
    симлінк: `npm pack`/`cpSync` шаблону не переносить симлінки надійно).
    Прогнати `pnpm template:sync`.
 2. `tests/create-store-template-parity.test.ts` — має підхопити нові
    пари (перевірити, чи список пар у тесті дискаверний чи ручний — якщо
    ручний, доповнити).
 3. Монорепо: `.claude/commands/редизайн-за-референсом.md` — обгортка
-   («Виконай скіл redesign-from-reference для $ARGUMENTS») — у шаблон НЕ
+   («Виконай скіл simplycms-redesign для $ARGUMENTS») — у шаблон НЕ
    їде (команди — конвенція монорепо).
 
 ### E. Тести
@@ -193,7 +193,7 @@ CLI: `node scripts/design-import/map-tokens.mjs <inspection.json> [--out tokens-
 
 ### F. Документація
 
-1. `docs/guides/redesign-from-reference.md` — короткий how-to для
+1. `docs/guides/simplycms-redesign.md` — короткий how-to для
    розробника магазину (як запустити, що отримаєш, межі).
 2. `CLAUDE.md` — рядок у Agent Tooling про новий скіл; згадка скриптів у
    Quick Reference НЕ потрібна (це не гейт).

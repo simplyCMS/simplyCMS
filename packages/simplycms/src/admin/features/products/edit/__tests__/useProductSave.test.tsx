@@ -8,8 +8,8 @@
  * викликано; (в) update кличе `updateProducts` з `[{ id, patch }]`, де
  * `patch.sku === null` при `hasModifications: true`.
  */
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
@@ -52,6 +52,9 @@ import { eq, useLiveQuery } from '@tanstack/react-db';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useProductSave } from '../useProductSave';
 import type { ProductFormValues } from '../product-form-schema';
+
+// Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
+afterEach(cleanup);
 
 const values: ProductFormValues = {
   name: 'Панель',

@@ -247,7 +247,7 @@ CREATE TABLE "product_modifications" (
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"stock_status" "stock_status" DEFAULT 'in_stock',
+	"stock_status" "stock_status" DEFAULT 'in_stock' NOT NULL,
 	CONSTRAINT "product_modifications_product_slug_unique" UNIQUE("product_id","slug")
 );
 --> statement-breakpoint
@@ -309,7 +309,7 @@ CREATE TABLE "products" (
 	"images" jsonb DEFAULT '[]'::jsonb,
 	"has_modifications" boolean DEFAULT true,
 	"sku" varchar,
-	"stock_status" "stock_status" DEFAULT 'in_stock',
+	"stock_status" "stock_status" DEFAULT 'in_stock' NOT NULL,
 	"return_policy" jsonb,
 	"shipping_details" jsonb,
 	CONSTRAINT "products_slug_key" UNIQUE("slug")
@@ -435,8 +435,7 @@ CREATE TABLE "shipping_zones" (
 	"is_default" boolean DEFAULT false NOT NULL,
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"cities" text[] DEFAULT '{""}',
-	"regions" text[] DEFAULT '{""}'
+	CONSTRAINT "shipping_zones_default_active" CHECK (not is_default or is_active)
 );
 --> statement-breakpoint
 CREATE TABLE "stock_by_pickup_point" (
@@ -507,8 +506,10 @@ CREATE TABLE "user_category_history" (
 	"to_category_name" text NOT NULL,
 	"reason" text,
 	"rule_id" uuid,
+	"source" text NOT NULL,
 	"changed_by" uuid,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "user_category_history_source_check" CHECK (source = ANY (ARRAY['manual'::text, 'rule'::text]))
 );
 --> statement-breakpoint
 ALTER TABLE "user_category_history" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
@@ -583,7 +584,8 @@ CREATE TABLE "users" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"banned_at" timestamp with time zone,
 	"ban_reason" text,
-	CONSTRAINT "users_email_key" UNIQUE("email")
+	CONSTRAINT "users_email_key" UNIQUE("email"),
+	CONSTRAINT "users_email_lowercase" CHECK ("users"."email" = lower("users"."email"))
 );
 --> statement-breakpoint
 CREATE TABLE "verifications" (
@@ -703,6 +705,7 @@ CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_stock_point_id" ON "order_items" USING btree ("stock_point_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
+CREATE INDEX "orders_created_at_idx" ON "orders" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_shipping_method_id" ON "orders" USING btree ("shipping_method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_user_id" ON "orders" USING btree ("user_id");--> statement-breakpoint
@@ -753,6 +756,7 @@ CREATE UNIQUE INDEX "idx_user_recipients_single_default" ON "user_recipients" US
 CREATE INDEX "idx_wishlists_product_id" ON "wishlists" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_accounts_user_id" ON "accounts" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "users_created_ms_id_idx" ON "users" USING btree (date_trunc('milliseconds', "created_at" at time zone 'UTC') desc,"id" desc);--> statement-breakpoint
 CREATE INDEX "idx_verifications_identifier" ON "verifications" USING btree ("identifier");--> statement-breakpoint
 CREATE INDEX "idx_media_entity" ON "media" USING btree ("entity_type","entity_id");--> statement-breakpoint
 CREATE INDEX "idx_media_uploaded_by" ON "media" USING btree ("uploaded_by");--> statement-breakpoint

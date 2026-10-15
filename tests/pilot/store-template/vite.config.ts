@@ -6,6 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { loadEnv } from 'vite';
 import { resolve } from 'node:path';
 import { importProtection } from 'simplycms/contracts/server-only';
+import { precompressAssets, simplycmsBuildInfo } from 'simplycms/vite';
 
 /**
  * Vite-конфіг магазину.
@@ -79,6 +80,12 @@ export default ({ mode }: { mode: string }) => {
 
   return {
     plugins: [
+      // Ідентифікатор збірки для `/api/health` і сторожа застарілих чанків:
+      // `define` глобала збірки (simplycms/vite).
+      simplycmsBuildInfo(),
+      // `.br`/`.gz` поруч з асетами клієнтської збірки: `server.mjs` віддає їх
+      // через sirv, самого стиснення на льоту там немає.
+      precompressAssets(),
       tailwindcss(),
       tanstackStart({
         router: { virtualRouteConfig: './routes.ts' },

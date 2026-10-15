@@ -19,5 +19,5 @@ export const messages = {
   'admin.sections.deleteWarning': 'Товари цього розділу лишаться без розділу',
   'admin.sections.notFound': 'Розділ не знайдено',
   'admin.sections.slugHint':
-    'Латиниця, цифри й дефіс — наприклад, laptops-gaming',
+    'Латиниця, цифри й дефіс — наприклад, laptops-gaming. Слово «all» зарезервоване',
 } as const;

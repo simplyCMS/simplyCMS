@@ -6,8 +6,6 @@
 // предикат у запиті. Загублений фільтр показав би покупцю вимкнений спосіб
 // доставки — і дав би оформити замовлення на неіснуючий тариф. Довести це
 // можна лише на базі, де вимкнені рядки справді є.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { loadShippingDirectory } from 'simplycms/commerce';
@@ -15,7 +13,7 @@ import { withStorefrontDb } from 'simplycms/storefront/loaders';
 import { resolveShippingRate } from 'simplycms/domain/shipping';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -35,8 +33,6 @@ import {
   SHIPPING_FIXTURES,
 } from './fixtures/shipping';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
-
 describe('довідники доставки під актором вітрини', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_shipping');
@@ -46,13 +42,7 @@ describe('довідники доставки під актором вітрин
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     for (const statement of SHIPPING_FIXTURES) {
       await queryRows(dbUrl, statement);
     }

@@ -72,9 +72,9 @@ async function inviteAdmin(
   const issued = await issueOwnerInvite({
     email,
     store: ownerInviteStore,
-    siteUrl: env.siteUrl,
+    env: { VITE_SITE_URL: env.siteUrl },
     // Лист не потрібен: токен береться з URL результату, як у `owner-invite.mts`.
-    sendEmail: async () => {},
+    schedule: async () => [],
   });
   const token = new URL(issued.url).searchParams.get('token');
   if (!token) throw new Error('[showcase] invite без токена в URL');

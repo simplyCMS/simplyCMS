@@ -6,14 +6,12 @@
 // рядок свій (USER_A), тож відмову дає грант. Позитив — КОЖНА колонка
 // декларації (`COLUMN_GRANTS`) оновлюється під `app_user`, і справжній шлях
 // вітрини (`updateProfile`) проходить: список не закороткий.
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { updateProfile, withCustomerDb } from 'simplycms/storefront/loaders';
 import { resolveHarness } from '../up.mjs';
 import {
-  applySqlFiles,
+  applyCanon,
   createTempDatabase,
   dropTempDatabase,
   queryRows,
@@ -25,7 +23,6 @@ import { withActor } from '../actors.mjs';
 import { COLUMN_GRANTS } from './fixtures/grants';
 import { SEED_STATEMENTS, USER_A } from './fixtures/rls-actors';
 
-const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 const AS_A = { userId: USER_A, role: 'app_user' };
 const RETAIL = `(select id from public.user_categories where code = 'retail')`;
 
@@ -48,13 +45,7 @@ describe('Е6в-24: колонковий UPDATE profiles для app_user', () =>
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applySqlFiles(
-      dbUrl,
-      readdirSync(CANON_DIR)
-        .filter((name) => name.endsWith('.sql'))
-        .sort()
-        .map((name) => join(CANON_DIR, name)),
-    );
+    await applyCanon(dbUrl);
     for (const statement of SEED_STATEMENTS) await queryRows(dbUrl, statement);
     runtimeUrl = withUser(dbUrl, 'app_runtime');
     process.env.DATABASE_URL = runtimeUrl;

@@ -78,6 +78,42 @@ describe('serveMedia', () => {
     expect(response.status).toBe(404);
   });
 
+  // Е8-Р14: збій драйвера (мережа S3) ≠ «файла немає». 404 кешували б CDN і
+  // браузер; 503 + один лог з ключем дає оператору причину.
+  it('виняток driver.open → 503, один console.error з ключем, без секретів', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    driver.open = async () => {
+      throw new Error('GET http://AKID:S3CR3T@s3.test/bucket/k failed');
+    };
+    try {
+      const response = await get(`/media/${KEY}`);
+      expect(response.status).toBe(503);
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(log).toHaveBeenCalledTimes(1);
+      const logged = JSON.stringify(log.mock.calls[0]);
+      expect(logged).toContain(KEY);
+      // Облікові дані з URL у повідомленні драйвера не доходять до логу.
+      expect(logged).not.toContain('S3CR3T');
+      expect(logged).not.toContain('AKID:');
+      expect(logged).toContain('s3.test/bucket/k failed');
+      expect(await response.text()).not.toContain(KEY);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('driver.open → null дає 404 без console.error', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    driver.open = async () => null;
+    try {
+      const response = await get(`/media/${KEY}`);
+      expect(response.status).toBe(404);
+      expect(log).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it.each([
     '/media/../../etc/passwd',
     '/media/ab/../../../etc/passwd',

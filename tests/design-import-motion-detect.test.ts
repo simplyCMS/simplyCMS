@@ -13,12 +13,12 @@ import {
   MOTION_GLOBALS,
   SIGNATURES,
   suspectJsDriven,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/motion-detect.mjs';
-import { browserRevealSnapshot } from '../.agents/skills/redesign-from-reference/scripts/lib/browser-reveal.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/motion-detect.mjs';
+import { browserRevealSnapshot } from '../.agents/skills/simplycms-redesign/scripts/lib/browser-reveal.mjs';
 import {
   captureReveal,
   diffReveal,
-} from '../.agents/skills/redesign-from-reference/scripts/lib/motion.mjs';
+} from '../.agents/skills/simplycms-redesign/scripts/lib/motion.mjs';
 
 describe('lib/motion-detect.mjs — detectMotionLibraries', () => {
   it('gsap за src скрипта', () => {

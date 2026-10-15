@@ -17,7 +17,7 @@ interface Product {
   section?: { slug: string } | null;
   price?: number | null;
   old_price?: number | null;
-  stock_status?: string | null;
+  stock_status?: string;
   discount_hints?: readonly ThresholdHint[];
 }
 

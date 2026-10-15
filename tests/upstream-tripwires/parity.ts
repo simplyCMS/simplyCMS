@@ -35,6 +35,9 @@ const SKIP_DIRS = new Set([
   'dist',
   '.git',
   '.claude',
+  // Git-ігнорований робочий простір агентів (журнали, брифи SDD): цитує ID
+  // з планів, а не несе обходів — інакше локальний прогін червонів би.
+  '.superpowers',
   'docs',
   'coverage',
   '.output',
