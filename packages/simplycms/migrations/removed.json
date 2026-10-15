@@ -1,8 +1,0 @@
-[
-  {
-    "name": "0005_mail_outbox.sql",
-    "sha256": "fc5b714b963732218da7b39a4808ab87067dadf62c27b2ac6d039bb26346bb95",
-    "removedIn": "0.16.0 (baseline-виняток М1)",
-    "reason": "mail_outbox злито в 0001_init.sql (baseline-виняток до 1.0.0-rc.1)"
-  }
-]

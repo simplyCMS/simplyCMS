@@ -29,11 +29,10 @@ describe('create-store template: парність із монорепо', () => 
     expect(read(join(TEMPLATE_DIR, file))).toBe(read(file));
   });
 
-  it.each(SYNCED_DIRS.map((d) => [d.from, d.to, d.exclude ?? []] as const))(
+  it.each(SYNCED_DIRS.map((d) => [d.from, d.to] as const))(
     'тека %s байт-ідентична',
-    (from, to, exclude) => {
-      // `exclude` — файли, що свідомо НЕ їдуть у шаблон (напр. removed.json).
-      const source = listFiles(from).filter((file) => !exclude.includes(file));
+    (from, to) => {
+      const source = listFiles(from);
       expect(source.length).toBeGreaterThan(0);
       expect(listFiles(join(TEMPLATE_DIR, to))).toEqual(source);
       for (const file of source) {
@@ -81,7 +80,7 @@ describe('create-store template: парність із монорепо', () => 
   // 🔴 `demo/demo-seed.sql` тут теж є, але НЕ входить у канон: readdir у
   // каноні (`db-diff.mjs`, `apply.mjs`) нерекурсивний і бере лише `*.sql`
   // верхнього рівня, тож піддиректорія `demo/` для накату канону невидима.
-  it('канон міграцій ядра — 0000_prelude → 0004_functions + README + demo/ + removed.json', () => {
+  it('канон міграцій ядра — 0000_prelude → 0004_functions + README + demo/', () => {
     expect(listFiles(SCHEMA_MIGRATIONS_DIR)).toEqual([
       '0000_prelude.sql',
       '0001_init.sql',
@@ -90,16 +89,7 @@ describe('create-store template: парність із монорепо', () => 
       '0004_functions.sql',
       'README.md',
       'demo/demo-seed.sql',
-      'removed.json',
     ]);
-  });
-
-  // Маніфест читає CLI з установленого ядра; у `db/migrations` магазину він був
-  // би чужорідним файлом поруч із міграціями (див. SYNCED_DIRS).
-  it('removed.json у шаблон магазину не їде', () => {
-    expect(listFiles(join(TEMPLATE_DIR, 'db/migrations'))).not.toContain(
-      'removed.json',
-    );
   });
 
   // 🔴 Схеми стороннього сервісу автентифікації й сховища у baseline не існують як клас — це і

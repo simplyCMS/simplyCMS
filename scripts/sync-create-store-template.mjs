@@ -38,7 +38,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   applyManagedBlock,
   renderManagedBlock,
@@ -98,15 +98,7 @@ export const TEMPLATE_HOST_FILES = [
 export const SYNCED_DIRS = [
   // Канон ядра → тека міграцій магазину (`db/migrations`: зміст — чистий
   // Postgres, назва без згадки постачальника).
-  // 🔴 `removed.json` (маніфест видалених файлів канону) у магазин НЕ їде: його
-  // читає CLI з установленого ядра (`node_modules/simplycms/migrations`), а
-  // свіжий магазин видалених файлів не має — у `db/migrations` це був би
-  // чужорідний файл поруч із міграціями.
-  {
-    from: SCHEMA_MIGRATIONS_DIR,
-    to: 'db/migrations',
-    exclude: ['removed.json'],
-  },
+  { from: SCHEMA_MIGRATIONS_DIR, to: 'db/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
   // 🔴 Скілів тут НЕМАЄ (трек К0): вони їдуть у магазин текою `skills/`
@@ -126,14 +118,10 @@ export function syncTemplate(root = REPO_ROOT) {
     mkdirSync(dirname(target), { recursive: true });
     cpSync(join(root, file), target);
   }
-  for (const { from, to, exclude = [] } of SYNCED_DIRS) {
+  for (const { from, to } of SYNCED_DIRS) {
     const target = join(root, TEMPLATE_DIR, to);
     rmSync(target, { recursive: true, force: true });
-    const source = join(root, from);
-    cpSync(source, target, {
-      recursive: true,
-      filter: (path) => !exclude.includes(relative(source, path)),
-    });
+    cpSync(join(root, from), target, { recursive: true });
   }
   syncAgentFiles(root);
   // Канон host/ пакета CLI: та сама множина SYNCED_FILES зі збереженням
