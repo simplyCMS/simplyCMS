@@ -1029,6 +1029,7 @@
   - `fixtures/product-graph.ts` (без `// М1-TEMP`); команди Task 11/12 (без дзеркалення);
   - `admin-server/impl/products/resource.ts` і `product-modifications/resource.ts` (лишається лише читання для колекцій), `property-values/resources.ts`;
   - `demo-seed.sql`, `scripts/dev-stand/*`;
+  - `scripts/live-smoke/{admin-save-return,admin-validation-errors,admin-lists-pagination}.mjs` — вставляють товари без перекладу й адреси і зламаються, коли ввімкнуться тригери І4 та наявності (`product-path.mjs` переводить Task 15, showcase — Task 12);
   - `CHANGELOG.md` `[Unreleased]` BREAKING: знос `return_policy`/`shipping_details` (Р8), адреси товару `/<path>`, «перестворити БД».
 - Create: `test-harness/pg/__tests__/property-values-shape.test.ts`; кейси товару в `source-translation-required.test.ts`
 
