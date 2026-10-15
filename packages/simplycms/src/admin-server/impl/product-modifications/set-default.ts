@@ -2,6 +2,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { productModifications } from 'simplycms/schema';
 import type { ProductModification } from 'simplycms/schema/types';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { runAdmin } from '../run';
 import { lockCatalogTarget } from '../catalog-lock';
 
@@ -34,7 +35,10 @@ export const setDefaultModificationOp = async ({
       throw new Error(`[admin-server] модифікації ${data.id} не існує`);
     // Два одночасні setDefault різних модифікацій товару інакше обидва
     // «зняли б інших» ДО коміту сусіда і впали 23505 (catalog-lock.ts).
-    await lockCatalogTarget(db, `mod-default:${target.productId}`);
+    await lockCatalogTarget(
+      db,
+      `${LOCK_KEYS.modDefaultPrefix}${target.productId}`,
+    );
     const now = new Date();
     const unset = (await db
       .update(productModifications)

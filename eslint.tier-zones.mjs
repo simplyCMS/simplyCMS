@@ -40,7 +40,9 @@ const PKG = 'packages/simplycms';
 
 // [тека в пакеті, шар T, субшлях у exports-мапі (null — теку не імпортують),
 //  фактичні імпорти на СВІЙ шар або ВИЩЕ (знімок Step 1; усе нижче легальне),
-//  додатково заборонені теки НИЖЧОГО шару — там, де шар не єдиний критерій]
+//  додатково заборонені теки НИЖЧОГО шару — там, де шар не єдиний критерій,
+//  винятки-ФАЙЛИ `<тека>/<файл>`: один модуль забороненої теки, відкритий зоні
+//  без відкриття решти теки (причина — коментарем біля рядка)]
 const TIER_ZONES = [
   ['src/contracts', 0, 'contracts', []],
   ['src/domain', 1, 'domain', []],
@@ -150,8 +152,10 @@ const TIER_ZONES = [
   ['src/vite', 2, 'vite', []],
   // Накат міграцій (Е8-Р2) — T2. Власне зʼєднання `pg` під власником схеми
   // (до ролей і RLS `withActor` неможливий), тож upward-винятків немає, і
-  // `db` йому теж ні до чого.
-  ['src/migrate', 2, 'migrate', []],
+  // `db` йому теж ні до чого. Єдиний виняток — ФАЙЛ `db/lock-keys` (М1, Task 2):
+  // чисті константи реєстру ключів замків без жодного імпорту, тому ключ накату
+  // живе в одному реєстрі з рядковими ключами, а `withActor` лишається забороненим.
+  ['src/migrate', 2, 'migrate', [], [], ['db/lock-keys']],
   // Прод-старт магазину (К3-Е8, F5 рев'ю) — T2. Upward `env` (перевірка груп до
   // накату) і `migrate` (сам накат); БД актора й auth йому ні до чого.
   ['src/prod-start', 2, 'prod-start', ['env', 'migrate']],
@@ -203,9 +207,14 @@ const ROOT_BARREL = {
     'Кореневий барель `simplycms` усередині самого пакета — цикл модулів. Імпортуй конкретний субшлях: simplycms/<тека>.',
 };
 
+const ZONE_MESSAGE = (dir, layer) =>
+  `Тір-зона ПК3: ${dir} — шар T${layer}. Легальні лише теки НИЖЧОГО шару (плюс зафіксовані винятки статус-кво). Підняти імпорт угору — архітектурне рішення зі зміною таблиці в eslint.tier-zones.mjs, а не побічний ефект правки.`;
+
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** Зони напрямку шарів для `eslint.config.mjs` (по одному блоку на теку). */
 export const tierZoneConfigs = TIER_ZONES.map(
-  ([dir, layer, name, upward, alsoForbidden = []]) => {
+  ([dir, layer, name, upward, alsoForbidden = [], exemptFiles = []]) => {
     const targets = Object.entries(TIER_LAYER)
       .filter(
         ([other, otherLayer]) =>
@@ -218,10 +227,30 @@ export const tierZoneConfigs = TIER_ZONES.map(
     // 🔴 Обидві форми того самого імпорту: bare-субшлях і відносний шлях.
     // Свій тір у `targets` не потрапляє ніколи, тож `../<своя тека>/…`
     // усередині зони лишається легальним.
-    const forbidden = targets.flatMap((other) => [
+    const formsOf = (other) => [
       `simplycms/${other}`,
       ...relativeForms(`${PKG}/${dir}`, `${PKG}/${TIER_DIR[other]}`),
-    ]);
+    ];
+    const exemptIn = (other) =>
+      exemptFiles
+        .filter((file) => file.startsWith(`${other}/`))
+        .map((file) => file.slice(other.length + 1));
+    const forbidden = targets
+      .filter((other) => exemptIn(other).length === 0)
+      .flatMap(formsOf);
+    // 🔴 Виняток-файл gitignore-групою не виразити: пара `simplycms/db` +
+    // `!simplycms/db/lock-keys` не працює (піддерево заборонене цілком, а
+    // повторно ввімкнути файл у виключеній теці gitignore не дозволяє). Тому
+    // тека з винятком забороняється regex-ом: сама тека і все піддерево, крім
+    // названих файлів (повний збіг імені — `lock-keys-x` не проходить).
+    const exemptPatterns = targets
+      .filter((other) => exemptIn(other).length > 0)
+      .flatMap((other) =>
+        formsOf(other).map((form) => ({
+          regex: `^${escapeRegex(form)}(?!/(?:${exemptIn(other).map(escapeRegex).join('|')})$)(?:/.*)?$`,
+          message: ZONE_MESSAGE(dir, layer),
+        })),
+      );
 
     return {
       files: [`${PKG}/${dir}/**/*.{ts,tsx}`],
@@ -231,10 +260,8 @@ export const tierZoneConfigs = TIER_ZONES.map(
           {
             paths: [ROOT_BARREL],
             patterns: [
-              {
-                group: forbidden,
-                message: `Тір-зона ПК3: ${dir} — шар T${layer}. Легальні лише теки НИЖЧОГО шару (плюс зафіксовані винятки статус-кво). Підняти імпорт угору — архітектурне рішення зі зміною таблиці в eslint.tier-zones.mjs, а не побічний ефект правки.`,
-              },
+              { group: forbidden, message: ZONE_MESSAGE(dir, layer) },
+              ...exemptPatterns,
               // Flat config замінює опції правила цілком, тож глобальна зона
               // `simplycms/db/client` тут не діяла б: доливаємо явно. Для
               // самої теки `src/db` вона зайва (вона і є фабрика) — і саме

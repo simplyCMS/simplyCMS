@@ -38,6 +38,7 @@
     "./admin-server/impl": "./src/admin-server/impl/index.ts",
     "./admin-data": "./src/admin-data/index.ts",
     "./db": "./src/db/index.ts",
+    "./db/lock-keys": "./src/db/lock-keys.ts",
     "./auth": "./src/auth/index.ts",
     "./auth/owner-invite-cli": "./src/auth/owner-invite-cli/index.ts",
     "./storage": "./src/storage/index.ts",
@@ -246,6 +247,10 @@
       "./db": {
         "types": "./dist/db/index.d.ts",
         "import": "./dist/db/index.js"
+      },
+      "./db/lock-keys": {
+        "types": "./dist/db/lock-keys.d.ts",
+        "import": "./dist/db/lock-keys.js"
       },
       "./auth": {
         "types": "./dist/auth/index.d.ts",

@@ -18,6 +18,7 @@ import type {
   ProductModification,
   StockByPickupPoint,
 } from 'simplycms/schema/types';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
 import type { SaveStockInput } from './save';
 
@@ -61,7 +62,7 @@ export async function saveStock(db: ActorDb, data: SaveStockInput) {
   };
   await lockCatalogTarget(
     db,
-    `stock:${target.productId ?? '-'}:${target.modificationId ?? '-'}`,
+    `${LOCK_KEYS.stockPrefix}${target.productId ?? '-'}:${target.modificationId ?? '-'}`,
   );
   // 🔴 М2: блокуються ВСІ наявні рядки цілі, не лише обслуговуючі — адмін
   // пише кількість і в НЕактивну точку (вручну). Join і порядок

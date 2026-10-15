@@ -30,9 +30,12 @@ values
 on conflict (code) do nothing;
 
 -- ── Мова ───────────────────────────────────────────────────────────────────
--- Магазин стартує україномовним (дефолт ядра); англійську додає адмін.
-insert into public.languages (id, code, name, is_default, is_active)
-values ('00000002-0000-4000-8000-000000000001', 'uk', 'Українська', true, true)
+-- Магазин стартує україномовним (дефолт ядра); інші мови додає адмін. Основна
+-- мова — `published`, її код і прапорець далі не змінюються (тригер
+-- `languages_guard`, `0004_functions.sql`). Рядок живе тут до підхвилі М2, коли
+-- його створення переїде в `bootstrapStore`.
+insert into public.languages (id, code, name, status, is_default, sort_order)
+values ('00000002-0000-4000-8000-000000000001', 'uk', 'Українська', 'published', true, 0)
 on conflict (code) do nothing;
 
 -- ── Тип ціни ───────────────────────────────────────────────────────────────

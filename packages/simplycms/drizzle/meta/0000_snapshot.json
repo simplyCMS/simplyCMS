@@ -886,7 +886,7 @@
         },
         "code": {
           "name": "code",
-          "type": "varchar(10)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -896,6 +896,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "status": {
+          "name": "status",
+          "type": "language_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
         "is_default": {
           "name": "is_default",
           "type": "boolean",
@@ -903,12 +911,12 @@
           "notNull": true,
           "default": false
         },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": true
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -919,6 +927,21 @@
         }
       },
       "indexes": {
+        "languages_code_lower_key": {
+          "name": "languages_code_lower_key",
+          "columns": [
+            {
+              "expression": "lower(\"code\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_languages_single_default": {
           "name": "idx_languages_single_default",
           "columns": [
@@ -949,7 +972,16 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "languages_code_format": {
+          "name": "languages_code_format",
+          "value": "\"languages\".\"code\" ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$'"
+        },
+        "languages_default_published": {
+          "name": "languages_default_published",
+          "value": "NOT \"languages\".\"is_default\" OR \"languages\".\"status\" = 'published'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.modification_property_values": {
@@ -6014,6 +6046,15 @@
         "percent",
         "fixed_amount",
         "fixed_price"
+      ]
+    },
+    "public.language_status": {
+      "name": "language_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "published",
+        "disabled"
       ]
     },
     "public.property_type": {

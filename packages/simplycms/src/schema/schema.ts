@@ -64,6 +64,7 @@ export const appRole = pgEnum("app_role", ['admin', 'user'])
 export const discountGroupOperator = pgEnum("discount_group_operator", ['and', 'or', 'not', 'min', 'max'])
 export const discountTargetType = pgEnum("discount_target_type", ['product', 'modification', 'section', 'all'])
 export const discountType = pgEnum("discount_type", ['percent', 'fixed_amount', 'fixed_price'])
+export const languageStatus = pgEnum("language_status", ['draft', 'published', 'disabled'])
 export const propertyType = pgEnum("property_type", ['text', 'number', 'select', 'multiselect', 'range', 'color', 'boolean'])
 export const shippingCalculationType = pgEnum("shipping_calculation_type", ['flat', 'weight', 'order_total', 'free_from'])
 export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 'carrier'])
@@ -154,16 +155,23 @@ export const userCategories = pgTable("user_categories", {
 
 export const languages = pgTable("languages", {
 	id: uuid().primaryKey().notNull(),
-	code: varchar({ length: 10 }).notNull(),
+	// Канонічний BCP 47 (регістр значущий): сегмент URL — `lower(code)`.
+	code: text().notNull(),
 	name: text().notNull(),
+	// Машина станів мови (М1, І1–І3): draft → published → disabled. Основна мова
+	// лише `published` і незмінна — це тримають CHECK нижче й тригер
+	// `languages_guard` (`0004_functions.sql`), а не код операцій.
+	status: languageStatus().default('draft').notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
-	isActive: boolean("is_active").default(true).notNull(),
+	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	unique("languages_code_key").on(table.code),
-	// К3-14: таблиця без parent-колонки — CRUD ще не реалізований (лише
-	// nav-заглушка), тож дефолт структурно глобальний.
+	// `en-GB` і `en-gb` — один сегмент URL, тож другий мусить відхилятись.
+	uniqueIndex("languages_code_lower_key").using("btree", sql`lower(${table.code})`),
 	uniqueIndex("idx_languages_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
+	check("languages_code_format", sql`${table.code} ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$'`),
+	check("languages_default_published", sql`NOT ${table.isDefault} OR ${table.status} = 'published'`),
 ]);
 
 export const userRoles = pgTable("user_roles", {

@@ -12,12 +12,9 @@ export {
   isCoreMigrationName,
   type MigrationFile,
 } from './files';
-export {
-  applyMigrations,
-  MIGRATION_LOCK_KEY,
-  type ApplyOptions,
-  type ApplyReport,
-} from './apply';
+export { applyMigrations, type ApplyOptions, type ApplyReport } from './apply';
+// Ім'я лишається публічним, джерело — реєстр ключів замків.
+export { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
 export { scramSha256Verifier } from './scram';
 export {
   readJournal,

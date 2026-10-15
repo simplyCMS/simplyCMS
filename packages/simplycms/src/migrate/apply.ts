@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
 import { MigrationChecksumError, UnjournaledDatabaseError } from './errors';
 import {
   checksumOf,
@@ -19,13 +20,9 @@ import {
   syncRuntimePassword,
 } from './runtime-password';
 
-/**
- * Ключ сесійного `pg_advisory_lock` накату (ASCII «SCMSMIGR»). Advisory-лок
- * у Postgres прив'язаний до бази, тож дві репліки однієї бази серіалізуються,
- * а різні бази одного кластера — ні. `BigInt(…)`, а не літерал `n`: ціль
- * компіляції кореня — ES2017.
- */
-export const MIGRATION_LOCK_KEY: bigint = BigInt('0x53434D534D494752');
+// Ключ сесійного `pg_advisory_lock` накату живе в реєстрі ключів замків
+// (`simplycms/db/lock-keys`): один простір ключів на базу, і лише реєстр доводить,
+// що жоден рядковий ключ не збігається з ним.
 const LOCK_PARAMS = [MIGRATION_LOCK_KEY.toString()];
 
 export type ApplyOptions = {

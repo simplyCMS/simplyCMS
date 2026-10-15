@@ -7,6 +7,7 @@ import {
   type CategoryRule,
 } from 'simplycms/domain';
 import { categoryRules, profiles, userCategoryHistory } from 'simplycms/schema';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { loadDefaultUserCategoryId } from './categories';
 import { loadCustomerStats } from './customer-stats';
 
@@ -16,7 +17,7 @@ import { loadCustomerStats } from './customer-stats';
  * ним. Живе в `commerce`, бо ним користуються і вітрина, і адмінка.
  */
 export function customerCategoryLock(userId: string): string {
-  return `customer-category:${userId}`;
+  return `${LOCK_KEYS.customerCategoryPrefix}${userId}`;
 }
 
 export interface CategoryChange {

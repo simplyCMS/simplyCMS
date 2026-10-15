@@ -1,3 +1,5 @@
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+
 /**
  * Advisory-ключ конфігурації знижок (Е6в-15). ПЕРШИЙ запит транзакції
  * (`lockCatalogTarget`) кожного запису груп (insert/update фабрики — guard
@@ -10,4 +12,4 @@
  * `user_category`), бере `CUSTOMER_CONFIG_LOCK` ПЕРШИМ; навпаки — дедлок
  * із видаленням категорії, що перевіряє посилання з умов знижок.
  */
-export const DISCOUNT_CONFIG_LOCK = 'discount-config';
+export const DISCOUNT_CONFIG_LOCK = LOCK_KEYS.discountConfig;

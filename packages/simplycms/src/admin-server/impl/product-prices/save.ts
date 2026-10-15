@@ -5,6 +5,7 @@ import { productPrices } from 'simplycms/schema';
 import { MONEY_RE } from 'simplycms/domain/money';
 import type { ActorDb } from 'simplycms/db';
 import type { ProductPrice } from 'simplycms/schema/types';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { lockCatalogTarget } from '../catalog-lock';
@@ -49,7 +50,7 @@ export async function saveProductPrices(
   // Перша вставка пари не має рядка під FOR UPDATE — серіалізуємо ціль (catalog-lock.ts).
   await lockCatalogTarget(
     db,
-    `prices:${data.productId}:${data.modificationId ?? '-'}`,
+    `${LOCK_KEYS.pricesPrefix}${data.productId}:${data.modificationId ?? '-'}`,
   );
   const scope = and(
     eq(productPrices.productId, data.productId),

@@ -30,9 +30,10 @@ const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
  * першому), потім insert #2 → 23505.
  * Коди — унікальні відносно сіду (UNIQUE code у languages/user_categories).
  *
- * 🔴 `shipping_zones` у GLOBAL немає: сід тримає єдину основну зону, а
- * reset автокомітом (зняти дефолт) відкладений тригер відхилив би — для неї
- * окремий кейс нижче, без reset.
+ * 🔴 `shipping_zones` і `languages` у GLOBAL немає: сід тримає єдину основну
+ * зону (і мову), а reset — зняти дефолт — відхилили б відкладений тригер зони
+ * і `languages_guard` (`is_default` мови незмінний) — для обох окремі кейси
+ * нижче, без reset.
  */
 const U1 = 'a0000000-0000-4000-8000-000000000001';
 const U2 = 'a0000000-0000-4000-8000-000000000002';
@@ -50,11 +51,6 @@ const GLOBAL: Array<[table: string, first: string, second: string]> = [
     'user_categories',
     `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 1', 'dflt-1', true)`,
     `insert into public.user_categories (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 2', 'dflt-2', true)`,
-  ],
-  [
-    'languages',
-    `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz1', 'Дефолт 1', true)`,
-    `insert into public.languages (id, code, name, is_default) values (gen_random_uuid(), 'zz2', 'Дефолт 2', true)`,
   ],
 ];
 
@@ -127,6 +123,20 @@ describe('К3-14: інваріант is_default тримає БД (усі 7 ін
         `insert into public.shipping_zones (id, name, is_default) values (gen_random_uuid(), 'Дефолт 2', true)`,
       ),
     ).rejects.toMatchObject({ code: '23505' });
+  });
+
+  it('languages: сід уже тримає основну мову — друга основна → 23505', async () => {
+    // `published` обовʼязковий: основна не в `published` упала б раніше на
+    // CHECK `languages_default_published` (23514), а не на індексі.
+    await expect(
+      queryRows(
+        dbUrl,
+        `insert into public.languages (id, code, name, status, is_default) values (gen_random_uuid(), 'pl', 'Polski', 'published', true)`,
+      ),
+    ).rejects.toMatchObject({
+      code: '23505',
+      constraint: 'idx_languages_single_default',
+    });
   });
 
   it.each(SCOPED)(

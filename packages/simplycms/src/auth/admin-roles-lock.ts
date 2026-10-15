@@ -1,3 +1,5 @@
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+
 /**
  * Advisory-ключ ролей адміна (Е6г-4, Е6г-19): його беруть `setAdminRole`,
  * `setCustomerBan`, `deleteCustomer` і invite власника. Перевірки «не адмін»,
@@ -7,4 +9,4 @@
  * адмінку, а адмінка імпортує ключ звідси. Порядок локів (канон §13):
  * `customer-category:<userId>` → `admin-roles`, зворотного не бере ніхто.
  */
-export const ADMIN_ROLES_LOCK = 'admin-roles';
+export const ADMIN_ROLES_LOCK = LOCK_KEYS.adminRoles;

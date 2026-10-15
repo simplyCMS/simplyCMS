@@ -148,5 +148,6 @@ export type NewTheme = InferInsertModel<typeof themes>;
 export type Plugin = InferSelectModel<typeof plugins>;
 export type SystemSetting = InferSelectModel<typeof systemSettings>;
 export type Language = InferSelectModel<typeof languages>;
+export type LanguageStatus = Language['status'];
 export type Banner = InferSelectModel<typeof banners>;
 export type NewBanner = InferInsertModel<typeof banners>;

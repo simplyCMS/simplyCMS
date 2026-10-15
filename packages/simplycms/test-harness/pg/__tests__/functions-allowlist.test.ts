@@ -19,8 +19,10 @@ import {
 /** Функції — `схема.імʼя`, тригери — голе імʼя. */
 const ALLOWLIST = [
   'app.current_user_id',
+  'public.languages_guard',
   'public.refuse_banned_session',
   'public.require_default_shipping_zone',
+  'languages_guard',
   'sessions_refuse_banned',
   'shipping_zones_require_default',
 ];

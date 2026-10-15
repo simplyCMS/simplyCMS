@@ -1,3 +1,5 @@
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+
 /**
  * Advisory-ключ конфігурації доставки (Е6а-12). ПЕРШИЙ запит транзакції
  * (`lockCatalogTarget`) кожного запису способів, зон і точок: insert/update
@@ -5,7 +7,7 @@
  * саме він серіалізує інваріанти між собою (єдина дефолтна зона, точка
  * належить способу самовивозу, спосіб із точками не видаляється).
  */
-export const SHIPPING_CONFIG_LOCK = 'shipping-config';
+export const SHIPPING_CONFIG_LOCK = LOCK_KEYS.shippingConfig;
 
 /**
  * Guarded remove доставки: кожен запитаний id має знайтись (`found` —

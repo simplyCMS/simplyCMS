@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
 import { themes } from 'simplycms/schema';
 import { activeThemeCache, isBuiltTheme } from 'simplycms/site';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
@@ -17,7 +18,7 @@ export const activateThemeInput = z.object({
  * Advisory-ключ активної теми (Е6б-15): серіалізує дві вкладки, що
  * активують різні теми одночасно.
  */
-export const SITE_THEME_LOCK = 'site-theme';
+export const SITE_THEME_LOCK = LOCK_KEYS.siteTheme;
 
 /**
  * Активувати тему (Е6б-15). Порядок у транзакції — канон:

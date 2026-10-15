@@ -650,6 +650,18 @@ email в іншому регістрі — не конфлікт, записує
   `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (invite — auth і не може імпортувати
   адмінку), адмінка імпортує його звідти. Перевірки «не адмін», «не я», «не
   останній адмін» і «не забанений» виконуються лише під ним.
+- 🔴 **Ключі замків — ОДИН реєстр `simplycms/db/lock-keys`** (`LOCK_KEYS`, М1): ключі
+  `admin-roles`, `customer-config`, `discount-config`, `shipping-config`, `site-theme`,
+  `store-profile`, `price-type-default`, `languages-set`, префікси
+  `customer-category:`, `stock:`, `prices:`, `mod-default:` і ключ накату
+  `MIGRATION_LOCK_KEY` (число, не рядок). Константи модулів (`ADMIN_ROLES_LOCK`,
+  `CUSTOMER_CONFIG_LOCK` тощо) — псевдоніми реєстру; новий ключ додається ТІЛЬКИ сюди.
+  Рядковий ключ хешується `hashtextextended(key, 0)` у bigint, ключ накату — число, а
+  простір ключів один на базу: `lock-keys-disjoint.test.ts` доводить, що жоден рядковий
+  ключ не збігається з іншим чи з ключем накату, а `lock-keys.test.ts` фіксує значення
+  літералами (їх хешують і хелпери харнеса). `languages-set` береться СПІЛЬНИМ
+  (`advisoryXactLockShared`) операціями, що створюють адреси й токени, і ексклюзивним
+  (`advisoryXactLock`) — додаванням мови й переходом `disabled` → `published`.
 - 🔴 **Глобальний порядок локів: `customer-config` → `discount-config`.** Жодна
   операція не бере їх навпаки: `saveDiscount` з умовою `user_category` бере
   `customer-config`, потім `discount-config` (перевірка, що категорії умови

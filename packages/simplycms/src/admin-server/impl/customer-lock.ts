@@ -1,3 +1,5 @@
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+
 /**
  * Advisory-ключ конфігурації покупців (Е6в-15): запис і видалення категорій,
  * setDefault, запис автоправил — і `saveDiscount` з умовою `user_category`
@@ -8,4 +10,4 @@
  * 🔴 Глобальний порядок: `customer-config` → `discount-config` — цей ключ
  * завжди ПЕРШИЙ, коли операції потрібні обидва.
  */
-export const CUSTOMER_CONFIG_LOCK = 'customer-config';
+export const CUSTOMER_CONFIG_LOCK = LOCK_KEYS.customerConfig;

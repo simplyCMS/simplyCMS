@@ -70,3 +70,42 @@ CREATE CONSTRAINT TRIGGER shipping_zones_require_default
 AFTER INSERT OR UPDATE OF is_default OR DELETE ON public.shipping_zones
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION public.require_default_shipping_zone();
+
+-- ── languages: машина станів мови (М1, І1–І3) ───────────────────────────────
+-- «Рівно одна основна» тримає частковий унікальний індекс, «основна лише
+-- `published`» на INSERT — CHECK `languages_default_published`. Рядкові
+-- обмеження не бачать СТАРОГО рядка, тому незмінність `code` і `is_default`,
+-- перехід основної в не-`published` та видалення основної — тригер.
+-- BEFORE-тригер спрацьовує раніше за CHECK, тож на UPDATE користувач бачить
+-- пояснення, а не безіменний 23514. Не-основну мову (без посилань на неї)
+-- видалити можна: будь-яке посилання блокує FK RESTRICT, а не цей тригер.
+-- INSERT тригер не чіпає: мову створює операція з мовним набором під замком.
+-- TRUNCATE рядкові тригери не викликає — так тести чистять таблицю.
+CREATE OR REPLACE FUNCTION public.languages_guard() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.is_default THEN
+      RAISE EXCEPTION 'languages: основну мову не видалити'
+        USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF NEW.code IS DISTINCT FROM OLD.code
+     OR NEW.is_default IS DISTINCT FROM OLD.is_default
+     OR (NEW.is_default AND NEW.status <> 'published') THEN
+    RAISE EXCEPTION 'languages: код і основна мова незмінні'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.languages_guard() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS languages_guard ON public.languages;
+CREATE TRIGGER languages_guard
+BEFORE UPDATE OR DELETE ON public.languages
+FOR EACH ROW EXECUTE FUNCTION public.languages_guard();

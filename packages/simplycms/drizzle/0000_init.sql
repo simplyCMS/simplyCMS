@@ -2,6 +2,7 @@ CREATE TYPE "public"."app_role" AS ENUM('admin', 'user');--> statement-breakpoin
 CREATE TYPE "public"."discount_group_operator" AS ENUM('and', 'or', 'not', 'min', 'max');--> statement-breakpoint
 CREATE TYPE "public"."discount_target_type" AS ENUM('product', 'modification', 'section', 'all');--> statement-breakpoint
 CREATE TYPE "public"."discount_type" AS ENUM('percent', 'fixed_amount', 'fixed_price');--> statement-breakpoint
+CREATE TYPE "public"."language_status" AS ENUM('draft', 'published', 'disabled');--> statement-breakpoint
 CREATE TYPE "public"."property_type" AS ENUM('text', 'number', 'select', 'multiselect', 'range', 'color', 'boolean');--> statement-breakpoint
 CREATE TYPE "public"."shipping_calculation_type" AS ENUM('flat', 'weight', 'order_total', 'free_from');--> statement-breakpoint
 CREATE TYPE "public"."shipping_pricing" AS ENUM('rates', 'provider', 'carrier');--> statement-breakpoint
@@ -102,12 +103,15 @@ CREATE TABLE "discounts" (
 --> statement-breakpoint
 CREATE TABLE "languages" (
 	"id" uuid PRIMARY KEY NOT NULL,
-	"code" varchar(10) NOT NULL,
+	"code" text NOT NULL,
 	"name" text NOT NULL,
+	"status" "language_status" DEFAULT 'draft' NOT NULL,
 	"is_default" boolean DEFAULT false NOT NULL,
-	"is_active" boolean DEFAULT true NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "languages_code_key" UNIQUE("code")
+	CONSTRAINT "languages_code_key" UNIQUE("code"),
+	CONSTRAINT "languages_code_format" CHECK ("languages"."code" ~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$'),
+	CONSTRAINT "languages_default_published" CHECK (NOT "languages"."is_default" OR "languages"."status" = 'published')
 );
 --> statement-breakpoint
 CREATE TABLE "modification_property_values" (
@@ -697,6 +701,7 @@ CREATE INDEX "idx_discount_groups_parent" ON "discount_groups" USING btree ("par
 CREATE INDEX "idx_discount_targets_discount" ON "discount_targets" USING btree ("discount_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_group" ON "discounts" USING btree ("group_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_discounts_price_type_id" ON "discounts" USING btree ("price_type_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "languages_code_lower_key" ON "languages" USING btree (lower("code"));--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_mod" ON "modification_property_values" USING btree ("modification_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_option" ON "modification_property_values" USING btree ("option_id" uuid_ops);--> statement-breakpoint

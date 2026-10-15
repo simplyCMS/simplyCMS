@@ -21,3 +21,21 @@ export async function advisoryXactLock(
     sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`,
   );
 }
+
+/**
+ * СПІЛЬНИЙ варіант того самого замка (`pg_advisory_xact_lock_shared`): ключ
+ * хешується так само, тож він конфліктує з ексклюзивним `advisoryXactLock` на
+ * тому ж ключі, але не з іншими спільними. Беруть операції, що лише
+ * приєднуються до загального набору (наприклад, створення сутності під
+ * `LOCK_KEYS.languagesSet`), а ексклюзивний власник — зміна самого набору —
+ * чекає завершення всіх таких транзакцій. Лок береться ПЕРШИМ запитом
+ * транзакції; знімається на COMMIT/ROLLBACK.
+ */
+export async function advisoryXactLockShared(
+  db: ActorDb,
+  key: string,
+): Promise<void> {
+  await db.execute(
+    sql`select pg_advisory_xact_lock_shared(hashtextextended(${key}, 0))`,
+  );
+}

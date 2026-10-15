@@ -12,6 +12,7 @@ import {
 import { media, systemSettings } from 'simplycms/schema';
 import { readStoreProfile, storeProfileCache } from 'simplycms/site';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { lockCatalogTarget } from '../catalog-lock';
 import { stateConflict } from '../errors';
 import { runAdmin } from '../run';
@@ -29,7 +30,7 @@ const STORE_LOGO = 'store_logo' satisfies MediaEntityType;
  * обидві прочитали б той самий «попередній» і одна з нових лишилась би
  * сиротою. `FOR UPDATE` рядка не годиться — рядка може не бути (upsert).
  */
-export const STORE_PROFILE_LOCK = 'store-profile';
+export const STORE_PROFILE_LOCK = LOCK_KEYS.storeProfile;
 
 /**
  * Чи референс — рядок `media` саме логотипа: тип І власник (К3-Е6д-3), щоб
