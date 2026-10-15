@@ -1025,7 +1025,7 @@
 **Files:**
 - Modify:
   - `schema/schema.ts` — знос `products.{slug,name,short_description,description,meta_title,meta_description,images,return_policy,shipping_details}`, `product_modifications.{slug,name,images}`, `*_property_values.value`; `value_kind` NOT NULL; складені FK і CHECK Р18; частковий UNIQUE; `option_id` FK `ON DELETE CASCADE`;
-  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`; і тригери НАЯВНОСТІ адреси й токена на `AFTER INSERT` бази — `attach_current_address_triggers(products, url_paths, 'product_id')`, `attach_current_token_triggers(product_modifications, slug_tokens, 'modification_id')` з Task 5, К4);
+  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`; і тригери НАЯВНОСТІ адреси й токена на `AFTER INSERT` бази (К4): процедури `attach_current_address_triggers`/`attach_current_token_triggers` уже викликані в Task 5, тож тут лише прибрати рядки `DISABLE TRIGGER` тригерів бази `products_cur_addr_b` і `product_modifications_cur_tok_b` з позначкою `-- М1-TEMP` (повторний виклик процедури впаде на дублікаті; тест `tgenabled` з Task 5 (`url-paths.test.ts`, `slug-tokens.test.ts`) перевертається з `'D'` на `'O'`);
   - `domain/media.ts` (`MEDIA_COLUMNS` без `products.images`, `product_modifications.images`);
   - `fixtures/product-graph.ts` (без `// М1-TEMP`); команди Task 11/12 (без дзеркалення);
   - `admin-server/impl/products/resource.ts` і `product-modifications/resource.ts` (лишається лише читання для колекцій), `property-values/resources.ts`;
@@ -1058,7 +1058,7 @@
   - (г) прибрати частковий UNIQUE → І8 червоний;
   - (д) прибрати умову `value_kind=text` → І5 червоний;
   - (е) прибрати тригер на `product_translations` → І4 червоний;
-  - (є) не підключати тригер наявності адреси на `products` → кейс «без адреси» червоний (І16).
+  - (є) повернути рядок `DISABLE TRIGGER` тригера бази `products_cur_addr_b` → кейс «без адреси» червоний (І16).
 
   Commit `feat(multilingual): товар — знос старих колонок, обмеження значень, обов'язкове джерело`.
 
