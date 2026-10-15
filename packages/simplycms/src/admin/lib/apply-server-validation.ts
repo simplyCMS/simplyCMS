@@ -58,6 +58,7 @@ const KEYS = {
   invalid_decimal: 'admin.validation.invalid_decimal',
   custom: 'admin.validation.custom',
   taken: 'admin.validation.taken',
+  reserved: 'admin.validation.reserved',
 } as const satisfies Record<ValidationIssueCode, MessageKey>;
 
 /** Ключ повідомлення для проблеми; повнота за кодами — типом `KEYS`. */

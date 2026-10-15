@@ -8,7 +8,7 @@ import {
   resolveToken,
   setExplicitToken,
 } from 'simplycms/addressing';
-import { useAddressingDb } from './fixtures/addressing-db';
+import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
 
 const CHECK = { code: '23514' };
 const UNIQUE = { code: '23505' };
@@ -24,23 +24,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     const id = await db.modification(productId);
     return { kind: 'modification' as const, id, scopeId: productId };
   };
-  const tok = (
-    locale: string,
-    slug: string,
-    t: { id: string; scopeId: string | null },
-    current = true,
-  ) =>
-    q(
-      `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
-       values ($1,$2,$3,$4,$5,$6)`,
-      [randomUUID(), locale, t.scopeId, slug, t.id, current],
-    );
-  const rows = (id: string) =>
-    q(
-      `select locale, slug, is_current from public.slug_tokens
-        where modification_id = $1 order by locale, is_current desc, slug`,
-      [id],
-    );
+  const { tok, rows } = tokenHelpers(q);
 
   beforeAll(async () => {
     await db.language('en');
@@ -144,50 +128,21 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     expect(first.get('uk')).toBe('red');
   });
 
-  describe('copyTokensForLocale', () => {
-    it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
-      await db.language('cs', 'draft');
-      const productId = await db.product();
-      const [x, z] = [
-        await db.modification(productId),
-        await db.modification(productId),
-      ];
-      const sx = { id: x, scopeId: productId };
-      const sz = { id: z, scopeId: productId };
-      await tok('uk', 'copy-x', sx);
-      await tok('uk', 'copy-z', sz);
-      await tok('cs', 'copy-z', sz);
-      await tok('cs', 'copy-x', sz, false);
-      expect(
-        await admin((d) => copyTokensForLocale(d, 'cs', 100)),
-      ).toBeGreaterThanOrEqual(1);
-      expect((await rows(x)).filter((r) => r.locale === 'cs')).toEqual([
-        { locale: 'cs', slug: 'copy-x-2', is_current: true },
-      ]);
-      expect(await admin((d) => copyTokensForLocale(d, 'cs', 100))).toBe(0);
-    });
-
-    it('модифікації пакета з колізією в новій мові не отримують однаковий slug', async () => {
-      await db.language('pl', 'draft');
-      const productId = await db.product();
-      const [a, b, other] = [
-        await db.modification(productId),
-        await db.modification(productId),
-        await db.modification(productId),
-      ];
-      await tok('uk', 'batch-a', { id: a, scopeId: productId });
-      await tok('uk', 'batch-a-2', { id: b, scopeId: productId });
-      await tok('pl', 'batch-a', { id: other, scopeId: productId }, false);
-      await tok('pl', 'other-now', { id: other, scopeId: productId });
-      await admin((d) => copyTokensForLocale(d, 'pl', 100));
-      const pl = async (id: string) =>
-        (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.slug);
-      expect(await pl(a)).toEqual(['batch-a-2']);
-      expect(await pl(b)).toEqual(['batch-a-2-2']);
-    });
-  });
-
   describe('setExplicitToken', () => {
+    it.each(['Upper', 'a/b', 'привіт', 'a--b'])(
+      'не slug (%s) → invalid_format',
+      async (slug) => {
+        const t = await mod();
+        await tok('uk', `fmt-${randomUUID().slice(0, 8)}`, t);
+        await expect(
+          admin((d) => setExplicitToken(d, t, 'uk', slug)),
+        ).rejects.toMatchObject({
+          name: 'ValidationError',
+          issues: [{ path: ['slug'], code: 'invalid_format' }],
+        });
+      },
+    );
+
     it('на чужий історичний або поточний → slug_taken', async () => {
       const productId = await db.product();
       const a = { id: await db.modification(productId), scopeId: productId };
@@ -293,5 +248,54 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
       { tgname: 'product_modifications_cur_tok_b', tgenabled: 'D' },
       { tgname: 'slug_tokens_cur_tok_r', tgenabled: 'O' },
     ]);
+  });
+});
+
+describe('copyTokensForLocale: ізольовано', () => {
+  const db = useAddressingDb('simplycms_copy_tokens_a');
+  const { tok, rows } = tokenHelpers(db.q);
+
+  it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
+    await db.language('cs', 'draft');
+    const productId = await db.product();
+    const [x, z] = [
+      await db.modification(productId),
+      await db.modification(productId),
+    ];
+    const sx = { id: x, scopeId: productId };
+    const sz = { id: z, scopeId: productId };
+    await tok('uk', 'copy-x', sx);
+    await tok('uk', 'copy-z', sz);
+    await tok('cs', 'copy-z', sz);
+    await tok('cs', 'copy-x', sz, false);
+    expect(await db.admin((d) => copyTokensForLocale(d, 'cs', 100))).toBe(1);
+    expect((await rows(x)).filter((r) => r.locale === 'cs')).toEqual([
+      { locale: 'cs', slug: 'copy-x-2', is_current: true },
+    ]);
+    expect(await db.admin((d) => copyTokensForLocale(d, 'cs', 100))).toBe(0);
+  });
+});
+
+describe('copyTokensForLocale: пакет з колізією', () => {
+  const db = useAddressingDb('simplycms_copy_tokens_b');
+  const { tok, rows } = tokenHelpers(db.q);
+
+  it('модифікації пакета з колізією в новій мові не отримують однаковий slug', async () => {
+    await db.language('pl', 'draft');
+    const productId = await db.product();
+    const [a, b, other] = [
+      await db.modification(productId),
+      await db.modification(productId),
+      await db.modification(productId),
+    ];
+    await tok('uk', 'batch-a', { id: a, scopeId: productId });
+    await tok('uk', 'batch-a-2', { id: b, scopeId: productId });
+    await tok('pl', 'batch-a', { id: other, scopeId: productId }, false);
+    await tok('pl', 'other-now', { id: other, scopeId: productId });
+    expect(await db.admin((d) => copyTokensForLocale(d, 'pl', 100))).toBe(2);
+    const pl = async (id: string) =>
+      (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.slug);
+    expect(await pl(a)).toEqual(['batch-a-2']);
+    expect(await pl(b)).toEqual(['batch-a-2-2']);
   });
 });

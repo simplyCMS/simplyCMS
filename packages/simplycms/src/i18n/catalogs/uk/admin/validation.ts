@@ -29,4 +29,5 @@ export const messages = {
   'admin.validation.invalid_decimal_plain': 'Введіть число',
   'admin.validation.custom': 'Некоректне значення',
   'admin.validation.taken': 'Таке значення вже використовується',
+  'admin.validation.reserved': 'Це значення зарезервоване системою',
 } as const;

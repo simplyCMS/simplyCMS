@@ -50,9 +50,9 @@ export function invalidFormat(field: string): ValidationError {
   return new ValidationError([{ path: [field], code: 'invalid_format' }]);
 }
 
-/** Зарезервований сегмент (`path_reserved`, І19): значення поза переліком. */
+/** Зарезервований сегмент чи ім'я з `public/` (І19): код `reserved`. */
 export function reservedValue(field: string): ValidationError {
-  return new ValidationError([{ path: [field], code: 'invalid_value' }]);
+  return new ValidationError([{ path: [field], code: 'reserved' }]);
 }
 
 export function assertSlugFormat(value: string, field: string): void {
@@ -73,7 +73,12 @@ export function allocateIn(
   return slug;
 }
 
-/** Postgres 23505 (drizzle перезагортає помилку драйвера в `.cause`). */
+/**
+ * Postgres 23505 (Drizzle перезагортає помилку драйвера в `.cause`;
+ * UPSTREAM:DRZ-1, docs/architecture/upstream-workarounds.md). Власний розбір,
+ * а не `toAdminConflict`: той живе в `admin-server`, якого `addressing` (T2)
+ * імпортувати не може.
+ */
 export function isUniqueViolation(error: unknown): boolean {
   const cause = (error as { cause?: unknown })?.cause ?? error;
   return (cause as { code?: string } | null)?.code === '23505';

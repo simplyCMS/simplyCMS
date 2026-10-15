@@ -2,7 +2,7 @@
 // мови, хеші джерела. Окремо від `write-plan.ts`, щоб тримати модулі в межах
 // ~150 рядків; зовні використовується лише через `simplycms/domain/translations`.
 import {
-  DOMAIN_ERROR_NAME,
+  ValidationError,
   type ValidationIssue,
 } from 'simplycms/contracts/domain-errors';
 import {
@@ -12,22 +12,6 @@ import {
   type TranslationRow,
 } from './status';
 import { normalizeTextInput } from './text';
-
-/**
- * Відмова вводу запису перекладу.
- *
- * `name` = `ValidationError` з T0-переліку: серіалізаційний адаптер впізнає
- * закриту родину за іменем (дух-тайпінг), тож помилка пройде межу serverFn, не
- * тягнучи серверний клас із `admin-server/impl`, якого T1 імпортувати не може.
- */
-export class TranslationValidationError extends Error {
-  override readonly name = DOMAIN_ERROR_NAME.validation;
-  readonly issues: readonly ValidationIssue[];
-  constructor(issues: readonly ValidationIssue[]) {
-    super('[domain/translations] помилка валідації запису перекладу');
-    this.issues = issues;
-  }
-}
 
 export const issue = (
   path: readonly string[],
@@ -56,7 +40,7 @@ export function normalizePatch(
       values[field] = value;
     }
   }
-  if (issues.length > 0) throw new TranslationValidationError(issues);
+  if (issues.length > 0) throw new ValidationError(issues);
   return values;
 }
 

@@ -39,6 +39,9 @@
   поточної адреси/токена в `0004_functions.sql`);
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`. Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
+- **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`
+  імпортуються з `simplycms/contracts/domain-errors` (раніше `simplycms/admin-server/impl`, звідки реекспорт прибрано).
+  Новий код поля `reserved` (`VALIDATION_ISSUE_CODES`) для зарезервованої адреси.
 - **i18n: відкритий `Locale`, `createTranslator(locale, fallback)`, `normalizeLocale` знесено:** `Locale` —
   відкритий рядок BCP 47 (мови додає власник магазину, а не ядро). `createTranslator` приймає ДРУГИМ
   аргументом обов'язкову fallback-мову (основна мова магазину, не обов'язково `uk`); ланцюг — «каталог
@@ -72,8 +75,7 @@
   `simplycms/addressing` (server-only): `createPathsForEntity`, `setExplicitPath`,
   `copyPathsForLocale`, `resolvePath`, `currentPaths` та дзеркальні для токенів, `publicNames`.
 - `simplycms/vite`: `simplycmsPublicManifest()` пише `dist/client/.simplycms-public.json` — верхньорівневі
-  імена `public/`, яким не може дорівнювати адреса сутності. Додайте плагін у `vite.config.ts`
-  магазину (шаблон `create-simplycms-store` уже містить).
+  імена `public/`, яким не може дорівнювати адреса сутності.
 
 ---
 

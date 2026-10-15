@@ -257,6 +257,7 @@ export const VALIDATION_ISSUE_CODES = [
   'invalid_decimal',
   'custom',
   'taken',
+  'reserved',
 ] as const;
 
 export type ValidationIssueCode = (typeof VALIDATION_ISSUE_CODES)[number];

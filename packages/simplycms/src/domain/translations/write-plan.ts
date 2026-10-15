@@ -2,18 +2,14 @@
 // рядки мов, які хеші джерела стампувати, чи не змінилось джерело, поки
 // перекладач працював. IO немає: поточний стан приходить аргументом, а
 // функцію хешу інжектує сервер (`sourceFieldHash`) — тут `node:crypto` не можна.
+import { ValidationError } from 'simplycms/contracts/domain-errors';
 import {
   fieldHasText,
   toSourceRow,
   type TranslatableSpec,
   type TranslationRow,
 } from './status';
-import {
-  TranslationValidationError,
-  issue,
-  mergeHashes,
-  normalizePatch,
-} from './write-parts';
+import { issue, mergeHashes, normalizePatch } from './write-parts';
 
 /** Вхід плану. `patch` містить ЛИШЕ мови, які клієнт надіслав. */
 export interface TranslationWriteInput {
@@ -74,7 +70,7 @@ function findSourceChange(
       (f) => !spec.fields.includes(f),
     );
     if (unknown.length > 0)
-      throw new TranslationValidationError(
+      throw new ValidationError(
         unknown.map((f) => issue([locale, f], 'unrecognized_keys')),
       );
     if (Object.entries(expected).some(([field, h]) => stored[field] !== h))
@@ -87,7 +83,7 @@ function findSourceChange(
  * План запису агрегата перекладів. Мова без жодного надісланого поля в
  * `upserts` не потрапляє, як і мова поза `patch`.
  *
- * @throws TranslationValidationError невідоме поле, `null`/порожнє для
+ * @throws ValidationError невідоме поле, `null`/порожнє для
  *   обов'язкового, основна мова без обов'язкового поля.
  */
 export function planTranslationWrite(
@@ -111,7 +107,7 @@ export function planTranslationWrite(
       (f) => !fieldHasText(spec, f, newSource[f]),
     );
     if (missing.length > 0)
-      throw new TranslationValidationError(
+      throw new ValidationError(
         missing.map((f) => issue([primary, f], 'too_small')),
       );
   }

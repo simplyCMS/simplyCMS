@@ -16,7 +16,6 @@ export {
   type TranslationRow,
 } from './status';
 export { hasRichText, hasText, normalizeTextInput } from './text';
-export { TranslationValidationError } from './write-parts';
 export {
   planTranslationWrite,
   type TranslationUpsert,

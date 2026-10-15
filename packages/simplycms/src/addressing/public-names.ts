@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 /** Файл, який пише плагін збірки `simplycms/vite` поруч зі статикою клієнта. */
 export const PUBLIC_MANIFEST_PATH = 'dist/client/.simplycms-public.json';
 
+let defaultRoot: string | null = null;
 const cache = new Map<string, readonly string[]>();
 
 /**
@@ -12,7 +13,9 @@ const cache = new Map<string, readonly string[]>();
  * (dev, тести) — `[]`. Кеш на процес: після збірки маніфест не змінюється.
  * `root` — корінь магазину; типово `process.cwd()` (так стартує прод).
  */
-export function publicNames(root: string = process.cwd()): readonly string[] {
+export function publicNames(
+  root: string = defaultRoot ?? process.cwd(),
+): readonly string[] {
   const file = resolve(root, PUBLIC_MANIFEST_PATH);
   const hit = cache.get(file);
   if (hit) return hit;
@@ -29,4 +32,18 @@ export function publicNames(root: string = process.cwd()): readonly string[] {
 /** Лише для тестів: скинути кеш між тимчасовими теками. */
 export function resetPublicNamesCache(): void {
   cache.clear();
+}
+
+/**
+ * Лише для тестів: підмінює корінь магазину для `publicNames()` (генератори
+ * кличуть її без аргументів). Повертає функцію відновлення.
+ */
+export function usePublicNamesRoot(root: string): () => void {
+  const previous = defaultRoot;
+  defaultRoot = root;
+  cache.clear();
+  return () => {
+    defaultRoot = previous;
+    cache.clear();
+  };
 }

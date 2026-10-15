@@ -3,15 +3,20 @@
 // перевірки — власником; відкладений тригер наявності ловиться на COMMIT сирих
 // транзакцій app_admin.
 import { randomUUID } from 'node:crypto';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
+  PUBLIC_MANIFEST_PATH,
   copyPathsForLocale,
   createPathsForEntity,
   currentPaths,
   resolvePath,
   setExplicitPath,
+  usePublicNamesRoot,
 } from 'simplycms/addressing';
-import { useAddressingDb } from './fixtures/addressing-db';
+import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
 
 const CHECK = { code: '23514' };
 const UNIQUE = { code: '23505' };
@@ -20,24 +25,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   const db = useAddressingDb('simplycms_url_paths');
   const { q, admin, tx } = db;
 
-  /** Рядок реєстру власником; `current` — чи поточний. */
-  const addr = (
-    locale: string,
-    path: string,
-    productId: string | null,
-    current = true,
-  ) =>
-    q(
-      `insert into public.url_paths (id, locale, path, product_id, is_current)
-       values ($1,$2,$3,$4,$5)`,
-      [randomUUID(), locale, path, productId, current],
-    );
-  const rows = (productId: string) =>
-    q(
-      `select locale, path, is_current from public.url_paths
-        where product_id = $1 order by locale, is_current desc, path`,
-      [productId],
-    );
+  const { addr, rows } = pathHelpers(q);
 
   beforeAll(async () => {
     await db.language('en');
@@ -115,49 +103,6 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     expect(en.get('uk')).toBe('en-2');
   });
 
-  describe('copyPathsForLocale (Review Focus 2)', () => {
-    it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
-      await db.language('cs', 'draft');
-      const [x, z] = [await db.product(), await db.product()];
-      await addr('uk', 'copy-x', x);
-      await addr('uk', 'copy-z', z);
-      // Мова cs уже має товар Z з поточною адресою й історичним рядком, що займає copy-x.
-      await addr('cs', 'copy-z', z);
-      await addr('cs', 'copy-x', z, false);
-      expect(
-        await admin((d) => copyPathsForLocale(d, 'cs', 100)),
-      ).toBeGreaterThanOrEqual(1);
-      expect((await rows(x)).filter((r) => r.locale === 'cs')).toEqual([
-        { locale: 'cs', path: 'copy-x-2', is_current: true },
-      ]);
-      expect(await admin((d) => copyPathsForLocale(d, 'cs', 100))).toBe(0);
-    });
-
-    it('товари пакета з однаковою базою в новій мові не отримують однаковий slug', async () => {
-      await db.language('pl', 'draft');
-      const [a, b] = [await db.product(), await db.product()];
-      await addr('uk', 'batch-a', a);
-      await addr('uk', 'batch-a-2', b);
-      // Займаємо batch-a історією іншого товару: a → batch-a-2, і b мусить піти далі.
-      const other = await db.product();
-      await addr('pl', 'batch-a', other, false);
-      await addr('pl', 'other-now', other);
-      await admin((d) => copyPathsForLocale(d, 'pl', 100));
-      const pl = async (id: string) =>
-        (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.path);
-      expect(await pl(a)).toEqual(['batch-a-2']);
-      expect(await pl(b)).toEqual(['batch-a-2-2']);
-    });
-
-    it('limit обмежує пакет', async () => {
-      await db.language('sk', 'draft');
-      for (let i = 0; i < 3; i += 1)
-        await addr('uk', `lim-${i}`, await db.product());
-      const first = await admin((d) => copyPathsForLocale(d, 'sk', 2));
-      expect(first).toBe(2);
-    });
-  });
-
   describe('setExplicitPath', () => {
     it('на чужий історичний або поточний → path_taken', async () => {
       const [a, b] = [await db.product(), await db.product()];
@@ -208,21 +153,73 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       ).toEqual(new Map([['uk', 'free-new']]));
     });
 
-    it.each(['cart', 'admin', 'sitemap.xml', 'uk', 'en'])(
-      'зарезервований сегмент і код мови (%s) → path_reserved',
+    it.each(['cart', 'admin', 'assets', 'uk', 'en'])(
+      'зарезервований сегмент і код мови (%s) → reserved (І19)',
       async (path) => {
         const p = await db.product();
-        await addr('uk', `res-${path.replace('.', '-')}`, p);
+        await addr('uk', `res-${path}`, p);
         await expect(
           admin((d) =>
             setExplicitPath(d, { kind: 'product', id: p }, 'uk', path),
           ),
         ).rejects.toMatchObject({
           name: 'ValidationError',
-          issues: [{ path: ['path'] }],
+          issues: [{ path: ['path'], code: 'reserved' }],
         });
       },
     );
+
+    it.each(['sitemap.xml', 'robots.txt', 'Cart', 'a b'])(
+      'не slug (%s) → invalid_format, а не reserved',
+      async (path) => {
+        const p = await db.product();
+        await addr('uk', `fmt-${randomUUID().slice(0, 8)}`, p);
+        await expect(
+          admin((d) =>
+            setExplicitPath(d, { kind: 'product', id: p }, 'uk', path),
+          ),
+        ).rejects.toMatchObject({
+          name: 'ValidationError',
+          issues: [{ path: ['path'], code: 'invalid_format' }],
+        });
+      },
+    );
+
+    it('імена з public/ збірки (маніфест) → reserved; генератор обходить їх суфіксом', async () => {
+      const root = mkdtempSync(join(tmpdir(), 'scms-public-'));
+      mkdirSync(join(root, 'dist/client'), { recursive: true });
+      writeFileSync(
+        join(root, PUBLIC_MANIFEST_PATH),
+        JSON.stringify(['robots-custom', 'favicon']),
+      );
+      const restore = usePublicNamesRoot(root);
+      try {
+        const p = await db.product();
+        await addr('uk', 'pub-own', p);
+        await expect(
+          admin((d) =>
+            setExplicitPath(
+              d,
+              { kind: 'product', id: p },
+              'uk',
+              'robots-custom',
+            ),
+          ),
+        ).rejects.toMatchObject({
+          issues: [{ path: ['path'], code: 'reserved' }],
+        });
+        const q2 = await db.product();
+        const got = await admin((d) =>
+          createPathsForEntity(d, { kind: 'product', id: q2 }, 'favicon', [
+            'uk',
+          ]),
+        );
+        expect(got.get('uk')).toBe('favicon-2');
+      } finally {
+        restore();
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('відкладена наявність поточної адреси (К4, тригер реєстру)', () => {
@@ -298,5 +295,91 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       { tgname: 'products_cur_addr_b', tgenabled: 'D' },
       { tgname: 'url_paths_cur_addr_r', tgenabled: 'O' },
     ]);
+  });
+});
+
+// Кожен кейс копіювання — у власній БД: точна кількість скопійованих рядків не
+// залежить від товарів інших кейсів.
+describe('copyPathsForLocale: ізольовано (Review Focus 2)', () => {
+  const db = useAddressingDb('simplycms_copy_paths_a');
+  const { addr, rows } = pathHelpers(db.q);
+  const own = async (id: string, locale: string) =>
+    (await rows(id)).filter((r) => r.locale === locale);
+
+  it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
+    await db.language('cs', 'draft');
+    const [x, z] = [await db.product(), await db.product()];
+    await addr('uk', 'copy-x', x);
+    await addr('uk', 'copy-z', z);
+    // Мова cs уже має товар Z з поточною адресою й історичним рядком, що займає copy-x.
+    await addr('cs', 'copy-z', z);
+    await addr('cs', 'copy-x', z, false);
+    expect(await db.admin((d) => copyPathsForLocale(d, 'cs', 100))).toBe(1);
+    expect(await own(x, 'cs')).toEqual([
+      { locale: 'cs', path: 'copy-x-2', is_current: true },
+    ]);
+    expect(await own(z, 'cs')).toHaveLength(2); // власні рядки Z не чіпано
+    expect(await db.admin((d) => copyPathsForLocale(d, 'cs', 100))).toBe(0);
+  });
+});
+
+describe('copyPathsForLocale: пакет з колізією', () => {
+  const db = useAddressingDb('simplycms_copy_paths_b');
+  const { addr, rows } = pathHelpers(db.q);
+
+  it('товари пакета з однаковою базою в новій мові не отримують однаковий slug', async () => {
+    await db.language('pl', 'draft');
+    const [a, b] = [await db.product(), await db.product()];
+    await addr('uk', 'batch-a', a);
+    await addr('uk', 'batch-a-2', b);
+    // batch-a зайнятий історією іншого товару: a → batch-a-2, і b мусить піти далі.
+    const other = await db.product();
+    await addr('pl', 'batch-a', other, false);
+    await addr('pl', 'other-now', other);
+    expect(await db.admin((d) => copyPathsForLocale(d, 'pl', 100))).toBe(2);
+    const pl = async (id: string) =>
+      (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.path);
+    expect(await pl(a)).toEqual(['batch-a-2']);
+    expect(await pl(b)).toEqual(['batch-a-2-2']);
+  });
+});
+
+describe('copyPathsForLocale: limit', () => {
+  const db = useAddressingDb('simplycms_copy_paths_c');
+  const { addr } = pathHelpers(db.q);
+
+  it('limit обмежує пакет; пакети продовжують до 0', async () => {
+    await db.language('sk', 'draft');
+    for (let i = 0; i < 3; i += 1)
+      await addr('uk', `lim-${i}`, await db.product());
+    const run = () => db.admin((d) => copyPathsForLocale(d, 'sk', 2));
+    expect([await run(), await run(), await run()]).toEqual([2, 1, 0]);
+  });
+});
+
+describe('copyPathsForLocale: імена з public/ збірки', () => {
+  const db = useAddressingDb('simplycms_copy_paths_d');
+  const { addr, rows } = pathHelpers(db.q);
+
+  it('копія, що збіглася б з іменем у public/, отримує суфікс', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'scms-public-copy-'));
+    mkdirSync(join(root, 'dist/client'), { recursive: true });
+    writeFileSync(
+      join(root, PUBLIC_MANIFEST_PATH),
+      JSON.stringify(['pub-copy']),
+    );
+    const restore = usePublicNamesRoot(root);
+    try {
+      await db.language('hu', 'draft');
+      const p = await db.product();
+      await addr('uk', 'pub-copy', p);
+      expect(await db.admin((d) => copyPathsForLocale(d, 'hu', 100))).toBe(1);
+      expect((await rows(p)).filter((r) => r.locale === 'hu')).toEqual([
+        { locale: 'hu', path: 'pub-copy-2', is_current: true },
+      ]);
+    } finally {
+      restore();
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -80,3 +80,47 @@ export function useAddressingDb(prefix: string): AddressingDb {
     },
   };
 }
+
+type Q = AddressingDb['q'];
+
+/** Рядки реєстру адрес власником БД: вставка й вибірка історії товару. */
+export const pathHelpers = (q: Q) => ({
+  addr: (
+    locale: string,
+    path: string,
+    productId: string | null,
+    current = true,
+  ) =>
+    q(
+      `insert into public.url_paths (id, locale, path, product_id, is_current)
+       values ($1,$2,$3,$4,$5)`,
+      [randomUUID(), locale, path, productId, current],
+    ),
+  rows: (productId: string) =>
+    q(
+      `select locale, path, is_current from public.url_paths
+        where product_id = $1 order by locale, is_current desc, path`,
+      [productId],
+    ),
+});
+
+/** Те саме для реєстру токенів модифікацій. */
+export const tokenHelpers = (q: Q) => ({
+  tok: (
+    locale: string,
+    slug: string,
+    t: { id: string; scopeId: string | null },
+    current = true,
+  ) =>
+    q(
+      `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [randomUUID(), locale, t.scopeId, slug, t.id, current],
+    ),
+  rows: (id: string) =>
+    q(
+      `select locale, slug, is_current from public.slug_tokens
+        where modification_id = $1 order by locale, is_current desc, slug`,
+      [id],
+    ),
+});

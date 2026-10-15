@@ -25,4 +25,5 @@ export const messages: Catalog = {
   'admin.validation.invalid_decimal_plain': 'Enter a number',
   'admin.validation.custom': 'Invalid value',
   'admin.validation.taken': 'This value is already in use',
+  'admin.validation.reserved': 'This value is reserved by the system',
 };
