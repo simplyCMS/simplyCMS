@@ -104,6 +104,6 @@ describe('ModificationsTable: помилка валідації при вида�
       ),
     );
     await vi.waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
-    expect(toastError.mock.calls[0]![0]).toContain('[admin-server]');
+    expect(toastError.mock.calls[0]![0]).toContain('помилка валідації вводу');
   });
 });
