@@ -72,6 +72,8 @@ export async function setExplicitToken(
   slug: string,
 ): Promise<void> {
   assertSlugFormat(slug, 'slug');
+  // Спільний замок ПЕРШИМ кроком, як у `createTokensForEntity` (майстер §3.5).
+  await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
   const found = await db.execute<{ owner: string; is_current: boolean }>(
     sql`select modification_id as owner, is_current from public.slug_tokens
          where locale = ${locale} and token_kind = 'modification'

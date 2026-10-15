@@ -8,6 +8,8 @@ import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import {
   createPathsForEntity,
   createTokensForEntity,
+  setExplicitPath,
+  setExplicitToken,
 } from 'simplycms/addressing';
 import { advisoryXactLock } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
@@ -161,6 +163,62 @@ describe('languages.add проти паралельного створення �
     await a.done;
     expect(await tokenIn(mod, 'no')).toHaveLength(1);
   });
+
+  // Явна зміна адреси/токена теж бере спільний замок сама (майстер §3.5): стоїть у черзі
+  // за ексклюзивним власником. Без замка `waiters` лишається 0 і `until` падає.
+  it.each([
+    [
+      'адреси',
+      'es',
+      async (productId: string) =>
+        hold(db, (d) =>
+          setExplicitPath(
+            d,
+            { kind: 'product', id: productId },
+            'uk',
+            'expl-p',
+          ),
+        ),
+    ],
+    [
+      'токена',
+      'fi',
+      async (productId: string) => {
+        const mod = await db.modification(productId, 'expl-t-m');
+        return hold(db, (d) =>
+          setExplicitToken(
+            d,
+            { kind: 'modification', id: mod, scopeId: productId },
+            'uk',
+            'expl-t',
+          ),
+        );
+      },
+    ],
+  ])(
+    'явна зміна %s чекає ексклюзивного власника languagesSet',
+    async (_what, code, start) => {
+      const product = await db.product(`expl-${code}`);
+      const b = hold(db, async (d) => {
+        await advisoryXactLock(d, LOCK_KEYS.languagesSet);
+        await d
+          .insert(languages)
+          .values({ id: randomUUID(), code, name: code, status: 'draft' });
+      });
+      await until('add отримав замок', b.acquired);
+      const a = await start(product);
+      await until(
+        'явна зміна стала в чергу',
+        async () => (await waiters(db)) === 1,
+      );
+      expect(a.acquired()).toBe(false);
+      b.release();
+      await b.done;
+      await until('явна зміна отримала замок', a.acquired);
+      a.release();
+      await a.done;
+    },
+  );
 
   it('disabled → draft чекає творця адреси; творець комітиться без 23514', async () => {
     await addLanguage('ja');

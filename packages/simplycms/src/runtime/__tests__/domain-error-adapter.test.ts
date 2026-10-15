@@ -198,7 +198,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
       },
     ];
     const make = (extra: Record<string, unknown> = {}) =>
-      Object.assign(new Error('[admin-server] помилка валідації вводу'), {
+      Object.assign(new Error('помилка валідації вводу'), {
         name: 'ValidationError',
         issues,
         ...extra,

@@ -65,11 +65,16 @@ export async function executeOperation<I, O>(
           if (reserved.kind === 'mismatch')
             throw new ProblemError('idempotency_mismatch');
         }
-        const output = await def.run({ subject, actor, db }, parsed.data);
-        // Вихід звіряється зі схемою ВСЕРЕДИНІ транзакції завжди (не лише з
+        // Вихід розбирається схемою ВСЕРЕДИНІ транзакції завжди (не лише з
         // ключем): невідповідність відкочує зміну, а не віддає 500 після коміту.
-        const wire = encodeOutput(def.output, output);
-        if (idem) await storeIdempotentResponse(db, idem, 200, wire);
+        // 🔴 Назовні йде САМЕ розібране значення (зайві поля відсічено): serverFn і
+        // HTTP беруть одне й те саме, тож транспорти не розходяться (І24), а
+        // другого розбору в HTTP-шарі немає.
+        const output = encodeOutput(
+          def.output,
+          await def.run({ subject, actor, db }, parsed.data),
+        ) as O;
+        if (idem) await storeIdempotentResponse(db, idem, 200, output);
         return { replayed: false, output };
       },
     );

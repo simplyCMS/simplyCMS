@@ -9,7 +9,6 @@ import { executeOperation } from '../execute';
 import { fingerprintOf } from './idempotency';
 import { errorResponse, problemResponse } from './problem';
 import { authenticateRequest, subjectKeyOf } from './token-auth';
-import { encodeOutput } from './wire';
 
 /** Пошук операції в реєстрі: його передає РОУТ (тир `operations` не знає `admin-server`). */
 export type OperationLookup = (
@@ -108,7 +107,8 @@ export async function handleApiRequest(
         headers,
       });
     }
-    const wire = encodeOutput(def.output, result.output);
+    // `result.output` уже дротова форма, розібрана схемою у виконавці.
+    const wire = result.output;
     const version = (wire as { version?: unknown } | null)?.version;
     if (def.versioned && typeof version === 'number')
       headers.set('etag', `"v${version}"`);

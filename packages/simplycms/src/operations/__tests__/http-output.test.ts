@@ -8,11 +8,10 @@ vi.mock('simplycms/auth', async (orig) => ({
   ...(await orig<typeof import('simplycms/auth')>()),
   readSessionSubject: vi.fn(async () => ({ userId: 'u1', roles: ['admin'] })),
 }));
-vi.mock('../execute', () => ({
-  executeOperation: vi.fn(async () => ({
-    replayed: false,
-    output: result.output,
-  })),
+// Транзакцію підміняємо, виконавця НЕ мокаємо: звірка виходу зі схемою тепер у ньому.
+vi.mock('simplycms/db', async (orig) => ({
+  ...(await orig<typeof import('simplycms/db')>()),
+  withActor: vi.fn(async (_a: unknown, fn: (db: unknown) => unknown) => fn({})),
 }));
 
 import { defineOperation } from '..';
@@ -24,7 +23,7 @@ const op = defineOperation({
   input: z.object({}),
   output: z.object({ name: z.string(), at: z.iso.datetime() }),
   async run() {
-    return { name: 'x', at: '2026-01-01T00:00:00.000Z' };
+    return result.output as { name: string; at: string };
   },
 });
 const call = () =>

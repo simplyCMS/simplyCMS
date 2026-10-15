@@ -85,6 +85,9 @@ export async function setExplicitPath(
   path: string,
 ): Promise<void> {
   assertSlugFormat(path, 'path');
+  // Спільний замок ПЕРШИМ кроком, структурно (не обов'язком викликача): явна зміна
+  // адреси теж створює рядок для мови, що може бути додана паралельно (майстер §3.5).
+  await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
   if (reservedFor(await languageSegments(db))(path))
     throw reservedValue('path');
   const col = column(target);

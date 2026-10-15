@@ -27,6 +27,7 @@ import { defineOperation } from '..';
 import { invokeFromServerFn, passThrough } from '../server';
 
 let thrown: Error | null = null;
+let produced: unknown = { ok: true };
 const op = defineOperation({
   id: 'test.throws',
   permission: 'settings.manage',
@@ -34,13 +35,14 @@ const op = defineOperation({
   output: z.object({ ok: z.boolean() }),
   async run() {
     if (thrown) throw thrown;
-    return { ok: true };
+    return produced as { ok: boolean };
   },
 });
 
 describe('invokeFromServerFn: статус відповіді', () => {
   beforeEach(() => {
     thrown = null;
+    produced = { ok: true };
     vi.mocked(setResponseStatus).mockClear();
   });
 
@@ -93,6 +95,11 @@ describe('invokeFromServerFn: статус відповіді', () => {
     expect(setResponseStatus).not.toHaveBeenCalled();
     const input = { a: 1 };
     expect(passThrough(input)).toBe(input);
+  });
+
+  it('вихід розібрано схемою: зайве поле з run до браузера не доходить (І24)', async () => {
+    produced = { ok: true, passwordHash: 'не віддавати' };
+    expect(await invokeFromServerFn(op, {})).toEqual({ ok: true });
   });
 
   it('відмова права ловиться до run: scopes без id → 403', async () => {

@@ -33,7 +33,7 @@ export async function throughServerFnBoundary(
 export function serverValidationError(
   issues: readonly ValidationIssue[],
 ): Error {
-  return Object.assign(new Error('[admin-server] помилка валідації вводу'), {
+  return Object.assign(new Error('помилка валідації вводу'), {
     name: 'ValidationError',
     issues,
   });
