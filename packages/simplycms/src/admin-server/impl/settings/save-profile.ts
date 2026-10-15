@@ -36,7 +36,6 @@ const STORE_LOGO = 'store_logo' satisfies MediaEntityType;
  * обидві прочитали б той самий «попередній» і одна з нових лишилась би
  * сиротою. `FOR UPDATE` рядка не годиться — рядка може не бути (upsert).
  */
-export const STORE_PROFILE_LOCK = LOCK_KEYS.storeProfile;
 
 /**
  * Чи референс — рядок `media` саме логотипа: тип І власник (К3-Е6д-3), щоб
@@ -82,7 +81,7 @@ export const saveStoreProfileOp = async ({
 }): Promise<StoreProfile> => {
   const profile = parseAdminInput(storeProfileInput, data);
   const { saved, erased } = await runAdmin('settings.manage', async (db) => {
-    await lockCatalogTarget(db, STORE_PROFILE_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.storeProfile);
     const previous = (await readStoreProfile(db)).logo;
     if (profile.logo !== null && !(await isStoreLogo(db, profile.logo)))
       stateConflict(ADMIN_STATE_CONSTRAINT.storeLogoInvalid);

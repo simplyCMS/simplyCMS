@@ -1,6 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
 import {
   ADMIN_STATE_CONSTRAINT,
   stateConflict,
@@ -11,6 +10,7 @@ import { sessions, users } from 'simplycms/schema';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const setCustomerBanInput = z.object({
   userId: z.uuid(),
@@ -38,7 +38,7 @@ export async function setCustomerBan(
   input: SetCustomerBanInput,
 ): Promise<{ bannedAt: Date | null }> {
   await advisoryXactLock(db, customerCategoryLock(input.userId));
-  await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+  await advisoryXactLock(db, LOCK_KEYS.adminRoles);
   if (!input.banned) {
     const unbanned = await db
       .update(users)

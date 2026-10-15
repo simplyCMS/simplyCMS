@@ -2,16 +2,16 @@ import { inArray } from 'drizzle-orm';
 import type { z } from 'zod';
 import { discounts } from 'simplycms/schema';
 import { lockCatalogTarget } from '../catalog-lock';
-import { DISCOUNT_CONFIG_LOCK } from '../discount-lock';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { discountsOps } from './resource';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /** Вхід — та сама схема, що в колекції `discounts` (фабричний `removeSchema`). */
 export const removeDiscountsInput = discountsOps.removeSchema;
 
 /**
- * Видалення знижок (F6 фінального рев'ю К3-Е6в) під `DISCOUNT_CONFIG_LOCK` —
+ * Видалення знижок (F6 фінального рев'ю К3-Е6в) під `LOCK_KEYS.discountConfig` —
  * ПЕРШИМ запитом, як `saveDiscount` (Е6в-16) і видалення груп.
  *
  * 🔴 Без локу паралельний `saveDiscount` з тим самим `id` чекав би лише на
@@ -28,7 +28,7 @@ export const removeDiscountsOp = async ({
 }) => {
   const ids = parseAdminInput(removeDiscountsInput, data).map((d) => d.id);
   return runAdmin('discount.manage', async (db) => {
-    await lockCatalogTarget(db, DISCOUNT_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.discountConfig);
     const deleted = await db
       .delete(discounts)
       .where(inArray(discounts.id, ids))

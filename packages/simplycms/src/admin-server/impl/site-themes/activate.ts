@@ -20,7 +20,6 @@ export const activateThemeInput = z.object({
  * Advisory-ключ активної теми (Е6б-15): серіалізує дві вкладки, що
  * активують різні теми одночасно.
  */
-export const SITE_THEME_LOCK = LOCK_KEYS.siteTheme;
 
 /**
  * Активувати тему (Е6б-15). Порядок у транзакції — канон:
@@ -46,7 +45,7 @@ export const activateThemeOp = async ({
 }): Promise<ThemeRow[]> => {
   const { name } = parseAdminInput(activateThemeInput, data);
   const rows = await runAdmin('settings.manage', async (db) => {
-    await lockCatalogTarget(db, SITE_THEME_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.siteTheme);
     if (!isBuiltTheme(name))
       stateConflict(ADMIN_STATE_CONSTRAINT.themeNotBuilt);
     const [target] = await selectThemeRows(db, name);

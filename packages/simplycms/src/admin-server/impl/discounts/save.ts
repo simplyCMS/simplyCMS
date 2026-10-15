@@ -13,11 +13,10 @@ import {
 import type { ActorDb } from 'simplycms/db';
 import type { JsonValue } from 'simplycms/schema/types';
 import { lockCatalogTarget } from '../catalog-lock';
-import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
-import { DISCOUNT_CONFIG_LOCK } from '../discount-lock';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { saveDiscountInput, type SaveDiscountInput } from './save-input';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /** Id категорій з усіх умов `user_category` (значення вже пройшли реєстр). */
 function categoryIds(conditions: SaveDiscountInput['conditions']): string[] {
@@ -48,7 +47,7 @@ async function assertCategoriesExist(db: ActorDb, ids: string[]) {
  * ROLLBACK усього: стара знижка лишається з попереднім набором.
  *
  * Локи — ПЕРШИМИ запитами, у глобальному порядку Е6в-15: з умовою
- * `user_category` — `CUSTOMER_CONFIG_LOCK`, потім `DISCOUNT_CONFIG_LOCK`;
+ * `user_category` — `LOCK_KEYS.customerConfig`, потім `LOCK_KEYS.discountConfig`;
  * під першим перевіряється, що категорії існують (видалення категорії,
  * на яку посилається умова, бере той самий ключ). Рядок знижки пишеться
  * ДО цілей і умов — на ньому тримається `FOR SHARE` у `getDiscountOp`.
@@ -62,8 +61,8 @@ export async function saveDiscount(db: ActorDb, input: SaveDiscountInput) {
   // Число → рядок `numeric` без округлення; `NaN`/`Infinity` відсік Zod.
   const patch = { ...fields, discountValue: String(discountValue) };
   const cats = categoryIds(conditions);
-  if (cats.length > 0) await lockCatalogTarget(db, CUSTOMER_CONFIG_LOCK);
-  await lockCatalogTarget(db, DISCOUNT_CONFIG_LOCK);
+  if (cats.length > 0) await lockCatalogTarget(db, LOCK_KEYS.customerConfig);
+  await lockCatalogTarget(db, LOCK_KEYS.discountConfig);
   if (cats.length > 0) await assertCategoriesExist(db, cats);
 
   const [discount] = await db

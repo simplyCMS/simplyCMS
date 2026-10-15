@@ -7,7 +7,7 @@ import {
 } from 'simplycms/contracts/domain-errors';
 import { lockCatalogTarget } from '../catalog-lock';
 import { runAdmin } from '../run';
-import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const setDefaultShippingZoneInput = z.object({ id: z.uuid() });
 
@@ -17,7 +17,7 @@ export const setDefaultShippingZoneInput = z.object({ id: z.uuid() });
  * доставка за адресою і точка самовивозу без зони (`resolveShippingZone`).
  *
  * Порядок — патерн `price-types/set-default.ts`:
- *  1. `SHIPPING_CONFIG_LOCK` — ПЕРШИЙ запит транзакції; той самий беруть
+ *  1. `LOCK_KEYS.shippingConfig` — ПЕРШИЙ запит транзакції; той самий беруть
  *     `removeShippingZonesOp` і update зон (guard деактивації), тож ціль не
  *     зникне й не вимкнеться між читанням і UPDATE.
  *  2. Ціль `FOR UPDATE`; немає — помилка. Уже дефолтна — no-op.
@@ -34,7 +34,7 @@ export const setDefaultShippingZoneOp = async ({
   data: z.infer<typeof setDefaultShippingZoneInput>;
 }) =>
   runAdmin('shipping.manage', async (db) => {
-    await lockCatalogTarget(db, SHIPPING_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.shippingConfig);
     const [target] = await db
       .select()
       .from(shippingZones)

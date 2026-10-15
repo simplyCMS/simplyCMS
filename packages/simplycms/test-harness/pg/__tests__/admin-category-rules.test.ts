@@ -122,7 +122,7 @@ describe('admin: автоправила категорій (Е6в-19)', () => {
     ).rejects.toMatchObject(F.conflict('state', 'category_rule_same_category'));
   });
 
-  it('insert правила стоїть під CUSTOMER_CONFIG_LOCK; після release — записано', async () => {
+  it('insert правила стоїть під LOCK_KEYS.customerConfig; після release — записано', async () => {
     const lock = await holdAdvisoryLock(url(), 'customer-config');
     try {
       const op = categoryRulesOps.insert({ data: [rule({})] as never });

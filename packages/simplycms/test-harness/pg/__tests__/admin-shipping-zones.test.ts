@@ -109,7 +109,7 @@ describe('admin: доставка — зони (Е6а, Task 4)', () => {
     ).toEqual([{ zone_id: DEFAULT }]);
   });
 
-  it('setDefault стоїть, поки зовнішній тримає SHIPPING_CONFIG_LOCK (holdAdvisoryLock/stillPending Е4-12)', async () => {
+  it('setDefault стоїть, поки зовнішній тримає LOCK_KEYS.shippingConfig (holdAdvisoryLock/stillPending Е4-12)', async () => {
     const target = await F.seedZone(url());
     const lock = await holdAdvisoryLock(url(), 'shipping-config');
     try {

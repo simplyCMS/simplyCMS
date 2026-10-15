@@ -26,7 +26,7 @@ function assertProviderPricing(provider: string, pricing?: ShippingPricing) {
 }
 
 /**
- * Guard способів доставки (Е6а-12, Е6а-16) — під `SHIPPING_CONFIG_LOCK`, над
+ * Guard способів доставки (Е6а-12, Е6а-16) — під `LOCK_KEYS.shippingConfig`, над
  * усім пакетом. Insert несе `provider` у рядку; update — ні (`insertOnly`),
  * тож для patch із `pricing: 'provider'` провайдер читається з БД.
  * Рушій (`resolveShippingRate`) для недосяжного режиму повертає `null` —

@@ -7,8 +7,8 @@ import {
   users,
   verifications,
 } from 'simplycms/schema';
-import { ADMIN_ROLES_LOCK } from './admin-roles-lock';
 import type { OwnerInviteStore } from './invite';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Сховище invite власника на Postgres (Task 7, В2-К1а).
@@ -48,7 +48,7 @@ export const ownerInviteStore: OwnerInviteStore = {
       // Лок ПЕРШИМ запитом: серіалізує invite з видачею/зняттям ролі, баном
       // і видаленням покупця (Е6г-4/Е6г-19). Роль тут НЕ видається (Р19) —
       // лок і перевірка бану лишаються, щоб забанений не отримав токена.
-      await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+      await advisoryXactLock(db, LOCK_KEYS.adminRoles);
       // Безумовний `FOR SHARE` за id (умова в WHERE ламає блокування), а
       // значення бану перевіряємо після читання.
       const [user] = await db
@@ -82,7 +82,7 @@ export const ownerInviteStore: OwnerInviteStore = {
       // запитом (`FOR SHARE` не бачить незакоміченої ролі конкурента), далі
       // `FOR SHARE` на користувача й перевірка бану — забанений адміном не
       // стає (Е6г-4/Е6г-19).
-      await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+      await advisoryXactLock(db, LOCK_KEYS.adminRoles);
       const [user] = await db
         .select({ bannedAt: users.bannedAt })
         .from(users)

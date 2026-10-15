@@ -7,7 +7,9 @@
  * кожна правка `schema.ts` — це перегенерація ОДНОЇ міграції `0000_init`, а не
  * нова міграція. Раніше снапшоти правили руками; цей скрипт — єдиний шлях:
  *
- *   1. видаляє `drizzle/` (інакше drizzle-kit дописав би другу міграцію);
+ *   1. генерує у ТИМЧАСОВУ теку `drizzle.tmp` (інакше drizzle-kit дописав би другу міграцію
+ *      до наявної `drizzle/`), а `drizzle/` замінює нею лише після успіху: збій генерації
+ *      (напр. помилка в `schema.ts`) не лишає репо без снапшота;
  *   2. `drizzle-kit generate … --name init` з cwd пакета (без мережі й БД);
  *   3. нормалізує те, що drizzle-kit пише недетерміновано:
  *        - `when` у `meta/_journal.json` (`Date.now()`) → `0`;
@@ -26,7 +28,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -77,57 +85,73 @@ function parseRoot(argv) {
 function rebaseline(root) {
   const pkgDir = join(root, 'packages', 'simplycms');
   const drizzleDir = join(pkgDir, 'drizzle');
+  // Відносне імʼя: drizzle-kit 0.31 склеює `./${out}`, абсолютний шлях ламає (ENOENT).
+  const tmpName = 'drizzle.tmp';
+  const tmpDir = join(pkgDir, tmpName);
   const canonFile = join(pkgDir, 'migrations', '0001_init.sql');
   if (!existsSync(join(pkgDir, 'src', 'schema', 'schema.ts'))) {
     throw new Error(`немає ${pkgDir}/src/schema/schema.ts — це не корінь репо`);
   }
 
-  rmSync(drizzleDir, { recursive: true, force: true });
+  rmSync(tmpDir, { recursive: true, force: true });
 
   // 🔴 `--out` відносний, cwd — тека пакета: drizzle-kit 0.31 склеює `./${out}`
   // і на абсолютному шляху падає з ENOENT (див. `drizzle.config.ts`).
-  execFileSync(
-    join(SCRIPT_REPO, 'node_modules', '.bin', 'drizzle-kit'),
-    [
-      'generate',
-      '--dialect',
-      'postgresql',
-      '--schema',
-      './src/schema/schema.ts',
-      '--out',
-      './drizzle',
-      '--name',
-      'init',
-    ],
-    { cwd: pkgDir, stdio: ['ignore', 'ignore', 'inherit'] },
-  );
+  try {
+    execFileSync(
+      join(SCRIPT_REPO, 'node_modules', '.bin', 'drizzle-kit'),
+      [
+        'generate',
+        '--dialect',
+        'postgresql',
+        '--schema',
+        './src/schema/schema.ts',
+        '--out',
+        `./${tmpName}`,
+        '--name',
+        'init',
+      ],
+      { cwd: pkgDir, stdio: ['ignore', 'ignore', 'inherit'] },
+    );
+  } catch (error) {
+    rmSync(tmpDir, { recursive: true, force: true });
+    throw error;
+  }
 
-  const journalFile = join(drizzleDir, 'meta', '_journal.json');
-  writeFileSync(
-    journalFile,
-    replaceOnce(
-      readFileSync(journalFile, 'utf8'),
-      /"when": \d+/,
-      '"when": 0',
-      '_journal.json',
-    ),
-  );
-  const snapshotFile = join(drizzleDir, 'meta', '0000_snapshot.json');
-  writeFileSync(
-    snapshotFile,
-    replaceOnce(
-      readFileSync(snapshotFile, 'utf8'),
-      /^(\{\s*"id": ")[0-9a-f-]{36}(")/,
-      `$1${SNAPSHOT_ID}$2`,
-      '0000_snapshot.json',
-    ),
-  );
+  try {
+    const journalFile = join(tmpDir, 'meta', '_journal.json');
+    writeFileSync(
+      journalFile,
+      replaceOnce(
+        readFileSync(journalFile, 'utf8'),
+        /"when": \d+/,
+        '"when": 0',
+        '_journal.json',
+      ),
+    );
+    const snapshotFile = join(tmpDir, 'meta', '0000_snapshot.json');
+    writeFileSync(
+      snapshotFile,
+      replaceOnce(
+        readFileSync(snapshotFile, 'utf8'),
+        /^(\{\s*"id": ")[0-9a-f-]{36}(")/,
+        `$1${SNAPSHOT_ID}$2`,
+        '0000_snapshot.json',
+      ),
+    );
 
-  const generated = readFileSync(join(drizzleDir, '0000_init.sql'), 'utf8');
-  writeFileSync(
-    canonFile,
-    `${[generated.replace(/\n+$/, ''), ...ALLOWLIST_MIGRATION_ONLY_LINES].join(BREAKPOINT)}\n`,
-  );
+    const generated = readFileSync(join(tmpDir, '0000_init.sql'), 'utf8');
+    writeFileSync(
+      canonFile,
+      `${[generated.replace(/\n+$/, ''), ...ALLOWLIST_MIGRATION_ONLY_LINES].join(BREAKPOINT)}\n`,
+    );
+    // Усе згенероване й нормалізоване — лише тепер підміняємо `drizzle/`.
+    rmSync(drizzleDir, { recursive: true, force: true });
+    renameSync(tmpDir, drizzleDir);
+  } finally {
+    // Після успішного rename теки вже нема; при збої нормалізації — не лишаємо сміття.
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 try {

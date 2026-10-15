@@ -147,8 +147,6 @@ export { getDiscountInput, getDiscountOp } from './discounts/get';
 export { saveDiscountInput } from './discounts/save-input';
 export type { SaveDiscountInput } from './discounts/save-input';
 export { saveDiscount, saveDiscountOp } from './discounts/save';
-export { DISCOUNT_CONFIG_LOCK } from './discount-lock';
-export { CUSTOMER_CONFIG_LOCK } from './customer-lock';
 // Харнес доводить, що `lockCatalogTarget` і `advisoryXactLock` — один лок (Е6в-15).
 export { lockCatalogTarget } from './catalog-lock';
 // К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,

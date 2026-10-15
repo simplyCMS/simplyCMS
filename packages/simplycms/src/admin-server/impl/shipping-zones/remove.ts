@@ -7,7 +7,8 @@ import {
 } from 'simplycms/contracts/domain-errors';
 import { lockCatalogTarget } from '../catalog-lock';
 import { runAdmin } from '../run';
-import { assertAllFound, SHIPPING_CONFIG_LOCK } from '../shipping-lock';
+import { assertAllFound } from '../shipping-lock';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const removeShippingZonesInput = z
   .array(z.object({ id: z.uuid() }))
@@ -18,7 +19,7 @@ export const removeShippingZonesInput = z
  * Видалення зон доставки (Е6а-12) — guarded batch. «Не видалити дефолтну» —
  * доменний інваріант, якого частковий індекс не покриває (він забороняє ДВІ
  * дефолтні, не НУЛЬ).
- *  1. `SHIPPING_CONFIG_LOCK` — ПЕРШИЙ запит, той самий, що в
+ *  1. `LOCK_KEYS.shippingConfig` — ПЕРШИЙ запит, той самий, що в
  *     `setDefaultShippingZoneOp`.
  *  2. `FOR UPDATE … ORDER BY id`; відсутній id — помилка, дефолтна серед них —
  *     `shipping_zone_default`; обидва відкочують увесь batch.
@@ -30,7 +31,7 @@ export const removeShippingZonesOp = async ({
   data: z.infer<typeof removeShippingZonesInput>;
 }) =>
   runAdmin('shipping.manage', async (db) => {
-    await lockCatalogTarget(db, SHIPPING_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.shippingConfig);
     const ids = data.map((d) => d.id);
     const found = await db
       .select({ id: shippingZones.id, isDefault: shippingZones.isDefault })

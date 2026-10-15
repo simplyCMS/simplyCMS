@@ -53,7 +53,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
       ],
     });
 
-  it('guard циклу стоїть, поки зовнішній тримає DISCOUNT_CONFIG_LOCK (holdAdvisoryLock/stillPending)', async () => {
+  it('guard циклу стоїть, поки зовнішній тримає LOCK_KEYS.discountConfig (holdAdvisoryLock/stillPending)', async () => {
     const root = await F.seedGroup(url());
     const child = await F.seedGroup(url(), { parent: root });
     const before = await F.snapshotGroups(url(), [root, child]);
@@ -74,7 +74,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
     }
   });
 
-  it('insert групи, saveDiscount і removeDiscountGroups стоять під DISCOUNT_CONFIG_LOCK; після release — записано', async () => {
+  it('insert групи, saveDiscount і removeDiscountGroups стоять під LOCK_KEYS.discountConfig; після release — записано', async () => {
     const group = await F.seedGroup(url());
     const doomed = await F.seedGroup(url());
     const runs = [
@@ -100,7 +100,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
     expect(await F.snapshotGroups(url(), [doomed])).toEqual([]);
   });
 
-  it('ред.2: зовнішнє зʼєднання тримає CUSTOMER_CONFIG_LOCK → saveDiscount з умовою user_category stillPending; без такої умови — проходить', async () => {
+  it('ред.2: зовнішнє зʼєднання тримає LOCK_KEYS.customerConfig → saveDiscount з умовою user_category stillPending; без такої умови — проходить', async () => {
     const group = await F.seedGroup(url());
     const category = await F.seedCategory(url());
     const plain = F.discountInput(group);
@@ -139,7 +139,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
     }
   });
 
-  it('F6: removeDiscounts стоїть під DISCOUNT_CONFIG_LOCK; після release — видалено', async () => {
+  it('F6: removeDiscounts стоїть під LOCK_KEYS.discountConfig; після release — видалено', async () => {
     // Без локу паралельний saveDiscount з тим самим id upsert-ом «воскрешав»
     // щойно видалену знижку.
     const input = F.discountInput(await F.seedGroup(url()));

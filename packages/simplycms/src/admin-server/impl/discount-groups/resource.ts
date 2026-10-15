@@ -1,14 +1,14 @@
 import type { z } from 'zod';
 import { discountGroups } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
-import { DISCOUNT_CONFIG_LOCK } from '../discount-lock';
 import { boundDiscountDate } from '../discounts/save-input';
 import { defineAdminResource } from '../resource';
 import { guardDiscountGroups } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Групи знижок (Е6в, Task 5). Insert/update — фабрика під
- * `DISCOUNT_CONFIG_LOCK` із guard-ом циклу й пари дат (Е6в-17, ред.2).
+ * `LOCK_KEYS.discountConfig` із guard-ом циклу й пари дат (Е6в-17, ред.2).
  * 🔴 Фабричний `discountGroupsOps.remove` serverFn-ом НЕ виставляється:
  * видалення — лише `removeDiscountGroupsOp` (під локом, повертає все
  * видалене піддерево для write-back).
@@ -39,6 +39,6 @@ export const discountGroupsOps = defineAdminResource({
   ],
   readonly: ['id', 'createdAt', 'updatedAt'],
   touch: 'updatedAt',
-  lock: DISCOUNT_CONFIG_LOCK,
+  lock: LOCK_KEYS.discountConfig,
   guard: guardDiscountGroups,
 });

@@ -8,7 +8,7 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import type { ActorDb } from 'simplycms/db';
 import { defineAdminResource } from '../resource';
 import type { ResourceGuardWrite } from '../resource-config';
-import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Е6а-20: дефолтну зону не можна деактивувати — довідник бере лише активні
@@ -36,7 +36,7 @@ async function guardShippingZones(
 /**
  * Зони доставки (Е6а, Task 4). 🔴 `isDefault` — readonly для фабрики:
  * дефолт ставить `setDefaultShippingZoneOp`, видалення — лише
- * `removeShippingZonesOp` (обидві під `SHIPPING_CONFIG_LOCK`); фабричний
+ * `removeShippingZonesOp` (обидві під `LOCK_KEYS.shippingConfig`); фабричний
  * `remove` serverFn-ом НЕ виставляється.
  */
 export const shippingZonesOps = defineAdminResource({
@@ -49,6 +49,6 @@ export const shippingZonesOps = defineAdminResource({
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
   writable: ['name', 'description', 'isActive', 'sortOrder'],
   readonly: ['id', 'isDefault', 'createdAt'],
-  lock: SHIPPING_CONFIG_LOCK,
+  lock: LOCK_KEYS.shippingConfig,
   guard: guardShippingZones,
 });

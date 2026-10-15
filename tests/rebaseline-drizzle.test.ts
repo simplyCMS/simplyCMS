@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -133,5 +134,20 @@ describe('pnpm db:rebaseline', () => {
     expect(
       readFileSync(join(PKG, 'migrations/0001_init.sql'), 'utf8'),
     ).toContain('CREATE TABLE "mail_outbox"');
+  });
+
+  it('збій генерації не чіпає drizzle/ і 0001_init.sql (генерація в тимчасову теку)', () => {
+    // Ламаємо схему В КОПІЇ: drizzle-kit мусить впасти, а наявний снапшот — вціліти.
+    appendFileSync(
+      join(tmpPkg, 'src/schema/schema.ts'),
+      '\nexport const = ;\n',
+    );
+    const result = spawnSync(process.execPath, [SCRIPT, '--root', tmpRoot], {
+      encoding: 'utf8',
+      timeout: 90_000,
+    });
+    expect(result.status).not.toBe(0);
+    expect(snapshotOf(tmpPkg)).toEqual(second);
+    expect(existsSync(join(tmpPkg, 'drizzle.tmp'))).toBe(false);
   });
 });

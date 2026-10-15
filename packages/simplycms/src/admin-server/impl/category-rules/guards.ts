@@ -24,7 +24,7 @@ function assertDistinct(from?: string | null, to?: string) {
  * `fromCategoryId === toCategoryId` → `category_rule_same_category`.
  * Insert — з рядка; update — злиття ПОТОЧНОГО рядка з patch (patch лише з
  * `toCategoryId`, рівним наявному `from`, інакше пройшов би). Викликається
- * фабрикою після `CUSTOMER_CONFIG_LOCK`, у тій самій транзакції.
+ * фабрикою після `LOCK_KEYS.customerConfig`, у тій самій транзакції.
  */
 export async function guardCategoryRules(
   db: ActorDb,

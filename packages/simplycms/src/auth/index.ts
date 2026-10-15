@@ -33,8 +33,6 @@ export type {
   AcceptOwnerInviteResult,
 } from './accept-invite';
 
-export { ADMIN_ROLES_LOCK } from './admin-roles-lock';
-
 export { isResetStillValid } from './reset-guard';
 export type { ResetGuard } from './reset-guard';
 

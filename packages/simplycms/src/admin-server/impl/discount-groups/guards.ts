@@ -100,7 +100,7 @@ async function guardCycle(db: ActorDb, write: GroupWrite): Promise<void> {
 }
 
 /**
- * Guard груп знижок (Е6в-17, ред.2) — під `DISCOUNT_CONFIG_LOCK` фабрики,
+ * Guard груп знижок (Е6в-17, ред.2) — під `LOCK_KEYS.discountConfig` фабрики,
  * над усім пакетом: паралельне перевішування не проскочить між перевіркою
  * циклу й записом.
  */

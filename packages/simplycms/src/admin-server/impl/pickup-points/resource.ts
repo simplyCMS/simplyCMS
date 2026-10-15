@@ -1,15 +1,15 @@
 import { pickupPoints } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
-import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
 import { guardPickupPoints } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Точки видачі (Е6а, Task 4).
  *
  * 🔴 `isSystem` — readonly: системна точка — склад, з якого списують і на
  * який повертають (`inventory/stock-write.ts`). `methodId` — `insertOnly` і
- * перевіряється `guardPickupPoints` під `SHIPPING_CONFIG_LOCK`.
+ * перевіряється `guardPickupPoints` під `LOCK_KEYS.shippingConfig`.
  * `workingHours`/`coordinates` — readonly: легасі їх теж не редагував
  * (поза Е6а). Фабричний `remove` serverFn-ом НЕ виставляється: видалення —
  * лише `removePickupPointsOp` (Е6а-17).
@@ -33,6 +33,6 @@ export const pickupPointsOps = defineAdminResource({
   ],
   insertOnly: ['methodId'],
   readonly: ['id', 'createdAt', 'isSystem', 'workingHours', 'coordinates'],
-  lock: SHIPPING_CONFIG_LOCK,
+  lock: LOCK_KEYS.shippingConfig,
   guard: guardPickupPoints,
 });

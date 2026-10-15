@@ -4,7 +4,7 @@ import type { ActorDb } from 'simplycms/db';
 
 /**
  * Спільні перевірки ролі адміна для `setAdminRole`, `setCustomerBan` і
- * `deleteCustomer` (Е6г-4). Викликаються ЛИШЕ під `ADMIN_ROLES_LOCK`:
+ * `deleteCustomer` (Е6г-4). Викликаються ЛИШЕ під `LOCK_KEYS.adminRoles`:
  * без нього «не адмін» і «не останній» застаріли б між перевіркою і записом.
  */
 export async function isAdminUser(

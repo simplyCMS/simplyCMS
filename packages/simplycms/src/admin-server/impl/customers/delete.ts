@@ -1,6 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
 import {
   customerCategoryLock,
   eraseOrderPersonalData,
@@ -22,6 +21,7 @@ import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';
 import { revokeUserVerifications } from './verifications';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const deleteCustomerInput = z.object({
   userId: z.uuid(),
@@ -62,7 +62,7 @@ export async function deleteCustomer(
   actor: CoreActor,
 ): Promise<DeleteCustomerResult & { discard: string[] }> {
   await advisoryXactLock(db, customerCategoryLock(input.userId));
-  await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+  await advisoryXactLock(db, LOCK_KEYS.adminRoles);
   const [user] = await db
     .select({ email: users.email })
     .from(users)

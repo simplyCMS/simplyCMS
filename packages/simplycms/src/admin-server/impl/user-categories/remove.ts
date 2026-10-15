@@ -12,10 +12,10 @@ import {
 } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import { lockCatalogTarget } from '../catalog-lock';
-import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
 import { runAdmin } from '../run';
 import { assertAllFound } from '../shipping-lock';
 import { parseAdminInput } from '../validation';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const removeUserCategoriesInput = z
   .array(z.object({ id: z.uuid() }))
@@ -25,7 +25,7 @@ export const removeUserCategoriesInput = z
 /**
  * Умова знижки `user_category` тримає id категорій у jsonb без FK — саме тому
  * її перевіряє код (Е6в-18), а атомарність дає спільний з `saveDiscount`
- * `CUSTOMER_CONFIG_LOCK` (Е6в-16 ред.2).
+ * `LOCK_KEYS.customerConfig` (Е6в-16 ред.2).
  */
 const referencedByDiscount = (ids: string[]) =>
   sql`${discountConditions.conditionType} = 'user_category'
@@ -67,7 +67,7 @@ async function blockingReason(db: ActorDb, ids: string[]) {
 /**
  * Видалення категорій покупців (Е6в-18) — guarded batch, явні state-коди
  * замість загального «використовується»:
- *  1. `CUSTOMER_CONFIG_LOCK` — ПЕРШИЙ запит (його ж беруть запис категорій,
+ *  1. `LOCK_KEYS.customerConfig` — ПЕРШИЙ запит (його ж беруть запис категорій,
  *     setDefault, запис правил і `saveDiscount` з умовою `user_category`).
  *  2. `FOR UPDATE … ORDER BY id`; відсутній id — помилка всього batch.
  *  3. Дефолтна → `user_category_default`; покупці → `_has_customers`;
@@ -82,7 +82,7 @@ export const removeUserCategoriesOp = async ({
 }) => {
   const ids = parseAdminInput(removeUserCategoriesInput, data).map((d) => d.id);
   return runAdmin('customer.manage', async (db) => {
-    await lockCatalogTarget(db, CUSTOMER_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.customerConfig);
     const found = await db
       .select({ id: userCategories.id, isDefault: userCategories.isDefault })
       .from(userCategories)

@@ -1,12 +1,12 @@
 import type { z } from 'zod';
 import { userCategories } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
-import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
 import { defineAdminResource } from '../resource';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Категорії покупців (Е6в, Task 6). Insert/update — фабрика під
- * `CUSTOMER_CONFIG_LOCK` (Е6в-15).
+ * `LOCK_KEYS.customerConfig` (Е6в-15).
  *
  * 🔴 `isDefault` — readonly: дефолт ставить іменована
  * `setDefaultUserCategoryOp`. 🔴 Фабричний `userCategoriesOps.remove`
@@ -28,5 +28,5 @@ export const userCategoriesOps = defineAdminResource({
   },
   writable: ['name', 'code', 'description', 'priceTypeId'],
   readonly: ['id', 'isDefault', 'createdAt'],
-  lock: CUSTOMER_CONFIG_LOCK,
+  lock: LOCK_KEYS.customerConfig,
 });

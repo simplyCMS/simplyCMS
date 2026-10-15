@@ -2,9 +2,9 @@ import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { userCategories } from 'simplycms/schema';
 import { lockCatalogTarget } from '../catalog-lock';
-import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const setDefaultUserCategoryInput = z.object({ id: z.uuid() });
 
@@ -12,7 +12,7 @@ export const setDefaultUserCategoryInput = z.object({ id: z.uuid() });
  * Дефолтна категорія покупців рівно одна (Е6в-18). Гість і профіль без
  * категорії оцінюються як дефолтна (Е6в-19) — вікна «нуль дефолтних» бути
  * не може. Порядок — як у `price-types/set-default.ts`:
- *  1. `CUSTOMER_CONFIG_LOCK` — ПЕРШИЙ запит (той самий бере
+ *  1. `LOCK_KEYS.customerConfig` — ПЕРШИЙ запит (той самий бере
  *     `removeUserCategoriesOp`, тож remove(X) не вклиниться між читанням і
  *     UPDATE цілі).
  *  2. Ціль `FOR UPDATE`; немає — помилка. Уже дефолтна — no-op.
@@ -28,7 +28,7 @@ export const setDefaultUserCategoryOp = async ({
 }) => {
   const { id } = parseAdminInput(setDefaultUserCategoryInput, data);
   return runAdmin('customer.manage', async (db) => {
-    await lockCatalogTarget(db, CUSTOMER_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.customerConfig);
     const [target] = await db
       .select()
       .from(userCategories)

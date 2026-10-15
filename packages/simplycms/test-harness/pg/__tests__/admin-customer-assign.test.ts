@@ -38,7 +38,7 @@ describe('admin: дефолт і ручне призначення (Е6в-18/20)
     expect(await defaults()).toEqual([{ id: F.DEFAULT_CATEGORY }]);
   });
 
-  it('setDefault стоїть, поки зовнішній тримає CUSTOMER_CONFIG_LOCK; після release — рівно одна дефолтна', async () => {
+  it('setDefault стоїть, поки зовнішній тримає LOCK_KEYS.customerConfig; після release — рівно одна дефолтна', async () => {
     const next = await F.seedCategory(url());
     const lock = await holdAdvisoryLock(url(), 'customer-config');
     try {

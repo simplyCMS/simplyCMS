@@ -1,4 +1,4 @@
-// Фінальне рев'ю К3-Е6в (F2): `CUSTOMER_CONFIG_LOCK` у
+// Фінальне рев'ю К3-Е6в (F2): `LOCK_KEYS.customerConfig` у
 // `removeUserCategoriesOp` — єдина серіалізація з `saveDiscount` з умовою
 // `user_category` (id категорій у jsonb без FK). Детерміновано: зовнішній
 // тримач advisory-ключа (`holdAdvisoryLock`/`stillPending`) і керована гонка
@@ -33,7 +33,7 @@ describe('admin: видалення категорій покупців — ло
   const categoryRows = (id: string) =>
     F.rows(url(), `select id from public.user_categories where id = $1`, [id]);
 
-  it('F2: remove стоїть, поки зовнішній тримає CUSTOMER_CONFIG_LOCK; після release — видалено', async () => {
+  it('F2: remove стоїть, поки зовнішній тримає LOCK_KEYS.customerConfig; після release — видалено', async () => {
     const category = await F.seedCategory(url());
     const lock = await holdAdvisoryLock(url(), 'customer-config');
     try {

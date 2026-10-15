@@ -2,9 +2,9 @@ import { asc, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { discountGroups } from 'simplycms/schema';
 import { lockCatalogTarget } from '../catalog-lock';
-import { DISCOUNT_CONFIG_LOCK } from '../discount-lock';
 import { runAdmin } from '../run';
 import { assertAllFound } from '../shipping-lock';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const removeDiscountGroupsInput = z
   .array(z.object({ id: z.uuid() }))
@@ -13,7 +13,7 @@ export const removeDiscountGroupsInput = z
 
 /**
  * Видалення груп знижок разом із піддеревом (Е6в-15):
- *  1. `DISCOUNT_CONFIG_LOCK` — ПЕРШИЙ запит (серіалізує з перевішуванням,
+ *  1. `LOCK_KEYS.discountConfig` — ПЕРШИЙ запит (серіалізує з перевішуванням,
  *     guard циклу якого бачить піддерево).
  *  2. Запитані рядки `FOR UPDATE … ORDER BY id`; відсутній id — помилка й
  *     ROLLBACK усього batch-у.
@@ -29,7 +29,7 @@ export const removeDiscountGroupsOp = async ({
   data: z.infer<typeof removeDiscountGroupsInput>;
 }) =>
   runAdmin('discount.manage', async (db) => {
-    await lockCatalogTarget(db, DISCOUNT_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.discountConfig);
     const ids = data.map((d) => d.id);
     const found = await db
       .select({ id: discountGroups.id })

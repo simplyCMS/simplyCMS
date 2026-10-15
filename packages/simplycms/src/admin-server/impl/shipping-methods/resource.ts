@@ -3,15 +3,15 @@ import { shippingMethods } from 'simplycms/schema';
 import { PRICE_TYPE_CODE_RE } from 'simplycms/domain';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
-import { SHIPPING_CONFIG_LOCK } from '../shipping-lock';
 import { guardShippingMethods } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Способи доставки (Е6а, Task 4).
  *
  * 🔴 Е6а-7: `provider` — `insertOnly`: зміна провайдера осиротила б точки й
  * тарифи. Е6а-12: провайдер із реєстру і режим `provider` лише з
- * `supportsQuote` перевіряє `guardShippingMethods` під `SHIPPING_CONFIG_LOCK`.
+ * `supportsQuote` перевіряє `guardShippingMethods` під `LOCK_KEYS.shippingConfig`.
  * 🔴 Фабричний `shippingMethodsOps.remove` serverFn-ом НЕ виставляється:
  * видалення — лише `removeShippingMethodsOp` (під локом, Е6а-17).
  */
@@ -37,6 +37,6 @@ export const shippingMethodsOps = defineAdminResource({
   insertOnly: ['provider'],
   readonly: ['id', 'createdAt', 'updatedAt'],
   touch: 'updatedAt',
-  lock: SHIPPING_CONFIG_LOCK,
+  lock: LOCK_KEYS.shippingConfig,
   guard: guardShippingMethods,
 });

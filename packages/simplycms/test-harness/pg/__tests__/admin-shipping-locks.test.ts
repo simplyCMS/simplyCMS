@@ -54,7 +54,7 @@ describe('admin: доставка — локи guarded remove (Е6а, F1)', () =
   };
 
   it.each(Object.keys(cases) as (keyof typeof cases)[])(
-    'remove %s стоїть, поки зовнішній тримає SHIPPING_CONFIG_LOCK; після release — видалено',
+    'remove %s стоїть, поки зовнішній тримає LOCK_KEYS.shippingConfig; після release — видалено',
     async (table) => {
       const { id, run } = await cases[table]();
       const lock = await holdAdvisoryLock(url(), LOCK);

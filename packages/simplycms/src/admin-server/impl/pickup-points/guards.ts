@@ -12,7 +12,7 @@ import type { ActorDb } from 'simplycms/db';
 import type { ResourceGuardWrite } from '../resource-config';
 
 /**
- * Guard точок видачі (Е6а-12, Е6а-16) — під `SHIPPING_CONFIG_LOCK`, над усім
+ * Guard точок видачі (Е6а-12, Е6а-16) — під `LOCK_KEYS.shippingConfig`, над усім
  * пакетом: кожна точка належить способу, чий провайдер везе до точки
  * (`destination === 'pickup-point'`). Адресний, невідомий чи відсутній
  * спосіб — `pickup_point_method_invalid` для всього batch-у. Update не

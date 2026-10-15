@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { priceTypes } from 'simplycms/schema';
 import { lockCatalogTarget } from '../catalog-lock';
 import { runAdmin } from '../run';
-import { PRICE_TYPE_DEFAULT_LOCK } from './set-default';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const removePriceTypesInput = z
   .array(z.object({ id: z.uuid() }))
@@ -36,7 +36,7 @@ export const removeManyPriceTypesOp = async ({
   data: z.infer<typeof removePriceTypesInput>;
 }) => {
   return runAdmin('catalog.write', async (db) => {
-    await lockCatalogTarget(db, PRICE_TYPE_DEFAULT_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.priceTypeDefault);
     const ids = data.map((d) => d.id);
     const rows = await db
       .select()

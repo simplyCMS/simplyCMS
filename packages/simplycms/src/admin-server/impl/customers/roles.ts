@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { ADMIN_ROLES_LOCK } from 'simplycms/auth';
 import {
   ADMIN_STATE_CONSTRAINT,
   stateConflict,
@@ -11,6 +10,7 @@ import { userRoles, users } from 'simplycms/schema';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { countAdmins, isAdminUser } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const setAdminRoleInput = z.object({
   userId: z.uuid(),
@@ -33,7 +33,7 @@ export const setAdminRoleOp = async ({
 }): Promise<{ isAdmin: boolean }> => {
   const input = parseAdminInput(setAdminRoleInput, data);
   return runAdmin('user.role.assign', async (db, grant) => {
-    await advisoryXactLock(db, ADMIN_ROLES_LOCK);
+    await advisoryXactLock(db, LOCK_KEYS.adminRoles);
     if (input.admin) {
       // Безумовний FOR SHARE за id; значення бану — після читання.
       const [user] = await db

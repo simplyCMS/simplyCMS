@@ -2,13 +2,13 @@ import type { z } from 'zod';
 import { categoryRules } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { parseCategoryRuleConditions } from 'simplycms/domain';
-import { CUSTOMER_CONFIG_LOCK } from '../customer-lock';
 import { defineAdminResource } from '../resource';
 import { guardCategoryRules } from './guards';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
  * Автоправила категорій покупців (Е6в, Task 6). Insert/update — фабрика під
- * `CUSTOMER_CONFIG_LOCK` (Е6в-15) з guard-ом «не в ту саму категорію».
+ * `LOCK_KEYS.customerConfig` (Е6в-15) з guard-ом «не в ту саму категорію».
  *
  * 🔴 `conditions` — через `parseCategoryRuleConditions` (Е6в-19): порожнє
  * правило, оператор поза переліком поля (ред.5) чи нечислове значення
@@ -48,6 +48,6 @@ export const categoryRulesOps = defineAdminResource({
     'priority',
   ],
   readonly: ['id', 'createdAt'],
-  lock: CUSTOMER_CONFIG_LOCK,
+  lock: LOCK_KEYS.customerConfig,
   guard: guardCategoryRules,
 });

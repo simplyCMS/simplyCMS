@@ -7,7 +7,8 @@ import {
 } from 'simplycms/contracts/domain-errors';
 import { lockCatalogTarget } from '../catalog-lock';
 import { runAdmin } from '../run';
-import { assertAllFound, SHIPPING_CONFIG_LOCK } from '../shipping-lock';
+import { assertAllFound } from '../shipping-lock';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 export const removePickupPointsInput = z
   .array(z.object({ id: z.uuid() }))
@@ -17,7 +18,7 @@ export const removePickupPointsInput = z
 /**
  * Видалення точок видачі (Е6а-12, Е6а-17): залишок не губиться видаленням.
  *
- * 0. `SHIPPING_CONFIG_LOCK` — ПЕРШИЙ запит. Точки читаються БЕЗ рядкового
+ * 0. `LOCK_KEYS.shippingConfig` — ПЕРШИЙ запит. Точки читаються БЕЗ рядкового
  *    локу: `is_system` змінити нічим (readonly), а insert/update точок
  *    серіалізує той самий advisory. 🔴 `FOR UPDATE` на точках ДО рядків
  *    залишку дав би зворотний порядок відносно оформлення (рядки залишку →
@@ -40,7 +41,7 @@ export const removePickupPointsOp = async ({
   data: z.infer<typeof removePickupPointsInput>;
 }) =>
   runAdmin('shipping.manage', async (db) => {
-    await lockCatalogTarget(db, SHIPPING_CONFIG_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.shippingConfig);
     const ids = data.map((d) => d.id);
     // Без FOR UPDATE навмисно: точку з рядком залишку база не видалить (FK
     // RESTRICT), а самі рядки залишку локуються кроком 1 — лок точки тут

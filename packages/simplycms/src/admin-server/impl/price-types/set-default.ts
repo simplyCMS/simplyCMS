@@ -11,7 +11,6 @@ export const setDefaultPriceTypeInput = z.object({ id: z.uuid() });
  * Advisory-ключ довідника типів цін (Е4-2). Спільний для setDefault і
  * remove — саме він серіалізує їх між собою.
  */
-export const PRICE_TYPE_DEFAULT_LOCK = LOCK_KEYS.priceTypeDefault;
 
 /**
  * Дефолтний тип ціни рівно один (Е4-2). Вітрина й `PriceValidator` беруть
@@ -41,7 +40,7 @@ export const setDefaultPriceTypeOp = async ({
   data: z.infer<typeof setDefaultPriceTypeInput>;
 }) => {
   return runAdmin('catalog.write', async (db) => {
-    await lockCatalogTarget(db, PRICE_TYPE_DEFAULT_LOCK);
+    await lockCatalogTarget(db, LOCK_KEYS.priceTypeDefault);
     const [target] = await db
       .select()
       .from(priceTypes)
