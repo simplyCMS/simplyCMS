@@ -292,7 +292,9 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `CHANGELOG` попередження «перестворити БД». Журнал `simplycms_migrations` і
   `MigrationChecksumError` чинні: розбіжність суми файлу ядра повідомляє «baseline платформи
   змінився» і називає дію (базу створюють заново), чужого файла — «зміна новою міграцією».
-  Заморожування baseline — крок релізу 1.0.0-rc.1.
+  Заморожування baseline — крок релізу 1.0.0-rc.1. Правка, що ПРИБИРАЄ файл канону, додає
+  запис у `migrations/removed.json` (`release-process.md`): `db:diff --write` сам лише
+  докопіює файли й застарілого в магазині не прибрав би.
 - `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. **Не** застосовуй
   міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
   інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.

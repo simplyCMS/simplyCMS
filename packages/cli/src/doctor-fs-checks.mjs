@@ -10,6 +10,11 @@ import {
   storeMigrationsDir,
 } from './db-diff.mjs';
 import { findHostDrift, findOrphanedHostFiles } from './host-drift.mjs';
+import {
+  findRemovedCoreMigrations,
+  readRemovedManifest,
+  removedNotice,
+} from './removed-migrations.mjs';
 import { inspectSkillLinks } from './skill-links.mjs';
 
 /** @typedef {import('./ui.mjs').Check} Check */
@@ -50,7 +55,9 @@ export function checkHostDrift({ storeRoot, hostDir }) {
  * плюс міграції встановлених плагінів (N канонів, Фаза 3 Р4). `own`
  * рахується по обʼєднанню канонів — інакше скопійована міграція плагіна
  * брехливо значилась би «власною». Спільне імʼя з різним вмістом — error:
- * міграції immutable (§4.4 спеки).
+ * міграції immutable (§4.4 спеки). Файл, якого вже немає в каноні ядра
+ * (маніфест `removed.json`), — теж warn: прибирає його `db:diff --write`,
+ * а змінений у магазині — ручна дія (doctor лише читає).
  * @param {{ storeRoot: string; schemaMigrationsDir: string }} ctx
  * @returns {Check}
  */
@@ -83,11 +90,31 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
     const details = `Спільні міграції змінені локально: ${changed.join(', ')} — міграції immutable, розберися вручну`;
     return { id, title, status: 'error', details };
   }
+  const warnings = [];
   const missing = perSource.flatMap((s) => s.missing);
-  if (missing.length > 0) {
-    const details = `Нові міграції канонів: ${missing.join(', ')}. Забери: pnpm simplycms db:diff --write`;
-    return { id, title, status: 'warn', details };
+  if (missing.length > 0)
+    warnings.push(
+      `Нові міграції канонів: ${missing.join(', ')}. Забери: pnpm simplycms db:diff --write`,
+    );
+  try {
+    const manifest = readRemovedManifest(schemaMigrationsDir);
+    const storeDir = storeMigrationsDir(storeRoot);
+    for (const { name, status } of findRemovedCoreMigrations(
+      storeDir,
+      manifest,
+    ))
+      warnings.push(
+        removedNotice(
+          manifest.find((e) => e.name === name),
+          status,
+        ),
+      );
+  } catch (error) {
+    // Зіпсований маніфест — стан магазину не визначити; doctor не падає.
+    return { id, title, status: 'error', details: error.message };
   }
+  if (warnings.length > 0)
+    return { id, title, status: 'warn', details: warnings.join('. ') };
   return { id, title, status: 'ok' };
 }
 

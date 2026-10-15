@@ -36,6 +36,7 @@ const HELP = `simplycms — CLI обслуговування магазину Si
               --check: перевірка без мережі й install, нічого не пише
                        (код 0 — збігається, 3 — розбіжність, 1 — помилка)
   db:diff   Порівняти міграції магазину з канонами (ядро + плагіни): db:diff [--write]
+              --write: докопіювати нові й прибрати файли, видалені з канону ядра
   db:apply  Накатити db/migrations на БД (MIGRATION_DATABASE_URL — власник схеми):
               db:apply [--dry-run | --check]   (--check: код 3, якщо є ненакочені)
   theme:conformance

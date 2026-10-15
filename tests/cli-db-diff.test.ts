@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   existsSync,
@@ -16,10 +17,12 @@ import {
   compareMigrations,
   compareMigrationsMulti,
   copyMigrations,
+  findRemovedCoreMigrations,
   lintPluginMigrationSql,
   listSqlFiles,
   parseDbDiffArgs,
   pluginMigrationSources,
+  readRemovedManifest,
   run,
   schemaMigrationsPath,
   storeMigrationsDir,
@@ -310,5 +313,171 @@ describe('cli db:diff: відсутня тека міграцій магазин
 
     expect(await runIn(store, ['--write'])).toBe(1);
     expect(existsSync(storeMigrationsDir(store))).toBe(false);
+  });
+});
+
+// Файли, ПРИБРАНІ з канону ядра (baseline-винятки до 1.0.0-rc.1): `db:diff --write`
+// лише докопіює нове й сам не видалив би застарілий файл, а той ламає накат
+// (CREATE TABLE вдруге). Прибирання йде за ЗАКРИТИМ маніфестом `removed.json` —
+// точне імʼя + sha256, а не за конвенцією імені: власну `0006_x.sql` магазину
+// конвенція не відрізнила б від файлу ядра.
+describe('cli db:diff: файли, прибрані з канону ядра', () => {
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  const STALE = '0005_mail_outbox.sql';
+  const STALE_SQL = 'create table mail_outbox ();\n';
+  const sha = (text: string) =>
+    createHash('sha256').update(text, 'utf8').digest('hex');
+  const entry = (name: string, sql: string) => ({
+    name,
+    sha256: sha(sql),
+    removedIn: '0.16.0 (baseline-виняток М1)',
+    reason: 'mail_outbox злито в 0001_init.sql',
+  });
+
+  /** Магазин зі «встановленим ядром», маніфест якого називає STALE. */
+  async function storeWithManifest(name: string) {
+    const store = await scaffoldStore(name);
+    const schemaDir = makeSchemaDir(store);
+    const manifest = [entry(STALE, STALE_SQL)];
+    writeFileSync(join(schemaDir, 'removed.json'), JSON.stringify(manifest));
+    return { store, schemaDir, manifest, storeDir: storeMigrationsDir(store) };
+  }
+
+  /** `run` у корені магазину; вивід збирається й нормалізується (рамки clack). */
+  async function runCaptured(store: string, argv: string[]) {
+    const cwd = process.cwd();
+    let output = '';
+    const spy = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation((chunk) => {
+        output += String(chunk);
+        return true;
+      });
+    try {
+      process.chdir(store);
+      await run(argv);
+    } finally {
+      process.chdir(cwd);
+      spy.mockRestore();
+    }
+    return {
+      exitCode: process.exitCode,
+      output: output.replace(/[│\s]+/g, ' '),
+    };
+  }
+
+  it('файл з маніфесту з правильним хешем — без --write лише звіт, файл лишився', async () => {
+    const { store, storeDir, manifest } = await storeWithManifest('rm-report');
+    writeFileSync(join(storeDir, STALE), STALE_SQL);
+
+    expect(findRemovedCoreMigrations(storeDir, manifest)).toEqual([
+      { name: STALE, status: 'match' },
+    ]);
+    const { exitCode, output } = await runCaptured(store, []);
+    expect(exitCode).toBeUndefined();
+    expect(output).toContain(STALE);
+    expect(output).toContain('прибрано з канону ядра');
+    // Файл з маніфесту — не «власна» міграція магазину.
+    expect(output).not.toContain('Власні міграції');
+    expect(existsSync(join(storeDir, STALE))).toBe(true);
+  });
+
+  it('змінений файл без --write: звіт із ручною дією, без підказки --write, exit 0', async () => {
+    const { store, storeDir } = await storeWithManifest('rm-modified-view');
+    writeFileSync(join(storeDir, STALE), `${STALE_SQL}-- правка\n`);
+
+    const { exitCode, output } = await runCaptured(store, []);
+    expect(exitCode).toBeUndefined();
+    expect(output).toContain('видали файл вручну');
+    // `--write` змінений файл не прибере — підказувати його було б брехнею.
+    expect(output).not.toContain('db:diff --write');
+    expect(existsSync(join(storeDir, STALE))).toBe(true);
+  });
+
+  it('--write: збіг імені й хешу → видалено', async () => {
+    const { store, storeDir } = await storeWithManifest('rm-write');
+    writeFileSync(join(storeDir, STALE), STALE_SQL);
+
+    const { exitCode } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBeUndefined();
+    expect(existsSync(join(storeDir, STALE))).toBe(false);
+    // Решту магазину не зачеплено: це видалення одного названого файлу.
+    expect(existsSync(join(storeDir, '0001_init.sql'))).toBe(true);
+  });
+
+  it("--write: ім'я збіглось, хеш ні → не видалено, відмова з інструкцією", async () => {
+    const { store, storeDir, manifest } =
+      await storeWithManifest('rm-modified');
+    const edited = `${STALE_SQL}-- власна правка магазину\n`;
+    writeFileSync(join(storeDir, STALE), edited);
+
+    expect(findRemovedCoreMigrations(storeDir, manifest)).toEqual([
+      { name: STALE, status: 'modified' },
+    ]);
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBe(1);
+    expect(readFileSync(join(storeDir, STALE), 'utf8')).toBe(edited);
+    expect(output).toContain(`${STALE} прибрано з канону ядра у 0.16.0`);
+    expect(output).toContain('він змінений (хеш інший)');
+    expect(output).toContain(
+      'перенеси свої зміни в нову міграцію й видали файл вручну',
+    );
+  });
+
+  it("файл поза маніфестом з ім'ям 0006_x.sql → не чіпається ні звітом, ні --write", async () => {
+    const { store, storeDir, manifest } = await storeWithManifest('rm-own');
+    // Вміст = вмісту запису маніфесту: відрізнити від файлу ядра його може
+    // лише імʼя, а імʼя 0006_x.sql у маніфесті не названо.
+    writeFileSync(join(storeDir, '0006_x.sql'), STALE_SQL);
+
+    expect(findRemovedCoreMigrations(storeDir, manifest)).toEqual([]);
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBeUndefined();
+    expect(readFileSync(join(storeDir, '0006_x.sql'), 'utf8')).toBe(STALE_SQL);
+    expect(output).not.toContain('прибрано з канону ядра');
+  });
+
+  it('плагінний файл → не розглядається', async () => {
+    const { store, storeDir, manifest } = await storeWithManifest('rm-plugin');
+    const plugin = '20260814120000_plg_faq_items.sql';
+    writeFileSync(join(storeDir, plugin), STALE_SQL);
+
+    expect(findRemovedCoreMigrations(storeDir, manifest)).toEqual([]);
+    await runCaptured(store, ['--write']);
+    expect(readFileSync(join(storeDir, plugin), 'utf8')).toBe(STALE_SQL);
+  });
+
+  it('файл з кінцями рядків CRLF (git на Windows) → збіг, а не «змінений»', async () => {
+    const { storeDir, manifest } = await storeWithManifest('rm-crlf');
+    writeFileSync(join(storeDir, STALE), STALE_SQL.replace(/\n/g, '\r\n'));
+    expect(findRemovedCoreMigrations(storeDir, manifest)).toEqual([
+      { name: STALE, status: 'match' },
+    ]);
+  });
+
+  it.each([
+    ['вихід за теку', '../0005_x.sql'],
+    ['плагінна міграція', '20260814120000_plg_faq_items.sql'],
+    ['не .sql', '0005_mail_outbox.json'],
+  ])(
+    'маніфест з небезпечним імʼям (%s) → відхиляється до будь-якого запису',
+    async (_label, name) => {
+      const { schemaDir } = await storeWithManifest('rm-bad-name');
+      writeFileSync(
+        join(schemaDir, 'removed.json'),
+        JSON.stringify([entry(name, STALE_SQL)]),
+      );
+      expect(() => readRemovedManifest(schemaDir)).toThrow(/removed\.json/);
+    },
+  );
+
+  it('ядро без removed.json (стара версія) → порожній маніфест, не помилка', async () => {
+    const { schemaDir, storeDir } = await storeWithManifest('rm-absent');
+    rmSync(join(schemaDir, 'removed.json'));
+    expect(readRemovedManifest(schemaDir)).toEqual([]);
+    expect(findRemovedCoreMigrations(storeDir, [])).toEqual([]);
   });
 });

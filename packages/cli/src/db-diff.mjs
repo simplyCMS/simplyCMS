@@ -6,6 +6,8 @@
 // (міграції immutable). Міграції плагіна перед копіюванням проходять
 // SQL-лінт меж: лише таблиці plg_<name>_* (спека §7/§9). Чистий компаратор
 // звідси переиспользовує doctor (перевірка №7) — реалізація одна.
+// Файли, яких у каноні ядра вже немає (baseline-винятки), прибирає `--write` за
+// закритим маніфестом `removed.json` — див. `removed-migrations.mjs`.
 import {
   cpSync,
   existsSync,
@@ -18,7 +20,16 @@ import { join } from 'node:path';
 import { configPluginEntries, stripPrefixes } from './config-edit.mjs';
 import { findStoreRoot } from './context.mjs';
 import { fileDiffers } from './host-drift.mjs';
+import {
+  applyRemovedCore,
+  findRemovedCoreMigrations,
+  readRemovedManifest,
+} from './removed-migrations.mjs';
 import { begin, finish, say, showSteps } from './ui.mjs';
+
+// Окремий модуль лише через розмір цього файла; db-diff лишається єдиним
+// публічним входом для компаратора міграцій (і для doctor №7).
+export { findRemovedCoreMigrations, readRemovedManifest };
 
 /** Тека міграцій магазину. */
 export const storeMigrationsDir = (storeRoot) =>
@@ -281,6 +292,10 @@ export async function run(argv) {
     storeDir,
     sources,
   );
+  // Маніфест читається ДО будь-якого запису: зіпсований — гучна помилка.
+  const manifest = readRemovedManifest(sources[0].dir);
+  const removed = findRemovedCoreMigrations(storeDir, manifest);
+  const matched = removed.filter((r) => r.status === 'match');
 
   if (collisions.length > 0) {
     say.error(
@@ -327,13 +342,16 @@ export async function run(argv) {
     return;
   }
 
-  if (own.length > 0)
+  // Файл з маніфесту канон «не знає», але він не власний — його звітує
+  // окремий блок нижче; у «власних» він збивав би з пантелику.
+  const ownVisible = own.filter((f) => !removed.some((r) => r.name === f));
+  if (ownVisible.length > 0)
     say.info(
-      `Власні міграції магазину (жоден канон їх не знає): ${own.join(', ')}`,
+      `Власні міграції магазину (жоден канон їх не знає): ${ownVisible.join(', ')}`,
     );
 
   const totalMissing = perSource.reduce((n, s) => n + s.missing.length, 0);
-  if (totalMissing === 0) {
+  if (totalMissing === 0 && removed.length === 0) {
     say.success('Нових міграцій немає — магазин не відстає від канонів.');
     finish('Вже зроблено.');
     return;
@@ -354,17 +372,42 @@ export async function run(argv) {
     }
   }
 
+  const { refused } = applyRemovedCore({
+    storeDir,
+    manifest,
+    found: removed,
+    write,
+  });
+
+  // `--write` має що зробити, лише якщо є що копіювати або що прибрати без
+  // відмови; один лише змінений файл потребує ручної дії, а не `--write`.
+  const actionable = [
+    totalMissing > 0 && 'скопіювати нові міграції в db/migrations/',
+    matched.length > 0 && 'прибрати файли, видалені з канону ядра',
+  ].filter(Boolean);
   if (!write) {
-    showSteps([
-      'pnpm simplycms db:diff --write   # скопіювати їх у db/migrations/',
-    ]);
-    finish('Є що забрати (--write).');
+    if (actionable.length > 0) {
+      showSteps([
+        `pnpm simplycms db:diff --write   # ${actionable.join(' і ')}`,
+      ]);
+      finish('Є що забрати (--write).');
+    } else {
+      finish('Є файл, прибраний з канону ядра, — потрібна ручна дія.');
+    }
+    return;
+  }
+  if (refused.length > 0) {
+    // Відмова — не «готово»: застарілий файл і далі ламатиме накат.
+    process.exitCode = 1;
+    finish(
+      'Файли, прибрані з канону й змінені в магазині, треба видалити вручну.',
+    );
     return;
   }
   // Накат — команда самого CLI (ядро `simplycms/migrate`, журнал сум): після
   // людського ревʼю SQL, у порядку імен, лише файли без запису в журналі.
   showSteps([
-    'git diff                        # ревʼю доданих міграцій',
+    'git diff                        # ревʼю доданих і прибраних міграцій',
     'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — власник схеми)',
   ]);
   finish('Готово.');

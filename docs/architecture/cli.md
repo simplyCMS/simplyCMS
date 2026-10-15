@@ -69,7 +69,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 4 | `pnpm-workspace.yaml` містить `allowBuilds` | error |
 | 5 | env: `DATABASE_URL` + `BETTER_AUTH_SECRET` у `process.env` або `.env.local`/`.env`; значення, що дорівнює відомій заглушці з прикладів env (`src/env-placeholders.mjs` — єдиний список, його ж читає тест шаблону; `DATABASE_URL`, `BETTER_AUTH_SECRET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `SMTP_URL`, `MIGRATION_DATABASE_URL`) — теж error; повідомлення називає ключ, не значення | error |
 | 6 | host-файли: дрейф проти канону (див. §4) | warn → `update --write` |
-| 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
+| 7 | міграції: відставання від `simplycms/migrations`; присутній у `db/migrations` файл із `migrations/removed.json` (прибраний з канону ядра) | warn → `db:diff --write` (для збігу хешу; змінений у магазині — ручна дія без `--write`); змінений спільний файл — error; зіпсований `removed.json` — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
@@ -304,6 +304,17 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
 - наявні лише в магазині й невідомі **жодному** канону → інформаційний список
   «власні міграції» (🔴 `own` рахується по обʼєднанню канонів — інакше
   скопійована міграція плагіна брехливо значилась би «власною»);
+- 🔴 файл, ПРИБРАНИЙ з канону ядра (маніфест `node_modules/simplycms/migrations/removed.json`:
+  `[{ name, sha256, removedIn, reason }]`, `removed-migrations.mjs`): `--write` лише копіював би
+  нове, а застарілий файл у `db/migrations` разом з оновленим baseline валить накат
+  (`CREATE TABLE` вдруге). Маніфест ЗАКРИТИЙ — розглядаються лише названі файли; сума рахується
+  з нормалізованими кінцями рядків (як журнал міграцій). Збіг імені й хешу: без `--write` звіт,
+  з `--write` файл видаляється. Імʼя збіглось, хеш ні (власник змінив файл): НЕ видаляється,
+  відмова з інструкцією «перенеси зміни в нову міграцію й видали вручну», `--write` завершується
+  кодом 1. Власні (`0006_x.sql`), плагінні (`<14 цифр>_plg_*`) і будь-які файли поза маніфестом
+  не розглядаються взагалі, а в «власних» названі в маніфесті не показуються. Ядро без
+  `removed.json` (стара версія) — порожній маніфест; зіпсований — гучна помилка до будь-якого
+  запису. Правило поповнення маніфесту — `release-process.md`.
 - 🔴 спільне ім'я з різним вмістом (канон↔магазин або канон↔канон) →
   **error, нічого не пишеться** (міграції immutable; розходження — привід
   для ручного розбору);
@@ -404,6 +415,10 @@ react-dom і vite у магазині вже є: `vite` тут — завант�
 | `SYNCED_FILES` (host-файли глю, корінь монорепо; усі файли `packages/cli/host/`) | `packages/cli/host/**` | `update`, `doctor` §6 |
 | `TEMPLATE_HOST_FILES` (шими, джерело — сам шаблон: `.claude/hooks/session-start.mjs`, `scripts/start.mjs`, `scripts/owner-invite.mjs`) | `packages/cli/host/**` | `update`, `doctor` §6 |
 | `packages/simplycms/migrations/` | `template/db/migrations/` | `db:diff`, `doctor` §7 |
+
+🔴 `removed.json` (маніфест видалених файлів канону) у шаблон НЕ копіюється
+(`SYNCED_DIRS[].exclude`): його читає CLI з установленого ядра, а у свіжому магазині
+видалених файлів немає — у `db/migrations` це був би чужорідний файл поруч з міграціями.
 
 🔴 Канон міграцій копією **не є** (це змінилось із рішенням B13): він сам
 собі джерело правди — baseline `0000_prelude` → `0004_functions`, який пишуть

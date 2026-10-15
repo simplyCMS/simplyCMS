@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
   cpSync,
@@ -241,6 +242,81 @@ describe('cli doctor (оффлайн)', () => {
     });
     expect(changed.status).toBe('error');
     expect(changed.details).toContain(shared);
+  });
+
+  // Файли, прибрані з канону ядра (маніфест removed.json у каноні): doctor
+  // лише попереджає — прибирає їх `db:diff --write`, doctor read-only.
+  describe('checkMigrations: файли, прибрані з канону ядра', () => {
+    const STALE = '0005_mail_outbox.sql';
+    const STALE_SQL = 'create table mail_outbox ();\n';
+
+    /** Магазин + «ядро» з копією його міграцій і маніфестом, що називає STALE. */
+    async function withManifest(name: string) {
+      const store = await scaffoldStore(name);
+      const storeDir = join(store, 'db', 'migrations');
+      const schemaDir = mkdtempSync(join(tmpdir(), 'cli-schema-'));
+      for (const file of readdirSync(storeDir).filter((n) =>
+        n.endsWith('.sql'),
+      ))
+        cpSync(join(storeDir, file), join(schemaDir, file));
+      writeFileSync(
+        join(schemaDir, 'removed.json'),
+        JSON.stringify([
+          {
+            name: STALE,
+            sha256: createHash('sha256').update(STALE_SQL).digest('hex'),
+            removedIn: '0.16.0 (baseline-виняток М1)',
+            reason: 'mail_outbox злито в 0001_init.sql',
+          },
+        ]),
+      );
+      return { store, storeDir, schemaDir };
+    }
+
+    it('присутній файл з маніфесту → warn', async () => {
+      const { store, storeDir, schemaDir } = await withManifest('doc-rm-warn');
+      writeFileSync(join(storeDir, STALE), STALE_SQL);
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('warn');
+      expect(res.details).toContain(STALE);
+      expect(res.details).toContain('db:diff --write');
+    });
+
+    it('файл з маніфесту, змінений у магазині → warn із ручною дією, без db:diff --write', async () => {
+      const { store, storeDir, schemaDir } = await withManifest('doc-rm-mod');
+      writeFileSync(join(storeDir, STALE), `${STALE_SQL}-- правка\n`);
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('warn');
+      expect(res.details).toContain(STALE);
+      expect(res.details).toContain('видали файл вручну');
+      expect(res.details).not.toContain('db:diff --write');
+    });
+
+    it('файла з маніфесту в магазині немає → ok', async () => {
+      const { store, schemaDir } = await withManifest('doc-rm-none');
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('ok');
+    });
+
+    it('зіпсований маніфест → error, а не виняток із doctor', async () => {
+      const { store, schemaDir } = await withManifest('doc-rm-bad');
+      writeFileSync(join(schemaDir, 'removed.json'), '{ не json');
+      const res = checkMigrations({
+        storeRoot: store,
+        schemaMigrationsDir: schemaDir,
+      });
+      expect(res.status).toBe('error');
+      expect(res.details).toContain('removed.json');
+    });
   });
 
   it('checkMigrations: канон є, а db/migrations немає — error із назвою теки', async () => {

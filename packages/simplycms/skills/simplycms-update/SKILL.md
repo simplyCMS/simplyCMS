@@ -32,7 +32,8 @@ pnpm simplycms update --check
    файлів, яких у каноні вже немає, не видаляє: осиротілі файли, названі в BREAKING (напр.
    `owner-invite-core.mjs` у теці `scripts` при переході на 0.15), видали за згодою власника.
 3. **Міграції** — `pnpm simplycms db:diff`, потім `db:diff --write` лише після ревʼю SQL
-   (`references/migrations.md`).
+   (`references/migrations.md`). `--write` також прибирає файли, які ядро видалило з канону;
+   змінений власником файл не видаляє — його переносять у нову міграцію й видаляють вручну.
 4. **Локальна перевірка** — `pnpm simplycms db:apply` на локальній БД, `pnpm build`,
    `pnpm simplycms doctor --online`.
 5. **Бекап перед ризиковою міграцією** — ручний, до деплою (`references/migrations.md`).

@@ -54,6 +54,8 @@ export default defineConfig({
       'tests/create-store-pack.test.ts',
       // Склад tarball-ів (потрібен dist): packaging-сюїта.
       'tests/pilot-probe-not-packed.test.ts',
+      // Маніфест видалених файлів канону в tarball-ах (npm pack потребує dist).
+      'tests/removed-manifest-packed.test.ts',
       // Смоук tarball-а @simplycms/cli (Gate TOOL): та сама логіка — гейт
       // опублікованого артефакту живе в релізному ланцюзі.
       'tests/cli-pack.test.ts',

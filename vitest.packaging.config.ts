@@ -33,6 +33,8 @@ export default defineConfig({
       'tests/create-store-pack.test.ts',
       // Оверлей-проба пілота не їде в tarball-и (склад — `npm pack --dry-run`, потрібен dist).
       'tests/pilot-probe-not-packed.test.ts',
+      // Маніфест видалених файлів канону їде в tarball ядра (його читає CLI).
+      'tests/removed-manifest-packed.test.ts',
       'tests/cli-pack.test.ts',
       // Гард форми `import.meta` у зібраному `dist` (див. шапку тесту):
       // потребує свіжого `pnpm build:packages`, тож місце — тут.
