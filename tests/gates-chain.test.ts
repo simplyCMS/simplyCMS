@@ -37,15 +37,49 @@ describe('перелік гейтів: AGENTS.md + pilot', () => {
     expect(read('scripts/release/gates.mjs')).toMatch(
       /export function runGates[\s\S]*GATES\.entries\(\)/,
     );
-    // Жоден інший скрипт не несе власного літерала гейта.
+    // Жоден інший скрипт не несе власного елемента переліку: ні поля `cmd:` (елемента
+    // переліку) в жодному скрипті, окрім єдиного масиву.
     const files = [
       ...readdirSync(join(ROOT, 'scripts')).filter((f) => f.endsWith('.mjs')),
       ...readdirSync(join(ROOT, 'scripts/release')).map((f) => `release/${f}`),
     ].filter((f) => f !== 'release/gates.mjs');
-    for (const file of files)
-      expect(read(`scripts/${file}`), file).not.toContain(
-        "cmd: 'pnpm format:check'",
-      );
+    for (const file of files) {
+      const text = read(`scripts/${file}`);
+      expect(text, `${file}: власне поле cmd`).not.toMatch(/\bcmd\s*:/);
+    }
+  });
+});
+
+describe('runChain: брудне дерево після прогону', () => {
+  const run = (after: string) => {
+    const written: Record<string, unknown>[] = [];
+    const result = runChain({
+      gates: [{ name: 'a', cmd: 'a' }],
+      exec: () => {},
+      head: 'abc',
+      now: () => 1,
+      write: (stamp) =>
+        written.push(structuredClone(stamp) as Record<string, unknown>),
+      statusAfter: () => after,
+    });
+    return { ...result, written };
+  };
+
+  it('чисте дерево: dirtyAfter немає, збою немає', () => {
+    const { stamp, failure } = run('');
+    expect(failure).toBeNull();
+    expect(stamp).not.toHaveProperty('dirtyAfter');
+  });
+
+  it('брудне після прогону: збій і dirtyAfter зі списком файлів у штампі', () => {
+    const { stamp, failure, written } = run(
+      ' M src/routeTree.gen.ts\n?? x.txt',
+    );
+    expect((failure as Error).message).toContain('src/routeTree.gen.ts');
+    expect(stamp.dirtyAfter).toEqual(['M src/routeTree.gen.ts', '?? x.txt']);
+    expect(written.at(-1)).toHaveProperty('dirtyAfter');
+    // Гейти самі були зелені: брудне дерево — окрема причина відмови.
+    expect(stamp.gates.every((g) => g.ok)).toBe(true);
   });
 });
 
@@ -92,7 +126,7 @@ describe('runChain: штамп', () => {
       ['a', true],
       ['b', false],
     ]);
-    // Штамп записано після кожного гейту, остання версія — з червоним.
-    expect(written).toHaveLength(2);
+    // Штамп записано після кожного гейту й ще раз наприкінці (finishedAt, dirtyAfter).
+    expect(written).toHaveLength(3);
   });
 });

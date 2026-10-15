@@ -161,17 +161,25 @@ describe('парність привілеїв: baseline v2', () => {
     ]);
     expect(rows.every((r) => r.security_definer === false)).toBe(true);
     expect(rows.some((r) => r.role_name === 'PUBLIC')).toBe(false);
-    const executors = rows
-      .filter(
-        (r) => r.privilege === 'EXECUTE' && r.role_name?.startsWith('app'),
-      )
-      .map((r) => r.role_name)
-      .sort();
-    expect([...new Set(executors)]).toEqual([
-      'app_admin',
-      'app_runtime',
-      'app_user',
-    ]);
+    // ТОЧНА мапа «функція -> ролі app_* з EXECUTE», а не множина ролей: інакше
+    // `GRANT EXECUTE ... languages_guard() TO app_runtime` лишив би тест зеленим.
+    const executors: Record<string, string[]> = {};
+    for (const fn of new Set(rows.map((r) => r.function_name)))
+      executors[fn] = [];
+    for (const r of rows)
+      if (r.privilege === 'EXECUTE' && r.role_name?.startsWith('app'))
+        executors[r.function_name]!.push(r.role_name);
+    const everyone = ['app_admin', 'app_runtime', 'app_user'];
+    const expected = Object.fromEntries(
+      Object.keys(executors).map((fn) => [
+        fn,
+        fn === 'app.current_user_id' || fn === 'public.advisory_lock_held'
+          ? everyone
+          : [],
+      ]),
+    );
+    for (const roles of Object.values(executors)) roles.sort();
+    expect(executors).toEqual(expected);
   });
 
   it('сиквенсів у baseline немає — порожній блок грантів на них правдивий', async () => {

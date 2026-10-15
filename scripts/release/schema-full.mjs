@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Гейт релізу `schema` — `pnpm test:schema` проти повного харнеса.
+ * Гейт `test:schema` (реліз і `pnpm gates`) — `pnpm test:schema` проти повного харнеса.
  *
  * 🔴 З 1.0 він обов'язковий (Е8-В3): реліз обіцяє, що магазин із даними переживе
  * наступну версію, а доводить це лише схемний контур (накат канону через журнал,
@@ -24,7 +24,7 @@ try {
   run('pnpm harness:up');
 } catch {
   throw new Error(
-    'Не вдалося підняти харнес (`pnpm harness:up`): Docker потрібен гейту `schema` релізу.',
+    'Не вдалося підняти харнес (`pnpm harness:up`): Docker потрібен гейту `test:schema`.',
   );
 }
 run('pnpm test:schema');

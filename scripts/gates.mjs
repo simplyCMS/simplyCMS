@@ -18,11 +18,19 @@ import { GATES, execGate } from './release/gates.mjs';
 export const STAMP_FILE = '.gates-stamp.json';
 
 /**
- * @param {{ gates: readonly {name:string,cmd:string}[]; exec: (gate:{name:string,cmd:string})=>void;
- *   head: string; now: ()=>number; write: (stamp:object)=>void; log?: (line:string)=>void }} deps
- * @returns {{ stamp: { head: string; startedAt: string; finishedAt: string; gates: {name:string,ok:boolean,ms:number}[] }; failure: unknown }}
+ * @param {{ gates: typeof GATES; exec: (gate: (typeof GATES)[number]) => void;
+ *   head: string; now: ()=>number; write: (stamp:object)=>void; statusAfter?: ()=>string; log?: (line:string)=>void }} deps
+ * @returns {{ stamp: { head: string; startedAt: string; finishedAt: string; gates: {name:string,ok:boolean,ms:number}[]; dirtyAfter?: string[] }; failure: unknown }}
  */
-export function runChain({ gates, exec, head, now, write, log = () => {} }) {
+export function runChain({
+  gates,
+  exec,
+  head,
+  now,
+  write,
+  statusAfter = () => '',
+  log = () => {},
+}) {
   const stamp = {
     head,
     startedAt: new Date(now()).toISOString(),
@@ -45,6 +53,20 @@ export function runChain({ gates, exec, head, now, write, log = () => {} }) {
     write(stamp);
     if (!ok) break;
   }
+  // `build` перегенеровує закомічений `src/routeTree.gen.ts` тощо: дерево, брудне ПІСЛЯ
+  // прогону, робить штамп із `head` неправдою про стан коміту.
+  const dirtyAfter = statusAfter()
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (dirtyAfter.length > 0) {
+    stamp.dirtyAfter = dirtyAfter;
+    failure ??= new Error(
+      `дерево брудне ПІСЛЯ прогону (гейти змінили закомічені файли):\n${dirtyAfter.join('\n')}`,
+    );
+  }
+  stamp.finishedAt = new Date(now()).toISOString();
+  write(stamp);
   return { stamp, failure };
 }
 
@@ -66,6 +88,7 @@ function main() {
     now: Date.now,
     write: (s) =>
       writeFileSync(join(root, STAMP_FILE), `${JSON.stringify(s, null, 2)}\n`),
+    statusAfter: () => git('status', '--porcelain'),
     log: console.log,
   });
   if (failure) {

@@ -141,13 +141,12 @@ function rebaseline(root) {
     );
 
     const generated = readFileSync(join(tmpDir, '0000_init.sql'), 'utf8');
-    writeFileSync(
-      canonFile,
-      `${[generated.replace(/\n+$/, ''), ...ALLOWLIST_MIGRATION_ONLY_LINES].join(BREAKPOINT)}\n`,
-    );
-    // Усе згенероване й нормалізоване — лише тепер підміняємо `drizzle/`.
+    const canon = `${[generated.replace(/\n+$/, ''), ...ALLOWLIST_MIGRATION_ONLY_LINES].join(BREAKPOINT)}\n`;
+    // Порядок: спершу `drizzle/` (rename — найімовірніше місце збою), потім канон:
+    // збій rename не лишає новий канон поруч зі старим снапшотом.
     rmSync(drizzleDir, { recursive: true, force: true });
     renameSync(tmpDir, drizzleDir);
+    writeFileSync(canonFile, canon);
   } finally {
     // Після успішного rename теки вже нема; при збої нормалізації — не лишаємо сміття.
     rmSync(tmpDir, { recursive: true, force: true });
