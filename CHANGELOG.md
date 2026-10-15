@@ -40,8 +40,19 @@
   тригер `languages_require_lock` (`0004_functions.sql`): запис у `languages` лише під ексклюзивним замком `languages-set`;
   `0003_seed.sql` бере цей замок перед вставкою основної мови;
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`;
+  тригер `addresses_require_languages_lock` (SQLSTATE `SC004`, `0004_functions.sql`): запис у `url_paths` і `slug_tokens` (INSERT/UPDATE) лише під замком `languages-set` (спільним або ексклюзивним), спільна SQL-функція `advisory_lock_held` (на неї переведено й `languages_require_lock`; EXECUTE видано `app_*`);
   нові таблиці `api_tokens` (лише sha256-хеш токена), `idempotency_keys` (складений PK, без `id`) і `service_accounts` (PK `user_id`), права лише `app_admin`; тригери `accounts_refuse_service`/`service_accounts_refuse_human` (`0004_functions.sql`); Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
+- **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
+  `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі
+  беруться з реєстру: `LOCK_KEYS.adminRoles`, `LOCK_KEYS.customerConfig`, `LOCK_KEYS.discountConfig` тощо
+  (`simplycms/db/lock-keys`).
+- **serverFn віддає вихід, розібраний схемою операції:** поля поза `output` відсікаються (раніше serverFn
+  віддавав сирий результат `run`, а HTTP — відсічений); обидва транспорти беруть одне значення.
+- **`setExplicitPath`/`setExplicitToken`** самі беруть спільний замок `languages-set`.
+- **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
+  дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з
+  `AGENTS.md` (гейт `test:schema`, раніше `schema` після `test:packaging`).
 - **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`
   імпортуються з `simplycms/contracts/domain-errors` (раніше `simplycms/admin-server/impl`, звідки реекспорт прибрано).
   Новий код поля `reserved` (`VALIDATION_ISSUE_CODES`) для зарезервованої адреси.
