@@ -13,7 +13,7 @@ import { useAddressingDb } from './fixtures/addressing-db';
 
 describe('паритет адрес і токенів на реальних генераторах (І22)', () => {
   const db = useAddressingDb('simplycms_addressing_parity');
-  const { q, admin } = db;
+  const { admin } = db;
 
   it('однакова картина зайнятих → однакові slug-и, включно з -2/-3 і історією', async () => {
     // Картина зайнятих (у мові uk): panel — поточний, panel-2 — історичний.
