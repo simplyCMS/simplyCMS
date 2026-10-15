@@ -62,4 +62,29 @@ describe('server-fn-top-level (К3-4′)', () => {
     expect(msgs).toHaveLength(1);
     expect(msgs[0].messageId).toBe('notTopLevel');
   });
+
+  it('аліас імпорту не обходить правило', () => {
+    const msgs = linter.verify(
+      `import { createServerFn as mk } from '@tanstack/react-start';\nconst o = { fn: mk({ method: 'GET' }).handler(h) };`,
+      config,
+      { filename: 'f.ts' },
+    );
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.messageId).toBe('notTopLevel');
+  });
+
+  it('namespace-імпорт і перепризначення не обходять правило', () => {
+    const ns = linter.verify(
+      `import * as rs from '@tanstack/react-start';\nconst o = { fn: rs.createServerFn().handler(h) };`,
+      config,
+      { filename: 'f.ts' },
+    );
+    expect(ns).toHaveLength(1);
+    const re = linter.verify(
+      `import { createServerFn } from '@tanstack/react-start';\nconst w = createServerFn;\nfunction f() { return w().handler(h); }`,
+      config,
+      { filename: 'f.ts' },
+    );
+    expect(re).toHaveLength(1);
+  });
 });

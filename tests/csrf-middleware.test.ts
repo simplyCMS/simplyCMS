@@ -8,7 +8,7 @@ import { startInstance } from '../src/start';
 import { toRequestUrl } from '../server-origin.mjs';
 
 // Роут health тягне `simplycms/db`; БД тут не потрібна — `ANY` до неї не ходить.
-vi.mock('simplycms/db', () => ({ withActor: async () => {} }));
+vi.mock('simplycms/db', () => ({ pingDatabase: async () => {} }));
 
 type RouteHandler = (ctx: { request: Request }) => Response | Promise<Response>;
 const healthHandlers = HealthRoute.options.server

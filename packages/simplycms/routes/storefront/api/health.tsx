@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { sql } from 'drizzle-orm';
-import { withActor } from 'simplycms/db';
+import { pingDatabase } from 'simplycms/db';
 import { BUILD_ID } from 'simplycms/runtime/build-id';
 
 /**
@@ -50,8 +49,7 @@ async function healthResponse(bodyless: boolean): Promise<Response> {
   let error: string | null = null;
 
   try {
-    // eslint-disable-next-line simplycms-ops/no-core-outside-operation -- liveness-проба `select 1`, не бізнес-операція
-    await withActor({ role: 'app_user' }, (db) => db.execute(sql`select 1`));
+    await pingDatabase();
     ok = true;
   } catch (err) {
     error = err instanceof Error ? err.message : 'Unknown error';

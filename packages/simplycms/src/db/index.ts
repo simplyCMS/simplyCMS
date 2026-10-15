@@ -12,6 +12,7 @@
  */
 export { withActor, type ActorDb } from './with-actor';
 export { asService } from './as-service';
+export { pingDatabase } from './ping';
 export { advisoryXactLock, advisoryXactLockShared } from './advisory-lock';
 export {
   isForeignKeyViolation,

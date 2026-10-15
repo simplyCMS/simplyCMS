@@ -17,14 +17,26 @@ vi.mock('simplycms/db', async (orig) => ({
     scopes: dbRow.scopes,
   })),
 }));
-// Виконавець не потрібен: паритет питає «операцію знайдено?», а не «що вона робить».
-vi.mock('../../../operations/execute', () => ({
-  executeOperation: vi.fn(async () => ({ replayed: false, output: null })),
-}));
+// Виконавець підмінено мінімально: перевіряє ЛИШЕ вхід за схемою операції (як
+// справжній, 400 на невалідному) і не чіпає БД. Паритет питає «операцію
+// знайдено й доступну?», а не «що вона робить».
+vi.mock('../../../operations/execute', async () => {
+  const { ValidationError } = await import('simplycms/contracts/domain-errors');
+  return {
+    executeOperation: vi.fn(
+      async (def: { input: import('zod').ZodType }, body: unknown) => {
+        const parsed = def.input.safeParse(body);
+        if (!parsed.success) throw new ValidationError([]);
+        return { replayed: true, status: 200, body: { ok: true } };
+      },
+    ),
+  };
+});
 
 import * as impl from 'simplycms/admin-server/impl';
 import { handleApiRequest } from '../../../operations/http/handle';
 import { generateToken } from '../../../operations/http/token-auth';
+import tseslint from 'typescript-eslint';
 import adminServerSource from '../../index.ts?raw';
 
 const { CORE_OPERATIONS, getOperation } = impl;
@@ -41,11 +53,33 @@ const exportNames = (def: unknown) =>
     .filter(([, v]) => v === def)
     .map(([k]) => k);
 
+/** Усі `invokeFromServerFn(<ідентифікатор>, …)` у файлі — за AST, а не за текстом. */
+function wrapperTargets(source: string): string[] {
+  // Типи `typescript-eslint` оголошують `parseForESLint` з одним аргументом.
+  const parser = tseslint.parser as unknown as {
+    parseForESLint(code: string, options: object): { ast: { body: unknown } };
+  };
+  const { ast } = parser.parseForESLint(source, { sourceType: 'module' });
+  const out: string[] = [];
+  const walk = (n: unknown): void => {
+    if (Array.isArray(n)) return n.forEach(walk);
+    if (!n || typeof n !== 'object') return;
+    const node = n as Record<string, unknown> & { type?: string };
+    if (node.type === 'CallExpression') {
+      const c = node.callee as { type: string; name?: string };
+      const a = (node.arguments as { type: string; name?: string }[])[0];
+      if (c.name === 'invokeFromServerFn' && a?.type === 'Identifier')
+        out.push(a.name!);
+    }
+    for (const [k, v] of Object.entries(node))
+      if (k !== 'parent' && k !== 'loc' && k !== 'range') walk(v);
+  };
+  walk(ast.body);
+  return out;
+}
+const targets = wrapperTargets(adminServerSource);
 /** Скільки обгорток передає `name` в `invokeFromServerFn`. */
-const wrapperCount = (name: string) =>
-  [...adminServerSource.matchAll(/invokeFromServerFn\((\w+), data\)/g)].filter(
-    (m) => m[1] === name,
-  ).length;
+const wrapperCount = (name: string) => targets.filter((t) => t === name).length;
 
 describe('паритет реєстру операцій (І24): serverFn', () => {
   it.each(CORE_OPERATIONS.map((d) => [d.id, d] as const))(
@@ -58,11 +92,8 @@ describe('паритет реєстру операцій (І24): serverFn', () =
   );
 
   it('навпаки: кожна обгортка посилається на операцію реєстру', () => {
-    const used = [
-      ...adminServerSource.matchAll(/invokeFromServerFn\((\w+), data\)/g),
-    ].map((m) => m[1]!);
-    expect(used.length).toBeGreaterThan(0);
-    for (const name of used)
+    expect(targets.length).toBeGreaterThan(0);
+    for (const name of targets)
       expect(CORE_OPERATIONS).toContain(
         (impl as Record<string, unknown>)[name],
       );
@@ -93,21 +124,21 @@ describe('паритет реєстру операцій (І24): HTTP', () => {
     );
 
   it.each(CORE_OPERATIONS.map((d) => [d.id] as const))(
-    '%s: операцію знайдено; sessionOnly ⇒ Bearer адміна дає 403 forbidden',
+    '%s: операцію знайдено, статус відповідає категорії',
     async (id) => {
+      const def = getOperation(id)!;
       const res = await call(id);
-      const kind = (
-        await res
-          .clone()
-          .json()
-          .catch(() => null)
-      )?.kind;
+      const kind = (await res.clone().json())?.kind;
       expect(kind).not.toBe('unknown_operation');
-      if (getOperation(id)!.sessionOnly) {
+      if (def.sessionOnly) {
+        // Токен не керує токенами: Bearer адміна — рівно 403.
         expect(res.status).toBe(403);
         expect(kind).toBe('forbidden');
       } else {
-        expect(res.status).not.toBe(404);
+        // Автентифікація й права пройшли (не 401/403/404): порожнє тіло дає
+        // 200, якщо схема входу його приймає, і 400 `validation`, якщо ні.
+        const accepts = def.input.safeParse({}).success;
+        expect(res.status).toBe(accepts ? 200 : 400);
       }
     },
   );

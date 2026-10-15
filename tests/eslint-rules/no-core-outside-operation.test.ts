@@ -47,6 +47,32 @@ describe('simplycms-ops/no-core-outside-operation (І25)', () => {
       `import { listProductsIn as q } from 'simplycms/admin-server/impl'; q(db);`,
     ],
     [
+      'аліас withActor з simplycms/db',
+      `import { withActor as wa } from 'simplycms/db'; wa(x, f);`,
+    ],
+    [
+      'namespace impl: impl.listProductsIn(db)',
+      `import * as impl from 'simplycms/admin-server/impl'; impl.listProductsIn(db);`,
+    ],
+    [
+      'namespace db: ns.withActor()',
+      `import * as dbm from 'simplycms/db'; dbm.withActor(x, f);`,
+    ],
+    ['метод db.withActor(...)', `db.withActor(x, f);`],
+    ['перепризначення const w = withActor', `const w = withActor; w(x, f);`],
+    [
+      'перепризначення аліаса імпорту',
+      `import { withActor as wa } from 'simplycms/db'; const w = wa; w(x, f);`,
+    ],
+    [
+      'деструктуризація namespace',
+      `import * as impl from 'simplycms/admin-server/impl'; const { runAdmin: r } = impl; r(x);`,
+    ],
+    [
+      'обчислюваний доступ ns["fnIn"]',
+      `import * as impl from 'simplycms/admin-server/impl'; impl['listProductsIn'](db);`,
+    ],
+    [
       'не-legacy ім’я в файлі serverFn',
       `export const fresh = createServerFn().handler(async () => runAdmin(x));`,
       ['old'],

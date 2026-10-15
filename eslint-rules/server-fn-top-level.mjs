@@ -7,6 +7,8 @@
  * серверний граф їде в клієнтський бандл. Це правило робить обидва режими
  * гучними на pnpm lint.
  */
+import { createServerFnTracker } from './lib/create-server-fn.mjs';
+
 /** @type {import('eslint').Rule.RuleModule} */
 export default {
   meta: {
@@ -19,8 +21,12 @@ export default {
     },
   },
   create(context) {
+    // Аліас `import { createServerFn as mk }` не повинен обходити правило.
+    const tracker = createServerFnTracker();
     return {
-      'CallExpression[callee.name="createServerFn"]'(node) {
+      ...tracker.visitors,
+      CallExpression(node) {
+        if (!tracker.isCreateCall(node)) return;
         // Легальна форма: … → VariableDeclarator(id=Identifier) →
         // VariableDeclaration → Program | ExportNamedDeclaration→Program.
         // Виклик — корінь method-chain, тож піднімаємось крізь ланцюг

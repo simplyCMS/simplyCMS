@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { dbFails } = vi.hoisted(() => ({ dbFails: { value: false } }));
 vi.mock('simplycms/db', () => ({
-  withActor: async () => {
+  pingDatabase: async () => {
     if (dbFails.value) throw new Error('connect ECONNREFUSED db.internal:5432');
   },
 }));

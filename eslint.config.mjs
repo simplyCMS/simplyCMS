@@ -67,6 +67,15 @@ const LEGACY_SERVER_FNS = JSON.parse(
   ),
 );
 
+// Файли зони serverFn перелічені ЯВНО, а не виводяться з ключів JSON: якщо файл
+// зникне з переліку, правило для нього не повинно мовчки вимкнутись.
+const SERVER_FN_ZONE_FILES = [
+  'packages/simplycms/src/admin-server/index.ts',
+  'packages/simplycms/src/plugin-sdk/server/index.ts',
+  'packages/simplycms/src/plugins/server/index.ts',
+  'packages/simplycms/src/themes/server/index.ts',
+];
+
 const I18N_MIGRATED_FILES = [
   'src/**/*.tsx',
   // К0: тіри вітрини й адмінки живуть теками флагмана. Зона перелічує саме
@@ -417,7 +426,7 @@ const eslintConfig = [
   // Окреме імʼя плагіна `simplycms-ops` і ОКРЕМИЙ блок на файл: flat config
   // замінює опції правила цілком, а legacy-перелік у кожного файла свій.
   // Перелік лише скорочується (правило падає на зниклому імені); М3 його знесе.
-  ...Object.entries(LEGACY_SERVER_FNS).map(([file, legacy]) => ({
+  ...SERVER_FN_ZONE_FILES.map((file) => ({
     files: [file],
     plugins: {
       'simplycms-ops': {
@@ -428,8 +437,14 @@ const eslintConfig = [
       },
     },
     rules: {
-      'simplycms-ops/thin-server-fn': ['error', { legacy }],
-      'simplycms-ops/no-core-outside-operation': ['error', { legacy }],
+      'simplycms-ops/thin-server-fn': [
+        'error',
+        { legacy: LEGACY_SERVER_FNS[file] ?? [] },
+      ],
+      'simplycms-ops/no-core-outside-operation': [
+        'error',
+        { legacy: LEGACY_SERVER_FNS[file] ?? [] },
+      ],
     },
   })),
   // Роути, адмінка й вітринні серверні модулі не ходять у дані повз операцію.
