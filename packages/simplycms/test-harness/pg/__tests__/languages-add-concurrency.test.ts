@@ -2,7 +2,9 @@
 // кожен товар, створений до й під час додавання, мусить мати адресу в новій
 // мові. Порядок «замок → набір мов» доводять три сценарії.
 import { randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import {
   createPathsForEntity,
   createTokensForEntity,
@@ -211,5 +213,21 @@ describe('languages.add проти паралельного створення �
     await b;
     expect(await pathIn(product, 'ko')).toHaveLength(0);
     expect(await pathIn(product, 'uk')).toHaveLength(1);
+  });
+
+  it('fill чекає ексклюзивний remove і після коміту отримує AdminNotFoundError, а не 23503', async () => {
+    await addLanguage('is');
+    const r = hold(db, async (d) => {
+      await advisoryXactLock(d, LOCK_KEYS.languagesSet);
+      await d.delete(languages).where(eq(languages.code, 'is'));
+    });
+    await until('remove отримав замок і видалив мову', r.acquired);
+    const f = executeOperation(languagesFill, { code: 'is' }, subject).catch(
+      (e: unknown) => e,
+    );
+    await until('fill став у чергу', async () => (await waiters(db)) === 1);
+    r.release();
+    await r.done;
+    expect(await f).toBeInstanceOf(AdminNotFoundError);
   });
 });

@@ -5,7 +5,8 @@ import {
   InUseError,
 } from 'simplycms/contracts/domain-errors';
 import { defineOperation } from 'simplycms/operations';
-import { isForeignKeyViolation } from 'simplycms/db';
+import { advisoryXactLockShared, isForeignKeyViolation } from 'simplycms/db';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
 import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
 import { FILL_BATCH, fillBatch } from './fill';
@@ -70,6 +71,10 @@ export const languagesFill = defineOperation({
   }),
   output: z.object({ inserted: z.number().int(), done: z.boolean() }),
   async run({ db }, input) {
+    // Спільний замок першим кроком: fill серіалізується з remove/setStatus
+    // (ексклюзивними), але не блокує створення товарів (теж спільні). Без нього
+    // remove мови між читанням і вставкою дав би сирий 23503 (500).
+    await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
     await load(db, input.code);
     // Рядок мови не змінюється, тож покоління кешу мов не піднімаємо.
     return fillBatch(db, input.code, input.batch);
