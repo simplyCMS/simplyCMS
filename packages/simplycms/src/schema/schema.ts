@@ -671,6 +671,27 @@ export const apiTokens = pgTable("api_tokens", {
 		}).onDelete("set null"),
 ]);
 
+// Сервісні облікові записи (М1, І27): власники токенів інтеграцій. Ознака — РЯДОК
+// тут, а не відсутність `accounts` (запрошена людина теж ще без `accounts`).
+// Окрема таблиця, а не колонка `users.is_service`: `users` належить Better Auth.
+// Взаємовиключність із `accounts` тримають два тригери (`0004_functions.sql`).
+export const serviceAccounts = pgTable("service_accounts", {
+	userId: uuid("user_id").primaryKey().notNull(),
+	createdBy: uuid("created_by"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "service_accounts_user_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [users.id],
+			name: "service_accounts_created_by_fkey"
+		}).onDelete("set null"),
+]);
+
 // Ключі ідемпотентності HTTP API (М1, І28). Складений природний PK без `id`:
 // сам PK і є область (`subject_key` = `token:<id>` | `user:<uuid>`, операція,
 // ключ клієнта), тож "Категорія A" з її явним `id` тут не застосовна. Рядок

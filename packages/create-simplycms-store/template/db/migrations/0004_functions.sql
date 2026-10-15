@@ -154,6 +154,56 @@ CREATE TRIGGER languages_require_lock
 BEFORE INSERT OR UPDATE OR DELETE ON public.languages
 FOR EACH ROW EXECUTE FUNCTION public.languages_require_lock();
 
+-- ── сервісні облікові записи ≠ облікові дані входу (М1, І27) ─────────────────
+-- Сервісний запис (рядок `service_accounts`) не має рядка `accounts`: увійти
+-- паролем чи OAuth він не може. Інваріант двосторонній: тригер на `accounts`
+-- (відмова SC002, коли `user_id` — сервісний) і дзеркальний на
+-- `service_accounts` (відмова SC003, коли в користувача вже є `accounts`).
+-- Рядок `users` блокується `FOR UPDATE` в обох: інакше дві конкурентні вставки
+-- (кожна не бачить незакомічену іншу) пройшли б обидві.
+-- Без `SECURITY DEFINER`: Better Auth пише `accounts` під `app_admin`, якому
+-- видано CRUD на `service_accounts` (0002_grants), тож читання тригером працює
+-- з правами актора.
+CREATE OR REPLACE FUNCTION public.accounts_refuse_service() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_catalog AS $$
+BEGIN
+  PERFORM 1 FROM public.users WHERE id = NEW.user_id FOR UPDATE;
+  IF EXISTS (SELECT 1 FROM public.service_accounts WHERE user_id = NEW.user_id) THEN
+    RAISE EXCEPTION 'accounts: сервісний обліковий запис не має облікових даних входу'
+      USING ERRCODE = 'SC002';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.accounts_refuse_service() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS accounts_refuse_service ON public.accounts;
+CREATE TRIGGER accounts_refuse_service
+BEFORE INSERT ON public.accounts
+FOR EACH ROW EXECUTE FUNCTION public.accounts_refuse_service();
+
+CREATE OR REPLACE FUNCTION public.service_accounts_refuse_human() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_catalog AS $$
+BEGIN
+  PERFORM 1 FROM public.users WHERE id = NEW.user_id FOR UPDATE;
+  IF EXISTS (SELECT 1 FROM public.accounts WHERE user_id = NEW.user_id) THEN
+    RAISE EXCEPTION 'service_accounts: у користувача вже є облікові дані входу'
+      USING ERRCODE = 'SC003';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.service_accounts_refuse_human() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS service_accounts_refuse_human ON public.service_accounts;
+CREATE TRIGGER service_accounts_refuse_human
+BEFORE INSERT ON public.service_accounts
+FOR EACH ROW EXECUTE FUNCTION public.service_accounts_refuse_human();
+
 -- ── перекладні сутності: обовʼязковий рядок основної мови (М1, І4–І5) ────────
 -- ОДНА функція на всі перекладні пари (товар, розділ, банер, плагінні таблиці
 -- `plg_*_translations`): тригер на кожну пару окремо розходився б у деталях

@@ -36,7 +36,7 @@ export type AllowEntry = {
  * `console.*` або `throw new Error(...)` (див. `i18n-coverage.test.ts`).
  */
 // Кількість кириличних рядків CLI `owner:invite` (див. `AllowEntry.strings`).
-const RUN_STRINGS = 10;
+const RUN_STRINGS = 11;
 const CLI_STRINGS = 3;
 
 export const ALLOWLIST: Record<string, AllowEntry> = {

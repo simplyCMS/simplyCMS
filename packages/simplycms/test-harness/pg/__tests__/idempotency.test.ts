@@ -13,7 +13,12 @@ vi.mock('simplycms/auth', async (orig) => ({
   ),
 }));
 
-import { IDEMPOTENCY_LOCK_TIMEOUT_MS } from 'simplycms/operations';
+import { advisoryXactLock } from 'simplycms/db';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+import {
+  IDEMPOTENCY_LOCK_TIMEOUT_MS,
+  fingerprintOf,
+} from 'simplycms/operations';
 import { apiHarness } from './fixtures/api-http';
 import { ADMIN, useAddressingDb } from './fixtures/addressing-db';
 
@@ -55,6 +60,12 @@ describe('Idempotency-Key (І28)', () => {
   };
 
   beforeAll(async () => {
+    // Запобіжник тесту: без `lock_timeout` (мутація ж) дубль висів би до таймаута
+    // тесту; зі `statement_timeout` на з'єднаннях пулу він падає за секунди. Пул
+    // створюється ліниво, тож параметр підхопиться.
+    const url = new URL(process.env.DATABASE_URL!);
+    url.searchParams.set('options', '-c statement_timeout=9000');
+    process.env.DATABASE_URL = url.toString();
     await db.q(
       `insert into public.users (id, name, email) values ($1, 'a', 'a@x.test')`,
       [ADMIN.userId],
@@ -173,31 +184,162 @@ describe('Idempotency-Key (І28)', () => {
     expect(await keyRow(subject, 'k-other-2')).toBeUndefined();
   });
 
-  it('утримана перша транзакція: дубль чекає й отримує 409 idempotency_in_flight', async () => {
-    const key = 'k-held';
+  /** Чекає, поки умова в `pg_stat_activity` стане істинною (доказ, що дубль справді чекає). */
+  const waitFor = async (where: string) => {
+    for (let i = 0; i < 100; i += 1) {
+      const rows = await db.q(
+        `select 1 from pg_stat_activity where datname = current_database() and ${where}`,
+      );
+      if (rows.length > 0) return;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    throw new Error(`не дочекались: ${where}`);
+  };
+  const WAITS_ON_KEY = `wait_event_type = 'Lock' and wait_event in ('transactionid', 'tuple') and query ilike '%idempotency_keys%'`;
+
+  /** Утримує транзакцію з рядком ключа (як незакомічена перша спроба); `done` її завершує. */
+  const holdKey = (body: unknown, key: string, commit: boolean) => {
     const release = Promise.withResolvers<void>();
     const held = db.admin(async (tx) => {
+      const fp = fingerprintOf(body);
       await tx.execute(sql`
         insert into public.idempotency_keys (subject_key, operation, key, fingerprint, status, response)
-        values (${`user:${ADMIN.userId}`}, 'languages.add', ${key}, '\\x01', 0, 'null'::jsonb)`);
+        values (${`user:${ADMIN.userId}`}, 'languages.add', ${key}, ${fp}, 0, 'null'::jsonb)`);
       await release.promise;
-      throw new Error('rollback');
+      if (!commit) throw new Error('rollback');
+      await tx.execute(sql`
+        update public.idempotency_keys set status = 200, response = '{"held":true}'::jsonb
+         where key = ${key}`);
     });
-    await new Promise((r) => setTimeout(r, 300));
-    const started = Date.now();
-    const res = await call(
+    held.catch(() => undefined);
+    return {
+      held,
+      done: async () => {
+        release.resolve();
+        await held.catch(() => undefined);
+      },
+    };
+  };
+
+  it('перша транзакція утримана: дубль чекає на PK, після коміту РІВНО одна відповідь — replay', async () => {
+    const body = { id: randomUUID(), code: 'hu', name: 'Hu' };
+    const h = { ...SESSION, 'idempotency-key': 'k-wait-replay' };
+    // Перша спроба — справжній запит: вона блокується на замку мов ПІСЛЯ вставки ключа.
+    const lock = Promise.withResolvers<void>();
+    const lockHolder = db.admin(async (tx) => {
+      await advisoryXactLock(tx, LOCK_KEYS.languagesSet);
+      await lock.promise;
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    try {
+      const first = call('languages.add', body, h);
+      await waitFor(`wait_event_type = 'Lock' and wait_event = 'advisory'`);
+      const dup = call('languages.add', body, h);
+      await waitFor(WAITS_ON_KEY);
+      lock.resolve();
+      const [a, b] = await Promise.all([first, dup]);
+      expect([a.status, b.status]).toEqual([200, 200]);
+      expect(
+        [a, b].filter((r) => r.headers.get('idempotent-replayed') === 'true'),
+      ).toHaveLength(1);
+      expect(b.headers.get('idempotent-replayed')).toBe('true');
+      expect(await b.json()).toEqual(await a.json());
+      expect(await langCount('hu')).toBe(1);
+    } finally {
+      lock.resolve();
+      await lockHolder.catch(() => undefined);
+    }
+  }, 30_000);
+
+  it('перша транзакція відкотилась (не-2xx) → дубль отримує fresh і виконується', async () => {
+    const body = { id: randomUUID(), code: 'fi', name: 'Fi' };
+    const key = 'k-wait-rollback';
+    const holder = holdKey(body, key, false);
+    try {
+      await new Promise((r) => setTimeout(r, 200));
+      const dup = call('languages.add', body, {
+        ...SESSION,
+        'idempotency-key': key,
+      });
+      await waitFor(WAITS_ON_KEY);
+      await holder.done();
+      const res = await dup;
+      expect(res.status).toBe(200);
+      expect(res.headers.get('idempotent-replayed')).toBeNull();
+      expect(await langCount('fi')).toBe(1);
+    } finally {
+      await holder.done();
+    }
+  }, 30_000);
+
+  it('утримана перша транзакція: дубль чекає й отримує 409 idempotency_in_flight', async () => {
+    const key = 'k-held';
+    const holder = holdKey({ x: 1 }, key, false);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      const started = Date.now();
+      const res = await call(
+        'languages.add',
+        { id: randomUUID(), code: 'sv', name: 'Sv' },
+        { ...SESSION, 'idempotency-key': key },
+      );
+      expect(res.status).toBe(409);
+      expect((await res.json()).kind).toBe('idempotency_in_flight');
+      expect(Date.now() - started).toBeGreaterThanOrEqual(
+        IDEMPOTENCY_LOCK_TIMEOUT_MS - 500,
+      );
+      expect(await langCount('sv')).toBe(0);
+    } finally {
+      await holder.done();
+    }
+  }, 30_000);
+
+  it('ті самі ключі тіла в іншому порядку → replay, не 422', async () => {
+    const id = randomUUID();
+    const h = { ...SESSION, 'idempotency-key': 'k-order' };
+    const first = await call(
       'languages.add',
-      { id: randomUUID(), code: 'sv', name: 'Sv' },
-      { ...SESSION, 'idempotency-key': key },
+      { id, code: 'ro', name: 'Ro' },
+      h,
     );
-    expect(res.status).toBe(409);
-    expect((await res.json()).kind).toBe('idempotency_in_flight');
-    expect(Date.now() - started).toBeGreaterThanOrEqual(
-      IDEMPOTENCY_LOCK_TIMEOUT_MS - 500,
+    expect(first.status).toBe(200);
+    const again = await call(
+      'languages.add',
+      { name: 'Ro', code: 'ro', id },
+      h,
     );
-    expect(await langCount('sv')).toBe(0);
-    release.resolve();
-    await expect(held).rejects.toThrow('rollback');
+    expect(again.status).toBe(200);
+    expect(again.headers.get('idempotent-replayed')).toBe('true');
+  });
+
+  it('прибирання протухлих не чекає на рядки конкурента: чужий ключ не дає хибного 409', async () => {
+    const subject = `user:${ADMIN.userId}`;
+    await db.q(
+      `insert into public.idempotency_keys (subject_key, operation, key, fingerprint, status, response, created_at)
+       values ($1, 'languages.fill', 'k-locked-stale', '\\x00', 200, '{}', now() - interval '25 hours')`,
+      [subject],
+    );
+    const release = Promise.withResolvers<void>();
+    const holder = db.admin(async (tx) => {
+      await tx.execute(
+        sql`select 1 from public.idempotency_keys where key = 'k-locked-stale' for update`,
+      );
+      await release.promise;
+    });
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      const started = Date.now();
+      const res = await call(
+        'languages.add',
+        { id: randomUUID(), code: 'no', name: 'No' },
+        { ...SESSION, 'idempotency-key': 'k-prune-free' },
+      );
+      expect(res.status).toBe(200);
+      expect(Date.now() - started).toBeLessThan(IDEMPOTENCY_LOCK_TIMEOUT_MS);
+    } finally {
+      release.resolve();
+      await holder.catch(() => undefined);
+    }
   }, 30_000);
 
   it('Idempotency-Key поза 1–255 символів → 400', async () => {

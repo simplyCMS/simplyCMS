@@ -15,7 +15,7 @@ import {
   storeIdempotentResponse,
 } from './http/idempotency';
 import { ProblemError } from './http/problem';
-import { toWire } from './http/wire';
+import { encodeOutput } from './http/wire';
 
 const actorOf = (subject: AuthzSubject): CoreActor =>
   subject.userId === null
@@ -66,7 +66,13 @@ export async function executeOperation<I, O>(
             throw new ProblemError('idempotency_mismatch');
         }
         const output = await def.run({ subject, actor, db }, parsed.data);
-        if (idem) await storeIdempotentResponse(db, idem, 200, toWire(output));
+        if (idem)
+          await storeIdempotentResponse(
+            db,
+            idem,
+            200,
+            encodeOutput(def.output, output),
+          );
         return { replayed: false, output };
       },
     );

@@ -19,6 +19,7 @@ import {
 /** Функції — `схема.імʼя`, тригери — голе імʼя. */
 const ALLOWLIST = [
   'app.current_user_id',
+  'public.accounts_refuse_service',
   'public.attach_current_address_triggers',
   'public.attach_current_token_triggers',
   'public.attach_source_translation_triggers',
@@ -29,10 +30,13 @@ const ALLOWLIST = [
   'public.require_current_token',
   'public.require_default_shipping_zone',
   'public.require_source_translation',
+  'public.service_accounts_refuse_human',
+  'accounts_refuse_service',
   'languages_guard',
   'languages_require_lock',
   'product_modifications_cur_tok_b',
   'products_cur_addr_b',
+  'service_accounts_refuse_human',
   'sessions_refuse_banned',
   'shipping_zones_require_default',
   'slug_tokens_cur_tok_r',

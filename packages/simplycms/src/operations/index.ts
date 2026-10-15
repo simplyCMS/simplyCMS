@@ -19,3 +19,4 @@ export {
   IDEMPOTENCY_LOCK_TIMEOUT_MS,
   IDEMPOTENCY_TTL_HOURS,
 } from './http/idempotency';
+export { fingerprintOf } from './http/idempotency';

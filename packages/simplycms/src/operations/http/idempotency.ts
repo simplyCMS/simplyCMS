@@ -66,17 +66,21 @@ export async function reserveIdempotencyKey(
     await db.execute(
       sql`select set_config('lock_timeout', ${`${IDEMPOTENCY_LOCK_TIMEOUT_MS}ms`}, true)`,
     );
-    // Те саме DELETE: порція протухлих + протухлий рядок САМОГО цього ключа
-    // (інакше він конфліктував би з вставкою, а порція могла б його не взяти).
+    // Протухлий рядок САМОГО цього ключа прибираємо першим і явно: інакше він
+    // конфліктував би з вставкою, а порція могла б його не взяти. Чекати тут
+    // можна лише на рядок цього ж ключа (його тримає той самий запит-конкурент).
     await db.execute(sql`
-      delete from public.idempotency_keys k using (
-        (select subject_key, operation, key from public.idempotency_keys
-          where ${STALE} limit ${IDEMPOTENCY_PRUNE_BATCH})
-        union
-        (select subject_key, operation, key from public.idempotency_keys
-          where (subject_key, operation, key) = ${PK(req)} and ${STALE})
-      ) s
-      where k.subject_key = s.subject_key and k.operation = s.operation and k.key = s.key`);
+      delete from public.idempotency_keys
+       where (subject_key, operation, key) = ${PK(req)} and ${STALE}`);
+    // Порція протухлих: `SKIP LOCKED` — прибирання НІКОЛИ не чекає на рядки
+    // конкурента (інакше `lock_timeout` дав би хибний 409 для чужого ключа, а
+    // різний порядок блокувань — deadlock). Форма майстра `ctid IN (… LIMIT 100)`.
+    await db.execute(sql`
+      delete from public.idempotency_keys
+       where ctid in (
+         select ctid from public.idempotency_keys
+          where ${STALE} limit ${IDEMPOTENCY_PRUNE_BATCH}
+            for update skip locked)`);
     const inserted = await db.execute(sql`
       insert into public.idempotency_keys
         (subject_key, operation, key, fingerprint, status, response)

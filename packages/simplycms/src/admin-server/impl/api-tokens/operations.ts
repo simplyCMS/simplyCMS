@@ -8,7 +8,7 @@ import {
   OPERATION_ID_FORMAT,
 } from 'simplycms/operations';
 import type { ActorDb } from 'simplycms/db';
-import { apiTokens, accounts, users } from 'simplycms/schema';
+import { apiTokens, serviceAccounts, users } from 'simplycms/schema';
 
 // Керування токенами HTTP API й сервісними обліковими записами (М1, І27).
 // 🔴 Усе `sessionOnly`: витеклий Bearer не випускає нових токенів. Права —
@@ -28,9 +28,9 @@ const tokenView = z.object({
 });
 
 /**
- * Токен випускається лише для себе чи сервісного облікового запису (користувач
- * без рядка `accounts`). Іншим — `AuthzError`: адмін не діє від імені іншої
- * людини, і атрибуція дій токена не фальсифікується.
+ * Токен випускається лише для себе чи сервісного облікового запису (рядок у
+ * `service_accounts`). Іншим — `AuthzError`: адмін не діє від імені іншої людини
+ * (зокрема запрошеної, що ще без `accounts`), і атрибуція токена не фальсифікується.
  */
 async function assertTokenOwner(
   db: ActorDb,
@@ -38,17 +38,17 @@ async function assertTokenOwner(
   userId: string,
 ) {
   if (userId === actorId) return;
+  const [service] = await db
+    .select({ userId: serviceAccounts.userId })
+    .from(serviceAccounts)
+    .where(eq(serviceAccounts.userId, userId));
+  if (service) return;
   const [user] = await db
     .select({ id: users.id })
     .from(users)
     .where(eq(users.id, userId));
   if (!user) throw new AdminNotFoundError('користувач');
-  const [account] = await db
-    .select({ id: accounts.id })
-    .from(accounts)
-    .where(eq(accounts.userId, userId))
-    .limit(1);
-  if (account) throw new AuthzError('api-tokens.create');
+  throw new AuthzError('api-tokens.create');
 }
 
 export const apiTokensCreate = defineOperation({

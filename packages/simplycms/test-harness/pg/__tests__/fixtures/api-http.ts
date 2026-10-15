@@ -4,9 +4,12 @@
 // шляху (ролі токена, grants, виконавець, ідемпотентність) справжня.
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { getOperation } from 'simplycms/admin-server/impl';
+import { CORE_OPERATIONS, getOperation } from 'simplycms/admin-server/impl';
 import { defineOperation } from 'simplycms/operations';
-import { handleApiRequest } from 'simplycms/operations/server';
+import {
+  handleApiRequest,
+  handleOpenApiRequest,
+} from 'simplycms/operations/server';
 
 /** Операція-свідок: повертає GUC актора, під яким реально йшла транзакція. */
 const whoami = defineOperation({
@@ -27,6 +30,18 @@ const lookup = (id: string) =>
 
 export function apiHarness(sessions: Map<string, unknown>) {
   return {
+    /** `GET /api/v1/openapi.json` (або інший метод) з довільними заголовками. */
+    openapi: (
+      headers: Record<string, string> = {},
+      method = 'GET',
+    ): Promise<Response> =>
+      handleOpenApiRequest(
+        new Request('https://shop.test/api/v1/openapi.json', {
+          method,
+          headers,
+        }),
+        CORE_OPERATIONS,
+      ),
     /** `POST /api/v1/<op>` з JSON-тілом; сесія — заголовком `x-test-session`. */
     call: (
       op: string,

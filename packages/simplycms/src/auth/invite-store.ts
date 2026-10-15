@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { advisoryXactLock, withActor } from 'simplycms/db';
-import { userRoles, users, verifications } from 'simplycms/schema';
+import {
+  serviceAccounts,
+  userRoles,
+  users,
+  verifications,
+} from 'simplycms/schema';
 import { ADMIN_ROLES_LOCK } from './admin-roles-lock';
 import type { OwnerInviteStore } from './invite';
 
@@ -52,6 +57,13 @@ export const ownerInviteStore: OwnerInviteStore = {
         .where(eq(users.id, userId))
         .for('share');
       if (user?.bannedAt) return 'banned' as const;
+      // Сервісний запис не запрошується: пошта «зайнята» (облікових даних входу
+      // йому тригер БД не дозволить, тож токен був би марним і оманливим).
+      const [service] = await db
+        .select({ userId: serviceAccounts.userId })
+        .from(serviceAccounts)
+        .where(eq(serviceAccounts.userId, userId));
+      if (service) return 'service' as const;
       // Старий токен тієї ж пошти знищується: «надішли ще раз» мусить робити
       // попереднє посилання недійсним, інакше в обігу живуть два ключі.
       await db

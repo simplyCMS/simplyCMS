@@ -421,6 +421,12 @@ CREATE TABLE "sections" (
 	CONSTRAINT "sections_slug_key" UNIQUE("slug")
 );
 --> statement-breakpoint
+CREATE TABLE "service_accounts" (
+	"user_id" uuid PRIMARY KEY NOT NULL,
+	"created_by" uuid,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "shipping_methods" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"code" varchar(50) NOT NULL,
@@ -733,6 +739,8 @@ ALTER TABLE "section_properties" ADD CONSTRAINT "section_properties_section_id_f
 ALTER TABLE "section_property_assignments" ADD CONSTRAINT "section_property_assignments_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "public"."section_properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "section_property_assignments" ADD CONSTRAINT "section_property_assignments_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sections" ADD CONSTRAINT "sections_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."sections"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "service_accounts" ADD CONSTRAINT "service_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "service_accounts" ADD CONSTRAINT "service_accounts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "slug_tokens" ADD CONSTRAINT "slug_tokens_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

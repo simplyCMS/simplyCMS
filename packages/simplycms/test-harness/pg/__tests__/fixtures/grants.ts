@@ -52,7 +52,12 @@ const CATALOG = [
 /** Доменні таблиці, які покупцю не видно взагалі. */
 // `api_tokens`/`idempotency_keys` (М1, І27–І28): токен читає серверний шлях
 // автентифікації до відомого актора, ключ пишеться в транзакції команди.
-const ADMIN_ONLY = ['api_tokens', 'category_rules', 'idempotency_keys'];
+const ADMIN_ONLY = [
+  'api_tokens',
+  'category_rules',
+  'idempotency_keys',
+  'service_accounts',
+];
 
 /**
  * Таблиці Better Auth: лише серверний auth-контур (Task 7). Покупець не сміє

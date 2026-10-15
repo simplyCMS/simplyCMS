@@ -152,8 +152,9 @@ describe('канон міграцій: накат на чисту БД', () => {
     // окремого файла `0005` немає, його злито ребазлайном М1).
     // 45 → 47: М1 Task 5 — реєстри адрес `url_paths` і мовних токенів `slug_tokens`.
     // 47 → 48: М1 Task 5а — покоління кешів `cache_generations` (Д6).
-    // 48 → 50: М1 Task 7 — токени API `api_tokens` і ключі ідемпотентності `idempotency_keys`.
-    expect(tables.length).toBe(50);
+    // 48 → 51: М1 Task 7 — токени API `api_tokens`, ключі ідемпотентності
+    // `idempotency_keys` і сервісні записи `service_accounts`.
+    expect(tables.length).toBe(51);
     for (const expected of [
       'simplycms_migrations',
       'users',

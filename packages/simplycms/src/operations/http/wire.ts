@@ -18,3 +18,19 @@ export const wireDate = z.codec(z.iso.datetime(), z.date(), {
 export function toWire(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value ?? null));
 }
+
+/**
+ * Відповідь операції → дротова форма, ЗВІРЕНА з вихідною схемою `def.output`.
+ * OpenAPI обіцяє клієнтам саме цю схему, тож адаптер її стереже: поле не за
+ * схемою — помилка (500 `internal` без деталей), зайві поля відсікаються (не
+ * витікає зайве з рядка БД). Одна функція і для тіла, і для збереженої
+ * ідемпотентної відповіді: повтор віддає те саме.
+ */
+export function encodeOutput(schema: z.ZodType, value: unknown): unknown {
+  const parsed = schema.safeParse(toWire(value));
+  if (!parsed.success)
+    throw new Error(
+      '[simplycms/operations] вихід операції не відповідає схемі',
+    );
+  return parsed.data;
+}

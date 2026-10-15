@@ -139,9 +139,11 @@ describe('парність привілеїв: baseline v2', () => {
     // `require_default_shipping_zone` (К3-Е8), `languages_guard`, `languages_require_lock` і
     // `require_source_translation` (М1) та процедура підключення останньої
     // `attach_source_translation_triggers` (DDL власника міграцій), а також
-    // `require_current_address|token` і їхні процедури підключення (М1), усі без SECDEF.
+    // `require_current_address|token` і їхні процедури підключення (М1), а також
+    // `accounts_refuse_service` і `service_accounts_refuse_human` (М1, І27), усі без SECDEF.
     expect([...new Set(rows.map((r) => r.function_name))].sort()).toEqual([
       'app.current_user_id',
+      'public.accounts_refuse_service',
       'public.attach_current_address_triggers',
       'public.attach_current_token_triggers',
       'public.attach_source_translation_triggers',
@@ -152,6 +154,7 @@ describe('парність привілеїв: baseline v2', () => {
       'public.require_current_token',
       'public.require_default_shipping_zone',
       'public.require_source_translation',
+      'public.service_accounts_refuse_human',
     ]);
     expect(rows.every((r) => r.security_definer === false)).toBe(true);
     expect(rows.some((r) => r.role_name === 'PUBLIC')).toBe(false);

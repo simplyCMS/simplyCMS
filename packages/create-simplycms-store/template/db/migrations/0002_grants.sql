@@ -173,6 +173,7 @@ grant select, insert, update, delete on table
   public.section_properties,
   public.section_property_assignments,
   public.sections,
+  public.service_accounts,
   public.shipping_methods,
   public.shipping_rates,
   public.shipping_zones,

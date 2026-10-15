@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { getTableColumns, getTableName, is } from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
+import * as schema from 'simplycms/schema';
 import { readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import {
@@ -171,7 +174,16 @@ function discoverInserts(root: string): InsertSite[] {
   return sites;
 }
 
-const isExempt = (site: InsertSite): boolean => ID_FROM_DB.has(site.table);
+/**
+ * Таблиці з ПРИРОДНИМ ключем (колонки `id` немає взагалі): вимагати від вставки
+ * `id` нема чого. Виїмка чесна, лише поки схема справді без `id` — це доводить
+ * тест нижче (не можна сховати тут таблицю з `id`). `service_accounts` (М1, І27):
+ * PK = `user_id` користувача.
+ */
+const NATURAL_KEY_TABLES = new Set(['service_accounts']);
+
+const isExempt = (site: InsertSite): boolean =>
+  ID_FROM_DB.has(site.table) || NATURAL_KEY_TABLES.has(site.table);
 
 /** Єдиний фільтр гейта: і реальний скан, і синтетичний кейс кличуть його. */
 const offendersOf = (sites: InsertSite[]): InsertSite[] =>
@@ -272,5 +284,26 @@ describe('Е0: таблиці, чий id кладе БД, ключа НЕ отр
         `${site.file}@${site.offset}: ${table} — ключ генерує БД, код його не шле`,
       ).not.toMatch(ID_FIELD);
     }
+  });
+});
+
+describe('Е0: реєстр природних ключів чесний', () => {
+  const columnsOf = (sqlName: string): string[] | null => {
+    const table = Object.values(schema).find(
+      (t) => is(t, PgTable) && getTableName(t as PgTable) === sqlName,
+    ) as PgTable | undefined;
+    return table
+      ? Object.values(getTableColumns(table)).map((c) => c.name)
+      : null;
+  };
+
+  it.each([...NATURAL_KEY_TABLES])('%s справді без колонки id', (table) => {
+    const columns = columnsOf(table);
+    expect(columns, `${table}: таблиці немає в схемі`).not.toBeNull();
+    expect(columns).not.toContain('id');
+  });
+
+  it('негативний контроль: таблиця з id у реєстр не пройшла б', () => {
+    expect(columnsOf('api_tokens')).toContain('id');
   });
 });

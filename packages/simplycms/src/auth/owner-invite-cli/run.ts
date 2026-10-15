@@ -99,6 +99,12 @@ export async function runOwnerInvite({
         error.code,
         { cause: error },
       );
+    if (error instanceof OwnerInviteError && error.code === 'email_taken')
+      throw new OwnerInviteCliError(
+        `Пошта ${email} зайнята сервісним обліковим записом.`,
+        error.code,
+        { cause: error },
+      );
     throw error;
   }
 

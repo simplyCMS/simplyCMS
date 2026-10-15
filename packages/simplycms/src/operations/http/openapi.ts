@@ -26,9 +26,12 @@ export function buildOpenApi(
 const cache = new WeakMap<object, string>();
 
 /**
- * `GET /api/v1/openapi.json` — лише автентифікованому адміністративному
- * суб'єкту: перелік операцій розкриває встановлені плагіни (покупець із
- * самореєстрації його не бачить). Документ мемоізується на процес за реєстром.
+ * `GET /api/v1/openapi.json` (рішення архітектора): валідний Bearer-токен (будь-які
+ * scopes) АБО cookie-сесія з `admin.access`. Перелік операцій розкриває
+ * встановлені плагіни, тож покупець із самореєстрації (роль `user`) бачить 403.
+ * Токен покупець отримати не може: усі `api-tokens.*`/`service-accounts.*`
+ * вимагають `apiToken.manage` (`admin`) і `sessionOnly`. Документ мемоізується
+ * на процес за реєстром.
  */
 export async function handleOpenApiRequest(
   request: Request,
@@ -41,7 +44,7 @@ export async function handleOpenApiRequest(
       return problemResponse('unauthenticated', 'openapi', {
         'www-authenticate': 'Bearer',
       });
-    if (!can(subject, 'admin.access'))
+    if (subject.tokenId === undefined && !can(subject, 'admin.access'))
       return problemResponse('forbidden', 'openapi');
     let body = cache.get(ops);
     if (body === undefined) {

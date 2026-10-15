@@ -38,7 +38,7 @@ export interface OwnerInviteStore {
     identifier: string;
     valueHash: string;
     expiresAt: Date;
-  }): Promise<'issued' | 'banned'>;
+  }): Promise<'issued' | 'banned' | 'service'>;
   /**
    * Видача ролі `admin` ПІСЛЯ прийняття запрошення: лок `admin-roles` першим
    * запитом, `FOR SHARE` на користувача, перевірка бану (той самий інваріант
@@ -53,10 +53,13 @@ export interface OwnerInviteStore {
   ): Promise<{ valueHash: string; expiresAt: Date } | null>;
 }
 
-/** Відмова випуску invite. Єдина причина зараз — `banned` (Е6г-19). */
+/**
+ * Відмова випуску invite: `banned` (Е6г-19) або `email_taken` — пошта належить
+ * сервісному обліковому запису (М1, І27), людині там входити нема чим.
+ */
 export class OwnerInviteError extends Error {
   override readonly name = 'OwnerInviteError';
-  constructor(readonly code: 'banned') {
+  constructor(readonly code: 'banned' | 'email_taken') {
     super(`[auth] invite відхилено: ${code}`);
   }
 }
@@ -132,6 +135,7 @@ export async function issueOwnerInvite(
     expiresAt: new Date(now.getTime() + ttlMs),
   });
   if (outcome === 'banned') throw new OwnerInviteError('banned');
+  if (outcome === 'service') throw new OwnerInviteError('email_taken');
 
   const url = siteUrl(
     `/auth/invite?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`,

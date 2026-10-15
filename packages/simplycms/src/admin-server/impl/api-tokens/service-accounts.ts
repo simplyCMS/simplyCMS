@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { defineOperation } from 'simplycms/operations';
-import { userRoles, users } from 'simplycms/schema';
+import { serviceAccounts, userRoles, users } from 'simplycms/schema';
 
 // Сервісні облікові записи (М1, І27): власники токенів інтеграцій. `sessionOnly`:
 // витеклий Bearer не заводить нових суб'єктів.
@@ -22,8 +22,7 @@ export const serviceAccountsCreate = defineOperation({
     name: z.string(),
     role: z.enum(['admin', 'user']),
   }),
-  async run({ db }, input) {
-    // Користувач БЕЗ рядка `accounts`: увійти паролем чи OAuth не може за побудовою.
+  async run({ db, actor }, input) {
     // 🔴 `users` — Категорія B: `id` кладе БД (гейт explicit-ids), тож вхід без
     // `id`, а ключ береться з `returning`. Пошта унікальна за власним суфіксом.
     const [created] = await db
@@ -35,6 +34,12 @@ export const serviceAccountsCreate = defineOperation({
       })
       .returning({ id: users.id });
     const id = created!.id;
+    // Ознака сервісного запису — цей рядок (а не відсутність `accounts`); тригери
+    // БД не пускають такому запису облікові дані входу.
+    await db.insert(serviceAccounts).values({
+      userId: id,
+      createdBy: actor.kind === 'admin' ? actor.userId : null,
+    });
     await db
       .insert(userRoles)
       .values({ id: randomUUID(), userId: id, role: input.role });
