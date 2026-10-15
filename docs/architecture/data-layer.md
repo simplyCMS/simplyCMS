@@ -239,27 +239,37 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 Джерело правди схеми — `packages/simplycms/src/schema/schema.ts` (Drizzle + RLS у TS).
 
 ```bash
+# До 1.0.0-rc.1 (baseline не заморожено) — перегенерація baseline:
 # 1. правка packages/simplycms/src/schema/schema.ts
-pnpm db:diff <name>       # 2. drizzle-kit generate → packages/simplycms/migrations/NNNN_<name>.sql
-#                            3. РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
-pnpm test:schema          # 4. накат УСЬОГО канону на чисту БД харнеса + поведінка RLS
+pnpm db:rebaseline        # 2. drizzle/ + migrations/0001_init.sql (детермінованим скриптом)
+#                            3. ручні файли: 0002_grants, 0003_seed, 0004_functions
+pnpm template:sync        # 4. копії в шаблоні й host CLI
+pnpm test:schema          # 5. накат УСЬОГО канону на чисту БД харнеса + поведінка RLS
+
+# Після 1.0.0-rc.1 (baseline заморожено) і в магазині — новий файл:
+pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migrations/NNNN_<name>.sql
+#                            РЕВʼЮ згенерованого SQL (git diff) — обовʼязково
 ```
 
 - Канон застосовного SQL — `packages/simplycms/migrations/`: baseline
   (`0000_prelude` → `0004_functions`) плюс усе, що додав `db:diff`. Порядок накату — за
   числовим префіксом імені.
 - 🔴 Ручні функції/тригери — лише в ручних файлах канону (`0000_prelude`,
-  `0004_functions`), `0001_init` — чистий генерат (парність із drizzle-kit повна,
-  без винятків за маркером); множину функцій і тригерів стереже гейт
+  `0004_functions`), `0001_init` — генерат `pnpm db:rebaseline` (вивід drizzle-kit плюс
+  рівно два `COMMENT ON COLUMN`, яких він не емітить; парність стереже
+  `tests/schema-sources-parity.test.ts`); множину функцій і тригерів стереже гейт
   `functions-allowlist.test.ts`.
 - 🔴 Ревʼю SQL обовʼязкове: drizzle-kit не бачить перейменувань (генерує
   `DROP`+`ADD`) і не діфить ролі, гранти й функції.
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/` (подвійна
   бухгалтерія навмисна, комітяться обидві теки; нумерація в них своя). Schema-тулінг
   (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`) живе на рівні ПАКЕТА, не в
-  `src/schema/`. `drizzle/meta/*` вручну не правиться; виняток — точкова правка
-  baseline (`drizzle/0000_init.sql` + `meta/0000_snapshot.json`, синхронно з каноном і
-  `schema.ts`), після якої `drizzle-kit generate` мусить сказати «No schema changes».
+  `src/schema/`. `drizzle/**` вручну не правиться НІКОЛИ: до `1.0.0-rc.1` це одна
+  міграція `0000_init`, яку цілком перегенеровує `pnpm db:rebaseline`
+  (`scripts/rebaseline-drizzle.mjs`: прибирає недетерміновані `when` журналу й `id`
+  знімка, тож два прогони поспіль дають нульовий диф — стереже
+  `tests/rebaseline-drizzle.test.ts`); після неї `drizzle-kit generate` мусить сказати
+  «No schema changes».
 - Копію канону для магазину везе шаблон скаффолдера
   (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
@@ -276,9 +286,9 @@ pnpm test:schema          # 4. накат УСЬОГО канону на чис�
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
-- 🔴 До `1.0.0-rc.1` baseline `0000…0005` ще не заморожено: його правлять як **виняток
-  baseline** (синхронно `schema.ts`, `migrations/{0001_init,0003_seed,0004_functions}.sql`,
-  `drizzle/0000_init.sql` і знімки `drizzle/meta`), і кожна така правка в релізі дає в
+- 🔴 До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено: його правлять як **виняток
+  baseline** (синхронно `schema.ts`, `migrations/{0001_init,0002_grants,0003_seed,0004_functions}.sql`,
+  `drizzle/` — перегенерує `pnpm db:rebaseline`, решту руками), і кожна така правка в релізі дає в
   `CHANGELOG` попередження «перестворити БД». Журнал `simplycms_migrations` і
   `MigrationChecksumError` чинні: розбіжність суми файлу ядра повідомляє «baseline платформи
   змінився» і називає дію (базу створюють заново), чужого файла — «зміна новою міграцією».

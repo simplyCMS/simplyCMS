@@ -32,6 +32,7 @@
     "test:watch": "vitest",
     "db:pull": "pnpm --filter simplycms run db:pull",
     "db:diff": "node scripts/db-diff.mjs",
+    "db:rebaseline": "node scripts/rebaseline-drizzle.mjs",
     "db:demo": "node scripts/demo-db.mjs",
     "db:showcase": "pnpm exec tsx scripts/showcase/run.mts",
     "live:smoke": "node scripts/live-smoke.mjs",

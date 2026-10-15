@@ -148,7 +148,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 44 → 42: Е6г прибрала `services` і `service_requests`.
     // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
     // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
-    // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (перша міграція `0005`).
+    // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (у baseline `0001_init`:
+    // окремого файла `0005` немає, його злито ребазлайном М1).
     expect(tables.length).toBe(45);
     for (const expected of [
       'simplycms_migrations',

@@ -199,7 +199,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
   `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками
   не правляться.
-- 🔴 До `1.0.0-rc.1` baseline `0000…0005` ще не заморожено: його правлять як виняток baseline
+- 🔴 До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено: його правлять як виняток baseline
   (`data-layer.md`), і кожна така правка в релізі дає в `CHANGELOG` попередження «перестворити БД».
   Заморожування — крок релізу 1.0.0-rc.1.
 - Агентні скіли, що їдуть у магазини, живуть у `packages/simplycms/skills/<name>`; `.agents/skills/`

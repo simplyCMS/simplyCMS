@@ -118,8 +118,6 @@ CREATE TABLE "modification_property_values" (
 	"numeric_value" numeric,
 	"option_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	-- Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
-	-- скалярну властивість в одному рядку (option_id NULL)
 	CONSTRAINT "modification_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("modification_id","property_id","option_id")
 );
 --> statement-breakpoint
@@ -135,8 +133,6 @@ CREATE TABLE "order_items" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"base_price" numeric,
 	"discount_data" jsonb,
-	-- Е5-4′: облік фактично списаного ПО ПОЗИЦІЇ — точка списання і скільки
-	-- реально знято; скасування повертає рівно stock_reserved і обнуляє його
 	"stock_point_id" uuid,
 	"stock_reserved" integer DEFAULT 0 NOT NULL,
 	CONSTRAINT "order_items_positive_quantity" CHECK (quantity > 0),
@@ -270,8 +266,6 @@ CREATE TABLE "product_property_values" (
 	"numeric_value" numeric(15, 4),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"option_id" uuid,
-	-- Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
-	-- скалярну властивість в одному рядку (option_id NULL)
 	CONSTRAINT "product_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("product_id","property_id","option_id")
 );
 --> statement-breakpoint
@@ -361,7 +355,6 @@ CREATE TABLE "section_properties" (
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"options" jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	-- Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
 	CONSTRAINT "section_properties_slug_key" UNIQUE("slug")
 );
 --> statement-breakpoint
@@ -501,7 +494,6 @@ CREATE TABLE "user_category_history" (
 	"user_id" uuid NOT NULL,
 	"from_category_id" uuid,
 	"to_category_id" uuid,
-	-- Е6в-2: історія — аудит; FK SET NULL, назви — знімком вставки
 	"from_category_name" text,
 	"to_category_name" text NOT NULL,
 	"reason" text,
@@ -620,6 +612,16 @@ CREATE TABLE "media_erasures" (
 );
 --> statement-breakpoint
 ALTER TABLE "media_erasures" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "mail_outbox" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"kind" text NOT NULL,
+	"message" jsonb NOT NULL,
+	"requested_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"attempts" integer DEFAULT 0 NOT NULL,
+	"last_error" text
+);
+--> statement-breakpoint
+ALTER TABLE "mail_outbox" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -649,13 +651,13 @@ ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_method_id_fkey" FOREIG
 ALTER TABLE "pickup_points" ADD CONSTRAINT "pickup_points_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_modifications" ADD CONSTRAINT "product_modifications_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
--- Е4-1: тип ціни з цінами не видаляється мовчки разом із цінами (RESTRICT)
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."property_options"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "public"."section_properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."user_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_default_pickup_point_id_fkey" FOREIGN KEY ("default_pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -671,19 +673,18 @@ ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_zone_id_fkey" FOREIG
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_categories" ADD CONSTRAINT "user_categories_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_rule_id_fkey" FOREIGN KEY ("rule_id") REFERENCES "public"."category_rules"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_recipients" ADD CONSTRAINT "user_recipients_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "wishlists" ADD CONSTRAINT "wishlists_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_recipients" ADD CONSTRAINT "user_recipients_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "media" ADD CONSTRAINT "media_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_banners_placement" ON "banners" USING btree ("placement" text_ops);--> statement-breakpoint
@@ -761,7 +762,6 @@ CREATE INDEX "idx_verifications_identifier" ON "verifications" USING btree ("ide
 CREATE INDEX "idx_media_entity" ON "media" USING btree ("entity_type","entity_id");--> statement-breakpoint
 CREATE INDEX "idx_media_uploaded_by" ON "media" USING btree ("uploaded_by");--> statement-breakpoint
 CREATE POLICY "comparisons_own_all" ON "comparisons" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
-CREATE POLICY "media_erasures_admin_all" ON "media_erasures" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
 CREATE POLICY "order_items_select_own_or_token" ON "order_items" AS PERMISSIVE FOR SELECT TO "app_user" USING (exists (select 1 from orders where orders.id = order_items.order_id and ((orders.user_id = (select app.current_user_id())) or (orders.access_token is not null and orders.access_token = (select nullif(current_setting('app.order_token', true), ''))))));--> statement-breakpoint
 CREATE POLICY "order_items_insert_own" ON "order_items" AS PERMISSIVE FOR INSERT TO "app_user" WITH CHECK (exists (select 1 from orders where orders.id = order_items.order_id and (orders.user_id = (select app.current_user_id()) or orders.user_id is null)));--> statement-breakpoint
 CREATE POLICY "order_items_admin_all" ON "order_items" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
@@ -784,4 +784,6 @@ CREATE POLICY "user_recipients_own_all" ON "user_recipients" AS PERMISSIVE FOR A
 CREATE POLICY "user_recipients_admin_select" ON "user_recipients" AS PERMISSIVE FOR SELECT TO "app_admin" USING (true);--> statement-breakpoint
 CREATE POLICY "user_roles_select_own" ON "user_roles" AS PERMISSIVE FOR SELECT TO "app_user" USING (user_id = (select app.current_user_id()));--> statement-breakpoint
 CREATE POLICY "user_roles_admin_all" ON "user_roles" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
-CREATE POLICY "wishlists_own_all" ON "wishlists" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));
+CREATE POLICY "wishlists_own_all" ON "wishlists" AS PERMISSIVE FOR ALL TO "app_user" USING (user_id = (select app.current_user_id())) WITH CHECK (user_id = (select app.current_user_id()));--> statement-breakpoint
+CREATE POLICY "media_erasures_admin_all" ON "media_erasures" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);--> statement-breakpoint
+CREATE POLICY "mail_outbox_admin_all" ON "mail_outbox" AS PERMISSIVE FOR ALL TO "app_admin" USING (true) WITH CHECK (true);

@@ -1,6 +1,6 @@
 // Доказ оновлюваності 1.0 (К3-Е8, Task 14): магазин із даними переживає
 // наступну версію платформи. «Наступна версія» тут — канон + дві нові
-// append-only міграції (`0006`/`0007`); змінений уже накочений `0005` має
+// append-only міграції (`0005`/`0006`); змінений уже накочений `0004` має
 // зупиняти накат і старт контейнера, не зачепивши дані.
 //
 // Кейси йдуть ПОСЛІДОВНО на одній БД (знімок лічильників беремо раз після
@@ -101,11 +101,11 @@ describe('оновлюваність 1.0: магазин із даними і н
     for (const table of TABLES.filter((t) => t !== 'mail_outbox'))
       expect(snapshot[table]).toBeGreaterThan(0);
     canon.write(
-      '0006_e8_probe_column.sql',
+      '0005_e8_probe_column.sql',
       'alter table products add column e8_probe text;\n',
     );
     canon.write(
-      '0007_e8_probe_backfill.sql',
+      '0006_e8_probe_backfill.sql',
       'update products set e8_probe = slug;\n',
     );
   }, 180_000);
@@ -123,19 +123,19 @@ describe('оновлюваність 1.0: магазин із даними і н
     await harness?.teardown();
   });
 
-  it('нові 0006/0007 накочуються, дані цілі, backfill заповнив усі рядки', async () => {
+  it('нові 0005/0006 накочуються, дані цілі, backfill заповнив усі рядки', async () => {
     const report = await applyMigrations({
       connectionString: dbUrl,
       dir: canon.dir,
     });
     expect(report.applied).toEqual([
-      '0006_e8_probe_column.sql',
-      '0007_e8_probe_backfill.sql',
+      '0005_e8_probe_column.sql',
+      '0006_e8_probe_backfill.sql',
     ]);
     expect((await journalOf(dbUrl)).map((r) => r.name)).toEqual([
       ...canonNames(),
-      '0006_e8_probe_column.sql',
-      '0007_e8_probe_backfill.sql',
+      '0005_e8_probe_column.sql',
+      '0006_e8_probe_backfill.sql',
     ]);
     expect(await counts()).toEqual(snapshot);
     const [unfilled] = (await queryRows(
@@ -156,11 +156,11 @@ describe('оновлюваність 1.0: магазин із даними і н
     expect(await journalOf(dbUrl)).toHaveLength(canonNames().length + 2);
   });
 
-  describe('змінений уже накочений 0005', () => {
+  describe('змінений уже накочений 0004', () => {
     const tampered = () => {
       canon.write(
-        '0005_mail_outbox.sql',
-        `${readFileSync(join(canon.dir, '0005_mail_outbox.sql'), 'utf8')}\n-- правка після накату\n`,
+        '0004_functions.sql',
+        `${readFileSync(join(canon.dir, '0004_functions.sql'), 'utf8')}\n-- правка після накату\n`,
       );
     };
 
@@ -173,7 +173,7 @@ describe('оновлюваність 1.0: магазин із даними і н
       }).catch((e: unknown) => e);
       expect(error).toBeInstanceOf(MigrationChecksumError);
       expect((error as MigrationChecksumError).names).toEqual([
-        '0005_mail_outbox.sql',
+        '0004_functions.sql',
       ]);
       expect(await journalOf(dbUrl)).toEqual(journalBefore);
       expect(await counts()).toEqual(snapshot);
@@ -200,7 +200,7 @@ describe('оновлюваність 1.0: магазин із даними і н
         });
         expect(code).toBe(1);
         expect(execve).not.toHaveBeenCalled();
-        expect(logs.join('\n')).toContain('0005_mail_outbox.sql');
+        expect(logs.join('\n')).toContain('0004_functions.sql');
         expect(await counts()).toEqual(snapshot);
       } finally {
         rmSync(storeDir, { recursive: true, force: true });

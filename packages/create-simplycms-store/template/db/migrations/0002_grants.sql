@@ -142,6 +142,11 @@ grant select, insert, update, delete on table
   public.discount_targets,
   public.discounts,
   public.languages,
+  -- Outbox пошти (Е8-Р10): тіло листа скидання пароля — секрет, тож лише
+  -- `app_admin` (ескалація `operator` теж йде через нього); покупцеві черга не
+  -- потрібна. `REVOKE … FROM PUBLIC` окремо не потрібен: його робить
+  -- масовий `revoke all on all tables` у кроці 1.
+  public.mail_outbox,
   public.media,
   public.media_erasures,
   public.modification_property_values,

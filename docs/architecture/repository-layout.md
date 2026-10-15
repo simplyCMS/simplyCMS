@@ -120,7 +120,7 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0005_mail_outbox (baseline до 1.0.0-rc.1 не заморожено:
+│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0004_functions (baseline до 1.0.0-rc.1 не заморожено:
 │   │   │                         #    виняток baseline, `data-layer.md`); джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи

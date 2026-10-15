@@ -9,7 +9,7 @@
 | Файл | Що робить | Хто його володіє |
 |------|-----------|------------------|
 | `0000_prelude.sql` | схема `app`, функція `app.current_user_id()`, ролі `app_runtime`/`app_user`/`app_admin` | рука (drizzle-kit цього класу об'єктів не емітить) |
-| `0001_init.sql` | уся схема: 40 доменних таблиць + таблиці Better Auth + `media`, енами, індекси, RLS-політики | `drizzle-kit generate`; ручна правка baseline — виняток, див. `docs/architecture/data-layer.md` § «Міграції» |
+| `0001_init.sql` | уся схема: доменні таблиці + таблиці Better Auth + `media` + `mail_outbox`, ени, індекси, RLS-політики | `pnpm db:rebaseline` (вивід `drizzle-kit generate` + два `COMMENT ON COLUMN`); руками не правиться, див. `docs/architecture/data-layer.md` § «Міграції» |
 | `0002_grants.sql` | явні GRANT-и по таблицях; зняття мовчазних дефолтів PUBLIC | рука |
 | `0003_seed.sql` | довідники чистого магазину, ідемпотентні | рука |
 | `0004_functions.sql` | функції й тригери над таблицями (`refuse_banned_session` / `sessions_refuse_banned`), ідемпотентні | рука (drizzle-kit функцій і тригерів не емітить) |
@@ -29,8 +29,8 @@ drizzle-kit відтворює форму сам. Ключ генерує **ви
 `crypto.randomUUID()`, сервер — `randomUUID()`), інакше оптимістичний
 рядок клієнтського кеша розійшовся б ключем із серверним.
 
-Руками у згенерований файл дописані лише `COMMENT ON COLUMN` — вони
-пояснюють контракт тому, хто дивиться на схему в ізоляції. Склад
+Скрипт `pnpm db:rebaseline` дописує до виводу drizzle-kit лише два
+`COMMENT ON COLUMN` — вони пояснюють контракт тому, хто дивиться на схему в ізоляції. Склад
 Категорії B (де `DEFAULT` лишається) стережуть гейти
 `id-defaults.test.ts` і `explicit-ids.test.ts`.
 
@@ -65,7 +65,23 @@ supabase/migrations`); для перезапуску `alterenergy` вона не
 таблиця без гранта, зайвий грант, `GRANT … TO PUBLIC` чи будь-яке право в
 `app_runtime` червонять `pnpm test:schema`.
 
-## Як додається нова міграція ядра
+## Як змінюється схема ядра
+
+🔴 **До `1.0.0-rc.1` (baseline `0000…0004` не заморожено)** окремих файлів міграцій
+не додають — baseline перегенеровують:
+
+```bash
+# 1. правка packages/simplycms/src/schema/schema.ts
+pnpm db:rebaseline     # 2. drizzle/ (одна міграція 0000_init + знімок + журнал) і 0001_init.sql
+#                           3. ручні файли: 0002_grants (гранти нової таблиці), 0003_seed, 0004_functions
+pnpm template:sync     # 4. копії в шаблоні скаффолдера й host CLI
+pnpm test:schema       # 5. накат усього канону на чисту БД + поведінка RLS
+```
+
+Скрипт детермінований (без мережі й БД; `when` журналу й `id` знімка нормалізовано):
+два прогони поспіль дають нульовий диф, а знімки `drizzle/**` руками не правляться.
+
+**Після `1.0.0-rc.1`** нова схема йде лише новим файлом:
 
 ```bash
 pnpm db:diff <name>    # schema.ts → drizzle-staging → NNNN_<name>.sql тут
@@ -76,7 +92,7 @@ pnpm db:diff <name>    # schema.ts → drizzle-staging → NNNN_<name>.sql ту�
 міняється (це асертить `simplycms db:diff` у магазині: спільне ім'я з іншим
 вмістом — помилка без запису).
 
-🔴 **До `1.0.0-rc.1` baseline `0000…0005` ще не заморожено.** Його правлять як виняток
+🔴 **До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено.** Його правлять як виняток
 baseline (`docs/architecture/data-layer.md`), і кожна така правка в релізі дає в `CHANGELOG`
 попередження «перестворити БД»: магазин, що вже накотив файл, тримає його sha256 у журналі
 `public.simplycms_migrations`, тож `MigrationChecksumError` на старті контейнера для файла ядра

@@ -48,7 +48,7 @@ describe('MigrationChecksumError', () => {
 
 describe('isCoreMigrationName', () => {
   it('ядро — чотири цифри й підкреслення; таймстамп плагіна — ні', () => {
-    expect(isCoreMigrationName('0005_mail_outbox.sql')).toBe(true);
+    expect(isCoreMigrationName('0005_x.sql')).toBe(true);
     expect(isCoreMigrationName('20261014000000_plg_faq_init.sql')).toBe(false);
     expect(isCoreMigrationName('custom.sql')).toBe(false);
   });

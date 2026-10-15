@@ -50,7 +50,7 @@
 
 🔴 **К3-Е8 (2026-10-13):** магазин, створений з npm, має шлях до Dokploy без ручного `psql`: власна БД
 накочується командою `simplycms db:apply` або на старті контейнера (`node scripts/start.mjs` →
-`simplycms/migrate`, журнал `simplycms_migrations`, правило: baseline `0000…0005` до 1.0 ще може змінюватися, заморожується кроком `1.0.0-rc.1`); файли — драйвер
+`simplycms/migrate`, журнал `simplycms_migrations`, правило: baseline `0000…0004` до 1.0 ще може змінюватися, заморожується кроком `1.0.0-rc.1`); файли — драйвер
 `s3`; листи — порт `simplycms/mail` (SMTP, outbox `mail_outbox`). Агент у магазині з першої сесії бачить
 стан (`simplycms status`, хук старту сесії) і веде за скілами `simplycms-{onboarding,update,diagnose}`.
 Живі докази — `pnpm live:smoke` (Mailpit) і `node scripts/release/pilot-full.mjs` (Garage + SMTP).

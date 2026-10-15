@@ -41,10 +41,10 @@
   беклог (спека релізу § 7).
 - **А — готовність до пілоту.** Node ≥ 24 і резолвер груп env `simplycms/env`; журнал міграцій
   `simplycms/migrate` (`public.simplycms_migrations`, sha256, advisory-лок, SCRAM-верифікатор пароля
-  `app_runtime`) з `simplycms db:apply`/`doctor --online`; правило **«baseline `0000…0005` заморожується кроком релізу 1.0.0-rc.1, не 0.15.0»**
+  `app_runtime`) з `simplycms db:apply`/`doctor --online`; правило **«baseline `0000…0004` заморожується кроком релізу 1.0.0-rc.1, не 0.15.0»**
   (до того — виняток baseline з попередженням у `CHANGELOG`); прод-старт `scripts/start.mjs` (накат + `process.execve`),
   `/api/health` з ідентифікатором збірки, прекомпресія статики, 413/411 без закриття зʼєднання;
-  драйвер `s3` (Garage) і порт пошти `simplycms/mail` (`smtp`/`log`, outbox `mail_outbox` — `0005`,
+  драйвер `s3` (Garage) і порт пошти `simplycms/mail` (`smtp`/`log`, outbox `mail_outbox`,
   листи auth/замовлень, картка хвостів у налаштуваннях); доказ оновлюваності 1.0, пререлізний цикл,
   engines плагінів/теми в `doctor`.
 - **Знахідки аудиту 2026-10-12 (Р18–Р30)** закрито кодом у тій самій гілці: база посилань з env, роль
