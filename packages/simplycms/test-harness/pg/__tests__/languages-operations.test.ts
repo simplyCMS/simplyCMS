@@ -17,18 +17,12 @@ import {
 import { executeOperation } from 'simplycms/operations';
 import type { OperationDef } from 'simplycms/operations';
 import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
-import {
-  ADMIN,
-  pathHelpers,
-  tokenHelpers,
-  useAddressingDb,
-} from './fixtures/addressing-db';
+import { ADMIN, tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
 describe('операції мов (M1, Task 6)', () => {
   const db = useAddressingDb('simplycms_languages_operations');
-  const { addr } = pathHelpers(db);
   const { tok } = tokenHelpers(db);
   const exec = async <I, O>(def: OperationDef<I, O>, raw: unknown) => {
     const res = await executeOperation(def, raw, subject);
@@ -46,12 +40,8 @@ describe('операції мов (M1, Task 6)', () => {
     (
       await db.q(`select status from public.languages where code = $1`, [code])
     )[0]?.status;
-  /** Товар з адресою основної мови (спрощена заміна `insertProductGraph`, Task 10). */
-  const seedProduct = async (slug: string) => {
-    const id = await db.product(slug);
-    await addr('uk', slug, id);
-    return id;
-  };
+  /** Товар графа з поточною адресою основної мови (`insertProductGraph`, Task 10). */
+  const seedProduct = (slug: string) => db.product(slug, true);
   const pathCount = async (locale: string) =>
     Number(
       (
@@ -170,22 +160,26 @@ describe('операції мов (M1, Task 6)', () => {
     expect(await stat('hu')).toBeUndefined();
   });
 
-  // М1-TEMP: Task 10 — таблиць перекладів ще немає, а FK на languages лише
-  // CASCADE. Тимчасова таблиця з FK NO ACTION моделює «мову використовують»;
-  // у Task 10 перепідключити на product_translations (і М2: замовлення).
+  // Справжній споживач мови: `product_translations.locale → languages(code) ON DELETE
+  // RESTRICT` (М2 додасть замовлення тощо).
   it('переклад товару мовою L → remove L → 409 language_in_use', async () => {
     await add('fi');
+    const productId = await seedProduct('g-1');
     await db.q(
-      `create table public.tmp_lang_ref (locale text references public.languages(code))`,
+      `insert into public.product_translations (product_id, locale, name)
+       values ($1, 'fi', 'Tuote')`,
+      [productId],
     );
-    await db.q(`insert into public.tmp_lang_ref values ('fi')`);
     const err = await exec(languagesRemove, { code: 'fi' }).catch(
       (e: unknown) => e,
     );
     expect(err).toBeInstanceOf(InUseError);
     expect((err as InUseError).kind).toBe('language_in_use');
     expect(await stat('fi')).toBe('draft');
-    await db.q(`drop table public.tmp_lang_ref`);
+    // Без перекладу мова знову вільна: доказ, що відмову давав саме FK перекладу.
+    await db.q(`delete from public.product_translations where locale = 'fi'`);
+    await exec(languagesRemove, { code: 'fi' });
+    expect(await stat('fi')).toBeUndefined();
   });
 
   it('remove draft-мови з адресами й токенами товарів → коміт', async () => {

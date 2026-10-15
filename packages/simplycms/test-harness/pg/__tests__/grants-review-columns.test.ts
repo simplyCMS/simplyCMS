@@ -23,6 +23,7 @@ import {
 import { withActor } from '../actors.mjs';
 import { COLUMN_GRANTS } from './fixtures/grants';
 import { SEED_STATEMENTS, USER_A, USER_B } from './fixtures/rls-actors';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const DENIED = /permission denied/;
 const RLS = /new row violates row-level security policy/;
@@ -71,11 +72,7 @@ describe('Е6д-16 б: колонкові гранти INSERT/UPDATE product_rev
   /** Свіжий товар: у A уже є відгук на PRODUCT, а (product, user) унікальні. */
   const freshProduct = async () => {
     const id = randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, $2, 'Т')`,
-      [id, `p-${id}`],
-    );
+    await insertProductGraphAt(dbUrl, { id, slug: `p-${id}`, name: 'Т' });
     return id;
   };
 

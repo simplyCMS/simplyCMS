@@ -27,6 +27,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -158,11 +159,12 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     const s = section();
     await sectionsOps.insert({ data: [s] });
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, section_id) values ($1, $2, 'Товар', $3)`,
-      [productId, `e4-product-${next()}`, s.id],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: `e4-product-${next()}`,
+      name: 'Товар',
+      sectionId: s.id,
+    });
     await expect(sectionsOps.remove({ data: [{ id: s.id }] })).resolves.toEqual(
       { count: 1 },
     );
@@ -216,17 +218,19 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     const o = option(p.id);
     await propertyOptionsOps.insert({ data: [o] });
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, $2, 'Товар')`,
-      [productId, `e4-product-${next()}`],
-    );
-    await queryRows(
-      dbUrl,
-      `insert into public.product_property_values (id, product_id, property_id, option_id)
-       values ($1, $2, $3, $4)`,
-      [crypto.randomUUID(), productId, p.id, o.id],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: `e4-product-${next()}`,
+      name: 'Товар',
+      values: [
+        {
+          id: crypto.randomUUID(),
+          propertyId: p.id,
+          kind: 'select',
+          optionId: o.id,
+        },
+      ],
+    });
     await sectionPropertiesOps.remove({ data: [{ id: p.id }] });
     expect(
       await queryRows(
@@ -470,11 +474,11 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     it('remove типу з цінами → AdminConflictError reference, ціни цілі (Review Focus 1)', async () => {
       const WHOLESALE_WITH_PRICES = await freshPriceType();
       const productId = crypto.randomUUID();
-      await queryRows(
-        dbUrl,
-        `insert into public.products (id, slug, name) values ($1, $2, 'Товар')`,
-        [productId, `e4-product-${next()}`],
-      );
+      await insertProductGraphAt(dbUrl, {
+        id: productId,
+        slug: `e4-product-${next()}`,
+        name: 'Товар',
+      });
       await queryRows(
         dbUrl,
         `insert into public.product_prices (id, price_type_id, product_id, price)

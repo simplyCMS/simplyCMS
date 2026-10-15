@@ -16,6 +16,7 @@ import {
   randomDbName,
   withDbName,
 } from '../apply.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const S1 = 'e4010000-0000-4000-8000-000000000001';
 const S2 = 'e4010000-0000-4000-8000-000000000002';
@@ -47,11 +48,12 @@ describe('довідники каталогу: інваріанти baseline (Е
          ($1, 'Гурт', 'e4-wholesale'), ($2, 'Без цін', 'e4-free')`,
       [PT_USED, PT_FREE],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, section_id, slug, name) values ($1, $2, 'e4-1-product', 'Товар Е4-1')`,
-      [PRODUCT, S1],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: PRODUCT,
+      slug: 'e4-1-product',
+      name: 'Товар Е4-1',
+      sectionId: S1,
+    });
     await queryRows(
       dbUrl,
       `insert into public.product_prices (id, price_type_id, product_id, price) values ($1, $2, $3, 100)`,

@@ -12,6 +12,7 @@
 
 import {
   allColumns,
+  conflictTarget,
   findSpec,
   TABLE_SPECS,
   updateColumns,
@@ -29,7 +30,12 @@ const HEADER = `-- ЗГЕНЕРОВАНО: node scripts/dev-stand/dump-demo-data
 -- scripts/pilot-pack/ НЕ чіпається — див. README поруч.
 
 -- Зворотні слеші в текстах — звичайні символи, а не escape-послідовності.
-set standard_conforming_strings = on;`;
+set standard_conforming_strings = on;
+
+-- Записи в \`url_paths\` і \`slug_tokens\` (М1, тригер SC004) — лише під замком мов,
+-- а замок \`xact\` живе рівно до COMMIT, тож увесь сід — одна транзакція.
+begin;
+select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));`;
 
 /** Невідома таблиця у вхідних даних — помилка, а не мовчазний пропуск. */
 function assertKnownTables(dataset) {
@@ -93,10 +99,13 @@ function orderSelfParent(rows, column) {
  * накаті; дедуп за `id` від цього не залежить.
  */
 function prepareRows(spec, rows) {
+  // Дедуп за арбітром конфлікту: `id`, а для таблиць перекладів — `dedupeKey`
+  // (їхній складений PK без `locale`, бо мова завжди одна — основна локальна).
+  const dedupeBy = spec.dedupeKey ?? ['id'];
   const byId = new Map();
   for (const row of rows) {
     const clean = sanitizeRow(spec, row);
-    byId.set(clean.id, clean);
+    byId.set(JSON.stringify(dedupeBy.map((c) => clean[c])), clean);
   }
   const sorted = [...byId.values()]
     .map((row) => [sortKeyOf(spec, row), row])
@@ -131,7 +140,7 @@ function renderTable(spec, rows) {
     ')',
     'values',
     values,
-    'on conflict (id) do update set',
+    `on conflict (${conflictTarget(spec).join(', ')}) do update set`,
     `${updates};`,
   ].join('\n');
 }
@@ -147,5 +156,5 @@ export function generateSeedSql(dataset) {
       'Порожній датасет: у дампі немає жодного каталожного рядка',
     );
   }
-  return `${[HEADER, ...blocks].join('\n\n')}\n`;
+  return `${[HEADER, ...blocks, 'commit;'].join('\n\n')}\n`;
 }

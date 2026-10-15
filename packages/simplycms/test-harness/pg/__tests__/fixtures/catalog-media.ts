@@ -3,6 +3,11 @@
 // файлу з власником — як це робить адмінський `uploadMedia`.
 import { withActor } from 'simplycms/db';
 import { writeMedia } from 'simplycms/storage';
+import {
+  insertProductGraph,
+  modificationGraphSql,
+  viaRows,
+} from './product-graph';
 import { useReviewsDb } from './reviews';
 
 export function useCatalogMediaDb(prefix: string) {
@@ -27,19 +32,26 @@ export function useCatalogMediaDb(prefix: string) {
 
   const product = async (images: string[] = []) => {
     const id = crypto.randomUUID();
-    await f.rows(
-      `insert into public.products (id, slug, name, images)
-       values ($1, $2, 'Товар', $3::jsonb)`,
-      [id, `cm-${tag()}`, JSON.stringify(images)],
+    await insertProductGraph(
+      viaRows((sql) => f.rows(sql)),
+      {
+        id,
+        slug: `cm-${tag()}`,
+        name: 'Товар',
+        images,
+      },
     );
     return id;
   };
   const modification = async (productId: string, images: string[] = []) => {
     const id = crypto.randomUUID();
     await f.rows(
-      `insert into public.product_modifications (id, product_id, slug, name, images)
-       values ($1, $2, $3, 'Мод', $4::jsonb)`,
-      [id, productId, `cm-${tag()}`, JSON.stringify(images)],
+      modificationGraphSql(productId, {
+        id,
+        slug: `cm-${tag()}`,
+        name: 'Мод',
+        images,
+      }),
     );
     return id;
   };

@@ -25,6 +25,7 @@ import {
   withDbName,
 } from '../apply.mjs';
 import { withActor } from '../actors.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const CANON_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -154,8 +155,18 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 47 → 48: М1 Task 5а — покоління кешів `cache_generations` (Д6).
     // 48 → 51: М1 Task 7 — токени API `api_tokens`, ключі ідемпотентності
     // `idempotency_keys` і сервісні записи `service_accounts`.
-    expect(tables.length).toBe(51);
+    // 51 → 57: М1 Task 10 — переклади товару (`product_translations`,
+    // `product_modification_translations`, `product_property_value_translations`,
+    // `modification_property_value_translations`) та зображення (`product_images`,
+    // `product_image_translations`).
+    expect(tables.length).toBe(57);
     for (const expected of [
+      'product_translations',
+      'product_modification_translations',
+      'product_images',
+      'product_image_translations',
+      'product_property_value_translations',
+      'modification_property_value_translations',
       'simplycms_migrations',
       'users',
       'sessions',
@@ -326,11 +337,7 @@ describe('канон міграцій: накат на чисту БД', () => {
       `insert into public.users (id, email, name) values ($1, 'rv@example.test', 'RV')`,
       [user],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, 'rv', 'RV')`,
-      [product],
-    );
+    await insertProductGraphAt(dbUrl, { id: product, slug: 'rv', name: 'RV' });
     await queryRows(
       dbUrl,
       `insert into public.product_reviews (id, product_id, user_id, rating)

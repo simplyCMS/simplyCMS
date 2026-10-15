@@ -21,6 +21,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -92,11 +93,12 @@ describe('санітизація HTML: запис і віддача проти �
     dbUrl = withDbName(harness.url, dbName);
     await applyCanon(dbUrl);
     await seedUser(authorId);
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, is_active) values ($1, $2, 'Товар', true)`,
-      [productId, productSlug],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: productSlug,
+      name: 'Товар',
+      isActive: true,
+    });
     await queryRows(
       dbUrl,
       `insert into public.section_properties (id, slug, name, property_type, has_page)
@@ -239,12 +241,13 @@ describe('санітизація HTML: запис і віддача проти �
        values ($1, 'raw-section', 'Сирий', $2, true)`,
       [sectionId, EVIL],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, description, is_active)
-       values ($1, 'raw-product', 'Сирий', $2, true)`,
-      [rawProductId, EVIL],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: rawProductId,
+      slug: 'raw-product',
+      name: 'Сирий',
+      texts: { description: EVIL },
+      isActive: true,
+    });
     await queryRows(
       dbUrl,
       `insert into public.property_options (id, property_id, slug, name, description)

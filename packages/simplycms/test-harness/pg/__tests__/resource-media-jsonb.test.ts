@@ -5,6 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { productsOps as ops } from 'simplycms/admin-server/impl';
 import { blockCommitOn } from './fixtures/commit-block';
 import { useCatalogMediaDb } from './fixtures/catalog-media';
+import {
+  insertProductGraph,
+  modificationGraphSql,
+  viaRows,
+} from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -26,9 +31,14 @@ describe('фабрика: media на jsonb-масиві (К3-Е6д-1)', () => {
       await d.upload('product', id),
       await d.upload('product', id),
     ];
-    await d.f.rows(
-      `insert into public.products (id, slug, name, images) values ($1, $2, 'Т', $3::jsonb)`,
-      [id, `jb-${id.slice(0, 8)}`, JSON.stringify([a, b])],
+    await insertProductGraph(
+      viaRows((sql) => d.f.rows(sql)),
+      {
+        id,
+        slug: `jb-${id.slice(0, 8)}`,
+        name: 'Т',
+        images: [a, b],
+      },
     );
     const c = await d.upload('product', id);
     await ops.update({ data: [{ id, patch: { images: [b, c] } }] });
@@ -56,9 +66,14 @@ describe('фабрика: media на jsonb-масиві (К3-Е6д-1)', () => {
   it('🔴 COMMIT впав → a цілий (рядок і файл), driver.delete не викликано', async () => {
     const id = crypto.randomUUID();
     const a = await d.upload('product', id);
-    await d.f.rows(
-      `insert into public.products (id, slug, name, images) values ($1, $2, 'Т', $3::jsonb)`,
-      [id, `jb-${id.slice(0, 8)}`, JSON.stringify([a])],
+    await insertProductGraph(
+      viaRows((sql) => d.f.rows(sql)),
+      {
+        id,
+        slug: `jb-${id.slice(0, 8)}`,
+        name: 'Т',
+        images: [a],
+      },
     );
     const spy = vi.spyOn(d.getMediaDriver(), 'delete');
     const unblock = await blockCommitOn(
@@ -82,16 +97,24 @@ describe('фабрика: media на jsonb-масиві (К3-Е6д-1)', () => {
   it('remove товару стирає фото товару, його модифікацій і відгуків (файли — після COMMIT)', async () => {
     const id = crypto.randomUUID();
     const own = await d.upload('product', id);
-    await d.f.rows(
-      `insert into public.products (id, slug, name, images) values ($1, $2, 'Т', $3::jsonb)`,
-      [id, `jb-${id.slice(0, 8)}`, JSON.stringify([own])],
+    await insertProductGraph(
+      viaRows((sql) => d.f.rows(sql)),
+      {
+        id,
+        slug: `jb-${id.slice(0, 8)}`,
+        name: 'Т',
+        images: [own],
+      },
     );
     const modId = crypto.randomUUID();
     const modPhoto = await d.upload('product_modification', modId);
     await d.f.rows(
-      `insert into public.product_modifications (id, product_id, slug, name, images)
-       values ($1, $2, 'm1', 'Мод', $3::jsonb)`,
-      [modId, id, JSON.stringify([modPhoto])],
+      modificationGraphSql(id, {
+        id: modId,
+        slug: 'm1',
+        name: 'Мод',
+        images: [modPhoto],
+      }),
     );
     const reviewId = await d.seedReview({ productId: id });
     const [revPhoto] = await d.seedPhotos(reviewId, 1);

@@ -17,6 +17,10 @@ import {
   withUser,
 } from '../apply.mjs';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
+import {
+  insertModificationAt,
+  insertProductGraphAt,
+} from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -60,11 +64,12 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
       `insert into public.sections (id, slug, name) values ($1,'ops-s','S')`,
       [SECTION],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, section_id) values ($1,'ops-p','P',$2)`,
-      [PRODUCT, SECTION],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: PRODUCT,
+      slug: 'ops-p',
+      name: 'P',
+      sectionId: SECTION,
+    });
     // 🔴 pickup_points.method_id — NOT NULL без DEFAULT (schema.ts): точка
     // видачі належить способу доставки, фікстура заводить обидва рядки.
     await queryRows(
@@ -147,17 +152,18 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
 
   it('setDefault не чіпає дефолти ІНШИХ товарів', async () => {
     const other = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1,'ops-other','O')`,
-      [other],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: other,
+      slug: 'ops-other',
+      name: 'O',
+    });
     const x = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.product_modifications (id, product_id, slug, name, is_default) values ($1,$2,'x','X',true)`,
-      [x, other],
-    );
+    await insertModificationAt(dbUrl, other, {
+      id: x,
+      slug: 'x',
+      name: 'X',
+      isDefault: true,
+    });
     const c = await mod('c');
     await setDefaultModificationOp({ data: { id: c.id } });
     expect(
@@ -291,11 +297,12 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   // точка товар не пропонує.
   it('М2, Review Focus: системна точка 0 + деактивована з залишком — статус лишається out_of_stock', async () => {
     const fresh = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, stock_status) values ($1,'ops-m2-a','M2A','out_of_stock')`,
-      [fresh],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: fresh,
+      slug: 'ops-m2-a',
+      name: 'M2A',
+      stockStatus: 'out_of_stock',
+    });
     const sys = await point({ isActive: true, isSystem: true });
     const inactive = await point({ isActive: false, isSystem: false });
     // Наявний залишок на ДЕАКТИВОВАНІЙ точці ДО виклику — адмін міг записати
@@ -320,11 +327,12 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
 
   it('М2: ціль лише з рядком на неактивній точці — статус не змінено', async () => {
     const fresh = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, stock_status) values ($1,'ops-m2-b','M2B','in_stock')`,
-      [fresh],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: fresh,
+      slug: 'ops-m2-b',
+      name: 'M2B',
+      stockStatus: 'in_stock',
+    });
     const inactive = await point({ isActive: false, isSystem: false });
     const { target } = await saveStockOp({
       data: {
@@ -357,11 +365,11 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   it('два одночасні ПЕРШІ saveProductPrices однієї пари — обидва успішні, рядок один', async () => {
     const pt = await retail();
     const fresh = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1,'ops-race','R')`,
-      [fresh],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: fresh,
+      slug: 'ops-race',
+      name: 'R',
+    });
     const input = (price: string) => ({
       data: {
         productId: fresh,
@@ -384,11 +392,11 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
 
   it('два одночасні ПЕРШІ saveStock однієї цілі — обидва успішні, рядок на точку один', async () => {
     const fresh = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1,'ops-race-s','S')`,
-      [fresh],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: fresh,
+      slug: 'ops-race-s',
+      name: 'S',
+    });
     const input = (quantity: number) => ({
       data: {
         productId: fresh,
@@ -419,16 +427,17 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
 
     it('mod-default: конкурент тримає лок → setDefault чекає ~300мс, резолвиться лише після release', async () => {
       const fresh = crypto.randomUUID();
-      await queryRows(
-        dbUrl,
-        `insert into public.products (id, slug, name) values ($1,'ops-lock-md','LM')`,
-        [fresh],
-      );
-      const m = await queryRows(
-        dbUrl,
-        `insert into public.product_modifications (id, product_id, slug, name) values ($1,$2,'lm1','LM1') returning id`,
-        [crypto.randomUUID(), fresh],
-      );
+      await insertProductGraphAt(dbUrl, {
+        id: fresh,
+        slug: 'ops-lock-md',
+        name: 'LM',
+      });
+      const m = [{ id: crypto.randomUUID() }];
+      await insertModificationAt(dbUrl, fresh, {
+        id: m[0]!.id,
+        slug: 'lm1',
+        name: 'LM1',
+      });
       const lock = await holdLock(`mod-default:${fresh}`);
       try {
         const op = setDefaultModificationOp({
@@ -445,11 +454,11 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     it('prices: конкурент тримає лок → saveProductPrices чекає ~300мс, резолвиться лише після release', async () => {
       const pt = await retail();
       const fresh = crypto.randomUUID();
-      await queryRows(
-        dbUrl,
-        `insert into public.products (id, slug, name) values ($1,'ops-lock-pr','LP')`,
-        [fresh],
-      );
+      await insertProductGraphAt(dbUrl, {
+        id: fresh,
+        slug: 'ops-lock-pr',
+        name: 'LP',
+      });
       const lock = await holdLock(`prices:${fresh}:-`);
       try {
         const op = saveProductPricesOp({
@@ -469,11 +478,11 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
 
     it('stock: конкурент тримає лок → saveStock чекає ~300мс, резолвиться лише після release', async () => {
       const fresh = crypto.randomUUID();
-      await queryRows(
-        dbUrl,
-        `insert into public.products (id, slug, name) values ($1,'ops-lock-st','LS')`,
-        [fresh],
-      );
+      await insertProductGraphAt(dbUrl, {
+        id: fresh,
+        slug: 'ops-lock-st',
+        name: 'LS',
+      });
       const lock = await holdLock(`stock:${fresh}:-`);
       try {
         const op = saveStockOp({

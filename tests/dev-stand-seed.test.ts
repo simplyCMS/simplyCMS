@@ -38,6 +38,13 @@ const FK_TABLE_ORDER = [
   'products',
   'product_modifications',
   'product_property_values',
+  'product_translations',
+  'product_modification_translations',
+  'product_images',
+  'product_image_translations',
+  'product_property_value_translations',
+  'url_paths',
+  'slug_tokens',
   'product_prices',
 ];
 
@@ -86,16 +93,19 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   it('кожен insert має on conflict … do update set', () => {
     const inserts = sql.match(/insert into public\./g) ?? [];
     const upserts = sql.match(/on conflict \(.+\) do update set/g) ?? [];
-    expect(inserts.length).toBe(5);
+    expect(inserts.length).toBe(7);
     expect(upserts.length).toBe(inserts.length);
   });
 
   it('арбітр конфлікту скрізь один — первинний ключ, а не природний', () => {
     const targets = [...sql.matchAll(/on conflict \((.+?)\) do update set/g)];
+    // Таблиця перекладів без `id` — арбітр її складений PK (М1).
     expect(targets.map((match) => match[1])).toEqual([
       'id',
       'id',
       'id',
+      'id',
+      'product_id, locale',
       'id',
       'id',
     ]);
@@ -118,6 +128,31 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
     expect(sql).toContain(
       '(select id from public.price_types order by is_default desc, sort_order, code limit 1)',
     );
+  });
+
+  it('мова перекладу й адреси — локальна основна, а не літерал із дампу', () => {
+    // Мова з джерела (`xx`) у локальній БД може не існувати (FK на languages).
+    expect(sql).not.toContain("'xx'");
+    const translations = blockOf(sql, 'product_translations');
+    expect(translations).toContain(
+      '(select code from public.languages where is_default)',
+    );
+    expect(translations).not.toContain('source_hashes');
+    expect(blockOf(sql, 'url_paths')).toContain(
+      '(select code from public.languages where is_default)',
+    );
+  });
+
+  it('сід — одна транзакція під спільним замком languages-set (SC004)', () => {
+    const begin = sql.indexOf('begin;');
+    const lock = sql.indexOf(
+      "select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));",
+    );
+    const firstInsert = sql.indexOf('insert into public.');
+    expect(begin).toBeGreaterThan(-1);
+    expect(lock).toBeGreaterThan(begin);
+    expect(firstInsert).toBeGreaterThan(lock);
+    expect(sql.trimEnd().endsWith('commit;')).toBe(true);
   });
 
   it('батьківська секція йде перед дочірньою', () => {
@@ -246,6 +281,6 @@ describe('dev-stand: детермінізм', () => {
       products: [...SAMPLE_DATASET.products, ...SAMPLE_DATASET.products],
     };
     const sql = generateSeedSql(doubled);
-    expect(sql.match(/panel-mono-450/g)?.length).toBe(1);
+    expect(blockOf(sql, 'products').match(/panel-mono-450/g)?.length).toBe(1);
   });
 });

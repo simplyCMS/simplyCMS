@@ -130,6 +130,9 @@ export const sectionProperties = pgTable("section_properties", {
 		}).onDelete("cascade"),
 	// Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
 	unique("section_properties_slug_key").on(table.slug),
+	// Ціль складеного FK значень `(property_id, value_kind)` (М1, І6, Р18): колонку значення
+	// прив'язує до типу властивості БД, а не код. Сам FK вмикає Task 17.
+	unique("section_properties_id_property_type_key").on(table.id, table.propertyType),
 ]);
 
 export const userCategories = pgTable("user_categories", {
@@ -283,9 +286,15 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 	modificationId: uuid("modification_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	value: text(),
-	numericValue: numeric("numeric_value"),
+	// Як у товару: `numeric(15,4)`, а не голий `numeric` (М1, Р18).
+	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
 	optionId: uuid("option_id"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	// Expand М1 (Р18): тип, булеве й колір значення. NULLABLE до Task 17, коли не лишається
+	// записувача повз команду й вмикаються складені FK та CHECK «одна колонка за типом».
+	valueKind: propertyType("value_kind"),
+	boolValue: boolean("bool_value"),
+	colorValue: text("color_value"),
 }, (table) => [
 	index("idx_modification_property_values_mod").using("btree", table.modificationId.asc().nullsLast().op("uuid_ops")),
 	index("idx_modification_property_values_option").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
@@ -320,6 +329,10 @@ export const productPropertyValues = pgTable("product_property_values", {
 	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	optionId: uuid("option_id"),
+	// Expand М1 (Р18): див. `modificationPropertyValues`.
+	valueKind: propertyType("value_kind"),
+	boolValue: boolean("bool_value"),
+	colorValue: text("color_value"),
 }, (table) => [
 	index("idx_product_property_values_option_id").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
 	foreignKey({
@@ -365,6 +378,8 @@ export const propertyOptions = pgTable("property_options", {
 			name: "property_options_property_id_fkey"
 		}).onDelete("cascade"),
 	unique("property_options_property_id_slug_key").on(table.propertyId, table.slug),
+	// Ціль складених FK `(property_id, option_id)` значень і `(scope_id, option_id)` токенів (М1, І7).
+	unique("property_options_property_id_id_key").on(table.propertyId, table.id),
 ]);
 
 export const sectionPropertyAssignments = pgTable("section_property_assignments", {
@@ -420,6 +435,9 @@ export const products = pgTable("products", {
 	// версіонувати чужий словник міграціями.
 	returnPolicy: jsonb("return_policy").$type<JsonValue>(),
 	shippingDetails: jsonb("shipping_details").$type<JsonValue>(),
+	// Оптимістична версія агрегата опису (М1, І14): будь-яка команда опису збільшує її
+	// на 1 у своїй транзакції; ціни й залишки версію не чіпають.
+	version: integer().default(1).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.sectionId],
@@ -454,6 +472,164 @@ export const productModifications = pgTable("product_modifications", {
 	unique("product_modifications_product_id_id_key").on(table.productId, table.id),
 	// К3-14: дефолт scoped на product_id — модифікації належать товару.
 	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
+]);
+
+// ── Переклади й зображення товару (М1, expand) ──────────────────────────────
+// Форма перекладу — майстер §3.1: складений PK `(<e>_id, locale)` без власного
+// `id` (природний ключ), `locale → languages(code) ON DELETE RESTRICT`, `source_hashes`
+// з хешами джерела на момент перекладу. Перекладні колонки NULLABLE навмисно:
+// обов'язковість (`name`) стосується лише рядка ОСНОВНОЇ мови й живе в
+// `require_source_translation` (Task 17), а рядок іншої мови може бути частково порожнім
+// (статус `missing`, майстер §3.4).
+const sourceHashes = () =>
+	jsonb("source_hashes").$type<Record<string, string>>().default({}).notNull();
+const translatedAt = () =>
+	timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull();
+
+export const productTranslations = pgTable("product_translations", {
+	productId: uuid("product_id").notNull(),
+	locale: text().notNull(),
+	name: text(),
+	shortDescription: text("short_description"),
+	description: text(),
+	metaTitle: text("meta_title"),
+	metaDescription: text("meta_description"),
+	sourceHashes: sourceHashes(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.productId, table.locale], name: "product_translations_pkey" }),
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "product_translations_product_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "product_translations_locale_fkey"
+		}).onDelete("restrict"),
+	index("idx_product_translations_locale").on(table.locale),
+	check("product_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+]);
+
+// Складений FK на `(product_id, id)` модифікації: переклад не може вказати на модифікацію
+// чужого товару, а `product_id` потрібен тригеру джерела й проєкції без JOIN.
+export const productModificationTranslations = pgTable("product_modification_translations", {
+	productId: uuid("product_id").notNull(),
+	modificationId: uuid("modification_id").notNull(),
+	locale: text().notNull(),
+	name: text(),
+	sourceHashes: sourceHashes(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.modificationId, table.locale], name: "product_modification_translations_pkey" }),
+	foreignKey({
+			columns: [table.productId, table.modificationId],
+			foreignColumns: [productModifications.productId, productModifications.id],
+			name: "product_modification_translations_modification_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "product_modification_translations_locale_fkey"
+		}).onDelete("restrict"),
+	index("idx_product_modification_translations_locale").on(table.locale),
+	check("product_modification_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+]);
+
+// Зображення товару: рядок на зображення замість jsonb-масиву `images`. Власник —
+// товар, а для модифікації складений FK `(product_id, modification_id)` не дає
+// прив'язати картинку до модифікації чужого товару (MATCH SIMPLE: NULL = зображення товару).
+export const productImages = pgTable("product_images", {
+	id: uuid().primaryKey().notNull(),
+	productId: uuid("product_id").notNull(),
+	modificationId: uuid("modification_id"),
+	storageKey: text("storage_key").notNull(),
+	sortOrder: integer("sort_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "product_images_product_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.productId, table.modificationId],
+			foreignColumns: [productModifications.productId, productModifications.id],
+			name: "product_images_modification_fkey"
+		}).onDelete("cascade"),
+	index("idx_product_images_product_id").on(table.productId, table.sortOrder),
+	index("idx_product_images_modification_id").on(table.modificationId),
+]);
+
+// Обов'язкових полів немає й тригера джерела (І4) немає: рядок перекладу зображення
+// необов'язковий (К6) — `alt` і мовний варіант файлу.
+export const productImageTranslations = pgTable("product_image_translations", {
+	imageId: uuid("image_id").notNull(),
+	locale: text().notNull(),
+	alt: text(),
+	storageKey: text("storage_key"),
+	sourceHashes: sourceHashes(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.imageId, table.locale], name: "product_image_translations_pkey" }),
+	foreignKey({
+			columns: [table.imageId],
+			foreignColumns: [productImages.id],
+			name: "product_image_translations_image_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "product_image_translations_locale_fkey"
+		}).onDelete("restrict"),
+	index("idx_product_image_translations_locale").on(table.locale),
+	check("product_image_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+]);
+
+// Текст значення властивості `value_kind = 'text'` живе в перекладі, а не в колонці `value`.
+export const productPropertyValueTranslations = pgTable("product_property_value_translations", {
+	valueId: uuid("value_id").notNull(),
+	locale: text().notNull(),
+	value: text(),
+	sourceHashes: sourceHashes(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.valueId, table.locale], name: "product_property_value_translations_pkey" }),
+	foreignKey({
+			columns: [table.valueId],
+			foreignColumns: [productPropertyValues.id],
+			name: "product_property_value_translations_value_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "product_property_value_translations_locale_fkey"
+		}).onDelete("restrict"),
+	index("idx_product_property_value_translations_locale").on(table.locale),
+	check("product_property_value_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+]);
+
+export const modificationPropertyValueTranslations = pgTable("modification_property_value_translations", {
+	valueId: uuid("value_id").notNull(),
+	locale: text().notNull(),
+	value: text(),
+	sourceHashes: sourceHashes(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.valueId, table.locale], name: "modification_property_value_translations_pkey" }),
+	foreignKey({
+			columns: [table.valueId],
+			foreignColumns: [modificationPropertyValues.id],
+			name: "modification_property_value_translations_value_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "modification_property_value_translations_locale_fkey"
+		}).onDelete("restrict"),
+	index("idx_modification_property_value_translations_locale").on(table.locale),
+	check("modification_property_value_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
 ]);
 
 // drizzle-orm не має `.collate()` для text; `customType` лишає тип `string`

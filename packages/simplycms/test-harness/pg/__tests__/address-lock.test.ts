@@ -1,22 +1,32 @@
 // М1 (майстер §3.5): запис у реєстри адрес і токенів — лише під замком `languages-set`
 // (спільним АБО ексклюзивним). Правило тримає тригер БД, як `languages_require_lock` (SC001).
-import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { advisoryXactLock, advisoryXactLockShared } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { slugTokenRowSql, urlPathRowSql } from './fixtures/product-graph';
 
 const NO_LOCK = { cause: { code: 'SC004' } };
 
 describe('addresses_require_languages_lock: запис в url_paths і slug_tokens без замка відмовляє', () => {
   const db = useAddressingDb('simplycms_address_lock');
-  const path = (productId: string, p: string, locale = 'uk') =>
-    sql`insert into public.url_paths (id, locale, path, product_id, is_current)
-        values (${randomUUID()}::uuid, ${locale}, ${p}, ${productId}::uuid, true)`;
+  const path = (
+    productId: string,
+    p: string,
+    locale = 'uk',
+    isCurrent = true,
+  ) => sql.raw(urlPathRowSql({ locale, path: p, productId, isCurrent }));
   const token = (productId: string, modId: string, slug: string) =>
-    sql`insert into public.slug_tokens (id, locale, slug, scope_id, modification_id, is_current)
-        values (${randomUUID()}::uuid, 'uk', ${slug}, ${productId}::uuid, ${modId}::uuid, true)`;
+    sql.raw(
+      slugTokenRowSql({
+        locale: 'uk',
+        scopeId: productId,
+        slug,
+        modificationId: modId,
+        isCurrent: true,
+      }),
+    );
 
   it('INSERT і UPDATE url_paths без замка → SC004', async () => {
     const product = await db.product('al-p1');
@@ -95,8 +105,7 @@ describe('addresses_require_languages_lock: запис в url_paths і slug_toke
     await db.admin(async (d) => {
       await advisoryXactLockShared(d, LOCK_KEYS.languagesSet);
       await d.execute(path(product, 'al-p5'));
-      await d.execute(sql`insert into public.url_paths (id, locale, path, product_id, is_current)
-        values (${randomUUID()}::uuid, 'uk', 'al-p5-old', ${product}::uuid, false)`);
+      await d.execute(path(product, 'al-p5-old', 'uk', false));
     });
     // Історичну адресу прибирає DELETE без замка: тригер на нього не реагує.
     await db.admin((d) =>

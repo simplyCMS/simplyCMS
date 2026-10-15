@@ -22,6 +22,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { productGraphSql } from './fixtures/product-graph';
 
 const uid = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -89,11 +90,19 @@ describe('фільтри каталогу без розділу', () => {
       `insert into public.sections (id, name, slug, is_active) values
         ('${SEC_A}', 'А', 'root-a', true), ('${SEC_B}', 'Б', 'root-b', true),
         ('${SEC_OFF}', 'Вимкнений', 'root-off', false)`,
-      `insert into public.products (id, name, slug, is_active) values
-        ('${PROD_ON}', 'Активний', 'root-on', true),
-        ('${PROD_OFF}', 'Неактивний', 'root-off-p', false)`,
-      `insert into public.product_modifications (id, product_id, slug, name)
-        values ('${MOD_ON}', '${PROD_ON}', 'root-mod', 'Мод')`,
+      productGraphSql({
+        id: PROD_ON,
+        name: 'Активний',
+        slug: 'root-on',
+        isActive: true,
+        modifications: [{ id: MOD_ON, slug: 'root-mod', name: 'Мод' }],
+      }),
+      productGraphSql({
+        id: PROD_OFF,
+        name: 'Неактивний',
+        slug: 'root-off-p',
+        isActive: false,
+      }),
     ];
     for (const p of PROPS) {
       statements.push(

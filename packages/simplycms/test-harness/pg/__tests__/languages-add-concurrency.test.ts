@@ -170,7 +170,7 @@ describe('languages.add проти паралельного створення �
     [
       'адреси',
       'es',
-      async (productId: string) =>
+      async (productId: string, _mod: string) =>
         hold(db, (d) =>
           setExplicitPath(
             d,
@@ -183,8 +183,9 @@ describe('languages.add проти паралельного створення �
     [
       'токена',
       'fi',
-      async (productId: string) => {
-        const mod = await db.modification(productId, 'expl-t-m');
+      // Модифікація створена ДО утримання ексклюзивного замка: фікстура товару
+      // сама бере спільний `languages-set` і стала б у чергу за власником.
+      async (productId: string, mod: string) => {
         return hold(db, (d) =>
           setExplicitToken(
             d,
@@ -199,6 +200,7 @@ describe('languages.add проти паралельного створення �
     'явна зміна %s чекає ексклюзивного власника languagesSet',
     async (_what, code, start) => {
       const product = await db.product(`expl-${code}`);
+      const mod = await db.modification(product, `expl-m-${code}`);
       const b = hold(db, async (d) => {
         await advisoryXactLock(d, LOCK_KEYS.languagesSet);
         await d
@@ -206,7 +208,7 @@ describe('languages.add проти паралельного створення �
           .values({ id: randomUUID(), code, name: code, status: 'draft' });
       });
       await until('add отримав замок', b.acquired);
-      const a = await start(product);
+      const a = await start(product, mod);
       await until(
         'явна зміна стала в чергу',
         async () => (await waiters(db)) === 1,

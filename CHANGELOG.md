@@ -41,7 +41,16 @@
   `0003_seed.sql` бере цей замок перед вставкою основної мови;
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`;
   тригер `addresses_require_languages_lock` (SQLSTATE `SC004`, `0004_functions.sql`): запис у `url_paths` і `slug_tokens` (INSERT/UPDATE) лише під замком `languages-set` (спільним або ексклюзивним), спільна SQL-функція `advisory_lock_held` (на неї переведено й `languages_require_lock`; EXECUTE видано `app_*`);
-  нові таблиці `api_tokens` (лише sha256-хеш токена), `idempotency_keys` (складений PK, без `id`) і `service_accounts` (PK `user_id`), права лише `app_admin`; тригери `accounts_refuse_service`/`service_accounts_refuse_human` (`0004_functions.sql`); Локально — порожня БД і
+  нові таблиці `api_tokens` (лише sha256-хеш токена), `idempotency_keys` (складений PK, без `id`) і `service_accounts` (PK `user_id`), права лише `app_admin`; тригери `accounts_refuse_service`/`service_accounts_refuse_human` (`0004_functions.sql`);
+  переклади товару (expand, М1 Task 10): нові таблиці `product_translations`, `product_modification_translations`
+  (складений FK на `(product_id, id)` модифікації), `product_images`, `product_image_translations`,
+  `product_property_value_translations`, `modification_property_value_translations` (PK `(<e>_id, locale)` без `id`,
+  `locale → languages(code) ON DELETE RESTRICT`, `source_hashes`, права `app_user` SELECT / `app_admin` CRUD);
+  у `product_property_values` і `modification_property_values` — NULLABLE `value_kind`, `bool_value`,
+  `color_value` (обмеження Р18 і тригери джерела вмикає Task 17), `modification_property_values.numeric_value` →
+  `numeric(15,4)`; `products.version`; `UNIQUE(id, property_type)` на `section_properties` і `UNIQUE(property_id, id)`
+  на `property_options`; демо-сід пише переклад основною мовою, адресу й токен для товарів і модифікацій;
+  Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
   `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі

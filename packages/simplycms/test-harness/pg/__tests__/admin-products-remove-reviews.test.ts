@@ -6,6 +6,7 @@ import { withActor } from 'simplycms/db';
 import { productsOps } from 'simplycms/admin-server/impl';
 import { holdRowLock, stillPending } from './fixtures/advisory-lock';
 import { blockCommitOn } from './fixtures/commit-block';
+import { insertProductGraph, viaRows } from './fixtures/product-graph';
 import { useReviewsDb } from './fixtures/reviews';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
@@ -25,9 +26,13 @@ describe('admin: видалення товару стирає фото його 
   /** Свіжий товар (без замовлень) з відгуком і двома фото. */
   const seeded = async () => {
     const productId = crypto.randomUUID();
-    await f.rows(
-      `insert into public.products (id, slug, name) values ($1, $2, 'Товар Е6д')`,
-      [productId, `e6d-rm-${productId.slice(0, 8)}`],
+    await insertProductGraph(
+      viaRows((sql) => f.rows(sql)),
+      {
+        id: productId,
+        slug: `e6d-rm-${productId.slice(0, 8)}`,
+        name: 'Товар Е6д',
+      },
     );
     const reviewId = await d.seedReview({ productId });
     const refs = await d.seedPhotos(reviewId, 2);

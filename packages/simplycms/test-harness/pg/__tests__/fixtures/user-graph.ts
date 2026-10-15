@@ -1,4 +1,5 @@
 // Сід тесту графа користувача: покупець з усіма залежними рядками (Е6г).
+import { productGraphSql } from './product-graph';
 
 export const BUYER = 'b1000000-0000-4000-8000-000000000001';
 export const OTHER = 'b1000000-0000-4000-8000-000000000002';
@@ -17,7 +18,7 @@ export const SEED = [
      ('${BUYER}', 'Покупець', 'buyer@example.test'),
      ('${OTHER}', 'Інший', 'other@example.test'),
      ('${ADMIN}', 'Адмін', 'admin@example.test')`,
-  `insert into public.products (id, slug, name) values ('${PRODUCT}', 'p', 'Товар')`,
+  productGraphSql({ id: PRODUCT, slug: 'p', name: 'Товар' }),
   `insert into public.user_addresses (id, user_id, name, city, address)
      values ('${ADDRESS}', '${BUYER}', 'Дім', 'Київ', 'вул. Перша, 1')`,
   `insert into public.user_recipients (id, user_id, first_name, last_name, phone, city, address)

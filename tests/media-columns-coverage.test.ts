@@ -47,6 +47,11 @@ const NOT_MEDIA: readonly string[] = [
   // в `<img src>` (`admin/features/themes/ThemeCard.tsx`). Це URL із метаданих
   // теми, тож резолверу медіа-референсів тут нема чого резолвити.
   'themes.preview_image',
+  // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`
+  // (М1 Task 10), не файл. Самі файли (`product_images.storage_key`,
+  // `product_image_translations.storage_key`) реєстр отримає, коли зображення
+  // переїдуть із jsonb у ці таблиці (Task 17): до того їх дзеркалить старий `images`.
+  'product_image_translations.image_id',
 ];
 
 describe('реєстр медіа-колонок', () => {

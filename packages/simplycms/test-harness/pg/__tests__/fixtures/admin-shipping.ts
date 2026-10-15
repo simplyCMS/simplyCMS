@@ -5,6 +5,7 @@ import { afterAll, beforeAll } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
+import { insertProductGraphAt } from './product-graph';
 
 /** Реєструє хуки БД у describe, що кличе; `url()` — привілейоване підключення. */
 export function useShippingAdminDb(prefix: string): { url: () => string } {
@@ -63,12 +64,15 @@ export const seedPoint = (url: string, methodId: string, isSystem = false) =>
     [methodId, `Точка ${next()}`, isSystem],
   );
 
-export const seedProduct = (url: string) =>
-  insertId(
-    url,
-    `insert into public.products (id, slug, name) values ($1, $2, 'Товар Е6а')`,
-    [`e6a-product-${next()}`],
-  );
+export const seedProduct = async (url: string) => {
+  const id = crypto.randomUUID();
+  await insertProductGraphAt(url, {
+    id,
+    slug: `e6a-product-${next()}`,
+    name: 'Товар Е6а',
+  });
+  return id;
+};
 
 export const seedStock = (url: string, pointId: string, qty: number) =>
   seedProduct(url).then((productId) =>

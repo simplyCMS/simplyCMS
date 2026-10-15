@@ -12,6 +12,8 @@
 // від того, що саме доводить тест. Історично рівно ця властивість і робила
 // забутий `SET LOCAL ROLE` тихим — негативний контроль №1 фіксує, що тепер ні.
 
+import { productGraphSql } from './product-graph';
+
 export const USER_A = '11111111-1111-4111-8111-111111111111';
 export const USER_B = '22222222-2222-4222-8222-222222222222';
 export const USER_ADMIN = '33333333-3333-4333-8333-333333333333';
@@ -45,8 +47,11 @@ export const SEED_STATEMENTS: string[] = [
      ('${USER_A}', 'Актор A', 'a@example.test'),
      ('${USER_B}', 'Актор B', 'b@example.test'),
      ('${USER_ADMIN}', 'Адміністратор', 'admin@example.test')`,
-  `insert into public.products (id, slug, name)
-     values ('${PRODUCT}', 'test-product', 'Тестовий товар')`,
+  productGraphSql({
+    id: PRODUCT,
+    slug: 'test-product',
+    name: 'Тестовий товар',
+  }),
   `insert into public.profiles (id, user_id, email) values
      (gen_random_uuid(), '${USER_A}', 'a@example.test'),
      (gen_random_uuid(), '${USER_B}', 'b@example.test')`,

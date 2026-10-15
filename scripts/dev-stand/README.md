@@ -17,9 +17,17 @@
 
 Множина таблиць — лише каталог: `sections`, `section_properties`,
 `property_options`, `section_property_assignments`, `products`,
-`product_modifications`, `product_property_values`, `product_prices`.
-Зображення окремої таблиці не мають — вони в jsonb `products.images`
+`product_modifications`, `product_property_values`, переклади товару
+(`product_translations`, `product_modification_translations`,
+`product_property_value_translations`), зображення (`product_images`,
+`product_image_translations`), реєстри адрес і токенів (`url_paths`,
+`slug_tokens`), `product_prices`. До Task 17 фото ще й у jsonb `products.images`
 (публічні URL-и Storage; локальне дзеркалення — опція, не вимога).
+
+Мова перекладів, адрес і токенів на стенді — ЛИШЕ основна: `locale` не дампиться, а
+підставляється підзапитом `languages.is_default` локальної БД (мова з джерела там
+може не існувати), дамп бере рядки основної мови джерела. Сід — одна транзакція
+під спільним замком `languages-set` (тригер SC004 на `url_paths`/`slug_tokens`).
 Персональних даних немає за побудовою: `profiles`, `orders`, `order_items`,
 `user_*` в allowlist-і відсутні, і додавати їх туди не
 можна. `created_at`/`updated_at` теж поза allowlist-ом — на стенді доречніші
@@ -53,7 +61,8 @@ node scripts/dev-stand/dump-demo-data.mjs
 psql "$DATABASE_URL" -f scripts/dev-stand/seed-demo.sql
 ```
 
-Сід ідемпотентний: кожен блок — `insert … on conflict (id) do update set …`,
+Сід ідемпотентний: кожен блок — `insert … on conflict (id) do update set …`
+(для таблиць перекладів арбітр — складений PK `(<e>_id, locale)`),
 тож повторний накат не дублює рядків і не падає. `price_type_id` береться
 підзапитом із **локального** `price_types` — id з клауд-БД у стеку не існує.
 

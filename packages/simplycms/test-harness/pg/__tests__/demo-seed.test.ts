@@ -67,6 +67,20 @@ describe('демо-сід: накат поверх канону', () => {
     stockByPickupPoint: (
       await queryRows(dbUrl, 'select id from public.stock_by_pickup_point')
     ).length,
+    // М1 Task 10: переклади, адреси й токени теж не плодяться при докаті.
+    productTranslations: (
+      await queryRows(dbUrl, 'select 1 from public.product_translations')
+    ).length,
+    modificationTranslations: (
+      await queryRows(
+        dbUrl,
+        'select 1 from public.product_modification_translations',
+      )
+    ).length,
+    urlPaths: (await queryRows(dbUrl, 'select id from public.url_paths'))
+      .length,
+    slugTokens: (await queryRows(dbUrl, 'select id from public.slug_tokens'))
+      .length,
   });
 
   it('накатується без помилок і дає непорожній каталог', async () => {
@@ -77,6 +91,49 @@ describe('демо-сід: накат поверх канону', () => {
     expect(c.prices).toBeGreaterThan(0);
     expect(c.modifications).toBeGreaterThan(0);
     expect(c.banners).toBeGreaterThan(0);
+  });
+
+  // М1 Task 10 (майстер §3.1): без перекладу основної мови товар не має назви на
+  // вітрині, без поточної адреси — URL. Модифікація дзеркально: переклад і токен.
+  it('кожен демо-товар має переклад основною мовою й поточну адресу', async () => {
+    const missing = await queryRows(
+      dbUrl,
+      `select p.slug from public.products p
+        where not exists (
+                select 1 from public.product_translations t
+                  join public.languages l on l.code = t.locale and l.is_default
+                 where t.product_id = p.id and nullif(btrim(t.name), '') is not null)
+           or not exists (
+                select 1 from public.url_paths u
+                  join public.languages l on l.code = u.locale and l.is_default
+                 where u.product_id = p.id and u.is_current and u.path = p.slug)`,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('кожна демо-модифікація має переклад основною мовою й поточний токен', async () => {
+    const missing = await queryRows(
+      dbUrl,
+      `select m.slug from public.product_modifications m
+        where not exists (
+                select 1 from public.product_modification_translations t
+                  join public.languages l on l.code = t.locale and l.is_default
+                 where t.modification_id = m.id and nullif(btrim(t.name), '') is not null)
+           or not exists (
+                select 1 from public.slug_tokens s
+                  join public.languages l on l.code = s.locale and l.is_default
+                 where s.modification_id = m.id and s.scope_id = m.product_id
+                   and s.is_current and s.slug = m.slug)`,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('значення властивостей демо мають value_kind', async () => {
+    const rows = await queryRows(
+      dbUrl,
+      'select id from public.product_property_values where value_kind is null',
+    );
+    expect(rows).toEqual([]);
   });
 
   it('дерево секцій: є батьківська й дочірні', async () => {

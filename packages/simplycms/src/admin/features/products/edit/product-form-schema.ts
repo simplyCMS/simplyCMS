@@ -85,6 +85,7 @@ export function toProductDraft(
     updatedAt: now,
     returnPolicy: null,
     shippingDetails: null,
+    version: 1,
     stockStatus: v.hasModifications ? 'in_stock' : v.stockStatus,
   };
 }

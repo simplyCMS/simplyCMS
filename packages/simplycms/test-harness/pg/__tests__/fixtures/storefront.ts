@@ -5,6 +5,12 @@
 // без жодного неактивного рядка тест «не віддає неактивні» був би зеленим
 // на порожній множині, тобто не доводив би нічого.
 
+import { randomUUID } from 'node:crypto';
+import { productGraphSql, sqlRef } from './product-graph';
+
+const sectionBySlug = (slug: string) =>
+  sqlRef(`(select id from public.sections where slug = '${slug}')`);
+
 /** Розділ, якого вітрина не має бачити. */
 export const HIDDEN_SECTION_SLUG = 'prykhovanyi-rozdil';
 /** Товар-чернетка: неактивний, але позначений «популярним». */
@@ -31,29 +37,46 @@ export const FIXTURE_STATEMENTS: string[] = [
      values (gen_random_uuid(), '${HIDDEN_SECTION_SLUG}', 'Прихований розділ', 99, false)`,
 
   // Чернетка: неактивна, але «популярна» й у активному розділі — тобто
-  // потрапила б у КОЖНУ добірку, якби фільтр видимості загубився.
-  `insert into public.products
-     (id, slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
-   select gen_random_uuid(), '${HIDDEN_PRODUCT_SLUG}', 'Чернетка товару', s.id,
-          false, true, false, 'in_stock', '[]'::jsonb
-     from public.sections s where s.slug = 'sonyachni-paneli'`,
-
-  // Та сама опція, що й у видимих товарів — негативний контроль сторінки
-  // значення характеристики.
-  `insert into public.product_property_values (id, product_id, property_id, option_id)
-   select gen_random_uuid(), p.id, sp.id, po.id
-     from public.products p
-     join public.section_properties sp on sp.slug = '${PAGED_PROPERTY_SLUG}'
-     join public.property_options po
-       on po.property_id = sp.id and po.slug = '${PAGED_OPTION_SLUG}'
-    where p.slug = '${HIDDEN_PRODUCT_SLUG}'`,
+  // потрапила б у КОЖНУ добірку, якби фільтр видимості загубився. Має ту саму
+  // опцію, що й видимі товари — негативний контроль сторінки значення
+  // характеристики.
+  productGraphSql({
+    id: randomUUID(),
+    slug: HIDDEN_PRODUCT_SLUG,
+    name: 'Чернетка товару',
+    sectionId: sectionBySlug('sonyachni-paneli'),
+    isActive: false,
+    isFeatured: true,
+    hasModifications: false,
+    stockStatus: 'in_stock',
+    values: [
+      {
+        id: randomUUID(),
+        propertyId: sqlRef(
+          `(select id from public.section_properties where slug = '${PAGED_PROPERTY_SLUG}')`,
+        ),
+        kind: 'select',
+        optionId: sqlRef(
+          `(select po.id from public.property_options po
+              join public.section_properties sp on sp.id = po.property_id
+             where sp.slug = '${PAGED_PROPERTY_SLUG}' and po.slug = '${PAGED_OPTION_SLUG}')`,
+        ),
+      },
+    ],
+  }),
 
   // Наповнення розділу понад ліміт каруселі: без цього віконний зріз
   // перевірявся б на трьох товарах, тобто не перевірявся б.
-  `insert into public.products
-     (id, slug, name, section_id, is_active, is_featured, has_modifications, stock_status, images)
-   select gen_random_uuid(), 'napovnennya-' || g, 'Наповнення ' || g, s.id,
-          true, false, false, 'in_stock', '[]'::jsonb
-     from generate_series(1, ${PER_SECTION_LIMIT}) as g
-     cross join public.sections s where s.slug = '${FILLED_SECTION_SLUG}'`,
+  ...Array.from({ length: PER_SECTION_LIMIT }, (_, i) =>
+    productGraphSql({
+      id: randomUUID(),
+      slug: `napovnennya-${i + 1}`,
+      name: `Наповнення ${i + 1}`,
+      sectionId: sectionBySlug(FILLED_SECTION_SLUG),
+      isActive: true,
+      isFeatured: false,
+      hasModifications: false,
+      stockStatus: 'in_stock',
+    }),
+  ),
 ];

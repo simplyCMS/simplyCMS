@@ -5,6 +5,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { searchProductsForOrderOp } from 'simplycms/admin-server/impl';
 import { useOrderItemsEditDb } from './fixtures/order-items-edit';
+import {
+  insertProductGraph,
+  modificationGraphSql,
+  viaRows,
+} from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/db', async (orig) => {
@@ -29,18 +34,27 @@ describe('admin: пошук товару для замовлення (К3-Е5б,
     (await search(query)).map((i) => i.name);
   const product = async (name: string, sku: string | null, active = true) => {
     const id = randomUUID();
-    await f.rows(
-      `insert into public.products (id, slug, name, sku, is_active, has_modifications)
-       values ($1, $2, $3, $4, $5, false)`,
-      [id, `s4-${id}`, name, sku, active],
+    await insertProductGraph(
+      viaRows((sql) => f.rows(sql)),
+      {
+        id,
+        slug: `s4-${id}`,
+        name,
+        sku,
+        isActive: active,
+        hasModifications: false,
+      },
     );
     return id;
   };
   const modification = (productId: string, name: string, sku: string | null) =>
     f.rows(
-      `insert into public.product_modifications (id, product_id, slug, name, sku)
-       values ($1, $2, $3, $4, $5)`,
-      [randomUUID(), productId, `m-${randomUUID()}`, name, sku],
+      modificationGraphSql(productId, {
+        id: randomUUID(),
+        slug: `m-${randomUUID()}`,
+        name,
+        sku,
+      }),
     );
 
   it('% і _ — літерали: «50%» знаходить «Знижка 50%», «5_» не знаходить «50» (Review Focus 5)', async () => {

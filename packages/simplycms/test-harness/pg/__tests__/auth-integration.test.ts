@@ -26,6 +26,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const PRODUCT = '44444444-4444-4444-8444-444444444444';
 const PASSWORD = 'super-secret-password';
@@ -71,11 +72,11 @@ describe('Better Auth над реальним Postgres', () => {
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
     await applyCanon(dbUrl);
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name)
-       values ('${PRODUCT}', 'test-product', 'Тестовий товар')`,
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: PRODUCT,
+      slug: 'test-product',
+      name: 'Тестовий товар',
+    });
 
     // Логін — як `app_runtime`: під власником таблиць fail-closed не міряється.
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');

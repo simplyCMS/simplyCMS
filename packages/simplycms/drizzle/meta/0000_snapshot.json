@@ -1224,6 +1224,107 @@
       },
       "isRLSEnabled": false
     },
+    "public.modification_property_value_translations": {
+      "name": "modification_property_value_translations",
+      "schema": "",
+      "columns": {
+        "value_id": {
+          "name": "value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_modification_property_value_translations_locale": {
+          "name": "idx_modification_property_value_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "modification_property_value_translations_value_id_fkey": {
+          "name": "modification_property_value_translations_value_id_fkey",
+          "tableFrom": "modification_property_value_translations",
+          "tableTo": "modification_property_values",
+          "columnsFrom": [
+            "value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "modification_property_value_translations_locale_fkey": {
+          "name": "modification_property_value_translations_locale_fkey",
+          "tableFrom": "modification_property_value_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "modification_property_value_translations_pkey": {
+          "name": "modification_property_value_translations_pkey",
+          "columns": [
+            "value_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "modification_property_value_translations_source_hashes_object": {
+          "name": "modification_property_value_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"modification_property_value_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.modification_property_values": {
       "name": "modification_property_values",
       "schema": "",
@@ -1254,7 +1355,7 @@
         },
         "numeric_value": {
           "name": "numeric_value",
-          "type": "numeric",
+          "type": "numeric(15, 4)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1270,6 +1371,25 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "value_kind": {
+          "name": "value_kind",
+          "type": "property_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bool_value": {
+          "name": "bool_value",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color_value": {
+          "name": "color_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -2570,6 +2690,339 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.product_image_translations": {
+      "name": "product_image_translations",
+      "schema": "",
+      "columns": {
+        "image_id": {
+          "name": "image_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alt": {
+          "name": "alt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_product_image_translations_locale": {
+          "name": "idx_product_image_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_image_translations_image_id_fkey": {
+          "name": "product_image_translations_image_id_fkey",
+          "tableFrom": "product_image_translations",
+          "tableTo": "product_images",
+          "columnsFrom": [
+            "image_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_image_translations_locale_fkey": {
+          "name": "product_image_translations_locale_fkey",
+          "tableFrom": "product_image_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "product_image_translations_pkey": {
+          "name": "product_image_translations_pkey",
+          "columns": [
+            "image_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "product_image_translations_source_hashes_object": {
+          "name": "product_image_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"product_image_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.product_images": {
+      "name": "product_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modification_id": {
+          "name": "modification_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_product_images_product_id": {
+          "name": "idx_product_images_product_id",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_product_images_modification_id": {
+          "name": "idx_product_images_modification_id",
+          "columns": [
+            {
+              "expression": "modification_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_images_product_id_fkey": {
+          "name": "product_images_product_id_fkey",
+          "tableFrom": "product_images",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_images_modification_fkey": {
+          "name": "product_images_modification_fkey",
+          "tableFrom": "product_images",
+          "tableTo": "product_modifications",
+          "columnsFrom": [
+            "product_id",
+            "modification_id"
+          ],
+          "columnsTo": [
+            "product_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.product_modification_translations": {
+      "name": "product_modification_translations",
+      "schema": "",
+      "columns": {
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modification_id": {
+          "name": "modification_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_product_modification_translations_locale": {
+          "name": "idx_product_modification_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_modification_translations_modification_fkey": {
+          "name": "product_modification_translations_modification_fkey",
+          "tableFrom": "product_modification_translations",
+          "tableTo": "product_modifications",
+          "columnsFrom": [
+            "product_id",
+            "modification_id"
+          ],
+          "columnsTo": [
+            "product_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_modification_translations_locale_fkey": {
+          "name": "product_modification_translations_locale_fkey",
+          "tableFrom": "product_modification_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "product_modification_translations_pkey": {
+          "name": "product_modification_translations_pkey",
+          "columns": [
+            "modification_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "product_modification_translations_source_hashes_object": {
+          "name": "product_modification_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"product_modification_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.product_modifications": {
       "name": "product_modifications",
       "schema": "",
@@ -2865,6 +3318,107 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.product_property_value_translations": {
+      "name": "product_property_value_translations",
+      "schema": "",
+      "columns": {
+        "value_id": {
+          "name": "value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_product_property_value_translations_locale": {
+          "name": "idx_product_property_value_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_property_value_translations_value_id_fkey": {
+          "name": "product_property_value_translations_value_id_fkey",
+          "tableFrom": "product_property_value_translations",
+          "tableTo": "product_property_values",
+          "columnsFrom": [
+            "value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_property_value_translations_locale_fkey": {
+          "name": "product_property_value_translations_locale_fkey",
+          "tableFrom": "product_property_value_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "product_property_value_translations_pkey": {
+          "name": "product_property_value_translations_pkey",
+          "columns": [
+            "value_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "product_property_value_translations_source_hashes_object": {
+          "name": "product_property_value_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"product_property_value_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.product_property_values": {
       "name": "product_property_values",
       "schema": "",
@@ -2909,6 +3463,25 @@
         "option_id": {
           "name": "option_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "value_kind": {
+          "name": "value_kind",
+          "type": "property_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bool_value": {
+          "name": "bool_value",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color_value": {
+          "name": "color_value",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
@@ -3195,6 +3768,131 @@
       },
       "isRLSEnabled": false
     },
+    "public.product_translations": {
+      "name": "product_translations",
+      "schema": "",
+      "columns": {
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "short_description": {
+          "name": "short_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meta_title": {
+          "name": "meta_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meta_description": {
+          "name": "meta_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_product_translations_locale": {
+          "name": "idx_product_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_translations_product_id_fkey": {
+          "name": "product_translations_product_id_fkey",
+          "tableFrom": "product_translations",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_translations_locale_fkey": {
+          "name": "product_translations_locale_fkey",
+          "tableFrom": "product_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "product_translations_pkey": {
+          "name": "product_translations_pkey",
+          "columns": [
+            "product_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "product_translations_source_hashes_object": {
+          "name": "product_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"product_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.products": {
       "name": "products",
       "schema": "",
@@ -3314,6 +4012,13 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
         }
       },
       "indexes": {
@@ -3730,6 +4435,14 @@
             "property_id",
             "slug"
           ]
+        },
+        "property_options_property_id_id_key": {
+          "name": "property_options_property_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "property_id",
+            "id"
+          ]
         }
       },
       "policies": {},
@@ -3837,6 +4550,14 @@
           "nullsNotDistinct": false,
           "columns": [
             "slug"
+          ]
+        },
+        "section_properties_id_property_type_key": {
+          "name": "section_properties_id_property_type_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "property_type"
           ]
         }
       },

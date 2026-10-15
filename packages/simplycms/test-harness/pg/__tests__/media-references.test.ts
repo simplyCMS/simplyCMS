@@ -6,6 +6,11 @@ import { withActor } from 'simplycms/db';
 import { MEDIA_COLUMNS } from 'simplycms/domain/media';
 import { findMediaReferences } from 'simplycms/storage';
 import { useReviewsDb } from './fixtures/reviews';
+import {
+  insertProductGraph,
+  modificationGraphSql,
+  viaRows,
+} from './fixtures/product-graph';
 
 describe('findMediaReferences (Е6д-22)', () => {
   const d = useReviewsDb('simplycms_e6d_media_refs');
@@ -13,24 +18,31 @@ describe('findMediaReferences (Е6д-22)', () => {
   const find = (key: string) =>
     withActor({ role: 'app_admin' }, (db) => findMediaReferences(db, key));
   const fresh = () => `ab/${crypto.randomUUID()}.png`;
-  const jsonKey = (ref: string) => JSON.stringify([`ab/other.png`, ref]);
 
   /** Сіятель на запис реєстру: кладе `key` у колонку нового рядка, повертає його id. */
   const SEEDERS: Record<string, (key: string) => Promise<string>> = {
     'products.images': async (key) => {
       const id = crypto.randomUUID();
-      await f.rows(
-        `insert into public.products (id, slug, name, images) values ($1, $2, 'T', $3::jsonb)`,
-        [id, `s-${id}`, jsonKey(key)],
+      await insertProductGraph(
+        viaRows((sql) => f.rows(sql)),
+        {
+          id,
+          slug: `s-${id}`,
+          name: 'T',
+          images: ['ab/other.png', key],
+        },
       );
       return id;
     },
     'product_modifications.images': async (key) => {
       const id = crypto.randomUUID();
       await f.rows(
-        `insert into public.product_modifications (id, product_id, slug, name, images)
-         values ($1, $2, $3, 'M', $4::jsonb)`,
-        [id, f.ids.panel, `m-${id}`, jsonKey(key)],
+        modificationGraphSql(f.ids.panel, {
+          id,
+          slug: `m-${id}`,
+          name: 'M',
+          images: ['ab/other.png', key],
+        }),
       );
       return id;
     },

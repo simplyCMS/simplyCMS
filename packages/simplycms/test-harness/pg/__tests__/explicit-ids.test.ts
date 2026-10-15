@@ -246,7 +246,7 @@ describe('Е0: дискавер id звіряє таблицю за значен
 
 describe('Е0: гейт бачить усю адмінку', () => {
   it('вставка без id у admin/pages — offender, виїмок за теками немає', () => {
-    const source = 'await db.insert(products).values(payload);';
+    const source = 'await db.insert(sections).values(payload);';
     const sites = discoverInsertsInSource(source, 'admin/pages/X.tsx');
     expect(offendersOf(sites)).toHaveLength(1);
   });
@@ -255,10 +255,10 @@ describe('Е0: гейт бачить усю адмінку', () => {
     // Без пропуску коментарів у findMatchingClose `// don't` відкривав би
     // «рядок», аргумент першої вставки поглинав би `id:` другої — fail-open.
     const source = [
-      "await db.insert(products).values({ // don't",
+      "await db.insert(sections).values({ // don't",
       "  name: 'x',",
       '});',
-      "await db.insert(products).values({ id: newId(), name: 'y' });",
+      "await db.insert(sections).values({ id: newId(), name: 'y' });",
     ].join('\n');
     const offenders = offendersOf(
       discoverInsertsInSource(source, 'admin/x.ts'),

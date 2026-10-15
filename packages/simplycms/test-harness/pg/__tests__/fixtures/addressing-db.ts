@@ -13,6 +13,12 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 import { withActor as rawActor } from '../../actors.mjs';
+import {
+  insertProductGraphAt,
+  modificationGraphSql,
+  slugTokenRowSql,
+  urlPathRowSql,
+} from './product-graph';
 
 export const ADMIN = {
   userId: '33333333-3333-4333-8333-333333333333',
@@ -33,7 +39,8 @@ export interface AddressingDb {
   shared: <T>(fn: (db: ActorDb) => Promise<T>) => Promise<T>;
   /** Сирі стейтменти однією транзакцією app_admin ПІД замком `languages-set`; відкладені тригери — на COMMIT. */
   tx: (...statements: string[]) => Promise<unknown>;
-  product: (slug?: string) => Promise<string>;
+  /** Товар графа: без адреси (за замовчуванням) чи з поточною адресою основної мови = slug. */
+  product: (slug?: string, withAddress?: boolean) => Promise<string>;
   modification: (productId: string, slug?: string) => Promise<string>;
   /** Додає мову (за замовчуванням `published`). */
   language: (code: string, status?: string) => Promise<void>;
@@ -80,19 +87,26 @@ export function useAddressingDb(prefix: string): AddressingDb {
       }),
     tx: (...statements) =>
       rawActor(runtimeUrl, ADMIN, [H.LANGUAGES_LOCK_SQL, ...statements]),
-    product: async (slug = `p-${randomUUID()}`) => {
+    product: async (slug = `p-${randomUUID()}`, withAddress = false) => {
       const id = randomUUID();
-      await q(
-        `insert into public.products (id, slug, name) values ($1,$2::varchar,$2::text)`,
-        [id, slug],
-      );
+      // Без адреси за замовчуванням: тести реєстрів самі створюють її генератором чи рядком.
+      await insertProductGraphAt(dbUrl, {
+        id,
+        slug,
+        name: slug,
+        addresses: withAddress,
+      });
       return id;
     },
     modification: async (productId, slug = `m-${randomUUID()}`) => {
       const id = randomUUID();
       await q(
-        `insert into public.product_modifications (id, product_id, slug, name) values ($1,$2,$3::varchar,$3::text)`,
-        [id, productId, slug],
+        modificationGraphSql(productId, {
+          id,
+          slug,
+          name: slug,
+          addresses: false,
+        }),
       );
       return id;
     },
@@ -116,12 +130,7 @@ export const pathHelpers = ({ q, w }: Q) => ({
     path: string,
     productId: string | null,
     current = true,
-  ) =>
-    w(
-      `insert into public.url_paths (id, locale, path, product_id, is_current)
-       values ($1,$2,$3,$4,$5)`,
-      [randomUUID(), locale, path, productId, current],
-    ),
+  ) => w(urlPathRowSql({ locale, path, productId, isCurrent: current })),
   rows: (productId: string) =>
     q(
       `select locale, path, is_current from public.url_paths
@@ -139,9 +148,13 @@ export const tokenHelpers = ({ q, w }: Q) => ({
     current = true,
   ) =>
     w(
-      `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
-       values ($1,$2,$3,$4,$5,$6)`,
-      [randomUUID(), locale, t.scopeId, slug, t.id, current],
+      slugTokenRowSql({
+        locale,
+        scopeId: t.scopeId,
+        slug,
+        modificationId: t.id,
+        isCurrent: current,
+      }),
     ),
   rows: (id: string) =>
     q(

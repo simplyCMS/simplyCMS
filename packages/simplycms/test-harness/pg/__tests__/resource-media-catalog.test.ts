@@ -8,6 +8,7 @@ import {
   sectionsOps,
 } from 'simplycms/admin-server/impl';
 import { useCatalogMediaDb } from './fixtures/catalog-media';
+import { modificationGraphSql } from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -87,9 +88,12 @@ describe('фото каталогу стираються двофазно (К3-�
       await d.upload('product_modification', id),
     ];
     await d.f.rows(
-      `insert into public.product_modifications (id, product_id, slug, name, images)
-       values ($1, $2, 'm1', 'Мод', $3::jsonb)`,
-      [id, productId, JSON.stringify([a, b])],
+      modificationGraphSql(productId, {
+        id,
+        slug: 'm1',
+        name: 'Мод',
+        images: [a, b],
+      }),
     );
     await productModificationsOps.update({
       data: [{ id, patch: { images: [b] } }],

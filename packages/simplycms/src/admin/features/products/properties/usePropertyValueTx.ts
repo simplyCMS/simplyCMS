@@ -74,6 +74,10 @@ export function usePropertyValueTx(
       value: v.value,
       numericValue: v.numericValue,
       optionId: v.optionId,
+      // Expand М1: нові колонки значення NULLABLE, діалог їх ще не заповнює.
+      valueKind: null,
+      boolValue: null,
+      colorValue: null,
       createdAt: new Date(),
     };
     return target === 'product'

@@ -11,6 +11,10 @@ import {
 import { useCatalogMediaDb } from './fixtures/catalog-media';
 import { blockCommitOn } from './fixtures/commit-block';
 import { profile } from './fixtures/admin-system';
+import {
+  inLockedBlock,
+  productGraphStatements,
+} from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -107,14 +111,27 @@ describe('sweepUnreferencedMediaOp (Е6д-22)', () => {
   it('живих старих > пакета не затуляють сироту: сирота стертий, живі цілі', async () => {
     const n = MEDIA_SWEEP_BATCH + 1;
     // Живі (48 год, старші за сироту) — товар посилається на файл. Одним INSERT.
+    const products = Array.from({ length: n }, () => ({
+      pid: crypto.randomUUID(),
+      key: `ab/live-${crypto.randomUUID()}.png`,
+    }));
     await f.rows(
-      `with g as (select gen_random_uuid() as pid, 'ab/live-' || gen_random_uuid() || '.png' as k
-                    from generate_series(1, $1))
-       , p as (insert into public.products (id, slug, name, images)
-               select pid, 'live-' || pid, 'T', jsonb_build_array(k) from g)
-       insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type, created_at)
-       select gen_random_uuid(), 'product', pid, k, 1, 'image/png', now() - interval '48 hours' from g`,
-      [n],
+      inLockedBlock(
+        products.flatMap(({ pid, key }) =>
+          productGraphStatements({
+            id: pid,
+            slug: `live-${pid}`,
+            name: 'T',
+            images: [key],
+          }),
+        ),
+      ),
+    );
+    await f.rows(
+      `insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type, created_at)
+       select gen_random_uuid(), 'product', x.pid, x.k, 1, 'image/png', now() - interval '48 hours'
+         from unnest($1::uuid[], $2::text[]) as x(pid, k)`,
+      [products.map((l) => l.pid), products.map((l) => l.key)],
     );
     const orphan = await d.upload('banner', crypto.randomUUID());
     await age(orphan, 25);

@@ -7,6 +7,7 @@
 // унікальності), а не RLS чи грант ролі — привілейоване підключення
 // dbUrl, як у single-default.test.ts.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { resolveHarness } from '../up.mjs';
 import {
   applyCanon,
@@ -16,6 +17,11 @@ import {
   randomDbName,
   withDbName,
 } from '../apply.mjs';
+import {
+  insertProductGraphAt,
+  insertValueAt,
+  type ValueSpec,
+} from './fixtures/product-graph';
 
 const SECTION = 'e3130000-0000-4000-8000-000000000001';
 const PROP_SCALAR = 'e3130000-0000-4000-8000-000000000002';
@@ -55,16 +61,15 @@ describe('Е3-13: multiselect — рядок на опцію (NULLS NOT DISTINCT
               ($2, $3, 'Білий', 'e3-13-white')`,
       [OPT_A, OPT_B, PROP_MULTI],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, section_id, slug, name) values ($1, $2, 'e3-13-product', 'Товар Е3-13')`,
-      [PRODUCT, SECTION],
-    );
-    await queryRows(
-      dbUrl,
-      `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, 'e3-13-mod', 'Модифікація Е3-13')`,
-      [MODIFICATION, PRODUCT],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: PRODUCT,
+      slug: 'e3-13-product',
+      name: 'Товар Е3-13',
+      sectionId: SECTION,
+      modifications: [
+        { id: MODIFICATION, slug: 'e3-13-mod', name: 'Модифікація Е3-13' },
+      ],
+    });
   }, 120_000);
 
   afterAll(async () => {
@@ -72,16 +77,25 @@ describe('Е3-13: multiselect — рядок на опцію (NULLS NOT DISTINCT
     await harness?.teardown();
   });
 
+  // Скалярна властивість (без опції) — текстова; з опцією — multiselect.
+  const valueSpec = (
+    propertyId: string,
+    optionId: string | null,
+    value: string,
+  ): ValueSpec =>
+    optionId === null
+      ? { id: randomUUID(), propertyId, kind: 'text', text: { uk: value } }
+      : { id: randomUUID(), propertyId, kind: 'multiselect', optionId };
+
   const insertProductValue = (
     propertyId: string,
     optionId: string | null,
     value: string,
   ) =>
-    queryRows(
+    insertValueAt(
       dbUrl,
-      `insert into public.product_property_values (id, product_id, property_id, option_id, value)
-       values (gen_random_uuid(), $1, $2, $3, $4)`,
-      [PRODUCT, propertyId, optionId, value],
+      { kind: 'product', id: PRODUCT },
+      valueSpec(propertyId, optionId, value),
     );
 
   const insertModificationValue = (
@@ -89,11 +103,10 @@ describe('Е3-13: multiselect — рядок на опцію (NULLS NOT DISTINCT
     optionId: string | null,
     value: string,
   ) =>
-    queryRows(
+    insertValueAt(
       dbUrl,
-      `insert into public.modification_property_values (id, modification_id, property_id, option_id, value)
-       values (gen_random_uuid(), $1, $2, $3, $4)`,
-      [MODIFICATION, propertyId, optionId, value],
+      { kind: 'modification', id: MODIFICATION },
+      valueSpec(propertyId, optionId, value),
     );
 
   it('product_property_values: скалярна властивість — рівно один рядок (option_id NULL не дублюється)', async () => {

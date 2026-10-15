@@ -50,7 +50,9 @@ export const productsOps = defineAdminResource({
   ],
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
-  readonly: ['id', 'createdAt', 'updatedAt'],
+  // `version` — оптимістична версія агрегата (М1, І14): її піднімає лише команда
+  // опису (Task 11), узагальнений CRUD її не пише.
+  readonly: ['id', 'createdAt', 'updatedAt', 'version'],
   // К3-Е6д-1: фото товару — власник `product`; заміна/прибирання стирає файл.
   media: { entityType: 'product', columns: ['images'] },
   // Е6д-19: FK `product_reviews.product_id` — CASCADE; без опції фото

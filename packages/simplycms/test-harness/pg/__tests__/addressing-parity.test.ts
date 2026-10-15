@@ -3,13 +3,13 @@
 // дають однакові slug-и, включно з `-2`/`-3`. `domain/slugs/__tests__/parity.test.ts`
 // доводить лише тотожність бареля; тут — що обидва реєстри справді кличуть її
 // однаково (окрема логіка суфікса в токенах розвела б їх).
-import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   createPathsForEntity,
   createTokensForEntity,
 } from 'simplycms/addressing';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { slugTokenRowSql, urlPathRowSql } from './fixtures/product-graph';
 
 describe('паритет адрес і токенів на реальних генераторах (І22)', () => {
   const db = useAddressingDb('simplycms_addressing_parity');
@@ -21,15 +21,22 @@ describe('паритет адрес і токенів на реальних ге
     const ownerMod = await db.modification(owner);
     const insertPath = (path: string, current: boolean) =>
       db.w(
-        `insert into public.url_paths (id, locale, path, product_id, is_current)
-         values ($1,'uk',$2,$3,$4)`,
-        [randomUUID(), path, owner, current],
+        urlPathRowSql({
+          locale: 'uk',
+          path,
+          productId: owner,
+          isCurrent: current,
+        }),
       );
     const insertToken = (slug: string, current: boolean) =>
       db.w(
-        `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
-         values ($1,'uk',$2,$3,$4,$5)`,
-        [randomUUID(), owner, slug, ownerMod, current],
+        slugTokenRowSql({
+          locale: 'uk',
+          scopeId: owner,
+          slug,
+          modificationId: ownerMod,
+          isCurrent: current,
+        }),
       );
     await insertPath('panel', true);
     await insertPath('panel-2', false);

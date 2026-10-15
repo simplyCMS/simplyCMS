@@ -28,6 +28,16 @@ const DEFAULT_PRICE_TYPE_SQL =
   '(select id from public.price_types order by is_default desc, sort_order, code limit 1)';
 
 /**
+ * Основна мова локальної БД (М1): переклади, адреси й токени стенда пишуться ЛИШЕ нею.
+ * Колонка `locale` не дампиться, а підставляється цим підзапитом (як `price_type_id`):
+ * мова з клауд-БД у локальному стеку може не існувати (FK `locale → languages(code)`).
+ * Джерело фільтрується тим самим виразом на ЇЇ основній мові (`localeWhere`).
+ */
+const PRIMARY_LOCALE_SQL =
+  '(select code from public.languages where is_default)';
+const localeWhere = `locale = ${PRIMARY_LOCALE_SQL}`;
+
+/**
  * 🔴 Арбітр конфлікту скрізь ОДИН — первинний ключ `id`, а не природний ключ
  * таблиці. Причина: природні ключі тут частково NULLABLE
  * (`section_properties.section_id` — глобальна властивість адмінки,
@@ -68,8 +78,8 @@ export const TABLE_SPECS = [
   },
   {
     table: 'products',
-    // Окремої таблиці зображень немає — фото живуть у jsonb `images`
-    // (публічні URL-и клауд-Storage; дзеркалення — опція, не вимога).
+    // М1-TEMP (Task 17): фото ще й у jsonb `images` (публічні URL-и клауд-Storage;
+    // дзеркалення — опція, не вимога); нове джерело — таблиця `product_images`.
     columns: cols(`id section_id slug name short_description description
       is_active is_featured meta_title meta_description images
       has_modifications sku stock_status`),
@@ -85,8 +95,68 @@ export const TABLE_SPECS = [
   },
   {
     table: 'product_property_values',
-    columns: cols('id product_id property_id value numeric_value option_id'),
+    columns: cols(`id product_id property_id value value_kind numeric_value
+      bool_value color_value option_id`),
     conflictKey: ['product_id', 'property_id'],
+  },
+  // ── Переклади, адреси, токени й зображення товару (М1). Таблиці перекладів не
+  // мають `id`: арбітр — складений PK `(<e>_id, locale)` (`conflictTarget`), а
+  // дедуп у генераторі — за `dedupeKey` (locale завжди одна — основна локальна).
+  {
+    table: 'product_translations',
+    columns: cols(`product_id name short_description description meta_title
+      meta_description`),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictTarget: ['product_id', 'locale'],
+    dedupeKey: ['product_id'],
+    conflictKey: ['product_id'],
+  },
+  {
+    table: 'product_modification_translations',
+    columns: cols('product_id modification_id name'),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictTarget: ['modification_id', 'locale'],
+    dedupeKey: ['modification_id'],
+    conflictKey: ['modification_id'],
+  },
+  {
+    table: 'product_images',
+    columns: cols('id product_id modification_id storage_key sort_order'),
+    conflictKey: ['product_id', 'sort_order'],
+  },
+  {
+    table: 'product_image_translations',
+    columns: cols('image_id alt storage_key'),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictTarget: ['image_id', 'locale'],
+    dedupeKey: ['image_id'],
+    conflictKey: ['image_id'],
+  },
+  {
+    table: 'product_property_value_translations',
+    columns: cols('value_id value'),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictTarget: ['value_id', 'locale'],
+    dedupeKey: ['value_id'],
+    conflictKey: ['value_id'],
+  },
+  {
+    table: 'url_paths',
+    columns: cols('id path product_id is_current'),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictKey: ['product_id', 'path'],
+  },
+  {
+    table: 'slug_tokens',
+    columns: cols('id scope_id slug modification_id is_current'),
+    derived: { locale: PRIMARY_LOCALE_SQL },
+    where: localeWhere,
+    conflictKey: ['modification_id', 'slug'],
   },
   {
     table: 'product_prices',
@@ -113,5 +183,11 @@ export function allColumns(spec) {
  * накат підхоплює перейменування, зроблене в джерелі між дампами.
  */
 export function updateColumns(spec) {
-  return allColumns(spec).filter((column) => column !== 'id');
+  const key = conflictTarget(spec);
+  return allColumns(spec).filter((column) => !key.includes(column));
+}
+
+/** Арбітр `on conflict`: `id` або складений PK таблиці перекладів. */
+export function conflictTarget(spec) {
+  return spec.conflictTarget ?? ['id'];
 }

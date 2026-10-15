@@ -41,8 +41,9 @@
 -- section_property_assignments 10000006, property_options 10000007,
 -- product_property_values 10000008, banners 10000009, shipping_methods
 -- 1000000a, pickup_points 1000000b, shipping_rates 1000000c,
--- stock_by_pickup_point 1000000d; суфікс —
--- порядковий номер рядка). Дані НЕ змінені, лише додано колонку id; посилання
+-- stock_by_pickup_point 1000000d, url_paths 1000000e, slug_tokens 1000000f; суфікс —
+-- порядковий номер рядка; id адреси й токена виведено з id товару/модифікації
+-- заміною префікса, тож вони детерміновані без другого списку літералів). Дані НЕ змінені, лише додано колонку id; посилання
 -- на батьківські рядки й далі резолвляться підзапитом/join-ом за натуральним
 -- ключем (slug/code), а не константою.
 
@@ -140,6 +141,49 @@ from (
 join public.products p on p.slug = v.product_slug
 on conflict (product_id, slug) do nothing;
 
+-- ── 3а. Переклади, адреси й токени (М1, expand) ─────────────────────────
+-- Кожен демо-товар і модифікація мають рядок перекладу ОСНОВНОЮ мовою та поточну
+-- адресу/токен тієї ж мови (slug = поточний шлях). `languages.is_default` —
+-- підзапит, а не літерал: основну мову задає магазин.
+-- М1-TEMP: зноситься в Task 17 — старі колонки `products.slug/name/...` вище ще
+-- пишуться для читачів до Task 15/16; тоді ці вставки стануть єдиним джерелом.
+insert into public.product_translations (product_id, locale, name, short_description, description)
+select p.id, l.code, p.name, p.short_description, p.description
+from public.products p
+cross join (select code from public.languages where is_default) l
+where p.id::text like '10000002-0000-4000-8000-%'
+on conflict (product_id, locale) do nothing;
+
+insert into public.product_modification_translations (product_id, modification_id, locale, name)
+select m.product_id, m.id, l.code, m.name
+from public.product_modifications m
+cross join (select code from public.languages where is_default) l
+where m.id::text like '10000003-0000-4000-8000-%'
+on conflict (modification_id, locale) do nothing;
+
+-- 🔴 Запис у реєстри адрес і токенів — лише під замком `languages-set` (тригер SC004),
+-- а замок `xact` живе до кінця транзакції: `do`-блок тримає його рівно на час запису
+-- і в одній транзакції файлу, і під `psql -f` в автокоміті.
+do $$
+begin
+  perform pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));
+
+  insert into public.url_paths (id, locale, path, product_id, is_current)
+  select overlay(p.id::text placing '1000000e' from 1 for 8)::uuid, l.code, p.slug, p.id, true
+  from public.products p
+  cross join (select code from public.languages where is_default) l
+  where p.id::text like '10000002-0000-4000-8000-%'
+  on conflict (locale, path) do nothing;
+
+  insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
+  select overlay(m.id::text placing '1000000f' from 1 for 8)::uuid, l.code, m.product_id, m.slug, m.id, true
+  from public.product_modifications m
+  cross join (select code from public.languages where is_default) l
+  where m.id::text like '10000003-0000-4000-8000-%'
+  on conflict do nothing;
+end
+$$;
+
 -- ── 4. Ціни: товари без модифікацій (модифікація NULL) ──────────────────
 insert into public.product_prices (id, price_type_id, product_id, modification_id, price, old_price)
 select v.id, pt.id, p.id, null, v.price, v.old_price
@@ -209,8 +253,8 @@ join public.section_properties sp on sp.slug = v.property_slug
 on conflict (property_id, slug) do nothing;
 
 -- ── 8. Значення властивостей товарів ────────────────────────────────────
-insert into public.product_property_values (id, product_id, property_id, numeric_value)
-select v.id, p.id, sp.id, v.numeric_value
+insert into public.product_property_values (id, product_id, property_id, value_kind, numeric_value)
+select v.id, p.id, sp.id, 'number'::property_type, v.numeric_value
 from (
   values
     ('10000008-0000-4000-8000-000000000001'::uuid, 'sonyachna-panel-450w-mono', 450::numeric),
@@ -221,8 +265,8 @@ join public.products p on p.slug = v.product_slug
 join public.section_properties sp on sp.slug = 'potuzhnist'
 on conflict (product_id, property_id, option_id) do nothing;
 
-insert into public.product_property_values (id, product_id, property_id, option_id)
-select v.id, p.id, sp.id, po.id
+insert into public.product_property_values (id, product_id, property_id, value_kind, option_id)
+select v.id, p.id, sp.id, 'select'::property_type, po.id
 from (
   values
     ('10000008-0000-4000-8000-000000000004'::uuid, 'sonyachna-panel-450w-mono', 'mono'),
@@ -234,8 +278,8 @@ join public.section_properties sp on sp.slug = 'tip-paneli'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
 on conflict (product_id, property_id, option_id) do nothing;
 
-insert into public.product_property_values (id, product_id, property_id, option_id)
-select v.id, p.id, sp.id, po.id
+insert into public.product_property_values (id, product_id, property_id, value_kind, option_id)
+select v.id, p.id, sp.id, 'select'::property_type, po.id
 from (
   values
     ('10000008-0000-4000-8000-000000000007'::uuid, 'invertor-merezhevyi-5kw', 'on-grid'),

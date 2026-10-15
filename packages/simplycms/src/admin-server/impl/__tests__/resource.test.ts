@@ -197,7 +197,7 @@ describe('defineAdminResource (К3-4′)', () => {
         'returnPolicy',
         'shippingDetails',
       ],
-      readonly: ['id', 'createdAt', 'updatedAt'],
+      readonly: ['id', 'createdAt', 'updatedAt', 'version'],
     });
     await productOps.update({ data: [{ id: ID, patch: { name: 'X' } }] });
     expect(set).toHaveBeenCalledWith(

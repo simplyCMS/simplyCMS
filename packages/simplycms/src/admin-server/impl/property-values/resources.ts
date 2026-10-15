@@ -18,7 +18,18 @@ export const productPropertyValuesOps = defineAdminResource({
   mode: 'on-demand',
   filterable: ['productId', 'propertyId'],
   sortable: ['createdAt'],
-  writable: ['productId', 'propertyId', 'value', 'numericValue', 'optionId'],
+  // Expand М1 (Р18): `valueKind`/`boolValue`/`colorValue` NULLABLE до Task 17; діалог
+  // їх ще не шле — пише команда агрегата (Task 11+).
+  writable: [
+    'productId',
+    'propertyId',
+    'value',
+    'numericValue',
+    'optionId',
+    'valueKind',
+    'boolValue',
+    'colorValue',
+  ],
   readonly: ['id', 'createdAt'],
 });
 
@@ -35,6 +46,9 @@ export const modificationPropertyValuesOps = defineAdminResource({
     'value',
     'numericValue',
     'optionId',
+    'valueKind',
+    'boolValue',
+    'colorValue',
   ],
   readonly: ['id', 'createdAt'],
 });

@@ -32,6 +32,7 @@ const PRODUCT_ID = '33333333-3333-4333-8333-333333333333';
 const PROPERTY_ID = '44444444-4444-4444-8444-444444444444';
 const GLOBAL_PROPERTY_ID = '77777777-7777-4777-8777-777777777777';
 const GLOBAL_PROPERTY_TWIN_ID = '88888888-8888-4888-8888-888888888888';
+const URL_PATH_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 export const SAMPLE_DATASET = {
   sections: [
@@ -131,6 +132,7 @@ export const SAMPLE_DATASET = {
       product_id: PRODUCT_ID,
       property_id: PROPERTY_ID,
       value: '450',
+      value_kind: 'number',
       numeric_value: '450.0000',
       option_id: null,
     },
@@ -143,6 +145,31 @@ export const SAMPLE_DATASET = {
       value: '10 років',
       numeric_value: null,
       option_id: null,
+    },
+  ],
+  // М1: переклад/адреса несуть `locale` з джерела (тут — `xx`, якої в локальній БД
+  // немає) і `source_hashes`: генератор їх відкидає й підставляє локальну основну мову.
+  product_translations: [
+    {
+      product_id: PRODUCT_ID,
+      locale: 'xx',
+      name: "Панель «Сонце» 450 Вт \\ O'Brien ☀️",
+      short_description: 'Коротко',
+      description: '<p>Опис із <b>HTML</b></p>',
+      meta_title: null,
+      meta_description: null,
+      source_hashes: { name: 'deadbeef' },
+      updated_at: new Date('2024-02-02T00:00:00.000Z'),
+    },
+  ],
+  url_paths: [
+    {
+      id: URL_PATH_ID,
+      locale: 'xx',
+      path: 'panel-mono-450',
+      product_id: PRODUCT_ID,
+      is_current: true,
+      created_at: new Date('2024-01-01T00:00:00.000Z'),
     },
   ],
   product_prices: [
@@ -163,4 +190,5 @@ export const SAMPLE_IDS = {
   PROPERTY_ID,
   GLOBAL_PROPERTY_ID,
   GLOBAL_PROPERTY_TWIN_ID,
+  URL_PATH_ID,
 };

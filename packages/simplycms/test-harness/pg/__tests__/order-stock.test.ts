@@ -39,6 +39,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 /** Панель із сідовим залишком 5 на системній точці. */
@@ -247,11 +248,12 @@ describe('замовлення списує залишок і повертає �
     // 🔴 Рішення архітектора B: ціль «під замовлення» — демо-сід такої не
     // має, тож заводимо окремий товар з обліком 0 на СИСТЕМНІЙ точці.
     const onOrderId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name, stock_status) values ($1, $2, 'Тест on_order', 'on_order')`,
-      [onOrderId, ON_ORDER_SLUG],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: onOrderId,
+      slug: ON_ORDER_SLUG,
+      name: 'Тест on_order',
+      stockStatus: 'on_order',
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
@@ -444,11 +446,11 @@ describe('замовлення списує залишок і повертає �
       [methodId],
     )) as IdRow[];
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, 'test-i1-deactivated-point', 'Тест I1')`,
-      [productId],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: 'test-i1-deactivated-point',
+      name: 'Тест I1',
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
@@ -499,11 +501,11 @@ describe('замовлення списує залишок і повертає �
       [first, second, methodId],
     );
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, 'test-a-drift-courier', 'Тест A: дрейф точки')`,
-      [productId],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: 'test-a-drift-courier',
+      name: 'Тест A: дрейф точки',
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
@@ -586,11 +588,11 @@ describe('замовлення списує залишок і повертає �
       [methodId],
     )) as IdRow[];
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, 'test-i1-regress-full-deplete', 'Тест I1-регрес')`,
-      [productId],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: 'test-i1-regress-full-deplete',
+      name: 'Тест I1-регрес',
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
@@ -719,11 +721,11 @@ describe('замовлення списує залишок і повертає �
       [methodId],
     )) as IdRow[];
     const productId = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, 'test-i3-double-cancel', 'Тест I3')`,
-      [productId],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: productId,
+      slug: 'test-i3-double-cancel',
+      name: 'Тест I3',
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, modification_id, quantity)
@@ -851,11 +853,11 @@ describe('замовлення списує залишок і повертає �
   };
   const newProduct = async (): Promise<string> => {
     const id = crypto.randomUUID();
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, slug, name) values ($1, $2, 'Тест Е5')`,
-      [id, `test-e5-${id}`],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id,
+      slug: `test-e5-${id}`,
+      name: 'Тест Е5',
+    });
     return id;
   };
   const createStockRow = async (

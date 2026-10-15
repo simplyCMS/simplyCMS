@@ -5,6 +5,9 @@
 // перевірялися б на порожній множині — тому тут складський рядок для
 // модифікації й характеристика на ній.
 
+import { randomUUID } from 'node:crypto';
+import { sqlRef, valueGraphSql } from './product-graph';
+
 /** Розділ, на якому міряється звуження вибірки й панель фільтрів. */
 export const FILTERED_SECTION_SLUG = 'sonyachni-paneli';
 /** Товар із модифікаціями — на ньому міряються залишки й характеристики. */
@@ -48,13 +51,26 @@ export const CLIENT_FIXTURE_STATEMENTS: string[] = [
 
   // Характеристика НА МОДИФІКАЦІЇ: саме її старий клієнт тягнув окремим
   // запитом, а наявність — ще й окремим RPC на кожну модифікацію.
-  `insert into public.modification_property_values (id, modification_id, property_id, option_id)
-   select gen_random_uuid(), m.id, sp.id, po.id
-     from public.product_modifications m
-     join public.products p on p.id = m.product_id
-     join public.section_properties sp on sp.slug = 'tip-invertora'
-     join public.property_options po
-       on po.property_id = sp.id and po.slug = 'on-grid'
-    where p.slug = '${MODIFIED_PRODUCT_SLUG}'
-      and m.slug = '${IN_STOCK_MOD_SLUG}'`,
+  valueGraphSql(
+    {
+      kind: 'modification',
+      id: sqlRef(
+        `(select m.id from public.product_modifications m
+            join public.products p on p.id = m.product_id
+           where p.slug = '${MODIFIED_PRODUCT_SLUG}' and m.slug = '${IN_STOCK_MOD_SLUG}')`,
+      ),
+    },
+    {
+      id: randomUUID(),
+      propertyId: sqlRef(
+        `(select id from public.section_properties where slug = 'tip-invertora')`,
+      ),
+      kind: 'select',
+      optionId: sqlRef(
+        `(select po.id from public.property_options po
+            join public.section_properties sp on sp.id = po.property_id
+           where sp.slug = 'tip-invertora' and po.slug = 'on-grid')`,
+      ),
+    },
+  ),
 ];

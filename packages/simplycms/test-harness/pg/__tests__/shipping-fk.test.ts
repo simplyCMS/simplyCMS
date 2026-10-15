@@ -15,6 +15,7 @@ import {
   randomDbName,
   withDbName,
 } from '../apply.mjs';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 const METHOD = 'e6a10000-0000-4000-8000-000000000001';
 const POINT_STOCK = 'e6a10000-0000-4000-8000-000000000002';
@@ -63,11 +64,12 @@ describe('доставка: FK RESTRICT (Е6а-17)', () => {
       `insert into public.sections (id, slug, name) values ($1, 'e6a-fk', 'Розділ')`,
       [SECTION],
     );
-    await queryRows(
-      dbUrl,
-      `insert into public.products (id, section_id, slug, name) values ($1, $2, 'e6a-fk-product', 'Товар')`,
-      [PRODUCT, SECTION],
-    );
+    await insertProductGraphAt(dbUrl, {
+      id: PRODUCT,
+      slug: 'e6a-fk-product',
+      name: 'Товар',
+      sectionId: SECTION,
+    });
     await queryRows(
       dbUrl,
       `insert into public.stock_by_pickup_point (id, pickup_point_id, product_id, quantity)

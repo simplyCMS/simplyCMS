@@ -2,6 +2,7 @@
 // інваріант «не більше одного дефолту» тримає БД, а не два нетранзакційні
 // запити з браузера (unset-усіх → insert нового), які й досі лишаються
 // єдиним записувачем на v2-стеку (легасі-клієнт БД без HTTP-посередника).
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { resolveHarness } from '../up.mjs';
@@ -16,6 +17,7 @@ import {
   randomDbName,
   withDbName,
 } from '../apply.mjs';
+import { modificationGraphSql } from './fixtures/product-graph';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 // 🔴 Локальна константа — `aggregate-deps.test.ts` (Task 1) ще не існує на
@@ -72,11 +74,26 @@ const SCOPED: Array<[table: string, a: string, b: string, aAgain: string]> = [
   ],
   [
     'product_modifications',
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P1}', 'dflt-a', 'A', true)`,
+    modificationGraphSql(P1, {
+      id: randomUUID(),
+      slug: 'dflt-a',
+      name: 'A',
+      isDefault: true,
+    }),
     // 🔴 P2 у демо-сіді ВЖЕ має дефолтну модифікацію — тут вставка з
     // is_default=false лише доводить, що індекс не заважає не-дефолтам.
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P2}', 'extra-b', 'B', false)`,
-    `insert into public.product_modifications (id, product_id, slug, name, is_default) values (gen_random_uuid(), '${P1}', 'dflt-a2', 'A2', true)`,
+    modificationGraphSql(P2, {
+      id: randomUUID(),
+      slug: 'extra-b',
+      name: 'B',
+      isDefault: false,
+    }),
+    modificationGraphSql(P1, {
+      id: randomUUID(),
+      slug: 'dflt-a2',
+      name: 'A2',
+      isDefault: true,
+    }),
   ],
 ];
 
