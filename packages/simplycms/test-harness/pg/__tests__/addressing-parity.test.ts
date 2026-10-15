@@ -20,13 +20,13 @@ describe('паритет адрес і токенів на реальних ге
     const owner = await db.product();
     const ownerMod = await db.modification(owner);
     const insertPath = (path: string, current: boolean) =>
-      q(
+      db.w(
         `insert into public.url_paths (id, locale, path, product_id, is_current)
          values ($1,'uk',$2,$3,$4)`,
         [randomUUID(), path, owner, current],
       );
     const insertToken = (slug: string, current: boolean) =>
-      q(
+      db.w(
         `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
          values ($1,'uk',$2,$3,$4,$5)`,
         [randomUUID(), owner, slug, ownerMod, current],

@@ -27,7 +27,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   const db = useAddressingDb('simplycms_url_paths');
   const { q, admin, tx } = db;
 
-  const { addr, rows } = pathHelpers(q);
+  const { addr, rows } = pathHelpers(db);
 
   beforeAll(async () => {
     await db.language('en');
@@ -323,7 +323,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
 // залежить від товарів інших кейсів.
 describe('copyPathsForLocale: ізольовано (Review Focus 2)', () => {
   const db = useAddressingDb('simplycms_copy_paths_a');
-  const { addr, rows } = pathHelpers(db.q);
+  const { addr, rows } = pathHelpers(db);
   const own = async (id: string, locale: string) =>
     (await rows(id)).filter((r) => r.locale === locale);
 
@@ -335,18 +335,18 @@ describe('copyPathsForLocale: ізольовано (Review Focus 2)', () => {
     // Мова cs уже має товар Z з поточною адресою й історичним рядком, що займає copy-x.
     await addr('cs', 'copy-z', z);
     await addr('cs', 'copy-x', z, false);
-    expect(await db.admin((d) => copyPathsForLocale(d, 'cs', 100))).toBe(1);
+    expect(await db.shared((d) => copyPathsForLocale(d, 'cs', 100))).toBe(1);
     expect(await own(x, 'cs')).toEqual([
       { locale: 'cs', path: 'copy-x-2', is_current: true },
     ]);
     expect(await own(z, 'cs')).toHaveLength(2); // власні рядки Z не чіпано
-    expect(await db.admin((d) => copyPathsForLocale(d, 'cs', 100))).toBe(0);
+    expect(await db.shared((d) => copyPathsForLocale(d, 'cs', 100))).toBe(0);
   });
 });
 
 describe('copyPathsForLocale: пакет з колізією', () => {
   const db = useAddressingDb('simplycms_copy_paths_b');
-  const { addr, rows } = pathHelpers(db.q);
+  const { addr, rows } = pathHelpers(db);
 
   it('товари пакета з однаковою базою в новій мові не отримують однаковий slug', async () => {
     await db.language('pl', 'draft');
@@ -357,7 +357,7 @@ describe('copyPathsForLocale: пакет з колізією', () => {
     const other = await db.product();
     await addr('pl', 'batch-a', other, false);
     await addr('pl', 'other-now', other);
-    expect(await db.admin((d) => copyPathsForLocale(d, 'pl', 100))).toBe(2);
+    expect(await db.shared((d) => copyPathsForLocale(d, 'pl', 100))).toBe(2);
     const pl = async (id: string) =>
       (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.path);
     expect(await pl(a)).toEqual(['batch-a-2']);
@@ -367,20 +367,20 @@ describe('copyPathsForLocale: пакет з колізією', () => {
 
 describe('copyPathsForLocale: limit', () => {
   const db = useAddressingDb('simplycms_copy_paths_c');
-  const { addr } = pathHelpers(db.q);
+  const { addr } = pathHelpers(db);
 
   it('limit обмежує пакет; пакети продовжують до 0', async () => {
     await db.language('sk', 'draft');
     for (let i = 0; i < 3; i += 1)
       await addr('uk', `lim-${i}`, await db.product());
-    const run = () => db.admin((d) => copyPathsForLocale(d, 'sk', 2));
+    const run = () => db.shared((d) => copyPathsForLocale(d, 'sk', 2));
     expect([await run(), await run(), await run()]).toEqual([2, 1, 0]);
   });
 });
 
 describe('copyPathsForLocale: імена з public/ збірки', () => {
   const db = useAddressingDb('simplycms_copy_paths_d');
-  const { addr, rows } = pathHelpers(db.q);
+  const { addr, rows } = pathHelpers(db);
 
   it('копія, що збіглася б з іменем у public/, отримує суфікс', async () => {
     const root = mkdtempSync(join(tmpdir(), 'scms-public-copy-'));
@@ -394,7 +394,7 @@ describe('copyPathsForLocale: імена з public/ збірки', () => {
       await db.language('hu', 'draft');
       const p = await db.product();
       await addr('uk', 'pub-copy', p);
-      expect(await db.admin((d) => copyPathsForLocale(d, 'hu', 100))).toBe(1);
+      expect(await db.shared((d) => copyPathsForLocale(d, 'hu', 100))).toBe(1);
       expect((await rows(p)).filter((r) => r.locale === 'hu')).toEqual([
         { locale: 'hu', path: 'pub-copy-2', is_current: true },
       ]);

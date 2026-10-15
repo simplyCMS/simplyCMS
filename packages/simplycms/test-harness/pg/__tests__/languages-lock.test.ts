@@ -66,11 +66,16 @@ describe('languages_require_lock: запис без замка відмовля�
     ).toHaveLength(0);
   });
 
-  it('літерал ключа в тілі тригера дорівнює LOCK_KEYS.languagesSet', async () => {
-    const rows = await db.q(
-      `select prosrc from pg_proc where proname = 'languages_require_lock'`,
-    );
-    const m = /hashtextextended\('([^']+)', 0\)/.exec(String(rows[0]?.prosrc));
-    expect(m?.[1]).toBe(LOCK_KEYS.languagesSet);
+  it('літерал ключа в тілі обох тригерів замка дорівнює LOCK_KEYS.languagesSet', async () => {
+    for (const fn of [
+      'languages_require_lock',
+      'addresses_require_languages_lock',
+    ]) {
+      const rows = await db.q(
+        `select prosrc from pg_proc where proname = '${fn}'`,
+      );
+      const m = /advisory_lock_held\('([^']+)'/.exec(String(rows[0]?.prosrc));
+      expect(m?.[1], fn).toBe(LOCK_KEYS.languagesSet);
+    }
   });
 });

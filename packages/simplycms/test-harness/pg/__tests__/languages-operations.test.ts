@@ -28,8 +28,8 @@ const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
 describe('операції мов (M1, Task 6)', () => {
   const db = useAddressingDb('simplycms_languages_operations');
-  const { addr } = pathHelpers(db.q);
-  const { tok } = tokenHelpers(db.q);
+  const { addr } = pathHelpers(db);
+  const { tok } = tokenHelpers(db);
   const exec = async <I, O>(def: OperationDef<I, O>, raw: unknown) => {
     const res = await executeOperation(def, raw, subject);
     if (res.replayed) throw new Error('replay');

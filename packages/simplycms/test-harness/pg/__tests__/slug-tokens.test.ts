@@ -25,7 +25,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     const id = await db.modification(productId);
     return { kind: 'modification' as const, id, scopeId: productId };
   };
-  const { tok, rows } = tokenHelpers(q);
+  const { tok, rows } = tokenHelpers(db);
 
   beforeAll(async () => {
     await db.language('en');
@@ -69,7 +69,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
   it('num_nonnulls і формат slug', async () => {
     const t = await mod();
     await expect(
-      q(
+      db.w(
         `insert into public.slug_tokens (id, locale, scope_id, slug, is_current)
          values (gen_random_uuid(), 'uk', $1, 'x', true)`,
         [t.scopeId],
@@ -255,7 +255,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
 
 describe('copyTokensForLocale: ізольовано', () => {
   const db = useAddressingDb('simplycms_copy_tokens_a');
-  const { tok, rows } = tokenHelpers(db.q);
+  const { tok, rows } = tokenHelpers(db);
 
   it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
     await db.language('cs', 'draft');
@@ -270,17 +270,17 @@ describe('copyTokensForLocale: ізольовано', () => {
     await tok('uk', 'copy-z', sz);
     await tok('cs', 'copy-z', sz);
     await tok('cs', 'copy-x', sz, false);
-    expect(await db.admin((d) => copyTokensForLocale(d, 'cs', 100))).toBe(1);
+    expect(await db.shared((d) => copyTokensForLocale(d, 'cs', 100))).toBe(1);
     expect((await rows(x)).filter((r) => r.locale === 'cs')).toEqual([
       { locale: 'cs', slug: 'copy-x-2', is_current: true },
     ]);
-    expect(await db.admin((d) => copyTokensForLocale(d, 'cs', 100))).toBe(0);
+    expect(await db.shared((d) => copyTokensForLocale(d, 'cs', 100))).toBe(0);
   });
 });
 
 describe('copyTokensForLocale: пакет з колізією', () => {
   const db = useAddressingDb('simplycms_copy_tokens_b');
-  const { tok, rows } = tokenHelpers(db.q);
+  const { tok, rows } = tokenHelpers(db);
 
   it('модифікації пакета з колізією в новій мові не отримують однаковий slug', async () => {
     await db.language('pl', 'draft');
@@ -294,7 +294,7 @@ describe('copyTokensForLocale: пакет з колізією', () => {
     await tok('uk', 'batch-a-2', { id: b, scopeId: productId });
     await tok('pl', 'batch-a', { id: other, scopeId: productId }, false);
     await tok('pl', 'other-now', { id: other, scopeId: productId });
-    expect(await db.admin((d) => copyTokensForLocale(d, 'pl', 100))).toBe(2);
+    expect(await db.shared((d) => copyTokensForLocale(d, 'pl', 100))).toBe(2);
     const pl = async (id: string) =>
       (await rows(id)).filter((r) => r.locale === 'pl').map((r) => r.slug);
     expect(await pl(a)).toEqual(['batch-a-2']);

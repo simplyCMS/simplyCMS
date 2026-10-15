@@ -20,6 +20,8 @@ import {
 const ALLOWLIST = [
   'app.current_user_id',
   'public.accounts_refuse_service',
+  'public.addresses_require_languages_lock',
+  'public.advisory_lock_held',
   'public.attach_current_address_triggers',
   'public.attach_current_token_triggers',
   'public.attach_source_translation_triggers',
@@ -40,7 +42,9 @@ const ALLOWLIST = [
   'sessions_refuse_banned',
   'shipping_zones_require_default',
   'slug_tokens_cur_tok_r',
+  'slug_tokens_require_lock',
   'url_paths_cur_addr_r',
+  'url_paths_require_lock',
 ];
 
 /** Усе користувацьке: функції (крім розширень) і нетехнічні тригери. */

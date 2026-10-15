@@ -18,9 +18,9 @@ import { GATES, execGate } from './release/gates.mjs';
 export const STAMP_FILE = '.gates-stamp.json';
 
 /**
- * @param {{ gates: readonly {name:string,cmd:string}[]; exec: (gate:object)=>void;
+ * @param {{ gates: readonly {name:string,cmd:string}[]; exec: (gate:{name:string,cmd:string})=>void;
  *   head: string; now: ()=>number; write: (stamp:object)=>void; log?: (line:string)=>void }} deps
- * @returns {{ head: string; startedAt: string; finishedAt: string; gates: {name:string,ok:boolean,ms:number}[] }}
+ * @returns {{ stamp: { head: string; startedAt: string; finishedAt: string; gates: {name:string,ok:boolean,ms:number}[] }; failure: unknown }}
  */
 export function runChain({ gates, exec, head, now, write, log = () => {} }) {
   const stamp = {

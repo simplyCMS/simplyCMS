@@ -3,7 +3,13 @@
 // фікстури товарів/модифікацій/мов власником і raw-транзакції від app_admin.
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll } from 'vitest';
-import { closeDbPool, withActor, type ActorDb } from 'simplycms/db';
+import {
+  advisoryXactLockShared,
+  closeDbPool,
+  withActor,
+  type ActorDb,
+} from 'simplycms/db';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 import { withActor as rawActor } from '../../actors.mjs';
@@ -16,9 +22,16 @@ export const ADMIN = {
 export interface AddressingDb {
   /** SQL власником БД: фікстури й перевірки стану. */
   q: (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
+  /**
+   * SQL власником під ексклюзивним замком `languages-set` (хелпер харнеса): так пишуться
+   * рядки реєстрів адрес і токенів, на які стоїть тригер замка (SC004).
+   */
+  w: (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
   /** Транзакція ядра від app_admin (коміт — у кінці `fn`). */
   admin: <T>(fn: (db: ActorDb) => Promise<T>) => Promise<T>;
-  /** Сирі стейтменти однією транзакцією app_admin; відкладені тригери — на COMMIT. */
+  /** Те саме, але ПІД спільним замком `languages-set`, як творці адрес і пакетне заповнення. */
+  shared: <T>(fn: (db: ActorDb) => Promise<T>) => Promise<T>;
+  /** Сирі стейтменти однією транзакцією app_admin ПІД замком `languages-set`; відкладені тригери — на COMMIT. */
   tx: (...statements: string[]) => Promise<unknown>;
   product: (slug?: string) => Promise<string>;
   modification: (productId: string, slug?: string) => Promise<string>;
@@ -51,10 +64,22 @@ export function useAddressingDb(prefix: string): AddressingDb {
   const q: AddressingDb['q'] = (sql, params = []) =>
     H.queryRows(dbUrl, sql, params) as Promise<Record<string, unknown>[]>;
 
+  const w: AddressingDb['w'] = (sql, params = []) =>
+    H.queryRowsLockingLanguages(dbUrl, sql, params) as unknown as Promise<
+      Record<string, unknown>[]
+    >;
+
   return {
     q,
+    w,
     admin: (fn) => withActor({ role: 'app_admin', userId: ADMIN.userId }, fn),
-    tx: (...statements) => rawActor(runtimeUrl, ADMIN, statements),
+    shared: (fn) =>
+      withActor({ role: 'app_admin', userId: ADMIN.userId }, async (d) => {
+        await advisoryXactLockShared(d, LOCK_KEYS.languagesSet);
+        return fn(d);
+      }),
+    tx: (...statements) =>
+      rawActor(runtimeUrl, ADMIN, [H.LANGUAGES_LOCK_SQL, ...statements]),
     product: async (slug = `p-${randomUUID()}`) => {
       const id = randomUUID();
       await q(
@@ -82,17 +107,17 @@ export function useAddressingDb(prefix: string): AddressingDb {
   };
 }
 
-type Q = AddressingDb['q'];
+type Q = Pick<AddressingDb, 'q' | 'w'>;
 
 /** Рядки реєстру адрес власником БД: вставка й вибірка історії товару. */
-export const pathHelpers = (q: Q) => ({
+export const pathHelpers = ({ q, w }: Q) => ({
   addr: (
     locale: string,
     path: string,
     productId: string | null,
     current = true,
   ) =>
-    q(
+    w(
       `insert into public.url_paths (id, locale, path, product_id, is_current)
        values ($1,$2,$3,$4,$5)`,
       [randomUUID(), locale, path, productId, current],
@@ -106,14 +131,14 @@ export const pathHelpers = (q: Q) => ({
 });
 
 /** Те саме для реєстру токенів модифікацій. */
-export const tokenHelpers = (q: Q) => ({
+export const tokenHelpers = ({ q, w }: Q) => ({
   tok: (
     locale: string,
     slug: string,
     t: { id: string; scopeId: string | null },
     current = true,
   ) =>
-    q(
+    w(
       `insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
        values ($1,$2,$3,$4,$5,$6)`,
       [randomUUID(), locale, t.scopeId, slug, t.id, current],

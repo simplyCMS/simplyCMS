@@ -110,6 +110,36 @@ CREATE TRIGGER languages_guard
 BEFORE UPDATE OR DELETE ON public.languages
 FOR EACH ROW EXECUTE FUNCTION public.languages_guard();
 
+-- ── advisory-замок поточного бекенда: ОДНА функція для всіх тригерів замка ────
+-- Ключ береться тим самим виразом, що й TS (`advisoryXactLock`):
+-- `hashtextextended(<ключ>, 0)`. Для 64-бітного ключа Postgres кладе в
+-- `pg_locks` старшу половину в `classid`, молодшу в `objid`, `objsubid = 1`.
+-- `mode`: ексклюзивний замок — `ExclusiveLock`, спільний — `ShareLock`.
+-- Окрема функція, а не копія виразу в кожному тригері: розрахунок ключа не має
+-- розходитись між правилами (SC001 і SC004). Парність літерала з
+-- `LOCK_KEYS.languagesSet` доводить `languages-lock.test.ts`.
+-- Без `SECURITY DEFINER`: `pg_locks` показує власні замки кожному, EXECUTE видано
+-- ролям застосунку нижче (0002 відкликає його в PUBLIC для нових функцій).
+CREATE OR REPLACE FUNCTION public.advisory_lock_held(lock_key text, lock_modes text[]) RETURNS boolean
+LANGUAGE sql STABLE
+SET search_path = public, pg_catalog AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM pg_catalog.pg_locks l
+     WHERE l.locktype = 'advisory'
+       AND l.pid = pg_backend_pid()
+       AND l.mode = ANY (lock_modes)
+       AND l.granted
+       AND l.database = (SELECT d.oid FROM pg_catalog.pg_database d
+                          WHERE d.datname = current_database())
+       AND l.objsubid = 1
+       AND ((l.classid::bigint << 32) | l.objid::bigint)
+           = hashtextextended(lock_key, 0)
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.advisory_lock_held(text, text[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.advisory_lock_held(text, text[]) TO app_runtime, app_user, app_admin;
+
 -- ── languages: запис лише під ексклюзивним замком `languages-set` (М1, І16) ──
 -- Правило: КОЖЕН запис у `languages` (INSERT, UPDATE, DELETE) береться під
 -- ексклюзивним advisory-замком `languages-set` — його творці адрес і токенів
@@ -117,26 +147,11 @@ FOR EACH ROW EXECUTE FUNCTION public.languages_guard();
 -- і не ламає їхній коміт відкладеною перевіркою наявності адреси. Тригер
 -- тримає правило в БД, а не лише в коді операцій: пряма вставка мимо замка
 -- відмовляє окремим SQLSTATE `SC001`.
--- Ключ береться тим самим виразом, що й TS (`advisoryXactLock`):
--- `hashtextextended('languages-set', 0)`. Для 64-бітного ключа Postgres кладе в
--- `pg_locks` старшу половину в `classid`, молодшу в `objid`, `objsubid = 1`.
--- Парність літерала з `LOCK_KEYS.languagesSet` доводить `languages-lock.test.ts`.
 CREATE OR REPLACE FUNCTION public.languages_require_lock() RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = public, pg_catalog AS $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_catalog.pg_locks l
-     WHERE l.locktype = 'advisory'
-       AND l.pid = pg_backend_pid()
-       AND l.mode = 'ExclusiveLock'
-       AND l.granted
-       AND l.database = (SELECT d.oid FROM pg_catalog.pg_database d
-                          WHERE d.datname = current_database())
-       AND l.objsubid = 1
-       AND ((l.classid::bigint << 32) | l.objid::bigint)
-           = hashtextextended('languages-set', 0)
-  ) THEN
+  IF NOT public.advisory_lock_held('languages-set', ARRAY['ExclusiveLock']) THEN
     RAISE EXCEPTION 'languages: запис без ексклюзивного замка languages-set'
       USING ERRCODE = 'SC001';
   END IF;
@@ -153,6 +168,39 @@ DROP TRIGGER IF EXISTS languages_require_lock ON public.languages;
 CREATE TRIGGER languages_require_lock
 BEFORE INSERT OR UPDATE OR DELETE ON public.languages
 FOR EACH ROW EXECUTE FUNCTION public.languages_require_lock();
+
+-- ── реєстри адрес і токенів: запис лише під замком `languages-set` (СПІЛЬНИМ або
+-- ексклюзивним), SQLSTATE `SC004` ──────────────────────────────────────────────
+-- Дзеркало SC001 для творців адрес (М1, майстер §3.5): створення сутності, нова
+-- модифікація, явна зміна адреси чи токена й пакетне заповнення мови беруть
+-- спільний замок, а зміна набору мов — ексклюзивний. Без замка творець міг би
+-- вставити адресу, не бачачи мови, що додається паралельно. Рівень STATEMENT: замок
+-- один на оператор, перевірка не множиться на рядки. DELETE не охоплено свідомо:
+-- каскад видалення товару й мови йде через RI, а видалення поточної адреси без
+-- заміни ловить тригер реєстру (`require_current_address|token`).
+CREATE OR REPLACE FUNCTION public.addresses_require_languages_lock() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public, pg_catalog AS $$
+BEGIN
+  IF NOT public.advisory_lock_held('languages-set', ARRAY['ExclusiveLock', 'ShareLock']) THEN
+    RAISE EXCEPTION '%: запис без замка languages-set', TG_TABLE_NAME
+      USING ERRCODE = 'SC004';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.addresses_require_languages_lock() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS url_paths_require_lock ON public.url_paths;
+CREATE TRIGGER url_paths_require_lock
+BEFORE INSERT OR UPDATE ON public.url_paths
+FOR EACH STATEMENT EXECUTE FUNCTION public.addresses_require_languages_lock();
+
+DROP TRIGGER IF EXISTS slug_tokens_require_lock ON public.slug_tokens;
+CREATE TRIGGER slug_tokens_require_lock
+BEFORE INSERT OR UPDATE ON public.slug_tokens
+FOR EACH STATEMENT EXECUTE FUNCTION public.addresses_require_languages_lock();
 
 -- ── сервісні облікові записи ≠ облікові дані входу (М1, І27) ─────────────────
 -- Сервісний запис (рядок `service_accounts`) не має рядка `accounts`: увійти
