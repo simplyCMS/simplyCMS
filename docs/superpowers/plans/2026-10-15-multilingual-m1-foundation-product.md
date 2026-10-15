@@ -299,9 +299,9 @@
   - `type TokenTarget = { kind: 'modification'; id: string; scopeId: string }`;
   - `createPathsForEntity(db, target, baseSlug: string, locales: readonly string[]): Promise<Map<string, string>>` — для кожної мови `allocateSlug` проти `url_paths` мови й `RESERVED_SEGMENTS`/`publicNames()`; спершу бере `advisoryXactLockShared(db, LOCK_KEYS.languagesSet)`;
   - `setExplicitPath(db, target, locale, path): Promise<void>`:
-    - чужий поточний чи історичний → `AdminConflictError('path_taken')`;
+    - чужий поточний чи історичний → `AdminConflictError('unique', 'path_taken')`;
     - власний історичний → він знову поточний, старий поточний → історія;
-    - зарезервований → `ValidationError('path_reserved')`;
+    - зарезервований → `ValidationError` з кодом `reserved` (`VALIDATION_ISSUE_CODES`, ключі `admin.validation.reserved` в uk/en);
   - `copyPathsForLocale(db, locale, limit: number): Promise<number>` — пакетне ідемпотентне заповнення для нової мови: копія поточного шляху основної мови з `allocateSlug` при колізії. Повертає кількість вставлених рядків (0 = завершено);
   - `resolvePath(db, locale, path): Promise<{ target: AddressTarget; currentPath: string; isCurrent: boolean } | null>`;
   - `currentPaths(db, target): Promise<Map<string, string>>`;
@@ -404,10 +404,9 @@
   - `packages/simplycms/test-harness/pg/__tests__/{languages-operations.test.ts,languages-add-concurrency.test.ts}`.
 - Modify:
   - `packages/simplycms/src/auth/{authz.ts,authz-request.ts}` (scopes, `subjectFromCookie`);
-  - `src/admin-server/impl/errors.ts` (доменні помилки без HTTP);
   - `src/admin-server/index.ts` (обгортки мов);
   - `src/site/read-cache.ts` (+ `languagesCache` на механізмі Task 5а);
-  - `src/contracts/domain-errors.ts` (імена нових помилок для `domainErrorAdapter`).
+  - `src/contracts/domain-errors.ts` (класи доменних помилок живуть тут з Task 5; імена нових помилок для `domainErrorAdapter`; `admin-server/impl/errors.ts` лишається лише з `toAdminConflict`).
 
 **Interfaces:**
 - Produces (`simplycms/operations`):
@@ -1025,7 +1024,7 @@
 **Files:**
 - Modify:
   - `schema/schema.ts` — знос `products.{slug,name,short_description,description,meta_title,meta_description,images,return_policy,shipping_details}`, `product_modifications.{slug,name,images}`, `*_property_values.value`; `value_kind` NOT NULL; складені FK і CHECK Р18; частковий UNIQUE; `option_id` FK `ON DELETE CASCADE`;
-  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`; і тригери НАЯВНОСТІ адреси й токена на `AFTER INSERT` бази (К4): процедури `attach_current_address_triggers`/`attach_current_token_triggers` уже викликані в Task 5, тож тут лише прибрати рядки `DISABLE TRIGGER` тригерів бази `products_cur_addr_b` і `product_modifications_cur_tok_b` з позначкою `-- М1-TEMP` (повторний виклик процедури впаде на дублікаті; тест `tgenabled` з Task 5 (`url-paths.test.ts`, `slug-tokens.test.ts`) перевертається з `'D'` на `'O'`);
+  - `migrations/0004_functions.sql` (constraint-тригери `require_source_translation` на `products`/`product_translations`, `product_modifications`/`product_modification_translations`, значення з умовою `value_kind=text`; і тригери НАЯВНОСТІ адреси й токена на `AFTER INSERT` бази (К4): процедури `attach_current_address_triggers`/`attach_current_token_triggers` уже викликані в Task 5, тож тут лише прибрати рядки `DISABLE TRIGGER` тригерів бази `products_cur_addr_b` і `product_modifications_cur_tok_b` з позначкою `-- М1-TEMP` (тригери вже підключено в Task 5, Task 17 лише вмикає тригер бази; тест `tgenabled` з Task 5 (`url-paths.test.ts`, `slug-tokens.test.ts`) перевертається з `'D'` на `'O'`);
   - `domain/media.ts` (`MEDIA_COLUMNS` без `products.images`, `product_modifications.images`);
   - `fixtures/product-graph.ts` (без `// М1-TEMP`); команди Task 11/12 (без дзеркалення);
   - `admin-server/impl/products/resource.ts` і `product-modifications/resource.ts` (лишається лише читання для колекцій), `property-values/resources.ts`;
