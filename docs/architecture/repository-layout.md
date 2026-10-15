@@ -84,7 +84,7 @@ simplyCMS/
 │   │   │                         #    (resolveDriverEnv): smtpTransport (peer nodemailer) і logTransport (у проді
 │   │   │                         #    без тіла листа). Upward лише env. server-only (К3-Е8)
 │   │   ├── src/vite/             # T2 Build-time плагіни Vite для збірки магазину: resolveBuildId +
-│   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz). Без залежності
+│   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz) + simplycmsPublicManifest (перелік public/ → publicNames). Без залежності
 │   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)
 │   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
 │   │   │                         #    readJournal, readStoreFacts): одна реалізація для проду, db:apply, test:schema і
@@ -104,6 +104,9 @@ simplyCMS/
 │   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getLanguagePack); Locale — відкритий рядок
 │   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto). Upward-винятків
 │   │   │                         #    немає. server-only (Мультимовність М1, Task 3)
+│   │   ├── src/addressing/       # T2 Реєстри адрес і мовних токенів: createPathsForEntity, setExplicitPath,
+│   │   │                         #    copyPathsForLocale, resolvePath, publicNames. Upward: db, admin-server (класи
+│   │   │                         #    помилок). server-only (Мультимовність М1, Task 5)
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
 │   │   ├── src/themes/           # T4 ThemeRegistry, bootstrapThemes, applyTokens,

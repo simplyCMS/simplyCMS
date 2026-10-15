@@ -83,9 +83,11 @@ grant select on table
   public.shipping_methods,
   public.shipping_rates,
   public.shipping_zones,
+  public.slug_tokens,
   public.stock_by_pickup_point,
   public.system_settings,
   public.themes,
+  public.url_paths,
   public.user_categories
 to app_user;
 
@@ -169,9 +171,11 @@ grant select, insert, update, delete on table
   public.shipping_methods,
   public.shipping_rates,
   public.shipping_zones,
+  public.slug_tokens,
   public.stock_by_pickup_point,
   public.system_settings,
   public.themes,
+  public.url_paths,
   public.user_categories,
   public.user_category_history,
   public.user_roles

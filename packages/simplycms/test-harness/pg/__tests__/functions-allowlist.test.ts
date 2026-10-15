@@ -19,14 +19,22 @@ import {
 /** Функції — `схема.імʼя`, тригери — голе імʼя. */
 const ALLOWLIST = [
   'app.current_user_id',
+  'public.attach_current_address_triggers',
+  'public.attach_current_token_triggers',
   'public.attach_source_translation_triggers',
   'public.languages_guard',
   'public.refuse_banned_session',
+  'public.require_current_address',
+  'public.require_current_token',
   'public.require_default_shipping_zone',
   'public.require_source_translation',
   'languages_guard',
+  'product_modifications_cur_tok_b',
+  'products_cur_addr_b',
   'sessions_refuse_banned',
   'shipping_zones_require_default',
+  'slug_tokens_cur_tok_r',
+  'url_paths_cur_addr_r',
 ];
 
 /** Усе користувацьке: функції (крім розширень) і нетехнічні тригери. */

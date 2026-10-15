@@ -8,6 +8,13 @@ export { resolveBuildId } from './build-id';
 export type { BuildIdEnv, BuildIdContext } from './build-id';
 export { precompressAssets, precompressDir } from './precompress';
 export type { PrecompressOptions, PrecompressPlugin } from './precompress';
+export {
+  PUBLIC_MANIFEST_FILE,
+  listPublicNames,
+  simplycmsPublicManifest,
+  writePublicManifest,
+} from './public-manifest';
+export type { PublicManifestPlugin } from './public-manifest';
 
 /**
  * Мінімальна форма плагіна Vite: ядро не залежить від `vite`, а структурна

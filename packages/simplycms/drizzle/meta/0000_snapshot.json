@@ -2450,6 +2450,14 @@
             "product_id",
             "slug"
           ]
+        },
+        "product_modifications_product_id_id_key": {
+          "name": "product_modifications_product_id_id_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "product_id",
+            "id"
+          ]
         }
       },
       "policies": {},
@@ -4207,6 +4215,163 @@
       },
       "isRLSEnabled": false
     },
+    "public.slug_tokens": {
+      "name": "slug_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_id": {
+          "name": "scope_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text COLLATE \"C\"",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "modification_id": {
+          "name": "modification_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_current": {
+          "name": "is_current",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_kind": {
+          "name": "token_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "CASE WHEN modification_id IS NOT NULL THEN 'modification' ELSE 'unknown' END",
+            "type": "stored"
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_slug_tokens_current_modification": {
+          "name": "idx_slug_tokens_current_modification",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "modification_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_current AND modification_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_slug_tokens_modification_id": {
+          "name": "idx_slug_tokens_modification_id",
+          "columns": [
+            {
+              "expression": "modification_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "slug_tokens_locale_fkey": {
+          "name": "slug_tokens_locale_fkey",
+          "tableFrom": "slug_tokens",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "slug_tokens_modification_scope_fkey": {
+          "name": "slug_tokens_modification_scope_fkey",
+          "tableFrom": "slug_tokens",
+          "tableTo": "product_modifications",
+          "columnsFrom": [
+            "scope_id",
+            "modification_id"
+          ],
+          "columnsTo": [
+            "product_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "slug_tokens_scope_slug_key": {
+          "name": "slug_tokens_scope_slug_key",
+          "nullsNotDistinct": true,
+          "columns": [
+            "locale",
+            "token_kind",
+            "scope_id",
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "slug_tokens_one_target": {
+          "name": "slug_tokens_one_target",
+          "value": "num_nonnulls(\"slug_tokens\".\"modification_id\") = 1"
+        },
+        "slug_tokens_modification_scope": {
+          "name": "slug_tokens_modification_scope",
+          "value": "\"slug_tokens\".\"modification_id\" IS NULL OR \"slug_tokens\".\"scope_id\" IS NOT NULL"
+        },
+        "slug_tokens_slug_format": {
+          "name": "slug_tokens_slug_format",
+          "value": "\"slug_tokens\".\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.stock_by_pickup_point": {
       "name": "stock_by_pickup_point",
       "schema": "",
@@ -4557,6 +4722,139 @@
       },
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.url_paths": {
+      "name": "url_paths",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "path": {
+          "name": "path",
+          "type": "text COLLATE \"C\"",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_current": {
+          "name": "is_current",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_url_paths_current_product": {
+          "name": "idx_url_paths_current_product",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "(is_current AND product_id IS NOT NULL)",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_url_paths_product_id": {
+          "name": "idx_url_paths_product_id",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "url_paths_locale_fkey": {
+          "name": "url_paths_locale_fkey",
+          "tableFrom": "url_paths",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "url_paths_product_id_fkey": {
+          "name": "url_paths_product_id_fkey",
+          "tableFrom": "url_paths",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "url_paths_locale_path_key": {
+          "name": "url_paths_locale_path_key",
+          "nullsNotDistinct": false,
+          "columns": [
+            "locale",
+            "path"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "url_paths_one_target": {
+          "name": "url_paths_one_target",
+          "value": "num_nonnulls(\"url_paths\".\"product_id\") = 1"
+        },
+        "url_paths_path_format": {
+          "name": "url_paths_path_format",
+          "value": "\"url_paths\".\"path\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user_addresses": {

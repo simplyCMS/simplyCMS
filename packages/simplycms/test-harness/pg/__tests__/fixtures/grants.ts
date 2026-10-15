@@ -41,9 +41,11 @@ const CATALOG = [
   'shipping_methods',
   'shipping_rates',
   'shipping_zones',
+  'slug_tokens',
   'stock_by_pickup_point',
   'system_settings',
   'themes',
+  'url_paths',
   'user_categories',
 ];
 

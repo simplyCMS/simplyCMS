@@ -1,4 +1,4 @@
-import { pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, pgEnum } from "drizzle-orm/pg-core"
+import { customType, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 // Схема ядра SimplyCMS — SSOT моделі даних v2 (рішення B3′/B5″/B13,
@@ -449,8 +449,83 @@ export const productModifications = pgTable("product_modifications", {
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
 	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
+	// Ціль складеного FK `slug_tokens (scope_id, modification_id)`: токен
+	// модифікації не може вказати на модифікацію чужого товару (М1, К2).
+	unique("product_modifications_product_id_id_key").on(table.productId, table.id),
 	// К3-14: дефолт scoped на product_id — модифікації належать товару.
 	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
+]);
+
+// drizzle-orm не має `.collate()` для text; `customType` лишає тип `string`
+// у застосунку й пише `text COLLATE "C"` у DDL.
+const textC = customType<{ data: string }>({
+	dataType() {
+		return 'text COLLATE "C"';
+	},
+});
+
+// Реєстр адрес сутностей (М1, І15–І16, І18): одна адреса на сегмент URL, поточна
+// й історична (стара адреса дає 301 на поточну). `path` — ASCII, тож `COLLATE "C"`:
+// префіксний `LIKE` генератора суфіксів іде індексом `UNIQUE(locale, path)`.
+// У М1 лише `product_id`; М2 додає section/property/option і розширює CHECK.
+// Наявність поточної адреси для кожної мови `draft`/`published` тримають
+// відкладені тригери `require_current_address` (`0004_functions.sql`).
+export const urlPaths = pgTable("url_paths", {
+	id: uuid().primaryKey().notNull(),
+	locale: text().notNull(),
+	path: textC().notNull(),
+	productId: uuid("product_id"),
+	isCurrent: boolean("is_current").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "url_paths_locale_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "url_paths_product_id_fkey"
+		}).onDelete("cascade"),
+	unique("url_paths_locale_path_key").on(table.locale, table.path),
+	uniqueIndex("idx_url_paths_current_product").using("btree", table.locale, table.productId).where(sql`(is_current AND product_id IS NOT NULL)`),
+	index("idx_url_paths_product_id").on(table.productId),
+	check("url_paths_one_target", sql`num_nonnulls(${table.productId}) = 1`),
+	check("url_paths_path_format", sql`${table.path} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+]);
+
+// Реєстр мовних токенів (М1, І21): slug модифікації в просторі
+// `(locale, token_kind, scope_id)`; для модифікації `scope_id` — товар.
+// `MATCH SIMPLE` складеного FK рядок із `scope_id IS NULL` не перевіряє, тому
+// область тримають явні CHECK (К2), а `token_kind` — частина ключа
+// унікальності: простори токенів різних видів не змішуються навіть за збігу UUID.
+export const slugTokens = pgTable("slug_tokens", {
+	id: uuid().primaryKey().notNull(),
+	locale: text().notNull(),
+	scopeId: uuid("scope_id"),
+	slug: textC().notNull(),
+	modificationId: uuid("modification_id"),
+	isCurrent: boolean("is_current").notNull(),
+	tokenKind: text("token_kind").generatedAlwaysAs(sql`CASE WHEN modification_id IS NOT NULL THEN 'modification' ELSE 'unknown' END`),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "slug_tokens_locale_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.scopeId, table.modificationId],
+			foreignColumns: [productModifications.productId, productModifications.id],
+			name: "slug_tokens_modification_scope_fkey"
+		}).onDelete("cascade"),
+	unique("slug_tokens_scope_slug_key").on(table.locale, table.tokenKind, table.scopeId, table.slug).nullsNotDistinct(),
+	uniqueIndex("idx_slug_tokens_current_modification").using("btree", table.locale, table.modificationId).where(sql`(is_current AND modification_id IS NOT NULL)`),
+	index("idx_slug_tokens_modification_id").on(table.modificationId),
+	check("slug_tokens_one_target", sql`num_nonnulls(${table.modificationId}) = 1`),
+	check("slug_tokens_modification_scope", sql`${table.modificationId} IS NULL OR ${table.scopeId} IS NOT NULL`),
+	check("slug_tokens_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
 ]);
 
 export const plugins = pgTable("plugins", {

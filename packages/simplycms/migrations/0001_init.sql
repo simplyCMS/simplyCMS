@@ -248,7 +248,8 @@ CREATE TABLE "product_modifications" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"stock_status" "stock_status" DEFAULT 'in_stock' NOT NULL,
-	CONSTRAINT "product_modifications_product_slug_unique" UNIQUE("product_id","slug")
+	CONSTRAINT "product_modifications_product_slug_unique" UNIQUE("product_id","slug"),
+	CONSTRAINT "product_modifications_product_id_id_key" UNIQUE("product_id","id")
 );
 --> statement-breakpoint
 CREATE TABLE "product_prices" (
@@ -435,6 +436,21 @@ CREATE TABLE "shipping_zones" (
 	CONSTRAINT "shipping_zones_default_active" CHECK (not is_default or is_active)
 );
 --> statement-breakpoint
+CREATE TABLE "slug_tokens" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"locale" text NOT NULL,
+	"scope_id" uuid,
+	"slug" text COLLATE "C" NOT NULL,
+	"modification_id" uuid,
+	"is_current" boolean NOT NULL,
+	"token_kind" text GENERATED ALWAYS AS (CASE WHEN modification_id IS NOT NULL THEN 'modification' ELSE 'unknown' END) STORED,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "slug_tokens_scope_slug_key" UNIQUE NULLS NOT DISTINCT("locale","token_kind","scope_id","slug"),
+	CONSTRAINT "slug_tokens_one_target" CHECK (num_nonnulls("slug_tokens"."modification_id") = 1),
+	CONSTRAINT "slug_tokens_modification_scope" CHECK ("slug_tokens"."modification_id" IS NULL OR "slug_tokens"."scope_id" IS NOT NULL),
+	CONSTRAINT "slug_tokens_slug_format" CHECK ("slug_tokens"."slug" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')
+);
+--> statement-breakpoint
 CREATE TABLE "stock_by_pickup_point" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"pickup_point_id" uuid NOT NULL,
@@ -469,6 +485,18 @@ CREATE TABLE "themes" (
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "themes_name_key" UNIQUE("name")
+);
+--> statement-breakpoint
+CREATE TABLE "url_paths" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"locale" text NOT NULL,
+	"path" text COLLATE "C" NOT NULL,
+	"product_id" uuid,
+	"is_current" boolean NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "url_paths_locale_path_key" UNIQUE("locale","path"),
+	CONSTRAINT "url_paths_one_target" CHECK (num_nonnulls("url_paths"."product_id") = 1),
+	CONSTRAINT "url_paths_path_format" CHECK ("url_paths"."path" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')
 );
 --> statement-breakpoint
 CREATE TABLE "user_addresses" (
@@ -674,9 +702,13 @@ ALTER TABLE "section_property_assignments" ADD CONSTRAINT "section_property_assi
 ALTER TABLE "sections" ADD CONSTRAINT "sections_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."sections"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_method_id_fkey" FOREIGN KEY ("method_id") REFERENCES "public"."shipping_methods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipping_rates" ADD CONSTRAINT "shipping_rates_zone_id_fkey" FOREIGN KEY ("zone_id") REFERENCES "public"."shipping_zones"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "slug_tokens" ADD CONSTRAINT "slug_tokens_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "slug_tokens" ADD CONSTRAINT "slug_tokens_modification_scope_fkey" FOREIGN KEY ("scope_id","modification_id") REFERENCES "public"."product_modifications"("product_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_by_pickup_point" ADD CONSTRAINT "stock_by_pickup_point_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "url_paths" ADD CONSTRAINT "url_paths_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "url_paths" ADD CONSTRAINT "url_paths_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_addresses" ADD CONSTRAINT "user_addresses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_categories" ADD CONSTRAINT "user_categories_price_type_id_fkey" FOREIGN KEY ("price_type_id") REFERENCES "public"."price_types"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_category_history" ADD CONSTRAINT "user_category_history_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -744,11 +776,15 @@ CREATE INDEX "idx_sections_parent_id" ON "sections" USING btree ("parent_id");--
 CREATE INDEX "idx_shipping_rates_method_id" ON "shipping_rates" USING btree ("method_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_shipping_rates_zone_id" ON "shipping_rates" USING btree ("zone_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_shipping_zones_single_default" ON "shipping_zones" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_slug_tokens_current_modification" ON "slug_tokens" USING btree ("locale","modification_id") WHERE (is_current AND modification_id IS NOT NULL);--> statement-breakpoint
+CREATE INDEX "idx_slug_tokens_modification_id" ON "slug_tokens" USING btree ("modification_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_modification_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"modification_id" uuid_ops) WHERE (modification_id IS NOT NULL);--> statement-breakpoint
 CREATE UNIQUE INDEX "unique_stock_product_per_point" ON "stock_by_pickup_point" USING btree ("pickup_point_id" uuid_ops,"product_id" uuid_ops) WHERE ((product_id IS NOT NULL) AND (modification_id IS NULL));--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_product_id" ON "stock_by_pickup_point" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_stock_by_pickup_point_modification_id" ON "stock_by_pickup_point" USING btree ("modification_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "themes_active_idx" ON "themes" USING btree ("is_active" bool_ops) WHERE (is_active = true);--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_url_paths_current_product" ON "url_paths" USING btree ("locale","product_id") WHERE (is_current AND product_id IS NOT NULL);--> statement-breakpoint
+CREATE INDEX "idx_url_paths_product_id" ON "url_paths" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_user_addresses_user_id" ON "user_addresses" USING btree ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_user_addresses_single_default" ON "user_addresses" USING btree ("user_id") WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "idx_user_categories_price_type_id" ON "user_categories" USING btree ("price_type_id");--> statement-breakpoint

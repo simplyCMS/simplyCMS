@@ -55,6 +55,7 @@
     "./prod-start": "./src/prod-start/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
     "./translations": "./src/translations/index.ts",
+    "./addressing": "./src/addressing/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
@@ -318,6 +319,10 @@
       "./translations": {
         "types": "./dist/translations/index.d.ts",
         "import": "./dist/translations/index.js"
+      },
+      "./addressing": {
+        "types": "./dist/addressing/index.d.ts",
+        "import": "./dist/addressing/index.js"
       },
       "./react-query": {
         "types": "./dist/react-query/index.d.ts",

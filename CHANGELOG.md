@@ -35,6 +35,8 @@
   `mail_outbox` злито в `0001_init.sql`, окремий `0005_mail_outbox.sql` прибрано;
   `languages` перебудовано (`code text` з CHECK формату BCP 47, `status` замість
   `is_active`, `sort_order`, `UNIQUE(lower(code))`, тригер `languages_guard`);
+  нові таблиці `url_paths` і `slug_tokens` (+ `UNIQUE(product_id, id)` на `product_modifications`, функції й тригери наявності
+  поточної адреси/токена в `0004_functions.sql`);
   `0002_grants.sql` видає `app_admin` права на `mail_outbox`. Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **i18n: відкритий `Locale`, `createTranslator(locale, fallback)`, `normalizeLocale` знесено:** `Locale` —
@@ -63,6 +65,15 @@
   `isReservedPropertyToken`.
 - `simplycms/i18n`: мовні пакети `LANGUAGE_PACKS` (`uk`, `en`), `getLanguagePack(code)` (`null` для
   мови без пакета), тип `LanguagePack`, тимчасовий міст `languageOfConfigLocale` (знос у М2).
+- **Реєстри адрес і мовних токенів** (Мультимовність М1): таблиці `url_paths` і `slug_tokens`
+  (унікальність у мові, історія адрес, одна поточна на сутність і мову, складений FK області
+  токена), відкладені тригери наявності поточної адреси/токена (`require_current_address`,
+  `require_current_token`; тригери на `products`/`product_modifications` вимкнено до Task 17) і
+  `simplycms/addressing` (server-only): `createPathsForEntity`, `setExplicitPath`,
+  `copyPathsForLocale`, `resolvePath`, `currentPaths` та дзеркальні для токенів, `publicNames`.
+- `simplycms/vite`: `simplycmsPublicManifest()` пише `dist/client/.simplycms-public.json` — верхньорівневі
+  імена `public/`, яким не може дорівнювати адреса сутності. Додайте плагін у `vite.config.ts`
+  магазину (шаблон `create-simplycms-store` уже містить).
 
 ---
 

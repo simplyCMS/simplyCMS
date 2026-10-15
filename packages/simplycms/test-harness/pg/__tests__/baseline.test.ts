@@ -150,7 +150,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
     // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (у baseline `0001_init`:
     // окремого файла `0005` немає, його злито ребазлайном М1).
-    expect(tables.length).toBe(45);
+    // 45 → 47: М1 Task 5 — реєстри адрес `url_paths` і мовних токенів `slug_tokens`.
+    expect(tables.length).toBe(47);
     for (const expected of [
       'simplycms_migrations',
       'users',
@@ -160,6 +161,8 @@ describe('канон міграцій: накат на чисту БД', () => {
       'media',
       'orders',
       'profiles',
+      'url_paths',
+      'slug_tokens',
     ])
       expect(tables).toContain(expected);
     // Схем, крім public і app, baseline не створює.

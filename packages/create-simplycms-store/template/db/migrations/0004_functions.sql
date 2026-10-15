@@ -378,3 +378,360 @@ $$;
 
 REVOKE ALL ON PROCEDURE public.attach_source_translation_triggers(regclass, regclass, text, text[], text)
   FROM PUBLIC;
+
+-- ── url_paths: рівно одна ПОТОЧНА адреса на (сутність, мова) (М1, І16, К4) ──
+-- «Не більше однієї» тримає частковий UNIQUE реєстру, «принаймні одна» — ця
+-- відкладена перевірка: заміна поточної адреси (нову вставити, стару в історію)
+-- — два стейтменти однієї транзакції, між якими поточної немає.
+--
+-- `TG_ARGV`: [0] роль `base` | `registry`; [1] базова таблиця; [2] реєстр;
+-- [3] FK-колонка реєстру на `base(id)`.
+--  • `base` (AFTER INSERT бази): усі мови `draft`/`published` зі знімка своєї
+--    транзакції мають поточну адресу. Рядок мови тригер НЕ запускає: повноту
+--    нової мови дає звірка перед публікацією.
+--  • `registry` (AFTER DELETE / UPDATE реєстру): лише (сутність, ТА мова);
+--    першими кроками `CONTINUE`, як «бази немає» в `require_source_translation`:
+--    мови вже немає чи вона не draft/published, або сутності вже немає.
+-- Ідентифікатори — лише `format('%I')`, значення — `USING`. Без SECURITY DEFINER;
+-- реєстр і `languages` не мають RLS (конвенція вище).
+CREATE OR REPLACE FUNCTION public.require_current_address() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public AS $$
+DECLARE
+  v_role  text := TG_ARGV[0];
+  v_base  text := TG_ARGV[1];
+  v_reg   text := TG_ARGV[2];
+  v_fk    text := TG_ARGV[3];
+  v_ents  uuid[];
+  v_locs  text[];
+  v_i     int;
+  v_ent   uuid;
+  v_loc   text;
+  v_ok    boolean;
+BEGIN
+  IF coalesce(v_role, '') NOT IN ('base', 'registry')
+     OR coalesce(v_base, '') = '' OR coalesce(v_reg, '') = ''
+     OR coalesce(v_fk, '') = '' THEN
+    RAISE EXCEPTION 'require_current_address: невідомі аргументи тригера (роль=%, база=%, реєстр=%, колонка=%)',
+      v_role, v_base, v_reg, v_fk USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  IF v_role = 'base' THEN
+    -- Сутність, видалена в цій самій транзакції, адреси не вимагає.
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM public.%I WHERE id = $1)', v_base)
+      INTO v_ok USING NEW.id;
+    IF NOT v_ok THEN RETURN NULL; END IF;
+    FOR v_loc IN
+      SELECT l.code FROM public.languages l
+       WHERE l.status IN ('draft', 'published') ORDER BY l.code
+    LOOP
+      EXECUTE format(
+        'SELECT EXISTS (SELECT 1 FROM public.%I WHERE %I = $1 AND locale = $2 AND is_current)',
+        v_reg, v_fk) INTO v_ok USING NEW.id, v_loc;
+      IF NOT v_ok THEN
+        RAISE EXCEPTION '%: потрібна поточна адреса для кожної мови (draft/published)', v_base
+          USING ERRCODE = 'check_violation',
+                DETAIL = format('id = %s, мова = %s', NEW.id, v_loc);
+      END IF;
+    END LOOP;
+    RETURN NULL;
+  END IF;
+
+  -- Реєстр: пари (сутність, мова) старого й нового рядка. UPDATE, що переніс
+  -- рядок в іншу сутність чи мову, може лишити без адреса обидві.
+  IF TG_OP <> 'INSERT' THEN
+    EXECUTE format('SELECT ($1).%I', v_fk) INTO v_ent USING OLD;
+    v_ents := ARRAY[v_ent]; v_locs := ARRAY[OLD.locale];
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    EXECUTE format('SELECT ($1).%I', v_fk) INTO v_ent USING NEW;
+    v_ents := v_ents || v_ent; v_locs := v_locs || NEW.locale;
+  END IF;
+
+  FOR v_i IN 1 .. coalesce(cardinality(v_ents), 0) LOOP
+    v_ent := v_ents[v_i]; v_loc := v_locs[v_i];
+    CONTINUE WHEN v_ent IS NULL;
+    -- Мови вже немає (каскад) або вона не draft/published: disabled
+    -- зберігає адреса і нічого не вимагає.
+    CONTINUE WHEN NOT EXISTS (
+      SELECT 1 FROM public.languages
+       WHERE code = v_loc AND status IN ('draft', 'published'));
+    -- Сутності вже немає (каскад видалення) — вимагати нічого.
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM public.%I WHERE id = $1)', v_base)
+      INTO v_ok USING v_ent;
+    CONTINUE WHEN NOT v_ok;
+    EXECUTE format(
+      'SELECT EXISTS (SELECT 1 FROM public.%I WHERE %I = $1 AND locale = $2 AND is_current)',
+      v_reg, v_fk) INTO v_ok USING v_ent, v_loc;
+    IF NOT v_ok THEN
+      RAISE EXCEPTION '%: потрібна рівно одна поточна адреса (мова %)', v_base, v_loc
+        USING ERRCODE = 'check_violation',
+              DETAIL = format('id = %s', v_ent);
+    END IF;
+  END LOOP;
+  RETURN NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_current_address() FROM PUBLIC;
+
+-- Підключення пари: обидва CONSTRAINT TRIGGER з одних аргументів. Реєстр
+-- слухає ще й `locale` та FK: перенесення рядка в іншу мову чи сутність теж
+-- може лишити пару без поточної адреса. Ідемпотентно (DROP + CREATE); імена
+-- обрізаються до 63 байт детерміновано.
+CREATE OR REPLACE PROCEDURE public.attach_current_address_triggers(
+  base regclass,
+  registry regclass,
+  fk text
+)
+LANGUAGE plpgsql
+SET search_path = public AS $$
+DECLARE
+  v_base   text;
+  v_reg    text;
+  v_id_att smallint;
+  v_fk_att smallint;
+  v_col    text;
+  v_b_trg  text;
+  v_r_trg  text;
+BEGIN
+  SELECT c.relname INTO v_base FROM pg_class c
+   WHERE c.oid = base AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
+  SELECT c.relname INTO v_reg FROM pg_class c
+   WHERE c.oid = registry AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
+  IF v_base IS NULL OR v_reg IS NULL THEN
+    RAISE EXCEPTION 'attach_current_address_triggers: % і % мають бути звичайними таблицями схеми public',
+      base, registry USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  FOREACH v_col IN ARRAY ARRAY[fk, 'locale', 'is_current', 'path'] LOOP
+    IF v_col IS NULL OR NOT EXISTS (
+         SELECT 1 FROM pg_attribute a
+          WHERE a.attrelid = registry AND a.attname = v_col
+            AND a.attnum > 0 AND NOT a.attisdropped) THEN
+      RAISE EXCEPTION 'attach_current_address_triggers: у %.% немає колонки "%"', 'public', v_reg, v_col
+        USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+  END LOOP;
+
+  SELECT a.attnum INTO v_id_att FROM pg_attribute a
+   WHERE a.attrelid = base AND a.attname = 'id' AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_id_att IS NULL THEN
+    RAISE EXCEPTION 'attach_current_address_triggers: у %.% немає колонки id типу uuid', 'public', v_base
+      USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  SELECT a.attnum INTO v_fk_att FROM pg_attribute a
+   WHERE a.attrelid = registry AND a.attname = fk AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_fk_att IS NULL THEN
+    RAISE EXCEPTION 'attach_current_address_triggers: колонка "%" у %.% має бути типу uuid', fk, 'public', v_reg
+      USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint k,
+                              unnest(k.conkey, k.confkey) AS u(src, dst)
+                  WHERE k.contype = 'f' AND k.conrelid = registry
+                    AND k.confrelid = base AND u.src = v_fk_att AND u.dst = v_id_att) THEN
+    RAISE EXCEPTION 'attach_current_address_triggers: колонка "%" у %.% має бути зовнішнім ключем на %.%(id)',
+      fk, 'public', v_reg, 'public', v_base USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  v_b_trg := left(v_base, 63 - length('_cur_addr_b')) || '_cur_addr_b';
+  v_r_trg := left(v_reg, 63 - length('_cur_addr_r')) || '_cur_addr_r';
+
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_b_trg, v_base);
+  EXECUTE format(
+    'CREATE CONSTRAINT TRIGGER %I AFTER INSERT ON public.%I '
+    || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
+    || 'EXECUTE FUNCTION public.require_current_address(%L, %L, %L, %L)',
+    v_b_trg, v_base, 'base', v_base, v_reg, fk);
+
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_r_trg, v_reg);
+  EXECUTE format(
+    'CREATE CONSTRAINT TRIGGER %I AFTER DELETE OR UPDATE OF is_current, path, locale, %I ON public.%I '
+    || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
+    || 'EXECUTE FUNCTION public.require_current_address(%L, %L, %L, %L)',
+    v_r_trg, fk, v_reg, 'registry', v_base, v_reg, fk);
+END;
+$$;
+
+REVOKE ALL ON PROCEDURE public.attach_current_address_triggers(regclass, regclass, text) FROM PUBLIC;
+
+-- ── slug_tokens: рівно один ПОТОЧНИЙ токен на (сутність, мова) (М1, І21, К4) ─
+-- Дзеркало `require_current_address()`: ті самі аргументи й гілки, колонка
+-- тексту — `slug`. Область токена `(token_kind, scope_id)` уже в ключі
+-- унікальності реєстру, а поточний токен шукається за FK сутності, однозначним
+-- у своїй області.
+CREATE OR REPLACE FUNCTION public.require_current_token() RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public AS $$
+DECLARE
+  v_role  text := TG_ARGV[0];
+  v_base  text := TG_ARGV[1];
+  v_reg   text := TG_ARGV[2];
+  v_fk    text := TG_ARGV[3];
+  v_ents  uuid[];
+  v_locs  text[];
+  v_i     int;
+  v_ent   uuid;
+  v_loc   text;
+  v_ok    boolean;
+BEGIN
+  IF coalesce(v_role, '') NOT IN ('base', 'registry')
+     OR coalesce(v_base, '') = '' OR coalesce(v_reg, '') = ''
+     OR coalesce(v_fk, '') = '' THEN
+    RAISE EXCEPTION 'require_current_token: невідомі аргументи тригера (роль=%, база=%, реєстр=%, колонка=%)',
+      v_role, v_base, v_reg, v_fk USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  IF v_role = 'base' THEN
+    -- Сутність, видалена в цій самій транзакції, токена не вимагає.
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM public.%I WHERE id = $1)', v_base)
+      INTO v_ok USING NEW.id;
+    IF NOT v_ok THEN RETURN NULL; END IF;
+    FOR v_loc IN
+      SELECT l.code FROM public.languages l
+       WHERE l.status IN ('draft', 'published') ORDER BY l.code
+    LOOP
+      EXECUTE format(
+        'SELECT EXISTS (SELECT 1 FROM public.%I WHERE %I = $1 AND locale = $2 AND is_current)',
+        v_reg, v_fk) INTO v_ok USING NEW.id, v_loc;
+      IF NOT v_ok THEN
+        RAISE EXCEPTION '%: потрібна поточна токен для кожної мови (draft/published)', v_base
+          USING ERRCODE = 'check_violation',
+                DETAIL = format('id = %s, мова = %s', NEW.id, v_loc);
+      END IF;
+    END LOOP;
+    RETURN NULL;
+  END IF;
+
+  -- Реєстр: пари (сутність, мова) старого й нового рядка. UPDATE, що переніс
+  -- рядок в іншу сутність чи мову, може лишити без токен обидві.
+  IF TG_OP <> 'INSERT' THEN
+    EXECUTE format('SELECT ($1).%I', v_fk) INTO v_ent USING OLD;
+    v_ents := ARRAY[v_ent]; v_locs := ARRAY[OLD.locale];
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    EXECUTE format('SELECT ($1).%I', v_fk) INTO v_ent USING NEW;
+    v_ents := v_ents || v_ent; v_locs := v_locs || NEW.locale;
+  END IF;
+
+  FOR v_i IN 1 .. coalesce(cardinality(v_ents), 0) LOOP
+    v_ent := v_ents[v_i]; v_loc := v_locs[v_i];
+    CONTINUE WHEN v_ent IS NULL;
+    -- Мови вже немає (каскад) або вона не draft/published: disabled
+    -- зберігає токен і нічого не вимагає.
+    CONTINUE WHEN NOT EXISTS (
+      SELECT 1 FROM public.languages
+       WHERE code = v_loc AND status IN ('draft', 'published'));
+    -- Сутності вже немає (каскад видалення) — вимагати нічого.
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM public.%I WHERE id = $1)', v_base)
+      INTO v_ok USING v_ent;
+    CONTINUE WHEN NOT v_ok;
+    EXECUTE format(
+      'SELECT EXISTS (SELECT 1 FROM public.%I WHERE %I = $1 AND locale = $2 AND is_current)',
+      v_reg, v_fk) INTO v_ok USING v_ent, v_loc;
+    IF NOT v_ok THEN
+      RAISE EXCEPTION '%: потрібна рівно одна поточна токен (мова %)', v_base, v_loc
+        USING ERRCODE = 'check_violation',
+              DETAIL = format('id = %s', v_ent);
+    END IF;
+  END LOOP;
+  RETURN NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.require_current_token() FROM PUBLIC;
+
+-- Підключення пари: обидва CONSTRAINT TRIGGER з одних аргументів. Реєстр
+-- слухає ще й `locale` та FK: перенесення рядка в іншу мову чи сутність теж
+-- може лишити пару без поточної токен. Ідемпотентно (DROP + CREATE); імена
+-- обрізаються до 63 байт детерміновано.
+CREATE OR REPLACE PROCEDURE public.attach_current_token_triggers(
+  base regclass,
+  registry regclass,
+  fk text
+)
+LANGUAGE plpgsql
+SET search_path = public AS $$
+DECLARE
+  v_base   text;
+  v_reg    text;
+  v_id_att smallint;
+  v_fk_att smallint;
+  v_col    text;
+  v_b_trg  text;
+  v_r_trg  text;
+BEGIN
+  SELECT c.relname INTO v_base FROM pg_class c
+   WHERE c.oid = base AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
+  SELECT c.relname INTO v_reg FROM pg_class c
+   WHERE c.oid = registry AND c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace;
+  IF v_base IS NULL OR v_reg IS NULL THEN
+    RAISE EXCEPTION 'attach_current_token_triggers: % і % мають бути звичайними таблицями схеми public',
+      base, registry USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  FOREACH v_col IN ARRAY ARRAY[fk, 'locale', 'is_current', 'slug'] LOOP
+    IF v_col IS NULL OR NOT EXISTS (
+         SELECT 1 FROM pg_attribute a
+          WHERE a.attrelid = registry AND a.attname = v_col
+            AND a.attnum > 0 AND NOT a.attisdropped) THEN
+      RAISE EXCEPTION 'attach_current_token_triggers: у %.% немає колонки "%"', 'public', v_reg, v_col
+        USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+  END LOOP;
+
+  SELECT a.attnum INTO v_id_att FROM pg_attribute a
+   WHERE a.attrelid = base AND a.attname = 'id' AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_id_att IS NULL THEN
+    RAISE EXCEPTION 'attach_current_token_triggers: у %.% немає колонки id типу uuid', 'public', v_base
+      USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  SELECT a.attnum INTO v_fk_att FROM pg_attribute a
+   WHERE a.attrelid = registry AND a.attname = fk AND a.atttypid = 'uuid'::regtype
+     AND a.attnum > 0 AND NOT a.attisdropped;
+  IF v_fk_att IS NULL THEN
+    RAISE EXCEPTION 'attach_current_token_triggers: колонка "%" у %.% має бути типу uuid', fk, 'public', v_reg
+      USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint k,
+                              unnest(k.conkey, k.confkey) AS u(src, dst)
+                  WHERE k.contype = 'f' AND k.conrelid = registry
+                    AND k.confrelid = base AND u.src = v_fk_att AND u.dst = v_id_att) THEN
+    RAISE EXCEPTION 'attach_current_token_triggers: колонка "%" у %.% має бути зовнішнім ключем на %.%(id)',
+      fk, 'public', v_reg, 'public', v_base USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  v_b_trg := left(v_base, 63 - length('_cur_tok_b')) || '_cur_tok_b';
+  v_r_trg := left(v_reg, 63 - length('_cur_tok_r')) || '_cur_tok_r';
+
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_b_trg, v_base);
+  EXECUTE format(
+    'CREATE CONSTRAINT TRIGGER %I AFTER INSERT ON public.%I '
+    || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
+    || 'EXECUTE FUNCTION public.require_current_token(%L, %L, %L, %L)',
+    v_b_trg, v_base, 'base', v_base, v_reg, fk);
+
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', v_r_trg, v_reg);
+  EXECUTE format(
+    'CREATE CONSTRAINT TRIGGER %I AFTER DELETE OR UPDATE OF is_current, slug, locale, %I ON public.%I '
+    || 'DEFERRABLE INITIALLY DEFERRED FOR EACH ROW '
+    || 'EXECUTE FUNCTION public.require_current_token(%L, %L, %L, %L)',
+    v_r_trg, fk, v_reg, 'registry', v_base, v_reg, fk);
+END;
+$$;
+
+REVOKE ALL ON PROCEDURE public.attach_current_token_triggers(regclass, regclass, text) FROM PUBLIC;
+
+-- ── Підключення до реальних таблиць ─────────────────────────────────────────
+CALL public.attach_current_address_triggers('public.products'::regclass, 'public.url_paths'::regclass, 'product_id');
+CALL public.attach_current_token_triggers('public.product_modifications'::regclass, 'public.slug_tokens'::regclass, 'modification_id');
+
+-- Тригер реєстру працює вже зараз. Тригер БАЗИ вимкнено: до Task 10 тести й
+-- сіди вставляють товари без адрес, а Task 17 лише прибирає ці два рядки.
+-- М1-TEMP: вмикається в Task 17
+ALTER TABLE public.products DISABLE TRIGGER products_cur_addr_b;
+-- М1-TEMP: вмикається в Task 17
+ALTER TABLE public.product_modifications DISABLE TRIGGER product_modifications_cur_tok_b;
