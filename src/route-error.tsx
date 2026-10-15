@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { describePublicError } from 'simplycms/contracts/masked-error';
-import { createTranslator, languageOf } from 'simplycms/i18n';
+import { createTranslator, languageOfConfigLocale } from 'simplycms/i18n';
 import config from '../simplycms.config';
 
 /**
@@ -14,7 +14,7 @@ import config from '../simplycms.config';
  *
  * М1-TEMP: Task 9 — мова запиту замість мови з конфіга.
  */
-const t = createTranslator(languageOf(config.locale), 'uk');
+const t = createTranslator(languageOfConfigLocale(config.locale), 'uk');
 
 /**
  * Єдиний екран помилки вітрини: корінь (`errorComponent`) і всі дочірні роути

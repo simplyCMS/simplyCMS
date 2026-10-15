@@ -1,15 +1,17 @@
 import { getLanguagePack } from './packs';
 import type { Locale, MessageKey, MessageParams, Translator } from './types';
 
+// М2: зноситься разом із `config.locale` (мова магазину — з БД).
 /**
- * `uk-UA` → `uk`, `EN` → `en`: мовна частина тегу в нижньому регістрі.
+ * Тимчасовий міст до М2 (знос `config.locale`): мовна частина тегу з конфіга
+ * магазину в нижньому регістрі, `uk-UA` → `uk`, `EN` → `en`.
  *
- * Міст до `config.locale`, що несе регіон (`uk-UA`). Мову не перевіряє й не
+ * НЕ загальна утиліта мов: для кодів мов магазину (`pt-BR` — окрема мова з
+ * власним сегментом URL) регіон зрізати не можна. Мову не перевіряє й не
  * підміняє: невідома лишається собою (`fr-FR` → `fr`), а відсутність пакета
  * закриває фолбек транслятора.
- * М2: зноситься разом із `config.locale` (мова магазину — з БД).
  */
-export function languageOf(tag: string): Locale {
+export function languageOfConfigLocale(tag: string): Locale {
   return tag.split('-')[0]?.toLowerCase() ?? '';
 }
 

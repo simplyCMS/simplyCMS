@@ -1,8 +1,10 @@
-// Статуси перекладів і нормалізація вводу (майстер §3.4) — чиста логіка T1.
+// Статуси перекладів (майстер §3.4) — чиста логіка T1.
 //
 // 🔴 Хешів тут НЕ рахують: sha256 потребує `node:crypto`, а цей модуль
 // імпортує й клієнт адмінки (бейджі статусів). Хеш поточного джерела приходить
-// у `TranslationRow.hashes` готовим — його рахує сервер (`simplycms/translations`).
+// у `SourceRow.currentHashes` готовим — його рахує сервер (`simplycms/translations`)
+// й передає сюди як `hash`.
+import { hasText } from './text';
 
 /** Статус поля або рядка перекладу відносно поточного джерела. */
 export type FieldStatus = 'current' | 'outdated' | 'missing';
@@ -10,7 +12,8 @@ export type FieldStatus = 'current' | 'outdated' | 'missing';
 /**
  * Опис перекладної сутності: які поля перекладаються й які з них обов'язкові.
  * `richHtml` — підмножина `fields`, що несе санітизований HTML: його хеш береться
- * від уже очищеної розмітки (санітизує викликач, не цей модуль).
+ * від уже очищеної розмітки (санітизує викликач), а порожнечу визначає розмітка
+ * (`<p></p>` — не текст).
  */
 export interface TranslatableSpec {
   readonly fields: readonly string[];
@@ -19,38 +22,60 @@ export interface TranslatableSpec {
 }
 
 /**
- * Рядок локалізованих полів одного запису.
- *
- * `hashes` мають різний зміст за роллю рядка, бо порівнюються між собою:
- * для рядка-ДЖЕРЕЛА — хеші його ПОТОЧНОГО тексту (поле без тексту хеша не має);
- * для рядка ПЕРЕКЛАДУ — `source_hashes`: хеш джерела на мить, коли поле
- * перекладали. Рівність цих двох і є «актуальність».
+ * Рядок локалізованих полів, як він лежить у БД. `hashes` рядка перекладу —
+ * `source_hashes`: хеш джерела на мить, коли поле перекладали. У рядка
+ * основної мови `source_hashes` = `{}`, тож як джерело для статусів його
+ * передавати не можна — для цього є `SourceRow`.
  */
 export interface TranslationRow {
   readonly values: Readonly<Record<string, string | null | undefined>>;
   readonly hashes?: Readonly<Record<string, string>>;
 }
 
-/** Є справжній текст (не `null`, не порожній рядок, не самі пробіли). */
-export function hasText(value: string | null | undefined): value is string {
-  return typeof value === 'string' && value.trim() !== '';
-}
-
 /**
- * Нормалізація вводу поля (§3.4): `undefined` — поле не надіслано (не чіпати),
- * `null`, `''` і самі пробіли — очистити (`null`), решта — як є. Непорожній текст
- * не обрізається: пробіли по краях можуть бути частиною rich-розмітки, а хеш і
- * так нормалізує (`NFC` + `trim`) на своєму боці.
+ * Рядок-ДЖЕРЕЛО з хешами його ПОТОЧНОГО тексту. Окремий тип (поле називається
+ * інакше, ніж `hashes`), щоб рядок основної мови з БД не можна було передати
+ * `rowStatus` як є: його `source_hashes` порожні, і всі переклади стали б
+ * `outdated`. Збирається `toSourceRow`.
  */
-export function normalizeTextInput(
+export interface SourceRow {
+  readonly values: Readonly<Record<string, string | null | undefined>>;
+  readonly currentHashes: Readonly<Record<string, string>>;
+}
+
+/** Чи розмітка поля rich-HTML (порожнеча за розміткою, а не за пробілами). */
+export function isRichField(spec: TranslatableSpec, field: string): boolean {
+  return spec.richHtml?.includes(field) ?? false;
+}
+
+/** Чи має значення поля `field` текст за правилами `spec`. */
+export function fieldHasText(
+  spec: TranslatableSpec,
+  field: string,
   value: string | null | undefined,
-): string | null | undefined {
-  if (value === undefined) return undefined;
-  return hasText(value) ? value : null;
+): value is string {
+  return hasText(value, isRichField(spec, field));
 }
 
 /**
- * Статус одного поля НЕ-джерела.
+ * Рядок-джерело для статусів: значення + хеші поточного тексту через
+ * інжектовану функцію хешу. Поле без тексту хеша не має.
+ */
+export function toSourceRow(
+  spec: TranslatableSpec,
+  values: SourceRow['values'],
+  hash: (text: string) => string,
+): SourceRow {
+  const currentHashes: Record<string, string> = {};
+  for (const field of spec.fields) {
+    const text = values[field];
+    if (fieldHasText(spec, field, text)) currentHashes[field] = hash(text);
+  }
+  return { values, currentHashes };
+}
+
+/**
+ * Статус одного поля НЕ-джерела; `rich` — поле зі `spec.richHtml`.
  *
  * Відсутність хеша і порожнє джерело (`currentSourceHash === null`) рівні:
  * переклад, зроблений, коли джерело було порожнім, лишається `current`, а коли
@@ -60,8 +85,9 @@ export function fieldStatus(
   target: string | null,
   recordedHash: string | undefined,
   currentSourceHash: string | null,
+  rich = false,
 ): FieldStatus {
-  if (!hasText(target)) return 'missing';
+  if (!hasText(target, rich)) return 'missing';
   return (recordedHash ?? null) === currentSourceHash ? 'current' : 'outdated';
 }
 
@@ -73,20 +99,21 @@ export function fieldStatus(
  */
 export function rowStatus(
   spec: TranslatableSpec,
-  source: TranslationRow,
+  source: SourceRow,
   target: TranslationRow | null,
 ): FieldStatus {
   if (!target) return 'missing';
-  if (spec.required.some((field) => !hasText(target.values[field])))
+  if (spec.required.some((f) => !fieldHasText(spec, f, target.values[f])))
     return 'missing';
   const outdated = spec.fields.some((field) => {
     const text = target.values[field];
     return (
-      hasText(text) &&
+      fieldHasText(spec, field, text) &&
       fieldStatus(
         text,
         target.hashes?.[field],
-        source.hashes?.[field] ?? null,
+        source.currentHashes[field] ?? null,
+        isRichField(spec, field),
       ) === 'outdated'
     );
   });
@@ -96,15 +123,18 @@ export function rowStatus(
 /**
  * «Перекладено» для SEO (§3.4): кожне поле, НЕпорожнє в джерелі, непорожнє й у
  * мові. `outdated` рахується перекладеним (текст є), а назва мовою з описом
- * чужою — ні: змішана мова в індекс не потрапляє.
+ * чужою — ні: змішана мова в індекс не потрапляє. Порожній rich-текст
+ * (`<p></p>`) порожній і в джерелі, і в перекладі.
  */
 export function isTranslatedForSeo(
   spec: TranslatableSpec,
-  source: TranslationRow,
-  target: TranslationRow | null,
+  source: Pick<TranslationRow, 'values'>,
+  target: Pick<TranslationRow, 'values'> | null,
 ): boolean {
   if (!target) return false;
   return spec.fields.every(
-    (field) => !hasText(source.values[field]) || hasText(target.values[field]),
+    (field) =>
+      !fieldHasText(spec, field, source.values[field]) ||
+      fieldHasText(spec, field, target.values[field]),
   );
 }

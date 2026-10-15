@@ -6,11 +6,12 @@ import {
   type ValidationIssue,
 } from 'simplycms/contracts/domain-errors';
 import {
-  hasText,
-  normalizeTextInput,
+  fieldHasText,
+  isRichField,
   type TranslatableSpec,
   type TranslationRow,
 } from './status';
+import { normalizeTextInput } from './text';
 
 /**
  * Відмова вводу запису перекладу.
@@ -45,7 +46,7 @@ export function normalizePatch(
   const issues: ValidationIssue[] = [];
   const values: Record<string, string | null> = {};
   for (const [field, raw] of Object.entries(fields)) {
-    const value = normalizeTextInput(raw);
+    const value = normalizeTextInput(raw, isRichField(spec, field));
     if (value === undefined) continue;
     if (!spec.fields.includes(field)) {
       issues.push(issue([locale, field], 'unrecognized_keys'));
@@ -57,20 +58,6 @@ export function normalizePatch(
   }
   if (issues.length > 0) throw new TranslationValidationError(issues);
   return values;
-}
-
-/** Хеші поточного тексту джерела для полів, де текст є. */
-export function hashesOf(
-  spec: TranslatableSpec,
-  values: TranslationRow['values'],
-  hash: (text: string) => string,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const field of spec.fields) {
-    const text = values[field];
-    if (hasText(text)) out[field] = hash(text);
-  }
-  return out;
 }
 
 /** `source_hashes` рядка після запису: старі зберігаються, надіслані поля — хеш НОВОГО джерела. */
@@ -90,7 +77,8 @@ export function mergeHashes(
   for (const [field, value] of Object.entries(sent)) {
     const sourceText = newSource[field];
     // Очищене поле й поле без тексту в джерелі хеша не мають (див. fieldStatus).
-    if (value !== null && hasText(sourceText)) merged[field] = hash(sourceText);
+    if (value !== null && fieldHasText(spec, field, sourceText))
+      merged[field] = hash(sourceText);
     else delete merged[field];
   }
   return merged;

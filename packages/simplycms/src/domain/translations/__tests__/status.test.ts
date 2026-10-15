@@ -4,6 +4,8 @@ import {
   isTranslatedForSeo,
   normalizeTextInput,
   rowStatus,
+  toSourceRow,
+  type SourceRow,
   type TranslatableSpec,
   type TranslationRow,
 } from '../index';
@@ -63,10 +65,10 @@ describe('fieldStatus', () => {
 });
 
 describe('rowStatus', () => {
-  const source = row(
-    { name: 'Назва', description: 'Опис' },
-    { name: 'h(Назва)', description: 'h(Опис)' },
-  );
+  const source: SourceRow = {
+    values: { name: 'Назва', description: 'Опис' },
+    currentHashes: { name: 'h(Назва)', description: 'h(Опис)' },
+  };
 
   it('рядка перекладу немає → missing', () => {
     expect(rowStatus(SPEC, source, null)).toBe('missing');
@@ -99,6 +101,31 @@ describe('rowStatus', () => {
   it('порожнє необов’язкове поле статус рядка не псує (його ловить isTranslatedForSeo)', () => {
     const target = row({ name: 'Name' }, { name: 'h(Назва)' });
     expect(rowStatus(SPEC, source, target)).toBe('current');
+  });
+});
+
+describe('SourceRow (рядок основної мови з БД не годиться як джерело статусів)', () => {
+  const hash = (text: string) => `h(${text})`;
+
+  it('toSourceRow рахує хеші поточного тексту, поле без тексту хеша не має', () => {
+    const source = toSourceRow(
+      SPEC,
+      { name: 'Назва', description: 'Опис', short_description: null },
+      hash,
+    );
+    expect(source.currentHashes).toEqual({
+      name: 'h(Назва)',
+      description: 'h(Опис)',
+    });
+  });
+
+  it('рядок з БД (source_hashes = {}) не передається в rowStatus: помилка типу', () => {
+    const dbRow: TranslationRow = {
+      values: { name: 'Назва' },
+      hashes: {},
+    };
+    // @ts-expect-error — TranslationRow не SourceRow: немає currentHashes
+    expect(rowStatus(SPEC, dbRow, null)).toBe('missing');
   });
 });
 

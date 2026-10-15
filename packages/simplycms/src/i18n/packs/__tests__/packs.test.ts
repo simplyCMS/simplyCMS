@@ -3,7 +3,7 @@ import {
   LANGUAGE_PACKS,
   createTranslator,
   getLanguagePack,
-  languageOf,
+  languageOfConfigLocale,
 } from 'simplycms/i18n';
 
 describe('мовні пакети', () => {
@@ -61,14 +61,14 @@ describe('createTranslator(locale, fallback)', () => {
   });
 });
 
-describe('languageOf (міст до config.locale, що несе регіон)', () => {
+describe('languageOfConfigLocale (тимчасовий міст до config.locale з регіоном, М2)', () => {
   it('зрізає регіон і регістр: uk-UA → uk, EN → en', () => {
-    expect(languageOf('uk-UA')).toBe('uk');
-    expect(languageOf('en-US')).toBe('en');
-    expect(languageOf('EN')).toBe('en');
+    expect(languageOfConfigLocale('uk-UA')).toBe('uk');
+    expect(languageOfConfigLocale('en-US')).toBe('en');
+    expect(languageOfConfigLocale('EN')).toBe('en');
   });
 
   it('не прив’язується до наявності пакета: fr-FR → fr', () => {
-    expect(languageOf('fr-FR')).toBe('fr');
+    expect(languageOfConfigLocale('fr-FR')).toBe('fr');
   });
 });

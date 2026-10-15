@@ -41,6 +41,8 @@ export function useThemeT<K extends string = string>(): (
   return useCallback(
     (key: K, params?: MessageParams): string => {
       const messages = theme.messages;
+      // М1-TEMP: Task 9 — фолбек стане основною мовою магазину (з контексту
+      // `I18nProvider`), а не захардкодженою `uk`.
       const template = messages?.[locale]?.[key] ?? messages?.uk?.[key] ?? key;
       return interpolate(template, params);
     },

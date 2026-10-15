@@ -1,96 +1,19 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   SERVER_ONLY,
-  SERVER_ONLY_DEPS,
   isServerOnlySubpath,
-  serverOnlyDepSpecifier,
 } from '../packages/simplycms/src/contracts/server-only';
+import {
+  ROOTS,
+  scan,
+  scanFixture,
+} from './domain-translations-client-safe/scan';
 
 /**
- * `domain/translations` і `domain/slugs` — T1: їх імпортує й клієнтський
- * бандл адмінки (бейджі статусів, прев'ю адрес). Тому ні вони, ні їхні
- * транзитивні локальні імпорти не можуть тягти `node:` чи server-only субшлях;
- * sha256 живе лише в серверному `simplycms/translations`.
- *
- * 🔴 Статичний розбір, а не «імпортували й не впало»: у vitest `node:crypto`
- * доступний, тож динамічна перевірка клієнтської безпеки нічого б не довела.
- * Перелік server-only береться з єдиної декларації `contracts/server-only`.
+ * `domain/translations` і `domain/slugs` — T1: їх імпортує й клієнтський бандл
+ * адмінки. Скан, його пастки (статичний розбір, а не «імпортували й не впало») і
+ * перелік server-only — у `domain-translations-client-safe/scan.ts`.
  */
-const SRC = resolve(import.meta.dirname, '../packages/simplycms/src');
-const ROOTS = ['domain/translations', 'domain/slugs'].map((r) =>
-  resolve(SRC, r),
-);
-
-const IMPORT_RE =
-  /(?:^|\n)\s*(?:import|export)\b[^'"]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|\n)\s*import\s*['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
-
-const specifiersOf = (code: string): string[] =>
-  [...code.matchAll(IMPORT_RE)].map((m) => (m[1] ?? m[2] ?? m[3])!);
-
-const sourceFiles = (dir: string): string[] =>
-  readdirSync(dir).flatMap((name) => {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory())
-      return name === '__tests__' ? [] : sourceFiles(full);
-    return /\.tsx?$/.test(name) ? [full] : [];
-  });
-
-/** Файл, на який вказує специфікатор усередині пакета, або null (зовнішній). */
-function resolveLocal(from: string, spec: string): string | null {
-  const base = spec.startsWith('.')
-    ? resolve(dirname(from), spec)
-    : spec.startsWith('simplycms/')
-      ? resolve(SRC, spec.slice('simplycms/'.length))
-      : null;
-  if (!base) return null;
-  const candidates = [
-    base,
-    `${base}.ts`,
-    `${base}.tsx`,
-    join(base, 'index.ts'),
-    join(base, 'index.tsx'),
-  ];
-  return candidates.find((c) => existsSync(c) && statSync(c).isFile()) ?? null;
-}
-
-/** Транзитивне замикання локальних імпортів від коренів + порушення. */
-function scan(roots: string[]): { files: string[]; violations: string[] } {
-  const queue = roots.flatMap((root) => sourceFiles(root));
-  const seen = new Set<string>();
-  const violations: string[] = [];
-  while (queue.length > 0) {
-    const file = queue.pop()!;
-    if (seen.has(file)) continue;
-    seen.add(file);
-    for (const spec of specifiersOf(readFileSync(file, 'utf8'))) {
-      const where = `${relative(SRC, file)} → ${spec}`;
-      if (spec.startsWith('node:')) violations.push(`node: ${where}`);
-      if (
-        spec.startsWith('simplycms/') &&
-        isServerOnlySubpath(spec.slice('simplycms/'.length))
-      )
-        violations.push(`server-only: ${where}`);
-      if (SERVER_ONLY_DEPS.some((d) => serverOnlyDepSpecifier(d).test(spec)))
-        violations.push(`серверна залежність: ${where}`);
-      const next = resolveLocal(file, spec);
-      if (next) queue.push(next);
-    }
-  }
-  return { files: [...seen].map((f) => relative(SRC, f)).sort(), violations };
-}
-
 describe('domain/translations і domain/slugs клієнтобезпечні (T1)', () => {
   const { files, violations } = scan(ROOTS);
 
@@ -115,26 +38,56 @@ describe('domain/translations і domain/slugs клієнтобезпечні (T1
     expect(violations).toEqual([]);
   });
 
-  it('негативний контроль: скан ловить node: і server-only у ТРАНЗИТИВНОМУ імпорті', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'client-safe-'));
-    try {
-      mkdirSync(join(dir, 'root'));
-      writeFileSync(
-        join(dir, 'root', 'a.ts'),
-        `import { b } from '../helper/b';\nexport const a = b;\n`,
-      );
-      mkdirSync(join(dir, 'helper'));
-      writeFileSync(
-        join(dir, 'helper', 'b.ts'),
-        `import { createHash } from 'node:crypto';\n` +
-          `import { sourceFieldHash } from 'simplycms/translations';\n` +
-          `export const b = [createHash, sourceFieldHash];\n`,
-      );
-      const found = scan([join(dir, 'root')]).violations;
-      expect(found.some((v) => v.startsWith('node:'))).toBe(true);
-      expect(found.some((v) => v.startsWith('server-only:'))).toBe(true);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+  // Негативний контроль на КОЖНУ гілку детектора: файл `helper/b.ts` лежить
+  // поза коренем скану і досяжний лише транзитивно.
+  const BRANCHES: Array<[string, string, string]> = [
+    ['node: префікс', `import { createHash } from 'node:crypto';`, 'node:'],
+    [
+      'голий вбудований модуль',
+      `import { readFileSync } from 'fs';`,
+      'builtin:',
+    ],
+    [
+      'голий вбудований підшлях',
+      `import { join } from 'path/posix';`,
+      'builtin:',
+    ],
+    [
+      'server-only субшлях',
+      `import { sourceFieldHash } from 'simplycms/translations';`,
+      'server-only:',
+    ],
+    [
+      'серверна залежність',
+      `import { Pool } from 'pg';`,
+      'серверна залежність:',
+    ],
+  ];
+
+  it.each(BRANCHES)(
+    'негативний контроль: %s у ТРАНЗИТИВНОМУ імпорті',
+    (_name, line, label) => {
+      const found = scanFixture({
+        'root/a.ts': `import { b } from '../helper/b';\nexport const a = b;\n`,
+        'helper/b.ts': `${line}\nexport const b = 1;\n`,
+      });
+      expect(found.some((v) => v.startsWith(label))).toBe(true);
+    },
+  );
+
+  it('негативний контроль: імпорт з розширенням `.js` не ховає замикання', () => {
+    const found = scanFixture({
+      'root/a.ts': `import { b } from '../helper/b.js';\nexport const a = b;\n`,
+      'helper/b.ts': `import 'node:crypto';\nexport const b = 1;\n`,
+    });
+    expect(found.some((v) => v.startsWith('node:'))).toBe(true);
+  });
+
+  it('позитивний контроль: чисте дерево не дає порушень', () => {
+    const found = scanFixture({
+      'root/a.ts': `import { b } from '../helper/b';\nexport const a = b;\n`,
+      'helper/b.ts': `export const b = 1;\n`,
+    });
+    expect(found).toEqual([]);
   });
 });

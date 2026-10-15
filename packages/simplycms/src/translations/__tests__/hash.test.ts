@@ -4,9 +4,9 @@ import { sourceFieldHash } from '../index';
 
 describe('sourceFieldHash (§3.4: sha256 від NFC+trim)', () => {
   it('NFC і зайвий пробіл не змінюють хеш', () => {
-    // Escape-послідовності, а не літерали: редактор чи форматер міг би
-    // мовчки нормалізувати «é» і зробити тест тавтологією.
-    expect(sourceFieldHash('Café')).toBe(sourceFieldHash('Café '));
+    // Escape-послідовності, а не літерали (u+00e9 цілим символом проти «e» + u+0301):
+    // редактор чи форматер міг би мовчки нормалізувати літерал і зробити тест тавтологією.
+    expect(sourceFieldHash('Caf\u00e9')).toBe(sourceFieldHash('Cafe\u0301 '));
   });
 
   it('64 hex-символи', () => {

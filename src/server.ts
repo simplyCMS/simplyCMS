@@ -11,7 +11,7 @@ import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
 import { withSecurityHeaders } from 'simplycms/server-guard';
-import { languageOf } from 'simplycms/i18n';
+import { languageOfConfigLocale } from 'simplycms/i18n';
 import {
   declareBuiltThemes,
   declareStoreCurrency,
@@ -28,7 +28,7 @@ declareBuiltThemes(Object.keys(config.themes ?? {}));
 // Локаль листів (скидання пароля, запрошення): серверний код `simplycms.config`
 // не бачить, тож host повідомляє її тим самим каналом (Е8-Р8). Без декларації
 // ядро шле українською з одним попередженням.
-declareStoreLocale(languageOf(config.locale));
+declareStoreLocale(languageOfConfigLocale(config.locale));
 
 // Валюта сум у листах замовлення — з того самого `simplycms.config`, що й
 // вітрина: чек без валюти двозначний. Без декларації — дефолт ядра з

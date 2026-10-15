@@ -105,6 +105,22 @@ describe('planTranslationWrite', () => {
     ]);
   });
 
+  it('сценарій 3: поле, назване в expected, але не надіслане, зберігає старий хеш', () => {
+    // description названо й збігається з поточним джерелом, але його не
+    // надсилали: актуальним стає лише надіслане поле (як у сценарії 2).
+    const result = plan({
+      patch: new Map([['en', { name: 'New name' }]]),
+      expectedSourceHashes: new Map([
+        ['en', { name: 'h(Назва)', description: 'h(Опис)' }],
+      ]),
+    });
+    expect(result.sourceChanged).toBeNull();
+    expect(result.upserts[0]?.sourceHashes).toEqual({
+      name: 'h(Назва)',
+      description: 'h(СтарийОпис)',
+    });
+  });
+
   it('expected називає поле, якого немає у spec → помилка валідації, а не мовчазний 409', () => {
     const error = issuesOf(() =>
       plan({

@@ -1,4 +1,8 @@
-import { getLanguagePack, languageOf, type Locale } from 'simplycms/i18n';
+import {
+  getLanguagePack,
+  languageOfConfigLocale,
+  type Locale,
+} from 'simplycms/i18n';
 import { runOwnerInvite } from './run';
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -13,7 +17,7 @@ export function resolveInviteLocale(
 ): Locale {
   const raw = env.VITE_LOCALE;
   if (!raw) return 'uk';
-  const locale = languageOf(raw);
+  const locale = languageOfConfigLocale(raw);
   if (getLanguagePack(locale)) return locale;
   log(
     `VITE_LOCALE="${raw}" не підтримується — лист запрошення піде мовою "uk".`,

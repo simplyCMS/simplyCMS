@@ -17,7 +17,11 @@ import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { I18nProvider, createTranslator, languageOf } from 'simplycms/i18n';
+import {
+  I18nProvider,
+  createTranslator,
+  languageOfConfigLocale,
+} from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
@@ -34,7 +38,7 @@ import appCss from '../styles/globals.css?url';
 import '../theme-registry';
 
 // Локаль магазину — build-time вибір власника, тож резолвиться один раз на модуль.
-const locale = languageOf(config.locale);
+const locale = languageOfConfigLocale(config.locale);
 
 /**
  * Транслятор каркаса — створюється напряму, а НЕ через `useT()`.

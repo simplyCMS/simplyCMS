@@ -29,7 +29,7 @@ const APOSTROPHES = /['’ʼ‘`]/g;
 /**
  * Slug із тексту або `null`, коли письмо без таблиці не передати латиницею.
  *
- * Порядок: NFC → таблиця мови (якщо є) → нижній регістр → NFKD без діакритики
+ * Порядок: NFC → таблиця мови (якщо є) → NFKD → нижній регістр → без діакритики
  * й мала мапа → решта не-алфавітно-цифрового стає роздільником `-`. Якщо після
  * цього лишилась літера чи цифра поза ASCII (`東京`, кирилиця без таблиці),
  * відповідь `null`: викликач вирішує, що робити (запитати адресу вручну), а
@@ -42,9 +42,12 @@ export function slugify(
 ): string | null {
   const prepared = text.normalize('NFC');
   const transliterated = pack?.slugify ? pack.slugify(prepared) : prepared;
+  // NFKD ПЕРЕД нижнім регістром: символи сумісності розкладаються у ВЕЛИКІ
+  // літери (`№` → `No`, `℃` → `°C`, `™` → `TM`), і зворотний порядок лишив би
+  // їх великими — тоді вони стали б роздільниками (`kabel-o2`, `10`).
   const folded = transliterated
-    .toLowerCase()
     .normalize('NFKD')
+    .toLowerCase()
     .replace(/\p{M}+/gu, '')
     .replace(/[łøßæœđþ]/g, (ch) => LATIN_FOLD[ch]!)
     .replace(APOSTROPHES, '');

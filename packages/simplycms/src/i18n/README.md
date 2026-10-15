@@ -24,7 +24,7 @@ pnpm add simplycms
 | Символ | Опис |
 |--------|------|
 | `createTranslator(locale, fallback)` | Транслятор-замикання: каталог мови → каталог `fallback` (основна мова магазину) → сам ключ |
-| `languageOf(tag)`            | `'uk-UA'` → `'uk'`, `'EN'` → `'en'`: мовна частина тегу (міст до `config.locale`) |
+| `languageOfConfigLocale(tag)` | Тимчасовий міст до М2 (знос `config.locale`): `'uk-UA'` → `'uk'`, `'EN'` → `'en'`. Не для кодів мов магазину (`pt-BR` — окрема мова) |
 | `LANGUAGE_PACKS`, `getLanguagePack(code)` | Мовні пакети ядра (`uk`, `en`): каталог + (необов'язково) таблиця транслітерації адрес; мова без пакета → `null` |
 | `I18nProvider`               | React-провайдер: мемоїзує транслятор по `locale` |
 | `useT()`                     | Транслятор поточного рендера; кидає поза провайдером |
@@ -34,10 +34,10 @@ pnpm add simplycms
 
 ```tsx
 // host: src/routes/__root.tsx — провайдер над усіма групами роутів
-import { I18nProvider, languageOf } from 'simplycms/i18n';
+import { I18nProvider, languageOfConfigLocale } from 'simplycms/i18n';
 import config from '../../simplycms.config';
 
-const locale = languageOf(config.locale);
+const locale = languageOfConfigLocale(config.locale);
 <html lang={locale}>
   <body>
     <I18nProvider locale={locale}>{children}</I18nProvider>

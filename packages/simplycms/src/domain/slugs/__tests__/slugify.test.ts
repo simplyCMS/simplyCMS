@@ -84,6 +84,17 @@ describe('slugify без таблиці (латиниця)', () => {
     expect(slugify('Hello — «World»', null)).toBe('hello-world');
   });
 
+  // Символи сумісності розкладаються NFKD у ВЕЛИКІ літери: нижній регістр
+  // мусить іти після розкладання, інакше вони стають роздільниками.
+  it.each([
+    ['Кабель №2', UK, 'kabel-no2'],
+    ['10 ℃', null, '10-c'],
+    ['Brand™ X', null, 'brandtm-x'],
+    ['Fi ﬁ ligature', null, 'fi-fi-ligature'],
+  ])('символи сумісності: %s → %s', (text, pack, expected) => {
+    expect(slugify(text, pack)).toBe(expected);
+  });
+
   it('результат завжди проходить SLUG_FORMAT', () => {
     for (const text of ['Łódź Straße', 'a  b', 'x1-y2']) {
       expect(SLUG_FORMAT.test(slugify(text, null) ?? '')).toBe(true);

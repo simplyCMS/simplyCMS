@@ -87,6 +87,7 @@ export async function runOwnerInvite({
       env: { VITE_SITE_URL: siteUrl },
       storeName,
       // CLI не бачить `simplycms.config` магазину — локаль листа з env.
+      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
       t: createTranslator(locale, 'uk'),
     });
   } catch (error) {

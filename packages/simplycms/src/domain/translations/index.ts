@@ -4,15 +4,18 @@
 // лише в серверному `simplycms/translations`.
 
 export {
+  fieldHasText,
   fieldStatus,
-  hasText,
+  isRichField,
   isTranslatedForSeo,
-  normalizeTextInput,
   rowStatus,
+  toSourceRow,
   type FieldStatus,
+  type SourceRow,
   type TranslatableSpec,
   type TranslationRow,
 } from './status';
+export { hasRichText, hasText, normalizeTextInput } from './text';
 export { TranslationValidationError } from './write-parts';
 export {
   planTranslationWrite,

@@ -2,10 +2,14 @@
 // рядки мов, які хеші джерела стампувати, чи не змінилось джерело, поки
 // перекладач працював. IO немає: поточний стан приходить аргументом, а
 // функцію хешу інжектує сервер (`sourceFieldHash`) — тут `node:crypto` не можна.
-import { hasText, type TranslatableSpec, type TranslationRow } from './status';
+import {
+  fieldHasText,
+  toSourceRow,
+  type TranslatableSpec,
+  type TranslationRow,
+} from './status';
 import {
   TranslationValidationError,
-  hashesOf,
   issue,
   mergeHashes,
   normalizePatch,
@@ -16,7 +20,7 @@ export interface TranslationWriteInput {
   readonly spec: TranslatableSpec;
   readonly current: {
     /** Рядок основної мови; `null` — сутність ще створюється. */
-    readonly source: TranslationRow | null;
+    readonly source: Pick<TranslationRow, 'values'> | null;
     /** Наявні рядки інших мов (з їхніми `source_hashes`). */
     readonly byLocale: ReadonlyMap<string, TranslationRow>;
   };
@@ -59,7 +63,11 @@ function findSourceChange(
 ): TranslationWritePlan['sourceChanged'] {
   const { spec, current, primary, expectedSourceHashes, hash } = input;
   if (!expectedSourceHashes) return null;
-  const stored = hashesOf(spec, current.source?.values ?? {}, hash);
+  const stored = toSourceRow(
+    spec,
+    current.source?.values ?? {},
+    hash,
+  ).currentHashes;
   for (const [locale, expected] of expectedSourceHashes) {
     if (locale === primary || !sentLocales.has(locale)) continue;
     const unknown = Object.keys(expected).filter(
@@ -99,7 +107,9 @@ export function planTranslationWrite(
     ...primaryValues,
   };
   if (primaryValues) {
-    const missing = spec.required.filter((f) => !hasText(newSource[f]));
+    const missing = spec.required.filter(
+      (f) => !fieldHasText(spec, f, newSource[f]),
+    );
     if (missing.length > 0)
       throw new TranslationValidationError(
         missing.map((f) => issue([primary, f], 'too_small')),
