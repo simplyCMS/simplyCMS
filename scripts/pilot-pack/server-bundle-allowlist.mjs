@@ -38,7 +38,6 @@ export const SERVER_BUNDLE_ALLOWLIST = {
   'cookie-es': 'ESM-only',
   dayjs:
     'CJS без exports: єдиний (CJS) вхід, нема ESM-варіанта для хибного вибору',
-  deepmerge: 'CJS без exports: єдиний вхід',
   defu: 'dual, лише ESM-імпорти (h3/better-auth); require() у бандлі немає',
   'dom-serializer': 'ESM-only',
   domelementtype: 'ESM-only',
