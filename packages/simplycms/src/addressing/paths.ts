@@ -3,12 +3,16 @@ import { sql } from 'drizzle-orm';
 import { urlPaths } from 'simplycms/schema';
 import { isReservedPath } from 'simplycms/domain/slugs';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
-import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
+import {
+  advisoryXactLockShared,
+  isUniqueViolation,
+  type ActorDb,
+} from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import {
   allocateIn,
   assertSlugFormat,
-  isUniqueViolation,
+  activeLocales,
   languageSegments,
   reservedValue,
   textArray,
@@ -25,9 +29,12 @@ const reservedFor = (langs: readonly string[]) => (candidate: string) =>
   isReservedPath(candidate, langs, publicNames());
 
 /**
- * Поточні адреси нової сутності в усіх переданих мовах. Спільний замок
- * `languagesSet` першим запитом: додавання мови (ексклюзивний власник) чекає
- * завершення цих транзакцій і бачить усі закомічені сутності (Review Focus 1).
+ * Поточні адреси нової сутності в усіх мовах `draft`/`published`. Спільний
+ * замок `languagesSet` першим запитом, а набір мов читається ПІСЛЯ нього в тій
+ * самій транзакції: додавання мови (ексклюзивний власник) чекає завершення цих
+ * транзакцій і бачить усі закомічені сутності, а прочитаний до замка набір
+ * пропустив би конкурентну мову (Review Focus 1, І16). Тому мов викликач не
+ * передає: порядок «замок → набір» не залежить від дисципліни викликача.
  * Зайняті slug-и (поточні й історичні) читає ОДИН запит за префіксом бази, а
  * не вся адресна таблиця мови. Конкурентна вставка того самого slug-а дає
  * `unique_violation`: прихованого повтору немає.
@@ -36,10 +43,10 @@ export async function createPathsForEntity(
   db: ActorDb,
   target: AddressTarget,
   baseSlug: string,
-  locales: readonly string[],
 ): Promise<Map<string, string>> {
   assertSlugFormat(baseSlug, 'path');
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+  const locales = await activeLocales(db);
   const result = new Map<string, string>();
   if (locales.length === 0) return result;
   const rows = await db.execute<{ locale: string; path: string }>(sql`

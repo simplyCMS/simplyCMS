@@ -178,7 +178,6 @@ export type { AssignCustomerCategoryInput } from './customers/assign-category';
 export { findCustomersInput, findCustomersOp } from './customers/find';
 export type { CustomerHit } from './customers/find';
 // С-15: актор ядер, яких кличуть поза операцією (сід, порти).
-export type { CoreActor } from './core-actor';
 export { adminInput } from './validation';
 // К3-Е6д, Task 6: модерація відгуків (`review.moderate`).
 export {
@@ -236,3 +235,14 @@ export {
 } from './customers/contacts';
 export { revokeUserVerifications } from './customers/verifications';
 export { countAdmins, isAdminUser } from './customers/guards';
+
+// Операції мов (М1, Task 6) і реєстр операцій ядра.
+export {
+  languagesAdd,
+  languagesFill,
+  languagesList,
+  languagesRemove,
+  languagesReorder,
+  languagesSetStatus,
+} from './languages/operations';
+export { CORE_OPERATIONS, getOperation } from './operations-registry';

@@ -13,5 +13,11 @@
 export { withActor, type ActorDb } from './with-actor';
 export { asService } from './as-service';
 export { advisoryXactLock, advisoryXactLockShared } from './advisory-lock';
+export {
+  isForeignKeyViolation,
+  isUniqueViolation,
+  pgErrorInfo,
+  toAdminConflict,
+} from './pg-errors';
 export type { Actor, ActorRole } from './actor';
 export { closeDbPool } from './client';

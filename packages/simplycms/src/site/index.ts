@@ -11,6 +11,7 @@ export {
   createReadCache,
   storeProfileCache,
   activeThemeCache,
+  languagesCache,
 } from './read-cache';
 export type { ReadCache, ThemeRecord } from './read-cache';
 export {
@@ -23,3 +24,6 @@ export { readStoreProfile, toStorefrontProfile } from './store-profile';
 export { declareBuiltThemes, isBuiltTheme } from './built-themes';
 export { declareStoreLocale, getStoreLocale } from './store-locale';
 export { declareStoreCurrency, getStoreCurrency } from './store-currency';
+export { readLanguages } from './languages';
+export type { LanguageSummary } from './languages';
+export { hasLanguagePack } from './language-pack';

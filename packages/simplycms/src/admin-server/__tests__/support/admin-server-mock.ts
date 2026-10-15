@@ -157,6 +157,12 @@ export function createAdminServerMock(
     getCustomerCard: vi.fn(),
     dashboardSummary: vi.fn(),
     diagnosePrice: vi.fn(),
+    listLanguages: vi.fn(),
+    addLanguage: vi.fn(),
+    setLanguageStatus: vi.fn(),
+    fillLanguage: vi.fn(),
+    reorderLanguages: vi.fn(),
+    removeLanguage: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

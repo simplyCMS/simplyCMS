@@ -33,7 +33,8 @@ const rel = (key: string) =>
   );
 
 /** Валідатори не на Zod-схемі: ім'я функції, а не регекс по тексту. */
-const NON_SCHEMA_VALIDATORS = ['uploadFormInput'];
+// `passThrough` (М1): вхід перевіряє виконавець операцій за схемою операції.
+const NON_SCHEMA_VALIDATORS = ['uploadFormInput', 'passThrough'];
 
 /** Файли ПОЗА `admin-server` із голими валідаторами — свідомо, з причиною. */
 const UNWRAPPED_BY_DESIGN: Record<string, string> = {

@@ -51,7 +51,24 @@ export type Operation =
 export interface AuthzSubject {
   readonly userId: string | null;
   readonly roles: readonly AppRole[];
+  /**
+   * Токен API (М1, І27): перелік id операцій, які токен вправі виконувати;
+   * права = роль ∩ scopes. `undefined` — сесійний суб'єкт без звуження.
+   * Порожній масив — токен без жодної операції (fail-closed), не «без обмежень».
+   */
+  readonly scopes?: readonly string[];
+  /** Id токена для атрибуції дії (`token:<id>`); у сесійного суб'єкта немає. */
+  readonly tokenId?: string;
 }
+
+/**
+ * Актор доменного ядра (С-15): хто виконує дію, коли ядро кличуть поза
+ * HTTP-запитом (сід, порти) або з виконавця операцій. Живе тут, а не в
+ * `admin-server`: тип потрібен і `operations` (T2), якому `admin-server`
+ * імпортувати не можна. 🔴 Дискримінант, а не `string | null`: `null` у ролі
+ * «система» читається як забута перевірка, `kind: 'system'` — як свідоме рішення.
+ */
+export type CoreActor = { kind: 'admin'; userId: string } | { kind: 'system' };
 
 type Grants = Readonly<Partial<Record<AppRole, AuthScope>>>;
 
@@ -115,7 +132,7 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
  * `.message` — К3-13).
  */
 export class AuthzError extends Error {
-  constructor(readonly operation: Operation | AppRole) {
+  constructor(readonly operation: Operation | AppRole | string) {
     super(`[simplycms/auth] Операція заборонена: ${operation}.`);
     this.name = DOMAIN_ERROR_NAME.authz;
   }
@@ -169,9 +186,17 @@ export function requireRole(
 export function requireOperation(
   subject: AuthzSubject,
   operation: Operation,
+  operationId?: string,
 ): AuthScope {
   const scope = resolveGrant(subject, operation);
   if (!scope) throw new AuthzError(operation);
+  // Токен звужує роль до своїх операцій (І27). Без `operationId` при заданих
+  // scopes — відмова: мовчки пропустити означало б ігнорувати звуження.
+  if (
+    subject.scopes &&
+    (operationId === undefined || !subject.scopes.includes(operationId))
+  )
+    throw new AuthzError(operationId ?? operation);
   return scope;
 }
 

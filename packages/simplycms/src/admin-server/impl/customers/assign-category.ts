@@ -7,7 +7,8 @@ import {
   loadDefaultUserCategoryId,
   writeCategoryChange,
 } from 'simplycms/commerce';
-import { actorOfGrant, type CoreActor } from '../core-actor';
+import type { CoreActor } from 'simplycms/auth';
+import { actorOfGrant } from '../core-actor';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 

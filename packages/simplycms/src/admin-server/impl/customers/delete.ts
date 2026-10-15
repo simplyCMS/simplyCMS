@@ -16,7 +16,8 @@ import {
 } from 'simplycms/domain/media';
 import { productReviews, profiles, users } from 'simplycms/schema';
 import { completeMediaErasures, eraseMediaRows } from 'simplycms/storage';
-import { actorOfGrant, type CoreActor } from '../core-actor';
+import type { CoreActor } from 'simplycms/auth';
+import { actorOfGrant } from '../core-actor';
 import { runAdmin } from '../run';
 import { fieldIssue, parseAdminInput } from '../validation';
 import { isAdminUser } from './guards';

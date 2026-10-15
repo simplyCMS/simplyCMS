@@ -17,6 +17,7 @@ import {
 } from 'simplycms/addressing';
 import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
 import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { hold, sleep, until } from './fixtures/lock-holders';
 
 const CHECK = { code: '23514' };
 const UNIQUE = { code: '23505' };
@@ -72,10 +73,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     for (const id of ids)
       got.push(
         await admin((d) =>
-          createPathsForEntity(d, { kind: 'product', id }, 'panel', [
-            'uk',
-            'en',
-          ]),
+          createPathsForEntity(d, { kind: 'product', id }, 'panel'),
         ),
       );
     expect(got.map((m) => m.get('uk'))).toEqual([
@@ -93,17 +91,37 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   it('createPathsForEntity: зарезервоване й код мови не стають адресою', async () => {
     const p = await db.product();
     const got = await admin((d) =>
-      createPathsForEntity(d, { kind: 'product', id: p }, 'cart', ['uk']),
+      createPathsForEntity(d, { kind: 'product', id: p }, 'cart'),
     );
     expect(got.get('uk')).toBe('cart-2');
     const e = await db.product();
     const en = await admin((d) =>
-      createPathsForEntity(d, { kind: 'product', id: e }, 'en', ['uk']),
+      createPathsForEntity(d, { kind: 'product', id: e }, 'en'),
     );
     expect(en.get('uk')).toBe('en-2');
   });
 
   describe('setExplicitPath', () => {
+    it('гонка: той самий новий шлях з двох транзакцій → другий path_taken (23505 з .cause)', async () => {
+      const [a, b] = [await db.product(), await db.product()];
+      const first = hold(db, (d) =>
+        setExplicitPath(d, { kind: 'product', id: a }, 'uk', 'race-x'),
+      );
+      await until('A вставила шлях', first.acquired);
+      // B не бачить незакомічений рядок A: передперевірка проходить, а вставка
+      // чекає на унікальний індекс і падає 23505 після коміту A.
+      const second = admin((d) =>
+        setExplicitPath(d, { kind: 'product', id: b }, 'uk', 'race-x'),
+      ).catch((e: unknown) => e);
+      await sleep(300);
+      first.release();
+      await first.done;
+      expect(await second).toMatchObject({
+        kind: 'unique',
+        constraint: 'path_taken',
+      });
+    });
+
     it('на чужий історичний або поточний → path_taken', async () => {
       const [a, b] = [await db.product(), await db.product()];
       await addr('uk', 'own-a', a);
@@ -210,9 +228,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
         });
         const q2 = await db.product();
         const got = await admin((d) =>
-          createPathsForEntity(d, { kind: 'product', id: q2 }, 'favicon', [
-            'uk',
-          ]),
+          createPathsForEntity(d, { kind: 'product', id: q2 }, 'favicon'),
         );
         expect(got.get('uk')).toBe('favicon-2');
       } finally {

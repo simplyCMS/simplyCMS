@@ -11,7 +11,7 @@ import {
   ValidationError,
   stateConflict,
 } from 'simplycms/contracts/domain-errors';
-import { toAdminConflict } from '../errors';
+import { toAdminConflict } from 'simplycms/db';
 import { fieldIssue } from '../validation';
 
 const pgError = (code: string, constraint: string) =>

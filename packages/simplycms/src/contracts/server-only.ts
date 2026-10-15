@@ -93,6 +93,10 @@ export const SERVER_ONLY = [
   // Реєстри адрес і мовних токенів (Мультимовність М1, Task 5): SQL у транзакції
   // викликача, `node:fs` для маніфесту `public/` — клієнту недоступні.
   'addressing',
+  // Реєстр операцій і виконавець (Мультимовність М1, Task 6): тягне `db`/`auth`,
+  // а `operations/server` — ще й `@tanstack/react-start/server`. Клієнт бачить
+  // лише serverFn-обгортки в `admin-server`.
+  'operations',
 ] as const;
 
 /**

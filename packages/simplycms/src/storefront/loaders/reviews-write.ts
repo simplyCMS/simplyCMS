@@ -7,6 +7,7 @@ import {
   REVIEW_MEDIA_ENTITY,
 } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
+import { isUniqueViolation } from 'simplycms/db';
 import { productReviews } from 'simplycms/schema';
 import {
   eraseMediaRows,
@@ -17,6 +18,9 @@ import {
 } from 'simplycms/storage';
 import { withCustomerDb, type ActorDb } from './db';
 import type { OperatorEscalation } from './escalation';
+
+/** Гонка двох подач відгуку: другу ловить це унікальне обмеження. */
+const REVIEW_UNIQUE = 'product_reviews_product_id_user_id_key';
 
 /** Поля, які покупець заповнює у формі відгуку; `images` — референси. */
 export interface ReviewInput {
@@ -103,24 +107,12 @@ export async function submitReviewWithImages(
         }
         const full = { ...input, images: published };
         return insertProductReview(db, userId, full, id).catch((e: unknown) => {
-          throw isDuplicateReview(e)
+          throw isUniqueViolation(e, REVIEW_UNIQUE)
             ? new CodedError(REVIEW_SUBMIT_ERROR.alreadySubmitted)
             : e;
         });
       }),
     options.discardWith ?? options.driver,
-  );
-}
-
-/** Помилка драйвера — у `.cause` Drizzle (UPSTREAM:DRZ-1, upstream-workarounds.md). */
-function isDuplicateReview(error: unknown): boolean {
-  const cause = ((error as { cause?: unknown })?.cause ?? error) as {
-    code?: string;
-    constraint?: string;
-  };
-  return (
-    cause?.code === '23505' &&
-    cause.constraint === 'product_reviews_product_id_user_id_key'
   );
 }
 

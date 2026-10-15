@@ -42,6 +42,11 @@
 - **Класи доменних помилок переїхали:** `ValidationError`, `AdminConflictError`, `AdminNotFoundError` і `stateConflict`
   імпортуються з `simplycms/contracts/domain-errors` (раніше `simplycms/admin-server/impl`, звідки реекспорт прибрано).
   Новий код поля `reserved` (`VALIDATION_ISSUE_CODES`) для зарезервованої адреси.
+- **`createPathsForEntity`/`createTokensForEntity` без параметра `locales`:** самі беруть спільний замок
+  `languages-set` і читають мови `draft`/`published` після нього (Review Focus 1).
+- **`toAdminConflict` переїхав у `simplycms/db`** (`pg-errors`: також `isUniqueViolation`,
+  `isForeignKeyViolation`; єдиний розбір `.cause`, UPSTREAM:DRZ-1); `admin-server/impl/errors.ts` видалено.
+  Тип `CoreActor` — з `simplycms/auth` (раніше з `simplycms/admin-server/impl`).
 - **i18n: відкритий `Locale`, `createTranslator(locale, fallback)`, `normalizeLocale` знесено:** `Locale` —
   відкритий рядок BCP 47 (мови додає власник магазину, а не ядро). `createTranslator` приймає ДРУГИМ
   аргументом обов'язкову fallback-мову (основна мова магазину, не обов'язково `uk`); ланцюг — «каталог
@@ -55,6 +60,13 @@
 
 ### Додано
 
+- `simplycms/operations` (server-only) — реєстр операцій і виконавець з явним суб'єктом
+  (`defineOperation`, `executeOperation`, `assertVersionThenHash`), `simplycms/operations/server` —
+  `invokeFromServerFn`; `AuthzSubject.scopes`/`tokenId`, `requireOperation(subject, op, operationId?)`,
+  `subjectFromCookie()`. Операції мов `languages.{list,add,setStatus,fill,reorder,remove}` (serverFn:
+  `listLanguages`, `addLanguage`, `setLanguageStatus`, `fillLanguage`, `reorderLanguages`, `removeLanguage`),
+  реєстр `CORE_OPERATIONS`/`getOperation` у `admin-server/impl`, `languagesCache`/`readLanguages` у `site`.
+  Нові доменні помилки `VersionMismatchError`, `SourceChangedError`, `InUseError`, код поля `language_incomplete`.
 - `simplycms/domain/translations` — чиста логіка перекладів (T1, клієнтобезпечна): `fieldStatus`,
   `rowStatus` (джерело — `SourceRow` з хешами поточного тексту, збирає `toSourceRow`),
   `isTranslatedForSeo`, `normalizeTextInput`, `planTranslationWrite` (сценарії 1–3 запису

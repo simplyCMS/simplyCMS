@@ -1,16 +1,4 @@
-import type { RequestGrant } from 'simplycms/auth';
-
-/**
- * Актор доменного ядра адмінки (С-15): хто виконує дію, коли ядро кличуть
- * поза операцією (сід, порти, майбутній MCP-сервер магазину).
- *
- * 🔴 Дискримінант, а не `string | null`: `null` у ролі «система» читається
- * як забута перевірка, а `kind: 'system'` — як свідоме рішення викликача.
- * Ядро, що пише автора дії (`changed_by`) чи перевіряє «не я», для
- * `system` поводиться як автоправило: автора немає, перевірки «не я» теж.
- * Операція передає `{ kind: 'admin', userId }` із гранта сесії.
- */
-export type CoreActor = { kind: 'admin'; userId: string } | { kind: 'system' };
+import type { CoreActor, RequestGrant } from 'simplycms/auth';
 
 /**
  * Актор ядра з гранта операції. `userId: null` за типом `AuthzSubject`

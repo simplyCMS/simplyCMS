@@ -114,7 +114,6 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
             d,
             { kind: 'modification', id, scopeId: productId },
             'red',
-            ['uk', 'en'],
           ),
         ),
       );
@@ -122,9 +121,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     expect(got.map((m) => m.get('uk'))).toEqual(['red', 'red-2', 'red-3']);
     expect(got.map((m) => m.get('en'))).toEqual(['red', 'red-2', 'red-3']);
     const other = await mod();
-    const first = await admin((d) =>
-      createTokensForEntity(d, other, 'red', ['uk']),
-    );
+    const first = await admin((d) => createTokensForEntity(d, other, 'red'));
     expect(first.get('uk')).toBe('red');
   });
 

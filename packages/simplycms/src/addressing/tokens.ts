@@ -2,12 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { slugTokens } from 'simplycms/schema';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
-import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
+import {
+  advisoryXactLockShared,
+  isUniqueViolation,
+  type ActorDb,
+} from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import {
   allocateIn,
+  activeLocales,
   assertSlugFormat,
-  isUniqueViolation,
   textArray,
 } from './shared';
 
@@ -15,8 +19,9 @@ import {
 export type TokenTarget = { kind: 'modification'; id: string; scopeId: string };
 
 /**
- * Поточні токени нової модифікації в усіх переданих мовах — дзеркало
- * `createPathsForEntity`: той самий замок, той самий `allocateSlug`, але
+ * Поточні токени нової модифікації в усіх мовах `draft`/`published` — дзеркало
+ * `createPathsForEntity`: той самий замок (набір мов читається ПІСЛЯ нього),
+ * той самий `allocateSlug`, але
  * простір імен `(locale, token_kind, scope_id)`: однаковий slug у різних
  * товарів дозволений. Службові сегменти модифікацій не стосуються (вони в
  * `?mod=`, а не в сегменті шляху).
@@ -25,10 +30,10 @@ export async function createTokensForEntity(
   db: ActorDb,
   target: TokenTarget,
   baseSlug: string,
-  locales: readonly string[],
 ): Promise<Map<string, string>> {
   assertSlugFormat(baseSlug, 'slug');
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+  const locales = await activeLocales(db);
   const result = new Map<string, string>();
   if (locales.length === 0) return result;
   const rows = await db.execute<{ locale: string; slug: string }>(sql`

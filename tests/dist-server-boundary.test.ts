@@ -187,6 +187,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   sanitize: 'nofollow ugc noopener noreferrer',
   translations: '[simplycms/translations] sourceFieldHash: потрібен рядок',
   addressing: '[addressing] немає основної мови',
+  operations: '[simplycms/operations] id операції має формат',
 };
 
 const SRC = resolve(CORE, 'src');

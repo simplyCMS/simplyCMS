@@ -6,6 +6,11 @@ import {
   makeSerovalPlugin,
 } from '@tanstack/router-core/ssr/client';
 import { fromCrossJSON, toCrossJSONAsync } from 'seroval';
+import {
+  InUseError,
+  SourceChangedError,
+  VersionMismatchError,
+} from 'simplycms/contracts/domain-errors';
 import { domainErrorAdapter } from '../domain-error-adapter';
 
 // Тип масиву плагінів — рівно той, що приймає seroval (без `any`).
@@ -118,6 +123,38 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     expect(out).toBeInstanceOf(Error);
     expect(out).toMatchObject({ name: 'AdminNotFoundError' });
   });
+
+  // М1 Task 6: нові члени родини мусять пройти межу з ПОЛЯМИ — поза закритою
+  // родиною клас замаскувався б у 500 «Internal server error».
+  it('VersionMismatchError: name і число currentVersion переживають межу', async () => {
+    const out = await roundTrip(new VersionMismatchError(7), withAdapter);
+    expect(out).toMatchObject({
+      name: 'VersionMismatchError',
+      currentVersion: 7,
+    });
+  });
+
+  it('SourceChangedError: locale і словник хешів переживають межу, не-рядкові значення відкидаються', async () => {
+    const src = new SourceChangedError('en', { name: 'abc', description: 'd' });
+    Object.assign(src, { current: { name: 'abc', bad: 5 } });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toMatchObject({
+      name: 'SourceChangedError',
+      locale: 'en',
+      current: { name: 'abc' },
+    });
+    expect((out as unknown as { current: object }).current).not.toHaveProperty(
+      'bad',
+    );
+  });
+
+  it.each(['language_in_use', 'reference'] as const)(
+    'InUseError %s: name і kind переживають межу',
+    async (kind) => {
+      const out = await roundTrip(new InUseError(kind), withAdapter);
+      expect(out).toMatchObject({ name: 'InUseError', kind });
+    },
+  );
 
   it('контроль БЕЗ адаптера: ShallowErrorPlugin лишає голий Error(message) — фіксує механіку дефекту Start', async () => {
     const src = Object.assign(new Error('конфлікт'), {

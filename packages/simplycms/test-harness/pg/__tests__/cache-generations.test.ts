@@ -19,8 +19,12 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import {
   activateThemeOp,
+  languagesAdd,
   saveStoreProfileOp,
 } from 'simplycms/admin-server/impl';
+import { executeOperation } from 'simplycms/operations';
+
+const LANGUAGE_CODES = ['aa', 'ab', 'ac'] as const;
 
 type Replica = {
   site: typeof import('simplycms/site');
@@ -75,6 +79,24 @@ describe('cache_generations: покоління кешів між репліка
       mutate: (n: number) =>
         activateThemeOp({ data: { name: n % 2 ? 'solarstore' : 'default' } }),
       expected: (n: number) => (n % 2 ? 'solarstore' : 'default'),
+    },
+    // М1 Task 6: мутація мов — крізь реальний виконавець операцій.
+    languages: {
+      cache: () => replica.site.languagesCache,
+      read: () =>
+        replica.db.withActor({ role: 'app_user' }, (d) =>
+          replica.site.readLanguages(d),
+        ),
+      mutate: (n: number) =>
+        executeOperation(
+          languagesAdd,
+          { id: crypto.randomUUID(), code: LANGUAGE_CODES[n], name: 'Тест' },
+          { userId: null, roles: ['admin'] },
+        ),
+      expected: (n: number) =>
+        expect.arrayContaining([
+          expect.objectContaining({ code: LANGUAGE_CODES[n] }),
+        ]),
     },
   } as const;
   const names = Object.keys(subjects) as (keyof typeof subjects)[];

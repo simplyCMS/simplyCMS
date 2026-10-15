@@ -60,7 +60,11 @@ export { ownerInviteStore } from './invite-store';
 export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
 export type { SessionSubject } from './session';
 
-export { requireGrant, resolveRequestGrant } from './authz-request';
+export {
+  requireGrant,
+  resolveRequestGrant,
+  subjectFromCookie,
+} from './authz-request';
 export type { RequestGrant } from './authz-request';
 
 export {
@@ -73,4 +77,10 @@ export {
   requireRole,
   resolveGrant,
 } from './authz';
-export type { AppRole, AuthScope, AuthzSubject, Operation } from './authz';
+export type {
+  AppRole,
+  AuthScope,
+  AuthzSubject,
+  CoreActor,
+  Operation,
+} from './authz';

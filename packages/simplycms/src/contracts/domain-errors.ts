@@ -16,7 +16,7 @@
  * адаптер (T2, `simplycms/runtime`) читає ОДИН перелік замість того, щоб
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
  * Серверним лишається мапінг кодів PG у конфлікт — `toAdminConflict`
- * (`admin-server/impl/errors.ts`, UPSTREAM:DRZ-1). Членство в
+ * (`simplycms/db`, файл `pg-errors.ts`). Членство в
  * `DOMAIN_ERROR_NAME` пускає клас крізь маскування Р23.
  */
 import { REVIEW_SUBMIT_ERROR } from './objects/review';
@@ -29,6 +29,12 @@ export const DOMAIN_ERROR_NAME = {
   notFound: 'AdminNotFoundError',
   /** Машинний код відмови в `message` (`media/*`, `avatar/*`, `review/*`): клієнт мапить його в i18n. */
   coded: 'CodedError',
+  /** Версія агрегата розійшлась з очікуваною (М1, І14): HTTP 412. */
+  versionMismatch: 'VersionMismatchError',
+  /** Джерело перекладу змінилось між читанням перекладача і записом (І13): 409. */
+  sourceChanged: 'SourceChangedError',
+  /** Рядок, на який посилаються (мова з перекладами, довідник): 409 `language_in_use`/`reference`. */
+  inUse: 'InUseError',
 } as const satisfies Readonly<Record<string, string>>;
 
 /** `error.name` доменної помилки — значення `DOMAIN_ERROR_NAME`. */
@@ -36,10 +42,16 @@ export type DomainErrorName =
   (typeof DOMAIN_ERROR_NAME)[keyof typeof DOMAIN_ERROR_NAME];
 
 /**
- * Примітивні поля кожної помилки, які переживають межу serverFn — ключі
- * читає адаптер (духом-тайпінг, без імпорту серверних класів), значення
- * лишаються `string | null` (жодних функцій/класів/undefined — контракт
- * `ValidateSerializable` seroval-адаптера цього й так вимагає).
+ * Значення поля помилки на дроті: рядок, скінченне число, `null` або плоский
+ * словник рядків (хеші джерела `SourceChangedError`). Жодних функцій, класів і
+ * `undefined` — контракт `ValidateSerializable` seroval-адаптера цього вимагає.
+ */
+export type DomainErrorFieldValue =
+  string | number | null | Readonly<Record<string, string>>;
+
+/**
+ * Поля кожної помилки, які переживають межу serverFn — ключі читає адаптер
+ * (духом-тайпінг, без імпорту серверних класів), значення — `DomainErrorFieldValue`.
  */
 export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   Record<DomainErrorName, readonly string[]>
@@ -54,7 +66,27 @@ export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   [DOMAIN_ERROR_NAME.notFound]: [],
   // Код їде самим `message`; додаткових полів немає.
   [DOMAIN_ERROR_NAME.coded]: [],
+  [DOMAIN_ERROR_NAME.versionMismatch]: ['currentVersion'],
+  [DOMAIN_ERROR_NAME.sourceChanged]: ['locale', 'current'],
+  [DOMAIN_ERROR_NAME.inUse]: ['kind'],
 };
+
+/**
+ * Привести значення поля до дротової форми або `null`. Єдина функція для обох
+ * боків межі: сервер чистить поле перед відправкою, клієнт — після отримання
+ * (payload з мережі не довіряємо). Словник пропускає лише рядкові значення.
+ */
+export function toFieldValue(v: unknown): DomainErrorFieldValue {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+    const out: Record<string, string> = {};
+    for (const [k, item] of Object.entries(v))
+      if (typeof item === 'string') out[k] = item;
+    return out;
+  }
+  return null;
+}
 
 /** Коди відмов медіа-завантаження (`admin-server/impl/media`). */
 export const MEDIA_ERROR = {
@@ -227,11 +259,49 @@ export function stateConflict(constraint: AdminStateConstraint): never {
   throw new AdminConflictError('state', constraint);
 }
 
+/**
+ * Версія агрегата не збіглась з очікуваною (І14): `If-Match`/`expectedVersion`
+ * застарів. Операція кидає її після права й валідації, але ПЕРЕД перевіркою
+ * хеша джерела; межа ставить 412 і віддає `currentVersion`.
+ */
+export class VersionMismatchError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.versionMismatch;
+  constructor(readonly currentVersion: number) {
+    super(`версія агрегата ${currentVersion} не збігається з очікуваною`);
+  }
+}
+
+/**
+ * Джерело перекладу змінилось (І13): переклад зроблено зі старого тексту.
+ * `current` — поточні хеші полів джерела, щоб перекладач перечитав і повторив.
+ */
+export class SourceChangedError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.sourceChanged;
+  constructor(
+    readonly locale: string,
+    readonly current: Readonly<Record<string, string>>,
+  ) {
+    super(`джерело перекладу мовою ${locale} змінилось`);
+  }
+}
+
+/**
+ * На рядок посилаються: `language_in_use` — мова має переклади чи замовлення
+ * (К1), `reference` — інше посилання. Окремо від `AdminConflictError`, бо
+ * межа HTTP віддає свій `kind` проблеми (майстер §3.3).
+ */
+export class InUseError extends Error {
+  override readonly name = DOMAIN_ERROR_NAME.inUse;
+  constructor(readonly kind: 'language_in_use' | 'reference') {
+    super(`[admin-server] ресурс використовується: ${kind}`);
+  }
+}
+
 /** Форма, що фактично летить через мережу (адаптер бере/віддає її ціле). */
 export interface SerializableDomainError {
   readonly name: DomainErrorName;
   readonly message: string;
-  readonly fields: Readonly<Record<string, string | null>>;
+  readonly fields: Readonly<Record<string, DomainErrorFieldValue>>;
   /** Лише для `ValidationError` (Тема 12) — уже пропущені крізь білий список. */
   readonly issues?: readonly ValidationIssue[];
 }
@@ -258,6 +328,8 @@ export const VALIDATION_ISSUE_CODES = [
   'custom',
   'taken',
   'reserved',
+  // М1 Task 6: публікація мови, поки не всі сутності мають адресу й токени.
+  'language_incomplete',
 ] as const;
 
 export type ValidationIssueCode = (typeof VALIDATION_ISSUE_CODES)[number];

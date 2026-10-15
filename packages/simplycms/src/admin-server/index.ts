@@ -125,7 +125,14 @@ import {
   findCustomersOp,
   diagnosePriceInput,
   diagnosePriceOp,
+  languagesAdd,
+  languagesFill,
+  languagesList,
+  languagesRemove,
+  languagesReorder,
+  languagesSetStatus,
 } from 'simplycms/admin-server/impl';
+import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
 // Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
 // живим не-serverFn експортом не є і клієнтську трансформацію не ламає.
@@ -719,3 +726,29 @@ export const getCustomerCard = createServerFn({ method: 'GET' })
 export const dashboardSummary = createServerFn({ method: 'GET' }).handler(
   dashboardSummaryOp,
 );
+
+// М1, Task 6: операції мов через реєстр. Форма обгортки фіксована: валідує
+// виконавець (схема операції), суб'єкт береться з cookie запиту.
+export const listLanguages = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesList, data));
+
+export const addLanguage = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesAdd, data));
+
+export const setLanguageStatus = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesSetStatus, data));
+
+export const fillLanguage = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesFill, data));
+
+export const reorderLanguages = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesReorder, data));
+
+export const removeLanguage = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(languagesRemove, data));

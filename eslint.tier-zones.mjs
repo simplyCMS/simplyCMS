@@ -118,6 +118,10 @@ const TIER_ZONES = [
       'sanitize',
       'site',
       'mail',
+      // Task 6 (М1): операції мов — перші споживачі `defineOperation`/виконавця.
+      'operations',
+      // операції мов (fill/completeness) — споживач реєстрів адрес за планом М1 Task 6
+      'addressing',
     ],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
@@ -170,6 +174,9 @@ const TIER_ZONES = [
   // (транзакція викликача, замок набору мов); класи доменних помилок беруться
   // з T0 `contracts/domain-errors`, тож `admin-server` йому не потрібен.
   ['src/addressing', 2, 'addressing', ['db']],
+  // Виконавець операцій (Мультимовність М1, Task 6) — T2. Upward `db` (єдиний канал
+  // `withActor`) і `auth` (перший рубіж `requireOperation`, суб'єкт з cookie).
+  ['src/operations', 2, 'operations', ['db', 'auth']],
   // 🔴 `ui` — примітиви shadcn/Radix: шар T3 сам по собі не забороняє йому
   // data-теки T2, але примітив, що ходить у БД, перестає бути примітивом.
   // Факт Step 1: `ui` імпортує ЛИШЕ себе — тож заборона фіксує статус-кво.

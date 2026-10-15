@@ -45,6 +45,16 @@ describe('мови: інваріанти в БД (І1–І3)', () => {
     ).rejects.toThrow('languages: код і основна мова незмінні');
   });
 
+  it('код НЕ-основної мови теж незмінний', async () => {
+    // Код — ключ FK адрес і токенів: перейменування розірвало б їх мовчки.
+    await expect(
+      tx(
+        add(ID_A, 'pl'),
+        `update public.languages set code = 'cs' where id = '${ID_A}'`,
+      ),
+    ).rejects.toThrow('languages: код і основна мова незмінні');
+  });
+
   it('основна незмінна', async () => {
     await expect(
       tx(`update public.languages set is_default = false where is_default`),

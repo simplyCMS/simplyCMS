@@ -10,7 +10,8 @@ vi.mock('simplycms/auth', async (orig) => ({
     scope: 'any',
   })),
 }));
-vi.mock('simplycms/db', () => ({
+vi.mock('simplycms/db', async (orig) => ({
+  ...(await orig<typeof import('simplycms/db')>()),
   withActor: vi.fn(async (_actor, fn) => fn({} as never, {} as never)),
 }));
 

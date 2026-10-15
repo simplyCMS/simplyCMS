@@ -43,9 +43,7 @@ describe('паритет адрес і токенів на реальних ге
       viaPaths.push(
         (
           await admin((d) =>
-            createPathsForEntity(d, { kind: 'product', id: p }, 'panel', [
-              'uk',
-            ]),
+            createPathsForEntity(d, { kind: 'product', id: p }, 'panel'),
           )
         ).get('uk')!,
       );
@@ -59,7 +57,6 @@ describe('паритет адрес і токенів на реальних ге
               d,
               { kind: 'modification', id, scopeId: owner },
               'panel',
-              ['uk'],
             ),
           )
         ).get('uk')!,

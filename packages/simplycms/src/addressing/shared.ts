@@ -14,6 +14,20 @@ export async function languageSegments(db: ActorDb): Promise<string[]> {
   return res.rows.map((r) => r.code.toLowerCase());
 }
 
+/**
+ * Коди мов `draft`/`published` — ті, для яких нова сутність мусить мати адресу
+ * (І16). 🔴 Лише ПІСЛЯ спільного замка `languagesSet` у тій самій транзакції
+ * (його бере сам генератор): прочитаний раніше набір не бачить мови, яку
+ * конкурентна транзакція додає. Приватна для модуля, свідомо не експортується.
+ */
+export async function activeLocales(db: ActorDb): Promise<string[]> {
+  const res = await db.execute<{ code: string }>(
+    sql`select code from public.languages
+         where status in ('draft', 'published') order by code`,
+  );
+  return res.rows.map((r) => r.code);
+}
+
 /** Код основної мови; без неї копіювати адреси нема з чого. */
 export async function primaryLocale(db: ActorDb): Promise<string> {
   const res = await db.execute<{ code: string }>(
@@ -71,15 +85,4 @@ export function allocateIn(
   const slug = allocateSlug(base, (c) => taken.has(c) || isReserved(c));
   taken.add(slug);
   return slug;
-}
-
-/**
- * Postgres 23505 (Drizzle перезагортає помилку драйвера в `.cause`;
- * UPSTREAM:DRZ-1, docs/architecture/upstream-workarounds.md). Власний розбір,
- * а не `toAdminConflict`: той живе в `admin-server`, якого `addressing` (T2)
- * імпортувати не може.
- */
-export function isUniqueViolation(error: unknown): boolean {
-  const cause = (error as { cause?: unknown })?.cause ?? error;
-  return (cause as { code?: string } | null)?.code === '23505';
 }

@@ -4,6 +4,8 @@ import {
   DOMAIN_ERROR_NAME,
   isDomainErrorName,
   sanitizeValidationIssues,
+  toFieldValue,
+  type DomainErrorFieldValue,
   type DomainErrorName,
   type SerializableDomainError,
 } from 'simplycms/contracts/domain-errors';
@@ -37,13 +39,11 @@ import {
 function extractFields(
   name: DomainErrorName,
   value: Error,
-): Readonly<Record<string, string | null>> {
+): Readonly<Record<string, DomainErrorFieldValue>> {
   const raw = value as unknown as Record<string, unknown>;
-  const out: Record<string, string | null> = {};
-  for (const key of DOMAIN_ERROR_FIELD_KEYS[name]) {
-    const v = raw[key];
-    out[key] = typeof v === 'string' ? v : null;
-  }
+  const out: Record<string, DomainErrorFieldValue> = {};
+  for (const key of DOMAIN_ERROR_FIELD_KEYS[name])
+    out[key] = toFieldValue(raw[key]);
   return out;
 }
 
@@ -76,7 +76,10 @@ export const domainErrorAdapter = createSerializationAdapter({
   fromSerializable: (value: SerializableDomainError): Error =>
     Object.assign(new Error(value.message), {
       name: value.name,
-      ...value.fields,
+      // Поля теж проходять чистку на клієнті: payload з мережі не довіряємо.
+      ...Object.fromEntries(
+        Object.entries(value.fields).map(([k, v]) => [k, toFieldValue(v)]),
+      ),
       // Другий прохід білого списку на клієнті — payload з мережі не довіряємо.
       ...(value.name === DOMAIN_ERROR_NAME.validation
         ? { issues: sanitizeValidationIssues(value.issues) }

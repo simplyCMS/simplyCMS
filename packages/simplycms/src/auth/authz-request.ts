@@ -11,6 +11,15 @@ import { readSessionSubject } from './session';
 /** Анонім: жодної ролі — матриця сама відмовляє всьому не-публічному. */
 const GUEST: AuthzSubject = { userId: null, roles: [] };
 
+/**
+ * Суб'єкт поточного запиту з cookie-сесії (анонім — без ролей). Винесено з
+ * `resolveRequestGrant`, щоб виконавець операцій отримував суб'єкта ЯВНО й не
+ * залежав від `requireGrant`. Ті самі застереження: лише ДО `withActor`.
+ */
+export async function subjectFromCookie(): Promise<AuthzSubject> {
+  return (await readSessionSubject(getRequest().headers)) ?? GUEST;
+}
+
 export interface RequestGrant {
   readonly subject: AuthzSubject;
   readonly scope: AuthScope;
@@ -31,7 +40,7 @@ export interface RequestGrant {
 export async function resolveRequestGrant(
   operation: Operation,
 ): Promise<RequestGrant> {
-  const subject = (await readSessionSubject(getRequest().headers)) ?? GUEST;
+  const subject = await subjectFromCookie();
   const scope = requireOperation(subject, operation); // кидає AuthzError
   return { subject, scope };
 }

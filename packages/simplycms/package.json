@@ -57,6 +57,8 @@
     "./sanitize": "./src/sanitize/index.ts",
     "./translations": "./src/translations/index.ts",
     "./addressing": "./src/addressing/index.ts",
+    "./operations": "./src/operations/index.ts",
+    "./operations/server": "./src/operations/server.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
@@ -328,6 +330,14 @@
       "./addressing": {
         "types": "./dist/addressing/index.d.ts",
         "import": "./dist/addressing/index.js"
+      },
+      "./operations": {
+        "types": "./dist/operations/index.d.ts",
+        "import": "./dist/operations/index.js"
+      },
+      "./operations/server": {
+        "types": "./dist/operations/server.d.ts",
+        "import": "./dist/operations/server.js"
       },
       "./react-query": {
         "types": "./dist/react-query/index.d.ts",

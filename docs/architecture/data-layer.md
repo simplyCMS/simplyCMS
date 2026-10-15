@@ -375,7 +375,7 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 `AdminNotFoundError`, `CodedError`); усі класи (крім `AuthzError` з `auth/authz.ts`) і чистий
 throw-хелпер `stateConflict` живуть у цьому T0-файлі, бо їх кидають і `admin-server`, і T2-модулі
 (`addressing`), і чиста логіка T1 (`domain/translations`), а залежність T2 від `admin-server` заборонена;
-серверним лишається лише `toAdminConflict` (`admin-server/impl/errors.ts`, мапінг кодів PG).
+серверним лишається мапінг кодів PG — `simplycms/db/pg-errors` (`toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation` на ОДНОМУ розборі `.cause`, UPSTREAM:DRZ-1). Нові члени родини (М1): `VersionMismatchError` (412), `SourceChangedError` і `InUseError` (409); їхні поля (число, словник хешів) переходять межу крізь `DomainErrorFieldValue`.
 `AdminNotFoundError` (Р26): «рядка немає», без полів;
 клієнт розпізнає її через `isNotFoundError` за `name`, тож картка відрізняє справжнє
 «не знайдено» від збою запиту. `CodedError`: `message` — машинний код (`media/*`,
@@ -681,7 +681,11 @@ email в іншому регістрі — не конфлікт, записує
   ключ не збігається з іншим чи з ключем накату, а `lock-keys.test.ts` фіксує значення
   літералами (їх хешують і хелпери харнеса). `languages-set` береться СПІЛЬНИМ
   (`advisoryXactLockShared`) операціями, що створюють адреси й токени, і ексклюзивним
-  (`advisoryXactLock`) — додаванням мови й переходом `disabled` → `published`.
+  (`advisoryXactLock`) — додаванням мови й переходом у `published`. 🔴 Генератори
+  адрес і токенів (`createPathsForEntity`/`createTokensForEntity`) самі беруть спільний
+  замок і читають мови `draft`/`published` ПІСЛЯ нього в тій самій транзакції; набір мов
+  викликач не передає, бо прочитаний до замка пропустив би конкурентну мову (Review
+  Focus 1, `languages-add-concurrency.test.ts`).
 - 🔴 **Глобальний порядок локів: `customer-config` → `discount-config`.** Жодна
   операція не бере їх навпаки: `saveDiscount` з умовою `user_category` бере
   `customer-config`, потім `discount-config` (перевірка, що категорії умови

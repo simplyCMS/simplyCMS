@@ -1,5 +1,6 @@
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { JsonValue, Theme } from 'simplycms/schema/types';
+import type { LanguageSummary } from './languages';
 import {
   CACHE_KEYS,
   readGenerations,
@@ -85,5 +86,10 @@ export const storeProfileCache: ReadCache<StorefrontProfile> = createReadCache(
 );
 export const activeThemeCache: ReadCache<ThemeRecord | null> = createReadCache(
   CACHE_KEYS.activeTheme,
+  { ttlMs: CACHE_TTL_MS },
+);
+// Набір мов (М1, Task 6): його змінюють лише операції мов, кожна піднімає покоління.
+export const languagesCache: ReadCache<LanguageSummary[]> = createReadCache(
+  CACHE_KEYS.languages,
   { ttlMs: CACHE_TTL_MS },
 );

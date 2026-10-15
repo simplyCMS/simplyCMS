@@ -13,4 +13,12 @@ describe('domain-errors: код reserved', () => {
       sanitizeValidationIssues([{ path: ['path'], code: 'reserved' }]),
     ).toEqual([{ path: ['path'], code: 'reserved' }]);
   });
+
+  it('language_incomplete (публікація неповної мови) проходить білий список', () => {
+    expect(
+      sanitizeValidationIssues([
+        { path: ['code'], code: 'language_incomplete' },
+      ]),
+    ).toEqual([{ path: ['code'], code: 'language_incomplete' }]);
+  });
 });

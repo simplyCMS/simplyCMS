@@ -14,7 +14,8 @@ vi.mock('simplycms/auth', () => ({
   requireGrant: vi.fn(async () => grant.value),
   dbRoleForSubject: () => 'app_admin',
 }));
-vi.mock('simplycms/db', () => ({
+vi.mock('simplycms/db', async (orig) => ({
+  ...(await orig<typeof import('simplycms/db')>()),
   withActor: vi.fn(async (_a: unknown, fn: (db: unknown) => unknown) => fn({})),
 }));
 vi.mock('@tanstack/react-start/server', () => ({

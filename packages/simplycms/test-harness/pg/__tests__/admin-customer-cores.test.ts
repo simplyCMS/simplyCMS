@@ -10,11 +10,12 @@ vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 import { setResponseStatus } from '@tanstack/react-start/server';
 import { withActor, type ActorDb } from 'simplycms/db';
 import * as A from 'simplycms/admin-server/impl';
+import type { CoreActor } from 'simplycms/auth';
 
 const asAdmin = <T>(fn: (db: ActorDb) => Promise<T>) =>
   withActor({ role: 'app_admin' }, fn);
-const SYSTEM: A.CoreActor = { kind: 'system' };
-const ADMIN: A.CoreActor = { kind: 'admin', userId: F.ADMIN_ID };
+const SYSTEM: CoreActor = { kind: 'system' };
+const ADMIN: CoreActor = { kind: 'admin', userId: F.ADMIN_ID };
 
 describe('ядра операцій покупця поза запитом (showcase Task 4)', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_cores');
@@ -33,7 +34,7 @@ describe('ядра операцій покупця поза запитом (show
         ])
       )[0]!.email,
     );
-  const assign = (userId: string, categoryId: string, actor: A.CoreActor) =>
+  const assign = (userId: string, categoryId: string, actor: CoreActor) =>
     asAdmin((tx) =>
       A.assignCustomerCategory(
         tx,
@@ -45,7 +46,7 @@ describe('ядра операцій покупця поза запитом (show
         actor,
       ),
     );
-  const remove = (userId: string, email: string, actor: A.CoreActor) =>
+  const remove = (userId: string, email: string, actor: CoreActor) =>
     asAdmin((tx) =>
       A.deleteCustomer(tx, { userId, confirmEmail: email }, actor),
     );
