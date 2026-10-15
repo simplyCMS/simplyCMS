@@ -176,7 +176,7 @@ export class ValidationError extends Error {
   override readonly name = DOMAIN_ERROR_NAME.validation;
   readonly issues: readonly ValidationIssue[];
   constructor(issues: readonly ValidationIssue[]) {
-    super('[admin-server] помилка валідації вводу');
+    super('помилка валідації вводу');
     this.issues = issues;
   }
 }

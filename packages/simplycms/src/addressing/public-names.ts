@@ -38,7 +38,7 @@ export function resetPublicNamesCache(): void {
  * Лише для тестів: підмінює корінь магазину для `publicNames()` (генератори
  * кличуть її без аргументів). Повертає функцію відновлення.
  */
-export function usePublicNamesRoot(root: string): () => void {
+export function overridePublicNamesRootForTests(root: string): () => void {
   const previous = defaultRoot;
   defaultRoot = root;
   cache.clear();

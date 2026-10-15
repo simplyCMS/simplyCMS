@@ -13,8 +13,4 @@ export {
 } from './tokens';
 export type { TokenTarget } from './tokens';
 export { copyPathsForLocale, copyTokensForLocale } from './copy';
-export {
-  PUBLIC_MANIFEST_PATH,
-  publicNames,
-  usePublicNamesRoot,
-} from './public-names';
+export { PUBLIC_MANIFEST_PATH, publicNames } from './public-names';

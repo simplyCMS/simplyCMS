@@ -14,8 +14,8 @@ import {
   currentPaths,
   resolvePath,
   setExplicitPath,
-  usePublicNamesRoot,
 } from 'simplycms/addressing';
+import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
 import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
 
 const CHECK = { code: '23514' };
@@ -192,7 +192,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
         join(root, PUBLIC_MANIFEST_PATH),
         JSON.stringify(['robots-custom', 'favicon']),
       );
-      const restore = usePublicNamesRoot(root);
+      const restore = overridePublicNamesRootForTests(root);
       try {
         const p = await db.product();
         await addr('uk', 'pub-own', p);
@@ -368,7 +368,7 @@ describe('copyPathsForLocale: імена з public/ збірки', () => {
       join(root, PUBLIC_MANIFEST_PATH),
       JSON.stringify(['pub-copy']),
     );
-    const restore = usePublicNamesRoot(root);
+    const restore = overridePublicNamesRootForTests(root);
     try {
       await db.language('hu', 'draft');
       const p = await db.product();

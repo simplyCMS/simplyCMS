@@ -13,8 +13,10 @@ import {
  * Е3-20: реєструється в `createStart(() => ({ serializationAdapters: […] }))`
  * (host `src/start.ts`). Клієнт-безпечний: розпізнає закриту родину
  * (`AdminConflictError`/`AuthzError`/`ValidationError`) ДУКОМ-ТАЙПІНГОМ за `name` з T0-переліку
- * `contracts/domain-errors` — не імпортує серверні класи
- * (`admin-server/impl`, `auth` — обидва в `contracts/server-only`).
+ * `contracts/domain-errors`: екземпляри не
+ * конструюються й класи не імпортуються — адаптеру досить імені та білого
+ * списку полів, а `AuthzError` лежить у серверному `auth` (`contracts/server-only`),
+ * якого клієнтський бандл тягнути не може.
  *
  * 🔴 Пріоритет над `ShallowErrorPlugin`: `createStart`'s
  * `getDefaultSerovalPlugins()` (`@tanstack/start-client-core`) будує масив
