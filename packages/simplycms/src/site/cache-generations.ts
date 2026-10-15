@@ -63,5 +63,7 @@ function loadGenerations(): Promise<ReadonlyMap<string, bigint>> {
 export function readGenerations(): Promise<ReadonlyMap<string, bigint>> {
   const ctx = getRequestContext();
   if (!ctx) return loadGenerations();
+  // Відмову `select` теж мемоізуємо: межа — один HTTP-запит, тож усі `get` цього
+  // запиту відмовляють разом, а наступний запит дістає свіжу спробу.
   return (ctx.generations ??= loadGenerations());
 }

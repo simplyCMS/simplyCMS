@@ -5,6 +5,9 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { getTableColumns, getTableName, is } from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
+import * as schema from 'simplycms/schema';
 
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
@@ -81,6 +84,32 @@ describe('Е0: сід детермінований', () => {
       ) ?? [];
     expect(uuids.length, `${label}: немає UUID-літералів`).toBeGreaterThan(0);
     expect(new Set(uuids).size, `${label}: дубльовані UUID`).toBe(uuids.length);
+  });
+});
+
+/** Колонки таблиці зі схеми Drizzle за її SQL-іменем; `null`, якщо таблиці немає. */
+function columnNames(sqlName: string): string[] | null {
+  // `schema` несе і enum-и: `is(…, PgTable)` відсіює їх до `getTableName`.
+  const table = Object.values(schema).find(
+    (t) => is(t, PgTable) && getTableName(t as PgTable) === sqlName,
+  ) as PgTable | undefined;
+  return table
+    ? Object.values(getTableColumns(table)).map((c) => c.name)
+    : null;
+}
+
+describe('Е0: реєстр природних ключів чесний', () => {
+  it.each([...NATURAL_KEY_TABLES])(
+    '%s справді без колонки id (інакше виняток приховує порушення)',
+    (qualified) => {
+      const columns = columnNames(qualified.replace(/^public\./, ''));
+      expect(columns, `${qualified}: таблиці немає в схемі`).not.toBeNull();
+      expect(columns).not.toContain('id');
+    },
+  );
+
+  it('негативний контроль: таблиця з id у реєстр не пройшла б', () => {
+    expect(columnNames('system_settings')).toContain('id');
   });
 });
 

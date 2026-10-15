@@ -6,7 +6,10 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkServerBundle } from './server-bundle.mjs';
+import {
+  checkRequestContextSingle,
+  checkServerBundle,
+} from './server-bundle.mjs';
 import { SERVER_BUNDLE_ALLOWLIST } from './server-bundle-allowlist.mjs';
 
 /** @returns {{ ok: boolean; details: string[] }} */
@@ -14,6 +17,10 @@ export function gateServerBundle(storeDir) {
   const stats = JSON.parse(
     readFileSync(join(storeDir, 'bundle-stats.ssr.json'), 'utf8'),
   );
-  const { ok, details } = checkServerBundle(stats, SERVER_BUNDLE_ALLOWLIST);
-  return { ok, details };
+  const bundle = checkServerBundle(stats, SERVER_BUNDLE_ALLOWLIST);
+  const context = checkRequestContextSingle(stats);
+  return {
+    ok: bundle.ok && context.ok,
+    details: [...bundle.details, ...context.details],
+  };
 }

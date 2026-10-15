@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FORBIDDEN_BUNDLED,
   bundledPackages,
+  checkRequestContextSingle,
   checkServerBundle,
   packageOfModule,
 } from '../scripts/pilot-pack/server-bundle.mjs';
@@ -104,5 +105,52 @@ describe('SERVER_BUNDLE_ALLOWLIST', () => {
       expect(reason.length, name).toBeGreaterThanOrEqual(8);
       expect(FORBIDDEN_BUNDLED.test(name), name).toBe(false);
     }
+  });
+});
+
+describe('checkRequestContextSingle (Д6)', () => {
+  const RC =
+    '/s/node_modules/.pnpm/simplycms@1/node_modules/simplycms/dist/site/request-context.js';
+
+  it('зелений: модуль рівно в одному чанку', () => {
+    const r = checkRequestContextSingle({
+      'a.js': { modules: [RC, '/s/src/other.ts'] },
+      'b.js': { modules: ['/s/src/x.ts'] },
+    });
+    expect(r.ok, r.details.join('\n')).toBe(true);
+  });
+
+  it('МУТАЦІЯ: другий id тієї ж логіки (симлінк чи query) — червоний', () => {
+    expect(
+      checkRequestContextSingle({
+        'a.js': { modules: [RC] },
+        'b.js': {
+          modules: ['/s/packages/simplycms/dist/site/request-context.js'],
+        },
+      }).ok,
+    ).toBe(false);
+    expect(
+      checkRequestContextSingle({
+        'a.js': { modules: [RC, `${RC}?v=1`] },
+      }).ok,
+    ).toBe(false);
+  });
+
+  it('модуля в бандлі немає — червоний', () => {
+    expect(
+      checkRequestContextSingle({ 'a.js': { modules: ['/s/src/x.ts'] } }).ok,
+    ).toBe(false);
+  });
+
+  it('суміжні файли (cache-generations) не рахуються', () => {
+    const r = checkRequestContextSingle({
+      'a.js': {
+        modules: [
+          RC,
+          '/s/node_modules/simplycms/dist/site/cache-generations.js',
+        ],
+      },
+    });
+    expect(r.ids).toHaveLength(1);
   });
 });

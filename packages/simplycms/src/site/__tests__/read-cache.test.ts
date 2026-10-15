@@ -102,7 +102,7 @@ describe('createReadCache (поколіннєвий)', () => {
     expect(load2).toHaveBeenCalledTimes(1);
   });
 
-  it('повільне читання зі старішим поколінням не перезаписує свіжіший запис', async () => {
+  it('повільне читання зі старішим поколінням: наступний get перечитує один раз', async () => {
     const cache = createReadCache<string>(KEY);
     let resolveSlow!: (v: string) => void;
     const slow = cache.get(
@@ -115,9 +115,24 @@ describe('createReadCache (поколіннєвий)', () => {
     resolveSlow('старе');
     await slow;
 
-    const load = vi.fn(async () => 'зайве');
-    expect(await cache.get(load)).toBe('свіже');
-    expect(load).not.toHaveBeenCalled();
+    // Запис тепер під старим поколінням: один get перечитує, далі кеш живий.
+    const load = vi.fn(async () => 'найсвіжіше');
+    expect(await cache.get(load)).toBe('найсвіжіше');
+    expect(await cache.get(load)).toBe('найсвіжіше');
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('покоління в БД зменшилось (відновлення з бекапу): get перечитує й кешує', async () => {
+    const cache = createReadCache<string>(KEY);
+    state.generations = new Map([[KEY, BigInt(7)]]);
+    await cache.get(async () => 'до відновлення');
+
+    state.generations = new Map([[KEY, BigInt(3)]]);
+    const load = vi.fn(async () => 'після відновлення');
+    expect(await cache.get(load)).toBe('після відновлення');
+    // Кеш не вимкнено: наступний get у тому ж поколінні не ходить у load.
+    expect(await cache.get(load)).toBe('після відновлення');
+    expect(load).toHaveBeenCalledTimes(1);
   });
 
   it('нульовий або відʼємний TTL відхиляється', () => {

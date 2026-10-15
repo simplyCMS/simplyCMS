@@ -81,3 +81,43 @@ export function checkServerBundle(stats, allowlist) {
 
   return { ok, details, bundled };
 }
+
+/**
+ * Нормалізований id модуля: без `\0`-префікса й query (`?v=…`), які Vite додає до
+ * віртуальних і перебудованих модулів, — інакше одна копія виглядала б двома.
+ */
+const normalizeModuleId = (id) => id.replace(/^\0/, '').replace(/\?.*$/, '');
+
+/** Файл контексту запиту ядра: `dist/site/request-context.js` (чи `src/…` у dev-збірці). */
+const REQUEST_CONTEXT_MODULE = /[\\/]site[\\/]request-context\.[cm]?[jt]s$/;
+
+/**
+ * Д6: `AsyncLocalStorage` контексту запиту має бути ОДИН на зібраний сервер.
+ * Друга копія модуля (інший id тієї ж логіки: симлінк і realpath, `src` і `dist`,
+ * дубль у чанку serverFn) дала б host-обгортці одне сховище, а `readGenerations`
+ * у лоадерах — інше: `getRequestContext()` там порожній, і кожен `get` кешу
+ * відкриває окрему транзакцію `select`. Жоден інший гейт цього не бачить.
+ *
+ * Рахуються входження нормалізованого id у модулі всіх чанків: рівно одне.
+ * Нуль — модуль не вклеєно (ядро пішло external, а host тоді тримає окремий
+ * екземпляр від чанків, що вклеїли його самі), понад одне — дубль.
+ *
+ * @param {Record<string, { modules: string[] }>} stats
+ * @returns {{ ok: boolean; details: string[]; ids: string[] }}
+ */
+export function checkRequestContextSingle(stats) {
+  const ids = [];
+  for (const chunk of Object.values(stats)) {
+    for (const id of chunk.modules ?? []) {
+      const normalized = normalizeModuleId(id);
+      if (REQUEST_CONTEXT_MODULE.test(normalized)) ids.push(normalized);
+    }
+  }
+  const ok = ids.length === 1;
+  const details = [
+    ok
+      ? 'OK   модуль site/request-context вклеєно рівно один раз'
+      : `FAIL модуль site/request-context зустрівся ${ids.length} раз(и) у серверних чанках (очікується рівно 1): ${ids.join(', ') || '—'}`,
+  ];
+  return { ok, details, ids };
+}
