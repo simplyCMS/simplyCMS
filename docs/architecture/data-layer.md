@@ -667,15 +667,14 @@ email в іншому регістрі — не конфлікт, записує
   і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
   `setCustomerBan`, `deleteCustomer`, випуск invite власника (`issueAdminInvite`, лише токен) і видача
   ролі після прийняття (`grantAdminRole`, Р19). Ключ
-  `ADMIN_ROLES_LOCK` живе в `simplycms/auth` (invite — auth і не може імпортувати
-  адмінку), адмінка імпортує його звідти. Перевірки «не адмін», «не я», «не
+  `LOCK_KEYS.adminRoles` беруть і `auth` (invite), і адмінка напряму з реєстру. Перевірки «не адмін», «не я», «не
   останній адмін» і «не забанений» виконуються лише під ним.
 - 🔴 **Ключі замків — ОДИН реєстр `simplycms/db/lock-keys`** (`LOCK_KEYS`, М1): ключі
   `admin-roles`, `customer-config`, `discount-config`, `shipping-config`, `site-theme`,
   `store-profile`, `price-type-default`, `languages-set`, префікси
   `customer-category:`, `stock:`, `prices:`, `mod-default:` і ключ накату
-  `MIGRATION_LOCK_KEY` (число, не рядок). Константи модулів (`ADMIN_ROLES_LOCK`,
-  `CUSTOMER_CONFIG_LOCK` тощо) — псевдоніми реєстру; новий ключ додається ТІЛЬКИ сюди.
+  `MIGRATION_LOCK_KEY` (число, не рядок). Псевдонімів-констант у модулях немає (то була б друга адреса
+  ключа): споживачі беруть `LOCK_KEYS.<ключ>`; новий ключ додається ТІЛЬКИ в реєстр.
   Рядковий ключ хешується `hashtextextended(key, 0)` у bigint, ключ накату — число, а
   простір ключів один на базу: `lock-keys-disjoint.test.ts` доводить, що жоден рядковий
   ключ не збігається з іншим чи з ключем накату, а `lock-keys.test.ts` фіксує значення
