@@ -276,6 +276,30 @@ describe('токени API (І27)', () => {
     ).rejects.toMatchObject({ code: 'SC003' });
   });
 
+  it('UPDATE user_id обходу не дає: accounts → сервісний (SC002), service_accounts → людина (SC003)', async () => {
+    const sa = await serviceAccount();
+    const human = randomUUID();
+    await db.q(
+      `insert into public.users (id, name, email) values ($1, 'h', $2)`,
+      [human, `${human}@x.test`],
+    );
+    const acc = randomUUID();
+    await db.q(
+      `insert into public.accounts (id, account_id, provider_id, user_id) values ($1, 'h', 'credential', $2)`,
+      [acc, human],
+    );
+    await expect(
+      db.q(`update public.accounts set user_id = $1 where id = $2`, [sa, acc]),
+    ).rejects.toMatchObject({ code: 'SC002' });
+    const other = await serviceAccount();
+    await expect(
+      db.q(
+        `update public.service_accounts set user_id = $1 where user_id = $2`,
+        [human, other],
+      ),
+    ).rejects.toMatchObject({ code: 'SC003' });
+  });
+
   it('запрошення на пошту сервісного запису → email зайнятий', async () => {
     const sa = await serviceAccount();
     const [row] = await db.q(`select email from public.users where id = $1`, [
@@ -351,12 +375,24 @@ describe('токени API (І27)', () => {
         'x-test-session': 'admin',
       });
       expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).toBe('Bearer');
+    });
+
+    it('HEAD → те саме, що GET, без тіла', async () => {
+      const get = await openapi({ 'x-test-session': 'admin' });
+      const head = await openapi({ 'x-test-session': 'admin' }, 'HEAD');
+      expect(head.status).toBe(200);
+      expect(head.headers.get('content-type')).toBe(
+        get.headers.get('content-type'),
+      );
+      expect(await head.text()).toBe('');
+      expect((await openapi({}, 'HEAD')).status).toBe(401);
     });
 
     it('POST → 405 з Allow: GET', async () => {
       const res = await openapi({ 'x-test-session': 'admin' }, 'POST');
       expect(res.status).toBe(405);
-      expect(res.headers.get('allow')).toBe('GET');
+      expect(res.headers.get('allow')).toBe('GET, HEAD');
     });
   });
 });

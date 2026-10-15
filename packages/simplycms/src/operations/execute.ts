@@ -66,13 +66,10 @@ export async function executeOperation<I, O>(
             throw new ProblemError('idempotency_mismatch');
         }
         const output = await def.run({ subject, actor, db }, parsed.data);
-        if (idem)
-          await storeIdempotentResponse(
-            db,
-            idem,
-            200,
-            encodeOutput(def.output, output),
-          );
+        // Вихід звіряється зі схемою ВСЕРЕДИНІ транзакції завжди (не лише з
+        // ключем): невідповідність відкочує зміну, а не віддає 500 після коміту.
+        const wire = encodeOutput(def.output, output);
+        if (idem) await storeIdempotentResponse(db, idem, 200, wire);
         return { replayed: false, output };
       },
     );

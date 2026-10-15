@@ -37,7 +37,8 @@ export async function handleOpenApiRequest(
   request: Request,
   ops: readonly OperationDef<unknown, unknown>[],
 ): Promise<Response> {
-  if (request.method !== 'GET') return methodNotAllowed('GET');
+  const head = request.method === 'HEAD';
+  if (request.method !== 'GET' && !head) return methodNotAllowed('GET, HEAD');
   try {
     const subject = await authenticateRequest(request);
     if (!subject)
@@ -51,7 +52,8 @@ export async function handleOpenApiRequest(
       body = JSON.stringify(buildOpenApi(ops));
       cache.set(ops, body);
     }
-    return new Response(body, {
+    // HEAD = GET без тіла (RFC 9110 § 9.3.2).
+    return new Response(head ? null : body, {
       headers: { 'content-type': 'application/json' },
     });
   } catch (error) {

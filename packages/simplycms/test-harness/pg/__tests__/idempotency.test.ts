@@ -2,7 +2,7 @@
 // `languages.add` проти живого Postgres.
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const session = vi.hoisted(() => ({ byHeader: new Map<string, unknown>() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -59,10 +59,18 @@ describe('Idempotency-Key (І28)', () => {
     };
   };
 
+  let savedUrl: string | undefined;
+  afterAll(() => {
+    // Не лишаємо змінений URL (з `options`) наступним файлам того ж воркера.
+    if (savedUrl === undefined) delete process.env.DATABASE_URL;
+    else process.env.DATABASE_URL = savedUrl;
+  });
+
   beforeAll(async () => {
     // Запобіжник тесту: без `lock_timeout` (мутація ж) дубль висів би до таймаута
     // тесту; зі `statement_timeout` на з'єднаннях пулу він падає за секунди. Пул
     // створюється ліниво, тож параметр підхопиться.
+    savedUrl = process.env.DATABASE_URL;
     const url = new URL(process.env.DATABASE_URL!);
     url.searchParams.set('options', '-c statement_timeout=9000');
     process.env.DATABASE_URL = url.toString();
@@ -349,5 +357,15 @@ describe('Idempotency-Key (І28)', () => {
       { ...SESSION, 'idempotency-key': 'x'.repeat(256) },
     );
     expect(res.status).toBe(400);
+  });
+
+  it('вихід не за схемою, без ключа: 500 і зміна відкочена (рядка немає)', async () => {
+    const key = `bad-out-${randomUUID()}`;
+    const res = await call('test.badOutput', { key }, SESSION);
+    expect(res.status).toBe(500);
+    expect((await res.json()).kind).toBe('internal');
+    expect(
+      await db.q(`select 1 from public.system_settings where key = $1`, [key]),
+    ).toHaveLength(0);
   });
 });

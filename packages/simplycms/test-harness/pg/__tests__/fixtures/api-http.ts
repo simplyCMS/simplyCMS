@@ -25,8 +25,26 @@ const whoami = defineOperation({
   },
 });
 
+/** Пише рядок і повертає вихід НЕ за схемою: рядок мусить відкотитись разом з 500. */
+const badOutput = defineOperation({
+  id: 'test.badOutput',
+  permission: 'settings.manage',
+  input: z.object({ key: z.string() }),
+  output: z.object({ ok: z.boolean() }),
+  async run({ db }, input) {
+    await db.execute(
+      sql`insert into public.system_settings (id, key, value) values (gen_random_uuid(), ${input.key}, '{}'::jsonb)`,
+    );
+    return { ok: 'не boolean' } as never;
+  },
+});
+
 const lookup = (id: string) =>
-  id === 'test.whoami' ? whoami : getOperation(id);
+  id === 'test.whoami'
+    ? whoami
+    : id === 'test.badOutput'
+      ? badOutput
+      : getOperation(id);
 
 export function apiHarness(sessions: Map<string, unknown>) {
   return {
