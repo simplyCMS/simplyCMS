@@ -452,7 +452,7 @@
   - `languages.setStatus` `{ code, status }` за таблицею майстра §3.5. `draft|disabled → published` вимагає `completeness(code).complete`, інакше `ValidationError('language_incomplete')`;
   - `languages.fill` `{ code, batch? }` → `{ inserted, done }` — пакетне заповнення: адреси, токени, а з Task 14 — ще й проєкція;
   - `languages.reorder` `{ codes: string[] }`;
-  - `languages.remove` `{ code }` → БУДЬ-ЯКЕ `foreign_key_violation`, що посилається на `languages` (переклади зараз, з М2 — `orders`, `profiles`, `product_reviews`), → `InUseError('language_in_use')` (К1). Мапінг — за `error.table = 'languages'` / іменем FK, а не за переліком таблиць, щоб нове посилання не потребувало правки.
+  - `languages.remove` `{ code }` → БУДЬ-ЯКЕ `foreign_key_violation`, що посилається на `languages` (переклади зараз, з М2 — `orders`, `profiles`, `product_reviews`), → `InUseError('language_in_use')` (К1). Мапінг ЛОКАЛЬНИЙ: `languages.remove` сам ловить `23503` навколо СВОГО `DELETE FROM languages`. В операції видалення мови інших FK-відмов бути не може, тож будь-який `23503` тут означає «мова використовується». Без глобального правила в `toAdminConflict`, без розбору повідомлення й переліку таблиць. 🔴 Postgres заповнює `TABLE NAME` таблицею, ЩО ПОСИЛАЄТЬСЯ (`product_translations`), а не `languages` — доведено архітектором живим прогоном на PG 17. Тому мапінг за `error.table` не спрацював би ніколи.
 
   Кожна мутація мов у своїй транзакції кличе `bumpCacheGeneration(db, CACHE_KEYS.languages)` (Task 5а). Кейс `languages` додається в `it.each` тесту «дві репліки» Task 5а. `completeness(db, code): Promise<{ complete: boolean; missingPaths: number; missingTokens: number; missingProjection: number }>` (`missingProjection` = 0, доки Task 14 не додасть проєкцію).
 
@@ -471,6 +471,7 @@
     - `'після fill до done → published'`;
     - `'disabled → published дозаповнює адреси товарів, створених поки мова disabled'`;
     - `'remove мови без перекладів — ок, адреси каскадом'`;
+    - `'переклад товару мовою L → remove L → 409 language_in_use'` (К1; у М2 те саме із замовленням);
     - `'remove основної → помилка тригера'`.
   - `languages-add-concurrency.test.ts` (Review Focus 1):
     - транзакція A створює адресу товару під спільним замком і тримається;
@@ -489,7 +490,8 @@
   - (б) `setStatus` без перевірки повноти → `'published без повноти'` червоний;
   - (в) ігнорувати `scopes` → `execute` червоний (І27 частина);
   - (г) поміняти порядок у `assertVersionThenHash` → `check-order` червоний;
-  - (д) `languages.add` не збільшує покоління → кейс `languages` тесту «дві репліки» червоний.
+  - (д) `languages.add` не збільшує покоління → кейс `languages` тесту «дві репліки» червоний;
+  - (е) мапити за `error.table = 'languages'` → кейс `language_in_use` дає 500 → червоний.
 
   Commit `feat(multilingual): реєстр операцій, явний суб'єкт, операції мов`.
 
