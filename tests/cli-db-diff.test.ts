@@ -441,6 +441,10 @@ describe('cli db:diff: файли, прибрані з канону ядра', (
     expect(output).toContain(
       'перенеси свої зміни в нову міграцію й видали файл вручну',
     );
+    // Заміни не було — нова база не потрібна, але накат після ручного видалення лишається.
+    expect(output).toContain(`видали вручну ${STALE}`);
+    expect(output).toContain('db:apply');
+    expect(output).not.toContain('перестворити базу даних');
   });
 
   it("файл поза маніфестом з ім'ям 0006_x.sql → не чіпається ні звітом, ні --write", async () => {
@@ -550,6 +554,28 @@ describe('cli db:diff: --rebaseline', () => {
     return { store, schemaDir, storeDir };
   }
 
+  /** Установлює плагін faq (запис у конфігу + канон у node_modules) і змінює його файл у магазині. */
+  function withChangedPluginFile(store: string, storeDir: string) {
+    const configPath = join(store, 'simplycms.config.ts');
+    writeFileSync(
+      configPath,
+      readFileSync(configPath, 'utf8').replace(
+        'plugins: [',
+        "plugins: [\n    { name: 'faq', module: () => import('@simplycms/plugin-faq') },",
+      ),
+    );
+    const faqDir = join(store, 'node_modules/@simplycms/plugin-faq/migrations');
+    mkdirSync(faqDir, { recursive: true });
+    const file = '20260814120000_plg_faq_items.sql';
+    writeFileSync(join(faqDir, file), 'create table plg_faq_items ();\n');
+    // У магазині той самий файл змінено: плагінні міграції immutable.
+    writeFileSync(
+      join(storeDir, file),
+      'create table plg_faq_items (id int);\n',
+    );
+    return file;
+  }
+
   const sqlOf = (dir: string) =>
     Object.fromEntries(
       Object.entries(snapshot(dir)).filter(([name]) => name.endsWith('.sql')),
@@ -571,6 +597,8 @@ describe('cli db:diff: --rebaseline', () => {
     }
     expect(output).toContain('базу даних треба перестворити');
     expect(output).toContain('`simplycms_migrations`');
+    // Заміна безумовна — власник мусить бачити, що локальні правки зникнуть.
+    expect(output).toContain('локальні правки в цих файлах буде втрачено');
     // Незмінений файл ядра в переліку заміни не названо.
     expect(output).not.toContain('0002_grants.sql');
   });
@@ -603,6 +631,22 @@ describe('cli db:diff: --rebaseline', () => {
     expect(sqlOf(storeDir)).toEqual(sqlOf(schemaDir));
   });
 
+  it('відсутній у магазині файл канону докопіюється в тому самому проході', async () => {
+    const { store, storeDir, schemaDir } = await oldStore('rb-copy-missing');
+    // Новий файл ядра, якого в магазині ще немає (крок 3 проходу).
+    const added = '0005_next_core.sql';
+    writeFileSync(join(schemaDir, added), 'select 1;\n');
+
+    const report = await runCaptured(store, ['--rebaseline']);
+    expect(report.output).toContain(added);
+    expect(existsSync(join(storeDir, added))).toBe(false);
+
+    const { exitCode } = await runCaptured(store, ['--write', '--rebaseline']);
+    expect(exitCode).toBeUndefined();
+    expect(readFileSync(join(storeDir, added), 'utf8')).toBe('select 1;\n');
+    expect(sqlOf(storeDir)).toEqual(sqlOf(schemaDir));
+  });
+
   it('змінений файл з маніфесту — відмова, решта плану виконується', async () => {
     const { store, storeDir, schemaDir } = await oldStore('rb-modified');
     const edited = `${STALE_SQL}-- власна правка\n`;
@@ -619,6 +663,10 @@ describe('cli db:diff: --rebaseline', () => {
       expect(readFileSync(join(storeDir, file), 'utf8')).toBe(
         readFileSync(join(schemaDir, file), 'utf8'),
       );
+    // Відмова + заміна: далі ручне видалення, нова база й накат.
+    expect(output).toContain(`видали вручну ${STALE}`);
+    expect(output).toContain('перестворити базу даних');
+    expect(output).toContain('db:apply');
   });
 
   it.each(['1.0.0-rc.1', '1.0.0-rc.12', '1.0.0', '2.3.1'])(
@@ -670,24 +718,7 @@ describe('cli db:diff: --rebaseline', () => {
 
   it('змінений файл ПЛАГІНА лишається зупинкою навіть з --rebaseline, нічого не записано', async () => {
     const { store, storeDir } = await oldStore('rb-plugin-changed');
-    // Установлюємо плагін faq: запис у конфігу + його канон у node_modules.
-    const configPath = join(store, 'simplycms.config.ts');
-    writeFileSync(
-      configPath,
-      readFileSync(configPath, 'utf8').replace(
-        'plugins: [',
-        "plugins: [\n    { name: 'faq', module: () => import('@simplycms/plugin-faq') },",
-      ),
-    );
-    const faqDir = join(store, 'node_modules/@simplycms/plugin-faq/migrations');
-    mkdirSync(faqDir, { recursive: true });
-    const file = '20260814120000_plg_faq_items.sql';
-    writeFileSync(join(faqDir, file), 'create table plg_faq_items ();\n');
-    // У магазині той самий файл змінено: плагінні міграції immutable.
-    writeFileSync(
-      join(storeDir, file),
-      'create table plg_faq_items (id int);\n',
-    );
+    const file = withChangedPluginFile(store, storeDir);
     const before = snapshot(storeDir);
 
     const { exitCode, output } = await runCaptured(store, [
@@ -707,6 +738,36 @@ describe('cli db:diff: --rebaseline', () => {
     expect(exitCode).toBe(1);
     expect(output).toContain('Спільні міграції розійшлися вмістом');
     expect(output).not.toContain('--rebaseline');
+    // Файл з маніфесту названо, але команди, що зупиниться на тому самому
+    // конфлікті, поруч немає.
+    expect(output).toContain(STALE);
+    expect(output).not.toContain('db:diff --write');
+  });
+
+  it('змінений лише файл плагіна → зупинка без команд: файл з маніфесту названо, `db:diff --write` не радиться', async () => {
+    const { store, storeDir, schemaDir } = await oldStore('rb-plugin-only');
+    // Ядро в порядку, конфліктує лише плагін.
+    for (const file of BASELINE)
+      cpSync(join(schemaDir, file), join(storeDir, file));
+    withChangedPluginFile(store, storeDir);
+
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('Спільні міграції розійшлися вмістом');
+    expect(output).toContain(STALE);
+    expect(output).not.toContain('db:diff --write');
+    expect(output).not.toContain('--rebaseline');
+  });
+
+  it('змінені і ядро, і плагін без --rebaseline → ребазлайн не радиться (сам зупинився б на плагіні)', async () => {
+    const { store, storeDir } = await oldStore('rb-core-and-plugin');
+    withChangedPluginFile(store, storeDir);
+
+    const { exitCode, output } = await runCaptured(store, ['--write']);
+    expect(exitCode).toBe(1);
+    expect(output).toContain('0001_init.sql');
+    expect(output).not.toContain('--rebaseline');
+    expect(output).not.toContain('db:diff --write');
   });
 
   it('--rebaseline без --write → лише звіт, файли не змінено', async () => {

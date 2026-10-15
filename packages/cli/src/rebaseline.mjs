@@ -83,7 +83,7 @@ export function reportReplacement(names, write) {
     ? 'замінюю вмістом канону'
     : 'буде замінено вмістом канону (--write)';
   say.warn(
-    `Файли ядра змінено baseline-винятком — ${verb}: ${names.join(', ')}`,
+    `Файли ядра змінено baseline-винятком — ${verb} (локальні правки в цих файлах буде втрачено): ${names.join(', ')}`,
   );
   say.error(
     'Увага — базу даних треба перестворити: журнал накату `simplycms_migrations` відхилить змінений вміст.',
@@ -105,9 +105,26 @@ export function refuseRebaseline(coreMigrationsDir) {
 }
 
 /**
- * Зупинка «Спільні міграції розійшлися вмістом»: текст з підказкою ребазлайну
- * (лише для змінених файлів ЯДРА і без `--rebaseline`) і файлами з маніфесту
- * `removed.json`, щоб власник бачив усе за один прогін.
+ * Порада до зупинки «Спільні міграції розійшлися вмістом». Ребазлайн радимо лише
+ * коли він справді пройде: змінені ЛИШЕ файли ядра (змінений файл плагіна зупинив
+ * би й `--rebaseline`) і режим ще доступний (канон не заморожено). Інакше поради
+ * немає, а `fix = null` — файли з маніфесту теж не дістануть команди, що знову
+ * впаде на тому самому конфлікті.
+ * @param {{ changed: string[]; coreChanged: string[]; rebaseline: boolean; coreDir: string }} args
+ * @returns {{ hint: string; fix: string | null }}
+ */
+export function conflictAdvice({ changed, coreChanged, rebaseline, coreDir }) {
+  const usable =
+    !rebaseline &&
+    coreChanged.length > 0 &&
+    changed.length === coreChanged.length;
+  const hint = usable ? rebaselineHint(coreDir) : '';
+  return { hint, fix: hint ? `pnpm ${REBASELINE_COMMAND}` : null };
+}
+
+/**
+ * Зупинка «Спільні міграції розійшлися вмістом»: текст із порадою (`conflictAdvice`)
+ * і файлами з маніфесту `removed.json`, щоб власник бачив усе за один прогін.
  * @param {{
  *   changed: string[]; coreChanged: string[]; rebaseline: boolean; coreDir: string;
  *   manifest: import('./removed-migrations.mjs').RemovedEntry[];
@@ -115,9 +132,8 @@ export function refuseRebaseline(coreMigrationsDir) {
  * }} args
  */
 export function reportContentConflict(args) {
-  const { changed, coreChanged, rebaseline, coreDir, manifest, removed } = args;
-  const hint =
-    !rebaseline && coreChanged.length > 0 ? rebaselineHint(coreDir) : '';
+  const { changed, manifest, removed } = args;
+  const { hint, fix } = conflictAdvice(args);
   say.error(
     [
       `Спільні міграції розійшлися вмістом: ${changed.join(', ')}.`,
@@ -127,7 +143,6 @@ export function reportContentConflict(args) {
       .filter(Boolean)
       .join('\n'),
   );
-  const fix = hint ? `pnpm ${REBASELINE_COMMAND}` : undefined;
   for (const text of removedNotices(manifest, removed, fix)) say.warn(text);
 }
 
@@ -141,4 +156,24 @@ export function applyReplacement({ storeDir, coreDir, names, write }) {
   if (!write) return;
   for (const name of names) cpSync(join(coreDir, name), join(storeDir, name));
   say.success(`Замінено вмістом канону (${names.length}): ${names.join(', ')}`);
+}
+
+/**
+ * Наступні кроки після `--write`. Відмова по зміненому файлу з маніфесту не
+ * «готово»: ручне видалення, і лише тоді (за потреби) нова база та накат.
+ * @param {{ replaced: number; refused: string[] }} args
+ * @returns {string[]}
+ */
+export function writeSteps({ replaced, refused }) {
+  return [
+    refused.length > 0
+      ? `видали вручну ${refused.join(', ')}   # попередньо перенеси свої зміни в нову міграцію`
+      : 'git diff                        # ревʼю доданих, замінених і прибраних міграцій',
+    ...(replaced > 0
+      ? [
+          'перестворити базу даних         # порожня БД (локально) або новий екземпляр (сервер)',
+        ]
+      : []),
+    'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — власник схеми)',
+  ];
 }

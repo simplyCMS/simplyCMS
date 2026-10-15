@@ -104,8 +104,10 @@ export function findRemovedCoreMigrations(storeDir, manifest) {
  * Повідомлення про один знайдений файл — спільне для `db:diff` і doctor.
  * @param {RemovedEntry} entry
  * @param {'match' | 'modified'} status
- * @param {string} [fix] команда, що прибере збіжний файл (за замовчуванням `db:diff --write`;
- *   у зупинці на зміненому baseline — ребазлайн, бо звичайний `--write` не дійде до прибирання)
+ * @param {string | null} [fix] команда, що прибере збіжний файл (за замовчуванням `db:diff --write`;
+ *   у зупинці на зміненому baseline — ребазлайн, бо звичайний `--write` не дійде до прибирання);
+ *   `null` — зупинку не усунути однією командою (змінений файл плагіна, канон заморожено):
+ *   команди немає взагалі, бо будь-яка зупинилась би на тому самому конфлікті
  */
 export function removedNotice(
   { name, removedIn, reason },
@@ -113,8 +115,12 @@ export function removedNotice(
   fix = 'pnpm simplycms db:diff --write',
 ) {
   const head = `Файл ${name} прибрано з канону ядра у ${removedIn}`;
+  const tail =
+    fix === null
+      ? 'його можна буде прибрати після усунення зупинки вище'
+      : `забери: ${fix}`;
   return status === 'match'
-    ? `${head}; причина: ${reason}. У магазині він збігається з відомою версією — забери: ${fix}`
+    ? `${head}; причина: ${reason}. У магазині він збігається з відомою версією — ${tail}`
     : `${head}, але в магазині він змінений (хеш інший) — перенеси свої зміни в нову міграцію й видали файл вручну`;
 }
 
@@ -123,7 +129,7 @@ export function removedNotice(
  * маніфесту звітуються поруч з іншою проблемою.
  * @param {RemovedEntry[]} manifest
  * @param {RemovedFinding[]} found
- * @param {string} [fix] див. `removedNotice`
+ * @param {string | null} [fix] див. `removedNotice`
  * @returns {string[]}
  */
 export function removedNotices(manifest, found, fix) {
@@ -139,7 +145,7 @@ export function removedNotices(manifest, found, fix) {
 /**
  * Звіт і (з `write`) прибирання. Видаляється лише `match`; `modified` —
  * відмова: чужі правки не губимо.
- * @param {{ storeDir: string; manifest: RemovedEntry[]; found: RemovedFinding[]; write: boolean; fix?: string }} args
+ * @param {{ storeDir: string; manifest: RemovedEntry[]; found: RemovedFinding[]; write: boolean; fix?: string | null }} args
  * @returns {{ removed: string[]; refused: string[] }}
  */
 export function applyRemovedCore({ storeDir, manifest, found, write, fix }) {

@@ -325,13 +325,18 @@ describe('cli doctor (оффлайн)', () => {
         '1.0.0',
       );
       appendFileSync(join(storeDir, '0001_init.sql'), '-- інша правка\n');
+      writeFileSync(join(storeDir, STALE), STALE_SQL);
       const res = checkMigrations({
         storeRoot: store,
         schemaMigrationsDir: schemaDir,
       });
       expect(res.status).toBe('error');
       expect(res.details).toContain('0001_init.sql');
+      // Файл з маніфесту названо, але без команди.
+      expect(res.details).toContain(STALE);
       expect(res.details).not.toContain('--rebaseline');
+      // `db:diff --write` зупинився б на тому самому конфлікті — команди немає.
+      expect(res.details).not.toContain('db:diff --write');
     });
 
     it('файла з маніфесту в магазині немає → ok', async () => {

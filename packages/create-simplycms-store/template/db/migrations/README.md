@@ -84,9 +84,15 @@ pnpm test:schema       # 5. накат усього канону на чисту
 
 🔴 **Виняток baseline прибрав файл канону** (так `0005_mail_outbox.sql` злито в `0001_init.sql`)?
 Додай запис у `removed.json`: `name`; `sha256` — хеш НОРМАЛІЗОВАНОГО тексту файла з тега останнього
-релізу (`\r\n` → `\n`; значення дає `hashMigrationText` з `packages/cli/src/removed-migrations.mjs`,
-у shell — `git show v<реліз>:<шлях> | sed 's/\r$//' | sha256sum`), не з робочої копії; `removedIn` —
-версія, у якій файла вже немає; `reason`. Без запису `db:diff --write` лишив би файл у `db/migrations`
+релізу (`\r\n` → `\n`), не з робочої копії. Значення дає `hashMigrationText` з
+`packages/cli/src/removed-migrations.mjs` — однорядково з кореня монорепо (`sha256sum` сирих байтів не
+підходить: він не нормалізує кінці рядків):
+
+```bash
+git show v<реліз>:<шлях> | node -e "import('./packages/cli/src/removed-migrations.mjs').then(m=>{let t='';process.stdin.setEncoding('utf8').on('data',d=>t+=d).on('end',()=>console.log(m.hashMigrationText(t)))})"
+```
+
+`removedIn` — версія, у якій файла вже немає; `reason`. Без запису `db:diff --write` лишив би файл у `db/migrations`
 магазину поруч із baseline, що вже містить ту саму таблицю (накат упаде на `CREATE TABLE`). Гейт —
 `tests/removed-migrations-manifest.test.ts`; після `1.0.0-rc.1` канон файлів не видаляє, маніфест не
 поповнюється (`docs/architecture/release-process.md`).

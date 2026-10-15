@@ -10,7 +10,7 @@ import {
   storeMigrationsDir,
 } from './db-diff.mjs';
 import { findHostDrift, findOrphanedHostFiles } from './host-drift.mjs';
-import { REBASELINE_COMMAND, rebaselineHint } from './rebaseline.mjs';
+import { conflictAdvice } from './rebaseline.mjs';
 import {
   findRemovedCoreMigrations,
   readRemovedManifest,
@@ -102,19 +102,17 @@ export function checkMigrations({ storeRoot, schemaMigrationsDir }) {
   }
   const changed = perSource.flatMap((s) => s.changed);
   if (changed.length > 0) {
-    // Підказка ребазлайну — лише коли змінений файл ядра й режим ще доступний.
-    const hint =
-      perSource[0].changed.length > 0
-        ? rebaselineHint(schemaMigrationsDir)
-        : '';
+    // Порада ребазлайну — лише коли він справді пройде (див. `conflictAdvice`).
+    const { hint, fix } = conflictAdvice({
+      changed,
+      coreChanged: perSource[0].changed,
+      rebaseline: false,
+      coreDir: schemaMigrationsDir,
+    });
     const details = [
       `Спільні міграції змінені локально: ${changed.join(', ')} — міграції immutable, розберися вручну`,
       hint.replace(/\.$/, ''),
-      ...removedNotices(
-        manifest,
-        removed,
-        hint ? `pnpm ${REBASELINE_COMMAND}` : undefined,
-      ),
+      ...removedNotices(manifest, removed, fix),
     ]
       .filter(Boolean)
       .join('. ');

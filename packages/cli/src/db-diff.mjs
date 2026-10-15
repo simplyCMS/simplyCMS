@@ -25,6 +25,7 @@ import {
   applyReplacement,
   refuseRebaseline,
   reportContentConflict,
+  writeSteps,
 } from './rebaseline.mjs';
 import {
   applyRemovedCore,
@@ -422,6 +423,9 @@ export async function run(argv) {
     }
     return;
   }
+  // Накат — команда самого CLI (ядро `simplycms/migrate`, журнал сум): після
+  // людського ревʼю SQL, у порядку імен, лише файли без запису в журналі.
+  showSteps(writeSteps({ replaced: replace.length, refused }));
   if (refused.length > 0) {
     // Відмова — не «готово»: застарілий файл і далі ламатиме накат.
     process.exitCode = 1;
@@ -430,16 +434,5 @@ export async function run(argv) {
     );
     return;
   }
-  // Накат — команда самого CLI (ядро `simplycms/migrate`, журнал сум): після
-  // людського ревʼю SQL, у порядку імен, лише файли без запису в журналі.
-  showSteps([
-    'git diff                        # ревʼю доданих, замінених і прибраних міграцій',
-    ...(replace.length > 0
-      ? [
-          'перестворити базу даних         # порожня БД (локально) або новий екземпляр (сервер)',
-        ]
-      : []),
-    'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — власник схеми)',
-  ]);
   finish('Готово.');
 }

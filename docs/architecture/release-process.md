@@ -292,8 +292,14 @@ Mailpit — проєкти `storage` і `mail` без них не стартую
 файл канону (так `0005_mail_outbox.sql` злито в `0001_init.sql`), додає в нього запис: `name`
 і `sha256` останньої опублікованої версії файла — не робочої копії, а тега, і НОРМАЛІЗОВАНОГО тексту
 (кінці рядків `\r\n` → `\n`, як у журналі міграцій і в CLI): значення дає `hashMigrationText`
-(`packages/cli/src/removed-migrations.mjs`) — та сама функція, якою гейт звіряє запис з тегом; у shell
-еквівалент `git show v<останній реліз>:<шлях> | sed 's/\r$//' | sha256sum`. `removedIn` — версія, у якій файла вже немає. Без запису `simplycms db:diff
+(`packages/cli/src/removed-migrations.mjs`) — та сама функція, якою гейт звіряє запис з тегом. Однорядково
+з кореня монорепо (shell-хеш `sha256sum` сирих байтів тут не підходить: він не нормалізує кінці рядків):
+
+```bash
+git show v<реліз>:<шлях> | node -e "import('./packages/cli/src/removed-migrations.mjs').then(m=>{let t='';process.stdin.setEncoding('utf8').on('data',d=>t+=d).on('end',()=>console.log(m.hashMigrationText(t)))})"
+```
+
+`removedIn` — версія, у якій файла вже немає. Без запису `simplycms db:diff
 --write` лишив би його в `db/migrations` магазину поряд із baseline, що вже містить ту саму
 таблицю, і накат упав би на `CREATE TABLE`. Маніфест закритий свідомо: CLI видаляє лише названий
 файл із точним хешем, а не «усе з числовим префіксом» — власна міграція магазину `0006_x.sql`
