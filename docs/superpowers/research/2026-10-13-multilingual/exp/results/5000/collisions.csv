@@ -1,0 +1,18 @@
+scale,model,scenario,outcome,detail
+5000,data,natural_fallback_collisions,0,пар у згенерованому каталозі
+5000,A,S1_fallback,ПРИЙНЯТО,/en/<slug> тепер веде на X; Y у локалі en недосяжний
+5000,A,S2_cross_locale,ПРИЙНЯТО,
+5000,A,S3_same_locale,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""pt_locale_slug_key"""
+5000,B,S1_fallback,ПРИЙНЯТО,/en/<slug> тепер веде на X; Y у локалі en недосяжний
+5000,B,S2_cross_locale,ПРИЙНЯТО,
+5000,B,S3_same_locale,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""bpt_locale_slug_key"""
+5000,D,S1_fallback,ПРИЙНЯТО,/en/<slug> тепер веде на X; Y у локалі en недосяжний
+5000,D,S2_cross_locale,ПРИЙНЯТО,
+5000,D,S3_same_locale,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""d_products_slug_en"""
+5000,A+registry,S1_fallback,ВІДХИЛЕНО БД,"slug ""orkoai-zhychyiiyal-teyerzore-luvyyuie-zoaidore"" уже належить товару 639e7565-b6e1-4ec3-8c10-56c0e6816852"
+5000,A+registry,S2_cross_locale,ВІДХИЛЕНО БД,"slug ""dichyprdi-yuieukredo-naroga-tseiimo-zosyzhypr"" уже належить товару 7e1f5ac6-0529-4737-8a87-d84633728ce4"
+5000,A+registry,S3_same_locale,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""pt_locale_slug_key"""
+5000,R2 cat_text (синхронно),S1_fallback,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""ct_locale_slug_key"""
+5000,R2 cat_text (синхронно),S2_cross_locale,ПРИЙНЯТО,
+5000,R (синхронно),S1_fallback,ВІДХИЛЕНО БД,"duplicate key value violates unique constraint ""ce_locale_slug_key"""
+5000,R (синхронно),S2_cross_locale,ПРИЙНЯТО,

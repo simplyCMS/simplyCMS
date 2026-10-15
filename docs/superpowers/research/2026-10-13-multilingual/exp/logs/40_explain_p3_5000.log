@@ -1,0 +1,209 @@
+==================== R / list_name / L1 f0 / de  ====================
+Limit (actual time=1.450..1.454 rows=24 loops=1)
+  Buffers: shared hit=664
+  ->  Sort (actual time=1.449..1.451 rows=24 loops=1)
+        Sort Key: name, product_id
+        Sort Method: top-N heapsort  Memory: 36kB
+        Buffers: shared hit=664
+        ->  Bitmap Heap Scan on catalog_entries ce (actual time=0.297..1.154 rows=718 loops=1)
+              Recheck Cond: (((locale)::text = 'de'::text) AND (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[])) AND is_active)
+              Heap Blocks: exact=634
+              Buffers: shared hit=664
+              ->  Bitmap Index Scan on ce_listing_price (actual time=0.230..0.230 rows=718 loops=1)
+                    Index Cond: (((locale)::text = 'de'::text) AND (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[])))
+                    Buffers: shared hit=30
+Planning Time: 0.171 ms
+Execution Time: 1.466 ms
+==================== R / list_price / L1 f3 / de  ====================
+Limit (actual time=1.125..1.129 rows=24 loops=1)
+  Buffers: shared hit=365
+  ->  Sort (actual time=1.124..1.125 rows=24 loops=1)
+        Sort Key: price_min, product_id
+        Sort Method: top-N heapsort  Memory: 35kB
+        Buffers: shared hit=365
+        ->  Bitmap Heap Scan on catalog_entries ce (actual time=0.326..1.012 rows=249 loops=1)
+              Recheck Cond: ((option_ids && '{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]) AND (option_ids && '{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]) AND (option_ids && '{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+              Filter: (is_active AND ((locale)::text = 'de'::text) AND (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[])))
+              Rows Removed by Filter: 1086
+              Heap Blocks: exact=352
+              Buffers: shared hit=365
+              ->  Bitmap Index Scan on ce_options_gin (actual time=0.286..0.286 rows=1335 loops=1)
+                    Index Cond: ((option_ids && '{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]) AND (option_ids && '{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]) AND (option_ids && '{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                    Buffers: shared hit=13
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.118 ms
+Execution Time: 1.148 ms
+==================== R / facets / L1 f3 / de  ====================
+Sort (actual time=16.818..16.827 rows=115 loops=1)
+  Sort Key: fl.property_sort, fl.option_sort
+  Sort Method: quicksort  Memory: 39kB
+  Buffers: shared hit=5752
+  CTE fm
+    ->  Bitmap Heap Scan on catalog_entries ce (actual time=0.292..2.618 rows=718 loops=1)
+          Recheck Cond: (((locale)::text = 'de'::text) AND (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[])) AND is_active)
+          Heap Blocks: exact=634
+          Buffers: shared hit=664
+          ->  Bitmap Index Scan on ce_listing_price (actual time=0.200..0.200 rows=718 loops=1)
+                Index Cond: (((locale)::text = 'de'::text) AND (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[])))
+                Buffers: shared hit=30
+  InitPlan 2
+    ->  Aggregate (actual time=0.114..0.115 rows=1 loops=1)
+          ->  CTE Scan on fm fm_1 (actual time=0.002..0.100 rows=249 loops=1)
+                Filter: (m1 AND m2 AND m3)
+                Rows Removed by Filter: 469
+  ->  Nested Loop (actual time=16.510..16.747 rows=115 loops=1)
+        Buffers: shared hit=5752
+        ->  GroupAggregate (actual time=16.366..16.410 rows=115 loops=1)
+              Group Key: fl_1.property_id, x.option_id
+              Buffers: shared hit=5407
+              ->  Sort (actual time=16.359..16.366 rows=115 loops=1)
+                    Sort Key: fl_1.property_id, x.option_id
+                    Sort Method: quicksort  Memory: 31kB
+                    Buffers: shared hit=5407
+                    ->  Nested Loop (actual time=11.849..16.290 rows=115 loops=1)
+                          Buffers: shared hit=5407
+                          ->  HashAggregate (actual time=11.689..12.090 rows=1581 loops=1)
+                                Group Key: x.option_id, fm.m1, fm.m2, fm.m3
+                                Batches: 1  Memory Usage: 337kB
+                                Buffers: shared hit=664
+                                ->  Nested Loop (actual time=0.307..8.593 rows=12903 loops=1)
+                                      Buffers: shared hit=664
+                                      ->  CTE Scan on fm (actual time=0.295..3.024 rows=718 loops=1)
+                                            Buffers: shared hit=664
+                                      ->  Memoize (actual time=0.003..0.006 rows=18 loops=718)
+                                            Cache Key: fm.option_ids
+                                            Cache Mode: binary
+                                            Hits: 0  Misses: 718  Evictions: 0  Overflows: 0  Memory Usage: 869kB
+                                            ->  Function Scan on unnest x (actual time=0.001..0.002 rows=18 loops=718)
+                          ->  Index Scan using facet_labels_pkey on facet_labels fl_1 (actual time=0.002..0.002 rows=0 loops=1581)
+                                Index Cond: (((locale)::text = 'de'::text) AND (option_id = x.option_id))
+                                Filter: ((fm.m1 OR (property_id = '52def9bb-bce2-4e0d-8c31-88a872fe1838'::uuid)) AND (fm.m2 OR (property_id = '56a198a8-ab2f-42d4-952e-a7fb96671c81'::uuid)) AND (fm.m3 OR (property_id = '98e78680-e5a3-4b0a-a58f-c72c961d25c0'::uuid)) AND (property_id = ANY ('{52def9bb-bce2-4e0d-8c31-88a872fe1838,56a198a8-ab2f-42d4-952e-a7fb96671c81,98e78680-e5a3-4b0a-a58f-c72c961d25c0,a814b9a5-945e-463b-b379-9c24c254cb36,b063144b-bda4-4b94-852b-472d2b4b4bf2,e63f7687-4159-4c68-a499-8d92ab0643d5,27f56700-bf21-4f2d-ace7-166cacd07996,b5f201c0-8322-4f78-88c6-81bbfa7e24e7}'::uuid[])))
+                                Rows Removed by Filter: 1
+                                Buffers: shared hit=4743
+        ->  Index Scan using facet_labels_pkey on facet_labels fl (actual time=0.001..0.001 rows=1 loops=115)
+              Index Cond: (((locale)::text = 'de'::text) AND (option_id = x.option_id))
+              Buffers: shared hit=345
+Planning Time: 0.356 ms
+Execution Time: 16.932 ms
+==================== R / search / L1 f0 / en broad ====================
+Append (actual time=23.961..45.566 rows=2573 loops=1)
+  Buffers: shared hit=17747
+  CTE q
+    ->  Result (actual time=0.000..0.002 rows=1 loops=1)
+  CTE hits
+    ->  Nested Loop (actual time=18.011..22.602 rows=1074 loops=1)
+          Buffers: shared hit=7622
+          ->  HashAggregate (actual time=17.993..18.673 rows=1074 loops=1)
+                Group Key: fts.id
+                Batches: 1  Memory Usage: 593kB
+                Buffers: shared hit=4400
+                ->  Append (actual time=14.034..17.324 rows=1100 loops=1)
+                      Buffers: shared hit=4400
+                      ->  Subquery Scan on fts (actual time=14.032..14.348 rows=1000 loops=1)
+                            Buffers: shared hit=4145
+                            ->  WindowAgg (actual time=14.031..14.274 rows=1000 loops=1)
+                                  Buffers: shared hit=4145
+                                  ->  Sort (actual time=14.016..14.085 rows=1000 loops=1)
+                                        Sort Key: (ts_rank_cd(s.tsv, q.tq)) DESC, s.product_id
+                                        Sort Method: quicksort  Memory: 64kB
+                                        Buffers: shared hit=4145
+                                        ->  Nested Loop (actual time=1.548..13.687 rows=1000 loops=1)
+                                              Buffers: shared hit=4145
+                                              ->  CTE Scan on q (actual time=0.002..0.004 rows=1 loops=1)
+                                              ->  Limit (actual time=1.504..3.714 rows=1000 loops=1)
+                                                    Buffers: shared hit=845
+                                                    ->  Nested Loop (actual time=1.504..3.633 rows=1000 loops=1)
+                                                          Buffers: shared hit=845
+                                                          ->  CTE Scan on q q_1 (actual time=0.000..0.001 rows=1 loops=1)
+                                                          ->  Bitmap Heap Scan on catalog_entries s (actual time=1.500..3.027 rows=1000 loops=1)
+                                                                Recheck Cond: ((tsv @@ q_1.tq) AND ((locale)::text = 'en'::text) AND is_active)
+                                                                Heap Blocks: exact=810
+                                                                Buffers: shared hit=845
+                                                                ->  BitmapAnd (actual time=1.351..1.353 rows=0 loops=1)
+                                                                      Buffers: shared hit=35
+                                                                      ->  Bitmap Index Scan on ce_tsv_gin (actual time=0.651..0.651 rows=1411 loops=1)
+                                                                            Index Cond: (tsv @@ q_1.tq)
+                                                                            Buffers: shared hit=9
+                                                                      ->  Bitmap Index Scan on ce_listing_price (actual time=0.647..0.648 rows=4757 loops=1)
+                                                                            Index Cond: ((locale)::text = 'en'::text)
+                                                                            Buffers: shared hit=26
+                      ->  Subquery Scan on trg (actual time=2.858..2.907 rows=100 loops=1)
+                            Buffers: shared hit=255
+                            ->  WindowAgg (actual time=2.857..2.898 rows=100 loops=1)
+                                  Buffers: shared hit=255
+                                  ->  Incremental Sort (actual time=2.851..2.875 rows=100 loops=1)
+                                        Sort Key: (('qutevior thy'::text <<-> s_1.title_norm)), s_1.product_id
+                                        Presorted Key: (('qutevior thy'::text <<-> s_1.title_norm))
+                                        Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                                        Pre-sorted Groups: 4  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                                        Buffers: shared hit=255
+                                        ->  Limit (actual time=2.805..2.818 rows=100 loops=1)
+                                              Buffers: shared hit=255
+                                              ->  Sort (actual time=2.802..2.809 rows=100 loops=1)
+                                                    Sort Key: (('qutevior thy'::text <<-> s_1.title_norm))
+                                                    Sort Method: top-N heapsort  Memory: 32kB
+                                                    Buffers: shared hit=255
+                                                    ->  Bitmap Heap Scan on catalog_entries s_1 (actual time=0.706..2.754 rows=208 loops=1)
+                                                          Recheck Cond: (((locale)::text = 'en'::text) AND is_active)
+                                                          Filter: ('qutevior thy'::text <% title_norm)
+                                                          Heap Blocks: exact=201
+                                                          Buffers: shared hit=255
+                                                          ->  BitmapAnd (actual time=0.655..0.657 rows=0 loops=1)
+                                                                Buffers: shared hit=54
+                                                                ->  Bitmap Index Scan on ce_trgm_gin (actual time=0.283..0.283 rows=227 loops=1)
+                                                                      Index Cond: (title_norm %> 'qutevior thy'::text)
+                                                                      Buffers: shared hit=28
+                                                                ->  Bitmap Index Scan on ce_listing_price (actual time=0.365..0.365 rows=4757 loops=1)
+                                                                      Index Cond: ((locale)::text = 'en'::text)
+                                                                      Buffers: shared hit=26
+          ->  Index Scan using catalog_entries_pkey on catalog_entries ce (actual time=0.003..0.003 rows=1 loops=1074)
+                Index Cond: ((product_id = fts.id) AND ((locale)::text = 'en'::text))
+                Buffers: shared hit=3222
+  ->  Subquery Scan on h (actual time=23.959..23.969 rows=24 loops=1)
+        Buffers: shared hit=7622
+        ->  Limit (actual time=23.957..23.961 rows=24 loops=1)
+              Buffers: shared hit=7622
+              ->  Sort (actual time=23.955..23.956 rows=24 loops=1)
+                    Sort Key: hits.score DESC, hits.product_id
+                    Sort Method: top-N heapsort  Memory: 35kB
+                    Buffers: shared hit=7622
+                    ->  CTE Scan on hits (actual time=18.015..23.668 rows=1074 loops=1)
+                          Buffers: shared hit=7622
+  ->  Subquery Scan on "*SELECT* 2" (actual time=10.861..20.892 rows=2548 loops=1)
+        Buffers: shared hit=10125
+        ->  Nested Loop (actual time=10.858..20.541 rows=2548 loops=1)
+              Buffers: shared hit=10125
+              ->  HashAggregate (actual time=10.806..11.540 rows=3375 loops=1)
+                    Group Key: x.option_id
+                    Batches: 1  Memory Usage: 393kB
+                    ->  Nested Loop (actual time=0.023..7.397 rows=19463 loops=1)
+                          ->  CTE Scan on hits hits_1 (actual time=0.001..0.572 rows=1074 loops=1)
+                          ->  Memoize (actual time=0.002..0.005 rows=18 loops=1074)
+                                Cache Key: hits_1.option_ids
+                                Cache Mode: binary
+                                Hits: 0  Misses: 1074  Evictions: 0  Overflows: 0  Memory Usage: 1309kB
+                                ->  Function Scan on unnest x (actual time=0.001..0.002 rows=18 loops=1074)
+              ->  Index Scan using facet_labels_pkey on facet_labels fl (actual time=0.002..0.002 rows=1 loops=3375)
+                    Index Cond: (((locale)::text = 'en'::text) AND (option_id = x.option_id))
+                    Filter: is_filterable
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=10125
+  ->  Subquery Scan on "*SELECT* 3" (actual time=0.498..0.499 rows=1 loops=1)
+        ->  Aggregate (actual time=0.496..0.497 rows=1 loops=1)
+              ->  CTE Scan on hits hits_2 (actual time=0.002..0.444 rows=1074 loops=1)
+Planning:
+  Buffers: shared hit=2
+Planning Time: 2.059 ms
+Execution Time: 45.992 ms
+==================== R / sitemap / L1 f0 / de  ====================
+HashAggregate (actual time=35.162..50.866 rows=4757 loops=1)
+  Group Key: product_id
+  Batches: 1  Memory Usage: 10449kB
+  Buffers: shared hit=2016
+  ->  Seq Scan on catalog_entries ce (actual time=0.022..10.732 rows=23785 loops=1)
+        Filter: is_active
+        Rows Removed by Filter: 1215
+        Buffers: shared hit=2016
+Planning Time: 0.220 ms
+Execution Time: 51.849 ms

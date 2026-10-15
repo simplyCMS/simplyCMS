@@ -1,0 +1,130 @@
+==================== A+locidx / search / L1 f0 / en broad ====================
+Append (actual time=46.110..82.020 rows=2532 loops=1)
+  Buffers: shared hit=37895
+  CTE q
+    ->  Result (actual time=0.001..0.001 rows=1 loops=1)
+  CTE hits
+    ->  Nested Loop (actual time=43.631..45.782 rows=1100 loops=1)
+          Buffers: shared hit=12883
+          ->  HashAggregate (actual time=43.619..43.907 rows=1100 loops=1)
+                Group Key: fts.id
+                Batches: 1  Memory Usage: 593kB
+                Buffers: shared hit=8483
+                ->  Append (actual time=22.788..43.267 rows=1100 loops=1)
+                      Buffers: shared hit=8483
+                      ->  Subquery Scan on fts (actual time=22.787..23.034 rows=1000 loops=1)
+                            Buffers: shared hit=5384
+                            ->  WindowAgg (actual time=22.786..22.969 rows=1000 loops=1)
+                                  Buffers: shared hit=5384
+                                  ->  Sort (actual time=22.783..22.821 rows=1000 loops=1)
+                                        Sort Key: (ts_rank_cd(s.tsv, q.tq)) DESC, s.entity_id
+                                        Sort Method: quicksort  Memory: 64kB
+                                        Buffers: shared hit=5384
+                                        ->  Nested Loop (actual time=15.445..22.590 rows=1000 loops=1)
+                                              Buffers: shared hit=5384
+                                              ->  CTE Scan on q (actual time=0.001..0.003 rows=1 loops=1)
+                                              ->  Limit (actual time=15.412..16.652 rows=1000 loops=1)
+                                                    Buffers: shared hit=1064
+                                                    ->  Nested Loop (actual time=15.411..16.595 rows=1000 loops=1)
+                                                          Buffers: shared hit=1064
+                                                          ->  CTE Scan on q q_1 (actual time=0.000..0.000 rows=1 loops=1)
+                                                          ->  Bitmap Heap Scan on search_documents s (actual time=15.410..16.302 rows=1000 loops=1)
+                                                                Recheck Cond: (((locale)::text = 'en'::text) AND (tsv @@ q_1.tq))
+                                                                Filter: (entity_type = 'product'::text)
+                                                                Heap Blocks: exact=1000
+                                                                Buffers: shared hit=1064
+                                                                ->  Bitmap Index Scan on sd_loc_tsv_gin (actual time=12.406..12.406 rows=26245 loops=1)
+                                                                      Index Cond: (((locale)::text = 'en'::text) AND (tsv @@ q_1.tq))
+                                                                      Buffers: shared hit=64
+                      ->  Subquery Scan on trg (actual time=18.457..20.164 rows=100 loops=1)
+                            Buffers: shared hit=3099
+                            ->  WindowAgg (actual time=18.457..20.156 rows=100 loops=1)
+                                  Buffers: shared hit=3099
+                                  ->  Incremental Sort (actual time=18.454..20.137 rows=100 loops=1)
+                                        Sort Key: (('vikawe lys'::text <<-> s_1.title_norm)), s_1.entity_id
+                                        Presorted Key: (('vikawe lys'::text <<-> s_1.title_norm))
+                                        Full-sort Groups: 2  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                                        Buffers: shared hit=3099
+                                        ->  Limit (actual time=9.273..20.103 rows=100 loops=1)
+                                              Buffers: shared hit=3099
+                                              ->  Index Scan using sd_loc_trgm_gist on search_documents s_1 (actual time=9.272..20.095 rows=100 loops=1)
+                                                    Index Cond: (((locale)::text = 'en'::text) AND (title_norm %> 'vikawe lys'::text))
+                                                    Rows Removed by Index Recheck: 3
+                                                    Order By: (title_norm <->> 'vikawe lys'::text)
+                                                    Filter: (entity_type = 'product'::text)
+                                                    Buffers: shared hit=3099
+          ->  Index Scan using products_pkey on products p (actual time=0.002..0.002 rows=1 loops=1100)
+                Index Cond: (id = fts.id)
+                Filter: is_active
+                Buffers: shared hit=4400
+  ->  Subquery Scan on h (actual time=46.110..46.116 rows=24 loops=1)
+        Buffers: shared hit=12883
+        ->  Limit (actual time=46.109..46.112 rows=24 loops=1)
+              Buffers: shared hit=12883
+              ->  Sort (actual time=46.108..46.109 rows=24 loops=1)
+                    Sort Key: hits.score DESC, hits.product_id
+                    Sort Method: top-N heapsort  Memory: 27kB
+                    Buffers: shared hit=12883
+                    ->  CTE Scan on hits (actual time=43.631..45.976 rows=1100 loops=1)
+                          Buffers: shared hit=12883
+  ->  Subquery Scan on "*SELECT* 2" (actual time=30.854..35.642 rows=2507 loops=1)
+        Buffers: shared hit=25012
+        ->  Nested Loop Left Join (actual time=30.852..35.337 rows=2507 loops=1)
+              Buffers: shared hit=25012
+              ->  Hash Join (actual time=30.826..31.781 rows=2507 loops=1)
+                    Hash Cond: (v.option_id = o.id)
+                    Buffers: shared hit=17738
+                    ->  HashAggregate (actual time=30.074..30.380 rows=2507 loops=1)
+                          Group Key: v.property_id, v.option_id
+                          Batches: 1  Memory Usage: 369kB
+                          Buffers: shared hit=17680
+                          ->  Hash Join (actual time=22.733..28.092 rows=13323 loops=1)
+                                Hash Cond: (v.property_id = sp.id)
+                                Buffers: shared hit=17680
+                                ->  HashAggregate (actual time=22.680..25.778 rows=19902 loops=1)
+                                      Group Key: v.product_id, v.property_id, v.option_id
+                                      Batches: 1  Memory Usage: 2833kB
+                                      Buffers: shared hit=17675
+                                      ->  Append (actual time=0.014..17.827 rows=21177 loops=1)
+                                            Buffers: shared hit=17675
+                                            ->  Nested Loop (actual time=0.013..4.090 rows=14687 loops=1)
+                                                  Buffers: shared hit=3447
+                                                  ->  CTE Scan on hits hits_1 (actual time=0.000..0.070 rows=1100 loops=1)
+                                                  ->  Index Only Scan using ppv_owner_property_option_key on product_property_values v (actual time=0.002..0.003 rows=13 loops=1100)
+                                                        Index Cond: ((product_id = hits_1.product_id) AND (option_id IS NOT NULL))
+                                                        Heap Fetches: 0
+                                                        Buffers: shared hit=3447
+                                            ->  Nested Loop (actual time=0.025..12.511 rows=6490 loops=1)
+                                                  Buffers: shared hit=14228
+                                                  ->  Nested Loop (actual time=0.012..3.666 rows=3245 loops=1)
+                                                        Buffers: shared hit=4492
+                                                        ->  CTE Scan on hits hits_2 (actual time=0.001..0.117 rows=1100 loops=1)
+                                                        ->  Index Scan using pm_product_slug_key on product_modifications mo (actual time=0.002..0.003 rows=3 loops=1100)
+                                                              Index Cond: (product_id = hits_2.product_id)
+                                                              Buffers: shared hit=4492
+                                                  ->  Index Only Scan using mpv_owner_property_option_key on modification_property_values v_1 (actual time=0.002..0.002 rows=2 loops=3245)
+                                                        Index Cond: (modification_id = mo.id)
+                                                        Heap Fetches: 0
+                                                        Buffers: shared hit=9736
+                                ->  Hash (actual time=0.041..0.042 rows=171 loops=1)
+                                      Buckets: 1024  Batches: 1  Memory Usage: 17kB
+                                      Buffers: shared hit=5
+                                      ->  Seq Scan on section_properties sp (actual time=0.005..0.025 rows=171 loops=1)
+                                            Filter: is_filterable
+                                            Rows Removed by Filter: 129
+                                            Buffers: shared hit=5
+                    ->  Hash (actual time=0.734..0.734 rows=4020 loops=1)
+                          Buckets: 4096  Batches: 1  Memory Usage: 304kB
+                          Buffers: shared hit=58
+                          ->  Seq Scan on property_options o (actual time=0.008..0.309 rows=4020 loops=1)
+                                Buffers: shared hit=58
+              ->  Index Scan using property_option_translations_pkey on property_option_translations ot (actual time=0.001..0.001 rows=1 loops=2507)
+                    Index Cond: ((option_id = o.id) AND ((locale)::text = 'en'::text))
+                    Buffers: shared hit=7274
+  ->  Subquery Scan on "*SELECT* 3" (actual time=0.089..0.090 rows=1 loops=1)
+        ->  Aggregate (actual time=0.088..0.088 rows=1 loops=1)
+              ->  CTE Scan on hits hits_3 (actual time=0.001..0.044 rows=1100 loops=1)
+Planning:
+  Buffers: shared hit=33
+Planning Time: 1.276 ms
+Execution Time: 82.290 ms

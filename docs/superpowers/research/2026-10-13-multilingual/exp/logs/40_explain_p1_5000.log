@@ -1,0 +1,1194 @@
+==================== A / pdp / L1 f0 / de  ====================
+Nested Loop Left Join (actual time=0.476..0.484 rows=1 loops=1)
+  Buffers: shared hit=263
+  InitPlan 5
+    ->  Limit (actual time=0.017..0.018 rows=1 loops=1)
+          Buffers: shared hit=7
+          ->  Append (actual time=0.016..0.018 rows=1 loops=1)
+                Buffers: shared hit=7
+                ->  Index Scan using pt_locale_slug_key on product_translations (actual time=0.007..0.007 rows=0 loops=1)
+                      Index Cond: (((locale)::text = 'de'::text) AND ((slug)::text = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text))
+                      Buffers: shared hit=2
+                ->  Nested Loop Anti Join (actual time=0.009..0.010 rows=1 loops=1)
+                      Buffers: shared hit=5
+                      ->  Index Scan using products_slug_key on products p2 (actual time=0.005..0.005 rows=1 loops=1)
+                            Index Cond: ((slug)::text = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text)
+                            Buffers: shared hit=3
+                      ->  Index Scan using product_translations_pkey on product_translations t2 (actual time=0.003..0.003 rows=0 loops=1)
+                            Index Cond: ((product_id = p2.id) AND ((locale)::text = 'de'::text))
+                            Filter: (slug IS NOT NULL)
+                            Buffers: shared hit=2
+  ->  Index Scan using products_pkey on products p (actual time=0.021..0.022 rows=1 loops=1)
+        Index Cond: (id = (InitPlan 5).col1)
+        Filter: is_active
+        Buffers: shared hit=10
+  ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.001..0.001 rows=0 loops=1)
+        Index Cond: ((product_id = (InitPlan 5).col1) AND ((locale)::text = 'de'::text))
+        Buffers: shared hit=2
+  SubPlan 1
+    ->  Nested Loop Left Join (actual time=0.014..0.014 rows=1 loops=1)
+          Buffers: shared hit=5
+          ->  Index Scan using sections_pkey on sections s (actual time=0.005..0.005 rows=1 loops=1)
+                Index Cond: (id = p.section_id)
+                Buffers: shared hit=2
+          ->  Index Scan using section_translations_pkey on section_translations st (actual time=0.005..0.005 rows=1 loops=1)
+                Index Cond: ((section_id = p.section_id) AND ((locale)::text = 'de'::text))
+                Buffers: shared hit=3
+  SubPlan 3
+    ->  Aggregate (actual time=0.223..0.225 rows=1 loops=1)
+          Buffers: shared hit=158
+          ->  Sort (actual time=0.098..0.099 rows=5 loops=1)
+                Sort Key: mo.sort_order
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=31
+                ->  Nested Loop Left Join (actual time=0.073..0.095 rows=5 loops=1)
+                      Buffers: shared hit=31
+                      ->  Nested Loop Left Join (actual time=0.013..0.025 rows=5 loops=1)
+                            Buffers: shared hit=16
+                            ->  Index Scan using pm_product_slug_key on product_modifications mo (actual time=0.008..0.008 rows=5 loops=1)
+                                  Index Cond: (product_id = p.id)
+                                  Buffers: shared hit=3
+                            ->  Index Scan using product_modification_translations_pkey on product_modification_translations mt (actual time=0.003..0.003 rows=1 loops=5)
+                                  Index Cond: ((modification_id = mo.id) AND ((locale)::text = 'de'::text))
+                                  Buffers: shared hit=13
+                      ->  Index Scan using product_prices_modification_id_idx on product_prices pp (actual time=0.013..0.014 rows=1 loops=5)
+                            Index Cond: (modification_id = mo.id)
+                            Filter: (price_type_id = '00000000-0000-4000-8000-000000000001'::uuid)
+                            Rows Removed by Filter: 1
+                            Buffers: shared hit=15
+          SubPlan 2
+            ->  Aggregate (actual time=0.021..0.022 rows=1 loops=5)
+                  Buffers: shared hit=127
+                  ->  Sort (actual time=0.018..0.018 rows=2 loops=5)
+                        Sort Key: sp.sort_order
+                        Sort Method: quicksort  Memory: 25kB
+                        Buffers: shared hit=127
+                        ->  Nested Loop Left Join (actual time=0.011..0.017 rows=2 loops=5)
+                              Buffers: shared hit=127
+                              ->  Nested Loop Left Join (actual time=0.008..0.012 rows=2 loops=5)
+                                    Buffers: shared hit=101
+                                    ->  Nested Loop Left Join (actual time=0.006..0.008 rows=2 loops=5)
+                                          Buffers: shared hit=71
+                                          ->  Nested Loop (actual time=0.004..0.005 rows=2 loops=5)
+                                                Buffers: shared hit=46
+                                                ->  Index Only Scan using mpv_owner_property_option_key on modification_property_values v (actual time=0.003..0.003 rows=2 loops=5)
+                                                      Index Cond: (modification_id = mo.id)
+                                                      Heap Fetches: 0
+                                                      Buffers: shared hit=16
+                                                ->  Index Scan using section_properties_pkey on section_properties sp (actual time=0.001..0.001 rows=1 loops=10)
+                                                      Index Cond: (id = v.property_id)
+                                                      Buffers: shared hit=30
+                                          ->  Index Scan using section_property_translations_pkey on section_property_translations spt (actual time=0.001..0.001 rows=0 loops=10)
+                                                Index Cond: ((property_id = sp.id) AND ((locale)::text = 'de'::text))
+                                                Buffers: shared hit=25
+                                    ->  Index Scan using property_options_pkey on property_options o (actual time=0.001..0.001 rows=1 loops=10)
+                                          Index Cond: (id = v.option_id)
+                                          Buffers: shared hit=30
+                              ->  Index Scan using property_option_translations_pkey on property_option_translations ot (actual time=0.002..0.002 rows=1 loops=10)
+                                    Index Cond: ((option_id = o.id) AND ((locale)::text = 'de'::text))
+                                    Buffers: shared hit=26
+  SubPlan 4
+    ->  Aggregate (actual time=0.166..0.168 rows=1 loops=1)
+          Buffers: shared hit=85
+          ->  Sort (actual time=0.135..0.137 rows=13 loops=1)
+                Sort Key: sp_1.sort_order
+                Sort Method: quicksort  Memory: 26kB
+                Buffers: shared hit=85
+                ->  Nested Loop Left Join (actual time=0.079..0.129 rows=13 loops=1)
+                      Buffers: shared hit=85
+                      ->  Nested Loop Left Join (actual time=0.076..0.110 rows=13 loops=1)
+                            Buffers: shared hit=65
+                            ->  Nested Loop Left Join (actual time=0.074..0.093 rows=13 loops=1)
+                                  Buffers: shared hit=38
+                                  ->  Hash Join (actual time=0.072..0.077 rows=13 loops=1)
+                                        Hash Cond: (v_1.property_id = sp_1.id)
+                                        Buffers: shared hit=9
+                                        ->  Index Scan using ppv_owner_property_option_key on product_property_values v_1 (actual time=0.006..0.007 rows=13 loops=1)
+                                              Index Cond: (product_id = p.id)
+                                              Buffers: shared hit=4
+                                        ->  Hash (actual time=0.061..0.061 rows=300 loops=1)
+                                              Buckets: 1024  Batches: 1  Memory Usage: 37kB
+                                              Buffers: shared hit=5
+                                              ->  Seq Scan on section_properties sp_1 (actual time=0.004..0.027 rows=300 loops=1)
+                                                    Buffers: shared hit=5
+                                  ->  Index Scan using section_property_translations_pkey on section_property_translations spt_1 (actual time=0.001..0.001 rows=0 loops=13)
+                                        Index Cond: ((property_id = sp_1.id) AND ((locale)::text = 'de'::text))
+                                        Buffers: shared hit=29
+                            ->  Index Scan using property_options_pkey on property_options o_1 (actual time=0.001..0.001 rows=1 loops=13)
+                                  Index Cond: (id = v_1.option_id)
+                                  Buffers: shared hit=27
+                      ->  Index Scan using property_option_translations_pkey on property_option_translations ot_1 (actual time=0.001..0.001 rows=0 loops=13)
+                            Index Cond: ((option_id = o_1.id) AND ((locale)::text = 'de'::text))
+                            Buffers: shared hit=20
+Planning:
+  Buffers: shared hit=141
+Planning Time: 1.492 ms
+Execution Time: 0.561 ms
+==================== B / pdp / L1 f0 / de  ====================
+Nested Loop Left Join (actual time=0.874..0.886 rows=1 loops=1)
+  Buffers: shared hit=391
+  InitPlan 5
+    ->  Limit (actual time=0.032..0.033 rows=1 loops=1)
+          Buffers: shared hit=9
+          ->  Append (actual time=0.032..0.033 rows=1 loops=1)
+                Buffers: shared hit=9
+                ->  Index Scan using bpt_locale_slug_key on product_translations (actual time=0.013..0.013 rows=0 loops=1)
+                      Index Cond: (((locale)::text = 'de'::text) AND ((slug)::text = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text))
+                      Buffers: shared hit=3
+                ->  Nested Loop Anti Join (actual time=0.018..0.019 rows=1 loops=1)
+                      Buffers: shared hit=6
+                      ->  Index Scan using bpt_locale_slug_key on product_translations t1 (actual time=0.011..0.012 rows=1 loops=1)
+                            Index Cond: (((locale)::text = 'uk'::text) AND ((slug)::text = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text))
+                            Buffers: shared hit=4
+                      ->  Index Scan using product_translations_pkey on product_translations t2 (actual time=0.006..0.006 rows=0 loops=1)
+                            Index Cond: ((product_id = t1.product_id) AND ((locale)::text = 'de'::text))
+                            Filter: (slug IS NOT NULL)
+                            Buffers: shared hit=2
+  ->  Nested Loop (actual time=0.050..0.052 rows=1 loops=1)
+        Buffers: shared hit=15
+        ->  Index Scan using products_pkey on products p (actual time=0.040..0.041 rows=1 loops=1)
+              Index Cond: (id = (InitPlan 5).col1)
+              Filter: is_active
+              Buffers: shared hit=12
+        ->  Index Scan using product_translations_pkey on product_translations td (actual time=0.008..0.009 rows=1 loops=1)
+              Index Cond: ((product_id = (InitPlan 5).col1) AND ((locale)::text = 'uk'::text))
+              Buffers: shared hit=3
+  ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.005..0.005 rows=0 loops=1)
+        Index Cond: ((product_id = (InitPlan 5).col1) AND ((locale)::text = 'de'::text))
+        Buffers: shared hit=2
+  SubPlan 1
+    ->  Nested Loop Left Join (actual time=0.029..0.031 rows=1 loops=1)
+          Buffers: shared hit=8
+          ->  Nested Loop (actual time=0.018..0.019 rows=1 loops=1)
+                Buffers: shared hit=5
+                ->  Index Only Scan using sections_pkey on sections s (actual time=0.009..0.010 rows=1 loops=1)
+                      Index Cond: (id = p.section_id)
+                      Heap Fetches: 0
+                      Buffers: shared hit=2
+                ->  Index Scan using section_translations_pkey on section_translations std (actual time=0.008..0.008 rows=1 loops=1)
+                      Index Cond: ((section_id = p.section_id) AND ((locale)::text = 'uk'::text))
+                      Buffers: shared hit=3
+          ->  Index Scan using section_translations_pkey on section_translations st (actual time=0.006..0.006 rows=1 loops=1)
+                Index Cond: ((section_id = p.section_id) AND ((locale)::text = 'de'::text))
+                Buffers: shared hit=3
+  SubPlan 3
+    ->  Aggregate (actual time=0.385..0.389 rows=1 loops=1)
+          Buffers: shared hit=224
+          ->  Sort (actual time=0.088..0.090 rows=5 loops=1)
+                Sort Key: mo.sort_order
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=46
+                ->  Nested Loop Left Join (actual time=0.032..0.076 rows=5 loops=1)
+                      Buffers: shared hit=46
+                      ->  Nested Loop Left Join (actual time=0.023..0.051 rows=5 loops=1)
+                            Buffers: shared hit=31
+                            ->  Nested Loop (actual time=0.017..0.035 rows=5 loops=1)
+                                  Buffers: shared hit=18
+                                  ->  Index Scan using bpm_product_slug_key on product_modifications mo (actual time=0.007..0.008 rows=5 loops=1)
+                                        Index Cond: (product_id = p.id)
+                                        Buffers: shared hit=3
+                                  ->  Index Scan using product_modification_translations_pkey on product_modification_translations mtd (actual time=0.004..0.004 rows=1 loops=5)
+                                        Index Cond: ((modification_id = mo.id) AND ((locale)::text = 'uk'::text))
+                                        Buffers: shared hit=15
+                            ->  Index Scan using product_modification_translations_pkey on product_modification_translations mt (actual time=0.002..0.002 rows=1 loops=5)
+                                  Index Cond: ((modification_id = mo.id) AND ((locale)::text = 'de'::text))
+                                  Buffers: shared hit=13
+                      ->  Index Scan using product_prices_modification_id_idx on product_prices pp (actual time=0.004..0.004 rows=1 loops=5)
+                            Index Cond: (modification_id = mo.id)
+                            Filter: (price_type_id = '00000000-0000-4000-8000-000000000001'::uuid)
+                            Rows Removed by Filter: 1
+                            Buffers: shared hit=15
+          SubPlan 2
+            ->  Aggregate (actual time=0.049..0.050 rows=1 loops=5)
+                  Buffers: shared hit=178
+                  ->  Sort (actual time=0.044..0.044 rows=2 loops=5)
+                        Sort Key: sp.sort_order
+                        Sort Method: quicksort  Memory: 25kB
+                        Buffers: shared hit=178
+                        ->  Nested Loop Left Join (actual time=0.026..0.040 rows=2 loops=5)
+                              Buffers: shared hit=178
+                              ->  Nested Loop Left Join (actual time=0.023..0.035 rows=2 loops=5)
+                                    Buffers: shared hit=152
+                                    ->  Nested Loop Left Join (actual time=0.018..0.028 rows=2 loops=5)
+                                          Buffers: shared hit=122
+                                          ->  Nested Loop Left Join (actual time=0.015..0.022 rows=2 loops=5)
+                                                Buffers: shared hit=101
+                                                ->  Nested Loop (actual time=0.012..0.017 rows=2 loops=5)
+                                                      Join Filter: (v.property_id = sp.id)
+                                                      Buffers: shared hit=76
+                                                      ->  Nested Loop (actual time=0.008..0.011 rows=2 loops=5)
+                                                            Buffers: shared hit=46
+                                                            ->  Index Only Scan using mpv_owner_property_option_key on modification_property_values v (actual time=0.004..0.005 rows=2 loops=5)
+                                                                  Index Cond: (modification_id = mo.id)
+                                                                  Heap Fetches: 0
+                                                                  Buffers: shared hit=16
+                                                            ->  Index Scan using section_property_translations_pkey on section_property_translations sptd (actual time=0.002..0.002 rows=1 loops=10)
+                                                                  Index Cond: ((property_id = v.property_id) AND ((locale)::text = 'uk'::text))
+                                                                  Buffers: shared hit=30
+                                                      ->  Index Scan using section_properties_pkey on section_properties sp (actual time=0.002..0.002 rows=1 loops=10)
+                                                            Index Cond: (id = sptd.property_id)
+                                                            Buffers: shared hit=30
+                                                ->  Index Scan using section_property_translations_pkey on section_property_translations spt (actual time=0.002..0.002 rows=0 loops=10)
+                                                      Index Cond: ((property_id = sp.id) AND ((locale)::text = 'de'::text))
+                                                      Buffers: shared hit=25
+                                          ->  Index Only Scan using property_options_pkey on property_options o (actual time=0.002..0.002 rows=1 loops=10)
+                                                Index Cond: (id = v.option_id)
+                                                Heap Fetches: 0
+                                                Buffers: shared hit=21
+                                    ->  Index Scan using property_option_translations_pkey on property_option_translations otd (actual time=0.003..0.003 rows=1 loops=10)
+                                          Index Cond: ((option_id = o.id) AND ((locale)::text = 'uk'::text))
+                                          Buffers: shared hit=30
+                              ->  Index Scan using property_option_translations_pkey on property_option_translations ot (actual time=0.002..0.002 rows=1 loops=10)
+                                    Index Cond: ((option_id = o.id) AND ((locale)::text = 'de'::text))
+                                    Buffers: shared hit=26
+  SubPlan 4
+    ->  Aggregate (actual time=0.353..0.357 rows=1 loops=1)
+          Buffers: shared hit=142
+          ->  Sort (actual time=0.315..0.320 rows=13 loops=1)
+                Sort Key: sp_1.sort_order
+                Sort Method: quicksort  Memory: 26kB
+                Buffers: shared hit=142
+                ->  Nested Loop Left Join (actual time=0.163..0.299 rows=13 loops=1)
+                      Buffers: shared hit=142
+                      ->  Nested Loop Left Join (actual time=0.156..0.273 rows=13 loops=1)
+                            Buffers: shared hit=122
+                            ->  Nested Loop Left Join (actual time=0.148..0.235 rows=13 loops=1)
+                                  Buffers: shared hit=95
+                                  ->  Nested Loop Left Join (actual time=0.139..0.204 rows=13 loops=1)
+                                        Buffers: shared hit=76
+                                        ->  Nested Loop (actual time=0.132..0.174 rows=13 loops=1)
+                                              Buffers: shared hit=47
+                                              ->  Hash Join (actual time=0.124..0.135 rows=13 loops=1)
+                                                    Hash Cond: (v_1.property_id = sp_1.id)
+                                                    Buffers: shared hit=8
+                                                    ->  Index Scan using ppv_owner_property_option_key on product_property_values v_1 (actual time=0.010..0.014 rows=13 loops=1)
+                                                          Index Cond: (product_id = p.id)
+                                                          Buffers: shared hit=4
+                                                    ->  Hash (actual time=0.098..0.101 rows=300 loops=1)
+                                                          Buckets: 1024  Batches: 1  Memory Usage: 24kB
+                                                          Buffers: shared hit=4
+                                                          ->  Seq Scan on section_properties sp_1 (actual time=0.005..0.043 rows=300 loops=1)
+                                                                Buffers: shared hit=4
+                                              ->  Index Scan using section_property_translations_pkey on section_property_translations sptd_1 (actual time=0.002..0.002 rows=1 loops=13)
+                                                    Index Cond: ((property_id = sp_1.id) AND ((locale)::text = 'uk'::text))
+                                                    Buffers: shared hit=39
+                                        ->  Index Scan using section_property_translations_pkey on section_property_translations spt_1 (actual time=0.002..0.002 rows=0 loops=13)
+                                              Index Cond: ((property_id = sp_1.id) AND ((locale)::text = 'de'::text))
+                                              Buffers: shared hit=29
+                                  ->  Index Only Scan using property_options_pkey on property_options o_1 (actual time=0.002..0.002 rows=1 loops=13)
+                                        Index Cond: (id = v_1.option_id)
+                                        Heap Fetches: 0
+                                        Buffers: shared hit=19
+                            ->  Index Scan using property_option_translations_pkey on property_option_translations otd_1 (actual time=0.002..0.002 rows=1 loops=13)
+                                  Index Cond: ((option_id = o_1.id) AND ((locale)::text = 'uk'::text))
+                                  Buffers: shared hit=27
+                      ->  Index Scan using property_option_translations_pkey on property_option_translations ot_1 (actual time=0.001..0.002 rows=0 loops=13)
+                            Index Cond: ((option_id = o_1.id) AND ((locale)::text = 'de'::text))
+                            Buffers: shared hit=20
+Planning:
+  Buffers: shared hit=237
+Planning Time: 2.718 ms
+Execution Time: 1.112 ms
+==================== D / pdp / L1 f0 / de  ====================
+Index Scan using products_pkey on products p (actual time=0.936..0.942 rows=1 loops=1)
+  Index Cond: (id = (InitPlan 5).col1)
+  Filter: is_active
+  Buffers: shared hit=150
+  InitPlan 5
+    ->  Limit (actual time=0.019..0.020 rows=1 loops=1)
+          Buffers: shared hit=5
+          ->  Append (actual time=0.019..0.019 rows=1 loops=1)
+                Buffers: shared hit=5
+                ->  Index Scan using d_products_slug_de on products p2 (actual time=0.008..0.008 rows=0 loops=1)
+                      Index Cond: ((slug ->> 'de'::text) = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text)
+                      Buffers: shared hit=2
+                ->  Index Scan using d_products_slug_uk on products p2_1 (actual time=0.010..0.010 rows=1 loops=1)
+                      Index Cond: ((slug ->> 'uk'::text) = 'dikygana-lezhy-naluchyst-aiteuken-levyormy'::text)
+                      Filter: (NOT (slug ? 'de'::text))
+                      Buffers: shared hit=3
+  SubPlan 1
+    ->  Index Scan using sections_pkey on sections s (actual time=0.010..0.010 rows=1 loops=1)
+          Index Cond: (id = p.section_id)
+          Buffers: shared hit=2
+  SubPlan 3
+    ->  Aggregate (actual time=0.169..0.171 rows=1 loops=1)
+          Buffers: shared hit=94
+          ->  Sort (actual time=0.046..0.047 rows=5 loops=1)
+                Sort Key: mo.sort_order
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=18
+                ->  Nested Loop Left Join (actual time=0.015..0.041 rows=5 loops=1)
+                      Buffers: shared hit=18
+                      ->  Index Scan using product_modifications_product_id_slug_idx on product_modifications mo (actual time=0.008..0.009 rows=5 loops=1)
+                            Index Cond: (product_id = p.id)
+                            Buffers: shared hit=3
+                      ->  Index Scan using product_prices_modification_id_idx on product_prices pp (actual time=0.005..0.005 rows=1 loops=5)
+                            Index Cond: (modification_id = mo.id)
+                            Filter: (price_type_id = '00000000-0000-4000-8000-000000000001'::uuid)
+                            Rows Removed by Filter: 1
+                            Buffers: shared hit=15
+          SubPlan 2
+            ->  Aggregate (actual time=0.020..0.020 rows=1 loops=5)
+                  Buffers: shared hit=76
+                  ->  Sort (actual time=0.016..0.016 rows=2 loops=5)
+                        Sort Key: sp.sort_order
+                        Sort Method: quicksort  Memory: 25kB
+                        Buffers: shared hit=76
+                        ->  Nested Loop Left Join (actual time=0.011..0.015 rows=2 loops=5)
+                              Buffers: shared hit=76
+                              ->  Nested Loop (actual time=0.006..0.008 rows=2 loops=5)
+                                    Buffers: shared hit=46
+                                    ->  Index Only Scan using mpv_owner_property_option_key on modification_property_values v (actual time=0.005..0.005 rows=2 loops=5)
+                                          Index Cond: (modification_id = mo.id)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=16
+                                    ->  Index Scan using section_properties_pkey on section_properties sp (actual time=0.001..0.001 rows=1 loops=10)
+                                          Index Cond: (id = v.property_id)
+                                          Buffers: shared hit=30
+                              ->  Index Scan using property_options_pkey on property_options o (actual time=0.003..0.003 rows=1 loops=10)
+                                    Index Cond: (id = v.option_id)
+                                    Buffers: shared hit=30
+  SubPlan 4
+    ->  Aggregate (actual time=0.674..0.675 rows=1 loops=1)
+          Buffers: shared hit=40
+          ->  Sort (actual time=0.648..0.649 rows=13 loops=1)
+                Sort Key: sp_1.sort_order
+                Sort Method: quicksort  Memory: 28kB
+                Buffers: shared hit=40
+                ->  Nested Loop Left Join (actual time=0.576..0.625 rows=13 loops=1)
+                      Buffers: shared hit=40
+                      ->  Hash Join (actual time=0.567..0.576 rows=13 loops=1)
+                            Hash Cond: (v_1.property_id = sp_1.id)
+                            Buffers: shared hit=13
+                            ->  Index Scan using ppv_owner_property_option_key on product_property_values v_1 (actual time=0.010..0.012 rows=13 loops=1)
+                                  Index Cond: (product_id = p.id)
+                                  Buffers: shared hit=4
+                            ->  Hash (actual time=0.549..0.549 rows=300 loops=1)
+                                  Buckets: 1024  Batches: 1  Memory Usage: 70kB
+                                  Buffers: shared hit=9
+                                  ->  Seq Scan on section_properties sp_1 (actual time=0.008..0.338 rows=300 loops=1)
+                                        Buffers: shared hit=9
+                      ->  Index Scan using property_options_pkey on property_options o_1 (actual time=0.003..0.003 rows=1 loops=13)
+                            Index Cond: (id = v_1.option_id)
+                            Buffers: shared hit=27
+Planning:
+  Buffers: shared hit=57
+Planning Time: 0.899 ms
+Execution Time: 1.014 ms
+==================== D-gin / pdp / L1 f0 / de  ====================
+Index Scan using products_pkey on products p (actual time=0.401..0.406 rows=1 loops=1)
+  Index Cond: (id = (InitPlan 5).col1)
+  Filter: is_active
+  Buffers: shared hit=152
+  InitPlan 5
+    ->  Limit (actual time=0.016..0.017 rows=1 loops=1)
+          Buffers: shared hit=7
+          ->  Append (actual time=0.015..0.016 rows=1 loops=1)
+                Buffers: shared hit=7
+                ->  Bitmap Heap Scan on products p2 (actual time=0.008..0.009 rows=0 loops=1)
+                      Recheck Cond: (slug @> jsonb_build_object('de', 'dikygana-lezhy-naluchyst-aiteuken-levyormy'))
+                      Buffers: shared hit=3
+                      ->  Bitmap Index Scan on d_products_slug_gin (actual time=0.007..0.007 rows=0 loops=1)
+                            Index Cond: (slug @> jsonb_build_object('de', 'dikygana-lezhy-naluchyst-aiteuken-levyormy'))
+                            Buffers: shared hit=3
+                ->  Bitmap Heap Scan on products p2_1 (actual time=0.007..0.007 rows=1 loops=1)
+                      Recheck Cond: (slug @> jsonb_build_object('uk', 'dikygana-lezhy-naluchyst-aiteuken-levyormy'))
+                      Filter: (NOT (slug ? 'de'::text))
+                      Heap Blocks: exact=1
+                      Buffers: shared hit=4
+                      ->  Bitmap Index Scan on d_products_slug_gin (actual time=0.003..0.003 rows=1 loops=1)
+                            Index Cond: (slug @> jsonb_build_object('uk', 'dikygana-lezhy-naluchyst-aiteuken-levyormy'))
+                            Buffers: shared hit=3
+  SubPlan 1
+    ->  Index Scan using sections_pkey on sections s (actual time=0.004..0.005 rows=1 loops=1)
+          Index Cond: (id = p.section_id)
+          Buffers: shared hit=2
+  SubPlan 3
+    ->  Aggregate (actual time=0.141..0.142 rows=1 loops=1)
+          Buffers: shared hit=94
+          ->  Sort (actual time=0.022..0.023 rows=5 loops=1)
+                Sort Key: mo.sort_order
+                Sort Method: quicksort  Memory: 25kB
+                Buffers: shared hit=18
+                ->  Nested Loop Left Join (actual time=0.007..0.019 rows=5 loops=1)
+                      Buffers: shared hit=18
+                      ->  Index Scan using product_modifications_product_id_slug_idx on product_modifications mo (actual time=0.003..0.004 rows=5 loops=1)
+                            Index Cond: (product_id = p.id)
+                            Buffers: shared hit=3
+                      ->  Index Scan using product_prices_modification_id_idx on product_prices pp (actual time=0.002..0.002 rows=1 loops=5)
+                            Index Cond: (modification_id = mo.id)
+                            Filter: (price_type_id = '00000000-0000-4000-8000-000000000001'::uuid)
+                            Rows Removed by Filter: 1
+                            Buffers: shared hit=15
+          SubPlan 2
+            ->  Aggregate (actual time=0.019..0.019 rows=1 loops=5)
+                  Buffers: shared hit=76
+                  ->  Sort (actual time=0.014..0.014 rows=2 loops=5)
+                        Sort Key: sp.sort_order
+                        Sort Method: quicksort  Memory: 25kB
+                        Buffers: shared hit=76
+                        ->  Nested Loop Left Join (actual time=0.008..0.012 rows=2 loops=5)
+                              Buffers: shared hit=76
+                              ->  Nested Loop (actual time=0.005..0.007 rows=2 loops=5)
+                                    Buffers: shared hit=46
+                                    ->  Index Only Scan using mpv_owner_property_option_key on modification_property_values v (actual time=0.003..0.003 rows=2 loops=5)
+                                          Index Cond: (modification_id = mo.id)
+                                          Heap Fetches: 0
+                                          Buffers: shared hit=16
+                                    ->  Index Scan using section_properties_pkey on section_properties sp (actual time=0.001..0.001 rows=1 loops=10)
+                                          Index Cond: (id = v.property_id)
+                                          Buffers: shared hit=30
+                              ->  Index Scan using property_options_pkey on property_options o (actual time=0.002..0.002 rows=1 loops=10)
+                                    Index Cond: (id = v.option_id)
+                                    Buffers: shared hit=30
+  SubPlan 4
+    ->  Aggregate (actual time=0.191..0.192 rows=1 loops=1)
+          Buffers: shared hit=40
+          ->  Sort (actual time=0.154..0.155 rows=13 loops=1)
+                Sort Key: sp_1.sort_order
+                Sort Method: quicksort  Memory: 28kB
+                Buffers: shared hit=40
+                ->  Nested Loop Left Join (actual time=0.119..0.149 rows=13 loops=1)
+                      Buffers: shared hit=40
+                      ->  Hash Join (actual time=0.115..0.122 rows=13 loops=1)
+                            Hash Cond: (v_1.property_id = sp_1.id)
+                            Buffers: shared hit=13
+                            ->  Index Scan using ppv_owner_property_option_key on product_property_values v_1 (actual time=0.006..0.008 rows=13 loops=1)
+                                  Index Cond: (product_id = p.id)
+                                  Buffers: shared hit=4
+                            ->  Hash (actual time=0.105..0.105 rows=300 loops=1)
+                                  Buckets: 1024  Batches: 1  Memory Usage: 70kB
+                                  Buffers: shared hit=9
+                                  ->  Seq Scan on section_properties sp_1 (actual time=0.005..0.052 rows=300 loops=1)
+                                        Buffers: shared hit=9
+                      ->  Index Scan using property_options_pkey on property_options o_1 (actual time=0.002..0.002 rows=1 loops=13)
+                            Index Cond: (id = v_1.option_id)
+                            Buffers: shared hit=27
+Planning:
+  Buffers: shared hit=59
+Planning Time: 0.797 ms
+Execution Time: 0.463 ms
+==================== A / list_name / L1 f0 / de  ====================
+Limit (actual time=2.375..2.581 rows=24 loops=1)
+  Buffers: shared hit=2255
+  ->  Result (actual time=2.374..2.578 rows=24 loops=1)
+        Buffers: shared hit=2255
+        ->  Sort (actual time=2.345..2.349 rows=24 loops=1)
+              Sort Key: (COALESCE(t.name, p.name)), p.id
+              Sort Method: top-N heapsort  Memory: 34kB
+              Buffers: shared hit=2153
+              ->  Nested Loop Left Join (actual time=0.095..2.118 rows=718 loops=1)
+                    Buffers: shared hit=2153
+                    ->  Bitmap Heap Scan on products p (actual time=0.090..0.756 rows=718 loops=1)
+                          Recheck Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                          Filter: is_active
+                          Rows Removed by Filter: 40
+                          Heap Blocks: exact=499
+                          Buffers: shared hit=509
+                          ->  Bitmap Index Scan on products_section_id_idx (actual time=0.051..0.052 rows=758 loops=1)
+                                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                                Buffers: shared hit=10
+                    ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.001..0.001 rows=0 loops=718)
+                          Index Cond: ((product_id = p.id) AND ((locale)::text = 'de'::text))
+                          Buffers: shared hit=1644
+        SubPlan 1
+          ->  Aggregate (actual time=0.009..0.009 rows=1 loops=24)
+                Buffers: shared hit=102
+                ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.006..0.007 rows=4 loops=24)
+                      Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p.id))
+                      Buffers: shared hit=102
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.236 ms
+Execution Time: 2.607 ms
+==================== B / list_name / L1 f0 / de  ====================
+Limit (actual time=2.998..3.096 rows=24 loops=1)
+  Buffers: shared hit=4422
+  ->  Result (actual time=2.997..3.094 rows=24 loops=1)
+        Buffers: shared hit=4422
+        ->  Sort (actual time=2.988..2.989 rows=24 loops=1)
+              Sort Key: (COALESCE(t.name, td.name)), p.id
+              Sort Method: top-N heapsort  Memory: 35kB
+              Buffers: shared hit=4320
+              ->  Nested Loop Left Join (actual time=0.017..2.781 rows=718 loops=1)
+                    Buffers: shared hit=4320
+                    ->  Nested Loop (actual time=0.015..1.810 rows=718 loops=1)
+                          Buffers: shared hit=2676
+                          ->  Index Scan using products_section_id_idx on products p (actual time=0.010..0.366 rows=718 loops=1)
+                                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                                Filter: is_active
+                                Rows Removed by Filter: 40
+                                Buffers: shared hit=522
+                          ->  Index Scan using product_translations_pkey on product_translations td (actual time=0.002..0.002 rows=1 loops=718)
+                                Index Cond: ((product_id = p.id) AND ((locale)::text = 'uk'::text))
+                                Buffers: shared hit=2154
+                    ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.001..0.001 rows=0 loops=718)
+                          Index Cond: ((product_id = p.id) AND ((locale)::text = 'de'::text))
+                          Buffers: shared hit=1644
+        SubPlan 1
+          ->  Aggregate (actual time=0.004..0.004 rows=1 loops=24)
+                Buffers: shared hit=102
+                ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.003..0.003 rows=4 loops=24)
+                      Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p.id))
+                      Buffers: shared hit=102
+Planning:
+  Buffers: shared hit=24
+Planning Time: 0.346 ms
+Execution Time: 3.121 ms
+==================== D / list_name / L1 f0 / de  ====================
+Limit (actual time=0.971..1.064 rows=24 loops=1)
+  Buffers: shared hit=678
+  ->  Result (actual time=0.970..1.062 rows=24 loops=1)
+        Buffers: shared hit=678
+        ->  Sort (actual time=0.962..0.970 rows=24 loops=1)
+              Sort Key: (COALESCE((p.name ->> 'de'::text), (p.name ->> 'uk'::text))), p.id
+              Sort Method: top-N heapsort  Memory: 34kB
+              Buffers: shared hit=576
+              ->  Bitmap Heap Scan on products p (actual time=0.101..0.819 rows=718 loops=1)
+                    Recheck Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                    Filter: is_active
+                    Rows Removed by Filter: 40
+                    Heap Blocks: exact=566
+                    Buffers: shared hit=576
+                    ->  Bitmap Index Scan on products_section_id_idx (actual time=0.057..0.058 rows=758 loops=1)
+                          Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                          Buffers: shared hit=10
+        SubPlan 1
+          ->  Aggregate (actual time=0.003..0.003 rows=1 loops=24)
+                Buffers: shared hit=102
+                ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.002..0.003 rows=4 loops=24)
+                      Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p.id))
+                      Buffers: shared hit=102
+Planning Time: 0.124 ms
+Execution Time: 1.079 ms
+==================== A / list_price / L1 f3 / de  ====================
+Nested Loop Left Join (actual time=3.026..3.121 rows=24 loops=1)
+  Buffers: shared hit=3198
+  ->  Nested Loop (actual time=3.021..3.070 rows=24 loops=1)
+        Buffers: shared hit=3144
+        ->  Limit (actual time=3.016..3.022 rows=24 loops=1)
+              Buffers: shared hit=3072
+              ->  Sort (actual time=3.016..3.020 rows=24 loops=1)
+                    Sort Key: (min(pp.price)), p_1.id
+                    Sort Method: top-N heapsort  Memory: 28kB
+                    Buffers: shared hit=3072
+                    ->  Nested Loop (actual time=1.257..2.957 rows=249 loops=1)
+                          Buffers: shared hit=3072
+                          ->  Index Scan using products_section_id_idx on products p_1 (actual time=1.249..1.977 rows=249 loops=1)
+                                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                                Filter: (is_active AND ((ANY (id = (hashed SubPlan 2).col1)) OR (ANY (id = (hashed SubPlan 4).col1))) AND ((ANY (id = (hashed SubPlan 6).col1)) OR (ANY (id = (hashed SubPlan 8).col1))) AND ((ANY (id = (hashed SubPlan 10).col1)) OR (ANY (id = (hashed SubPlan 12).col1))))
+                                Rows Removed by Filter: 509
+                                Buffers: shared hit=2043
+                                SubPlan 2
+                                  ->  Bitmap Heap Scan on product_property_values v (actual time=0.063..0.325 rows=402 loops=1)
+                                        Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                        Heap Blocks: exact=352
+                                        Buffers: shared hit=355
+                                        ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.028..0.028 rows=402 loops=1)
+                                              Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                              Buffers: shared hit=3
+                                SubPlan 4
+                                  ->  Nested Loop (actual time=0.005..0.006 rows=0 loops=1)
+                                        Buffers: shared hit=2
+                                        ->  Bitmap Heap Scan on modification_property_values v_1 (actual time=0.005..0.005 rows=0 loops=1)
+                                              Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                              Buffers: shared hit=2
+                                              ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.004..0.004 rows=0 loops=1)
+                                                    Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                                    Buffers: shared hit=2
+                                        ->  Index Scan using product_modifications_pkey on product_modifications m (never executed)
+                                              Index Cond: (id = v_1.modification_id)
+                                SubPlan 6
+                                  ->  Bitmap Heap Scan on product_property_values v_2 (actual time=0.050..0.308 rows=495 loops=1)
+                                        Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                        Heap Blocks: exact=405
+                                        Buffers: shared hit=410
+                                        ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.023..0.023 rows=495 loops=1)
+                                              Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                              Buffers: shared hit=5
+                                SubPlan 8
+                                  ->  Nested Loop (actual time=0.006..0.006 rows=0 loops=1)
+                                        Buffers: shared hit=4
+                                        ->  Bitmap Heap Scan on modification_property_values v_3 (actual time=0.006..0.006 rows=0 loops=1)
+                                              Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                              Buffers: shared hit=4
+                                              ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.004..0.004 rows=0 loops=1)
+                                                    Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                                    Buffers: shared hit=4
+                                        ->  Index Scan using product_modifications_pkey on product_modifications m_1 (never executed)
+                                              Index Cond: (id = v_3.modification_id)
+                                SubPlan 10
+                                  ->  Bitmap Heap Scan on product_property_values v_4 (actual time=0.087..0.387 rows=758 loops=1)
+                                        Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                        Heap Blocks: exact=561
+                                        Buffers: shared hit=568
+                                        ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.037..0.037 rows=758 loops=1)
+                                              Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                              Buffers: shared hit=7
+                                SubPlan 12
+                                  ->  Nested Loop (never executed)
+                                        ->  Bitmap Heap Scan on modification_property_values v_5 (never executed)
+                                              Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                              ->  Bitmap Index Scan on modification_property_values_option_id_idx (never executed)
+                                                    Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                        ->  Index Scan using product_modifications_pkey on product_modifications m_2 (never executed)
+                                              Index Cond: (id = v_5.modification_id)
+                          ->  Aggregate (actual time=0.004..0.004 rows=1 loops=249)
+                                Buffers: shared hit=1029
+                                ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.003..0.003 rows=3 loops=249)
+                                      Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p_1.id))
+                                      Buffers: shared hit=1029
+        ->  Index Scan using products_pkey on products p (actual time=0.002..0.002 rows=1 loops=24)
+              Index Cond: (id = p_1.id)
+              Buffers: shared hit=72
+  ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.002..0.002 rows=0 loops=24)
+        Index Cond: ((product_id = p.id) AND ((locale)::text = 'de'::text))
+        Buffers: shared hit=54
+Planning:
+  Buffers: shared hit=102
+Planning Time: 0.921 ms
+Execution Time: 3.198 ms
+==================== B / list_price / L1 f3 / de  ====================
+Nested Loop Left Join (actual time=2.055..2.182 rows=24 loops=1)
+  Buffers: shared hit=3088
+  ->  Nested Loop (actual time=2.053..2.150 rows=24 loops=1)
+        Join Filter: (p.id = p_1.id)
+        Buffers: shared hit=3034
+        ->  Nested Loop (actual time=2.051..2.109 rows=24 loops=1)
+              Buffers: shared hit=2962
+              ->  Limit (actual time=2.046..2.052 rows=24 loops=1)
+                    Buffers: shared hit=2890
+                    ->  Sort (actual time=2.046..2.050 rows=24 loops=1)
+                          Sort Key: (min(pp.price)), p_1.id
+                          Sort Method: top-N heapsort  Memory: 28kB
+                          Buffers: shared hit=2890
+                          ->  Nested Loop (actual time=0.955..1.997 rows=249 loops=1)
+                                Buffers: shared hit=2890
+                                ->  Index Scan using products_section_id_idx on products p_1 (actual time=0.947..1.304 rows=249 loops=1)
+                                      Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                                      Filter: (is_active AND ((ANY (id = (hashed SubPlan 2).col1)) OR (ANY (id = (hashed SubPlan 4).col1))) AND ((ANY (id = (hashed SubPlan 6).col1)) OR (ANY (id = (hashed SubPlan 8).col1))) AND ((ANY (id = (hashed SubPlan 10).col1)) OR (ANY (id = (hashed SubPlan 12).col1))))
+                                      Rows Removed by Filter: 509
+                                      Buffers: shared hit=1861
+                                      SubPlan 2
+                                        ->  Bitmap Heap Scan on product_property_values v (actual time=0.044..0.214 rows=402 loops=1)
+                                              Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                              Heap Blocks: exact=352
+                                              Buffers: shared hit=355
+                                              ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.018..0.019 rows=402 loops=1)
+                                                    Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                                    Buffers: shared hit=3
+                                      SubPlan 4
+                                        ->  Nested Loop (actual time=0.003..0.004 rows=0 loops=1)
+                                              Buffers: shared hit=2
+                                              ->  Bitmap Heap Scan on modification_property_values v_1 (actual time=0.003..0.004 rows=0 loops=1)
+                                                    Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                                    Buffers: shared hit=2
+                                                    ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.002..0.002 rows=0 loops=1)
+                                                          Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                                          Buffers: shared hit=2
+                                              ->  Index Scan using product_modifications_pkey on product_modifications m (never executed)
+                                                    Index Cond: (id = v_1.modification_id)
+                                      SubPlan 6
+                                        ->  Bitmap Heap Scan on product_property_values v_2 (actual time=0.052..0.220 rows=495 loops=1)
+                                              Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                              Heap Blocks: exact=405
+                                              Buffers: shared hit=410
+                                              ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.020..0.020 rows=495 loops=1)
+                                                    Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                                    Buffers: shared hit=5
+                                      SubPlan 8
+                                        ->  Nested Loop (actual time=0.003..0.004 rows=0 loops=1)
+                                              Buffers: shared hit=4
+                                              ->  Bitmap Heap Scan on modification_property_values v_3 (actual time=0.003..0.003 rows=0 loops=1)
+                                                    Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                                    Buffers: shared hit=4
+                                                    ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.003..0.003 rows=0 loops=1)
+                                                          Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                                          Buffers: shared hit=4
+                                              ->  Index Scan using product_modifications_pkey on product_modifications m_1 (never executed)
+                                                    Index Cond: (id = v_3.modification_id)
+                                      SubPlan 10
+                                        ->  Bitmap Heap Scan on product_property_values v_4 (actual time=0.074..0.310 rows=758 loops=1)
+                                              Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                              Heap Blocks: exact=561
+                                              Buffers: shared hit=568
+                                              ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.035..0.035 rows=758 loops=1)
+                                                    Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                                    Buffers: shared hit=7
+                                      SubPlan 12
+                                        ->  Nested Loop (never executed)
+                                              ->  Bitmap Heap Scan on modification_property_values v_5 (never executed)
+                                                    Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                                    ->  Bitmap Index Scan on modification_property_values_option_id_idx (never executed)
+                                                          Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                              ->  Index Scan using product_modifications_pkey on product_modifications m_2 (never executed)
+                                                    Index Cond: (id = v_5.modification_id)
+                                ->  Aggregate (actual time=0.003..0.003 rows=1 loops=249)
+                                      Buffers: shared hit=1029
+                                      ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.002..0.002 rows=3 loops=249)
+                                            Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p_1.id))
+                                            Buffers: shared hit=1029
+              ->  Index Scan using product_translations_pkey on product_translations td (actual time=0.002..0.002 rows=1 loops=24)
+                    Index Cond: ((product_id = p_1.id) AND ((locale)::text = 'uk'::text))
+                    Buffers: shared hit=72
+        ->  Index Scan using products_pkey on products p (actual time=0.001..0.001 rows=1 loops=24)
+              Index Cond: (id = td.product_id)
+              Buffers: shared hit=72
+  ->  Index Scan using product_translations_pkey on product_translations t (actual time=0.001..0.001 rows=0 loops=24)
+        Index Cond: ((product_id = p.id) AND ((locale)::text = 'de'::text))
+        Buffers: shared hit=54
+Planning:
+  Buffers: shared hit=120
+Planning Time: 0.848 ms
+Execution Time: 2.229 ms
+==================== D / list_price / L1 f3 / de  ====================
+Nested Loop (actual time=2.148..2.203 rows=24 loops=1)
+  Buffers: shared hit=3170
+  ->  Limit (actual time=2.144..2.148 rows=24 loops=1)
+        Buffers: shared hit=3098
+        ->  Sort (actual time=2.143..2.146 rows=24 loops=1)
+              Sort Key: (min(pp.price)), p_1.id
+              Sort Method: top-N heapsort  Memory: 28kB
+              Buffers: shared hit=3098
+              ->  Nested Loop (actual time=0.890..2.097 rows=249 loops=1)
+                    Buffers: shared hit=3098
+                    ->  Index Scan using products_section_id_idx on products p_1 (actual time=0.884..1.484 rows=249 loops=1)
+                          Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                          Filter: (is_active AND ((ANY (id = (hashed SubPlan 2).col1)) OR (ANY (id = (hashed SubPlan 4).col1))) AND ((ANY (id = (hashed SubPlan 6).col1)) OR (ANY (id = (hashed SubPlan 8).col1))) AND ((ANY (id = (hashed SubPlan 10).col1)) OR (ANY (id = (hashed SubPlan 12).col1))))
+                          Rows Removed by Filter: 509
+                          Buffers: shared hit=2069
+                          SubPlan 2
+                            ->  Bitmap Heap Scan on product_property_values v (actual time=0.041..0.178 rows=402 loops=1)
+                                  Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                  Heap Blocks: exact=352
+                                  Buffers: shared hit=355
+                                  ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.016..0.016 rows=402 loops=1)
+                                        Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                        Buffers: shared hit=3
+                          SubPlan 4
+                            ->  Nested Loop (actual time=0.003..0.003 rows=0 loops=1)
+                                  Buffers: shared hit=2
+                                  ->  Bitmap Heap Scan on modification_property_values v_1 (actual time=0.002..0.003 rows=0 loops=1)
+                                        Recheck Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                        Buffers: shared hit=2
+                                        ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.002..0.002 rows=0 loops=1)
+                                              Index Cond: (option_id = ANY ('{ac23b719-781e-44d0-aa88-cf27621e379f}'::uuid[]))
+                                              Buffers: shared hit=2
+                                  ->  Index Scan using product_modifications_pkey on product_modifications m (never executed)
+                                        Index Cond: (id = v_1.modification_id)
+                          SubPlan 6
+                            ->  Bitmap Heap Scan on product_property_values v_2 (actual time=0.045..0.223 rows=495 loops=1)
+                                  Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                  Heap Blocks: exact=405
+                                  Buffers: shared hit=410
+                                  ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.018..0.018 rows=495 loops=1)
+                                        Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                        Buffers: shared hit=5
+                          SubPlan 8
+                            ->  Nested Loop (actual time=0.004..0.005 rows=0 loops=1)
+                                  Buffers: shared hit=4
+                                  ->  Bitmap Heap Scan on modification_property_values v_3 (actual time=0.004..0.004 rows=0 loops=1)
+                                        Recheck Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                        Buffers: shared hit=4
+                                        ->  Bitmap Index Scan on modification_property_values_option_id_idx (actual time=0.003..0.003 rows=0 loops=1)
+                                              Index Cond: (option_id = ANY ('{07e25e14-7ac8-4740-9d08-dfb1822fbc33,59b972d6-81c1-4529-a6ba-7863d60f0929}'::uuid[]))
+                                              Buffers: shared hit=4
+                                  ->  Index Scan using product_modifications_pkey on product_modifications m_1 (never executed)
+                                        Index Cond: (id = v_3.modification_id)
+                          SubPlan 10
+                            ->  Bitmap Heap Scan on product_property_values v_4 (actual time=0.071..0.284 rows=758 loops=1)
+                                  Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                  Heap Blocks: exact=561
+                                  Buffers: shared hit=568
+                                  ->  Bitmap Index Scan on product_property_values_option_id_idx (actual time=0.032..0.032 rows=758 loops=1)
+                                        Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                        Buffers: shared hit=7
+                          SubPlan 12
+                            ->  Nested Loop (never executed)
+                                  ->  Bitmap Heap Scan on modification_property_values v_5 (never executed)
+                                        Recheck Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                        ->  Bitmap Index Scan on modification_property_values_option_id_idx (never executed)
+                                              Index Cond: (option_id = ANY ('{fdda2cd7-4f4b-4680-83a1-b567df25ae96,cb99ef72-5205-4b3c-808f-fa931cb85e77,be8b90b2-0abe-4eb5-91e3-504e98dcc6b7}'::uuid[]))
+                                  ->  Index Scan using product_modifications_pkey on product_modifications m_2 (never executed)
+                                        Index Cond: (id = v_5.modification_id)
+                    ->  Aggregate (actual time=0.002..0.002 rows=1 loops=249)
+                          Buffers: shared hit=1029
+                          ->  Index Scan using product_prices_unique on product_prices pp (actual time=0.001..0.002 rows=3 loops=249)
+                                Index Cond: ((price_type_id = '00000000-0000-4000-8000-000000000001'::uuid) AND (product_id = p_1.id))
+                                Buffers: shared hit=1029
+  ->  Index Scan using products_pkey on products p (actual time=0.002..0.002 rows=1 loops=24)
+        Index Cond: (id = p_1.id)
+        Buffers: shared hit=72
+Planning:
+  Buffers: shared hit=90
+Planning Time: 0.728 ms
+Execution Time: 2.242 ms
+==================== A / facets / L1 f3 / de  ====================
+Sort (actual time=30.794..30.809 rows=115 loops=1)
+  Sort Key: sp.sort_order, o.sort_order
+  Sort Method: quicksort  Memory: 40kB
+  Buffers: shared hit=4113
+  CTE base
+    ->  Bitmap Heap Scan on products p (actual time=0.136..1.006 rows=718 loops=1)
+          Recheck Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+          Filter: is_active
+          Rows Removed by Filter: 40
+          Heap Blocks: exact=499
+          Buffers: shared hit=509
+          ->  Bitmap Index Scan on products_section_id_idx (actual time=0.084..0.085 rows=758 loops=1)
+                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                Buffers: shared hit=10
+  CTE po
+    ->  HashAggregate (actual time=17.062..19.861 rows=12903 loops=1)
+          Group Key: v.product_id, v.property_id, v.option_id
+          Batches: 1  Memory Usage: 1809kB
+          Buffers: shared hit=3432
+          ->  Append (actual time=0.149..13.469 rows=13751 loops=1)
+                Buffers: shared hit=3432
+                ->  Nested Loop (actual time=0.148..5.179 rows=9305 loops=1)
+                      Buffers: shared hit=2742
+                      ->  CTE Scan on base (actual time=0.137..1.136 rows=718 loops=1)
+                            Buffers: shared hit=509
+                      ->  Index Only Scan using ppv_owner_property_option_key on product_property_values v (actual time=0.003..0.004 rows=13 loops=718)
+                            Index Cond: ((product_id = base.id) AND (option_id IS NOT NULL))
+                            Heap Fetches: 0
+                            Buffers: shared hit=2233
+                ->  Hash Join (actual time=3.217..7.457 rows=4446 loops=1)
+                      Hash Cond: (v_1.modification_id = mo.id)
+                      Buffers: shared hit=690
+                      ->  Seq Scan on modification_property_values v_1 (actual time=0.011..1.403 rows=30490 loops=1)
+                            Buffers: shared hit=377
+                      ->  Hash (actual time=3.184..3.185 rows=2223 loops=1)
+                            Buckets: 4096  Batches: 1  Memory Usage: 171kB
+                            Buffers: shared hit=313
+                            ->  Hash Join (actual time=0.082..2.861 rows=2223 loops=1)
+                                  Hash Cond: (mo.product_id = base_1.id)
+                                  Buffers: shared hit=313
+                                  ->  Seq Scan on product_modifications mo (actual time=0.003..0.871 rows=15245 loops=1)
+                                        Buffers: shared hit=313
+                                  ->  Hash (actual time=0.074..0.074 rows=718 loops=1)
+                                        Buckets: 1024  Batches: 1  Memory Usage: 42kB
+                                        ->  CTE Scan on base base_1 (actual time=0.000..0.031 rows=718 loops=1)
+  CTE fm
+    ->  HashAggregate (actual time=10.044..10.117 rows=718 loops=1)
+          Group Key: po_1.product_id
+          Batches: 1  Memory Usage: 185kB
+          ->  CTE Scan on po po_1 (actual time=0.000..6.155 rows=12903 loops=1)
+  InitPlan 4
+    ->  Aggregate (actual time=0.050..0.050 rows=1 loops=1)
+          ->  CTE Scan on fm fm_1 (actual time=0.001..0.038 rows=249 loops=1)
+                Filter: (m1 AND m2 AND m3)
+                Rows Removed by Filter: 469
+  ->  Nested Loop Left Join (actual time=30.240..30.734 rows=115 loops=1)
+        Buffers: shared hit=4113
+        ->  Nested Loop (actual time=30.180..30.436 rows=115 loops=1)
+              Buffers: shared hit=3853
+              ->  Hash Left Join (actual time=30.166..30.229 rows=115 loops=1)
+                    Hash Cond: (sp.id = spt.property_id)
+                    Buffers: shared hit=3508
+                    ->  Hash Join (actual time=30.099..30.145 rows=115 loops=1)
+                          Hash Cond: (sp.id = po.property_id)
+                          Buffers: shared hit=3437
+                          ->  Seq Scan on section_properties sp (actual time=0.006..0.030 rows=300 loops=1)
+                                Buffers: shared hit=5
+                          ->  Hash (actual time=30.051..30.052 rows=115 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 17kB
+                                Buffers: shared hit=3432
+                                ->  GroupAggregate (actual time=29.803..30.039 rows=115 loops=1)
+                                      Group Key: po.property_id, po.option_id
+                                      Buffers: shared hit=3432
+                                      ->  Sort (actual time=29.799..29.881 rows=2175 loops=1)
+                                            Sort Key: po.property_id, po.option_id
+                                            Sort Method: quicksort  Memory: 198kB
+                                            Buffers: shared hit=3432
+                                            ->  Hash Join (actual time=27.394..29.349 rows=2175 loops=1)
+                                                  Hash Cond: (po.product_id = fm.product_id)
+                                                  Join Filter: ((fm.m1 OR (po.property_id = '52def9bb-bce2-4e0d-8c31-88a872fe1838'::uuid)) AND (fm.m2 OR (po.property_id = '56a198a8-ab2f-42d4-952e-a7fb96671c81'::uuid)) AND (fm.m3 OR (po.property_id = '98e78680-e5a3-4b0a-a58f-c72c961d25c0'::uuid)))
+                                                  Rows Removed by Join Filter: 3145
+                                                  Buffers: shared hit=3432
+                                                  ->  CTE Scan on po (actual time=17.067..18.151 rows=5320 loops=1)
+                                                        Filter: (property_id = ANY ('{52def9bb-bce2-4e0d-8c31-88a872fe1838,56a198a8-ab2f-42d4-952e-a7fb96671c81,98e78680-e5a3-4b0a-a58f-c72c961d25c0,a814b9a5-945e-463b-b379-9c24c254cb36,b063144b-bda4-4b94-852b-472d2b4b4bf2,e63f7687-4159-4c68-a499-8d92ab0643d5,27f56700-bf21-4f2d-ace7-166cacd07996,b5f201c0-8322-4f78-88c6-81bbfa7e24e7}'::uuid[]))
+                                                        Rows Removed by Filter: 7583
+                                                        Buffers: shared hit=3432
+                                                  ->  Hash (actual time=10.318..10.318 rows=718 loops=1)
+                                                        Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                                                        ->  CTE Scan on fm (actual time=10.046..10.255 rows=718 loops=1)
+                    ->  Hash (actual time=0.058..0.059 rows=79 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 13kB
+                          Buffers: shared hit=71
+                          ->  Index Scan using spt_locale_slug_key on section_property_translations spt (actual time=0.021..0.048 rows=79 loops=1)
+                                Index Cond: ((locale)::text = 'de'::text)
+                                Buffers: shared hit=71
+              ->  Index Scan using property_options_pkey on property_options o (actual time=0.001..0.001 rows=1 loops=115)
+                    Index Cond: (id = po.option_id)
+                    Buffers: shared hit=345
+        ->  Index Scan using property_option_translations_pkey on property_option_translations ot (actual time=0.002..0.002 rows=0 loops=115)
+              Index Cond: ((option_id = o.id) AND ((locale)::text = 'de'::text))
+              Buffers: shared hit=260
+Planning:
+  Buffers: shared hit=52
+Planning Time: 0.909 ms
+Execution Time: 31.250 ms
+==================== B / facets / L1 f3 / de  ====================
+Sort (actual time=29.105..29.122 rows=115 loops=1)
+  Sort Key: sp.sort_order, o.sort_order
+  Sort Method: quicksort  Memory: 40kB
+  Buffers: shared hit=4286
+  CTE base
+    ->  Bitmap Heap Scan on products p (actual time=0.068..0.402 rows=718 loops=1)
+          Recheck Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+          Filter: is_active
+          Rows Removed by Filter: 40
+          Heap Blocks: exact=158
+          Buffers: shared hit=168
+          ->  Bitmap Index Scan on products_section_id_idx (actual time=0.053..0.054 rows=758 loops=1)
+                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                Buffers: shared hit=10
+  CTE po
+    ->  HashAggregate (actual time=16.367..18.954 rows=12903 loops=1)
+          Group Key: v.product_id, v.property_id, v.option_id
+          Batches: 1  Memory Usage: 1809kB
+          Buffers: shared hit=3037
+          ->  Append (actual time=0.075..13.132 rows=13751 loops=1)
+                Buffers: shared hit=3037
+                ->  Nested Loop (actual time=0.075..3.654 rows=9305 loops=1)
+                      Buffers: shared hit=2401
+                      ->  CTE Scan on base (actual time=0.068..0.511 rows=718 loops=1)
+                            Buffers: shared hit=168
+                      ->  Index Only Scan using ppv_owner_property_option_key on product_property_values v (actual time=0.003..0.003 rows=13 loops=718)
+                            Index Cond: ((product_id = base.id) AND (option_id IS NOT NULL))
+                            Heap Fetches: 0
+                            Buffers: shared hit=2233
+                ->  Hash Join (actual time=2.969..8.549 rows=4446 loops=1)
+                      Hash Cond: (v_1.modification_id = mo.id)
+                      Buffers: shared hit=636
+                      ->  Seq Scan on modification_property_values v_1 (actual time=0.009..1.818 rows=30490 loops=1)
+                            Buffers: shared hit=377
+                      ->  Hash (actual time=2.949..2.952 rows=2223 loops=1)
+                            Buckets: 4096  Batches: 1  Memory Usage: 171kB
+                            Buffers: shared hit=259
+                            ->  Hash Join (actual time=0.084..2.648 rows=2223 loops=1)
+                                  Hash Cond: (mo.product_id = base_1.id)
+                                  Buffers: shared hit=259
+                                  ->  Seq Scan on product_modifications mo (actual time=0.004..0.880 rows=15245 loops=1)
+                                        Buffers: shared hit=259
+                                  ->  Hash (actual time=0.074..0.075 rows=718 loops=1)
+                                        Buckets: 1024  Batches: 1  Memory Usage: 42kB
+                                        ->  CTE Scan on base base_1 (actual time=0.000..0.031 rows=718 loops=1)
+  CTE fm
+    ->  HashAggregate (actual time=8.566..8.654 rows=718 loops=1)
+          Group Key: po_1.product_id
+          Batches: 1  Memory Usage: 185kB
+          ->  CTE Scan on po po_1 (actual time=0.000..5.413 rows=12903 loops=1)
+  InitPlan 4
+    ->  Aggregate (actual time=0.050..0.051 rows=1 loops=1)
+          ->  CTE Scan on fm fm_1 (actual time=0.001..0.039 rows=249 loops=1)
+                Filter: (m1 AND m2 AND m3)
+                Rows Removed by Filter: 469
+  ->  Nested Loop Left Join (actual time=28.397..29.053 rows=115 loops=1)
+        Buffers: shared hit=4286
+        ->  Nested Loop (actual time=28.340..28.868 rows=115 loops=1)
+              Buffers: shared hit=4026
+              ->  Nested Loop (actual time=28.327..28.624 rows=115 loops=1)
+                    Buffers: shared hit=3681
+                    ->  Hash Left Join (actual time=28.316..28.433 rows=115 loops=1)
+                          Hash Cond: (sp.id = spt.property_id)
+                          Buffers: shared hit=3336
+                          ->  Hash Join (actual time=28.254..28.355 rows=115 loops=1)
+                                Hash Cond: (sptd.property_id = sp.id)
+                                Buffers: shared hit=3266
+                                ->  Index Scan using bspt_locale_slug_key on section_property_translations sptd (actual time=0.009..0.093 rows=300 loops=1)
+                                      Index Cond: ((locale)::text = 'uk'::text)
+                                      Buffers: shared hit=225
+                                ->  Hash (actual time=28.216..28.218 rows=115 loops=1)
+                                      Buckets: 1024  Batches: 1  Memory Usage: 19kB
+                                      Buffers: shared hit=3041
+                                      ->  Hash Join (actual time=28.164..28.197 rows=115 loops=1)
+                                            Hash Cond: (sp.id = po.property_id)
+                                            Buffers: shared hit=3041
+                                            ->  Seq Scan on section_properties sp (actual time=0.004..0.026 rows=300 loops=1)
+                                                  Buffers: shared hit=4
+                                            ->  Hash (actual time=28.129..28.131 rows=115 loops=1)
+                                                  Buckets: 1024  Batches: 1  Memory Usage: 17kB
+                                                  Buffers: shared hit=3037
+                                                  ->  GroupAggregate (actual time=27.778..28.110 rows=115 loops=1)
+                                                        Group Key: po.property_id, po.option_id
+                                                        Buffers: shared hit=3037
+                                                        ->  Sort (actual time=27.772..27.885 rows=2175 loops=1)
+                                                              Sort Key: po.property_id, po.option_id
+                                                              Sort Method: quicksort  Memory: 198kB
+                                                              Buffers: shared hit=3037
+                                                              ->  Hash Join (actual time=25.280..27.341 rows=2175 loops=1)
+                                                                    Hash Cond: (po.product_id = fm.product_id)
+                                                                    Join Filter: ((fm.m1 OR (po.property_id = '52def9bb-bce2-4e0d-8c31-88a872fe1838'::uuid)) AND (fm.m2 OR (po.property_id = '56a198a8-ab2f-42d4-952e-a7fb96671c81'::uuid)) AND (fm.m3 OR (po.property_id = '98e78680-e5a3-4b0a-a58f-c72c961d25c0'::uuid)))
+                                                                    Rows Removed by Join Filter: 3145
+                                                                    Buffers: shared hit=3037
+                                                                    ->  CTE Scan on po (actual time=16.373..17.608 rows=5320 loops=1)
+                                                                          Filter: (property_id = ANY ('{52def9bb-bce2-4e0d-8c31-88a872fe1838,56a198a8-ab2f-42d4-952e-a7fb96671c81,98e78680-e5a3-4b0a-a58f-c72c961d25c0,a814b9a5-945e-463b-b379-9c24c254cb36,b063144b-bda4-4b94-852b-472d2b4b4bf2,e63f7687-4159-4c68-a499-8d92ab0643d5,27f56700-bf21-4f2d-ace7-166cacd07996,b5f201c0-8322-4f78-88c6-81bbfa7e24e7}'::uuid[]))
+                                                                          Rows Removed by Filter: 7583
+                                                                          Buffers: shared hit=3037
+                                                                    ->  Hash (actual time=8.897..8.897 rows=718 loops=1)
+                                                                          Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                                                                          ->  CTE Scan on fm (actual time=8.568..8.812 rows=718 loops=1)
+                          ->  Hash (actual time=0.053..0.054 rows=79 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 13kB
+                                Buffers: shared hit=70
+                                ->  Index Scan using bspt_locale_slug_key on section_property_translations spt (actual time=0.017..0.043 rows=79 loops=1)
+                                      Index Cond: ((locale)::text = 'de'::text)
+                                      Buffers: shared hit=70
+                    ->  Index Scan using property_options_pkey on property_options o (actual time=0.001..0.001 rows=1 loops=115)
+                          Index Cond: (id = po.option_id)
+                          Buffers: shared hit=345
+              ->  Index Scan using property_option_translations_pkey on property_option_translations otd (actual time=0.002..0.002 rows=1 loops=115)
+                    Index Cond: ((option_id = o.id) AND ((locale)::text = 'uk'::text))
+                    Buffers: shared hit=345
+        ->  Index Scan using property_option_translations_pkey on property_option_translations ot (actual time=0.001..0.001 rows=0 loops=115)
+              Index Cond: ((option_id = o.id) AND ((locale)::text = 'de'::text))
+              Buffers: shared hit=260
+Planning:
+  Buffers: shared hit=76
+Planning Time: 1.420 ms
+Execution Time: 29.335 ms
+==================== D / facets / L1 f3 / de  ====================
+Sort (actual time=26.324..26.335 rows=115 loops=1)
+  Sort Key: sp.sort_order, o.sort_order
+  Sort Method: quicksort  Memory: 40kB
+  Buffers: shared hit=3965
+  CTE base
+    ->  Bitmap Heap Scan on products p (actual time=0.178..1.223 rows=718 loops=1)
+          Recheck Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+          Filter: is_active
+          Rows Removed by Filter: 40
+          Heap Blocks: exact=566
+          Buffers: shared hit=576
+          ->  Bitmap Index Scan on products_section_id_idx (actual time=0.119..0.120 rows=758 loops=1)
+                Index Cond: (section_id = ANY ('{38075061-41bb-4742-bf47-ec738e9b8854,b3481e96-d04a-4fe4-815c-58ab12bd252d,f62f89ff-763c-47b5-b2c1-249a9f609ea1,9701febe-34b0-4d3e-9f4b-a10ba03b0965,ec0e8e13-eea2-484a-b58b-a2e31af9ed5a,cc8a9dc1-55c6-4661-bdcb-153361c6c5dd,04bb339f-b901-4378-b6f7-dfd832451b7f,e76d2822-0305-4293-9b47-48088878b486,b6efea77-f1ac-4ad0-bc15-b4d6c50355d5,6240dc43-b5c1-4fc8-a1a9-91f60efc1fe5,37b19af6-f303-46a7-8456-ebcca38bf846,f5101cd1-943c-46a8-8f46-9d6248bb0c66,5270cdb9-a70a-492e-b2bf-40a166664550,07938d77-f46a-47fe-b409-056c8bcabfa7,dfdc04af-c169-45dd-ba1d-8314bcaa50ff,f6a9edde-1d93-4733-8876-d1a7ae9a8e46,abfb1c98-6729-439c-b4e1-1db105d8b95c,24d36c0f-acb4-4811-be53-415072c73046,c98a1571-aec6-4c31-9cad-c7a70e44798b,55f250ed-f45d-494b-8a90-f7d833faee29,87615ba4-ba3e-40f5-a7c9-e2632a00c518}'::uuid[]))
+                Buffers: shared hit=10
+  CTE po
+    ->  HashAggregate (actual time=17.020..18.886 rows=12903 loops=1)
+          Group Key: v.product_id, v.property_id, v.option_id
+          Batches: 1  Memory Usage: 1809kB
+          Buffers: shared hit=3611
+          ->  Append (actual time=0.201..13.385 rows=13751 loops=1)
+                Buffers: shared hit=3611
+                ->  Nested Loop (actual time=0.199..5.463 rows=9305 loops=1)
+                      Buffers: shared hit=2809
+                      ->  CTE Scan on base (actual time=0.179..1.375 rows=718 loops=1)
+                            Buffers: shared hit=576
+                      ->  Index Only Scan using ppv_owner_property_option_key on product_property_values v (actual time=0.003..0.004 rows=13 loops=718)
+                            Index Cond: ((product_id = base.id) AND (option_id IS NOT NULL))
+                            Heap Fetches: 0
+                            Buffers: shared hit=2233
+                ->  Hash Join (actual time=2.751..7.070 rows=4446 loops=1)
+                      Hash Cond: (v_1.modification_id = mo.id)
+                      Buffers: shared hit=802
+                      ->  Seq Scan on modification_property_values v_1 (actual time=0.009..1.422 rows=30490 loops=1)
+                            Buffers: shared hit=377
+                      ->  Hash (actual time=2.729..2.731 rows=2223 loops=1)
+                            Buckets: 4096  Batches: 1  Memory Usage: 171kB
+                            Buffers: shared hit=425
+                            ->  Hash Join (actual time=0.081..2.520 rows=2223 loops=1)
+                                  Hash Cond: (mo.product_id = base_1.id)
+                                  Buffers: shared hit=425
+                                  ->  Seq Scan on product_modifications mo (actual time=0.004..0.790 rows=15245 loops=1)
+                                        Buffers: shared hit=425
+                                  ->  Hash (actual time=0.072..0.073 rows=718 loops=1)
+                                        Buckets: 1024  Batches: 1  Memory Usage: 42kB
+                                        ->  CTE Scan on base base_1 (actual time=0.001..0.029 rows=718 loops=1)
+  CTE fm
+    ->  HashAggregate (actual time=6.341..6.405 rows=718 loops=1)
+          Group Key: po_1.product_id
+          Batches: 1  Memory Usage: 185kB
+          ->  CTE Scan on po po_1 (actual time=0.000..3.785 rows=12903 loops=1)
+  InitPlan 4
+    ->  Aggregate (actual time=0.059..0.060 rows=1 loops=1)
+          ->  CTE Scan on fm fm_1 (actual time=0.001..0.048 rows=249 loops=1)
+                Filter: (m1 AND m2 AND m3)
+                Rows Removed by Filter: 469
+  ->  Nested Loop (actual time=26.058..26.274 rows=115 loops=1)
+        Buffers: shared hit=3965
+        ->  Hash Join (actual time=25.978..26.024 rows=115 loops=1)
+              Hash Cond: (sp.id = po.property_id)
+              Buffers: shared hit=3620
+              ->  Seq Scan on section_properties sp (actual time=0.024..0.042 rows=300 loops=1)
+                    Buffers: shared hit=9
+              ->  Hash (actual time=25.921..25.922 rows=115 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 17kB
+                    Buffers: shared hit=3611
+                    ->  GroupAggregate (actual time=25.683..25.909 rows=115 loops=1)
+                          Group Key: po.property_id, po.option_id
+                          Buffers: shared hit=3611
+                          ->  Sort (actual time=25.679..25.752 rows=2175 loops=1)
+                                Sort Key: po.property_id, po.option_id
+                                Sort Method: quicksort  Memory: 198kB
+                                Buffers: shared hit=3611
+                                ->  Hash Join (actual time=23.596..25.313 rows=2175 loops=1)
+                                      Hash Cond: (po.product_id = fm.product_id)
+                                      Join Filter: ((fm.m1 OR (po.property_id = '52def9bb-bce2-4e0d-8c31-88a872fe1838'::uuid)) AND (fm.m2 OR (po.property_id = '56a198a8-ab2f-42d4-952e-a7fb96671c81'::uuid)) AND (fm.m3 OR (po.property_id = '98e78680-e5a3-4b0a-a58f-c72c961d25c0'::uuid)))
+                                      Rows Removed by Join Filter: 3145
+                                      Buffers: shared hit=3611
+                                      ->  CTE Scan on po (actual time=17.026..18.005 rows=5320 loops=1)
+                                            Filter: (property_id = ANY ('{52def9bb-bce2-4e0d-8c31-88a872fe1838,56a198a8-ab2f-42d4-952e-a7fb96671c81,98e78680-e5a3-4b0a-a58f-c72c961d25c0,a814b9a5-945e-463b-b379-9c24c254cb36,b063144b-bda4-4b94-852b-472d2b4b4bf2,e63f7687-4159-4c68-a499-8d92ab0643d5,27f56700-bf21-4f2d-ace7-166cacd07996,b5f201c0-8322-4f78-88c6-81bbfa7e24e7}'::uuid[]))
+                                            Rows Removed by Filter: 7583
+                                            Buffers: shared hit=3611
+                                      ->  Hash (actual time=6.560..6.560 rows=718 loops=1)
+                                            Buckets: 1024  Batches: 1  Memory Usage: 44kB
+                                            ->  CTE Scan on fm (actual time=6.343..6.511 rows=718 loops=1)
+        ->  Index Scan using property_options_pkey on property_options o (actual time=0.001..0.001 rows=1 loops=115)
+              Index Cond: (id = po.option_id)
+              Buffers: shared hit=345
+Planning:
+  Buffers: shared hit=28
+Planning Time: 0.594 ms
+Execution Time: 26.624 ms
+==================== A / sitemap / L1 f0 / de  ====================
+Hash Left Join (actual time=9.821..16.163 rows=4757 loops=1)
+  Hash Cond: (p.id = tr.product_id)
+  Buffers: shared hit=2675
+  ->  Seq Scan on products p (actual time=0.004..1.549 rows=4757 loops=1)
+        Filter: is_active
+        Rows Removed by Filter: 243
+        Buffers: shared hit=750
+  ->  Hash (actual time=9.810..9.810 rows=4851 loops=1)
+        Buckets: 8192  Batches: 1  Memory Usage: 742kB
+        Buffers: shared hit=1925
+        ->  Subquery Scan on tr (actual time=7.616..9.351 rows=4851 loops=1)
+              Buffers: shared hit=1925
+              ->  HashAggregate (actual time=7.615..9.038 rows=4851 loops=1)
+                    Group Key: product_translations.product_id
+                    Batches: 1  Memory Usage: 6353kB
+                    Buffers: shared hit=1925
+                    ->  Seq Scan on product_translations (actual time=0.002..2.193 rows=9062 loops=1)
+                          Filter: (slug IS NOT NULL)
+                          Buffers: shared hit=1925
+Planning Time: 0.075 ms
+Execution Time: 16.390 ms
+==================== B / sitemap / L1 f0 / de  ====================
+Hash Join (actual time=14.077..15.645 rows=4757 loops=1)
+  Hash Cond: (p.id = tr.product_id)
+  Buffers: shared hit=3305
+  ->  Seq Scan on products p (actual time=0.005..0.461 rows=4757 loops=1)
+        Filter: is_active
+        Rows Removed by Filter: 243
+        Buffers: shared hit=158
+  ->  Hash (actual time=14.067..14.068 rows=5000 loops=1)
+        Buckets: 8192  Batches: 1  Memory Usage: 1005kB
+        Buffers: shared hit=3147
+        ->  Subquery Scan on tr (actual time=11.066..13.562 rows=5000 loops=1)
+              Buffers: shared hit=3147
+              ->  HashAggregate (actual time=11.066..13.211 rows=5000 loops=1)
+                    Group Key: product_translations.product_id
+                    Batches: 1  Memory Usage: 6353kB
+                    Buffers: shared hit=3147
+                    ->  Seq Scan on product_translations (actual time=0.002..3.576 rows=14062 loops=1)
+                          Filter: (slug IS NOT NULL)
+                          Buffers: shared hit=3147
+Planning Time: 0.097 ms
+Execution Time: 15.885 ms
+==================== D / sitemap / L1 f0 / de  ====================
+Seq Scan on products p (actual time=0.004..3.587 rows=4757 loops=1)
+  Filter: is_active
+  Rows Removed by Filter: 243
+  Buffers: shared hit=1123
+Planning Time: 0.031 ms
+Execution Time: 3.738 ms
