@@ -43,7 +43,7 @@ const PKG = 'packages/simplycms';
 //  додатково заборонені теки НИЖЧОГО шару — там, де шар не єдиний критерій,
 //  винятки-ФАЙЛИ `<тека>/<файл>`: один модуль забороненої теки, відкритий зоні
 //  без відкриття решти теки (причина — коментарем біля рядка)]
-const TIER_ZONES = [
+export const TIER_ZONES = [
   ['src/contracts', 0, 'contracts', []],
   ['src/domain', 1, 'domain', []],
   ['src/schema', 1, 'schema', []],
