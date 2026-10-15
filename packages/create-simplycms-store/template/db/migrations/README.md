@@ -12,7 +12,7 @@
 | `0001_init.sql` | уся схема: доменні таблиці + таблиці Better Auth + `media` + `mail_outbox`, ени, індекси, RLS-політики | `pnpm db:rebaseline` (вивід `drizzle-kit generate` + два `COMMENT ON COLUMN`); руками не правиться, див. `docs/architecture/data-layer.md` § «Міграції» |
 | `0002_grants.sql` | явні GRANT-и по таблицях; зняття мовчазних дефолтів PUBLIC | рука |
 | `0003_seed.sql` | довідники чистого магазину, ідемпотентні | рука |
-| `0004_functions.sql` | функції й тригери над таблицями (`refuse_banned_session` / `sessions_refuse_banned`, `languages_guard` — машина станів мови), ідемпотентні | рука (drizzle-kit функцій і тригерів не емітить) |
+| `0004_functions.sql` | функції й тригери над таблицями (`refuse_banned_session` / `sessions_refuse_banned`, `languages_guard` — машина станів мови, `require_source_translation` + процедура підключення `attach_source_translation_triggers` — обовʼязковий рядок основної мови перекладних сутностей), ідемпотентні | рука (drizzle-kit функцій і тригерів не емітить) |
 
 Порядок жорсткий і не випадковий: політики `0001` посилаються на
 `app.current_user_id()` і на роль `app_user`, гранти `0002` потребують уже
