@@ -51,7 +51,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 
 | Контур | Команда | Доходить до | Потребує |
 |---|---|---|---|
-| Юніти | `pnpm test` | сирців | — |
+| Юніти | `pnpm test` | сирців; гард `tests/test-cleanup-guard.test.ts` — файл із `render`/`renderHook` з `@testing-library/react` мусить мати `afterEach(cleanup)` (сліпий до namespace-імпорту `* as rtl` і рендеру не через RTL) | — |
 | Гонка teardown jsdom (живий auth-клієнт/ефекти після тесту) | `pnpm test:race` | вкладені прогони `query-client-context` у середовищі-форсері (`tests/race-teardown/`): мутант без моку/cleanup → unhandled «window is not defined», поточний код → чисто; поза `pnpm test` (секунди на прогін) | — |
 | Схема, гранти, RLS | `pnpm test:schema` | накату канону на чисту БД | Postgres (проєкт `pg` — без Docker); проєкти `storage` і `mail` — Garage і Mailpit (`pnpm harness:up`) |
 | Пакувальність | `pnpm pilot:pack` | локальних tarball-ів | — |
