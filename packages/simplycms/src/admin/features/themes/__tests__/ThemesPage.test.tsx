@@ -47,7 +47,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import ThemesPage from '../ThemesPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 let client: QueryClient;
 
 const card = (displayName: string) =>

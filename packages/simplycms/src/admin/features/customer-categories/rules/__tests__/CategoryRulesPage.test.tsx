@@ -44,7 +44,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import CategoryRulesPage from '../CategoryRulesPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const run = () =>
   fireEvent.click(
     screen.getByRole('button', {

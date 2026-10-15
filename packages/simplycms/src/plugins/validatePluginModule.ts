@@ -77,7 +77,7 @@ export function validatePluginModule(
   if (messages !== undefined) {
     if (!isRecord(messages)) {
       throw new Error(
-        `[plugin] "${name}": messages має бути Partial<Record<Locale, Record<string, string>>>`,
+        `[plugin] "${name}": messages має бути Partial<Record<string, Record<string, string>>>`,
       );
     }
     const prefix = `plugin.${name}.`;

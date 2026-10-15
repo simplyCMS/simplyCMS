@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 describe('PriceTypesPage', () => {
   it('рядки впорядковані за sortOrder, а не за порядком із сервера', async () => {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Редагування позицій у картці (Task 5, Е5б-11): справжні колекції + стаб
- * межі serverFn. Асерти — точні тексти `createTranslator('uk')`.
+ * межі serverFn. Асерти — точні тексти `createTranslator('uk', 'uk')`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -58,7 +58,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 import OrderDetailPage from '../OrderDetailPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>

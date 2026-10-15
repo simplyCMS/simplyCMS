@@ -40,7 +40,8 @@ export function createResetPasswordSender(deps: ResetMailDeps) {
       to: user.email,
       url,
       storeName: deps.storeName ?? (await readStoreName()),
-      t: createTranslator(getStoreLocale()),
+      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
+      t: createTranslator(getStoreLocale(), 'uk'),
     });
     const ids = await schedule([{ kind: 'password_reset', message }]);
     void deliverMail(ids, deps.mailTransport).catch(

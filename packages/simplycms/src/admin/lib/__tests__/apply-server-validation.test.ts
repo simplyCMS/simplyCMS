@@ -13,8 +13,8 @@ import {
   throughServerFnBoundary,
 } from './support/serverfn-boundary';
 
-const t = createTranslator('uk');
-const tEn = createTranslator('en');
+const t = createTranslator('uk', 'uk');
+const tEn = createTranslator('en', 'uk');
 
 describe('applyServerValidation', () => {
   it('не ValidationError → null (викликач веде звичайним шляхом)', () => {

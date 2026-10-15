@@ -32,6 +32,8 @@
     "./domain/store-profile": "./src/domain/store-profile.ts",
     "./domain/money": "./src/domain/money.ts",
     "./domain/user-categories": "./src/domain/user-categories/index.ts",
+    "./domain/translations": "./src/domain/translations/index.ts",
+    "./domain/slugs": "./src/domain/slugs/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/types": "./src/schema/types.ts",
     "./admin-server": "./src/admin-server/index.ts",
@@ -52,6 +54,7 @@
     "./migrate": "./src/migrate/index.ts",
     "./prod-start": "./src/prod-start/index.ts",
     "./sanitize": "./src/sanitize/index.ts",
+    "./translations": "./src/translations/index.ts",
     "./react-query": "./src/react-query/index.ts",
     "./react-query/queries": "./src/react-query/queries.ts",
     "./runtime": "./src/runtime/index.ts",
@@ -224,6 +227,14 @@
         "types": "./dist/domain/user-categories/index.d.ts",
         "import": "./dist/domain/user-categories/index.js"
       },
+      "./domain/translations": {
+        "types": "./dist/domain/translations/index.d.ts",
+        "import": "./dist/domain/translations/index.js"
+      },
+      "./domain/slugs": {
+        "types": "./dist/domain/slugs/index.d.ts",
+        "import": "./dist/domain/slugs/index.js"
+      },
       "./schema": {
         "types": "./dist/schema/schema.d.ts",
         "import": "./dist/schema/schema.js"
@@ -303,6 +314,10 @@
       "./sanitize": {
         "types": "./dist/sanitize/index.d.ts",
         "import": "./dist/sanitize/index.js"
+      },
+      "./translations": {
+        "types": "./dist/translations/index.d.ts",
+        "import": "./dist/translations/index.js"
       },
       "./react-query": {
         "types": "./dist/react-query/index.d.ts",

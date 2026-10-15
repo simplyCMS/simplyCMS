@@ -42,7 +42,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import SettingsPage from '../SettingsPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const KEY = entityKey(ENTITY.systemSettings).all();
 let client: QueryClient;
 

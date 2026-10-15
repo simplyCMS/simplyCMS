@@ -32,7 +32,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { MailOutboxCard } from '../MailOutboxCard';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const KEY = entityKey(ENTITY.mailOutbox).all();
 const SECRET = 'https://shop.test/reset?token=TOP-SECRET-TOKEN';
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);

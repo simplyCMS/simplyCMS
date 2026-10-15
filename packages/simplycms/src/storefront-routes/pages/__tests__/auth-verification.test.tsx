@@ -46,7 +46,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 import Auth from '../Auth';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const type = (id: string, value: string) =>
   fireEvent.change(document.getElementById(id)!, { target: { value } });
 

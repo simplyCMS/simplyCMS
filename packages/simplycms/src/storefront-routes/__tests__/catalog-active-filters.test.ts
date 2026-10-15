@@ -10,7 +10,7 @@ import type { NumericProperty } from '../pages/catalog/types';
  * Бейджі активних фільтрів — спільні для каталогу й сторінки розділу
  * (Фаза 4). Під тестом склад бейджів, а не їх оформлення.
  */
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const power: NumericProperty = {
   id: 'prop-power',

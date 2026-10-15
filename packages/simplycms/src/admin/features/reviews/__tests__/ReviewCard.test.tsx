@@ -34,7 +34,7 @@ vi.mock('@tanstack/react-router', async () => {
   };
 });
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 beforeEach(() => {
   stubDom();

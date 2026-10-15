@@ -42,7 +42,7 @@ describe('StockEditor: валідація кількості', () => {
     });
     fireEvent.click(screen.getByText('Зберегти залишки'));
     await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(1));
-    const t = createTranslator('uk');
+    const t = createTranslator('uk', 'uk');
     expect(mocks.toastError).toHaveBeenCalledWith(
       t('admin.products.stock.saveFailed', {
         message: t('admin.products.stock.invalidQuantity'),

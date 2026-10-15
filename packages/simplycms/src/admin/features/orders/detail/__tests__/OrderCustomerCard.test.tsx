@@ -7,7 +7,7 @@ import { makeOrder } from '../../../../../admin-data/__tests__/support/orders-se
 import { OrderCustomerCard } from '../OrderCustomerCard';
 
 afterEach(cleanup);
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const renderCard = (over: Partial<AdminOrder>) =>
   render(

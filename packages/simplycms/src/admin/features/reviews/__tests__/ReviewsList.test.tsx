@@ -30,7 +30,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const CURSOR = { createdAt: new Date('2026-10-01T00:00:00Z'), id: 'x' };
 const lastArg = () => mocks.listReviews.mock.lastCall![0].data;
 

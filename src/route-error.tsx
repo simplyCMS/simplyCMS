@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { describePublicError } from 'simplycms/contracts/masked-error';
-import { createTranslator, normalizeLocale } from 'simplycms/i18n';
+import { createTranslator, languageOf } from 'simplycms/i18n';
 import config from '../simplycms.config';
 
 /**
@@ -11,8 +11,10 @@ import config from '../simplycms.config';
  * 🔴 Причина: екран помилки рендериться замість `RootComponent`, тобто поза
  * `I18nProvider`. `useT()` там кинув би — помилка всередині обробника помилок.
  * `createTranslator` — чисте замикання без контексту, тож працює однаково.
+ *
+ * М1-TEMP: Task 9 — мова запиту замість мови з конфіга.
  */
-const t = createTranslator(normalizeLocale(config.locale));
+const t = createTranslator(languageOf(config.locale), 'uk');
 
 /**
  * Єдиний екран помилки вітрини: корінь (`errorComponent`) і всі дочірні роути

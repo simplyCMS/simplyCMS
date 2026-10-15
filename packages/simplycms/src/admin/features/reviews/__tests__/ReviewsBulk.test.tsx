@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const rows = [row(1), row(2), row(3)];
 
 beforeEach(() => {

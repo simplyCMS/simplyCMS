@@ -57,7 +57,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PluginSettingsPage from '../PluginSettingsPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const KEY = entityKey(ENTITY.plugins).all();
 let client: QueryClient;
 

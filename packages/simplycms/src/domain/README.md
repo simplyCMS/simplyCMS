@@ -27,6 +27,8 @@ pnpm add simplycms
 | `simplycms/domain/inventory` | `isPurchasable`, `schemaOrgAvailability`, `calculateProductAvailability`, `enrichProductsWithAvailability` — статус є джерелом правди, кількість — деталь показу (К2-Е0) |
 | `simplycms/domain/shipping` | `calculateShippingCost`, `calculateShipping`, `formatShippingCost`, `resolveShippingZone` (зона за призначенням: основна або зона точки самовивозу; місто не впливає) |
 | `simplycms/domain/user-categories` | `evaluateCategoryRules(rules, currentCategoryId, stats)` — порт `check_category_rules`: обчислює перехід категорії покупця за пріоритетними правилами, без звернень до БД |
+| `simplycms/domain/translations` | `fieldStatus`, `rowStatus`, `isTranslatedForSeo` — статуси перекладів відносно поточного джерела (хеші приходять готовими); `normalizeTextInput` (`''`/пробіли → `null`); `planTranslationWrite` — чистий план запису сценаріїв 1–3 (хеш інжектується). Клієнтобезпечний: sha256 — лише в серверному `simplycms/translations` |
+| `simplycms/domain/slugs` | `slugify(text, pack)` (власна таблиця КМУ 2010 для `uk`, `null` для нелатинського письма без таблиці), `allocateSlug` (`base`, `base-2`…), `SLUG_FORMAT`, службові сегменти `RESERVED_SEGMENTS`/`RESERVED_QUERY_KEYS` і `isReservedPath`/`isReservedPropertyToken` |
 
 Доменні типи реекспортуються з `simplycms/contracts` — тягнути його окремо не обов'язково.
 

@@ -2,7 +2,7 @@
 /**
  * Список замовлень (Task 6, Е5): справжні колекції + стаб межі serverFn
  * (`orders-server-stub` фільтрує/сортує/ліміт як сервер). Асерти — точні
- * тексти `createTranslator('uk')`, не `/./`.
+ * тексти `createTranslator('uk', 'uk')`, не `/./`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
@@ -50,7 +50,7 @@ vi.mock('@tanstack/react-router', () => ({
 import OrdersPage from '../OrdersPage';
 import { ORDERS_PAGE_SIZE, useOrdersList } from '../useOrdersList';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const NEW = { id: 's-new', name: 'Нове', color: '#112233', sortOrder: 0 };
 const DONE = { id: 's-done', name: 'Виконано', color: '#445566', sortOrder: 1 };
 

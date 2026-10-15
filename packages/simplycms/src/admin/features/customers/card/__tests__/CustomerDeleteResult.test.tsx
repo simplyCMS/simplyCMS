@@ -40,7 +40,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const conflict = (constraint: string) =>
   Object.assign(new Error('conflict'), {
     name: DOMAIN_ERROR_NAME.adminConflict,

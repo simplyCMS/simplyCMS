@@ -47,7 +47,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import UserCategoriesPage from '../UserCategoriesPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const rowOf = (name: string) => screen.getByText(name).closest('tr')!;
 
 beforeEach(() => {

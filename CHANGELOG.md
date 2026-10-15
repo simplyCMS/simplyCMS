@@ -53,6 +53,28 @@
   `simplycms_migrations` відхиляє змінений вміст накочених файлів. `simplycms doctor` (№7) попереджає про
   застарілий файл. Після `1.0.0-rc.1` `--rebaseline` відмовляє («канон заморожено») — перевіряється за
   версією встановленого ядра.
+- **i18n: відкритий `Locale`, `createTranslator(locale, fallback)`, `normalizeLocale` знесено:** `Locale` —
+  відкритий рядок BCP 47 (мови додає власник магазину, а не ядро). `createTranslator` приймає ДРУГИМ
+  аргументом обов'язкову fallback-мову (основна мова магазину, не обов'язково `uk`); ланцюг — «каталог
+  мови → каталог fallback → ключ». `normalizeLocale` видалено: для `config.locale` з регіоном (`uk-UA`)
+  є `languageOf` (`uk-UA` → `uk`), невідому мову він не підміняє. Код магазину, що кличе
+  `createTranslator(x)` чи `normalizeLocale(x)`, переходить на `createTranslator(languageOf(x), 'uk')`.
+  Файли `src/routes/__root.tsx`, `src/route-error.tsx`, `src/server.ts` магазину оновить
+  `simplycms update`. `ThemeMessages` і `PluginMessages` тепер з ключем-рядком (раніше `'uk' | 'en'`).
+
+### Додано
+
+- `simplycms/domain/translations` — чиста логіка перекладів (T1, клієнтобезпечна): `fieldStatus`,
+  `rowStatus`, `isTranslatedForSeo`, `normalizeTextInput`, `planTranslationWrite` (сценарії 1–3
+  запису перекладів, функція хешу інжектується).
+- `simplycms/translations` (server-only) — `sourceFieldHash`: sha256 від `NFC` + `trim` тексту поля
+  джерела.
+- `simplycms/domain/slugs` — один генератор адрес і токенів: `slugify` (власна таблиця КМУ 2010 для
+  `uk`, латиниця з діакритикою, `null` для письма без таблиці), `allocateSlug` (`base`, `base-2`…),
+  `SLUG_FORMAT`, службові сегменти `RESERVED_SEGMENTS`/`RESERVED_QUERY_KEYS`, `isReservedPath`,
+  `isReservedPropertyToken`.
+- `simplycms/i18n`: мовні пакети `LANGUAGE_PACKS` (`uk`, `en`), `getLanguagePack(code)` (`null` для
+  мови без пакета), тип `LanguagePack`, `languageOf`.
 
 ---
 

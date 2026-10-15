@@ -39,7 +39,7 @@ vi.mock('@tanstack/react-router', () => ({
 import OrdersPage from '../OrdersPage';
 import { validateOrdersSearch } from '../orders-search';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const NEW = { id: 's-new', name: 'Нове', color: '#112233', sortOrder: 0 };
 const DONE = { id: 's-done', name: 'Виконано', color: '#445566', sortOrder: 1 };
 const at = (i: number) => new Date(Date.UTC(2026, 9, 1, 10, 0, 0) - i * 1000);

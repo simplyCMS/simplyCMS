@@ -33,7 +33,7 @@ vi.mock('simplycms/ui/select', () => ({
 
 import { AddAssignmentDialog } from '../AddAssignmentDialog';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 afterEach(cleanup);
 
 function setup(properties = PROPS) {

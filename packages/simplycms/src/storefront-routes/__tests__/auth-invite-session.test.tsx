@@ -43,7 +43,7 @@ vi.mock('simplycms/core/lib/auth-client', () => ({
 }));
 vi.mock('../server/invite', () => ({ acceptOwnerInvite: calls.accept }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 async function submitInvite() {
   render(

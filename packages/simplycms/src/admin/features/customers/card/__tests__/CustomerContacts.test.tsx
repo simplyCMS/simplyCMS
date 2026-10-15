@@ -50,7 +50,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const validation = (path: string, code: string) =>
   Object.assign(new Error('validation'), {
     name: DOMAIN_ERROR_NAME.validation,

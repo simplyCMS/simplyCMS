@@ -60,7 +60,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PropertyEditPage from '../PropertyEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 let rows: SectionProperty[] = PROPS;
 

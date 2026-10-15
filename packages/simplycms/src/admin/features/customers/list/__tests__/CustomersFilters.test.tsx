@@ -15,7 +15,7 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const lastArg = () => mocks.listCustomers.mock.lastCall![0].data;
 const CURSOR = { createdAt: new Date('2026-10-01T00:00:00Z'), id: 'x' };
 

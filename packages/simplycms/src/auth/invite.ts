@@ -143,7 +143,8 @@ export async function issueOwnerInvite(
     url,
     storeName: input.storeName ?? 'SimplyCMS',
     ttlMs,
-    t: input.t ?? createTranslator(getStoreLocale()),
+    // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
+    t: input.t ?? createTranslator(getStoreLocale(), 'uk'),
   });
   const mailIds = await (input.schedule ?? scheduleMail)([
     { kind: 'owner_invite', message },

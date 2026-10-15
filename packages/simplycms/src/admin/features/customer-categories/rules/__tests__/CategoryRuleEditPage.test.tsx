@@ -45,7 +45,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import CategoryRuleEditPage from '../CategoryRuleEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const hint = () =>
   screen.queryByText(t('admin.customerCategories.rules.utmHint'));
 

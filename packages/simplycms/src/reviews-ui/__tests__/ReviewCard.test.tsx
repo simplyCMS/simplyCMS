@@ -11,7 +11,7 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
 import { ReviewCard } from '../ReviewCard';
 
 afterEach(cleanup);
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const review = (over: Partial<ProductReview>): ProductReview => ({
   id: 'r1',

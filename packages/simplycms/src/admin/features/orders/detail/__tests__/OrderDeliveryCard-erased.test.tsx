@@ -27,7 +27,7 @@ describe('OrderDeliveryCard — знеособлена адреса (Е6г-7)', 
     );
     expect(screen.getByText('Кур’єр')).toBeTruthy();
     expect(
-      screen.getAllByText(createTranslator('uk')('common.notSet')).length,
+      screen.getAllByText(createTranslator('uk', 'uk')('common.notSet')).length,
     ).toBeGreaterThan(0);
     expect(container.textContent).not.toMatch(/null/);
   });

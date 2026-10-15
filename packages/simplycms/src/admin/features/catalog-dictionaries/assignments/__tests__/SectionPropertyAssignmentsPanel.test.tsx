@@ -70,7 +70,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { SectionPropertyAssignmentsPanel } from '../SectionPropertyAssignmentsPanel';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const region = (key: 'productProps' | 'modificationProps') =>
   screen.getByRole('region', { name: t(`admin.properties.section.${key}`) });

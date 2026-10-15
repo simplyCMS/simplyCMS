@@ -28,7 +28,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const heading = () => screen.findByRole('heading', { name: /Іван Петренко/ });
 
 beforeEach(() => {

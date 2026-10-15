@@ -1,23 +1,16 @@
-import { messages as uk } from './catalogs/uk/index';
-import { messages as en } from './catalogs/en/index';
-import type {
-  Catalog,
-  Locale,
-  MessageKey,
-  MessageParams,
-  Translator,
-} from './types';
+import { getLanguagePack } from './packs';
+import type { Locale, MessageKey, MessageParams, Translator } from './types';
 
-/** Реєстр каталогів за локаллю. uk — повний, решта часткові. */
-const catalogs: Record<Locale, Catalog> = { uk, en };
-
-const SUPPORTED: readonly Locale[] = ['uk', 'en'];
-const DEFAULT_LOCALE: Locale = 'uk';
-
-/** `uk-UA` → `uk`, `EN` → `en`, невідома/порожня → `uk`. */
-export function normalizeLocale(input: string): Locale {
-  const base = input.split('-')[0]?.toLowerCase() ?? '';
-  return SUPPORTED.find((locale) => locale === base) ?? DEFAULT_LOCALE;
+/**
+ * `uk-UA` → `uk`, `EN` → `en`: мовна частина тегу в нижньому регістрі.
+ *
+ * Міст до `config.locale`, що несе регіон (`uk-UA`). Мову не перевіряє й не
+ * підміняє: невідома лишається собою (`fr-FR` → `fr`), а відсутність пакета
+ * закриває фолбек транслятора.
+ * М2: зноситься разом із `config.locale` (мова магазину — з БД).
+ */
+export function languageOf(tag: string): Locale {
+  return tag.split('-')[0]?.toLowerCase() ?? '';
 }
 
 /**
@@ -38,16 +31,21 @@ export function interpolate(template: string, params?: MessageParams): string {
 /**
  * Створює транслятор під конкретну локаль.
  *
+ * Ланцюг: каталог мови → каталог `fallback` → сам ключ (видимий сигнал про
+ * пропущений переклад). `fallback` обов'язковий і НЕ має дефолту: це основна
+ * мова магазину, яка не обов'язково українська, а тихий `uk` віддав б
+ * англомовному магазину українські рядки.
+ *
  * Транслятор — замикання без модульного mutable-стану: жодного `setLocale`.
  * Тому SSR може тримати кілька трансляторів різних локалей одночасно
  * (per-request), і вони не впливають один на одного.
  */
-export function createTranslator(locale: Locale): Translator {
-  const catalog = catalogs[locale] ?? catalogs[DEFAULT_LOCALE];
+export function createTranslator(locale: Locale, fallback: Locale): Translator {
+  const own = getLanguagePack(locale)?.catalog;
+  const base = getLanguagePack(fallback)?.catalog;
 
   return (key: MessageKey, params?: MessageParams): string => {
-    // Ланцюг: локаль → uk → сам ключ (видимий сигнал про пропущений переклад).
-    const template = catalog[key] ?? uk[key] ?? key;
+    const template = own?.[key] ?? base?.[key] ?? key;
     return interpolate(template, params);
   };
 }

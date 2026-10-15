@@ -43,7 +43,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PluginsPage from '../PluginsPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 let client: QueryClient;
 
 beforeEach(() => {

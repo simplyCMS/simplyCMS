@@ -43,7 +43,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PickupPointEditPage from '../PickupPointEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const PICKUP_2 = {
   ...METHODS[1]!,
   id: 'b0000000-0000-4000-8000-000000000003',

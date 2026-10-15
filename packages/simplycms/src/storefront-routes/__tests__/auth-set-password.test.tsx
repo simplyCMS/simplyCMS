@@ -11,7 +11,7 @@ import { I18nProvider, createTranslator } from 'simplycms/i18n';
 
 // Очікувані рядки беремо з публічного транслятора, а не з каталогу напряму:
 // підкаталог `catalogs/*` не в `exports` пакета (audit-exports це стереже).
-const uk = createTranslator('uk');
+const uk = createTranslator('uk', 'uk');
 
 /**
  * Сторінка встановлення нового пароля (К1′б, Better Auth).

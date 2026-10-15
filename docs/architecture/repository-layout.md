@@ -47,7 +47,10 @@ simplyCMS/
 │   │   │                         #    правило no-server-only-in-client. 🔴 Три лінт-детектори
 │   │   │                         #    рахуються ОКРЕМО: різні механізми й різні негативні
 │   │   │                         #    контролі — test-contours.md §12)
-│   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping
+│   │   ├── src/domain/           # T1 Pure-логіка: pricing/discounts/inventory/shipping;
+│   │   │                         #    ./translations — статуси перекладів і план запису (§3.4),
+│   │   │                         #    ./slugs — slugify (КМУ 2010), allocateSlug, службові сегменти URL.
+│   │   │                         #    Обидва клієнтобезпечні (без node:), хеш приходить аргументом
 │   │   ├── src/schema/           # T1 Drizzle-схема ядра + RLS у TS
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle — джерело типів для НОВОГО серверного коду
 │   │   ├── src/db/               # T2 pg-пул + `withActor` — ЄДИНИЙ спосіб дістати зʼєднання
@@ -97,7 +100,10 @@ simplyCMS/
 │   │   │                         #    src/start.ts serializationAdapters)
 │   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
 │   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
-│   │   ├── src/i18n/             # T2 createTranslator, I18nProvider, каталоги uk/en
+│   │   ├── src/i18n/             # T2 createTranslator(locale, fallback), I18nProvider, каталоги uk/en,
+│   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getLanguagePack); Locale — відкритий рядок
+│   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto). Upward-винятків
+│   │   │                         #    немає. server-only (Мультимовність М1, Task 3)
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
 │   │   ├── src/themes/           # T4 ThemeRegistry, bootstrapThemes, applyTokens,

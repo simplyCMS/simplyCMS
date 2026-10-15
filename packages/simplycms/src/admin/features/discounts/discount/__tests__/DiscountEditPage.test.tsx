@@ -54,7 +54,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import DiscountEditPage from '../DiscountEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const saved = () => savedData(m);
 
 beforeEach(() => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Діалог додавання товару — пошук (Task 6, Е5б-11): debounce 300 мс,
-// відповідь лише на ОСТАННІЙ запит. Тексти — `createTranslator('uk')`.
+// відповідь лише на ОСТАННІЙ запит. Тексти — `createTranslator('uk', 'uk')`.
 import { describe, expect, it, vi } from 'vitest';
 import { act, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';

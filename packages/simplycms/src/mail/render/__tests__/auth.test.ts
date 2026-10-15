@@ -12,7 +12,7 @@ const URL_ = 'https://shop.example/api/auth/reset-password/tok?callbackURL=%2F';
 const STORE = 'Магазин "Сонце" <тест>';
 
 describe.each(['uk', 'en'] as const)('рендер листів, локаль %s', (locale) => {
-  const t = createTranslator(locale);
+  const t = createTranslator(locale, 'uk');
 
   it('скидання: тема й текст несуть storeName, у тексті є url, у темі його немає', () => {
     const mail = renderPasswordResetMail({
@@ -90,7 +90,13 @@ describe.each(['uk', 'en'] as const)('рендер листів, локаль %s
 
 it('локалі дають різні тексти (en не падає на uk)', () => {
   const input = { to: 'a@b.test', url: URL_, storeName: 'S' };
-  const uk = renderPasswordResetMail({ ...input, t: createTranslator('uk') });
-  const en = renderPasswordResetMail({ ...input, t: createTranslator('en') });
+  const uk = renderPasswordResetMail({
+    ...input,
+    t: createTranslator('uk', 'uk'),
+  });
+  const en = renderPasswordResetMail({
+    ...input,
+    t: createTranslator('en', 'uk'),
+  });
   expect(uk.subject).not.toBe(en.subject);
 });

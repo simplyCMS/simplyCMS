@@ -58,7 +58,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 import OrderDetailPage from '../OrderDetailPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>

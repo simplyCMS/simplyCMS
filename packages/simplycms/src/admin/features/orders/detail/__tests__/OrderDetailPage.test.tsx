@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Картка замовлення (Task 7, Е5): справжні колекції + стаб межі serverFn.
- * Асерти — точні тексти `createTranslator('uk')`.
+ * Асерти — точні тексти `createTranslator('uk', 'uk')`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -54,7 +54,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 import OrderDetailPage from '../OrderDetailPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>
     <EngineProvider value={ENGINE}>

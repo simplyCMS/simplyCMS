@@ -41,7 +41,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import OrderStatuses from '../../../pages/OrderStatuses';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const row = (p: Partial<OrderStatus>): OrderStatus => ({
   id: '00000001-0000-4000-8000-000000000001',

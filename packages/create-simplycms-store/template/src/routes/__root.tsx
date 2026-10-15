@@ -17,11 +17,7 @@ import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import {
-  I18nProvider,
-  createTranslator,
-  normalizeLocale,
-} from 'simplycms/i18n';
+import { I18nProvider, createTranslator, languageOf } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
@@ -38,7 +34,7 @@ import appCss from '../styles/globals.css?url';
 import '../theme-registry';
 
 // Локаль магазину — build-time вибір власника, тож резолвиться один раз на модуль.
-const locale = normalizeLocale(config.locale);
+const locale = languageOf(config.locale);
 
 /**
  * Транслятор каркаса — створюється напряму, а НЕ через `useT()`.
@@ -47,8 +43,10 @@ const locale = normalizeLocale(config.locale);
  * `RootComponent`, тобто поза `I18nProvider`. `useT()` там кинув би — помилка
  * всередині обробника помилок. `createTranslator` — чисте замикання без
  * контексту, тож працює в обох випадках однаково.
+ *
+ * М1-TEMP: Task 9 — мова запиту й основна мова магазину замість конфіга.
  */
-const t = createTranslator(locale);
+const t = createTranslator(locale, 'uk');
 
 /**
  * Контекст кореневого роуту: `QueryClient`, народжений у `getRouter()`

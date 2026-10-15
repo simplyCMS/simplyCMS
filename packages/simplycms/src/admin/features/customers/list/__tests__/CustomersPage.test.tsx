@@ -30,7 +30,7 @@ vi.mock('@tanstack/react-router', () => ({
   }) => <a href={to.replace('$userId', params.userId)}>{children}</a>,
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 beforeEach(() => {
   stubDom();

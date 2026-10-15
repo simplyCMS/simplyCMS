@@ -185,6 +185,7 @@ const SENTINELS: Record<(typeof SERVER_ONLY)[number], string> = {
   migrate: 'адопція бази без журналу не підтримується',
   'prod-start': '[start] MIGRATION_DATABASE_URL не задано — накат пропущено.',
   sanitize: 'nofollow ugc noopener noreferrer',
+  translations: '[simplycms/translations] sourceFieldHash: потрібен рядок',
 };
 
 const SRC = resolve(CORE, 'src');

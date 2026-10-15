@@ -31,7 +31,8 @@ export function I18nProvider({
   children: ReactNode;
 }) {
   const value = useMemo<I18nContextValue>(
-    () => ({ t: createTranslator(locale), locale }),
+    // М1-TEMP: Task 9 — фолбек стане основною мовою магазину (проп `fallback`).
+    () => ({ t: createTranslator(locale, 'uk'), locale }),
     [locale],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

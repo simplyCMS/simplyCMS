@@ -83,7 +83,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PropertyOptionEditPage from '../PropertyOptionEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const fill = (name: string, slug: string) => {
   fireEvent.change(screen.getByLabelText(t('common.name')), {

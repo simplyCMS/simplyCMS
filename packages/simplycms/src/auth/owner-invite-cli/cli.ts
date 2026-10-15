@@ -1,4 +1,4 @@
-import { normalizeLocale, type Locale } from 'simplycms/i18n';
+import { getLanguagePack, languageOf, type Locale } from 'simplycms/i18n';
 import { runOwnerInvite } from './run';
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -13,12 +13,12 @@ export function resolveInviteLocale(
 ): Locale {
   const raw = env.VITE_LOCALE;
   if (!raw) return 'uk';
-  const locale = normalizeLocale(raw);
-  if (raw.split('-')[0]?.toLowerCase() !== locale)
-    log(
-      `VITE_LOCALE="${raw}" не підтримується — лист запрошення піде мовою "${locale}".`,
-    );
-  return locale;
+  const locale = languageOf(raw);
+  if (getLanguagePack(locale)) return locale;
+  log(
+    `VITE_LOCALE="${raw}" не підтримується — лист запрошення піде мовою "uk".`,
+  );
+  return 'uk';
 }
 
 /** Аргументи й обов'язкові ключі env; відмова — помилкою з текстом для оператора. */

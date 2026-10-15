@@ -1,6 +1,6 @@
 import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
-import { createTranslator, normalizeLocale } from 'simplycms/i18n';
+import { createTranslator, languageOf } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 
 /**
@@ -85,7 +85,8 @@ export function storefrontHead(
   page: (t: Translator) => PageHead,
 ): { meta: HeadMeta[] } {
   const { storeProfile, locale } = readStorefrontRoot(matches);
-  const own = page(createTranslator(normalizeLocale(locale)));
+  // М1-TEMP: Task 9 — мова запиту замість мови з кореневого лоадера.
+  const own = page(createTranslator(languageOf(locale), 'uk'));
   return {
     meta: toMeta(
       composeTitle(own.title, storeProfile.name),

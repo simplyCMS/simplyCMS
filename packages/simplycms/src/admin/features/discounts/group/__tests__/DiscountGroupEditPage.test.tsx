@@ -50,7 +50,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import DiscountGroupEditPage from '../DiscountGroupEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 beforeEach(() => {
   vi.clearAllMocks();

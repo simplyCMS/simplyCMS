@@ -9,12 +9,12 @@
  */
 import {
   createTranslator,
-  normalizeLocale,
+  languageOf,
 } from '../../../packages/simplycms/src/i18n/translator';
 import type { MessageKey } from '../../../packages/simplycms/src/i18n/types';
 import { e2eLocale } from './env';
 
 /** Текст активної локалі прогону для ключа каталогу. */
 export function t(key: MessageKey): string {
-  return createTranslator(normalizeLocale(e2eLocale()))(key);
+  return createTranslator(languageOf(e2eLocale()), 'uk')(key);
 }

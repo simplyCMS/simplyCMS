@@ -30,7 +30,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { ShippingRatesTable } from '../ShippingRatesTable';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const methodId = METHODS[0]!.id;
 
 beforeEach(() => {

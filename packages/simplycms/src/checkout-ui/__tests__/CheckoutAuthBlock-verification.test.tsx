@@ -30,7 +30,7 @@ vi.mock('simplycms/ui/use-toast', () => ({
 
 import { CheckoutAuthBlock } from '../CheckoutAuthBlock';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const CONTACTS = { phone: null, email: null };
 const type = (id: string, value: string) =>
   fireEvent.change(document.getElementById(id)!, { target: { value } });

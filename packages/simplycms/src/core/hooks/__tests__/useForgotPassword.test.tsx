@@ -18,7 +18,7 @@ vi.mock('simplycms/ui/use-toast', () => ({
 
 import { useForgotPassword } from '../useForgotPassword';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const wrapper = ({ children }: { children: ReactNode }) => (
   <I18nProvider locale="uk">{children}</I18nProvider>
 );

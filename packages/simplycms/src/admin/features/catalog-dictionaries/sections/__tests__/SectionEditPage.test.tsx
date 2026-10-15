@@ -92,7 +92,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import SectionEditPage from '../SectionEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const fill = (name: string, slug: string) => {
   fireEvent.change(screen.getByLabelText('Назва'), { target: { value: name } });

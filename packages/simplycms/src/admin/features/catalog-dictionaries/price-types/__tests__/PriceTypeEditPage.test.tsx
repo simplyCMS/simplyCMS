@@ -62,7 +62,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import PriceTypeEditPage from '../PriceTypeEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const fill = (name: string, code: string) => {
   fireEvent.change(screen.getByLabelText('Назва'), { target: { value: name } });

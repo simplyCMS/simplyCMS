@@ -36,7 +36,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { PropertyOptionsTable } from '../PropertyOptionsTable';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 // Сервер зі станом (TSDB-1): після запису зріз ревалідується, і статична
 // відповідь повернула б видалену опцію.

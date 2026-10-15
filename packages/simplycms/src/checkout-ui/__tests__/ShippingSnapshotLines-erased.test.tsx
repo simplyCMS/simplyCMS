@@ -22,7 +22,7 @@ describe('ShippingSnapshotLines — знеособлена адреса (Е6г-7
     );
     expect(screen.getByText('Кур’єр')).toBeTruthy();
     expect(
-      screen.getByText(createTranslator('uk')('common.notSet')),
+      screen.getByText(createTranslator('uk', 'uk')('common.notSet')),
     ).toBeTruthy();
     expect(container.textContent).not.toMatch(/null/);
   });

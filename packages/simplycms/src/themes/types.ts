@@ -7,7 +7,6 @@ import type {
   HomeViewModel,
   ProductDetailViewModel,
 } from 'simplycms/contracts/views';
-import type { Locale } from 'simplycms/i18n';
 
 /**
  * Паспорт теми. Тема — це встановлювана одиниця платформи, тому маніфест
@@ -129,8 +128,9 @@ export interface ThemeViews {
 /**
  * Каталог перекладів теми: `messages[locale][key]`.
  *
- * `Locale` беремо з `simplycms/i18n` — той самий тип, що й у ядрі, тож
- * `useThemeT` (нижче) читає обидва каталоги (ядра й теми) під одну локаль.
+ * Ключ каталогу — код мови як відкритий рядок (`Locale` ядра відкритий так
+ * само: мови додає власник магазину), тож `useThemeT` (нижче) читає обидва
+ * каталоги (ядра й теми) під одну локаль.
  * `Record<string, string>`, а НЕ union конкретних ключів: theme-system не
  * знає наперед ключів жодної теми (кожна оголошує власний `keyof typeof
  * messages.uk` локально) — це навмисно ширший за `MessageKey` ядра тип,
@@ -138,7 +138,7 @@ export interface ThemeViews {
  * якраз те, чого контракт уникає (втрата захисту від одруків для 961
  * core-ключа).
  */
-export type ThemeMessages = Partial<Record<Locale, Record<string, string>>>;
+export type ThemeMessages = Partial<Record<string, Record<string, string>>>;
 
 /**
  * Одне зовнішнє font stylesheet-джерело теми (контракт v2.2).

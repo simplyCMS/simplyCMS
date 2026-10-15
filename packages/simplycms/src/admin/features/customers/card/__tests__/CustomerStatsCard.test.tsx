@@ -9,7 +9,7 @@ vi.mock('simplycms/react-query', () => ({
   useFormatPrice: () => (n: number) => String(n),
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const show = (over: Record<string, unknown>) =>
   render(
     <I18nProvider locale="uk">

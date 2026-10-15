@@ -3,7 +3,7 @@ import {
   redactUrls,
   resolveDriverEnv,
 } from 'simplycms/env';
-import { createTranslator, normalizeLocale } from 'simplycms/i18n';
+import { createTranslator } from 'simplycms/i18n';
 import {
   deliverMail,
   scheduleMail,
@@ -87,7 +87,7 @@ export async function runOwnerInvite({
       env: { VITE_SITE_URL: siteUrl },
       storeName,
       // CLI не бачить `simplycms.config` магазину — локаль листа з env.
-      t: createTranslator(normalizeLocale(locale)),
+      t: createTranslator(locale, 'uk'),
     });
   } catch (error) {
     // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду;

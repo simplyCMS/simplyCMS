@@ -36,7 +36,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import ShippingZonesPage from '../ShippingZonesPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const rowOf = (name: string) => screen.getByText(name).closest('tr')!;
 const badge = t('common.byDefault');
 

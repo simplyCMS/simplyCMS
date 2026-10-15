@@ -23,20 +23,21 @@ pnpm add simplycms
 
 | Символ | Опис |
 |--------|------|
-| `createTranslator(locale)`   | Транслятор-замикання під локаль: `t(key, params?) → string` |
-| `normalizeLocale(input)`     | `'uk-UA'` → `'uk'`, `'EN'` → `'en'`, невідома → `'uk'` |
+| `createTranslator(locale, fallback)` | Транслятор-замикання: каталог мови → каталог `fallback` (основна мова магазину) → сам ключ |
+| `languageOf(tag)`            | `'uk-UA'` → `'uk'`, `'EN'` → `'en'`: мовна частина тегу (міст до `config.locale`) |
+| `LANGUAGE_PACKS`, `getLanguagePack(code)` | Мовні пакети ядра (`uk`, `en`): каталог + (необов'язково) таблиця транслітерації адрес; мова без пакета → `null` |
 | `I18nProvider`               | React-провайдер: мемоїзує транслятор по `locale` |
 | `useT()`                     | Транслятор поточного рендера; кидає поза провайдером |
-| `Locale`, `MessageKey`, `MessageParams`, `Catalog`, `Translator` | Типи. `MessageKey` виводиться з uk-каталогу — union замкнений |
+| `Locale`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. `Locale` — відкритий рядок BCP 47; `MessageKey` виводиться з uk-каталогу — union замкнений |
 
 ## Приклад
 
 ```tsx
 // host: src/routes/__root.tsx — провайдер над усіма групами роутів
-import { I18nProvider, normalizeLocale } from 'simplycms/i18n';
+import { I18nProvider, languageOf } from 'simplycms/i18n';
 import config from '../../simplycms.config';
 
-const locale = normalizeLocale(config.locale);
+const locale = languageOf(config.locale);
 <html lang={locale}>
   <body>
     <I18nProvider locale={locale}>{children}</I18nProvider>
@@ -54,7 +55,7 @@ const t = useT();
 ## 🔴 Глобального `setLocale` (замінено на `createTranslator` для кожного запиту) немає навмисно
 
 Модульного mutable-стану в пакеті нема — інакше два SSR-запити різними мовами
-перетирали б локаль один одному. Резолв ключа — ланцюг «каталог локалі → uk →
+перетирали б локаль один одному. Резолв ключа — ланцюг «каталог локалі → каталог fallback-мови →
 сам ключ»: пропущений переклад видно як `cart.title`, а не як мовчазний рядок
 чужою мовою.
 

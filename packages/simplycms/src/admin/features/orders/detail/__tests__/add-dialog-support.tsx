@@ -18,7 +18,7 @@ import {
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { CANCELLED, makeItem, NEW } from './support';
 
-export const t = createTranslator('uk');
+export const t = createTranslator('uk', 'uk');
 export const at = new Date(Date.UTC(2026, 9, 1, 10));
 export const hit = (
   productId: string,

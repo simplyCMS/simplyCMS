@@ -50,7 +50,8 @@ export function createEmailVerification(deps: MailDeps) {
       to: user.email,
       url,
       storeName: deps.storeName ?? (await readStoreName()),
-      t: createTranslator(getStoreLocale()),
+      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
+      t: createTranslator(getStoreLocale(), 'uk'),
     });
     const ids = await schedule([{ kind: 'email_verification', message }]);
     void deliverMail(ids, deps.mailTransport).catch(

@@ -34,7 +34,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import { StorageMaintenanceCard } from '../StorageMaintenanceCard';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const KEY = entityKey(ENTITY.mediaErasures).all();
 const TAIL = {
   storageKey: 'ab/x.png',

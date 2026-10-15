@@ -28,7 +28,7 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'u-1' } }),
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 const order = (code: string) => ({
   id: 'order-1',

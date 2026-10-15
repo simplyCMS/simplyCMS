@@ -45,7 +45,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 beforeEach(() => {
   slot.mockClear();

@@ -37,7 +37,7 @@ import { usePluginToggle } from '../usePluginToggle';
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const KEY = entityKey(ENTITY.plugins).all();
 let client: QueryClient;
 

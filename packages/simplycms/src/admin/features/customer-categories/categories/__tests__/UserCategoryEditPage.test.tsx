@@ -42,7 +42,7 @@ vi.mock('simplycms/admin-server', async () =>
 
 import UserCategoryEditPage from '../UserCategoryEditPage';
 
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 
 beforeEach(() => {
   vi.clearAllMocks();

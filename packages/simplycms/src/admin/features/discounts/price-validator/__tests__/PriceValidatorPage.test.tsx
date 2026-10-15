@@ -20,7 +20,7 @@ import { stubDom } from '../../__tests__/render-support';
 import { REJECTION_REASON_KEY } from '../rejection-reasons';
 
 stubDom();
-const t = createTranslator('uk');
+const t = createTranslator('uk', 'uk');
 const m = vi.hoisted(() => ({
   diagnosePrice: vi.fn(),
   searchProductsForOrder: vi.fn(),

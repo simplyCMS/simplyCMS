@@ -29,7 +29,7 @@ const ORDER: OrderMailData = {
 describe.each(['uk', 'en'] as const)(
   'рендер листів замовлення, %s',
   (locale) => {
-    const t = createTranslator(locale);
+    const t = createTranslator(locale, 'uk');
     const money = { locale, currency: 'UAH' };
 
     it('лист покупцю: номер у темі, склад і підсумки в тексті, каталог розв’язано', () => {
