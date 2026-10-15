@@ -80,6 +80,7 @@ pnpm pilot            # той самий пілот + Gate B проти жив�
 pnpm template:sync    # синк закомічених копій з монорепо, ТРИ цілі: template/ скаффолдера,
                       # packages/cli/host/ (канон host-файлів для simplycms update),
                       # packages/simplycms/migrations/ (для simplycms db:diff) — усі під парність-тестом
+pnpm gates            # ПОВНИЙ ланцюг гейтів + pilot; чисте дерево; штамп .gates-stamp.json
 pnpm release X.Y.Z    # РЕЛІЗ: гарди + бамп версії всіх 5 пакетів + гейти + коміт
                       # → git push → PR у main → мерж публікує на npmjs
                       # Повний опис — docs/architecture/release-process.md
@@ -141,6 +142,12 @@ ln -s ../../node_modules/@tanstack/react-db/skills/react-db .claude/skills/tanst
 
 Порядок: `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
 typecheck:showcase → test → test:schema → build:packages → typecheck:template → test:packaging`.
+
+🔴 Повний ланцюг — `pnpm gates` (`scripts/gates.mjs`): ті самі гейти + повний `pilot` наприкінці, з
+ЄДИНОГО переліку `scripts/release/gates.mjs` (його ж бере `pnpm release`; `tests/gates-chain.test.ts`
+звіряє порядок з `AGENTS.md`). Відмовляє на брудному дереві, зупиняється на першому червоному гейті, пише
+штамп `.gates-stamp.json` (git-ignored): `{ head, startedAt, finishedAt, gates: [{ name, ok, ms }] }` —
+і при падінні, з тим, що встигло пройти. Звіт на СТОП посилається на штамп (head + усі `ok`).
 
 - 🔴 `install --frozen-lockfile` — **перший** і не пропускається після будь-якої правки
   `package.json`: жоден інший гейт не звіряє `pnpm-lock.yaml` з манифестами, а звичайний

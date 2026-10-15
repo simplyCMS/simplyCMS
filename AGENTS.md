@@ -86,12 +86,14 @@ pnpm db:diff <name>      # schema.ts → SQL-міграція (ревʼю обо
 pnpm db:rebaseline       # до 1.0.0-rc.1: перегенерація baseline (drizzle/ + 0001_init.sql), детермінована
 pnpm build:packages      # збірка публікованих пакетів
 pnpm template:sync       # синк закомічених копій з монорепо (шаблон, host CLI, міграції)
+pnpm gates               # ПОВНИЙ ланцюг гейтів (+ pilot) однією командою; чисте дерево; штамп .gates-stamp.json
 pnpm release X.Y.Z       # реліз (гарди + бамп + гейти + коміт); push і PR — вручну
 ```
 
 **Порядок гейтів:** `pnpm install --frozen-lockfile → format:check → lint → build → typecheck →
 typecheck:showcase → test → test:schema → build:packages → typecheck:template → test:packaging`.
-Повний каталог команд, причини порядку, лінт-зони й CI — `docs/development/TOOLING.md`;
+Повний ланцюг — `pnpm gates` (ці гейти + повний `pilot`; той самий перелік, що в `pnpm release`;
+штамп `.gates-stamp.json` з `head` і `ok` кожного гейту — доказ для звіту). Повний каталог команд, причини порядку, лінт-зони й CI — `docs/development/TOOLING.md`;
 змінні оточення й запуск у проді — `docs/development/ENVIRONMENT.md`.
 
 - 🔴 `install --frozen-lockfile` — після будь-якої правки `package.json`: інші гейти

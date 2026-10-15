@@ -13,6 +13,7 @@
     "build:packages": "node scripts/build-packages.mjs",
     "version:packages": "node scripts/version-packages.mjs",
     "verify:published": "node scripts/verify-published.mjs",
+    "gates": "node scripts/gates.mjs",
     "release": "node scripts/release.mjs",
     "start": "node server.mjs",
     "lint": "pnpm exec eslint .",

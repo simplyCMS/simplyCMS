@@ -85,3 +85,6 @@ scripts/dev-stand/seed-demo.sql
 
 # Журнали живого прогону (pnpm live:smoke)
 .live-smoke/
+
+# Штамп повного ланцюга гейтів (pnpm gates)
+.gates-stamp.json

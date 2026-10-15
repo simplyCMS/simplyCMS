@@ -242,14 +242,15 @@ remote незворотне, а автоматичний код на це пра
 
 ### Гейти релізу
 
-Той самий склад, що в `AGENTS.md`, з двома відмінностями — обидві свідомі:
-`test:schema` іде після `test:packaging` (гейт `schema`) і в кінці є повний `pilot`
-(Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL).
+Той самий склад і порядок, що в `AGENTS.md`, плюс в кінці повний `pilot` (Gate A–D, SB, IP, CLI,
+TOOL, MEDIA, MAIL). Перелік ОДИН (`scripts/release/gates.mjs`): його ж ганяє `pnpm gates`
+(виконавець) зі штампом `.gates-stamp.json`; `test:schema` у ньому — повним харнесом
+(`schema-full.mjs`).
 
 ```
 install --frozen-lockfile → format:check → lint → build
-→ typecheck → typecheck:showcase → test → build:packages → typecheck:template → test:packaging
-→ schema → pilot
+→ typecheck → typecheck:showcase → test → test:schema → build:packages → typecheck:template
+→ test:packaging → pilot
 ```
 
 🔴 `pilot` — останній і саме тут, а не в CI (трек T, 2026-09-02; з К3-Е7 — ПОВНИЙ, не
