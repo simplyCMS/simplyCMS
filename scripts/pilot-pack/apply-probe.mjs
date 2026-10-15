@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * Накат оверлею-проби санітайзера (`sanitize-probe.sql`) на БД пілота.
+ * Накат оверлеїв-проб пілота на його БД: санітайзер (`sanitize-probe.sql`) і сервісний
+ * запис із токеном для `/api/v1` (`api-probe.mjs`).
  * Використання: `node scripts/pilot-pack/apply-probe.mjs <адмін-DSN бази з демо-сідом>`.
  * Для ручного `pnpm pilot` проти власної демо-БД — те саме (без оверлею крок Gate B червоніє).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import pg from 'pg';
+import { applyApiProbe } from './api-probe.mjs';
 
 export const PROBE_SQL = join(import.meta.dirname, 'sanitize-probe.sql');
 
@@ -20,6 +22,8 @@ export async function applyProbe(connectionString) {
       throw new Error(
         'Оверлей-проба не знайшов товар invertor-merezhevyi-5kw: БД не з демо-сідом (pnpm db:demo)',
       );
+    // Сервісний запис і токен для Gate B (`/api/v1`): окремий модуль, бо це не SQL-оверлей.
+    await applyApiProbe(client);
   } finally {
     await client.end();
   }

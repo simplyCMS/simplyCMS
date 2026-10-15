@@ -22,7 +22,7 @@ const filesOf = (pkgDir: string): string[] => {
   }[];
   return info!.files.map((f) => f.path);
 };
-const PROBE = /sanitize-probe|apply-probe/;
+const PROBE = /sanitize-probe|apply-probe|api-probe/;
 
 describe('оверлей-проба пілота не потрапляє в tarball-и', () => {
   it.each([

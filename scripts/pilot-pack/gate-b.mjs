@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { get } from 'node:http';
 import pg from 'pg';
+import { checkApiV1 } from './gate-b-api.mjs';
 
 /** Товари з БД — очікувані рядки для SSR-перевірок. */
 export async function expectedProducts(env) {
@@ -156,6 +157,8 @@ export async function gateHttp(port, env) {
     robots.status === 200 && robotsBody.includes('Sitemap:'),
     `${robots.status}, ${robots.headers.get('content-type')}`,
   );
+
+  await checkApiV1(base, check);
 
   const health = await fetch(`${base}/api/health`);
   const healthJson = await health.json();
