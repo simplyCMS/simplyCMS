@@ -95,6 +95,10 @@ describe('фото каталогу стираються двофазно (К3-�
         images: [a, b],
       }),
     );
+    // Стан «лише старий jsonb» (див. resource-media-jsonb): без рядків `product_images`.
+    await d.f.rows(`delete from public.product_images where product_id = $1`, [
+      productId,
+    ]);
     await productModificationsOps.update({
       data: [{ id, patch: { images: [b] } }],
     });

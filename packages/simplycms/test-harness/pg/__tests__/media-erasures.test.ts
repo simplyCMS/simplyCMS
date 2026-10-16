@@ -71,6 +71,11 @@ describe('outbox стирання медіа (Е6д-20)', () => {
   const erase = async (n = 1) => {
     const reviewId = await d.seedReview();
     const refs = await d.seedPhotos(reviewId, n);
+    // Реальні шляхи стирають ПІСЛЯ зняття референсу; живе посилання захищає файл.
+    await f.rows(
+      `update public.product_reviews set images = '[]'::jsonb where id = $1`,
+      [reviewId],
+    );
     const keys = await withActor({ role: 'app_admin' }, (db) =>
       eraseMediaRows(db, refs, { entityType: 'review', entityId: reviewId }),
     );

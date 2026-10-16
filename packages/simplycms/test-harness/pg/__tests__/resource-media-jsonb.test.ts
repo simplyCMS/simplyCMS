@@ -40,6 +40,11 @@ describe('фабрика: media на jsonb-масиві (К3-Е6д-1)', () => {
         images: [a, b],
       },
     );
+    // Стан «лише старий jsonb»: фікстура графа дзеркалить фото в `product_images`,
+    // а живе посилання з будь-якої медіа-колонки захищає файл від стирання.
+    await d.f.rows(`delete from public.product_images where product_id = $1`, [
+      id,
+    ]);
     const c = await d.upload('product', id);
     await ops.update({ data: [{ id, patch: { images: [b, c] } }] });
     expect(await images(id)).toEqual([b, c]);
