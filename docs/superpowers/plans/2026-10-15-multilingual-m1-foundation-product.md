@@ -794,7 +794,7 @@
     - `'saveDescription з новою назвою не змінює шлях'` (І17);
     - `'deleteTranslation основної → validation'`;
     - `'Idempotency: products.create двічі через HTTP — один товар'`.
-  - `translation-race.test.ts` (І13, Review Focus 4): дві паралельні транзакції — A `saveDescription(uk.description)`, B `saveTranslation(en.description, expected=старий хеш)`. Хто б не пройшов першим, кінцевий `en.description` не `current` щодо нового джерела, а B отримує 409, якщо A закомітилась раніше. Синхронізація — advisory-«засувками» харнесу (`holdAdvisoryLock`).
+  - `translation-race.test.ts` (І13, Review Focus 4): дві паралельні транзакції — A `saveDescription(uk.description)`, B `saveTranslation(en.description, expected=старий хеш)`. Хто б не пройшов першим, кінцевий `en.description` не `current` щодо нового джерела, а B отримує 412 `version_mismatch` (версія перевіряється першою; `expectedVersion` обов'язковий), якщо A закомітилась раніше. Окремий кейс: свіжа версія + старі хеші → 409 `source_changed`. Синхронізація — advisory-«засувками» харнесу (`holdAdvisoryLock`).
 - [ ] **Step 2:** FAIL.
 - [ ] **Step 3:** Реалізація, обгортки serverFn (форма Task 6), реєстр, `pnpm api:snapshot`, легасі-перелік лінту не росте.
 - [ ] **Step 4:** PASS; `pnpm vitest run packages/simplycms/src/operations` (паритет) → PASS.
