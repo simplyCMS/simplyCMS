@@ -5,7 +5,7 @@
  * модулем за каноном 150 рядків.
  */
 import { sql } from './sql.mjs';
-import { orderShipping } from './admin-shipping-sql.mjs';
+import { orderShipping, pollUntil } from './admin-shipping-sql.mjs';
 import { deleteRow, makeDefault, rowOf } from './admin-shipping-owner.mjs';
 
 /** Чи лишились тестові записи кроку (способи за кодами, точка за назвою). */
@@ -79,7 +79,15 @@ export async function restoreZones({ page, base, dbUrl, check, fx }) {
         await deleteRow(page, fx.zone);
         await rowOf(page, fx.zone).waitFor({ state: 'detached' });
       });
-    const after = await read();
+    // Видалення зони оптимістичне (рядок зникає до COMMIT): БД опитуємо.
+    const after = await pollUntil(
+      read,
+      (zs) =>
+        zs
+          .filter((z) => z.is_default)
+          .map((z) => z.name)
+          .join() === fx.rate.zone && !zs.some((z) => z.name === fx.zone),
+    );
     const ok =
       after
         .filter((z) => z.is_default)

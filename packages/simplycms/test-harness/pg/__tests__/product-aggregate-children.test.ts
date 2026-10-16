@@ -496,6 +496,17 @@ describe('агрегат товару: модифікації, значення,
       const sel = await property('select', ['A']);
       const txt = await property('text');
       const mod = randomUUID();
+      const [keyMain, keyEn] = [
+        `ab/${randomUUID()}.png`,
+        `ab/${randomUUID()}.png`,
+      ];
+      for (const key of [keyMain, keyEn])
+        await db.q(
+          `insert into public.media (id, entity_type, entity_id, storage_key, size_bytes, mime_type)
+           values ($1, 'product', $2, $3, 1, 'image/png')`,
+          [randomUUID(), id, key],
+        );
+      const imageId = randomUUID();
       const s1 = await saveDescription(id, v, {
         modifications: {
           upsert: [
@@ -505,6 +516,17 @@ describe('агрегат товару: модифікації, значення,
               isDefault: true,
               sortOrder: 2,
               texts: { uk: { name: 'Червоний' }, en: { name: 'Red' } },
+            },
+          ],
+        },
+        images: {
+          upsert: [
+            {
+              id: imageId,
+              storageKey: keyMain,
+              sortOrder: 0,
+              alt: { uk: 'Кабель', en: 'Cable' },
+              overrides: { en: keyEn },
             },
           ],
         },
@@ -539,6 +561,13 @@ describe('агрегат товару: модифікації, значення,
         mvals: await db.q(
           `select value_id, locale, value from public.modification_property_value_translations order by value_id, locale`,
         ),
+        imgs: await db.q(
+          `select i.id, i.storage_key, i.sort_order, t.locale, t.alt, t.storage_key as override
+             from public.product_images i
+             left join public.product_image_translations t on t.image_id = i.id
+            where i.product_id = $1 order by t.locale`,
+          [id],
+        ),
       });
       const before = await snapshot();
       const got = await get(id);
@@ -557,6 +586,12 @@ describe('агрегат товару: модифікації, значення,
         'uk',
       ]);
       expect(got.propertyValues).toHaveLength(2);
+      expect(got.images).toMatchObject([
+        {
+          alt: { uk: 'Кабель', en: 'Cable' },
+          overrides: { en: expect.any(String) },
+        },
+      ]);
       // Відповідь -> вхід: ЛИШЕ зняти поля статусу, без перейменувань і зміни форм.
       const strip = (v: unknown): unknown =>
         Array.isArray(v)
@@ -585,6 +620,8 @@ describe('агрегат товару: модифікації, значення,
       expect(after.tokens).toEqual(before.tokens);
       expect(after.vals).toEqual(before.vals);
       expect(after.mvals).toEqual(before.mvals);
+      expect(after.imgs).toEqual(before.imgs);
+      expect(before.imgs).toHaveLength(2); // alt uk+en; override en
       expect(after.mods).toEqual(
         before.mods.map((m) => ({ ...m, sku: 'S-2' })),
       );

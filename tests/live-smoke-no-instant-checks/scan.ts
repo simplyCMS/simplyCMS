@@ -7,14 +7,14 @@ import { join, relative, resolve } from 'node:path';
  * Тут лише логіка; жодних `describe`/`it`.
  */
 
-const ROOT = resolve(import.meta.dirname, '../..');
-const DIR = join(ROOT, 'scripts/live-smoke');
+export const ROOT = resolve(import.meta.dirname, '../..');
+export const DIR = join(ROOT, 'scripts/live-smoke');
 
 const INSTANT =
   /\.(?:isVisible|isHidden|isChecked|isEnabled|isDisabled|isEditable|textContent|innerText|inputValue|allTextContents|allInnerTexts)\(|\.count\(\)/;
 
 /** Лише код: коментарі з поясненням «чому не isVisible» не рахуються. */
-function stripComments(src: string): string {
+export function stripComments(src: string): string {
   return src
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -39,32 +39,7 @@ export function findInstantReads(
   return out;
 }
 
-/**
- * Читання БД одразу після очікування зникнення рядка в UI. Видалення в адмінці
- * оптимістичне (`collection.delete`): рядок зникає до COMMIT, тож `detached` /
- * `expectGone` не доводять, що БД уже змінилась. Читання мусить іти через
- * `pollUntil` (опитування з таймаутом) — у вікні між очікуванням і читанням має
- * бути `pollUntil`, або це миттєве читання БД.
- */
-export function findDetachedThenDbRead(
-  file: string,
-  src: string,
-): { file: string; call: string }[] {
-  const lines = stripComments(src).split('\n');
-  const out: { file: string; call: string }[] = [];
-  lines.forEach((line, i) => {
-    if (!/state:\s*'detached'|expectGone\(/.test(line)) return;
-    const window = lines.slice(i + 1, i + 9);
-    const poll = window.findIndex((l) => l.includes('pollUntil('));
-    window.forEach((l, k) => {
-      if (/await\s+(?:\w+\.)?\w+\(\s*dbUrl\b/.test(l) && (poll < 0 || k < poll))
-        out.push({ file, call: l.trim() });
-    });
-  });
-  return out;
-}
-
-function walk(dir: string): string[] {
+export function walk(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory()
       ? walk(join(dir, e.name))
@@ -103,17 +78,4 @@ export function uncovered(
     else bad.push(k);
   }
   return bad;
-}
-
-/** Миттєві читання БД після `detached`/`expectGone` у всіх скриптах смоку. */
-export function scanDetachedDbReads(): { file: string; call: string }[] {
-  const files = [...walk(DIR), join(ROOT, 'scripts/live-smoke.mjs')].filter(
-    (f) => !f.endsWith('/wait.mjs'),
-  );
-  return files.flatMap((f) =>
-    findDetachedThenDbRead(
-      relative(DIR, f).replaceAll('\\', '/'),
-      readFileSync(f, 'utf8'),
-    ),
-  );
 }

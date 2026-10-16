@@ -34,6 +34,7 @@ export {
   findMediaReferences,
   MEDIA_REFERENCED_ENTITY_TYPES,
   mediaReferenceExists,
+  findReferencedKeys,
   type MediaReference,
 } from './references';
 export {

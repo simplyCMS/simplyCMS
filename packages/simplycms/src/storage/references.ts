@@ -12,7 +12,12 @@ export interface MediaReference {
 
 type Row = { id: string };
 
-/** Гілка пошуку референсу: таблиця, колонка/шлях і предикат на вираз ключа. */
+/**
+ * Гілка пошуку референсу — ОДИН опис, з якого будуються ВСІ запити: пошук за
+ * одним ключем (`predicate`) і за множиною (`findReferencedKeys`). Окремих
+ * предикатів по гілках немає, тож колонка чи логотип не можуть випасти з
+ * одного запиту, залишившись в іншому.
+ */
 interface Branch {
   readonly table: string;
   readonly column: string;
@@ -20,35 +25,28 @@ interface Branch {
   readonly entityType: string;
   /** Вираз `id` рядка для таблиці без колонки `id`; за замовчуванням `id`. */
   readonly idExpression: string;
-  readonly predicate: (key: SQL | string) => SQL;
-  /** Вираз ключів-посилань рядка (для вибірки збігів з множиною): рядок або елементи масиву. */
+  /** Вираз ключів-посилань рядка: рядок (`text`) або масив рядків (`jsonb`). */
   readonly keysOf: SQL;
   readonly kind: 'text' | 'jsonb';
+  /** Додаткова умова на рядок (логотип — лише рядок профілю магазину). */
+  readonly rowFilter?: SQL;
 }
 
 /**
  * ЄДИНЕ джерело гілок референсу (Е6д-22): `findMediaReferences` і вибір
- * кандидатів sweep (`mediaReferenceExists`) будують предикат тут, тож логотип
- * чи нова медіа-колонка не можуть потрапити в одне й випасти з іншого.
+ * кандидатів sweep (`mediaReferenceExists`) будують запити з цього опису, тож
+ * логотип чи нова медіа-колонка не можуть потрапити в одне й випасти з іншого.
  * jsonb → членство `col ? key`, text → рівність; логотип — окрема гілка.
  */
 const BRANCHES: readonly Branch[] = [
-  ...MEDIA_COLUMNS.map((entry): Branch => {
-    const { table, column, kind, entityType } = entry;
-    const c = sql.identifier(column);
-    return {
-      table,
-      column,
-      entityType,
-      idExpression: 'idExpression' in entry ? entry.idExpression : 'id',
-      keysOf: sql`${c}`,
-      kind,
-      predicate: (key) =>
-        kind === 'jsonb'
-          ? sql`jsonb_typeof(${c}) = 'array' and ${c} ? ${key}`
-          : sql`${c} = ${key}`,
-    };
-  }),
+  ...MEDIA_COLUMNS.map((entry): Branch => ({
+    table: entry.table,
+    column: entry.column,
+    entityType: entry.entityType,
+    idExpression: 'idExpression' in entry ? entry.idExpression : 'id',
+    keysOf: sql`${sql.identifier(entry.column)}`,
+    kind: entry.kind,
+  })),
   {
     table: LOGO_MEDIA_REFERENCE.table,
     column: LOGO_MEDIA_REFERENCE.column,
@@ -56,10 +54,18 @@ const BRANCHES: readonly Branch[] = [
     idExpression: 'id',
     keysOf: sql`value->>'logo'`,
     kind: 'text',
-    predicate: (key) =>
-      sql`key = ${STORE_PROFILE_KEY} and value->>'logo' = ${key}`,
+    rowFilter: sql`key = ${STORE_PROFILE_KEY}`,
   },
 ];
+
+/** Умова «рядок гілки посилається на `key`» (один ключ). */
+function predicate(b: Branch, key: SQL | string): SQL {
+  const own =
+    b.kind === 'jsonb'
+      ? sql`jsonb_typeof(${b.keysOf}) = 'array' and ${b.keysOf} ? ${key}`
+      : sql`${b.keysOf} = ${key}`;
+  return b.rowFilter ? sql`${b.rowFilter} and ${own}` : own;
+}
 
 /** Типи власника, для яких реально є гілка пошуку (з тих самих гілок, що SQL). */
 export const MEDIA_REFERENCED_ENTITY_TYPES: readonly string[] = [
@@ -73,7 +79,7 @@ export const MEDIA_REFERENCED_ENTITY_TYPES: readonly string[] = [
 export function mediaReferenceExists(key: SQL): SQL {
   const parts = BRANCHES.map(
     (b) =>
-      sql`exists (select 1 from public.${sql.identifier(b.table)} where ${b.predicate(key)})`,
+      sql`exists (select 1 from public.${sql.identifier(b.table)} where ${predicate(b, key)})`,
   );
   return sql.join(parts, sql` or `);
 }
@@ -89,7 +95,7 @@ export async function findMediaReferences(
   const found: MediaReference[] = [];
   for (const b of BRANCHES) {
     const { rows } = await db.execute<Row>(
-      sql`select (${sql.raw(b.idExpression)})::text as id from public.${sql.identifier(b.table)} where ${b.predicate(key)}`,
+      sql`select (${sql.raw(b.idExpression)})::text as id from public.${sql.identifier(b.table)} where ${predicate(b, key)}`,
     );
     for (const row of rows)
       found.push({ table: b.table, column: b.column, id: row.id });
@@ -110,16 +116,15 @@ export async function findReferencedKeys(
   )}]::text[]`;
   for (const b of BRANCHES) {
     const table = sql`public.${sql.identifier(b.table)}`;
+    const filter = b.rowFilter ? sql`${b.rowFilter} and ` : sql``;
     const query =
       b.kind === 'jsonb'
         ? sql`select e as key from ${table}
                cross join lateral jsonb_array_elements_text(
                  case when jsonb_typeof(${b.keysOf}) = 'array' then ${b.keysOf} else '[]'::jsonb end) e
-              where jsonb_typeof(${b.keysOf}) = 'array' and ${b.keysOf} ?| ${arr} and e = any(${arr})`
-        : b.table === LOGO_MEDIA_REFERENCE.table
-          ? sql`select ${b.keysOf} as key from ${table}
-                 where key = ${STORE_PROFILE_KEY} and ${b.keysOf} = any(${arr})`
-          : sql`select ${b.keysOf} as key from ${table} where ${b.keysOf} = any(${arr})`;
+              where ${filter}jsonb_typeof(${b.keysOf}) = 'array' and ${b.keysOf} ?| ${arr} and e = any(${arr})`
+        : sql`select ${b.keysOf} as key from ${table}
+               where ${filter}${b.keysOf} = any(${arr})`;
     const { rows } = await db.execute<{ key: string }>(query);
     for (const row of rows) live.add(row.key);
   }

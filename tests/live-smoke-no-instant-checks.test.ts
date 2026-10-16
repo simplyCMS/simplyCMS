@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { INSTANT_CHECK_EXEMPTIONS } from './live-smoke-no-instant-checks/data';
 import {
-  findDetachedThenDbRead,
+  DETACHED_DB_READ_EXEMPTIONS,
+  INSTANT_CHECK_EXEMPTIONS,
+} from './live-smoke-no-instant-checks/data';
+import {
   findInstantReads,
-  scanDetachedDbReads,
   keyOf,
   scanLiveSmoke,
   uncovered,
 } from './live-smoke-no-instant-checks/scan';
+import {
+  findDetachedDbReads,
+  scanDetachedDbReads,
+} from './live-smoke-no-instant-checks/scan-db-reads';
 
 /**
  * Ратчет миттєвих читань UI у кроках `live:smoke`.
@@ -93,17 +98,115 @@ describe('миттєві читання UI у live-smoke', () => {
       expect(findInstantReads('x.mjs', `await l.${m}();`)).toHaveLength(1);
   });
 
-  it('після очікування зникнення рядка БД читається через pollUntil (оптимістичне видалення)', () => {
-    expect(
-      scanDetachedDbReads(),
-      'рядок зник з UI до COMMIT: опитуй БД через pollUntil (admin-shipping-sql.mjs), а не читай одразу',
-    ).toEqual([]);
-  });
+  describe('читання БД після очікування зникнення (структурний гард)', () => {
+    const dbAllowed = new Map<string, number>();
+    for (const e of DETACHED_DB_READ_EXEMPTIONS)
+      dbAllowed.set(keyOf(e), (dbAllowed.get(keyOf(e)) ?? 0) + 1);
+    const hits = scanDetachedDbReads();
 
-  it('негативний контроль: миттєве читання БД після detached ловиться, pollUntil — ні', () => {
-    const bad = `await page.getByRole('row').waitFor({ state: 'detached' });\nconst n = await countBy(dbUrl, 'x');`;
-    const ok = `await page.getByRole('row').waitFor({ state: 'detached' });\nconst n = await pollUntil(\n () => countBy(dbUrl, 'x'),\n Boolean,\n);`;
-    expect(findDetachedThenDbRead('x.mjs', bad)).toHaveLength(1);
-    expect(findDetachedThenDbRead('x.mjs', ok)).toHaveLength(0);
+    it('поза списком виїмок читань БД після detached/expectGone без pollUntil немає', () => {
+      expect(
+        uncovered(hits, dbAllowed),
+        'рядок зник з UI до COMMIT: опитуй БД через pollUntil (admin-shipping-sql.mjs) або додай виїмку з причиною',
+      ).toEqual([]);
+    });
+
+    it('виїмки без мертвих записів і з причинами', () => {
+      const seen = new Map<string, number>();
+      for (const h of hits) seen.set(keyOf(h), (seen.get(keyOf(h)) ?? 0) + 1);
+      expect([...dbAllowed].filter(([k, n]) => (seen.get(k) ?? 0) < n)).toEqual(
+        [],
+      );
+      expect(
+        DETACHED_DB_READ_EXEMPTIONS.filter((e) => e.reason.trim().length < 10),
+      ).toEqual([]);
+    });
+
+    const run = (src: string, extra: Record<string, string> = {}) =>
+      findDetachedDbReads({ 'x.mjs': src, ...extra });
+    const wait = `await page.getByRole('row').waitFor({ state: 'detached' });`;
+
+    it('негативні контролі: усі форми читання після detached червоні', () => {
+      // 1. замикання без dbUrl в аргументах (форма реального пропуску admin-shipping-final)
+      expect(
+        run(`export async function f({ page, dbUrl }) {
+  const read = () => sql(dbUrl, 'select 1');
+  ${wait}
+  const after = await read();
+}`),
+      ).toHaveLength(1);
+      // 2. читач-хелпер з іншого файлу без dbUrl в аргументах
+      expect(
+        run(
+          `import { countRows } from './h.mjs';
+export async function f({ page }) {
+  ${wait}
+  return countRows('x');
+}`,
+          {
+            'h.mjs': `export async function countRows(t) { return sql(url(), t); }`,
+          },
+        ),
+      ).toHaveLength(1);
+      // 3. { dbUrl } в об'єкті
+      expect(
+        run(`const facts = async (o) => sql(o.dbUrl, 'select 1');
+export async function f({ page, dbUrl }) {
+  ${wait}
+  return facts({ dbUrl });
+}`),
+      ).toHaveLength(1);
+      // 4. dbUrl не першим аргументом
+      expect(
+        run(`const byId = async (id, url) => sql(url, 'select 1', [id]);
+export async function f({ page, dbUrl }) {
+  ${wait}
+  return byId(1, dbUrl);
+}`),
+      ).toHaveLength(1);
+      // 5. читання далеко (понад 20 рядків) після detached
+      expect(
+        run(`const q = async () => sql(u, 'select 1');
+export async function f({ page }) {
+  ${wait}
+${'  await page.waitForTimeout(1);\n'.repeat(25)}  return q();
+}`),
+      ).toHaveLength(1);
+      // 6. detached усередині хелпера, читання у викликача
+      expect(
+        run(`const del = async (page) => { ${wait} };
+const q = async () => sql(u, 'select 1');
+export async function f({ page }) {
+  await del(page);
+  return q();
+}`),
+      ).toHaveLength(1);
+      // 7. транзитивний читач (читач викликає читача)
+      expect(
+        run(`const a = async () => sql(u, 'select 1');
+const b = async () => a();
+export async function f({ page }) {
+  ${wait}
+  return b();
+}`),
+      ).toHaveLength(1);
+    });
+
+    it('негативні контролі: pollUntil, читання до очікування й крок із page не червоніють', () => {
+      expect(
+        run(`const q = async () => sql(u, 'select 1');
+export async function f({ page }) {
+  ${wait}
+  return pollUntil(() => q(), Boolean);
+}`),
+      ).toHaveLength(0);
+      expect(
+        run(`const q = async () => sql(u, 'select 1');
+export async function f({ page }) {
+  const before = await q();
+  ${wait}
+}`),
+      ).toHaveLength(0);
+    });
   });
 });

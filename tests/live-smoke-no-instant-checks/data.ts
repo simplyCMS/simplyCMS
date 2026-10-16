@@ -179,3 +179,63 @@ export const INSTANT_CHECK_EXEMPTIONS: readonly {
     reason: 'після `waitForURL(/order-success/)` і `networkidle`',
   },
 ];
+
+/**
+ * Виїмки структурного гарда «читання БД після очікування зникнення»
+ * (`scan-db-reads.ts`). Ключ — `file :: <функція>: <читач> після <очікувач>`
+ * (кратність враховано). Список лише скорочується.
+ */
+const TOAST =
+  '`deactivateAndDelete` завершується `waitToast` успіху від сервера — COMMIT уже був, читання безпечне';
+export const DETACHED_DB_READ_EXEMPTIONS: readonly {
+  file: string;
+  call: string;
+  reason: string;
+}[] = [
+  ...[
+    'methodByCode',
+    'pointNameById',
+    'methodByCode',
+    'ratesOf',
+    'methodStep',
+    'methodStep',
+    'prepare',
+    'leftovers',
+  ].map((read) => ({
+    file: 'admin-shipping-cleanup.mjs',
+    call: `dropShippingConfig: ${read} після deactivateAndDelete`,
+    reason: TOAST,
+  })),
+  ...['defaultPriceTypeName', 'priceTypeCount', 'priceCountByType'].map(
+    (read) => ({
+      file: 'admin-dictionaries-price-types.mjs',
+      call: `runPriceTypesPart: ${read} після detached`,
+      reason:
+        'читаються ІНШІ рядки (дефолтний тип і тип PRICED із цінами), а не видалений NEW_TYPE; сам NEW_TYPE — через pollUntil',
+    }),
+  ),
+  {
+    file: 'admin-dictionaries-price-types.mjs',
+    call: 'removeSectionPart: assignmentsOfSection після detached',
+    reason:
+      'призначення зникають каскадом у ТІЙ САМІЙ транзакції, що й розділ; розділ уже дочекано через pollUntil',
+  },
+  ...['orderItemsPricing', 'profileByEmail'].map((read) => ({
+    file: 'admin-discounts-flow.mjs',
+    call: `thresholdPart: ${read} після putInCart`,
+    reason:
+      '`putInCart` чекає зникнення індикатора кошика, а не видалення рядка; читаються замовлення й профіль після `checkout`',
+  })),
+  {
+    file: 'admin-shipping-setup.mjs',
+    call: 'createPart: seedPointStock після addRate',
+    reason:
+      '`addRate` чекає закриття діалогу створення; seedPointStock ПИШЕ залишок іншої таблиці, а не читає видалене',
+  },
+  {
+    file: 'admin-shipping.mjs',
+    call: 'cleanupShippingStep: assertDemoShape після restoreZones',
+    reason:
+      'assertDemoShape читає замовлення (не зони); зони `restoreZones` перевіряє через pollUntil',
+  },
+];
