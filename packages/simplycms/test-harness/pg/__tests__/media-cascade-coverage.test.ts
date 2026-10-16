@@ -15,6 +15,8 @@ vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 const EXEMPT: Record<string, string> = {
   'users → profiles.avatar_url':
     'користувача видаляє лише іменована операція deleteCustomer: аватар стирається двофазно (Е6г-15, Е6д-14), доказ — admin-customer-delete-photos/-locks',
+  'product_images → product_image_translations.storage_key':
+    'рядок зображення видаляє лише команда агрегата (images.remove / modifications.remove), яка стирає файли діффом множин ключів товару; ресурсу product_images немає — доказ product-images-media',
 };
 
 type Pair = { ancestor: string; child: string; column: string };

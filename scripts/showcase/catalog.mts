@@ -1,14 +1,16 @@
 /**
- * Каталог сіду (С-4, С-14): розділи з властивостями, товари з модифікаціями й
- * зображеннями — усе через операції фабрики (`*Ops.insertIn/updateIn`), тобто
- * з тими самими схемами, локами й guard-ами, що й адмінка.
+ * Каталог сіду (С-4, С-14): розділи з властивостями — операціями фабрики
+ * (`*Ops.insertIn`), товари з модифікаціями, значеннями й зображеннями —
+ * командами агрегата (`catalog-products.mts`), тобто з тими самими схемами,
+ * локами й guard-ами, що й адмінка.
  *
- * 🔴 Демо-товари не переписуються: їм лише додаються зображення (`updateIn`).
+ * 🔴 Демо-товари не переписуються: їм лише додаються зображення (команда
+ * `products.saveDescription`).
  */
 import { randomUUID } from 'node:crypto';
 import { asc, notInArray } from 'drizzle-orm';
 import {
-  productsOps,
+  productsSaveDescription,
   propertyOptionsOps,
   sectionPropertiesOps,
   sectionPropertyAssignmentsOps,
@@ -18,6 +20,7 @@ import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
 import { products } from '../../packages/simplycms/src/schema/index.ts';
 import { PROPERTIES, SECTIONS, type SectionSpec } from './catalog-data.mts';
 import { insertProducts } from './catalog-products.mts';
+import { runCommand } from './command.mts';
 import { uploadProductImages } from './images.mts';
 import type { Rand } from './prng.mts';
 import { stream, type SeedContext } from './seed-context.mts';
@@ -102,21 +105,20 @@ async function imagesForDemo(
   newIds: string[],
 ): Promise<void> {
   const demo = await db
-    .select({ id: products.id })
+    .select({ id: products.id, version: products.version })
     .from(products)
     .where(notInArray(products.id, newIds))
     .orderBy(asc(products.slug));
-  for (const { id } of demo) {
-    const images = await uploadProductImages(db, ctx, rand, id, 1);
-    // К3-Е6д-1: `products` — media-ресурс, `updateIn` вимагає колектор ключів
-    // заміненого. Демо-зображення (посилання, не файли) рядків `media` не
-    // мають, тож стирати нічого: непорожній колектор = дефект сіду.
-    const replaced: string[] = [];
-    await productsOps.updateIn(db, [{ id, patch: { images } }], replaced);
-    if (replaced.length > 0)
-      throw new Error(
-        `[showcase] демо-товар ${id}: замінено файли ${replaced}`,
-      );
+  for (const { id, version } of demo) {
+    const [storageKey] = await uploadProductImages(db, ctx, rand, id, 1);
+    // Демо-товар лише отримує фото; його тексти й адреси недоторкані.
+    await runCommand(db, productsSaveDescription, {
+      id,
+      expectedVersion: version,
+      images: {
+        upsert: [{ id: randomUUID(), storageKey, sortOrder: 0 }],
+      },
+    });
   }
 }
 

@@ -87,6 +87,15 @@
     до COMMIT. Гейт класу `test-harness/pg/__tests__/media-cascade-coverage.test.ts`
     звіряє кожну каскадну медіа-колонку з каталогу FK з покриттям або винятком із
     причиною.
+  - 🔴 **Фото товару (М1, Task 12):** `product_images.storage_key` і
+    `product_image_translations.storage_key` (мовний варіант файлу) — медіа-колонки з
+    власником `product` (`media.entity_id` = id ТОВАРУ, навіть для фото модифікації).
+    Опція `cascadeMedia` має поле `owner` — колонку id власника, коли він не сам
+    дочірній рядок; у таблиці перекладу без `id` ключ запису в `findMediaReferences`
+    будує `idExpression` (`image_id:locale`). Команда `products.saveDescription`
+    перевіряє нові ключі (409 `media_ref_invalid`) і стирає зниклі діффом множини
+    ключів товару до/після; файли — після коміту (`afterCommit` лише добирає намір,
+    записаний в outbox `media_erasures`).
   - аватар (`replaceAvatar`/`removeMyAvatar`), логотип магазину (Е6б-14) теж двофазні (К3-Е6д-3): винятків із двофазного канону немає.
     `ImageUpload` файл сам не стирає, а сироту, лишену скасованою формою, прибирає sweep
     (він звіряє `findMediaReferences`, див. «Посилання на медіа»).
@@ -131,7 +140,8 @@
 - Вітрина резолвить референс **на сервері**, у лоадері чи мапері сутності, щоб
   контракт тем v3 отримував готові URL-рядки.
 - Нова медіа-колонка в схемі → запис у `MEDIA_COLUMNS` (`simplycms/domain/media`) +
-  резолв при читанні. Гейт — `tests/media-columns-coverage.test.ts`.
+  резолв при читанні. Гейт — `tests/media-columns-coverage.test.ts` (евристика
+  бачить і `storage_key`: власні таблиці сховища — у `NOT_MEDIA`).
 - 🔴 Не викликай `supabase.storage` і не імпортуй `@supabase/storage-js`: правило
   `simplycms-storage/no-direct-storage` (`eslint-rules/no-direct-storage.mjs`) і
   ратчет `tests/storage-direct-calls.test.ts` це валять. Виїмок немає: список

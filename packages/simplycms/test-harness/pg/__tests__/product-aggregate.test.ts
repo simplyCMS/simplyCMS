@@ -420,26 +420,31 @@ describe('агрегат товару (М1, Task 11)', () => {
     const { id, version } = await seed();
     await saveDescription(id, version, { base: { sku: 'A' } });
     const stale = version;
+    // Фабрики, а не готові проміси: перший відхилений проміс без обробника,
+    // поки тест чекає на попередній, давав б unhandled rejection у vitest.
     const bad = [
-      exec(productsSetPath, {
-        id,
-        locale: 'pl',
-        path: 'x-y',
-        expectedVersion: stale,
-      }),
-      exec(productsSetPath, {
-        id,
-        locale: 'uk',
-        path: 'Bad Path',
-        expectedVersion: stale,
-      }),
-      exec(productsDeleteTranslation, {
-        id,
-        locale: 'uk',
-        expectedVersion: stale,
-      }),
+      () =>
+        exec(productsSetPath, {
+          id,
+          locale: 'pl',
+          path: 'x-y',
+          expectedVersion: stale,
+        }),
+      () =>
+        exec(productsSetPath, {
+          id,
+          locale: 'uk',
+          path: 'Bad Path',
+          expectedVersion: stale,
+        }),
+      () =>
+        exec(productsDeleteTranslation, {
+          id,
+          locale: 'uk',
+          expectedVersion: stale,
+        }),
     ];
-    for (const p of bad)
-      expect(await rejects(p)).toBeInstanceOf(ValidationError);
+    for (const run of bad)
+      expect(await rejects(run())).toBeInstanceOf(ValidationError);
   });
 });

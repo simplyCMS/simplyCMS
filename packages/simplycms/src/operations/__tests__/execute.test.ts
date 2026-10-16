@@ -5,12 +5,26 @@ import { setResponseStatus } from '@tanstack/react-start/server';
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 // Транзакцію підміняємо: перевіряємо виконавця, а не Postgres.
 const actors: unknown[] = [];
+// Хронологія подій: «commit» ставиться, коли колбек транзакції повернувся (як
+// COMMIT у `withActor`), тож тест розрізняє «хвіст після коміту» і «усередині».
+const events: string[] = [];
 vi.mock('simplycms/db', async (orig) => ({
   ...(await orig<typeof import('simplycms/db')>()),
   withActor: vi.fn(async (actor: unknown, fn: (db: unknown) => unknown) => {
     actors.push(actor);
-    return fn({ fake: true });
+    const out = await fn({ fake: true });
+    events.push('commit');
+    return out;
   }),
+}));
+// Ключ ідемпотентності: поведінку резервування задає тест, SQL не потрібен.
+const reserve = vi.hoisted(() => ({
+  result: { kind: 'fresh' } as
+    { kind: 'fresh' } | { kind: 'replay'; status: number; body: unknown },
+}));
+vi.mock('../http/idempotency', () => ({
+  reserveIdempotencyKey: vi.fn(async () => reserve.result),
+  storeIdempotentResponse: vi.fn(async () => undefined),
 }));
 
 import { AuthzError } from 'simplycms/auth';
@@ -33,6 +47,8 @@ describe('executeOperation', () => {
   beforeEach(() => {
     run.mockClear();
     actors.length = 0;
+    events.length = 0;
+    reserve.result = { kind: 'fresh' };
     vi.mocked(setResponseStatus).mockClear();
   });
 
@@ -101,34 +117,60 @@ describe('executeOperation', () => {
     );
   });
 
-  it('afterCommit: хвіст іде ПІСЛЯ повернення транзакції, при відкаті — ніколи, збій хвоста не маскує відповідь', async () => {
-    const order: string[] = [];
-    const tail = defineOperation({
+  const tailOp = (fail = false) =>
+    defineOperation({
       id: 'test.tail',
       permission: 'settings.manage',
       input: z.object({ fail: z.boolean() }),
       output: z.object({ ok: z.boolean() }),
+      idempotent: 'create',
       async run({ afterCommit }, input) {
         afterCommit(async () => {
-          order.push('tail');
-          throw new Error('хвіст впав');
+          events.push('tail');
+          if (fail) throw new Error('хвіст впав');
         });
-        order.push('run');
+        events.push('run');
         if (input.fail) throw new Error('відкат');
         return { ok: true };
       },
     });
+
+  it('afterCommit: хвіст іде ПІСЛЯ коміту (не всередині транзакції), при відкаті — ніколи, збій хвоста не маскує відповідь', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
+      const tail = tailOp(true);
       await expect(
         executeOperation(tail, { fail: true }, admin),
       ).rejects.toThrow('відкат');
-      expect(order).toEqual(['run']);
+      expect(events).toEqual(['run']);
       const ok = await executeOperation(tail, { fail: false }, admin);
       expect(ok).toEqual({ replayed: false, output: { ok: true } });
-      expect(order).toEqual(['run', 'run', 'tail']);
+      // Порядок рівно run → commit → tail: хвіст до коміту дав би run, tail, commit.
+      expect(events).toEqual(['run', 'run', 'commit', 'tail']);
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it('replay ідемпотентного ключа: ні run, ні хвости вдруге не виконуються', async () => {
+    const idempotency = {
+      subjectKey: 'user:u1',
+      key: 'k1',
+      fingerprint: Buffer.from('x'),
+    };
+    const op = tailOp();
+    const first = await executeOperation(op, { fail: false }, admin, {
+      idempotency,
+    });
+    expect(first).toEqual({ replayed: false, output: { ok: true } });
+    expect(events).toEqual(['run', 'commit', 'tail']);
+    // Другий виклик: ключ уже збережено → replay.
+    reserve.result = { kind: 'replay', status: 200, body: { ok: true } };
+    events.length = 0;
+    const again = await executeOperation(op, { fail: false }, admin, {
+      idempotency,
+    });
+    expect(again).toEqual({ replayed: true, status: 200, body: { ok: true } });
+    expect(events).toEqual(['commit']);
   });
 });

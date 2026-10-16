@@ -4,14 +4,13 @@
  * кожної позиції в обох точках.
  *
  * 🔴 Системна точка й спосіб самовивозу — з демо-сіду (шукаються за ознакою,
- * а не константою id); нове — операціями фабрики й ядром `saveStock`.
+ * а не константою id); нове — операціями фабрики й командою `products.saveStock`.
  */
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import {
   pickupPointsOps,
-  saveStock,
-  saveStockInput,
+  productsSaveStock,
   shippingMethodsOps,
   shippingRatesOps,
 } from '../../packages/simplycms/src/admin-server/impl/index.ts';
@@ -22,6 +21,7 @@ import {
   shippingZones,
 } from '../../packages/simplycms/src/schema/index.ts';
 import type { SaleTarget } from './commerce.mts';
+import { runCommand } from './command.mts';
 import { int, type Rand } from './prng.mts';
 
 export type ShippingIds = {
@@ -122,7 +122,7 @@ export async function seedStock(
   ids: ShippingIds,
 ): Promise<void> {
   for (const target of targets) {
-    const input = saveStockInput.parse({
+    await runCommand(db, productsSaveStock, {
       productId: target.modificationId ? null : target.productId,
       modificationId: target.modificationId,
       quantities: [
@@ -130,6 +130,5 @@ export async function seedStock(
         { pickupPointId: ids.secondPointId, quantity: int(rand, 12, 40) },
       ],
     });
-    await saveStock(db, input);
   }
 }

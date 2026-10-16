@@ -23,6 +23,7 @@ import { expectedVersion, textsRow, stockStatus, versionOut } from './schemas';
 export { productsCreate } from './create';
 export { productsSaveDescription } from './save-description';
 export { productsSaveTranslation } from './save-translation';
+export { productsSetModificationToken } from './modification-token-op';
 
 export const productsGet = defineOperation({
   id: 'products.get',
@@ -111,6 +112,8 @@ export const productsRemove = defineOperation({
     // Рядки `media` (товару й каскадних дочірніх) стираються в транзакції разом
     // із рядком outbox; самі файли — після коміту (Е6д-14, друга фаза).
     const discard: string[] = [];
+    // Фото й мовні перевизначення (`product_images*`) каскадом зникають разом із
+    // товаром: їхні `cascadeMedia` в `productsOps.removeIn` стирають рядки `media`.
     await productsOps.removeIn(db, [{ id: input.id }], discard);
     afterCommit(() => completeMediaErasures(discard));
     return { id: input.id };

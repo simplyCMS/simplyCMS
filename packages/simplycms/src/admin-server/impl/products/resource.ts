@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { SLUG_RE } from 'simplycms/domain';
 import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
 import {
+  productImageTranslations,
+  productImages,
   productModifications,
   productReviews,
   products,
@@ -68,6 +70,21 @@ export const productsOps = defineAdminResource({
       fk: productModifications.productId,
       column: productModifications.images,
       entityType: 'product_modification',
+    },
+    // М1 (Task 12): фото й мовні перевизначення — рядки `product_images` /
+    // `product_image_translations`; файли належать ТОВАРУ (media.entity_id = id товару).
+    {
+      fk: productImages.productId,
+      column: productImages.storageKey,
+      entityType: 'product',
+      owner: productImages.productId,
+    },
+    {
+      via: productImages.productId,
+      fk: productImageTranslations.imageId,
+      column: productImageTranslations.storageKey,
+      entityType: 'product',
+      owner: productImages.productId,
     },
   ],
 });

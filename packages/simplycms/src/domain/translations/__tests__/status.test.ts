@@ -3,6 +3,7 @@ import {
   fieldStatus,
   isTranslatedForSeo,
   normalizeTextInput,
+  planTranslationWrite,
   rowStatus,
   toSourceRow,
   type SourceRow,
@@ -161,5 +162,37 @@ describe('isTranslatedForSeo (§3.4: кожне непорожнє в джере
   it('рядок із самих пробілів не рахується перекладом', () => {
     const target = row({ name: 'Name', description: '   ' });
     expect(isTranslatedForSeo(SPEC, source, target)).toBe(false);
+  });
+});
+
+describe('порожнє джерело → переклад → джерело заповнили', () => {
+  const hash = (t: string) => `h(${t})`;
+  const spec: TranslatableSpec = { fields: ['alt'], required: [] };
+
+  it('переклад при порожньому джерелі current, після заповнення джерела — outdated', () => {
+    // Переклад записано, поки джерело порожнє: хеша джерела немає.
+    const plan = planTranslationWrite({
+      spec,
+      current: { source: { values: { alt: null } }, byLocale: new Map() },
+      primary: 'uk',
+      patch: new Map([['en', { alt: 'Cable' }]]),
+      hash,
+    });
+    const stored = plan.upserts[0]!;
+    expect(stored.sourceHashes).toEqual({});
+    const target = row({ alt: 'Cable' }, stored.sourceHashes);
+    const empty = toSourceRow(spec, { alt: null }, hash);
+    expect(rowStatus(spec, empty, target)).toBe('current');
+    // Джерело заповнили: хеш поточного джерела з'явився, збережений — ні.
+    const filled = toSourceRow(spec, { alt: 'Кабель' }, hash);
+    expect(rowStatus(spec, filled, target)).toBe('outdated');
+    expect(
+      fieldStatus(
+        'Cable',
+        undefined,
+        filled.currentHashes['alt'] ?? null,
+        false,
+      ),
+    ).toBe('outdated');
   });
 });

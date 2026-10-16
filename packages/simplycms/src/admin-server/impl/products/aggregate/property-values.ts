@@ -1,0 +1,123 @@
+import { sql } from 'drizzle-orm';
+import { planTranslationWrite } from 'simplycms/domain/translations';
+import {
+  TRANSLATABLE,
+  applyTranslationPlan,
+  loadTranslations,
+  sourceFieldHash,
+} from 'simplycms/translations';
+import {
+  fail,
+  NOOP,
+  requireDistinct,
+  requireLocales,
+  uuidArray,
+  type ChildCtx,
+  type Step,
+} from './children-common';
+import type { PropertyValuesInput } from './children-schemas';
+import { checkShape, loadRefs } from './property-value-checks';
+import { writeValueRow, type ValueTable } from './property-value-write';
+import { assertRowsOwned } from './property-value-owned';
+import { remapPlanIssues } from './schemas';
+
+type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
+
+const tableOf = (u: Upsert): ValueTable =>
+  u.modificationId ? 'modification' : 'product';
+const specOf = (t: ValueTable) =>
+  t === 'modification'
+    ? TRANSLATABLE.modificationPropertyValue
+    : TRANSLATABLE.productPropertyValue;
+
+/**
+ * Значення властивостей товару й модифікації (Р18). Складеного FK
+ * `(property_id, value_kind)` і CHECK ще немає (Task 17), тому команда САМА
+ * звіряє `kind` з `section_properties.property_type`, колонку значення — з
+ * `kind`, а опцію — з її властивістю.
+ */
+export async function planPropertyValues(
+  ctx: ChildCtx,
+  input: PropertyValuesInput | undefined,
+): Promise<Step> {
+  const upserts = input?.upsert ?? [];
+  const removes = input?.remove ?? [];
+  if (upserts.length === 0 && removes.length === 0) return NOOP;
+  const at = (i: number, ...rest: string[]) => [
+    'propertyValues',
+    'upsert',
+    i,
+    ...rest,
+  ];
+  requireDistinct(
+    upserts.map((u) => u.id),
+    (i) => at(i, 'id'),
+  );
+  const removing = new Set(removes);
+  const refs = await loadRefs(ctx, upserts);
+  upserts.forEach((u, i) => {
+    if (removing.has(u.id)) throw fail(at(i, 'id'), 'invalid_value');
+    if (u.modificationId && !ctx.modificationIds.has(u.modificationId))
+      throw fail(at(i, 'modificationId'), 'invalid_value');
+    requireLocales(ctx, u.text, (l) => at(i, 'text', l));
+    checkShape(u, refs, (...rest) => at(i, ...rest));
+  });
+  await assertRowsOwned(ctx, upserts, removing);
+
+  const stored = new Map<
+    ValueTable,
+    Awaited<ReturnType<typeof loadTranslations>>
+  >();
+  for (const t of ['product', 'modification'] as const)
+    stored.set(
+      t,
+      await loadTranslations(
+        ctx.db,
+        specOf(t),
+        upserts.filter((u) => tableOf(u) === t).map((u) => u.id),
+      ),
+    );
+  const prepared = upserts.map((u, i) => {
+    const all = stored.get(tableOf(u))!.get(u.id) ?? new Map();
+    const byLocale = new Map(all);
+    byLocale.delete(ctx.primary);
+    const plan = remapPlanIssues(['propertyValues', 'upsert', i, 'text'], () =>
+      planTranslationWrite({
+        spec: specOf(tableOf(u)),
+        current: { source: all.get(ctx.primary) ?? null, byLocale },
+        primary: ctx.primary,
+        patch: new Map(
+          Object.entries(u.text ?? {}).map(([l, v]) => [l, { value: v }]),
+        ),
+        hash: sourceFieldHash,
+      }),
+    );
+    return { u, plan };
+  });
+
+  return {
+    async apply() {
+      const { db } = ctx;
+      if (removes.length > 0) {
+        await db.execute(sql`delete from public.product_property_values
+          where product_id = ${ctx.productId} and id = any(${uuidArray(removes)})`);
+        await db.execute(sql`delete from public.modification_property_values
+          where id = any(${uuidArray(removes)}) and modification_id in
+            (select id from public.product_modifications where product_id = ${ctx.productId})`);
+      }
+      for (const { u, plan } of prepared) {
+        const table = tableOf(u);
+        const primaryText = plan.upserts.find((x) => x.locale === ctx.primary)
+          ?.values.value;
+        await writeValueRow(db, ctx.productId, table, u, primaryText);
+        if (u.kind === 'text')
+          await applyTranslationPlan(db, specOf(table), u.id, plan);
+        // Не-text значення переклад не має: після зміни типу залишки прибираємо.
+        else
+          await db.execute(
+            sql`delete from ${sql.raw(specOf(table).table)} where value_id = ${u.id}`,
+          );
+      }
+    },
+  };
+}

@@ -18,6 +18,8 @@ interface Branch {
   readonly column: string;
   /** `media.entity_type` файлів, які ця гілка захищає (гейт sweep). */
   readonly entityType: string;
+  /** Вираз `id` рядка для таблиці без колонки `id`; за замовчуванням `id`. */
+  readonly idExpression: string;
   readonly predicate: (key: SQL | string) => SQL;
 }
 
@@ -28,12 +30,14 @@ interface Branch {
  * jsonb → членство `col ? key`, text → рівність; логотип — окрема гілка.
  */
 const BRANCHES: readonly Branch[] = [
-  ...MEDIA_COLUMNS.map(({ table, column, kind, entityType }): Branch => {
+  ...MEDIA_COLUMNS.map((entry): Branch => {
+    const { table, column, kind, entityType } = entry;
     const c = sql.identifier(column);
     return {
       table,
       column,
       entityType,
+      idExpression: 'idExpression' in entry ? entry.idExpression : 'id',
       predicate: (key) =>
         kind === 'jsonb'
           ? sql`jsonb_typeof(${c}) = 'array' and ${c} ? ${key}`
@@ -44,6 +48,7 @@ const BRANCHES: readonly Branch[] = [
     table: LOGO_MEDIA_REFERENCE.table,
     column: LOGO_MEDIA_REFERENCE.column,
     entityType: LOGO_MEDIA_REFERENCE.entityType,
+    idExpression: 'id',
     predicate: (key) =>
       sql`key = ${STORE_PROFILE_KEY} and value->>'logo' = ${key}`,
   },
@@ -77,7 +82,7 @@ export async function findMediaReferences(
   const found: MediaReference[] = [];
   for (const b of BRANCHES) {
     const { rows } = await db.execute<Row>(
-      sql`select id::text as id from public.${sql.identifier(b.table)} where ${b.predicate(key)}`,
+      sql`select (${sql.raw(b.idExpression)})::text as id from public.${sql.identifier(b.table)} where ${b.predicate(key)}`,
     );
     for (const row of rows)
       found.push({ table: b.table, column: b.column, id: row.id });

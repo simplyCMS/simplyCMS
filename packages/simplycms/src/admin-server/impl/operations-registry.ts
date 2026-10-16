@@ -20,8 +20,11 @@ import {
   productsRemove,
   productsSaveDescription,
   productsSaveTranslation,
+  productsSetModificationToken,
   productsSetPath,
 } from './products/aggregate/operations';
+import { productsSavePrices } from './product-prices/operations';
+import { productsSaveStock } from './stock/operations';
 
 /**
  * Реєстр операцій ядра (І24): перелік тут, бо саме `admin-server` визначає
@@ -48,6 +51,9 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   productsDeleteTranslation,
   productsSetPath,
   productsRemove,
+  productsSetModificationToken,
+  productsSavePrices,
+  productsSaveStock,
 ] as readonly OperationDef<unknown, unknown>[];
 
 const BY_ID: ReadonlyMap<string, OperationDef<unknown, unknown>> = new Map(

@@ -256,6 +256,9 @@ export {
   productsRemove,
   productsSaveDescription,
   productsSaveTranslation,
+  productsSetModificationToken,
   productsSetPath,
 } from './products/aggregate/operations';
+export { productsSavePrices } from './product-prices/operations';
+export { productsSaveStock } from './stock/operations';
 export { CORE_OPERATIONS, getOperation } from './operations-registry';

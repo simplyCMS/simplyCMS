@@ -174,6 +174,9 @@ export function createAdminServerMock(
     deleteProductTranslation: vi.fn(),
     setProductPath: vi.fn(),
     removeProduct: vi.fn(),
+    setProductModificationToken: vi.fn(),
+    saveProductPricesCommand: vi.fn(),
+    saveStockCommand: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }

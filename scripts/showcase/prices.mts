@@ -3,15 +3,12 @@
  * із PRNG за діапазоном розділу, демо-товарам — їхня роздрібна з демо-сіду
  * без змін плюс оптова (−10%).
  *
- * 🔴 Ядро `saveProductPrices` довіряє розібраному входу — вхід іде через його
- * ж схему `saveProductPricesInput`. Набір пари замінюється атомарно, тож
- * демо-ціна переписується тією самою сумою.
+ * 🔴 Ціни пишуться командою `products.savePrices` (вхід розбирає її схема).
+ * Набір пари замінюється атомарно, тож демо-ціна переписується тією самою сумою.
  */
 import { asc, eq } from 'drizzle-orm';
-import {
-  saveProductPrices,
-  saveProductPricesInput,
-} from '../../packages/simplycms/src/admin-server/impl/index.ts';
+import { productsSavePrices } from '../../packages/simplycms/src/admin-server/impl/index.ts';
+import { runCommand } from './command.mts';
 import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
 import {
   productModifications,
@@ -108,7 +105,7 @@ export async function seedPrices(
     ...(await demoPrices(db, retailId)),
   ];
   for (const { target, retail, oldPrice } of pairs) {
-    const input = saveProductPricesInput.parse({
+    await runCommand(db, productsSavePrices, {
       productId: target.productId,
       modificationId: target.modificationId,
       prices: [
@@ -124,7 +121,6 @@ export async function seedPrices(
         },
       ],
     });
-    await saveProductPrices(db, input);
   }
   // Кодовий порядок рядків, не `localeCompare`: той залежить від ICU машини.
   return pairs.map((p) => p.target).sort((a, b) => (a.key < b.key ? -1 : 1));

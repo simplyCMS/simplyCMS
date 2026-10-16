@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   fieldStatus,
   hasRichText,
+  hasText,
   isTranslatedForSeo,
   normalizeTextInput,
   planTranslationWrite,
@@ -110,6 +111,10 @@ describe('hasRichText не обманюється атрибутами й екр
     '<p>&#x2003;&#8201;</p>',
     '<p>\u200B\u200C\u200D\u2060\uFEFF</p>',
     '<p>&#8203;&zwnj;</p>',
+    // М'який перенос і розділювач монгольських голосних не відображаються.
+    '<p>&shy;</p>',
+    '<p>\u00AD\u180E</p>',
+    '<p>&#173;&#x180E;&#6158;</p>',
   ])('невидимі символи й сутності — не вміст: %j', (html) => {
     expect(hasRichText(html)).toBe(false);
     expect(normalizeTextInput(html, true)).toBeNull();
@@ -117,6 +122,8 @@ describe('hasRichText не обманюється атрибутами й екр
 
   it('звичайне (не rich) поле: символи нульової ширини — теж порожнеча, сутності — ні', () => {
     expect(normalizeTextInput('\u200B\uFEFF \u2060', false)).toBeNull();
+    expect(normalizeTextInput('\u00AD\u180E', false)).toBeNull();
+    expect(hasText('\u00AD', false)).toBe(false);
     expect(normalizeTextInput('&nbsp;', false)).toBe('&nbsp;');
   });
 

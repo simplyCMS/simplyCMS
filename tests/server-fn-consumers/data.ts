@@ -31,6 +31,12 @@ export const SERVER_FN_NO_CONSUMER_ALLOWLIST: Readonly<Record<string, string>> =
       'М1: UI товару — у наступних задачах М1; serverFn-обгортки операцій products.* (І24)',
     'packages/simplycms/src/admin-server/index.ts#removeProduct':
       'М1: UI товару — у наступних задачах М1; serverFn-обгортки операцій products.* (І24)',
+    'packages/simplycms/src/admin-server/index.ts#setProductModificationToken':
+      'М1: UI товару — у наступних задачах М1; serverFn-обгортки операцій products.* (І24)',
+    'packages/simplycms/src/admin-server/index.ts#saveProductPricesCommand':
+      'М1: UI товару — у наступних задачах М1; serverFn-обгортки операцій products.* (І24)',
+    'packages/simplycms/src/admin-server/index.ts#saveStockCommand':
+      'М1: UI товару — у наступних задачах М1; serverFn-обгортки операцій products.* (І24)',
     'packages/simplycms/src/admin-server/index.ts#createApiToken':
       'М1: UI токенів — у М3; serverFn-обгортки операцій токенів (І24)',
     'packages/simplycms/src/admin-server/index.ts#listApiTokens':

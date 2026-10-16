@@ -140,7 +140,10 @@ import {
   productsGet,
   productsRemove,
   productsSaveDescription,
+  productsSavePrices,
+  productsSaveStock,
   productsSaveTranslation,
+  productsSetModificationToken,
   productsSetPath,
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
@@ -810,3 +813,20 @@ export const setProductPath = createServerFn({ method: 'POST' })
 export const removeProduct = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsRemove, data));
+
+// М1, Task 12: токен модифікації, ціни й залишки — команди реєстру (Р14: ціни й
+// залишки версію агрегата не збільшують). Старі `saveProductPrices`/`saveStock`
+// лишаються до перенесення адмінки (Task 18).
+export const setProductModificationToken = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) =>
+    invokeFromServerFn(productsSetModificationToken, data),
+  );
+
+export const saveProductPricesCommand = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsSavePrices, data));
+
+export const saveStockCommand = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsSaveStock, data));

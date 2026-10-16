@@ -27,8 +27,14 @@ import * as schema from 'simplycms/schema';
  * широту, а насправді вимагала суфікса `_url`: `hero_image`, `avatar` чи
  * `image_key` проходили повз гейт мовчки (знайдено рев'ю Е2). Звужувати
  * назад — лише разом із цим докблоком.
+ *
+ * `storage_key` (референс файлу сховища) входить до евристики явно: колонка
+ * `product_image_translations.storage_key` вислизала від гейта, бо назва не
+ * містить `image`. Власні таблиці сховища (`media`, `media_erasures`) тримають
+ * ключ як свою ідентичність, а не посилання, — вони в `NOT_MEDIA` нижче.
  */
-const LOOKS_LIKE_MEDIA = /^(images|image.*|.*_image.*|avatar.*)$/;
+const LOOKS_LIKE_MEDIA =
+  /^(images|image.*|.*_image.*|avatar.*|(.*_)?storage_key)$/;
 
 /**
  * Колонки, що збігаються з евристикою, але медіа НЕ несуть.
@@ -49,11 +55,12 @@ const NOT_MEDIA: readonly string[] = [
   'themes.preview_image',
   // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`
   // (М1 Task 10), не файл. Самі файли (`product_images.storage_key`,
-  // `product_image_translations.storage_key`) у `MEDIA_COLUMNS` додає Task 12, коли
-  // команди пишуть зображення в ці таблиці; до того їх дзеркалить старий `images`.
-  // 🔴 `LOOKS_LIKE_MEDIA` колонку `storage_key` НЕ бачить, тож гейт про її
-  // відсутність у реєстрі мовчить — Task 12 мусить розширити евристику.
+  // `product_image_translations.storage_key`) зареєстровані в `MEDIA_COLUMNS`.
   'product_image_translations.image_id',
+  // Власні таблиці сховища: `storage_key` — їхня ідентичність, а не посилання
+  // на файл з іншої сутності (рядок `media` і хвіст `media_erasures`).
+  'media.storage_key',
+  'media_erasures.storage_key',
 ];
 
 describe('реєстр медіа-колонок', () => {

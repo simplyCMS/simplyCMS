@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { MEDIA_COLUMNS } from 'simplycms/domain/media';
 import { findMediaReferences } from 'simplycms/storage';
+import * as H from '../apply.mjs';
 import { useReviewsDb } from './fixtures/reviews';
 import {
   insertProductGraph,
@@ -18,6 +19,22 @@ describe('findMediaReferences (Е6д-22)', () => {
   const find = (key: string) =>
     withActor({ role: 'app_admin' }, (db) => findMediaReferences(db, key));
   const fresh = () => `ab/${crypto.randomUUID()}.png`;
+
+  /** Товар із одним зображенням `key` (рядок `product_images`). */
+  const image = async (key: string) => {
+    const productId = crypto.randomUUID();
+    await insertProductGraph(
+      viaRows((sql) => f.rows(sql)),
+      { id: productId, slug: `s-${productId}`, name: 'T' },
+    );
+    const imageId = crypto.randomUUID();
+    await f.rows(
+      `insert into public.product_images (id, product_id, storage_key, sort_order)
+       values ($1, $2, $3, 0)`,
+      [imageId, productId, key],
+    );
+    return { productId, imageId };
+  };
 
   /** Сіятель на запис реєстру: кладе `key` у колонку нового рядка, повертає його id. */
   const SEEDERS: Record<string, (key: string) => Promise<string>> = {
@@ -45,6 +62,24 @@ describe('findMediaReferences (Е6д-22)', () => {
         }),
       );
       return id;
+    },
+    'product_images.storage_key': async (key) => (await image(key)).imageId,
+    'product_image_translations.storage_key': async (key) => {
+      // Мова FK `ON DELETE RESTRICT`: рядок мови потрібен до перекладу.
+      await H.queryRowsLockingLanguages(
+        f.db.url,
+        `insert into public.languages (id, code, name, status, is_default, sort_order)
+         values (gen_random_uuid(), 'en', 'English', 'published', false, 9)
+         on conflict (code) do nothing`,
+        [],
+      );
+      const { imageId } = await image('ab/base.png');
+      await f.rows(
+        `insert into public.product_image_translations (image_id, locale, storage_key)
+         values ($1, 'en', $2)`,
+        [imageId, key],
+      );
+      return `${imageId}:en`;
     },
     'product_reviews.images': (key) => d.seedReview({ images: [key] }),
     'sections.image_url': async (key) => {

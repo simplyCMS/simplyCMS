@@ -24,6 +24,13 @@ export type ResourceCascadeMedia = {
   readonly via?: PgColumn;
   readonly column: PgColumn;
   readonly entityType: string;
+  /**
+   * Колонка з id ВЛАСНИКА файлів, коли власник — не сам дочірній рядок
+   * (М1: файли фото й перевизначень належать товару, `media.entity_id` =
+   * `product_id`). Колонка з дочірньої таблиці або — за `via` — з проміжної.
+   * Без неї власник — `id` дочірнього рядка (Е6д-16).
+   */
+  readonly owner?: PgColumn;
 };
 
 /** Опис покриття для гейта класу (`media-cascade-coverage`): хто кого стирає. */
@@ -42,14 +49,19 @@ export function assertCascadeMedia(
   table: Table,
   cascade: readonly ResourceCascadeMedia[],
 ): readonly ResourceCascadeMedia[] {
-  for (const { fk, column, via } of cascade) {
+  for (const { fk, column, via, owner } of cascade) {
     const child = getTableName(fk.table);
+    if (owner && owner.table !== fk.table && owner.table !== via?.table)
+      throw new Error(
+        `[admin-server] ${getTableName(table)}: cascadeMedia ${child}.${column.name} — owner мусить бути з дочірньої чи проміжної таблиці`,
+      );
     // Збіг ланцюжка з реальними FK доводить гейт `media-cascade-coverage`.
     const viaBroken = via && (via.table === table || !idOf(via.table));
     if (
       viaBroken ||
       column.table !== fk.table ||
-      !idOf(fk.table) ||
+      // Без `id` (складений PK) власник мусить бути заданий явно.
+      (!idOf(fk.table) && !owner) ||
       fk.table === table
     )
       throw new Error(
@@ -95,29 +107,47 @@ export async function snapshotCascadeMedia(
     .orderBy(asc(parentId))
     .for('update');
   const out: ChildRefs[] = [];
-  for (const { fk, column, entityType, via } of cascade) {
-    const childId = idOf(fk.table)!;
+  for (const { fk, column, entityType, via, owner } of cascade) {
+    // Таблиця без `id` (переклад із складеним PK): порядок локів за fk, власник — `owner`.
+    const childId = idOf(fk.table) ?? fk;
     // Дворівневий каскад: спершу лочимо проміжні рядки — вставка дочірнього
     // під ними тримає `FOR KEY SHARE` на проміжному і дочекається нашого COMMIT.
-    const parents = via
-      ? (
-          await db
-            .select({ id: idOf(via.table)! })
-            .from(via.table)
-            .where(inArray(via, [...ids]))
-            .orderBy(asc(idOf(via.table)!))
-            .for('update')
-        ).map((row) => String(row.id))
-      : [...ids];
+    const ownerInVia = !!via && owner?.table === via.table;
+    const viaRows = via
+      ? await db
+          .select({
+            id: idOf(via.table)!,
+            owner: ownerInVia ? owner! : idOf(via.table)!,
+          })
+          .from(via.table)
+          .where(inArray(via, [...ids]))
+          .orderBy(asc(idOf(via.table)!))
+          .for('update')
+      : [];
+    const parents = via ? viaRows.map((row) => String(row.id)) : [...ids];
     if (parents.length === 0) continue;
+    const ownerOfParent = new Map(
+      viaRows.map((row) => [String(row.id), String(row.owner)]),
+    );
     const rows = await db
-      .select({ id: childId, value: column })
+      .select({
+        id: childId,
+        value: column,
+        parent: fk,
+        own: owner && !ownerInVia ? owner : childId,
+      })
       .from(fk.table)
       .where(inArray(fk, parents))
       .orderBy(asc(childId))
       .for('update');
     for (const row of rows)
-      out.push({ entityType, id: String(row.id), refs: columnRefs(row.value) });
+      out.push({
+        entityType,
+        id: ownerInVia
+          ? (ownerOfParent.get(String(row.parent)) ?? String(row.id))
+          : String(row.own),
+        refs: columnRefs(row.value),
+      });
   }
   return out;
 }

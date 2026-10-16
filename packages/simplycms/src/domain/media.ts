@@ -205,6 +205,23 @@ export const MEDIA_COLUMNS = [
     entityType: 'product_modification',
     kind: 'jsonb',
   },
+  // М1 (Task 12): фото товару — рядок на зображення; власник файлу завжди
+  // товар (`entityType: 'product'`), і для зображення модифікації теж.
+  {
+    table: 'product_images',
+    column: 'storage_key',
+    entityType: 'product',
+    kind: 'text',
+  },
+  // Мовний варіант файлу (перевизначення): таблиця без `id` — ідентифікатор
+  // у `findMediaReferences` складається з вираження `idExpression`.
+  {
+    table: 'product_image_translations',
+    column: 'storage_key',
+    entityType: 'product',
+    kind: 'text',
+    idExpression: "image_id::text || ':' || locale",
+  },
   {
     table: 'product_reviews',
     column: 'images',
@@ -249,6 +266,11 @@ export const MEDIA_COLUMNS = [
   entityType: string;
   /** Тип колонки: `jsonb` — масив референсів, `text` — один. Звіряється з БД тестом парності. */
   kind: 'text' | 'jsonb';
+  /**
+   * SQL-вираз ідентифікатора рядка для таблиць без колонки `id` (складений PK).
+   * Лише літерал із цього реєстру: у запит іде через `sql.raw`.
+   */
+  idExpression?: string;
 }[];
 
 /**

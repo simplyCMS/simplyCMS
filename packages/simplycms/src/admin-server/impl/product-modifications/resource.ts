@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { SLUG_RE } from 'simplycms/domain';
-import { productModifications } from 'simplycms/schema';
+import {
+  productImageTranslations,
+  productImages,
+  productModifications,
+} from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
@@ -40,4 +44,21 @@ export const productModificationsOps = defineAdminResource({
   readonly: ['id', 'isDefault', 'createdAt', 'updatedAt'],
   // К3-Е6д-1: прибране з галереї фото стирає файл після COMMIT.
   media: { entityType: 'product_modification', columns: ['images'] },
+  // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
+  // зникають; їхні файли належать товару, а не модифікації.
+  cascadeMedia: [
+    {
+      fk: productImages.modificationId,
+      column: productImages.storageKey,
+      entityType: 'product',
+      owner: productImages.productId,
+    },
+    {
+      via: productImages.modificationId,
+      fk: productImageTranslations.imageId,
+      column: productImageTranslations.storageKey,
+      entityType: 'product',
+      owner: productImages.productId,
+    },
+  ],
 });

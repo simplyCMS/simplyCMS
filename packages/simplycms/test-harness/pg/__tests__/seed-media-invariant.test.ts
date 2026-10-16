@@ -27,6 +27,14 @@ vi.mock('simplycms/auth', async (orig) => ({
 /** Власник файлу за таблицею-носієм; `idColumn` — яка колонка рядка є `entity_id`. */
 const OWNER: Record<string, { type: string; idColumn: string }> = {
   products: { type: 'product', idColumn: 'id' },
+  // М1: файли фото й перевизначень належать товару (вираз, бо в перекладі
+  // немає `product_id`).
+  product_images: { type: 'product', idColumn: 'product_id' },
+  product_image_translations: {
+    type: 'product',
+    idColumn:
+      '(select i.product_id from public.product_images i where i.id = image_id)',
+  },
   product_modifications: { type: 'product_modification', idColumn: 'id' },
   product_reviews: { type: 'review', idColumn: 'id' },
   banners: { type: 'banner', idColumn: 'id' },

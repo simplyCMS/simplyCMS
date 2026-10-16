@@ -6,17 +6,19 @@ const MEDIA_TAGS: ReadonlySet<string> = new Set(['img', 'video', 'iframe']);
 
 /**
  * «Порожні» символи: пробіли Unicode (у т.ч. nbsp, en/em/thin space — їх знає
- * `\s`) і нульової ширини (ZWSP/ZWNJ/ZWJ, word joiner, BOM). Текст лише з них
- * на екрані порожній, тож не є вмістом.
+ * `\s`), нульової ширини (ZWSP/ZWNJ/ZWJ, word joiner, BOM), м'який перенос
+ * U+00AD (`&shy;`) і розділювач монгольських голосних U+180E (`\s` його не
+ * знає від Unicode 6.3). Текст лише з них на екрані порожній, тож не є вмістом.
  */
-const INVISIBLE_CHAR = /^[\s\u200B-\u200D\u2060\uFEFF]$/;
-const INVISIBLE_RUN = /[\s\u200B-\u200D\u2060\uFEFF]+/g;
+const INVISIBLE_CHAR = /^[\s\u00AD\u180E\u200B-\u200D\u2060\uFEFF]$/;
+const INVISIBLE_RUN = /[\s\u00AD\u180E\u200B-\u200D\u2060\uFEFF]+/g;
 const NAMED_INVISIBLE: Readonly<Record<string, string>> = {
   nbsp: '\u00a0',
   ensp: '\u2002',
   emsp: '\u2003',
   thinsp: '\u2009',
   hairsp: '\u200a',
+  shy: '\u00ad',
   zwnj: '\u200c',
   zwj: '\u200d',
   nobreak: '\u2060',

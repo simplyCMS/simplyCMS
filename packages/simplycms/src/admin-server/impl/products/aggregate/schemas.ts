@@ -117,7 +117,7 @@ export function fromWireKeys<T>(
  * для однієї мови (`dropLocale`) — `fields.<поле>`.
  */
 export function remapPlanIssues<T>(
-  prefix: readonly string[],
+  prefix: readonly (string | number)[],
   run: () => T,
   dropLocale = false,
 ): T {
