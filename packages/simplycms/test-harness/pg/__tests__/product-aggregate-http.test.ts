@@ -114,4 +114,25 @@ describe('If-Match/ETag і Idempotency-Key на агрегаті товару', 
     const list = await call('languages.list', {}, { ...S, 'if-match': '"v1"' });
     expect(list.status).toBe(400);
   });
+
+  it('покупець із cookie-сесією → 403 на products.get, навіть для неактивного товару', async () => {
+    const id = randomUUID();
+    const res = await call(
+      'products.create',
+      { id, texts, isActive: false },
+      S,
+    );
+    expect(res.status).toBe(200);
+    const buyer = randomUUID();
+    sessionAs('buyer', buyer, ['user']);
+    const read = await call(
+      'products.get',
+      { id },
+      { 'x-test-session': 'buyer' },
+    );
+    expect(read.status).toBe(403);
+    expect(await kind(read)).toBe('forbidden');
+    const admin = await call('products.get', { id }, S);
+    expect(admin.status).toBe(200);
+  });
 });

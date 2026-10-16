@@ -1581,7 +1581,7 @@
     "/api/v1/products.get": {
       "post": {
         "operationId": "products.get",
-        "x-permission": "catalog.read",
+        "x-permission": "catalog.write",
         "parameters": [
           {
             "name": "If-Match",

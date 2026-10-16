@@ -59,6 +59,7 @@ const KEYS = {
   custom: 'admin.validation.custom',
   taken: 'admin.validation.taken',
   reserved: 'admin.validation.reserved',
+  path_required: 'admin.validation.path_required',
   language_incomplete: 'admin.validation.language_incomplete',
 } as const satisfies Record<ValidationIssueCode, MessageKey>;
 

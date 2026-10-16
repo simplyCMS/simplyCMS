@@ -3,7 +3,45 @@
 
 /** Медіа без тексту: картинка чи відео в розмітці — це вміст, а не порожнеча. */
 const MEDIA_TAGS: ReadonlySet<string> = new Set(['img', 'video', 'iframe']);
-const SPACE_ENTITY = /&(?:nbsp|#160|#xa0);/gi;
+
+/**
+ * «Порожні» символи: пробіли Unicode (у т.ч. nbsp, en/em/thin space — їх знає
+ * `\s`) і нульової ширини (ZWSP/ZWNJ/ZWJ, word joiner, BOM). Текст лише з них
+ * на екрані порожній, тож не є вмістом.
+ */
+const INVISIBLE_CHAR = /^[\s\u200B-\u200D\u2060\uFEFF]$/;
+const INVISIBLE_RUN = /[\s\u200B-\u200D\u2060\uFEFF]+/g;
+const NAMED_INVISIBLE: Readonly<Record<string, string>> = {
+  nbsp: '\u00a0',
+  ensp: '\u2002',
+  emsp: '\u2003',
+  thinsp: '\u2009',
+  hairsp: '\u200a',
+  zwnj: '\u200c',
+  zwj: '\u200d',
+  nobreak: '\u2060',
+};
+const ENTITY = /&(?:#(\d+)|#x([0-9a-f]+)|([a-z0-9]+));/gi;
+
+/** Сутність, що розкривається в «порожній» символ, зникає; решта лишається текстом. */
+function dropInvisibleEntities(text: string): string {
+  return text.replace(
+    ENTITY,
+    (whole, dec?: string, hex?: string, name?: string) => {
+      const cp = dec ? Number(dec) : hex ? parseInt(hex, 16) : null;
+      const ch =
+        cp === null
+          ? NAMED_INVISIBLE[(name ?? '').toLowerCase()]
+          : cp > 0x10ffff
+            ? undefined
+            : String.fromCodePoint(cp);
+      return ch !== undefined && INVISIBLE_CHAR.test(ch) ? '' : whole;
+    },
+  );
+}
+
+const isBlank = (text: string): boolean =>
+  text.replace(INVISIBLE_RUN, '') === '';
 const LETTER = /[A-Za-z]/;
 const SPACE = /\s/;
 
@@ -77,7 +115,7 @@ function scan(html: string): { text: string; media: boolean } {
  */
 export function hasRichText(html: string): boolean {
   const { text, media } = scan(html);
-  return media || text.replace(SPACE_ENTITY, ' ').trim() !== '';
+  return media || !isBlank(dropInvisibleEntities(text));
 }
 
 /**
@@ -93,7 +131,7 @@ export function hasText(
   rich: boolean,
 ): value is string {
   if (typeof value !== 'string') return false;
-  return rich ? hasRichText(value) : value.trim() !== '';
+  return rich ? hasRichText(value) : !isBlank(value);
 }
 
 /**

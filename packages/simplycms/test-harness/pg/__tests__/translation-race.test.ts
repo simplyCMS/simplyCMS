@@ -5,7 +5,10 @@
 // він іде повз корінь, його не видно за `stillPending`, а після релізу він
 // мовчки пише переклад зі старого джерела замість відмови.
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { VersionMismatchError } from 'simplycms/contracts/domain-errors';
+import {
+  SourceChangedError,
+  VersionMismatchError,
+} from 'simplycms/contracts/domain-errors';
 import { sourceFieldHash } from 'simplycms/translations';
 import { holdRowLock, stillPending } from './fixtures/advisory-lock';
 import { useAddressingDb } from './fixtures/addressing-db';
@@ -79,6 +82,17 @@ describe('гонка перекладу і зміни джерела (І13)', ()
     expect(after.version).toBe(version + 1);
     expect(after.texts.en!.description).toBe('<p>Old</p>');
     expect(after.texts.en!.fieldStatus.description).toBe('outdated');
+    // СТАН хеша: збережений хеш en.description — від старого джерела, не від нового.
+    const [en] = await db.q(
+      `select source_hashes from public.product_translations where product_id = $1 and locale = 'en'`,
+      [id],
+    );
+    expect((en!.source_hashes as Record<string, string>).description).toBe(
+      sourceFieldHash('<p>Старий</p>'),
+    );
+    expect((en!.source_hashes as Record<string, string>).description).not.toBe(
+      sourceFieldHash('<p>Новий</p>'),
+    );
   });
 
   it('два паралельні saveTranslation з тією самою версією: рівно один проходить', async () => {
@@ -109,5 +123,33 @@ describe('гонка перекладу і зміни джерела (І13)', ()
       results.filter((r) => r instanceof VersionMismatchError),
     ).toHaveLength(1);
     expect((await get(id)).version).toBe(version + 1);
+    expect((await get(id)).texts.en!.fieldStatus.description).toBe('current');
+  });
+
+  it('свіжа версія, старі хеші (джерело змінено поза версією) → 409, не current', async () => {
+    const { id, version } = await seed();
+    // Джерело змінено в обхід агрегата: версія та сама, хеш інший.
+    await db.q(
+      `update public.product_translations set description = '<p>Інакше</p>' where product_id = $1 and locale = 'uk'`,
+      [id],
+    );
+    const err = await rejects(
+      saveTranslation(
+        id,
+        version,
+        'en',
+        { description: '<p>X</p>' },
+        {
+          description: sourceFieldHash('<p>Старий</p>'),
+        },
+      ),
+    );
+    expect(err).toBeInstanceOf(SourceChangedError);
+    const [en] = await db.q(
+      `select description, source_hashes from public.product_translations where product_id = $1 and locale = 'en'`,
+      [id],
+    );
+    expect(en!.description).toBe('<p>Old</p>');
+    expect((await get(id)).texts.en!.fieldStatus.description).toBe('outdated');
   });
 });

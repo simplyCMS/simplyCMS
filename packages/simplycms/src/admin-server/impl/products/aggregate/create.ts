@@ -39,13 +39,7 @@ const input = productBase.extend({
 });
 
 const pathRequired = () =>
-  new ValidationError([
-    {
-      path: ['path'],
-      code: 'too_small',
-      params: { minimum: 1, origin: 'string' },
-    },
-  ]);
+  new ValidationError([{ path: ['path'], code: 'path_required' }]);
 
 export const productsCreate = defineOperation({
   id: 'products.create',

@@ -4,10 +4,14 @@ import {
   ValidationError,
 } from 'simplycms/contracts/domain-errors';
 import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
-import { planTranslationWrite } from 'simplycms/domain/translations';
+import {
+  planTranslationWrite,
+  toSourceRow,
+} from 'simplycms/domain/translations';
 import {
   TRANSLATABLE,
   applyTranslationPlan,
+  fieldToWire,
   sourceFieldHash,
 } from 'simplycms/translations';
 import { assertKnownLocales, loadState, lockProduct } from './load';
@@ -24,6 +28,30 @@ import {
 import { code } from '../../languages/view';
 
 const SPEC = TRANSLATABLE.product;
+
+/**
+ * Кожне надіслане поле, чиє джерело має текст, мусить мати хеш у
+ * `expectedSourceHashes`: без нього перекладач нічого не підтвердив, а запис
+ * штампував би хеш поточного джерела без перевірки (сценарій 3 став би
+ * сценарієм 2). Поле з порожнім джерелом хеша не має — його не вимагаємо.
+ */
+function requireHashes(
+  patch: Readonly<Record<string, string | null | undefined>>,
+  expected: Readonly<Record<string, string>>,
+  source: Readonly<Record<string, string | null | undefined>>,
+): void {
+  const stored = toSourceRow(SPEC, source, sourceFieldHash).currentHashes;
+  const missing = Object.entries(patch)
+    .filter(([f, v]) => v !== undefined && stored[f] && !(f in expected))
+    .map(([f]) => f);
+  if (missing.length > 0)
+    throw new ValidationError(
+      missing.map((f) => ({
+        path: ['expectedSourceHashes', fieldToWire(f)],
+        code: 'invalid_type' as const,
+      })),
+    );
+}
 
 /**
  * Сценарій 3 майстра §3.4: переклад однієї не-основної мови з перевіркою
@@ -54,6 +82,7 @@ export const productsSaveTranslation = defineOperation({
     const expected = fromWireKeys(input.expectedSourceHashes, [
       'expectedSourceHashes',
     ]);
+    requireHashes(toPatch(input.fields), expected, state.source?.values ?? {});
     const plan = remapPlanIssues(
       ['fields'],
       () =>

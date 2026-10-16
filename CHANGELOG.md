@@ -67,6 +67,11 @@
   операція з `expectedVersion` у вході (інакше 400); відповіді версіонованих операцій, у т.ч. ідемпотентний
   replay, несуть `ETag: "v<n>"`. `hasText`/`normalizeTextInput`/`fieldStatus` (`simplycms/domain/translations`)
   тепер вимагають аргумент `rich`; `hasRichText` розбирає розмітку токенайзером, а не регексом.
+  Фікс-раунд: `products.get` вимагає `catalog.write` (не `catalog.read`, який має покупець); новий код
+  валідації `path_required` (`VALIDATION_ISSUE_CODES`, ключі uk/en); `OperationContext.afterCommit` — хвіст
+  після коміту (`products.remove` стирає файли); `saveTranslation` вимагає хеш у `expectedSourceHashes` для
+  кожного надісланого поля з непорожнім джерелом; валідація входу команд іде перед перевіркою версії;
+  невидимі символи (`&ensp;`, `&#00160;`, U+200B…U+FEFF) — не вміст поля.
 - **`setExplicitPath`/`setExplicitToken`** самі беруть спільний замок `languages-set`.
 - **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
   дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з

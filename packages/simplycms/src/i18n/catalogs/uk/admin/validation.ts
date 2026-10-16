@@ -30,6 +30,8 @@ export const messages = {
   'admin.validation.custom': 'Некоректне значення',
   'admin.validation.taken': 'Таке значення вже використовується',
   'admin.validation.reserved': 'Це значення зарезервоване системою',
+  'admin.validation.path_required':
+    'Вкажіть адресу вручну: з назви її не вдалося утворити',
   'admin.validation.language_incomplete':
     'Мова неповна: завершіть заповнення адрес перед публікацією',
 } as const;

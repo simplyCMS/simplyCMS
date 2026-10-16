@@ -100,4 +100,35 @@ describe('executeOperation', () => {
       /id операції має формат/,
     );
   });
+
+  it('afterCommit: хвіст іде ПІСЛЯ повернення транзакції, при відкаті — ніколи, збій хвоста не маскує відповідь', async () => {
+    const order: string[] = [];
+    const tail = defineOperation({
+      id: 'test.tail',
+      permission: 'settings.manage',
+      input: z.object({ fail: z.boolean() }),
+      output: z.object({ ok: z.boolean() }),
+      async run({ afterCommit }, input) {
+        afterCommit(async () => {
+          order.push('tail');
+          throw new Error('хвіст впав');
+        });
+        order.push('run');
+        if (input.fail) throw new Error('відкат');
+        return { ok: true };
+      },
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await expect(
+        executeOperation(tail, { fail: true }, admin),
+      ).rejects.toThrow('відкат');
+      expect(order).toEqual(['run']);
+      const ok = await executeOperation(tail, { fail: false }, admin);
+      expect(ok).toEqual({ replayed: false, output: { ok: true } });
+      expect(order).toEqual(['run', 'run', 'tail']);
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });

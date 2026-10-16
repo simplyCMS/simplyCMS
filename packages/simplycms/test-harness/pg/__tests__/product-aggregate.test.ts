@@ -84,7 +84,9 @@ describe('агрегат товару (М1, Task 11)', () => {
 
   it('create: нелатинська назва без пакета й без path → validation на path; явний path працює', async () => {
     const err = await rejects(create({ uk: { name: '東京' } }));
-    expect((err as ValidationError).issues[0]?.path).toEqual(['path']);
+    expect((err as ValidationError).issues).toEqual([
+      { path: ['path'], code: 'path_required' },
+    ]);
     const ok = await create({ uk: { name: '東京' } }, { path: 'tokyo-item' });
     expect(ok.paths.uk).toBe('tokyo-item');
     expect(
@@ -366,5 +368,78 @@ describe('агрегат товару (М1, Task 11)', () => {
       status: 'current',
       fieldStatus: { name: 'current', metaTitle: 'missing' },
     });
+  });
+
+  it('сценарій 3: назване, але не надіслане поле лише перевіряється — його хеш не змінюється', async () => {
+    const { id, version } = await seed();
+    const v2 = (
+      await saveDescription(id, version, {
+        texts: { uk: { description: '<p>Новий</p>' } },
+      })
+    ).version;
+    const before = (await row(id, 'en'))?.source_hashes as Record<
+      string,
+      string
+    >;
+    await saveTranslation(
+      id,
+      v2,
+      'en',
+      { name: 'Cable 2' },
+      {
+        name: sourceFieldHash('Кабель'),
+        description: sourceFieldHash('<p>Новий</p>'),
+      },
+    );
+    const after = (await row(id, 'en'))?.source_hashes as Record<
+      string,
+      string
+    >;
+    expect(after.description).toBe(before.description);
+    const en = (await get(id)).texts.en!;
+    expect(en.fieldStatus).toMatchObject({
+      name: 'current',
+      description: 'outdated',
+    });
+  });
+
+  it('надіслане поле без хеша в expectedSourceHashes → validation на шляху поля, нічого не записано', async () => {
+    const { id, version } = await seed();
+    const err = await rejects(
+      saveTranslation(id, version, 'en', { description: '<p>D2</p>' }, {}),
+    );
+    expect(err).toBeInstanceOf(ValidationError);
+    expect((err as ValidationError).issues).toEqual([
+      { path: ['expectedSourceHashes', 'description'], code: 'invalid_type' },
+    ]);
+    expect((await row(id, 'en'))?.description).toBe('<p>Desc</p>');
+    expect((await get(id)).version).toBe(version);
+  });
+
+  it('валідація перед версією (400, не 412): застаріла версія + невалідна мова/адреса/основна мова', async () => {
+    const { id, version } = await seed();
+    await saveDescription(id, version, { base: { sku: 'A' } });
+    const stale = version;
+    const bad = [
+      exec(productsSetPath, {
+        id,
+        locale: 'pl',
+        path: 'x-y',
+        expectedVersion: stale,
+      }),
+      exec(productsSetPath, {
+        id,
+        locale: 'uk',
+        path: 'Bad Path',
+        expectedVersion: stale,
+      }),
+      exec(productsDeleteTranslation, {
+        id,
+        locale: 'uk',
+        expectedVersion: stale,
+      }),
+    ];
+    for (const p of bad)
+      expect(await rejects(p)).toBeInstanceOf(ValidationError);
   });
 });

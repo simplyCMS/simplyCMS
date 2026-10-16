@@ -328,6 +328,8 @@ export const VALIDATION_ISSUE_CODES = [
   'custom',
   'taken',
   'reserved',
+  // М1 Task 11: адресу не вивести з назви (нелатинське письмо без мовного пакета) — вказати вручну.
+  'path_required',
   // М1 Task 6: публікація мови, поки не всі сутності мають адресу й токени.
   'language_incomplete',
 ] as const;

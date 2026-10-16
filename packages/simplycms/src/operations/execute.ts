@@ -22,6 +22,15 @@ const actorOf = (subject: AuthzSubject): CoreActor =>
     ? { kind: 'system' }
     : { kind: 'admin', userId: subject.userId };
 
+/** Хвіст після коміту: збій лише в журнал, відповідь уже закомічена команди не міняє. */
+async function runTail(tail: () => Promise<void>): Promise<void> {
+  try {
+    await tail();
+  } catch (error) {
+    console.warn('[simplycms/operations] хвіст після коміту впав', error);
+  }
+}
+
 /**
  * ЄДИНИЙ виконавець операцій реєстру (serverFn і HTTP йдуть крізь нього).
  *
@@ -47,8 +56,9 @@ export async function executeOperation<I, O>(
     throw new ValidationError(sanitizeValidationIssues(parsed.error.issues));
   const actor = actorOf(subject);
   const idem = opts.idempotency && { ...opts.idempotency, operation: def.id };
+  const tails: (() => Promise<void>)[] = [];
   try {
-    return await withActor(
+    const result = await withActor(
       {
         role: dbRoleForSubject(subject),
         userId: subject.userId ?? undefined,
@@ -72,12 +82,18 @@ export async function executeOperation<I, O>(
         // другого розбору в HTTP-шарі немає.
         const output = encodeOutput(
           def.output,
-          await def.run({ subject, actor, db }, parsed.data),
+          await def.run(
+            { subject, actor, db, afterCommit: (fn) => tails.push(fn) },
+            parsed.data,
+          ),
         ) as O;
         if (idem) await storeIdempotentResponse(db, idem, 200, output);
         return { replayed: false, output };
       },
     );
+    // Хвости — після коміту, і лише для виконаної команди (replay `run` не кликав).
+    for (const tail of tails) await runTail(tail);
+    return result;
   } catch (error) {
     throw toAdminConflict(error) ?? error;
   }

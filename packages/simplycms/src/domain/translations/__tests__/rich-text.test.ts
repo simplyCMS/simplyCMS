@@ -104,6 +104,27 @@ describe('hasRichText не обманюється атрибутами й екр
     expect(hasRichText(html)).toBe(true);
   });
 
+  it.each([
+    '<p>&#00160;</p>',
+    '<p>&ensp;&emsp;&thinsp;</p>',
+    '<p>&#x2003;&#8201;</p>',
+    '<p>\u200B\u200C\u200D\u2060\uFEFF</p>',
+    '<p>&#8203;&zwnj;</p>',
+  ])('невидимі символи й сутності — не вміст: %j', (html) => {
+    expect(hasRichText(html)).toBe(false);
+    expect(normalizeTextInput(html, true)).toBeNull();
+  });
+
+  it('звичайне (не rich) поле: символи нульової ширини — теж порожнеча, сутності — ні', () => {
+    expect(normalizeTextInput('\u200B\uFEFF \u2060', false)).toBeNull();
+    expect(normalizeTextInput('&nbsp;', false)).toBe('&nbsp;');
+  });
+
+  it('сутність, що не є пробілом, — текст', () => {
+    expect(hasRichText('<p>&amp;</p>')).toBe(true);
+    expect(hasRichText('<p>&#65;</p>')).toBe(true);
+  });
+
   it('незавершений тег не дає тексту і не кидає', () => {
     expect(hasRichText('<p title="abc')).toBe(false);
     expect(hasRichText('<p')).toBe(false);

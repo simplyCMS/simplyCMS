@@ -26,6 +26,8 @@ export const messages: Catalog = {
   'admin.validation.custom': 'Invalid value',
   'admin.validation.taken': 'This value is already in use',
   'admin.validation.reserved': 'This value is reserved by the system',
+  'admin.validation.path_required':
+    'Enter the address manually: it cannot be derived from the name',
   'admin.validation.language_incomplete':
     'The language is incomplete: finish filling addresses before publishing',
 };

@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { setExplicitPath } from 'simplycms/addressing';
 import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
-import { TRANSLATABLE, deleteTranslation } from 'simplycms/translations';
+import { ValidationError } from 'simplycms/contracts/domain-errors';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
+import {
+  TRANSLATABLE,
+  deleteTranslation,
+  primaryLocaleCode,
+} from 'simplycms/translations';
+import { completeMediaErasures } from 'simplycms/storage';
 import { productsOps } from '../resource';
 import { code } from '../../languages/view';
 import {
@@ -19,7 +26,9 @@ export { productsSaveTranslation } from './save-translation';
 
 export const productsGet = defineOperation({
   id: 'products.get',
-  permission: 'catalog.read',
+  // Не `catalog.read` (його має покупець): агрегат віддає неактивні товари, усі
+  // мови, статуси й хеші. Прецедент — stock/product-modifications (`catalog.write`).
+  permission: 'catalog.write',
   versioned: true,
   input: z.object({ id: z.uuid() }),
   output: z.object({
@@ -47,8 +56,10 @@ export const productsDeleteTranslation = defineOperation({
   output: versionOut,
   async run({ db }, input) {
     const version = await lockProduct(db, input.id);
+    // Валідація (400) перед версією (412), майстер §3.3: основну мову не видаляють.
+    if (input.locale === (await primaryLocaleCode(db)))
+      throw new ValidationError([{ path: ['locale'], code: 'invalid_value' }]);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
-    // Основну мову видаляти не можна — відмова всередині `deleteTranslation`.
     await deleteTranslation(db, TRANSLATABLE.product, input.id, input.locale);
     return { version: await bumpProduct(db, input.id) };
   },
@@ -68,8 +79,11 @@ export const productsSetPath = defineOperation({
   output: versionOut,
   async run({ db }, input) {
     const version = await lockProduct(db, input.id);
-    assertVersionThenHash(version, input.expectedVersion, () => undefined);
+    // Валідація (400) перед версією (412), майстер §3.3.
     await assertKnownLocales(db, [input.locale], () => ['locale']);
+    if (!SLUG_FORMAT.test(input.path))
+      throw new ValidationError([{ path: ['path'], code: 'invalid_format' }]);
+    assertVersionThenHash(version, input.expectedVersion, () => undefined);
     await setExplicitPath(
       db,
       { kind: 'product', id: input.id },
@@ -91,13 +105,14 @@ export const productsRemove = defineOperation({
   permission: 'catalog.write',
   input: z.object({ id: z.uuid(), expectedVersion }),
   output: z.object({ id: z.uuid() }),
-  async run({ db }, input) {
+  async run({ db, afterCommit }, input) {
     const version = await lockProduct(db, input.id);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
-    // Файли товару й каскадних дочірніх (фото відгуків, модифікацій) стирає
-    // outbox медіа: ключі потрапляють у чергу в цій транзакції, самі файли
-    // добираються після коміту опортуністичним хвостом (`completeMediaErasures`).
-    await productsOps.removeIn(db, [{ id: input.id }], []);
+    // Рядки `media` (товару й каскадних дочірніх) стираються в транзакції разом
+    // із рядком outbox; самі файли — після коміту (Е6д-14, друга фаза).
+    const discard: string[] = [];
+    await productsOps.removeIn(db, [{ id: input.id }], discard);
+    afterCommit(() => completeMediaErasures(discard));
     return { id: input.id };
   },
 });

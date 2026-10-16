@@ -22,3 +22,12 @@ describe('domain-errors: код reserved', () => {
     ).toEqual([{ path: ['code'], code: 'language_incomplete' }]);
   });
 });
+
+describe('domain-errors: код path_required', () => {
+  it('є в переліку кодів і проходить білий список', () => {
+    expect(VALIDATION_ISSUE_CODES).toContain('path_required');
+    expect(
+      sanitizeValidationIssues([{ path: ['path'], code: 'path_required' }]),
+    ).toEqual([{ path: ['path'], code: 'path_required' }]);
+  });
+});
