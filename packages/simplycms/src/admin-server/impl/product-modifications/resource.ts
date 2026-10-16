@@ -1,9 +1,11 @@
+import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { SLUG_RE } from 'simplycms/domain';
 import {
   productImageTranslations,
   productImages,
   productModifications,
+  products,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
@@ -46,6 +48,27 @@ export const productModificationsOps = defineAdminResource({
   media: { entityType: 'product_modification', columns: ['images'] },
   // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
   // зникають; їхні файли належать товару, а не модифікації.
+  // М1: каскад фото модифікації серіалізується з командами агрегата товару
+  // (`lockProduct` = `FOR UPDATE` кореня; порядок за id — без взаємного блокування).
+  lockOnRemove: async (db, ids) => {
+    if (ids.length === 0) return;
+    const roots = await db
+      .selectDistinct({ id: productModifications.productId })
+      .from(productModifications)
+      .where(inArray(productModifications.id, [...ids]));
+    if (roots.length === 0) return;
+    await db
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        inArray(
+          products.id,
+          roots.map((r) => r.id),
+        ),
+      )
+      .orderBy(products.id)
+      .for('update');
+  },
   cascadeMedia: [
     {
       fk: productImages.modificationId,

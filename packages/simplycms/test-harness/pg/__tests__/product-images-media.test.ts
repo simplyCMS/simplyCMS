@@ -25,6 +25,7 @@ import {
   AdminConflictError,
   ValidationError,
 } from 'simplycms/contracts/domain-errors';
+import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import {
   completeMediaErasures,
@@ -389,6 +390,36 @@ describe('зображення товару й медіа-контур (Task 12)
       await completeMediaErasures(discard);
       expect(discard).toEqual([b]);
       await alive(a);
+    });
+
+    it('remove модифікації чекає замка кореня товару (серіалізація з командами агрегата)', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const mod = randomUUID();
+      await saveDescription(p.id, p.version, {
+        modifications: { upsert: [{ id: mod, texts: { uk: { name: 'M' } } }] },
+      });
+      let release!: () => void;
+      let locked!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const held = new Promise<void>((r) => (locked = r));
+      // Команда агрегата «в польоті»: тримає FOR UPDATE кореня.
+      const holder = withActor({ role: 'app_admin' }, async (tx) => {
+        await tx.execute(
+          sql`select 1 from public.products where id = ${p.id} for update`,
+        );
+        locked();
+        await gate;
+      });
+      await held;
+      let done = false;
+      const removal = withActor({ role: 'app_admin' }, (tx) =>
+        productModificationsOps.removeIn(tx, [{ id: mod }], []),
+      ).then(() => (done = true));
+      await new Promise((r) => setTimeout(r, 400));
+      expect(done).toBe(false);
+      release();
+      await Promise.all([holder, removal]);
+      expect(done).toBe(true);
     });
 
     it('старий шлях products.images: заміна масиву не стирає файл, що лишився в product_images', async () => {

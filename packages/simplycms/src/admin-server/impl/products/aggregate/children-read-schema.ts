@@ -23,7 +23,7 @@ export const childrenOut = z.object({
         }),
       ),
       /** Лише поточні токени за мовою. */
-      tokens: z.record(z.string(), z.string()),
+      token: z.record(z.string(), z.string()),
     }),
   ),
   propertyValues: z.array(
@@ -36,9 +36,9 @@ export const childrenOut = z.object({
       bool: z.boolean().optional(),
       color: z.string().optional(),
       modificationId: z.uuid().optional(),
-      text: perLocale(
-        z.object({ value: z.string().nullable(), status }),
-      ).optional(),
+      text: z.record(z.string(), z.string().nullable()).optional(),
+      /** Статуси поруч із полем (конвенція `textsRow`): мова -> статус. */
+      textStatus: z.record(z.string(), status).optional(),
     }),
   ),
   images: z.array(

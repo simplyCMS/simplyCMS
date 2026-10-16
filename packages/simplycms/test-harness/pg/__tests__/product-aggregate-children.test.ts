@@ -551,36 +551,32 @@ describe('агрегат товару: модифікації, значення,
           texts: { en: { name: 'Red', status: 'current' } },
         },
       ]);
-      expect(Object.keys(got.modifications[0]!.tokens).sort()).toEqual([
+      expect(Object.keys(got.modifications[0]!.token).sort()).toEqual([
         'de',
         'en',
         'uk',
       ]);
       expect(got.propertyValues).toHaveLength(2);
-      // Відповідь -> вхід: лише прибрати статуси й токени.
+      // Відповідь -> вхід: ЛИШЕ зняти поля статусу, без перейменувань і зміни форм.
+      const strip = (v: unknown): unknown =>
+        Array.isArray(v)
+          ? v.map(strip)
+          : v && typeof v === 'object'
+            ? Object.fromEntries(
+                Object.entries(v)
+                  .filter(
+                    ([k]) =>
+                      !['status', 'fieldStatus', 'textStatus'].includes(k),
+                  )
+                  .map(([k, x]) => [k, strip(x)]),
+              )
+            : v;
       const back = {
         modifications: {
-          upsert: got.modifications.map((m) => ({
-            id: m.id,
-            sku: m.sku,
-            isDefault: m.isDefault,
-            sortOrder: m.sortOrder,
-            texts: Object.fromEntries(
-              Object.entries(m.texts).map(([l, t]) => [l, { name: t.name }]),
-            ),
-            token: m.tokens,
-          })),
+          upsert: strip(got.modifications) as { sku: string }[],
         },
-        propertyValues: {
-          upsert: got.propertyValues.map(({ text, ...rest }) => ({
-            ...rest,
-            ...(text && {
-              text: Object.fromEntries(
-                Object.entries(text).map(([l, t]) => [l, t.value]),
-              ),
-            }),
-          })),
-        },
+        propertyValues: { upsert: strip(got.propertyValues) },
+        images: { upsert: strip(got.images) },
       };
       back.modifications.upsert[0]!.sku = 'S-2'; // єдина зміна
       const out = await saveDescription(id, got.version, back);

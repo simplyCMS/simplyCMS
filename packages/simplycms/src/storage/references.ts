@@ -21,6 +21,9 @@ interface Branch {
   /** Вираз `id` рядка для таблиці без колонки `id`; за замовчуванням `id`. */
   readonly idExpression: string;
   readonly predicate: (key: SQL | string) => SQL;
+  /** Вираз ключів-посилань рядка (для вибірки збігів з множиною): рядок або елементи масиву. */
+  readonly keysOf: SQL;
+  readonly kind: 'text' | 'jsonb';
 }
 
 /**
@@ -38,6 +41,8 @@ const BRANCHES: readonly Branch[] = [
       column,
       entityType,
       idExpression: 'idExpression' in entry ? entry.idExpression : 'id',
+      keysOf: sql`${c}`,
+      kind,
       predicate: (key) =>
         kind === 'jsonb'
           ? sql`jsonb_typeof(${c}) = 'array' and ${c} ? ${key}`
@@ -49,6 +54,8 @@ const BRANCHES: readonly Branch[] = [
     column: LOGO_MEDIA_REFERENCE.column,
     entityType: LOGO_MEDIA_REFERENCE.entityType,
     idExpression: 'id',
+    keysOf: sql`value->>'logo'`,
+    kind: 'text',
     predicate: (key) =>
       sql`key = ${STORE_PROFILE_KEY} and value->>'logo' = ${key}`,
   },
@@ -88,4 +95,33 @@ export async function findMediaReferences(
       found.push({ table: b.table, column: b.column, id: row.id });
   }
   return found;
+}
+
+/** Ключі з `keys`, на які ще є посилання: ОДИН запит на гілку (`= ANY`), не на ключ. */
+export async function findReferencedKeys(
+  db: ActorDb,
+  keys: readonly string[],
+): Promise<Set<string>> {
+  const live = new Set<string>();
+  if (keys.length === 0) return live;
+  const arr = sql`array[${sql.join(
+    keys.map((k) => sql`${k}`),
+    sql`, `,
+  )}]::text[]`;
+  for (const b of BRANCHES) {
+    const table = sql`public.${sql.identifier(b.table)}`;
+    const query =
+      b.kind === 'jsonb'
+        ? sql`select e as key from ${table}
+               cross join lateral jsonb_array_elements_text(
+                 case when jsonb_typeof(${b.keysOf}) = 'array' then ${b.keysOf} else '[]'::jsonb end) e
+              where jsonb_typeof(${b.keysOf}) = 'array' and ${b.keysOf} ?| ${arr} and e = any(${arr})`
+        : b.table === LOGO_MEDIA_REFERENCE.table
+          ? sql`select ${b.keysOf} as key from ${table}
+                 where key = ${STORE_PROFILE_KEY} and ${b.keysOf} = any(${arr})`
+          : sql`select ${b.keysOf} as key from ${table} where ${b.keysOf} = any(${arr})`;
+    const { rows } = await db.execute<{ key: string }>(query);
+    for (const row of rows) live.add(row.key);
+  }
+  return live;
 }

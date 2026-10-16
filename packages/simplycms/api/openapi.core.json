@@ -1782,7 +1782,7 @@
                               "additionalProperties": false
                             }
                           },
-                          "tokens": {
+                          "token": {
                             "type": "object",
                             "propertyNames": {
                               "type": "string"
@@ -1798,7 +1798,7 @@
                           "isDefault",
                           "sortOrder",
                           "texts",
-                          "tokens"
+                          "token"
                         ],
                         "additionalProperties": false
                       }
@@ -1855,18 +1855,17 @@
                               "type": "string"
                             },
                             "additionalProperties": {
-                              "type": "object",
-                              "properties": {
-                                "value": {
-                                  "type": ["string", "null"]
-                                },
-                                "status": {
-                                  "type": "string",
-                                  "enum": ["current", "outdated", "missing"]
-                                }
-                              },
-                              "required": ["value", "status"],
-                              "additionalProperties": false
+                              "type": ["string", "null"]
+                            }
+                          },
+                          "textStatus": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {
+                              "type": "string",
+                              "enum": ["current", "outdated", "missing"]
                             }
                           }
                         },

@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { media } from 'simplycms/schema';
 
 import type { MediaStorageDriver } from './driver';
 import { mediaKey, type MediaMime } from './keys';
 import { enqueueMediaErasures } from './erasures';
-import { mediaReferenceExists } from './references';
+import { findReferencedKeys } from './references';
 import { getMediaDriver } from './select';
 
 export interface WriteMediaInput {
@@ -126,13 +126,10 @@ export async function eraseMediaRows(
     .orderBy(media.storageKey)
     .for('update');
   if (locked.length === 0) return [];
-  const live = await db.execute<{ key: string }>(sql`
-    select k.key from unnest(array[${sql.join(
-      keys.map((k) => sql`${k}`),
-      sql`, `,
-    )}]::text[]) as k(key)
-     where ${mediaReferenceExists(sql`k.key`)}`);
-  const kept = new Set(live.rows.map((r) => r.key));
+  const kept = await findReferencedKeys(
+    db,
+    locked.map((r) => r.storageKey),
+  );
   const doomed = locked.filter((r) => !kept.has(r.storageKey));
   if (doomed.length === 0) return [];
   const deleted = await db

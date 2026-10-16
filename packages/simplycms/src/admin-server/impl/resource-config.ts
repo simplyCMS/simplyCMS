@@ -100,6 +100,10 @@ export interface AdminResourceConfigBase<
    *  тій самій транзакції, а файли — після COMMIT. Покриття звіряє гейт класу
    *  `media-cascade-coverage` з каталогом FK. */
   cascadeMedia?: readonly ResourceCascadeMedia[];
+  /** Блокування кореня агрегата ПЕРЕД видаленням (М1): `remove` не має guard-а,
+   *  а каскад медіа мусить серіалізуватись з командами агрегата (`FOR UPDATE`
+   *  кореня), інакше паралельна команда додасть посилання між перевіркою і COMMIT. */
+  lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
 }
 
 /**

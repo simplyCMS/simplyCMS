@@ -93,6 +93,7 @@ export function defineAdminResource<
     guard: config.guard,
     media: config.media && assertMediaColumns(config.table, config.media),
     cascadeMedia: assertCascadeMedia(config.table, config.cascadeMedia ?? []),
+    lockOnRemove: config.lockOnRemove,
   });
 
   return {

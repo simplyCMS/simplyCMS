@@ -4,6 +4,23 @@ import { TRANSLATABLE, loadTranslations } from 'simplycms/translations';
 import type { ChildrenOut } from './children-read-schema';
 import { withStatuses } from './children-status';
 
+/** `text` (як на вході) і `textStatus` поруч. */
+function textFields(
+  spec: Parameters<typeof withStatuses>[0],
+  rows: Parameters<typeof withStatuses>[1],
+  primary: string,
+) {
+  const by = withStatuses(spec, rows, primary);
+  return {
+    text: Object.fromEntries(
+      Object.entries(by).map(([l, r]) => [l, r.values.value ?? null]),
+    ),
+    textStatus: Object.fromEntries(
+      Object.entries(by).map(([l, r]) => [l, r.status]),
+    ),
+  };
+}
+
 /** Значення властивостей товару й його модифікацій (форма входу `saveDescription`). */
 export async function loadPropertyValues(
   db: ActorDb,
@@ -67,16 +84,7 @@ export async function loadPropertyValues(
       ...(v.bool_value !== null && { bool: v.bool_value }),
       ...(v.color_value !== null && { color: v.color_value }),
       ...(v.modification_id && { modificationId: v.modification_id }),
-      ...(v.kind === 'text' && {
-        text: Object.fromEntries(
-          Object.entries(withStatuses(spec, vText.get(v.id), primary)).map(
-            ([l, r]) => [
-              l,
-              { value: r.values.value ?? null, status: r.status },
-            ],
-          ),
-        ),
-      }),
+      ...(v.kind === 'text' && textFields(spec, vText.get(v.id), primary)),
     };
   });
   return propertyValues;

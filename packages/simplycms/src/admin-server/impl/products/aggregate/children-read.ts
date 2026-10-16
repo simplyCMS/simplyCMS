@@ -56,7 +56,7 @@ async function loadModifications(
         },
       ]),
     ),
-    tokens: Object.fromEntries(
+    token: Object.fromEntries(
       tokens
         .filter((t) => t.modification_id === m.id)
         .map((t) => [t.locale, t.slug]),

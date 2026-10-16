@@ -31,6 +31,7 @@ interface WriteOpsDeps<Insert, Patch> {
   guard?: ResourceGuard<Insert, Patch>;
   media?: ResourceMedia;
   cascadeMedia?: readonly ResourceCascadeMedia[];
+  lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
 }
 
 type Rec = Record<string, unknown>;

@@ -11,6 +11,7 @@ import {
   sectionsBySlug,
   seedPricedType,
 } from './admin-dictionaries-sql.mjs';
+import { pollUntil } from './admin-shipping-sql.mjs';
 import { expectDisabled, waitToast } from './wait.mjs';
 
 const NEW_TYPE = { code: 'live_dict_type', name: 'Живий тип Е4' };
@@ -55,7 +56,11 @@ export async function runPriceTypesPart({ page, base, dbUrl, check }) {
   await page
     .getByRole('row', { name: new RegExp(NEW_TYPE.name) })
     .waitFor({ state: 'detached', timeout: 10_000 });
-  const left = await priceTypeCount(dbUrl, NEW_TYPE.code);
+  // Видалення оптимістичне: рядок зникає до COMMIT — БД опитуємо, а не читаємо миттєво.
+  const left = await pollUntil(
+    () => priceTypeCount(dbUrl, NEW_TYPE.code),
+    (n) => n === 0,
+  );
   check(
     'адмін: тип ціни створено й видалено',
     created === 1 && left === 0,
@@ -91,7 +96,11 @@ export async function removeSectionPart({ page, base, dbUrl, check, section }) {
   await page
     .getByRole('row', { name: new RegExp(section.name) })
     .waitFor({ state: 'detached', timeout: 10_000 });
-  const rows = await sectionsBySlug(dbUrl, section.slug);
+  // Оптимістичне видалення: рядок зник з UI до COMMIT каскаду — чекаємо БД.
+  const rows = await pollUntil(
+    () => sectionsBySlug(dbUrl, section.slug),
+    (r) => r.length === 0,
+  );
   const assignments = await assignmentsOfSection(dbUrl, section.id);
   check(
     'адмін: розділ видалено, призначення зникло каскадом',

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { INSTANT_CHECK_EXEMPTIONS } from './live-smoke-no-instant-checks/data';
 import {
+  findDetachedThenDbRead,
   findInstantReads,
+  scanDetachedDbReads,
   keyOf,
   scanLiveSmoke,
   uncovered,
@@ -89,5 +91,19 @@ describe('миттєві читання UI у live-smoke', () => {
     // миттєві читання знаходяться з розширеного набору
     for (const m of ['isChecked', 'isEditable', 'inputValue', 'allInnerTexts'])
       expect(findInstantReads('x.mjs', `await l.${m}();`)).toHaveLength(1);
+  });
+
+  it('після очікування зникнення рядка БД читається через pollUntil (оптимістичне видалення)', () => {
+    expect(
+      scanDetachedDbReads(),
+      'рядок зник з UI до COMMIT: опитуй БД через pollUntil (admin-shipping-sql.mjs), а не читай одразу',
+    ).toEqual([]);
+  });
+
+  it('негативний контроль: миттєве читання БД після detached ловиться, pollUntil — ні', () => {
+    const bad = `await page.getByRole('row').waitFor({ state: 'detached' });\nconst n = await countBy(dbUrl, 'x');`;
+    const ok = `await page.getByRole('row').waitFor({ state: 'detached' });\nconst n = await pollUntil(\n () => countBy(dbUrl, 'x'),\n Boolean,\n);`;
+    expect(findDetachedThenDbRead('x.mjs', bad)).toHaveLength(1);
+    expect(findDetachedThenDbRead('x.mjs', ok)).toHaveLength(0);
   });
 });

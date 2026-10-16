@@ -4,6 +4,7 @@
  * товар з вітрини. Виніс із `admin-catalog.mjs` — канон 150 рядків.
  */
 import { productCountBySlug } from './admin-sql.mjs';
+import { pollUntil } from './admin-shipping-sql.mjs';
 import { parseMoney } from './selectors.mjs';
 import { waitToast } from './wait.mjs';
 
@@ -95,8 +96,13 @@ export async function verifyDelete({
   await page
     .getByRole('row', { name: /Живий товар Е3/ })
     .waitFor({ state: 'detached', timeout: 10_000 });
+  // Видалення оптимістичне (рядок зник до COMMIT): БД опитуємо.
+  const left = await pollUntil(
+    () => productCountBySlug(dbUrl, slug),
+    (n) => n === 0,
+  );
+  // Вітрина — після того, як БД підтвердила видалення (інакше 200 до COMMIT).
   const gone = await page.goto(`${base}/catalog/${section.slug}/${slug}`);
-  const left = await productCountBySlug(dbUrl, slug);
   check(
     'адмін: видалення → вітрина 404, рядка немає',
     gone?.status() === 404 && left === 0,

@@ -24,11 +24,13 @@ export async function removeRowsWithMedia(
     ctx: ResourceWriteContext;
     media?: ResourceMedia;
     cascadeMedia?: readonly ResourceCascadeMedia[];
+    lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
   },
   rows: readonly { id: string }[],
   discard: string[],
 ): Promise<{ count: number }> {
   const ids = rows.map((r) => r.id);
+  await d.lockOnRemove?.(db, ids);
   const cascade = d.cascadeMedia ?? [];
   const children = await snapshotCascadeMedia(db, d.ctx.table, cascade, ids);
   const result = d.media
