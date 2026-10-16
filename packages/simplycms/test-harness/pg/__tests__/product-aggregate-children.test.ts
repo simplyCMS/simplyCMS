@@ -489,4 +489,186 @@ describe('агрегат товару: модифікації, значення,
       expect(await version(id)).toBe(v);
     });
   });
+
+  describe('products.get віддає дітей агрегата', () => {
+    it('read-modify-write: get -> змінити одне поле -> saveDescription з тим самим вмістом -> нічого зайвого, версія +1', async () => {
+      const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+      const sel = await property('select', ['A']);
+      const txt = await property('text');
+      const mod = randomUUID();
+      const s1 = await saveDescription(id, v, {
+        modifications: {
+          upsert: [
+            {
+              id: mod,
+              sku: 'S-1',
+              isDefault: true,
+              sortOrder: 2,
+              texts: { uk: { name: 'Червоний' }, en: { name: 'Red' } },
+            },
+          ],
+        },
+        propertyValues: {
+          upsert: [
+            {
+              id: randomUUID(),
+              propertyId: sel.pid,
+              kind: 'select',
+              optionId: sel.ids[0],
+            },
+            {
+              id: randomUUID(),
+              propertyId: txt.pid,
+              kind: 'text',
+              text: { uk: 'Мідь', en: 'Copper' },
+              modificationId: mod,
+            },
+          ],
+        },
+      });
+      const snapshot = async () => ({
+        mods: await db.q(
+          `select id, sku, is_default, sort_order from public.product_modifications where product_id = $1`,
+          [id],
+        ),
+        tokens: await tokens(mod),
+        vals: await db.q(
+          `select id, value_kind, option_id from public.product_property_values where product_id = $1`,
+          [id],
+        ),
+        mvals: await db.q(
+          `select value_id, locale, value from public.modification_property_value_translations order by value_id, locale`,
+        ),
+      });
+      const before = await snapshot();
+      const got = await get(id);
+      expect(got.modifications).toMatchObject([
+        {
+          id: mod,
+          sku: 'S-1',
+          isDefault: true,
+          sortOrder: 2,
+          texts: { en: { name: 'Red', status: 'current' } },
+        },
+      ]);
+      expect(Object.keys(got.modifications[0]!.tokens).sort()).toEqual([
+        'de',
+        'en',
+        'uk',
+      ]);
+      expect(got.propertyValues).toHaveLength(2);
+      // Відповідь -> вхід: лише прибрати статуси й токени.
+      const back = {
+        modifications: {
+          upsert: got.modifications.map((m) => ({
+            id: m.id,
+            sku: m.sku,
+            isDefault: m.isDefault,
+            sortOrder: m.sortOrder,
+            texts: Object.fromEntries(
+              Object.entries(m.texts).map(([l, t]) => [l, { name: t.name }]),
+            ),
+            token: m.tokens,
+          })),
+        },
+        propertyValues: {
+          upsert: got.propertyValues.map(({ text, ...rest }) => ({
+            ...rest,
+            ...(text && {
+              text: Object.fromEntries(
+                Object.entries(text).map(([l, t]) => [l, t.value]),
+              ),
+            }),
+          })),
+        },
+      };
+      back.modifications.upsert[0]!.sku = 'S-2'; // єдина зміна
+      const out = await saveDescription(id, got.version, back);
+      expect(out.version).toBe(s1.version + 1);
+      const after = await snapshot();
+      expect(after.tokens).toEqual(before.tokens);
+      expect(after.vals).toEqual(before.vals);
+      expect(after.mvals).toEqual(before.mvals);
+      expect(after.mods).toEqual(
+        before.mods.map((m) => ({ ...m, sku: 'S-2' })),
+      );
+    });
+  });
+
+  it('значення не переносимо між власниками: інший modificationId або товар↔модифікація -> validation', async () => {
+    const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+    const p = await property('number');
+    const [a, b, val] = [randomUUID(), randomUUID(), randomUUID()];
+    const s1 = await saveDescription(id, v, {
+      modifications: { upsert: [modOf(a, 'A'), modOf(b, 'B')] },
+      propertyValues: {
+        upsert: [
+          {
+            id: val,
+            propertyId: p.pid,
+            kind: 'number',
+            number: '1',
+            modificationId: a,
+          },
+        ],
+      },
+    });
+    for (const owner of [{ modificationId: b }, {}])
+      expect(
+        await rejects(
+          saveDescription(id, s1.version, {
+            propertyValues: {
+              upsert: [
+                {
+                  id: val,
+                  propertyId: p.pid,
+                  kind: 'number',
+                  number: '2',
+                  ...owner,
+                },
+              ],
+            },
+          }),
+        ),
+      ).toBeInstanceOf(ValidationError);
+    expect(
+      (
+        await db.q(
+          `select modification_id from public.modification_property_values where id = $1`,
+          [val],
+        )
+      )[0]!.modification_id,
+    ).toBe(a);
+  });
+
+  it('savePrices: модифікація іншого товару -> validation; saveStock лишається lock-нейтральним', async () => {
+    const one = await create({ uk: { name: 'Один' } });
+    const two = await create({ uk: { name: 'Два' } });
+    const mod = randomUUID();
+    await saveDescription(two.id, two.version, {
+      modifications: { upsert: [modOf(mod, 'M')] },
+    });
+    const [pt] = await db.q(`select id from public.price_types limit 1`);
+    const prices = [{ priceTypeId: pt!.id, price: '10.00', oldPrice: null }];
+    expect(
+      await rejects(
+        exec(productsSavePrices, {
+          productId: one.id,
+          modificationId: mod,
+          prices,
+        }),
+      ),
+    ).toBeInstanceOf(ValidationError);
+    expect(
+      await db.q(
+        `select 1 from public.product_prices where modification_id = $1`,
+        [mod],
+      ),
+    ).toHaveLength(0);
+    await exec(productsSavePrices, {
+      productId: two.id,
+      modificationId: mod,
+      prices,
+    });
+  });
 });

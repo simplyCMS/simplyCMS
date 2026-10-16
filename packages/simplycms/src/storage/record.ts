@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { media } from 'simplycms/schema';
 
 import type { MediaStorageDriver } from './driver';
 import { mediaKey, type MediaMime } from './keys';
 import { enqueueMediaErasures } from './erasures';
+import { mediaReferenceExists } from './references';
 import { getMediaDriver } from './select';
 
 export interface WriteMediaInput {
@@ -95,6 +96,13 @@ export interface MediaOwner {
  * чужий, `data:`/`https:`, уже стертий — тихо ігнорується й у результат не
  * потрапляє, тож його файл ніхто не стирає.
  *
+ * 🔴 Ключ, на який ще посилається БУДЬ-ЯКА медіа-колонка (`mediaReferenceExists`),
+ * НЕ стирається і його рядок `media` лишається: фото товару й фото модифікації чи
+ * перевизначення мови можуть ділити один файл, і каскад або заміна одного
+ * референсу не мають убивати файл, що ще показується. Перевірка саме тут, бо
+ * через `eraseMediaRows` проходять УСІ шляхи стирання (фабрика, каскад, іменовані
+ * операції); виклик мусить іти ПІСЛЯ зняття свого референсу (усі так і йдуть).
+ *
  * `FOR UPDATE` + `ORDER BY storage_key` — щоб паралельні стирання тих самих
  * ключів не дійшли обидва до `discard` і не взяли локи в різному порядку.
  */
@@ -106,7 +114,7 @@ export async function eraseMediaRows(
   const keys = [...new Set(refs)];
   if (keys.length === 0) return [];
   const locked = await db
-    .select({ id: media.id })
+    .select({ id: media.id, storageKey: media.storageKey })
     .from(media)
     .where(
       and(
@@ -118,12 +126,21 @@ export async function eraseMediaRows(
     .orderBy(media.storageKey)
     .for('update');
   if (locked.length === 0) return [];
+  const live = await db.execute<{ key: string }>(sql`
+    select k.key from unnest(array[${sql.join(
+      keys.map((k) => sql`${k}`),
+      sql`, `,
+    )}]::text[]) as k(key)
+     where ${mediaReferenceExists(sql`k.key`)}`);
+  const kept = new Set(live.rows.map((r) => r.key));
+  const doomed = locked.filter((r) => !kept.has(r.storageKey));
+  if (doomed.length === 0) return [];
   const deleted = await db
     .delete(media)
     .where(
       inArray(
         media.id,
-        locked.map((r) => r.id),
+        doomed.map((r) => r.id),
       ),
     )
     .returning({ key: media.storageKey });

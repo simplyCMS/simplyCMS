@@ -17,6 +17,7 @@ import {
   loadState,
   lockProduct,
 } from './load';
+import { childrenOut } from './children-read';
 import { bumpProduct } from './mirror';
 import { expectedVersion, textsRow, stockStatus, versionOut } from './schemas';
 
@@ -32,20 +33,22 @@ export const productsGet = defineOperation({
   permission: 'catalog.write',
   versioned: true,
   input: z.object({ id: z.uuid() }),
-  output: z.object({
-    id: z.uuid(),
-    version: z.number().int(),
-    base: z.object({
-      sectionId: z.uuid().nullable(),
-      sku: z.string().nullable(),
-      isActive: z.boolean(),
-      isFeatured: z.boolean(),
-      hasModifications: z.boolean().nullable(),
-      stockStatus,
-    }),
-    texts: z.record(z.string(), textsRow),
-    paths: z.record(z.string(), z.string()),
-  }),
+  output: z
+    .object({
+      id: z.uuid(),
+      version: z.number().int(),
+      base: z.object({
+        sectionId: z.uuid().nullable(),
+        sku: z.string().nullable(),
+        isActive: z.boolean(),
+        isFeatured: z.boolean(),
+        hasModifications: z.boolean().nullable(),
+        stockStatus,
+      }),
+      texts: z.record(z.string(), textsRow),
+      paths: z.record(z.string(), z.string()),
+    })
+    .extend(childrenOut.shape),
   run: ({ db }, input) => getProductAggregate(db, input.id),
 });
 

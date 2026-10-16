@@ -12,6 +12,7 @@ import {
   toSourceRow,
 } from 'simplycms/domain/translations';
 import { products } from 'simplycms/schema';
+import { loadChildren } from './children-read';
 import type { TextsRow } from './schemas';
 import {
   TRANSLATABLE,
@@ -111,5 +112,6 @@ export async function getProductAggregate(db: ActorDb, id: string) {
     },
     texts,
     paths: Object.fromEntries(await currentPaths(db, { kind: 'product', id })),
+    ...(await loadChildren(db, id, primary)),
   };
 }

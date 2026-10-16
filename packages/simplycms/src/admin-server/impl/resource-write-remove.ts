@@ -1,9 +1,9 @@
 import type { ActorDb } from 'simplycms/db';
+import type { ResourceCascadeMedia } from './resource-cascade-media';
 import {
   eraseCascadeMedia,
   snapshotCascadeMedia,
-  type ResourceCascadeMedia,
-} from './resource-cascade-media';
+} from './resource-cascade-snapshot';
 import type { ResourceMedia } from './resource-media';
 import { removeWithMedia } from './resource-write-media';
 import {

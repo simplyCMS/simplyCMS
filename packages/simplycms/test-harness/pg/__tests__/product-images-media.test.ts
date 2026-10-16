@@ -33,7 +33,12 @@ import {
   writeMedia,
 } from 'simplycms/storage';
 import { useAddressingDb } from './fixtures/addressing-db';
-import { create, exec, saveDescription } from './fixtures/product-aggregate';
+import {
+  create,
+  exec,
+  get,
+  saveDescription,
+} from './fixtures/product-aggregate';
 
 describe('зображення товару й медіа-контур (Task 12)', () => {
   const state = { root: '' };
@@ -96,7 +101,7 @@ describe('зображення товару й медіа-контур (Task 12)
   };
 
   it('фото з alt двома мовами; перевизначення en → findMediaReferences бачить обидва ключі', async () => {
-    const { image, main, en } = await seed();
+    const { id: pid, image, main, en } = await seed();
     const alts = await db.q(
       `select locale, alt from public.product_image_translations where image_id = $1 order by locale`,
       [image.id],
@@ -104,6 +109,17 @@ describe('зображення товару й медіа-контур (Task 12)
     expect(alts).toMatchObject([
       { locale: 'en', alt: 'Cable' },
       { locale: 'uk', alt: 'Кабель' },
+    ]);
+    // `products.get` віддає зображення у формі входу `saveDescription`.
+    const got = await get(pid);
+    expect(got.images).toEqual([
+      {
+        id: image.id,
+        storageKey: main,
+        sortOrder: 0,
+        alt: { uk: 'Кабель', en: 'Cable' },
+        overrides: { en },
+      },
     ]);
     const refs = (key: string) =>
       withActor({ role: 'app_admin' }, (tx) => findMediaReferences(tx, key));
@@ -307,5 +323,92 @@ describe('зображення товару й медіа-контур (Task 12)
     await completeMediaErasures(discard);
     expect(onDisk(key)).toBe(false);
     expect(await mediaRow(key)).toHaveLength(0);
+  });
+
+  describe('ключ, на який ще є посилання, не стирається', () => {
+    const alive = async (key: string) => {
+      expect(onDisk(key)).toBe(true);
+      expect(await mediaRow(key)).toHaveLength(1);
+    };
+
+    it('спільний ключ фото товару й фото модифікації: remove модифікації лишає файл і рядок media', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const [mod, key] = [randomUUID(), await upload(p.id)];
+      const s1 = await saveDescription(p.id, p.version, {
+        modifications: { upsert: [{ id: mod, texts: { uk: { name: 'M' } } }] },
+      });
+      await saveDescription(p.id, s1.version, {
+        images: {
+          upsert: [img(key), img(key, { modificationId: mod, sortOrder: 1 })],
+        },
+      });
+      const discard: string[] = [];
+      await withActor({ role: 'app_admin' }, (tx) =>
+        productModificationsOps.removeIn(tx, [{ id: mod }], discard),
+      );
+      await completeMediaErasures(discard);
+      expect(discard).toEqual([]);
+      await alive(key);
+    });
+
+    it('override = ключ іншого фото: зняття override лишає файл', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const [a, b] = [await upload(p.id), await upload(p.id)];
+      const [ia, ib] = [img(a), img(b, { sortOrder: 1 })];
+      const s1 = await saveDescription(p.id, p.version, {
+        images: { upsert: [ia, { ...ib, overrides: { en: a } }] },
+      });
+      await saveDescription(p.id, s1.version, {
+        images: { upsert: [{ ...ib, overrides: { en: null } }] },
+      });
+      await alive(a);
+    });
+
+    it('override = ключ іншого фото: каскад видалення модифікації з таким override лишає файл', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const [mod, a, b] = [
+        randomUUID(),
+        await upload(p.id),
+        await upload(p.id),
+      ];
+      const s1 = await saveDescription(p.id, p.version, {
+        modifications: { upsert: [{ id: mod, texts: { uk: { name: 'M' } } }] },
+      });
+      await saveDescription(p.id, s1.version, {
+        images: {
+          upsert: [
+            img(a),
+            img(b, { modificationId: mod, sortOrder: 1, overrides: { en: a } }),
+          ],
+        },
+      });
+      const discard: string[] = [];
+      await withActor({ role: 'app_admin' }, (tx) =>
+        productModificationsOps.removeIn(tx, [{ id: mod }], discard),
+      );
+      await completeMediaErasures(discard);
+      expect(discard).toEqual([b]);
+      await alive(a);
+    });
+
+    it('старий шлях products.images: заміна масиву не стирає файл, що лишився в product_images', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const [k1, k2] = [await upload(p.id), await upload(p.id)];
+      await saveDescription(p.id, p.version, {
+        images: { upsert: [img(k1), img(k2, { sortOrder: 1 })] },
+      });
+      const discard: string[] = [];
+      await withActor({ role: 'app_admin' }, (tx) =>
+        productsOps.updateIn(
+          tx,
+          [{ id: p.id, patch: { images: [k2] } }],
+          discard,
+        ),
+      );
+      await completeMediaErasures(discard);
+      expect(discard).toEqual([]);
+      await alive(k1);
+      await alive(k2);
+    });
   });
 });

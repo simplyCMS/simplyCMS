@@ -4,8 +4,9 @@ import { fail, uuidArray, type ChildCtx } from './children-common';
 import type { PropertyValuesInput } from './children-schemas';
 
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
-type Owned = { id: string; mine: boolean };
+type Owned = { id: string; mine: boolean; owner: string | null };
 
+// М1-TEMP: зноситься в Task 17 — ім'я дасть частковий UNIQUE `(owner, property_id)`.
 const taken = () =>
   new AdminConflictError('unique', 'property_value_scalar_taken');
 
@@ -24,21 +25,25 @@ export async function assertRowsOwned(
   const { db, productId } = ctx;
   const ids = uuidArray(upserts.map((u) => u.id));
   const inProduct = await db.execute<Owned>(sql`
-    select id, product_id = ${productId} as mine
+    select id, product_id = ${productId} as mine, null::uuid as owner
       from public.product_property_values where id = any(${ids})`);
   const inModification = await db.execute<Owned>(sql`
-    select v.id, m.product_id = ${productId} as mine
+    select v.id, m.product_id = ${productId} as mine, v.modification_id as owner
       from public.modification_property_values v
       join public.product_modifications m on m.id = v.modification_id
      where v.id = any(${ids})`);
-  const own = (rows: readonly Owned[]) =>
-    new Map(rows.map((r) => [r.id, r.mine]));
+  const own = (rows: readonly Owned[]) => new Map(rows.map((r) => [r.id, r]));
   const product = own(inProduct.rows);
   const modification = own(inModification.rows);
   upserts.forEach((u, i) => {
     const here = u.modificationId ? modification : product;
     const there = u.modificationId ? product : modification;
-    if (there.has(u.id) || here.get(u.id) === false)
+    const row = here.get(u.id);
+    // Рядок не переносимо між власниками (товар ↔ модифікація, модифікація ↔
+    // модифікація): тихе збереження старого власника розійшлося б зі скалярною
+    // перевіркою, яка рахує нового.
+    const moved = row !== undefined && row.owner !== (u.modificationId ?? null);
+    if (there.has(u.id) || row?.mine === false || moved)
       throw fail(['propertyValues', 'upsert', i, 'id'], 'invalid_value');
   });
 
