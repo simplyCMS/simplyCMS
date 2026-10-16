@@ -589,7 +589,7 @@ describe('агрегат товару: модифікації, значення,
       expect(got.images).toMatchObject([
         {
           alt: { uk: 'Кабель', en: 'Cable' },
-          overrides: { en: expect.any(String) },
+          overrides: { en: keyEn },
         },
       ]);
       // Відповідь -> вхід: ЛИШЕ зняти поля статусу, без перейменувань і зміни форм.

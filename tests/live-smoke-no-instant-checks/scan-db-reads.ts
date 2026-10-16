@@ -11,15 +11,26 @@ import { DIR, ROOT, walk } from './scan';
  * що БД уже змінилась. Будь-яке читання БД після такого очікування в тій самій
  * функції верхнього рівня мусить іти через `pollUntil(...)`.
  *
- * Як визначається «читання БД», транзитивно по ВСІХ файлах смоку:
+ * Як визначається «читання БД» (по ВСІХ файлах смоку):
  *  • `sql(` — базове читання (`sql.mjs`);
  *  • «читач» — іменована функція/стрілка (де завгодно, зокрема вкладена), у тілі
- *    якої є `sql(` або виклик іншого читача і немає `page` (крок із браузером
- *    читачем не вважається);
- *  • «очікувач» — функція, у тілі якої є `detached`/`expectGone(` або виклик
- *    очікувача (тоді її виклик теж є точкою очікування).
+ *    якої є `sql(` або виклик іншого читача (ТРАНЗИТИВНО) і немає `page`;
+ *  • «очікувач» — іменована функція, у тілі якої ПРЯМО є `state: 'detached'` /
+ *    `expectGone(`; її виклик теж є точкою очікування.
  * Порушення: у функції верхнього рівня після точки очікування є виклик
  * читача/`sql(` поза аргументами `pollUntil(...)`.
+ *
+ * 🔴 Два свідомі обмеження (вмикаються назад режимом `strict`):
+ *  (а) очікувачі НЕ транзитивні: функція, що лише викликає очікувача
+ *      (`del → step(del) → top: step(); q()`), очікувачем не вважається. Інакше
+ *      кожен оркестратор, що десь глибоко викликає очікування, робив би
+ *      підозрілим будь-яке своє читання після нього — шум без користі: після
+ *      вкладеного кроку читання зазвичай стосується іншого стану.
+ *  (б) функція з `page` читачем не вважається: крок із браузером, що читає БД
+ *      всередині, — це сценарій, а не читач; без цього кожен крок-оркестратор
+ *      ставав би «читачем» через свої виклики читачів.
+ * Перевірено: у режимі `strict` (транзитивні очікувачі + читачі з `page`)
+ * реальних прихованих випадків понад виїмки немає — див. звіт Task 12.
  */
 
 type Fn = { name: string; start: number; end: number; top: boolean };
@@ -165,10 +176,11 @@ function pollRanges(t: string): [number, number][] {
 
 export function findDetachedDbReads(
   files: Record<string, string>,
+  opts: { strict?: boolean } = {},
 ): { file: string; call: string }[] {
   const srcs = parseSources(files);
   const isRead = (b: string) => /(?<![\w$.])sql\s*\(/.test(b);
-  const noPage = (b: string) => !/\bpage\b/.test(b);
+  const noPage = (b: string) => opts.strict || !/\bpage\b/.test(b);
   // Глобальні читачі — лише функції верхнього рівня (імпортуються між файлами);
   // вкладені імена (`read`, `fetch`…) діють тільки у своїй функції, інакше збіг
   // з параметром чи локальною змінною в іншому файлі давав би хибні читачі.
@@ -200,6 +212,22 @@ export function findDetachedDbReads(
         .map((f) => f.name),
     ),
   );
+  if (opts.strict)
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const s of srcs)
+        for (const n of closure(
+          s,
+          s.fns,
+          waiters,
+          (b) => direct.test(b),
+          () => true,
+        ))
+          if (!waiters.has(n)) {
+            waiters.add(n);
+            grew = true;
+          }
+    }
   const out: { file: string; call: string }[] = [];
   for (const s of srcs) {
     const polls = pollRanges(s.masked);
@@ -223,7 +251,7 @@ export function findDetachedDbReads(
       if (triggers.length === 0) continue;
       const first = Math.min(...triggers.map((t) => t.at));
       const labelBefore = (i: number) =>
-        triggers.filter((t) => t.at <= i).sort((a, b) => a.at - b.at)[0]!.label;
+        triggers.filter((t) => t.at <= i).sort((a, b) => b.at - a.at)[0]!.label;
       const nested = s.fns.filter(
         (f) => !f.top && f.start >= top.start && f.end <= top.end,
       );
@@ -247,7 +275,9 @@ export function findDetachedDbReads(
 }
 
 /** Усі файли смоку (без `wait.mjs`). */
-export function scanDetachedDbReads(): { file: string; call: string }[] {
+export function scanDetachedDbReads(
+  opts: { strict?: boolean } = {},
+): { file: string; call: string }[] {
   const files = [...walk(DIR), join(ROOT, 'scripts/live-smoke.mjs')].filter(
     (f) => !f.endsWith('/wait.mjs'),
   );
@@ -258,5 +288,6 @@ export function scanDetachedDbReads(): { file: string; call: string }[] {
         readFileSync(f, 'utf8'),
       ]),
     ),
+    opts,
   );
 }

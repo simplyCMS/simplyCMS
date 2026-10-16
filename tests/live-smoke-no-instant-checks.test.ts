@@ -192,6 +192,42 @@ export async function f({ page }) {
       ).toHaveLength(1);
     });
 
+    it('обмеження гарда: очікувачі не транзитивні, функція з page не читач — strict їх вмикає', () => {
+      const src = `const wait = async (page) => { ${wait} };
+const step = async (page) => { await wait(page); };
+const q = async () => sql(u, 'select 1');
+export async function top(page) {
+  await step(page);
+  return q();
+}`;
+      expect(run(src)).toHaveLength(0);
+      expect(
+        findDetachedDbReads({ 'x.mjs': src }, { strict: true }),
+      ).toHaveLength(1);
+      const withPage = `const q = async () => sql(u, 'select 1');
+const stepWithPage = async (page) => { await q(); await page.goto('x'); };
+export async function top(page) {
+  ${wait}
+  return stepWithPage(page);
+}`;
+      expect(run(withPage)).toHaveLength(0);
+      expect(
+        findDetachedDbReads({ 'x.mjs': withPage }, { strict: true }),
+      ).toHaveLength(1);
+    });
+
+    it('мітка очікувача — найближчий попередній, а не перший у функції', () => {
+      const hit = run(`const q = async () => sql(u, 'select 1');
+const del = async (page) => { ${wait} };
+export async function top(page) {
+  await del(page);
+  await page.goto('x');
+  ${wait}
+  return q();
+}`);
+      expect(hit.map((h) => h.call)).toEqual(['top: q після detached']);
+    });
+
     it('негативні контролі: pollUntil, читання до очікування й крок із page не червоніють', () => {
       expect(
         run(`const q = async () => sql(u, 'select 1');

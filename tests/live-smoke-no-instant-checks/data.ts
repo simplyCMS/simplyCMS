@@ -211,7 +211,7 @@ export const DETACHED_DB_READ_EXEMPTIONS: readonly {
       file: 'admin-dictionaries-price-types.mjs',
       call: `runPriceTypesPart: ${read} після detached`,
       reason:
-        'читаються ІНШІ рядки (дефолтний тип і тип PRICED із цінами), а не видалений NEW_TYPE; сам NEW_TYPE — через pollUntil',
+        'гарантія — тост відмови сервера «Запис використовується» (`waitToast`) після спроби видалити PRICED; читаються PRICED і дефолтний тип `retail`, яких видалення NEW_TYPE не чіпає; сам NEW_TYPE — через pollUntil',
     }),
   ),
   {
@@ -236,6 +236,6 @@ export const DETACHED_DB_READ_EXEMPTIONS: readonly {
     file: 'admin-shipping.mjs',
     call: 'cleanupShippingStep: assertDemoShape після restoreZones',
     reason:
-      'assertDemoShape читає замовлення (не зони); зони `restoreZones` перевіряє через pollUntil',
+      'assertDemoShape читає замовлення, точки, способи й зони; гарантія — тости `isPersisted` (`waitToast` успіху) у `dropShippingConfig` та pollUntil у `restoreZones`',
   },
 ];
