@@ -47,12 +47,12 @@ describe('порожній rich-text не є текстом (спільний п
   });
 
   it('для не-rich поля розмітка — звичайний текст', () => {
-    expect(normalizeTextInput('<p></p>')).toBe('<p></p>');
+    expect(normalizeTextInput('<p></p>', false)).toBe('<p></p>');
   });
 
   it('fieldStatus: порожній rich-переклад — missing, звичайне поле з тим самим рядком — ні', () => {
     expect(fieldStatus('<p></p>', undefined, null, true)).toBe('missing');
-    expect(fieldStatus('<p></p>', undefined, null)).toBe('current');
+    expect(fieldStatus('<p></p>', undefined, null, false)).toBe('current');
   });
 
   it('toSourceRow: порожній rich не має хеша', () => {
@@ -75,6 +75,38 @@ describe('порожній rich-text не є текстом (спільний п
         values: { name: 'N', description: '<p></p>' },
       }),
     ).toBe('missing');
+  });
+});
+
+describe('hasRichText не обманюється атрибутами й екрануванням', () => {
+  it.each([
+    // `>` у значенні атрибута не завершує тег: решта тегу — не текст.
+    '<p title="a>b"></p>',
+    "<p title='a>b'></p>",
+    '<p data-x="a > b" class="c"><br></p>',
+    // `<img` у лапках атрибута — не медіа.
+    '<p title="<img src=x>"></p>',
+    '<!-- <img> --><p></p>',
+  ])('порожньо: %j', (html) => {
+    expect(hasRichText(html)).toBe(false);
+  });
+
+  it.each([
+    // Екранований `<img` — це видимий текст.
+    '<p>&lt;img&gt;</p>',
+    '<p>&lt;img</p>',
+    '<p title="a>b">текст</p>',
+    '<IMG SRC="x">',
+    '<img/>',
+    // Знак «менше» без імені тегу — текст.
+    '<p>1 < 2</p>',
+  ])('не порожньо: %j', (html) => {
+    expect(hasRichText(html)).toBe(true);
+  });
+
+  it('незавершений тег не дає тексту і не кидає', () => {
+    expect(hasRichText('<p title="abc')).toBe(false);
+    expect(hasRichText('<p')).toBe(false);
   });
 });
 

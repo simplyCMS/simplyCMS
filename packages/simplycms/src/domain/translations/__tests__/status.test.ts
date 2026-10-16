@@ -23,44 +23,44 @@ const row = (
 
 describe('normalizeTextInput (§3.4: порожнє = null, відсутнє = undefined)', () => {
   it('undefined лишається undefined — поле не надіслано', () => {
-    expect(normalizeTextInput(undefined)).toBeUndefined();
+    expect(normalizeTextInput(undefined, false)).toBeUndefined();
   });
 
   it('null лишається null — явне очищення', () => {
-    expect(normalizeTextInput(null)).toBeNull();
+    expect(normalizeTextInput(null, false)).toBeNull();
   });
 
   it.each(['', ' ', '   \n\t '])('%j → null', (value) => {
-    expect(normalizeTextInput(value)).toBeNull();
+    expect(normalizeTextInput(value, false)).toBeNull();
   });
 
   it('непорожній текст не чіпається (пробіли по краях — частина тексту)', () => {
-    expect(normalizeTextInput(' Назва ')).toBe(' Назва ');
+    expect(normalizeTextInput(' Назва ', false)).toBe(' Назва ');
   });
 });
 
 describe('fieldStatus', () => {
   it('немає тексту → missing, навіть коли хеш збігається', () => {
-    expect(fieldStatus(null, undefined, 'x')).toBe('missing');
-    expect(fieldStatus(null, 'x', 'x')).toBe('missing');
-    expect(fieldStatus('   ', 'x', 'x')).toBe('missing');
+    expect(fieldStatus(null, undefined, 'x', false)).toBe('missing');
+    expect(fieldStatus(null, 'x', 'x', false)).toBe('missing');
+    expect(fieldStatus('   ', 'x', 'x', false)).toBe('missing');
   });
 
   it('хеш збігається → current', () => {
-    expect(fieldStatus('y', 'h1', 'h1')).toBe('current');
+    expect(fieldStatus('y', 'h1', 'h1', false)).toBe('current');
   });
 
   it('хеш розійшовся → outdated', () => {
-    expect(fieldStatus('y', 'h0', 'h1')).toBe('outdated');
+    expect(fieldStatus('y', 'h0', 'h1', false)).toBe('outdated');
   });
 
   it('хеша немає, а у джерела текст є → outdated (походження невідоме)', () => {
-    expect(fieldStatus('y', undefined, 'h1')).toBe('outdated');
+    expect(fieldStatus('y', undefined, 'h1', false)).toBe('outdated');
   });
 
   it('джерело порожнє: переклад без хеша — current, із хешем (колишнього тексту) — outdated', () => {
-    expect(fieldStatus('y', undefined, null)).toBe('current');
-    expect(fieldStatus('y', 'h1', null)).toBe('outdated');
+    expect(fieldStatus('y', undefined, null, false)).toBe('current');
+    expect(fieldStatus('y', 'h1', null, false)).toBe('outdated');
   });
 });
 

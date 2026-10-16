@@ -4,7 +4,7 @@ import {
   type AuthzSubject,
 } from 'simplycms/auth';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
-import type { OperationDef } from '../define';
+import { acceptsExpectedVersion, type OperationDef } from '../define';
 import { executeOperation } from '../execute';
 import { fingerprintOf } from './idempotency';
 import { errorResponse, problemResponse } from './problem';
@@ -36,9 +36,19 @@ async function readBody(request: Request): Promise<unknown> {
   }
 }
 
-/** `If-Match: "v<n>"` ↔ `expectedVersion`: різні значення — 400. */
-function applyIfMatch(body: unknown, header: string | null): unknown {
+/**
+ * `If-Match: "v<n>"` ↔ `expectedVersion`: різні значення — 400. Операція без
+ * `expectedVersion` у вході заголовка не приймає (400): майстер §3.3 мовчить, а
+ * тихо проігнорований `If-Match` виглядав би як пройдена перевірка версії.
+ */
+function applyIfMatch(
+  body: unknown,
+  header: string | null,
+  def: OperationDef<unknown, unknown>,
+): unknown {
   if (header === null) return body;
+  if (!acceptsExpectedVersion(def))
+    throw new ValidationError([{ path: ['If-Match'], code: 'custom' }]);
   const m = IF_MATCH.exec(header.trim());
   const isObject =
     body !== null && typeof body === 'object' && !Array.isArray(body);
@@ -49,6 +59,17 @@ function applyIfMatch(body: unknown, header: string | null): unknown {
   if (given !== undefined && given !== expected)
     throw new ValidationError([{ path: ['expectedVersion'], code: 'custom' }]);
   return { ...(body as Record<string, unknown>), expectedVersion: expected };
+}
+
+/** `ETag: "v<n>"` для відповіді версіонованої операції (майстер §3.3). */
+function setEtag(
+  headers: Headers,
+  def: OperationDef<unknown, unknown>,
+  body: unknown,
+): void {
+  const version = (body as { version?: unknown } | null)?.version;
+  if (def.versioned && typeof version === 'number')
+    headers.set('etag', `"v${version}"`);
 }
 
 function idempotencyOf(
@@ -96,12 +117,15 @@ export async function handleApiRequest(
     const body = applyIfMatch(
       await readBody(request),
       request.headers.get('if-match'),
+      def,
     );
     const idempotency = idempotencyOf(def, subject, request, body);
     const result = await executeOperation(def, body, subject, { idempotency });
     const headers = new Headers({ 'content-type': 'application/json' });
     if (result.replayed) {
       headers.set('idempotent-replayed', 'true');
+      // Повтор несе той самий ETag, що й перша відповідь (версія — у збереженому тілі).
+      setEtag(headers, def, result.body);
       return new Response(JSON.stringify(result.body), {
         status: result.status,
         headers,
@@ -109,9 +133,7 @@ export async function handleApiRequest(
     }
     // `result.output` уже дротова форма, розібрана схемою у виконавці.
     const wire = result.output;
-    const version = (wire as { version?: unknown } | null)?.version;
-    if (def.versioned && typeof version === 'number')
-      headers.set('etag', `"v${version}"`);
+    setEtag(headers, def, wire);
     return new Response(JSON.stringify(wire), { status: 200, headers });
   } catch (error) {
     return errorResponse(error, op);

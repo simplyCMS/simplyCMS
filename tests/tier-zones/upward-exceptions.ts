@@ -47,6 +47,10 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
     'операції мов і токенів — споживачі defineOperation/виконавця (М1, Task 6)',
   'admin-server→addressing':
     'fill мови кличе copyPathsForLocale/copyTokensForLocale (М1, Task 6)',
+  'admin-server→translations':
+    'агрегат товару пише рядки перекладів і хеші джерела (М1, Task 11)',
+  'admin-server→i18n':
+    'products.create бере мовний пакет основної мови для slugify (М1, Task 11)',
   // --- T2 інфраструктура ---
   'storage→db':
     'рядок media пишеться через withActor — іншого каналу до Postgres немає',
@@ -67,6 +71,8 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'prod-start→env': 'перевірка груп env до накату (К3-Е8, F5)',
   'prod-start→migrate': 'сам накат міграцій на старті (К3-Е8)',
   'addressing→db': 'транзакція викликача і замок набору мов (М1, Task 5)',
+  'translations→db':
+    'транзакція викликача (ActorDb) для читання/запису рядків перекладів (М1, Task 11)',
   'operations→db': 'єдиний канал withActor для виконавця операцій (М1, Task 6)',
   'operations→auth':
     "перший рубіж requireOperation і суб'єкт з cookie (М1, Task 6)",

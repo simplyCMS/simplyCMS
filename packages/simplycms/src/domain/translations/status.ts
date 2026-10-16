@@ -85,7 +85,7 @@ export function fieldStatus(
   target: string | null,
   recordedHash: string | undefined,
   currentSourceHash: string | null,
-  rich = false,
+  rich: boolean,
 ): FieldStatus {
   if (!hasText(target, rich)) return 'missing';
   return (recordedHash ?? null) === currentSourceHash ? 'current' : 'outdated';

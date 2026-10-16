@@ -26,6 +26,8 @@ export const ADMIN = {
 } as const;
 
 export interface AddressingDb {
+  /** DSN бази власником схеми: для зовнішніх «тримачів» локів (`holdRowLock`). */
+  url: () => string;
   /** SQL власником БД: фікстури й перевірки стану. */
   q: (sql: string, params?: unknown[]) => Promise<Record<string, unknown>[]>;
   /**
@@ -77,6 +79,7 @@ export function useAddressingDb(prefix: string): AddressingDb {
     >;
 
   return {
+    url: () => dbUrl,
     q,
     w,
     admin: (fn) => withActor({ role: 'app_admin', userId: ADMIN.userId }, fn),

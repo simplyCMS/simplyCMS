@@ -1,4 +1,3 @@
-// simplycms/translations — серверна частина перекладів (T2, server-only).
-// Тека лише започаткована: серверні записи перекладів додає Task 11.
-
-export { sourceFieldHash } from './hash';
+// simplycms/translations (T2, server-only): хеш поля джерела, реєстр перекладних
+// сутностей, читання/запис рядків перекладів. Чиста логіка — `simplycms/domain/translations`.
+export * from './server';

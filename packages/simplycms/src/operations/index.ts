@@ -3,6 +3,7 @@
 // (він і є переліком операцій): тут про нього знати не можна — цикл.
 export {
   OPERATION_ID_FORMAT,
+  acceptsExpectedVersion,
   assertVersionThenHash,
   defineOperation,
 } from './define';

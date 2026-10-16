@@ -123,6 +123,10 @@ export const TIER_ZONES = [
       'operations',
       // операції мов (fill/completeness) — споживач реєстрів адрес за планом М1 Task 6
       'addressing',
+      // Task 11 (М1): агрегат товару пише переклади (`translations`) і бере мовний пакет
+      // основної мови для slugify (`i18n`).
+      'translations',
+      'i18n',
     ],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
@@ -167,10 +171,11 @@ export const TIER_ZONES = [
   // Санітизація rich-HTML (Тема 9) — T2. Чиста функція над рядком: upward-
   // винятків немає; тип `SanitizedHtml` бере з T0 (`contracts`).
   ['src/sanitize', 2, 'sanitize', []],
-  // Серверні переклади (Мультимовність М1, Task 3) — T2. Хеш поля джерела
-  // (`node:crypto`); тека лише започаткована, серверні записи додає Task 11.
-  // Чиста логіка — у `domain/translations` (T1), яку T2 імпортувати вільно.
-  ['src/translations', 2, 'translations', []],
+  // Серверні переклади (Мультимовність М1, Tasks 3 і 11) — T2. Хеш поля джерела
+  // (`node:crypto`), читання й запис рядків перекладів. Upward лише `db`
+  // (транзакція викликача, `ActorDb`). Чиста логіка — у `domain/translations`
+  // (T1), яку T2 імпортувати вільно.
+  ['src/translations', 2, 'translations', ['db']],
   // Реєстри адрес і мовних токенів (Мультимовність М1, Task 5) — T2. Upward лише `db`
   // (транзакція викликача, замок набору мов); класи доменних помилок беруться
   // з T0 `contracts/domain-errors`, тож `admin-server` йому не потрібен.

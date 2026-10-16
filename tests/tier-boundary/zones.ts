@@ -84,13 +84,9 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   // Кеш профілю й вшиті теми (Е6б-7; Е8 додав upward `i18n`) — T2, upward
   // `db`, `i18n`; `auth` того ж тіру — поза винятком.
   ['packages/simplycms/src/site', 'simplycms/auth', 'simplycms/i18n'],
-  // Серверні переклади (М1, Task 3) — T2 без upward-винятків: хеш поля — чиста
-  // функція над рядком, до БД їй діла нема, тож ловиться навіть `db`.
-  [
-    'packages/simplycms/src/translations',
-    'simplycms/db',
-    'simplycms/contracts',
-  ],
+  // Серверні переклади (М1, Tasks 3 і 11) — T2, upward лише `db` (транзакція викликача);
+  // `auth` того ж тіру — поза винятком: переклади про права нічого не знають.
+  ['packages/simplycms/src/translations', 'simplycms/auth', 'simplycms/db'],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
   [
     'packages/simplycms/src/themes',

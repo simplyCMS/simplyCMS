@@ -58,6 +58,15 @@
   (`simplycms/db/lock-keys`).
 - **serverFn віддає вихід, розібраний схемою операції:** поля поза `output` відсікаються (раніше serverFn
   віддавав сирий результат `run`, а HTTP — відсічений); обидва транспорти беруть одне значення.
+- **Агрегат товару через реєстр операцій (М1, Task 11):** `products.create` (ідемпотентна), `products.get`,
+  `products.saveDescription`, `products.saveTranslation`, `products.deleteTranslation`, `products.setPath`,
+  `products.remove` + serverFn-обгортки (`createProduct`, `getProduct`, …). Кожна команда: `FOR UPDATE` кореня →
+  версія (412) → хеш джерела (409) → запис → `version + 1`. Поля текстів на дроті camelCase (`shortDescription`),
+  ключі `source_hashes` у БД — колонки (`short_description`). `simplycms/translations`: `TRANSLATABLE`,
+  `loadTranslations`, `applyTranslationPlan`, `deleteTranslation`, `withFallback`. `If-Match` приймає лише
+  операція з `expectedVersion` у вході (інакше 400); відповіді версіонованих операцій, у т.ч. ідемпотентний
+  replay, несуть `ETag: "v<n>"`. `hasText`/`normalizeTextInput`/`fieldStatus` (`simplycms/domain/translations`)
+  тепер вимагають аргумент `rich`; `hasRichText` розбирає розмітку токенайзером, а не регексом.
 - **`setExplicitPath`/`setExplicitToken`** самі беруть спільний замок `languages-set`.
 - **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
   дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з

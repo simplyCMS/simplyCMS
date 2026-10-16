@@ -249,4 +249,13 @@ export {
   apiTokensRevoke,
 } from './api-tokens/operations';
 export { serviceAccountsCreate } from './api-tokens/service-accounts';
+export {
+  productsCreate,
+  productsDeleteTranslation,
+  productsGet,
+  productsRemove,
+  productsSaveDescription,
+  productsSaveTranslation,
+  productsSetPath,
+} from './products/aggregate/operations';
 export { CORE_OPERATIONS, getOperation } from './operations-registry';

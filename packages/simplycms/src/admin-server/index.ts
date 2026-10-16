@@ -135,6 +135,13 @@ import {
   apiTokensList,
   apiTokensRevoke,
   serviceAccountsCreate,
+  productsCreate,
+  productsDeleteTranslation,
+  productsGet,
+  productsRemove,
+  productsSaveDescription,
+  productsSaveTranslation,
+  productsSetPath,
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
@@ -774,3 +781,32 @@ export const revokeApiToken = createServerFn({ method: 'POST' })
 export const createServiceAccount = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(serviceAccountsCreate, data));
+
+// М1, Task 11: команди агрегата товару через реєстр (версія, переклади, адреса).
+export const createProduct = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsCreate, data));
+
+export const getProduct = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsGet, data));
+
+export const saveProductDescription = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsSaveDescription, data));
+
+export const saveProductTranslation = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsSaveTranslation, data));
+
+export const deleteProductTranslation = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsDeleteTranslation, data));
+
+export const setProductPath = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsSetPath, data));
+
+export const removeProduct = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(productsRemove, data));

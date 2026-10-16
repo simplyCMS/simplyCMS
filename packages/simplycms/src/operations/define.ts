@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { AuthzSubject, CoreActor, Operation } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
 import { VersionMismatchError } from 'simplycms/contracts/domain-errors';
@@ -30,6 +30,20 @@ export interface OperationDef<I, O> {
   /** Лише cookie-сесія; Bearer → 403 (механіку дає HTTP-шар). */
   readonly sessionOnly?: true;
   run(ctx: OperationContext, input: I): Promise<O>;
+}
+
+/**
+ * Чи приймає вхід операції `expectedVersion` (корінь — `z.object` з цим ключем).
+ * `If-Match` ↔ `expectedVersion`: заголовок для операції без цього поля схема
+ * мовчки відкинула б (strip), тож HTTP-шар відмовляє явно (400), а не вдає,
+ * ніби перевірив версію.
+ */
+export function acceptsExpectedVersion(
+  def: OperationDef<unknown, unknown>,
+): boolean {
+  return (
+    def.input instanceof z.ZodObject && 'expectedVersion' in def.input.shape
+  );
 }
 
 /** Ключ ідемпотентності запиту (механіку реалізує HTTP-шар). */

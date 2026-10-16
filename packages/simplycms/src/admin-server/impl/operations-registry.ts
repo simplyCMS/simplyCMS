@@ -13,6 +13,15 @@ import {
   languagesReorder,
 } from './languages/operations';
 import { languagesSetStatus } from './languages/status';
+import {
+  productsCreate,
+  productsDeleteTranslation,
+  productsGet,
+  productsRemove,
+  productsSaveDescription,
+  productsSaveTranslation,
+  productsSetPath,
+} from './products/aggregate/operations';
 
 /**
  * Реєстр операцій ядра (І24): перелік тут, бо саме `admin-server` визначає
@@ -32,6 +41,13 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   apiTokensRevoke,
   apiTokensList,
   serviceAccountsCreate,
+  productsCreate,
+  productsGet,
+  productsSaveDescription,
+  productsSaveTranslation,
+  productsDeleteTranslation,
+  productsSetPath,
+  productsRemove,
 ] as readonly OperationDef<unknown, unknown>[];
 
 const BY_ID: ReadonlyMap<string, OperationDef<unknown, unknown>> = new Map(

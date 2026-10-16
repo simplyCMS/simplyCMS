@@ -167,6 +167,13 @@ export function createAdminServerMock(
     listApiTokens: vi.fn(),
     revokeApiToken: vi.fn(),
     createServiceAccount: vi.fn(),
+    createProduct: vi.fn(),
+    getProduct: vi.fn(),
+    saveProductDescription: vi.fn(),
+    saveProductTranslation: vi.fn(),
+    deleteProductTranslation: vi.fn(),
+    setProductPath: vi.fn(),
+    removeProduct: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }
