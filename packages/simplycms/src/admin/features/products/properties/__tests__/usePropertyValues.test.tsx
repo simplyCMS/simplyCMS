@@ -1,156 +1,153 @@
 // @vitest-environment jsdom
 /**
- * `usePropertyValues` (Task 10, Step 2): (а) multiselect `[A] → [A, B]` —
- * ОДНА вставка рядка `optionId: B`, жодного видалення; (б) `[A, B] → [B]` —
- * видалення рядка A, жодної вставки; (в) скаляр: порожнє значення при
- * наявному рядку → delete; (г) перше значення скаляра → insert з
- * клієнтським uuid (контракт id).
+ * `usePropertyValues` — значення властивостей як чернетка форми картки:
+ * скаляр (insert/update/delete), multiselect (рядок на опцію), значення
+ * модифікації, текст мовою вкладки, серверна помилка біля поля.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
-
-// 🔴 vi.hoisted, не звичайний const — admin-data барелем тягне ВСІ файли
-// колекцій, кожен імпортує щось із `simplycms/admin-server`.
-const {
-  listProductPropertyValues,
-  insertProductPropertyValues,
-  updateProductPropertyValues,
-  removeProductPropertyValues,
-} = vi.hoisted(() => ({
-  listProductPropertyValues: vi.fn(async () => [] as unknown[]),
-  insertProductPropertyValues: vi.fn(
-    async ({ data }: { data: unknown[] }) => data,
-  ),
-  updateProductPropertyValues: vi.fn(async () => [] as unknown[]),
-  removeProductPropertyValues: vi.fn(async () => undefined),
-}));
-vi.mock('simplycms/admin-server', async () =>
-  (
-    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    listProductPropertyValues,
-    insertProductPropertyValues,
-    updateProductPropertyValues,
-    removeProductPropertyValues,
-  }),
-);
-
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render } from '@testing-library/react';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ProductFormValues } from '../../edit/product-form-schema';
+import { CardHarness } from '../../__tests__/card-harness';
 import { usePropertyValues } from '../usePropertyValues';
 
-function row(id: string, propertyId: string, optionId: string | null) {
-  return {
-    id,
-    productId: 'p1',
-    propertyId,
-    value: optionId ?? 'Текст',
-    numericValue: null,
-    optionId,
-    createdAt: new Date(),
-  };
-}
-
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
-    </QueryClientProvider>
-  );
-}
-
-beforeEach(() => vi.clearAllMocks());
 afterEach(() => cleanup());
 
+const P = '11111111-1111-4111-8111-111111111111';
+const O1 = '22222222-2222-4222-8222-222222222222';
+const O2 = '33333333-3333-4333-8333-333333333333';
+const MOD = '44444444-4444-4444-8444-444444444444';
+const prop = (propertyType: 'text' | 'number' | 'multiselect' | 'select') => ({
+  id: P,
+  propertyType,
+});
+const none = { value: null, numericValue: null, optionId: null };
+
+function setup(
+  target: 'product' | 'modification' = 'product',
+  values: Partial<ProductFormValues> = {},
+  opts: { active?: string; card?: object } = {},
+) {
+  const out: {
+    api?: ReturnType<typeof usePropertyValues>;
+    form?: UseFormReturn<ProductFormValues>;
+  } = {};
+  function Probe() {
+    out.api = usePropertyValues(target, target === 'product' ? 'p' : MOD);
+    return null;
+  }
+  render(
+    <CardHarness
+      values={values}
+      active={opts.active}
+      card={opts.card}
+      onForm={(f) => (out.form = f)}
+    >
+      <Probe />
+    </CardHarness>,
+  );
+  return out as Required<typeof out>;
+}
+
 describe('usePropertyValues', () => {
-  it('(г) перше значення скаляра — insert з клієнтським uuid', async () => {
-    const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
-      wrapper,
-    });
-
-    result.current.saveScalar('propA', {
-      value: 'Текст',
-      numericValue: null,
-      optionId: null,
-    });
-
-    await waitFor(() =>
-      expect(insertProductPropertyValues).toHaveBeenCalledTimes(1),
-    );
-    const [{ data }] = insertProductPropertyValues.mock.calls[0] as [
-      { data: Array<{ id: string; productId: string; propertyId: string }> },
-    ];
-    expect(data).toHaveLength(1);
-    expect(data[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(data[0]?.productId).toBe('p1');
-    expect(data[0]?.propertyId).toBe('propA');
-    expect(removeProductPropertyValues).not.toHaveBeenCalled();
-  });
-
-  it('(в) порожнє значення при наявному рядку — delete, не update', async () => {
-    listProductPropertyValues.mockResolvedValueOnce([row('v1', 'propA', null)]);
-    const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
-      wrapper,
-    });
-    await waitFor(() => expect(result.current.rowsOf('propA')).toHaveLength(1));
-
-    result.current.saveScalar('propA', {
-      value: null,
-      numericValue: null,
-      optionId: null,
-    });
-
-    await waitFor(() =>
-      expect(removeProductPropertyValues).toHaveBeenCalledWith({
-        data: [{ id: 'v1' }],
-      }),
-    );
-    expect(updateProductPropertyValues).not.toHaveBeenCalled();
-    expect(insertProductPropertyValues).not.toHaveBeenCalled();
-  });
-
-  it('(а) multiselect [A] → [A, B] — одна вставка B, жодного видалення', async () => {
-    listProductPropertyValues.mockResolvedValueOnce([row('v1', 'propB', 'A')]);
-    const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
-      wrapper,
-    });
-    await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(1));
-
-    result.current.saveMulti('propB', ['A', 'B']);
-
-    await waitFor(() =>
-      expect(insertProductPropertyValues).toHaveBeenCalledTimes(1),
-    );
-    const [{ data }] = insertProductPropertyValues.mock.calls[0] as [
-      { data: Array<{ optionId: string | null; value: string | null }> },
-    ];
-    expect(data).toHaveLength(1);
-    expect(data[0]?.optionId).toBe('B');
-    // Е3-13, ревізія: назву опції несе join `property_options`, а не
-    // `product_property_values.value` — адмінка більше не пише кеш.
-    expect(data[0]?.value).toBeNull();
-    expect(removeProductPropertyValues).not.toHaveBeenCalled();
-  });
-
-  it('(б) multiselect [A, B] → [B] — видалення A, жодної вставки', async () => {
-    listProductPropertyValues.mockResolvedValueOnce([
-      row('v1', 'propB', 'A'),
-      row('v2', 'propB', 'B'),
+  it('перше значення скаляра — новий рядок із клієнтським uuid, без мережі', () => {
+    const s = setup();
+    act(() => s.api.saveScalar(prop('number'), { ...none, numericValue: '7' }));
+    expect(s.form.getValues('propertyValues')).toEqual([
+      {
+        id: expect.stringMatching(/^[0-9a-f-]{36}$/),
+        propertyId: P,
+        kind: 'number',
+        number: '7',
+      },
     ]);
-    const { result } = renderHook(() => usePropertyValues('product', 'p1'), {
-      wrapper,
+  });
+
+  it('зміна наявного скаляра лишає id', () => {
+    const s = setup('product', {
+      propertyValues: [{ id: O1, propertyId: P, kind: 'number', number: '1' }],
     });
-    await waitFor(() => expect(result.current.rowsOf('propB')).toHaveLength(2));
+    act(() => s.api.saveScalar(prop('number'), { ...none, numericValue: '2' }));
+    expect(s.form.getValues('propertyValues')).toEqual([
+      { id: O1, propertyId: P, kind: 'number', number: '2' },
+    ]);
+  });
 
-    result.current.saveMulti('propB', ['B']);
+  it('порожнє значення при наявному рядку — рядок зникає', () => {
+    const s = setup('product', {
+      propertyValues: [{ id: O1, propertyId: P, kind: 'number', number: '1' }],
+    });
+    act(() => s.api.saveScalar(prop('number'), none));
+    expect(s.form.getValues('propertyValues')).toEqual([]);
+  });
 
-    await waitFor(() =>
-      expect(removeProductPropertyValues).toHaveBeenCalledWith({
-        data: [{ id: 'v1' }],
-      }),
+  it('multiselect [A] → [A, B]: додається лише B, id A той самий', () => {
+    const s = setup('product', {
+      propertyValues: [
+        { id: MOD, propertyId: P, kind: 'multiselect', optionId: O1 },
+      ],
+    });
+    act(() => s.api.saveMulti(prop('multiselect'), [O1, O2]));
+    const rows = s.form.getValues('propertyValues');
+    expect(rows.map((r) => r.optionId)).toEqual([O1, O2]);
+    expect(rows[0]!.id).toBe(MOD);
+  });
+
+  it('multiselect [A, B] → [B]: A видалено, B лишився', () => {
+    const s = setup('product', {
+      propertyValues: [
+        { id: MOD, propertyId: P, kind: 'multiselect', optionId: O1 },
+        { id: P, propertyId: P, kind: 'multiselect', optionId: O2 },
+      ],
+    });
+    act(() => s.api.saveMulti(prop('multiselect'), [O2]));
+    expect(s.form.getValues('propertyValues').map((r) => r.optionId)).toEqual([
+      O2,
+    ]);
+  });
+
+  it('значення модифікації несе modificationId; значення товару його не має і не плутається', () => {
+    const s = setup('modification', {
+      propertyValues: [{ id: O1, propertyId: P, kind: 'number', number: '9' }],
+    });
+    act(() => s.api.saveScalar(prop('number'), { ...none, numericValue: '3' }));
+    const rows = s.form.getValues('propertyValues');
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r) => r.modificationId)).toMatchObject({
+      modificationId: MOD,
+      number: '3',
+    });
+    expect(rows.find((r) => !r.modificationId)?.number).toBe('9');
+    expect(s.api.rowsOf(P)).toHaveLength(1);
+  });
+
+  it('text: пише мовою активної вкладки, rowsOf віддає її текст', () => {
+    const s = setup(
+      'product',
+      {
+        propertyValues: [
+          { id: O1, propertyId: P, kind: 'text', text: { uk: 'укр' } },
+        ],
+      },
+      { active: 'en' },
     );
-    expect(insertProductPropertyValues).not.toHaveBeenCalled();
+    expect(s.api.rowsOf(P)[0]!.value).toBeNull();
+    act(() => s.api.saveScalar(prop('text'), { ...none, value: 'eng' }));
+    expect(s.form.getValues('propertyValues')[0]!.text).toEqual({
+      uk: 'укр',
+      en: 'eng',
+    });
+  });
+
+  it('зміна значення скидає серверну помилку цього поля; errors віддає помилки картки', () => {
+    const clear = vi.fn();
+    const s = setup(
+      'product',
+      {},
+      { card: { valueErrors: { [P]: 'Некоректно' }, clearValueError: clear } },
+    );
+    expect(s.api.errors[P]).toBe('Некоректно');
+    act(() => s.api.saveScalar(prop('number'), { ...none, numericValue: '1' }));
+    expect(clear).toHaveBeenCalledWith(P);
   });
 });

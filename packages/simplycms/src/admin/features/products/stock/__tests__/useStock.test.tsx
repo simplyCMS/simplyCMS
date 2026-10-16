@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 /**
  * `useStock` (Task 8, Step 2): (а) `saveStock` отримує `quantities` по всіх
- * точках з інпутів, порожнє = 0; (б) після відповіді `{ rows, target }`
- * колекція залишків містить `rows`, а `target` записано в
- * `productsCollection` (товар) / `productModificationsCollection`
- * (модифікація) без refetch; (в) відʼємне/дробове число → serverFn не
+ * точках з інпутів, порожнє = 0; (б) відповідь `{ count, stockStatus }` рядків не
+ * несе — колекції лише для читання перечитуються; (в) відʼємне/дробове число → serverFn не
  * викликано.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -27,7 +25,7 @@ vi.mock('simplycms/admin-server', async () =>
     listProducts,
     listProductModifications,
     listStock,
-    saveStock,
+    saveStockCommand: saveStock,
   }),
 );
 
@@ -48,10 +46,7 @@ afterEach(() => cleanup());
 
 describe('useStock', () => {
   it('(а) quantities по всіх точках, порожнє = 0', async () => {
-    saveStock.mockResolvedValueOnce({
-      rows: [],
-      target: { id: 'p1', stockStatus: 'in_stock' },
-    });
+    saveStock.mockResolvedValueOnce({ count: 2, stockStatus: 'in_stock' });
     const { result } = renderHook(() => useStock('p1', null), { wrapper });
 
     await result.current.save({ pp1: '5', pp2: '' });
@@ -68,31 +63,16 @@ describe('useStock', () => {
     });
   });
 
-  it('(б) write-back: rows у stock-колекції, target — у productsCollection', async () => {
-    saveStock.mockResolvedValueOnce({
-      rows: [
-        {
-          id: 'st1',
-          pickupPointId: 'pp1',
-          productId: 'p1',
-          modificationId: null,
-          quantity: 5,
-        },
-      ],
-      target: {
-        id: 'p1',
-        stockStatus: 'in_stock',
-        name: 'Товар',
-        slug: 'x',
-      },
-    });
+  it('(б) після збереження колекції лише для читання перечитуються: статус товару оновлено без write-back', async () => {
+    saveStock.mockResolvedValueOnce({ count: 1, stockStatus: 'in_stock' });
     const queryClient = new QueryClient();
     const wrap2 = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-    listProducts.mockResolvedValueOnce([
-      { id: 'p1', stockStatus: 'out_of_stock' },
-    ]);
+    // Сервер змінив статус, поки команда виконувалась: наступне читання бачить новий.
+    listProducts
+      .mockResolvedValueOnce([{ id: 'p1', stockStatus: 'out_of_stock' }])
+      .mockResolvedValue([{ id: 'p1', stockStatus: 'in_stock' }]);
     // Один queryClient — один стек колекцій (WeakMap реєстру): `useStock` і
     // `useLiveQuery` нижче діляться ТІЄЮ САМОЮ productsCollection.
     const { result } = renderHook(
@@ -111,7 +91,8 @@ describe('useStock', () => {
       { wrapper: wrap2 },
     );
     await waitFor(() => expect(listProducts).toHaveBeenCalled());
-    await result.current.stock.save({ pp1: '5' });
+    const res = await result.current.stock.save({ pp1: '5' });
+    expect(res).toEqual({ stockStatus: 'in_stock' });
     await waitFor(() =>
       expect(result.current.live.data?.stockStatus).toBe('in_stock'),
     );
@@ -119,15 +100,15 @@ describe('useStock', () => {
 
   it('(в) відʼємне число — serverFn не викликано', async () => {
     const { result } = renderHook(() => useStock('p1', null), { wrapper });
-    const ok = await result.current.save({ pp1: '-1' });
-    expect(ok).toBe(false);
+    const res = await result.current.save({ pp1: '-1' });
+    expect(res).toBeNull();
     expect(saveStock).not.toHaveBeenCalled();
   });
 
   it('(в) нечислове (abc → 0 через Number) НЕ ламає — контракт: Number("abc")=NaN → помилка', async () => {
     const { result } = renderHook(() => useStock('p1', null), { wrapper });
-    const ok = await result.current.save({ pp1: 'abc' });
-    expect(ok).toBe(false);
+    const res = await result.current.save({ pp1: 'abc' });
+    expect(res).toBeNull();
     expect(saveStock).not.toHaveBeenCalled();
   });
 });

@@ -2,26 +2,17 @@ import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { ProductModification } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
-import {
-  insertProductModifications,
-  listProductModifications,
-  removeProductModifications,
-  updateProductModifications,
-} from 'simplycms/admin-server';
+import { listProductModifications } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
-import { persistenceHandlers, type WriteBack } from '../handlers';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * On-demand за товаром — картка товару читає зріз `productId eq` (Task 7).
- * 🔴 Дефолт і порядок — ІМЕНОВАНІ операції (`setDefaultProductModification`,
- * `reorderProductModification`, Task 4), не фабричний insert/update: тут
- * лише базовий CRUD.
+ * On-demand за товаром. ЛИШЕ ЧИТАННЯ (М1, Task 13): запис модифікацій іде
+ * командою агрегата `products.saveDescription`; колекція дає таблиці картки
+ * статус наявності й ціну, а селекторам (знижки, замовлення) — назви.
  */
 function create(queryClient: QueryClient) {
-  // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.
-  const ref: { current?: WriteBack<ProductModification> } = {};
   const collection = createCollection(
     onDemandCollectionOptions<ProductModification>({
       id: ENTITY.productModifications,
@@ -36,15 +27,8 @@ function create(queryClient: QueryClient) {
             >[0],
           ),
         }),
-      ...persistenceHandlers<ProductModification>(() => ref.current!, {
-        entity: ENTITY.productModifications,
-        insert: insertProductModifications,
-        update: updateProductModifications,
-        remove: removeProductModifications,
-      }),
     }),
   );
-  ref.current = collection;
   return collection;
 }
 

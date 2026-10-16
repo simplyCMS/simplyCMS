@@ -1,13 +1,22 @@
 import { resolveMediaUrl } from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
-import type { ProductModification, ProductPrice } from 'simplycms/schema/types';
+import type { ProductPrice } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
 import { TableCell, TableRow } from 'simplycms/ui/table';
 import { ArrowDown, ArrowUp, ImageIcon, Trash2 } from 'lucide-react';
+import type { StockStatus } from 'simplycms/contracts';
 import { ModificationStatusBadge } from './ModificationStatusBadge';
 
 interface Props {
-  readonly mod: ProductModification;
+  readonly name: string;
+  readonly sku: string;
+  readonly isDefault: boolean;
+  /** Ключ першого фото модифікації. */
+  readonly thumb: string | undefined;
+  /** Статус наявності з БД (лише читання); немає — модифікація ще не збережена. */
+  readonly stockStatus: StockStatus | undefined;
+  /** Серверна помилка збереження цього рядка. */
+  readonly error?: string;
   readonly price: ProductPrice | undefined;
   readonly formatPrice: (
     value: number,
@@ -22,7 +31,12 @@ interface Props {
 
 /** Один рядок таблиці модифікацій — виніс із `ModificationsTable.tsx` (канон 150 рядків). */
 export function ModificationRow({
-  mod,
+  name,
+  sku,
+  isDefault,
+  thumb,
+  stockStatus,
+  error,
   price,
   formatPrice,
   canMoveUp,
@@ -65,9 +79,9 @@ export function ModificationRow({
         </div>
       </TableCell>
       <TableCell>
-        {mod.images?.[0] ? (
+        {thumb ? (
           <img
-            src={resolveMediaUrl(mod.images[0]) ?? undefined}
+            src={resolveMediaUrl(thumb) ?? undefined}
             alt=""
             width={32}
             height={32}
@@ -85,14 +99,19 @@ export function ModificationRow({
         )}
       </TableCell>
       <TableCell className="font-medium">
-        {mod.name}
-        {mod.isDefault && (
+        {name}
+        {isDefault && (
           <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
             {t('common.byDefaultShort')}
           </span>
         )}
+        {error && (
+          <p role="alert" className="text-xs font-normal text-destructive">
+            {error}
+          </p>
+        )}
       </TableCell>
-      <TableCell className="text-muted-foreground">{mod.sku || '—'}</TableCell>
+      <TableCell className="text-muted-foreground">{sku || '—'}</TableCell>
       <TableCell>
         {price ? (
           <div className="flex flex-col">
@@ -112,7 +131,11 @@ export function ModificationRow({
         )}
       </TableCell>
       <TableCell>
-        <ModificationStatusBadge status={mod.stockStatus} />
+        {stockStatus ? (
+          <ModificationStatusBadge status={stockStatus} />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell>
         <Button

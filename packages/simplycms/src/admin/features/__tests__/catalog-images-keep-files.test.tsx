@@ -26,8 +26,6 @@ vi.mock('../../components/RichTextEditor', () => ({
 
 import { SectionSideCards } from '../catalog-dictionaries/sections/SectionSideCards';
 import { OptionPageCards } from '../catalog-dictionaries/properties/OptionPageCards';
-import { ProductMainFields } from '../products/edit/ProductMainFields';
-import { ModificationFormFields } from '../products/modifications/ModificationFormFields';
 
 afterEach(() => cleanup());
 
@@ -70,8 +68,6 @@ describe('форми каталогу: прибрана картинка не с
       'опція властивості',
       (form) => <OptionPageCards form={form} entityId="option-id" />,
     ],
-    ['товар', () => <ProductMainFields entityId="product-id" />],
-    ['модифікація', () => <ModificationFormFields modId="mod-id" />],
   ];
   it.each(cases)('%s: референс знято з форми', async (_n, body) => {
     const seen = removeImage(body);

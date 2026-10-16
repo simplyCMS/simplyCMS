@@ -107,7 +107,14 @@ export async function runAdminCatalogStep({ context, base, dbUrl, check }) {
 
     // 3-5. Вітрина / дубль slug / видалення.
     await verifyStorefront({ page, base, check, section, slug });
-    await verifyDuplicateSlugToast({ page, base, check, section, slug });
+    await verifyDuplicateSlugToast({
+      page,
+      base,
+      dbUrl,
+      check,
+      section,
+      slug,
+    });
     await verifyDelete({ page, base, dbUrl, check, section, slug });
 
     // 6. Нуль pageerror — підсумок у ту саму таблицю `live-smoke.mjs`.

@@ -1,101 +1,81 @@
-import { eq, useLiveQuery } from '@tanstack/react-db';
-import {
-  productModificationsCollection,
-  useCollection,
-} from 'simplycms/admin-data';
-import {
-  reorderProductModification,
-  setDefaultProductModification,
-} from 'simplycms/admin-server';
+import { useFormContext, useWatch } from 'react-hook-form';
+import type { DraftModification } from '../edit/product-form-schema';
+import type { ProductFormValues } from '../edit/product-form-schema';
+import { withScopedImages } from '../edit/product-images';
 import type { ModificationFormValues } from './modification-form-schema';
+import { toDraftModification } from './modification-form-values';
 
 /**
- * Модифікації товару (Task 8, Step 3). CRUD — фабричні мутації колекції
- * (`insert`/`update`/`delete`, Task 4 persistence-хендлери); дефолт і
- * порядок — ІМЕНОВАНІ операції (`setDefaultProductModification`,
- * `reorderProductModification`, single-default індекс — контракт хвиль Е1б).
+ * Модифікації товару — ЧЕРНЕТКА в формі картки (`modifications` у значеннях).
+ * Жодної мережі: усе піде одним `saveDescription` кнопкою «Зберегти» картки.
+ * Дефолт і порядок — звичайні поля чернетки (`isDefault`, `sortOrder`), а
+ * єдиність дефолта тримає сервер (знімає прапор з решти в тій самій транзакції).
  */
-export function useModifications(productId: string) {
-  const mods = useCollection(productModificationsCollection);
-  const { data: modifications } = useLiveQuery({
-    query: (q) =>
-      q
-        .from({ m: mods })
-        .where(({ m }) => eq(m.productId, productId))
-        .orderBy(({ m }) => m.sortOrder, 'asc'),
-  });
+export function useModifications() {
+  const { control, getValues, setValue } = useFormContext<ProductFormValues>();
+  const all = useWatch({ control, name: 'modifications' });
+  const modifications = [...all].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const applyDefault = async (id: string) => {
-    const { rows } = await setDefaultProductModification({ data: { id } });
-    // Write-back УСІХ змінених (знятий і поставлений) — без refetch.
-    mods.utils.writeBatch(() => {
-      for (const row of rows) mods.utils.writeUpsert(row);
-    });
-  };
+  const write = (next: DraftModification[]) =>
+    setValue('modifications', next, { shouldDirty: true });
 
-  const reorder = async (id: string, direction: 'up' | 'down') => {
-    const { swapped } = await reorderProductModification({
-      data: { id, direction },
-    });
-    mods.utils.writeBatch(() => {
-      for (const row of swapped) mods.utils.writeUpsert(row);
-    });
-  };
+  /** Порядок 0..n-1 за поточним розташуванням. */
+  const renumber = (list: DraftModification[]) =>
+    list.map((m, i) => ({ ...m, sortOrder: i }));
 
-  /** Повертає id нової модифікації — виклик картки перемикає дефолт-вкладку. */
-  const create = async (
-    form: ModificationFormValues,
-    // Діалог генерує id наперед (власник завантажених фото, К3-Е6д-1).
-    id: string = crypto.randomUUID(), // контракт id: ключ генерує клієнт
-  ): Promise<string> => {
-    // 🔴 max+1 з УЖЕ завантаженого зрізу товару — нормалізує легасі-порядок
-    // (там sort_order писався індексом масиву, звідси дублікати).
+  const setDefault = (id: string) =>
+    write(
+      getValues('modifications').map((m) => ({
+        ...m,
+        isDefault: m.id === id,
+      })),
+    );
+
+  /** Нова або змінена модифікація разом із її фото. */
+  const save = (id: string, form: ModificationFormValues) => {
+    const list = getValues('modifications');
+    const existing = list.find((m) => m.id === id);
     const sortOrder =
-      Math.max(-1, ...(modifications ?? []).map((m) => m.sortOrder ?? 0)) + 1;
-    const now = new Date();
-    const tx = mods.insert({
-      id,
-      productId,
-      slug: form.slug,
-      name: form.name,
-      sku: form.sku || null,
-      images: form.images,
-      sortOrder,
-      // 🔴 Живого рядка ще нема — статус іде з форми (симетрично
-      // toProductDraft товару); фолбек лише для типу (`stockStatus`
-      // optional у схемі, ModificationStatusControl завжди виставляє
-      // значення на create-гілці, `?? 'in_stock'` — той самий дефолт).
-      stockStatus: form.stockStatus ?? 'in_stock',
-      isDefault: false,
-      createdAt: now,
-      updatedAt: now,
+      existing?.sortOrder ?? Math.max(-1, ...list.map((m) => m.sortOrder)) + 1;
+    const draft = toDraftModification(id, form, sortOrder);
+    const next = existing
+      ? list.map((m) => (m.id === id ? draft : m))
+      : [...list, draft];
+    write(
+      form.isDefault
+        ? next.map((m) => ({ ...m, isDefault: m.id === id }))
+        : next,
+    );
+    setValue('images', withScopedImages(getValues('images'), id, form.images), {
+      shouldDirty: true,
     });
-    await tx.isPersisted.promise;
-    // Review Focus 5: дефолт — ОКРЕМОЮ операцією ПІСЛЯ insert (isDefault
-    // readonly у ресурсі); її відмова — окремий тост, створення вже є.
-    if (form.isDefault) await applyDefault(id);
-    return id;
   };
 
-  // 🔴 Рев'ю C6, item 1: `draft.stockStatus` тут НЕ виставляється — при
-  // редагуванні статус належить ЛИШЕ `ModificationStatusControl` (миттєвий
-  // `mods.update` над живим рядком) і `saveStock` (write-back). Форма несе
-  // стейл-значення з моменту відкриття діалогу (`useForm({defaultValues})`
-  // не стежить за зовнішнім write-back) — запис його тут перезаписував би
-  // щойно виставлений статус наступним Save (симетрично `toProductPatch`
-  // товару, яке з тієї ж причини не несе `stockStatus`).
-  const update = async (id: string, form: ModificationFormValues) => {
-    const tx = mods.update(id, (draft) => {
-      draft.name = form.name;
-      draft.slug = form.slug;
-      draft.sku = form.sku || null;
-      draft.images = form.images;
-    });
-    await tx.isPersisted.promise;
-    if (form.isDefault) await applyDefault(id);
+  const remove = (id: string) => {
+    write(renumber(getValues('modifications').filter((m) => m.id !== id)));
+    // Фото й значення прибраної модифікації зникають каскадом на сервері.
+    setValue(
+      'images',
+      getValues('images').filter((i) => i.modificationId !== id),
+      { shouldDirty: true },
+    );
+    setValue(
+      'propertyValues',
+      getValues('propertyValues').filter((v) => v.modificationId !== id),
+      { shouldDirty: true },
+    );
   };
 
-  const remove = (id: string) => mods.delete(id);
+  const reorder = (id: string, direction: 'up' | 'down') => {
+    const list = [...getValues('modifications')].sort(
+      (a, b) => a.sortOrder - b.sortOrder,
+    );
+    const i = list.findIndex((m) => m.id === id);
+    const j = direction === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j]!, list[i]!];
+    write(renumber(list));
+  };
 
-  return { modifications, create, update, remove, applyDefault, reorder };
+  return { modifications, save, remove, setDefault, reorder };
 }

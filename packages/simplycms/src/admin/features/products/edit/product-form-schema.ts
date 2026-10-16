@@ -1,91 +1,110 @@
 import { z } from 'zod';
 import { SLUG_RE } from 'simplycms/domain';
-import type { Product } from 'simplycms/schema/types';
 
-const optionalText = z.string().trim();
-// Е4-7: формат slug живе в T1 (`simplycms/domain`); реекспорт лишено, щоб
-// не правити наявних споживачів.
+// Формат адреси живе в T1 (`simplycms/domain`); реекспорт лишено, щоб не
+// правити наявних споживачів.
 export { SLUG_RE };
 
-/** Значення форми картки товару (Task 7). */
+/** Поля, що перекладаються (`products.saveDescription`.texts.<мова>). */
+export const TEXT_FIELDS = [
+  'name',
+  'shortDescription',
+  'description',
+  'metaTitle',
+  'metaDescription',
+] as const;
+export type TextField = (typeof TEXT_FIELDS)[number];
+export type DraftTexts = Record<TextField, string>;
+
+export const PROPERTY_KINDS = [
+  'text',
+  'number',
+  'select',
+  'multiselect',
+  'range',
+  'color',
+  'boolean',
+] as const;
+
+const stockStatus = z.enum(['in_stock', 'out_of_stock', 'on_order']);
+const perLocale = <T extends z.ZodType>(v: T) => z.record(z.string(), v);
+
+const draftTexts = z.object({
+  name: z.string(),
+  shortDescription: z.string(),
+  description: z.string(),
+  metaTitle: z.string(),
+  metaDescription: z.string(),
+});
+
+export const draftModification = z.object({
+  id: z.uuid(),
+  sku: z.string(),
+  isDefault: z.boolean(),
+  sortOrder: z.number().int(),
+  /** Назва за мовою. */
+  texts: perLocale(z.string()),
+  /** Токен за мовою (порожній — не задано). */
+  token: perLocale(z.string()),
+});
+export type DraftModification = z.infer<typeof draftModification>;
+
+export const draftValue = z.object({
+  id: z.uuid(),
+  propertyId: z.uuid(),
+  kind: z.enum(PROPERTY_KINDS),
+  optionId: z.uuid().optional(),
+  number: z.string().optional(),
+  bool: z.boolean().optional(),
+  color: z.string().optional(),
+  text: perLocale(z.string().nullable()).optional(),
+  modificationId: z.uuid().optional(),
+});
+export type DraftValue = z.infer<typeof draftValue>;
+
+export const draftImage = z.object({
+  id: z.uuid(),
+  storageKey: z.string(),
+  sortOrder: z.number().int(),
+  modificationId: z.uuid().optional(),
+  alt: perLocale(z.string().nullable()),
+  overrides: perLocale(z.string()),
+});
+export type DraftImage = z.infer<typeof draftImage>;
+
+/**
+ * Значення форми картки. Тексти — за мовами (вкладки); дочірні колекції
+ * агрегата живуть тут же, тож усе йде ОДНИМ `saveDescription`. `path` — лише
+ * для створення (адреса основної мови), далі її править `PathField`.
+ */
 export const productFormSchema = z.object({
-  name: z.string().trim().min(1),
-  slug: z.string().trim().regex(SLUG_RE),
-  shortDescription: optionalText,
-  description: optionalText,
-  metaTitle: optionalText,
-  metaDescription: optionalText,
-  // 🔴 Легасі (ProductEdit.tsx) дозволяв товар без розділу — `section_id:
-  // formData.section_id || null` без клієнтської валідації; FK у схемі
-  // nullable ON DELETE SET NULL. Панелі властивостей і так умовні на
-  // sectionId (`data.sectionId &&`), тож min(1) тут був би СТРОГІШИМ за
-  // легасі й за схему БД без причини.
-  sectionId: optionalText,
+  sectionId: z.string(),
   isActive: z.boolean(),
   isFeatured: z.boolean(),
   hasModifications: z.boolean(),
-  sku: optionalText,
-  stockStatus: z.enum(['in_stock', 'out_of_stock', 'on_order']),
-  images: z.array(z.string()),
+  sku: z.string().trim(),
+  stockStatus,
+  path: z.string().trim(),
+  texts: perLocale(draftTexts),
+  modifications: z.array(draftModification),
+  propertyValues: z.array(draftValue),
+  images: z.array(draftImage),
 });
 export type ProductFormValues = z.infer<typeof productFormSchema>;
 
-const orNull = (s: string) => (s === '' ? null : s);
-
 /**
- * Поля запису з форми. 🔴 Товар із модифікаціями не має власних sku й
- * статусу наявності — вони живуть на модифікаціях (правило легасі
- * `ProductEdit.tsx:169-176`, не змінюється).
- *
- * 🔴 МAJOR (рев'ю хвилі C): `stockStatus` НЕ входить у patch для простого
- * товару — контролюється миттєвим `StockStatusSelect` над ЖИВИМ рядком
- * колекції (`products.update` напряму, `SimpleProductPanel`) і гвардом
- * `saveStock` (Е3-3). Якби patch ніс `v.stockStatus`, кожен Save картки
- * перезаписував би щойно виставлений статус стейл-значенням форми
- * (`useForm({defaultValues})` не стежить за зовнішнім write-back). Виняток
- * — перемикання товару НА «з модифікаціями»: мод-товар власного контролу
- * не має, статус фіксується `in_stock` тут же (як і раніше).
+ * Схема з вимогою: назва основною мовою (І4) і, якщо задано, формат адреси.
+ * Фабрика, бо основну мову знає лише завантажений набір мов.
  */
-export function toProductPatch(v: ProductFormValues) {
-  return {
-    name: v.name,
-    slug: v.slug,
-    shortDescription: orNull(v.shortDescription),
-    description: orNull(v.description),
-    metaTitle: orNull(v.metaTitle),
-    metaDescription: orNull(v.metaDescription),
-    sectionId: orNull(v.sectionId),
-    isActive: v.isActive,
-    isFeatured: v.isFeatured,
-    hasModifications: v.hasModifications,
-    images: v.images,
-    sku: v.hasModifications ? null : orNull(v.sku),
-    ...(v.hasModifications && { stockStatus: 'in_stock' as const }),
-  } satisfies Partial<Product>;
-}
-
-/**
- * Повний оптимістичний рядок для `collection.insert` — колекція тримає
- * `Product`, не `NewProduct`. `returnPolicy`/`shippingDetails` форма не
- * редагує (B7-override — поза етапом), тож тут завжди `null`.
- *
- * 🔴 `stockStatus` тут ЗАВЖДИ виставляється явно (`toProductPatch` несе
- * його лише умовно): товару щойно немає в БД — миттєвого контролу над
- * живим рядком ще нема, початкове значення бере форма.
- */
-export function toProductDraft(
-  v: ProductFormValues,
-  id: string,
-  now: Date,
-): Product {
-  return {
-    ...toProductPatch(v),
-    id,
-    createdAt: now,
-    updatedAt: now,
-    returnPolicy: null,
-    shippingDetails: null,
-    version: 1,
-    stockStatus: v.hasModifications ? 'in_stock' : v.stockStatus,
-  };
+export function productFormSchemaFor(primary: string) {
+  return productFormSchema.superRefine((v, ctx) => {
+    if (!v.texts[primary]?.name.trim())
+      ctx.addIssue({
+        code: 'custom',
+        path: ['texts', primary, 'name'],
+        message: 'name',
+      });
+    if (v.path !== '' && !SLUG_RE.test(v.path))
+      ctx.addIssue({ code: 'custom', path: ['path'], message: 'path' });
+  });
 }

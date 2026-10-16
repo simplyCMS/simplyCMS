@@ -1,115 +1,110 @@
 // @vitest-environment jsdom
 /**
- * Рев'ю хвилі C (BLOCKER, структурний фікс): `<form>` діалогу несе ЛИШЕ
- * поля модифікації — Collapsible-и цін/залишків ПОЗА нею.
- *
- * 🔴 Негативний контроль — ПЕРШИЙ тест (DOM-структура): на стеші коду ДО
- * фіксу (PricesEditor — нащадок `<form onSubmit={submit}>`) він червоніє
- * (`saveButton.closest('form') === dialogForm`). Другий тест (клік не
- * кличе `onUpdate`) НЕ дискримінує — jsdom 30 не тригерить нативний
- * `submit` із голого `.click()` по вкладеній `type=submit` кнопці навіть
- * у старій структурі, тож він зелений і до, і після фіксу; лишається як
- * санітарна перевірка проводки (`saveProductPrices` дійсно викликається),
- * не як регрес-гейт.
+ * Діалог модифікації: `<form>` несе ЛИШЕ поля модифікації — секції цін/залишків
+ * ПОЗА нею (інакше їхні кнопки сабмітили б діалог) і є лише в збереженої
+ * модифікації. «Застосувати» віддає значення чернетці, id нової — наперед.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
-import type { ProductModification } from 'simplycms/schema/types';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { ResizeObserverStub } from '../../edit/__tests__/test-engine-stub';
+import { CardHarness, mod, PRODUCT_ID } from '../../__tests__/card-harness';
 
-// 🔴 jsdom 30 не має ResizeObserver — Radix Select (StockStatusSelect)
-// вимірює тригер під час монтування (той самий клас проблем, що й
-// hasPointerCapture/scrollIntoView, задокументований у ProductsPage.test.tsx).
-class ResizeObserverStub {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
-
-const { saveProductPrices, listProductPrices, listPriceTypes } = vi.hoisted(
-  () => ({
-    saveProductPrices: vi.fn(async () => ({ rows: [], removedIds: [] })),
-    listProductPrices: vi.fn(async () => [] as unknown[]),
-    listPriceTypes: vi.fn(async () => [] as unknown[]),
-  }),
-);
+const mocks = vi.hoisted(() => ({
+  saveProductPricesCommand: vi.fn(async () => ({ count: 0, removedIds: [] })),
+  listProductPrices: vi.fn(async () => [] as unknown[]),
+  listPriceTypes: vi.fn(async () => [] as unknown[]),
+}));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    listProductPrices,
-    saveProductPrices,
-    listPriceTypes,
-  }),
+  ).createAdminServerMock(mocks),
 );
+vi.mock('simplycms/core/hooks/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 
 import { ModificationDialog } from '../ModificationDialog';
-import type { ModificationFormValues } from '../modification-form-schema';
 
-const MOD: ProductModification = {
-  id: 'm1',
-  productId: 'p1',
-  slug: '100w',
-  name: 'Модифікація 100w',
-  sku: 'SKU-1',
-  images: [],
-  sortOrder: 0,
-  stockStatus: 'in_stock',
-  isDefault: false,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-
-function renderDialog(
-  onCreate: (values: ModificationFormValues, id: string) => Promise<string>,
-  onUpdate: (id: string, values: ModificationFormValues) => Promise<void>,
-) {
-  const queryClient = new QueryClient();
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
-    </QueryClientProvider>
-  );
-  return render(
-    <ModificationDialog
-      open
-      onOpenChange={vi.fn()}
-      productId="p1"
-      sectionId={null}
-      mod={MOD}
-      newId="new-mod-id"
-      onCreate={onCreate}
-      onUpdate={onUpdate}
-    />,
-    { wrapper },
-  );
-}
-
+const M1 = '11111111-1111-4111-8111-aaaaaaaaaaaa';
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => cleanup());
 
-describe('ModificationDialog: структурна ізоляція секцій від <form>', () => {
+function renderDialog(
+  m: ReturnType<typeof mod> | null,
+  onApply = vi.fn(),
+  persisted = true,
+) {
+  render(
+    <CardHarness
+      card={{ persistedModificationIds: new Set(persisted && m ? [m.id] : []) }}
+    >
+      <ModificationDialog
+        open
+        onOpenChange={vi.fn()}
+        productId={PRODUCT_ID}
+        sectionId={null}
+        mod={m}
+        newId="new-mod-id"
+        onApply={onApply}
+      />
+    </CardHarness>,
+  );
+  return onApply;
+}
+
+describe('ModificationDialog', () => {
   it('кнопка «Зберегти ціни» — НЕ нащадок <form> діалогу', () => {
-    // 🔴 Radix Dialog портализує вміст у document.body — не в container.
-    renderDialog(vi.fn(), vi.fn());
+    renderDialog(mod(M1, 'M'));
     const saveButton = screen.getByRole('button', { name: 'Зберегти ціни' });
     const dialogForm = document.body.querySelector('form');
     expect(dialogForm).not.toBeNull();
     expect(saveButton.closest('form')).not.toBe(dialogForm);
   });
 
-  it('клік «Зберегти ціни» кличе saveProductPrices (санітарна перевірка проводки)', async () => {
-    const onCreate = vi.fn();
-    const onUpdate = vi.fn();
-    renderDialog(onCreate, onUpdate);
+  it('секції цін і залишків — лише для збереженої модифікації', () => {
+    renderDialog(mod(M1, 'M'), vi.fn(), false);
+    expect(screen.queryByRole('button', { name: 'Зберегти ціни' })).toBeNull();
+  });
 
+  it('клік «Зберегти ціни» кличе команду цін, а не onApply', async () => {
+    const onApply = renderDialog(mod(M1, 'M'));
     screen.getByRole('button', { name: 'Зберегти ціни' }).click();
-    await vi.waitFor(() => expect(saveProductPrices).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(mocks.saveProductPricesCommand).toHaveBeenCalledTimes(1),
+    );
+    expect(onApply).not.toHaveBeenCalled();
+  });
 
-    expect(onUpdate).not.toHaveBeenCalled();
-    expect(onCreate).not.toHaveBeenCalled();
+  it('створення: onApply(newId, значення) — той самий id', async () => {
+    const onApply = renderDialog(null);
+    fireEvent.change(document.getElementById('mod-name')!, {
+      target: { value: 'A' },
+    });
+    fireEvent.change(document.getElementById('mod-slug')!, {
+      target: { value: 'a' },
+    });
+    fireEvent.submit(document.body.querySelector('form')!);
+    await vi.waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
+    expect(onApply.mock.calls[0]![0]).toBe('new-mod-id');
+    expect(onApply.mock.calls[0]![1]).toMatchObject({
+      names: { uk: 'A' },
+      tokens: { uk: 'a' },
+    });
+  });
+
+  it('порожня назва основної мови або токен не за форматом — onApply НЕ викликано', async () => {
+    const onApply = renderDialog(null);
+    fireEvent.submit(document.body.querySelector('form')!);
+    await screen.findAllByRole('alert');
+    fireEvent.change(document.getElementById('mod-name')!, {
+      target: { value: 'A' },
+    });
+    fireEvent.change(document.getElementById('mod-slug')!, {
+      target: { value: 'Bad Token' },
+    });
+    fireEvent.submit(document.body.querySelector('form')!);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(onApply).not.toHaveBeenCalled();
   });
 });

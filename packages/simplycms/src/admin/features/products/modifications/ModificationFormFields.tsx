@@ -4,22 +4,23 @@ import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
 import { Switch } from 'simplycms/ui/switch';
 import { ImageUpload } from '../../../components/ImageUpload';
+import { useTranslationContext } from '../../translations/translation-context';
 import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
-  /** id модифікації: існуючої або згенерований НАПЕРЕД для нової. */
+  /** Товар-власник файлів: фото модифікації — файли ТОВАРУ (`entity_type = 'product'`). */
+  readonly productId: string;
   readonly modId: string;
 }
 
 /**
- * Основні поля форми модифікації — виніс із `ModificationDialog.tsx`
- * (канон 150 рядків). 🔴 Статус наявності тут НЕ рендериться (рев'ю хвилі
- * C, МAJOR) — при редагуванні це окремий миттєвий контрол над живим
- * рядком, при створенні — `ModificationStatusControl` над цією ж формою;
- * обидва малює `ModificationDialog`, не ці «сирі» поля.
+ * Поля модифікації: назва й токен за кожною мовою (основна — обовʼязкова назва,
+ * `mod-name`/`mod-slug`), SKU, дефолт, фото. Порожній токен основної мови
+ * сервер виводить із назви.
  */
-export function ModificationFormFields({ modId }: Props) {
+export function ModificationFormFields({ productId, modId }: Props) {
   const t = useT();
+  const { languages, primary } = useTranslationContext();
   const {
     register,
     watch,
@@ -29,54 +30,53 @@ export function ModificationFormFields({ modId }: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="mod-name">{t('common.nameRequiredLabel')}</Label>
-          <Input
-            id="mod-name"
-            {...register('name')}
-            placeholder={t('admin.products.mods.namePlaceholder')}
-            required
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? 'mod-name-error' : undefined}
-          />
-          {errors.name && (
-            <p
-              id="mod-name-error"
-              role="alert"
-              className="text-xs text-destructive"
-            >
-              {errors.name.type === 'server'
-                ? errors.name.message
-                : t('admin.products.nameError')}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="mod-slug">{t('admin.products.slugLabel')}</Label>
-          <Input
-            id="mod-slug"
-            {...register('slug')}
-            placeholder="100w"
-            required
-            aria-invalid={!!errors.slug}
-            aria-describedby="mod-slug-error"
-          />
-          <p
-            id="mod-slug-error"
-            role={errors.slug ? 'alert' : undefined}
-            className={
-              errors.slug
-                ? 'text-xs text-destructive'
-                : 'text-xs text-muted-foreground'
-            }
-          >
-            {errors.slug?.type === 'server'
-              ? errors.slug.message
-              : t('admin.products.slugHint')}
-          </p>
-        </div>
-      </div>
+      {languages.map((l) => {
+        const main = l.code === primary;
+        const nameError = errors.names?.[l.code];
+        const tokenError = errors.tokens?.[l.code];
+        return (
+          <div key={l.code} className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={main ? 'mod-name' : `mod-name-${l.code}`}>
+                {main ? t('common.nameRequiredLabel') : t('common.name')} (
+                {l.code})
+              </Label>
+              <Input
+                id={main ? 'mod-name' : `mod-name-${l.code}`}
+                {...register(`names.${l.code}`)}
+                placeholder={t('admin.products.mods.namePlaceholder')}
+                aria-invalid={!!nameError}
+              />
+              {nameError && (
+                <p role="alert" className="text-xs text-destructive">
+                  {t('admin.products.nameError')}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={main ? 'mod-slug' : `mod-slug-${l.code}`}>
+                {t('admin.products.mods.tokenLabel')} ({l.code})
+              </Label>
+              <Input
+                id={main ? 'mod-slug' : `mod-slug-${l.code}`}
+                {...register(`tokens.${l.code}`)}
+                placeholder="100w"
+                aria-invalid={!!tokenError}
+              />
+              <p
+                role={tokenError ? 'alert' : undefined}
+                className={
+                  tokenError
+                    ? 'text-xs text-destructive'
+                    : 'text-xs text-muted-foreground'
+                }
+              >
+                {t('admin.products.slugHint')}
+              </p>
+            </div>
+          </div>
+        );
+      })}
 
       <div className="space-y-2">
         <Label htmlFor="mod-sku">{t('admin.products.mods.sku')}</Label>
@@ -101,9 +101,10 @@ export function ModificationFormFields({ modId }: Props) {
           onImagesChange={(images) =>
             setValue('images', images, { shouldDirty: true })
           }
-          entityType="product_modification"
-          entityId={modId}
+          entityType="product"
+          entityId={productId}
           maxImages={10}
+          key={modId}
         />
       </div>
     </>

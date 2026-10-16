@@ -90,7 +90,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   writeDelete: 'утиліта query-db-collection (записи реєстру)',
   writeBatch: 'утиліта query-db-collection (записи реєстру)',
   updateCacheData: 'внутрішнє імʼя query-db-collection (записи реєстру)',
-  gcTime: 'опція TanStack Query',
   SyncNotInitializedError: 'клас помилки @tanstack/db (записи реєстру)',
   getSerovalPlugins: 'внутрішнє імʼя Start (запис START-1)',
   getDefaultSerovalPlugins: 'внутрішнє імʼя Start (запис START-1)',
@@ -113,8 +112,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   ERR_PNPM_IGNORED_BUILDS: 'код помилки pnpm, цитата',
   CollectionPage: 'тип schema.org у скілі редизайну',
   ItemList: 'тип schema.org у скілі редизайну',
-  setDefault:
-    'назва операції в прозі (сімейство `setDefault*` серверних функцій)',
   // --- інше ---
   __PLUGIN_NAME__: 'плейсхолдер шаблону скаффолдера (підставляється CLI)',
   __THEME_NAME__: 'плейсхолдер шаблону скаффолдера (підставляється CLI)',

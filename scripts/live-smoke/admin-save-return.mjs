@@ -48,6 +48,18 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
       `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, 'sr-mod-${tag}', 'Мод ${tag}')`,
       [modId, product.id],
     );
+    // М1: картка читає `products.get` — тексти беруться з перекладів основної
+    // мови, а не з колонок-дзеркал (повний перехід сіду — Task 17).
+    await sql(
+      dbUrl,
+      `insert into public.product_translations (product_id, locale, name) values ($1, 'uk', $2)`,
+      [product.id, old],
+    );
+    await sql(
+      dbUrl,
+      `insert into public.product_modification_translations (product_id, modification_id, locale, name) values ($1, $2, 'uk', $3)`,
+      [product.id, modId, `Мод ${tag}`],
+    );
 
     // (б) залишки модифікації в діалозі картки.
     await page.goto(`${base}/admin/products`, { waitUntil: 'networkidle' });

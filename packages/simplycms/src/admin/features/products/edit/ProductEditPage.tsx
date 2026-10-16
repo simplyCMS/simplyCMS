@@ -1,141 +1,96 @@
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { eq, useLiveQuery } from '@tanstack/react-db';
 import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { productsCollection, useCollection } from 'simplycms/admin-data';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 import { useT } from 'simplycms/i18n';
-import type { Product } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
-import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { adminPath } from '../../../lib/adminLinks';
-import { ModificationsPanel } from '../modifications/ModificationsPanel';
-import { PropertyValuesPanel } from '../properties/PropertyValuesPanel';
-import { SimpleProductPanel } from '../simple/SimpleProductPanel';
-import { ProductForm } from './ProductForm';
-import { useProductSave } from './useProductSave';
-import type { ProductFormValues } from './product-form-schema';
+import { ProductCard } from './ProductCard';
+import {
+  useProductAggregate,
+  useProductLanguages,
+} from './useProductAggregate';
 
 interface Props {
   readonly productId: string;
 }
 
-/** БД → форма: `null` полів переведено в порожній рядок форми. */
-function toFormValues(row: Product): ProductFormValues {
-  return {
-    name: row.name,
-    slug: row.slug,
-    shortDescription: row.shortDescription ?? '',
-    description: row.description ?? '',
-    metaTitle: row.metaTitle ?? '',
-    metaDescription: row.metaDescription ?? '',
-    sectionId: row.sectionId ?? '',
-    isActive: row.isActive,
-    isFeatured: row.isFeatured,
-    hasModifications: row.hasModifications ?? false,
-    sku: row.sku ?? '',
-    stockStatus: row.stockStatus,
-    images: row.images ?? [],
-  };
-}
-
 /**
- * Картка існуючого товару (Task 7): рядок — жива колекція (`findOne`).
- * 🔴 `productId`, що не є uuid (стара закладка), інакше дав би 400 зі
- * схеми `list`-serverFn (`id` — uuid-фільтр) — перевіряємо ДО запиту.
- * Панелі модифікацій/цін/залишків (Task 8) — СИБЛІНГИ `ProductForm`, не
- * нащадки її `<form>` (рев'ю хвилі C, BLOCKER — див. коментар
- * `ProductForm.tsx`). Перемикач панелі — за `data.hasModifications`
- * ЖИВОГО рядка колекції (Task 7 Step 3), не за незбереженим станом
- * форми: зміна перемикача типу товару без Save панель НЕ підмінює.
- * Значення властивостей ТОВАРУ (Task 10) — теж сиблінг, за живим
- * `data.sectionId`: `appliesTo='all'` для простого товару (усі
- * призначення розділу — легасі `AllProductProperties`), `'product'` для
- * товару з модифікаціями (легасі `ProductPropertyValues`).
+ * Сторінка існуючого товару: завантажує агрегат (`products.get`) і мови, далі
+ * віддає їх `ProductCard`. 🔴 `productId`, що не є uuid (стара закладка), інакше
+ * дав би 400 зі схеми команди — перевіряємо ДО запиту.
  */
 export function ProductEditPage({ productId }: Props) {
   const t = useT();
   const navigate = useNavigate();
-  const { update } = useProductSave();
-  const products = useCollection(productsCollection);
   const isValidId = z.uuid().safeParse(productId).success;
-
-  const { data, isLoading, isReady } = useLiveQuery({
-    query: (q) =>
-      isValidId
-        ? q
-            .from({ p: products })
-            .where(({ p }) => eq(p.id, productId))
-            .findOne()
-        : undefined,
-  });
-
+  const agg = useProductAggregate(productId, isValidId);
+  const langs = useProductLanguages();
   const goBack = () => navigate({ to: adminPath('products') });
+  const back = (
+    <Button variant="ghost" size="icon" onClick={goBack}>
+      <ArrowLeft className="h-5 w-5" />
+    </Button>
+  );
 
-  if (!isValidId || (isReady && !data)) {
+  const notFound =
+    !isValidId ||
+    (agg.error as { name?: string } | null)?.name ===
+      DOMAIN_ERROR_NAME.notFound;
+  if (notFound)
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+        {back}
         <p className="text-muted-foreground">{t('admin.products.notFound')}</p>
       </div>
     );
-  }
 
-  if (isLoading || !data) {
+  if (agg.isError || langs.isError)
+    return (
+      <div className="space-y-4">
+        {back}
+        <p className="text-destructive">{t('admin.translations.loadFailed')}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            void agg.refetch();
+            void langs.refetch();
+          }}
+        >
+          {t('admin.translations.retry')}
+        </Button>
+      </div>
+    );
+
+  if (!agg.data || !langs.data)
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
-  }
+
+  const primary = langs.data.find((l) => l.isDefault)?.code;
+  const title = (primary && agg.data.texts[primary]?.name) || '';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={goBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+        {back}
         <div>
           <h1 className="text-3xl font-bold">
-            {data.name || t('admin.products.editTitle')}
+            {title || t('admin.products.editTitle')}
           </h1>
           <p className="text-muted-foreground">
             {t('admin.products.editSubtitle')}
           </p>
         </div>
       </div>
-      <ProductForm
+      <ProductCard
         productId={productId}
-        entityId={productId}
-        defaultValues={toFormValues(data)}
-        onSubmit={(values, binding) => update(productId, values, binding)}
-        submitLabel={t('common.save')}
-        meta={{ createdAt: data.createdAt, updatedAt: data.updatedAt }}
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {data.hasModifications ? (
-              <ModificationsPanel
-                productId={productId}
-                sectionId={data.sectionId}
-              />
-            ) : (
-              <SimpleProductPanel productId={productId} />
-            )}
-            <PropertyValuesPanel
-              target="product"
-              ownerId={productId}
-              sectionId={data.sectionId}
-              appliesTo={data.hasModifications ? 'product' : 'all'}
-            />
-            <PluginSlot
-              name="admin.product.form.after"
-              context={{ productId }}
-            />
-          </div>
-        </div>
-      </ProductForm>
+        aggregate={agg.data}
+        languages={langs.data}
+        refetch={async () => (await agg.refetch()).data}
+      />
     </div>
   );
 }

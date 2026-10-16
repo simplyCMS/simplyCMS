@@ -60,6 +60,8 @@ export const messages: Catalog = {
   'admin.products.mods.properties': 'Modification properties',
   'admin.products.mods.empty':
     'No modifications yet. Add the first one for this product.',
+  'admin.products.mods.apply': 'Apply',
+  'admin.products.mods.tokenLabel': 'URL token',
   'admin.products.mods.confirmDelete': 'Delete this modification?',
 
   'admin.products.stock.inStock': 'In stock',

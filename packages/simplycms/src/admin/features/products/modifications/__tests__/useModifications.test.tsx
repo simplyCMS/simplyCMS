@@ -1,259 +1,117 @@
 // @vitest-environment jsdom
 /**
- * `useModifications` (Task 8, Step 3): (а) Review Focus 5 — create з
- * `isDefault: true` → спершу `insertProductModifications`, ПОТІМ
- * `setDefaultProductModification({ data: { id } })` (isDefault readonly
- * у ресурсі, дефолт ставиться окремою операцією); (б) write-back
- * `applyDefault` оновлює прапорець у ДВОХ рядках колекції (знятий і
- * поставлений); (в) sortOrder нового = max+1 навіть коли наявні мають
- * однакові sortOrder (легасі писав sort_order індексом масиву); (г) рев'ю
- * C6 item 1 — `update()` НЕ переписує `stockStatus`, щойно виставлений
- * `ModificationStatusControl` напряму в живому рядку.
+ * `useModifications` — чернетка модифікацій у формі картки: жодної мережі,
+ * дефолт єдиний, порядок — перенумерація, видалення прибирає фото й значення.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-
-const {
-  insertProductModifications,
-  updateProductModifications,
-  removeProductModifications,
-  listProductModifications,
-  setDefaultProductModification,
-  reorderProductModification,
-} = vi.hoisted(() => ({
-  insertProductModifications: vi.fn(
-    async ({ data }: { data: Array<{ id: string }> }) => data,
-  ),
-  updateProductModifications: vi.fn(),
-  removeProductModifications: vi.fn(),
-  listProductModifications: vi.fn(async () => [] as unknown[]),
-  setDefaultProductModification: vi.fn(),
-  reorderProductModification: vi.fn(),
-}));
-vi.mock('simplycms/admin-server', async () =>
-  (
-    await import('../../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    listProductModifications,
-    insertProductModifications,
-    updateProductModifications,
-    removeProductModifications,
-    setDefaultProductModification,
-    reorderProductModification,
-  }),
-);
-
-import {
-  productModificationsCollection,
-  useCollection,
-} from 'simplycms/admin-data';
+import { afterEach, describe, expect, it } from 'vitest';
+import { act, cleanup, render } from '@testing-library/react';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ProductFormValues } from '../../edit/product-form-schema';
+import { CardHarness, mod } from '../../__tests__/card-harness';
 import { useModifications } from '../useModifications';
-import type { ModificationFormValues } from '../modification-form-schema';
 
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-}
-
-const FORM: ModificationFormValues = {
-  name: '100W',
-  slug: '100w',
-  sku: 'SP-100W',
-  stockStatus: 'in_stock',
-  isDefault: false,
-  images: [],
-};
-
-beforeEach(() => {
-  vi.clearAllMocks();
-});
 afterEach(() => cleanup());
 
+const A = '11111111-1111-4111-8111-aaaaaaaaaaaa';
+const B = '22222222-2222-4222-8222-bbbbbbbbbbbb';
+
+function setup(values: Partial<ProductFormValues> = {}) {
+  const out: {
+    api?: ReturnType<typeof useModifications>;
+    form?: UseFormReturn<ProductFormValues>;
+  } = {};
+  function Probe() {
+    out.api = useModifications();
+    return null;
+  }
+  render(
+    <CardHarness values={values} onForm={(f) => (out.form = f)}>
+      <Probe />
+    </CardHarness>,
+  );
+  return out as Required<typeof out>;
+}
+
+const form = (name: string, extra: object = {}) => ({
+  names: { uk: name, en: '' },
+  tokens: { uk: '', en: '' },
+  sku: '',
+  isDefault: false,
+  images: [],
+  ...extra,
+});
+
 describe('useModifications', () => {
-  it('(а) create з isDefault: true — insert, ПОТІМ setDefault (у цьому порядку)', async () => {
-    const { result } = renderHook(() => useModifications('p1'), { wrapper });
-    // Дати колекції стати ready ДО insert, щоб старт синку не мішався з
-    // порядком викликів самого тесту (серіалізація черги — Е3-19).
-    await waitFor(() => expect(result.current.modifications).toEqual([]));
+  it('save нової: sortOrder = max+1, чернетка без мережі', () => {
+    const s = setup({ modifications: [mod(A, 'A', { sortOrder: 4 })] });
+    act(() => s.api.save(B, form('B')));
+    expect(
+      s.form.getValues('modifications').map((m) => [m.id, m.sortOrder]),
+    ).toEqual([
+      [A, 4],
+      [B, 5],
+    ]);
+    expect(s.form.getValues('modifications')[1]!.texts.uk).toBe('B');
+  });
 
-    const callOrder: string[] = [];
-    insertProductModifications.mockImplementationOnce(async ({ data }) => {
-      callOrder.push('insert');
-      return data;
-    });
-    setDefaultProductModification.mockImplementationOnce(async () => {
-      callOrder.push('setDefault');
-      return { rows: [] };
-    });
-
-    await result.current.create({ ...FORM, isDefault: true });
-
-    expect(callOrder).toEqual(['insert', 'setDefault']);
-    expect(insertProductModifications).toHaveBeenCalledTimes(1);
-    const [{ data }] = insertProductModifications.mock.calls[0] as [
-      { data: Array<{ id: string; isDefault: boolean }> },
-    ];
-    // Рядок insert несе isDefault: false — сервер його все одно strip-ить
-    // (readonly), але клієнт не мусить брехати про стан ДО setDefault.
-    expect(data[0]?.isDefault).toBe(false);
-    expect(setDefaultProductModification).toHaveBeenCalledWith({
-      data: { id: expect.any(String) },
+  it('save існуючої зберігає її sortOrder і оновлює поля', () => {
+    const s = setup({ modifications: [mod(A, 'A', { sortOrder: 2 })] });
+    act(() => s.api.save(A, form('A2', { sku: 'S' })));
+    expect(s.form.getValues('modifications')[0]).toMatchObject({
+      sortOrder: 2,
+      sku: 'S',
+      texts: { uk: 'A2' },
     });
   });
 
-  it('(б) applyDefault: write-back оновлює ОБИДВА рядки (знятий і поставлений)', async () => {
-    listProductModifications.mockResolvedValueOnce([
-      {
-        id: 'm1',
-        productId: 'p1',
-        slug: 'a',
-        name: 'A',
-        sku: null,
-        isDefault: true,
-        images: [],
-        sortOrder: 0,
-        stockStatus: 'in_stock',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'm2',
-        productId: 'p1',
-        slug: 'b',
-        name: 'B',
-        sku: null,
-        isDefault: false,
-        images: [],
-        sortOrder: 1,
-        stockStatus: 'in_stock',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
+  it('isDefault у save знімає прапор з решти', () => {
+    const s = setup({ modifications: [mod(A, 'A', { isDefault: true })] });
+    act(() => s.api.save(B, form('B', { isDefault: true })));
+    expect(s.form.getValues('modifications').map((m) => m.isDefault)).toEqual([
+      false,
+      true,
     ]);
-    setDefaultProductModification.mockResolvedValueOnce({
-      rows: [
-        { id: 'm1', isDefault: false },
-        { id: 'm2', isDefault: true },
+  });
+
+  it('setDefault робить дефолтною одну', () => {
+    const s = setup({
+      modifications: [
+        mod(A, 'A', { isDefault: true }),
+        mod(B, 'B', { sortOrder: 1 }),
       ],
     });
-
-    const { result } = renderHook(() => useModifications('p1'), { wrapper });
-    await waitFor(() => expect(result.current.modifications).toHaveLength(2));
-
-    await result.current.applyDefault('m2');
-
-    await waitFor(() => {
-      const byId = new Map(
-        (result.current.modifications ?? []).map((m) => [m.id, m]),
-      );
-      expect(byId.get('m1')?.isDefault).toBe(false);
-      expect(byId.get('m2')?.isDefault).toBe(true);
-    });
-  });
-
-  it('(в) sortOrder нового = max+1 навіть коли наявні мають однакові sortOrder', async () => {
-    listProductModifications.mockResolvedValueOnce([
-      {
-        id: 'm1',
-        productId: 'p1',
-        slug: 'a',
-        name: 'A',
-        sku: null,
-        isDefault: false,
-        images: [],
-        sortOrder: 3,
-        stockStatus: 'in_stock',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 'm2',
-        productId: 'p1',
-        slug: 'b',
-        name: 'B',
-        sku: null,
-        isDefault: false,
-        images: [],
-        sortOrder: 3,
-        stockStatus: 'in_stock',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
+    act(() => s.api.setDefault(B));
+    expect(s.form.getValues('modifications').map((m) => m.isDefault)).toEqual([
+      false,
+      true,
     ]);
-    const { result } = renderHook(() => useModifications('p1'), { wrapper });
-    await waitFor(() => expect(result.current.modifications).toHaveLength(2));
-
-    await result.current.create(FORM);
-
-    const [{ data }] = insertProductModifications.mock.calls[0] as [
-      { data: Array<{ id: string; sortOrder: number }> },
-    ];
-    expect(data[0]?.sortOrder).toBe(4);
   });
 
-  it('(г) update() не переписує stockStatus, виставлений ModificationStatusControl напряму', async () => {
-    const row = {
-      id: 'm1',
-      productId: 'p1',
-      slug: 'a',
-      name: 'A',
-      sku: null as string | null,
-      isDefault: false,
-      images: [] as string[],
-      sortOrder: 0,
-      stockStatus: 'in_stock' as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    // Стан сервера мінливий (update-стаб міняє row): ревалідація після запису
-    // (TSDB-1) читає його, а не витрачений `Once`.
-    listProductModifications.mockImplementation(async () => [{ ...row }]);
-    updateProductModifications.mockImplementation(
-      async ({
-        data,
-      }: {
-        data: Array<{ id: string; patch: Record<string, unknown> }>;
-      }) =>
-        data.map((p) => {
-          Object.assign(row, p.patch);
-          return { ...row };
-        }),
-    );
-
-    const { result } = renderHook(
-      () => ({
-        mods: useCollection(productModificationsCollection),
-        api: useModifications('p1'),
-      }),
-      { wrapper },
-    );
-    await waitFor(() =>
-      expect(result.current.api.modifications).toHaveLength(1),
-    );
-
-    // Симуляція `ModificationStatusControl`: миттєвий запис НАПРЯМУ в
-    // колекцію, окрема транзакція від Save діалогу.
-    const controlTx = result.current.mods.update('m1', (d) => {
-      d.stockStatus = 'out_of_stock';
+  it('reorder міняє місцями сусідів і перенумеровує; на краю — нічого', () => {
+    const s = setup({
+      modifications: [mod(A, 'A'), mod(B, 'B', { sortOrder: 1 })],
     });
-    await controlTx.isPersisted.promise;
-    expect(updateProductModifications).toHaveBeenCalledTimes(1);
+    act(() => s.api.reorder(B, 'up'));
+    expect(s.api.modifications.map((m) => [m.id, m.sortOrder])).toEqual([
+      [B, 0],
+      [A, 1],
+    ]);
+    act(() => s.api.reorder(B, 'up'));
+    expect(s.api.modifications[0]!.id).toBe(B);
+  });
 
-    // Save діалогу: форма несе СТЕЙЛ 'in_stock' — значення на момент
-    // відкриття діалогу, до того, як контрол переписав живий рядок.
-    await result.current.api.update('m1', {
-      ...FORM,
-      stockStatus: 'in_stock',
-    });
-
-    expect(updateProductModifications).toHaveBeenCalledTimes(2);
-    const [{ data: savePatch }] = updateProductModifications.mock.calls[1] as [
-      { data: Array<{ id: string; patch: object }> },
-    ];
-    expect(savePatch[0]?.patch).not.toHaveProperty('stockStatus');
+  it('save з фото кладе їх у images під цією модифікацією; remove прибирає фото і значення', () => {
+    const s = setup({ modifications: [mod(A, 'A')] });
+    act(() => s.api.save(A, form('A', { images: ['k1'] })));
+    expect(s.form.getValues('images')).toMatchObject([
+      { storageKey: 'k1', modificationId: A },
+    ]);
+    s.form.setValue('propertyValues', [
+      { id: B, propertyId: B, kind: 'boolean', bool: true, modificationId: A },
+    ]);
+    act(() => s.api.remove(A));
+    expect(s.form.getValues('modifications')).toEqual([]);
+    expect(s.form.getValues('images')).toEqual([]);
+    expect(s.form.getValues('propertyValues')).toEqual([]);
   });
 });

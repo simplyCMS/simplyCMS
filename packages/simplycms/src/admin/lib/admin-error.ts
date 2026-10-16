@@ -136,7 +136,8 @@ export function adminErrorKey(error: unknown): MessageKey | null {
         : null;
     // Входження, не суфікс: product_modifications_product_slug_unique названо
     // руками, решта slug-обмежень — *_slug_key (аудит 2026-09-23).
-    return typeof e.constraint === 'string' && e.constraint.includes('slug')
+    return typeof e.constraint === 'string' &&
+      (e.constraint.includes('slug') || e.constraint === 'path_taken')
       ? 'admin.errors.slugTaken'
       : 'admin.errors.conflictUnique';
   }

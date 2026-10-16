@@ -1,38 +1,77 @@
 import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { Loader2 } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { ProductForm } from './ProductForm';
-import { useProductSave } from './useProductSave';
-import type { ProductFormValues } from './product-form-schema';
+import { blankForm } from './product-aggregate';
+import {
+  productFormSchemaFor,
+  type ProductFormValues,
+} from './product-form-schema';
+import { useProductLanguages } from './useProductAggregate';
+import { useProductCreate } from './useProductSave';
+import { useRowErrors } from './useRowErrors';
+import type { LanguageInfo } from '../../translations/translation-context';
 
-const DEFAULT_VALUES: ProductFormValues = {
-  name: '',
-  slug: '',
-  shortDescription: '',
-  description: '',
-  metaTitle: '',
-  metaDescription: '',
-  sectionId: '',
-  isActive: true,
-  isFeatured: false,
-  hasModifications: false,
-  sku: '',
-  stockStatus: 'in_stock',
-  images: [],
-};
+interface BodyProps {
+  readonly languages: readonly LanguageInfo[];
+}
+
+function Body({ languages }: BodyProps) {
+  const t = useT();
+  const primary =
+    languages.find((l) => l.isDefault)?.code ?? languages[0]!.code;
+  // К3-Е6д-1: id нового товару наперед — фото привʼязуються до нього ще до
+  // збереження, і той самий id йде в `products.create`.
+  const [newId] = useState(() => crypto.randomUUID());
+  const rows = useRowErrors();
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchemaFor(primary)),
+    defaultValues: blankForm(languages.map((l) => l.code)),
+  });
+  const create = useProductCreate(newId, {
+    setFormError: (name, message) =>
+      form.setError(name as never, { type: 'server', message }),
+    setModificationError: rows.setModificationError,
+    setValueError: rows.setValueError,
+  });
+
+  return (
+    <ProductForm
+      form={form}
+      mode="create"
+      translation={{ languages, primary, statuses: {} }}
+      card={{
+        productId: null,
+        entityId: newId,
+        paths: {},
+        persistedModificationIds: new Set(),
+        modificationErrors: {},
+        valueErrors: {},
+        clearValueError: () => undefined,
+        onConflict: () => undefined,
+      }}
+      onSubmit={create}
+      submitLabel={t('common.create')}
+    >
+      <PluginSlot
+        name="admin.product.form.after"
+        context={{ productId: null }}
+      />
+    </ProductForm>
+  );
+}
 
 /**
- * Сторінка нового товару (Task 7): жодних панелей модифікацій/цін/
- * залишків/властивостей — як у легасі (`!isNew && …`), бо товару ще
- * немає в БД, писати сателіти нічому.
+ * Сторінка нового товару: лише поля картки (тексти за мовами, адреса основної
+ * мови, фото) — модифікації, ціни, залишки й властивості з'являються після
+ * створення, бо писати їх ще немає в що.
  */
 export function NewProductPage() {
   const t = useT();
-  const { create } = useProductSave();
-  // К3-Е6д-1: id нового товару наперед — фото привʼязуються до нього ще до
-  // збереження, і той самий id йде в insert (ресурс звіряє власника файлу).
-  const [newId] = useState(() => crypto.randomUUID());
-
+  const langs = useProductLanguages();
   return (
     <div className="space-y-6">
       <div>
@@ -41,18 +80,11 @@ export function NewProductPage() {
           {t('admin.products.newSubtitle')}
         </p>
       </div>
-      <ProductForm
-        productId={null}
-        entityId={newId}
-        defaultValues={DEFAULT_VALUES}
-        onSubmit={(values, binding) => create(values, binding, newId)}
-        submitLabel={t('common.create')}
-      >
-        <PluginSlot
-          name="admin.product.form.after"
-          context={{ productId: null }}
-        />
-      </ProductForm>
+      {langs.data && langs.data.length > 0 ? (
+        <Body languages={langs.data} />
+      ) : (
+        <Loader2 className="h-8 w-8 animate-spin" />
+      )}
     </div>
   );
 }

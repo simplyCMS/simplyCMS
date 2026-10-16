@@ -34,7 +34,7 @@ vi.mock('simplycms/admin-server', async () =>
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock({
     listProductPrices,
-    saveProductPrices,
+    saveProductPricesCommand: saveProductPrices,
     listPriceTypes,
   }),
 );

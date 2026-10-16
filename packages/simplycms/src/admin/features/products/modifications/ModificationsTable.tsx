@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { eq, useLiveQuery } from '@tanstack/react-db';
-import { toast } from 'sonner';
 import {
   priceTypesCollection,
+  productModificationsCollection,
   productPricesCollection,
   useCollection,
 } from 'simplycms/admin-data';
 import { useFormatPrice } from 'simplycms/react-query';
 import { useT } from 'simplycms/i18n';
-import type { ProductModification } from 'simplycms/schema/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,26 +25,41 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { reportTxError } from '../../../lib/report-tx-error';
+import { useFormContext } from 'react-hook-form';
+import { useProductCard } from '../edit/product-card-context';
+import type {
+  DraftModification,
+  ProductFormValues,
+} from '../edit/product-form-schema';
+import { imageKeys } from '../edit/product-images';
+import { useTranslationContext } from '../../translations/translation-context';
 import { useModifications } from './useModifications';
 import { ModificationRow } from './ModificationRow';
 
 interface Props {
   readonly productId: string;
   readonly data: ReturnType<typeof useModifications>;
-  readonly onEdit: (mod: ProductModification) => void;
+  readonly onEdit: (mod: DraftModification) => void;
 }
 
-/** Таблиця модифікацій (Task 8, Step 3) — розмітка легасі `ProductModifications.tsx:530-661`. */
+/**
+ * Таблиця модифікацій чернетки картки. Назва, SKU, дефолт і фото — з
+ * чернетки; ціна й статус наявності — з колекцій лише для читання (для ще не
+ * збереженої модифікації їх немає).
+ */
 export function ModificationsTable({ productId, data, onEdit }: Props) {
   const t = useT();
   const formatPrice = useFormatPrice();
-  const { modifications, reorder, remove } = data;
+  const { modifications: mods, reorder, remove } = data;
+  const { primary, active } = useTranslationContext();
+  const card = useProductCard();
+  const { getValues } = useFormContext<ProductFormValues>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Дефолтна ціна рядка — ОДНИМ запитом на всю таблицю (eq productId), не N.
   const prices = useCollection(productPricesCollection);
   const types = useCollection(priceTypesCollection);
+  const modCol = useCollection(productModificationsCollection);
   const { data: priceRows } = useLiveQuery({
     query: (q) =>
       q.from({ p: prices }).where(({ p }) => eq(p.productId, productId)),
@@ -53,26 +67,15 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
   const { data: typeRows } = useLiveQuery({
     query: (q) => q.from({ t: types }),
   });
+  const { data: savedRows } = useLiveQuery({
+    query: (q) =>
+      q.from({ m: modCol }).where(({ m }) => eq(m.productId, productId)),
+  });
   const defaultTypeId = typeRows.find((tp) => tp.isDefault)?.id;
   const priceOf = (modId: string) =>
     priceRows.find(
       (p) => p.modificationId === modId && p.priceTypeId === defaultTypeId,
     );
-
-  const mods = modifications ?? [];
-
-  // Review Focus 2: оптимістичне видалення відкочується САМЕ бібліотекою
-  // (rollback колекції) при 23503 — товар/модифікація в замовленнях.
-  const handleDelete = (id: string) => {
-    setDeleteId(null);
-    remove(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.products.mods.deleted')),
-      )
-      // Тема 12: полів тут немає (видалення) — `reportTxError` дає локалізований
-      // тост (у т.ч. для ValidationError), а не сирий JSON.
-      .catch((e: unknown) => reportTxError(t, e));
-  };
 
   if (mods.length === 0)
     return (
@@ -99,7 +102,12 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
           {mods.map((mod, index) => (
             <ModificationRow
               key={mod.id}
-              mod={mod}
+              name={mod.texts[active] || mod.texts[primary] || ''}
+              sku={mod.sku}
+              isDefault={mod.isDefault}
+              thumb={imageKeys(getValues('images'), mod.id)[0]}
+              stockStatus={savedRows.find((m) => m.id === mod.id)?.stockStatus}
+              error={card.modificationErrors[mod.id]}
               price={priceOf(mod.id)}
               formatPrice={formatPrice}
               canMoveUp={index > 0}
@@ -126,7 +134,10 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteId && handleDelete(deleteId)}
+              onClick={() => {
+                if (deleteId) remove(deleteId);
+                setDeleteId(null);
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t('common.delete')}

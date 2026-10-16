@@ -1,85 +1,101 @@
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
+import { createProduct, saveProductDescription } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { adminPath } from '../../../lib/adminLinks';
-import { adminErrorKey } from '../../../lib/admin-error';
+import { useAggregateCommand } from '../../translations/useAggregateCommand';
+import { blankForm } from './product-aggregate';
+import type { ProductFormValues } from './product-form-schema';
 import {
-  applyServerValidation,
-  type FormErrorBinding,
-} from '../../../lib/apply-server-validation';
-import {
-  toProductDraft,
-  toProductPatch,
-  type ProductFormValues,
-} from './product-form-schema';
+  buildCreateInput,
+  buildSaveInput,
+  isEmptyInput,
+  type SaveIndex,
+} from './product-save-input';
+import { reportSaveError, type ErrorSink } from './save-errors';
+
+interface UpdateOptions {
+  readonly productId: string;
+  /** Стан, з яким порівнюється форма (останній `products.get`). */
+  readonly baseline: ProductFormValues;
+  readonly onConflict: (currentVersion: number) => void;
+  /** Після успіху: перечитати агрегат і скинути форму до нього. */
+  readonly onSaved: () => Promise<void>;
+  readonly sink: ErrorSink;
+}
 
 /**
- * Створення й збереження товару через колекцію (оптимізм + write-back
- * хендлерів Task 5). `isPersisted` чекається ДО навігації/тосту успіху —
- * успіх показується лише після підтвердження сервера. Review Focus 1:
- * конфлікт slug — тост з i18n-ключем, форма НЕ скидається (введене
- * лишається, бо помилковий шлях не викликає `form.reset`).
+ * Збереження існуючого товару: ОДИН запит `saveDescription` із різницею між
+ * baseline і формою (тексти лише змінених вкладок, модифікації, значення,
+ * фото). Конфлікт версії обробляє `useAggregateCommand`; помилки валідації
+ * лягають на поля й рядки картки, форма при них не скидається.
  */
-export function useProductSave() {
-  const products = useCollection(productsCollection);
-  const navigate = useNavigate();
+export function useProductUpdate(o: UpdateOptions) {
   const t = useT();
+  const { run } = useAggregateCommand(saveProductDescription, {
+    onConflict: o.onConflict,
+  });
 
-  const fail = (e: unknown, binding?: FormErrorBinding) => {
-    // Тема 12: помилка валідації сервера → помилка ПОЛЯ форми; тост — лише
-    // для того, що до поля не привʼязалось (або якщо форми нема).
-    const rest = binding
-      ? applyServerValidation(e, binding.setError, {
-          t,
-          fieldFor: binding.fieldFor,
-        })
-      : null;
-    if (rest !== null) {
-      if (rest.length > 0) toast.error(t('admin.validation.failed'));
+  return async (values: ProductFormValues) => {
+    const { input, index } = buildSaveInput(o.baseline, values);
+    if (isEmptyInput(input)) {
+      toast.info(t('admin.translations.nothingToSave'));
       return;
     }
-    const key = adminErrorKey(e);
-    toast.error(key ? t(key) : `${t('common.error')} ${(e as Error).message}`);
+    try {
+      const out = await run({ id: o.productId, ...input });
+      if (!out) return;
+      toast.success(t('admin.products.updated'));
+      await o.onSaved();
+    } catch (e) {
+      reportSaveError(e, t, index, o.sink);
+    }
+  };
+}
+
+/**
+ * Створення: `products.create` (тексти, база, адреса основної мови), а якщо
+ * до збереження завантажено фото — другий крок `saveDescription` на версію зі
+ * створення (створення дітей агрегата не приймає). id генерує форма наперед:
+ * фото привʼязуються до нього ще до збереження.
+ */
+export function useProductCreate(entityId: string, sink: ErrorSink) {
+  const t = useT();
+  const navigate = useNavigate();
+  const products = useCollection(productsCollection);
+  const empty: SaveIndex = {
+    modifications: [],
+    propertyValues: [],
+    images: [],
   };
 
-  const create = async (
-    values: ProductFormValues,
-    binding?: FormErrorBinding,
-    // Форма нового товару генерує id наперед (власник завантажених фото).
-    id: string = crypto.randomUUID(), // контракт id: ключ генерує клієнт (К3-6)
-  ) => {
+  return async (values: ProductFormValues) => {
     try {
-      const tx = products.insert(toProductDraft(values, id, new Date()));
-      await tx.isPersisted.promise;
+      const created = await createProduct({
+        data: buildCreateInput(entityId, values),
+      });
+      const { input } = buildSaveInput(blankForm([]), {
+        ...blankForm([]),
+        images: values.images,
+      });
+      if (input.images)
+        await saveProductDescription({
+          data: {
+            id: entityId,
+            expectedVersion: created.version,
+            images: input.images,
+          },
+        });
+      // Список товарів — колекція лише для читання: новий рядок тягнемо перечитуванням.
+      await products.utils.refetch();
       toast.success(t('admin.products.created'));
       await navigate({
         to: adminPath('products/$productId'),
-        params: { productId: id },
+        params: { productId: entityId },
       });
     } catch (e) {
-      fail(e, binding);
+      reportSaveError(e, t, empty, sink);
     }
   };
-
-  const update = async (
-    id: string,
-    values: ProductFormValues,
-    binding?: FormErrorBinding,
-  ) => {
-    const patch = toProductPatch(values);
-    // 🔴 Updater мусить лишити слід у draft (А-4: порожній draft — тихий
-    // no-op без запиту). Object.assign пише всі поля patch завжди.
-    const tx = products.update(id, (draft) => {
-      Object.assign(draft, patch);
-    });
-    try {
-      await tx.isPersisted.promise;
-      toast.success(t('admin.products.updated'));
-    } catch (e) {
-      fail(e, binding);
-    }
-  };
-
-  return { create, update };
 }

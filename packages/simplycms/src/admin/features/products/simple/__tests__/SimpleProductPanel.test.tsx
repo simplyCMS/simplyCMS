@@ -1,101 +1,68 @@
 // @vitest-environment jsdom
 /**
- * `SimpleProductPanel` (рев'ю C6, item 2): миттєвий `products.update` над
- * живим рядком (`StockStatusSelect`) — без `.catch` на
- * `tx.isPersisted.promise` відхилена мутація тихо відкочувалась
- * (бібліотека сама робить rollback) і лишала unhandled rejection у
- * консолі. Той самий хелпер (`reportTxError`), що й
- * `ModificationStatusControl.test.tsx` — сюди перенесено лише проводку.
+ * `SimpleProductPanel`: статус наявності — поле чернетки картки (`base.stockStatus`),
+ * а не миттєвий запис над рядком: жодної мережі до «Зберегти» картки. Коли
+ * `saveStock` виводить статус із залишків, форма отримує його назад.
  *
  * `StockStatusSelect` замокано кнопкою — реальний Radix Select у jsdom 30
  * не має `hasPointerCapture`/`scrollIntoView` (`ProductsPage.test.tsx`).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
-import { Form } from 'simplycms/ui/form';
+import { cleanup, render, screen } from '@testing-library/react';
+import type { UseFormReturn } from 'react-hook-form';
+import { CardHarness, PRODUCT_ID } from '../../__tests__/card-harness';
+import type { ProductFormValues } from '../../edit/product-form-schema';
 
 vi.mock('../../stock/StockStatusSelect', () => ({
-  StockStatusSelect: ({ onChange }: { onChange: (v: string) => void }) => (
-    <button onClick={() => onChange('out_of_stock')}>change-status</button>
+  StockStatusSelect: ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+  }) => (
+    <button onClick={() => onChange('out_of_stock')}>status:{value}</button>
   ),
 }));
-
-const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
-vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
-
-const { listProducts, updateProducts } = vi.hoisted(() => ({
-  listProducts: vi.fn(async () => [{ id: 'p1', stockStatus: 'in_stock' }]),
-  updateProducts: vi.fn(async () => {
-    throw Object.assign(new Error('conflict'), {
-      name: 'AdminConflictError',
-      kind: 'unique',
-      constraint: 'x_key',
-    });
-  }),
+vi.mock('../../stock/StockEditor', () => ({
+  StockEditor: ({ onStatus }: { onStatus: (s: string) => void }) => (
+    <button onClick={() => onStatus('on_order')}>stock-saved</button>
+  ),
 }));
+vi.mock('../../prices/PricesEditor', () => ({ PricesEditor: () => null }));
+const mocks = vi.hoisted(() => ({ updateProducts: vi.fn() }));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    listProducts,
-    updateProducts,
-  }),
+  ).createAdminServerMock({}),
 );
 
 import { SimpleProductPanel } from '../SimpleProductPanel';
-import type { ProductFormValues } from '../../edit/product-form-schema';
-
-function Harness() {
-  const form = useForm<ProductFormValues>({
-    defaultValues: {
-      name: '',
-      slug: '',
-      shortDescription: '',
-      description: '',
-      metaTitle: '',
-      metaDescription: '',
-      sectionId: '',
-      isActive: true,
-      isFeatured: false,
-      hasModifications: false,
-      sku: '',
-      stockStatus: 'in_stock',
-      images: [],
-    },
-  });
-  return (
-    <Form {...form}>
-      <SimpleProductPanel productId="p1" />
-    </Form>
-  );
-}
-
-function renderHarness() {
-  const queryClient = new QueryClient();
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
-    </QueryClientProvider>
-  );
-  return render(<Harness />, { wrapper });
-}
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => cleanup());
 
-describe('SimpleProductPanel: .catch на tx.isPersisted.promise', () => {
-  it('відхилена мутація — тост з i18n-ключем, не мовчазний rollback', async () => {
-    renderHarness();
-    const button = await screen.findByRole('button', { name: 'change-status' });
-    button.click();
+function renderPanel() {
+  let form!: UseFormReturn<ProductFormValues>;
+  render(
+    <CardHarness onForm={(f) => (form = f)}>
+      <SimpleProductPanel productId={PRODUCT_ID} />
+    </CardHarness>,
+  );
+  return () => form;
+}
 
-    await waitFor(() => expect(updateProducts).toHaveBeenCalledTimes(1));
-    await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith('Таке значення вже існує'),
-    );
+describe('SimpleProductPanel: статус наявності — поле чернетки', () => {
+  it('вибір статусу міняє форму і не йде в мережу', async () => {
+    const form = renderPanel();
+    (await screen.findByRole('button', { name: 'status:in_stock' })).click();
+    expect(form().getValues('stockStatus')).toBe('out_of_stock');
+    expect(mocks.updateProducts).not.toHaveBeenCalled();
+  });
+
+  it('статус, виведений saveStock, повертається у форму', async () => {
+    const form = renderPanel();
+    (await screen.findByRole('button', { name: 'stock-saved' })).click();
+    expect(form().getValues('stockStatus')).toBe('on_order');
   });
 });

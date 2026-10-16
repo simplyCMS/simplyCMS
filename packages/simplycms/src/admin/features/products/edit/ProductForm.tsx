@@ -1,134 +1,118 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
 import { Loader2, Save } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
+import { LanguageTabs } from '../../translations/LanguageTabs';
+import {
+  TranslationContext,
+  type TranslationContextValue,
+} from '../../translations/translation-context';
 import { ProductMainFields } from './ProductMainFields';
 import { ProductMetaCard } from './ProductMetaCard';
 import { ProductSeoFields } from './ProductSeoFields';
 import { ProductSidebar } from './ProductSidebar';
 import {
-  productFormSchema,
-  type ProductFormValues,
-} from './product-form-schema';
-import {
-  formErrorBinding,
-  type FormErrorBinding,
-} from '../../../lib/apply-server-validation';
-
-/** Поля, чий UI (`ProductMainFields`) показує повідомлення серверної помилки. */
-const SERVER_ERROR_FIELDS = ['name', 'slug'] as const;
+  ProductCardContext,
+  type ProductCardContextValue,
+} from './product-card-context';
+import type { ProductFormValues } from './product-form-schema';
 
 interface Props {
-  /** `null` — новий товар (не створено, ID немає). */
-  readonly productId: string | null;
-  /** id власника фото: `productId` або згенерований наперед id нового товару. */
-  readonly entityId: string;
-  readonly defaultValues: ProductFormValues;
-  /** `binding` — привʼязка серверних помилок валідації до полів цієї форми (Тема 12). */
-  readonly onSubmit: (
-    values: ProductFormValues,
-    binding: FormErrorBinding,
-  ) => void | Promise<void>;
+  readonly form: UseFormReturn<ProductFormValues>;
+  readonly mode: 'create' | 'edit';
+  readonly card: ProductCardContextValue;
+  readonly translation: Omit<TranslationContextValue, 'active' | 'setActive'>;
+  readonly onSubmit: (values: ProductFormValues) => void | Promise<void>;
   readonly submitLabel: string;
-  /** Дати для `ProductMetaCard` — лише для ІСНУЮЧОГО товару. */
-  readonly meta?: { createdAt: Date; updatedAt: Date };
   /**
-   * Панелі-сателіти (`ProductEditPage`) — рендеряться ПІСЛЯ `</form>`, але
-   * всередині ТОГО САМОГО `FormProvider` (`<Form {...form}>`), тож
-   * `SimpleProductPanel`'s `useFormContext()` (поле `sku`) і далі бачить
-   * форму картки. `FormProvider` — чистий React-контекст, без власного DOM-
-   * вузла: «всередині Form» ≠ «нащадок `<form>`» (структурний фікс лишається
-   * чинним — жодна панель не є нащадком літерального `<form>`).
+   * Панелі-сателіти (модифікації, ціни, залишки, властивості) — ПІСЛЯ
+   * `</form>`, але всередині того ж `FormProvider`: `Button` ядра без `type`
+   * усередині `<form>` сабмітив би картку кожним своїм кліком, а читати
+   * чернетку картки (модифікації, значення) їм треба.
    */
   readonly children?: ReactNode;
 }
 
 /**
- * Композиція форми картки товару (Task 7): розмітка й `PluginSlot`-и — з
- * легасі `ProductEdit.tsx` БЕЗ дизайнерських змін, шар даних —
- * react-hook-form + Zod (`FormProvider`, підполя читають контекст).
- *
- * 🔴 Рев'ю хвилі C (BLOCKER, структурний фікс): панелі-сателіти
- * (модифікації/ціни/залишки, Task 8) — НЕ тут. `Button` ядра не задає
- * `type` ⇒ усередині `<form>` це `submit`; панель, змонтована як нащадок
- * цього `<form>`, сабмітила б картку кожним своїм кліком («Зберегти
- * залишки», ↑/↓ модифікації тощо). Тож `<form>` тут несе ЛИШЕ поля картки
- * (`ProductMainFields`/`ProductSeoFields`/сайдбар) — панелі рендерить
- * `ProductEditPage` СИБЛІНГОМ цього компонента, за ЖИВИМ рядком колекції
- * (Task 7 Step 3 — не за `useWatch` незбереженої форми: інакше перемикач
- * типу товару підміняв би панель ДО Save, а панель писала б у таблицю, де
- * БД ще каже `has_modifications` протилежне).
+ * Композиція картки товару: вкладки мов зверху, поля активної мови, бокова
+ * панель, єдина кнопка «Зберегти». Дані й збереження — у `ProductCard` /
+ * `NewProductPage` (тут лише розмітка й контексти).
  */
 export function ProductForm({
-  productId,
-  entityId,
-  defaultValues,
+  form,
+  mode,
+  card,
+  translation,
   onSubmit,
   submitLabel,
-  meta,
   children,
 }: Props) {
   const t = useT();
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
-    defaultValues,
-  });
+  const [active, setActive] = useState(translation.primary);
+  const productId = card.productId;
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(
-          (values) =>
-            onSubmit(values, formErrorBinding(form, SERVER_ERROR_FIELDS)),
-          () => toast.error(t('admin.products.fixFields')),
-        )}
-        className="space-y-6"
-      >
-        <div className="flex justify-end">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
+    <TranslationContext.Provider value={{ ...translation, active, setActive }}>
+      <ProductCardContext.Provider value={card}>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(
+              (values) => onSubmit(values),
+              () => toast.error(t('admin.products.fixFields')),
             )}
-            {submitLabel}
-          </Button>
-        </div>
-
-        <PluginSlot name="admin.product.form.before" context={{ productId }} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <ProductMainFields entityId={entityId} />
-            <ProductSeoFields />
-            <PluginSlot
-              name="admin.product.form.fields"
-              context={{ productId }}
-            />
-          </div>
-
-          <div className="space-y-6">
-            <ProductSidebar />
-            <PluginSlot
-              name="admin.product.form.sidebar"
-              context={{ productId }}
-            />
-            {productId && meta && (
-              <ProductMetaCard
-                id={productId}
-                createdAt={meta.createdAt}
-                updatedAt={meta.updatedAt}
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <LanguageTabs
+                languages={translation.languages}
+                active={active}
+                onChange={setActive}
+                statusOf={(code) =>
+                  translation.statuses[code]?.status ?? 'missing'
+                }
               />
-            )}
-          </div>
-        </div>
-      </form>
-      {children}
-    </Form>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {submitLabel}
+              </Button>
+            </div>
+
+            <PluginSlot
+              name="admin.product.form.before"
+              context={{ productId }}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <ProductMainFields mode={mode} />
+                <ProductSeoFields />
+                <PluginSlot
+                  name="admin.product.form.fields"
+                  context={{ productId }}
+                />
+              </div>
+
+              <div className="space-y-6">
+                <ProductSidebar />
+                <PluginSlot
+                  name="admin.product.form.sidebar"
+                  context={{ productId }}
+                />
+                {productId && <ProductMetaCard id={productId} />}
+              </div>
+            </div>
+          </form>
+          {children}
+        </Form>
+      </ProductCardContext.Provider>
+    </TranslationContext.Provider>
   );
 }

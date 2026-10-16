@@ -4,6 +4,7 @@
  * товар з вітрини. Виніс із `admin-catalog.mjs` — канон 150 рядків.
  */
 import { productCountBySlug } from './admin-sql.mjs';
+import { sql } from './sql.mjs';
 import { pollUntil } from './admin-shipping-sql.mjs';
 import { parseMoney } from './selectors.mjs';
 import { waitToast } from './wait.mjs';
@@ -47,29 +48,40 @@ export async function verifyStorefront({ page, base, check, section, slug }) {
   );
 }
 
-/** Review Focus 1 наживо: дубль slug — зрозумілий тост, не текст SQL. */
+/**
+ * Review Focus 1 наживо: адреса, що вже зайнята іншим товаром, — зрозумілий
+ * тост, не текст SQL. При СТВОРЕННІ дубль адреси не помилка (генератор дає
+ * вільну — `slug-2`), тож конфлікт перевіряється там, де він можливий: явна
+ * зміна адреси існуючого товару (`PathField` → `products.setPath`).
+ */
 export async function verifyDuplicateSlugToast({
   page,
   base,
+  dbUrl,
   check,
   section,
   slug,
 }) {
   await page.goto(`${base}/admin/products/new`, { waitUntil: 'networkidle' });
   await page.locator('#product-name').fill('Дубль');
-  await page.locator('#product-slug').fill(slug);
   await page.locator('#product-section').click();
   await page.getByRole('option', { name: section.name }).click();
   await page.getByRole('button', { name: 'Створити' }).click();
+  await page.waitForURL(/\/admin\/products\/[0-9a-f-]{36}$/, {
+    timeout: 15_000,
+  });
+  await page.locator('#product-path-uk').waitFor({ timeout: 15_000 });
+  await page.locator('#product-path-uk').fill(slug);
+  await page.getByRole('button', { name: 'Зберегти адресу' }).click();
   // 🔴 НЕ `.isVisible({ timeout })`: `timeout` там deprecated і мовчки
-  // ігнорується (Playwright не чекає появи, читає DOM ОДРАЗУ) — гонка
-  // проти асинхронного 409+тосту, спіймана живим прогоном Е3-20.
-  // `.waitFor({ state: 'visible' })` реально чекає й ретраїть.
+  // ігнорується — `waitToast` реально чекає й ретраїть.
   check(
-    'адмін: дубль slug → тост i18n',
+    'адмін: дубль адреси → тост i18n',
     await waitToast(page, 'Такий URL (slug) уже зайнятий'),
     '',
   );
+  // Дубль-товар не лишаємо: він заважав би перевірці видалення нижче.
+  await sql(dbUrl, `delete from public.products where name = 'Дубль'`);
 }
 
 /** Видалення в списку прибирає рядок оптимістично і товар з вітрини (204/404). */

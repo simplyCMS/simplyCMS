@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
+import { removeProduct } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import {
@@ -50,19 +51,24 @@ export default function ProductsTable({
   const openEdit = (productId: string) =>
     navigate({ to: adminPath('products/$productId'), params: { productId } });
 
-  // Review Focus 2: оптимістичне видалення відкочується САМЕ бібліотекою
-  // (rollback колекції) при помилці onDelete — тут лишається пояснити чому.
-  const handleDelete = (row: ProductListRow) => {
-    const tx = products.delete(row.id);
-    tx.isPersisted.promise
-      .then(() => toast.success(t('admin.products.deleted')))
-      .catch((e: unknown) => {
-        const key = adminErrorKey(e);
-        toast.error(
-          key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
-        );
-      });
+  // Видалення — команда `products.remove` з версією рядка, яку бачив
+  // список; чужа правка між читанням і видаленням дає 412 (діалог не потрібен:
+  // рядок лишається, а список перечитується).
+  const handleDelete = async (row: ProductListRow) => {
     setDeleteTarget(null);
+    try {
+      await removeProduct({
+        data: { id: row.id, expectedVersion: row.version },
+      });
+      products.utils.writeDelete(row.id);
+      toast.success(t('admin.products.deleted'));
+    } catch (e: unknown) {
+      const key = adminErrorKey(e);
+      toast.error(
+        key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
+      );
+      await products.utils.refetch();
+    }
   };
 
   return (

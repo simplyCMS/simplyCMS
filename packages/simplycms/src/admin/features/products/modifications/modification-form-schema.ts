@@ -2,22 +2,26 @@ import { z } from 'zod';
 import { SLUG_RE } from '../edit/product-form-schema';
 
 /**
- * Значення форми модифікації (Task 8, Step 3). Slug — той самий регекс,
- * що в товару (Task 7).
- *
- * 🔴 `stockStatus` — `optional()` (рев'ю C6, item 1): поле потрібне ЛИШЕ
- * на шляху СТВОРЕННЯ (`useModifications.create`, `ModificationStatusControl`
- * пише в `form` живого рядка ще нема). При РЕДАГУВАННІ живий рядок уже є —
- * статус іде окремим миттєвим `mods.update` над ним
- * (`ModificationStatusControl`), а `toModificationFormValues` (edit-шлях)
- * НЕ кладе `stockStatus` у defaultValues, щоб не лишати мертве поле форми.
+ * Значення форми модифікації. Назва й токен — за мовами (`names`, `tokens`);
+ * фото — ключі сховища цієї модифікації. Статусу наявності тут немає: його
+ * виводить облік залишків (`products.saveStock`), а не форма.
  */
 export const modificationFormSchema = z.object({
-  name: z.string().trim().min(1),
-  slug: z.string().trim().regex(SLUG_RE),
+  names: z.record(z.string(), z.string().trim()),
+  tokens: z.record(z.string(), z.string().trim()),
   sku: z.string().trim(),
-  stockStatus: z.enum(['in_stock', 'out_of_stock', 'on_order']).optional(),
   isDefault: z.boolean(),
   images: z.array(z.string()),
 });
 export type ModificationFormValues = z.infer<typeof modificationFormSchema>;
+
+/** Назва основною мовою обовʼязкова (І4), токен — у форматі адреси, якщо заданий. */
+export function modificationFormSchemaFor(primary: string) {
+  return modificationFormSchema.superRefine((v, ctx) => {
+    if (!v.names[primary])
+      ctx.addIssue({ code: 'custom', path: ['names', primary], message: 'n' });
+    for (const [l, slug] of Object.entries(v.tokens))
+      if (slug !== '' && !SLUG_RE.test(slug))
+        ctx.addIssue({ code: 'custom', path: ['tokens', l], message: 't' });
+  });
+}

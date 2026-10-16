@@ -40,14 +40,14 @@ import { createMutableServer } from '../../../../../admin-data/__tests__/support
 const { listProducts, listSections, removeProducts } = vi.hoisted(() => ({
   listProducts: vi.fn(async () => [] as unknown[]),
   listSections: vi.fn(async () => [] as unknown[]),
-  removeProducts: vi.fn(async () => ({ count: 1 })),
+  removeProducts: vi.fn(async () => ({ id: 'p1' })),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock({
     listProducts,
-    removeProducts,
+    removeProduct: removeProducts,
     listSections,
   }),
 );
@@ -77,6 +77,7 @@ function makeProduct(i: number, overrides: Record<string, unknown> = {}) {
     images: [],
     isActive: true,
     isFeatured: false,
+    version: 4,
     stockStatus: 'in_stock',
     createdAt: new Date(2026, 0, 1),
     updatedAt: new Date(2026, 0, 1),
@@ -175,7 +176,7 @@ describe('ProductsPage', () => {
     );
   });
 
-  it('(4) Review Focus 2: 23503 на видаленні → rollback, товар знову в списку, тост conflictReference', async () => {
+  it('(4) Review Focus 2: 23503 на видаленні → товар лишається в списку, тост conflictReference', async () => {
     // Сервер зі станом: відкат оптимістичного видалення запускає повторний
     // запит зрізу (db ordered-source-loader, TSDB-1) — `mockResolvedValueOnce`
     // уже витрачений, і дефолтний [] затер би повернутий рядок.
@@ -202,14 +203,38 @@ describe('ProductsPage', () => {
       confirm.click();
     });
 
-    // Оптимістичне видалення відкочується — рядок повертається в таблицю.
+    // Видалення неоптимістичне: відмова лишає рядок у таблиці.
     await waitFor(() => expect(screen.getByText('Товар 1')).toBeTruthy());
     expect(toastError).toHaveBeenCalledWith(
       'Запис використовується (наприклад, у замовленнях) — деактивуйте його замість видалення',
     );
-    // Відкат запускає повторний запит зрізу (ordered-source-loader, TSDB-1);
-    // чекаємо його відповіді — сервер рядок не видаляв, тож він лишається.
+    // Після відмови список перечитується; сервер рядок не видаляв — він лишається.
     await awaitRevalidation(listProducts, before);
     expect(screen.getByText('Товар 1')).toBeTruthy();
+  });
+
+  it('(5) видалення шле команду з версією рядка і прибирає його зі списку', async () => {
+    const srv = createMutableServer([makeProduct(1) as { id: string }]);
+    listProducts.mockImplementation(srv.list as never);
+    removeProducts.mockImplementationOnce((async () => {
+      srv.remove('p1');
+      return { id: 'p1' };
+    }) as never);
+    renderPage();
+    await screen.findByText('Товар 1');
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Видалити' }).click();
+    });
+    const dialog = await screen.findByRole('alertdialog');
+    await act(async () => {
+      within(dialog).getByRole('button', { name: 'Видалити' }).click();
+    });
+
+    await waitFor(() => expect(screen.queryByText('Товар 1')).toBeNull());
+    expect(removeProducts).toHaveBeenCalledWith({
+      data: { id: 'p1', expectedVersion: 4 },
+    });
+    expect(toastSuccess).toHaveBeenCalledWith('Товар видалено');
   });
 });

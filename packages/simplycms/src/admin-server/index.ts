@@ -20,16 +20,8 @@ import {
   removeManyOrderStatusesOp,
   productsOps,
   productModificationsOps,
-  setDefaultModificationInput,
-  setDefaultModificationOp,
-  reorderModificationInput,
-  reorderModificationOp,
   productPricesOps,
-  saveProductPricesInput,
-  saveProductPricesOp,
   stockOps,
-  saveStockInput,
-  saveStockOp,
   productPropertyValuesOps,
   modificationPropertyValuesOps,
   sectionsOps,
@@ -232,103 +224,25 @@ export const listProducts = createServerFn({ method: 'GET' })
   .validator(adminInput(productsOps.subsetSchema))
   .handler(productsOps.list);
 
-export const insertProducts = createServerFn({ method: 'POST' })
-  .validator(adminInput(productsOps.insertSchema))
-  .handler(productsOps.insert);
-
-export const updateProducts = createServerFn({ method: 'POST' })
-  .validator(adminInput(productsOps.updateSchema))
-  .handler(productsOps.update);
-
-export const removeProducts = createServerFn({ method: 'POST' })
-  .validator(adminInput(productsOps.removeSchema))
-  .handler(productsOps.remove);
-
 export const listProductModifications = createServerFn({ method: 'GET' })
   .validator(adminInput(productModificationsOps.subsetSchema))
   .handler(productModificationsOps.list);
-
-export const insertProductModifications = createServerFn({ method: 'POST' })
-  .validator(adminInput(productModificationsOps.insertSchema))
-  .handler(productModificationsOps.insert);
-
-export const updateProductModifications = createServerFn({ method: 'POST' })
-  .validator(adminInput(productModificationsOps.updateSchema))
-  .handler(productModificationsOps.update);
-
-export const removeProductModifications = createServerFn({ method: 'POST' })
-  .validator(adminInput(productModificationsOps.removeSchema))
-  .handler(productModificationsOps.remove);
-
-// 🔴 Task 4 (Е3): дефолт і порядок модифікацій — iменовані операції, не
-// фабричний insert/update (single-default індекс, контракт хвиль Е1б).
-export const setDefaultProductModification = createServerFn({
-  method: 'POST',
-})
-  .validator(adminInput(setDefaultModificationInput))
-  .handler(setDefaultModificationOp);
-
-export const reorderProductModification = createServerFn({ method: 'POST' })
-  .validator(adminInput(reorderModificationInput))
-  .handler(reorderModificationOp);
 
 export const listProductPrices = createServerFn({ method: 'GET' })
   .validator(adminInput(productPricesOps.subsetSchema))
   .handler(productPricesOps.list);
 
-// 🔴 Атомарна заміна набору цін пари товар/модифікація (Е3-10) — не
-// фабричні insert/update/remove: одна кнопка «Зберегти ціни», один акт.
-export const saveProductPrices = createServerFn({ method: 'POST' })
-  .validator(adminInput(saveProductPricesInput))
-  .handler(saveProductPricesOp);
-
 export const listStock = createServerFn({ method: 'GET' })
   .validator(adminInput(stockOps.subsetSchema))
   .handler(stockOps.list);
-
-// 🔴 Ручний облік залишків з гвардованим переходом stock_status в ОДНІЙ
-// транзакції (Е3-3) — не фабричний ops.update.
-export const saveStock = createServerFn({ method: 'POST' })
-  .validator(adminInput(saveStockInput))
-  .handler(saveStockOp);
 
 export const listProductPropertyValues = createServerFn({ method: 'GET' })
   .validator(adminInput(productPropertyValuesOps.subsetSchema))
   .handler(productPropertyValuesOps.list);
 
-export const insertProductPropertyValues = createServerFn({ method: 'POST' })
-  .validator(adminInput(productPropertyValuesOps.insertSchema))
-  .handler(productPropertyValuesOps.insert);
-
-export const updateProductPropertyValues = createServerFn({ method: 'POST' })
-  .validator(adminInput(productPropertyValuesOps.updateSchema))
-  .handler(productPropertyValuesOps.update);
-
-export const removeProductPropertyValues = createServerFn({ method: 'POST' })
-  .validator(adminInput(productPropertyValuesOps.removeSchema))
-  .handler(productPropertyValuesOps.remove);
-
 export const listModificationPropertyValues = createServerFn({ method: 'GET' })
   .validator(adminInput(modificationPropertyValuesOps.subsetSchema))
   .handler(modificationPropertyValuesOps.list);
-
-export const insertModificationPropertyValues = createServerFn({
-  method: 'POST',
-})
-  .validator(adminInput(modificationPropertyValuesOps.insertSchema))
-  .handler(modificationPropertyValuesOps.insert);
-
-export const updateModificationPropertyValues = createServerFn({
-  method: 'POST',
-})
-  .validator(adminInput(modificationPropertyValuesOps.updateSchema))
-  .handler(modificationPropertyValuesOps.update);
-
-export const removeModificationPropertyValues = createServerFn({
-  method: 'POST',
-})
-  .validator(adminInput(modificationPropertyValuesOps.removeSchema))
-  .handler(modificationPropertyValuesOps.remove);
 
 // 🔴 Task 3 (Е4): довідники каталогу — записувані ресурси замість читальних
 // Е3 (Е3-1 → Е4). Операція всього CRUD — catalog.write (Е3-6). Незмінні
@@ -816,7 +730,7 @@ export const removeProduct = createServerFn({ method: 'POST' })
 
 // М1, Task 12: токен модифікації, ціни й залишки — команди реєстру (Р14: ціни й
 // залишки версію агрегата не збільшують). Старі `saveProductPrices`/`saveStock`
-// лишаються до перенесення адмінки (Task 18).
+// прибрано: адмінка (Task 13) ходить лише цими командами.
 export const setProductModificationToken = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) =>

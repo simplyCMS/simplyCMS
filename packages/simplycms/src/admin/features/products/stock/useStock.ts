@@ -5,15 +5,15 @@ import {
   stockCollection,
   useCollection,
 } from 'simplycms/admin-data';
-import { saveStock } from 'simplycms/admin-server';
-import type { Product, ProductModification } from 'simplycms/schema/types';
+import { saveStockCommand } from 'simplycms/admin-server';
+import type { StockStatus } from 'simplycms/contracts';
 
 /**
- * Ручний облік залишків (Task 8, Step 2) — `saveStock` (Е3-3) в одній
- * транзакції пише кількості й гвардовано перераховує `stockStatus` цілі.
- * Write-back іде у ДВІ колекції: залишки і — обовʼязково — рядок цілі
- * (товар або модифікація), інакше бейдж статусу лишався б застарілим без
- * refetch.
+ * Ручний облік залишків — команда `products.saveStock` (кількості + гвардований
+ * перехід `stockStatus` цілі в одній транзакції). Відповідь не несе рядків, тож
+ * після збереження колекції лише для читання (залишки, цільовий товар чи
+ * модифікація) перечитуються: інакше бейдж статусу лишався б застарілим.
+ * Версію агрегата команда не чіпає.
  */
 export function useStock(productId: string, modificationId: string | null) {
   const stock = useCollection(stockCollection);
@@ -30,34 +30,28 @@ export function useStock(productId: string, modificationId: string | null) {
         ),
   });
 
-  const save = async (quantities: Record<string, string>): Promise<boolean> => {
+  /** `null` — кількості невалідні; інакше новий статус наявності цілі. */
+  const save = async (
+    quantities: Record<string, string>,
+  ): Promise<{ stockStatus: StockStatus } | null> => {
     const parsed = Object.entries(quantities).map(([pickupPointId, raw]) => ({
       pickupPointId,
       quantity: raw.trim() === '' ? 0 : Number(raw),
     }));
     if (parsed.some((q) => !Number.isInteger(q.quantity) || q.quantity < 0))
-      return false;
-    const res = await saveStock({
+      return null;
+    const res = await saveStockCommand({
       data: {
         productId: modificationId ? null : productId,
         modificationId,
         quantities: parsed,
       },
     });
-    stock.utils.writeBatch(() => {
-      for (const row of res.rows) stock.utils.writeUpsert(row);
-    });
-    // 🔴 Статус цілі змінився гвардом на сервері (Е3-3) — пишемо рядок цілі
-    // туди, звідки його читає картка, інакше бейдж показав би старий статус.
-    // Цільова колекція тут лише отримана через `useCollection`, без власної
-    // підписки; окремий `preload()` не потрібен — write-утиліти
-    // `query-db-collection` самі стартують sync, якщо він ще не йшов.
-    if (modificationId) {
-      mods.utils.writeUpsert(res.target as ProductModification);
-    } else {
-      products.utils.writeUpsert(res.target as Product);
-    }
-    return true;
+    await Promise.all([
+      stock.utils.refetch(),
+      modificationId ? mods.utils.refetch() : products.utils.refetch(),
+    ]);
+    return { stockStatus: res.stockStatus };
   };
 
   return { rows, save };

@@ -1,58 +1,65 @@
 // @vitest-environment jsdom
 /**
- * Невалідна форма картки (рев'ю): submit із порожньою назвою — інлайн-
+ * Невалідна форма картки: submit із порожньою назвою основної мови — інлайн-
  * помилка під полем, тост `admin.products.fixFields`, onSubmit НЕ
  * викликано. Мутація: прибрати onInvalid із form.handleSubmit → тост не
  * показано → червоне.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { I18nProvider } from 'simplycms/i18n';
+import { ResizeObserverStub } from './test-engine-stub';
 
-vi.stubGlobal(
-  'ResizeObserver',
-  class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  },
-);
-
+vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock({}),
 );
+vi.mock('../../../../components/RichTextEditor', () => ({
+  RichTextEditor: () => null,
+}));
+vi.mock('simplycms/core/hooks/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
 
 import { ProductForm } from '../ProductForm';
-import type { ProductFormValues } from '../product-form-schema';
+import { blankForm } from '../product-aggregate';
+import {
+  productFormSchemaFor,
+  type ProductFormValues,
+} from '../product-form-schema';
 
-const DEFAULT_VALUES: ProductFormValues = {
-  name: '',
-  slug: 'panel',
-  shortDescription: '',
-  description: '',
-  metaTitle: '',
-  metaDescription: '',
-  sectionId: '',
-  isActive: true,
-  isFeatured: false,
-  hasModifications: false,
-  sku: '',
-  stockStatus: 'in_stock',
-  images: [],
-};
+const LANGS = [{ code: 'uk', name: 'Українська', isDefault: true }];
 
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient();
+function Harness({ onSubmit }: { onSubmit: () => void }) {
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchemaFor('uk')),
+    defaultValues: blankForm(['uk']),
+  });
   return (
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
-    </QueryClientProvider>
+    <ProductForm
+      form={form}
+      mode="create"
+      translation={{ languages: LANGS, primary: 'uk', statuses: {} }}
+      card={{
+        productId: null,
+        entityId: 'new-product-id',
+        paths: {},
+        persistedModificationIds: new Set(),
+        modificationErrors: {},
+        valueErrors: {},
+        clearValueError: () => undefined,
+        onConflict: () => undefined,
+      }}
+      onSubmit={onSubmit}
+      submitLabel="Створити"
+    />
   );
 }
 
@@ -63,22 +70,18 @@ describe('ProductForm: невалідна назва — інлайн-помил
   it('submit із порожньою назвою: помилка під полем, тост, onSubmit НЕ викликано', async () => {
     const onSubmit = vi.fn();
     render(
-      <ProductForm
-        productId={null}
-        entityId="new-product-id"
-        defaultValues={DEFAULT_VALUES}
-        onSubmit={onSubmit}
-        submitLabel="Створити"
-      />,
-      { wrapper },
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nProvider locale="uk">
+          <Harness onSubmit={onSubmit} />
+        </I18nProvider>
+      </QueryClientProvider>,
     );
 
-    // 🔴 jsdom не тригерить submit-подію форми з голого fireEvent.click по
-    // ВКЛАДЕНІЙ type=submit кнопці (той самий клас, що й ResizeObserver/
-    // hasPointerCapture-прогалини) — submit форми напряму, як реальний
-    // браузер робить це за кліком.
-    const btn = screen.getByRole('button', { name: /Створити/ });
-    fireEvent.submit(btn.closest('form')!);
+    // 🔴 jsdom не тригерить submit-подію з голого click по вкладеній
+    // type=submit кнопці — submit форми напряму, як робить браузер.
+    fireEvent.submit(
+      screen.getByRole('button', { name: /Створити/ }).closest('form')!,
+    );
 
     const error = await screen.findByRole('alert');
     expect(error.textContent).toBe('Введіть назву товару');

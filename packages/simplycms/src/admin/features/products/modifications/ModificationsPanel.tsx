@@ -1,55 +1,36 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
-import type { ProductModification } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Plus } from 'lucide-react';
+import type { DraftModification } from '../edit/product-form-schema';
 import { useModifications } from './useModifications';
 import { ModificationsTable } from './ModificationsTable';
 import { ModificationDialog } from './ModificationDialog';
-import type { ModificationFormValues } from './modification-form-schema';
 
 interface Props {
   readonly productId: string;
-  /** Розділ товару — протягується в `ModificationDialog` для секції властивостей (Task 10). */
+  /** Розділ товару — протягується в `ModificationDialog` для секції властивостей. */
   readonly sectionId: string | null;
 }
 
 /**
- * Модифікації товару (Task 8, Step 3–4) — картка легасі
- * `ProductModifications.tsx`: таблиця + діалог створення/редагування.
- * Дефолт і порядок — іменовані операції `useModifications`.
+ * Модифікації товару: таблиця + діалог. Діалог лише ЗАСТОСОВУЄ зміни до
+ * чернетки картки (`useModifications`); на сервер вони йдуть кнопкою
+ * «Зберегти» картки разом з рештою агрегата.
  */
 export function ModificationsPanel({ productId, sectionId }: Props) {
   const t = useT();
-  const data = useModifications(productId);
-  const [editing, setEditing] = useState<ProductModification | null>(null);
+  const data = useModifications();
+  const [editing, setEditing] = useState<DraftModification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  // К3-Е6д-1: id нової модифікації наперед — власник її фото, він же йде в insert.
+  // К3-Е6д-1: id нової модифікації наперед — власник її запису в чернетці.
   const [newId, setNewId] = useState(() => crypto.randomUUID());
 
   const openCreate = () => {
     setEditing(null);
     setNewId(crypto.randomUUID());
     setDialogOpen(true);
-  };
-  const openEdit = (mod: ProductModification) => {
-    setEditing(mod);
-    setDialogOpen(true);
-  };
-
-  // 🔴 Помилку тут НЕ ловимо: `ModificationDialog.submit` сам мапить її
-  // через `adminErrorKey` і лишає діалог відкритим (Review Focus 1) —
-  // подвійний catch дав би два тости на одну відмову.
-  const handleCreate = async (values: ModificationFormValues, id: string) => {
-    await data.create(values, id);
-    toast.success(t('admin.products.mods.created'));
-    return id;
-  };
-  const handleUpdate = async (id: string, values: ModificationFormValues) => {
-    await data.update(id, values);
-    toast.success(t('admin.products.mods.updated'));
   };
 
   return (
@@ -64,12 +45,18 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
             {t('common.add')}
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {t('admin.translations.unsavedChildren')}
+        </p>
       </CardHeader>
       <CardContent>
         <ModificationsTable
           productId={productId}
           data={data}
-          onEdit={openEdit}
+          onEdit={(mod) => {
+            setEditing(mod);
+            setDialogOpen(true);
+          }}
         />
       </CardContent>
       <ModificationDialog
@@ -79,8 +66,7 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
         sectionId={sectionId}
         mod={editing}
         newId={newId}
-        onCreate={handleCreate}
-        onUpdate={handleUpdate}
+        onApply={(id, values) => data.save(id, values)}
       />
     </Card>
   );

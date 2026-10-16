@@ -4,7 +4,7 @@ import {
   productPricesCollection,
   useCollection,
 } from 'simplycms/admin-data';
-import { saveProductPrices } from 'simplycms/admin-server';
+import { saveProductPricesCommand } from 'simplycms/admin-server';
 import { isMoney, normalizeMoneyInput } from 'simplycms/domain/money';
 
 export type PriceDraft = Record<string, { price: string; oldPrice: string }>;
@@ -44,9 +44,8 @@ export function buildPricesInput(
 /**
  * Ціни пари товар/модифікація (Task 8, Step 1). Читання — on-demand зріз
  * (`productId eq` + `modificationId eq`/`isNull`, обидва push-down — Е3-14);
- * запис — ОДИН атомарний `saveProductPrices` (Е3-10) і write-back рядків.
- * Колекція цін — на читання (`admin-data/collections/product-prices.ts`):
- * без `persistenceHandlers`, запис лише цим хуком.
+ * запис — ОДНА атомарна команда `products.savePrices` (Е3-10), після якої
+ * колекція (лише читання) перечитується. Версію агрегата команда не чіпає.
  */
 export function usePrices(productId: string, modificationId: string | null) {
   const prices = useCollection(productPricesCollection);
@@ -73,13 +72,11 @@ export function usePrices(productId: string, modificationId: string | null) {
     const built = buildPricesInput(draft);
     if ('invalidTypeId' in built) return built.invalidTypeId;
     const input = built.input;
-    const res = await saveProductPrices({
+    await saveProductPricesCommand({
       data: { productId, modificationId, prices: input },
     });
-    prices.utils.writeBatch(() => {
-      for (const id of res.removedIds) prices.utils.writeDelete(id);
-      for (const row of res.rows) prices.utils.writeUpsert(row);
-    });
+    // Команда не повертає рядків: колекція лише для читання перечитується.
+    await prices.utils.refetch();
     return null;
   };
 

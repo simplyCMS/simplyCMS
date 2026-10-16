@@ -1,11 +1,8 @@
-import { eq, useLiveQuery } from '@tanstack/react-db';
 import { useFormContext } from 'react-hook-form';
-import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Input } from 'simplycms/ui/input';
 import { Label } from 'simplycms/ui/label';
-import { reportTxError } from '../../../lib/report-tx-error';
 import { PricesEditor } from '../prices/PricesEditor';
 import { StockEditor } from '../stock/StockEditor';
 import { StockStatusSelect } from '../stock/StockStatusSelect';
@@ -16,26 +13,14 @@ interface Props {
 }
 
 /**
- * Ціни/SKU/наявність ПРОСТОГО товару (Task 8, Step 4) — композиція легасі
- * `SimpleProductFields.tsx`. 🔴 МAJOR (рев'ю хвилі C): `stockStatus` —
- * ОКРЕМИЙ контрол із МИТТЄВИМ збереженням (`products.update` напряму над
- * живим рядком), а НЕ поле форми картки — інакше стейл `defaultValues`
- * RHF (без `reset`) переписав би статус, щойно виставлений `saveStock`
- * (Е3-3) або цим самим контролом, наступним Save картки.
- * `sku` лишається полем форми (Task 7, `productFormSchema`/`toProductPatch`)
- * — конфлікту стейлості нема, бо sku не змінюється поза формою.
+ * Ціни/SKU/наявність ПРОСТОГО товару. Статус наявності — поле картки
+ * (`base.stockStatus`, зберігається її кнопкою), а коли `saveStock` виводить
+ * статус із залишків, форма отримує його назад (`onStatus`) — інакше наступне
+ * збереження картки перезаписало б щойно виведений статус застарілим.
  */
 export function SimpleProductPanel({ productId }: Props) {
   const t = useT();
-  const { register } = useFormContext<ProductFormValues>();
-  const products = useCollection(productsCollection);
-  const { data: row } = useLiveQuery({
-    query: (q) =>
-      q
-        .from({ p: products })
-        .where(({ p }) => eq(p.id, productId))
-        .findOne(),
-  });
+  const { register, watch, setValue } = useFormContext<ProductFormValues>();
 
   return (
     <>
@@ -57,28 +42,19 @@ export function SimpleProductPanel({ productId }: Props) {
                 placeholder="INV-001"
               />
             </div>
-            {row && (
-              <StockStatusSelect
-                value={row.stockStatus}
-                onChange={(v) => {
-                  // 🔴 Item 2: без .catch — відхилена мутація тихо
-                  // відкочується (бібліотека сама) і лишає unhandled
-                  // rejection у консолі.
-                  const tx = products.update(productId, (d) => {
-                    d.stockStatus = v;
-                  });
-                  tx.isPersisted.promise.catch((e: unknown) =>
-                    reportTxError(t, e),
-                  );
-                }}
-              />
-            )}
+            <StockStatusSelect
+              value={watch('stockStatus')}
+              onChange={(v) =>
+                setValue('stockStatus', v, { shouldDirty: true })
+              }
+            />
           </div>
 
           <StockEditor
             productId={productId}
             modificationId={null}
             showCard={false}
+            onStatus={(status) => setValue('stockStatus', status)}
           />
         </CardContent>
       </Card>

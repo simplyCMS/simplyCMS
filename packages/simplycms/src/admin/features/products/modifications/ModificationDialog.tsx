@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
-import type { ProductModification } from 'simplycms/schema/types';
 import { Button } from 'simplycms/ui/button';
 import { Form } from 'simplycms/ui/form';
 import {
@@ -12,63 +11,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'simplycms/ui/dialog';
-import { Loader2 } from 'lucide-react';
-import { adminErrorKey } from '../../../lib/admin-error';
+import { useProductCard } from '../edit/product-card-context';
+import type { ProductFormValues } from '../edit/product-form-schema';
+import { useTranslationContext } from '../../translations/translation-context';
 import {
-  applyServerValidation,
-  formErrorBinding,
-} from '../../../lib/apply-server-validation';
-import {
-  modificationFormSchema,
+  modificationFormSchemaFor,
   type ModificationFormValues,
 } from './modification-form-schema';
 import { ModificationFormFields } from './ModificationFormFields';
 import { ModificationDialogSections } from './ModificationDialogSections';
-import { ModificationStatusControl } from './ModificationStatusControl';
 import { resolveModFormValues } from './modification-form-values';
+import type { DraftModification } from '../edit/product-form-schema';
 
 const DIALOG_FORM_ID = 'modification-dialog-form';
-/** Поля, чий UI (`ModificationFormFields`) показує повідомлення серверної помилки. */
-const SERVER_ERROR_FIELDS = ['name', 'slug'] as const;
 
 interface Props {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly productId: string;
-  /** Розділ товару — для секції властивостей `ModificationDialogSections` (Task 10). */
+  /** Розділ товару — для секції властивостей `ModificationDialogSections`. */
   readonly sectionId: string | null;
-  /** `null` — нова модифікація (ціни/залишки/властивості — недоступні). */
-  readonly mod: ProductModification | null;
-  /** id нової модифікації, згенерований наперед (власник її фото). */
+  /** `null` — нова модифікація. */
+  readonly mod: DraftModification | null;
+  /** id нової модифікації, згенерований наперед. */
   readonly newId: string;
-  readonly onCreate: (
-    values: ModificationFormValues,
-    id: string,
-  ) => Promise<string>;
-  readonly onUpdate: (
-    id: string,
-    values: ModificationFormValues,
-  ) => Promise<void>;
+  /** Застосувати значення до чернетки картки (мережі тут немає). */
+  readonly onApply: (id: string, values: ModificationFormValues) => void;
 }
 
 /**
- * Форма модифікації (Task 8, Step 3) — розмітка легасі
- * `ProductModifications.tsx` (діалог), react-hook-form + Zod. Конфлікт
- * slug (`product_modifications_product_slug_unique`) — тост
- * `adminErrorKey`, форма лишається відкритою з введеним (Review Focus 1).
+ * Форма модифікації: react-hook-form + Zod. «Застосувати» змінює чернетку
+ * картки, а не БД.
  *
- * 🔴 Рев'ю хвилі C (BLOCKER, структурний фікс): `<form>` несе ЛИШЕ поля
- * модифікації (`ModificationFormFields`) — Collapsible-и цін/залишків
- * (`ModificationDialogSections`) ПОЗА нею, у тому ж `DialogContent`, щоб
- * їхні кнопки не сабмітили діалог. Кнопки внизу — теж поза `<form>`, але
- * сабмітять її через HTML5 `form={DIALOG_FORM_ID}` (не DOM-нащадок,
- * триггер по id — так само зберігається візуальний порядок «поля →
- * секції → кнопки»).
- *
- * 🔴 МAJOR: статус наявності — у ФОРМІ лише при СТВОРЕННІ (нема живого
- * рядка, куди писати миттєво); при РЕДАГУВАННІ — окремий
- * `StockStatusSelect` над живим рядком (`mods.update` напряму), той самий
- * принцип, що й `SimpleProductPanel`.
+ * 🔴 Структура: `<form>` несе ЛИШЕ поля модифікації — секції цін/залишків/
+ * властивостей ПОЗА нею (їхні кнопки не мусять сабмітити діалог), а кнопки
+ * внизу сабмітять форму через HTML5 `form={DIALOG_FORM_ID}`. Секції доступні
+ * лише для модифікації, що вже є в БД: ціни й залишки писати ще нікуди.
  */
 export function ModificationDialog({
   open,
@@ -77,44 +55,31 @@ export function ModificationDialog({
   sectionId,
   mod,
   newId,
-  onCreate,
-  onUpdate,
+  onApply,
 }: Props) {
   const t = useT();
+  const { languages, primary } = useTranslationContext();
+  const card = useProductCard();
+  const parent = useFormContext<ProductFormValues>();
+  const codes = languages.map((l) => l.code);
   const form = useForm<ModificationFormValues>({
-    resolver: zodResolver(modificationFormSchema),
-    defaultValues: resolveModFormValues(mod),
+    resolver: zodResolver(modificationFormSchemaFor(primary)),
+    defaultValues: resolveModFormValues(mod, parent.getValues('images'), codes),
   });
 
-  // Ре-ініціалізація полів при відкритті на ІНШУ модифікацію/створення —
-  // `useForm` бере `defaultValues` лише при монтуванні діалогу.
+  // `useForm` бере `defaultValues` лише при монтуванні: при відкритті на ІНШУ
+  // модифікацію чи створення поля ініціалізуємо наново.
   useEffect(() => {
-    if (open) form.reset(resolveModFormValues(mod));
+    if (open)
+      form.reset(resolveModFormValues(mod, parent.getValues('images'), codes));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- перелік мов стабільний протягом відкриття
   }, [open, mod, form]);
 
-  const submit = async (values: ModificationFormValues) => {
-    try {
-      if (mod) await onUpdate(mod.id, values);
-      else await onCreate(values, newId);
-      onOpenChange(false);
-    } catch (e) {
-      // Тема 12: помилка валідації сервера → помилка поля, тост — лише для
-      // немапленого (див. `applyServerValidation`).
-      const binding = formErrorBinding(form, SERVER_ERROR_FIELDS);
-      const rest = applyServerValidation(e, binding.setError, {
-        t,
-        fieldFor: binding.fieldFor,
-      });
-      if (rest !== null) {
-        if (rest.length > 0) toast.error(t('admin.validation.failed'));
-        return;
-      }
-      const key = adminErrorKey(e);
-      toast.error(
-        key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
-      );
-    }
+  const submit = (values: ModificationFormValues) => {
+    onApply(mod?.id ?? newId, values);
+    onOpenChange(false);
   };
+  const persisted = mod !== null && card.persistedModificationIds.has(mod.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,17 +92,22 @@ export function ModificationDialog({
         <Form {...form}>
           <form
             id={DIALOG_FORM_ID}
-            onSubmit={form.handleSubmit(submit, () =>
-              toast.error(t('admin.products.fixFields')),
-            )}
+            onSubmit={(e) => {
+              // Вкладена форма в порталі не мусить сабмітити картку-предка.
+              e.stopPropagation();
+              return form.handleSubmit(submit, () =>
+                toast.error(t('admin.products.fixFields')),
+              )(e);
+            }}
             className="space-y-4"
           >
-            <ModificationFormFields modId={mod?.id ?? newId} />
+            <ModificationFormFields
+              productId={productId}
+              modId={mod?.id ?? newId}
+            />
           </form>
 
-          <ModificationStatusControl mod={mod} form={form} />
-
-          {mod && (
+          {persisted && mod && (
             <ModificationDialogSections
               productId={productId}
               modificationId={mod.id}
@@ -153,15 +123,8 @@ export function ModificationDialog({
             >
               {t('common.cancel')}
             </Button>
-            <Button
-              type="submit"
-              form={DIALOG_FORM_ID}
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting && (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              )}
-              {mod ? t('common.save') : t('common.create')}
+            <Button type="submit" form={DIALOG_FORM_ID}>
+              {t('admin.products.mods.apply')}
             </Button>
           </div>
         </Form>

@@ -12,7 +12,7 @@ import { ColorPropertyInput } from './ColorPropertyInput';
 import { MultiselectPropertyInput } from './MultiselectPropertyInput';
 import { NumberPropertyInput } from './NumberPropertyInput';
 import { TextPropertyInput } from './TextPropertyInput';
-import type { PropertyValueDraft } from './usePropertyValues';
+import type { PropertyValueDraft } from './property-value-mapping';
 
 interface ValueRowLike {
   readonly value: string | null;

@@ -60,6 +60,8 @@ export const messages = {
   'admin.products.mods.properties': 'Властивості модифікації',
   'admin.products.mods.empty':
     'Модифікацій ще немає. Додайте першу модифікацію товару.',
+  'admin.products.mods.apply': 'Застосувати',
+  'admin.products.mods.tokenLabel': 'URL-токен',
   'admin.products.mods.confirmDelete': 'Видалити цю модифікацію?',
 
   // Наявність

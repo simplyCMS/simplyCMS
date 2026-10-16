@@ -19,6 +19,7 @@ import {
   productModificationsOps,
   productsOps,
   productsRemove,
+  productsSaveDescription,
   sweepUnreferencedMediaOp,
 } from 'simplycms/admin-server/impl';
 import {
@@ -29,6 +30,7 @@ import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import {
   completeMediaErasures,
+  eraseMediaRows,
   findMediaReferences,
   getMediaDriver,
   writeMedia,
@@ -39,6 +41,7 @@ import {
   exec,
   get,
   saveDescription,
+  subject,
 } from './fixtures/product-aggregate';
 
 describe('зображення товару й медіа-контур (Task 12)', () => {
@@ -420,6 +423,187 @@ describe('зображення товару й медіа-контур (Task 12)
       release();
       await Promise.all([holder, removal]);
       expect(done).toBe(true);
+    });
+
+    it('гонка: T2 копіює фото з ключем K у новий рядок, T1 знімає модифікацію з K — T1 чекає замка кореня, файл K живий', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const [mod, key] = [randomUUID(), await upload(p.id)];
+      const s1 = await saveDescription(p.id, p.version, {
+        modifications: { upsert: [{ id: mod, texts: { uk: { name: 'M' } } }] },
+      });
+      const old = img(key, { modificationId: mod });
+      const s2 = await saveDescription(p.id, s1.version, {
+        images: { upsert: [old] },
+      });
+      let release!: () => void;
+      let started!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const open = new Promise<void>((r) => (started = r));
+      // T2: справжня команда агрегата в транзакції, яку тримаємо відкритою
+      // ПІСЛЯ запису (замок кореня й нове посилання на K вже є).
+      const t2 = withActor({ role: 'app_admin' }, async (tx) => {
+        const input = productsSaveDescription.input.parse({
+          id: p.id,
+          expectedVersion: s2.version,
+          images: {
+            // Лише копія: видалення старого рядка T2 змусило б T1 чекати на
+            // рядковий замок каскаду, і тест не відрізняв би замок кореня.
+            upsert: [img(key, { sortOrder: 1 })],
+          },
+        });
+        await productsSaveDescription.run(
+          {
+            subject,
+            actor: { role: 'app_admin' },
+            db: tx,
+            afterCommit: () => undefined,
+          } as never,
+          input,
+        );
+        started();
+        await gate;
+      });
+      await open;
+      // T1: стирач файлів цього ж власника — remove модифікації з фото K.
+      const discard: string[] = [];
+      let done = false;
+      const t1 = withActor({ role: 'app_admin' }, (tx) =>
+        productModificationsOps.removeIn(tx, [{ id: mod }], discard),
+      ).then(() => (done = true));
+      // T1 справді стоїть на замку (а не просто ще не стартував).
+      let waiting = 0;
+      for (let i = 0; i < 40 && waiting === 0; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const rows = await db.q(
+          `select 1 from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'`,
+        );
+        waiting = rows.length;
+      }
+      expect(waiting).toBeGreaterThan(0);
+      expect(done).toBe(false);
+      release();
+      await Promise.all([t2, t1]);
+      await completeMediaErasures(discard);
+      expect(discard).not.toContain(key);
+      await alive(key);
+    });
+
+    /** T2: saveDescription у транзакції, яку тримаємо відкритою після запису. */
+    const holdSave = async (
+      id: string,
+      expectedVersion: number,
+      body: object,
+    ) => {
+      let release!: () => void;
+      let started!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const open = new Promise<void>((r) => (started = r));
+      const done = withActor({ role: 'app_admin' }, async (tx) => {
+        const input = productsSaveDescription.input.parse({
+          id,
+          expectedVersion,
+          ...body,
+        });
+        await productsSaveDescription.run(
+          {
+            subject,
+            actor: { role: 'app_admin' },
+            db: tx,
+            afterCommit: () => undefined,
+          } as never,
+          input,
+        );
+        started();
+        await gate;
+      });
+      // Якщо T2 впав до `started`, не зависаємо на `open`.
+      await Promise.race([open, done]);
+      return { release, done };
+    };
+    const lockWaiters = async () => {
+      for (let i = 0; i < 40; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const rows = await db.q(
+          `select 1 from pg_stat_activity
+            where datname = current_database() and wait_event_type = 'Lock'`,
+        );
+        if (rows.length > 0) return rows.length;
+      }
+      return 0;
+    };
+    const eraseUnreferenced = (pid: string, key: string, out: string[]) =>
+      withActor({ role: 'app_admin' }, async (tx) => {
+        out.push(
+          ...(await eraseMediaRows(tx, [key], {
+            entityType: 'product',
+            entityId: pid,
+          })),
+        );
+      });
+
+    it('ключ не з before: eraseMediaRows чекає FOR SHARE від saveDescription, після коміту бачить посилання і лишає файл', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const key = await upload(p.id);
+      const t2 = await holdSave(p.id, p.version, {
+        images: { upsert: [img(key)] },
+      });
+      const erased: string[] = [];
+      let finished = false;
+      const t1 = eraseUnreferenced(p.id, key, erased).then(
+        () => (finished = true),
+      );
+      expect(await lockWaiters()).toBeGreaterThan(0);
+      expect(finished).toBe(false);
+      t2.release();
+      await Promise.all([t2.done, t1]);
+      await completeMediaErasures(erased);
+      expect(erased).toEqual([]);
+      await alive(key);
+    });
+
+    it('ключ не з before: sweep пропускає (SKIP LOCKED) рядок media, який тримає saveDescription, і лишає файл', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const key = await upload(p.id);
+      await db.q(
+        `update public.media set created_at = now() - interval '1 year' where storage_key = $1`,
+        [key],
+      );
+      const t2 = await holdSave(p.id, p.version, {
+        images: { upsert: [img(key)] },
+      });
+      // Sweep не чекає на замок, а обходить заблокований рядок: закінчується
+      // ДО коміту T2 і нічого не стирає (без SKIP LOCKED завис би на T2).
+      const outcome = await Promise.race([
+        sweepUnreferencedMediaOp(),
+        new Promise<'blocked'>((r) => setTimeout(() => r('blocked'), 3_000)),
+      ]);
+      t2.release();
+      await t2.done;
+      expect(outcome).not.toBe('blocked');
+      const swept = outcome as { erased: number };
+      expect(swept.erased).toBe(0);
+      await alive(key);
+    });
+
+    it('зворотний порядок: eraseMediaRows завершився першим — saveDescription отримує 409 media_ref_invalid, посилання на стертий файл немає', async () => {
+      const p = await create({ uk: { name: 'Кабель' } });
+      const key = await upload(p.id);
+      const erased: string[] = [];
+      await eraseUnreferenced(p.id, key, erased);
+      await completeMediaErasures(erased);
+      expect(erased).toEqual([key]);
+      const err = await rejects(
+        saveDescription(p.id, p.version, { images: { upsert: [img(key)] } }),
+      );
+      expect(err).toBeInstanceOf(AdminConflictError);
+      expect(err).toMatchObject({ kind: 'state' });
+      expect(
+        await db.q(
+          `select 1 from public.product_images where storage_key = $1`,
+          [key],
+        ),
+      ).toHaveLength(0);
     });
 
     it('старий шлях products.images: заміна масиву не стирає файл, що лишився в product_images', async () => {

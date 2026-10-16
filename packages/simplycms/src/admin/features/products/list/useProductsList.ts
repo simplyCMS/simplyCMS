@@ -17,6 +17,9 @@ export interface ProductFilters {
 /** Рядок списку — проєкція join-а, не повний рядок `Product`. */
 export interface ProductListRow {
   readonly id: string;
+  /** Для `products.remove` (expectedVersion). */
+  readonly version: number;
+  /** Назва основною мовою: колонку дзеркалить команда агрегата (М1-TEMP до Task 17). */
   readonly name: string;
   readonly images: readonly string[] | null;
   readonly isActive: boolean;
@@ -57,6 +60,7 @@ export function useProductsList(filters: ProductFilters) {
         .orderBy(({ p }) => p.createdAt, 'desc')
         .select(({ p, s }) => ({
           id: p.id,
+          version: p.version,
           name: p.name,
           images: p.images,
           isActive: p.isActive,

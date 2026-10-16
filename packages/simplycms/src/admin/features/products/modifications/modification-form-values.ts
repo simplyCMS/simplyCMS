@@ -1,38 +1,58 @@
-import type { ProductModification } from 'simplycms/schema/types';
+import type {
+  DraftImage,
+  DraftModification,
+} from '../edit/product-form-schema';
+import { imageKeys } from '../edit/product-images';
 import type { ModificationFormValues } from './modification-form-schema';
 
-/** Дефолти форми модифікації для СТВОРЕННЯ — виніс із `ModificationDialog.tsx` (канон 150). */
-export const EMPTY_MODIFICATION_FORM: ModificationFormValues = {
-  name: '',
-  slug: '',
+/** Дефолти форми для СТВОРЕННЯ. */
+export const emptyModificationForm = (
+  locales: readonly string[],
+): ModificationFormValues => ({
+  names: Object.fromEntries(locales.map((l) => [l, ''])),
+  tokens: Object.fromEntries(locales.map((l) => [l, ''])),
   sku: '',
-  stockStatus: 'in_stock',
   isDefault: false,
   images: [],
-};
+});
 
-/**
- * БД → форма модифікації (`null` полів переведено в порожній рядок).
- * 🔴 `stockStatus` СВІДОМО відсутній (рев'ю C6, item 1) — редагування читає
- * й пише статус напряму з живого рядка колекції
- * (`ModificationStatusControl`), а не з форми; клавши сюди
- * `mod.stockStatus`, лишили б мертве поле, яке ніхто не читає.
- */
+/** Чернетка модифікації (+ її фото) → значення форми діалогу. */
 export function toModificationFormValues(
-  mod: ProductModification,
+  mod: DraftModification,
+  images: readonly DraftImage[],
+  locales: readonly string[],
 ): ModificationFormValues {
   return {
-    name: mod.name,
-    slug: mod.slug,
-    sku: mod.sku ?? '',
+    names: Object.fromEntries(locales.map((l) => [l, mod.texts[l] ?? ''])),
+    tokens: Object.fromEntries(locales.map((l) => [l, mod.token[l] ?? ''])),
+    sku: mod.sku,
     isDefault: mod.isDefault,
-    images: mod.images ?? [],
+    images: imageKeys(images, mod.id),
   };
 }
 
-/** `null` — СТВОРЕННЯ (дефолти); інакше — переведений рядок БД. */
 export function resolveModFormValues(
-  mod: ProductModification | null,
+  mod: DraftModification | null,
+  images: readonly DraftImage[],
+  locales: readonly string[],
 ): ModificationFormValues {
-  return mod ? toModificationFormValues(mod) : EMPTY_MODIFICATION_FORM;
+  return mod
+    ? toModificationFormValues(mod, images, locales)
+    : emptyModificationForm(locales);
+}
+
+/** Значення форми діалогу → чернетка модифікації (порядок задає викликач). */
+export function toDraftModification(
+  id: string,
+  form: ModificationFormValues,
+  sortOrder: number,
+): DraftModification {
+  return {
+    id,
+    sku: form.sku,
+    isDefault: form.isDefault,
+    sortOrder,
+    texts: { ...form.names },
+    token: { ...form.tokens },
+  };
 }

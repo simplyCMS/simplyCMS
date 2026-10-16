@@ -6,6 +6,7 @@ import { Label } from 'simplycms/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, Save } from 'lucide-react';
+import type { StockStatus } from 'simplycms/contracts';
 import { useServerFieldErrors } from '../../../lib/useServerFieldErrors';
 import {
   usePickupPoints,
@@ -18,6 +19,8 @@ interface Props {
   readonly productId: string;
   readonly modificationId: string | null;
   readonly showCard?: boolean;
+  /** Новий статус наявності цілі після збереження (його виводить сервер). */
+  readonly onStatus?: (status: StockStatus) => void;
 }
 
 /**
@@ -29,6 +32,7 @@ export function StockEditor({
   productId,
   modificationId,
   showCard = true,
+  onStatus,
 }: Props) {
   const t = useT();
   const { rows, save } = useStock(productId, modificationId);
@@ -55,8 +59,9 @@ export function StockEditor({
     try {
       const quantities: Record<string, string> = {};
       for (const p of pickupPoints) quantities[p.id] = valueFor(p.id);
-      const ok = await save(quantities);
-      if (ok) {
+      const saved = await save(quantities);
+      if (saved) {
+        onStatus?.(saved.stockStatus);
         setDraft({});
         toast.success(t('admin.products.stock.saved'));
       } else {

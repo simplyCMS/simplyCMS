@@ -1,5 +1,5 @@
 import { Input } from 'simplycms/ui/input';
-import type { PropertyValueDraft } from './usePropertyValues';
+import type { PropertyValueDraft } from './property-value-mapping';
 import { useDraftField } from './useDraftField';
 
 interface Props {

@@ -1,120 +1,92 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useT } from 'simplycms/i18n';
-import { applyServerValidation } from '../../../lib/apply-server-validation';
-import { reportTxError } from '../../../lib/report-tx-error';
-import { useKeyedQueue } from './useKeyedQueue';
+import { useFormContext, useWatch } from 'react-hook-form';
+import type { SectionProperty } from 'simplycms/schema/types';
+import { useProductCard } from '../edit/product-card-context';
+import type {
+  DraftValue,
+  ProductFormValues,
+} from '../edit/product-form-schema';
+import { useTranslationContext } from '../../translations/translation-context';
 import {
-  usePropertyValueTx,
+  toDraftValue,
+  toRow,
+  type PropertyKind,
   type PropertyValueDraft,
-  type PropertyValueTarget,
-  type Tx,
-} from './usePropertyValueTx';
+} from './property-value-mapping';
 
-export type { PropertyValueDraft, PropertyValueTarget };
+export type { PropertyValueDraft };
+export type PropertyValueTarget = 'product' | 'modification';
 
 /**
- * Значення властивостей власника — товару (`target='product'`) або
- * модифікації (`target='modification'`) — Task 10, Step 2. Автозбереження
- * (Е3-11): кожна зміна — оптимістична мутація фабричних персист-хендлерів
- * колекції (`usePropertyValueTx`); multiselect — рядок на опцію (Е3-13),
- * унікальність тримає БД.
- *
- * 🔴 Е3-19б: операції серіалізовані `useKeyedQueue` на ключ `propertyId`
- * — наступна стартує ЛИШЕ ПІСЛЯ `isPersisted` (або відхилення) попередньої
- * (паралельні авто-транзакції `@tanstack/db` інакше могли виконатись у
- * будь-якому порядку — update випереджав insert того самого рядка).
- * Дельта (insert/update/delete) рахується від ЖИВОГО стану колекції
- * (`liveRowsOf`) на момент СТАРТУ операції, не кліку.
+ * Значення властивостей власника — товару або модифікації — як ЧЕРНЕТКА в
+ * формі картки (`propertyValues`): мережі тут немає, на сервер вони йдуть
+ * кнопкою «Зберегти» картки в одному `saveDescription`. Multiselect — рядок на
+ * опцію. Текстові значення редагуються мовою активної вкладки. Серверна
+ * помилка значення (`valueErrors`) показується біля поля, поки його не змінять.
  */
 export function usePropertyValues(
   target: PropertyValueTarget,
   ownerId: string,
 ) {
-  const t = useT();
-  const { rowsOf, liveRowsOf, insertTx, updateTx, deleteTx } =
-    usePropertyValueTx(target, ownerId);
-  // Тема 12: помилка валідації сервера — біля поля властивості (ключ —
-  // `propertyId`), а не загальним тостом; усе інше — як раніше.
-  const [errors, setErrors] = useState<Readonly<Record<string, string>>>({});
-  const enqueue = useKeyedQueue((e, propertyId) => {
-    const rest = applyServerValidation(
-      e,
-      (_field, err) => setErrors((p) => ({ ...p, [propertyId]: err.message })),
+  const { control, getValues, setValue } = useFormContext<ProductFormValues>();
+  const all = useWatch({ control, name: 'propertyValues' });
+  const { active } = useTranslationContext();
+  const card = useProductCard();
+
+  const owns = (v: DraftValue) =>
+    target === 'product' ? !v.modificationId : v.modificationId === ownerId;
+  const ofProperty = (list: readonly DraftValue[], propertyId: string) =>
+    list.filter((v) => owns(v) && v.propertyId === propertyId);
+  const write = (next: DraftValue[]) =>
+    setValue('propertyValues', next, { shouldDirty: true });
+  const owner = target === 'modification' ? { modificationId: ownerId } : {};
+
+  const rowsOf = (propertyId: string) =>
+    ofProperty(all, propertyId).map((v) => toRow(v, active));
+
+  const saveScalar = (
+    property: Pick<SectionProperty, 'id' | 'propertyType'>,
+    v: PropertyValueDraft,
+  ) => {
+    card.clearValueError(property.id);
+    const list = getValues('propertyValues');
+    const existing = ofProperty(list, property.id)[0];
+    const next = toDraftValue(
       {
-        t,
-        fieldFor: (path) =>
-          path.at(-1) === 'numericValue' || path.at(-1) === 'value'
-            ? propertyId
-            : null,
+        id: existing?.id ?? crypto.randomUUID(), // контракт id: ключ генерує клієнт
+        propertyId: property.id,
+        ...owner,
       },
+      property.propertyType as PropertyKind,
+      v,
+      existing,
+      active,
     );
-    if (rest === null) reportTxError(t, e);
-    else if (rest.length > 0) toast.error(t('admin.validation.failed'));
-  });
-
-  /**
-   * Скалярні типи (text/number/range/boolean/color) і `select` (один
-   * option-рядок): один рядок. 🔴 «Порожньо» — і `value`, і `optionId`
-   * відсутні: `select` пише `value: null` завжди (Е3-13, ревізія «назва
-   * опції — одне джерело»), тож голого `v.value === null` досить було б,
-   * щоб трактувати щойно вибрану опцію як видалення рядка.
-   */
-  const saveScalar = (propertyId: string, v: PropertyValueDraft) => {
-    setErrors((p) => {
-      if (!(propertyId in p)) return p;
-      const next = { ...p };
-      delete next[propertyId];
-      return next;
-    });
-    enqueue(propertyId, async () => {
-      const existing = liveRowsOf(propertyId)[0];
-      const empty = (v.value === null || v.value === '') && v.optionId === null;
-      const tx =
-        existing && empty
-          ? deleteTx([existing.id])
-          : existing
-            ? updateTx(existing.id, v)
-            : !empty
-              ? insertTx(propertyId, v)
-              : null;
-      if (tx) await tx.isPersisted.promise;
-    });
+    const rest = list.filter((x) => x !== existing);
+    write(next ? [...rest, next] : rest);
   };
 
-  /**
-   * Multiselect: бажаний набір опцій → вставити відсутні, видалити зайві.
-   * 🔴 `value` рядка не пишемо (Е3-13, ревізія): назву для відображення
-   * бере join `property_options` (`option.name`), а не кеш у `value`.
-   */
-  const saveMulti = (propertyId: string, optionIds: readonly string[]) => {
-    enqueue(propertyId, async () => {
-      const current = liveRowsOf(propertyId);
-      const have = new Set(current.map((r) => r.optionId));
-      const toDelete = current.filter(
-        (r) => !r.optionId || !optionIds.includes(r.optionId),
-      );
-      const toInsert = optionIds.filter((id) => !have.has(id));
-      const txs: Tx[] = [];
-      const delTx = deleteTx(toDelete.map((r) => r.id));
-      if (delTx) txs.push(delTx);
-      for (const optionId of toInsert)
-        txs.push(
-          insertTx(propertyId, {
-            value: null,
-            numericValue: null,
-            optionId,
-          }),
-        );
-      const results = await Promise.allSettled(
-        txs.map((tx) => tx.isPersisted.promise),
-      );
-      const rejected = results.find(
-        (r): r is PromiseRejectedResult => r.status === 'rejected',
-      );
-      if (rejected) throw rejected.reason;
-    });
+  const saveMulti = (
+    property: Pick<SectionProperty, 'id'>,
+    optionIds: readonly string[],
+  ) => {
+    card.clearValueError(property.id);
+    const list = getValues('propertyValues');
+    const mine = ofProperty(list, property.id);
+    const keep = mine.filter(
+      (x) => x.optionId && optionIds.includes(x.optionId),
+    );
+    const have = new Set(keep.map((x) => x.optionId));
+    const added = optionIds
+      .filter((id) => !have.has(id))
+      .map((optionId): DraftValue => ({
+        id: crypto.randomUUID(), // контракт id: ключ генерує клієнт
+        propertyId: property.id,
+        kind: 'multiselect',
+        optionId,
+        ...owner,
+      }));
+    write([...list.filter((x) => !mine.includes(x)), ...keep, ...added]);
   };
 
-  return { rowsOf, saveScalar, saveMulti, errors };
+  return { rowsOf, saveScalar, saveMulti, errors: card.valueErrors };
 }

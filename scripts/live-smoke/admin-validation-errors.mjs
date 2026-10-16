@@ -39,6 +39,17 @@ export async function runAdminValidationErrorsStep({
       `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, $3, $4)`,
       [modId, productId, `ve-mod-${tag}`, `Мод ${tag}`],
     );
+    // М1: картка читає переклади основної мови (повний перехід сіду — Task 17).
+    await sql(
+      dbUrl,
+      `insert into public.product_translations (product_id, locale, name) values ($1, 'uk', $2)`,
+      [productId, name],
+    );
+    await sql(
+      dbUrl,
+      `insert into public.product_modification_translations (product_id, modification_id, locale, name) values ($1, $2, 'uk', $3)`,
+      [productId, modId, `Мод ${tag}`],
+    );
 
     await page.goto(`${base}/admin/products/${productId}`, {
       waitUntil: 'networkidle',

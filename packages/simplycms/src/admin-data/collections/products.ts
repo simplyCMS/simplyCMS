@@ -2,14 +2,8 @@ import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import type { Product } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
-import {
-  insertProducts,
-  listProducts,
-  removeProducts,
-  updateProducts,
-} from 'simplycms/admin-server';
+import { listProducts } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
-import { persistenceHandlers, type WriteBack } from '../handlers';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
@@ -19,10 +13,10 @@ import { toSubsetPayload } from '../subset-payload';
  * статичний `collectionKey(...)` — demand-суфікс дописує бібліотека, префікс
  * лишається спільним для всіх зрізів (Б-2). `preload()` на такій
  * колекції — no-op: прогрів роуту робиться live-query (Task 6).
+ * ЛИШЕ ЧИТАННЯ (М1, Task 13): створення, правки й видалення товару — команди
+ * агрегата (`products.create/saveDescription/remove`), без persistence-хендлерів.
  */
 function create(queryClient: QueryClient) {
-  // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.
-  const ref: { current?: WriteBack<Product> } = {};
   const collection = createCollection(
     onDemandCollectionOptions<Product>({
       id: ENTITY.products,
@@ -39,15 +33,8 @@ function create(queryClient: QueryClient) {
             >[0],
           ),
         }),
-      ...persistenceHandlers<Product>(() => ref.current!, {
-        entity: ENTITY.products,
-        insert: insertProducts,
-        update: updateProducts,
-        remove: removeProducts,
-      }),
     }),
   );
-  ref.current = collection;
   return collection;
 }
 

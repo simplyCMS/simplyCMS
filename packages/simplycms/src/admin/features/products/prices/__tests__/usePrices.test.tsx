@@ -6,8 +6,8 @@
  * 234,50', oldPrice: '' }` → `saveProductPrices` отримує рядок з
  * `price: '1234.50'`, `oldPrice: null` (порожнє поле в набір не йде);
  * (б) `'-5'` → повертає id типу з невалідним полем, serverFn не викликано;
- * (в) після відповіді `{ rows, removedIds }` колекція містить `rows` і не
- * містить `removedIds` (write-back без refetch).
+ * (в) відповідь `{ count, removedIds }` рядків не несе — колекція цін (лише
+ * читання) перечитується, прибраних рядків у ній нема.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
@@ -28,7 +28,7 @@ vi.mock('simplycms/admin-server', async () =>
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock({
     listProductPrices,
-    saveProductPrices,
+    saveProductPricesCommand: saveProductPrices,
     listPriceTypes,
   }),
 );
@@ -49,7 +49,7 @@ afterEach(() => cleanup());
 
 describe('usePrices', () => {
   it('(а) кома й порожнє поле — нормалізація перед відправкою', async () => {
-    saveProductPrices.mockResolvedValueOnce({ rows: [], removedIds: [] });
+    saveProductPrices.mockResolvedValueOnce({ count: 1, removedIds: [] });
     const { result } = renderHook(() => usePrices('p1', null), { wrapper });
 
     const failed = await result.current.save({
@@ -77,50 +77,31 @@ describe('usePrices', () => {
     expect(saveProductPrices).not.toHaveBeenCalled();
   });
 
-  it('(в) write-back: rows у колекції, removedIds — ні (без refetch)', async () => {
-    listProductPrices.mockResolvedValueOnce([
-      {
-        id: 'kept',
-        productId: 'p1',
-        modificationId: null,
-        priceTypeId: 'wholesale',
-        price: '5.00',
-        oldPrice: null,
-      },
-      {
-        id: 'gone',
-        productId: 'p1',
-        modificationId: null,
-        priceTypeId: 'retail',
-        price: '10.00',
-        oldPrice: null,
-      },
-    ]);
+  it('(в) після збереження колекція цін (лише читання) перечитується: нові рядки є, прибраних нема', async () => {
+    const row = (id: string, price: string) => ({
+      id,
+      productId: 'p1',
+      modificationId: null,
+      priceTypeId: id,
+      price,
+      oldPrice: null,
+    });
+    listProductPrices
+      .mockResolvedValueOnce([row('kept', '5.00'), row('gone', '10.00')])
+      .mockResolvedValue([row('kept', '7.00')]);
     saveProductPrices.mockResolvedValueOnce({
-      rows: [
-        {
-          id: 'kept',
-          productId: 'p1',
-          modificationId: null,
-          priceTypeId: 'wholesale',
-          price: '7.00',
-          oldPrice: null,
-        },
-      ],
+      count: 1,
       removedIds: ['gone'],
     });
 
     const { result } = renderHook(() => usePrices('p1', null), { wrapper });
     await waitFor(() => expect(result.current.rows).toHaveLength(2));
 
-    await result.current.save({
-      wholesale: { price: '7.00', oldPrice: '' },
-    });
+    await result.current.save({ kept: { price: '7.00', oldPrice: '' } });
 
     await waitFor(() => {
-      const ids = result.current.rows.map((r) => r.id);
-      expect(ids).toContain('kept');
-      expect(ids).not.toContain('gone');
+      expect(result.current.rows.map((r) => r.id)).toEqual(['kept']);
+      expect(result.current.rows[0]!.price).toBe('7.00');
     });
   });
 });
