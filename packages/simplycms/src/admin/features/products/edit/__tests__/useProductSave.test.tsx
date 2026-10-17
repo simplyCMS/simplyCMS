@@ -21,12 +21,13 @@ vi.mock('simplycms/admin-server', async () =>
 );
 const navigateMock = vi.fn();
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigateMock }));
-const { toastSuccess, toastError } = vi.hoisted(() => ({
+const { toastSuccess, toastError, toastInfo } = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  toastInfo: vi.fn(),
 }));
 vi.mock('sonner', () => ({
-  toast: { success: toastSuccess, error: toastError, info: vi.fn() },
+  toast: { success: toastSuccess, error: toastError, info: toastInfo },
 }));
 
 import { blankForm } from '../product-aggregate';
@@ -59,7 +60,7 @@ afterEach(() => cleanup());
 
 describe('useProductCreate', () => {
   it('create: products.create з id наперед і адресою, далі навігація на картку', async () => {
-    const { result } = renderHook(() => useProductCreate(ID, sink()), {
+    const { result } = renderHook(() => useProductCreate(ID, sink(), 'uk'), {
       wrapper,
     });
     await result.current(values());
@@ -84,7 +85,7 @@ describe('useProductCreate', () => {
     v.images = [
       { id: ID, storageKey: 'k', sortOrder: 0, alt: {}, overrides: {} },
     ];
-    const { result } = renderHook(() => useProductCreate(ID, sink()), {
+    const { result } = renderHook(() => useProductCreate(ID, sink(), 'uk'), {
       wrapper,
     });
     await result.current(v);
@@ -106,10 +107,25 @@ describe('useProductCreate', () => {
       }),
     );
     const s = sink();
-    const { result } = renderHook(() => useProductCreate(ID, s), { wrapper });
+    const { result } = renderHook(() => useProductCreate(ID, s, 'uk'), {
+      wrapper,
+    });
     await result.current(values());
 
     expect(s.setFormError).toHaveBeenCalledWith('path', expect.any(String));
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  it('адреса, яку генератор змінив (зайнята → -2), показана користувачу', async () => {
+    mocks.createProduct.mockResolvedValue({
+      id: ID,
+      version: 1,
+      paths: { uk: 'panel-2' },
+    });
+    const { result } = renderHook(() => useProductCreate(ID, sink(), 'uk'), {
+      wrapper,
+    });
+    await result.current(values());
+    expect(toastInfo).toHaveBeenCalledWith(expect.stringContaining('panel-2'));
   });
 });

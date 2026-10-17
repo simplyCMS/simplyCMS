@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import {
   priceTypesCollection,
-  productModificationsCollection,
   productPricesCollection,
   useCollection,
 } from 'simplycms/admin-data';
@@ -25,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from 'simplycms/ui/table';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { useProductCard } from '../edit/product-card-context';
 import type {
   DraftModification,
@@ -53,23 +52,19 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
   const { modifications: mods, reorder, remove } = data;
   const { primary, active } = useTranslationContext();
   const card = useProductCard();
-  const { getValues } = useFormContext<ProductFormValues>();
+  const { control } = useFormContext<ProductFormValues>();
+  const images = useWatch({ control, name: 'images' });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Дефолтна ціна рядка — ОДНИМ запитом на всю таблицю (eq productId), не N.
   const prices = useCollection(productPricesCollection);
   const types = useCollection(priceTypesCollection);
-  const modCol = useCollection(productModificationsCollection);
   const { data: priceRows } = useLiveQuery({
     query: (q) =>
       q.from({ p: prices }).where(({ p }) => eq(p.productId, productId)),
   });
   const { data: typeRows } = useLiveQuery({
     query: (q) => q.from({ t: types }),
-  });
-  const { data: savedRows } = useLiveQuery({
-    query: (q) =>
-      q.from({ m: modCol }).where(({ m }) => eq(m.productId, productId)),
   });
   const defaultTypeId = typeRows.find((tp) => tp.isDefault)?.id;
   const priceOf = (modId: string) =>
@@ -105,8 +100,8 @@ export function ModificationsTable({ productId, data, onEdit }: Props) {
               name={mod.texts[active] || mod.texts[primary] || ''}
               sku={mod.sku}
               isDefault={mod.isDefault}
-              thumb={imageKeys(getValues('images'), mod.id)[0]}
-              stockStatus={savedRows.find((m) => m.id === mod.id)?.stockStatus}
+              thumb={imageKeys(images, mod.id)[0]}
+              stockStatus={mod.stockStatus}
               error={card.modificationErrors[mod.id]}
               price={priceOf(mod.id)}
               formatPrice={formatPrice}

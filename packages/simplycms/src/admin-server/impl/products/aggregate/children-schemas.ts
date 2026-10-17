@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { code } from '../../languages/view';
+import { stockStatus } from './schemas';
 
 // Схеми дочірніх колекцій агрегата товару (М1, Task 12). Усі strict: невідоме
 // поле — відмова, а не мовчазне відкидання. Колекції ніколи не видаляються
@@ -26,6 +27,8 @@ export const modificationUpsert = z.strictObject({
   sku: optText(100),
   isDefault: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(1_000_000).optional(),
+  /** Ручний статус наявності модифікації (як `base.stockStatus` товару); `saveStock` виводить його з залишків. */
+  stockStatus: stockStatus.optional(),
   texts: z.record(code, z.strictObject({ name: optText(500) })).optional(),
   /** Явний токен за мовою; без нього нова модифікація бере токен від назви. */
   token: z.record(code, z.string().max(255).regex(SLUG_FORMAT)).optional(),

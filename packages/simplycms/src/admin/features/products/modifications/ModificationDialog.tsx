@@ -75,6 +75,16 @@ export function ModificationDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- перелік мов стабільний протягом відкриття
   }, [open, mod, form]);
 
+  // `saveStock` міг вивести новий статус у чернетці: поле діалогу підхоплює його,
+  // якщо користувач його ще не міняв (dirty не затираємо).
+  const draftStatus = parent
+    .watch('modifications')
+    .find((m) => m.id === mod?.id)?.stockStatus;
+  useEffect(() => {
+    if (open && draftStatus && !form.formState.dirtyFields.stockStatus)
+      form.setValue('stockStatus', draftStatus);
+  }, [open, draftStatus, form]);
+
   const submit = (values: ModificationFormValues) => {
     onApply(mod?.id ?? newId, values);
     onOpenChange(false);

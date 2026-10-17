@@ -6,7 +6,10 @@ import { productsCollection, useCollection } from 'simplycms/admin-data';
 import { useT } from 'simplycms/i18n';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { ConflictDialog } from '../../translations/ConflictDialog';
-import type { LanguageInfo } from '../../translations/translation-context';
+import type {
+  LanguageInfo,
+  TranslationStatus,
+} from '../../translations/translation-context';
 import {
   AggregateVersionContext,
   useAggregateVersionStore,
@@ -18,6 +21,7 @@ import { ProductForm } from './ProductForm';
 import {
   aggregateToForm,
   localeStatuses,
+  rebase,
   type ProductAggregate,
 } from './product-aggregate';
 import {
@@ -26,6 +30,7 @@ import {
 } from './product-form-schema';
 import { useProductUpdate } from './useProductSave';
 import { useRowErrors } from './useRowErrors';
+import { useStockStatusSync } from './useStockStatusSync';
 
 interface Props {
   readonly productId: string;
@@ -51,8 +56,14 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
     defaultValues: state.baseline,
   });
 
-  /** Свідоме перечитування: форма й знімок стають станом БД. */
-  const reload = async () => {
+  const [active, setActive] = useState(primary);
+
+  /**
+   * Перечитування: знімок стає станом БД. Свідоме («Перезавантажити») скидає
+   * форму цілком; після власного збереження (`sent`) поля, які користувач
+   * змінив ПІСЛЯ відправки запиту, лишаються його (`rebase`).
+   */
+  const reload = async (sent?: ProductFormValues) => {
     const fresh = await refetch();
     if (!fresh) {
       toast.error(t('admin.translations.loadFailed'));
@@ -60,7 +71,7 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
     }
     const baseline = aggregateToForm(fresh, codes);
     setState({ agg: fresh, baseline });
-    form.reset(baseline);
+    form.reset(sent ? rebase(baseline, sent, form.getValues()) : baseline);
     store.set(fresh.version);
     rows.reset();
     setConflict(false);
@@ -72,14 +83,18 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
     productId,
     baseline: state.baseline,
     onConflict: () => setConflict(true),
-    onSaved: reload,
+    onSaved: (sent) => reload(sent),
     sink: {
-      setFormError: (name, message) =>
-        form.setError(name as never, { type: 'server', message }),
+      setFormError: (name, message) => {
+        form.setError(name as never, { type: 'server', message });
+        rows.noteTextError(name, setActive);
+      },
       setModificationError: rows.setModificationError,
       setValueError: rows.setValueError,
     },
   });
+
+  const onStockStatus = useStockStatusSync(form, state.baseline, setState);
 
   const statuses = localeStatuses(state.agg);
   const saved = state.agg.base;
@@ -89,7 +104,8 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
       <ProductForm
         form={form}
         mode="edit"
-        translation={{ languages, primary, statuses }}
+        translation={{ languages, primary, statuses, active, setActive }}
+        errorLocales={rows.errorLocales}
         card={{
           productId,
           entityId: productId,
@@ -101,6 +117,19 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
           valueErrors: rows.valueErrors,
           clearValueError: rows.clearValueError,
           onConflict: () => setConflict(true),
+          onStockStatus,
+          onPathSaved: (locale, path) =>
+            setState((s) => ({
+              ...s,
+              agg: { ...s.agg, paths: { ...s.agg.paths, [locale]: path } },
+            })),
+          statusOfModificationName: (id, l) =>
+            state.agg.modifications.find((m) => m.id === id)?.texts[l]
+              ?.status as TranslationStatus | undefined,
+          statusOfValueText: (id, l) =>
+            state.agg.propertyValues.find((v) => v.id === id)?.textStatus?.[
+              l
+            ] as TranslationStatus | undefined,
         }}
         onSubmit={(values) => {
           rows.reset();
@@ -133,7 +162,7 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
       </ProductForm>
       <ConflictDialog
         open={conflict}
-        onReload={reload}
+        onReload={() => reload()}
         onKeep={() => setConflict(false)}
       />
     </>

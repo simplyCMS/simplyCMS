@@ -6,6 +6,7 @@ import { Label } from 'simplycms/ui/label';
 import { PricesEditor } from '../prices/PricesEditor';
 import { StockEditor } from '../stock/StockEditor';
 import { StockStatusSelect } from '../stock/StockStatusSelect';
+import { useProductCard } from '../edit/product-card-context';
 import type { ProductFormValues } from '../edit/product-form-schema';
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 export function SimpleProductPanel({ productId }: Props) {
   const t = useT();
   const { register, watch, setValue } = useFormContext<ProductFormValues>();
+  const card = useProductCard();
 
   return (
     <>
@@ -54,7 +56,7 @@ export function SimpleProductPanel({ productId }: Props) {
             productId={productId}
             modificationId={null}
             showCard={false}
-            onStatus={(status) => setValue('stockStatus', status)}
+            onStatus={(status) => card.onStockStatus(null, status)}
           />
         </CardContent>
       </Card>

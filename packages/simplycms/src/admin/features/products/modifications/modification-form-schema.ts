@@ -11,6 +11,7 @@ export const modificationFormSchema = z.object({
   tokens: z.record(z.string(), z.string().trim()),
   sku: z.string().trim(),
   isDefault: z.boolean(),
+  stockStatus: z.enum(['in_stock', 'out_of_stock', 'on_order']),
   images: z.array(z.string()),
 });
 export type ModificationFormValues = z.infer<typeof modificationFormSchema>;

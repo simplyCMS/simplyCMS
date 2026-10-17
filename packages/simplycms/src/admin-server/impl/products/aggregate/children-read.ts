@@ -19,8 +19,9 @@ async function loadModifications(
       sku: string | null;
       is_default: boolean;
       sort_order: number;
+      stock_status: 'in_stock' | 'out_of_stock' | 'on_order';
     }>(
-      sql`select id, sku, is_default, sort_order from public.product_modifications
+      sql`select id, sku, is_default, sort_order, stock_status from public.product_modifications
            where product_id = ${productId} order by sort_order, id`,
     )
   ).rows;
@@ -40,6 +41,7 @@ async function loadModifications(
     sku: m.sku,
     isDefault: m.is_default,
     sortOrder: m.sort_order,
+    stockStatus: m.stock_status,
     texts: Object.fromEntries(
       Object.entries(
         withStatuses(

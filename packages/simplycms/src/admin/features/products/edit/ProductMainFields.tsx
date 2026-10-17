@@ -107,6 +107,7 @@ export function ProductMainFields({ mode }: Props) {
                 languageName={language?.name ?? l}
                 path={card.paths[l]}
                 onConflict={card.onConflict}
+                onSaved={(p) => card.onPathSaved(l, p)}
               />
             )}
           </div>

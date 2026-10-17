@@ -34,6 +34,9 @@ function modificationsDiff(
     if (m.sku !== (was?.sku ?? '')) row.sku = orNull(m.sku);
     if (m.isDefault !== (was?.isDefault ?? false)) row.isDefault = m.isDefault;
     if (m.sortOrder !== was?.sortOrder) row.sortOrder = m.sortOrder;
+    // Новій модифікації типовий статус сервер ставить сам.
+    if (m.stockStatus !== (was?.stockStatus ?? 'in_stock'))
+      row.stockStatus = m.stockStatus;
     const names: Record<string, Obj> = {};
     for (const [l, name] of Object.entries(m.texts))
       if (name !== (was?.texts[l] ?? '')) names[l] = { name: orNull(name) };
@@ -107,6 +110,14 @@ export function buildSaveInput(
     'propertyValues',
     (v) => v.propertyId,
   );
+  // Текст значення — за мовами: у запит йдуть лише змінені мови, інакше сервер
+  // поставив би чужій (незмінній) мові хеш нового джерела і зробив її «актуальною».
+  const prevValue = new Map(was.propertyValues.map((v) => [v.id, v]));
+  values.upsert = values.upsert.map((v) =>
+    v.kind === 'text'
+      ? { ...v, text: changedLocales(v.text, prevValue.get(v.id)?.text) }
+      : v,
+  );
   if (values.upsert.length > 0 || values.remove.length > 0)
     input.propertyValues = {
       ...(values.upsert.length > 0 && { upsert: values.upsert }),
@@ -119,6 +130,15 @@ export function buildSaveInput(
       ...(imgs.remove.length > 0 && { remove: imgs.remove }),
     };
   return { input, index };
+}
+
+function changedLocales(
+  cur: Record<string, string | null> | undefined,
+  prev: Record<string, string | null> | undefined,
+): Record<string, string | null> {
+  return Object.fromEntries(
+    Object.entries(cur ?? {}).filter(([l, v]) => v !== (prev?.[l] ?? null)),
+  );
 }
 
 export const isEmptyInput = (i: SaveInput) => Object.keys(i).length === 0;

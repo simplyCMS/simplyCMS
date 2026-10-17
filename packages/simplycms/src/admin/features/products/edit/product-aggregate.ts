@@ -1,8 +1,10 @@
 import type { getProduct } from 'simplycms/admin-server';
+import type { StockStatus } from 'simplycms/contracts';
 import type {
   LocaleStatuses,
   TranslationStatus,
 } from '../../translations/translation-context';
+import { same } from './product-diff';
 import {
   TEXT_FIELDS,
   type DraftTexts,
@@ -67,6 +69,7 @@ export function aggregateToForm(
       sku: m.sku ?? '',
       isDefault: m.isDefault,
       sortOrder: m.sortOrder,
+      stockStatus: m.stockStatus,
       texts: Object.fromEntries(
         Object.entries(m.texts).map(([l, r]) => [l, r.name ?? '']),
       ),
@@ -92,4 +95,53 @@ export function localeStatuses(
       },
     ]),
   );
+}
+
+/** Знімок з новим статусом наявності цілі (`null` — сам товар, інакше модифікація). */
+export function withStockStatus(
+  f: ProductFormValues,
+  modificationId: string | null,
+  status: StockStatus,
+): ProductFormValues {
+  return modificationId === null
+    ? { ...f, stockStatus: status }
+    : {
+        ...f,
+        modifications: f.modifications.map((m) =>
+          m.id === modificationId ? { ...m, stockStatus: status } : m,
+        ),
+      };
+}
+
+/**
+ * Свіжий знімок БД + те, що користувач змінив ПІСЛЯ відправки запиту: поле,
+ * що відрізняється між відправленим (`sent`) і поточним (`now`), лишається
+ * поточним, решту бере БД. Тексти — по полях, колекції — цілком.
+ */
+export function rebase(
+  fresh: ProductFormValues,
+  sent: ProductFormValues,
+  now: ProductFormValues,
+): ProductFormValues {
+  const out: ProductFormValues = structuredClone(fresh);
+  for (const [locale, row] of Object.entries(now.texts)) {
+    for (const f of TEXT_FIELDS)
+      if (row[f] !== (sent.texts[locale]?.[f] ?? '')) {
+        out.texts[locale] ??= emptyTexts();
+        out.texts[locale][f] = row[f];
+      }
+  }
+  for (const k of [
+    'sectionId',
+    'isActive',
+    'isFeatured',
+    'hasModifications',
+    'sku',
+    'stockStatus',
+    'path',
+  ] as const)
+    if (now[k] !== sent[k]) Object.assign(out, { [k]: now[k] });
+  for (const k of ['modifications', 'propertyValues', 'images'] as const)
+    if (!same(now[k], sent[k])) Object.assign(out, { [k]: now[k] });
+  return out;
 }

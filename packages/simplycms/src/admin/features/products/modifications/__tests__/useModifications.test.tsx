@@ -37,6 +37,7 @@ const form = (name: string, extra: object = {}) => ({
   tokens: { uk: '', en: '' },
   sku: '',
   isDefault: false,
+  stockStatus: 'in_stock' as const,
   images: [],
   ...extra,
 });

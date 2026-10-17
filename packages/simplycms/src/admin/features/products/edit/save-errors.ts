@@ -51,5 +51,8 @@ export function reportSaveError(
   if (rest === null) {
     const key = adminErrorKey(e);
     toast.error(key ? t(key) : `${t('common.error')} ${(e as Error).message}`);
-  } else if (rest.length > 0) toast.error(t('admin.validation.failed'));
+  } else {
+    // Навіть коли все розкладено по полях: поле може бути на неактивній вкладці.
+    toast.error(t('admin.validation.failed'));
+  }
 }

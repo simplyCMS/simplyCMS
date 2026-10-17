@@ -17,6 +17,8 @@ interface Props {
   /** Збережена адреса мови (`products.get`.paths); немає — ще не створена. */
   readonly path: string | undefined;
   readonly onConflict: (currentVersion: number) => void;
+  /** Адресу збережено: картка оновлює свій знімок `paths`. */
+  readonly onSaved?: (path: string) => void;
 }
 
 /**
@@ -30,6 +32,7 @@ export function PathField({
   languageName,
   path,
   onConflict,
+  onSaved,
 }: Props) {
   const t = useT();
   const [value, setValue] = useState(path ?? '');
@@ -46,6 +49,7 @@ export function PathField({
       const out = await run({ id: productId, locale, path: value.trim() });
       if (!out) return;
       setSaved(value.trim());
+      onSaved?.(value.trim());
       toast.success(t('admin.translations.path.saved'));
     } catch (e) {
       const rest = applyServerValidation(

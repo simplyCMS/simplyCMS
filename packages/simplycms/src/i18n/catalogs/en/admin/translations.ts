@@ -17,6 +17,8 @@ export const messages: Catalog = {
   'admin.translations.path.label': 'Address (URL) for {language}',
   'admin.translations.path.save': 'Save address',
   'admin.translations.path.saved': 'Address saved',
+  'admin.translations.hasErrors': 'Has errors',
+  'admin.translations.path.adjusted': 'The server adjusted the address: {path}',
   'admin.translations.nothingToSave': 'There is nothing to save',
   'admin.translations.loadFailed': 'Could not load the product',
   'admin.translations.retry': 'Try again',

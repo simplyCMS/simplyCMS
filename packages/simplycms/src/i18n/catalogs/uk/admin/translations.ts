@@ -15,6 +15,8 @@ export const messages = {
   'admin.translations.path.label': 'Адреса (URL) мови {language}',
   'admin.translations.path.save': 'Зберегти адресу',
   'admin.translations.path.saved': 'Адресу збережено',
+  'admin.translations.hasErrors': 'Є помилки',
+  'admin.translations.path.adjusted': 'Адресу змінено сервером: {path}',
   'admin.translations.nothingToSave': 'Змін для збереження немає',
   'admin.translations.loadFailed': 'Не вдалося завантажити товар',
   'admin.translations.retry': 'Спробувати ще раз',

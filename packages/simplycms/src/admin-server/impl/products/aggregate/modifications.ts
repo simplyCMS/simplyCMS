@@ -111,6 +111,7 @@ export async function planModifications(
             sku: u.sku ?? null,
             isDefault: u.isDefault === true,
             sortOrder: u.sortOrder ?? 0,
+            ...(u.stockStatus && { stockStatus: u.stockStatus }),
           });
         else
           await db
@@ -119,6 +120,7 @@ export async function planModifications(
               ...(u.sku === undefined ? {} : { sku: u.sku }),
               ...(u.isDefault === undefined ? {} : { isDefault: u.isDefault }),
               ...(u.sortOrder === undefined ? {} : { sortOrder: u.sortOrder }),
+              ...(u.stockStatus ? { stockStatus: u.stockStatus } : {}),
               ...(name ? { name } : {}), // М1-TEMP: зноситься в Task 17
               updatedAt: new Date(),
             })

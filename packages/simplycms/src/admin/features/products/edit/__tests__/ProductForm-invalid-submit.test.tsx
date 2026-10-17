@@ -46,7 +46,13 @@ function Harness({ onSubmit }: { onSubmit: () => void }) {
     <ProductForm
       form={form}
       mode="create"
-      translation={{ languages: LANGS, primary: 'uk', statuses: {} }}
+      translation={{
+        languages: LANGS,
+        primary: 'uk',
+        statuses: {},
+        active: 'uk',
+        setActive: () => undefined,
+      }}
       card={{
         productId: null,
         entityId: 'new-product-id',
@@ -56,6 +62,8 @@ function Harness({ onSubmit }: { onSubmit: () => void }) {
         valueErrors: {},
         clearValueError: () => undefined,
         onConflict: () => undefined,
+        onStockStatus: () => undefined,
+        onPathSaved: () => undefined,
       }}
       onSubmit={onSubmit}
       submitLabel="Створити"

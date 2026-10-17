@@ -13,6 +13,7 @@ export const emptyModificationForm = (
   tokens: Object.fromEntries(locales.map((l) => [l, ''])),
   sku: '',
   isDefault: false,
+  stockStatus: 'in_stock',
   images: [],
 });
 
@@ -27,6 +28,7 @@ export function toModificationFormValues(
     tokens: Object.fromEntries(locales.map((l) => [l, mod.token[l] ?? ''])),
     sku: mod.sku,
     isDefault: mod.isDefault,
+    stockStatus: mod.stockStatus,
     images: imageKeys(images, mod.id),
   };
 }
@@ -51,6 +53,7 @@ export function toDraftModification(
     id,
     sku: form.sku,
     isDefault: form.isDefault,
+    stockStatus: form.stockStatus,
     sortOrder,
     texts: { ...form.names },
     token: { ...form.tokens },

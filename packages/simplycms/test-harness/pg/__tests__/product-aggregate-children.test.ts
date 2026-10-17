@@ -43,6 +43,34 @@ describe('агрегат товару: модифікації, значення,
     ...extra,
   });
 
+  it('stockStatus модифікації: ставиться в upsert, віддається products.get, змінюється наступним upsert', async () => {
+    const p = await create({ uk: { name: 'Кабель' } });
+    const mod = randomUUID();
+    const s1 = await saveDescription(p.id, p.version, {
+      modifications: {
+        upsert: [modOf(mod, 'M', { stockStatus: 'on_order' })],
+      },
+    });
+    expect((await get(p.id)).modifications[0]).toMatchObject({
+      id: mod,
+      stockStatus: 'on_order',
+    });
+    await saveDescription(p.id, s1.version, {
+      modifications: { upsert: [{ id: mod, stockStatus: 'out_of_stock' }] },
+    });
+    expect((await get(p.id)).modifications[0]!.stockStatus).toBe(
+      'out_of_stock',
+    );
+    // Без поля статус не чіпається.
+    const v = await version(p.id);
+    await saveDescription(p.id, v, {
+      modifications: { upsert: [{ id: mod, sku: 'S' }] },
+    });
+    expect((await get(p.id)).modifications[0]!.stockStatus).toBe(
+      'out_of_stock',
+    );
+  });
+
   /** Товар + властивість заданого типу (+ опції), для тестів значень. */
   const property = async (type: string, options: string[] = []) => {
     const pid = randomUUID();

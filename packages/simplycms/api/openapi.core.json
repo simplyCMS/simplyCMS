@@ -1752,6 +1752,10 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "stockStatus": {
+                            "type": "string",
+                            "enum": ["in_stock", "out_of_stock", "on_order"]
+                          },
                           "texts": {
                             "type": "object",
                             "propertyNames": {
@@ -1797,6 +1801,7 @@
                           "sku",
                           "isDefault",
                           "sortOrder",
+                          "stockStatus",
                           "texts",
                           "token"
                         ],
@@ -2299,6 +2304,10 @@
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 1000000
+                            },
+                            "stockStatus": {
+                              "type": "string",
+                              "enum": ["in_stock", "out_of_stock", "on_order"]
                             },
                             "texts": {
                               "type": "object",

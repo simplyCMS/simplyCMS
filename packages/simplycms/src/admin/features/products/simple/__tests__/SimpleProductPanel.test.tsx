@@ -60,9 +60,14 @@ describe('SimpleProductPanel: статус наявності — поле че�
     expect(mocks.updateProducts).not.toHaveBeenCalled();
   });
 
-  it('статус, виведений saveStock, повертається у форму', async () => {
-    const form = renderPanel();
+  it('статус, виведений saveStock, іде до картки (вона вирішує, чи не затирає ручний вибір)', async () => {
+    const onStockStatus = vi.fn();
+    render(
+      <CardHarness card={{ onStockStatus }}>
+        <SimpleProductPanel productId={PRODUCT_ID} />
+      </CardHarness>,
+    );
     (await screen.findByRole('button', { name: 'stock-saved' })).click();
-    expect(form().getValues('stockStatus')).toBe('on_order');
+    expect(onStockStatus).toHaveBeenCalledWith(null, 'on_order');
   });
 });

@@ -470,17 +470,21 @@ describe('зображення товару й медіа-контур (Task 12)
       const t1 = withActor({ role: 'app_admin' }, (tx) =>
         productModificationsOps.removeIn(tx, [{ id: mod }], discard),
       ).then(() => (done = true));
-      // T1 справді стоїть на замку (а не просто ще не стартував).
-      let waiting = 0;
-      for (let i = 0; i < 40 && waiting === 0; i++) {
+      // T1 стоїть саме на замку КОРЕНЯ товару (`select … from "products" … for
+      // update`), а не на рядку media чи каскаді: інакше мутація «без lockOnRemove»
+      // лишалася б зеленою.
+      let waitingQueries: string[] = [];
+      for (let i = 0; i < 40 && waitingQueries.length === 0; i++) {
         await new Promise((r) => setTimeout(r, 100));
         const rows = await db.q(
-          `select 1 from pg_stat_activity
+          `select query from pg_stat_activity
             where datname = current_database() and wait_event_type = 'Lock'`,
         );
-        waiting = rows.length;
+        waitingQueries = rows.map((r) => String(r.query));
       }
-      expect(waiting).toBeGreaterThan(0);
+      expect(waitingQueries.join('\n')).toMatch(
+        /from "products"[\s\S]*for update/i,
+      );
       expect(done).toBe(false);
       release();
       await Promise.all([t2, t1]);

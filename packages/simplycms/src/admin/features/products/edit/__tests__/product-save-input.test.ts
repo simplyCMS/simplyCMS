@@ -4,7 +4,7 @@
  * значення й фото йдуть тим самим запитом.
  */
 import { describe, expect, it } from 'vitest';
-import { blankForm } from '../product-aggregate';
+import { blankForm, rebase, withStockStatus } from '../product-aggregate';
 import type { ProductFormValues } from '../product-form-schema';
 import {
   buildCreateInput,
@@ -30,6 +30,7 @@ const mod = (id: string, extra: object = {}) => ({
   sku: '',
   isDefault: false,
   sortOrder: 0,
+  stockStatus: 'in_stock' as 'in_stock' | 'out_of_stock' | 'on_order',
   texts: { uk: 'М', en: '' },
   token: {},
   ...extra,
@@ -170,6 +171,58 @@ describe('buildSaveInput', () => {
   });
 });
 
+describe('buildSaveInput: статус модифікації й текст значення', () => {
+  it('змінений статус модифікації йде в upsert, типовий для нової — ні', () => {
+    const base = { ...was(), modifications: [mod(M1)] };
+    const now = structuredClone(base);
+    now.modifications[0]!.stockStatus = 'on_order';
+    expect(buildSaveInput(base, now).input.modifications?.upsert).toEqual([
+      { id: M1, stockStatus: 'on_order' },
+    ]);
+    const fresh = { ...was(), modifications: [mod(M2)] };
+    expect(
+      buildSaveInput(was(), fresh).input.modifications?.upsert?.[0],
+    ).not.toHaveProperty('stockStatus');
+  });
+
+  it('незмінена мова значення не йде (інакше сервер зробив би її «актуальною»)', () => {
+    const val = (text: Record<string, string | null>) => ({
+      id: V1,
+      propertyId: P1,
+      kind: 'text' as const,
+      text,
+    });
+    const base = {
+      ...was(),
+      propertyValues: [val({ uk: 'мідь', en: 'copper' })],
+    };
+    const now = {
+      ...base,
+      propertyValues: [val({ uk: 'алюміній', en: 'copper' })],
+    };
+    expect(buildSaveInput(base, now).input.propertyValues?.upsert).toEqual([
+      val({ uk: 'алюміній' }),
+    ]);
+  });
+
+  it('нове текстове значення йде всіма непорожніми мовами', () => {
+    const now = {
+      ...was(),
+      propertyValues: [
+        {
+          id: V1,
+          propertyId: P1,
+          kind: 'text' as const,
+          text: { uk: 'a', en: null },
+        },
+      ],
+    };
+    expect(
+      buildSaveInput(was(), now).input.propertyValues?.upsert?.[0]?.text,
+    ).toEqual({ uk: 'a' });
+  });
+});
+
 describe('same', () => {
   it('ігнорує ключі зі значенням undefined, розрізняє вкладене', () => {
     expect(same({ a: 1, b: undefined }, { a: 1 })).toBe(true);
@@ -194,5 +247,38 @@ describe('buildCreateInput', () => {
       sku: null,
       stockStatus: 'in_stock',
     });
+  });
+});
+
+describe('rebase / withStockStatus', () => {
+  it('поле, змінене після відправки, лишається; решта — з БД', () => {
+    const sent = was();
+    const fresh = structuredClone(sent);
+    fresh.texts.uk!.name = 'З БД';
+    fresh.texts.en!.name = 'DB en';
+    const now = structuredClone(sent);
+    now.texts.uk!.name = 'Введене пізніше';
+    now.isFeatured = true;
+    const out = rebase(fresh, sent, now);
+    expect(out.texts.uk!.name).toBe('Введене пізніше');
+    expect(out.texts.en!.name).toBe('DB en');
+    expect(out.isFeatured).toBe(true);
+  });
+
+  it('колекція, змінена після відправки, береться цілком', () => {
+    const sent = was();
+    const now = { ...sent, modifications: [mod(M1)] };
+    expect(rebase(was(), sent, now).modifications).toHaveLength(1);
+    expect(rebase(was(), sent, sent).modifications).toEqual([]);
+  });
+
+  it('withStockStatus міняє товар або лише вказану модифікацію', () => {
+    const f = { ...was(), modifications: [mod(M1), mod(M2)] };
+    expect(withStockStatus(f, null, 'on_order').stockStatus).toBe('on_order');
+    const g = withStockStatus(f, M2, 'out_of_stock');
+    expect(g.modifications.map((m) => m.stockStatus)).toEqual([
+      'in_stock',
+      'out_of_stock',
+    ]);
   });
 });

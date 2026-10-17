@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { PROPERTY_KINDS } from './children-schemas';
-import { fieldStatus as statusEnum } from './schemas';
+import {
+  fieldStatus as statusEnum,
+  stockStatus as statusStock,
+} from './schemas';
 
 // Форма дітей агрегата у відповіді `products.get`: дзеркало входу `saveDescription`
 // (ті самі id та мапи за мовою) + статуси, як у `textsRow` (М1, Task 12).
@@ -15,6 +18,7 @@ export const childrenOut = z.object({
       sku: z.string().nullable(),
       isDefault: z.boolean(),
       sortOrder: z.number().int(),
+      stockStatus: statusStock,
       texts: perLocale(
         z.object({
           name: z.string().nullable(),

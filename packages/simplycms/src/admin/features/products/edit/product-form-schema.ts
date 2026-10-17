@@ -42,6 +42,7 @@ export const draftModification = z.object({
   sku: z.string(),
   isDefault: z.boolean(),
   sortOrder: z.number().int(),
+  stockStatus,
   /** Назва за мовою. */
   texts: perLocale(z.string()),
   /** Токен за мовою (порожній — не задано). */

@@ -26,23 +26,35 @@ function Body({ languages }: BodyProps) {
   // К3-Е6д-1: id нового товару наперед — фото привʼязуються до нього ще до
   // збереження, і той самий id йде в `products.create`.
   const [newId] = useState(() => crypto.randomUUID());
+  const [active, setActive] = useState(primary);
   const rows = useRowErrors();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchemaFor(primary)),
     defaultValues: blankForm(languages.map((l) => l.code)),
   });
-  const create = useProductCreate(newId, {
-    setFormError: (name, message) =>
-      form.setError(name as never, { type: 'server', message }),
-    setModificationError: rows.setModificationError,
-    setValueError: rows.setValueError,
-  });
+  const create = useProductCreate(
+    newId,
+    {
+      setFormError: (name, message) => {
+        form.setError(name as never, { type: 'server', message });
+        rows.noteTextError(name, setActive);
+      },
+      setModificationError: rows.setModificationError,
+      setValueError: rows.setValueError,
+    },
+    primary,
+  );
+  const submit = (values: ProductFormValues) => {
+    rows.reset();
+    return create(values);
+  };
 
   return (
     <ProductForm
       form={form}
       mode="create"
-      translation={{ languages, primary, statuses: {} }}
+      translation={{ languages, primary, statuses: {}, active, setActive }}
+      errorLocales={rows.errorLocales}
       card={{
         productId: null,
         entityId: newId,
@@ -52,8 +64,10 @@ function Body({ languages }: BodyProps) {
         valueErrors: {},
         clearValueError: () => undefined,
         onConflict: () => undefined,
+        onStockStatus: () => undefined,
+        onPathSaved: () => undefined,
       }}
-      onSubmit={create}
+      onSubmit={submit}
       submitLabel={t('common.create')}
     >
       <PluginSlot

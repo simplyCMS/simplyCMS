@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,7 +25,9 @@ interface Props {
   readonly form: UseFormReturn<ProductFormValues>;
   readonly mode: 'create' | 'edit';
   readonly card: ProductCardContextValue;
-  readonly translation: Omit<TranslationContextValue, 'active' | 'setActive'>;
+  /** Активну мову тримає власник (картка/сторінка створення): помилку сервера перемикає вкладку. */
+  readonly translation: TranslationContextValue;
+  readonly errorLocales?: ReadonlySet<string>;
   readonly onSubmit: (values: ProductFormValues) => void | Promise<void>;
   readonly submitLabel: string;
   /**
@@ -47,16 +49,17 @@ export function ProductForm({
   mode,
   card,
   translation,
+  errorLocales,
   onSubmit,
   submitLabel,
   children,
 }: Props) {
   const t = useT();
-  const [active, setActive] = useState(translation.primary);
+  const { active, setActive } = translation;
   const productId = card.productId;
 
   return (
-    <TranslationContext.Provider value={{ ...translation, active, setActive }}>
+    <TranslationContext.Provider value={translation}>
       <ProductCardContext.Provider value={card}>
         <Form {...form}>
           <form
@@ -71,6 +74,7 @@ export function ProductForm({
                 languages={translation.languages}
                 active={active}
                 onChange={setActive}
+                errorLocales={errorLocales}
                 statusOf={(code) =>
                   translation.statuses[code]?.status ?? 'missing'
                 }

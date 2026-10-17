@@ -21,7 +21,7 @@ interface UpdateOptions {
   readonly baseline: ProductFormValues;
   readonly onConflict: (currentVersion: number) => void;
   /** Після успіху: перечитати агрегат і скинути форму до нього. */
-  readonly onSaved: () => Promise<void>;
+  readonly onSaved: (sent: ProductFormValues) => Promise<void>;
   readonly sink: ErrorSink;
 }
 
@@ -47,7 +47,7 @@ export function useProductUpdate(o: UpdateOptions) {
       const out = await run({ id: o.productId, ...input });
       if (!out) return;
       toast.success(t('admin.products.updated'));
-      await o.onSaved();
+      await o.onSaved(values);
     } catch (e) {
       reportSaveError(e, t, index, o.sink);
     }
@@ -60,7 +60,11 @@ export function useProductUpdate(o: UpdateOptions) {
  * створення (створення дітей агрегата не приймає). id генерує форма наперед:
  * фото привʼязуються до нього ще до збереження.
  */
-export function useProductCreate(entityId: string, sink: ErrorSink) {
+export function useProductCreate(
+  entityId: string,
+  sink: ErrorSink,
+  primary: string,
+) {
   const t = useT();
   const navigate = useNavigate();
   const products = useCollection(productsCollection);
@@ -75,6 +79,10 @@ export function useProductCreate(entityId: string, sink: ErrorSink) {
       const created = await createProduct({
         data: buildCreateInput(entityId, values),
       });
+      // Явна адреса, яку генератор змінив (зайнята → `-2`), не лишається тихою.
+      const actual = created.paths[primary];
+      if (values.path !== '' && actual && actual !== values.path)
+        toast.info(t('admin.translations.path.adjusted', { path: actual }));
       const { input } = buildSaveInput(blankForm([]), {
         ...blankForm([]),
         images: values.images,

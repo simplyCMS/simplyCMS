@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Label } from 'simplycms/ui/label';
+import { useProductCard } from '../edit/product-card-context';
+import { TranslationStatusBadge } from '../../translations/TranslationStatusBadge';
+import { useTranslationContext } from '../../translations/translation-context';
 import { PropertyInput } from './PropertyInput';
 import type { PropertyAppliesTo } from './usePropertySchema';
 import { usePropertySchema } from './usePropertySchema';
@@ -35,6 +38,8 @@ export function PropertyValuesPanel({
   showCard = true,
 }: Props) {
   const t = useT();
+  const card = useProductCard();
+  const { active, primary } = useTranslationContext();
   const { rows: schema, isLoading } = usePropertySchema(sectionId, appliesTo);
   const { rowsOf, saveScalar, saveMulti, errors } = usePropertyValues(
     target,
@@ -76,6 +81,16 @@ export function PropertyValuesPanel({
               className="flex items-center gap-2"
             >
               {property.name}
+              {property.propertyType === 'text' &&
+                (() => {
+                  const id = rowsOf(property.id)[0]?.id;
+                  const status = id
+                    ? card.statusOfValueText?.(id, active)
+                    : undefined;
+                  return active !== primary && status ? (
+                    <TranslationStatusBadge status={status} />
+                  ) : null;
+                })()}
               {property.isRequired && (
                 <span className="text-destructive">*</span>
               )}

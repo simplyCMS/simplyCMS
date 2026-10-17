@@ -7,6 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from 'simplycms/ui/collapsible';
+import { useProductCard } from '../edit/product-card-context';
 import { PricesEditor } from '../prices/PricesEditor';
 import { PropertyValuesPanel } from '../properties/PropertyValuesPanel';
 import { StockEditor } from '../stock/StockEditor';
@@ -30,6 +31,7 @@ export function ModificationDialogSections({
   sectionId,
 }: Props) {
   const t = useT();
+  const card = useProductCard();
   const [pricesOpen, setPricesOpen] = useState(true);
   const [stockOpen, setStockOpen] = useState(true);
   const [propsOpen, setPropsOpen] = useState(true);
@@ -80,6 +82,7 @@ export function ModificationDialogSections({
             productId={productId}
             modificationId={modificationId}
             showCard={false}
+            onStatus={(s) => card.onStockStatus(modificationId, s)}
           />
         </CollapsibleContent>
       </Collapsible>

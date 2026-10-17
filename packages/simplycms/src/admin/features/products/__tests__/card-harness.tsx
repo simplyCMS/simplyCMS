@@ -67,6 +67,8 @@ function Inner({ o, children }: { o: Options; children: ReactNode }) {
             valueErrors: {},
             clearValueError: () => undefined,
             onConflict: () => undefined,
+            onStockStatus: () => undefined,
+            onPathSaved: () => undefined,
             ...o.card,
           }}
         >
@@ -103,6 +105,7 @@ export const mod = (id: string, name: string, extra: object = {}) => ({
   sku: '',
   isDefault: false,
   sortOrder: 0,
+  stockStatus: 'in_stock' as const,
   texts: { uk: name, en: '' },
   token: {},
   ...extra,
