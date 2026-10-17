@@ -49,7 +49,7 @@ export const productModificationsOps = defineAdminResource({
   // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
   // зникають; їхні файли належать товару, а не модифікації.
   // М1: каскад фото модифікації серіалізується з командами агрегата товару
-  // (`lockProduct` = `FOR UPDATE` кореня; порядок за id — без взаємного блокування).
+  // (`lockProduct` = `FOR NO KEY UPDATE` кореня; порядок за id — без взаємного блокування).
   lockOnRemove: async (db, ids) => {
     if (ids.length === 0) return;
     const roots = await db
@@ -67,7 +67,7 @@ export const productModificationsOps = defineAdminResource({
         ),
       )
       .orderBy(products.id)
-      .for('update');
+      .for('no key update');
   },
   cascadeMedia: [
     {

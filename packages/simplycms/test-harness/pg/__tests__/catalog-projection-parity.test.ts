@@ -13,6 +13,7 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languagesFill } from 'simplycms/admin-server/impl';
 import { isTranslatedForSeo } from 'simplycms/domain/translations';
 import { TRANSLATABLE } from 'simplycms/translations';
+import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
 import { useAddressingDb } from './fixtures/addressing-db';
 import { hold, until, waiters } from './fixtures/lock-holders';
 import {
@@ -177,6 +178,8 @@ describe('проєкція тексту: паритет, замок, гонка 
     expect(await proj(id, 'bg')).toBeUndefined();
     // Команда: оновлює джерело й пише рядок bg (не закомічений).
     const command = hold(db, async (d) => {
+      // Справжній порядок команди: корінь агрегата, потім джерело й проєкція.
+      await lockProduct(d, id);
       await d.execute(
         sql`update public.product_translations set name = 'Нове' where product_id = ${id}::uuid and locale = 'uk'`,
       );

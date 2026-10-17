@@ -37,6 +37,36 @@ set standard_conforming_strings = on;
 begin;
 select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));`;
 
+/**
+ * Проєкція тексту товару (М1, Task 14, І23) будується кроком САМОГО сіду з щойно
+ * записаних перекладів і адрес: вітрина читає `catalog_product_texts`, а дамп її не
+ * містить (похідна таблиця). Стенд пише лише основну мову, тож fallback-а немає, але
+ * вираз той самий, що в `catalog-projection/expected.ts` (рядок = мова draft/published
+ * з поточною адресою; `is_translated` за правилом «непорожнє в джерелі -> непорожнє в мові»).
+ */
+const PROJECTION_FIELDS = [
+  'name',
+  'short_description',
+  'description',
+  'meta_title',
+  'meta_description',
+];
+export const PROJECTION_STEP = `-- catalog_product_texts: похідна проєкція (будується з product_translations і url_paths)
+insert into public.catalog_product_texts (
+  product_id, locale, ${PROJECTION_FIELDS.join(', ')}, path, is_translated
+)
+select p.id, l.code, ${PROJECTION_FIELDS.map((f) => `coalesce(t.${f}, s.${f})`).join(', ')}, u.path,
+       (t.product_id is not null and ${PROJECTION_FIELDS.map((f) => `(s.${f} is null or t.${f} is not null)`).join(' and ')})
+  from public.products p
+  join public.languages l on l.status in ('draft', 'published')
+  join public.url_paths u on u.product_id = p.id and u.locale = l.code and u.is_current
+  join public.product_translations s
+    on s.product_id = p.id and s.locale = (select code from public.languages where is_default)
+  left join public.product_translations t on t.product_id = p.id and t.locale = l.code
+ where coalesce(t.name, s.name) is not null
+on conflict (product_id, locale) do update set
+${[...PROJECTION_FIELDS, 'path', 'is_translated'].map((c) => `  ${c} = excluded.${c}`).join(',\n')};`;
+
 /** Невідома таблиця у вхідних даних — помилка, а не мовчазний пропуск. */
 function assertKnownTables(dataset) {
   for (const table of Object.keys(dataset)) {
@@ -48,10 +78,19 @@ function assertKnownTables(dataset) {
   }
 }
 
+/** Той самий клас «непорожніх» символів, що CHECK у `schema.ts` (`NON_BLANK`). */
+const BLANK_FREE =
+  /[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]/;
+
 /** Рядок, звужений до allowlist-у колонок: усе інше не існує для генератора. */
 function sanitizeRow(spec, row) {
   const clean = {};
   for (const column of spec.columns) clean[column] = row[column] ?? null;
+  // CHECK `product_translations_*_text`: плоске перекладне поле — NULL або з текстом;
+  // порожній рядок із джерела (`''`, самі пробіли) на стенді стає NULL, а не падінням накату.
+  for (const column of spec.blankToNull ?? [])
+    if (typeof clean[column] === 'string' && !BLANK_FREE.test(clean[column]))
+      clean[column] = null;
   return clean;
 }
 
@@ -156,5 +195,5 @@ export function generateSeedSql(dataset) {
       'Порожній датасет: у дампі немає жодного каталожного рядка',
     );
   }
-  return `${[HEADER, ...blocks, 'commit;'].join('\n\n')}\n`;
+  return `${[HEADER, ...blocks, PROJECTION_STEP, 'commit;'].join('\n\n')}\n`;
 }

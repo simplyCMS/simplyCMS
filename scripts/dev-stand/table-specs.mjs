@@ -106,6 +106,13 @@ export const TABLE_SPECS = [
     table: 'product_translations',
     columns: cols(`product_id name short_description description meta_title
       meta_description`),
+    // CHECK у схемі: плоске поле — NULL або з текстом, тож порожнє з джерела -> NULL.
+    blankToNull: [
+      'name',
+      'short_description',
+      'meta_title',
+      'meta_description',
+    ],
     derived: { locale: PRIMARY_LOCALE_SQL },
     where: localeWhere,
     conflictTarget: ['product_id', 'locale'],

@@ -519,7 +519,8 @@ export const productTranslations = pgTable("product_translations", {
 	// Це БД-гарантія вхідної умови SQL-предиката `is_translated` проєкції
 	// `catalog_product_texts` (`src.f IS NULL OR loc.f IS NOT NULL`): `''` чи самі
 	// пробіли в обхід команди дали б там хибне «перекладено». Клас «порожніх» символів —
-	// той самий, що `INVISIBLE_RUN` у `domain/translations/text.ts`. Rich-поле `description`
+	// той самий, що `INVISIBLE_RUN` у `domain/translations/text.ts`. Паритет плоских полів звірка
+	// бачить лише як «є/немає», тож його тримає ТІЛЬКИ цей CHECK. Rich-поле `description`
 	// SQL не перевіряє: його порожнеча визначається розміткою (звірка проєкції ловить розбіжність).
 	check("product_translations_name_text", sql`${table.name} IS NULL OR ${table.name} ~ ${NON_BLANK}`),
 	check("product_translations_short_description_text", sql`${table.shortDescription} IS NULL OR ${table.shortDescription} ~ ${NON_BLANK}`),

@@ -93,7 +93,8 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   it('кожен insert має on conflict … do update set', () => {
     const inserts = sql.match(/insert into public\./g) ?? [];
     const upserts = sql.match(/on conflict \(.+\) do update set/g) ?? [];
-    expect(inserts.length).toBe(7);
+    // 7 таблиць датасету + крок проєкції (М1, Task 14).
+    expect(inserts.length).toBe(8);
     expect(upserts.length).toBe(inserts.length);
   });
 
@@ -108,6 +109,8 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
       'product_id, locale',
       'id',
       'id',
+      // крок проєкції (М1, Task 14)
+      'product_id, locale',
     ]);
     expect(sql).not.toContain('coalesce(modification_id');
   });
@@ -143,6 +146,31 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
     );
   });
 
+  it('проєкція тексту будується кроком сіду після перекладів і адрес, до commit', () => {
+    const step = sql.indexOf('insert into public.catalog_product_texts');
+    expect(step).toBeGreaterThan(sql.indexOf('insert into public.url_paths'));
+    expect(step).toBeGreaterThan(
+      sql.indexOf('insert into public.product_translations'),
+    );
+    expect(step).toBeLessThan(sql.lastIndexOf('commit;'));
+  });
+
+  it('порожнє плоске перекладне поле з джерела стає NULL (CHECK схеми)', () => {
+    const dirty = generateSeedSql({
+      ...SAMPLE_DATASET,
+      product_translations: SAMPLE_DATASET.product_translations.map((r) => ({
+        ...r,
+        short_description: '   ',
+        meta_title: '',
+      })),
+    });
+    const block = blockOf(dirty, 'product_translations');
+    expect(block).not.toContain("'   '");
+    expect(block).toContain(
+      ", null, '<p>Опис із <b>HTML</b></p>', null, null,",
+    );
+  });
+
   it('сід — одна транзакція під спільним замком languages-set (SC004)', () => {
     const begin = sql.indexOf('begin;');
     const lock = sql.indexOf(
@@ -162,9 +190,10 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   });
 
   it('таблиці — у топологічному порядку (батьки перед дітьми)', () => {
-    const emitted = [...sql.matchAll(/insert into public\.([a-z_]+) \(/g)].map(
-      (match) => match[1],
-    );
+    const emitted = [...sql.matchAll(/insert into public\.([a-z_]+) \(/g)]
+      .map((match) => match[1])
+      // Похідна проєкція (М1, Task 14) — не таблиця дампу, а крок після них.
+      .filter((table) => table !== 'catalog_product_texts');
     expect(emitted).toEqual(FK_TABLE_ORDER.filter((t) => emitted.includes(t)));
   });
 

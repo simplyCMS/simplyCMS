@@ -26,15 +26,20 @@ import {
 const SPEC = TRANSLATABLE.product;
 
 /**
- * Корінь агрегата під `FOR UPDATE` — ПЕРШИЙ запит кожної команди: усі записи
+ * Корінь агрегата під `FOR NO KEY UPDATE` — ПЕРШИЙ запит кожної команди: усі записи
  * опису й перекладів серіалізуються на ньому (версія, хеш джерела, І13/І14).
+ * 🔴 Саме NO KEY UPDATE, а не UPDATE: ключ рядка команди не міняють, а `FOR UPDATE`
+ * конфліктує з `FOR KEY SHARE`, який бере FK при вставці дочірніх рядків — зокрема
+ * рядків проєкції в `fill`/`setStatus` під `languages-set`; команда (рядок товару ->
+ * `languages-set` у refresh) і вони (`languages-set` -> FK на рядок товару) давали
+ * б цикл блокувань 40P01. Команди між собою серіалізуються й так.
  */
 export async function lockProduct(db: ActorDb, id: string): Promise<number> {
   const [row] = await db
     .select({ version: products.version })
     .from(products)
     .where(eq(products.id, id))
-    .for('update');
+    .for('no key update');
   if (!row) throw new AdminNotFoundError('товар');
   return row.version;
 }

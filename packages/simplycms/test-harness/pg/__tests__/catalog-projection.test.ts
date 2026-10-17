@@ -14,6 +14,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { completeness } from '../../../src/admin-server/impl/languages/completeness';
 import { sourceFieldHash } from 'simplycms/translations';
+import { PROJECTION_STEP } from '../../../../../scripts/dev-stand/generate-seed.mjs';
 import { useAddressingDb } from './fixtures/addressing-db';
 import {
   create,
@@ -306,6 +307,13 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
       expect(await proj(id, 'ro')).toBeDefined();
       await clean();
     });
+  });
+
+  it('крок проєкції сіду стенда будує рядки, еквівалентні командам', async () => {
+    await seed();
+    await db.q(`delete from public.catalog_product_texts`);
+    await db.q(PROJECTION_STEP);
+    await clean();
   });
 
   it('фікстура insertProductGraph доведена до стану команд: звірка 0 (П6)', async () => {
