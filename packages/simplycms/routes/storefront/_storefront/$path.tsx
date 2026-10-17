@@ -7,13 +7,16 @@ import {
 } from 'simplycms/storefront-routes/pages/entity-route';
 
 // Сторінка сутності за адресою з реєстру: `/<path>` і `/<мова>/<path>` (префікс
-// мови знімає `rewrite` роутера). У М1 сутність — товар. Статичні роути
-// (`/cart`, `/catalog`, …) специфічніші за splat, тож перекрити їх адреса не може.
-export const Route = createFileRoute('/_storefront/$')({
+// мови знімає `rewrite` роутера). У М1 сутність — товар. 🔴 Іменований параметр
+// на ОДИН сегмент, а не splat: адреса сутності — один сегмент (§3.2), тож
+// `/admin/<щось>`, `/api/…`, `/auth/…` цей роут не перехоплює і поводяться як раніше
+// (splat `/$` ловив би їх і тягнув оболонку вітрини). Статичні роути (`/cart`,
+// `/catalog`, …) специфічніші, тож перекрити їх адреса не може.
+export const Route = createFileRoute('/_storefront/$path')({
   validateSearch: entitySearch,
   loader: ({ params, location, context }) =>
     loadEntityPage({
-      splat: params._splat ?? '',
+      path: params.path,
       publicHref: location.publicHref,
       locales: context.locales,
     }),

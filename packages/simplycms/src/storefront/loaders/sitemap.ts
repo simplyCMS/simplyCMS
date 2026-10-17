@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import {
   catalogProductTexts as texts,
   languages,
@@ -7,6 +7,7 @@ import {
 } from 'simplycms/schema';
 import type { LanguageVersion } from '../seo/hreflang';
 import type { ActorDb } from './db';
+import { pageVisible } from './product-visibility';
 
 /**
  * Дані для `/sitemap.xml` — рівно те, з чого будуються URL-и (В2-К1а).
@@ -72,12 +73,9 @@ export async function loadSitemapData(db: ActorDb): Promise<SitemapData> {
       isDefault: languages.isDefault,
     })
     .from(texts)
-    .innerJoin(
-      languages,
-      and(eq(languages.code, texts.locale), eq(languages.status, 'published')),
-    )
+    .innerJoin(languages, eq(languages.code, texts.locale))
     .innerJoin(products, eq(products.id, texts.productId))
-    .where(eq(products.isActive, true))
+    .where(pageVisible())
     .orderBy(
       desc(products.updatedAt),
       asc(products.id),

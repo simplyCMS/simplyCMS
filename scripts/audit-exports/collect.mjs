@@ -66,6 +66,7 @@ const EXCLUDE_PATHSPECS = [
  *   dir: string;
  *   packageJsonPath: string;
  *   exportsKeys: string[];
+ *   exportsTargets: Record<string, unknown>;
  *   publishExportsKeys: string[] | null;
  * }} PackageInfo
  */
@@ -89,6 +90,7 @@ export function collectPackages() {
       dir: entry.name,
       packageJsonPath,
       exportsKeys: Object.keys(json.exports ?? {}),
+      exportsTargets: json.exports ?? {},
       publishExportsKeys: json.publishConfig?.exports
         ? Object.keys(json.publishConfig.exports)
         : null,

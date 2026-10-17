@@ -29,7 +29,7 @@ vi.mock('../shells/useActiveThemeModule', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
-  useParams: () => ({ _splat: 'panel-550', sectionSlug: 'panels' }),
+  useParams: () => ({ path: 'panel-550', sectionSlug: 'panels' }),
   useNavigate: () => () => {},
   useLocation: ({ select }: { select: (l: { pathname: string }) => unknown }) =>
     select({ pathname: '/catalog/panels/panel-550' }),

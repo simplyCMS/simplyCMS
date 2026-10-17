@@ -43,6 +43,8 @@ export interface ProductPropertyValueViewModel {
   value: string | null;
   numeric_value: number | null;
   option_id: string | null;
+  /** Мова `value`, коли текст узято з основної мови (fallback): view обгортає його `lang` (І37). */
+  value_lang?: string | null;
   /**
    * Назва опції — джерело правди для відображення (Е3-13, ревізія):
    * `product_property_values.value` для рядків з `option_id` — застарілий

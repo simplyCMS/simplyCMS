@@ -40,7 +40,7 @@
   модифікацій і значень властивостей `admin-data` — лише читання (без `persistenceHandlers`). Ручний статус наявності
   модифікації — поле `stockStatus` у `modifications.upsert` і у виході `products.get` (як `base.stockStatus` товару); `saveStock` далі виводить його з залишків. 412 при збереженні — діалог «Товар змінив хтось інший».
 - **Сторінка товару — за адресою з реєстру** (`simplycms/storefront-routes`, `simplycms/domain`, `simplycms/contracts`):
-  товар відкривається на `/<path>` і `/<мова>/<path>` (роут сутності `routes/storefront/_storefront/$.tsx`); прибрано роут
+  товар відкривається на `/<path>` і `/<мова>/<path>` (роут сутності `routes/storefront/_storefront/$path.tsx`); прибрано роут
   `/catalog/$sectionSlug/$productSlug`, редірект сегмента розділу та зарезервований slug розділу `all` (`NO_SECTION_SLUG`,
   `isReservedSectionSlug`, `productRedirectTarget`). `productPath({ path, locale?, primary? })` замість
   `productPath({ slug, sectionSlug })`, `LinkResolver.product({ path })`, `getProduct({ locale, path })`,
@@ -72,6 +72,7 @@
   проєкція тексту товару (М1 Task 14, І23): нова таблиця `catalog_product_texts` (PK `(product_id, locale)`, CASCADE на товар і мову,
   індекс `(locale, path)`, права `app_user` SELECT / `app_admin` CRUD) і CHECK `product_translations_{name,short_description,meta_title,meta_description}_text`
   (плоске перекладне поле — `NULL` або з непорожнім текстом; `''` і самі пробіли в обхід команди відхиляються);
+  колонка `fallback_fields text[] NOT NULL DEFAULT '{}'` (Task 15: поля тексту, узяті з основної мови; рахує той самий SQL-будівник, що й текст, звіряє `reconcile`; вітрина обгортає їх `lang`);
   демо-сід пише проєкцію основної мови;
   Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.

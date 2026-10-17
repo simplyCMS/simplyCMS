@@ -25,6 +25,8 @@ export type ModificationRow = {
   sort_order: ProductModification['sortOrder'];
   stock_status: ProductModification['stockStatus'];
   images: string[];
+  /** Мова назви, коли вона узята з основної мови (fallback): вітрина огортає її `lang` (І37). */
+  name_lang?: string | null;
 };
 
 /** Нормалізує `images` модифікації тим самим правилом, що й у товару. */

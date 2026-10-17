@@ -108,6 +108,34 @@ describe('адреса товару: реєстр, нормалізація і �
     expect(await run('/kabel-chervonyi?mod=nope')).toBeNull();
   });
 
+  it('токен ?mod=, який роутер читає як не-рядок (123): резолв у БД і канонічна лапкована форма', async () => {
+    const { id, version: v, paths } = await translated();
+    const mod = randomUUID();
+    const s = await saveDescription(id, v, {
+      modifications: {
+        upsert: [{ id: mod, texts: { uk: { name: 'Розмір' } } }],
+      },
+    });
+    const [{ slug: oldToken }] = (await db.q(
+      `select slug from public.slug_tokens where modification_id = $1 and locale = 'uk'`,
+      [mod],
+    )) as Array<{ slug: string }>;
+    await exec(productsSetModificationToken, {
+      modificationId: mod,
+      locale: 'uk',
+      slug: '123',
+      expectedVersion: s.version,
+    });
+    expect(await location(`/${paths.uk}?mod=${oldToken}`)).toBe(
+      `/${paths.uk}?mod=%22123%22`,
+    );
+    // Поточний токен, набраний як число, теж зводиться до канонічної форми роутера.
+    expect(await location(`/${paths.uk}?mod=123`)).toBe(
+      `/${paths.uk}?mod=%22123%22`,
+    );
+    expect(await run(`/${paths.uk}?mod=%22123%22`)).toBeNull();
+  });
+
   it('видалений товар: історії немає → нормалізація мовчить, сторінка null (404)', async () => {
     const { id, paths } = await translated();
     await setPath(id, 'uk', 'to-be-removed');
@@ -158,6 +186,25 @@ describe('адреса товару: реєстр, нормалізація і �
     });
   });
 
+  it('переклад буквально рівний основній мові — НЕ fallback; відсутній переклад поля — fallback (І37)', async () => {
+    const { id, paths } = await create({
+      uk: { name: 'iPhone 15', description: '<p>Опис</p>' },
+      en: { name: 'iPhone 15' },
+    });
+    const en = await page('en', paths.en!);
+    // Назва перекладена буквально так само: lang основної мови на ній був би хибним.
+    expect(en?.page.fallbackFields).toEqual(['description']);
+    expect(
+      (
+        await db.q(
+          `select fallback_fields from public.catalog_product_texts where product_id = $1 and locale = 'en'`,
+          [id],
+        )
+      )[0],
+    ).toEqual({ fallback_fields: ['description'] });
+    expect((await page('uk', paths.uk!))?.page.fallbackFields).toEqual([]);
+  });
+
   it('перекладене en: self-canonical, hreflang uk/en/x-default, своя назва, без fallback-полів', async () => {
     const { paths } = await translated();
     const en = await page('en', paths.en!);
@@ -189,9 +236,27 @@ describe('адреса товару: реєстр, нормалізація і �
     expect(await page('uk', paths.uk!)).toBeNull();
   });
 
-  it('модифікація: токен ?mod= і назва — мовою сторінки (withFallback)', async () => {
+  it('історична адреса неактивного товару / чернетки мови — без 301 (не розкриває поточну адресу)', async () => {
+    const { id, paths } = await translated();
+    await setPath(id, 'uk', 'visible-now');
+    expect(await location(`/${paths.uk}`)).toBe('/visible-now');
+    await db.q(`update public.products set is_active = false where id = $1`, [
+      id,
+    ]);
+    // Сторінка за поточною адресою — 404, тож 301 на неї був би лише витоком slug-а.
+    expect(await run(`/${paths.uk}`)).toBeNull();
+    expect(await page('uk', 'visible-now')).toBeNull();
+    // Те саме для мови, що не `published`: історія в `de` (draft) не редіректить.
+    const other = await translated();
+    await setPath(other.id, 'de', 'de-new');
+    expect(
+      await lookupProductAddress('de', other.paths.de ?? other.paths.uk!, null),
+    ).toBeNull();
+  });
+
+  it('модифікація: токен ?mod=, назва і ознака fallback — мовою сторінки (withFallback)', async () => {
     const { id, version: v, paths } = await translated();
-    const mod = randomUUID();
+    const [mod, noEn, same] = [randomUUID(), randomUUID(), randomUUID()];
     const s = await saveDescription(id, v, {
       modifications: {
         upsert: [
@@ -199,6 +264,8 @@ describe('адреса товару: реєстр, нормалізація і �
             id: mod,
             texts: { uk: { name: 'Червоний' }, en: { name: 'Red' } },
           },
+          { id: noEn, texts: { uk: { name: 'Чорний' } } },
+          { id: same, texts: { uk: { name: 'XL' }, en: { name: 'XL' } } },
         ],
       },
     });
@@ -210,13 +277,20 @@ describe('адреса товару: реєстр, нормалізація і �
     });
     const uk = await page('uk', paths.uk!);
     const en = await page('en', paths.en!);
-    expect(en?.product_modifications[0]).toMatchObject({
-      id: mod,
+    const byId = (p: typeof en, mid: string) =>
+      p?.product_modifications.find((m) => m.id === mid);
+    expect(byId(en, mod)).toMatchObject({
       name: 'Red',
       slug: 'red',
+      name_lang: null,
     });
-    expect(uk?.product_modifications[0]?.name).toBe('Червоний');
-    expect(uk?.product_modifications[0]?.slug).not.toBe('red');
+    // Немає англійської назви → з основної мови, з її lang (І37).
+    expect(byId(en, noEn)).toMatchObject({ name: 'Чорний', name_lang: 'uk' });
+    // Переклад буквально рівний основній назві — НЕ fallback.
+    expect(byId(en, same)).toMatchObject({ name: 'XL', name_lang: null });
+    expect(byId(uk, mod)?.name).toBe('Червоний');
+    expect(byId(uk, mod)?.slug).not.toBe('red');
+    expect(byId(uk, noEn)?.name_lang).toBeNull();
   });
 
   it('значення властивостей — за типом: текст з перекладів (fallback), булеве й колір з власних колонок', async () => {
@@ -268,6 +342,15 @@ describe('адреса товару: реєстр, нормалізація і �
         (p?.product_property_values ?? []).map((v) => [v.property_id, v.value]),
       );
     };
+    const langs = async (locale: string, path: string) => {
+      const p = await page(locale, path);
+      return Object.fromEntries(
+        (p?.product_property_values ?? []).map((v) => [
+          v.property_id,
+          v.value_lang,
+        ]),
+      );
+    };
     expect(await values('en', paths.en!)).toEqual({
       [text]: 'Yes',
       [bool]: 'true',
@@ -275,6 +358,9 @@ describe('адреса товару: реєстр, нормалізація і �
       [onlyUk]: 'Лише укр', // fallback на основну мову
     });
     expect((await values('uk', paths.uk!))[text]).toBe('Так');
+    // Ознака fallback — з даних: лише текст без англійського перекладу несе `lang` основної.
+    expect((await langs('en', paths.en!))[text]).toBeNull();
+    expect((await langs('en', paths.en!))[onlyUk]).toBe('uk');
   });
 
   it('sitemap: неперекладена версія поза ним, перекладена — з alternates', async () => {

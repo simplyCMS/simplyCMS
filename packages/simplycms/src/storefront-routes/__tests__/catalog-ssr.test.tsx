@@ -14,8 +14,8 @@ import { TestEngineProvider } from './engine-stub';
 /** Підставляє $param-плейсхолдери в шлях — щоб перевіряти й href картки. */
 function buildHref(to: string, params?: Record<string, string>): string {
   if (!params) return to;
-  // Сторінка сутності: splat-патерн `/$` підставляє `_splat`.
-  if (to === '/$') return `/${params._splat ?? ''}`;
+  // Сторінка сутності: патерн `/$path` підставляє `path`.
+  if (to === '/$path') return `/${params.path ?? ''}`;
   return Object.entries(params).reduce(
     (acc, [key, value]) => acc.replaceAll(`$${key}`, value),
     to,

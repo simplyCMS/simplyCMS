@@ -52,6 +52,7 @@ export function useProductContent({
         value: string | null;
         numeric_value: number | null;
         option_id: string | null;
+        value_lang?: string | null;
         property_options: { id: string; slug: string; name: string } | null;
         section_properties: {
           id: string;
@@ -67,6 +68,7 @@ export function useProductContent({
         value: pv.value,
         numeric_value: pv.numeric_value,
         option_id: pv.option_id,
+        value_lang: pv.value_lang ?? null,
         option: pv.property_options,
         property: pv.section_properties,
       }),

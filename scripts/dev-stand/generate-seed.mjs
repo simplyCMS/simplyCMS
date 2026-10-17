@@ -53,10 +53,11 @@ const PROJECTION_FIELDS = [
 ];
 export const PROJECTION_STEP = `-- catalog_product_texts: похідна проєкція (будується з product_translations і url_paths)
 insert into public.catalog_product_texts (
-  product_id, locale, ${PROJECTION_FIELDS.join(', ')}, path, is_translated
+  product_id, locale, ${PROJECTION_FIELDS.join(', ')}, path, is_translated, fallback_fields
 )
 select p.id, l.code, ${PROJECTION_FIELDS.map((f) => `coalesce(t.${f}, s.${f})`).join(', ')}, u.path,
-       (t.product_id is not null and ${PROJECTION_FIELDS.map((f) => `(s.${f} is null or t.${f} is not null)`).join(' and ')})
+       (t.product_id is not null and ${PROJECTION_FIELDS.map((f) => `(s.${f} is null or t.${f} is not null)`).join(' and ')}),
+       array_remove(array[${PROJECTION_FIELDS.map((f) => `case when s.${f} is not null and t.${f} is null then '${f}' end`).join(', ')}], null)::text[]
   from public.products p
   join public.languages l on l.status in ('draft', 'published')
   join public.url_paths u on u.product_id = p.id and u.locale = l.code and u.is_current
@@ -65,7 +66,7 @@ select p.id, l.code, ${PROJECTION_FIELDS.map((f) => `coalesce(t.${f}, s.${f})`).
   left join public.product_translations t on t.product_id = p.id and t.locale = l.code
  where coalesce(t.name, s.name) is not null
 on conflict (product_id, locale) do update set
-${[...PROJECTION_FIELDS, 'path', 'is_translated'].map((c) => `  ${c} = excluded.${c}`).join(',\n')};`;
+${[...PROJECTION_FIELDS, 'path', 'is_translated', 'fallback_fields'].map((c) => `  ${c} = excluded.${c}`).join(',\n')};`;
 
 /** Невідома таблиця у вхідних даних — помилка, а не мовчазний пропуск. */
 function assertKnownTables(dataset) {

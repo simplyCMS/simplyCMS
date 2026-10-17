@@ -17,7 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
     params: Record<string, string>;
     children: ReactNode;
   }) => (
-    <a href={to.replace(/\$/, params._splat ?? '')} data-testid="card">
+    <a href={to.replace('$path', params.path ?? '')} data-testid="card">
       {children}
     </a>
   ),

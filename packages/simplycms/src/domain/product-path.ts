@@ -4,8 +4,8 @@
 // `path` бере з реєстру `url_paths` (мова × шлях), а НЕ зі slug-а розділу чи
 // товару. Тип сутності за адресою визначає реєстр, не форма URL.
 
-/** Шлях роуту сторінки сутності (splat) — для `<Link to>`. */
-export const PRODUCT_ROUTE = '/$' as const;
+/** Шлях роуту сторінки сутності (один сегмент) — для `<Link to>`. */
+export const PRODUCT_ROUTE = '/$path' as const;
 
 /** Мінімум, з якого видно шлях товару. */
 export type ProductPathInput = {
@@ -27,7 +27,7 @@ export type ProductPath = {
    * Параметри `<Link>`: БЕЗ мови. Префікс мови дописує `rewrite` роутера за
    * мовою поточної сторінки, тож посилання ведуть на ту саму мову, де стоїть читач.
    */
-  params: { _splat: string };
+  params: { path: string };
   /** Готовий шлях від кореня з префіксом мови для canonical, sitemap і JSON-LD. */
   href: string;
 };
@@ -38,7 +38,7 @@ export function productPath(product: ProductPathInput): ProductPath {
   const prefixed = locale !== undefined && locale !== primary;
   return {
     to: PRODUCT_ROUTE,
-    params: { _splat: path },
+    params: { path },
     href: prefixed ? `/${locale.toLowerCase()}/${path}` : `/${path}`,
   };
 }

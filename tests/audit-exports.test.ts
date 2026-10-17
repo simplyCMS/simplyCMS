@@ -140,3 +140,46 @@ describe('audit-exports: специфікатори лише з імпорт-ф�
     expect(missing.map((m) => m.specifier)).toEqual(['simplycms/nope-x']);
   });
 });
+
+// 🔴 Сліпа зона, яку ловив лише pilot (Task 15): ключ-патерн `./storefront-routes/pages/*`
+// «покриває» будь-яке ім'я, але його ціль `*.tsx` для `.ts`-модуля файлу не має — у
+// монорепо аліас резолвить усе, а в tarball-і це `ERR_MODULE_NOT_FOUND`. Імпорт іде з
+// `routes/**` (файл-роут), тож гейт мусить і читати цей корінь, і звіряти ціль з файлом.
+describe('audit-exports: ціль патерна існує, імпорти з routes/** видно', () => {
+  const ENTITY = 'simplycms/storefront-routes/pages/entity-route';
+
+  it('сканер бачить специфікатор файл-роуту сутності', async () => {
+    const { collectSpecifiers } =
+      await import('../scripts/audit-exports/collect.mjs');
+    expect(collectSpecifiers()).toContain(ENTITY);
+  });
+
+  it('прибраний явний ключ entity-route → missing БЕЗ pilot (негативний контроль)', async () => {
+    const { collectPackages } =
+      await import('../scripts/audit-exports/collect.mjs');
+    const real = collectPackages().get('simplycms')!;
+    const key = './storefront-routes/pages/entity-route';
+    expect(real.exportsKeys).toContain(key);
+    const targets = Object.fromEntries(
+      Object.entries(real.exportsTargets as Record<string, unknown>).filter(
+        ([k]) => k !== key,
+      ),
+    );
+    const packages = new Map([
+      [
+        'simplycms',
+        { ...real, exportsKeys: Object.keys(targets), exportsTargets: targets },
+      ],
+    ]);
+    const { missing } = runAudit({ packages, specifiers: [ENTITY] });
+    expect(missing.map((m) => m.reason)).toEqual([
+      expect.stringContaining(
+        'ціль ./src/storefront-routes/pages/entity-route.tsx не існує',
+      ),
+    ]);
+  });
+
+  it('з явним ключем той самий специфікатор проходить', () => {
+    expect(runAudit({ specifiers: [ENTITY] }).missing).toEqual([]);
+  });
+});

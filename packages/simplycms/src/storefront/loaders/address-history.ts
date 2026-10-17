@@ -1,7 +1,8 @@
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { slugTokens, urlPaths } from 'simplycms/schema';
+import { languages, products, slugTokens, urlPaths } from 'simplycms/schema';
 import { withStorefrontDb, type ActorDb } from './db';
+import { pageVisible } from './product-visibility';
 
 /** Що реєстр адрес каже про шлях: поточна адреса сутності й токен `?mod=` (якщо спитали). */
 export type AddressResolution = {
@@ -38,11 +39,16 @@ export async function resolveProductAddress(
         eq(current.isCurrent, true),
       ),
     )
+    .innerJoin(languages, eq(languages.code, urlPaths.locale))
+    .innerJoin(products, eq(products.id, urlPaths.productId))
     .where(
       and(
         eq(urlPaths.locale, locale),
         eq(urlPaths.path, path),
         isNotNull(urlPaths.productId),
+        // Той самий предикат, що й сторінка: інакше 301 розкрив би адресу
+        // прихованого товару / неопублікованої мови, за якою сторінка дає 404.
+        pageVisible(),
       ),
     )
     .limit(1);

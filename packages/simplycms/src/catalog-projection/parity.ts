@@ -1,6 +1,9 @@
 import { sql } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
-import { isTranslatedForSeo } from 'simplycms/domain/translations';
+import {
+  fallbackFieldsOf,
+  isTranslatedForSeo,
+} from 'simplycms/domain/translations';
 import { TRANSLATABLE } from 'simplycms/translations';
 import { TEXT_FIELDS, col } from './expected';
 
@@ -24,8 +27,8 @@ export interface FindOptions {
 }
 
 /**
- * Паритет SQL-предиката `is_translated` з TS `isTranslatedForSeo`: збережений
- * прапорець мусить збігатися з доменним правилом. Для плоских полів їх зводить
+ * Паритет SQL-предиката `is_translated` з TS `isTranslatedForSeo` і `fallback_fields` з
+ * `fallbackFieldsOf`: збережені значення мусять збігатися з доменним правилом. Для плоских полів їх зводить
  * CHECK у БД; для rich-поля SQL бачить лише `IS NULL`, тож `<p></p>`, вставлений в
  * обхід команди, дав би тут розбіжність — її не можна мовчки пропустити.
  * Читаємо rich-поля цілком, плоскі — лише як «є/немає» (CHECK гарантує непорожнє).
@@ -49,7 +52,8 @@ export async function parityMismatches(
   let after: MismatchKey | null = null;
   while (out.length < budget) {
     const res: { rows: Record<string, unknown>[] } = await db.execute(sql`
-      select c.product_id, c.locale, c.is_translated, t.product_id is not null as has_t,
+      select c.product_id, c.locale, c.is_translated, c.fallback_fields,
+             t.product_id is not null as has_t,
              ${pick('s')}, ${pick('t')}
         from public.catalog_product_texts c
         join public.product_translations s
@@ -82,13 +86,16 @@ export async function parityMismatches(
             ];
           }),
         );
-      const want = isTranslatedForSeo(
-        SPEC,
-        { values: values('s') },
-        r.has_t ? { values: values('t') } : null,
-      );
+      const source = { values: values('s') };
+      const target = r.has_t ? { values: values('t') } : null;
+      const want = isTranslatedForSeo(SPEC, source, target);
+      const wantFallback = fallbackFieldsOf(SPEC, source, target);
       after = { productId: String(r.product_id), locale: String(r.locale) };
-      if (want !== r.is_translated) out.push(after);
+      if (
+        want !== r.is_translated ||
+        wantFallback.join() !== (r.fallback_fields as string[]).join()
+      )
+        out.push(after);
     }
     if (res.rows.length < PAGE) break;
   }

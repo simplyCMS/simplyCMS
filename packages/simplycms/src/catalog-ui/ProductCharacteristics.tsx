@@ -7,6 +7,7 @@ interface PropertyValue {
   value: string | null;
   numeric_value: number | null;
   option_id?: string | null;
+  value_lang?: string | null;
   option?: {
     id: string;
     slug: string;
@@ -98,7 +99,11 @@ export function ProductCharacteristics({
       );
     }
 
-    return formattedValue;
+    return pv.value_lang && !pv.option ? (
+      <span lang={pv.value_lang}>{formattedValue}</span>
+    ) : (
+      formattedValue
+    );
   };
 
   return (

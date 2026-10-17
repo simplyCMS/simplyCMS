@@ -11,7 +11,10 @@ import {
 import { advisoryXactLock } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languagesFill } from 'simplycms/admin-server/impl';
-import { isTranslatedForSeo } from 'simplycms/domain/translations';
+import {
+  fallbackFieldsOf,
+  isTranslatedForSeo,
+} from 'simplycms/domain/translations';
 import { TRANSLATABLE } from 'simplycms/translations';
 import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
 import { useAddressingDb } from './fixtures/addressing-db';
@@ -60,23 +63,30 @@ describe('проєкція тексту: паритет, замок, гонка 
         });
         const uk = (await get(id)).texts;
         const row = await proj(id, 'en');
+        const sourceRow = {
+          values: {
+            name: `Тест ${i}`,
+            short_description: uk.uk?.shortDescription,
+            description: uk.uk?.description,
+          },
+        };
+        const targetRow = {
+          values: {
+            name: 'Test',
+            short_description: uk.en?.shortDescription,
+            description: uk.en?.description,
+          },
+        };
         const want = isTranslatedForSeo(
           TRANSLATABLE.product,
-          {
-            values: {
-              name: `Тест ${i}`,
-              short_description: uk.uk?.shortDescription,
-              description: uk.uk?.description,
-            },
-          },
-          {
-            values: {
-              name: 'Test',
-              short_description: uk.en?.shortDescription,
-              description: uk.en?.description,
-            },
-          },
+          sourceRow,
+          targetRow,
         );
+        // fallback_fields: SQL і TS-двійник збігаються на тих самих векторах.
+        expect(
+          row?.fallback_fields,
+          `${JSON.stringify([source, target])}`,
+        ).toEqual(fallbackFieldsOf(TRANSLATABLE.product, sourceRow, targetRow));
         expect(row?.is_translated, `${JSON.stringify([source, target])}`).toBe(
           want,
         );

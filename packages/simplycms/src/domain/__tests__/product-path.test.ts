@@ -5,14 +5,14 @@ describe('productPath (М1, §3.2)', () => {
   it('основна мова: /<path> без префікса, to+params для роуту сутності', () => {
     const p = productPath({ path: 'boot', locale: 'uk', primary: 'uk' });
     expect(p.href).toBe('/boot');
-    expect(p.to).toBe('/$');
-    expect(p.params).toEqual({ _splat: 'boot' });
+    expect(p.to).toBe('/$path');
+    expect(p.params).toEqual({ path: 'boot' });
   });
 
   it('інша мова: /<lower(code)>/<path>, а params без мови (її дописує rewrite)', () => {
     const p = productPath({ path: 'boot-en', locale: 'pt-BR', primary: 'uk' });
     expect(p.href).toBe('/pt-br/boot-en');
-    expect(p.params).toEqual({ _splat: 'boot-en' });
+    expect(p.params).toEqual({ path: 'boot-en' });
   });
 
   it('без мови (адмінка, лист) — адреса основної мови', () => {

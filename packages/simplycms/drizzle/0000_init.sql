@@ -63,6 +63,7 @@ CREATE TABLE "catalog_product_texts" (
 	"meta_description" text,
 	"path" text COLLATE "C" NOT NULL,
 	"is_translated" boolean NOT NULL,
+	"fallback_fields" text[] DEFAULT '{}'::text[] NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "catalog_product_texts_pkey" PRIMARY KEY("product_id","locale")
 );

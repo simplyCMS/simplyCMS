@@ -84,6 +84,8 @@ function row(over: {
     hreflang: Array<{ hrefLang: string; href: string }>;
   };
   isTranslated: boolean;
+  modifications?: unknown[];
+  values?: unknown[];
 }): ProductDetailProduct {
   return {
     id: 'prod-1',
@@ -99,11 +101,11 @@ function row(over: {
     created_at: new Date('2026-01-01T00:00:00Z'),
     updated_at: new Date('2026-01-01T00:00:00Z'),
     images: [],
-    has_modifications: false,
+    has_modifications: (over.modifications?.length ?? 0) > 0,
     sku: null,
     stock_status: 'in_stock',
     sections: null,
-    product_modifications: [],
+    product_modifications: over.modifications ?? [],
     product_prices: [
       {
         price_type_id: 'retail',
@@ -112,7 +114,7 @@ function row(over: {
         old_price: null,
       },
     ],
-    product_property_values: [],
+    product_property_values: over.values ?? [],
     guest_price_types: { priceTypeId: 'retail', defaultPriceTypeId: 'retail' },
     page: {
       locale: over.locale,
@@ -190,6 +192,64 @@ products.byAddress.set(
     },
   }),
 );
+// Модифікації й характеристики: ознака fallback іде з даних (`name_lang`/`value_lang`),
+// а не з порівняння текстів — «XL» з перекладом, рівним основній, `lang` не має.
+const mod = (id: string, name: string, lang: string | null) => ({
+  id,
+  name,
+  name_lang: lang,
+  slug: id,
+  is_default: id === 'm1',
+  sort_order: 0,
+  stock_status: 'in_stock',
+  sku: null,
+  images: [],
+});
+products.byAddress.set(
+  'en/mods',
+  row({
+    path: 'mods',
+    locale: 'en',
+    name: 'Cable',
+    description: null,
+    fallback: false,
+    isTranslated: true,
+    seo: { robots: 'index, follow', canonical: '/en/mods', hreflang: [] },
+    modifications: [mod('m1', 'Чорний', 'uk'), mod('m2', 'XL', null)],
+    values: [
+      {
+        property_id: 'p1',
+        value: 'Лише укр',
+        value_lang: 'uk',
+        numeric_value: null,
+        option_id: null,
+        property_options: null,
+        section_properties: {
+          id: 'p1',
+          name: 'Матеріал',
+          slug: 'material',
+          property_type: 'text',
+          has_page: false,
+        },
+      },
+      {
+        property_id: 'p2',
+        value: 'Steel',
+        value_lang: null,
+        numeric_value: null,
+        option_id: null,
+        property_options: null,
+        section_properties: {
+          id: 'p2',
+          name: 'Frame',
+          slug: 'frame',
+          property_type: 'text',
+          has_page: false,
+        },
+      },
+    ],
+  }),
+);
 // Опис із розміткою — без тегів у meta.
 products.byAddress.set(
   'uk/html',
@@ -241,11 +301,11 @@ async function ssr(url: string): Promise<string> {
   });
   const entity = createRoute({
     getParentRoute: () => root,
-    path: '/$',
+    path: '/$path',
     validateSearch: entitySearch,
     loader: ({ params, location, context }) =>
       loadEntityPage({
-        splat: params._splat ?? '',
+        path: params.path,
         publicHref: location.publicHref,
         locales: context.locales,
       }),
@@ -283,6 +343,14 @@ describe('сторінка товару: відрендерений HTML (Review
     expect(html).toContain('>Specifications<');
     expect(html).toContain('Add to cart');
     expect(html).not.toContain('>Опис<');
+  });
+
+  it('назва модифікації і текст значення з основної мови мають lang; переклад, рівний джерелу, — ні (М3, І37)', async () => {
+    const html = await ssr('/en/mods');
+    expect(html).toContain('<span lang="uk">Чорний</span>');
+    expect(html).not.toContain('<span lang="uk">XL</span>');
+    expect(html).toContain('<span lang="uk">Лише укр</span>');
+    expect(html).not.toContain('<span lang="uk">Steel</span>');
   });
 
   it('/x основної мови: self-canonical, без lang-обгорток fallback', async () => {

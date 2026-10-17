@@ -25,6 +25,7 @@ export const VALUE_COLUMNS: readonly string[] = [
   ...TEXT_FIELDS,
   'path',
   'is_translated',
+  'fallback_fields',
 ];
 
 export interface Scope {
@@ -63,6 +64,15 @@ export function expectedRows(scope: Scope = {}): SQL {
     ),
     sql` and `,
   );
+  // Поля з основної мови: у джерелі є, у мові (або рядка мови немає) — NULL. Порядок
+  // реєстру, тож `text[]` стабільний для порівняння рядків.
+  const fallback = sql`array_remove(array[${sql.join(
+    TEXT_FIELDS.map(
+      (f) =>
+        sql`case when s.${col(f)} is not null and t.${col(f)} is null then ${sql.raw(`'${f}'`)}::text end`,
+    ),
+    sql`, `,
+  )}], null)::text[]`;
   const filters: SQL[] = [];
   if (scope.productIds)
     filters.push(sql`p.id in (${list(scope.productIds, '::uuid')})`);
@@ -71,7 +81,8 @@ export function expectedRows(scope: Scope = {}): SQL {
     filters.length > 0 ? sql` and ${sql.join(filters, sql` and `)}` : sql``;
   return sql`
     select p.id as product_id, l.code as locale, ${texts}, u.path as path,
-           (t.product_id is not null and ${translated}) as is_translated
+           (t.product_id is not null and ${translated}) as is_translated,
+           ${fallback} as fallback_fields
       from public.products p
       join public.languages l on l.status in ('draft', 'published')
       join public.url_paths u

@@ -429,6 +429,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "fallback_fields": {
+          "name": "fallback_fields",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",

@@ -9,10 +9,11 @@ import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import type { ActorDb } from './db';
 import { productBaseColumns } from './entities/product';
 import { sectionRefColumns } from './entities/section';
+import { pageVisible } from './product-visibility';
 import { indexPolicy } from '../seo/index-policy';
 import type { LanguageVersion } from '../seo/hreflang';
 import {
-  fallbackFields,
+  FALLBACK_FIELDS,
   type ProductAddress,
   type ProductPageBase,
 } from './product-page-types';
@@ -44,33 +45,29 @@ export async function loadProductPageBase(
       section: sectionRefColumns,
       text: projectionText,
       isTranslated: texts.isTranslated,
+      fallback: texts.fallbackFields,
     })
     .from(texts)
-    .innerJoin(
-      languages,
-      and(eq(languages.code, texts.locale), eq(languages.status, 'published')),
-    )
+    .innerJoin(languages, eq(languages.code, texts.locale))
     .innerJoin(products, eq(products.id, texts.productId))
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(
       and(
         eq(texts.locale, address.locale),
         eq(texts.path, address.path),
-        eq(products.isActive, true),
+        pageVisible(),
       ),
     )
     .limit(1);
   if (!row) return null;
 
-  // Усі опубліковані версії товару: з них hreflang, x-default і порівняння
-  // з основною мовою для `lang` фрагментів fallback.
+  // Усі опубліковані версії товару: з них hreflang і x-default.
   const versions = await db
     .select({
       code: texts.locale,
       path: texts.path,
       isTranslated: texts.isTranslated,
       isDefault: languages.isDefault,
-      text: projectionText,
     })
     .from(texts)
     .innerJoin(
@@ -100,12 +97,9 @@ export async function loadProductPageBase(
       primary,
       path: address.path,
       isTranslated: row.isTranslated,
-      fallbackFields: fallbackFields(
-        row.text,
-        primaryRow?.text,
-        address.locale,
-        primary,
-      ),
+      // Ознака з даних проєкції, а не порівняння текстів: переклад, буквально
+      // рівний основній мові, не fallback.
+      fallbackFields: FALLBACK_FIELDS.filter((f) => row.fallback.includes(f)),
       seo: indexPolicy({
         locale: address.locale,
         primary,

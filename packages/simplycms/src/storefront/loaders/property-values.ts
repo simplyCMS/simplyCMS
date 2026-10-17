@@ -20,6 +20,8 @@ export interface ProductPropertyValueRow {
   value: string | null;
   numeric_value: number | null;
   option_id: string | null;
+  /** Мова тексту, коли він з основної мови (fallback): огортається `lang` (І37). */
+  value_lang: string | null;
   property_options: { id: string; slug: string; name: string } | null;
   section_properties: {
     id: string;
@@ -112,11 +114,12 @@ export function displayValue(
  */
 export function toPropertyValueRow(
   row: RawPropertyValueRow,
-  text?: string | null,
+  text?: { text: string | null; lang: string | null },
 ): ProductPropertyValueRow {
   return {
     property_id: row.property_id,
-    value: displayValue(row, text),
+    value: displayValue(row, text?.text),
+    value_lang: text?.text ? text.lang : null,
     numeric_value:
       row.numeric_value === null ? null : Number(row.numeric_value),
     option_id: row.option_id,
@@ -135,7 +138,7 @@ export function toPropertyValueRow(
  */
 export function toPropertyValueViewModel(
   row: RawPropertyValueRow,
-  text?: string | null,
+  text?: { text: string | null; lang: string | null },
 ): ProductPropertyValueViewModel {
   const normalized = toPropertyValueRow(row, text);
   return {
@@ -143,6 +146,7 @@ export function toPropertyValueViewModel(
     value: normalized.value,
     numeric_value: normalized.numeric_value,
     option_id: normalized.option_id,
+    value_lang: normalized.value_lang,
     option: normalized.property_options,
     property: normalized.section_properties,
   };

@@ -21,7 +21,7 @@ export type ProductPage = {
   path: string;
   /** SEO-предикат «перекладено» (майстер §3.4). */
   isTranslated: boolean;
-  /** Поля, чий текст узято з основної мови: у розмітці вони мають `lang=<основна>`. */
+  /** Поля, чий текст узято з основної мови (колонка проєкції `fallback_fields`): у розмітці вони мають `lang=<основна>`. */
   fallbackFields: FallbackField[];
   seo: IndexPolicy;
 };
@@ -50,19 +50,3 @@ export type ProductPageBase = {
   };
   page: ProductPage;
 };
-
-/**
- * Поля, чий текст у проєкції збігається з основною мовою: проєкція вже склала
- * `coalesce(мова, основна)`, а ознаки «з fallback» по полях не зберігає. Збіг
- * слова-в-слово означає або fallback, або переклад, що збігається з джерелом
- * (бренд, артикул): `lang=<основна>` на такому тексті безпечний.
- */
-export function fallbackFields(
-  own: Record<string, string | null>,
-  source: Record<string, string | null> | undefined,
-  locale: string,
-  primary: string,
-): FallbackField[] {
-  if (locale === primary || !source) return [];
-  return FALLBACK_FIELDS.filter((f) => own[f] !== null && own[f] === source[f]);
-}

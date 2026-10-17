@@ -100,9 +100,13 @@ describe('renderSitemapXml', () => {
         expect(entry !== undefined).toBe(policy.indexable);
         if (!entry) continue;
         expect(`https://shop.test${policy.canonical}`).toBe(own);
-        if (entry.alternates.length > 0) {
-          expect(entry.alternates.map((a) => a.href)).toContain(own);
-        }
+        // Alternates sitemap = hreflang, які політика дає тій самій версії (повний набір, з x-default).
+        expect(entry.alternates).toEqual(
+          policy.hreflang.map((h) => ({
+            hrefLang: h.hrefLang,
+            href: `https://shop.test${h.href}`,
+          })),
+        );
       }
     }
   });

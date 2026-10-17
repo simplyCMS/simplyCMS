@@ -17,6 +17,8 @@ export type ProductDetailProduct = ProductDetailRow;
 export interface ProductModificationRow {
   id: string;
   name: string;
+  /** Мова назви, коли вона з основної мови (fallback). */
+  name_lang?: string | null;
   slug: string;
   is_default: boolean;
   sort_order: number;

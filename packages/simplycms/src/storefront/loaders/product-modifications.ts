@@ -6,7 +6,9 @@ import {
   type ModificationRow,
 } from './entities/modification';
 
-type RawModification = Parameters<typeof toModificationRow>[0];
+type RawModification = Parameters<typeof toModificationRow>[0] & {
+  name_fallback: boolean;
+};
 
 /**
  * Модифікації товару для картки у мові запиту: назва — `withFallback` (мова,
@@ -22,7 +24,7 @@ export async function loadProductModifications(
   const fb = withFallback(TRANSLATABLE.productModification, locale, primary);
   const res = await db.execute<RawModification>(sql`
     select m.id, m.product_id, coalesce(tk.slug, tp.slug) as slug,
-           ${fb.columns.name} as name, m.sku, m.is_default, m.sort_order,
+           ${fb.columns.name} as name, ${fb.fallback.name} as name_fallback, m.sku, m.is_default, m.sort_order,
            m.stock_status, m.images
       from public.product_modifications m ${fb.joinOn(sql`m.id`)}
       left join public.slug_tokens tk
@@ -31,5 +33,10 @@ export async function loadProductModifications(
         on tp.modification_id = m.id and tp.locale = ${primary} and tp.is_current
      where m.product_id = ${productId}::uuid
      order by m.sort_order, m.id`);
-  return res.rows.map(toModificationRow);
+  return res.rows.map(({ name_fallback, ...row }) => ({
+    ...toModificationRow(row),
+    // Ознака з даних (`withFallback`), не порівняння текстів: назва, буквально
+    // рівна основній, але перекладена, `lang` не отримує.
+    name_lang: name_fallback ? primary : null,
+  }));
 }

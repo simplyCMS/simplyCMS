@@ -60,7 +60,7 @@ function routerAt(url: string) {
   const root = createRootRouteWithContext<RouterContext>()({});
   const entity = createRoute({
     getParentRoute: () => root,
-    path: '/$',
+    path: '/$path',
     validateSearch: entitySearch,
   });
   return createRouter({
@@ -115,8 +115,41 @@ describe('нормалізація адреси: ОДИН 301 (І20)', () => {
     expect(await location('/uk/old/?mod=old&utm=1')).toBe('/new?mod=new&utm=1');
   });
 
-  it('токен з цифр: новий токен проходить розбір роутера (не %227%22)', async () => {
-    expect(await location('/new?mod=5')).toBe('/new?mod=7');
+  it('токен з цифр: історичний → поточний у лапкованій формі, яку роутер вважає канонічною', async () => {
+    expect(await location('/new?mod=5')).toBe('/new?mod=%227%22');
+    expect(routerRedirects('/new?mod=%227%22')).toBe(false);
+    expect(await run('/new?mod=%227%22')).toBeNull();
+  });
+
+  describe('токен, який роутер розбирає як не-рядок (M4)', () => {
+    const CASES = [
+      ['true', '/new?mod=%22true%22'],
+      ['false', '/new?mod=%22false%22'],
+      ['null', '/new?mod=%22null%22'],
+      ['123', '/new?mod=%22123%22'],
+      // Експонента: роутер переписує її на число ще до валідатора — токен не відновити.
+      ['1e5', '/new?mod=%22100000%22'],
+    ] as const;
+
+    it.each(CASES)(
+      '?mod=%s → один 301 у канонічну форму, після якої роутер мовчить',
+      async (token, to) => {
+        const res = await run(`/new?mod=${token}`);
+        expect(res?.status).toBe(301);
+        expect(res?.headers.get('location')).toBe(to);
+        expect(await run(to)).toBeNull();
+        expect(routerRedirects(to)).toBe(false);
+      },
+    );
+
+    it('validateSearch сторінки зводить будь-який примітив до рядка, не примітив відкидає', () => {
+      expect(entitySearch({ mod: 5 })).toEqual({ mod: '5' });
+      expect(entitySearch({ mod: true })).toEqual({ mod: 'true' });
+      expect(entitySearch({ mod: null })).toEqual({ mod: 'null' });
+      expect(entitySearch({ mod: 'red' })).toEqual({ mod: 'red' });
+      expect(entitySearch({ mod: [1] })).toEqual({ mod: undefined });
+      expect(entitySearch({})).toEqual({ mod: undefined });
+    });
   });
 
   it('невідомий токен лишається як є (без редіректу на ньому)', async () => {

@@ -26,7 +26,12 @@ import {
   collectPackages,
   collectSpecifiers,
 } from './audit-exports/collect.mjs';
-import { resolveExportKey } from './audit-exports/resolve.mjs';
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import {
+  exportTargetFile,
+  resolveExportKey,
+} from './audit-exports/resolve.mjs';
 
 /**
  * Прогонити повний аудит.
@@ -78,6 +83,22 @@ export function runAudit(input = {}) {
         specifier,
         pkg: pkgName,
         reason: 'exports',
+        packageJsonPath: info.packageJsonPath,
+      });
+      continue;
+    }
+
+    // Ключ-патерн покриває ім'я, але ціль (`*.tsx`) може не мати відповідного файлу.
+    const file = exportTargetFile(
+      devKey,
+      info.exportsTargets?.[devKey],
+      subpath,
+    );
+    if (file && !existsSync(join(dirname(info.packageJsonPath), file))) {
+      missing.push({
+        specifier,
+        pkg: pkgName,
+        reason: `exports: ціль ${file} не існує`,
         packageJsonPath: info.packageJsonPath,
       });
       continue;

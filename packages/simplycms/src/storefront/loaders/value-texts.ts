@@ -7,6 +7,9 @@ import {
   type RawPropertyValueRow,
 } from './property-values';
 
+/** Текст значення мовою запиту та мова фрагмента, коли він з основної (fallback). */
+export type ValueText = { text: string | null; lang: string | null };
+
 /** Власник значення: товар чи модифікація (різні таблиці значень і перекладів). */
 export type ValueOwner = 'product' | 'modification';
 
@@ -32,26 +35,36 @@ export async function loadProductValueTexts(
   valueIds: readonly string[],
   locale: string,
   primary: string,
-): Promise<Map<string, string | null>> {
-  const out = new Map<string, string | null>();
+): Promise<Map<string, ValueText>> {
+  const out = new Map<string, ValueText>();
   if (valueIds.length === 0) return out;
   const { table, spec } = OWNER[owner];
   const fb = withFallback(spec, locale, primary);
-  const res = await db.execute<{ value_id: string; value: string | null }>(sql`
-    select v.id as value_id, ${fb.columns.value} as value
+  const res = await db.execute<{
+    value_id: string;
+    value: string | null;
+    is_fallback: boolean;
+  }>(sql`
+    select v.id as value_id, ${fb.columns.value} as value,
+           ${fb.fallback.value} as is_fallback
       from ${table} v ${fb.joinOn(sql`v.id`)}
      where v.id in (${sql.join(
        valueIds.map((id) => sql`${id}::uuid`),
        sql`, `,
      )})`);
-  for (const r of res.rows) out.set(r.value_id, r.value);
+  for (const r of res.rows)
+    out.set(r.value_id, {
+      text: r.value,
+      // Ознака з даних (`withFallback`): переклад, рівний основній мові, не fallback.
+      lang: r.is_fallback ? primary : null,
+    });
   return out;
 }
 
 /** Рядки значень картки зі значеннями за типом (текст — з перекладів). */
 export function withValueTexts(
   rows: readonly RawPropertyValueRow[],
-  texts: ReadonlyMap<string, string | null>,
+  texts: ReadonlyMap<string, ValueText>,
 ): ProductPropertyValueRow[] {
   return rows.map((row) => toPropertyValueRow(row, texts.get(row.value_id)));
 }

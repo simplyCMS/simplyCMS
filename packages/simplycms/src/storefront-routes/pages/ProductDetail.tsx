@@ -37,10 +37,10 @@ export default function ProductDetailPage({
   path,
 }: ProductDetailPageProps = {}) {
   const t = useT();
-  const params = useParams({ strict: false }) as { _splat?: string };
+  const params = useParams({ strict: false }) as { path?: string };
 
   const { data: product, isLoading } = useProductQuery(
-    path ?? params._splat,
+    path ?? params.path,
     initialProduct,
   );
 

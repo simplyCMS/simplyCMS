@@ -1,4 +1,3 @@
-import { defaultParseSearch } from '@tanstack/react-router';
 import { SLUG_FORMAT, RESERVED_SEGMENTS } from 'simplycms/domain/slugs';
 import type { AddressResolution } from 'simplycms/storefront/loaders';
 import {
@@ -6,6 +5,12 @@ import {
   resolveRequestLocale,
   type LocaleSet,
 } from '../locale/resolve';
+
+const isPrimitive = (v: unknown): boolean =>
+  typeof v === 'string' ||
+  typeof v === 'number' ||
+  typeof v === 'boolean' ||
+  v === null;
 
 /** Резолвер реєстру адрес: ін'єкція, щоб крок історії тестувався без БД. */
 export type AddressLookup = (
@@ -32,22 +37,19 @@ export async function applyHistory(
   if (!SLUG_FORMAT.test(path) || RESERVED_SEGMENTS.includes(path)) {
     return { pathname, query };
   }
-  // Токен іде як рядок: роутер JSON-розбирає query, і `?mod=5` для нього число.
-  const mod = query.mod === undefined ? null : String(query.mod);
+  // Токен іде як рядок: роутер JSON-розбирає query, і `?mod=5`/`true`/`null` для нього
+  // не рядки (див. `entitySearch`). Не примітив (масив, об'єкт) роутер відкине сам.
+  const mod = isPrimitive(query.mod) ? String(query.mod) : null;
   const hit = await lookup(resolved.locale, path, mod);
   if (!hit) return { pathname, query };
 
   const prefix = resolved.prefixed ? `/${localePrefix(resolved.locale)}` : '';
   const next = { ...query };
-  if (hit.mod !== null && hit.mod !== mod) {
-    // Новий токен проходить через той самий розбір, що й query запиту: токен з
-    // цифр має стати числом, інакше роутер перепише `?mod=7` на `%227%22`.
-    next.mod = (
-      defaultParseSearch(`?mod=${encodeURIComponent(hit.mod)}`) as Record<
-        string,
-        unknown
-      >
-    ).mod;
-  }
+  // `mod` у кінцевій адресі — завжди рядок (як його бачить `entitySearch`): токен з цифр
+  // тоді серіалізується лапкованою формою, яку роутер вважає канонічною, і другого
+  // (307) редіректу немає. Історичний токен замінюється поточним; не примітив — геть.
+  if (hit.mod !== null) next.mod = hit.mod;
+  else if (mod !== null) next.mod = mod;
+  else delete next.mod;
   return { pathname: `${prefix}/${hit.path}`, query: next };
 }

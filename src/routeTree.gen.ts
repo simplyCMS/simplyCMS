@@ -13,7 +13,7 @@ import { Route as ProtectedRouteImport } from './../packages/simplycms/routes/st
 import { Route as StorefrontRouteImport } from './../packages/simplycms/routes/storefront/_storefront'
 import { Route as AdminRouteImport } from './../packages/simplycms/routes/admin/admin'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
-import { Route as StorefrontSplatRouteImport } from './../packages/simplycms/routes/storefront/_storefront/$'
+import { Route as StorefrontPathRouteImport } from './../packages/simplycms/routes/storefront/_storefront/$path'
 import { Route as StorefrontCartRouteImport } from './../packages/simplycms/routes/storefront/_storefront/cart'
 import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/routes/storefront/_storefront/checkout'
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
@@ -94,9 +94,9 @@ const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StorefrontRoute,
 } as any)
-const StorefrontSplatRoute = StorefrontSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
+const StorefrontPathRoute = StorefrontPathRouteImport.update({
+  id: '/$path',
+  path: '/$path',
   getParentRoute: () => StorefrontRoute,
 } as any)
 const StorefrontCartRoute = StorefrontCartRouteImport.update({
@@ -434,7 +434,7 @@ const AdminPropertiesPropertyIdOptionsOptionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof StorefrontIndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/$': typeof StorefrontSplatRoute
+  '/$path': typeof StorefrontPathRoute
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -499,7 +499,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof StorefrontIndexRoute
-  '/$': typeof StorefrontSplatRoute
+  '/$path': typeof StorefrontPathRoute
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -567,7 +567,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_storefront': typeof StorefrontRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
-  '/_storefront/$': typeof StorefrontSplatRoute
+  '/_storefront/$path': typeof StorefrontPathRoute
   '/_storefront/cart': typeof StorefrontCartRoute
   '/_storefront/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -636,7 +636,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/$'
+    | '/$path'
     | '/cart'
     | '/checkout'
     | '/api/health'
@@ -701,7 +701,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/$'
+    | '/$path'
     | '/cart'
     | '/checkout'
     | '/api/health'
@@ -768,7 +768,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_storefront'
     | '/admin'
-    | '/_storefront/$'
+    | '/_storefront/$path'
     | '/_storefront/cart'
     | '/_storefront/checkout'
     | '/api/health'
@@ -877,11 +877,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorefrontIndexRouteImport
       parentRoute: typeof StorefrontRoute
     }
-    '/_storefront/$': {
-      id: '/_storefront/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof StorefrontSplatRouteImport
+    '/_storefront/$path': {
+      id: '/_storefront/$path'
+      path: '/$path'
+      fullPath: '/$path'
+      preLoaderRoute: typeof StorefrontPathRouteImport
       parentRoute: typeof StorefrontRoute
     }
     '/_storefront/cart': {
@@ -1333,7 +1333,7 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 )
 
 interface StorefrontRouteChildren {
-  StorefrontSplatRoute: typeof StorefrontSplatRoute
+  StorefrontPathRoute: typeof StorefrontPathRoute
   StorefrontCartRoute: typeof StorefrontCartRoute
   StorefrontCheckoutRoute: typeof StorefrontCheckoutRoute
   StorefrontIndexRoute: typeof StorefrontIndexRoute
@@ -1346,7 +1346,7 @@ interface StorefrontRouteChildren {
 }
 
 const StorefrontRouteChildren: StorefrontRouteChildren = {
-  StorefrontSplatRoute: StorefrontSplatRoute,
+  StorefrontPathRoute: StorefrontPathRoute,
   StorefrontCartRoute: StorefrontCartRoute,
   StorefrontCheckoutRoute: StorefrontCheckoutRoute,
   StorefrontIndexRoute: StorefrontIndexRoute,

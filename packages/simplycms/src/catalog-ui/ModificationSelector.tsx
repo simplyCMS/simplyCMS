@@ -14,6 +14,8 @@ export interface ModificationStockInfo {
 interface Modification {
   id: string;
   name: string;
+  /** Мова назви, коли вона з основної мови (fallback): огортається `lang` (І37). */
+  name_lang?: string | null;
   slug: string;
   stock_status?: StockStatus;
   sku?: string | null;
@@ -118,7 +120,11 @@ export function ModificationSelector({
                       isUnavailable && 'text-muted-foreground',
                     )}
                   >
-                    {mod.name}
+                    {mod.name_lang ? (
+                      <span lang={mod.name_lang}>{mod.name}</span>
+                    ) : (
+                      mod.name
+                    )}
                   </div>
                   {mod.sku && (
                     <div className="text-xs text-muted-foreground">

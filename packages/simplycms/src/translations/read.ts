@@ -60,22 +60,32 @@ export async function loadTranslations(
  * Читання з fallback на основну мову для вітрини (Task 15/16): значення поля
  * мови, а коли його немає — джерела. Псевдоніми фіксовані: `t_loc` (мова
  * запиту), `t_src` (основна). `joinOn(owner)` — пара LEFT JOIN-ів до таблиці
- * перекладів сутності, `owner` — вираз її id у запиті викликача.
+ * перекладів сутності, `owner` — вираз її id у запиті викликача. `fallback[поле]` —
+ * булева ознака «текст узято з основної мови» (у мові порожньо, у джерелі є): ознака
+ * з ДАНИХ, а не з порівняння текстів, тож переклад, буквально рівний джерелу
+ * («iPhone 15»), fallback не вважається (І37).
  */
 export function withFallback(
   spec: TranslatableEntity,
   locale: string,
   primary: string,
-): { columns: Record<string, SQL>; joinOn: (owner: SQL) => SQL } {
+): {
+  columns: Record<string, SQL>;
+  fallback: Record<string, SQL>;
+  joinOn: (owner: SQL) => SQL;
+} {
   const table = sql.raw(assertIdent(spec.table));
   const fk = sql.raw(assertIdent(spec.fk));
   const columns: Record<string, SQL> = {};
+  const fallback: Record<string, SQL> = {};
   for (const f of spec.fields) {
     const c = sql.raw(assertIdent(f));
     columns[f] = sql`coalesce(t_loc.${c}, t_src.${c})`;
+    fallback[f] = sql`(t_loc.${c} is null and t_src.${c} is not null)`;
   }
   return {
     columns,
+    fallback,
     joinOn: (owner) => sql`
       left join ${table} t_loc on t_loc.${fk} = ${owner} and t_loc.locale = ${locale}
       left join ${table} t_src on t_src.${fk} = ${owner} and t_src.locale = ${primary}`,

@@ -21,6 +21,11 @@ export const otherLocalePathsSql = (productId: Id, path: string): string => `
     from public.languages l
    where l.status in ('draft', 'published') and not l.is_default`;
 
+/** Поля з основної мови: у джерелі є, у мові — NULL (двійник `fallback_fields`). */
+const fallback = FIELDS.map(
+  (f) => `case when s.${f} is not null and t.${f} is null then '${f}' end`,
+).join(', ');
+
 /** Рядки проєкції товару для всіх активних мов (джерело — переклад основної мови). */
 export const projectionSql = (productId: Id): string => {
   const coalesced = FIELDS.map((f) => `coalesce(t.${f}, s.${f})`).join(', ');
@@ -29,8 +34,9 @@ export const projectionSql = (productId: Id): string => {
   ).join(' and ');
   return `
   insert into public.catalog_product_texts
-    (product_id, locale, ${FIELDS.join(', ')}, path, is_translated)
-  select p.id, l.code, ${coalesced}, u.path, (t.product_id is not null and ${translated})
+    (product_id, locale, ${FIELDS.join(', ')}, path, is_translated, fallback_fields)
+  select p.id, l.code, ${coalesced}, u.path, (t.product_id is not null and ${translated}),
+         array_remove(array[${fallback}], null)::text[]
     from public.products p
     join public.languages l on l.status in ('draft', 'published')
     join public.url_paths u on u.product_id = p.id and u.locale = l.code and u.is_current

@@ -121,6 +121,24 @@ export function rowStatus(
 }
 
 /**
+ * Поля, чий текст на вітрині береться з основної мови (fallback): непорожні в
+ * джерелі й порожні (або рядка перекладу немає) в мові. Ознака з ДАНИХ, а не з
+ * порівняння текстів: переклад, буквально рівний джерелу («iPhone 15»), НЕ fallback.
+ * Порядок — як у `spec.fields`; SQL-двійник — `fallback_fields` проєкції.
+ */
+export function fallbackFieldsOf(
+  spec: TranslatableSpec,
+  source: Pick<TranslationRow, 'values'>,
+  target: Pick<TranslationRow, 'values'> | null,
+): string[] {
+  return spec.fields.filter(
+    (field) =>
+      fieldHasText(spec, field, source.values[field]) &&
+      !fieldHasText(spec, field, target?.values[field]),
+  );
+}
+
+/**
  * «Перекладено» для SEO (§3.4): кожне поле, НЕпорожнє в джерелі, непорожнє й у
  * мові. `outdated` рахується перекладеним (текст є), а назва мовою з описом
  * чужою — ні: змішана мова в індекс не потрапляє. Порожній rich-текст

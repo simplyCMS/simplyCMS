@@ -4,6 +4,7 @@
 // лише в серверному `simplycms/translations`.
 
 export {
+  fallbackFieldsOf,
   fieldHasText,
   fieldStatus,
   isRichField,

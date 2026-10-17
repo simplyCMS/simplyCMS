@@ -67,8 +67,9 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   `SsrProductGrid`; збагачення — на сервері, не в `useEffect`.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
 - **Адреса картки товару** — `/<path>` в основній мові й `/<lower(code)>/<path>` в інших; `path` береться
-  з реєстру `url_paths` (мова × шлях), а не зі slug-а товару чи розділу. Сторінку віддає splat-роут сутності
-  (`routes/storefront/_storefront/$.tsx`), тип сутності визначає реєстр. Канонічний шлях будує лише
+  з реєстру `url_paths` (мова × шлях), а не зі slug-а товару чи розділу. Сторінку віддає роут сутності з одним параметром-сегментом
+  (`routes/storefront/_storefront/$path.tsx`; не splat: `/admin/<щось>` він не перехоплює),
+  тип сутності визначає реєстр. Канонічний шлях будує лише
   `productPath` (`simplycms/domain`): картка, sitemap, адмінка, `canonical` і JSON-LD беруть його звідти.
   Нормалізація (`storefront-routes/seo/normalize`) складає мову, історичну адресу, історичний `?mod=`, слеш і
   форму query (серіалізатор — той самий, що в роутера) в ОДИН 301; адреса, якої немає в реєстрі, — 404.

@@ -20,7 +20,7 @@ node .claude/skills/simplycms-redesign/scripts/inspect.mjs http://localhost:3000
 |-----|---------|------------|
 | `home` | `/` | — |
 | `listing` | `/catalog` (або `/catalog/<sectionSlug>` — репрезентативніша) | — |
-| `product` | `/catalog/<sectionSlug>/<productSlug>` | — |
+| `product` | `/<path>` — поточна адреса товару основної мови з реєстру (вкладка «Адреса» картки товару в адмінці; на `/catalog` це `href` картки товару); для іншої мови — `/<мова>/<path>` | — |
 | `cart` | `/cart` | 🔴 кошик має бути НЕПОРОЖНІМ |
 | `checkout` | `/checkout` | 🔴 кошик має бути НЕПОРОЖНІМ |
 | `about` / `contact` | канонічної сторінки в ядрі немає — або наша `src/routes/my/…`, або тип свідомо без пари (виняток №3 нижче) | — |

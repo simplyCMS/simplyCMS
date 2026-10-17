@@ -735,6 +735,9 @@ export const catalogProductTexts = pgTable("catalog_product_texts", {
 	metaDescription: text("meta_description"),
 	path: textC().notNull(),
 	isTranslated: boolean("is_translated").notNull(),
+	// Поля тексту, узяті з основної мови (мови немає/порожнє, а джерело є): вітрина обгортає
+	// їх `lang=<основна>` (І37). Рахує той самий SQL-будівник, що й текст (`expected.ts`).
+	fallbackFields: text("fallback_fields").array().notNull().default(sql`'{}'::text[]`),
 	updatedAt: translatedAt(),
 }, (table) => [
 	primaryKey({ columns: [table.productId, table.locale], name: "catalog_product_texts_pkey" }),

@@ -43,6 +43,7 @@ export function mergePropertyValues(
           // текст «Чорний, Білий» вів би лише на «Чорний».
           option: null,
           option_id: null,
+          value_lang: null,
         },
   );
 }
