@@ -17,11 +17,11 @@ import {
   NOOP,
   requireDistinct,
   requireLocales,
-  uuidArray,
   type ChildCtx,
   type Step,
 } from './children-common';
 import type { ModificationsInput } from './children-schemas';
+import { deleteModifications } from '../../product-modifications/delete';
 import { assertNotForeign } from './modification-scope';
 import { applyTokens, baseSlugOf } from './modification-tokens';
 import { remapPlanIssues } from './schemas';
@@ -87,8 +87,10 @@ export async function planModifications(
     async apply() {
       const db = ctx.db;
       if (removes.length > 0)
-        await db.execute(sql`delete from public.product_modifications
-          where product_id = ${ctx.productId} and id = any(${uuidArray(removes)})`);
+        await deleteModifications(db, {
+          productIds: [ctx.productId],
+          ids: removes,
+        });
       if (defaults[0]) {
         // Той самий замок, що в `setDefaultModification`: дефолт — один на товар.
         await advisoryXactLock(

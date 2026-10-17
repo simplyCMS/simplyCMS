@@ -17,6 +17,7 @@ import {
   getProductAggregate,
   loadState,
   lockProduct,
+  lockProductForRemove,
 } from './load';
 import { childrenOut } from './children-read';
 import { bumpProduct } from './mirror';
@@ -115,7 +116,9 @@ export const productsRemove = defineOperation({
   input: z.object({ id: z.uuid(), expectedVersion }),
   output: z.object({ id: z.uuid() }),
   async run({ db, afterCommit }, input) {
-    const version = await lockProduct(db, input.id);
+    // Корінь одразу `FOR UPDATE` (ієрархія, пункт (д)): DELETE товару інакше посилив
+    // би `NO KEY UPDATE` уже після замків модифікацій.
+    const version = await lockProductForRemove(db, input.id);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
     // Рядки `media` (товару й каскадних дочірніх) стираються в транзакції разом
     // із рядком outbox; самі файли — після коміту (Е6д-14, друга фаза).

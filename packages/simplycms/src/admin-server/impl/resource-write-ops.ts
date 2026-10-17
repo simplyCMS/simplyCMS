@@ -10,7 +10,7 @@ import {
   requireDiscard,
   updateWithMedia,
 } from './resource-write-media';
-import { removeRowsWithMedia } from './resource-write-remove';
+import { removeRowsWithMedia, type RemoveHooks } from './resource-write-remove';
 import {
   insertResourceRows,
   updateResourceRows,
@@ -18,7 +18,7 @@ import {
 } from './resource-write';
 import { parseAdminInput, validateAdminInput } from './validation';
 
-interface WriteOpsDeps<Insert, Patch> {
+interface WriteOpsDeps<Insert, Patch> extends RemoveHooks {
   ctx: ResourceWriteContext;
   run: <Out>(fn: (db: ActorDb) => Promise<Out>) => Promise<Out>;
   insertSchema: z.ZodType<Insert[], Insert[]>;
@@ -31,7 +31,6 @@ interface WriteOpsDeps<Insert, Patch> {
   guard?: ResourceGuard<Insert, Patch>;
   media?: ResourceMedia;
   cascadeMedia?: readonly ResourceCascadeMedia[];
-  lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
 }
 
 type Rec = Record<string, unknown>;

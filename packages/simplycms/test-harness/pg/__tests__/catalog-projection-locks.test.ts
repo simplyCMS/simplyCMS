@@ -177,6 +177,19 @@ describe('замки команди товару проти setStatus і fill (�
       ).toEqual(['ok', 'ok']);
     });
 
+    it('reconcile (виправлення) проти видалення товару: товар пропущено, 23503 немає', async () => {
+      const { id } = await create({ uk: { name: 'Видалення C' } });
+      await db.q(
+        `delete from public.catalog_product_texts where product_id = $1`,
+        [id],
+      );
+      expect(
+        await raceWith(id, deleteProduct(id), () =>
+          db.admin((d) => reconcileProductTexts(d, { limit: 1000 })),
+        ),
+      ).toEqual(['ok', 'ok']);
+    });
+
     it('fill (токени) проти видалення модифікації: модифікацію пропущено, 23503 немає', async () => {
       const product = await db.product('mod-race', true);
       const mod = await db.modification(product, 'mod-race-m');

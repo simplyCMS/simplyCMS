@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
+  advisoryXactLock,
   advisoryXactLockShared,
-  lockProductRootsShared,
   type ActorDb,
 } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
@@ -89,20 +89,31 @@ export async function countProjectionMismatches(
  * `mismatched` — знайдено, `fixed` — після перерахунку збіглося. Різниця — те, що
  * refresh виправити не може (rich-текст без вмісту, вставлений в обхід команди):
  * його треба виправити в джерелі, тому воно лишається видимим.
+ *
+ * 🔴 ЕКСКЛЮЗИВНИЙ `languages-set`: команда пише проєкцію лише під спільним замком,
+ * тож звірка чекає коміту кожної команди, що вже пише проєкцію, а наступні чекають
+ * звірку — застарілий знімок не перекриє свіжого рядка (І23). Рядкових замків
+ * коренів звірка не бере: лише `FOR KEY SHARE` товарів (за id) — видалений
+ * паралельно товар пропускається замість FK 23503 на вставці.
  */
 export async function reconcileProductTexts(
   db: ActorDb,
   { limit }: { limit: number },
 ): Promise<{ mismatched: number; fixed: number }> {
-  await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+  await advisoryXactLock(db, LOCK_KEYS.languagesSet);
   const found = await findProjectionMismatches(db, { limit });
   if (found.length === 0) return { mismatched: 0, fixed: 0 };
-  // Корені під FOR SHARE (ORDER BY id) ДО перерахунку: команда, що ще не закомітилась,
-  // могла змінити джерело, а refresh читає свіжий стан лише під замком; видалені корені
-  // відкидаємо (інакше застарілий рядок перекрив би свіжий, І23).
-  const products = await lockProductRootsShared(db, [
-    ...new Set(found.map((k) => k.productId)),
-  ]);
+  const ids = [...new Set(found.map((k) => k.productId))].sort();
+  const alive = await db.execute<{ id: string }>(sql`
+    select id from public.products
+     where id in (${sql.join(
+       ids.map((id) => sql`${id}::uuid`),
+       sql`, `,
+     )})
+     order by id
+       for key share`);
+  const products = alive.rows.map((r) => r.id);
+  if (products.length === 0) return { mismatched: found.length, fixed: 0 };
   await refreshProductTexts(db, products);
   const still = new Set(
     (await findProjectionMismatches(db, { productIds: products })).map(keyOf),

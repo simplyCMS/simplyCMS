@@ -129,9 +129,13 @@ export async function removeWithMedia(
   d: Pick<MediaWriteDeps<unknown, unknown>, 'ctx' | 'media'>,
   ids: readonly string[],
   discard: string[],
+  del: (db: ActorDb, ids: readonly string[]) => Promise<{ count: number }> = (
+    x,
+    i,
+  ) => removeResourceRows(x, d.ctx.table, i),
 ): Promise<{ count: number }> {
   const snap = await readSnapshot(db, d.ctx, ids);
-  const result = await removeResourceRows(db, d.ctx.table, ids);
+  const result = await del(db, ids);
   const pairs = [...snap].map(([id, before]) => ({ id, before, after: null }));
   discard.push(...(await eraseReplacedMedia(db, d.media, pairs)));
   return result;

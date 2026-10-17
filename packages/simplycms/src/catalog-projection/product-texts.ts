@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import {
@@ -70,39 +70,38 @@ export async function refreshProductTexts(
 }
 
 /**
+ * Відсутні рядки проєкції мови: очікувані (`expectedRows`), яких ще немає. ЄДИНИЙ
+ * предикат «товару бракує рядка, і його можна побудувати» — з нього беруть і етап
+ * побудови, і перевірка прогресу `languages.fill`/`setStatus`: товар, для якого рядок
+ * побудувати неможливо (немає джерела з назвою чи адреси), не вважається незробленим.
+ */
+export const missingProjectionRows = (locale: string): SQL => sql`
+  select e.* from (${expectedRows({ locales: [locale] })}) e
+   where not exists (
+     select 1 from public.catalog_product_texts c
+      where c.product_id = e.product_id and c.locale = e.locale)`;
+
+/**
  * Етап проєкції `languages.fill` (і дозбірка при `disabled → published`): будує до
  * `limit` ВІДСУТНІХ рядків мови, наявні не чіпає. 🔴 `DO NOTHING`, не `DO UPDATE`:
  * fill читає знімок, а команда товару, що ще не закомітилась, могла змінити джерело
  * й записати свіжий рядок — перезапис застарілим знімком зламав би І23.
  * Викликач тримає замок `languages-set` (fill — спільний, setStatus — ексклюзивний).
- * 🔴 `FOR KEY SHARE` на товарі: паралельне видалення товару до коміту інакше дало б
- * на вставці FK 23503; видалений рядок після коміту видалення пропускається. Це єдиний
- * захист для `setStatus` (він тримає ексклюзивний `languages-set` і коренів не бере);
- * `fill` додатково бере корені (`only`, `lockProductRootsShared`) — для нього цей замок
- * вже зайвий, але нешкідливий.
+ * 🔴 `FOR KEY SHARE` на товарі (у порядку id): паралельне видалення товару до коміту
+ * інакше дало б на вставці FK 23503; видалений рядок після коміту видалення
+ * пропускається. Сильніших замків на товарі тут немає: KEY SHARE сумісний із
+ * командами (`NO KEY UPDATE`) і каскадом `SET NULL` розділу.
  * Повертає кількість вставлених рядків.
  */
 export async function buildMissingProjection(
   db: ActorDb,
   locale: string,
   limit: number,
-  only?: readonly string[],
 ): Promise<number> {
   const res = await db.execute(sql`
     insert into public.catalog_product_texts (${columnList()})
-    select ${columnList('e.')} from (${expectedRows({ locales: [locale] })}) e
+    select ${columnList('e.')} from (${missingProjectionRows(locale)}) e
       join public.products pr on pr.id = e.product_id
-     where not exists (
-       select 1 from public.catalog_product_texts c
-        where c.product_id = e.product_id and c.locale = e.locale)
-       ${
-         only
-           ? sql`and e.product_id in (${sql.join(
-               only.map((id) => sql`${id}::uuid`),
-               sql`, `,
-             )})`
-           : sql``
-       }
      order by e.product_id
      limit ${limit}
      for key share of pr

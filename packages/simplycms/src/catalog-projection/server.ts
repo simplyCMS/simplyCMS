@@ -2,6 +2,7 @@
 export {
   buildMissingProjection,
   dropLocaleProjection,
+  missingProjectionRows,
   refreshProductTexts,
 } from './product-texts';
 export {

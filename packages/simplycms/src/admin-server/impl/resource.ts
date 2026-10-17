@@ -94,6 +94,7 @@ export function defineAdminResource<
     media: config.media && assertMediaColumns(config.table, config.media),
     cascadeMedia: assertCascadeMedia(config.table, config.cascadeMedia ?? []),
     lockOnRemove: config.lockOnRemove,
+    deleteRows: config.deleteRows,
   });
 
   return {

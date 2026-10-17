@@ -9,6 +9,7 @@ import {
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
+import { deleteModifications } from './delete';
 
 /**
  * 🔴 isDefault — readonly (контракт хвиль Е1б для таблиць із single-default
@@ -69,6 +70,8 @@ export const productModificationsOps = defineAdminResource({
       .orderBy(products.id)
       .for('no key update');
   },
+  // М1 (Task 14): DELETE — лише єдиним видалячем модифікацій (`FOR UPDATE` за id).
+  deleteRows: (db, ids) => deleteModifications(db, { ids }),
   cascadeMedia: [
     {
       fk: productImages.modificationId,

@@ -104,6 +104,14 @@ export interface AdminResourceConfigBase<
    *  а каскад медіа мусить серіалізуватись з командами агрегата (`FOR NO KEY UPDATE`
    *  кореня), інакше паралельна команда додасть посилання між перевіркою і COMMIT. */
   lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
+  /** Власний DELETE рядків замість узагальненого (М1, Task 14): таблиця з єдиним
+   *  видалячем (`product_modifications` -> `deleteModifications`) і ресурс, що мусить
+   *  прибрати дочірні рядки в узгодженому порядку замків до власного DELETE. Іде після
+   *  знімків медіа, тож стирання медіа не змінюється. */
+  deleteRows?: (
+    db: ActorDb,
+    ids: readonly string[],
+  ) => Promise<{ count: number }>;
 }
 
 /**

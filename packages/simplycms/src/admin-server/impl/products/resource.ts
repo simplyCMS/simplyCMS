@@ -9,7 +9,9 @@ import {
   products,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
+import { deleteModifications } from '../product-modifications/delete';
 import { defineAdminResource } from '../resource';
+import { removeResourceRows } from '../resource-write';
 
 /**
  * Товар — перший on-demand ресурс (К3-5). filterable — рівно ті поля, якими
@@ -55,6 +57,12 @@ export const productsOps = defineAdminResource({
   // `version` — оптимістична версія агрегата (М1, І14): її піднімає лише команда
   // опису (Task 11), узагальнений CRUD її не пише.
   readonly: ['id', 'createdAt', 'updatedAt', 'version'],
+  // М1 (Task 14): модифікації — ЄДИНИМ видалячем (`FOR UPDATE` за id) після знімків
+  // медіа й до DELETE товару: порядок «корінь -> модифікації за id», як у fill.
+  deleteRows: async (db, ids) => {
+    await deleteModifications(db, { productIds: ids });
+    return removeResourceRows(db, products, ids);
+  },
   // К3-Е6д-1: фото товару — власник `product`; заміна/прибирання стирає файл.
   media: { entityType: 'product', columns: ['images'] },
   // Е6д-19: FK `product_reviews.product_id` — CASCADE; без опції фото

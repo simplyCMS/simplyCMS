@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import {
   buildMissingProjection,
   dropLocaleProjection,
+  missingProjectionRows,
 } from 'simplycms/catalog-projection';
 import { z } from 'zod';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
@@ -11,6 +12,7 @@ import { languages } from 'simplycms/schema';
 import type { Language } from 'simplycms/schema/types';
 import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
 import { completeness } from './completeness';
+import { stuckFill } from './fill';
 import {
   code,
   invalid,
@@ -31,9 +33,23 @@ const TRANSITIONS: Readonly<Record<Language['status'], readonly string[]>> = {
 /** Розмір пакета дозбірки проєкції в одній транзакції переходу. */
 const PROJECTION_BATCH = 2000;
 
-/** Дозбирає всю відсутню проєкцію мови (замок `languages-set` ексклюзивний — гонки немає). */
+/**
+ * Дозбирає всю відсутню проєкцію мови (замок `languages-set` ексклюзивний — гонки немає).
+ * Запобіжник (I-2): пакет нічого не вставив, а `missingProjectionRows` (той самий
+ * предикат, з якого будує етап) ще щось бачить — етап розійшовся з вибором; відмова
+ * з переліком id замість мовчазної неповної проєкції.
+ */
 async function buildProjection(db: ActorDb, code: string): Promise<void> {
   while ((await buildMissingProjection(db, code, PROJECTION_BATCH)) > 0);
+  const left = await db.execute<{ id: string }>(sql`
+    select distinct product_id as id from (${missingProjectionRows(code)}) e
+     order by 1 limit 50`);
+  if (left.rows.length > 0)
+    throw stuckFill(
+      'setStatus',
+      code,
+      left.rows.map((r) => r.id),
+    );
 }
 
 export const languagesSetStatus = defineOperation({
