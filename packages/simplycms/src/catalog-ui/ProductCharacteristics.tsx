@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useT } from 'simplycms/i18n';
+import { isSafeCssColor } from 'simplycms/domain';
 
 interface PropertyValue {
   property_id: string;
@@ -20,6 +21,16 @@ interface PropertyValue {
   } | null;
 }
 
+/**
+ * Колір для плашки: значення йде в `style`, тож лише безпечний CSS-колір (з `#` або
+ * без нього — URL-форма токена кольору пише hex без `#`); інакше плашки немає.
+ */
+function swatchColor(value: string | null): string | null {
+  if (!value) return null;
+  if (isSafeCssColor(value)) return value;
+  return isSafeCssColor(`#${value}`) ? `#${value}` : null;
+}
+
 interface ProductCharacteristicsProps {
   propertyValues: PropertyValue[];
 }
@@ -36,6 +47,8 @@ export function ProductCharacteristics({
     return null;
   }
 
+  // Значення — за ТИПОМ властивості (Р18): булеве і колір лишаються текстами
+  // `'true'`/`'false'` і `#rrggbb`, які лоадер кладе у `value` за `value_kind`.
   // 🔴 Назва опції — з `option.name` (join `property_options`, завжди
   // свіжий), НЕ з `pv.value`: для рядків з опцією `value` — застарілий
   // кеш, що розходиться при перейменуванні опції (Е3-13, ревізія).
@@ -54,6 +67,21 @@ export function ProductCharacteristics({
 
   const renderValue = (pv: PropertyValue) => {
     const formattedValue = formatValue(pv);
+
+    const swatch =
+      pv.property?.property_type === 'color' ? swatchColor(pv.value) : null;
+    if (swatch) {
+      return (
+        <span className="inline-flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="inline-block h-4 w-4 rounded-full border"
+            style={{ backgroundColor: swatch }}
+          />
+          {formattedValue}
+        </span>
+      );
+    }
 
     if (pv.property?.has_page && pv.option?.slug && pv.property?.slug) {
       return (

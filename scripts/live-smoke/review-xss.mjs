@@ -14,7 +14,7 @@
  *
  * Виклик — у воронці після `register`, поки покупець залогінений.
  */
-import { sql, stockSnapshot } from './sql.mjs';
+import { sql } from './sql.mjs';
 import { PRODUCT_SLUG } from './selectors.mjs';
 
 /** Корисний текст + два класичних вектори. */
@@ -31,8 +31,7 @@ export async function runReviewXssStep({ page, base, dbUrl, check }) {
     void dialog.dismiss();
   });
 
-  const { section } = await stockSnapshot(dbUrl, PRODUCT_SLUG);
-  const productUrl = `${base}/catalog/${section}/${PRODUCT_SLUG}`;
+  const productUrl = `${base}/${PRODUCT_SLUG}`;
   const [{ id: productId }] = await sql(
     dbUrl,
     `select id from public.products where slug = $1`,

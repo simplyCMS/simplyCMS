@@ -13,6 +13,7 @@ import { Route as ProtectedRouteImport } from './../packages/simplycms/routes/st
 import { Route as StorefrontRouteImport } from './../packages/simplycms/routes/storefront/_storefront'
 import { Route as AdminRouteImport } from './../packages/simplycms/routes/admin/admin'
 import { Route as StorefrontIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/index'
+import { Route as StorefrontSplatRouteImport } from './../packages/simplycms/routes/storefront/_storefront/$'
 import { Route as StorefrontCartRouteImport } from './../packages/simplycms/routes/storefront/_storefront/cart'
 import { Route as StorefrontCheckoutRouteImport } from './../packages/simplycms/routes/storefront/_storefront/checkout'
 import { Route as AdminIndexRouteImport } from './../packages/simplycms/routes/admin/admin/index'
@@ -59,7 +60,6 @@ import { Route as ApiV1OpenapiChar91DotChar93jsonRouteImport } from './../packag
 import { Route as ProtectedProfileOrdersIndexRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/index'
 import { Route as ProtectedProfileOrdersOrderIdRouteImport } from './../packages/simplycms/routes/storefront/_protected/profile/orders/$orderId'
 import { Route as StorefrontCatalogSectionSlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/index'
-import { Route as StorefrontCatalogSectionSlugProductSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug'
 import { Route as StorefrontPropertiesPropertySlugIndexRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/index'
 import { Route as StorefrontPropertiesPropertySlugOptionSlugRouteImport } from './../packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/$optionSlug'
 import { Route as AdminDiscountsGroupsGroupIdRouteImport } from './../packages/simplycms/routes/admin/admin/discounts/groups/$groupId'
@@ -92,6 +92,11 @@ const AdminRoute = AdminRouteImport.update({
 const StorefrontIndexRoute = StorefrontIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => StorefrontRoute,
+} as any)
+const StorefrontSplatRoute = StorefrontSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => StorefrontRoute,
 } as any)
 const StorefrontCartRoute = StorefrontCartRouteImport.update({
@@ -336,12 +341,6 @@ const StorefrontCatalogSectionSlugIndexRoute =
     path: '/catalog/$sectionSlug/',
     getParentRoute: () => StorefrontRoute,
   } as any)
-const StorefrontCatalogSectionSlugProductSlugRoute =
-  StorefrontCatalogSectionSlugProductSlugRouteImport.update({
-    id: '/catalog/$sectionSlug/$productSlug',
-    path: '/catalog/$sectionSlug/$productSlug',
-    getParentRoute: () => StorefrontRoute,
-  } as any)
 const StorefrontPropertiesPropertySlugIndexRoute =
   StorefrontPropertiesPropertySlugIndexRouteImport.update({
     id: '/properties/$propertySlug/',
@@ -435,6 +434,7 @@ const AdminPropertiesPropertyIdOptionsOptionIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof StorefrontIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/$': typeof StorefrontSplatRoute
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -479,7 +479,6 @@ export interface FileRoutesByFullPath {
   '/admin/user-categories/': typeof AdminUserCategoriesIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/profile/orders/$orderId': typeof ProtectedProfileOrdersOrderIdRoute
-  '/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
   '/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
   '/admin/discounts/groups/$groupId': typeof AdminDiscountsGroupsGroupIdRoute
   '/admin/plugins/$pluginId/settings': typeof AdminPluginsPluginIdSettingsRoute
@@ -500,6 +499,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof StorefrontIndexRoute
+  '/$': typeof StorefrontSplatRoute
   '/cart': typeof StorefrontCartRoute
   '/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -544,7 +544,6 @@ export interface FileRoutesByTo {
   '/admin/user-categories': typeof AdminUserCategoriesIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/profile/orders/$orderId': typeof ProtectedProfileOrdersOrderIdRoute
-  '/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
   '/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
   '/admin/discounts/groups/$groupId': typeof AdminDiscountsGroupsGroupIdRoute
   '/admin/plugins/$pluginId/settings': typeof AdminPluginsPluginIdSettingsRoute
@@ -568,6 +567,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_storefront': typeof StorefrontRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/_storefront/$': typeof StorefrontSplatRoute
   '/_storefront/cart': typeof StorefrontCartRoute
   '/_storefront/checkout': typeof StorefrontCheckoutRoute
   '/api/health': typeof ApiHealthRoute
@@ -613,7 +613,6 @@ export interface FileRoutesById {
   '/admin/user-categories/': typeof AdminUserCategoriesIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/_protected/profile/orders/$orderId': typeof ProtectedProfileOrdersOrderIdRoute
-  '/_storefront/catalog/$sectionSlug/$productSlug': typeof StorefrontCatalogSectionSlugProductSlugRoute
   '/_storefront/properties/$propertySlug/$optionSlug': typeof StorefrontPropertiesPropertySlugOptionSlugRoute
   '/admin/discounts/groups/$groupId': typeof AdminDiscountsGroupsGroupIdRoute
   '/admin/plugins/$pluginId/settings': typeof AdminPluginsPluginIdSettingsRoute
@@ -637,6 +636,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/$'
     | '/cart'
     | '/checkout'
     | '/api/health'
@@ -681,7 +681,6 @@ export interface FileRouteTypes {
     | '/admin/user-categories/'
     | '/admin/users/'
     | '/profile/orders/$orderId'
-    | '/catalog/$sectionSlug/$productSlug'
     | '/properties/$propertySlug/$optionSlug'
     | '/admin/discounts/groups/$groupId'
     | '/admin/plugins/$pluginId/settings'
@@ -702,6 +701,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$'
     | '/cart'
     | '/checkout'
     | '/api/health'
@@ -746,7 +746,6 @@ export interface FileRouteTypes {
     | '/admin/user-categories'
     | '/admin/users'
     | '/profile/orders/$orderId'
-    | '/catalog/$sectionSlug/$productSlug'
     | '/properties/$propertySlug/$optionSlug'
     | '/admin/discounts/groups/$groupId'
     | '/admin/plugins/$pluginId/settings'
@@ -769,6 +768,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_storefront'
     | '/admin'
+    | '/_storefront/$'
     | '/_storefront/cart'
     | '/_storefront/checkout'
     | '/api/health'
@@ -814,7 +814,6 @@ export interface FileRouteTypes {
     | '/admin/user-categories/'
     | '/admin/users/'
     | '/_protected/profile/orders/$orderId'
-    | '/_storefront/catalog/$sectionSlug/$productSlug'
     | '/_storefront/properties/$propertySlug/$optionSlug'
     | '/admin/discounts/groups/$groupId'
     | '/admin/plugins/$pluginId/settings'
@@ -876,6 +875,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof StorefrontIndexRouteImport
+      parentRoute: typeof StorefrontRoute
+    }
+    '/_storefront/$': {
+      id: '/_storefront/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof StorefrontSplatRouteImport
       parentRoute: typeof StorefrontRoute
     }
     '/_storefront/cart': {
@@ -1200,13 +1206,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StorefrontCatalogSectionSlugIndexRouteImport
       parentRoute: typeof StorefrontRoute
     }
-    '/_storefront/catalog/$sectionSlug/$productSlug': {
-      id: '/_storefront/catalog/$sectionSlug/$productSlug'
-      path: '/catalog/$sectionSlug/$productSlug'
-      fullPath: '/catalog/$sectionSlug/$productSlug'
-      preLoaderRoute: typeof StorefrontCatalogSectionSlugProductSlugRouteImport
-      parentRoute: typeof StorefrontRoute
-    }
     '/_storefront/properties/$propertySlug/': {
       id: '/_storefront/properties/$propertySlug/'
       path: '/properties/$propertySlug'
@@ -1334,27 +1333,26 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 )
 
 interface StorefrontRouteChildren {
+  StorefrontSplatRoute: typeof StorefrontSplatRoute
   StorefrontCartRoute: typeof StorefrontCartRoute
   StorefrontCheckoutRoute: typeof StorefrontCheckoutRoute
   StorefrontIndexRoute: typeof StorefrontIndexRoute
   StorefrontOrderSuccessOrderIdRoute: typeof StorefrontOrderSuccessOrderIdRoute
   StorefrontCatalogIndexRoute: typeof StorefrontCatalogIndexRoute
   StorefrontPropertiesIndexRoute: typeof StorefrontPropertiesIndexRoute
-  StorefrontCatalogSectionSlugProductSlugRoute: typeof StorefrontCatalogSectionSlugProductSlugRoute
   StorefrontPropertiesPropertySlugOptionSlugRoute: typeof StorefrontPropertiesPropertySlugOptionSlugRoute
   StorefrontCatalogSectionSlugIndexRoute: typeof StorefrontCatalogSectionSlugIndexRoute
   StorefrontPropertiesPropertySlugIndexRoute: typeof StorefrontPropertiesPropertySlugIndexRoute
 }
 
 const StorefrontRouteChildren: StorefrontRouteChildren = {
+  StorefrontSplatRoute: StorefrontSplatRoute,
   StorefrontCartRoute: StorefrontCartRoute,
   StorefrontCheckoutRoute: StorefrontCheckoutRoute,
   StorefrontIndexRoute: StorefrontIndexRoute,
   StorefrontOrderSuccessOrderIdRoute: StorefrontOrderSuccessOrderIdRoute,
   StorefrontCatalogIndexRoute: StorefrontCatalogIndexRoute,
   StorefrontPropertiesIndexRoute: StorefrontPropertiesIndexRoute,
-  StorefrontCatalogSectionSlugProductSlugRoute:
-    StorefrontCatalogSectionSlugProductSlugRoute,
   StorefrontPropertiesPropertySlugOptionSlugRoute:
     StorefrontPropertiesPropertySlugOptionSlugRoute,
   StorefrontCatalogSectionSlugIndexRoute:

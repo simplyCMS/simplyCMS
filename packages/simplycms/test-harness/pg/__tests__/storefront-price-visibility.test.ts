@@ -28,7 +28,11 @@ async function allPublicPrices(
   db: ActorDb,
   viewer: ViewerPriceTypes,
 ): Promise<PriceEntry[]> {
-  const product = await loadProduct(db, STATION_SLUG, viewer);
+  const product = await loadProduct(
+    db,
+    { locale: 'uk', path: STATION_SLUG },
+    viewer,
+  );
   const catalog = await loadCatalogProducts(db, viewer);
   const home = await loadHomePageData(db, viewer);
   const option = await loadPropertyOption(db, 'tip-paneli', 'mono', viewer);
@@ -101,7 +105,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
 
   it('гість: getProduct (картка) без гуртового виду', async () => {
     const product = await withViewerPricesDb(null, (tx, v) =>
-      loadProduct(tx, STATION_SLUG, v),
+      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v),
     );
     expect(typesOf(product!.product_prices)).toEqual(new Set([guestTypeId]));
   });
@@ -139,7 +143,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
     expect(types.has(WHOLESALE_TYPE)).toBe(true);
     expect(types.has(guestTypeId)).toBe(true);
     const product = await withViewerPricesDb(db.wholesale, (tx, v) =>
-      loadProduct(tx, STATION_SLUG, v),
+      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v),
     );
     expect(
       product!.product_prices.find((p) => p.price_type_id === WHOLESALE_TYPE)

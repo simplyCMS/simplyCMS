@@ -40,10 +40,10 @@ describe('JSON-LD offers сторінки товару — гостьова ці
 
   const offersOf = async (slug: string, userId: string | null = null) => {
     const product = await withViewerPricesDb(userId, (tx, v) =>
-      loadProduct(tx, slug, v),
+      loadProduct(tx, { locale: 'uk', path: slug }, v),
     );
     if (!product) throw new Error(`товару ${slug} немає`);
-    const head = productHead(matches, product, 'any');
+    const head = productHead(matches, product);
     const ld = JSON.parse(head.scripts[0]!.children) as Record<string, unknown>;
     return ld.offers as Record<string, unknown> | undefined;
   };

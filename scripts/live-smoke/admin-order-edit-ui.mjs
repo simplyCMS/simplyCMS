@@ -16,8 +16,8 @@ import { PRODUCT_SLUG, parseMoney } from './selectors.mjs';
  * Покупець оформлює замовлення товару воронки (`PRODUCT_SLUG`) — хелпери Е5
  * у тій самій послідовності, що `admin-orders-buyer.mjs`.
  */
-export async function placeOrder({ page, base, dbUrl, section }) {
-  await addToCart({ page, base, section, productSlug: PRODUCT_SLUG });
+export async function placeOrder({ page, base, dbUrl }) {
+  await addToCart({ page, base, productSlug: PRODUCT_SLUG });
   await openCheckoutPrefilled({ page, base });
   return submitCheckout({ page, base, dbUrl });
 }

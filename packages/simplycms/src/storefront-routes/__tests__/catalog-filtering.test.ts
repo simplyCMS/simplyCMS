@@ -41,6 +41,7 @@ function boolValue(value: string) {
   return {
     property_id: wifi.id,
     value,
+    bool_value: value === 'true',
     numeric_value: null,
     option_id: null,
   };

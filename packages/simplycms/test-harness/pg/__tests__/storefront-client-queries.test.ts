@@ -152,7 +152,7 @@ describe('вибірки вітрини, знятi з браузера', () => {
       const ids = await loadModificationIds(db, product.id);
       return {
         stock: await loadModificationStock(db, ids),
-        values: await loadProductModificationValues(db, product.id),
+        values: await loadProductModificationValues(db, product.id, 'uk', 'uk'),
       };
     });
 

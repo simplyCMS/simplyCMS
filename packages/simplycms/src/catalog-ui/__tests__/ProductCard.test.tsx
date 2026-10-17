@@ -1,10 +1,9 @@
 // @vitest-environment jsdom
-// Р25: посилання картки ведуть на шлях, який роут товару вважає канонічним.
+// Посилання картки ведуть на `/<path>` — сторінку сутності з реєстру адрес.
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { I18nProvider } from 'simplycms/i18n';
-import { productRedirectTarget } from 'simplycms/domain';
 import { ProductCard } from '../ProductCard';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -18,10 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
     params: Record<string, string>;
     children: ReactNode;
   }) => (
-    <a
-      href={to.replace(/\$(\w+)/g, (_, k: string) => params[k] ?? '')}
-      data-testid="card"
-    >
+    <a href={to.replace(/\$/, params._splat ?? '')} data-testid="card">
       {children}
     </a>
   ),
@@ -42,20 +38,13 @@ const renderCard = (section: { slug: string } | null) =>
   );
 
 describe('ProductCard: шлях товару', () => {
-  it('🔴 без розділу → /catalog/all/<slug>, який роут не редіректить (не 404)', () => {
+  it('веде на сторінку сутності /<path>, розділ у шляху не бере участі', () => {
     renderCard(null);
-    const href = screen.getByTestId('card').getAttribute('href')!;
-    expect(href).toBe('/catalog/all/orphan');
-    const [, , segment, slug] = href.split('/');
-    expect(
-      productRedirectTarget({ slug: slug!, sectionSlug: null }, segment!),
-    ).toBeNull();
+    expect(screen.getByTestId('card').getAttribute('href')).toBe('/orphan');
   });
 
-  it('з розділом → /catalog/<розділ>/<slug>', () => {
+  it('товар з розділом має ту саму адресу: розділ не частина URL товару', () => {
     renderCard({ slug: 'shoes' });
-    expect(screen.getByTestId('card').getAttribute('href')).toBe(
-      '/catalog/shoes/orphan',
-    );
+    expect(screen.getByTestId('card').getAttribute('href')).toBe('/orphan');
   });
 });

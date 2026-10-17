@@ -9,7 +9,7 @@ import type { EngineContext } from 'simplycms/contracts';
  */
 export const ENGINE: EngineContext = {
   links: {
-    product: (p) => `/catalog/${p.slug}`,
+    product: (p) => `/${p.path}`,
     section: (s) => `/catalog/${s.slug}`,
     cart: () => '/cart',
     checkout: () => '/checkout',

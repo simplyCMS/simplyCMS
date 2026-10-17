@@ -27,8 +27,7 @@ export async function placeTwoOrders({ page, base, dbUrl, check }) {
   const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
   const placed = [];
   for (let i = 0; i < 2; i++) {
-    const target = { section: before.section, productSlug: PRODUCT_SLUG };
-    await addToCart({ page, base, ...target });
+    await addToCart({ page, base, productSlug: PRODUCT_SLUG });
     await openCheckoutPrefilled({ page, base });
     placed.push(await submitCheckout({ page, base, dbUrl }));
   }
@@ -103,7 +102,7 @@ export async function verifyCabinet({ page, base, order, state, check }) {
 
 /** Вітрина після скасування адміном: бейдж наявності картки = БД. */
 export async function verifyBadgeAfterCancel({ page, base, stock, check }) {
-  await page.goto(`${base}/catalog/${stock.section}/${PRODUCT_SLUG}`, {
+  await page.goto(`${base}/${PRODUCT_SLUG}`, {
     waitUntil: 'networkidle',
   });
   const badge =

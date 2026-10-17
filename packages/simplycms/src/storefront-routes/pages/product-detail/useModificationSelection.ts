@@ -1,6 +1,6 @@
-// Вибір модифікації із синхронізацією з URL (`?mod=<slug>`).
+// Вибір модифікації з URL (`?mod=<токен мови>`).
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate, useSearch, useLocation } from '@tanstack/react-router';
 import type { ProductModificationRow } from './types';
 
@@ -11,9 +11,11 @@ export interface ModificationSelection {
 }
 
 /**
- * Стан вибраної модифікації. Джерело правди — URL: після першого рендеру
- * вибір із `?mod=` виграє, інакше береться дефолтна модифікація й URL
- * дописується `replace`-переходом (історія браузера не засмічується).
+ * Вибрана модифікація. Джерело правди — URL, а не стан: токен у `?mod=` — це
+ * токен ПОТОЧНОЇ мови (історичний нормалізація вже переписала одним 301), а без
+ * нього береться дефолтна модифікація. Стану й ефекту немає, тож SSR рендерить
+ * ту саму модифікацію, що й клієнт, а адреса товару не обростає `?mod=` сама
+ * (канонічна адреса — без query).
  */
 export function useModificationSelection(
   modifications: ProductModificationRow[],
@@ -21,50 +23,34 @@ export function useModificationSelection(
 ): ModificationSelection {
   const navigate = useNavigate();
   const pathname = useLocation({ select: (l) => l.pathname });
-  const search = useSearch({ strict: false }) as Record<
-    string,
-    string | undefined
-  >;
+  const search = useSearch({ strict: false }) as { mod?: string | number };
+  // Роутер JSON-розбирає значення query: токен з самих цифр (`?mod=5`) приходить числом.
+  const token = search.mod === undefined ? undefined : String(search.mod);
 
-  const [selectedModId, setSelectedModId] = useState<string>('');
-  const modSlugFromUrl = search.mod;
-
-  useEffect(() => {
-    if (!hasModifications || modifications.length === 0) return;
-
-    // Визначаємо цільову модифікацію: з URL або за замовчуванням
-    let targetMod = modSlugFromUrl
-      ? modifications.find((m) => m.slug === modSlugFromUrl)
+  const selectedMod = useMemo(() => {
+    if (!hasModifications || modifications.length === 0) return undefined;
+    const fromUrl = token
+      ? modifications.find((m) => m.slug === token)
       : undefined;
-
-    if (!targetMod && !selectedModId) {
-      targetMod = modifications.find((m) => m.is_default) || modifications[0];
-    }
-
-    if (targetMod && targetMod.id !== selectedModId) {
-      const id = targetMod.id;
-      const slug = targetMod.slug;
-      // Batch: оновлюємо стан та URL разом
-      setSelectedModId(id);
-      if (slug) {
-        navigate({ to: pathname, search: { mod: slug }, replace: true });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modifications, modSlugFromUrl, hasModifications]);
-
-  const selectedMod = modifications.find((m) => m.id === selectedModId);
+    return (
+      fromUrl ?? modifications.find((m) => m.is_default) ?? modifications[0]
+    );
+  }, [modifications, hasModifications, token]);
 
   const onSelect = useCallback(
     (modId: string) => {
       const mod = modifications.find((m) => m.id === modId);
-      if (mod) {
-        setSelectedModId(modId);
-        navigate({ to: pathname, search: { mod: mod.slug }, replace: true });
-      }
+      if (!mod) return;
+      // `replace`: вибір варіанта не засмічує історію браузера; решта query
+      // (utm тощо) лишається.
+      navigate({
+        to: pathname,
+        search: (prev: Record<string, unknown>) => ({ ...prev, mod: mod.slug }),
+        replace: true,
+      });
     },
     [modifications, navigate, pathname],
   );
 
-  return { selectedModId, selectedMod, onSelect };
+  return { selectedModId: selectedMod?.id ?? '', selectedMod, onSelect };
 }

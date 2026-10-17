@@ -29,7 +29,7 @@ vi.mock('../shells/useActiveThemeModule', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
-  useParams: () => ({ sectionSlug: 'panels', productSlug: 'panel-550' }),
+  useParams: () => ({ _splat: 'panel-550', sectionSlug: 'panels' }),
   useNavigate: () => () => {},
   useLocation: ({ select }: { select: (l: { pathname: string }) => unknown }) =>
     select({ pathname: '/catalog/panels/panel-550' }),
@@ -90,6 +90,19 @@ const product = {
   description: null,
   sections: section,
   product_prices: [{ price_type_id: null, price: 4200, old_price: null }],
+  page: {
+    locale: 'uk',
+    primary: 'uk',
+    path: 'panel-550',
+    isTranslated: true,
+    fallbackFields: [],
+    seo: {
+      indexable: true,
+      robots: 'index, follow',
+      canonical: '/panel-550',
+      hreflang: [],
+    },
+  },
 } as unknown as NonNullable<ProductDetailPageProps['product']>;
 
 /** Провайдери — рівно ті, що тримає прод (`__root.tsx`). */

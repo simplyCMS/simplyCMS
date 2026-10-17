@@ -1,32 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import {
-  NO_SECTION_SLUG,
-  isReservedSectionSlug,
-  productPath,
-} from '../product-path';
-import { SLUG_RE } from '../slug';
+import { productPath } from '../product-path';
 
-describe('productPath (К3-Е8, Р25)', () => {
-  it('з розділом: /catalog/<розділ>/<slug>, to+params і href узгоджені', () => {
-    const p = productPath({ slug: 'boot', sectionSlug: 'shoes' });
-    expect(p.href).toBe('/catalog/shoes/boot');
-    expect(p.params).toEqual({ sectionSlug: 'shoes', productSlug: 'boot' });
-    expect(p.to).toBe('/catalog/$sectionSlug/$productSlug');
+describe('productPath (М1, §3.2)', () => {
+  it('основна мова: /<path> без префікса, to+params для роуту сутності', () => {
+    const p = productPath({ path: 'boot', locale: 'uk', primary: 'uk' });
+    expect(p.href).toBe('/boot');
+    expect(p.to).toBe('/$');
+    expect(p.params).toEqual({ _splat: 'boot' });
   });
 
-  it.each([null, undefined, ''])(
-    'без розділу (%j): зарезервований сегмент, ніколи порожній',
-    (sectionSlug) => {
-      const p = productPath({ slug: 'orphan', sectionSlug });
-      expect(p.href).toBe('/catalog/all/orphan');
-      expect(p.params.sectionSlug).toBe(NO_SECTION_SLUG);
-      expect(p.href).not.toContain('//');
-    },
-  );
+  it('інша мова: /<lower(code)>/<path>, а params без мови (її дописує rewrite)', () => {
+    const p = productPath({ path: 'boot-en', locale: 'pt-BR', primary: 'uk' });
+    expect(p.href).toBe('/pt-br/boot-en');
+    expect(p.params).toEqual({ _splat: 'boot-en' });
+  });
 
-  it('зарезервований сегмент — валідний за SLUG_RE, тож його треба відхиляти окремо', () => {
-    expect(SLUG_RE.test(NO_SECTION_SLUG)).toBe(true);
-    expect(isReservedSectionSlug(NO_SECTION_SLUG)).toBe(true);
-    expect(isReservedSectionSlug('shoes')).toBe(false);
+  it('без мови (адмінка, лист) — адреса основної мови', () => {
+    expect(productPath({ path: 'boot' }).href).toBe('/boot');
+  });
+
+  it('шлях ніколи не містить подвійного слеша', () => {
+    expect(
+      productPath({ path: 'a', locale: 'en', primary: 'uk' }).href,
+    ).not.toContain('//');
   });
 });

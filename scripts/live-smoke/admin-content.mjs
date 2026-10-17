@@ -20,7 +20,7 @@ import { editPart } from './admin-content-edit.mjs';
 import { bodyLimitPart } from './body-limit.mjs';
 import { cleanupContentStep } from './admin-content-cleanup.mjs';
 import { userByEmail } from './admin-customers-sql.mjs';
-import { stockSnapshot, sql } from './sql.mjs';
+import { sql } from './sql.mjs';
 
 const SLUG = 'sonyachna-panel-600w-bifacial';
 const TAG = Date.now().toString(36);
@@ -64,8 +64,7 @@ export async function runAdminContentStep({
   const st = { errors, mediaKeys: [] };
   const args = { page, pages, contexts, base, dbUrl, check, fx: FX, st };
   try {
-    const { section } = await stockSnapshot(dbUrl, SLUG);
-    st.productUrl = `${base}/catalog/${section}/${SLUG}`;
+    st.productUrl = `${base}/${SLUG}`;
     const [product] = await sql(
       dbUrl,
       'select id from public.products where slug = $1',

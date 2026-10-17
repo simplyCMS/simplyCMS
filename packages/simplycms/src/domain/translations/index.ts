@@ -16,6 +16,7 @@ export {
   type TranslationRow,
 } from './status';
 export { hasRichText, hasText, normalizeTextInput } from './text';
+export { richTextToPlain } from './plain-text';
 export {
   planTranslationWrite,
   type TranslationUpsert,

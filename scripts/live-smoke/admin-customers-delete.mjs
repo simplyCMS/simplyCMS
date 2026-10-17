@@ -11,7 +11,6 @@ import { pollUntil } from './admin-shipping-sql.mjs';
 import { parseMoney, waitText } from './selectors.mjs';
 import * as q from './admin-customers-sql.mjs';
 import { reviewById, seedReview } from './admin-customers-seed.mjs';
-import { stockSnapshot } from './sql.mjs';
 import {
   dashboardFacts,
   orphans,
@@ -63,8 +62,7 @@ export async function deletePart({ page, pages, base, dbUrl, check, fx, st }) {
     `кнопка вимкнена ${r.disabledBefore}, тост ${r.toast}; замовлення ${JSON.stringify(order)}; рядків ${gone}`,
   );
   st.erasedNumber = order?.order_number;
-  const { section } = await stockSnapshot(dbUrl, fx.slug);
-  const url = `${base}/catalog/${section}/${fx.slug}`;
+  const url = `${base}/${fx.slug}`;
   await page.goto(url, { waitUntil: 'networkidle' });
   const shown = await waitText(page, fx.review);
   const former = await waitText(page, 'Колишній покупець');

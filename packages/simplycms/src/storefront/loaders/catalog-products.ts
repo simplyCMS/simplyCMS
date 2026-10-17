@@ -100,6 +100,7 @@ export async function loadCatalogProductsWhere(
       product_id: productPropertyValues.productId,
       property_id: productPropertyValues.propertyId,
       value: productPropertyValues.value,
+      bool_value: productPropertyValues.boolValue,
       numeric_value: productPropertyValues.numericValue,
       option_id: productPropertyValues.optionId,
     })
@@ -121,6 +122,7 @@ export async function loadCatalogProductsWhere(
     (valuesByProduct[row.product_id] ??= []).push({
       property_id: row.property_id,
       value: row.value,
+      bool_value: row.bool_value,
       numeric_value: toNumericValue(row.numeric_value),
       option_id: row.option_id,
     });

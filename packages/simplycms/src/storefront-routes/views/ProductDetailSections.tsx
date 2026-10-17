@@ -6,6 +6,7 @@ import type {
 } from 'simplycms/contracts/views';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { Separator } from 'simplycms/ui/separator';
+import { FallbackText } from '../components/FallbackText';
 import { ProductCharacteristics } from 'simplycms/core/components/catalog/ProductCharacteristics';
 
 const NAV_SECTIONS = [
@@ -65,10 +66,12 @@ export function ProductDetailSections({
           {t('product.description')}
         </h2>
         {description.html ? (
-          <RichHtml
-            className="prose prose-sm max-w-none dark:prose-invert"
-            html={description.html}
-          />
+          <FallbackText lang={description.lang} as="div">
+            <RichHtml
+              className="prose prose-sm max-w-none dark:prose-invert"
+              html={description.html}
+            />
+          </FallbackText>
         ) : (
           <p className="text-muted-foreground">{t('product.noDescription')}</p>
         )}

@@ -151,7 +151,12 @@ describe('Е1б: deps агрегатів повні відносно факти�
     modificationData: async () => {
       const m = await import('simplycms/storefront/loaders');
       await m.withStorefrontDb(async (db) => {
-        await m.loadProductModificationValues(db, PRODUCT_WITH_MODS);
+        await m.loadProductModificationValues(
+          db,
+          PRODUCT_WITH_MODS,
+          'uk',
+          'uk',
+        );
         const ids = await m.loadModificationIds(db, PRODUCT_WITH_MODS);
         await m.loadModificationStock(db, ids);
       });

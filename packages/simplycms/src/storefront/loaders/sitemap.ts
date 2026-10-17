@@ -1,5 +1,11 @@
-import { asc, desc, eq } from 'drizzle-orm';
-import { products, sections } from 'simplycms/schema';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import {
+  catalogProductTexts as texts,
+  languages,
+  products,
+  sections,
+} from 'simplycms/schema';
+import type { LanguageVersion } from '../seo/hreflang';
 import type { ActorDb } from './db';
 
 /**
@@ -17,12 +23,16 @@ export interface SitemapSection {
   readonly updated_at: Date;
 }
 
-/** Товар у sitemap разом зі slug-ом розділу, з якого будується URL. */
+/**
+ * Товар у sitemap: опубліковані мовні версії з адресами з реєстру. Скільки
+ * `<url>` він дасть і з якими альтернативами, вирішує `indexPolicy`, а не цей
+ * лоадер: sitemap не має власної думки, що «перекладено».
+ */
 export interface SitemapProduct {
-  readonly slug: string;
   readonly updated_at: Date;
-  /** `null` — товар без розділу; URL тоді йде під технічним `products`. */
-  readonly section_slug: string | null;
+  /** Основна мова магазину. */
+  readonly primary: string;
+  readonly languages: readonly LanguageVersion[];
 }
 
 export interface SitemapData {
@@ -31,7 +41,7 @@ export interface SitemapData {
 }
 
 /**
- * Активні розділи й товари для sitemap.
+ * Активні розділи й товари (з мовними версіями) для sitemap.
  *
  * 🔴 `is_active` — обовʼязковий предикат в ОБОХ запитах (пояснення про модель
  * видимості — у `./sections`). Тут ціна помилки навіть вища, ніж на сторінці:
@@ -49,19 +59,62 @@ export async function loadSitemapData(db: ActorDb): Promise<SitemapData> {
     .where(eq(sections.isActive, true))
     .orderBy(asc(sections.sortOrder));
 
-  // Розділ підтягується `leftJoin`-ом БЕЗ фільтра активності: URL товару має
-  // ту саму форму, що й на сторінці каталогу, а «активність розділу» — окреме
-  // правило показу, яке тут звузило б вибірку до `products` мовчки.
-  const productRows = await db
+  // Товари — з проєкції тексту (адреса й `is_translated` для кожної ОПУБЛІКОВАНОЇ
+  // мови); `is_active` — як і всюди на вітрині. Рядок на (товар × мову), які
+  // нижче групуються в товар.
+  const rows = await db
     .select({
-      slug: products.slug,
+      id: products.id,
       updated_at: products.updatedAt,
-      section_slug: sections.slug,
+      code: texts.locale,
+      path: texts.path,
+      isTranslated: texts.isTranslated,
+      isDefault: languages.isDefault,
     })
-    .from(products)
-    .leftJoin(sections, eq(products.sectionId, sections.id))
+    .from(texts)
+    .innerJoin(
+      languages,
+      and(eq(languages.code, texts.locale), eq(languages.status, 'published')),
+    )
+    .innerJoin(products, eq(products.id, texts.productId))
     .where(eq(products.isActive, true))
-    .orderBy(desc(products.updatedAt));
+    .orderBy(
+      desc(products.updatedAt),
+      asc(products.id),
+      asc(languages.sortOrder),
+      asc(languages.code),
+    );
 
-  return { sections: sectionRows, products: productRows };
+  const byProduct = new Map<
+    string,
+    { updated_at: Date; primary: string | null; languages: LanguageVersion[] }
+  >();
+  for (const row of rows) {
+    const entry = byProduct.get(row.id) ?? {
+      updated_at: row.updated_at,
+      primary: null,
+      languages: [],
+    };
+    entry.languages.push({
+      code: row.code,
+      isTranslated: row.isTranslated,
+      path: row.path,
+    });
+    if (row.isDefault) entry.primary = row.code;
+    byProduct.set(row.id, entry);
+  }
+
+  const productList: SitemapProduct[] = [];
+  for (const entry of byProduct.values()) {
+    // Товар без рядка основної мови не має «основної версії» для canonical.
+    if (entry.primary !== null) {
+      productList.push({
+        updated_at: entry.updated_at,
+        primary: entry.primary,
+        languages: entry.languages,
+      });
+    }
+  }
+
+  return { sections: sectionRows, products: productList };
 }

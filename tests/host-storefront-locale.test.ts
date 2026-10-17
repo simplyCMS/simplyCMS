@@ -47,6 +47,8 @@ vi.mock('simplycms/storefront/loaders', () => ({
       known: ['uk', 'en', 'pl'],
     };
   },
+  // Реєстр адрес без історії: ця сюїта про мовний контекст, не про 301 з історії.
+  lookupProductAddress: async () => null,
 }));
 
 beforeEach(() => {

@@ -27,6 +27,7 @@ export * from './reviews-edit';
 export * from './stock';
 export * from './stock-info';
 export * from './product-detail';
+export * from './address-history';
 export * from './products';
 export * from './properties';
 export * from './property-option';

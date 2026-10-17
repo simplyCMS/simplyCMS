@@ -1,21 +1,33 @@
-import { loadLocaleSet } from 'simplycms/storefront/loaders';
+// Серіалізатори query беремо з пакета роутера (реекспорт router-core): це ті
+// самі функції, які роутер за замовчуванням застосовує до `location.search`.
+import {
+  defaultParseSearch,
+  defaultStringifySearch,
+} from '@tanstack/react-router';
+import {
+  loadLocaleSet,
+  lookupProductAddress,
+} from 'simplycms/storefront/loaders';
 import { getRequestContext } from 'simplycms/site/request-context';
 import {
   isStorefrontPath,
   resolveRequestLocale,
   type LocaleSet,
 } from '../locale/resolve';
+import { applyHistory, type AddressLookup } from './history';
+
+export type { AddressLookup } from './history';
 
 /**
  * Нормалізація адреси вітрини ДО роутера: рівно ОДИН 301 на кінцеву адресу.
  *
  * Чому тут, а не в роутері: канонізація router-core (`loadServerRoute`) віддає
- * 307 і опції, що міняє статус чи вимикає її, у цій версії немає. Тож 301 на
- * префікс основної мови й завершальний слеш віддає сама обгортка серверного
- * входу, а роутерна канонізація лишається страховкою.
+ * 307 і опції, що міняє статус чи вимикає її, у цій версії немає. Тож 301 віддає
+ * сама обгортка серверного входу, а роутерна канонізація лишається страховкою.
  *
- * Кроки складаються в одну кінцеву адресу, а не в ланцюжок редіректів: Task 15
- * дописує сюди історію адрес і `?mod=`, і ця функція так само дасть один 301.
+ * Кроки складаються в одну кінцеву адресу, а не в ланцюжок редіректів: префікс
+ * основної мови, слеш, ІСТОРІЯ адреси сутності, історичний `?mod=` і форма query
+ * — усе це змінює одну й ту саму ціль, і редірект один (І20).
  */
 
 type Target = { pathname: string };
@@ -71,13 +83,18 @@ function sameOriginPath(pathname: string): string | null {
  * - префікс відомої, але неопублікованої мови → 404;
  * - префікс мови над невітринним шляхом (`/en/api/…`, `/uk/media/…`) → 404:
  *   інакше той самий ресурс мав би дубль адреси під кожною мовою;
- * - префікс основної мови, завершальний слеш, зайві слеші → 301 на кінцеву адресу;
- * - query зберігається як є (байт у байт: порядок і `utm_*`).
+ * - префікс основної мови, завершальний слеш, зайві слеші, історична адреса,
+ *   історичний `?mod=` → ОДИН 301 на кінцеву адресу;
+ * - query серіалізується ТИМ САМИМ `defaultParseSearch`/`defaultStringifySearch`,
+ *   що й роутер: так закодований (`?utm=%31`) чи повторений (`?a=1&a=2`) параметр
+ *   дає один наш 301 на форму, яку роутер вважає канонічною, а не 301, за яким
+ *   роутер додає ще й 307. Невідомі й дозволені параметри зберігаються.
  */
-export function normalizeStorefrontRequest(
+export async function normalizeStorefrontRequest(
   url: URL,
   set: LocaleSet,
-): Response | null {
+  lookup: AddressLookup = lookupProductAddress,
+): Promise<Response | null> {
   if (!isStorefrontPath(url.pathname)) return null;
 
   const resolved = resolveRequestLocale(url.pathname, set);
@@ -89,13 +106,24 @@ export function normalizeStorefrontRequest(
   const stepped = STEPS.reduce<Target>((acc, step) => step(acc, set), {
     pathname: url.pathname,
   });
-  const safe = sameOriginPath(stepped.pathname);
-  if (safe === null) return notFound();
-  if (safe === url.pathname) return null;
+  const safePath = sameOriginPath(stepped.pathname);
+  if (safePath === null) return notFound();
+
+  const history = await applyHistory(
+    safePath,
+    defaultParseSearch(url.search),
+    set,
+    lookup,
+  );
+  const target = sameOriginPath(history.pathname);
+  if (target === null) return notFound();
+
+  const search = defaultStringifySearch(history.query);
+  if (target === url.pathname && search === url.search) return null;
 
   return new Response(null, {
     status: 301,
-    headers: { location: safe + url.search },
+    headers: { location: target + search },
   });
 }
 
@@ -129,7 +157,7 @@ export function withStorefrontNormalize<TArgs extends unknown[]>(
     if (!isPageRequest) return delegate(request, ...args);
 
     const locales = await loadLocaleSet();
-    const response = normalizeStorefrontRequest(url, locales);
+    const response = await normalizeStorefrontRequest(url, locales);
     if (response !== null) return response;
     const ctx = getRequestContext();
     if (ctx) ctx.storefront = { locales };

@@ -59,22 +59,13 @@ describe('ReviewCardPage', () => {
     expect(screen.getByText(t('admin.reviews.internalNote'))).toBeTruthy();
   });
 
-  it('Р25: посилання на товар з розділом = productPath', async () => {
+  it('посилання на товар = productPath основної мови, розділ у URL не бере участі', async () => {
     renderWithClient(<ReviewCardPage />);
-    const expected = productPath({ slug: 'kurtka', sectionSlug: 'odyag' }).href;
+    const expected = productPath({ path: 'kurtka' }).href;
     await waitFor(() =>
       expect(document.querySelector(`a[href="${expected}"]`)).not.toBeNull(),
     );
-  });
-
-  it('Р25: посилання на товар без розділу = /catalog/all/<slug>', async () => {
-    mocks.getReviewCard.mockResolvedValue(card({ sectionSlug: null }));
-    renderWithClient(<ReviewCardPage />);
-    await waitFor(() =>
-      expect(
-        document.querySelector('a[href="/catalog/all/kurtka"]'),
-      ).not.toBeNull(),
-    );
+    expect(expected).toBe('/kurtka');
   });
 
   it('«Відхилити» з приміткою шле adminComment і інвалідує [product_reviews]', async () => {

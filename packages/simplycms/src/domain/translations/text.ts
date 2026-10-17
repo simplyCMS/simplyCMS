@@ -82,8 +82,12 @@ function tagName(html: string, at: number): string | null {
  * тут недоречний: модуль клієнтобезпечний (T1), `sanitize-html` серверний, а
  * `DOMParser` у Node/SSR немає.
  */
-function scan(html: string): { text: string; media: boolean } {
+export function scan(
+  html: string,
+  stopAtMedia = true,
+): { text: string; media: boolean } {
   let text = '';
+  let media = false;
   let i = 0;
   while (i < html.length) {
     if (html[i] !== '<') {
@@ -100,13 +104,16 @@ function scan(html: string): { text: string; media: boolean } {
         text += '<';
         i += 1;
       } else if (MEDIA_TAGS.has(name)) {
-        return { text, media: true };
+        // Для «чи є вміст» досить першого медіа; для витягу тексту — читаємо далі.
+        if (stopAtMedia) return { text, media: true };
+        media = true;
+        i = skipTag(html, i);
       } else {
         i = skipTag(html, i);
       }
     }
   }
-  return { text, media: false };
+  return { text, media };
 }
 
 /**

@@ -1,58 +1,44 @@
-// simplycms/domain — єдиний канонічний шлях картки товару (К3-Е8, Р25).
+// simplycms/domain — єдиний канонічний шлях картки товару (М1, §3.2).
 //
-// 🔴 Раніше кожен споживач будував URL по-своєму (картка — порожній сегмент,
-// sitemap — `products`, адмінка — `all`, canonical — сегмент із URL запиту),
-// тож товар без розділу (FK `on delete set null` робить його легальним) давав
-// `/catalog//slug` → 404 і кілька canonical. Тепер шлях будує ЛИШЕ ця функція.
+// Адреса товару — `/<path>` в основній мові й `/<lower(code)>/<path>` в інших;
+// `path` бере з реєстру `url_paths` (мова × шлях), а НЕ зі slug-а розділу чи
+// товару. Тип сутності за адресою визначає реєстр, не форма URL.
 
-/**
- * Сегмент `/catalog/<сегмент>/<slug>` для товару без розділу. Зарезервований:
- * slug розділу не може його зайняти (форма й сервер відхиляють), інакше
- * розділ `all` перехопив би шлях безрозділових товарів.
- */
-export const NO_SECTION_SLUG = 'all';
+/** Шлях роуту сторінки сутності (splat) — для `<Link to>`. */
+export const PRODUCT_ROUTE = '/$' as const;
 
-/** Чи зарезервований slug (його не може мати розділ). */
-export function isReservedSectionSlug(slug: string): boolean {
-  return slug === NO_SECTION_SLUG;
-}
-
-/** Мінімум товару, з якого видно його шлях. */
+/** Мінімум, з якого видно шлях товару. */
 export type ProductPathInput = {
-  slug: string;
-  sectionSlug: string | null | undefined;
+  /** Поточна адреса товару в мові `locale`, без префікса мови й початкового `/`. */
+  path: string;
+  /**
+   * Мова адреси. Разом з `primary` лише визначає префікс у `href`. Обидва
+   * опущені — адреса основної мови (адмінка, лист: мови читача там нема).
+   */
+  locale?: string;
+  /** Основна мова магазину: її адреси — без префікса. */
+  primary?: string;
 };
-
-/** Шлях роуту картки (патерн TanStack Router) — для `Link`. */
-export const PRODUCT_ROUTE = '/catalog/$sectionSlug/$productSlug' as const;
 
 export type ProductPath = {
   /** Патерн роуту для `<Link to>`. */
   to: typeof PRODUCT_ROUTE;
-  params: { sectionSlug: string; productSlug: string };
-  /** Готовий шлях для sitemap, адмінки, canonical і JSON-LD. */
+  /**
+   * Параметри `<Link>`: БЕЗ мови. Префікс мови дописує `rewrite` роутера за
+   * мовою поточної сторінки, тож посилання ведуть на ту саму мову, де стоїть читач.
+   */
+  params: { _splat: string };
+  /** Готовий шлях від кореня з префіксом мови для canonical, sitemap і JSON-LD. */
   href: string;
 };
 
-/** Канонічний шлях товару: з розділом — його slug, без — `NO_SECTION_SLUG`. */
+/** Канонічний шлях товару в мові `locale`. */
 export function productPath(product: ProductPathInput): ProductPath {
-  const sectionSlug = product.sectionSlug || NO_SECTION_SLUG;
+  const { path, locale, primary } = product;
+  const prefixed = locale !== undefined && locale !== primary;
   return {
     to: PRODUCT_ROUTE,
-    params: { sectionSlug, productSlug: product.slug },
-    href: `/catalog/${sectionSlug}/${product.slug}`,
+    params: { _splat: path },
+    href: prefixed ? `/${locale.toLowerCase()}/${path}` : `/${path}`,
   };
-}
-
-/**
- * Куди слати запит `/catalog/<segment>/<slug>`: `null`, якщо сегмент уже
- * канонічний, інакше `{ to, params }` для 301. Чиста функція, щоб рішення
- * роуту тестувалося без роутера.
- */
-export function productRedirectTarget(
-  product: ProductPathInput,
-  segment: string,
-): Pick<ProductPath, 'to' | 'params'> | null {
-  const { to, params } = productPath(product);
-  return params.sectionSlug === segment ? null : { to, params };
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SLUG_RE, isReservedSectionSlug } from 'simplycms/domain';
+import { SLUG_RE } from 'simplycms/domain';
 import type { Section } from 'simplycms/schema/types';
 
 const optionalText = z.string().trim();
@@ -11,11 +11,7 @@ const optionalText = z.string().trim();
  */
 export const sectionFormSchema = z.object({
   name: z.string().trim().min(1),
-  slug: z
-    .string()
-    .trim()
-    .regex(SLUG_RE)
-    .refine((v) => !isReservedSectionSlug(v)),
+  slug: z.string().trim().regex(SLUG_RE),
   description: optionalText,
   metaTitle: optionalText,
   metaDescription: optionalText,

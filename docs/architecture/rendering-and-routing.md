@@ -66,13 +66,14 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - Списки товарів повні в SSR-HTML: DTO `ProductListItem` (`storefront-routes/server`) +
   `SsrProductGrid`; збагачення — на сервері, не в `useEffect`.
 - `head` на кожній SSR-сторінці (title, description, og:*, canonical, JSON-LD де доречно).
-- **Канонічний шлях картки товару** — лише `productPath` (`simplycms/domain`, Р25): картка,
-  sitemap, адмінка, `canonical` і JSON-LD беруть його звідти. З розділом —
-  `/catalog/<розділ>/<slug>`, без розділу (FK `on delete set null` це дозволяє) —
-  `/catalog/all/<slug>`. Неканонічний сегмент у URL → 301 на канонічний; `canonical` і
-  `url` у JSON-LD будуються від даних товару, не від URL запиту. Сегмент `all`
-  **зарезервований**: розділ зі slug `all` форма й сервер відхиляють, а наявний такий
-  розділ треба перейменувати до збереження (інакше він перехопив би шлях товарів без розділу).
+- **Адреса картки товару** — `/<path>` в основній мові й `/<lower(code)>/<path>` в інших; `path` береться
+  з реєстру `url_paths` (мова × шлях), а не зі slug-а товару чи розділу. Сторінку віддає splat-роут сутності
+  (`routes/storefront/_storefront/$.tsx`), тип сутності визначає реєстр. Канонічний шлях будує лише
+  `productPath` (`simplycms/domain`): картка, sitemap, адмінка, `canonical` і JSON-LD беруть його звідти.
+  Нормалізація (`storefront-routes/seo/normalize`) складає мову, історичну адресу, історичний `?mod=`, слеш і
+  форму query (серіалізатор — той самий, що в роутера) в ОДИН 301; адреса, якої немає в реєстрі, — 404.
+  Текст і адреса товару на вітрині — з проєкції `catalog_product_texts`; неперекладена версія має `noindex`,
+  canonical на основну, і поза hreflang та sitemap (`storefront/seo/indexPolicy`).
 - Корінь (`src/routes/__root.tsx`) має `errorComponent` і `notFoundComponent`.
 - **Auth** — cookie-сесії Better Auth (не localStorage JWT). Request-guard для `/admin` —
   middleware `adminRequestGuard` у `src/start.ts` (закриває первинний HTTP-запит,

@@ -24,7 +24,7 @@ export async function runSecurityHeaderChecks({ base, check }) {
   const channels = [
     ['SSR /', '/'],
     ['статика sirv', css ? `/${css[0]}` : '/favicon.ico'],
-    ['SSR 404', '/catalog/немає-такого/ні-товару'],
+    ['SSR 404', '/немає-такого-товару'],
     ['sitemap', '/sitemap.xml'],
   ];
   for (const [label, path] of channels) {

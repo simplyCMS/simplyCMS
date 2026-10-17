@@ -95,7 +95,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
   it('товар за slug приходить із розділом, цінами й характеристиками', async () => {
     const product = await withViewerPricesDb(null, (db, v) =>
-      loadProduct(db, VISIBLE_PRODUCT_SLUG, v),
+      loadProduct(db, { locale: 'uk', path: VISIBLE_PRODUCT_SLUG }, v),
     );
 
     expect(product?.slug).toBe(VISIBLE_PRODUCT_SLUG);
@@ -112,7 +112,11 @@ describe('лоадери вітрини проти живого Postgres', () =>
       async (db, v) => {
         const section = await loadSectionBySlug(db, 'sonyachni-paneli');
         return {
-          hidden: await loadProduct(db, HIDDEN_PRODUCT_SLUG, v),
+          hidden: await loadProduct(
+            db,
+            { locale: 'uk', path: HIDDEN_PRODUCT_SLUG },
+            v,
+          ),
           inSection: await loadProductList(db, v, section?.id),
         };
       },
@@ -289,15 +293,21 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(data.sections.map((row) => row.slug)).not.toContain(
       HIDDEN_SECTION_SLUG,
     );
-    expect(data.products.map((row) => row.slug)).not.toContain(
-      HIDDEN_PRODUCT_SLUG,
+    const paths = data.products.flatMap((row) =>
+      row.languages.map((v) => v.path),
     );
-    // URL товару будується з розділу — без нього посилання пішло б під
-    // технічний `products`, тобто в нікуди.
-    expect(
-      data.products.find((row) => row.slug === VISIBLE_PRODUCT_SLUG)
-        ?.section_slug,
-    ).toBe('sonyachni-paneli');
+    expect(paths).not.toContain(HIDDEN_PRODUCT_SLUG);
+    // Адреса товару — з реєстру в мові версії, а не slug розділу: URL не
+    // залежить від того, у якому розділі лежить товар.
+    const visible = data.products.find((row) =>
+      row.languages.some((v) => v.path === VISIBLE_PRODUCT_SLUG),
+    );
+    expect(visible?.primary).toBe('uk');
+    expect(visible?.languages).toContainEqual({
+      code: 'uk',
+      path: VISIBLE_PRODUCT_SLUG,
+      isTranslated: true,
+    });
     // `updated_at` — Date (контракт К2-Е0): рядком він стає лише в
     // `<lastmod>` через toISOString(). Регекс ФОРМАТУ драйвера тут пінив би
     // GUC кластера, а не код.

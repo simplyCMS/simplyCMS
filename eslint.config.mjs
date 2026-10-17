@@ -107,7 +107,7 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms/src/storefront-routes/**/*.ts',
   // Серверні лоадери вітрини, її роут-файли й серверний вхід host-а: саме там
   // заголовки запиту доступні, тож заборона І30 має стояти й тут.
-  'packages/simplycms/src/storefront/**/*.ts',
+  'packages/simplycms/src/storefront/**/*.{ts,tsx}',
   'packages/simplycms/routes/storefront/**/*.ts',
   'src/server.ts',
   'packages/simplycms/src/admin/**/*.tsx',

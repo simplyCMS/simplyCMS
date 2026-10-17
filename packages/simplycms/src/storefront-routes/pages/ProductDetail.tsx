@@ -23,7 +23,8 @@ import type {
 
 export interface ProductDetailPageProps {
   product?: ProductDetailProduct;
-  sectionSlug?: string;
+  /** Адреса товару в мові сторінки; без неї береться splat-параметр роуту. */
+  path?: string;
 }
 
 /**
@@ -33,15 +34,13 @@ export interface ProductDetailPageProps {
  */
 export default function ProductDetailPage({
   product: initialProduct,
+  path,
 }: ProductDetailPageProps = {}) {
   const t = useT();
-  const params = useParams({ strict: false }) as {
-    sectionSlug?: string;
-    productSlug?: string;
-  };
+  const params = useParams({ strict: false }) as { _splat?: string };
 
   const { data: product, isLoading } = useProductQuery(
-    params.productSlug,
+    path ?? params._splat,
     initialProduct,
   );
 
@@ -90,6 +89,9 @@ export default function ProductDetailPage({
     );
   }
 
+  // Фрагменти, чий текст узято з основної мови: у розмітці вони мають її `lang`.
+  const fallback = new Set(product.page.fallbackFields);
+  const primary = product.page.primary;
   const pluginContext = { product, selectedMod };
   const bindings: ProductDetailBindings = {
     pluginContext,
@@ -122,15 +124,27 @@ export default function ProductDetailPage({
   return (
     <ProductDetailSlotBindings value={bindings}>
       <views.ProductDetail
-        breadcrumbs={buildBreadcrumbs(t, section, product.name)}
+        breadcrumbs={buildBreadcrumbs(
+          t,
+          section,
+          product.name,
+          fallback.has('name') ? primary : null,
+        )}
         gallery={{ images }}
         summary={{
           name: product.name,
           sku: current.sku ?? null,
           short_description: product.short_description,
           discountPercent: current.discountPercent,
+          nameLang: fallback.has('name') ? primary : null,
+          shortDescriptionLang: fallback.has('short_description')
+            ? primary
+            : null,
         }}
-        description={{ html: product.description }}
+        description={{
+          html: product.description,
+          lang: fallback.has('description') ? primary : null,
+        }}
         characteristics={{ items: propertyValues }}
         slots={productDetailSlots}
       />

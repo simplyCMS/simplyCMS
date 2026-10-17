@@ -8,52 +8,58 @@ const SET: LocaleSet = {
   known: ['uk', 'en', 'pl'],
 };
 
+// Без реєстру адрес: ця сюїта про мову й слеші; історія — `path-normalize.test.ts`.
+const NO_REGISTRY = async () => null;
 const run = (path: string) =>
-  normalizeStorefrontRequest(new URL(path, 'http://localhost'), SET);
+  normalizeStorefrontRequest(
+    new URL(path, 'http://localhost'),
+    SET,
+    NO_REGISTRY,
+  );
 
 describe('normalizeStorefrontRequest', () => {
-  it('/uk/x?utm_source=a → 301 /x?utm_source=a (query байт у байт)', () => {
-    const res = run('/uk/x?utm_source=a');
+  it('/uk/x?utm_source=a → 301 /x?utm_source=a (query байт у байт)', async () => {
+    const res = await run('/uk/x?utm_source=a');
     expect(res?.status).toBe(301);
     expect(res?.headers.get('location')).toBe('/x?utm_source=a');
   });
 
-  it('/uk → 301 /; /uk/ → 301 / (один редірект)', () => {
-    expect(run('/uk')?.headers.get('location')).toBe('/');
-    expect(run('/uk/')?.headers.get('location')).toBe('/');
+  it('/uk → 301 /; /uk/ → 301 / (один редірект)', async () => {
+    expect((await run('/uk'))?.headers.get('location')).toBe('/');
+    expect((await run('/uk/'))?.headers.get('location')).toBe('/');
   });
 
-  it('/pl/x при pl у draft → 404', () => {
-    expect(run('/pl/x')?.status).toBe(404);
+  it('/pl/x при pl у draft → 404', async () => {
+    expect((await run('/pl/x'))?.status).toBe(404);
   });
 
-  it('/en/x → null (пропуск до роутера)', () => {
-    expect(run('/en/x')).toBeNull();
+  it('/en/x → null (пропуск до роутера)', async () => {
+    expect(await run('/en/x')).toBeNull();
   });
 
-  it('/x → null', () => {
-    expect(run('/x')).toBeNull();
+  it('/x → null', async () => {
+    expect(await run('/x')).toBeNull();
   });
 
-  it('завершальний слеш: /x/ → 301 /x; корінь не чіпаємо', () => {
-    expect(run('/x/')?.headers.get('location')).toBe('/x');
-    expect(run('/')).toBeNull();
-    expect(run('/en')).toBeNull();
+  it('завершальний слеш: /x/ → 301 /x; корінь не чіпаємо', async () => {
+    expect((await run('/x/'))?.headers.get('location')).toBe('/x');
+    expect(await run('/')).toBeNull();
+    expect(await run('/en')).toBeNull();
   });
 
-  it('/en/x/ → рівно ОДИН 301 на /en/x, і /en/x далі вже null (без циклу)', () => {
-    const first = run('/en/x/?a=1');
+  it('/en/x/ → рівно ОДИН 301 на /en/x, і /en/x далі вже null (без циклу)', async () => {
+    const first = await run('/en/x/?a=1');
     expect(first?.status).toBe(301);
     expect(first?.headers.get('location')).toBe('/en/x?a=1');
-    expect(run('/en/x?a=1')).toBeNull();
+    expect(await run('/en/x?a=1')).toBeNull();
   });
 
-  it('/uk/x/ → один 301 одразу на кінцеву /x, а не через /uk/x', () => {
-    expect(run('/uk/x/')?.headers.get('location')).toBe('/x');
+  it('/uk/x/ → один 301 одразу на кінцеву /x, а не через /uk/x', async () => {
+    expect((await run('/uk/x/'))?.headers.get('location')).toBe('/x');
   });
 
-  it('/en/ → один 301 на /en', () => {
-    expect(run('/en/')?.headers.get('location')).toBe('/en');
+  it('/en/ → один 301 на /en', async () => {
+    expect((await run('/en/'))?.headers.get('location')).toBe('/en');
   });
 
   it.each([
@@ -62,8 +68,8 @@ describe('normalizeStorefrontRequest', () => {
     '/_serverFn/x',
     '/assets/a/',
     '/media/a/',
-  ])('службовий %s не нормалізується', (path) => {
-    expect(run(path)).toBeNull();
+  ])('службовий %s не нормалізується', async (path) => {
+    expect(await run(path)).toBeNull();
   });
 
   describe('відкритий редирект: Location завжди шлях на тому самому origin', () => {
@@ -77,8 +83,8 @@ describe('normalizeStorefrontRequest', () => {
       '/en/\\evil.example',
       '/uk///evil.example//x',
     ];
-    it.each(ATTACKS)('%s', (path) => {
-      const res = run(path);
+    it.each(ATTACKS)('%s', async (path) => {
+      const res = await run(path);
       const location = res?.headers.get('location') ?? null;
       if (location !== null) {
         expect(location).toMatch(/^\/(?![/\\])/);
@@ -91,25 +97,27 @@ describe('normalizeStorefrontRequest', () => {
       }
     });
 
-    it('/uk//evil.example → 301 /evil.example (схлопнуто, не //evil.example)', () => {
-      expect(run('/uk//evil.example')?.headers.get('location')).toBe(
+    it('/uk//evil.example → 301 /evil.example (схлопнуто, не //evil.example)', async () => {
+      expect((await run('/uk//evil.example'))?.headers.get('location')).toBe(
         '/evil.example',
       );
     });
 
-    it('/en//catalog → 301 /en/catalog', () => {
-      expect(run('/en//catalog')?.headers.get('location')).toBe('/en/catalog');
+    it('/en//catalog → 301 /en/catalog', async () => {
+      expect((await run('/en//catalog'))?.headers.get('location')).toBe(
+        '/en/catalog',
+      );
     });
   });
 
   it.each(['/uk/api/health', '/en/api/health', '/en/media/x.png', '/uk/admin'])(
     'префікс мови над невітринним %s → 404 (без дубля адреси)',
-    (path) => {
-      expect(run(path)?.status).toBe(404);
+    async (path) => {
+      expect((await run(path))?.status).toBe(404);
     },
   );
 
-  it('регістр сегмента: /UK/x — не мова, тож без редіректу', () => {
-    expect(run('/UK/x')).toBeNull();
+  it('регістр сегмента: /UK/x — не мова, тож без редіректу', async () => {
+    expect(await run('/UK/x')).toBeNull();
   });
 });

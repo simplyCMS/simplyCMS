@@ -11,6 +11,21 @@
 -- у бандлі скретча червонить Gate B); `title` на `<a>` чи `onerror` до `postcss`/`isPlainObject` не
 -- доходять і дали б хибно-зелений крок. Очікування на SSR: `<strong>`, `<a href>` і `text-align`
 -- дожили; `<script>`, `onerror`, `title`, `color` зникли.
-update public.products
-   set description = '<p style="text-align: center; color: red">Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><a href="https://example.com/inverter" title="t">специфікація</a><script>alert(1)</script><img src="x" onerror="alert(2)">'
- where slug = 'invertor-merezhevyi-5kw';
+--
+-- Вітрина читає опис з проєкції `catalog_product_texts` (М1, Task 15), а істина — переклад
+-- основної мови, тож проба пише в ОБИДВІ таблиці (проєкція — функція перекладу; пише лише команда,
+-- але оверлей пілота обходить її свідомо). Один оператор: `apply-probe.mjs` рахує `rowCount` рядків,
+-- яких торкнулась проєкція (рівно 1 — товар знайдено).
+with probe as (
+  select p.id as product_id, l.code as locale,
+         '<p style="text-align: center; color: red">Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><a href="https://example.com/inverter" title="t">специфікація</a><script>alert(1)</script><img src="x" onerror="alert(2)">'::text as html
+    from public.products p
+   cross join (select code from public.languages where is_default) l
+   where p.slug = 'invertor-merezhevyi-5kw'
+), source as (
+  update public.product_translations t set description = probe.html
+    from probe where t.product_id = probe.product_id and t.locale = probe.locale
+  returning t.product_id
+)
+update public.catalog_product_texts c set description = probe.html
+  from probe where c.product_id = probe.product_id and c.locale = probe.locale;

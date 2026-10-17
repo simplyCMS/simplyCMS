@@ -18,20 +18,25 @@ import type { ProductDetailProduct } from './types';
  * схожих запитах (клієнтський колись віддавав інше, ніж серверний).
  *
  * 🔴 Ключ несе вид цін глядача (Р29): прайс у payload залежить від сесії,
- * і мову запиту (І36): текст товару залежить від мови.
+ * і мову запиту (І36): текст товару залежить від мови. Запит йде за адресою
+ * `(мова, шлях)`, а не за slug: без цього `enabled` був би хибним на сторінці
+ * сутності, де параметра `productSlug` більше немає.
  */
 export function useProductQuery(
-  productSlug: string | undefined,
+  path: string | undefined,
   initialProduct?: ProductDetailProduct,
 ) {
   const view = useViewerPriceKey();
-  const products = entityKey(ENTITY.products, useLocale());
+  const locale = useLocale();
+  const products = entityKey(ENTITY.products, locale);
   return useQuery({
-    queryKey: priceViewKey(products.detail(productSlug ?? ''), view),
+    // Ключ несе шлях з реєстру, а мова вже в сегменті 1 ключа сутності: адреса
+    // унікальна лише в межах мови, тож навігація між товарами не показує попередні дані.
+    queryKey: priceViewKey(products.detail(path ?? ''), view),
     meta: VIEWER_PRICED_META,
     queryFn: (): Promise<ProductDetailProduct | null> =>
-      getProduct({ data: { slug: productSlug as string } }),
-    enabled: !!productSlug && view !== null,
+      getProduct({ data: { locale, path: path as string } }),
+    enabled: !!path && view !== null,
     // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
     initialData: useSeedableInitialData(initialProduct),
   });

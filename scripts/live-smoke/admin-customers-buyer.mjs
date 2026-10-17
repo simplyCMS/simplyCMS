@@ -4,7 +4,6 @@
  * оформлення замовлення. Кожен покупець кроку — у власному `browser.newContext()`.
  */
 import { PASSWORD } from './register.mjs';
-import { stockSnapshot } from './sql.mjs';
 import {
   addToCart,
   openCheckoutPrefilled,
@@ -44,9 +43,8 @@ export async function loginAs(page, base, email, failureText) {
 
 /** Повна воронка одного товару: картка → кошик → чекаут → `order-success`. */
 export async function placeOrder({ page, base, dbUrl, slug }) {
-  const { section } = await stockSnapshot(dbUrl, slug);
   await page.evaluate(() => localStorage.removeItem('simplycms-cart'));
-  await addToCart({ page, base, section, productSlug: slug });
+  await addToCart({ page, base, productSlug: slug });
   await openCheckoutPrefilled({ page, base });
   return submitCheckout({ page, dbUrl });
 }

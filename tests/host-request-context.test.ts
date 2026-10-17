@@ -47,6 +47,8 @@ vi.mock('simplycms/storefront/loaders', () => ({
     published: ['uk'],
     known: ['uk'],
   }),
+  // Реєстр адрес без історії: ця сюїта про контекст запиту.
+  lookupProductAddress: async () => null,
 }));
 vi.mock('../simplycms.config', () => ({ default: { locale: 'uk-UA' } }));
 vi.mock('simplycms/db', () => ({

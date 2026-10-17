@@ -1,26 +1,14 @@
 import { and, eq } from 'drizzle-orm';
 import {
-  productModifications,
   productPrices,
   productPropertyValues,
-  products,
   propertyOptions,
   sectionProperties,
-  sections,
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
-import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
 import type { ActorDb } from './db';
-import {
-  productColumns,
-  toImageList,
-  type ProductRow,
-} from './entities/product';
-import {
-  modificationColumns,
-  toModificationRow,
-  type ModificationRow,
-} from './entities/modification';
+import { toImageList, type ProductRow } from './entities/product';
+import { type ModificationRow } from './entities/modification';
 import {
   loadGuestPriceTypes,
   priceColumns,
@@ -29,9 +17,18 @@ import {
   type PriceTypes,
   type ViewerPriceTypes,
 } from 'simplycms/commerce';
-import { sectionRefColumns, type SectionRef } from './entities/section';
-import { propertyValueColumns, toPropertyValueRow } from './property-values';
+import { type SectionRef } from './entities/section';
+import { propertyValueColumns } from './property-values';
 import type { ProductPropertyValueRow } from './property-values';
+import { loadProductModifications } from './product-modifications';
+import { loadProductValueTexts, withValueTexts } from './value-texts';
+import {
+  loadProductPageBase,
+  type ProductAddress,
+  type ProductPage,
+} from './product-page';
+
+export type { ProductAddress, ProductPage } from './product-page';
 
 /** Товар сторінки картки разом з усіма приєднаними гілками. */
 export type ProductDetailRow = ProductRow & {
@@ -47,44 +44,45 @@ export type ProductDetailRow = ProductRow & {
    * `product_prices` і в покупця — як фолбек (Р29).
    */
   guest_price_types: PriceTypes;
+  /** Мова сторінки, адреса, SEO-політика і поля з fallback (М1, І33/І37). */
+  page: ProductPage;
 };
 
 /**
- * Товар за slug — з розділом, модифікаціями, цінами й характеристиками.
+ * Товар за адресою з реєстру `(мова, шлях)` — з розділом, модифікаціями, цінами
+ * й характеристиками.
  *
- * 🔴 `is_active = true` тут ОБОВʼЯЗКОВИЙ, хоч у старому коді його не було:
- * без нього чернетка товару відкривалася прямим посиланням і потрапляла в
- * JSON-LD. Клієнтський запит картки цей предикат мав завжди — тобто SSR і
- * гідрація давали різний результат на тому самому URL.
+ * 🔴 Текст і адреса — з проєкції `catalog_product_texts` у мові запиту (П7), не з
+ * колонок `products`. Модифікації і текстові значення властивостей — з
+ * `withFallback` (мова, інакше основна). `slug` рядка — поточна адреса мови.
+ *
+ * 🔴 `is_active = true` тут ОБОВʼЯЗКОВИЙ: без нього чернетка товару відкривалася
+ * б прямим посиланням і потрапляла в JSON-LD. Мова — лише `published`.
  *
  * 🔴 Ціни — лише видів `viewer` (Р29): гість гуртового прайсу не дістає ні в
  * payload, ні в SSR-HTML. Набір рахує `withViewerDb` із серверної сесії.
  */
 export async function loadProduct(
   db: ActorDb,
-  slug: string,
+  address: ProductAddress,
   viewer: ViewerPriceTypes,
 ): Promise<ProductDetailRow | null> {
-  const [row] = await db
-    .select({ product: productColumns, section: sectionRefColumns })
-    .from(products)
-    .leftJoin(sections, eq(products.sectionId, sections.id))
-    .where(and(eq(products.slug, slug), eq(products.isActive, true)))
-    .limit(1);
-
-  if (!row) return null;
+  const base = await loadProductPageBase(db, address);
+  if (!base) return null;
 
   // Послідовно — причина та сама, що в `./products`: одне зʼєднання.
-  const productId = row.product.id;
-  const modificationRows = await db
-    .select(modificationColumns)
-    .from(productModifications)
-    .where(eq(productModifications.productId, productId));
+  const { product, page } = base;
+  const modificationRows = await loadProductModifications(
+    db,
+    product.id,
+    page.locale,
+    page.primary,
+  );
   const priceRows = await db
     .select(priceColumns)
     .from(productPrices)
     .where(
-      and(eq(productPrices.productId, productId), visibleToViewer(viewer)),
+      and(eq(productPrices.productId, product.id), visibleToViewer(viewer)),
     );
   const propertyValueRows = await db
     .select(propertyValueColumns)
@@ -97,20 +95,26 @@ export async function loadProduct(
       sectionProperties,
       eq(productPropertyValues.propertyId, sectionProperties.id),
     )
-    .where(eq(productPropertyValues.productId, productId));
+    .where(eq(productPropertyValues.productId, product.id));
+  const valueTexts = await loadProductValueTexts(
+    db,
+    'product',
+    propertyValueRows.map((r) => r.value_id),
+    page.locale,
+    page.primary,
+  );
   const guestPriceTypes = await loadGuestPriceTypes(db);
 
   return {
-    ...row.product,
-    // Тема 9, рубіж 2: старі рядки, сід і демо-дані чистимо при віддачі.
-    description: sanitizeNullableRichHtml(row.product.description, 'content'),
-    images: toImageList(row.product.images),
-    // `leftJoin` без збігу дає рядок із порожнім `id` — розділ у товару
-    // необовʼязковий (FK `on delete set null`), тож перевіряємо явно.
-    sections: row.section?.id ? row.section : null,
-    product_modifications: modificationRows.map(toModificationRow),
+    ...product,
+    ...base.text,
+    slug: page.path,
+    images: toImageList(product.images),
+    sections: base.section,
+    product_modifications: modificationRows,
     product_prices: priceRows.map(toPriceEntry),
-    product_property_values: propertyValueRows.map(toPropertyValueRow),
+    product_property_values: withValueTexts(propertyValueRows, valueTexts),
     guest_price_types: guestPriceTypes,
+    page,
   };
 }

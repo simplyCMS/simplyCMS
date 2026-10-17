@@ -22,6 +22,11 @@ const ZONE_PATHS = [
   'packages/simplycms/src/storefront-routes/pages/Home.tsx',
   'packages/simplycms/src/storefront/loaders/products.ts',
   'packages/simplycms/routes/storefront/api/x.ts',
+  // Роут-файли вітрини `.tsx` (сторінка сутності `$.tsx` читає мову сторінки лише з
+  // URL): зона мусить бачити й їх, а не лише `.ts` (М1, Task 15).
+  'packages/simplycms/routes/storefront/_storefront/$.tsx',
+  'packages/simplycms/routes/storefront/_storefront/x.tsx',
+  'packages/simplycms/src/storefront/seo/x.tsx',
   'src/server.ts',
 ];
 const OUTSIDE = 'packages/simplycms/src/admin-server/impl/x.ts';

@@ -19,7 +19,7 @@ import { EngineProvider } from 'simplycms/react-query';
  */
 const engine: EngineContext = {
   links: {
-    product: (p) => `/catalog/${p.slug}`,
+    product: (p) => `/${p.path}`,
     section: (s) => `/catalog/${s.slug}`,
     cart: () => '/cart',
     checkout: () => '/checkout',

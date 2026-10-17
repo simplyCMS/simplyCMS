@@ -144,4 +144,17 @@ export const detailProduct = {
   ...catalogRow,
   sections: { id: 's1', slug: 'panels', name: 'Панелі' },
   product_property_values: [],
+  page: {
+    locale: 'uk',
+    primary: 'uk',
+    path: 'detail',
+    isTranslated: true,
+    fallbackFields: [],
+    seo: {
+      indexable: true,
+      robots: 'index, follow',
+      canonical: '/detail',
+      hreflang: [],
+    },
+  },
 } as unknown as ProductDetailProduct;

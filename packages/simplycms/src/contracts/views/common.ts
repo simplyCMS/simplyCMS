@@ -12,6 +12,8 @@ export interface BreadcrumbItem {
   label: string;
   /** Готовий href. Відсутній — поточна сторінка (рендериться не лінком). */
   href?: string;
+  /** Мова підпису, коли він узятий з основної мови (fallback): view обгортає його `lang` (І37). */
+  lang?: string | null;
 }
 
 /**

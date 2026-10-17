@@ -39,6 +39,17 @@
   `setDefaultProductModification`, `reorderProductModification` і старі `saveProductPrices`/`saveStock`; колекції товару,
   модифікацій і значень властивостей `admin-data` — лише читання (без `persistenceHandlers`). Ручний статус наявності
   модифікації — поле `stockStatus` у `modifications.upsert` і у виході `products.get` (як `base.stockStatus` товару); `saveStock` далі виводить його з залишків. 412 при збереженні — діалог «Товар змінив хтось інший».
+- **Сторінка товару — за адресою з реєстру** (`simplycms/storefront-routes`, `simplycms/domain`, `simplycms/contracts`):
+  товар відкривається на `/<path>` і `/<мова>/<path>` (роут сутності `routes/storefront/_storefront/$.tsx`); прибрано роут
+  `/catalog/$sectionSlug/$productSlug`, редірект сегмента розділу та зарезервований slug розділу `all` (`NO_SECTION_SLUG`,
+  `isReservedSectionSlug`, `productRedirectTarget`). `productPath({ path, locale?, primary? })` замість
+  `productPath({ slug, sectionSlug })`, `LinkResolver.product({ path })`, `getProduct({ locale, path })`,
+  `getModificationData({ productId, locale })`, `loadProduct(db, { locale, path }, viewer)`; `?mod=` — токен поточної мови
+  (`slug_tokens`). Історична адреса й історичний `?mod=` дають ОДИН 301 разом із префіксом основної мови, слешем і формою
+  query; `title`/`description`/`og:*` беруть `meta_title`/`meta_description` (опис без HTML-тегів), `robots`, hreflang з
+  `x-default`, `og:locale` — мовою версії; sitemap товарів — рядок на опубліковану мову з `<xhtml:link>`. View-моделі
+  `ProductDetailSummary`/`ProductDetailDescription`/`BreadcrumbItem` дістали необов'язкові `nameLang`, `shortDescriptionLang`,
+  `lang` (fallback-фрагменти мають `lang` основної мови); тема, що підмінює view, мусить їх застосувати.
 - **Baseline змінено — базу перестворити** (до `1.0.0-rc.1` baseline `0000…0004` не заморожено):
   `mail_outbox` злито в `0001_init.sql`, окремий `0005_mail_outbox.sql` прибрано;
   `languages` перебудовано (`code text` з CHECK формату BCP 47, `status` замість

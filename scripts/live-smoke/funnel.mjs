@@ -37,7 +37,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
 
   // 1. Картка: бейдж і JSON-LD проти БД (те, чого curl не бачить).
-  await goto(`/catalog/${before.section}/${PRODUCT_SLUG}`);
+  await goto(`/${PRODUCT_SLUG}`);
   const badge =
     (await page
       .locator('text=/В наявності|Немає в наявності|Під замовлення/')

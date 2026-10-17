@@ -17,6 +17,9 @@ import { readClientLocaleSet } from './script';
  *
  * Читати це треба ОДИН раз — у `getRouter()`; далі набір їде в контексті
  * роутера (`context.locales`), і ні лоадер, ні `NotFound` до ALS не звертаються.
+ * Виняток — запит, який нормалізація не готувала (404 під `/api`, адмінка): для
+ * нього `undefined` тут, а `beforeLoad` кореня дочитує набір
+ * (`loadLocaleSetLazily`, див. `resolveRouterLocales`).
  */
 export const readLocaleSet = createIsomorphicFn()
   .server((): LocaleSet | undefined => getRequestContext()?.storefront?.locales)

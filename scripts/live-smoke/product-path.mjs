@@ -1,16 +1,19 @@
 /**
- * Р25 на СПРАВЖНЬОМУ збереженому сервері: один канонічний шлях товару.
+ * Адреса товару на СПРАВЖНЬОМУ збереженому сервері (М1, Task 15): сторінка
+ * `/<path>` з реєстру `url_paths`, ОДИН 301 на історичну адресу / префікс основної
+ * мови / закодований параметр, 404 для невідомого.
  *
- * Чому тут, а не юнітом: склейку 301 + `<link rel="canonical">` робить роут
- * `$sectionSlug/$productSlug` разом із SSR-`head()`; чиста `productRedirectTarget`
- * цього не доводить. Товару без розділу в сіді немає, тож крок створює його
- * прямим SQL (id дає викликач — «Категорія A») і прибирає за собою.
+ * Чому тут, а не юнітом: склейку нормалізації (до Start), splat-роуту сутності і
+ * SSR-`head()` разом доводить лише живий сервер. Товару зі старою адресою в сіді
+ * немає, тож крок створює його прямим SQL (id дає викликач — «Категорія A») під
+ * замком `languages-set` (як демо-сід) і прибирає за собою.
  */
 import { randomUUID } from 'node:crypto';
+import pg from 'pg';
 import { sql } from './sql.mjs';
 
-const NO_SECTION_SLUG = 'all';
-const ORPHAN_SLUG = 'smoke-no-section-product';
+const SLUG = 'smoke-address-product';
+const OLD_SLUG = 'smoke-address-product-old';
 
 /** GET без слідування редиректу: статус, `Location`, тіло. */
 async function probe(base, path) {
@@ -22,13 +25,53 @@ async function probe(base, path) {
   };
 }
 
-/** Шлях із `Location` (абсолютний чи відносний) без origin. */
-const locPath = (loc) => (loc ? new URL(loc, 'http://x').pathname : null);
-
 const canonicalOf = (html) =>
   /<link[^>]*rel="canonical"[^>]*href="([^"]*)"/.exec(html)?.[1] ??
   /<link[^>]*href="([^"]*)"[^>]*rel="canonical"/.exec(html)?.[1] ??
   null;
+
+/** Товар: корінь, переклад і поточна адреса основної мови, історична адреса, проєкція. */
+async function insertProduct(dbUrl, id) {
+  const client = new pg.Client({ connectionString: dbUrl });
+  await client.connect();
+  try {
+    await client.query('begin');
+    await client.query(
+      "select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0))",
+    );
+    // М1-TEMP: зноситься в Task 17 — `products.slug`/`name` ще NOT NULL.
+    await client.query(
+      `insert into public.products (id, slug, name, is_active) values ($1, $2, 'Smoke адреса', true)`,
+      [id, SLUG],
+    );
+    await client.query(
+      `insert into public.product_translations (product_id, locale, name)
+       select $1, code, 'Smoke адреса' from public.languages where is_default`,
+      [id],
+    );
+    for (const [path, current] of [
+      [SLUG, true],
+      [OLD_SLUG, false],
+    ]) {
+      await client.query(
+        `insert into public.url_paths (id, locale, path, product_id, is_current)
+         select gen_random_uuid(), code, $2, $1, $3 from public.languages where is_default`,
+        [id, path, current],
+      );
+    }
+    await client.query(
+      `insert into public.catalog_product_texts (product_id, locale, name, path, is_translated)
+       select $1, code, 'Smoke адреса', $2, true from public.languages where is_default`,
+      [id, SLUG],
+    );
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback').catch(() => {});
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
 
 /**
  * @param {object} p
@@ -37,74 +80,61 @@ const canonicalOf = (html) =>
  * @param {(label: string, passed: boolean, fact: string) => void} p.check
  */
 export async function runProductPathChecks({ base, dbUrl, check }) {
-  const [withSection] = await sql(
-    dbUrl,
-    `select p.slug, s.slug as section from public.products p
-       join public.sections s on s.id = p.section_id
-      where p.is_active order by p.slug limit 1`,
-  );
-  const [other] = await sql(
-    dbUrl,
-    `select slug from public.sections where slug <> $1 order by slug limit 1`,
-    [withSection.section],
-  );
-  await sql(dbUrl, `delete from public.products where slug = $1`, [
-    ORPHAN_SLUG,
-  ]);
-  await sql(
-    dbUrl,
-    `insert into public.products (id, slug, name, section_id, is_active)
-     values ($1, $2, 'Smoke без розділу', null, true)`,
-    [randomUUID(), ORPHAN_SLUG],
-  );
+  const id = randomUUID();
+  await sql(dbUrl, `delete from public.products where slug = $1`, [SLUG]);
+  await insertProduct(dbUrl, id);
   try {
-    // (а) без розділу: будь-який сегмент → 301 на /catalog/all/<slug>.
-    const orphanHref = `/catalog/${NO_SECTION_SLUG}/${ORPHAN_SLUG}`;
-    const wrong = await probe(base, `/catalog/anything/${ORPHAN_SLUG}`);
+    // (а) поточна адреса: 200, self-canonical.
+    const current = await probe(base, `/${SLUG}`);
     check(
-      'Р25: товар без розділу, чужий сегмент → 301 на /all/',
-      wrong.status === 301 && locPath(wrong.location) === orphanHref,
-      `${wrong.status} ${wrong.location ?? '—'}`,
-    );
-    const canon = await probe(base, orphanHref);
-    check(
-      'Р25: /catalog/all/<slug> товару без розділу → 200',
-      canon.status === 200,
-      `${canon.status}`,
+      'адреса: /<path> товару → 200',
+      current.status === 200,
+      `${current.status}`,
     );
     check(
-      'Р25: canonical товару без розділу — від даних',
-      canonicalOf(canon.html) === `${base}${orphanHref}`,
-      canonicalOf(canon.html) ?? '—',
+      'адреса: self-canonical від реєстру',
+      canonicalOf(current.html) === `${base}/${SLUG}`,
+      canonicalOf(current.html) ?? '—',
     );
 
-    // (б) з розділом під чужим сегментом → 301 на правильний розділ.
-    const goodHref = `/catalog/${withSection.section}/${withSection.slug}`;
-    const moved = await probe(
-      base,
-      `/catalog/${other.slug}/${withSection.slug}`,
-    );
+    // (б) історична адреса + utm → ОДИН 301 на поточну зі збереженим query.
+    const old = await probe(base, `/${OLD_SLUG}?utm_source=smoke`);
     check(
-      'Р25: товар з розділом під чужим сегментом → 301 на його розділ',
-      moved.status === 301 && locPath(moved.location) === goodHref,
-      `${moved.status} ${moved.location ?? '—'}`,
+      'адреса: історична → один 301 на поточну з query',
+      old.status === 301 && old.location === `/${SLUG}?utm_source=smoke`,
+      `${old.status} ${old.location ?? '—'}`,
     );
 
-    // (в) canonical однаковий для канонічного URL і для URL після редиректу.
-    const direct = await probe(base, goodHref);
-    const followed = await fetch(
-      `${base}/catalog/${other.slug}/${withSection.slug}`,
-    );
-    const followedCanonical = canonicalOf(await followed.text());
+    // (в) префікс основної мови і закодований параметр — теж один 301 на кінцеву.
+    const prefixed = await probe(base, `/uk/${OLD_SLUG}/?utm=%31`);
     check(
-      'Р25: canonical однаковий для канонічного і для URL після редиректу',
-      canonicalOf(direct.html) === `${base}${goodHref}` &&
-        followedCanonical === `${base}${goodHref}`,
-      `${canonicalOf(direct.html) ?? '—'} | ${followedCanonical ?? '—'}`,
+      'адреса: /uk/<стара>/?utm=%31 → один 301 на /<поточна>?utm=1',
+      prefixed.status === 301 && prefixed.location === `/${SLUG}?utm=1`,
+      `${prefixed.status} ${prefixed.location ?? '—'}`,
+    );
+    const landed = await probe(base, prefixed.location ?? '/');
+    check(
+      'адреса: кінцева адреса одразу 200 (без другого редіректу)',
+      landed.status === 200,
+      `${landed.status}`,
+    );
+
+    // (г) невідомий шлях, шлях з кількох сегментів і зник­лий розділ-товар: 404.
+    const unknown = await probe(base, '/smoke-no-such-product');
+    const nested = await probe(base, `/catalog/all/${SLUG}`);
+    check(
+      'адреса: невідомий шлях і колишній /catalog/…/<товар> → 404',
+      unknown.status === 404 && nested.status === 404,
+      `${unknown.status} ${nested.status}`,
     );
   } finally {
-    await sql(dbUrl, `delete from public.products where slug = $1`, [
-      ORPHAN_SLUG,
-    ]);
+    await sql(dbUrl, `delete from public.products where id = $1`, [id]);
   }
+  // Видалений товар не лишає історії: стара адреса тепер просто 404.
+  const gone = await probe(base, `/${OLD_SLUG}`);
+  check(
+    'адреса: після видалення товару історична адреса → 404',
+    gone.status === 404,
+    `${gone.status}`,
+  );
 }

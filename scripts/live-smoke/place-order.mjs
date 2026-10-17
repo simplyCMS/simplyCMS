@@ -14,10 +14,9 @@ import { waitToast } from './wait.mjs';
 /**
  * Картка товару → «Додати в кошик». Чекаємо тост `product.addedToCart`:
  * без нього наступний `goto` міг би обігнати запис кошика.
- * `section` — slug розділу: URL картки вітрини — `/catalog/<розділ>/<товар>`.
  */
-export async function addToCart({ page, base, section, productSlug }) {
-  await page.goto(`${base}/catalog/${section}/${productSlug}`, {
+export async function addToCart({ page, base, productSlug }) {
+  await page.goto(`${base}/${productSlug}`, {
     waitUntil: 'networkidle',
   });
   await page

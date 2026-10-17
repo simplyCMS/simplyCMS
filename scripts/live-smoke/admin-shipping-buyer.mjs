@@ -20,7 +20,7 @@ const chooseMethod = (page, methodId) =>
 
 /** Кошик → `/checkout` із префілом профілю. */
 async function openWith(page, base, stock, slug) {
-  await addToCart({ page, base, section: stock.section, productSlug: slug });
+  await addToCart({ page, base, productSlug: slug });
   await openCheckoutPrefilled({ page, base });
 }
 

@@ -10,6 +10,7 @@ import { toNumericValue } from './entities/catalog-product';
 import type { CatalogPropertyValueRow } from './entities/catalog-product';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import { toPropertyValueViewModel } from './property-values';
+import { loadProductValueTexts } from './value-texts';
 
 /** Плоскі значення характеристик модифікацій: `modificationId → значення`. */
 export async function loadModificationValues(
@@ -24,6 +25,7 @@ export async function loadModificationValues(
       modification_id: modificationPropertyValues.modificationId,
       property_id: modificationPropertyValues.propertyId,
       value: modificationPropertyValues.value,
+      bool_value: modificationPropertyValues.boolValue,
       numeric_value: modificationPropertyValues.numericValue,
       option_id: modificationPropertyValues.optionId,
     })
@@ -34,6 +36,7 @@ export async function loadModificationValues(
     (grouped[row.modification_id] ??= []).push({
       property_id: row.property_id,
       value: row.value,
+      bool_value: row.bool_value,
       numeric_value: toNumericValue(row.numeric_value),
       option_id: row.option_id,
     });
@@ -52,14 +55,20 @@ export async function loadModificationValues(
 export async function loadProductModificationValues(
   db: ActorDb,
   productId: string,
+  locale: string,
+  primary: string,
 ): Promise<Record<string, ProductPropertyValueViewModel[]>> {
   const grouped: Record<string, ProductPropertyValueViewModel[]> = {};
 
   const rows = await db
     .select({
       modification_id: modificationPropertyValues.modificationId,
+      value_id: modificationPropertyValues.id,
       property_id: modificationPropertyValues.propertyId,
       value: modificationPropertyValues.value,
+      value_kind: modificationPropertyValues.valueKind,
+      bool_value: modificationPropertyValues.boolValue,
+      color_value: modificationPropertyValues.colorValue,
       numeric_value: modificationPropertyValues.numericValue,
       option_id: modificationPropertyValues.optionId,
       option: {
@@ -90,8 +99,17 @@ export async function loadProductModificationValues(
     )
     .where(eq(productModifications.productId, productId));
 
+  const texts = await loadProductValueTexts(
+    db,
+    'modification',
+    rows.map((row) => row.value_id),
+    locale,
+    primary,
+  );
   for (const row of rows) {
-    (grouped[row.modification_id] ??= []).push(toPropertyValueViewModel(row));
+    (grouped[row.modification_id] ??= []).push(
+      toPropertyValueViewModel(row, texts.get(row.value_id)),
+    );
   }
   return grouped;
 }

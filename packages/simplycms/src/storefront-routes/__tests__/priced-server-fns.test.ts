@@ -57,9 +57,9 @@ describe('serverFn вітрини з цінами — через withViewerDb (�
   it.each([
     [
       'getProduct',
-      () => call(getProduct, { slug: 'x' }),
+      () => call(getProduct, { locale: 'uk', path: 'x' }),
       'loadProduct',
-      [TX, 'x', VIEWER],
+      [TX, { locale: 'uk', path: 'x' }, VIEWER],
     ],
     [
       'getCatalogProducts',

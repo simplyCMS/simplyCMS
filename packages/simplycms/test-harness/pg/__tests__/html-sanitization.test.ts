@@ -261,7 +261,7 @@ describe('санітизація HTML: запис і віддача проти �
     expect(section?.description).not.toMatch(FORBIDDEN);
 
     const product = await withViewerPricesDb(null, (db, viewer) =>
-      loadProduct(db, 'raw-product', viewer),
+      loadProduct(db, { locale: 'uk', path: 'raw-product' }, viewer),
     );
     expect(product?.description).toBeTruthy();
     expect(product?.description).not.toMatch(FORBIDDEN);

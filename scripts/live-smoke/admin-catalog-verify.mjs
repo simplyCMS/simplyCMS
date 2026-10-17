@@ -11,10 +11,10 @@ import { waitToast } from './wait.mjs';
 
 /**
  * @param {{page: import('@playwright/test').Page, base: string,
- *   check: Function, section: {slug: string, name: string}, slug: string}} args
+ *   check: Function, slug: string}} args
  */
-export async function verifyStorefront({ page, base, check, section, slug }) {
-  const res = await page.goto(`${base}/catalog/${section.slug}/${slug}`, {
+export async function verifyStorefront({ page, base, check, slug }) {
+  const res = await page.goto(`${base}/${slug}`, {
     waitUntil: 'networkidle',
   });
   const text = (await page.locator('main').textContent()) ?? '';
@@ -85,14 +85,7 @@ export async function verifyDuplicateSlugToast({
 }
 
 /** Видалення в списку прибирає рядок оптимістично і товар з вітрини (204/404). */
-export async function verifyDelete({
-  page,
-  base,
-  dbUrl,
-  check,
-  section,
-  slug,
-}) {
+export async function verifyDelete({ page, base, dbUrl, check, slug }) {
   await page.goto(`${base}/admin/products`, { waitUntil: 'networkidle' });
   await page
     .getByRole('row', { name: /Живий товар Е3/ })
@@ -114,7 +107,7 @@ export async function verifyDelete({
     (n) => n === 0,
   );
   // Вітрина — після того, як БД підтвердила видалення (інакше 200 до COMMIT).
-  const gone = await page.goto(`${base}/catalog/${section.slug}/${slug}`);
+  const gone = await page.goto(`${base}/${slug}`);
   check(
     'адмін: видалення → вітрина 404, рядка немає',
     gone?.status() === 404 && left === 0,

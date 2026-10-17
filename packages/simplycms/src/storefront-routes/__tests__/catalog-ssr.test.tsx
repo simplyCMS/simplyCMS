@@ -14,6 +14,8 @@ import { TestEngineProvider } from './engine-stub';
 /** Підставляє $param-плейсхолдери в шлях — щоб перевіряти й href картки. */
 function buildHref(to: string, params?: Record<string, string>): string {
   if (!params) return to;
+  // Сторінка сутності: splat-патерн `/$` підставляє `_splat`.
+  if (to === '/$') return `/${params._splat ?? ''}`;
   return Object.entries(params).reduce(
     (acc, [key, value]) => acc.replaceAll(`$${key}`, value),
     to,
@@ -116,7 +118,7 @@ describe('SSR-повнота списків товарів', () => {
     // далі осмислений: доводить, що SSR-розмітка містить очікуваний символ,
     // просто джерело символу тепер детерміноване, а не рушій-залежне.
     expect(html).toContain('₴');
-    expect(html).toContain('/catalog/invertory/invertor-5kw');
+    expect(html).toContain('href="/invertor-5kw"');
   });
 
   it('CatalogSection рендерить назву й ціну товару в серверному HTML', () => {
@@ -133,6 +135,6 @@ describe('SSR-повнота списків товарів', () => {
     // 🔴 Див. коментар у тесті Catalog вище — '₴' тут гарантує мапа
     // символів у simplycms/domain/money, а не CLDR рушія.
     expect(html).toContain('₴');
-    expect(html).toContain('/catalog/invertory/invertor-5kw');
+    expect(html).toContain('href="/invertor-5kw"');
   });
 });

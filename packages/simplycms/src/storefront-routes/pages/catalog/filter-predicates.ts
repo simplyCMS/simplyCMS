@@ -15,8 +15,9 @@ export interface FilterableProduct {
   section: { id: string } | null;
   propertyValues: Array<{
     property_id: string;
-    /** Текстове значення; для boolean — `'true'` / `'false'`. */
     value: string | null;
+    /** Булеве значення (Р18); фільтр «Так» читає його, а не текст `value`. */
+    bool_value?: boolean | null;
     numeric_value: number | null;
     option_id: string | null;
   }>;
@@ -74,7 +75,7 @@ export function matchesOptionFilters(
 
 /**
  * Boolean-фільтри («Так»): ключ стану — slug, зіставлення — за `property_id`.
- * Значення можуть прийти з товару й з модифікацій — досить одного `'true'`.
+ * Значення можуть прийти з товару й з модифікацій — досить одного `true`.
  */
 export function matchesBooleanFilters(
   product: FilterableProduct,
@@ -84,7 +85,7 @@ export function matchesBooleanFilters(
   return (booleanProperties ?? []).every((prop) => {
     if (filters[prop.slug] !== true) return true;
     return product.propertyValues.some(
-      (pv) => pv.property_id === prop.id && pv.value === 'true',
+      (pv) => pv.property_id === prop.id && pv.bool_value === true,
     );
   });
 }

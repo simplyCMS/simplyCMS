@@ -65,7 +65,7 @@ export async function runPriceVisibilityChecks({
     [categoryId, email],
   );
   try {
-    const path = `/catalog/${product.section}/${product.slug}`;
+    const path = `/${product.slug}`;
     for (const [label, url] of [
       ['картка', path],
       ['головна', '/'],

@@ -27,7 +27,7 @@ const matches = () => {
   return [{ routeId: '__root__', loaderData: data }];
 };
 const offersOf = (product: ProductHeadInput): unknown => {
-  const head = productHead(matches(), product, 'solar');
+  const head = productHead(matches(), product);
   const ld = JSON.parse(head.scripts[0]!.children) as Record<string, unknown>;
   return ld.offers;
 };
@@ -40,9 +40,12 @@ const entry = (
 
 const BASE: ProductHeadInput = {
   name: 'Панель',
-  slug: 'panel',
   description: null,
   images: [],
+  page: {
+    locale: 'uk',
+    seo: { robots: 'index, follow', canonical: '/panel', hreflang: [] },
+  },
   stock_status: 'in_stock',
   has_modifications: false,
   product_modifications: [],

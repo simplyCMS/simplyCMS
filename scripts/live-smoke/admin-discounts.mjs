@@ -15,7 +15,6 @@
  * ПІСЛЯ доставки й ПЕРЕД кроком «система» (той лишається останнім).
  */
 import { register } from './register.mjs';
-import { stockSnapshot } from './sql.mjs';
 import * as q from './admin-discounts-sql.mjs';
 import { setupPart } from './admin-discounts-setup.mjs';
 import {
@@ -54,10 +53,9 @@ const off = (price, percent) => Math.round(price * (100 - percent)) / 100;
 
 /** Факти, від яких залежать частини: товар, ціни, новий покупець, фікстура. */
 async function prepare({ bPage, base, dbUrl, st }) {
-  const stock = await stockSnapshot(dbUrl, FX.slug);
   const { id, price: full } = await q.productPricing(dbUrl, FX.slug);
   st.productId = id;
-  st.productUrl = `${base}/catalog/${stock.section}/${FX.slug}`;
+  st.productUrl = `${base}/${FX.slug}`;
   st.prices = {
     base: full,
     off10: off(full, FX.threshold.value),

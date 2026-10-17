@@ -23,9 +23,9 @@ const DATA: SitemapData = {
   sections: [{ slug: 'shoes', updated_at: new Date('2026-07-01T00:00:00Z') }],
   products: [
     {
-      slug: 'boot',
       updated_at: new Date('2026-07-01T00:00:00Z'),
-      section_slug: 'shoes',
+      primary: 'uk',
+      languages: [{ code: 'uk', isTranslated: true, path: 'boot' }],
     },
   ],
 };
@@ -61,7 +61,7 @@ describe('SEO-ендпойнти серверного входу', () => {
     expect(response.headers.get('cache-control')).toBe(
       'public, max-age=3600, stale-while-revalidate=86400',
     );
-    expect(body).toContain('<loc>https://shop.test/catalog/shoes/boot</loc>');
+    expect(body).toContain('<loc>https://shop.test/boot</loc>');
     expect(delegate).not.toHaveBeenCalled();
   });
 

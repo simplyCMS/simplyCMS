@@ -100,9 +100,7 @@ export async function gateHttp(port, env) {
   // default-імпорт не бачить, тож тут реально проганяємо `sanitize-html` на SSR: опис товару з
   // оверлею — rich-розмітка зі `style` (проганяє `postcss.parse`), `<script>` і `onerror`. Проба — оверлей пілота `sanitize-probe.sql`
   // (`apply-probe.mjs` поверх `pnpm db:demo`; демо-сід чистий): без неї крок червоніє, а не мовчки пропускається.
-  const probe = await fetch(
-    `${base}/catalog/invertory/invertor-merezhevyi-5kw`,
-  );
+  const probe = await fetch(`${base}/invertor-merezhevyi-5kw`);
   const probeHtml = await probe.text();
   const kept =
     probeHtml.includes('<strong>98%</strong>') &&
@@ -114,7 +112,7 @@ export async function gateHttp(port, env) {
     probeHtml.includes('color:red') ||
     probeHtml.includes('color: red');
   check(
-    'GET /catalog/invertory/invertor-merezhevyi-5kw (sanitize-html на сервері)',
+    'GET /invertor-merezhevyi-5kw (sanitize-html на сервері)',
     probe.status === 200 && kept && !dirty,
     `${probe.status}, <strong>/<a href> лишились: ${kept}, небезпечне лишилось: ${dirty}` +
       (probe.status === 200 && !kept

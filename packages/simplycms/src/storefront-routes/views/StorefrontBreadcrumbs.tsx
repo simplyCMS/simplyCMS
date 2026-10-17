@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import type { BreadcrumbItem } from 'simplycms/contracts/views';
+import { FallbackText } from '../components/FallbackText';
 
 /**
  * Хлібні крихти вітрини — спільний підкомпонент канонічних view (картка
@@ -22,7 +23,9 @@ export function StorefrontBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
               {item.label}
             </Link>
           ) : (
-            <span className="text-foreground">{item.label}</span>
+            <span className="text-foreground">
+              <FallbackText lang={item.lang}>{item.label}</FallbackText>
+            </span>
           )}
         </Fragment>
       ))}

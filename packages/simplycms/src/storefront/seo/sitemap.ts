@@ -1,5 +1,5 @@
-import { productPath } from 'simplycms/domain';
 import type { SitemapData } from '../loaders/sitemap';
+import { indexPolicy } from './index-policy';
 
 /**
  * Рендер `/sitemap.xml` — ЧИСТА функція від даних (В2-К1а).
@@ -30,17 +30,37 @@ export function renderSitemapXml(data: SitemapData, baseUrl: string): string {
     );
   }
 
-  /** Товари */
+  /**
+   * Товари: рядок на опубліковану мову, де `indexPolicy` каже «індексується»; його
+   * альтернативи — ті самі hreflang, що вийдуть у `<head>` сторінки (паритет).
+   * Неперекладена версія `noindex` і поза sitemap.
+   */
   for (const product of data.products) {
-    const { href } = productPath({
-      slug: product.slug,
-      sectionSlug: product.section_slug,
-    });
-    urls.push(entry(`${baseUrl}${href}`, product.updated_at, 'weekly', 0.7));
+    for (const version of product.languages) {
+      const policy = indexPolicy({
+        locale: version.code,
+        primary: product.primary,
+        isTranslated: version.isTranslated,
+        languages: product.languages,
+      });
+      if (!policy.indexable) continue;
+      urls.push(
+        entry(
+          `${baseUrl}${policy.canonical}`,
+          product.updated_at,
+          'weekly',
+          0.7,
+          policy.hreflang.map((h) => ({
+            hrefLang: h.hrefLang,
+            href: `${baseUrl}${h.href}`,
+          })),
+        ),
+      );
+    }
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${urls.join('\n')}
 </urlset>`;
 }
@@ -50,6 +70,7 @@ function entry(
   lastmod?: Date,
   changefreq?: string,
   priority?: number,
+  alternates: ReadonlyArray<{ hrefLang: string; href: string }> = [],
 ): string {
   const parts = [`  <url>\n    <loc>${escapeXml(loc)}</loc>`];
   // Єдине місце, де дата стає рядком: W3C Datetime для sitemaps.org; текст
@@ -58,6 +79,11 @@ function entry(
   if (changefreq) parts.push(`    <changefreq>${changefreq}</changefreq>`);
   if (priority !== undefined)
     parts.push(`    <priority>${priority}</priority>`);
+  for (const alt of alternates) {
+    parts.push(
+      `    <xhtml:link rel="alternate" hreflang="${escapeXml(alt.hrefLang)}" href="${escapeXml(alt.href)}"/>`,
+    );
+  }
   parts.push('  </url>');
   return parts.join('\n');
 }

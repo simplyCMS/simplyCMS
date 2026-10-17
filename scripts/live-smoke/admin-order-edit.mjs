@@ -49,12 +49,10 @@ export async function runAdminOrderEditStep({
     // 1. Покупець оформлює замовлення; знімки обох товарів — ДО нього.
     const before = await stockSnapshot(dbUrl, PRODUCT_SLUG);
     const beforeAdded = await stockSnapshot(dbUrl, ADDED_SLUG);
-    const section = before.section;
     const { orderId } = await placeOrder({
       page: buyerPage,
       base,
       dbUrl,
-      section,
     });
     const [line] = await orderItems(dbUrl, orderId);
     const placed = await stockSnapshot(dbUrl, PRODUCT_SLUG);

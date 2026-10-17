@@ -29,12 +29,15 @@ export function useModificationData(
   product: ProductDetailProduct | null | undefined,
 ): ModificationData {
   const productId = product?.id;
-  const key = AGGREGATE.modificationData.keyFor(useLocale());
+  const locale = useLocale();
+  const key = AGGREGATE.modificationData.keyFor(locale);
 
   const { data } = useQuery({
     queryKey: [...key, productId ?? ''],
     queryFn: () =>
-      getModificationData({ data: { productId: productId as string } }),
+      getModificationData({
+        data: { productId: productId as string, locale },
+      }),
     enabled: !!productId,
     staleTime: 30_000,
   });

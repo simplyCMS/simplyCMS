@@ -64,7 +64,7 @@ export async function bodyLimitPart({ pages, base, dbUrl, check, st }) {
     [st.productId],
   );
   const title = `Е6д-2 стеля ${Date.now().toString(36)}`;
-  await page.goto(`${base}/catalog/${other.section}/${other.slug}`, {
+  await page.goto(`${base}/${other.slug}`, {
     waitUntil: 'networkidle',
   });
   await page.getByRole('button', { name: 'Написати відгук' }).click();

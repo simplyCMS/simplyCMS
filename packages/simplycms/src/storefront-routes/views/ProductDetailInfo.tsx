@@ -7,6 +7,7 @@ import { useT } from 'simplycms/i18n';
 import { Badge } from 'simplycms/ui/badge';
 import { Button } from 'simplycms/ui/button';
 import { Separator } from 'simplycms/ui/separator';
+import { FallbackText } from '../components/FallbackText';
 
 /**
  * Права колонка картки: назва, бейджі, ціна, короткий опис, вибір
@@ -34,7 +35,9 @@ export function ProductDetailInfo({
           </Badge>
         )}
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{summary.name}</h1>
+          <h1 className="text-3xl font-bold">
+            <FallbackText lang={summary.nameLang}>{summary.name}</FallbackText>
+          </h1>
           <div className="flex items-center gap-2 shrink-0 pt-1">
             {/* Реквізити: бейдж наявності + бейджі плагінів */}
             <slots.StockBadge />
@@ -55,7 +58,11 @@ export function ProductDetailInfo({
 
       {/* Short description */}
       {summary.short_description && (
-        <p className="text-muted-foreground">{summary.short_description}</p>
+        <p className="text-muted-foreground">
+          <FallbackText lang={summary.shortDescriptionLang}>
+            {summary.short_description}
+          </FallbackText>
+        </p>
       )}
 
       {/* Реквізит: вибір модифікації */}

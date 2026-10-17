@@ -29,6 +29,24 @@ export const productColumns = {
   stock_status: products.stockStatus,
 };
 
+/**
+ * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
+ * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8),
+ * а не з колонок `products`, які ще дзеркалять лише основну мову.
+ */
+export const productBaseColumns = {
+  id: products.id,
+  section_id: products.sectionId,
+  is_active: products.isActive,
+  is_featured: products.isFeatured,
+  created_at: products.createdAt,
+  updated_at: products.updatedAt,
+  images: products.images,
+  has_modifications: products.hasModifications,
+  sku: products.sku,
+  stock_status: products.stockStatus,
+};
+
 /** Повний рядок товару (без приєднаних гілок). */
 export type ProductRow = {
   id: Product['id'];

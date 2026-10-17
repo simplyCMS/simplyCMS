@@ -31,10 +31,8 @@ export function ProductCard({ product, rating }: ProductCardProps) {
   const price = product.price ?? undefined;
   const oldPrice = product.old_price;
   const stockStatus = product.stock_status ?? 'in_stock';
-  const path = productPath({
-    slug: product.slug,
-    sectionSlug: product.section?.slug,
-  });
+  // Мови тут не передаємо: префікс дописує `rewrite` роутера (мова поточної сторінки).
+  const path = productPath({ path: product.slug });
 
   return (
     <Link to={path.to} params={path.params}>

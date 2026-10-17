@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
   loadModificationIds,
+  loadLocaleSet,
   loadModificationStock,
   loadProduct,
   loadProductModificationValues,
@@ -18,14 +19,16 @@ export interface ModificationDataPayload {
 }
 
 /**
- * Отримати товар за slug (для сторінки товару). Ціни — лише видів глядача
- * сесії; залогіненому — `private, no-store` (Р29, `withViewerDb`).
+ * Отримати товар за адресою з реєстру: мова запиту + шлях без префікса мови
+ * (сторінка товару). Ціни — лише видів глядача сесії; залогіненому —
+ * `private, no-store` (Р29, `withViewerDb`). Мова мусить бути опублікованою,
+ * інакше `null`: чернетки мови відкривати не можна навіть прямим викликом.
  */
 export const getProduct = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().min(1) }))
+  .validator(z.object({ locale: z.string().min(1), path: z.string().min(1) }))
   .handler(async ({ data: input }) => {
-    const { slug } = input as { slug: string };
-    return withViewerDb((db, viewer) => loadProduct(db, slug, viewer));
+    const address = input as { locale: string; path: string };
+    return withViewerDb((db, viewer) => loadProduct(db, address, viewer));
   });
 
 /**
@@ -37,12 +40,26 @@ export const getProduct = createServerFn({ method: 'GET' })
  * достатньо двох запитів. Самої функції в схемі v2 вже й немає (B13).
  */
 export const getModificationData = createServerFn({ method: 'GET' })
-  .validator(z.object({ productId: z.string().min(1) }))
+  .validator(
+    z.object({ productId: z.string().min(1), locale: z.string().min(1) }),
+  )
   .handler(async ({ data: input }): Promise<ModificationDataPayload> => {
-    const { productId } = input as { productId: string };
+    const { productId, locale } = input as {
+      productId: string;
+      locale: string;
+    };
+    // Мова з клієнта — лише вибір тексту: невідома чи неопублікована мова
+    // читається основною, а не помилкою.
+    const set = await loadLocaleSet();
+    const shown = set.published.includes(locale) ? locale : set.primary;
 
     return withStorefrontDb(async (db) => ({
-      propertyValues: await loadProductModificationValues(db, productId),
+      propertyValues: await loadProductModificationValues(
+        db,
+        productId,
+        shown,
+        set.primary,
+      ),
       stock: await loadModificationStock(
         db,
         await loadModificationIds(db, productId),

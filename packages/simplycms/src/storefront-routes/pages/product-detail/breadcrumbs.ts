@@ -14,6 +14,7 @@ export function buildBreadcrumbs(
   t: Translator,
   section: ProductSectionRef | null,
   productName: string,
+  productNameLang?: string | null,
 ): BreadcrumbItem[] {
   const items: BreadcrumbItem[] = [
     { label: t('breadcrumbs.home'), href: '/' },
@@ -24,6 +25,6 @@ export function buildBreadcrumbs(
     items.push({ label: section.name, href: `/catalog/${section.slug}` });
   }
 
-  items.push({ label: productName });
+  items.push({ label: productName, lang: productNameLang });
   return items;
 }

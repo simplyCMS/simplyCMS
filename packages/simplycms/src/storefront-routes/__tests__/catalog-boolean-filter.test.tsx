@@ -55,7 +55,15 @@ function item(
     isAvailable: true,
     section: { id: 'sec-1' },
     propertyValues: value
-      ? [{ property_id: wifi.id, value, numeric_value: null, option_id: null }]
+      ? [
+          {
+            property_id: wifi.id,
+            value,
+            bool_value: value === 'true',
+            numeric_value: null,
+            option_id: null,
+          },
+        ]
       : [],
   };
 }

@@ -280,7 +280,7 @@ Vite у build резолвить external від кореня проєкту, а
 
 **Dual-пакети в бандлі безпечні, доки споживач бере іменовані експорти** (зараз `sanitize-html` →
 `is-plain-object`, `postcss`, `nanoid`); рантайм-сторож — крок Gate B «sanitize-html на сервері»
-(`GET /catalog/invertory/invertor-merezhevyi-5kw`: проба — оверлей пілота `scripts/pilot-pack/sanitize-probe.sql` (демо-сід чистий), зі `style`, `<script>`,
+(`GET /invertor-merezhevyi-5kw`: проба — оверлей пілота `scripts/pilot-pack/sanitize-probe.sql` (демо-сід чистий), зі `style`, `<script>`,
 `onerror` → `<strong>`/`<a>`/`text-align` дожили, небезпечне зникло; мутація — зламаний `postcss.parse` у
 серверному бандлі скретча → FAIL). Статичний Gate SB переходу споживача на default-імпорт не бачить.
 

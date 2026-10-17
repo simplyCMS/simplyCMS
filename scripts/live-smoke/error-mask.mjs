@@ -4,7 +4,7 @@
  *
  * Чому тут, а не юнітом: SSR серіалізує помилку роуту в HTML-потік
  * (`$_TSR`-скрипт) — юніт на компонент цього не бачить, тож асертимо ВЕСЬ HTML
- * відповіді. Канали: (1) SSR `/catalog/a%00b` — NUL у slug дає помилку Postgres;
+ * відповіді. Канали: (1) SSR `/catalog/a%00b` (сторінка розділу) — NUL у slug дає помилку Postgres;
  * (2) server function по HTTP — її GET-запит береться з трафіку клієнтської
  * навігації й підміняється slug з NUL (ідентифікатори хешовані, вгадувати
  * не можна); (3) недоступна БД — окремий сервер із мертвим `DATABASE_URL`.
@@ -89,15 +89,16 @@ export async function runErrorMaskChecks({
       seen.push(url);
   });
   await page.goto(`${base}/catalog`);
-  const href = await page
-    .locator('a[href^="/catalog/"]')
-    .first()
-    .getAttribute('href');
+  // Картка товару веде на `/<path>` (сторінка сутності), а не на `/catalog/…`.
+  const card = page
+    .locator('[data-simplycms-requisite="catalog.product-grid"] a')
+    .first();
+  const href = await card.getAttribute('href');
   seen.length = 0;
-  await page.locator('a[href^="/catalog/"]').first().click();
+  await card.click();
   await page.waitForLoadState('networkidle');
   await page.close();
-  const slug = href?.split('/').pop() ?? '';
+  const slug = href?.slice(1) ?? '';
   const call = seen.find((u) => u.searchParams.get('payload')?.includes(slug));
   check(
     'Р23: у трафіку навігації є GET server function зі slug',

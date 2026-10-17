@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
-import { productPath } from 'simplycms/domain';
 import { productHead, type ProductHeadInput } from '../head/product';
 
 /**
- * `head()` картки товару: canonical і `url` JSON-LD будуються від `siteUrl`
- * кореня; без нього обидва відсутні (а не відносні чи `example.com`).
+ * `head()` картки товару: canonical, hreflang і `url` JSON-LD будуються від
+ * `siteUrl` кореня й результату політики індексації (`page.seo`); без `siteUrl`
+ * їх немає (а не відносні чи `example.com`).
  */
 
 const PROFILE: StorefrontProfile = {
@@ -20,7 +20,6 @@ const PROFILE: StorefrontProfile = {
 
 const PRODUCT: ProductHeadInput = {
   name: 'Панель',
-  slug: 'panel',
   description: null,
   images: ['/media/panel.jpg'],
   stock_status: 'in_stock',
@@ -35,6 +34,18 @@ const PRODUCT: ProductHeadInput = {
     },
   ],
   guest_price_types: { priceTypeId: 'retail', defaultPriceTypeId: 'retail' },
+  page: {
+    locale: 'uk',
+    seo: {
+      robots: 'index, follow',
+      canonical: '/panel',
+      hreflang: [
+        { hrefLang: 'uk', href: '/panel' },
+        { hrefLang: 'en', href: '/en/panel-en' },
+        { hrefLang: 'x-default', href: '/panel' },
+      ],
+    },
+  },
 };
 
 function matches(siteUrl: string) {
@@ -43,7 +54,7 @@ function matches(siteUrl: string) {
     storeProfile: PROFILE,
     siteUrl,
     locale: 'uk',
-    languages: { primary: 'uk', published: ['uk'] },
+    languages: { primary: 'uk', published: ['uk', 'en'] },
   };
   return [{ routeId: '__root__', loaderData: data }];
 }
@@ -61,45 +72,93 @@ function content(head: ReturnType<typeof productHead>, key: string): unknown {
   return m && 'content' in m ? m.content : undefined;
 }
 
+const titleOf = (head: ReturnType<typeof productHead>): unknown => {
+  const titled = head.meta.find((m) => 'title' in m);
+  return titled && 'title' in titled ? titled.title : null;
+};
+
 describe('productHead', () => {
-  it('порожній siteUrl → без canonical і без url у JSON-LD', () => {
-    const head = productHead(matches(''), PRODUCT, 'solar');
+  it('порожній siteUrl → без canonical, hreflang і url у JSON-LD', () => {
+    const head = productHead(matches(''), PRODUCT);
     expect(head.links).toEqual([]);
     expect(jsonLd(head)).not.toHaveProperty('url');
   });
 
-  it('з siteUrl → canonical і url від нормалізованої адреси', () => {
-    const head = productHead(matches('https://shop.example'), PRODUCT, 'solar');
-    const url = 'https://shop.example/catalog/solar/panel';
-    expect(head.links).toEqual([{ rel: 'canonical', href: url }]);
-    expect(jsonLd(head).url).toBe(url);
-  });
-
-  it('Р25: canonical і url JSON-LD однакові для будь-якого сегмента в URL, = productPath', () => {
-    // Сегмент URL у head() більше не передається взагалі: canonical береться
-    // з розділу ТОВАРУ, тож `/catalog/foo/panel` і `/catalog/solar/panel` дають один.
-    const head = productHead(matches('https://shop.example'), PRODUCT, 'solar');
-    const href = productPath({ slug: 'panel', sectionSlug: 'solar' }).href;
+  it('з siteUrl → canonical, hreflang із x-default і url від адреси з реєстру', () => {
+    const head = productHead(matches('https://shop.example'), PRODUCT);
     expect(head.links).toEqual([
-      { rel: 'canonical', href: `https://shop.example${href}` },
+      { rel: 'canonical', href: 'https://shop.example/panel' },
+      { rel: 'alternate', hrefLang: 'uk', href: 'https://shop.example/panel' },
+      {
+        rel: 'alternate',
+        hrefLang: 'en',
+        href: 'https://shop.example/en/panel-en',
+      },
+      {
+        rel: 'alternate',
+        hrefLang: 'x-default',
+        href: 'https://shop.example/panel',
+      },
     ]);
-    expect(jsonLd(head).url).toBe(`https://shop.example${href}`);
+    expect(jsonLd(head).url).toBe('https://shop.example/panel');
   });
 
-  it('Р25: товар без розділу → canonical і url на /catalog/all/<slug>', () => {
-    const head = productHead(matches('https://shop.example'), PRODUCT, null);
-    const url = 'https://shop.example/catalog/all/panel';
-    expect(head.links).toEqual([{ rel: 'canonical', href: url }]);
-    expect(jsonLd(head).url).toBe(url);
+  it('ручний canonical на інший сайт лишається абсолютним', () => {
+    const head = productHead(matches('https://shop.example'), {
+      ...PRODUCT,
+      page: {
+        ...PRODUCT.page,
+        seo: {
+          ...PRODUCT.page.seo,
+          canonical: 'https://other.example/p',
+          hreflang: [],
+        },
+      },
+    });
+    expect(head.links).toEqual([
+      { rel: 'canonical', href: 'https://other.example/p' },
+    ]);
+  });
+
+  it('robots і og:locale — мовою версії; pt-BR → pt_BR', () => {
+    const head = productHead(matches(''), {
+      ...PRODUCT,
+      page: {
+        locale: 'pt-BR',
+        seo: { ...PRODUCT.page.seo, robots: 'noindex, follow' },
+      },
+    });
+    expect(content(head, 'robots')).toBe('noindex, follow');
+    expect(content(head, 'og:locale')).toBe('pt_BR');
   });
 
   it('опис без власного тексту товару — i18n-шаблон, однаковий у meta і og', () => {
-    const head = productHead(matches(''), PRODUCT, 'solar');
+    const head = productHead(matches(''), PRODUCT);
     expect(content(head, 'description')).toBe('Купити Панель');
     expect(content(head, 'og:description')).toBe('Купити Панель');
-    const titled = head.meta.find((m) => 'title' in m);
-    expect(titled && 'title' in titled ? titled.title : null).toBe(
-      'Панель — Крамниця',
-    );
+    expect(titleOf(head)).toBe('Панель — Крамниця');
+  });
+
+  it('meta_title і meta_description мають пріоритет над назвою й описом', () => {
+    const head = productHead(matches(''), {
+      ...PRODUCT,
+      meta_title: 'Сонячна панель 450 Вт',
+      meta_description: 'Мета-опис',
+      short_description: 'Короткий',
+      description: '<p>Довгий</p>',
+    });
+    expect(titleOf(head)).toBe('Сонячна панель 450 Вт — Крамниця');
+    expect(content(head, 'description')).toBe('Мета-опис');
+    expect(content(head, 'og:title')).toBe('Сонячна панель 450 Вт');
+  });
+
+  it('опис із HTML → у meta description, og:description і JSON-LD без тегів', () => {
+    const head = productHead(matches(''), {
+      ...PRODUCT,
+      description: '<p>Опис <b>x</b></p>',
+    });
+    expect(content(head, 'description')).toBe('Опис x');
+    expect(content(head, 'og:description')).toBe('Опис x');
+    expect(jsonLd(head).description).toBe('Опис x');
   });
 });

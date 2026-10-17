@@ -125,6 +125,7 @@
     "./storefront-routes/head/*": "./src/storefront-routes/head/*.ts",
     "./storefront-routes/locale/RootNotFound": "./src/storefront-routes/locale/RootNotFound.tsx",
     "./storefront-routes/locale/*": "./src/storefront-routes/locale/*.ts",
+    "./storefront-routes/pages/entity-route": "./src/storefront-routes/pages/entity-route.ts",
     "./storefront-routes/pages/*": "./src/storefront-routes/pages/*.tsx",
     "./storefront-routes/components/*": "./src/storefront-routes/components/*.tsx",
     "./storefront-routes/shells/*": "./src/storefront-routes/shells/*",
@@ -605,6 +606,10 @@
       "./storefront-routes/locale/*": {
         "types": "./dist/storefront-routes/locale/*.d.ts",
         "import": "./dist/storefront-routes/locale/*.js"
+      },
+      "./storefront-routes/pages/entity-route": {
+        "types": "./dist/storefront-routes/pages/entity-route.d.ts",
+        "import": "./dist/storefront-routes/pages/entity-route.js"
       },
       "./storefront-routes/pages/*": {
         "types": "./dist/storefront-routes/pages/*.d.ts",

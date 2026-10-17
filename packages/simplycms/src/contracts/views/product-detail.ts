@@ -18,11 +18,20 @@ export interface ProductDetailSummary {
   short_description: string | null;
   /** Відсоток знижки для бейджа «-N%»; null — знижки немає. */
   discountPercent: number | null;
+  /**
+   * Мова фрагмента, коли назва / короткий опис узяті з основної мови (fallback
+   * неперекладеного поля): view обгортає їх `lang=<цей код>` (І37). `null` або
+   * відсутнє — текст мовою сторінки, обгортки не треба.
+   */
+  nameLang?: string | null;
+  shortDescriptionLang?: string | null;
 }
 
 /** Повний опис товару (HTML з редактора). */
 export interface ProductDetailDescription {
   html: SanitizedHtml | null;
+  /** Мова опису, коли він узятий з основної мови (fallback); див. `ProductDetailSummary.nameLang`. */
+  lang?: string | null;
 }
 
 /**

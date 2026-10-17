@@ -31,6 +31,8 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
     'лист замовлення ставиться в outbox у транзакції оформлення (Е8, Task 12)',
   'storefront→env': 'база посилань у листі — лише siteUrl (Е8, Р18в)',
   'storefront→i18n': 'тексти листа замовлення (Е8, Task 12)',
+  'storefront→translations':
+    'withFallback і реєстр перекладних полів: ОДНЕ правило fallback на основну мову для читань вітрини, а не копії coalesce у лоадерах (М1, Task 15)',
   'admin-server→db': 'єдиний канал до Postgres — withActor (Е1б)',
   'admin-server→auth': 'перший рубіж requireGrant/requireOperation (Е1б)',
   'admin-server→storage':

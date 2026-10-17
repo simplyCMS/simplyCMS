@@ -5,14 +5,12 @@
 // (без IO) провайдери, тож модуль безпечний для браузерного бандла.
 
 import type { LinkResolver, ConfigProvider } from 'simplycms/contracts';
+import { productPath } from 'simplycms/domain';
 import config from '../simplycms.config';
 
 /** Маршрути simplyCMS-вітрини. */
 export const appLinks: LinkResolver = {
-  product: (p) =>
-    p.sectionSlug
-      ? `/catalog/${p.sectionSlug}/${p.slug}`
-      : `/catalog/${p.slug}`,
+  product: (p) => productPath(p).href,
   section: (s) => `/catalog/${s.slug}`,
   cart: () => '/cart',
   checkout: () => '/checkout',
