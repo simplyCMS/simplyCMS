@@ -17,6 +17,7 @@ import { assertImageKeys, eraseGone, productKeys } from './image-media';
 import { mirrorImages } from './image-mirror';
 import { assertKnownLocales, loadState, lockProduct } from './load';
 import { bumpProduct } from './mirror';
+import { refreshAfterPlan } from './projection';
 import { modificationIdsAfter, modificationIdsOf } from './modification-scope';
 import { planImages } from './images';
 import { planModifications } from './modifications';
@@ -94,6 +95,7 @@ export const productsSaveDescription = defineOperation({
     const before = touchesFiles ? await productKeys(db, input.id) : [];
     if (touchesFiles) await assertImageKeys(db, input.id, before, images.keys);
     await applyTranslationPlan(db, SPEC, input.id, plan);
+    await refreshAfterPlan(db, input.id, plan, state.primary);
     await modifications.apply();
     await values.apply();
     await images.apply();

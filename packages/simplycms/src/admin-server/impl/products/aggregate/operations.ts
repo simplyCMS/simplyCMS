@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { setExplicitPath } from 'simplycms/addressing';
+import { refreshProductTexts } from 'simplycms/catalog-projection';
 import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { SLUG_FORMAT } from 'simplycms/domain/slugs';
@@ -65,6 +66,8 @@ export const productsDeleteTranslation = defineOperation({
       throw new ValidationError([{ path: ['locale'], code: 'invalid_value' }]);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
     await deleteTranslation(db, TRANSLATABLE.product, input.id, input.locale);
+    // Рядок мови лишається з fallback на основну, але `is_translated` стає false.
+    await refreshProductTexts(db, [input.id], [input.locale]);
     return { version: await bumpProduct(db, input.id) };
   },
 });
@@ -94,6 +97,8 @@ export const productsSetPath = defineOperation({
       input.locale,
       input.path,
     );
+    // Адреса — частина проєкції: нова поточна адреса мови в тій самій транзакції (І23).
+    await refreshProductTexts(db, [input.id], [input.locale]);
     const { primary } = await loadState(db, input.id);
     return {
       version: await bumpProduct(db, input.id, {

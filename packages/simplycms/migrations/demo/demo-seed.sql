@@ -184,6 +184,20 @@ begin
 end
 $$;
 
+-- Проєкція тексту товару основної мови (М1, Task 14): рядок перекладу основної мови —
+-- одночасно джерело, тож `is_translated = true`. Інших мов у демо немає (мови додає
+-- власник магазину, а `languages.fill` будує їхню проєкцію).
+insert into public.catalog_product_texts
+  (product_id, locale, name, short_description, description, meta_title, meta_description, path, is_translated)
+select t.product_id, t.locale, t.name, t.short_description, t.description,
+       t.meta_title, t.meta_description, u.path, true
+from public.product_translations t
+join public.url_paths u on u.product_id = t.product_id and u.locale = t.locale and u.is_current
+where t.locale = (select code from public.languages where is_default)
+  and t.product_id::text like '10000002-0000-4000-8000-%'
+  and t.name is not null
+on conflict (product_id, locale) do nothing;
+
 -- ── 4. Ціни: товари без модифікацій (модифікація NULL) ──────────────────
 insert into public.product_prices (id, price_type_id, product_id, modification_id, price, old_price)
 select v.id, pt.id, p.id, null, v.price, v.old_price

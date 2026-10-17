@@ -53,6 +53,20 @@ CREATE TABLE "cache_generations" (
 	"generation" bigint DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "catalog_product_texts" (
+	"product_id" uuid NOT NULL,
+	"locale" text NOT NULL,
+	"name" text NOT NULL,
+	"short_description" text,
+	"description" text,
+	"meta_title" text,
+	"meta_description" text,
+	"path" text COLLATE "C" NOT NULL,
+	"is_translated" boolean NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "catalog_product_texts_pkey" PRIMARY KEY("product_id","locale")
+);
+--> statement-breakpoint
 CREATE TABLE "category_rules" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -391,7 +405,11 @@ CREATE TABLE "product_translations" (
 	"source_hashes" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "product_translations_pkey" PRIMARY KEY("product_id","locale"),
-	CONSTRAINT "product_translations_source_hashes_object" CHECK (jsonb_typeof("product_translations"."source_hashes") = 'object')
+	CONSTRAINT "product_translations_source_hashes_object" CHECK (jsonb_typeof("product_translations"."source_hashes") = 'object'),
+	CONSTRAINT "product_translations_name_text" CHECK ("product_translations"."name" IS NULL OR "product_translations"."name" ~ '[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]'),
+	CONSTRAINT "product_translations_short_description_text" CHECK ("product_translations"."short_description" IS NULL OR "product_translations"."short_description" ~ '[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]'),
+	CONSTRAINT "product_translations_meta_title_text" CHECK ("product_translations"."meta_title" IS NULL OR "product_translations"."meta_title" ~ '[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]'),
+	CONSTRAINT "product_translations_meta_description_text" CHECK ("product_translations"."meta_description" IS NULL OR "product_translations"."meta_description" ~ '[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]')
 );
 --> statement-breakpoint
 CREATE TABLE "products" (
@@ -768,6 +786,8 @@ ALTER TABLE "mail_outbox" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "api_tokens" ADD CONSTRAINT "api_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "api_tokens" ADD CONSTRAINT "api_tokens_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "banners" ADD CONSTRAINT "banners_section_id_fkey" FOREIGN KEY ("section_id") REFERENCES "public"."sections"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "catalog_product_texts" ADD CONSTRAINT "catalog_product_texts_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "catalog_product_texts" ADD CONSTRAINT "catalog_product_texts_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_from_category_id_fkey" FOREIGN KEY ("from_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "category_rules" ADD CONSTRAINT "category_rules_to_category_id_fkey" FOREIGN KEY ("to_category_id") REFERENCES "public"."user_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "comparisons" ADD CONSTRAINT "comparisons_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -853,6 +873,7 @@ ALTER TABLE "media" ADD CONSTRAINT "media_uploaded_by_fkey" FOREIGN KEY ("upload
 CREATE INDEX "idx_api_tokens_user_id" ON "api_tokens" USING btree ("user_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_banners_placement" ON "banners" USING btree ("placement" text_ops);--> statement-breakpoint
 CREATE INDEX "idx_banners_section_id" ON "banners" USING btree ("section_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "idx_catalog_product_texts_locale_path" ON "catalog_product_texts" USING btree ("locale","path");--> statement-breakpoint
 CREATE INDEX "idx_category_rules_from_category_id" ON "category_rules" USING btree ("from_category_id");--> statement-breakpoint
 CREATE INDEX "idx_category_rules_to_category_id" ON "category_rules" USING btree ("to_category_id");--> statement-breakpoint
 CREATE INDEX "idx_comparisons_product_id" ON "comparisons" USING btree ("product_id");--> statement-breakpoint

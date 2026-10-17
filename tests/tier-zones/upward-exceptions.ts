@@ -71,6 +71,12 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'prod-start→env': 'перевірка груп env до накату (К3-Е8, F5)',
   'prod-start→migrate': 'сам накат міграцій на старті (К3-Е8)',
   'addressing→db': 'транзакція викликача і замок набору мов (М1, Task 5)',
+  'catalog-projection→db':
+    'транзакція викликача (ActorDb) і спільний замок набору мов (М1, Task 14)',
+  'catalog-projection→translations':
+    'реєстр полів TRANSLATABLE.product — проєкція не має власного переліку полів (М1, Task 14)',
+  'admin-server→catalog-projection':
+    'команди товару й fill/статус мови оновлюють проєкцію тексту в транзакції (М1, Task 14)',
   'translations→db':
     'транзакція викликача (ActorDb) для читання/запису рядків перекладів (М1, Task 11)',
   'operations→db': 'єдиний канал withActor для виконавця операцій (М1, Task 6)',

@@ -58,6 +58,10 @@
   `color_value` (обмеження Р18 і тригери джерела вмикає Task 17), `modification_property_values.numeric_value` →
   `numeric(15,4)`; `products.version`; `UNIQUE(id, property_type)` на `section_properties` і `UNIQUE(property_id, id)`
   на `property_options`; демо-сід пише переклад основною мовою, адресу й токен для товарів і модифікацій;
+  проєкція тексту товару (М1 Task 14, І23): нова таблиця `catalog_product_texts` (PK `(product_id, locale)`, CASCADE на товар і мову,
+  індекс `(locale, path)`, права `app_user` SELECT / `app_admin` CRUD) і CHECK `product_translations_{name,short_description,meta_title,meta_description}_text`
+  (плоске перекладне поле — `NULL` або з непорожнім текстом; `''` і самі пробіли в обхід команди відхиляються);
+  демо-сід пише проєкцію основної мови;
   Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
@@ -81,6 +85,12 @@
   кожного надісланого поля з непорожнім джерелом; валідація входу команд іде перед перевіркою версії;
   невидимі символи (`&ensp;`, `&#00160;`, U+200B…U+FEFF) — не вміст поля.
 - **`setExplicitPath`/`setExplicitToken`** самі беруть спільний замок `languages-set`.
+- **Проєкція тексту товару (М1 Task 14):** новий субшлях `simplycms/catalog-projection` (server-only) —
+  `refreshProductTexts` (синхронно в транзакції команд товару, спільний замок `languages-set`),
+  `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), `dropLocaleProjection`,
+  `reconcileProductTexts`/`countProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
+  `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
+  дозбирає при поверненні; `completeness.missingProjection` — кількість усіх розбіжностей звірки.
 - **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
   дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з
   `AGENTS.md` (гейт `test:schema`, раніше `schema` після `test:packaging`).

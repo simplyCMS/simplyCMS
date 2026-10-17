@@ -57,6 +57,7 @@
     "./sanitize": "./src/sanitize/index.ts",
     "./translations": "./src/translations/index.ts",
     "./addressing": "./src/addressing/index.ts",
+    "./catalog-projection": "./src/catalog-projection/index.ts",
     "./operations": "./src/operations/index.ts",
     "./operations/server": "./src/operations/server.ts",
     "./react-query": "./src/react-query/index.ts",
@@ -332,6 +333,10 @@
       "./addressing": {
         "types": "./dist/addressing/index.d.ts",
         "import": "./dist/addressing/index.js"
+      },
+      "./catalog-projection": {
+        "types": "./dist/catalog-projection/index.d.ts",
+        "import": "./dist/catalog-projection/index.js"
       },
       "./operations": {
         "types": "./dist/operations/index.d.ts",

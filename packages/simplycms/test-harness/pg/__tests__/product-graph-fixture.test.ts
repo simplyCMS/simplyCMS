@@ -117,10 +117,12 @@ describe('insertProductGraph (М1 Task 10)', () => {
 
   it('url_paths: поточний шлях основної мови = slug', async () => {
     const rows = await q(
-      `select locale, path, is_current from public.url_paths where product_id = $1`,
+      `select locale, path, is_current from public.url_paths where product_id = $1 order by locale`,
       [ids.product],
     );
+    // Основна мова пише граф; інші draft/published мови — фікстура, як команди (М1, Task 14).
     expect(rows).toEqual([
+      { locale: 'en', path: 'pg-product', is_current: true },
       { locale: 'uk', path: 'pg-product', is_current: true },
     ]);
   });
@@ -229,7 +231,10 @@ describe('insertProductGraph (М1 Task 10)', () => {
       name: 'L2',
     });
     expect(
-      await q(`select 1 from public.url_paths where product_id = $1`, [other]),
+      await q(
+        `select 1 from public.url_paths where product_id = $1 and locale = 'uk'`,
+        [other],
+      ),
     ).toHaveLength(1);
   });
 

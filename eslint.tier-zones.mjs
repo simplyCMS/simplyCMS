@@ -127,6 +127,8 @@ export const TIER_ZONES = [
       // основної мови для slugify (`i18n`).
       'translations',
       'i18n',
+      // Task 14 (М1): команди товару й fill мови оновлюють проєкцію тексту.
+      'catalog-projection',
     ],
   ],
   // Порт сховища (Е2) — T2. Upward-виняток `db` той самий, що в `auth` і
@@ -180,6 +182,10 @@ export const TIER_ZONES = [
   // (транзакція викликача, замок набору мов); класи доменних помилок беруться
   // з T0 `contracts/domain-errors`, тож `admin-server` йому не потрібен.
   ['src/addressing', 2, 'addressing', ['db']],
+  // Проєкція тексту товару для вітрини (Мультимовність М1, Task 14) — T2. Upward
+  // `db` (транзакція викликача, замок набору мов) і `translations` (реєстр полів
+  // `TRANSLATABLE.product`: проєкція не має власного переліку полів).
+  ['src/catalog-projection', 2, 'catalog-projection', ['db', 'translations']],
   // Виконавець операцій (Мультимовність М1, Task 6) — T2. Upward `db` (єдиний канал
   // `withActor`) і `auth` (перший рубіж `requireOperation`, суб'єкт з cookie).
   ['src/operations', 2, 'operations', ['db', 'auth']],

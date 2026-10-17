@@ -12,8 +12,8 @@ import * as schema from 'simplycms/schema';
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
-// вручну (8 у `0003_seed.sql`, 23 у `demo/demo-seed.sql`: 19 + переклади товару й
-// модифікацій, `url_paths`, `slug_tokens` — М1 Task 10). Це не косметика:
+// вручну (8 у `0003_seed.sql`, 24 у `demo/demo-seed.sql`: 19 + переклади товару й
+// модифікацій, `url_paths`, `slug_tokens` — М1 Task 10, проєкція — Task 14). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
 // негативним контролем нижче) — тобто скан «чи знайдено хоч один INSERT»
@@ -22,7 +22,7 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 // незалежно від того, чи всі ЗНАЙДЕНІ вставки формально мають `id`.
 const SEEDS = [
   ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 8],
-  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 23],
+  ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 24],
 ] as const;
 
 /**
@@ -36,6 +36,8 @@ const NATURAL_KEY_TABLES = new Set([
   // Переклади (М1, майстер §3.1): PK `(<e>_id, locale)`, власного `id` немає.
   'public.product_translations',
   'public.product_modification_translations',
+  // Проєкція тексту (М1, Task 14): PK `(product_id, locale)`.
+  'public.catalog_product_texts',
 ]);
 
 /**

@@ -1,0 +1,105 @@
+import { sql } from 'drizzle-orm';
+import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+import { refreshProductTexts } from './product-texts';
+import { VALUE_COLUMNS, col, expectedRows } from './expected';
+import {
+  keyOf,
+  parityMismatches,
+  type FindOptions,
+  type MismatchKey,
+} from './parity';
+
+// Звірка проєкції з джерелом (І23). Одна логіка в двох режимах: read-only підрахунок
+// (`countProjectionMismatches`, для повноти мови) і виправлення (`reconcileProductTexts`).
+
+export type { MismatchKey };
+
+/** Відсутні, застарілі й зайві рядки: повний порівняльний FULL JOIN очікуваного зі збереженим. */
+async function setMismatches(
+  db: ActorDb,
+  o: FindOptions,
+): Promise<MismatchKey[]> {
+  const scope = {
+    productIds: o.productIds,
+    locales: o.locale ? [o.locale] : undefined,
+  };
+  const row = (alias: string) =>
+    sql.join(
+      VALUE_COLUMNS.map((c) => sql`${sql.raw(alias)}.${col(c)}`),
+      sql`, `,
+    );
+  const stored = [
+    o.productIds
+      ? sql`c.product_id in (${sql.join(
+          o.productIds.map((id) => sql`${id}::uuid`),
+          sql`, `,
+        )})`
+      : sql`true`,
+    o.locale ? sql`c.locale = ${o.locale}` : sql`true`,
+  ];
+  const res = await db.execute<{ product_id: string; locale: string }>(sql`
+    select coalesce(e.product_id, c.product_id) as product_id,
+           coalesce(e.locale, c.locale) as locale
+      from (${expectedRows(scope)}) e
+      full join (select * from public.catalog_product_texts c
+                  where ${sql.join(stored, sql` and `)}) c
+        on c.product_id = e.product_id and c.locale = e.locale
+     where e.product_id is null or c.product_id is null
+        or (${row('e')}) is distinct from (${row('c')})
+     order by 1, 2
+     ${o.limit === undefined ? sql`` : sql`limit ${o.limit}`}`);
+  return res.rows.map((r) => ({ productId: r.product_id, locale: r.locale }));
+}
+
+/** Усі розбіжності (без дублів) за обраним зрізом; read-only. */
+export async function findProjectionMismatches(
+  db: ActorDb,
+  o: FindOptions = {},
+): Promise<MismatchKey[]> {
+  const limit = o.limit ?? Number.POSITIVE_INFINITY;
+  const set = await setMismatches(db, {
+    ...o,
+    limit: Number.isFinite(limit) ? limit : undefined,
+  });
+  const seen = new Set(set.map(keyOf));
+  const extra = await parityMismatches(db, o, Math.max(limit - set.length, 0));
+  return [...set, ...extra.filter((k) => !seen.has(keyOf(k)))].slice(0, limit);
+}
+
+/**
+ * Скільки рядків проєкції мови розходяться з джерелом (відсутні + застарілі +
+ * зайві + непаритетні). Read-only режим тієї самої звірки: для повноти мови
+ * (`completeness.missingProjection`). Набір мов читається під спільним замком.
+ */
+export async function countProjectionMismatches(
+  db: ActorDb,
+  locale: string,
+): Promise<number> {
+  await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+  return (await findProjectionMismatches(db, { locale })).length;
+}
+
+/**
+ * Звіряє проєкцію з джерелом і виправляє розбіжності (до `limit` рядків за виклик):
+ * `mismatched` — знайдено, `fixed` — після перерахунку збіглося. Різниця — те, що
+ * refresh виправити не може (rich-текст без вмісту, вставлений в обхід команди):
+ * його треба виправити в джерелі, тому воно лишається видимим.
+ */
+export async function reconcileProductTexts(
+  db: ActorDb,
+  { limit }: { limit: number },
+): Promise<{ mismatched: number; fixed: number }> {
+  await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+  const found = await findProjectionMismatches(db, { limit });
+  if (found.length === 0) return { mismatched: 0, fixed: 0 };
+  const products = [...new Set(found.map((k) => k.productId))];
+  await refreshProductTexts(db, products);
+  const still = new Set(
+    (await findProjectionMismatches(db, { productIds: products })).map(keyOf),
+  );
+  return {
+    mismatched: found.length,
+    fixed: found.filter((k) => !still.has(keyOf(k))).length,
+  };
+}

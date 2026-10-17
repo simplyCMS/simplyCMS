@@ -1,4 +1,9 @@
 import { eq } from 'drizzle-orm';
+import type { ActorDb } from 'simplycms/db';
+import {
+  buildMissingProjection,
+  dropLocaleProjection,
+} from 'simplycms/catalog-projection';
 import { z } from 'zod';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { defineOperation } from 'simplycms/operations';
@@ -23,6 +28,14 @@ const TRANSITIONS: Readonly<Record<Language['status'], readonly string[]>> = {
   disabled: ['draft', 'published'],
 };
 
+/** Розмір пакета дозбірки проєкції в одній транзакції переходу. */
+const PROJECTION_BATCH = 2000;
+
+/** Дозбирає всю відсутню проєкцію мови (замок `languages-set` ексклюзивний — гонки немає). */
+async function buildProjection(db: ActorDb, code: string): Promise<void> {
+  while ((await buildMissingProjection(db, code, PROJECTION_BATCH)) > 0);
+}
+
 export const languagesSetStatus = defineOperation({
   id: 'languages.setStatus',
   permission: 'settings.manage',
@@ -36,6 +49,17 @@ export const languagesSetStatus = defineOperation({
     if (row.status === input.status) return toView(row);
     if (row.isDefault || !TRANSITIONS[row.status].includes(input.status))
       throw invalid('status');
+    const [updated] = await db
+      .update(languages)
+      .set({ status: input.status })
+      .where(eq(languages.code, input.code))
+      .returning();
+    // Проєкція тексту живе лише в `draft`/`published` (§3.5): вихід у `disabled`
+    // її знімає, повернення — дозбирає з адрес і джерела, що з'явились за час вимкнення.
+    if (input.status === 'disabled') await dropLocaleProjection(db, input.code);
+    else if (row.status === 'disabled') await buildProjection(db, input.code);
+    // Повноту міряємо ПІСЛЯ зміни статусу (набір мов проєкції — з `languages`):
+    // відмова відкочує всю транзакцію, тож мова лишається в попередньому статусі.
     if (input.status === 'published') {
       const c = await completeness(db, input.code);
       if (!c.complete)
@@ -43,11 +67,6 @@ export const languagesSetStatus = defineOperation({
           { path: ['status'], code: 'language_incomplete' },
         ]);
     }
-    const [updated] = await db
-      .update(languages)
-      .set({ status: input.status })
-      .where(eq(languages.code, input.code))
-      .returning();
     await bumpCacheGeneration(db, CACHE_KEYS.languages);
     return toView(updated!);
   },

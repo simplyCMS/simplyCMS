@@ -20,6 +20,7 @@ const CRUD: Cmd[] = ['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
  */
 const CATALOG = [
   'banners',
+  'catalog_product_texts',
   'discount_conditions',
   'discount_groups',
   'discount_targets',

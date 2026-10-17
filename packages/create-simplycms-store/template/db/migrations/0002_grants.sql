@@ -62,6 +62,7 @@ grant execute on function app.current_user_id() to app_runtime, app_user, app_ad
 -- `is_active` переїхала в запити (TS), бо це правило показу, а не безпеки.
 grant select on table
   public.banners,
+  public.catalog_product_texts,
   public.discount_conditions,
   public.discount_groups,
   public.discount_targets,
@@ -148,6 +149,7 @@ grant select, insert, update, delete on table
   -- ні хеші токенів, ні чужі відповіді не потрібні.
   public.api_tokens,
   public.banners,
+  public.catalog_product_texts,
   public.category_rules,
   public.discount_conditions,
   public.discount_groups,

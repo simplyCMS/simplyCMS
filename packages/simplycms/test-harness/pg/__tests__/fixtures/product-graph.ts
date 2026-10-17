@@ -27,6 +27,7 @@ import {
 } from './product-graph-rows';
 import { modificationSql } from './product-graph-modification';
 import { valueSql } from './product-graph-values';
+import { otherLocalePathsSql, projectionSql } from './product-graph-projection';
 
 export * from './product-graph-types';
 export { PRIMARY, slugTokenRowSql, urlPathRowSql } from './product-graph-rows';
@@ -81,6 +82,9 @@ export function productGraphStatements(spec: ProductGraphSpec): string[] {
     out.push(...modificationSql(spec.id, m));
   for (const v of spec.values ?? [])
     out.push(...valueSql({ kind: 'product', id: spec.id }, v));
+  // Стан, еквівалентний командам (І23): адреса в кожній активній мові й рядки проєкції.
+  if (spec.addresses !== false)
+    out.push(otherLocalePathsSql(spec.id, spec.slug), projectionSql(spec.id));
   return out;
 }
 

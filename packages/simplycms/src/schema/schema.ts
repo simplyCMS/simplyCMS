@@ -486,6 +486,11 @@ const sourceHashes = () =>
 const translatedAt = () =>
 	timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull();
 
+// Регекс «є хоч один непорожній символ» (ARE Postgres); літерал `\uXXXX` розбирає сам Postgres.
+const NON_BLANK = sql.raw(
+	String.raw`'[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]'`,
+);
+
 export const productTranslations = pgTable("product_translations", {
 	productId: uuid("product_id").notNull(),
 	locale: text().notNull(),
@@ -510,6 +515,16 @@ export const productTranslations = pgTable("product_translations", {
 		}).onDelete("restrict"),
 	index("idx_product_translations_locale").on(table.locale),
 	check("product_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+	// Плоске поле або NULL, або з текстом (майстер §3.4: порожнє нормалізується до NULL).
+	// Це БД-гарантія вхідної умови SQL-предиката `is_translated` проєкції
+	// `catalog_product_texts` (`src.f IS NULL OR loc.f IS NOT NULL`): `''` чи самі
+	// пробіли в обхід команди дали б там хибне «перекладено». Клас «порожніх» символів —
+	// той самий, що `INVISIBLE_RUN` у `domain/translations/text.ts`. Rich-поле `description`
+	// SQL не перевіряє: його порожнеча визначається розміткою (звірка проєкції ловить розбіжність).
+	check("product_translations_name_text", sql`${table.name} IS NULL OR ${table.name} ~ ${NON_BLANK}`),
+	check("product_translations_short_description_text", sql`${table.shortDescription} IS NULL OR ${table.shortDescription} ~ ${NON_BLANK}`),
+	check("product_translations_meta_title_text", sql`${table.metaTitle} IS NULL OR ${table.metaTitle} ~ ${NON_BLANK}`),
+	check("product_translations_meta_description_text", sql`${table.metaDescription} IS NULL OR ${table.metaDescription} ~ ${NON_BLANK}`),
 ]);
 
 // Складений FK на `(product_id, id)` модифікації: переклад не може вказати на модифікацію
@@ -702,6 +717,37 @@ export const slugTokens = pgTable("slug_tokens", {
 	check("slug_tokens_one_target", sql`num_nonnulls(${table.modificationId}) = 1`),
 	check("slug_tokens_modification_scope", sql`${table.modificationId} IS NULL OR ${table.scopeId} IS NOT NULL`),
 	check("slug_tokens_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
+]);
+
+// Проєкція тексту товару для вітрини (М1, Task 14, І23): текст УЖЕ з fallback на
+// основну мову, `is_translated` = «перекладено для SEO» (§3.4), `path` — поточна адреса
+// мови. ПОХІДНА таблиця: оновлюється синхронно в транзакції команди (`refreshProductTexts`),
+// істина — `product_translations` + `url_paths`; розбіжність ловить `reconcileProductTexts`.
+// Рядки лише для мов `draft`/`published` і лише для товарів з поточною адресою в мові.
+export const catalogProductTexts = pgTable("catalog_product_texts", {
+	productId: uuid("product_id").notNull(),
+	locale: text().notNull(),
+	name: text().notNull(),
+	shortDescription: text("short_description"),
+	description: text(),
+	metaTitle: text("meta_title"),
+	metaDescription: text("meta_description"),
+	path: textC().notNull(),
+	isTranslated: boolean("is_translated").notNull(),
+	updatedAt: translatedAt(),
+}, (table) => [
+	primaryKey({ columns: [table.productId, table.locale], name: "catalog_product_texts_pkey" }),
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "catalog_product_texts_product_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.locale],
+			foreignColumns: [languages.code],
+			name: "catalog_product_texts_locale_fkey"
+		}).onDelete("cascade"),
+	index("idx_catalog_product_texts_locale_path").on(table.locale, table.path),
 ]);
 
 export const plugins = pgTable("plugins", {

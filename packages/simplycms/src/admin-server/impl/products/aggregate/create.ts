@@ -5,6 +5,7 @@ import { defineOperation } from 'simplycms/operations';
 import { advisoryXactLockShared } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { createPathsForEntity } from 'simplycms/addressing';
+import { refreshProductTexts } from 'simplycms/catalog-projection';
 import { SLUG_FORMAT, slugify } from 'simplycms/domain/slugs';
 import { planTranslationWrite } from 'simplycms/domain/translations';
 import { getLanguagePack } from 'simplycms/i18n';
@@ -108,6 +109,8 @@ export const productsCreate = defineOperation({
     if (!own) throw new Error('[products.create] немає адреси основної мови');
     // М1-TEMP: зноситься в Task 17
     await db.update(products).set({ slug: own }).where(eq(products.id, id));
+    // Проєкція для ВСІХ мов draft/published: fallback-рядки теж потрібні вітрині (І23).
+    await refreshProductTexts(db, [id]);
     return { id, version: 1, paths: Object.fromEntries(paths) };
   },
 });

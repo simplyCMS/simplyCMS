@@ -14,6 +14,7 @@ import {
   fieldToWire,
   sourceFieldHash,
 } from 'simplycms/translations';
+import { refreshProductTexts } from 'simplycms/catalog-projection';
 import { assertKnownLocales, loadState, lockProduct } from './load';
 import { bumpProduct } from './mirror';
 import {
@@ -104,6 +105,7 @@ export const productsSaveTranslation = defineOperation({
         );
     });
     await applyTranslationPlan(db, SPEC, input.id, plan);
+    await refreshProductTexts(db, [input.id], [input.locale]);
     return { version: await bumpProduct(db, input.id) };
   },
 });

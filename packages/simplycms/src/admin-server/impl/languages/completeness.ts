@@ -1,18 +1,23 @@
 import { sql } from 'drizzle-orm';
+import { countProjectionMismatches } from 'simplycms/catalog-projection';
 import type { ActorDb } from 'simplycms/db';
 
 export interface Completeness {
   readonly complete: boolean;
   readonly missingPaths: number;
   readonly missingTokens: number;
-  /** Проєкція мови з'явиться з Task 14; до того — завжди 0. */
+  /**
+   * Розбіжності проєкції тексту мови із джерелом: відсутні + застарілі + зайві
+   * (той самий розрахунок, що `reconcileProductTexts`, лише читання). Для мови
+   * `disabled` проєкції немає за побудовою — 0.
+   */
   readonly missingProjection: number;
 }
 
 /**
  * Повнота мови (І16): кожен товар має поточну адресу, кожна модифікація —
- * поточний токен у цій мові. Публікація без повноти дала б 404 на сторінках,
- * які в основній мові існують. Рахуємо від самих сутностей, а не від адрес
+ * поточний токен у цій мові, проєкція тексту товарів збігається з джерелом.
+ * Публікація без повноти дала б 404 на сторінках, які в основній мові існують. Рахуємо від самих сутностей, а не від адрес
  * основної мови: сутність без адреси в основній теж є дефектом повноти.
  */
 export async function completeness(
@@ -33,7 +38,7 @@ export async function completeness(
       ) as tokens`);
   const missingPaths = Number(res.rows[0]?.paths ?? 0);
   const missingTokens = Number(res.rows[0]?.tokens ?? 0);
-  const missingProjection = 0;
+  const missingProjection = await countProjectionMismatches(db, code);
   return {
     complete: missingPaths + missingTokens + missingProjection === 0,
     missingPaths,

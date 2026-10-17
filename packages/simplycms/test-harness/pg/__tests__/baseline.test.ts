@@ -159,7 +159,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     // `product_modification_translations`, `product_property_value_translations`,
     // `modification_property_value_translations`) та зображення (`product_images`,
     // `product_image_translations`).
-    expect(tables.length).toBe(57);
+    // 57 → 58: М1 Task 14 — проєкція тексту товару `catalog_product_texts`.
+    expect(tables.length).toBe(58);
     for (const expected of [
       'product_translations',
       'product_modification_translations',
@@ -178,6 +179,7 @@ describe('канон міграцій: накат на чисту БД', () => {
       'url_paths',
       'slug_tokens',
       'cache_generations',
+      'catalog_product_texts',
     ])
       expect(tables).toContain(expected);
     // Схем, крім public і app, baseline не створює.

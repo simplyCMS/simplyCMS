@@ -107,6 +107,9 @@ simplyCMS/
 │   │   ├── src/addressing/       # T2 Реєстри адрес і мовних токенів: createPathsForEntity, setExplicitPath,
 │   │   │                         #    copyPathsForLocale, resolvePath, publicNames. Upward: db. Класи
 │   │   │                         #    помилок — з T0. server-only (Мультимовність М1, Task 5)
+│   │   ├── src/catalog-projection/ # T2 Проєкція тексту товару catalog_product_texts (текст з fallback,
+│   │   │                         #    is_translated, поточна адреса): refreshProductTexts, buildMissingProjection,
+│   │   │                         #    reconcileProductTexts. Upward: db, translations. server-only (М1, Task 14)
 │   │   ├── src/operations/       # T2 Опис операції (defineOperation), виконавець з явним суб'єктом
 │   │   │                         #    (executeOperation), assertVersionThenHash; /server — invokeFromServerFn.
 │   │   │                         #    Реєстр CORE_OPERATIONS — у admin-server/impl. http/ — адаптер /api/v1
