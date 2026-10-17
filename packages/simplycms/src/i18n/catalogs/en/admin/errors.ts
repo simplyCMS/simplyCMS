@@ -64,6 +64,8 @@ export const messages: Catalog = {
     'This image does not belong to this record — upload it again',
   'admin.errors.reviewNotFound':
     'Review not found — the list has been refreshed',
+  'admin.errors.concurrentChange':
+    'The data was just changed concurrently — please retry',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

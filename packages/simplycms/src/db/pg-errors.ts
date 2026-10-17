@@ -1,4 +1,7 @@
-import { AdminConflictError } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  AdminConflictError,
+} from 'simplycms/contracts/domain-errors';
 
 /**
  * Помилки Postgres у вигляді, придатному для доменного коду — ЄДИНИЙ розбір
@@ -37,6 +40,17 @@ export function isForeignKeyViolation(error: unknown): boolean {
   return pgErrorInfo(error).code === '23503';
 }
 
+/**
+ * Часткові UNIQUE «одна поточна адреса/токен на мову» (М1, Task 14): їх порушує лише
+ * паралельна вставка того самого поточного запису (`languages.fill` під KEY SHARE не
+ * чекає команду), а не зайняте значення — тож це «паралельна зміна, повторіть», а не
+ * `path_taken`/`slug_taken` (ті — лише для UNIQUE самого шляху/slug).
+ */
+const CONCURRENT_CURRENT: ReadonlySet<string> = new Set([
+  'idx_url_paths_current_product',
+  'idx_slug_tokens_current_modification',
+]);
+
 const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {
   '23505': 'unique',
   '23503': 'reference',
@@ -48,6 +62,11 @@ const KIND_BY_CODE: Record<string, AdminConflictError['kind']> = {
  */
 export function toAdminConflict(error: unknown): AdminConflictError | null {
   const { code, constraint } = pgErrorInfo(error);
+  if (code === '23505' && constraint && CONCURRENT_CURRENT.has(constraint))
+    return new AdminConflictError(
+      'state',
+      ADMIN_STATE_CONSTRAINT.concurrentChange,
+    );
   const kind = code ? KIND_BY_CODE[code] : undefined;
   if (!kind) return null;
   return new AdminConflictError(kind, constraint ?? null);

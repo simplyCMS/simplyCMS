@@ -117,7 +117,9 @@ export async function setExplicitPath(
       isCurrent: true,
     });
   } catch (error) {
-    if (isUniqueViolation(error))
+    // Лише UNIQUE самого шляху означає «зайнято»; частковий UNIQUE поточної адреси —
+    // паралельна вставка, її розбирає межа (`toAdminConflict`: «повторіть»).
+    if (isUniqueViolation(error, 'url_paths_locale_path_key'))
       throw new AdminConflictError('unique', 'path_taken');
     throw error;
   }

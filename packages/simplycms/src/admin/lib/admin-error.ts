@@ -98,6 +98,8 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.reviewNotFound]: 'admin.errors.reviewNotFound',
   // Е6д-23: версія відгуку застаріла — сам текст належить каталогу відгуків.
   [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
+  // М1 Task 14: паралельна зміна поточної адреси/токена — повторити.
+  [ADMIN_STATE_CONSTRAINT.concurrentChange]: 'admin.errors.concurrentChange',
   // Е6д-22: файл ще використовується.
 } satisfies Record<AdminStateConstraint, MessageKey>;
 

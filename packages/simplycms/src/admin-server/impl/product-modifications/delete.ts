@@ -16,8 +16,9 @@ export interface ModificationsToDelete {
  * 🔴 Порядок id — той самий, у якому `languages.fill` бере `FOR KEY SHARE` модифікацій
  * (`copyTokensForLocale`); власний DELETE ішов би в порядку плану (heap при seq scan),
  * і два пакети зустрічались би на рядках у протилежних порядках (40P01). Викликач
- * тримає корінь товару (ієрархія «корінь -> модифікації», `load.ts`). Інший код рядки
- * модифікацій напряму не видаляє — стереже тест-сканер `modifications-deleter`.
+ * тримає корінь товару (порядок «set -> корінь -> модифікації», `lock-order.ts`). Інший код
+ * рядки модифікацій напряму не видаляє: узагальнений DELETE фабрики (`removeResourceRows`)
+ * на цій таблиці кидає помилку, сирі й аліасні DELETE ловить сканер `modifications-deleter`.
  */
 export async function deleteModifications(
   db: ActorDb,

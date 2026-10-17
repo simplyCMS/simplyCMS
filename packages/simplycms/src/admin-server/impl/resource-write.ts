@@ -1,4 +1,10 @@
-import { eq, inArray, type Column, type Table } from 'drizzle-orm';
+import {
+  eq,
+  getTableName,
+  inArray,
+  type Column,
+  type Table,
+} from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import {
   sanitizeRichColumns,
@@ -82,11 +88,22 @@ export async function updateResourceRows(
   return out;
 }
 
+/** Таблиці з ЄДИНИМ видалячем: узагальнений DELETE на них — помилка конфігурації. */
+const OWN_DELETER: Readonly<Record<string, string>> = {
+  // Порядок замків агрегата товару, пункт (4) `products/aggregate/lock-order.ts`.
+  product_modifications: 'deleteModifications (хук `deleteRows`)',
+};
+
 export async function removeResourceRows(
   db: ActorDb,
   table: Table,
   ids: readonly unknown[],
 ): Promise<{ count: number }> {
+  const own = OWN_DELETER[getTableName(table)];
+  if (own)
+    throw new Error(
+      `[admin-server] ${getTableName(table)}: видалення лише через ${own}`,
+    );
   const id = idColumn(table);
   const rows = await db
     .delete(table)

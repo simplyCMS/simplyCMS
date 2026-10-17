@@ -101,7 +101,8 @@ export async function setExplicitToken(
       isCurrent: true,
     });
   } catch (error) {
-    if (isUniqueViolation(error))
+    // Як в адрес: «зайнято» — лише UNIQUE самого slug; поточний — межа (`toAdminConflict`).
+    if (isUniqueViolation(error, 'slug_tokens_scope_slug_key'))
       throw new AdminConflictError('unique', 'slug_taken');
     throw error;
   }

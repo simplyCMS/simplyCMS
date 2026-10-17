@@ -5,10 +5,10 @@ import {
   productImageTranslations,
   productImages,
   productModifications,
-  products,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
+import { lockAggregateRoots } from '../products/aggregate/lock-order';
 import { deleteModifications } from './delete';
 
 /**
@@ -49,26 +49,19 @@ export const productModificationsOps = defineAdminResource({
   media: { entityType: 'product_modification', columns: ['images'] },
   // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
   // зникають; їхні файли належать товару, а не модифікації.
-  // М1: каскад фото модифікації серіалізується з командами агрегата товару
-  // (`lockProduct` = `FOR NO KEY UPDATE` кореня; порядок за id — без взаємного блокування).
+  // М1: каскад фото модифікації серіалізується з командами агрегата товару: корені —
+  // тим самим замком кореня агрегата (спільний `languages-set` -> NO KEY UPDATE за id).
   lockOnRemove: async (db, ids) => {
     if (ids.length === 0) return;
     const roots = await db
       .selectDistinct({ id: productModifications.productId })
       .from(productModifications)
       .where(inArray(productModifications.id, [...ids]));
-    if (roots.length === 0) return;
-    await db
-      .select({ id: products.id })
-      .from(products)
-      .where(
-        inArray(
-          products.id,
-          roots.map((r) => r.id),
-        ),
-      )
-      .orderBy(products.id)
-      .for('no key update');
+    await lockAggregateRoots(
+      db,
+      roots.map((r) => r.id),
+      'no key update',
+    );
   },
   // М1 (Task 14): DELETE — лише єдиним видалячем модифікацій (`FOR UPDATE` за id).
   deleteRows: (db, ids) => deleteModifications(db, { ids }),

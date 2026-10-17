@@ -91,9 +91,13 @@
   `reconcileProductTexts`/`countProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
   `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
   дозбирає при поверненні; `languages.fill` і звірка беруть на товарах і модифікаціях лише `FOR KEY SHARE`
-  (за id, корінь раніше за модифікації), команди — `FOR NO KEY UPDATE`, `products.remove` — `FOR UPDATE` кореня першим
-  кроком; рядки `product_modifications` видаляє лише `deleteModifications` (`FOR UPDATE ORDER BY id`, хук ресурсу
-  `deleteRows`); fill і `setStatus` відмовляють з переліком id, якщо пакет не просувається;
+  (за id, корінь раніше за модифікації). Порядок замків агрегата — `languages-set` -> корені -> дочірні: замок кореня
+  (`lockAggregateRoots`: команди `FOR NO KEY UPDATE`, `products.remove` — `FOR UPDATE`, пакетний remove модифікацій) сам
+  бере спільний `languages-set` перед рядком кореня; рядки `product_modifications` видаляє лише `deleteModifications`
+  (`FOR UPDATE ORDER BY id`, хук ресурсу `deleteRows`; узагальнений DELETE фабрики на цій таблиці відмовляє); fill
+  пропускає вже наявну поточну адресу/токен мови (`ON CONFLICT` на частковий UNIQUE), а команда, що програла таку
+  паралельну вставку, отримує 409 `state: concurrent_change` («повторіть»), не `path_taken`/`slug_taken`; fill і
+  `setStatus` відмовляють з переліком id, якщо пакет не просувається;
   `completeness.missingProjection` — кількість усіх розбіжностей звірки.
 - **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
   дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з

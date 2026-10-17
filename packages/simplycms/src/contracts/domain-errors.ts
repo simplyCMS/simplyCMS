@@ -188,6 +188,9 @@ export const ADMIN_STATE_CONSTRAINT = {
   reviewNotFound: 'review_not_found',
   // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
   reviewChanged: 'review_changed',
+  // М1 Task 14: поточну адресу/токен мови паралельно вставив інший запис (`languages.fill`
+  // чи команда) — дані вільні, а не зайняті; дію варто просто повторити.
+  concurrentChange: 'concurrent_change',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */

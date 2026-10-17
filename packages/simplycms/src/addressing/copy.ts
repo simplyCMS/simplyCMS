@@ -18,7 +18,7 @@ import { publicNames } from './public-names';
 // запису в новій мові, тож повторний виклик продовжує, а не дублює.
 // 🔴 Вибір кандидатів — спільні фрагменти `copy-candidates.ts` (і для перевірки прогресу fill).
 // 🔴 Замки: лише `FOR KEY SHARE` на батьківських рядках, ЗАВЖДИ «товар -> модифікації»
-// і кожен рівень за id (ієрархія замків агрегата, `load.ts`). KEY SHARE сумісний із
+// і кожен рівень за id (порядок замків агрегата, `products/aggregate/lock-order.ts`). KEY SHARE сумісний із
 // `NO KEY UPDATE` команд і каскаду `SET NULL` розділу; паралельне видалення товару чи
 // модифікації до коміту інакше дало б на вставці FK 23503 — заблокований рядок, видалений
 // у чужій транзакції, після її коміту просто пропускається.
@@ -58,10 +58,18 @@ export async function copyPathsForLocale(
     productId: r.product_id,
     isCurrent: true,
   }));
-  await db
+  // Поточну адресу (L, товар) могла вставити паралельна команда (`setPath` під своїм
+  // коренем, KEY SHARE fill її не чекає): явна адреса — вже «не бракує», тож ціль —
+  // САМЕ частковий UNIQUE поточного запису; конфлікт шляху (`locale, path`) летить як є.
+  const inserted = await db
     .insert(urlPaths)
-    .values(values.map((v) => ({ id: randomUUID(), ...v })));
-  return values.length;
+    .values(values.map((v) => ({ id: randomUUID(), ...v })))
+    .onConflictDoNothing({
+      target: [urlPaths.locale, urlPaths.productId],
+      where: sql.raw('is_current and product_id is not null'),
+    })
+    .returning({ id: urlPaths.id });
+  return inserted.length;
 }
 
 /** Дзеркало для токенів модифікацій: простір `(locale, token_kind, scope_id)`. */
@@ -125,8 +133,14 @@ export async function copyTokensForLocale(
       isCurrent: true,
     };
   });
-  await db
+  // Як в адрес: ціль — частковий UNIQUE поточного токена модифікації в мові.
+  const inserted = await db
     .insert(slugTokens)
-    .values(values.map((v) => ({ id: randomUUID(), ...v })));
-  return values.length;
+    .values(values.map((v) => ({ id: randomUUID(), ...v })))
+    .onConflictDoNothing({
+      target: [slugTokens.locale, slugTokens.modificationId],
+      where: sql.raw('is_current and modification_id is not null'),
+    })
+    .returning({ id: slugTokens.id });
+  return inserted.length;
 }

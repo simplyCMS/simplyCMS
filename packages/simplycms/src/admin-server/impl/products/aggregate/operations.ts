@@ -116,7 +116,7 @@ export const productsRemove = defineOperation({
   input: z.object({ id: z.uuid(), expectedVersion }),
   output: z.object({ id: z.uuid() }),
   async run({ db, afterCommit }, input) {
-    // Корінь одразу `FOR UPDATE` (ієрархія, пункт (д)): DELETE товару інакше посилив
+    // Корінь одразу `FOR UPDATE` (порядок замків, пункт (3) `lock-order.ts`): DELETE товару інакше посилив
     // би `NO KEY UPDATE` уже після замків модифікацій.
     const version = await lockProductForRemove(db, input.id);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
