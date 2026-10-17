@@ -28,6 +28,8 @@ interface Props {
   /** Активну мову тримає власник (картка/сторінка створення): помилку сервера перемикає вкладку. */
   readonly translation: TranslationContextValue;
   readonly errorLocales?: ReadonlySet<string>;
+  /** Клієнтська (zod) помилка полів мов: власник позначає вкладки й перемикається на першу. */
+  readonly onInvalidLocales?: (locales: string[]) => void;
   readonly onSubmit: (values: ProductFormValues) => void | Promise<void>;
   readonly submitLabel: string;
   /**
@@ -50,6 +52,7 @@ export function ProductForm({
   card,
   translation,
   errorLocales,
+  onInvalidLocales,
   onSubmit,
   submitLabel,
   children,
@@ -65,7 +68,10 @@ export function ProductForm({
           <form
             onSubmit={form.handleSubmit(
               (values) => onSubmit(values),
-              () => toast.error(t('admin.products.fixFields')),
+              (errors) => {
+                onInvalidLocales?.(Object.keys(errors.texts ?? {}));
+                toast.error(t('admin.products.fixFields'));
+              },
             )}
             className="space-y-6"
           >

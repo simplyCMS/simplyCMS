@@ -106,6 +106,11 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
         mode="edit"
         translation={{ languages, primary, statuses, active, setActive }}
         errorLocales={rows.errorLocales}
+        onInvalidLocales={(locales) => {
+          rows.reset();
+          for (const l of locales)
+            rows.noteTextError(`texts.${l}.x`, setActive);
+        }}
         card={{
           productId,
           entityId: productId,

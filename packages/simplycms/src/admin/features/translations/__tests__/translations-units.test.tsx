@@ -31,8 +31,9 @@ vi.mock('simplycms/admin-server', async () =>
     await import('../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock(mocks),
 );
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  toast: { success: vi.fn(), error: toastError, info: vi.fn() },
 }));
 
 afterEach(() => {
@@ -200,5 +201,8 @@ describe('PathField', () => {
     await user.type(screen.getByLabelText(/Адреса/), '2');
     await user.click(screen.getByRole('button', { name: 'Зберегти адресу' }));
     expect(onSaved).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith(
+      'Такий URL (slug) уже зайнятий — змініть його',
+    );
   });
 });

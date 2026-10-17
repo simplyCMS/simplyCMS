@@ -55,6 +55,10 @@ function Body({ languages }: BodyProps) {
       mode="create"
       translation={{ languages, primary, statuses: {}, active, setActive }}
       errorLocales={rows.errorLocales}
+      onInvalidLocales={(locales) => {
+        rows.reset();
+        for (const l of locales) rows.noteTextError(`texts.${l}.x`, setActive);
+      }}
       card={{
         productId: null,
         entityId: newId,
