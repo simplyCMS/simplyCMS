@@ -16,6 +16,8 @@ import {
 import { renderSitemapXml } from 'simplycms/storefront/seo';
 import { normalizeStorefrontRequest } from '../../../src/storefront-routes/seo/normalize';
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
+import { defaultParseSearch } from '@tanstack/react-router';
+import { entitySearch } from '../../../src/storefront-routes/pages/entity-route';
 import { useAddressingDb } from './fixtures/addressing-db';
 import { create, exec, saveDescription } from './fixtures/product-aggregate';
 import { insertValueAt } from './fixtures/product-graph';
@@ -134,6 +136,31 @@ describe('адреса товару: реєстр, нормалізація і �
       `/${paths.uk}?mod=%22123%22`,
     );
     expect(await run(`/${paths.uk}?mod=%22123%22`)).toBeNull();
+  });
+
+  it('токен 1e5 (з назви «1E5»): ?mod=1e5 → один 301 на канонічну форму ТОГО САМОГО токена, сторінка з цією модифікацією', async () => {
+    const { id, version: v, paths } = await translated();
+    const mod = randomUUID();
+    await saveDescription(id, v, {
+      modifications: { upsert: [{ id: mod, texts: { uk: { name: '1E5' } } }] },
+    });
+    const [{ slug }] = (await db.q(
+      `select slug from public.slug_tokens where modification_id = $1 and locale = 'uk'`,
+      [mod],
+    )) as Array<{ slug: string }>;
+    expect(slug).toBe('1e5');
+    const res = await run(`/${paths.uk}?mod=1e5`);
+    expect(res?.status).toBe(301);
+    // Не `%22100000%22`: роутер розібрав би 1e5 як число, токен береться з сирого query.
+    expect(res?.headers.get('location')).toBe(`/${paths.uk}?mod=%221e5%22`);
+    expect(await run(`/${paths.uk}?mod=%221e5%22`)).toBeNull();
+    const shown = await page('uk', paths.uk!);
+    expect(shown?.product_modifications.find((m) => m.id === mod)?.slug).toBe(
+      '1e5',
+    );
+    expect(entitySearch(defaultParseSearch('?mod=%221e5%22'))).toEqual({
+      mod: '1e5',
+    });
   });
 
   it('видалений товар: історії немає → нормалізація мовчить, сторінка null (404)', async () => {

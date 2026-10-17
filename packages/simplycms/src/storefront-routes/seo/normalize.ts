@@ -78,6 +78,24 @@ function sameOriginPath(pathname: string): string | null {
 }
 
 /**
+ * Query запиту, розібраний як у роутера, АЛЕ токен `mod` береться рядком із сирого
+ * `url.search`. Роутер JSON-розбирає значення: `1e5` стає `100000`, 17+ цифр
+ * втрачають точність, `true` — булеве; нормалізація, що взяла б розібране значення,
+ * 301-ила б на ІНШИЙ токен. Токен — завжди рядок (`entitySearch`), а лапкована форма
+ * `?mod=%221e5%22` читається назад рівно як `'1e5'`, тож 301 веде на канонічну форму
+ * ТОГО САМОГО токена і без петлі. Масив (`mod=a&mod=b`) роутер відкидає сам.
+ */
+function parseQueryKeepingToken(url: URL): Record<string, unknown> {
+  const query = defaultParseSearch(url.search) as Record<string, unknown>;
+  const raw = url.searchParams.get('mod');
+  const parsed = query.mod;
+  if (raw !== null && !Array.isArray(parsed) && typeof parsed !== 'string') {
+    query.mod = raw;
+  }
+  return query;
+}
+
+/**
  * Відповідь нормалізації або `null` (запит іде далі в роутер).
  *
  * - префікс відомої, але неопублікованої мови → 404;
@@ -111,7 +129,7 @@ export async function normalizeStorefrontRequest(
 
   const history = await applyHistory(
     safePath,
-    defaultParseSearch(url.search),
+    parseQueryKeepingToken(url),
     set,
     lookup,
   );

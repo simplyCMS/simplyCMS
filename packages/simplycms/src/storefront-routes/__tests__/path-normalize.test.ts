@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  defaultParseSearch,
 } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { createLocaleRewrite } from '../locale/rewrite';
@@ -127,8 +128,11 @@ describe('нормалізація адреси: ОДИН 301 (І20)', () => {
       ['false', '/new?mod=%22false%22'],
       ['null', '/new?mod=%22null%22'],
       ['123', '/new?mod=%22123%22'],
-      // Експонента: роутер переписує її на число ще до валідатора — токен не відновити.
-      ['1e5', '/new?mod=%22100000%22'],
+      // Роутер JSON-розбирає ці значення в ІНШЕ число (100000, втрата точності), але токен
+      // береться рядком із сирого query — 301 веде на канонічну форму ТОГО САМОГО токена.
+      ['1e5', '/new?mod=%221e5%22'],
+      ['5e-3', '/new?mod=%225e-3%22'],
+      ['12345678901234567', '/new?mod=%2212345678901234567%22'],
     ] as const;
 
     it.each(CASES)(
@@ -141,6 +145,14 @@ describe('нормалізація адреси: ОДИН 301 (І20)', () => {
         expect(routerRedirects(to)).toBe(false);
       },
     );
+
+    it('канонічна форма читається назад тим самим токеном (вибір модифікації)', () => {
+      for (const token of ['1e5', '12345678901234567', 'true', '5']) {
+        const to = `/new?mod=${encodeURIComponent(JSON.stringify(token))}`;
+        const parsed = defaultParseSearch(to.slice(to.indexOf('?')));
+        expect(entitySearch(parsed)).toEqual({ mod: token });
+      }
+    });
 
     it('validateSearch сторінки зводить будь-який примітив до рядка, не примітив відкидає', () => {
       expect(entitySearch({ mod: 5 })).toEqual({ mod: '5' });

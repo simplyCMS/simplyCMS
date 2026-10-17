@@ -32,9 +32,9 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 
 ### 1.3 SEO-інфраструктура — мінімальна
 - **`seoResolver` не існує** взагалі.
-- Тільки сторінка товару (`packages/simplycms/routes/storefront/_storefront/catalog/$sectionSlug/$productSlug.tsx`) має повний набір (canonical, og, JSON-LD Product, 301 на канонічну секцію). Решта роутів (`catalog/index`, `$sectionSlug/index`, `properties/*`) — **без canonical**, часто без `description`.
+- Тільки сторінка товару (`packages/simplycms/routes/storefront/_storefront/$path.tsx`, адреса `/<path>` з реєстру `url_paths`, М1) має повний набір (canonical, hreflang, og, JSON-LD Product, один 301 нормалізації на поточну адресу). Решта роутів (`catalog/index`, `$sectionSlug/index`, `properties/*`) — **без canonical**, часто без `description`.
 - `meta_title`/`meta_description` на `products` і `sections` **не споживаються** роутами (хардкод-фолбеки).
-- `packages/simplycms/src/storefront-routes/seo/sitemap.ts` (`buildSitemapXml`): `/`, `/catalog`, `/properties`, `/catalog/$sectionSlug`, `/catalog/$sectionSlug/$productSlug`. **Не включає** жодних property/option лендингів і жодних filter-URL.
+- `packages/simplycms/src/storefront-routes/seo/sitemap.ts` (`buildSitemapXml`): `/`, `/catalog`, `/properties`, `/catalog/$sectionSlug`, товари `/<path>` (рядок на опубліковану мову з `xhtml:link`, М1). **Не включає** жодних property/option лендингів і жодних filter-URL.
 - `packages/simplycms/src/storefront-routes/seo/robots.txt` (`buildRobotsTxt`): Allow `/`, Disallow `/admin/`, `/api/`, `/auth/callback`. **Не керує** параметрами фільтрів/сортування/пагінації.
 - `simplycms.config.ts` `seo`: лише `siteName`, `defaultTitle`, `titleTemplate`. **Немає** `defaultDescription`, `baseUrl`, `ogImage` — потрібно для fallback-ланцюжка resolver-а.
   > **Примітка (з К3-Е6б):** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
@@ -102,7 +102,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 | Тип сторінки | robots | canonical |
 |---|---|---|
 | Секція `/catalog/$sectionSlug` | index, follow | self |
-| Товар `/catalog/$sectionSlug/$productSlug` | index, follow | self (вже є) |
+| Товар `/<path>` (`/<мова>/<path>`) | index, follow | self (вже є) |
 | Single-facet лендинг (секція×опція, `is_filterable` + достатньо товарів) | index, follow | self |
 | Multi-facet / query-параметри | noindex, follow | → секція |
 | Сортування / view / пагінація >1 | noindex, follow | → стор.1 / база |
@@ -181,7 +181,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - [ ] **Маркер індексованості лендингу:** використовувати наявний `is_filterable`, чи окреме `has_page`/нове поле на властивості/опції?
 
 ## 8. Clarify — URL-форма single-facet лендингу (потребує рішення)
-Колізія: наявний `/catalog/$sectionSlug/$productSlug` робить `/catalog/shoes/nike` неоднозначним (товар чи лендинг бренду?). Варіанти:
+Колізія (історична; товар уже не під `/catalog/…`, але двосегментний `/catalog/shoes/nike` лишається вільним для лендингу): шлях лендингу «розділ × опція» не перетинається з адресою товару `/<path>`, проте мусить бути в реєстрі службових сегментів. Варіанти:
 - **A (рекоменд.):** зарезервований сегмент — `/catalog/$sectionSlug/filter/$propertySlug/$optionSlug` (Bitrix-style, без колізій, явно SEO).
 - **B:** компактний — `/catalog/$sectionSlug/$propertySlug-$optionSlug` (коротший, але парсинг і ризик колізій зі слагами товарів).
 - **C:** залишити лише глобальні `/properties/$propertySlug/$optionSlug` (без секційного контексту — слабший SEO для «категорія+бренд»).
