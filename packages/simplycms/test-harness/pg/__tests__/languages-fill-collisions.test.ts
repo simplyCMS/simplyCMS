@@ -85,6 +85,8 @@ describe('fill <-> команда в новій мові (Task 14, раунд 5)
       `select 1 from public.products where id = '${q}' for update`,
       () => fillAll('sk'),
       setPath(p, 'sk', 'h1-explicit'),
+      // Сенс кейсу: команда комітить, не чекаючи на fill, — вона й не мусить блокуватись.
+      { second: 'loose' },
     );
     expect(out).toEqual(['ok', 'ok']);
     expect(await currentPath(p, 'sk')).toEqual(['h1-explicit']);
@@ -119,6 +121,8 @@ describe('fill <-> команда в новій мові (Task 14, раунд 5)
       `select 1 from public.products where id = '${lo.id}' for update`,
       () => fillAll('sr'),
       setToken(hi.id, hi.mod, 'sr', 'explicit-t'),
+      // Те саме: команда першою комітить повз застряглий fill, без черги.
+      { second: 'loose' },
     );
     expect(out).toEqual(['ok', 'ok']);
     expect(await currentToken(hi.mod, 'sr')).toEqual(['explicit-t']);

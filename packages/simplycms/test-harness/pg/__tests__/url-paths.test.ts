@@ -18,7 +18,7 @@ import {
 import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
 import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
 import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
-import { hold, sleep, until } from './fixtures/lock-holders';
+import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
 
 const CHECK = { code: '23514' };
 const UNIQUE = { code: '23505' };
@@ -114,7 +114,8 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       const second = admin((d) =>
         setExplicitPath(d, { kind: 'product', id: b }, 'uk', 'race-x'),
       ).catch((e: unknown) => e);
-      await sleep(300);
+      // Строго: вставка B мусить стати на унікальний індекс, а не просто стартувати.
+      await waitForBlockedTree(db, first, 1);
       first.release();
       await first.done;
       expect(await second).toMatchObject({

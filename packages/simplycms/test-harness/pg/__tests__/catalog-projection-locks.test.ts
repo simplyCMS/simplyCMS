@@ -17,7 +17,12 @@ import {
 } from 'simplycms/admin-server/impl';
 import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
 import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
-import { hold, sleep, until } from './fixtures/lock-holders';
+import {
+  hold,
+  until,
+  waitForBlockedTree,
+  waitForBlockedTreeOrSettled,
+} from './fixtures/lock-holders';
 import { insertModificationAt } from './fixtures/product-graph';
 import {
   create,
@@ -25,6 +30,9 @@ import {
   get,
   saveDescription,
 } from './fixtures/product-aggregate';
+
+// Кейс, що не дочекався черги, відпускає тримача: інакше його замок висів би до кінця файла.
+const RELEASE = { releaseOnFail: true } as const;
 
 describe('замки команди товару проти setStatus і fill (М1, Task 14, I-1)', () => {
   const db = useAddressingDb('simplycms_catalog_projection_locks');
@@ -37,18 +45,14 @@ describe('замки команди товару проти setStatus і fill (�
     throw new Error('fill не завершився');
   };
 
-  /** Команда: lockProduct -> пауза до `proceed` -> refresh, як текстова команда агрегата. */
+  /** Команда: lockProduct -> утримання до `proceed` -> refresh, як текстова команда агрегата. */
   const command = (id: string) => {
-    let proceed!: () => void;
-    const gate = new Promise<void>((r) => (proceed = r));
-    let locked = false;
-    const done = db.admin(async (d) => {
-      await lockProduct(d, id);
-      locked = true;
-      await gate;
-      await refreshProductTexts(d, [id]);
-    });
-    return { locked: () => locked, proceed, done };
+    const h = hold(
+      db,
+      (d) => lockProduct(d, id),
+      (d) => refreshProductTexts(d, [id]),
+    );
+    return { ...h, locked: h.acquired, proceed: h.release };
   };
   const settled = (p: Promise<unknown>) =>
     p.then(
@@ -73,7 +77,8 @@ describe('замки команди товару проти setStatus і fill (�
       code: 'lt',
       status: 'published',
     });
-    await sleep(500);
+    // Строго: setStatus (ексклюзивний languages-set) мусить стати в чергу за спільним set команди.
+    await waitForBlockedTree(db, cmd, 1, RELEASE);
     cmd.proceed();
     expect(await Promise.all([settled(cmd.done), settled(status)])).toEqual([
       'ok',
@@ -97,7 +102,9 @@ describe('замки команди товару проти setStatus і fill (�
     const cmd = command(id);
     await until('команда тримає рядок товару', cmd.locked);
     const fill = fillAll('bg');
-    await sleep(500);
+    // Нестрого: усі адреси вже скопійовано, fill може не торкнутись рядка товару й
+    // завершитись ok, не ставши в чергу.
+    await waitForBlockedTreeOrSettled(db, cmd, 1, [fill], RELEASE);
     cmd.proceed();
     expect(await Promise.all([settled(cmd.done), settled(fill)])).toEqual([
       'ok',
@@ -117,16 +124,11 @@ describe('замки команди товару проти setStatus і fill (�
       statement: (d: Parameters<typeof lockProduct>[0]) => Promise<void>,
       id: string,
     ) => {
-      let commit!: () => void;
-      const gate = new Promise<void>((r) => (commit = r));
-      let deleted = false;
-      const done = db.admin(async (d) => {
+      const h = hold(db, async (d) => {
         await lockProduct(d, id);
         await statement(d);
-        deleted = true;
-        await gate;
       });
-      return { deleted: () => deleted, commit, done };
+      return { ...h, deleted: h.acquired, commit: h.release };
     };
     const raceWith = async (
       id: string,
@@ -139,7 +141,8 @@ describe('замки команди товару проти setStatus і fill (�
         rm.done,
       ]);
       const other = concurrent();
-      await sleep(500);
+      // Строго: конкурент мусить стати на рядок, який видалення ще не закомітило.
+      await waitForBlockedTree(db, rm, 1, RELEASE);
       rm.commit();
       return Promise.all([settled(rm.done), settled(other)]);
     };
@@ -227,30 +230,25 @@ describe('замки команди товару проти setStatus і fill (�
       return { id, a: a!, b: b! };
     };
     /** T0 тримає KEY SHARE на b: видаляч зависає між замками a і b, fill встигає взяти b. */
-    const latch = (b: string) => {
-      let release!: () => void;
-      const gate = new Promise<void>((r) => (release = r));
-      let held = false;
-      const done = db.admin(async (d) => {
-        await d.execute(
+    const latch = (b: string) =>
+      hold(db, (d) =>
+        d.execute(
           sql`select 1 from public.product_modifications where id = ${b}::uuid for key share`,
-        );
-        held = true;
-        await gate;
-      });
-      return { held: () => held, release, done };
-    };
+        ),
+      );
     const race = async (
       b: string,
       remover: () => Promise<unknown>,
       code: string,
     ) => {
       const t0 = latch(b);
-      await until('T0 тримає KEY SHARE', t0.held);
+      await until('T0 тримає KEY SHARE', t0.acquired);
       const removal = remover();
-      await sleep(400);
+      // Строго: видаляч мусить дійти до a і стати на b (T0), перш ніж стартує fill.
+      await waitForBlockedTree(db, t0, 1, RELEASE);
       const fill = fillAll(code);
-      await sleep(400);
+      // Строго: fill бере b раніше за видаляча, тому стає в чергу (на T0 чи на видаляча).
+      await waitForBlockedTree(db, t0, 2, RELEASE);
       t0.release();
       return Promise.all([settled(removal), settled(fill), t0.done]);
     };
@@ -309,7 +307,8 @@ describe('замки команди товару проти setStatus і fill (�
     });
     await until('команда записала рядок', command.acquired);
     const recon = db.admin((d) => reconcileProductTexts(d, { limit: 1000 }));
-    await sleep(500);
+    // Строго: reconcile мусить стати на рядок товару, який тримає команда.
+    await waitForBlockedTree(db, command, 1, RELEASE);
     command.release();
     await Promise.all([command.done, recon]);
     expect(

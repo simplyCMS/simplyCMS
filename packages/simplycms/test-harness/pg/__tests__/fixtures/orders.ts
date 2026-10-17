@@ -93,32 +93,8 @@ export const restrictOrdersSelectForAdmin = async (dbUrl: string) => {
   );
 };
 
-/**
- * Опитує `pg_stat_activity` до дедлайну, поки не зʼявиться бекенд, який
- * блокує САМЕ `holderPid` (привʼязка через `pg_blocking_pids`, а не «будь-хто,
- * хто чекає»). Повертає pid і текст запиту, на якому він стоїть.
- */
-export const waitForBlockedBy = async (
-  dbUrl: string,
-  holderPid: number,
-  deadlineMs = 5_000,
-  stepMs = 25,
-): Promise<{ pid: number; query: string }> => {
-  const until = Date.now() + deadlineMs;
-  while (Date.now() < until) {
-    const rows = (await queryRows(
-      dbUrl,
-      `select pid, query from pg_stat_activity
-        where datname = current_database() and $1 = any(pg_blocking_pids(pid))`,
-      [holderPid],
-    )) as { pid: number; query: string }[];
-    if (rows.length > 0) return rows[0]!;
-    await new Promise((r) => setTimeout(r, stepMs));
-  }
-  throw new Error(
-    `[harness] за ${deadlineMs} мс ніхто не став на лок ${holderPid}`,
-  );
-};
+// `waitForBlockedBy` живе в `lock-holders.ts` (14б): один очікувач блокування на харнес.
+export { waitForBlockedBy } from './lock-holders';
 
 /** Кількість row-локів бекенду `pid` на позиціях і залишках. */
 export const rowLocksOnStock = async (
