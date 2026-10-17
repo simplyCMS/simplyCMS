@@ -15,7 +15,7 @@ import {
 import { completeness } from '../../../src/admin-server/impl/languages/completeness';
 import { sourceFieldHash } from 'simplycms/translations';
 import { PROJECTION_STEP } from '../../../../../scripts/dev-stand/generate-seed.mjs';
-import { useAddressingDb } from './fixtures/addressing-db';
+import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
 import {
   create,
   exec,
@@ -27,6 +27,7 @@ import { insertProductGraphAt } from './fixtures/product-graph';
 
 describe('проєкція тексту товару (М1, Task 14)', () => {
   const db = useAddressingDb('simplycms_catalog_projection');
+  const { addr } = pathHelpers(db);
   const reconcile = () =>
     db.admin((d) => reconcileProductTexts(d, { limit: 10_000 }));
   const clean = async () =>
@@ -312,11 +313,7 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
   it('крок проєкції сіду стенда будує рядки, еквівалентні командам', async () => {
     const { id } = await seed();
     // Історична адреса не повинна потрапити в проєкцію: крок бере лише `is_current`.
-    await db.w(
-      `insert into public.url_paths (id, locale, path, product_id, is_current)
-       values (gen_random_uuid(), 'uk', 'stara-adresa-' || $1::text, $1::uuid, false)`,
-      [id],
-    );
+    await addr('uk', `stara-adresa-${id}`, id, false);
     await db.q(`delete from public.catalog_product_texts`);
     await db.q(PROJECTION_STEP);
     expect((await proj(id, 'uk'))?.path).not.toContain('stara-adresa');
