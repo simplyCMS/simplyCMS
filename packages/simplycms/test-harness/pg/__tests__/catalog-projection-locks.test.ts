@@ -21,7 +21,7 @@ import {
   hold,
   until,
   waitForBlockedTree,
-  waitForBlockedTreeOrSettled,
+  waitForSettled,
 } from './fixtures/lock-holders';
 import { insertModificationAt } from './fixtures/product-graph';
 import {
@@ -102,9 +102,9 @@ describe('замки команди товару проти setStatus і fill (�
     const cmd = command(id);
     await until('команда тримає рядок товару', cmd.locked);
     const fill = fillAll('bg');
-    // Нестрого: усі адреси вже скопійовано, fill може не торкнутись рядка товару й
-    // завершитись ok, не ставши в чергу.
-    await waitForBlockedTreeOrSettled(db, cmd, 1, [fill], RELEASE);
+    // Усі адреси вже скопійовано: fill рядка товару не торкається й мусить завершитись
+    // ok повз команду (стати в чергу — інша поведінка, кейс тоді не про це).
+    await waitForSettled('fill завершився повз команду', fill, cmd);
     cmd.proceed();
     expect(await Promise.all([settled(cmd.done), settled(fill)])).toEqual([
       'ok',

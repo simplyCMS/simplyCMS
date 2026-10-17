@@ -67,8 +67,8 @@ describe('порядок замків агрегата: корінь -> моди
       `select 1 from public.products where id = '${a}' for share`,
       () => db.admin((d) => sectionsOps.removeIn(d, [{ id: section }], [])),
       () => fillAll('lv'),
-      // fill може не стати в чергу (нічого дописувати до розділу), а завершитись ok.
-      { second: 'loose' },
+      // Після фіксу fill бере KEY SHARE, сумісний із NO KEY UPDATE видалення: мусить завершитись без черги.
+      { second: 'settles' },
     );
     expect(out).toEqual(['ok', 'ok']);
     await clean();
@@ -146,8 +146,8 @@ describe('порядок замків агрегата: корінь -> моди
           modifications: { remove: [a, b] },
         }),
       () => fillAll('fi'),
-      // fill мови без жодного прочитаного рядка не мусить блокуватись: ok без черги.
-      { second: 'loose' },
+      // fill бере KEY SHARE, сумісний із засувкою й видаленням за id: мусить завершитись без черги.
+      { second: 'settles' },
     );
     expect(out).toEqual(['ok', 'ok']);
     await clean();

@@ -40,8 +40,8 @@ describe('languages.fill: done за предикатом, inserted за факт
           path: 'p-explicit',
           expectedVersion: (await get(p)).version,
         }),
-      // Команда комітить повз застряглий fill (сенс кейсу), тож у черзі її може не бути.
-      { second: 'loose' },
+      // Передумова кейсу: команда комітить повз застряглий fill, тож мусить завершитись до відпускання T0.
+      { second: 'settles' },
     );
     expect(out).toEqual(['ok', 'ok']);
     expect(first).toEqual({ inserted: 1, done: false });

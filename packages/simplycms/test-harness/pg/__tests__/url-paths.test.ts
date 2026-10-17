@@ -115,7 +115,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
         setExplicitPath(d, { kind: 'product', id: b }, 'uk', 'race-x'),
       ).catch((e: unknown) => e);
       // Строго: вставка B мусить стати на унікальний індекс, а не просто стартувати.
-      await waitForBlockedTree(db, first, 1);
+      await waitForBlockedTree(db, first, 1, { releaseOnFail: true });
       first.release();
       await first.done;
       expect(await second).toMatchObject({

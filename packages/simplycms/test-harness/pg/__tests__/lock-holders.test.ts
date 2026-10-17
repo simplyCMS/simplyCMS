@@ -1,11 +1,12 @@
 // Негативні контролі очікувача блокування (М1, Task 14б): дерево очікування рахує лише тих,
 // хто стоїть на тримачі (прямо чи через інших), а строгий режим не проходить без блокування.
 import { sql } from 'drizzle-orm';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useAddressingDb } from './fixtures/addressing-db';
 import {
   blockedTreeSize,
   hold,
+  type Holder,
   until,
   waitForBlockedTree,
   waitForBlockedTreeOrSettled,
@@ -15,12 +16,30 @@ describe('очікувач блокування за деревом від тр�
   const db = useAddressingDb('simplycms_lock_holders');
   const lock = (key: string) =>
     sql.raw(`select pg_advisory_xact_lock(hashtextextended('${key}', 0))`);
-  const holdKey = (key: string) => hold(db, (d) => d.execute(lock(key)));
-  /** Очікувач: транзакція, що бере ті самі замки по черзі; `then` — після них. */
-  const waiter = (...keys: string[]) =>
-    db.admin(async (d) => {
+  // Усе, що відкрив контроль, закривається в afterEach навіть при червоному тесті:
+  // інакше відкриті транзакції висять до afterAll (hook timeout, сирітська БД) і
+  // ламають сусідні контролі.
+  let holders: Holder[] = [];
+  let waiters: Promise<unknown>[] = [];
+  afterEach(async () => {
+    for (const h of holders) h.release();
+    await Promise.allSettled([...holders.map((h) => h.done), ...waiters]);
+    holders = [];
+    waiters = [];
+  });
+  const holdKey = (key: string) => {
+    const h = hold(db, (d) => d.execute(lock(key)));
+    holders.push(h);
+    return h;
+  };
+  /** Очікувач: транзакція, що бере ті самі замки по черзі. */
+  const waiter = (...keys: string[]) => {
+    const w = db.admin(async (d) => {
       for (const k of keys) await d.execute(lock(k));
     });
+    waiters.push(w);
+    return w;
+  };
   const quick = { deadlineMs: 400, stepMs: 20 };
 
   it('строгий режим без конфлікту: ніхто не став на тримача -> «не дочекались»', async () => {

@@ -9,6 +9,7 @@ import {
   until,
   waitForBlockedTree,
   waitForBlockedTreeOrSettled,
+  waitForSettled,
 } from './lock-holders';
 
 /** Результат операції одним рядком: `ok`, код PG, `kind:constraint` конфлікту чи ім'я помилки. */
@@ -30,9 +31,11 @@ export const outcome = (p: Promise<unknown>): Promise<string> =>
 
 /**
  * Режим очікування учасника: `strict` — він МУСИТЬ стати в чергу за замком (інакше
- * «не дочекались»); `loose` — може й не блокуватись (пропустив рядок і завершився ok).
+ * «не дочекались»); `settles` — він МУСИТЬ ЗАВЕРШИТИСЬ, поки T0 ще тримає замок (кейс
+ * «команда комітить повз застряглий учасник»; став у чергу — помилка передумови);
+ * `loose` — або те, або те.
  */
-export type WaitMode = 'strict' | 'loose';
+export type WaitMode = 'strict' | 'settles' | 'loose';
 
 /**
  * T0 бере `take` (SQL або функцію), далі `first`; коли `first` став у чергу за T0, — `second`;
@@ -52,21 +55,39 @@ export async function latchRace(
   );
   await until('T0 тримає засувку', t0.acquired);
   const running: Promise<unknown>[] = [];
+  const wait = (
+    mode: WaitMode | undefined,
+    p: Promise<string>,
+    n: number | (() => number),
+    what: string,
+  ) => {
+    const opts = { releaseOnFail: true };
+    if (mode === 'settles') return waitForSettled(what, p, t0);
+    if (mode === 'loose')
+      return waitForBlockedTreeOrSettled(db, t0, n, [p], opts);
+    return waitForBlockedTree(db, t0, n, opts);
+  };
   try {
     const a = outcome(first());
     running.push(a);
     let aDone = false;
     void a.then(() => (aDone = true));
-    if (modes.first === 'loose')
-      await waitForBlockedTreeOrSettled(db, t0, 1, [a]);
-    else await waitForBlockedTree(db, t0, 1);
+    await wait(
+      modes.first,
+      a,
+      1,
+      'перший учасник завершився до відпускання T0',
+    );
     const b = outcome(second());
     running.push(b);
     // Якщо `first` уже завершився, другому нема на кому стояти, крім T0: рівень 1.
     const need = () => (aDone ? 1 : 2);
-    if (modes.second === 'loose')
-      await waitForBlockedTreeOrSettled(db, t0, need, [b]);
-    else await waitForBlockedTree(db, t0, need);
+    await wait(
+      modes.second,
+      b,
+      need,
+      'другий учасник завершився до відпускання T0',
+    );
   } catch (e) {
     // Не лишаємо T0 висіти з відкритою транзакцією: наступні тести бачили б його замок.
     t0.release();
