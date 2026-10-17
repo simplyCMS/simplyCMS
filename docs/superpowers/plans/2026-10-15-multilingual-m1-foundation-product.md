@@ -774,7 +774,7 @@
   - `products.setPath` `{ id, locale, path, expectedVersion }` → `setExplicitPath`; ЗБІЛЬШУЄ `version` (адреса — частина агрегата для ETag); те саме для `products.setModificationToken` (Task 12);
   - `products.remove` `{ id, expectedVersion }`.
 
-  Порядок у кожній команді: `SELECT … FOR UPDATE` кореня → `assertVersionThenHash` → запис → `version = version + 1`. До Task 17 — дзеркалення в старі колонки (`// М1-TEMP`):
+  Порядок у кожній команді: `SELECT … FOR NO KEY UPDATE` кореня → `assertVersionThenHash` → запис → `version = version + 1`. До Task 17 — дзеркалення в старі колонки (`// М1-TEMP`):
   - текст основної мови → `products.*`;
   - поточний шлях основної мови → `products.slug` (NOT NULL до Task 17, без дзеркала create упав би).
 
@@ -800,7 +800,7 @@
 - [ ] **Step 4:** PASS; `pnpm vitest run packages/simplycms/src/operations` (паритет) → PASS.
 - [ ] **Step 5:** БЛ. Мутації:
   - (а) `applyTranslationPlan` видаляє відсутні мови → І11 червоний;
-  - (б) прибрати `FOR UPDATE` у `saveTranslation` → race червоний;
+  - (б) прибрати `FOR NO KEY UPDATE` у `saveTranslation` → race червоний;
   - (в) `saveDescription` перегенеровує шлях → І17 червоний;
   - (г) хешувати сирий HTML замість санітизованого → кейс `'опис з <script> → хеш = хеш санітизованого'` (додати в `product-aggregate`) червоний.
 

@@ -101,7 +101,7 @@ export interface AdminResourceConfigBase<
    *  `media-cascade-coverage` з каталогом FK. */
   cascadeMedia?: readonly ResourceCascadeMedia[];
   /** Блокування кореня агрегата ПЕРЕД видаленням (М1): `remove` не має guard-а,
-   *  а каскад медіа мусить серіалізуватись з командами агрегата (`FOR UPDATE`
+   *  а каскад медіа мусить серіалізуватись з командами агрегата (`FOR NO KEY UPDATE`
    *  кореня), інакше паралельна команда додасть посилання між перевіркою і COMMIT. */
   lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
 }

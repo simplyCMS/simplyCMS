@@ -75,6 +75,8 @@ export async function refreshProductTexts(
  * fill читає знімок, а команда товару, що ще не закомітилась, могла змінити джерело
  * й записати свіжий рядок — перезапис застарілим знімком зламав би І23.
  * Викликач тримає замок `languages-set` (fill — спільний, setStatus — ексклюзивний).
+ * 🔴 `FOR KEY SHARE` на товарі: паралельне видалення товару до коміту інакше дало б
+ * на вставці FK 23503; видалений рядок після коміту видалення пропускається.
  * Повертає кількість вставлених рядків.
  */
 export async function buildMissingProjection(
@@ -85,11 +87,13 @@ export async function buildMissingProjection(
   const res = await db.execute(sql`
     insert into public.catalog_product_texts (${columnList()})
     select ${columnList('e.')} from (${expectedRows({ locales: [locale] })}) e
+      join public.products pr on pr.id = e.product_id
      where not exists (
        select 1 from public.catalog_product_texts c
         where c.product_id = e.product_id and c.locale = e.locale)
      order by e.product_id
      limit ${limit}
+     for key share of pr
     on conflict (product_id, locale) do nothing`);
   return res.rowCount ?? 0;
 }

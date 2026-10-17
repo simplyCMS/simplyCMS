@@ -310,9 +310,16 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
   });
 
   it('крок проєкції сіду стенда будує рядки, еквівалентні командам', async () => {
-    await seed();
+    const { id } = await seed();
+    // Історична адреса не повинна потрапити в проєкцію: крок бере лише `is_current`.
+    await db.w(
+      `insert into public.url_paths (id, locale, path, product_id, is_current)
+       values (gen_random_uuid(), 'uk', 'stara-adresa-' || $1::text, $1::uuid, false)`,
+      [id],
+    );
     await db.q(`delete from public.catalog_product_texts`);
     await db.q(PROJECTION_STEP);
+    expect((await proj(id, 'uk'))?.path).not.toContain('stara-adresa');
     await clean();
   });
 

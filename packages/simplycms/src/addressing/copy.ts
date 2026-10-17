@@ -15,6 +15,11 @@ import { publicNames } from './public-names';
 // Пакетне заповнення нової мови копіями поточних адрес/токенів основної (М1,
 // Review Focus 2). Ідемпотентне: вибираються лише сутності БЕЗ поточного
 // запису в новій мові, тож повторний виклик продовжує, а не дублює.
+// 🔴 `FOR KEY SHARE` на батьківському рядку (товар / модифікація): вибірка йде зі
+// знімка, а паралельне видалення сутності до коміту дало б на вставці FK 23503
+// (409 `reference`). Заблокований рядок, видалений у чужій транзакції, після її коміту
+// пропускається — сутності вже немає, копіювати нічого. KEY SHARE не конфліктує з
+// командами (NO KEY UPDATE), тож `lockProduct` цієї вставки не блокує.
 // Кандидати всього пакета читає ОДИН запит (`candidateAny`: ланцюг `=`/`LIKE` по індексу); множина
 // зайнятих поповнюється в пам'яті після кожної алокації.
 
@@ -27,11 +32,13 @@ export async function copyPathsForLocale(
   const primary = await primaryLocale(db);
   const batch = await db.execute<{ product_id: string; path: string }>(sql`
     select p.product_id, p.path from public.url_paths p
+      join public.products pr on pr.id = p.product_id
      where p.locale = ${primary} and p.is_current and p.product_id is not null
        and not exists (
          select 1 from public.url_paths t
           where t.locale = ${locale} and t.product_id = p.product_id and t.is_current)
-     order by p.path, p.product_id limit ${limit}`);
+     order by p.path, p.product_id limit ${limit}
+     for key share of pr`);
   if (batch.rows.length === 0) return 0;
   const bases = [...new Set(batch.rows.map((r) => r.path))];
   const rows = await db.execute<{ path: string }>(sql`
@@ -66,12 +73,14 @@ export async function copyTokensForLocale(
     slug: string;
   }>(sql`
     select p.modification_id, p.scope_id, p.slug from public.slug_tokens p
+      join public.product_modifications m on m.id = p.modification_id
      where p.locale = ${primary} and p.is_current and p.token_kind = 'modification'
        and not exists (
          select 1 from public.slug_tokens t
           where t.locale = ${locale} and t.modification_id = p.modification_id
             and t.is_current)
-     order by p.scope_id, p.slug, p.modification_id limit ${limit}`);
+     order by p.scope_id, p.slug, p.modification_id limit ${limit}
+     for key share of m`);
   if (batch.rows.length === 0) return 0;
   const bases = [...new Set(batch.rows.map((r) => r.slug))];
   const scopes = [...new Set(batch.rows.map((r) => r.scope_id))];
