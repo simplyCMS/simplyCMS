@@ -22,10 +22,12 @@ const embla = vi.hoisted(() => {
     },
     off: (ev: string, cb: () => void) => listeners.get(ev)?.delete(cb),
   };
-  return { listeners, state, api };
+  // Реальний хук Embla віддає `undefined`, доки не ініціалізується.
+  const ref: { current: typeof api | undefined } = { current: api };
+  return { listeners, state, api, ref };
 });
 vi.mock('embla-carousel-react', () => ({
-  default: () => [vi.fn(), embla.api],
+  default: () => [vi.fn(), embla.ref.current],
 }));
 
 import { useIsMobile } from '../use-mobile';
@@ -70,7 +72,34 @@ describe('useIsMobile', () => {
 });
 
 describe('Carousel: стан прокрутки з Embla', () => {
+  it('api зʼявляється після першого рендера: підписка встановлюється, стан оновлюється', () => {
+    embla.listeners.clear();
+    embla.state.prev = true;
+    embla.state.next = true;
+    embla.ref.current = undefined;
+    const tree = () => (
+      <Carousel>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
+    );
+    const { rerender } = render(tree());
+    const prev = screen.getByText('Previous slide').closest('button')!;
+    expect(prev.disabled).toBe(true);
+    expect(embla.listeners.get('select')?.size ?? 0).toBe(0);
+
+    embla.ref.current = embla.api;
+    rerender(tree());
+    expect(embla.listeners.get('select')!.size).toBe(1);
+    expect(prev.disabled).toBe(false);
+    embla.state.prev = false;
+    act(() => embla.listeners.get('select')!.forEach((cb) => cb()));
+    expect(prev.disabled).toBe(true);
+  });
+
   it('кнопки відображають canScroll і оновлюються на select; відписка на unmount', () => {
+    embla.listeners.clear();
+    embla.ref.current = embla.api;
     embla.state.prev = false;
     embla.state.next = true;
     const { unmount } = render(

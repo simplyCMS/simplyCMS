@@ -9,6 +9,10 @@ import { I18nProvider } from 'simplycms/i18n';
  * раніше. Дочірні секції підмінено заглушками, що показують отримані
  * `values`/`notes`/`selectedMethod` і викликають `onChange`, — перевіряється
  * саме проводка сторінки, а не самі секції (їх тримають свої тести).
+ *
+ * 🔴 Кнопки заглушок — `type="button"`: кнопка за замовчуванням сабмітить
+ * форму, а сабміт сам ре-рендерить Checkout і маскує відсутність підписки
+ * (мутація «`useWatch` -> `getValues`» лишалась би зеленою).
  */
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
@@ -64,7 +68,9 @@ vi.mock('simplycms/checkout-ui', () => ({
   }) => (
     <div>
       <output data-testid="contact-first">{values.firstName}</output>
-      <button onClick={() => onChange('firstName', 'Олена')}>set-first</button>
+      <button type="button" onClick={() => onChange('firstName', 'Олена')}>
+        set-first
+      </button>
     </div>
   ),
   CheckoutRecipientForm: ({ values }: { values: Record<string, unknown> }) => (
@@ -79,7 +85,9 @@ vi.mock('simplycms/checkout-ui', () => ({
   }) => (
     <div>
       <output data-testid="delivery-city">{String(values.deliveryCity)}</output>
-      <button onClick={() => onChange('deliveryCity', 'Київ')}>set-city</button>
+      <button type="button" onClick={() => onChange('deliveryCity', 'Київ')}>
+        set-city
+      </button>
     </div>
   ),
   CheckoutPaymentForm: ({ selectedMethod }: { selectedMethod: string }) => (
@@ -94,7 +102,9 @@ vi.mock('simplycms/checkout-ui', () => ({
   }) => (
     <div>
       <output data-testid="notes">{notes}</output>
-      <button onClick={() => onNotesChange('Подзвоніть')}>set-notes</button>
+      <button type="button" onClick={() => onNotesChange('Подзвоніть')}>
+        set-notes
+      </button>
     </div>
   ),
 }));
