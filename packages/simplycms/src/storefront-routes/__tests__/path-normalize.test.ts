@@ -146,6 +146,24 @@ describe('нормалізація адреси: ОДИН 301 (І20)', () => {
       },
     );
 
+    it('не токен: обʼєкт і масив відкидаються (301 без mod), а не зводяться до токена-рядка', async () => {
+      for (const q of [
+        'mod=%7B%22a%22%3A1%7D',
+        'mod=a&mod=b',
+        'mod=%5B1%2C2%5D',
+      ]) {
+        const res = await run(`/new?${q}`);
+        expect(res?.status).toBe(301);
+        expect(res?.headers.get('location')).toBe('/new');
+        expect(routerRedirects('/new')).toBe(false);
+      }
+    });
+
+    it('порожнє значення лишається як є; %-кодований токен читається як токен', async () => {
+      expect(await run('/new?mod=')).toBeNull();
+      expect(await location('/new?mod=%6Fld')).toBe('/new?mod=new');
+    });
+
     it('канонічна форма читається назад тим самим токеном (вибір модифікації)', () => {
       for (const token of ['1e5', '12345678901234567', 'true', '5']) {
         const to = `/new?mod=${encodeURIComponent(JSON.stringify(token))}`;

@@ -1,5 +1,5 @@
-// Серіалізатори query беремо з пакета роутера (реекспорт router-core): це ті
-// самі функції, які роутер за замовчуванням застосовує до `location.search`.
+// Розбір query (`defaultParseSearch`) беремо з пакета роутера (реекспорт router-core):
+// це та сама функція, якою роутер за замовчуванням розбирає `location.search`.
 import { defaultParseSearch } from '@tanstack/react-router';
 
 /**
@@ -28,7 +28,15 @@ export function parseQueryKeepingToken(url: URL): Record<string, unknown> {
   const query = defaultParseSearch(url.search) as Record<string, unknown>;
   const raw = url.searchParams.get('mod');
   const parsed = query.mod;
-  if (raw !== null && !Array.isArray(parsed) && typeof parsed !== 'string') {
+  // Лише скаляри, які роутер розібрав у не-рядок (число, булеве, null). Об'єкт
+  // (`mod={"a":1}`) і масив (`mod=a&mod=b`) — не токен (токен є slug-рядком): вони
+  // лишаються як є, і нормалізація їх відкидає.
+  if (
+    raw !== null &&
+    (typeof parsed === 'number' ||
+      typeof parsed === 'boolean' ||
+      parsed === null)
+  ) {
     query.mod = raw;
   }
   return query;

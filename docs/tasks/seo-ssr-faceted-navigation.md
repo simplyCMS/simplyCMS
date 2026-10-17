@@ -95,7 +95,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 ### 4.1 URL-схема
 - **Multi-facet та утиліті (основний робочий стан фільтра секції):**
   `/catalog/$sectionSlug?brand=nike&color=red&priceMin=100` — значення **слаги опцій** (не GUID), стандартний `&`. SSR-список (працює без JS, шериться). `robots: noindex, follow`, `canonical → /catalog/$sectionSlug`. Порожня комбінація → 404.
-- **Single-facet indexable лендинг (секція × одна властивість-опція):** clean slug-path, SSR, **self-canonical**, унікальні title/H1/description, у sitemap. **Точна форма path — відкрите рішення (§8, бо колізує з наявним `/catalog/$sectionSlug/$productSlug`).** Рекомендований дефолт — зарезервований сегмент, напр. `/catalog/$sectionSlug/filter/$propertySlug/$optionSlug` (Bitrix-style, без колізій).
+- **Single-facet indexable лендинг (секція × одна властивість-опція):** clean slug-path, SSR, **self-canonical**, унікальні title/H1/description, у sitemap. **Точна форма path — відкрите рішення (§8: товар уже не під `/catalog/…`, але двосегментні `/catalog/$sectionSlug/<сегмент>` мають лишитись вільними для лендингу).** Рекомендований дефолт — зарезервований сегмент, напр. `/catalog/$sectionSlug/filter/$propertySlug/$optionSlug` (Bitrix-style, без колізій).
 - **Глобальні `/properties/$propertySlug/$optionSlug`** залишаються як taxonomy-хаби (крос-секційні), з canonical-дисципліною, щоб не конкурували з секційними лендингами.
 
 ### 4.2 Політика індексованості (за замовчуванням)
