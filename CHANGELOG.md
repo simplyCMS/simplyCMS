@@ -90,7 +90,8 @@
   `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), `dropLocaleProjection`,
   `reconcileProductTexts`/`countProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
   `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
-  дозбирає при поверненні; `completeness.missingProjection` — кількість усіх розбіжностей звірки.
+  дозбирає при поверненні; `languages.fill` і звірка беруть корені товарів `FOR SHARE ORDER BY id`
+  (`lockProductRootsShared` у `simplycms/db`), команди — `FOR NO KEY UPDATE`; `completeness.missingProjection` — кількість усіх розбіжностей звірки.
 - **`pnpm gates`:** повний ланцюг гейтів + `pilot` одним переліком з `pnpm release`, відмовляє на брудному
   дереві (до і після прогону), пише `.gates-stamp.json`. У релізі `test:schema` тепер стоїть на місці з
   `AGENTS.md` (гейт `test:schema`, раніше `schema` після `test:packaging`).

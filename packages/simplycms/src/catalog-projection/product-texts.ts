@@ -76,13 +76,17 @@ export async function refreshProductTexts(
  * й записати свіжий рядок — перезапис застарілим знімком зламав би І23.
  * Викликач тримає замок `languages-set` (fill — спільний, setStatus — ексклюзивний).
  * 🔴 `FOR KEY SHARE` на товарі: паралельне видалення товару до коміту інакше дало б
- * на вставці FK 23503; видалений рядок після коміту видалення пропускається.
+ * на вставці FK 23503; видалений рядок після коміту видалення пропускається. Це єдиний
+ * захист для `setStatus` (він тримає ексклюзивний `languages-set` і коренів не бере);
+ * `fill` додатково бере корені (`only`, `lockProductRootsShared`) — для нього цей замок
+ * вже зайвий, але нешкідливий.
  * Повертає кількість вставлених рядків.
  */
 export async function buildMissingProjection(
   db: ActorDb,
   locale: string,
   limit: number,
+  only?: readonly string[],
 ): Promise<number> {
   const res = await db.execute(sql`
     insert into public.catalog_product_texts (${columnList()})
@@ -91,6 +95,14 @@ export async function buildMissingProjection(
      where not exists (
        select 1 from public.catalog_product_texts c
         where c.product_id = e.product_id and c.locale = e.locale)
+       ${
+         only
+           ? sql`and e.product_id in (${sql.join(
+               only.map((id) => sql`${id}::uuid`),
+               sql`, `,
+             )})`
+           : sql``
+       }
      order by e.product_id
      limit ${limit}
      for key share of pr

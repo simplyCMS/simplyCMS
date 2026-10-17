@@ -11,6 +11,7 @@
  * повернулися б.
  */
 export { withActor, type ActorDb } from './with-actor';
+export { lockProductRootsShared } from './row-locks';
 export { asService } from './as-service';
 export { pingDatabase } from './ping';
 export { advisoryXactLock, advisoryXactLockShared } from './advisory-lock';

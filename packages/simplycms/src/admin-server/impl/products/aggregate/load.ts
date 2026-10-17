@@ -33,6 +33,21 @@ const SPEC = TRANSLATABLE.product;
  * рядків проєкції в `fill`/`setStatus` під `languages-set`; команда (рядок товару ->
  * `languages-set` у refresh) і вони (`languages-set` -> FK на рядок товару) давали
  * б цикл блокувань 40P01. Команди між собою серіалізуються й так.
+ *
+ * Ієрархія замків агрегата (порушення дає 40P01 або 23503):
+ * (а) замки коренів товарів беруться лише в порядку id: `lockOnRemove` (пакетний
+ *     remove модифікацій), `fill` і `reconcileProductTexts` — `NO KEY UPDATE`/`FOR SHARE`
+ *     `ORDER BY id` (`lockProductRootsShared`); команда бере ОДИН корінь і береться за
+ *     нього ПЕРШОЮ, спільний `languages-set` — пізніше (refresh, генератори адрес).
+ *     Доводить `catalog-projection-locks.test.ts` (fill/remove/saveDescription на двох
+ *     модифікаціях; мутація «fill без кореня» -> 40P01).
+ * (б) хто тримає ЕКСКЛЮЗИВНИЙ `languages-set` (`setStatus`, add/remove/reorder мов),
+ *     коренів не бере й дочірніх рядків не видаляє — лише KEY SHARE через FK; тому
+ *     команда, що чекає спільний `languages-set` під своїм коренем, циклу не утворює
+ *     (кейс 40P01 раунду 1: «команда <-> setStatus»; мутація `FOR UPDATE` -> червоний).
+ * (в) хто тримає СПІЛЬНИЙ `languages-set` і пише в агрегат (`fill`, `reconcile`), спершу
+ *     бере корені за (а); дочірні рядки далі захищені коренем (мутація «reconcile без
+ *     замка» -> застарілий рядок перекриває свіжий, І23).
  */
 export async function lockProduct(db: ActorDb, id: string): Promise<number> {
   const [row] = await db

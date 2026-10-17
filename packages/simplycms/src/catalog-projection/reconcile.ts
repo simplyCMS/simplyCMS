@@ -1,5 +1,9 @@
 import { sql } from 'drizzle-orm';
-import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
+import {
+  advisoryXactLockShared,
+  lockProductRootsShared,
+  type ActorDb,
+} from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { refreshProductTexts } from './product-texts';
 import { VALUE_COLUMNS, col, expectedRows } from './expected';
@@ -93,7 +97,12 @@ export async function reconcileProductTexts(
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
   const found = await findProjectionMismatches(db, { limit });
   if (found.length === 0) return { mismatched: 0, fixed: 0 };
-  const products = [...new Set(found.map((k) => k.productId))];
+  // Корені під FOR SHARE (ORDER BY id) ДО перерахунку: команда, що ще не закомітилась,
+  // могла змінити джерело, а refresh читає свіжий стан лише під замком; видалені корені
+  // відкидаємо (інакше застарілий рядок перекрив би свіжий, І23).
+  const products = await lockProductRootsShared(db, [
+    ...new Set(found.map((k) => k.productId)),
+  ]);
   await refreshProductTexts(db, products);
   const still = new Set(
     (await findProjectionMismatches(db, { productIds: products })).map(keyOf),

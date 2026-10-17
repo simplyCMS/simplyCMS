@@ -13,11 +13,18 @@ import {
   languagesAdd,
   languagesFill,
   languagesSetStatus,
+  productsRemove,
 } from 'simplycms/admin-server/impl';
 import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
 import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
-import { sleep, until } from './fixtures/lock-holders';
-import { create, exec } from './fixtures/product-aggregate';
+import { hold, sleep, until } from './fixtures/lock-holders';
+import { insertModificationAt } from './fixtures/product-graph';
+import {
+  create,
+  exec,
+  get,
+  saveDescription,
+} from './fixtures/product-aggregate';
 
 describe('замки команди товару проти setStatus і fill (М1, Task 14, I-1)', () => {
   const db = useAddressingDb('simplycms_catalog_projection_locks');
@@ -186,6 +193,125 @@ describe('замки команди товару проти setStatus і fill (�
           () => fillAll('hu'),
         ),
       ).toEqual(['ok', 'ok']);
+    });
+  });
+
+  describe('fill проти видалення модифікацій у протилежному порядку (корінь, 40P01)', () => {
+    /** Дві модифікації: id a < b, а slug навпаки — fill копіює токени b -> a, видаляч бере a -> b. */
+    const withTwoModifications = async (name: string) => {
+      const { id } = await create({ uk: { name } });
+      const [a, b] = [randomUUID(), randomUUID()].sort();
+      await insertModificationAt(db.url(), id, {
+        id: a!,
+        slug: 'zz-mod',
+        name: 'A',
+      });
+      await insertModificationAt(db.url(), id, {
+        id: b!,
+        slug: 'aa-mod',
+        name: 'B',
+      });
+      return { id, a: a!, b: b! };
+    };
+    /** T0 тримає KEY SHARE на b: видаляч зависає між замками a і b, fill встигає взяти b. */
+    const latch = (b: string) => {
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      let held = false;
+      const done = db.admin(async (d) => {
+        await d.execute(
+          sql`select 1 from public.product_modifications where id = ${b}::uuid for key share`,
+        );
+        held = true;
+        await gate;
+      });
+      return { held: () => held, release, done };
+    };
+    const race = async (
+      b: string,
+      remover: () => Promise<unknown>,
+      code: string,
+    ) => {
+      const t0 = latch(b);
+      await until('T0 тримає KEY SHARE', t0.held);
+      const removal = remover();
+      await sleep(400);
+      const fill = fillAll(code);
+      await sleep(400);
+      t0.release();
+      return Promise.all([settled(removal), settled(fill), t0.done]);
+    };
+    const clean = async () =>
+      expect(
+        await db.admin((d) => reconcileProductTexts(d, { limit: 1000 })),
+      ).toEqual({
+        mismatched: 0,
+        fixed: 0,
+      });
+
+    it('fill <-> products.remove товару з двома модифікаціями: ok/ok, звірка 0', async () => {
+      const { id, b } = await withTwoModifications('Корінь A');
+      await add('da');
+      const [rm, fill] = await race(
+        b,
+        async () => {
+          const out = await get(id);
+          return exec(productsRemove, { id, expectedVersion: out.version });
+        },
+        'da',
+      );
+      expect([rm, fill]).toEqual(['ok', 'ok']);
+      await clean();
+    });
+
+    it('fill <-> saveDescription, що видаляє дві модифікації: ok/ok, звірка 0', async () => {
+      const { id, a, b } = await withTwoModifications('Корінь B');
+      await add('no');
+      const [rm, fill] = await race(
+        b,
+        async () =>
+          saveDescription(id, (await get(id)).version, {
+            modifications: { remove: [a, b] },
+          }),
+        'no',
+      );
+      expect([rm, fill]).toEqual(['ok', 'ok']);
+      await clean();
+    });
+  });
+
+  it('reconcile (виправлення) проти команди: не перезаписує свіжий рядок застарілим (І23)', async () => {
+    const { id } = await create({ uk: { name: 'Звірка' } });
+    // Розбіжність, яку reconcile побачить у закоміченому стані: рядка en немає.
+    await db.q(
+      `delete from public.catalog_product_texts where product_id = $1 and locale = 'en'`,
+      [id],
+    );
+    const command = hold(db, async (d) => {
+      await lockProduct(d, id);
+      await d.execute(
+        sql`update public.product_translations set name = 'Нова' where product_id = ${id}::uuid and locale = 'uk'`,
+      );
+      await refreshProductTexts(d, [id]);
+    });
+    await until('команда записала рядок', command.acquired);
+    const recon = db.admin((d) => reconcileProductTexts(d, { limit: 1000 }));
+    await sleep(500);
+    command.release();
+    await Promise.all([command.done, recon]);
+    expect(
+      (
+        await db.q(
+          `select name from public.catalog_product_texts where product_id = $1 and locale = 'en'`,
+          [id],
+        )
+      )[0]?.name,
+    ).toBe('Нова');
+    expect(
+      await db.admin((d) => reconcileProductTexts(d, { limit: 1000 })),
+    ).toEqual({
+      mismatched: 0,
+      fixed: 0,
     });
   });
 });

@@ -15,11 +15,10 @@ import { publicNames } from './public-names';
 // Пакетне заповнення нової мови копіями поточних адрес/токенів основної (М1,
 // Review Focus 2). Ідемпотентне: вибираються лише сутності БЕЗ поточного
 // запису в новій мові, тож повторний виклик продовжує, а не дублює.
-// 🔴 `FOR KEY SHARE` на батьківському рядку (товар / модифікація): вибірка йде зі
-// знімка, а паралельне видалення сутності до коміту дало б на вставці FK 23503
-// (409 `reference`). Заблокований рядок, видалений у чужій транзакції, після її коміту
-// пропускається — сутності вже немає, копіювати нічого. KEY SHARE не конфліктує з
-// командами (NO KEY UPDATE), тож `lockProduct` цієї вставки не блокує.
+// 🔴 Паралельне видалення товару/модифікації інакше дало б на вставці FK 23503, а
+// блокування дочірніх рядків у протилежних порядках — 40P01. Тому `languages.fill`
+// спершу бере корені товарів пакета (`lockProductRootsShared`, ORDER BY id) і передає
+// їх у `only`: лише ці товари копіюються; видаляч модифікацій тримає той самий корінь.
 // Кандидати всього пакета читає ОДИН запит (`candidateAny`: ланцюг `=`/`LIKE` по індексу); множина
 // зайнятих поповнюється в пам'яті після кожної алокації.
 
@@ -28,17 +27,17 @@ export async function copyPathsForLocale(
   db: ActorDb,
   locale: string,
   limit: number,
+  only?: readonly string[],
 ): Promise<number> {
   const primary = await primaryLocale(db);
   const batch = await db.execute<{ product_id: string; path: string }>(sql`
     select p.product_id, p.path from public.url_paths p
-      join public.products pr on pr.id = p.product_id
      where p.locale = ${primary} and p.is_current and p.product_id is not null
+       ${only ? sql`and p.product_id = any(${textArray(only)}::uuid[])` : sql``}
        and not exists (
          select 1 from public.url_paths t
           where t.locale = ${locale} and t.product_id = p.product_id and t.is_current)
-     order by p.path, p.product_id limit ${limit}
-     for key share of pr`);
+     order by p.path, p.product_id limit ${limit}`);
   if (batch.rows.length === 0) return 0;
   const bases = [...new Set(batch.rows.map((r) => r.path))];
   const rows = await db.execute<{ path: string }>(sql`
@@ -65,6 +64,7 @@ export async function copyTokensForLocale(
   db: ActorDb,
   locale: string,
   limit: number,
+  only?: readonly string[],
 ): Promise<number> {
   const primary = await primaryLocale(db);
   const batch = await db.execute<{
@@ -73,14 +73,13 @@ export async function copyTokensForLocale(
     slug: string;
   }>(sql`
     select p.modification_id, p.scope_id, p.slug from public.slug_tokens p
-      join public.product_modifications m on m.id = p.modification_id
      where p.locale = ${primary} and p.is_current and p.token_kind = 'modification'
+       ${only ? sql`and p.scope_id = any(${textArray(only)}::uuid[])` : sql``}
        and not exists (
          select 1 from public.slug_tokens t
           where t.locale = ${locale} and t.modification_id = p.modification_id
             and t.is_current)
-     order by p.scope_id, p.slug, p.modification_id limit ${limit}
-     for key share of m`);
+     order by p.scope_id, p.slug, p.modification_id limit ${limit}`);
   if (batch.rows.length === 0) return 0;
   const bases = [...new Set(batch.rows.map((r) => r.slug))];
   const scopes = [...new Set(batch.rows.map((r) => r.scope_id))];
