@@ -405,10 +405,10 @@ describe('зображення товару й медіа-контур (Task 12)
       let locked!: () => void;
       const gate = new Promise<void>((r) => (release = r));
       const held = new Promise<void>((r) => (locked = r));
-      // Команда агрегата «в польоті»: тримає FOR UPDATE кореня.
+      // Команда агрегата «в польоті»: тримає FOR NO KEY UPDATE кореня.
       const holder = withActor({ role: 'app_admin' }, async (tx) => {
         await tx.execute(
-          sql`select 1 from public.products where id = ${p.id} for update`,
+          sql`select 1 from public.products where id = ${p.id} for no key update`,
         );
         locked();
         await gate;
@@ -483,7 +483,7 @@ describe('зображення товару й медіа-контур (Task 12)
         waitingQueries = rows.map((r) => String(r.query));
       }
       expect(waitingQueries.join('\n')).toMatch(
-        /from "products"[\s\S]*for update/i,
+        /from "products"[\s\S]*for no key update/i,
       );
       expect(done).toBe(false);
       release();
