@@ -1,14 +1,23 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import PropertyOptionPage from 'simplycms/storefront-routes/pages/PropertyPage';
 import { getPropertyOption } from 'simplycms/storefront-routes/server/properties';
+import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
 import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute(
   '/_storefront/properties/$propertySlug/$optionSlug',
 )({
-  loader: async ({ params: { propertySlug, optionSlug } }) => {
+  loader: async ({
+    params: { propertySlug, optionSlug },
+    location,
+    context,
+  }) => {
     const result = await getPropertyOption({
-      data: { propertySlug, optionSlug },
+      data: {
+        propertySlug,
+        optionSlug,
+        locale: localeOfHref(location.publicHref, context.locales),
+      },
     });
 
     if (!result) {

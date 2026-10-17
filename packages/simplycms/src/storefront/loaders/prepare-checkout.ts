@@ -11,6 +11,7 @@ import {
   type ShippingMethodRow,
 } from 'simplycms/commerce';
 import { toCents } from 'simplycms/domain/pricing';
+import type { TextLocale } from 'simplycms/domain/translations';
 import type { ActorDb } from './db';
 
 /**
@@ -61,11 +62,16 @@ export type PrepareCheckoutResult =
  * в одній транзакції актора, тож «показане покупцю = записане в БД»
  * тримається ЗА ПОБУДОВОЮ, а не звіркою двох реалізацій. Відмови — ті самі
  * три коди, четвертого немає (рішення E).
+ *
+ * 🔴 `text` — мова назв позицій: з неї формується знімок `order_items.name` (М1: назва
+ * мовою запиту; двомовний знімок і `orders.locale` — М2). Квота й оформлення беруть
+ * ту саму мову, тож показана назва = записана.
  */
 export async function prepareCheckout(
   db: ActorDb,
   input: PlaceOrderInput,
   userId: string | null,
+  text: TextLocale,
 ): Promise<PrepareCheckoutResult> {
   // 🔴 Порожній кошик — відмова ДО priceItems, а не лише `.min(1)` у
   // T5-схемі (рев'ю M2): обидва викликачі (`placeOrderFor`, `quoteCheckoutFor`)
@@ -90,7 +96,7 @@ export async function prepareCheckout(
   });
   if (typeof choice === 'string') return { ok: false, reason: choice };
 
-  const items = await priceItems(db, userId, input.items);
+  const items = await priceItems(db, userId, input.items, text);
   if (items === 'not_purchasable')
     return { ok: false, reason: 'not_purchasable' };
 

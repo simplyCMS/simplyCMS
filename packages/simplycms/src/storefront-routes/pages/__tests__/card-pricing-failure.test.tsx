@@ -49,6 +49,7 @@ const SSR_ITEM = {
   slug: 'panel',
   name: 'Панель SSR',
   imageUrl: null,
+  nameLang: null,
   price: 1000,
   sectionSlug: 'panels',
 };

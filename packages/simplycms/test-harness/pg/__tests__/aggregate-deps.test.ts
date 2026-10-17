@@ -18,6 +18,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
@@ -145,8 +146,8 @@ describe('Е1б: deps агрегатів повні відносно факти�
         { productId: PRODUCT_NO_MODS, modificationId: null, quantity: 1 },
         { productId: PRODUCT_WITH_MODS, modificationId: MOD_ID, quantity: 2 },
       ];
-      await m.quoteCartFor(items, null);
-      await m.quoteCartFor(items, userId);
+      await m.quoteCartFor(items, null, UK);
+      await m.quoteCartFor(items, userId, UK);
     },
     modificationData: async () => {
       const m = await import('simplycms/storefront/loaders');
@@ -169,7 +170,7 @@ describe('Е1б: deps агрегатів повні відносно факти�
       // профіль і категорію (`profiles`, `user_categories`).
       for (const actor of [null, userId])
         await v.withViewerPricesDb(actor, (db, viewer) =>
-          m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer),
+          m.loadPropertyOption(db, 'tip-invertora', 'on-grid', viewer, UK),
         );
     },
     catalogProducts: async () => {
@@ -178,7 +179,7 @@ describe('Е1б: deps агрегатів повні відносно факти�
         await import('../../../src/storefront/loaders/viewer-prices-db');
       for (const actor of [null, userId])
         await v.withViewerPricesDb(actor, (db, viewer) =>
-          m.loadCatalogProducts(db, viewer),
+          m.loadCatalogProducts(db, viewer, UK),
         );
     },
   };

@@ -2,24 +2,11 @@ import { productModifications } from 'simplycms/schema';
 import type { ProductModification } from 'simplycms/schema/types';
 import { toImageList } from './product';
 
-/** Модифікація для картки товару (форма, яку читає `useModificationData`). */
-export const modificationColumns = {
-  id: productModifications.id,
-  product_id: productModifications.productId,
-  slug: productModifications.slug,
-  name: productModifications.name,
-  sku: productModifications.sku,
-  is_default: productModifications.isDefault,
-  sort_order: productModifications.sortOrder,
-  stock_status: productModifications.stockStatus,
-  images: productModifications.images,
-};
-
 export type ModificationRow = {
   id: ProductModification['id'];
   product_id: ProductModification['productId'];
-  slug: ProductModification['slug'];
-  name: ProductModification['name'];
+  slug: string;
+  name: string;
   sku: ProductModification['sku'];
   is_default: ProductModification['isDefault'];
   sort_order: ProductModification['sortOrder'];

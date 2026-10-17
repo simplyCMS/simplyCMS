@@ -4,6 +4,7 @@ import {
   loadProperties,
   loadPropertyBySlug,
   loadPropertyOption,
+  resolveTextLocale,
   withStorefrontDb,
   withViewerDb,
 } from 'simplycms/storefront/loaders';
@@ -27,14 +28,17 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
     z.object({
       propertySlug: z.string().min(1),
       optionSlug: z.string().min(1),
+      locale: z.string().min(1),
     }),
   )
   .handler(async ({ data: input }) => {
-    const { propertySlug, optionSlug } = input as {
+    const { propertySlug, optionSlug, locale } = input as {
       propertySlug: string;
       optionSlug: string;
+      locale: string;
     };
+    const text = await resolveTextLocale(locale);
     return withViewerDb((db, viewer) =>
-      loadPropertyOption(db, propertySlug, optionSlug, viewer),
+      loadPropertyOption(db, propertySlug, optionSlug, viewer, text),
     );
   });

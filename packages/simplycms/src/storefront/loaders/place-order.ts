@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { PlaceOrderInput, PlaceOrderResult } from 'simplycms/contracts';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { applyCategoryRules } from 'simplycms/commerce';
 import { InsufficientStockError } from 'simplycms/inventory';
 import { siteUrl } from 'simplycms/env';
@@ -38,6 +39,7 @@ import { resolveRecipient, toOrderInput } from './place-order-support';
 export async function placeOrderFor(
   input: PlaceOrderInput,
   userId: string | null,
+  text: TextLocale,
 ): Promise<PlaceOrderResult> {
   // 🔴 Порожній кошик — `prepareCheckout` відмовляє ДО priceItems
   // (гвард живе там, спільний з квотою — рев'ю #9, докладніше в
@@ -62,7 +64,7 @@ export async function placeOrderFor(
   let mailIds: string[] = [];
   try {
     result = await run(async (db, operator) => {
-      const prepared = await prepareCheckout(db, input, userId);
+      const prepared = await prepareCheckout(db, input, userId, text);
       if (!prepared.ok) return prepared;
 
       const savedRecipientId = await resolveRecipient(db, userId, input);

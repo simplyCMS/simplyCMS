@@ -29,6 +29,7 @@ type Raw = Omit<AdminReviewRow, 'createdAt' | 'updatedAt'> & {
  *
  * - 🔴 Порядок і курсор по `date_trunc('milliseconds', created_at)`: курсор
  *   приходить як JS `Date` (мс), а в БД мікросекунди.
+ * - Назва товару — основною мовою (`product_translations`): адмін-читач, не вітрина.
  * - Автор — `LEFT JOIN`: відгук покупця, якого видалено, лишається з
  *   `user_id NULL` і `authorName/authorEmail = null`.
  * - `imagesCount` не падає на `NULL`/не-масиві (`jsonb` без CHECK форми).
@@ -55,7 +56,7 @@ export const listReviewsOp = async ({
 
   return runAdmin('review.moderate', async (db) => {
     const result = await db.execute<Raw>(sql`
-      select r.id, r.product_id as "productId", p.name as "productName",
+      select r.id, r.product_id as "productId", pt.name as "productName",
              r.user_id as "userId",
              coalesce(nullif(trim(concat_ws(' ', pr.first_name, pr.last_name)), ''),
                       u.name) as "authorName",
@@ -67,6 +68,9 @@ export const listReviewsOp = async ({
              ${isoTs(sql`date_trunc('milliseconds', r.created_at)`)} as "createdAtKey"
         from public.product_reviews r
         join public.products p on p.id = r.product_id
+        join public.product_translations pt
+          on pt.product_id = p.id
+         and pt.locale = (select code from public.languages where is_default)
         left join public.users u on u.id = r.user_id
         left join public.profiles pr on pr.user_id = u.id
         ${whereSql}

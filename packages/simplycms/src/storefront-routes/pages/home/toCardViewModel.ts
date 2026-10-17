@@ -28,6 +28,8 @@ export function toCardViewModel(
     slug: product.slug,
     images: product.images,
     short_description: product.short_description,
+    name_lang: product.name_lang,
+    short_description_lang: product.short_description_lang,
     section: product.section,
     stock_status: product.stock_status,
     ...(pricesFailed

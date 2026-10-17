@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { AppliedDiscount, RejectedDiscount } from 'simplycms/contracts';
 import { loadPricingContext, priceCart } from 'simplycms/commerce';
+import { primaryLocaleCode } from 'simplycms/translations';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { diagnosePriceInput } from './input';
@@ -36,6 +37,8 @@ export const diagnosePriceOp = async ({
     const ctx = await loadPricingContext(db, input.userId, {
       includeInactive: true,
     });
+    // Діагностика — адмін-читач: назва рядка не показується, мова — основна.
+    const primary = await primaryLocaleCode(db);
     const { lines } = await priceCart(
       db,
       ctx,
@@ -46,6 +49,7 @@ export const diagnosePriceOp = async ({
           quantity: input.quantity,
         },
       ],
+      { locale: primary, primary },
       { extraCartTotal: input.otherCartTotal },
     );
     const line = lines[0]!;

@@ -5,6 +5,7 @@
 import type { PlaceOrderInput } from 'simplycms/contracts';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import { queryRows } from '../../apply.mjs';
+import { UK } from './text-locale';
 
 export const orderInput = (
   shippingMethodId: string,
@@ -66,7 +67,7 @@ export const placeOrder = async (
   input: PlaceOrderInput,
   userId: string | null = null,
 ): Promise<string> => {
-  const result = await placeOrderFor(input, userId);
+  const result = await placeOrderFor(input, userId, UK);
   if (!result.ok)
     throw new Error(`[harness] оформлення відмовлено: ${result.reason}`);
   return result.order.id;

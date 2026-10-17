@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import type { BreadcrumbItem } from 'simplycms/contracts/views';
-import { FallbackText } from '../components/FallbackText';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 
 /**
  * Хлібні крихти вітрини — спільний підкомпонент канонічних view (картка

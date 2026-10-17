@@ -54,6 +54,7 @@ const ssrItem = {
   name: 'Item B',
   slug: 'item-b',
   imageUrl: null,
+  nameLang: null,
   sectionSlug: 'sec',
   price: 999,
 };

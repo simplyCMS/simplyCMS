@@ -4,14 +4,23 @@ import { useT } from 'simplycms/i18n';
 import type { ThresholdHint } from 'simplycms/contracts';
 import { useFormatPrice } from 'simplycms/react-query';
 import { productPath } from 'simplycms/domain';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 import { DiscountHints } from './DiscountHints';
 
 interface ProductCardProps {
   product: {
     id: string;
     name: string;
+    /** Поточна адреса товару в мові сторінки (не адреса основної мови). */
     slug: string;
     short_description?: string | null;
+    /**
+     * Мова назви / короткого опису, коли текст узято з основної мови (fallback):
+     * обгортка `lang` не дає скрінрідеру читати його вимовою мови сторінки (І37).
+     * Ознака з даних проєкції; не задано — текст мовою сторінки.
+     */
+    name_lang?: string | null;
+    short_description_lang?: string | null;
     images?: string[];
     section?: { slug: string } | null;
     has_modifications?: boolean;
@@ -72,11 +81,13 @@ export function ProductCard({ product, rating }: ProductCardProps) {
         </div>
         <div className="p-4">
           <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors mb-2">
-            {product.name}
+            <FallbackText lang={product.name_lang}>{product.name}</FallbackText>
           </h3>
           {product.short_description && (
             <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-              {product.short_description}
+              <FallbackText lang={product.short_description_lang}>
+                {product.short_description}
+              </FallbackText>
             </p>
           )}
           <div className="flex items-baseline gap-2">

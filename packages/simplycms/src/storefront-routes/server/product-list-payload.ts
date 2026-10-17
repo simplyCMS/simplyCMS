@@ -1,4 +1,5 @@
 import { loadGuestPriceTypes, loadViewerPriceTypes } from 'simplycms/commerce';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { loadProductList, type ActorDb } from 'simplycms/storefront/loaders';
 import {
   toProductListPayload,
@@ -11,6 +12,7 @@ import {
  */
 export async function loadProductListPayload(
   db: ActorDb,
+  text: TextLocale,
   sectionId?: string,
 ): Promise<ProductListPayload> {
   // Послідовно: транзакція живе на одному зʼєднанні (див. `storefront/loaders`).
@@ -19,6 +21,7 @@ export async function loadProductListPayload(
   const rows = await loadProductList(
     db,
     await loadViewerPriceTypes(db, null),
+    text,
     sectionId,
   );
   return toProductListPayload(rows, await loadGuestPriceTypes(db));

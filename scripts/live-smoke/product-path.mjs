@@ -81,7 +81,12 @@ async function insertProduct(dbUrl, id) {
  */
 export async function runProductPathChecks({ base, dbUrl, check }) {
   const id = randomUUID();
-  await sql(dbUrl, `delete from public.products where slug = $1`, [SLUG]);
+  await sql(
+    dbUrl,
+    `delete from public.products where id in (
+       select product_id from public.url_paths where path = $1)`,
+    [SLUG],
+  );
   await insertProduct(dbUrl, id);
   try {
     // (а) поточна адреса: 200, self-canonical.

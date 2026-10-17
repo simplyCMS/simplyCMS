@@ -36,7 +36,8 @@ import { getCatalogProducts } from '../../server/catalog';
 export function useCatalogProductsQuery(sectionId: string | null | undefined) {
   const view = useViewerPriceKey();
   // Мова запиту (І36) — перший сегмент агрегату: `[name, locale, …]`.
-  const key = AGGREGATE.catalogProducts.keyFor(useLocale());
+  const locale = useLocale();
+  const key = AGGREGATE.catalogProducts.keyFor(locale);
   return useQuery({
     queryKey: priceViewKey(
       sectionId === undefined
@@ -47,7 +48,7 @@ export function useCatalogProductsQuery(sectionId: string | null | undefined) {
     meta: VIEWER_PRICED_META,
     queryFn: (): Promise<CatalogProductRow[]> =>
       getCatalogProducts({
-        data: sectionId ? { sectionId } : {},
+        data: sectionId ? { sectionId, locale } : { locale },
       }),
     enabled: sectionId !== null && view !== null,
   });

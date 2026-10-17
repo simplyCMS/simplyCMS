@@ -38,6 +38,10 @@ export interface AdminReviewCard extends AdminReviewRow {
   content: SanitizedHtml | null;
   adminComment: string | null;
   images: string[];
-  productSlug: string;
+  /**
+   * Поточний шлях товару в основній мові, без префікса мови (реєстр `url_paths`);
+   * `null` — адреси немає (товар поза вітриною), посилання на нього не буде.
+   */
+  productPath: string | null;
   sectionSlug: string | null;
 }

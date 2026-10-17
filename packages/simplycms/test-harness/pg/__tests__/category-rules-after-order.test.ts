@@ -8,6 +8,7 @@ import type { PlaceOrderInput } from 'simplycms/contracts';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/customer-categories';
 import { demoPickupInput } from './fixtures/orders';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('simplycms/commerce', async (orig) => {
   const actual = await orig<typeof import('simplycms/commerce')>();
@@ -30,7 +31,7 @@ describe('автоправила після оформлення замовле�
   });
   afterEach(() => vi.restoreAllMocks());
 
-  const order = (userId: string | null) => placeOrderFor(input, userId);
+  const order = (userId: string | null) => placeOrderFor(input, userId, UK);
   const placed = async (userId: string | null) => {
     const result = await order(userId);
     if (!result.ok) throw new Error(`[harness] відмова: ${result.reason}`);

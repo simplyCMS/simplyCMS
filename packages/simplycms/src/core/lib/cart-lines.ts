@@ -36,5 +36,11 @@ export const cartLinesSchema = z
   .max(MAX_CART_LINES)
   .refine(hasUniquePairs, { message: 'duplicate_cart_line' });
 
-/** Вхід `quoteCart`. */
-export const quoteCartInputSchema = z.object({ items: cartLinesSchema });
+/**
+ * Вхід `quoteCart`. `locale` — мова назв рядків кошика (мова сторінки): сервер звіряє її з
+ * опублікованими й невідому читає основною, а не відмовляє.
+ */
+export const quoteCartInputSchema = z.object({
+  items: cartLinesSchema,
+  locale: z.string().min(1),
+});

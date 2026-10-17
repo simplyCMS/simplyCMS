@@ -40,6 +40,12 @@ export interface CatalogProductRow extends Omit<
    * цей же `??` у кожному споживачі — і в одному з них про нього забути.
    */
   has_modifications: boolean;
+  /**
+   * Мова назви/короткого опису, коли текст узято з основної мови (fallback): картка
+   * обгортає його `lang` (І37). Ознака з даних проєкції, не порівняння текстів.
+   */
+  name_lang: string | null;
+  short_description_lang: string | null;
   section: SectionRef | null;
   /** Повний список — на ньому рахується наявність товару з модифікаціями. */
   product_modifications: CatalogModificationRow[];

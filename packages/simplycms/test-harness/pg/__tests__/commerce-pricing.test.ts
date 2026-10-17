@@ -8,6 +8,7 @@ import { withActor } from 'simplycms/db';
 import { priceItems } from 'simplycms/commerce';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 /** Пара `[price, basePrice]` кожної позиції — для кейсів без `discountData`. */
 const unit = (out: Awaited<ReturnType<typeof priceItems>>) =>
@@ -32,11 +33,16 @@ describe('рушій цін commerce: priceItems', () => {
 
   it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані в Step 1', async () => {
     const out = await guest((db) =>
-      priceItems(db, null, [
-        line(F.PANEL_450, 2),
-        line(F.INVERTER_8KW),
-        line(F.INVERTER_5KW, 1, F.INVERTER_5KW_1PH),
-      ]),
+      priceItems(
+        db,
+        null,
+        [
+          line(F.PANEL_450, 2),
+          line(F.INVERTER_8KW),
+          line(F.INVERTER_5KW, 1, F.INVERTER_5KW_1PH),
+        ],
+        UK,
+      ),
     );
     expect(out).toEqual([
       {
@@ -89,6 +95,7 @@ describe('рушій цін commerce: priceItems', () => {
           db,
           null,
           battery,
+          UK,
           extraCartTotal === undefined ? undefined : { extraCartTotal },
         ),
       );
@@ -104,7 +111,7 @@ describe('рушій цін commerce: priceItems', () => {
 
   it('cartTotal множить ціну на кількість: 3 акумулятори = 63000 ≥ 50000 → знижка «від суми» без extraCartTotal', async () => {
     const out = await guest((db) =>
-      priceItems(db, null, [line(F.BATTERY_200AH, 3)]),
+      priceItems(db, null, [line(F.BATTERY_200AH, 3)], UK),
     );
     if (out === 'not_purchasable') throw new Error(out);
     expect(out[0]).toMatchObject({
@@ -117,12 +124,12 @@ describe('рушій цін commerce: priceItems', () => {
 
   it('покупець із категорією отримує свій тип ціни; гість — дефолтний', async () => {
     const station = [line(F.STATION_10KWH)];
-    expect(unit(await guest((db) => priceItems(db, null, station)))).toEqual([
-      [68000, null],
-    ]);
+    expect(
+      unit(await guest((db) => priceItems(db, null, station, UK))),
+    ).toEqual([[68000, null]]);
     const customer = await withActor(
       { role: 'app_user', userId: ids.wholesale },
-      (db) => priceItems(db, ids.wholesale, station),
+      (db) => priceItems(db, ids.wholesale, station, UK),
     );
     expect(unit(customer)).toEqual([[F.WHOLESALE_STATION_PRICE, null]]);
   });

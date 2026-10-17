@@ -6,6 +6,7 @@ import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { orderInput } from './fixtures/orders';
 import { useOrderItemsEditDb } from './fixtures/order-items-edit';
 import { carrierMethod, courierInput } from './fixtures/shipping-snapshot';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -76,7 +77,7 @@ describe('доставка: режим ціни й знімок у замовл�
 
   it('(б) адресний carrier: shipping_cost 0, total = subtotal, знімок kind address', async () => {
     const method = await carrier();
-    const result = await placeOrderFor(courier(method), null);
+    const result = await placeOrderFor(courier(method), null, UK);
     if (!result.ok) throw new Error(result.reason);
     const [row] = await f.rows<{
       subtotal: string;
@@ -108,7 +109,7 @@ describe('доставка: режим ціни й знімок у замовл�
     const input = orderInput(other!.id, ids.point, [
       { productId: ids.panel, quantity: 1 },
     ]);
-    expect(await placeOrderFor(input, null)).toEqual({
+    expect(await placeOrderFor(input, null, UK)).toEqual({
       ok: false,
       reason: 'pickup_point_invalid',
     });
@@ -116,11 +117,11 @@ describe('доставка: режим ціни й знімок у замовл�
 
   it('(е) quoteCheckoutFor для carrier: shippingPricing carrier, shippingCost 0; для тарифного способу — rates', async () => {
     const method = await carrier();
-    const quoted = await quoteCheckoutFor(courier(method), null);
+    const quoted = await quoteCheckoutFor(courier(method), null, UK);
     if (!quoted.ok) throw new Error(quoted.reason);
     expect(quoted.quote.shippingPricing).toBe('carrier');
     expect(quoted.quote.shippingCost).toBe(0);
-    const rated = await quoteCheckoutFor(courier(ids.fixed), null);
+    const rated = await quoteCheckoutFor(courier(ids.fixed), null, UK);
     if (!rated.ok) throw new Error(rated.reason);
     expect(rated.quote.shippingPricing).toBe('rates');
     expect(rated.quote.shippingCost).toBe(70.1);

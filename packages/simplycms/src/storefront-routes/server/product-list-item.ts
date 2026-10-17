@@ -23,8 +23,11 @@ export interface PriceContext {
 /** Мінімальний DTO товару для серверного рендеру списку каталогу. */
 export interface ProductListItem {
   id: string;
+  /** Поточна адреса товару в мові списку: картка веде на неї, не на адресу основної мови. */
   slug: string;
   name: string;
+  /** Мова назви, коли її узято з основної мови (fallback): картка обгортає її `lang`. */
+  nameLang: string | null;
   imageUrl: string | null;
   price: number | null;
   /** Slug секції — потрібен для коректного href картки в серверному HTML. */
@@ -72,6 +75,7 @@ export function toProductListItem(
     id: row.id,
     slug: row.slug,
     name: row.name,
+    nameLang: row.name_lang,
     imageUrl: row.images[0] ?? null,
     price,
     sectionSlug: row.sections?.slug ?? null,

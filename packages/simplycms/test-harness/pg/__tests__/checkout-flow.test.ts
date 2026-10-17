@@ -44,6 +44,7 @@ import {
   HIDDEN_SHIPPING_FIXTURES,
 } from './fixtures/shipping';
 import { percentDiscountStatements } from './fixtures/discounts';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 const PANEL_SLUG = 'sonyachna-panel-450w-mono';
@@ -268,6 +269,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 2 }],
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -299,6 +301,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
     expect(await ordersCount()).toBe(before);
@@ -314,6 +317,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
     expect(await ordersCount()).toBe(before);
@@ -328,6 +332,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'pickup_point_invalid' });
     expect(await ordersCount()).toBe(before);
@@ -346,6 +351,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
     expect(await ordersCount()).toBe(before);
@@ -362,6 +368,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
     expect(await ordersCount()).toBe(before);
@@ -379,6 +386,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -412,6 +420,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items,
       }),
       null,
+      UK,
     );
     expect(pick.ok).toBe(true);
     if (!pick.ok) return;
@@ -424,6 +433,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items,
       }),
       null,
+      UK,
     );
     expect(cour.ok).toBe(true);
     if (!cour.ok) return;
@@ -453,6 +463,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -468,6 +479,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
     expect(await ordersCount()).toBe(before);
@@ -487,6 +499,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
   });
@@ -499,6 +512,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
   });
@@ -531,6 +545,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -549,6 +564,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -575,6 +591,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -593,6 +610,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: untrackedItems(),
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'shipping_unavailable' });
     expect(await ordersCount()).toBe(before);
@@ -615,6 +633,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -636,6 +655,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: outOfStock, modificationId: null, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -652,6 +672,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         ],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -667,6 +688,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: foreignMod, quantity: 1 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -684,6 +706,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         ],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -694,6 +717,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     const result = await placeOrderFor(
       input({ shippingMethodId: pickup }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -711,6 +735,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
         items: [{ productId: panel, modificationId: null, quantity: 10 }],
       }),
       null,
+      UK,
     );
     expect(result).toEqual({ ok: false, reason: 'not_purchasable' });
     expect(await ordersCount()).toBe(before);
@@ -726,12 +751,12 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       deliveryCity: 'Одеса',
       items: [{ productId: untracked, modificationId: null, quantity: 1 }],
     });
-    const quoted = await quoteCheckoutFor(request, null);
+    const quoted = await quoteCheckoutFor(request, null, UK);
     expect(quoted.ok).toBe(true);
     if (!quoted.ok) return;
     expect(quoted.quote.shippingCost).toBe(100);
 
-    const placed = await placeOrderFor(request, null);
+    const placed = await placeOrderFor(request, null, UK);
     expect(placed.ok).toBe(true);
     if (!placed.ok) return;
     const [row] = (await queryRows(
@@ -779,7 +804,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       pickupPointId: point,
       items: [{ productId: untracked, modificationId: null, quantity: 2 }],
     });
-    const quoted = await quoteCheckoutFor(request, null);
+    const quoted = await quoteCheckoutFor(request, null, UK);
     expect(quoted.ok).toBe(true);
     if (!quoted.ok) return;
     // 24500 базова ціна; 20% лише від qty>=2 → 19600/шт = 39200 разом,
@@ -787,7 +812,7 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     expect(quoted.quote.subtotal).toBe(39200);
     expect(quoted.quote.subtotal).not.toBe(2 * 24500);
 
-    const placed = await placeOrderFor(request, null);
+    const placed = await placeOrderFor(request, null, UK);
     expect(placed.ok).toBe(true);
     if (!placed.ok) return;
     const [row] = (await queryRows(
@@ -831,11 +856,11 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     for (const { reason, overrides } of cases) {
       const request = input(overrides);
       const before = await ordersCount();
-      expect(await quoteCheckoutFor(request, null)).toEqual({
+      expect(await quoteCheckoutFor(request, null, UK)).toEqual({
         ok: false,
         reason,
       });
-      expect(await placeOrderFor(request, null)).toEqual({
+      expect(await placeOrderFor(request, null, UK)).toEqual({
         ok: false,
         reason,
       });

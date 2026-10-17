@@ -14,6 +14,7 @@ import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-price
 import { loadProductListPayload } from 'simplycms/storefront-routes/server/product-list-payload';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 const PRODUCT = F.STATION_10KWH;
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
@@ -34,7 +35,7 @@ describe('SSR-ціна гостя = клієнтська ціна гостя (F5
     );
     const env = await discountEnvironmentFor(null);
     expect(env.priceTypeId).toBe(WHOLESALE_TYPE);
-    const quote = await quoteCartFor([line(PRODUCT)], null);
+    const quote = await quoteCartFor([line(PRODUCT)], null, UK);
     const first = quote.lines[0];
     if (!first.available) throw new Error('недоступний');
     clientPrice = first.basePrice;
@@ -42,7 +43,9 @@ describe('SSR-ціна гостя = клієнтська ціна гостя (F5
   });
 
   it('каталог: ціна SSR-списку й тип у priceContext — як у гостя на клієнті', async () => {
-    const payload = await withStorefrontDb((tx) => loadProductListPayload(tx));
+    const payload = await withStorefrontDb((tx) =>
+      loadProductListPayload(tx, UK),
+    );
     const item = payload.items.find((i) => i.id === PRODUCT);
     expect(item?.price).toBe(clientPrice);
     expect(payload.priceContext.priceTypeId).toBe(WHOLESALE_TYPE);
@@ -50,7 +53,7 @@ describe('SSR-ціна гостя = клієнтська ціна гостя (F5
 
   it('головна: SSR-ціна добірки й розділу — як у гостя на клієнті', async () => {
     const home = await withViewerPricesDb(null, (tx, v) =>
-      loadHomePageData(tx, v),
+      loadHomePageData(tx, v, UK),
     );
     const featured = home.featuredProducts.find((p) => p.id === PRODUCT);
     expect(featured?.price).toBe(clientPrice);

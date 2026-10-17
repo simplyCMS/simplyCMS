@@ -42,7 +42,10 @@ export default function ReviewCardPage() {
       <NotFoundState backTo={back} message={t('admin.reviews.notFound')} />
     );
 
-  const productUrl = productPath({ path: review.productSlug }).href;
+  const productUrl =
+    review.productPath === null
+      ? null
+      : productPath({ path: review.productPath }).href;
   return (
     <div className="max-w-3xl space-y-6">
       <CardPageHeader
@@ -54,14 +57,18 @@ export default function ReviewCardPage() {
         <CardHeader>
           <CardTitle className="text-base">
             {t('admin.reviews.product')}:{' '}
-            <a
-              href={productUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              {review.productName}
-            </a>
+            {productUrl === null ? (
+              review.productName
+            ) : (
+              <a
+                href={productUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                {review.productName}
+              </a>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

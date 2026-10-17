@@ -48,6 +48,7 @@ import {
   UNPAGED_PROPERTY_SLUG,
   VISIBLE_PRODUCT_SLUG,
 } from './fixtures/storefront';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -82,7 +83,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
   it('каталог непорожній і не містить неактивного товару', async () => {
     const rows = await withViewerPricesDb(null, (db, v) =>
-      loadProductList(db, v),
+      loadProductList(db, v, UK),
     );
 
     expect(rows.length).toBeGreaterThan(0);
@@ -117,7 +118,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
             { locale: 'uk', path: HIDDEN_PRODUCT_SLUG },
             v,
           ),
-          inSection: await loadProductList(db, v, section?.id),
+          inSection: await loadProductList(db, v, UK, section?.id),
         };
       },
     );
@@ -185,7 +186,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
   it('головна: банери, добірки й товари розділів без неактивних', async () => {
     const data = await withViewerPricesDb(null, (db, v) =>
-      loadHomePageData(db, v),
+      loadHomePageData(db, v, UK),
     );
     const filled = data.sections.find(
       (section) => section.slug === FILLED_SECTION_SLUG,
@@ -214,7 +215,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
          ('10000009-0000-4000-8000-0000000000f3'::uuid, 'Р24-чинний', 'data:,x', 'home', 0, true, now() - interval '1 day')`,
     );
     const data = await withViewerPricesDb(null, (db, v) =>
-      loadHomePageData(db, v),
+      loadHomePageData(db, v, UK),
     );
     const titles = data.banners.map((b) => b.title);
     expect(titles).toContain('Р24-чинний');
@@ -228,11 +229,11 @@ describe('лоадери вітрини проти живого Postgres', () =>
       async (db, v) => {
         const section = await loadSectionBySlug(db, 'sonyachni-paneli');
         return {
-          featured: await loadHomeProducts(db, true, v),
+          featured: await loadHomeProducts(db, true, v, UK),
           // Розділ панелей ДОЧІРНІЙ до `sonyachna-energetyka`, тож кореневі
           // бакети `loadSectionProducts` цих товарів не містять — беремо його
           // напряму, як клієнтський перезапит каруселі.
-          panels: await loadOneSectionProducts(db, section!, v),
+          panels: await loadOneSectionProducts(db, section!, v, UK),
         };
       },
     );
@@ -316,7 +317,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
   it('сторінка значення характеристики не показує неактивних товарів', async () => {
     const data = await withViewerPricesDb(null, (db, v) =>
-      loadPropertyOption(db, PAGED_PROPERTY_SLUG, PAGED_OPTION_SLUG, v),
+      loadPropertyOption(db, PAGED_PROPERTY_SLUG, PAGED_OPTION_SLUG, v, UK),
     );
 
     expect(data?.option.slug).toBe(PAGED_OPTION_SLUG);

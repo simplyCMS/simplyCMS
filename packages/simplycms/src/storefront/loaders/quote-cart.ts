@@ -4,6 +4,7 @@ import type {
   CheckoutItemInput,
 } from 'simplycms/contracts';
 import { loadPricingContext, priceCart } from 'simplycms/commerce';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { toCents } from 'simplycms/domain/pricing';
 import { withCustomerDb, withStorefrontDb, type ActorDb } from './db';
 
@@ -13,6 +14,9 @@ const EMPTY_QUOTE: CartQuote = { lines: [], subtotal: 0 };
  * Квота кошика (Е6в-13) — ціни, знижки й підказки рядків тим самим ядром
  * (`loadPricingContext` + `priceCart`), що рахує чек: картка, кошик і чек
  * розійтися не можуть за побудовою.
+ *
+ * 🔴 `text` — мова назв рядків (мова сторінки, звірена з опублікованими:
+ * `resolveTextLocale`); на ціни й знижки не впливає.
  *
  * 🔴 `userId` — лише з серверної сесії (`core/lib/cart-quote.ts`): клієнт,
  * який називає себе, називає й свою категорію, а отже знижку.
@@ -26,11 +30,12 @@ const EMPTY_QUOTE: CartQuote = { lines: [], subtotal: 0 };
 export async function quoteCartFor(
   items: CheckoutItemInput[],
   userId: string | null,
+  text: TextLocale,
 ): Promise<CartQuote> {
   if (items.length === 0) return EMPTY_QUOTE;
 
   const load = async (db: ActorDb) =>
-    priceCart(db, await loadPricingContext(db, userId), items);
+    priceCart(db, await loadPricingContext(db, userId), items, text);
   const { lines } = userId
     ? await withCustomerDb(userId, load)
     : await withStorefrontDb(load);

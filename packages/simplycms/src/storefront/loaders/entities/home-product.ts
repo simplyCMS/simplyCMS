@@ -4,14 +4,19 @@ import type { PriceTypes } from 'simplycms/commerce';
 import type { PriceEntry } from 'simplycms/contracts';
 import { resolvePrice } from 'simplycms/domain/pricing';
 import { toImageList } from './product';
+import { listLangs, listTextColumns } from '../product-list-text';
 
-/** Мінімальний товар для карток головної. */
+/**
+ * Мінімальний товар для карток головної. Назва, адреса й короткий опис — з проєкції
+ * `catalog_product_texts` у мові запиту (П7); запит приєднує її через `textJoinOn`.
+ */
 export const homeProductColumns = {
   id: products.id,
-  name: products.name,
-  slug: products.slug,
+  name: listTextColumns.name,
+  slug: listTextColumns.slug,
   images: products.images,
-  short_description: products.shortDescription,
+  short_description: listTextColumns.short_description,
+  fallback: listTextColumns.fallback,
   stock_status: products.stockStatus,
   section_id: products.sectionId,
 };
@@ -19,9 +24,13 @@ export const homeProductColumns = {
 export interface HomeProductRow {
   id: Product['id'];
   name: Product['name'];
+  /** Поточна адреса товару в мові запиту (не основної мови). */
   slug: Product['slug'];
   images: string[];
   short_description: Product['shortDescription'];
+  /** Мова назви/короткого опису, коли текст узято з основної мови (fallback). */
+  name_lang: string | null;
+  short_description_lang: string | null;
   stock_status: Product['stockStatus'];
   /** Slug розділу — потрібен лише для href картки. */
   section: { slug: string } | null;
@@ -45,6 +54,8 @@ export interface RawHomeProductRow {
   slug: string;
   images: unknown;
   short_description: string | null;
+  /** Поля тексту, узяті з основної мови (колонка проєкції `fallback_fields`). */
+  fallback: readonly string[];
   stock_status: Product['stockStatus'];
   section_id: Product['sectionId'];
 }
@@ -54,6 +65,7 @@ export function toHomeProduct(
   sectionSlug: string | null,
   prices: PriceEntry[],
   priceTypes: PriceTypes,
+  primary: string,
 ): HomeProductRow {
   // SSR-ціна — ТИМ САМИМ доменним резолвом, що в каталозі
   // (`product-list-item`): окремий MIN(price)-агрегат був би другим способом
@@ -69,6 +81,7 @@ export function toHomeProduct(
     slug: row.slug,
     images: toImageList(row.images),
     short_description: row.short_description,
+    ...listLangs(row.fallback, primary),
     stock_status: row.stock_status,
     section: sectionSlug === null ? null : { slug: sectionSlug },
     section_id: row.section_id,

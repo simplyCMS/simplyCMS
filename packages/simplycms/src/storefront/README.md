@@ -32,18 +32,26 @@ pnpm add simplycms
 `withStorefrontDb` (`app_user` без `userId`). Лоадери з цінами (`loadProduct`,
 `loadProductList`, `loadCatalogProducts`, `loadPropertyOption`, `loadHomePageData`,
 `loadHomeProducts`, `loadSectionProducts`) приймають обовʼязковий `viewer` —
-набір видів цін глядача (Р29) — і відкриваються лише через `withViewerDb`:
+набір видів цін глядача (Р29) — і відкриваються лише через `withViewerDb`.
+Списки й добірки товару (`loadProductList`, `loadCatalogProducts`, `loadPropertyOption`,
+`loadHomePageData`, `loadHomeProducts`, `loadSectionProducts`) та оформлення
+(`quoteCartFor`, `quoteCheckoutFor`, `placeOrderFor`) приймають також `text: TextLocale`
+(`{ locale, primary }`) — мову читання тексту товару: назва, адреса й короткий опис — з проєкції
+`catalog_product_texts` у цій мові, неперекладене — з основної. Мову клієнта звіряє з
+опублікованими `resolveTextLocale`:
 
 ```ts
 import {
   loadSectionBySlug,
   loadProductList,
+  resolveTextLocale,
   withViewerDb,
 } from 'simplycms/storefront/loaders';
 
+const text = await resolveTextLocale(locale);
 const data = await withViewerDb(async (db, viewer) => {
   const section = await loadSectionBySlug(db, slug);
-  return section ? loadProductList(db, viewer, section.id) : [];
+  return section ? loadProductList(db, viewer, text, section.id) : [];
 });
 ```
 

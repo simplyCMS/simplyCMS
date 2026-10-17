@@ -8,6 +8,7 @@ import { quoteShippingCost, validateShippingChoice } from 'simplycms/commerce';
 import { prepareCheckout } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 describe('доставка commerce', () => {
   const ids = useCommerceDb('simplycms_commerce_shipping');
@@ -51,7 +52,7 @@ describe('доставка commerce', () => {
         ...o,
       }) as PlaceOrderInput;
     const prepare = (o: Partial<PlaceOrderInput>) =>
-      guest((db) => prepareCheckout(db, order(o), null));
+      guest((db) => prepareCheckout(db, order(o), null, UK));
     expect(await prepare({})).toEqual({
       ok: false,
       reason: 'shipping_unavailable',

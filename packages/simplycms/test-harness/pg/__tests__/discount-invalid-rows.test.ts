@@ -10,6 +10,7 @@ import {
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 import { percentDiscountStatements } from './fixtures/discounts';
+import { UK } from './fixtures/text-locale';
 
 const PRODUCT = F.INVERTER_8KW;
 const target = { type: 'product', id: PRODUCT } as const;
@@ -47,10 +48,10 @@ describe('пошкоджений рядок правил знижок не ла�
   });
 
   it('priceItems і quoteCartFor застосовують валідну знижку без винятку', async () => {
-    const out = await guest((tx) => priceItems(tx, null, [line(PRODUCT)]));
+    const out = await guest((tx) => priceItems(tx, null, [line(PRODUCT)], UK));
     if (out === 'not_purchasable') throw new Error(out);
     expect(out[0].price).toBe(900);
-    const cart = await quoteCartFor([line(PRODUCT)], null);
+    const cart = await quoteCartFor([line(PRODUCT)], null, UK);
     const first = cart.lines[0];
     if (!first.available) throw new Error('недоступний');
     expect(first.price).toBe(900);

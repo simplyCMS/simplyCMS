@@ -24,6 +24,7 @@ const cart = vi.hoisted(() => ({
 
 vi.mock('../../lib/cart-quote', () => server);
 vi.mock('../useAuth', () => ({ useAuth: () => ({ user: auth.user }) }));
+vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
 vi.mock('simplycms/react-query', () => ({
   useCart: () => ({ items: cart.items, hydrated: cart.hydrated }),
 }));
@@ -54,14 +55,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('useCartQuote', () => {
-  it('ключ — userId і трійки позицій; serverFn отримує лише id і кількість', async () => {
+  it('ключ — мова, userId і трійки позицій; serverFn отримує лише id і кількість', async () => {
     const { result } = renderHook(() => useCartQuote(), { wrapper });
     await waitFor(() => expect(result.current.quote).toEqual(QUOTE));
     expect(keys()).toEqual([
-      [...AGGREGATE.cartQuote.key, null, [[P, null, 1]]],
+      [...AGGREGATE.cartQuote.keyFor('uk'), null, [[P, null, 1]]],
     ]);
     expect(server.quoteCart).toHaveBeenCalledWith({
-      data: { items: [{ productId: P, modificationId: null, quantity: 1 }] },
+      data: {
+        items: [{ productId: P, modificationId: null, quantity: 1 }],
+        locale: 'uk',
+      },
     });
   });
 
@@ -72,7 +76,7 @@ describe('useCartQuote', () => {
     rerender();
     await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
     expect(keys()).toContainEqual([
-      ...AGGREGATE.cartQuote.key,
+      ...AGGREGATE.cartQuote.keyFor('uk'),
       null,
       [[P, null, 3]],
     ]);
@@ -85,7 +89,7 @@ describe('useCartQuote', () => {
     rerender();
     await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
     expect(keys()).toContainEqual([
-      ...AGGREGATE.cartQuote.key,
+      ...AGGREGATE.cartQuote.keyFor('uk'),
       'u1',
       [[P, null, 1]],
     ]);

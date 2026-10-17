@@ -4,32 +4,6 @@ import type { Product } from 'simplycms/schema/types';
 import { resolveMediaUrls } from 'simplycms/domain/media';
 
 /**
- * Мапа select-а товару у snake_case (причина ключів — коментар у `./section`).
- *
- * 🔴 `return_policy`/`shipping_details` (B7) свідомо НЕ вибираються: рендерер
- * JSON-LD для них приїде в К2, а зайвий jsonb у кожному рядку списку — це
- * трафік SSR-відповіді без жодного споживача.
- */
-export const productColumns = {
-  id: products.id,
-  section_id: products.sectionId,
-  slug: products.slug,
-  name: products.name,
-  short_description: products.shortDescription,
-  description: products.description,
-  is_active: products.isActive,
-  is_featured: products.isFeatured,
-  meta_title: products.metaTitle,
-  meta_description: products.metaDescription,
-  created_at: products.createdAt,
-  updated_at: products.updatedAt,
-  images: products.images,
-  has_modifications: products.hasModifications,
-  sku: products.sku,
-  stock_status: products.stockStatus,
-};
-
-/**
  * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
  * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8),
  * а не з колонок `products`, які ще дзеркалять лише основну мову.
@@ -51,19 +25,20 @@ export const productBaseColumns = {
 export type ProductRow = {
   id: Product['id'];
   section_id: Product['sectionId'];
-  slug: Product['slug'];
-  name: Product['name'];
-  short_description: Product['shortDescription'];
+  /** Поточна адреса товару в мові читання (реєстр `url_paths`), а не колонка `products`. */
+  slug: string;
+  name: string;
+  short_description: string | null;
   /**
    * 🔴 Тема 9: розмітка опису — ЗАВЖДИ `SanitizedHtml` (рубіж 2). Сирий SELECT
-   * (`productColumns`) дає `string`, тож рядок мапиться лоадером; каталожний
+   * дає `string`, тож рядок мапиться лоадером; каталожний
    * список опису не віддає взагалі (`null`).
    */
   description: SanitizedHtml | null;
   is_active: Product['isActive'];
   is_featured: Product['isFeatured'];
-  meta_title: Product['metaTitle'];
-  meta_description: Product['metaDescription'];
+  meta_title: string | null;
+  meta_description: string | null;
   created_at: Product['createdAt'];
   updated_at: Product['updatedAt'];
   images: string[];

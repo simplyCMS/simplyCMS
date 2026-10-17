@@ -5,6 +5,7 @@ import type {
   QuoteCheckoutResult,
   QuotedItem,
 } from 'simplycms/contracts';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { withCustomerDb, withOrderTokenDb, type ActorDb } from './db';
 import { prepareCheckout } from './prepare-checkout';
 
@@ -32,13 +33,14 @@ import { prepareCheckout } from './prepare-checkout';
 export async function quoteCheckoutFor(
   input: PlaceOrderInput,
   userId: string | null,
+  text: TextLocale,
 ): Promise<QuoteCheckoutResult> {
   const run = <T>(fn: (db: ActorDb) => Promise<T>): Promise<T> =>
     userId === null
       ? withOrderTokenDb(randomUUID(), (db) => fn(db))
       : withCustomerDb(userId, (db) => fn(db));
 
-  const prepared = await run((db) => prepareCheckout(db, input, userId));
+  const prepared = await run((db) => prepareCheckout(db, input, userId, text));
   if (!prepared.ok) return prepared;
 
   const items: QuotedItem[] = prepared.items.map((item) => ({

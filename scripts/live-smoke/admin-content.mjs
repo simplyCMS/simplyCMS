@@ -21,6 +21,7 @@ import { bodyLimitPart } from './body-limit.mjs';
 import { cleanupContentStep } from './admin-content-cleanup.mjs';
 import { userByEmail } from './admin-customers-sql.mjs';
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 
 const SLUG = 'sonyachna-panel-600w-bifacial';
 const TAG = Date.now().toString(36);
@@ -67,7 +68,7 @@ export async function runAdminContentStep({
     st.productUrl = `${base}/${SLUG}`;
     const [product] = await sql(
       dbUrl,
-      'select id from public.products where slug = $1',
+      `select id from public.products where id = ${productIdByPath('$1')}`,
       [SLUG],
     );
     st.productId = product.id;

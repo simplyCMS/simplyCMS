@@ -8,6 +8,7 @@ import { quoteCartFor } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 import { percentDiscountStatements } from './fixtures/discounts';
+import { UK } from './fixtures/text-locale';
 
 const PRODUCT = F.INVERTER_8KW;
 const target = { type: 'product', id: PRODUCT } as const;
@@ -44,10 +45,10 @@ describe('семантично невалідні рядки знижок (Е6в
   });
 
   it('priceItems і квота кошика застосовують лише валідну знижку', async () => {
-    const out = await guest((tx) => priceItems(tx, null, [line(PRODUCT)]));
+    const out = await guest((tx) => priceItems(tx, null, [line(PRODUCT)], UK));
     if (out === 'not_purchasable') throw new Error(out);
     expect(out[0].price).toBe(900);
-    const quote = await quoteCartFor([line(PRODUCT)], null);
+    const quote = await quoteCartFor([line(PRODUCT)], null, UK);
     const first = quote.lines[0];
     if (!first.available) throw new Error('недоступний');
     expect(first.price).toBe(900);

@@ -9,6 +9,7 @@ import type { PlaceOrderInput } from 'simplycms/contracts';
 import { placeOrderFor } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/customer-categories';
 import { demoPickupInput } from './fixtures/orders';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -74,7 +75,7 @@ describe('автоправила: ізоляція збоїв (Е6в-25)', () =>
     const customer = await F.seedCustomer(url(), { categoryId: from });
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
-      const result = await placeOrderFor(input, customer);
+      const result = await placeOrderFor(input, customer, UK);
       expect(result.ok).toBe(true);
       expect(await F.customerState(url(), customer)).toMatchObject({
         category_id: vip,

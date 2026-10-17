@@ -77,7 +77,6 @@ const RESOLVED_BY: Record<string, string> = {
   'reviews.ts#images': 'toImageList',
   'products.ts#images': 'toImageList',
   'entities/home-product.ts#images': 'toImageList',
-  'entities/modification.ts#images': 'toImageList',
   'entities/banner.ts#image_url': 'resolveMediaUrl',
   'entities/banner.ts#desktop_image_url': 'resolveMediaUrl',
   'entities/banner.ts#mobile_image_url': 'resolveMediaUrl',
@@ -103,8 +102,8 @@ const RESOLVED_BY_CONSUMERS: Record<
     files: [
       'products.ts',
       'product-detail.ts',
+      'catalog-products.ts',
       'entities/home-product.ts',
-      'entities/modification.ts',
     ],
   },
 };

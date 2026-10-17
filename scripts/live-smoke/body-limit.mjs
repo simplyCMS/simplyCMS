@@ -16,6 +16,7 @@ import { tsImport } from 'tsx/esm/api';
 import { PNG } from './avatar.mjs';
 import { reviewByTitle } from './admin-content-sql.mjs';
 import { sql } from './sql.mjs';
+import { joinPrimaryPath } from './product-address.mjs';
 
 // Константи ядра беруться з джерела, а не копіюються: стеля виводиться з них.
 // `tsImport` із `tsx/esm/api` — без залежності від type-stripping Node (на відміну
@@ -58,9 +59,10 @@ export async function bodyLimitPart({ pages, base, dbUrl, check, st }) {
   // Інший товар: на перший покупець уже залишив відгук (унікальність).
   const [other] = await sql(
     dbUrl,
-    `select p.slug, s.slug as section from public.products p
+    `select up.path as slug, s.slug as section from public.products p
+       ${joinPrimaryPath()}
        join public.sections s on s.id = p.section_id
-      where p.is_active = true and p.id <> $1 order by p.slug limit 1`,
+      where p.is_active = true and p.id <> $1 order by up.path limit 1`,
     [st.productId],
   );
   const title = `Е6д-2 стеля ${Date.now().toString(36)}`;

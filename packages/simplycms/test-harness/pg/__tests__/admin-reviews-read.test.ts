@@ -115,7 +115,7 @@ describe('admin: читання модерації відгуків (Е6д-7, Е
       [f.ids.panel],
     );
     expect(card?.sectionSlug).toBe(expected.slug);
-    expect(card?.productSlug).toBeTruthy();
+    expect(card?.productPath).toBeTruthy();
     expect(
       await getReviewCardOp({ data: { id: crypto.randomUUID() } }),
     ).toBeNull();

@@ -22,6 +22,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { insertProductGraphAt } from './fixtures/product-graph';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -267,7 +268,7 @@ describe('санітизація HTML: запис і віддача проти �
     expect(product?.description).not.toMatch(FORBIDDEN);
 
     const page = await withViewerPricesDb(null, (db, viewer) =>
-      loadPropertyOption(db, 'xss-prop', 'raw-option', viewer),
+      loadPropertyOption(db, 'xss-prop', 'raw-option', viewer, UK),
     );
     expect(page?.option.description).toBeTruthy();
     expect(page?.option.description).not.toMatch(FORBIDDEN);

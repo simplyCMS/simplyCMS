@@ -8,6 +8,7 @@
  * кластера RLS не підпадає (`force row level security` канон не вмикає).
  */
 import pg from 'pg';
+import { productIdByPath } from './product-address.mjs';
 
 /** Один запит окремим зʼєднанням: прогін короткий, пул тут зайвий. */
 export async function sql(url, text, values = []) {
@@ -47,7 +48,7 @@ export async function stockSnapshot(url, slug) {
     `select p.id, p.stock_status, s.slug as section
        from public.products p
        join public.sections s on s.id = p.section_id
-      where p.slug = $1`,
+      where p.id = ${productIdByPath('$1')}`,
     [slug],
   );
   if (!product)

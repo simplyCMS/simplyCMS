@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { searchProductsForOrderOp } from 'simplycms/admin-server/impl';
+import { queryRowsLockingLanguages } from '../apply.mjs';
 import { useOrderItemsEditDb } from './fixtures/order-items-edit';
 import {
   insertProductGraph,
@@ -32,7 +33,12 @@ describe('admin: пошук товару для замовлення (К3-Е5б,
     (await searchProductsForOrderOp({ data: { query } })).items;
   const names = async (query: string) =>
     (await search(query)).map((i) => i.name);
-  const product = async (name: string, sku: string | null, active = true) => {
+  const product = async (
+    name: string,
+    sku: string | null,
+    active = true,
+    translations: Record<string, { name: string }> = {},
+  ) => {
     const id = randomUUID();
     await insertProductGraph(
       viaRows((sql) => f.rows(sql)),
@@ -43,6 +49,7 @@ describe('admin: пошук товару для замовлення (К3-Е5б,
         sku,
         isActive: active,
         hasModifications: false,
+        translations,
       },
     );
     return id;
@@ -87,6 +94,43 @@ describe('admin: пошук товару для замовлення (К3-Е5б,
     expect(requireGrant).not.toHaveBeenCalled();
     expect((await search('за')).length).toBeGreaterThan(0);
     expect(withActor).toHaveBeenCalledTimes(1);
+  });
+
+  it('пошук для замовлення знаходить товар за en-назвою й за артикулом', async () => {
+    await queryRowsLockingLanguages(
+      f.db.url,
+      `insert into public.languages (id, code, name, status, is_default, sort_order)
+       values (gen_random_uuid(), 'en', 'English', 'published', false, 7)`,
+      [],
+    );
+    const id = await product('Інвертор мережевий', 'INV-777', true, {
+      en: { name: 'Grid inverter' },
+    });
+    // Англійська назва знаходить товар, а показується назва ОСНОВНОЮ мовою (адмін-читач).
+    for (const q of ['grid inv', 'GRID INVERTER', 'ор мереж', 'inv-777']) {
+      expect(await search(q), q).toEqual([
+        {
+          productId: id,
+          name: 'Інвертор мережевий',
+          sku: 'INV-777',
+          hasModifications: false,
+        },
+      ]);
+    }
+  });
+
+  it('збіг за англійською назвою модифікації знаходить товар', async () => {
+    await product('Коробка', null);
+    const id = await product('Реле часу', null);
+    await f.rows(
+      modificationGraphSql(id, {
+        id: randomUUID(),
+        slug: `m-${randomUUID()}`,
+        name: 'Червона',
+        translations: { en: { name: 'Crimson' } },
+      }),
+    );
+    expect(await names('crimson')).toEqual(['Реле часу']);
   });
 
   it('неактивний товар не повертається', async () => {

@@ -6,12 +6,16 @@ import {
   loadSectionBySlug,
   loadSectionFilterProperties,
   loadSections,
+  resolveTextLocale,
   withStorefrontDb,
   withViewerDb,
   type SectionRow,
 } from 'simplycms/storefront/loaders';
 import type { ProductListPayload } from './product-list-item';
 import { loadProductListPayload } from './product-list-payload';
+
+/** Мова читання тексту товарів: дає її роут (з префікса адреси), не сесія. */
+const localeInput = z.object({ locale: z.string().min(1) });
 
 export interface CatalogPageData {
   sections: SectionRow[];
@@ -29,13 +33,15 @@ export interface SectionPageData extends CatalogPageData {
  * викликів, і кожен відкривав ВЛАСНУ транзакцію — тобто сторінка складалася
  * з різних знімків БД і платила зайвими раундтрипами. Тут усе в одній.
  */
-export const getCatalogPageData = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<CatalogPageData> =>
-    withStorefrontDb(async (db) => ({
+export const getCatalogPageData = createServerFn({ method: 'GET' })
+  .validator(localeInput)
+  .handler(async ({ data: input }): Promise<CatalogPageData> => {
+    const text = await resolveTextLocale((input as { locale: string }).locale);
+    return withStorefrontDb(async (db) => ({
       sections: await loadSections(db),
-      products: await loadProductListPayload(db),
-    })),
-);
+      products: await loadProductListPayload(db, text),
+    }));
+  });
 
 /**
  * Сторінка розділу. `null` означає «розділу немає або він неактивний» —
@@ -46,9 +52,10 @@ export const getCatalogPageData = createServerFn({ method: 'GET' }).handler(
  * замість одного.
  */
 export const getSectionPageData = createServerFn({ method: 'GET' })
-  .validator(z.object({ slug: z.string().min(1) }))
+  .validator(localeInput.extend({ slug: z.string().min(1) }))
   .handler(async ({ data: input }): Promise<SectionPageData | null> => {
-    const { slug } = input as { slug: string };
+    const { slug, locale } = input as { slug: string; locale: string };
+    const text = await resolveTextLocale(locale);
 
     return withStorefrontDb(async (db) => {
       const section = await loadSectionBySlug(db, slug);
@@ -57,7 +64,7 @@ export const getSectionPageData = createServerFn({ method: 'GET' })
       return {
         section,
         sections: await loadSections(db),
-        products: await loadProductListPayload(db, section.id),
+        products: await loadProductListPayload(db, text, section.id),
       };
     });
   });
@@ -83,11 +90,15 @@ export const getCatalogSection = createServerFn({ method: 'GET' })
  * лише видів глядача сесії (Р29, `withViewerDb`).
  */
 export const getCatalogProducts = createServerFn({ method: 'GET' })
-  .validator(z.object({ sectionId: z.string().min(1).optional() }))
+  .validator(localeInput.extend({ sectionId: z.string().min(1).optional() }))
   .handler(async ({ data: input }) => {
-    const { sectionId } = input as { sectionId?: string };
+    const { sectionId, locale } = input as {
+      sectionId?: string;
+      locale: string;
+    };
+    const text = await resolveTextLocale(locale);
     return withViewerDb((db, viewer) =>
-      loadCatalogProducts(db, viewer, sectionId),
+      loadCatalogProducts(db, viewer, text, sectionId),
     );
   });
 

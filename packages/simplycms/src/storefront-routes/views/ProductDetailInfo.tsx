@@ -7,7 +7,7 @@ import { useT } from 'simplycms/i18n';
 import { Badge } from 'simplycms/ui/badge';
 import { Button } from 'simplycms/ui/button';
 import { Separator } from 'simplycms/ui/separator';
-import { FallbackText } from '../components/FallbackText';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 
 /**
  * Права колонка картки: назва, бейджі, ціна, короткий опис, вибір

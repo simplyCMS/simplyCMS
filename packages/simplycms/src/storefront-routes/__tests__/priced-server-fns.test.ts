@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
  */
 const VIEWER = { ids: ['retail'] };
 const TX = { tx: true };
+/** Мова читання тексту, яку «визначив» `resolveTextLocale` (мок): передається лоадеру як є. */
+const TEXT = { locale: 'en', primary: 'uk' };
 
 const loaders = vi.hoisted(() => ({
   withViewerDb: vi.fn(),
@@ -18,6 +20,7 @@ const loaders = vi.hoisted(() => ({
   loadHomePageData: vi.fn(),
   loadHomeProducts: vi.fn(),
   loadOneSectionProducts: vi.fn(),
+  resolveTextLocale: vi.fn(),
 }));
 
 // Білдер — тотожність над хендлером: перевіряємо тіло serverFn, не RPC Start.
@@ -48,6 +51,7 @@ const SECTION = { id: 's1', name: 'Панелі', slug: 'paneli' };
 
 beforeEach(() => {
   for (const fn of Object.values(loaders)) fn.mockReset();
+  loaders.resolveTextLocale.mockResolvedValue(TEXT);
   loaders.withViewerDb.mockImplementation(
     async (fn: (db: unknown, viewer: unknown) => unknown) => fn(TX, VIEWER),
   );
@@ -63,39 +67,44 @@ describe('serverFn вітрини з цінами — через withViewerDb (�
     ],
     [
       'getCatalogProducts',
-      () => call(getCatalogProducts, { sectionId: 's1' }),
+      () => call(getCatalogProducts, { sectionId: 's1', locale: 'en' }),
       'loadCatalogProducts',
-      [TX, VIEWER, 's1'],
+      [TX, VIEWER, TEXT, 's1'],
     ],
     [
       'getPropertyOption',
-      () => call(getPropertyOption, { propertySlug: 'p', optionSlug: 'o' }),
+      () =>
+        call(getPropertyOption, {
+          propertySlug: 'p',
+          optionSlug: 'o',
+          locale: 'en',
+        }),
       'loadPropertyOption',
-      [TX, 'p', 'o', VIEWER],
+      [TX, 'p', 'o', VIEWER, TEXT],
     ],
     [
       'getHomePageData',
-      () => call(getHomePageData),
+      () => call(getHomePageData, { locale: 'en' }),
       'loadHomePageData',
-      [TX, VIEWER],
+      [TX, VIEWER, TEXT],
     ],
     [
       'getFeaturedProducts',
-      () => call(getFeaturedProducts),
+      () => call(getFeaturedProducts, { locale: 'en' }),
       'loadHomeProducts',
-      [TX, true, VIEWER],
+      [TX, true, VIEWER, TEXT],
     ],
     [
       'getNewProducts',
-      () => call(getNewProducts),
+      () => call(getNewProducts, { locale: 'en' }),
       'loadHomeProducts',
-      [TX, false, VIEWER],
+      [TX, false, VIEWER, TEXT],
     ],
     [
       'getSectionProducts',
-      () => call(getSectionProducts, SECTION),
+      () => call(getSectionProducts, { ...SECTION, locale: 'en' }),
       'loadOneSectionProducts',
-      [TX, SECTION, VIEWER],
+      [TX, SECTION, VIEWER, TEXT],
     ],
   ] as const)('%s', async (_name, run, loader, args) => {
     await run();

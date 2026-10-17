@@ -20,7 +20,8 @@ type Raw = Omit<
 };
 
 /**
- * Картка відгуку (`review.moderate`) або `null`. Поглинає колишній
+ * Картка відгуку (`review.moderate`) або `null`. Назва і адреса товару — ОСНОВНОЇ мови
+ * (адмін-читач): `productPath` — поточний шлях з реєстру `url_paths`, без префікса мови. Поглинає колишній
  * легасі-запит вмісту відгуку (Е6д-11): `content` очищено на сервері (відгук —
  * недовірений вхід, а виконався б у сесії власника), `images` — референси, які
  * адмінка резолвить клієнтським `resolveMediaUrl`. `images` нормалізовано:
@@ -34,8 +35,8 @@ export const getReviewCardOp = async ({
   const { id } = parseAdminInput(getReviewCardInput, data);
   return runAdmin('review.moderate', async (db) => {
     const result = await db.execute<Raw>(sql`
-      select r.id, r.product_id as "productId", p.name as "productName",
-             p.slug as "productSlug", s.slug as "sectionSlug",
+      select r.id, r.product_id as "productId", pt.name as "productName",
+             up.path as "productPath", s.slug as "sectionSlug",
              r.user_id as "userId",
              coalesce(nullif(trim(concat_ws(' ', pr.first_name, pr.last_name)), ''),
                       u.name) as "authorName",
@@ -47,6 +48,12 @@ export const getReviewCardOp = async ({
              ${isoVersion(sql`r.updated_at`)} as "updatedAt"
         from public.product_reviews r
         join public.products p on p.id = r.product_id
+        join public.product_translations pt
+          on pt.product_id = p.id
+         and pt.locale = (select code from public.languages where is_default)
+        left join public.url_paths up
+          on up.product_id = p.id and up.is_current
+         and up.locale = (select code from public.languages where is_default)
         left join public.sections s on s.id = p.section_id
         left join public.users u on u.id = r.user_id
         left join public.profiles pr on pr.user_id = u.id

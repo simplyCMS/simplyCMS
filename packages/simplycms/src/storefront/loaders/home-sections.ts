@@ -1,5 +1,10 @@
 import { and, eq, inArray, lte, sql } from 'drizzle-orm';
-import { products } from 'simplycms/schema';
+import {
+  catalogProductTexts as texts,
+  languages,
+  products,
+} from 'simplycms/schema';
+import type { TextLocale } from 'simplycms/domain/translations';
 import type { ActorDb } from './db';
 import {
   homeProductColumns,
@@ -7,6 +12,7 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
+import { publishedLanguageOn, textJoinOn } from './product-list-text';
 import {
   loadGuestPriceTypes,
   loadViewerPricesByProduct,
@@ -29,6 +35,7 @@ export async function loadSectionProducts(
   db: ActorDb,
   sections: SectionRef[],
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<Record<string, HomeProductRow[]>> {
   const bySection: Record<string, HomeProductRow[]> = {};
   for (const section of sections) bySection[section.id] = [];
@@ -51,6 +58,9 @@ export async function loadSectionProducts(
       `.as('position'),
     })
     .from(products)
+    // Текст мови запиту (П7): товар без рядка проєкції в цій мові в добірку не йде.
+    .innerJoin(texts, textJoinOn(text))
+    .innerJoin(languages, publishedLanguageOn())
     // Предикат видимості — див. коментар у `./sections`.
     .where(
       and(eq(products.isActive, true), inArray(products.sectionId, sectionIds)),
@@ -82,6 +92,7 @@ export async function loadSectionProducts(
         slugById.get(row.section_id) ?? null,
         prices[row.id] ?? [],
         guestPriceTypes,
+        text.primary,
       ),
     );
   }
@@ -99,7 +110,8 @@ export async function loadOneSectionProducts(
   db: ActorDb,
   section: SectionRef,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<HomeProductRow[]> {
-  const bySection = await loadSectionProducts(db, [section], viewer);
+  const bySection = await loadSectionProducts(db, [section], viewer, text);
   return bySection[section.id] ?? [];
 }

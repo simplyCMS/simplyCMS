@@ -1,5 +1,11 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
-import { products, sections } from 'simplycms/schema';
+import {
+  catalogProductTexts as texts,
+  languages,
+  products,
+  sections,
+} from 'simplycms/schema';
+import type { TextLocale } from 'simplycms/domain/translations';
 import type { Banner } from 'simplycms/contracts';
 import type { ActorDb } from './db';
 import { loadBanners } from './banners';
@@ -10,6 +16,7 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
+import { publishedLanguageOn, textJoinOn } from './product-list-text';
 import {
   loadGuestPriceTypes,
   loadViewerPricesByProduct,
@@ -41,12 +48,13 @@ export interface HomePageData {
 export async function loadHomePageData(
   db: ActorDb,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<HomePageData> {
   // Р24: лише розміщення `home` і лише в межах розкладу — тема бере ПЕРШИЙ
   // банер як hero, тож банер іншого місця чи з майбутнім розкладом не годиться.
   const homeBanners = await loadBanners(db, { placement: 'home' });
-  const featured = await loadHomeProducts(db, true, viewer);
-  const newProducts = await loadHomeProducts(db, false, viewer);
+  const featured = await loadHomeProducts(db, true, viewer, text);
+  const newProducts = await loadHomeProducts(db, false, viewer, text);
   const rootSections = await loadRootSections(db);
 
   return {
@@ -54,7 +62,7 @@ export async function loadHomePageData(
     featuredProducts: featured,
     newProducts,
     sections: rootSections,
-    sectionProducts: await loadSectionProducts(db, rootSections, viewer),
+    sectionProducts: await loadSectionProducts(db, rootSections, viewer, text),
   };
 }
 
@@ -70,6 +78,7 @@ export async function loadHomeProducts(
   db: ActorDb,
   featuredOnly: boolean,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<HomeProductRow[]> {
   const visible = featuredOnly
     ? and(eq(products.isActive, true), eq(products.isFeatured, true))
@@ -78,6 +87,8 @@ export async function loadHomeProducts(
   const rows = await db
     .select({ ...homeProductColumns, section_slug: sections.slug })
     .from(products)
+    .innerJoin(texts, textJoinOn(text))
+    .innerJoin(languages, publishedLanguageOn())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     // Другий ключ — щоб LIMIT не відсікав «які трапляться» серед рядків з
@@ -94,6 +105,12 @@ export async function loadHomeProducts(
   );
   const guestPriceTypes = await loadGuestPriceTypes(db);
   return rows.map((row) =>
-    toHomeProduct(row, row.section_slug, prices[row.id] ?? [], guestPriceTypes),
+    toHomeProduct(
+      row,
+      row.section_slug,
+      prices[row.id] ?? [],
+      guestPriceTypes,
+      text.primary,
+    ),
   );
 }

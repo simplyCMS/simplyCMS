@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { CartQuote } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
+import { useLocale } from 'simplycms/i18n';
 import { useCart } from 'simplycms/react-query';
 import { quoteCart } from '../lib/cart-quote';
 import { useAuth } from './useAuth';
@@ -25,7 +26,7 @@ export interface CartQuoteState {
  * Серверна квота кошика (Е6в-13) — ЄДИНЕ джерело цін, знижок, підказок і
  * суми кошика: drawer, сторінка кошика, `CartSummary` і чекаут читають її.
  *
- * 🔴 Ключ — `userId` і трійки позицій: вхід/вихід або зміна кількості дають
+ * 🔴 Ключ — мова (І36), `userId` і трійки позицій: вхід/вихід або зміна кількості дають
  * новий ключ і новий запит (Review Focus 2). `userId` — лише сегмент
  * клієнтського кешу: актора сервер бере з сесії.
  *
@@ -50,17 +51,19 @@ export function useCartQuote(): CartQuoteState {
     modificationId,
     quantity,
   }));
+  // Назви рядків квоти — мовою сторінки (М1), тож мова — перший сегмент ключа (І36).
+  const locale = useLocale();
   const query = useQuery({
     queryKey: [
-      ...AGGREGATE.cartQuote.key,
+      ...AGGREGATE.cartQuote.keyFor(locale),
       userId,
       lines.map((l) => [l.productId, l.modificationId, l.quantity]),
     ],
-    queryFn: () => quoteCart({ data: { items: lines } }),
+    queryFn: () => quoteCart({ data: { items: lines, locale } }),
     staleTime: 0,
     enabled: hydrated && lines.length > 0,
     placeholderData: (previous, previousQuery) =>
-      previousQuery?.queryKey[1] === userId ? previous : undefined,
+      previousQuery?.queryKey[2] === userId ? previous : undefined,
   });
   const refetch = () => void query.refetch();
   const idle = { isError: false, isFetching: false, isPlaceholderData: false };

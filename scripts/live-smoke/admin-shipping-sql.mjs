@@ -7,6 +7,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 
 // Скрипт — чистий node без збірки, TS-модуль він не імпортує. Рівність із
 // `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema/seed-ids`) стереже тест
@@ -90,7 +91,8 @@ export async function seedPointStock(url, pointId, slug, quantity) {
     url,
     `insert into public.stock_by_pickup_point
        (id, pickup_point_id, product_id, modification_id, quantity)
-     select $1, $2, p.id, null, $4 from public.products p where p.slug = $3`,
+     select $1, $2, p.id, null, $4 from public.products p
+      where p.id = ${productIdByPath('$3')}`,
     [id, pointId, slug, quantity],
   );
   return id;

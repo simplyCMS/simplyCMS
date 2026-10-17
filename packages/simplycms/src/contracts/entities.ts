@@ -240,9 +240,12 @@ export const AGGREGATE = {
    * `PropertyOptionPageData.products` документовано як «уже з
    * модифікаціями й цінами» — deps звіряють саме це, а не тільки join
    * ідентифікації опції (Task 6, fix-раунд 2: перша редакція пропустила
-   * делегування в спільний лоадер).
+   * делегування в спільний лоадер). `languages` (М1, Task 16): текст і адреса
+   * товарів читаються з проєкції лише для опублікованої мови, тож зміна статусу
+   * мови міняє склад сторінки.
    */
   propertyOptionPage: aggregateKey('property-option-page', [
+    ENTITY.languages,
     ENTITY.products,
     ENTITY.propertyOptions,
     ENTITY.sectionProperties,
@@ -268,9 +271,11 @@ export const AGGREGATE = {
    * шість таблиць одним походом; доступність — зі `stock_status` рядка,
    * без окремого читання залишків (К2-Е0, Е0-3). Раніше йшла під
    * `entityKey(ENTITY.products)`, тож мутація ціни не мала шляху до
-   * інвалідації списку (фінальне рев'ю Е1а, фікс-раунд 3).
+   * інвалідації списку (фінальне рев'ю Е1а, фікс-раунд 3). `languages`
+   * (М1, Task 16): назва й адреса — з проєкції для опублікованої мови.
    */
   catalogProducts: aggregateKey('catalog-products', [
+    ENTITY.languages,
     ENTITY.products,
     ENTITY.sections,
     ENTITY.productModifications,

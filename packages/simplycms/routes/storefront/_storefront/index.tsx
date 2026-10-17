@@ -5,13 +5,16 @@ import {
   homeHead,
   readStorefrontRoot,
 } from 'simplycms/storefront-routes/head/head';
+import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
 import { buildOrganizationJsonLd } from 'simplycms/storefront-routes/head/organization';
 
 export const Route = createFileRoute('/_storefront/')({
   staleTime: 60_000,
-  loader: async () => {
-    return getHomePageData();
-  },
+  // Мова — з префікса публічного href: товари головної читаються її текстом (П7).
+  loader: async ({ location, context }) =>
+    getHomePageData({
+      data: { locale: localeOfHref(location.publicHref, context.locales) },
+    }),
   // Заголовок головної — `homeTitle` профілю (без суфікса назви), а
   // Organization JSON-LD живе лише тут: це сторінка-представник магазину.
   head: ({ matches }) => {

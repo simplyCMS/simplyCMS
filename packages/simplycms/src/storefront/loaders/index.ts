@@ -4,6 +4,7 @@ export * from './viewer';
 export * from './banners';
 export * from './home';
 export * from './languages';
+export * from './text-locale';
 export * from './home-sections';
 export * from './catalog-filters';
 export * from './catalog-products';

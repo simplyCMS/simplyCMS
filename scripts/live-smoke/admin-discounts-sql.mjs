@@ -6,6 +6,7 @@
  * категорію перед видаленням тестової (`user_category_has_customers`).
  */
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 
 /** Перший рядок запиту або `null`. */
 const one = async (...args) => (await sql(...args))[0] ?? null;
@@ -103,7 +104,7 @@ export async function productPricing(url, slug) {
     `select p.id, pp.price::float8 as price from public.products p
        join public.product_prices pp on pp.product_id = p.id
        join public.price_types t on t.id = pp.price_type_id
-      where p.slug = $1 and t.is_default and pp.modification_id is null`,
+      where p.id = ${productIdByPath('$1')} and t.is_default and pp.modification_id is null`,
     [slug],
   );
   if (!row) throw new Error(`[live-smoke] у демо-БД немає ціни «${slug}»`);
@@ -117,7 +118,7 @@ export async function bumpStock(url, slug, extra) {
     `update public.stock_by_pickup_point s set quantity = s.quantity + $2
        from public.products p, public.pickup_points pp
       where p.id = s.product_id and pp.id = s.pickup_point_id
-        and p.slug = $1 and s.modification_id is null and pp.is_system
+        and p.id = ${productIdByPath('$1')} and s.modification_id is null and pp.is_system
       returning s.id, s.quantity - $2 as quantity`,
     [slug, extra],
   );

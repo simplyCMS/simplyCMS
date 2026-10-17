@@ -11,6 +11,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 const PRODUCT = F.STATION_10KWH;
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
@@ -60,10 +61,12 @@ describe('тип ціни — з категорії покупця, NULL-про�
   /** Тип середовища, база рядка квоти й ціна чеку для актора. */
   const observe = async (userId: string | null) => {
     const env = await discountEnvironmentFor(userId);
-    const quote = await quoteCartFor([line(PRODUCT)], userId);
+    const quote = await quoteCartFor([line(PRODUCT)], userId, UK);
     const priced = await (userId
-      ? withCustomerDb(userId, (tx) => priceItems(tx, userId, [line(PRODUCT)]))
-      : guest((tx) => priceItems(tx, null, [line(PRODUCT)])));
+      ? withCustomerDb(userId, (tx) =>
+          priceItems(tx, userId, [line(PRODUCT)], UK),
+        )
+      : guest((tx) => priceItems(tx, null, [line(PRODUCT)], UK)));
     const first = quote.lines[0];
     if (!first.available || priced === 'not_purchasable')
       throw new Error('недоступний');

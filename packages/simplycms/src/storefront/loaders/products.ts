@@ -1,13 +1,21 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import {
+  catalogProductTexts as texts,
+  languages,
   productModifications,
   productPrices,
   products,
   sections,
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
+import type { TextLocale } from 'simplycms/domain/translations';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
+import {
+  listLangs,
+  publishedLanguageOn,
+  textJoinOn,
+} from './product-list-text';
 import { listModificationColumns } from './entities/modification';
 import {
   groupPricesByProduct,
@@ -29,8 +37,11 @@ export interface ProductListModification {
  */
 export interface ProductListRow {
   id: string;
+  /** Поточна адреса товару в мові запиту (реєстр `url_paths` через проєкцію). */
   slug: string;
   name: string;
+  /** Мова назви, коли її узято з основної мови (fallback), інакше `null`. */
+  name_lang: string | null;
   images: string[];
   has_modifications: boolean | null;
   sections: { slug: string } | null;
@@ -51,12 +62,16 @@ export interface ProductListRow {
  * `./sections`). Розділ у фільтрі не робить його зайвим: неактивний товар
  * лишається в активному розділі.
  *
+ * 🔴 Назва й адреса — з проєкції `catalog_product_texts` у мові `text` (П7), а не з
+ * колонок `products`; товар без рядка проєкції в цій мові у список не потрапляє.
+ *
  * 🔴 Ціни — лише видів `viewer` (Р29): лоадер публічний (його радить README
  * магазинам), тож контракт той самий, що в `loadProduct`/`loadCatalogProducts`.
  */
 export async function loadProductList(
   db: ActorDb,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
   sectionId?: string,
 ): Promise<ProductListRow[]> {
   const visible = sectionId
@@ -66,13 +81,16 @@ export async function loadProductList(
   const rows = await db
     .select({
       id: products.id,
-      slug: products.slug,
-      name: products.name,
+      slug: texts.path,
+      name: texts.name,
+      fallback: texts.fallbackFields,
       images: products.images,
       has_modifications: products.hasModifications,
       section_slug: sections.slug,
     })
     .from(products)
+    .innerJoin(texts, textJoinOn(text))
+    .innerJoin(languages, publishedLanguageOn())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     .orderBy(desc(products.createdAt));
@@ -106,6 +124,7 @@ export async function loadProductList(
     id: row.id,
     slug: row.slug,
     name: row.name,
+    ...listLangs(row.fallback, text.primary),
     images: toImageList(row.images),
     has_modifications: row.has_modifications,
     sections: row.section_slug === null ? null : { slug: row.section_slug },

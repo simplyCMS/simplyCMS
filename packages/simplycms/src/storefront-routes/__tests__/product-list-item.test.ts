@@ -20,6 +20,7 @@ function makeRow(overrides: Partial<ProductListRow> = {}): ProductListRow {
     id: 'prod-1',
     slug: 'invertor-5kw',
     name: 'Інвертор 5 кВт',
+    name_lang: null,
     images: ['https://cdn.example.com/invertor.jpg'],
     has_modifications: true,
     sections: { slug: 'invertory' },
@@ -69,6 +70,7 @@ describe('toProductListItem', () => {
       id: 'prod-1',
       slug: 'invertor-5kw',
       name: 'Інвертор 5 кВт',
+      nameLang: null,
       imageUrl: 'https://cdn.example.com/invertor.jpg',
       price: 4200,
       sectionSlug: 'invertory',
@@ -116,6 +118,7 @@ describe('toProductListItem', () => {
       id: 'prod-1',
       slug: 'invertor-5kw',
       name: 'Інвертор 5 кВт',
+      nameLang: null,
       imageUrl: null,
       price: null,
       sectionSlug: 'invertory',
@@ -161,5 +164,13 @@ describe('toProductListItem', () => {
         guest,
       ).price,
     ).toBe(1000);
+  });
+});
+
+describe('toProductListItem: мова назви', () => {
+  it('name_lang рядка їде в nameLang: картка обгорне fallback-назву `lang` основної мови', () => {
+    const item = toProductListItem(makeRow({ name_lang: 'uk' }), GUEST_DEFAULT);
+
+    expect(item.nameLang).toBe('uk');
   });
 });

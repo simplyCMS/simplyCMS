@@ -10,6 +10,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
+import { joinPrimaryPath } from './product-address.mjs';
 
 const CODE = 'smoke-r29-wholesale';
 
@@ -32,9 +33,10 @@ export async function runPriceVisibilityChecks({
   const categoryId = randomUUID();
   const [product] = await sql(
     dbUrl,
-    `select p.id, p.slug, s.slug as section from public.products p
+    `select p.id, up.path as slug, s.slug as section from public.products p
+       ${joinPrimaryPath()}
        join public.sections s on s.id = p.section_id
-      where p.is_active order by p.slug limit 1`,
+      where p.is_active order by up.path limit 1`,
   );
   const [profile] = await sql(
     dbUrl,

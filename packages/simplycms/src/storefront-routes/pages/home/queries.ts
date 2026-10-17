@@ -34,12 +34,14 @@ import type { HomeProduct, HomeSection } from './types';
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
-  const products = entityKey(ENTITY.products, useLocale());
+  const locale = useLocale();
+  const products = entityKey(ENTITY.products, locale);
   return useQuery({
     queryKey: priceViewKey(products.variant('featured'), view),
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
-    queryFn: (): Promise<HomeProduct[]> => getFeaturedProducts(),
+    queryFn: (): Promise<HomeProduct[]> =>
+      getFeaturedProducts({ data: { locale } }),
     initialData: useSeedableInitialData(initialData),
   });
 }
@@ -47,12 +49,13 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
-  const products = entityKey(ENTITY.products, useLocale());
+  const locale = useLocale();
+  const products = entityKey(ENTITY.products, locale);
   return useQuery({
     queryKey: priceViewKey(products.variant('new'), view),
     meta: VIEWER_PRICED_META,
     enabled: view !== null,
-    queryFn: (): Promise<HomeProduct[]> => getNewProducts(),
+    queryFn: (): Promise<HomeProduct[]> => getNewProducts({ data: { locale } }),
     initialData: useSeedableInitialData(initialData),
   });
 }
@@ -97,6 +100,6 @@ export function useSectionProducts(
     initialData: useSeedableInitialData(options?.initialData),
     staleTime: 60_000,
     queryFn: (): Promise<HomeProduct[]> =>
-      getSectionProducts({ data: section }),
+      getSectionProducts({ data: { ...section, locale } }),
   });
 }

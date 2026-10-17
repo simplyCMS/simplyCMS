@@ -18,6 +18,7 @@ import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-price
 import type { ViewerPriceTypes } from 'simplycms/commerce';
 import * as F from './fixtures/commerce';
 import { useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
 const RETAIL_EMAIL = 'commerce-retail@example.test';
@@ -33,10 +34,10 @@ async function allPublicPrices(
     { locale: 'uk', path: STATION_SLUG },
     viewer,
   );
-  const catalog = await loadCatalogProducts(db, viewer);
-  const home = await loadHomePageData(db, viewer);
-  const option = await loadPropertyOption(db, 'tip-paneli', 'mono', viewer);
-  const list = await loadProductList(db, viewer);
+  const catalog = await loadCatalogProducts(db, viewer, UK);
+  const home = await loadHomePageData(db, viewer, UK);
+  const option = await loadPropertyOption(db, 'tip-paneli', 'mono', viewer, UK);
+  const list = await loadProductList(db, viewer, UK);
   expect(product).not.toBeNull();
   expect(option?.products.length).toBeGreaterThan(0);
   return [
@@ -112,7 +113,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
 
   it('гість: каталог без гуртового виду', async () => {
     const rows = await withViewerPricesDb(null, (tx, v) =>
-      loadCatalogProducts(tx, v),
+      loadCatalogProducts(tx, v, UK),
     );
     const types = typesOf(rows.flatMap((row) => row.product_prices));
     expect(types.has(WHOLESALE_TYPE)).toBe(false);
@@ -121,7 +122,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
 
   it('гість: loadProductList (публічний, README) без гуртового виду', async () => {
     const rows = await withViewerPricesDb(null, (tx, v) =>
-      loadProductList(tx, v),
+      loadProductList(tx, v, UK),
     );
     const types = typesOf(rows.flatMap((row) => row.product_prices));
     expect(types.has(WHOLESALE_TYPE)).toBe(false);
@@ -130,7 +131,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
 
   it('покупець гуртової категорії: loadProductList несе його вид', async () => {
     const rows = await withViewerPricesDb(db.wholesale, (tx, v) =>
-      loadProductList(tx, v),
+      loadProductList(tx, v, UK),
     );
     expect(
       typesOf(rows.flatMap((row) => row.product_prices)).has(WHOLESALE_TYPE),

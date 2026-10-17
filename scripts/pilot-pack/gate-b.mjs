@@ -36,7 +36,11 @@ export async function expectedProducts(env) {
     await client.query('begin');
     await client.query('set local role app_user');
     const { rows } = await client.query(
-      'select name from public.products where is_active = true limit 50',
+      `select t.name from public.catalog_product_texts t
+         join public.products p on p.id = t.product_id
+        where p.is_active = true
+          and t.locale = (select code from public.languages where is_default)
+        limit 50`,
     );
     await client.query('commit');
     // Імена зі спецсимволами HTML пропускаємо — React їх екранує.

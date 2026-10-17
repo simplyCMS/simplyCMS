@@ -36,7 +36,7 @@ export const card = (over: Record<string, unknown> = {}) => ({
   content: '<p>Чудовий товар</p>',
   adminComment: null,
   images: ['review/r1/a.jpg'],
-  productSlug: 'kurtka',
+  productPath: 'kurtka',
   sectionSlug: 'odyag',
   updatedAt: new Date(Date.UTC(2026, 9, 2)),
   ...over,

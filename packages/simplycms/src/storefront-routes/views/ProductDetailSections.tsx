@@ -6,7 +6,7 @@ import type {
 } from 'simplycms/contracts/views';
 import { useT, type MessageKey } from 'simplycms/i18n';
 import { Separator } from 'simplycms/ui/separator';
-import { FallbackText } from '../components/FallbackText';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 import { ProductCharacteristics } from 'simplycms/core/components/catalog/ProductCharacteristics';
 
 const NAV_SECTIONS = [

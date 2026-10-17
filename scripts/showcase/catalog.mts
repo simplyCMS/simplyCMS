@@ -8,7 +8,7 @@
  * `products.saveDescription`).
  */
 import { randomUUID } from 'node:crypto';
-import { asc, notInArray } from 'drizzle-orm';
+import { and, asc, eq, notInArray } from 'drizzle-orm';
 import {
   productsSaveDescription,
   propertyOptionsOps,
@@ -17,7 +17,11 @@ import {
   sectionsOps,
 } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
-import { products } from '../../packages/simplycms/src/schema/index.ts';
+import {
+  languages,
+  products,
+  urlPaths,
+} from '../../packages/simplycms/src/schema/index.ts';
 import { PROPERTIES, SECTIONS, type SectionSpec } from './catalog-data.mts';
 import { insertProducts } from './catalog-products.mts';
 import { runCommand } from './command.mts';
@@ -107,8 +111,18 @@ async function imagesForDemo(
   const demo = await db
     .select({ id: products.id, version: products.version })
     .from(products)
+    // Порядок — за поточною адресою основної мови (реєстр `url_paths`), не за колонкою `products`.
+    .innerJoin(languages, eq(languages.isDefault, true))
+    .innerJoin(
+      urlPaths,
+      and(
+        eq(urlPaths.productId, products.id),
+        eq(urlPaths.locale, languages.code),
+        eq(urlPaths.isCurrent, true),
+      ),
+    )
     .where(notInArray(products.id, newIds))
-    .orderBy(asc(products.slug));
+    .orderBy(asc(urlPaths.path));
   for (const { id, version } of demo) {
     const [storageKey] = await uploadProductImages(db, ctx, rand, id, 1);
     // Демо-товар лише отримує фото; його тексти й адреси недоторкані.

@@ -15,6 +15,7 @@
  * Виклик — у воронці після `register`, поки покупець залогінений.
  */
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 import { PRODUCT_SLUG } from './selectors.mjs';
 
 /** Корисний текст + два класичних вектори. */
@@ -34,7 +35,7 @@ export async function runReviewXssStep({ page, base, dbUrl, check }) {
   const productUrl = `${base}/${PRODUCT_SLUG}`;
   const [{ id: productId }] = await sql(
     dbUrl,
-    `select id from public.products where slug = $1`,
+    `select id from public.products where id = ${productIdByPath('$1')}`,
     [PRODUCT_SLUG],
   );
 

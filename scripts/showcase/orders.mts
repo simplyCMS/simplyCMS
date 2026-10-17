@@ -16,6 +16,7 @@ import {
 import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
 import { orderStatuses } from '../../packages/simplycms/src/schema/index.ts';
 import { placeOrderFor } from '../../packages/simplycms/src/storefront/loaders/place-order.ts';
+import { resolveTextLocale } from '../../packages/simplycms/src/storefront/loaders/text-locale.ts';
 import { checkoutInputSchema } from '../../packages/simplycms/src/storefront-routes/server/checkout-input.ts';
 import type { PlannedOrder } from './orders-plan.mts';
 import type { People } from './people.mts';
@@ -73,9 +74,15 @@ export async function placeOrders(
   shipping: ShippingIds,
 ): Promise<PlacedOrder[]> {
   const placed: PlacedOrder[] = [];
+  // Вітрина сіду — основна мова: назви позицій знімка беруться нею.
+  const text = await resolveTextLocale(undefined);
   for (const order of plan) {
     const userId = order.buyer === null ? null : people.buyers[order.buyer]!.id;
-    const result = await placeOrderFor(checkoutOf(order, shipping), userId);
+    const result = await placeOrderFor(
+      checkoutOf(order, shipping),
+      userId,
+      text,
+    );
     if (!result.ok)
       throw new Error(
         `[showcase] замовлення ${order.person.email} відхилено: ${result.reason}`,

@@ -5,6 +5,7 @@
  * `./admin-customers-facts.mjs`.
  */
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 
 const one = async (...args) => (await sql(...args))[0] ?? null;
 
@@ -70,5 +71,10 @@ export const orderRow = (url, orderId) =>
 
 /** Продукт за slug: id (для відгуку). */
 export const productId = async (url, slug) =>
-  (await one(url, 'select id from public.products where slug = $1', [slug]))
-    ?.id;
+  (
+    await one(
+      url,
+      `select id from public.products where id = ${productIdByPath('$1')}`,
+      [slug],
+    )
+  )?.id;

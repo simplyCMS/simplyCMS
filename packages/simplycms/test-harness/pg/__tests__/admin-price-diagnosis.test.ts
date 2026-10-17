@@ -5,6 +5,7 @@ import { withActor } from 'simplycms/db';
 import * as C from './fixtures/commerce';
 import { percentDiscountStatements } from './fixtures/discounts';
 import * as F from './fixtures/admin-discounts';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -47,6 +48,7 @@ describe('admin: діагностика ціни тим самим ядром (�
           tx,
           userId,
           [{ productId, modificationId: null, quantity: 1 }],
+          UK,
           { extraCartTotal },
         ),
     );

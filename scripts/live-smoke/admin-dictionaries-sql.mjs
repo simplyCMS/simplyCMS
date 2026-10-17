@@ -4,6 +4,7 @@
  * `sql()` — з `./sql.mjs`, повторно.
  */
 import { sql } from './sql.mjs';
+import { joinPrimaryPath, productIdByPath } from './product-address.mjs';
 
 /** Усі розділи з цим slug — після дубля має лишитись рівно один. */
 export async function sectionsBySlug(url, slug) {
@@ -80,7 +81,7 @@ export async function seedPricedType(url, { code, name, productSlug }) {
      )
      insert into public.product_prices (id, price_type_id, product_id, price)
      select gen_random_uuid(), pt.id, p.id, 999
-       from pt, public.products p where p.slug = $3
+       from pt, public.products p where p.id = ${productIdByPath('$3')}
      returning price_type_id`,
     [name, code, productSlug],
   );
@@ -104,7 +105,8 @@ export async function priceCountByType(url, priceTypeId) {
 export async function anyProductSlug(url) {
   const [row] = await sql(
     url,
-    `select slug from public.products where is_active order by slug limit 1`,
+    `select up.path as slug from public.products p ${joinPrimaryPath()}
+      where p.is_active order by up.path limit 1`,
   );
   if (!row) throw new Error('[live-smoke] у демо-БД немає активних товарів');
   return row.slug;

@@ -19,6 +19,7 @@ import * as F from './fixtures/commerce';
 import { guest, line, useCommerceDb } from './fixtures/commerce-db';
 import { percentDiscountStatements } from './fixtures/discounts';
 import { orderInput } from './fixtures/orders';
+import { UK } from './fixtures/text-locale';
 
 /** Демо-товар без модифікацій, який контур вимикає (`is_active = false`). */
 const DISABLED = '10000002-0000-4000-8000-000000000003';
@@ -26,7 +27,9 @@ const INVERTER_BASE = 24500;
 const STATION_BASE = 68000;
 
 const quote = (items: CheckoutItemInput[]) =>
-  guest(async (db) => priceCart(db, await loadPricingContext(db, null), items));
+  guest(async (db) =>
+    priceCart(db, await loadPricingContext(db, null), items, UK),
+  );
 const priced = (l: { available: boolean }): PricedLine => {
   if (!l.available) throw new Error('рядок недоступний');
   return l as PricedLine;
@@ -98,7 +101,7 @@ describe('ядро priceCart', () => {
 
   it('priceItems на тому самому вході відмовляє not_purchasable', async () => {
     const out = await guest((tx) =>
-      priceItems(tx, null, [line(F.INVERTER_8KW), line(DISABLED, 2)]),
+      priceItems(tx, null, [line(F.INVERTER_8KW), line(DISABLED, 2)], UK),
     );
     expect(out).toBe('not_purchasable');
   });
@@ -158,10 +161,11 @@ describe('ядро priceCart', () => {
     'картка-кошик-чек: ціни quoteCartFor = quoteCheckoutFor (%s)',
     async (_who, actor) => {
       const userId = actor();
-      const cart = await quoteCartFor(PARITY_CART, userId);
+      const cart = await quoteCartFor(PARITY_CART, userId, UK);
       const checkout = await quoteCheckoutFor(
         { ...orderInput(db.pickup, db.point, []), items: PARITY_CART },
         userId,
+        UK,
       );
       if (!checkout.ok) throw new Error(`квота чекауту: ${checkout.reason}`);
       expect(cart.lines.map((l) => quoted(l).price)).toEqual(
@@ -172,8 +176,12 @@ describe('ядро priceCart', () => {
   );
 
   it('категорія покупця змінює ціну квоти (гурт бачить свою базу)', async () => {
-    const guestQuote = await quoteCartFor([line(F.STATION_10KWH)], null);
-    const wholesale = await quoteCartFor([line(F.STATION_10KWH)], db.wholesale);
+    const guestQuote = await quoteCartFor([line(F.STATION_10KWH)], null, UK);
+    const wholesale = await quoteCartFor(
+      [line(F.STATION_10KWH)],
+      db.wholesale,
+      UK,
+    );
     expect(quoted(guestQuote.lines[0]).basePrice).toBe(STATION_BASE);
     expect(quoted(wholesale.lines[0]).basePrice).toBe(
       F.WHOLESALE_STATION_PRICE,
@@ -184,6 +192,7 @@ describe('ядро priceCart', () => {
     const out = await quoteCartFor(
       [line(F.INVERTER_8KW), line(DISABLED, 2)],
       null,
+      UK,
     );
     expect(out.lines[1]).toEqual({
       available: false,
@@ -195,7 +204,7 @@ describe('ядро priceCart', () => {
   });
 
   it('рядок квоти несе лише назву й суму застосованих знижок', async () => {
-    const out = await quoteCartFor([line(F.PANEL_450)], null);
+    const out = await quoteCartFor([line(F.PANEL_450)], null, UK);
     expect(quoted(out.lines[0])).toMatchObject({
       basePrice: 4800,
       price: 4320,
@@ -211,10 +220,12 @@ describe('ядро priceCart', () => {
     const one = await quoteCartFor(
       [line(F.INVERTER_5KW, 1, F.INVERTER_5KW_1PH)],
       null,
+      UK,
     );
     const three = await quoteCartFor(
       [line(F.INVERTER_5KW, 3, F.INVERTER_5KW_1PH)],
       null,
+      UK,
     );
     const hint = quoted(one.lines[0]).hints[0];
     expect(hint).toMatchObject({ kind: 'quantity', threshold: 3 });
@@ -241,10 +252,11 @@ describe('ядро priceCart', () => {
       `update public.product_prices set price = 0.20 where modification_id = '${GREY}'`,
     );
     const items = [line(BAT_100, 1, BLACK), line(BAT_100, 1, GREY)];
-    const cart = await quoteCartFor(items, null);
+    const cart = await quoteCartFor(items, null, UK);
     const checkout = await quoteCheckoutFor(
       { ...orderInput(db.pickup, db.point, []), items },
       null,
+      UK,
     );
     if (!checkout.ok) throw new Error(`квота чекауту: ${checkout.reason}`);
     expect(cart.subtotal).toBe(0.3);

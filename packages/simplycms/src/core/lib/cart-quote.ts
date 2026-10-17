@@ -3,6 +3,7 @@ import type { CartQuote } from 'simplycms/contracts';
 import {
   optionalSessionUserId,
   quoteCartFor,
+  resolveTextLocale,
 } from 'simplycms/storefront/loaders';
 import { quoteCartInputSchema } from './cart-lines';
 
@@ -24,5 +25,9 @@ import { quoteCartInputSchema } from './cart-lines';
 export const quoteCart = createServerFn({ method: 'POST' })
   .validator(quoteCartInputSchema)
   .handler(async ({ data }): Promise<CartQuote> =>
-    quoteCartFor(data.items, await optionalSessionUserId()),
+    quoteCartFor(
+      data.items,
+      await optionalSessionUserId(),
+      await resolveTextLocale(data.locale),
+    ),
   );

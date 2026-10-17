@@ -6,14 +6,15 @@
  * 🔴 Ціни пишуться командою `products.savePrices` (вхід розбирає її схема).
  * Набір пари замінюється атомарно, тож демо-ціна переписується тією самою сумою.
  */
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { productsSavePrices } from '../../packages/simplycms/src/admin-server/impl/index.ts';
 import { runCommand } from './command.mts';
 import type { ActorDb } from '../../packages/simplycms/src/db/index.ts';
 import {
-  productModifications,
+  languages,
   productPrices,
-  products,
+  slugTokens,
+  urlPaths,
 } from '../../packages/simplycms/src/schema/index.ts';
 import type { CatalogProduct } from './catalog.mts';
 import { int, type Rand } from './prng.mts';
@@ -60,25 +61,41 @@ function newPrices(
   });
 }
 
-/** Роздрібні ціни демо-сіду (товар чи модифікація) — у порядку slug. */
+/**
+ * Роздрібні ціни демо-сіду (товар чи модифікація) — у порядку адреси.
+ * Ключ позиції — поточна адреса товару й токен модифікації ОСНОВНОЇ мови з реєстрів
+ * `url_paths`/`slug_tokens`, а не колонки `products`/`product_modifications`.
+ */
 async function demoPrices(db: ActorDb, retailId: string): Promise<PricePair[]> {
   const rows = await db
     .select({
       productId: productPrices.productId,
       modificationId: productPrices.modificationId,
-      slug: products.slug,
-      modSlug: productModifications.slug,
+      slug: urlPaths.path,
+      modSlug: slugTokens.slug,
       price: productPrices.price,
       oldPrice: productPrices.oldPrice,
     })
     .from(productPrices)
-    .innerJoin(products, eq(products.id, productPrices.productId))
+    .innerJoin(languages, eq(languages.isDefault, true))
+    .innerJoin(
+      urlPaths,
+      and(
+        eq(urlPaths.productId, productPrices.productId),
+        eq(urlPaths.locale, languages.code),
+        eq(urlPaths.isCurrent, true),
+      ),
+    )
     .leftJoin(
-      productModifications,
-      eq(productModifications.id, productPrices.modificationId),
+      slugTokens,
+      and(
+        eq(slugTokens.modificationId, productPrices.modificationId),
+        eq(slugTokens.locale, languages.code),
+        eq(slugTokens.isCurrent, true),
+      ),
     )
     .where(eq(productPrices.priceTypeId, retailId))
-    .orderBy(asc(products.slug), asc(productModifications.slug));
+    .orderBy(asc(urlPaths.path), asc(slugTokens.slug));
   return rows.map((r) => ({
     target: {
       key: r.modSlug ? `${r.slug}/${r.modSlug}` : r.slug,

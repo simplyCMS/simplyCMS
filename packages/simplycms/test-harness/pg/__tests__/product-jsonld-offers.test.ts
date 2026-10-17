@@ -11,6 +11,7 @@ import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-price
 import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';
+import { UK } from './fixtures/text-locale';
 
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
 const DEFAULT_CATEGORY = '00000004-0000-4000-8000-000000000001';
@@ -48,7 +49,7 @@ describe('JSON-LD offers сторінки товару — гостьова ці
     return ld.offers as Record<string, unknown> | undefined;
   };
   const guestBase = async (productId: string) => {
-    const first = (await quoteCartFor([line(productId)], null)).lines[0];
+    const first = (await quoteCartFor([line(productId)], null, UK)).lines[0];
     if (!first.available) throw new Error('недоступний');
     return first.basePrice;
   };

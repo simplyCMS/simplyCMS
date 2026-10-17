@@ -39,6 +39,20 @@
   `setDefaultProductModification`, `reorderProductModification` і старі `saveProductPrices`/`saveStock`; колекції товару,
   модифікацій і значень властивостей `admin-data` — лише читання (без `persistenceHandlers`). Ручний статус наявності
   модифікації — поле `stockStatus` у `modifications.upsert` і у виході `products.get` (як `base.stockStatus` товару); `saveStock` далі виводить його з залишків. 412 при збереженні — діалог «Товар змінив хтось інший».
+- **Решта читачів товару — на перекладах і проєкції** (`simplycms/storefront/loaders`, `simplycms/storefront-routes`,
+  `simplycms/commerce`, `simplycms/catalog-ui`, `simplycms/contracts`): лістинги, головна, посекційні добірки, сторінка значення
+  характеристики, кошик, чекаут і знімок `order_items.name` читають назву, адресу й короткий опис товару мовою запиту з
+  `catalog_product_texts` (модифікації — переклад мови, інакше основна). Лоадери й `quoteCartFor`/`quoteCheckoutFor`/`placeOrderFor`/
+  `priceItems`/`priceCart`/`loadCatalog` дістали обов'язковий параметр `text: TextLocale` (`{ locale, primary }`, тип у
+  `simplycms/domain/translations`); серверні функції `getCatalogPageData`, `getSectionPageData`, `getCatalogProducts`,
+  `getHomePageData`, `getFeaturedProducts`, `getNewProducts`, `getSectionProducts`, `getPropertyOption`, `quoteCart`,
+  `quoteCheckout`, `placeOrder` приймають `locale`; невідома чи неопублікована мова читається основною (`resolveTextLocale`).
+  `slug` картки списку — поточна адреса ЦІЄЇ мови (`/en/<path en>`), `ProductCardViewModel`/`ProductCard` дістали
+  `name_lang`/`short_description_lang` (fallback-текст має `lang` основної мови; тема з власною карткою мусить їх застосувати).
+  Ключ квоти кошика — `[…AGGREGATE.cartQuote.keyFor(locale), userId, …]`. `FallbackText` переїхав у `simplycms/ui/fallback-text`.
+  Адмін-читачі (позиції замовлення, діагностика ціни, відгуки) читають назву основною мовою; пошук товару для замовлення —
+  за назвою будь-якою мовою й артикулом; `AdminReviewCard.productSlug` → `productPath` (шлях основної мови або `null`).
+  Знімок замовлення одномовний (мова запиту); двомовний знімок і `orders.locale` — М2.
 - **Сторінка товару — за адресою з реєстру** (`simplycms/storefront-routes`, `simplycms/domain`, `simplycms/contracts`):
   товар відкривається на `/<path>` і `/<мова>/<path>` (роут сутності `routes/storefront/_storefront/$path.tsx`); прибрано роут
   `/catalog/$sectionSlug/$productSlug`, редірект сегмента розділу та зарезервований slug розділу `all` (`NO_SECTION_SLUG`,

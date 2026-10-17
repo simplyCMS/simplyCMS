@@ -5,6 +5,7 @@
  * і `parseFloat`-сума дала б float-дрейф там, де БД рахує точно.
  */
 import { sql } from './sql.mjs';
+import { joinPrimaryPath, productIdByPath } from './product-address.mjs';
 
 /** `"1234.5"` → 123450 без `parseFloat`-дрейфу. */
 export function cents(s) {
@@ -16,10 +17,11 @@ export function cents(s) {
 export async function orderItems(url, orderId) {
   return sql(
     url,
-    `select oi.id, p.slug, oi.name, oi.quantity, oi.price, oi.total,
+    `select oi.id, up.path as slug, oi.name, oi.quantity, oi.price, oi.total,
             oi.stock_reserved, oi.stock_point_id
        from public.order_items oi
        left join public.products p on p.id = oi.product_id
+       ${joinPrimaryPath({ left: true })}
       where oi.order_id = $1 order by oi.created_at, oi.id`,
     [orderId],
   );
@@ -65,7 +67,7 @@ export async function defaultPrice(url, slug) {
     `select pp.price from public.product_prices pp
        join public.products p on p.id = pp.product_id
        join public.price_types pt on pt.id = pp.price_type_id
-      where p.slug = $1 and pt.is_default and pp.modification_id is null`,
+      where p.id = ${productIdByPath('$1')} and pt.is_default and pp.modification_id is null`,
     [slug],
   );
   return row?.price ?? null;

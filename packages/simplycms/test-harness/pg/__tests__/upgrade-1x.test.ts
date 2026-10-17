@@ -27,6 +27,7 @@ import {
 } from '../apply.mjs';
 import { canonCopy, canonNames, journalOf } from './fixtures/migrate';
 import { order, PNG, seedStore } from './fixtures/upgrade-1x';
+import { UK } from './fixtures/text-locale';
 
 const TABLES = [
   'orders',
@@ -79,6 +80,7 @@ describe('оновлюваність 1.0: магазин із даними і н
         pickupPointId: point,
       },
       null,
+      UK,
     );
     expect(placed.ok).toBe(true);
     // Файл у фейковому (локальному tmp) сховищі + рядок media.

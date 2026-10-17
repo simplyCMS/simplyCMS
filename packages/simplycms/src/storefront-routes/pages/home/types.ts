@@ -7,6 +7,9 @@ export interface HomeProduct {
   slug: string;
   images: string[];
   short_description: string | null;
+  /** Мова назви / короткого опису, коли текст узято з основної мови (fallback). */
+  name_lang?: string | null;
+  short_description_lang?: string | null;
   stock_status: string;
   section: { slug: string } | null;
   /** Розділ — ціль знижок `section` для `priceForCard` (Е6в-11). */

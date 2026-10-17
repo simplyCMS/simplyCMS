@@ -1,11 +1,14 @@
 import { and, desc, eq, inArray, type SQL } from 'drizzle-orm';
 import {
+  catalogProductTexts as texts,
+  languages,
   productModifications,
   productPrices,
   productPropertyValues,
   products,
   sections,
 } from 'simplycms/schema';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { calculateProductAvailability } from 'simplycms/domain/inventory';
 import type { ActorDb } from './db';
 import {
@@ -16,13 +19,13 @@ import {
   type CatalogProductRow,
   type CatalogPropertyValueRow,
 } from './entities/catalog-product';
-import { productColumns, toImageList } from './entities/product';
-
-// Тема 9: розмітка опису в список не вибирається — він її не показує, а
-// санітизувати опис кожного товару сторінки каталогу було б марною роботою.
-const catalogProductColumns = Object.fromEntries(
-  Object.entries(productColumns).filter(([key]) => key !== 'description'),
-) as Omit<typeof productColumns, 'description'>;
+import { productBaseColumns, toImageList } from './entities/product';
+import {
+  listLangs,
+  listTextColumns,
+  publishedLanguageOn,
+  textJoinOn,
+} from './product-list-text';
 import {
   groupPricesByProduct,
   priceColumns,
@@ -39,6 +42,11 @@ import { loadModificationValues } from './modification-values';
  * `sectionId` звужує вибірку сторінкою розділу; без нього беруться всі
  * активні товари — чипси каталогу перемикають розділ уже на клієнті.
  *
+ * 🔴 Текст і адреса — з проєкції `catalog_product_texts` у мові `text` (П7); товар без
+ * рядка проєкції в цій мові (немає адреси) у список не потрапляє: картка без `href`
+ * була б мертвою. Опис розмітки в список не вибирається (Тема 9): він його не показує,
+ * а санітизувати опис кожного товару сторінки було б марною роботою.
+ *
  * 🔴 `is_active = true` — обовʼязковий предикат видимості: RLS на каталозі
  * немає (див. `./sections`), тож забутий фільтр не впаде, а тихо виведе
  * чернетки в магазин.
@@ -51,11 +59,13 @@ import { loadModificationValues } from './modification-values';
 export async function loadCatalogProducts(
   db: ActorDb,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
   sectionId?: string,
 ): Promise<CatalogProductRow[]> {
   return loadCatalogProductsWhere(
     db,
     viewer,
+    text,
     sectionId ? eq(products.sectionId, sectionId) : undefined,
   );
 }
@@ -71,6 +81,7 @@ export async function loadCatalogProducts(
 export async function loadCatalogProductsWhere(
   db: ActorDb,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
   extra?: SQL,
 ): Promise<CatalogProductRow[]> {
   const visible = extra
@@ -78,8 +89,14 @@ export async function loadCatalogProductsWhere(
     : eq(products.isActive, true);
 
   const rows = await db
-    .select({ product: catalogProductColumns, section: sectionRefColumns })
+    .select({
+      product: productBaseColumns,
+      text: listTextColumns,
+      section: sectionRefColumns,
+    })
     .from(products)
+    .innerJoin(texts, textJoinOn(text))
+    .innerJoin(languages, publishedLanguageOn())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     .orderBy(desc(products.createdAt));
@@ -128,12 +145,15 @@ export async function loadCatalogProductsWhere(
     });
   }
 
-  return rows.map(({ product, section }) => {
+  return rows.map(({ product, text: row, section }) => {
     const mods = modsByProduct[product.id] ?? [];
     const defaultMod = pickDefaultModification(mods);
 
+    const { fallback, ...rowText } = row;
     return {
       ...product,
+      ...rowText,
+      ...listLangs(fallback, text.primary),
       // Список каталогу розмітки опису не несе (картка читає лише картку товару).
       description: null,
       images: toImageList(product.images),

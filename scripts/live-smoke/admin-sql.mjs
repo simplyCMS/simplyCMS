@@ -4,6 +4,7 @@
  * розділення переріс би канон 150 рядків. `sql()` — звідти, повторно.
  */
 import { sql } from './sql.mjs';
+import { productIdByPath } from './product-address.mjs';
 
 /** Розділ демо-каталогу за slug — крок обирає його у формі товару. */
 export async function sectionBySlug(url, slug) {
@@ -20,7 +21,7 @@ export async function sectionBySlug(url, slug) {
 export async function productBySlug(url, slug) {
   const [row] = await sql(
     url,
-    `select id, is_active from public.products where slug = $1`,
+    `select id, is_active from public.products where id = ${productIdByPath('$1')}`,
     [slug],
   );
   return row ?? null;
@@ -30,7 +31,8 @@ export async function productBySlug(url, slug) {
 export async function productCountBySlug(url, slug) {
   const [{ n }] = await sql(
     url,
-    `select count(*)::int as n from public.products where slug = $1`,
+    `select count(*)::int as n from public.products
+      where id = ${productIdByPath('$1')}`,
     [slug],
   );
   return n;

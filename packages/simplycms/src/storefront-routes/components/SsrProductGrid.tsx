@@ -26,6 +26,7 @@ export function SsrProductGrid({ items, viewMode }: SsrProductGridProps) {
           product={{
             id: item.id,
             name: item.name,
+            name_lang: item.nameLang,
             slug: item.slug,
             images: item.imageUrl ? [item.imageUrl] : [],
             section: item.sectionSlug ? { slug: item.sectionSlug } : null,

@@ -46,6 +46,7 @@ import {
   OUT_OF_STOCK_MOD_SLUG,
   STOCK_QUANTITY,
 } from './fixtures/storefront-client';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -88,8 +89,8 @@ describe('вибірки вітрини, знятi з браузера', () => {
     const { all, scoped } = await withViewerPricesDb(null, async (db, v) => {
       const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
       return {
-        all: await loadCatalogProducts(db, v),
-        scoped: await loadCatalogProducts(db, v, section!.id),
+        all: await loadCatalogProducts(db, v, UK),
+        scoped: await loadCatalogProducts(db, v, UK, section!.id),
       };
     });
 
@@ -110,13 +111,14 @@ describe('вибірки вітрини, знятi з браузера', () => {
       async (db, v) => {
         const section = await loadSectionBySlug(db, FILTERED_SECTION_SLUG);
         return {
-          all: await loadCatalogProducts(db, v),
-          scoped: await loadCatalogProducts(db, v, section!.id),
+          all: await loadCatalogProducts(db, v, UK),
+          scoped: await loadCatalogProducts(db, v, UK, section!.id),
           byOption: await loadPropertyOption(
             db,
             PAGED_PROPERTY_SLUG,
             PAGED_OPTION_SLUG,
             v,
+            UK,
           ),
         };
       },
@@ -129,7 +131,7 @@ describe('вибірки вітрини, знятi з браузера', () => {
 
   it('вибірка каталогу несе наявність, а не складські рядки', async () => {
     const rows = await withViewerPricesDb(null, (db, v) =>
-      loadCatalogProducts(db, v),
+      loadCatalogProducts(db, v, UK),
     );
     const modified = rows.find((row) => row.slug === MODIFIED_PRODUCT_SLUG);
 

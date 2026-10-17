@@ -18,6 +18,9 @@ vi.mock('../../../server/checkout-quote', () => ({
   quoteCheckout: (...args: unknown[]) => quoteCheckoutMock(...args),
 }));
 
+// Мова сторінки йде в запит квоти (назви позицій); провайдера i18n тест не піднімає.
+vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
+
 const wrapper = ({ children }: { children: ReactNode }) => (
   <CartProvider>{children}</CartProvider>
 );
@@ -120,6 +123,8 @@ describe('useCheckoutQuote — blocked не шле запит', () => {
     expect(quoteCheckoutMock.mock.calls[0][0].data).toMatchObject({
       deliveryCity: null,
       pickupPointId: 'pt1',
+      // Назви позицій квоти — мовою сторінки (М1).
+      locale: 'uk',
     });
   });
 

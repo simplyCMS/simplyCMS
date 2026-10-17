@@ -32,6 +32,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { blockCommitOn } from './fixtures/commit-block';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -137,6 +138,7 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
         ...overrides,
       }),
       user ?? null,
+      UK,
     );
 
   beforeAll(async () => {

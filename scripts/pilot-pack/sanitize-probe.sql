@@ -21,7 +21,8 @@ with probe as (
          '<p style="text-align: center; color: red">Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><a href="https://example.com/inverter" title="t">специфікація</a><script>alert(1)</script><img src="x" onerror="alert(2)">'::text as html
     from public.products p
    cross join (select code from public.languages where is_default) l
-   where p.slug = 'invertor-merezhevyi-5kw'
+   join public.url_paths u on u.product_id = p.id and u.locale = l.code and u.is_current
+   where u.path = 'invertor-merezhevyi-5kw'
 ), source as (
   update public.product_translations t set description = probe.html
     from probe where t.product_id = probe.product_id and t.locale = probe.locale

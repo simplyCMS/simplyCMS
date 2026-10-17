@@ -3,6 +3,7 @@ import type {
   PlaceOrderRejection,
 } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
+import type { TextLocale } from 'simplycms/domain/translations';
 import type { JsonValue } from 'simplycms/schema/types';
 import { priceCart } from './price-cart';
 import { loadPricingContext } from './pricing-context';
@@ -30,6 +31,9 @@ export interface NewOrderItem {
  * 🔴 `discountData = { applied }` — лише знижки, що УВІЙШЛИ в суму (Е6в-5):
  * знімок позиції пояснює чек до копійки, без програвших і обрізаних.
  *
+ * `text` — мова назви позиції, що лягає в знімок `order_items.name` (М1: мова запиту
+ * для чекауту, основна — для адмінки; двомовний знімок — М2).
+ *
  * `opts.extraCartTotal` (Е5б-6) — сума кошика ПОЗА `items` (адмінка додає
  * позицію до замовлення: знижка «від суми» бачить весь склад). Чекаут — без.
  */
@@ -37,10 +41,11 @@ export async function priceItems(
   db: ActorDb,
   userId: string | null,
   items: CheckoutItemInput[],
+  text: TextLocale,
   opts?: { extraCartTotal?: number },
 ): Promise<NewOrderItem[] | Extract<PlaceOrderRejection, 'not_purchasable'>> {
   const ctx = await loadPricingContext(db, userId);
-  const { lines } = await priceCart(db, ctx, items, opts);
+  const { lines } = await priceCart(db, ctx, items, text, opts);
 
   const result: NewOrderItem[] = [];
   for (const line of lines) {

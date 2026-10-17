@@ -56,3 +56,13 @@ export const checkoutInputSchema = z.object({
   // `placeOrder` читає ТУ САМУ схему.
   items: cartLinesSchema.min(1),
 }) satisfies z.ZodType<PlaceOrderInput>;
+
+/**
+ * Запит оформлення / квоти чекауту: форма замовлення + мова назв позицій. Мова — не поле
+ * контракту `PlaceOrderInput` (не бізнес-вхід замовлення), а параметр читання: сервер
+ * звіряє її з опублікованими й невідому читає основною. Знімок `order_items.name` у М1 —
+ * назва мовою запиту; двомовний знімок і `orders.locale` — М2.
+ */
+export const checkoutRequestSchema = checkoutInputSchema.extend({
+  locale: z.string().min(1),
+});

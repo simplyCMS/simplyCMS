@@ -79,6 +79,7 @@ export default function PropertyPage({
         data: {
           propertySlug: propertySlug as string,
           optionSlug: optionSlug as string,
+          locale,
         },
       }),
     enabled: !!propertySlug && !!optionSlug && view !== null,

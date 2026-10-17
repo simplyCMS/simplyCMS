@@ -6,6 +6,7 @@ import type {
   ThresholdHint,
 } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
+import type { TextLocale } from 'simplycms/domain/translations';
 import {
   discountThresholdHints,
   resolveDiscount,
@@ -46,6 +47,9 @@ export interface UnavailableLine {
  * порозі через хвіст float (`0.1 + 0.2 > 0.3`). Усі рядки рахуються з ОДНИМ
  * `cartTotal` і ОДНИМ `ctx.now`.
  *
+ * `text` — мова назв позицій (кошик і чекаут — мова запиту, адмінка — основна);
+ * на ціну й знижки не впливає.
+ *
  * `opts.extraCartTotal` (Е5б-6) — сума кошика ПОЗА `items` (адмінка додає
  * позицію до замовлення: знижка «від суми» бачить весь склад).
  */
@@ -53,6 +57,7 @@ export async function priceCart(
   db: ActorDb,
   ctx: PricingContext,
   items: CheckoutItemInput[],
+  text: TextLocale,
   opts?: { extraCartTotal?: number },
 ): Promise<{ lines: (PricedLine | UnavailableLine)[]; cartTotal: number }> {
   const extra = opts?.extraCartTotal ?? 0;
@@ -60,7 +65,7 @@ export async function priceCart(
     throw new Error('[simplycms/commerce] extraCartTotal — невідʼємне число');
   if (items.length === 0) return { lines: [], cartTotal: toCents(extra) / 100 };
 
-  const resolve = await loadCatalog(db, ctx, items);
+  const resolve = await loadCatalog(db, ctx, items, text);
   const resolved = items.map((item) => ({ item, found: resolve(item) }));
   const cartTotal =
     resolved.reduce(

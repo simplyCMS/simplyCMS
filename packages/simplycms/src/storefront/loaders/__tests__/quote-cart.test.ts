@@ -22,7 +22,9 @@ describe('quoteCartFor: порожній кошик', () => {
   it.each([null, 'u1'])(
     'userId %s — { lines: [], subtotal: 0 } без БД',
     async (userId) => {
-      await expect(quoteCartFor([], userId)).resolves.toEqual({
+      await expect(
+        quoteCartFor([], userId, { locale: 'uk', primary: 'uk' }),
+      ).resolves.toEqual({
         lines: [],
         subtotal: 0,
       });

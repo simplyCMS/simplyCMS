@@ -24,6 +24,8 @@ export type CommerceIds = Record<
 /** Id контуру + SQL суперкористувачем у його БД — тест-локальні фікстури. */
 export type CommerceDb = CommerceIds & {
   run: (statement: string) => Promise<unknown[]>;
+  /** Додає опубліковану мову ПІД замком `languages-set` (запис мов без нього відхиляє тригер). */
+  language: (code: string) => Promise<void>;
 };
 
 /** Транзакція гостя — той самий актор, що в чекауті без сесії. */
@@ -40,6 +42,14 @@ export const line = (
 export function useCommerceDb(prefix: string): CommerceDb {
   const ids: CommerceDb = {
     run: (statement) => H.queryRows(dbUrl, statement) as Promise<unknown[]>,
+    language: async (code) => {
+      await H.queryRowsLockingLanguages(
+        dbUrl,
+        `insert into public.languages (id, code, name, status, is_default, sort_order)
+         values (gen_random_uuid(), $1::text, $1::text, 'published', false, 5)`,
+        [code],
+      );
+    },
     wholesale: '',
     pickup: '',
     point: '',

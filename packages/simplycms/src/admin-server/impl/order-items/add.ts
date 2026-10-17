@@ -7,6 +7,7 @@ import {
   stateConflict,
 } from 'simplycms/contracts/domain-errors';
 import { priceItems } from 'simplycms/commerce';
+import { primaryLocaleCode } from 'simplycms/translations';
 import { reserveNewOrderItemStock } from 'simplycms/inventory';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
@@ -70,10 +71,13 @@ export const addOrderItemOp = async ({
       (sum, i) => sum + toCents(i.basePrice ?? i.price) * i.quantity,
       0,
     );
+    // Знімок назви додає менеджер: основною мовою магазину (М1; двомовний знімок — М2).
+    const primary = await primaryLocaleCode(db);
     const priced = await priceItems(
       db,
       order.userId,
       [{ productId, modificationId, quantity }],
+      { locale: primary, primary },
       { extraCartTotal: extraCents / 100 },
     );
     if (priced === 'not_purchasable')

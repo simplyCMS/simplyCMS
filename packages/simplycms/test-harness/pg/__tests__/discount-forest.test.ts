@@ -12,6 +12,7 @@ import {
   percentDiscountStatements,
   type PercentDiscountSpec,
 } from './fixtures/discounts';
+import { UK } from './fixtures/text-locale';
 
 /** Товар без власних акцій у фікстурах контуру; база тут — рівно 1000. */
 const PRODUCT = F.INVERTER_8KW;
@@ -36,7 +37,8 @@ describe('ліс знижок зі сховища → priceItems', () => {
   };
   const discount = (s: Omit<PercentDiscountSpec, 'target'>) =>
     percentDiscountStatements({ ...s, target });
-  const priceGuest = () => guest((tx) => priceItems(tx, null, [line(PRODUCT)]));
+  const priceGuest = () =>
+    guest((tx) => priceItems(tx, null, [line(PRODUCT)], UK));
 
   beforeAll(async () => {
     await db.run(
@@ -103,7 +105,7 @@ describe('ліс знижок зі сховища → priceItems', () => {
     expect(only(await priceGuest())).toMatchObject({ price: 900 });
     const wholesale = await withActor(
       { role: 'app_user', userId: db.wholesale },
-      (tx) => priceItems(tx, db.wholesale, [line(PRODUCT)]),
+      (tx) => priceItems(tx, db.wholesale, [line(PRODUCT)], UK),
     );
     // Гуртовик не має своєї ціни на товар — база з дефолтного типу.
     expect(only(wholesale)).toMatchObject({ price: 900, basePrice: 1000 });

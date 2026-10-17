@@ -10,6 +10,7 @@ import {
   courierInput,
   shippingDataOf,
 } from './fixtures/shipping-snapshot';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -25,7 +26,7 @@ describe('доставка: recomputeOrderTotals і знімок (К3-Е6а, Е6
   const { ids } = f;
 
   const place = async (method: string) => {
-    const result = await placeOrderFor(courierInput(f, method), null);
+    const result = await placeOrderFor(courierInput(f, method), null, UK);
     if (!result.ok) throw new Error(result.reason);
     return result.order.id;
   };

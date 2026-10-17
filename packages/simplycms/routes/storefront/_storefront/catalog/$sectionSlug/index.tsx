@@ -1,14 +1,20 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import CatalogSectionPage from 'simplycms/storefront-routes/pages/CatalogSection';
 import { getSectionPageData } from 'simplycms/storefront-routes/server/catalog';
+import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
 import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({
   staleTime: 60_000,
-  loader: async ({ params: { sectionSlug } }) => {
+  loader: async ({ params: { sectionSlug }, location, context }) => {
     // Один похід на сервер замість двох послідовних: розділ, перелік розділів
     // і товари приходять однією транзакцією вітрини.
-    const data = await getSectionPageData({ data: { slug: sectionSlug } });
+    const data = await getSectionPageData({
+      data: {
+        slug: sectionSlug,
+        locale: localeOfHref(location.publicHref, context.locales),
+      },
+    });
 
     if (!data) {
       throw notFound();

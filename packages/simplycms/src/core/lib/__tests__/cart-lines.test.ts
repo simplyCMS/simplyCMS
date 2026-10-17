@@ -10,7 +10,7 @@ const M = '10000003-0000-4000-8000-000000000001';
 const uuid = (i: number) =>
   `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
 const ok = (items: unknown[]) =>
-  quoteCartInputSchema.safeParse({ items }).success;
+  quoteCartInputSchema.safeParse({ items, locale: 'uk' }).success;
 
 describe('quoteCartInputSchema', () => {
   it('порожній кошик і звичайні рядки — так', () => {
@@ -21,6 +21,10 @@ describe('quoteCartInputSchema', () => {
         { productId: P, modificationId: M, quantity: 999 },
       ]),
     ).toBe(true);
+  });
+
+  it('без мови — помилка: назви рядків читаються мовою сторінки', () => {
+    expect(quoteCartInputSchema.safeParse({ items: [] }).success).toBe(false);
   });
 
   it.each([

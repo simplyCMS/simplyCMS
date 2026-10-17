@@ -28,6 +28,12 @@ export interface ProductCardViewModel {
   slug: string;
   images: string[];
   short_description: string | null;
+  /**
+   * Мова назви / короткого опису, коли текст узято з основної мови (fallback), інакше
+   * відсутнє: картка обгортає його `lang` (І37). Ознака з даних, не порівняння текстів.
+   */
+  name_lang?: string | null;
+  short_description_lang?: string | null;
   /** Розділ потрібен для href картки; null — товар поза розділом. */
   section: { slug: string } | null;
   stock_status: string;

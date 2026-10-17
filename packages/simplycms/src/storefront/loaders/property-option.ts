@@ -11,6 +11,7 @@ import type { ActorDb } from './db';
 import { loadCatalogProductsWhere } from './catalog-products';
 import type { CatalogProductRow } from './entities/catalog-product';
 import type { ViewerPriceTypes } from 'simplycms/commerce';
+import type { TextLocale } from 'simplycms/domain/translations';
 import {
   optionColumns,
   propertyColumns,
@@ -40,6 +41,7 @@ export async function loadPropertyOption(
   propertySlug: string,
   optionSlug: string,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<PropertyOptionPageData | null> {
   const [row] = await db
     .select({ property: propertyColumns, option: optionColumns })
@@ -63,7 +65,7 @@ export async function loadPropertyOption(
   return {
     property: toPropertyRow(row.property),
     option: toOptionRow(row.option),
-    products: await loadProductsByOption(db, row.option.id, viewer),
+    products: await loadProductsByOption(db, row.option.id, viewer, text),
   };
 }
 
@@ -83,6 +85,7 @@ async function loadProductsByOption(
   db: ActorDb,
   optionId: string,
   viewer: ViewerPriceTypes,
+  text: TextLocale,
 ): Promise<CatalogProductRow[]> {
   const onProduct = db
     .select({ marker: sql`1` })
@@ -112,6 +115,7 @@ async function loadProductsByOption(
   return loadCatalogProductsWhere(
     db,
     viewer,
+    text,
     or(exists(onProduct), exists(onModification)),
   );
 }

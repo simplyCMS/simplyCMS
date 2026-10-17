@@ -81,7 +81,11 @@ export async function verifyDuplicateSlugToast({
     '',
   );
   // Дубль-товар не лишаємо: він заважав би перевірці видалення нижче.
-  await sql(dbUrl, `delete from public.products where name = 'Дубль'`);
+  await sql(
+    dbUrl,
+    `delete from public.products where id in (
+       select product_id from public.product_translations where name = 'Дубль')`,
+  );
 }
 
 /** Видалення в списку прибирає рядок оптимістично і товар з вітрини (204/404). */
