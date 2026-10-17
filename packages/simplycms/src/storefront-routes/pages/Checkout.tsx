@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -174,7 +175,9 @@ export default function Checkout() {
   // навігацію на `/order-success` редиректом на `/cart`. Прапорець виставляє
   // ЛИШЕ успішне оформлення (перед `clearCart()`), тому пряма реакція на
   // порожній кошик (видалення позицій руками) лишається чинною.
-  const orderPlacedRef = useRef(false);
+  // Стан, а не ref: гейт читається й у рендері, а читати ref під час рендеру
+  // не можна (`react-hooks/refs`). Синхронність дає `flushSync` у `onSubmit`.
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   // Redirect if cart is empty. 🔴 Гейт на `hydrated` (Е0-5, рішення А
   // архітектора): гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
@@ -183,10 +186,10 @@ export default function Checkout() {
   // `CartProvider` і хибно редиректив би на /cart при прямому вході на
   // /checkout з непорожнім кошиком.
   useEffect(() => {
-    if (hydrated && items.length === 0 && !orderPlacedRef.current) {
+    if (hydrated && items.length === 0 && !orderPlaced) {
       navigate({ to: '/cart' });
     }
-  }, [hydrated, items, navigate]);
+  }, [hydrated, items, navigate, orderPlaced]);
 
   // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
   // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
@@ -201,6 +204,12 @@ export default function Checkout() {
     useWatch({ control: form.control, name: 'pickupPointId' }) || '';
   const deliveryCity =
     useWatch({ control: form.control, name: 'deliveryCity' }) || '';
+  // Решта значень форми для дочірніх секцій — теж через `useWatch`: той самий
+  // обмін підписки на ререндер при зміні поля, що й у `form.watch()`, але
+  // без нестабільної функції, яку компілятор не вміє мемоїзувати.
+  const values = useWatch({ control: form.control });
+  const paymentMethod = values.paymentMethod ?? 'cash';
+  const notes = values.notes || '';
   const { quote, quoting, matchesCurrent, blocked, failed } = useCheckoutQuote({
     items,
     shippingMethodId,
@@ -293,7 +302,9 @@ export default function Checkout() {
 
       // 🔴 Прапорець ПЕРЕД `clearCart()` — саме він спорожнює кошик, який
       // ефект/рендер-гілка нижче ще встигнуть побачити на цьому ж рендері.
-      orderPlacedRef.current = true;
+      // `flushSync`: прапорець має закомітитись ДО спорожнення кошика, інакше
+      // синхронний рендер від стору кошика побачить порожній кошик без нього.
+      flushSync(() => setOrderPlaced(true));
       clearCart();
 
       toast({
@@ -324,12 +335,12 @@ export default function Checkout() {
     // Profile will be loaded by the useEffect when user changes
   };
 
-  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище (плюс `orderPlacedRef`
+  // 🔴 Той самий гейт на `hydrated`, що й у ефекті вище (плюс `orderPlaced`
   // — та сама гонка на спорожнений кошик після успішного оформлення): до
   // гідратації `items` завжди порожній, і без гейту тут був би спалах
   // «порожній кошик» на прямому вході в /checkout, доки CartProvider не
   // перечитає localStorage.
-  if (hydrated && items.length === 0 && !orderPlacedRef.current) {
+  if (hydrated && items.length === 0 && !orderPlaced) {
     return null;
   }
 
@@ -377,23 +388,23 @@ export default function Checkout() {
 
               <CheckoutContactForm
                 values={{
-                  firstName: form.watch('firstName'),
-                  lastName: form.watch('lastName'),
-                  email: form.watch('email') || '',
-                  phone: form.watch('phone') || '',
+                  firstName: values.firstName ?? '',
+                  lastName: values.lastName ?? '',
+                  email: values.email || '',
+                  phone: values.phone || '',
                 }}
                 onChange={(field, value) =>
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
               />
               <CheckoutRecipientForm
-                values={form.watch()}
+                values={values}
                 onChange={(field, value) =>
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
               />
               <CheckoutDeliveryForm
-                values={form.watch()}
+                values={values}
                 onChange={(field, value) =>
                   form.setValue(field as keyof CheckoutFormData, value)
                 }
@@ -419,7 +430,7 @@ export default function Checkout() {
                 )}
               />
               <CheckoutPaymentForm
-                selectedMethod={form.watch('paymentMethod')}
+                selectedMethod={paymentMethod}
                 onMethodChange={(method) =>
                   form.setValue('paymentMethod', method)
                 }
@@ -439,7 +450,7 @@ export default function Checkout() {
                 matchesCurrent={matchesCurrent}
                 blocked={blocked}
                 failed={failed}
-                notes={form.watch('notes') || ''}
+                notes={notes}
                 onNotesChange={(notes) => form.setValue('notes', notes)}
                 isSubmitting={isSubmitting}
                 canSubmit={canSubmit}

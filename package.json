@@ -16,7 +16,7 @@
     "gates": "node scripts/gates.mjs",
     "release": "node scripts/release.mjs",
     "start": "node server.mjs",
-    "lint": "pnpm exec eslint .",
+    "lint": "pnpm exec eslint . --max-warnings 0",
     "lint:fix": "pnpm exec eslint . --fix",
     "typecheck": "tsc --noEmit",
     "typecheck:template": "tsc -p tsconfig.template.json",

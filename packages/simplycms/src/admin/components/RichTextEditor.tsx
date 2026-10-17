@@ -77,7 +77,7 @@ export function RichTextEditor({
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  }, [editor]);
+  }, [editor, t]);
 
   const addImage = useCallback(() => {
     if (!editor) return;
@@ -87,7 +87,7 @@ export function RichTextEditor({
     if (url) {
       editor.chain().focus().setImage({ src: url }).run();
     }
-  }, [editor]);
+  }, [editor, t]);
 
   if (!editor) {
     return null;

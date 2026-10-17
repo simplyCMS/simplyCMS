@@ -63,17 +63,31 @@ const Carousel = React.forwardRef<
       },
       plugins,
     );
-    const [canScrollPrev, setCanScrollPrev] = React.useState(false);
-    const [canScrollNext, setCanScrollNext] = React.useState(false);
-
-    const onSelect = React.useCallback((api: CarouselApi) => {
-      if (!api) {
-        return;
-      }
-
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-    }, []);
+    // Відхилення від реєстру shadcn (там `useState` + `onSelect(api)` в ефекті,
+    // що ловить `react-hooks/set-state-in-effect`): стан прокрутки — це
+    // зовнішній стан Embla, тож читаємо його `useSyncExternalStore`. Снапшот —
+    // бітова маска (стабільний примітив). Заодно `reInit` тепер відписується
+    // (у версії реєстру лишався підписаним).
+    const subscribe = React.useCallback(
+      (notify: () => void) => {
+        if (!api) return () => {};
+        api.on('reInit', notify);
+        api.on('select', notify);
+        return () => {
+          api.off('reInit', notify);
+          api.off('select', notify);
+        };
+      },
+      [api],
+    );
+    const scrollMask = React.useSyncExternalStore(
+      subscribe,
+      () =>
+        api ? (api.canScrollPrev() ? 1 : 0) | (api.canScrollNext() ? 2 : 0) : 0,
+      () => 0,
+    );
+    const canScrollPrev = (scrollMask & 1) !== 0;
+    const canScrollNext = (scrollMask & 2) !== 0;
 
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev();
@@ -103,20 +117,6 @@ const Carousel = React.forwardRef<
 
       setApi(api);
     }, [api, setApi]);
-
-    React.useEffect(() => {
-      if (!api) {
-        return;
-      }
-
-      onSelect(api);
-      api.on('reInit', onSelect);
-      api.on('select', onSelect);
-
-      return () => {
-        api?.off('select', onSelect);
-      };
-    }, [api, onSelect]);
 
     return (
       <CarouselContext.Provider

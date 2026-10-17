@@ -197,8 +197,9 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 ## 4. Лінт
 
-🔴 **Норма: `pnpm lint` = 0 errors / 7 warnings.** Ворнінги — `react-hooks/*` і `no-unused-vars`.
-Не «лагодити» число вгору чи вниз без причини.
+🔴 **Норма: `pnpm lint` = 0 errors / 0 warnings.** Скрипт `lint` — `eslint . --max-warnings 0`,
+тож будь-яке нове попередження червонить гейт. Попередження лагодять, а не вимикають
+`eslint-disable` без причини в коментарі.
 
 Error-зони й кастомні правила (селектори й опції не послабляти; кожне має негативний контроль
 тестом):

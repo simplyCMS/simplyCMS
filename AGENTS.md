@@ -102,8 +102,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   (`.prettierignore`): генерат, артефакти збірки і всі `*.md`.
 - 🔴 `build` перед `typecheck` (генерує `src/routeTree.gen.ts`); `typecheck:template` — окремий
   гейт після `build:packages` (кореневий `tsconfig.json` шаблон не бачить).
-- 🔴 **Норма `pnpm lint` = 0 errors / 7 warnings** (`react-hooks/*`, `no-unused-vars`). Не «лагодь»
-  число без причини; селектори й опції error-зон не послабляй — кожне кастомне правило має
+- 🔴 `pnpm lint` — 0 errors / 0 warnings, тримає `--max-warnings 0`; нове попередження лагодять, а не вимикають `eslint-disable` без причини в коментарі. Селектори й опції error-зон не послабляй — кожне кастомне правило має
   негативний контроль тестом і власне імʼя плагіна.
 - 🔴 Зелений `pnpm test` нічого не каже про опублікований пакет: що доводить кожен гейт
   (пілот A/B/C/D/CLI/TOOL, tarball-parity) і які зони не покриті —
