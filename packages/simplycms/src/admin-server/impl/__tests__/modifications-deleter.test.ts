@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type { ActorDb } from 'simplycms/db';
 import { productModifications } from 'simplycms/schema';
 import { removeResourceRows } from '../resource-write';
+import { tableNames } from './support/table-names';
 
 const sources = import.meta.glob(
   ['../../../**/*.{ts,tsx}', '!../../../**/__tests__/**'],
@@ -22,29 +23,25 @@ const rel = (key: string) =>
 
 const HELPER = 'admin-server/impl/product-modifications/delete.ts';
 
-/** Прямий DELETE модифікацій: сирий SQL (будь-які лапки/схема), Drizzle, узагальнений видаляч. */
-const DELETERS = [
-  /delete\s+from\s+(?:only\s+)?(?:"?public"?\s*\.\s*)?"?product_modifications"?(?![\w])/i,
-  /\.delete\(\s*(?:\w+\.)?productModifications\s*,?\s*\)/,
-  /removeResourceRows\(\s*\w+\s*,\s*(?:\w+\.)?productModifications\b/,
-];
+/** DELETE за іменем таблиці БД у сирому SQL (будь-які лапки/схема, `only`). */
+const RAW_DELETE =
+  /delete\s+from\s+(?:only\s+)?(?:"?public"?\s*\.\s*)?"?product_modifications"?(?![\w])/i;
 
-/** Аліаси таблиці (`const m = productModifications`) і `.delete(m)` через них. */
-const aliasDelete = (src: string) =>
-  [
-    ...src.matchAll(
-      /(?:const|let|var)\s+(\w+)\s*=\s*(?:\w+\.)?productModifications\b/g,
-    ),
-  ].some(([, alias]) =>
-    new RegExp(`\\.delete\\(\\s*${alias}\\s*,?\\s*\\)`).test(src),
+/** DELETE через об'єкт таблиці під будь-яким іменем модуля (`tableNames`). */
+const deletesVia = (src: string) =>
+  tableNames(src, 'productModifications').some((name) =>
+    [
+      `\\.delete\\(\\s*${name}\\s*,?\\s*\\)`,
+      `removeResourceRows\\(\\s*\\w+\\s*,\\s*${name}\\b`,
+      `delete\\s+from\\s+(?:only\\s+)?\\$\\{\\s*${name}\\s*\\}`,
+    ].some((re) => new RegExp(re, 'i').test(src)),
   );
 
 const offenders = (files: Record<string, string>) =>
   Object.entries(files)
     .filter(
       ([path, src]) =>
-        path !== HELPER &&
-        (DELETERS.some((re) => re.test(src)) || aliasDelete(src)),
+        path !== HELPER && (RAW_DELETE.test(src) || deletesVia(src)),
     )
     .map(([path]) => path);
 
@@ -54,7 +51,7 @@ describe('єдиний видаляч модифікацій (М1, Task 14)', ()
   );
 
   it('сканер бачить хелпер (інакше glob порожній і тест нічого не доводить)', () => {
-    expect(files[HELPER]).toMatch(DELETERS[1]!);
+    expect(deletesVia(files[HELPER] ?? '')).toBe(true);
   });
 
   it('негативний контроль: кожна форма видалення ловиться', () => {
@@ -71,10 +68,18 @@ describe('єдиний видаляч модифікацій (М1, Task 14)', ()
       'alias.ts':
         'const m = productModifications;\nawait db.delete(m).where(x)',
       'generic.ts': 'removeResourceRows(db, productModifications, ids)',
+      'import-alias.ts':
+        "import { productModifications as pm } from 'simplycms/schema';\nawait db.delete(pm).where(x)",
+      'interp.ts': 'sql`delete from ${productModifications} where id = ${id}`',
+      'interp-alias.ts':
+        "import { productModifications as pm } from 'x';\nsql`DELETE FROM ${pm} WHERE x`",
     };
     expect(offenders(forms)).toEqual(Object.keys(forms));
     expect(
-      offenders({ 'ok.ts': 'sql`delete from public.product_modifications_x`' }),
+      offenders({
+        'ok.ts': 'sql`delete from public.product_modifications_x`',
+        'ok2.ts': 'await db.delete(productModificationsOther).where(x)',
+      }),
     ).toEqual([]);
   });
 

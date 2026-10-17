@@ -12,9 +12,11 @@ import { products } from 'simplycms/schema';
  *     `lockAggregateRoots` (сканер `aggregate-lock-order.test.ts`); він сам бере спільний
  *     `languages-set` перед коренем. Тому команда не пише дочірніх рядків з FK на
  *     `languages` (переклади, адреси) раніше, ніж дочекається ексклюзивного власника
- *     (`languages.remove`), який видаляє ті самі таблиці для мови. Тести «saveTranslation
- *     <-> languages.remove» і «products.remove <-> languages.remove» (`catalog-projection-
- *     order`); мутації «set після кореня» / «remove без set» -> 40P01.
+ *     (`languages.remove`), який видаляє ті самі таблиці для мови. Тести —
+ *     `aggregate-language-locks.test.ts`: «saveTranslation <-> languages.remove» (set
+ *     прибрано -> 40P01), «products.remove <-> setStatus» (set ПІСЛЯ кореня -> 40P01),
+ *     «products.remove <-> languages.remove» (set прибрано лише з видалення -> 40P01:
+ *     каскади товару й мови беруть токени мови й рядки мови в протилежних порядках).
  * (2) Власник ЕКСКЛЮЗИВНОГО `languages-set` (`setStatus`, add/remove/reorder мов,
  *     `reconcileProductTexts`) рядкових замків коренів не бере: лише KEY SHARE через FK і
  *     вибірки. Видаляти рядки мови (проєкцію, каскад `languages.remove`) він може, бо

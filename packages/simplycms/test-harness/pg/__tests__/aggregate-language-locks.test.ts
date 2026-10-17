@@ -77,32 +77,41 @@ describe('languages-set перед коренем агрегата (Task 14, р�
   });
 
   it('products.remove (дві історичні адреси в мові) <-> languages.remove: ok/ok', async () => {
+    // Мова draft з проєкцією й без перекладу товару: RESTRICT-FK перекладу на мову тут
+    // ні до чого, лишається лише порядок рядків двох каскадів.
     await add('hr');
-    const { id } = await create({
-      uk: { name: 'Історія' },
-      hr: { name: 'Povijest' },
-    });
+    const { id } = await create({ uk: { name: 'Історія' } });
+    const mod = randomUUID();
     await insertModificationAt(db.url(), id, {
-      id: randomUUID(),
+      id: mod,
       slug: 'hist-mod',
       name: 'M',
     });
     await fillAll('hr');
-    await exec(languagesSetStatus, { code: 'hr', status: 'disabled' });
     await addr('hr', `hist-1-${id}`, id, false);
     await addr('hr', `hist-2-${id}`, id, false);
-    const price = randomUUID();
+    const [method, point, stock] = [randomUUID(), randomUUID(), randomUUID()];
     await db.q(
-      `insert into public.product_prices (id, price_type_id, product_id, price)
-       values ($1, (select id from public.price_types where code = 'retail'), $2, 10)`,
-      [price, id],
+      `insert into public.shipping_methods (id, code, name, provider)
+       values ($1, $2, 'S', 'manual')`,
+      [method, `s-${method.slice(0, 8)}`],
     );
-    // T0 тримає ціну товару: видалення вже прибрало модифікації (токени мови hr) і чекає в
-    // каскаді товару ДО перекладів; remove мови каскадом бере переклад (товар, hr), потім
-    // токени — без set з боку видалення порядки протилежні (40P01).
+    await db.q(
+      `insert into public.pickup_points (id, method_id, name, address, city)
+       values ($1, $2, 'P', 'A', 'C')`,
+      [point, method],
+    );
+    await db.q(
+      `insert into public.stock_by_pickup_point (id, pickup_point_id, modification_id, quantity)
+       values ($1, $2, $3, 1)`,
+      [stock, point, mod],
+    );
+    // T0 тримає залишок модифікації: видалення товару в каскаді модифікації вже взяло її
+    // токени мови hr і чекає; remove мови каскадом бере рядки hr (проєкцію, адреси) і
+    // доходить до тих самих токенів. Без спільного set з боку видалення — 40P01.
     const out = await latchRace(
       db,
-      `select 1 from public.product_prices where id = '${price}' for key share`,
+      `select 1 from public.stock_by_pickup_point where id = '${stock}' for key share`,
       removeProduct(id),
       () => exec(languagesRemove, { code: 'hr' }),
     );

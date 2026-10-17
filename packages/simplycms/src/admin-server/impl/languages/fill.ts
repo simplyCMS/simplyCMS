@@ -53,10 +53,7 @@ async function stages(db: ActorDb, code: string, batch: number) {
   const paths = await copyPathsForLocale(db, code, batch);
   const tokens = await copyTokensForLocale(db, code, batch);
   const texts = await buildMissingProjection(db, code, batch);
-  return {
-    inserted: paths + tokens + texts,
-    done: paths < batch && tokens < batch && texts < batch,
-  };
+  return paths + tokens + texts;
 }
 
 /**
@@ -64,25 +61,31 @@ async function stages(db: ActorDb, code: string, batch: number) {
  * останньою: будується з адрес, щойно створених у цій транзакції). Ідемпотентне —
  * копіюються лише сутності без поточного запису в мові; наявні рядки проєкції fill
  * не перезаписує (їх оновлює лише команда, І23). Для мови `disabled` проєкції нема.
- * Замки — лише `FOR KEY SHARE` на товарах і модифікаціях (порядок — `products/aggregate/lock-order.ts`, пункт (5)).
- * `done`: усі три вибірки вичерпались (менше за ліміт); клієнт кличе, доки
- * `done` не стане `true`. Остаточну істину дає `completeness`.
+ * Замки — лише `FOR KEY SHARE` на товарах і модифікаціях (порядок —
+ * `products/aggregate/lock-order.ts`, пункт (5)).
+ * `inserted` — фактично вставлені рядки (`RETURNING`). `done` — за ТИМ САМИМ предикатом
+ * (`pendingFill`) після пакета роботи для мови не лишилось; не «вставили менше за ліміт»:
+ * рядок, який пропустив `ON CONFLICT` чи паралельне видалення, зменшує лічильник, але не
+ * означає, що решта мови готова. Клієнт кличе, доки `done` не стане `true`; остаточну
+ * істину дає `completeness`.
  */
 export async function fillBatch(
   db: ActorDb,
   code: string,
   batch: number = FILL_BATCH,
 ): Promise<{ inserted: number; done: boolean }> {
-  const first = await stages(db, code, batch);
-  if (first.inserted > 0) return first;
-  const stuck = await pendingFill(db, code, batch);
-  if (stuck.length === 0) return first;
-  // Кандидат міг з'явитись у чужій транзакції вже після вибірки етапів: ще один прохід
-  // його підбере. Відмова — лише для товарів, що лишились незробленими в обох перевірках.
+  const inserted = await stages(db, code, batch);
+  const left = await pendingFill(db, code, batch);
+  if (inserted > 0 || left.length === 0)
+    return { inserted, done: left.length === 0 };
+  // Нічого не вставлено, а робота лишилась: кандидат міг з'явитись у чужій транзакції вже
+  // після вибірки етапів — ще один прохід його підбере. Відмова — лише для товарів, що
+  // лишились незробленими в обох перевірках.
   const again = await stages(db, code, batch);
-  if (again.inserted > 0) return again;
-  const still = new Set(await pendingFill(db, code, batch));
-  const both = stuck.filter((id) => still.has(id));
+  const still = await pendingFill(db, code, batch);
+  if (again > 0 || still.length === 0)
+    return { inserted: again, done: still.length === 0 };
+  const both = left.filter((id) => still.includes(id));
   if (both.length > 0) throw stuckFill('fill', code, both);
-  return again;
+  return { inserted: 0, done: false };
 }
