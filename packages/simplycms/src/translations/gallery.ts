@@ -5,7 +5,9 @@ import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 // картки), тож вираз живе в одному модулі поруч із реєстром перекладної сутності
 // `productImage` (`specs.ts`): мовний варіант файлу (`product_image_translations`)
 // підключається тут, а не в кожному читачі.
-const ORDER = sql.raw('i.sort_order, i.created_at, i.id');
+/** Порядок галереї (аліас `i` — `product_images`): канон для всіх читачів, у т.ч. live-smoke. */
+export const GALLERY_ORDER = 'i.sort_order, i.created_at, i.id';
+const ORDER = sql.raw(GALLERY_ORDER);
 
 /**
  * Референси фото товару (без фото модифікацій) jsonb-масивом у порядку галереї;

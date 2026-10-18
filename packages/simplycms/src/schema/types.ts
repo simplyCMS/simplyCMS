@@ -47,7 +47,7 @@ import type {
 } from './schema';
 
 // 🔴 Реекспорт, не власне визначення: `JsonValue` — тип jsonb-колонок БЕЗ
-// власної форми (returnPolicy/shippingDetails/options), джерело —
+// власної форми (options/config/discount_data), джерело —
 // `schema/json.ts` (T1, той самий, що й ця схема).
 export type { JsonValue } from './json';
 

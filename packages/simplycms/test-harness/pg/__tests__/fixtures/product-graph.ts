@@ -16,6 +16,7 @@ import {
   type ModificationSpec,
   type PgClientLike,
   type ProductGraphSpec,
+  type ValueOwner,
   type ValueSpec,
 } from './product-graph-types';
 import {
@@ -107,10 +108,8 @@ export const modificationGraphSql = (
   productId: Id,
   m: ModificationSpec,
 ): string => inLockedBlock(modificationSql(productId, m));
-export const valueGraphSql = (
-  owner: { kind: 'product' | 'modification'; id: Id },
-  v: ValueSpec,
-): string => inLockedBlock(valueSql(owner, v));
+export const valueGraphSql = (owner: ValueOwner, v: ValueSpec): string =>
+  inLockedBlock(valueSql(owner, v));
 
 export async function insertProductGraph(
   db: PgClientLike,
@@ -139,7 +138,7 @@ export async function insertModificationAt(
 /** Значення властивості існуючого товару чи модифікації. */
 export async function insertValueAt(
   dbUrl: string,
-  owner: { kind: 'product' | 'modification'; id: Id },
+  owner: ValueOwner,
   v: ValueSpec,
 ): Promise<void> {
   await queryRows(dbUrl, valueGraphSql(owner, v));

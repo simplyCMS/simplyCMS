@@ -41,7 +41,7 @@ export interface AdminResourceConfigBase<
   R extends ColumnName<T>,
   I extends ColumnName<T>,
   O extends ColumnName<T>,
-  RM extends ReadModelSpec<T> | undefined = undefined,
+  RM extends ReadModelSpec | undefined = undefined,
 > {
   entity: string;
   table: T;
@@ -98,7 +98,7 @@ export interface AdminResourceConfigBase<
     NoInfer<Partial<InsertPick<T, W>>>
   >;
   /** Е6д-1: колонки-референси на файли сутності `entityType` (лише
-   *  writable `text` або `jsonb`-масив референсів, К3-Е6д-1). Фабрика
+   *  writable `text`, К3-Е6д-1; jsonb-масиви — лише в `cascadeMedia`). Фабрика
    *  перевіряє нові референси, стирає рядки `media` заміненого/видаленого в
    *  транзакції, а файли — після COMMIT (Е6д-14). */
   media?: { entityType: MediaEntityType; columns: readonly NoInfer<W>[] };

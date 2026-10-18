@@ -7,7 +7,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { templatedTargets, writesProductTables } from './fixtures/writer-guard';
 import {
+  VALUE_OWNERS,
   insertProductGraph,
   sqlRef,
   urlPathRowSql,
@@ -280,21 +282,13 @@ describe('insertProductGraph (М1 Task 10)', () => {
 // реєстрів — їм потрібні рядки довільної (хибної) форми для негативних контролів.
 describe('єдиний записувач графа товару', () => {
   const HARNESS = join(import.meta.dirname, '../..');
-  const T =
-    'products|product_modifications|product_property_values|modification_property_values';
-  const O =
-    'products|productModifications|productPropertyValues|modificationPropertyValues';
-  // Регістронезалежно, `\s+` (перенос рядка, подвійний пробіл), кваліфікований `schema.x`.
-  const PRODUCT_TABLES = new RegExp(
-    `insert\\s+into\\s+(public\\.)?(${T})\\b|insert\\(\\s*[\\w.]*(${O})\\b|insertInto\\(\\s*['"](${T})['"]`,
-    'i',
-  );
   const REGISTRIES =
     /insert\s+into\s+(public\.)?(url_paths|slug_tokens)\b|insert\(\s*[\w.]*(urlPaths|slugTokens)\b|insertInto\(\s*['"](url_paths|slug_tokens)['"]/i;
   const BUILDERS = (f: string) =>
     f.startsWith('pg/__tests__/fixtures/product-graph');
-  // Цей файл містить зразки заборонених форм як дані.
+  // Цей файл і модуль гарда містять зразки заборонених форм як дані.
   const SELF = 'pg/__tests__/product-graph-fixture.test.ts';
+  const GUARD = 'pg/__tests__/fixtures/writer-guard.ts';
   const REGISTRY_TESTS = new Set([
     'pg/__tests__/url-paths.test.ts',
     'pg/__tests__/slug-tokens.test.ts',
@@ -308,24 +302,48 @@ describe('єдиний записувач графа товару', () => {
           ? [join(dir, e.name)]
           : [],
     );
-  const offenders = (re: RegExp, allowed: Set<string>) =>
+  /**
+   * Шаблонні імена таблиць, які гард розкрити не може, — лише тут і з причиною: інакше
+   * це порушення (тихий пропуск такого шаблону вже раз пропустив запис повз билдер).
+   */
+  const DYNAMIC_TABLES: Record<string, string> = {
+    'pg/__tests__/attach-current.test.ts':
+      'пробні таблиці процедури attach_current_* (create table у самому тесті)',
+    'pg/__tests__/fixtures/translatable-probe.ts':
+      'пробні таблиці тригера джерела (create table у самій фікстурі)',
+    'pg/__tests__/seed-determinism.test.ts':
+      'текст повідомлення асерту (`insert into ${table} без колонки id`), не SQL',
+  };
+  const harnessFiles = () =>
     files(HARNESS)
       .map((f) => relative(HARNESS, f))
-      .filter(
-        (f) =>
-          !allowed.has(f) &&
-          f !== SELF &&
-          !BUILDERS(f) &&
-          re.test(readFileSync(join(HARNESS, f), 'utf8')),
-      )
+      .filter((f) => f !== SELF && f !== GUARD && !BUILDERS(f));
+  const text = (f: string) => readFileSync(join(HARNESS, f), 'utf8');
+  const offenders = (test: (t: string) => boolean, allowed: Set<string>) =>
+    harnessFiles()
+      .filter((f) => !allowed.has(f) && test(text(f)))
       .sort();
 
   it('вставки в таблиці товару — лише через fixtures/product-graph*.ts', () => {
-    expect(offenders(PRODUCT_TABLES, new Set())).toEqual([]);
+    expect(offenders(writesProductTables, new Set())).toEqual([]);
+  });
+
+  it("шаблонне ім'я таблиці, яке гард не розкриває, — лише з причиною", () => {
+    expect(
+      offenders(
+        (t) => templatedTargets(t).unexpandable.length > 0,
+        new Set(Object.keys(DYNAMIC_TABLES)),
+      ),
+    ).toEqual([]);
+  });
+
+  it('перелік дозволених шаблонів не стухає (файл справді має такий шаблон)', () => {
+    for (const f of Object.keys(DYNAMIC_TABLES))
+      expect(templatedTargets(text(f)).unexpandable, f).not.toEqual([]);
   });
 
   it('вставки в url_paths/slug_tokens — лише тести реєстрів', () => {
-    expect(offenders(REGISTRIES, REGISTRY_TESTS)).toEqual([]);
+    expect(offenders((t) => REGISTRIES.test(t), REGISTRY_TESTS)).toEqual([]);
   });
 
   // Негативний контроль самого гарда: кожна заборонена форма впізнається.
@@ -337,13 +355,42 @@ describe('єдиний записувач графа товару', () => {
     'db.insert(\n productPropertyValues)',
     "insertInto('modification_property_values', row)",
   ])('гард впізнає форму %j', (sample) => {
-    expect(PRODUCT_TABLES.test(sample)).toBe(true);
+    expect(writesProductTables(sample)).toBe(true);
   });
 
   it('гард ловить insertInto в іншій фікстурі (реальний прогін)', () => {
     const fake = 'pg/__tests__/fixtures/other-fixture.ts';
-    const text = "insertInto('products', {})";
-    const hit = [fake].filter((f) => !BUILDERS(f) && PRODUCT_TABLES.test(text));
+    const sample = "insertInto('products', {})";
+    const hit = [fake].filter(
+      (f) => !BUILDERS(f) && writesProductTables(sample),
+    );
     expect(hit).toEqual([fake]);
+  });
+
+  // Task 17 fix-1 (A3): шаблонні імена — розкриття за власниками з одного джерела.
+  it.each(VALUE_OWNERS)(
+    'шаблон `${owner}_property_values` розкривається і в «%s_property_values»',
+    (owner) => {
+      const sample =
+        'insert into public.${owner}_property_values (id) values (1)';
+      expect(templatedTargets(sample).guarded).toContain(
+        `${owner}_property_values`,
+      );
+      expect(writesProductTables(sample)).toBe(true);
+    },
+  );
+
+  it('шаблон перекладів значень розкривається, але не є таблицею графа', () => {
+    const sample =
+      'insert into public.${kind}_property_value_translations (value_id) values (1)';
+    expect(templatedTargets(sample)).toEqual({ guarded: [], unexpandable: [] });
+  });
+
+  it.each([
+    'insert into public.${table} (id) values (1)',
+    'insert into public.plg_${name}_items (id) values (1)',
+    'insert into ${a}_${b}_property_values (id)',
+  ])('нерозкривний шаблон %j — порушення, а не пропуск', (sample) => {
+    expect(templatedTargets(sample).unexpandable).toHaveLength(1);
   });
 });

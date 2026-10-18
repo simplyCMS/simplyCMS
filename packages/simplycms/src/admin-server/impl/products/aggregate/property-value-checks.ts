@@ -5,7 +5,15 @@ import type { PropertyKind, PropertyValuesInput } from './children-schemas';
 
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
 
-/** Наявні властивості з входу одним читанням (рання помилка поля `propertyId`). */
+/**
+ * Наявні властивості з входу одним читанням (рання помилка поля `propertyId`).
+ *
+ * 🔴 `FOR KEY SHARE` у транзакції запису (команда агрегата): той самий замок, який потім
+ * візьме складений FK значення, тож порядок замків не змінюється. Без нього паралельне
+ * видалення властивості між цим SELECT і вставкою дало б 23503 складеного FK — і хибну
+ * помилку поля `kind` замість `propertyId`. З ним видалення або чекає на запис значення,
+ * або (якщо почалося раніше) цей SELECT дочекається його коміту й рядка не побачить.
+ */
 export async function loadKnownProperties(
   ctx: Pick<ChildCtx, 'db'>,
   upserts: readonly Upsert[],
@@ -13,7 +21,9 @@ export async function loadKnownProperties(
   if (upserts.length === 0) return new Set();
   const props = await ctx.db.execute<{ id: string }>(
     sql`select id from public.section_properties
-         where id = any(${uuidArray(upserts.map((u) => u.propertyId))})`,
+         where id = any(${uuidArray(upserts.map((u) => u.propertyId))})
+         order by id
+           for key share`,
   );
   return new Set(props.rows.map((r) => r.id));
 }

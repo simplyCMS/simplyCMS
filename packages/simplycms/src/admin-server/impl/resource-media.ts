@@ -52,7 +52,8 @@ export async function readSnapshot(
 
 /**
  * Референси одного значення медіа-колонки (К3-Е6д-1): `text` — один непорожній
- * рядок, `jsonb` — масив (нормалізований: лише непорожні рядки).
+ * рядок; jsonb-масив (нормалізований: лише непорожні рядки) приходить лише з каскаду
+ * (`cascadeMedia`, фото відгуків) — опція `media` приймає тільки `text`.
  */
 export const columnRefs = (value: unknown): string[] =>
   typeof value === 'string'
@@ -67,7 +68,7 @@ const refsOf = (media: ResourceMedia, row: Record<string, unknown> | null) =>
 
 /**
  * Перевірка НОВИХ референсів (Е6д-1): непорожній ключ, якого не було в знімку
- * колонки (для jsonb-масиву — доданий елемент), мусить бути рядком `media` з `entity_type = media.entityType`
+ * колонки, мусить бути рядком `media` з `entity_type = media.entityType`
  * і `entity_id = <id рядка>`, інакше 409 `media_ref_invalid`.
  *
  * 🔴 Умова `entity_id` — не формальність: стирання йде за `storage_key`, тож
@@ -87,8 +88,7 @@ export async function assertMediaRefs(
 ): Promise<void> {
   const wanted = rows.flatMap(({ id, next, before }) =>
     media.columns.flatMap((col) => {
-      // Нові = ключі значення, яких не було в знімку ТІЄЇ Ж колонки: для
-      // `text` — зміна рядка, для `jsonb`-масиву — додані елементи.
+      // Нові = ключі значення, яких не було в знімку ТІЄЇ Ж колонки (`text` — зміна рядка).
       const old = new Set(columnRefs(before?.[col]));
       return columnRefs(next[col])
         .filter((key) => !old.has(key))

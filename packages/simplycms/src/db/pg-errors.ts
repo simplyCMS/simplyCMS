@@ -52,6 +52,15 @@ export function isForeignKeyViolation(
   );
 }
 
+/** `check_violation` (23514), за потреби — саме на цьому обмеженні (CHECK за іменем). */
+export function isCheckViolation(error: unknown, constraint?: string): boolean {
+  const info = pgErrorInfo(error);
+  return (
+    info.code === '23514' &&
+    (constraint === undefined || info.constraint === constraint)
+  );
+}
+
 /**
  * Часткові UNIQUE «одна поточна адреса/токен на мову» (М1, Task 14): їх порушує лише
  * паралельна вставка того самого поточного запису (`languages.fill` під KEY SHARE не

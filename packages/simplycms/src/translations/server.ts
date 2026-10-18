@@ -15,6 +15,7 @@ export {
 } from './read';
 export { applyTranslationPlan, deleteTranslation } from './upsert';
 export {
+  GALLERY_ORDER,
   mainImageSql,
   modificationGallerySql,
   productGallerySql,

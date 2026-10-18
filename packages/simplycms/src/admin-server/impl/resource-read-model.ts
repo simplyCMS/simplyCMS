@@ -1,7 +1,5 @@
 import { and, eq, getTableColumns, type Column, type SQL } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
-import type { Table } from 'drizzle-orm';
-import type { ColumnName } from './resource-schemas';
 import type { ActorDb } from 'simplycms/db';
 import { primaryLocaleCode } from 'simplycms/translations';
 
@@ -13,7 +11,9 @@ import { primaryLocaleCode } from 'simplycms/translations';
  * - `fields` — поле рядка → колонка таблиці перекладів; перекриває однойменну колонку
  *   таблиці у SELECT, фільтрі, сортуванні й `defaultOrder` (ОДНЕ місце, не латки в споживачах);
  * - `required` — поля з `NOT NULL` за інваріантом (І4: назва основної мови): тип без `null`;
- * - `exclude` — колонки таблиці, яких у read-model немає;
+ * Решта колонок таблиці (`picked`, без `omit` ресурсу) лишається в рядку як є: поле
+ * «виключити колонку з read-model» знесено разом з останньою дзеркальною колонкою (М1,
+ * Task 17) — без споживача воно лише множило гілки типу `ReadRow`.
  * - `computed` — поле рядка → скалярний підзапит від `id` ресурсу (мініатюра товару —
  *   головне фото агрегата, `mainImageSql`): дані з дочірньої таблиці без JOIN, що множив
  *   би рядки сторінки. Такі поля не фільтруються й не сортуються.
@@ -23,15 +23,13 @@ import { primaryLocaleCode } from 'simplycms/translations';
  * з'являється з порожньою назвою (`name` в усіх споживачів — не `null`); сам стан
  * неможливий — constraint-тригер І4 відмовляє такому рядку на COMMIT.
  */
-export interface ReadModelSpec<T extends Table = Table> {
+export interface ReadModelSpec {
   /** Таблиця перекладів (`<entity>_translations`) з колонками `locale` і FK-власником. */
   readonly translations: PgTable;
   /** FK перекладу на `id` ресурсу. */
   readonly owner: Column;
   readonly fields: Readonly<Record<string, Column>>;
   readonly required?: readonly string[];
-  /** Колонки таблиці ресурсу, яких немає в read-model (імена перевіряє typecheck). */
-  readonly exclude?: readonly ColumnName<T>[];
   readonly computed?: Readonly<Record<string, (ownerId: Column) => SQL>>;
 }
 
@@ -51,20 +49,23 @@ export type ReadModelGuards<RM> = RM extends ReadModelSpec
       }
   : unknown;
 
-/** Тип поля read-model: дані колонки перекладу, без `null` для `required`. */
+/**
+ * Тип поля read-model: дані колонки перекладу; `required` — без `null` (І4), інакше `null`
+ * за nullability колонки. 🔴 `_['data']` Drizzle `null` НЕ містить (його додає `notNull`),
+ * тож без цієї гілки nullable-поле перекладу було б типізоване як завжди заповнене.
+ */
 type FieldValue<RM extends ReadModelSpec, K extends keyof RM['fields']> =
   K extends RequiredField<RM>
-    ? NonNullable<RM['fields'][K]['_']['data']>
-    : RM['fields'][K]['_']['data'];
+    ? RM['fields'][K]['_']['data']
+    : RM['fields'][K]['_']['notNull'] extends true
+      ? RM['fields'][K]['_']['data']
+      : RM['fields'][K]['_']['data'] | null;
 
 /**
- * Опційні ключі спеки — через `infer`, а не `NonNullable<RM['exclude']>`: у конфігу без
- * ключа індексований доступ бере тип з обмеження `ReadModelSpec` (усі колонки), і
- * `Omit` прибрав би з рядка все.
+ * Опційні ключі спеки — через `infer`, а не `NonNullable<RM['required']>`: у конфігу без
+ * ключа індексований доступ бере тип з обмеження `ReadModelSpec` (`string`), і кожне поле
+ * стало б `required` (той самий клас дефекту вже раз прибрав з `ReadRow` усі колонки).
  */
-type Excluded<RM> = RM extends { exclude: readonly (infer E extends string)[] }
-  ? E
-  : never;
 type RequiredField<RM> = RM extends { required: readonly (infer R)[] }
   ? R
   : never;
@@ -79,27 +80,24 @@ type ComputedRow<RM> = {
     : never;
 };
 
-/** Рядок read-model: рядок таблиці без `exclude` і перекритих полів + поля перекладу й обчислені. */
+/** Рядок read-model: рядок таблиці без перекритих полів + поля перекладу й обчислені. */
 export type ReadRow<
   Row,
   RM extends ReadModelSpec | undefined,
 > = RM extends ReadModelSpec
-  ? Omit<Row, Excluded<RM> | Extract<keyof RM['fields'], string>> & {
+  ? Omit<Row, Extract<keyof RM['fields'], string>> & {
       [K in keyof RM['fields']]: FieldValue<RM, K>;
     } & ComputedRow<RM>
   : Row;
 
-/** Вибірка SELECT read-model: проєкція таблиці без `exclude` + поля перекладу й обчислені. */
+/** Вибірка SELECT read-model: проєкція таблиці + поля перекладу (перекривають) й обчислені. */
 export function readSelection(
   picked: Record<string, Column>,
   spec: ReadModelSpec,
   ownerId: Column,
 ): Record<string, Column | SQL.Aliased> {
-  const hidden = new Set(spec.exclude ?? []);
   return {
-    ...Object.fromEntries(
-      Object.entries(picked).filter(([k]) => !hidden.has(k)),
-    ),
+    ...picked,
     ...spec.fields,
     ...Object.fromEntries(
       // Псевдонім обов'язковий: Drizzle не дає посилатися на сирий SQL без `.as()`.

@@ -5,9 +5,10 @@
 // генератор схем (`columnsToZod` дає для jsonb лише рантайм-union, а тип
 // самої Drizzle-колонки — рівно розрив, який тут закривається).
 //
-// 🔴 Колонки з ВІДОМОЮ формою (напр. `images` — масив медіа-референсів)
-// типізуються власним конкретним типом (`string[]`), не цим — `JsonValue`
-// призначений лише для jsonb-полів без домашньої структури (JSON-LD-подібні
-// обʼєкти `returnPolicy`/`shippingDetails`, довільна конфігурація `options`).
+// 🔴 Колонки з ВІДОМОЮ формою (напр. `product_reviews.images` — масив
+// медіа-референсів, `source_hashes` перекладів — мапа хешів) типізуються власним
+// конкретним типом (`string[]`, `Record<string, string>`), не цим — `JsonValue`
+// призначений лише для jsonb-полів без домашньої структури (довільна конфігурація
+// `options`/`config`, знімки `discount_data`/`shipping_data`).
 export type JsonValue =
   string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };

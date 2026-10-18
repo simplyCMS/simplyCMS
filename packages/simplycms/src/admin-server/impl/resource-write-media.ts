@@ -1,5 +1,5 @@
 import { getTableColumns, getTableName, is, type Table } from 'drizzle-orm';
-import { PgJsonb, PgText } from 'drizzle-orm/pg-core';
+import { PgText } from 'drizzle-orm/pg-core';
 import type { ActorDb } from 'simplycms/db';
 import { completeMediaErasures } from 'simplycms/storage';
 import { lockCatalogTarget } from './catalog-lock';
@@ -18,13 +18,19 @@ import {
 
 type Rec = Record<string, unknown>;
 
-/** Рантайм-рубіж конфігу: тип звужує колонки до writable, а `text` — лише тут. */
+/**
+ * Рантайм-рубіж конфігу: тип звужує колонки до writable, а `text` — лише тут.
+ * jsonb-масив референсів як `media` не підтримується (М1, Task 17): єдиний такий носій
+ * (`products.images`) знесено, а семантику диффу масиву без споживача ніщо не перевіряло б.
+ * Повертати — разом із ресурсом-споживачем і тестом. Каскад jsonb (`cascadeMedia` фото
+ * відгуків) — окремий шлях і лишається.
+ */
 export function assertMediaColumns(table: Table, media: ResourceMedia) {
   const columns = getTableColumns(table);
   for (const col of media.columns)
-    if (!is(columns[col], PgText) && !is(columns[col], PgJsonb))
+    if (!is(columns[col], PgText))
       throw new Error(
-        `[admin-server] ${getTableName(table)}.${col}: media-колонка мусить бути text або jsonb`,
+        `[admin-server] ${getTableName(table)}.${col}: media-колонка мусить бути text`,
       );
   return media;
 }

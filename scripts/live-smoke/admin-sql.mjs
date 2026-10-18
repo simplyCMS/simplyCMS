@@ -64,6 +64,13 @@ export async function productPrice(url, productId, priceTypeId) {
 }
 
 /**
+ * Порядок галереї — КОПІЯ канону `GALLERY_ORDER` (`simplycms/translations`, `gallery.ts`):
+ * `.mjs` живого прогону не імпортує TS-модуль пакета. Розходження ловить тест парності
+ * `tests/live-smoke-gallery-order.test.ts`.
+ */
+export const GALLERY_ORDER = 'i.sort_order, i.created_at, i.id';
+
+/**
  * Залишок і статус наявності товару (одна точка видачі в демо) + `images` — референси
  * галереї товару з `product_images` у порядку картки (М1: jsonb `products.images` знесено).
  */
@@ -71,7 +78,7 @@ export async function productStockAndImages(url, productId) {
   const [row] = await sql(
     url,
     `select s.quantity, p.stock_status,
-            coalesce((select jsonb_agg(i.storage_key order by i.sort_order, i.created_at, i.id)
+            coalesce((select jsonb_agg(i.storage_key order by ${GALLERY_ORDER})
                         from public.product_images i
                        where i.product_id = p.id and i.modification_id is null), '[]'::jsonb) as images
        from public.stock_by_pickup_point s

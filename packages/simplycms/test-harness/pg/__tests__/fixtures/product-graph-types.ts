@@ -32,6 +32,18 @@ export interface ProductTexts {
   metaDescription: string;
 }
 
+/**
+ * Власники значень властивостей — ЄДИНЕ джерело для билдера (`valueSql`) і гарда
+ * «єдиного записувача» (`product-graph-fixture.test.ts`): таблиця значень власника —
+ * `<власник>_property_values`, перекладів — `<власник>_property_value_translations`.
+ */
+export const VALUE_OWNERS = ['product', 'modification'] as const;
+export type ValueOwnerKind = (typeof VALUE_OWNERS)[number];
+export interface ValueOwner {
+  kind: ValueOwnerKind;
+  id: Id;
+}
+
 export interface ValueSpec {
   id: string;
   propertyId: Id;

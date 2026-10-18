@@ -114,7 +114,10 @@
   чи без поточної адреси в кожній мові `draft`/`published` не комітиться). Узагальнений CRUD товару, модифікацій і
   значень (`productsOps`, `productModificationsOps`, `*PropertyValuesOps`) — лише читання й видалення; тип медіа
   `product_modification` прибрано з `MEDIA_ENTITY_TYPES`; `SLUG_RE` (`simplycms/domain`) → `SLUG_FORMAT`
-  (`simplycms/domain/slugs`); `isForeignKeyViolation(error, constraint?)` (`simplycms/db`) розпізнає FK за іменем.
+  (`simplycms/domain/slugs`); `isForeignKeyViolation(error, constraint?)` і новий `isCheckViolation(error, constraint?)`
+  (`simplycms/db`) розпізнають обмеження за іменем. Фабрика `defineAdminResource` (`simplycms/admin-server/impl`): опція
+  `media` приймає лише `text`-колонки (jsonb-масив референсів — помилка конфігу; каскад `cascadeMedia` jsonb лишається),
+  поле `readModel.exclude` знесено (споживача не лишилось), поле перекладу без `required` типізоване з `null`.
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
   `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі
   беруться з реєстру: `LOCK_KEYS.adminRoles`, `LOCK_KEYS.customerConfig`, `LOCK_KEYS.discountConfig` тощо

@@ -413,11 +413,53 @@ describe('агрегат товару: модифікації, значення,
         }),
       );
       expect(err).toBeInstanceOf(ValidationError);
-      expect((err as ValidationError).issues[0]?.path).toEqual([
-        'propertyValues',
-        'upsert',
-        0,
-        'kind',
+      // Шлях і код — ті самі, що давала звірка в коді до Task 17 (`invalid_value`).
+      expect((err as ValidationError).issues).toEqual([
+        {
+          path: ['propertyValues', 'upsert', 0, 'kind'],
+          code: 'invalid_value',
+        },
+      ]);
+      expect(await version(id)).toBe(v);
+    });
+
+    // A1 (архітектор, Task 17 fix-1): рання перевірка існування властивості бере рядок
+    // `FOR KEY SHARE`, тож видалення властивості, що почалося раніше, команда чекає й після
+    // його коміту дає помилку `propertyId`, а не хибну `kind` складеного FK.
+    it('гонка: властивість видаляють паралельно → помилка propertyId, не kind', async () => {
+      const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+      const p = await property('number');
+      const t0 = hold(db, (d) =>
+        d.execute(
+          sql`delete from public.section_properties where id = ${p.pid}`,
+        ),
+      );
+      await until('T0 видалив властивість', t0.acquired);
+      const pending = rejects(
+        saveDescription(id, v, {
+          propertyValues: {
+            upsert: [
+              {
+                id: randomUUID(),
+                propertyId: p.pid,
+                kind: 'number',
+                number: '1',
+              },
+            ],
+          },
+        }),
+      );
+      // Строго: команда мусить стати в чергу за рядком властивості T0.
+      await waitForBlockedTree(db, t0, 1, { releaseOnFail: true });
+      t0.release();
+      await t0.done;
+      const err = await pending;
+      expect(err).toBeInstanceOf(ValidationError);
+      expect((err as ValidationError).issues).toEqual([
+        {
+          path: ['propertyValues', 'upsert', 0, 'propertyId'],
+          code: 'invalid_value',
+        },
       ]);
       expect(await version(id)).toBe(v);
     });

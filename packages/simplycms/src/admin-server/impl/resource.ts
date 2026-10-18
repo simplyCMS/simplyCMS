@@ -43,7 +43,7 @@ export function defineAdminResource<
   const R extends ColumnName<T>,
   const I extends ColumnName<T> = never,
   const O extends ColumnName<T> = never,
-  const RM extends ReadModelSpec<T> | undefined = undefined,
+  const RM extends ReadModelSpec | undefined = undefined,
 >(
   config: AdminResourceConfigBase<T, W, R, I, O, RM> &
     AdminResourceColumnGuards<T, W, R, I, O> &
@@ -74,7 +74,6 @@ export function defineAdminResource<
     picked,
     touch: config.touch,
     richHtml: config.richHtml,
-    // Імена `exclude` уже звірено типом конфігу; для списку це просто рядки.
     readModel: config.readModel as ReadModelSpec | undefined,
   };
 

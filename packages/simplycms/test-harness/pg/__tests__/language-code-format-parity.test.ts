@@ -4,6 +4,7 @@
 // його виразу). Розбіжність дала б або 500 на валідному для форми коді, або 400 на коді,
 // який БД прийняла б.
 import { describe, expect, it } from 'vitest';
+import { isCheckViolation } from 'simplycms/db';
 import { LANGUAGE_CODE_FORMAT } from 'simplycms/domain/translations';
 import { useAddressingDb } from './fixtures/addressing-db';
 
@@ -46,7 +47,9 @@ describe('парність форми коду мови: LANGUAGE_CODE_FORMAT �
       await db.w(`delete from public.languages where code = $1`, [code]);
       return true;
     } catch (error) {
-      if ((error as { code?: string }).code === '23514') return false;
+      // Відмова форми — лише САМЕ цей CHECK: інший CHECK чи тригер `languages` з тим
+      // самим SQLSTATE (23514) не мусить зійти за «БД відхиляє код».
+      if (isCheckViolation(error, 'languages_code_format')) return false;
       throw error;
     }
   };

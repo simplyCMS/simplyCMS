@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isCheckViolation,
   isForeignKeyViolation,
   isUniqueViolation,
   pgErrorInfo,
@@ -38,6 +39,13 @@ describe('pg-errors (єдиний розбір DRZ-1)', () => {
     expect(isForeignKeyViolation(wrapped('23503', 'fk'), 'fk')).toBe(true);
     expect(isForeignKeyViolation(wrapped('23503', 'fk'), 'other')).toBe(false);
     expect(isForeignKeyViolation(wrapped('23505'))).toBe(false);
+  });
+
+  it('isCheckViolation: лише 23514, за потреби — на названому обмеженні', () => {
+    expect(isCheckViolation(wrapped('23514', 'c'))).toBe(true);
+    expect(isCheckViolation(wrapped('23514', 'c'), 'c')).toBe(true);
+    expect(isCheckViolation(wrapped('23514', 'c'), 'other')).toBe(false);
+    expect(isCheckViolation(wrapped('23505', 'c'), 'c')).toBe(false);
   });
 
   it('toAdminConflict: 23505 → unique, 23503 → reference, інакше null', () => {

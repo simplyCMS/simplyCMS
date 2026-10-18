@@ -15,6 +15,7 @@ export { asService } from './as-service';
 export { pingDatabase } from './ping';
 export { advisoryXactLock, advisoryXactLockShared } from './advisory-lock';
 export {
+  isCheckViolation,
   isForeignKeyViolation,
   isUniqueViolation,
   pgErrorInfo,
