@@ -46,6 +46,9 @@ export default defineConfig({
       // (трек T): ламається першою, коли серверний код потрапляє в чанк,
       // досяжний із клієнтського entry.
       'tests/dist-server-boundary.test.ts',
+      // Ядро зовнішнє в dist референс-теми й плагіна (№156): власна копія
+      // ALS контексту запиту в dist теми розірвала б контекст лоадерів.
+      'tests/dist-theme-plugin-external.test.ts',
       // Справжня збірка з нестандартним `serverFns.base` (Р20′).
       'tests/server-fn-base-build.test.ts',
     ],

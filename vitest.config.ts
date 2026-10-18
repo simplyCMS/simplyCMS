@@ -68,6 +68,8 @@ export default defineConfig({
       // `build:packages`) червоніє, а партиційний тест «проходить» ВАКУУМНО:
       // `entryFiles()` на порожньому dist дає `[]`, і перетин теж `[]`.
       'tests/dist-server-boundary.test.ts',
+      // Читає dist теми й плагіна — той самий випадок, що й рядок вище.
+      'tests/dist-theme-plugin-external.test.ts',
       // Справжня збірка застосунку з нестандартним `serverFns.base` (~хвилина):
       // місце в packaging-сюїті.
       'tests/server-fn-base-build.test.ts',
