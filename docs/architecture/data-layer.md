@@ -17,7 +17,10 @@
   GUC актора (`app.user_id`, `app.order_token`) + `SET LOCAL ROLE app_user|app_admin`.
   Застосунок логіниться роллю `app_runtime` без прямих грантів, тож забутий
   `SET LOCAL ROLE` падає з `permission denied`, а не тихо працює з правами власника
-  таблиць (fail-closed). Гола фабрика пулу (`db/client`) закрита лінт-зоною
+  таблиць (fail-closed). Прелюдія (`0000_prelude.sql`) перевіряє атрибути ролей і своє членство
+  `app_runtime` в `app_user`/`app_admin` (`inherit false, set true`), але НЕ членство `app_runtime`/`app_*`
+  у ролях з INHERIT, видане іншим грантором: таке членство дає права без `SET LOCAL ROLE` і знімає
+  fail-closed (сигнал — `doctor --online`, план М5). Гола фабрика пулу (`db/client`) закрита лінт-зоною
   (`eslint.db-client-zone.mjs`) і не має субшляху в `exports`.
 - `fn` у `withActor` отримує drizzle над зʼєднанням САМЕ цієї транзакції, не над
   пулом: «взяти `db` глобально» неможливо за побудовою.
