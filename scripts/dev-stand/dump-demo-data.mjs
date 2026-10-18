@@ -18,6 +18,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import pg from 'pg';
 import { generateSeedSql } from './generate-seed.mjs';
+import { assertSourceSchema } from './source-schema.mjs';
 import { TABLE_SPECS } from './table-specs.mjs';
 
 const here = resolve(fileURLToPath(import.meta.url), '..');
@@ -56,6 +57,19 @@ async function fetchTable(client, spec) {
   return rows;
 }
 
+/**
+ * Увесь датасет allowlist-у. Схема джерела звіряється ДО першого select: БД до М1 дає
+ * зрозумілу відмову з інструкцією, а не сирий «relation does not exist».
+ */
+export async function dumpDataset(client) {
+  await assertSourceSchema(client);
+  const dataset = {};
+  for (const spec of TABLE_SPECS) {
+    dataset[spec.table] = await fetchTable(client, spec);
+  }
+  return dataset;
+}
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -64,11 +78,9 @@ async function main() {
   }
   const client = new pg.Client({ connectionString: url });
   await client.connect();
-  const dataset = {};
+  let dataset;
   try {
-    for (const spec of TABLE_SPECS) {
-      dataset[spec.table] = await fetchTable(client, spec);
-    }
+    dataset = await dumpDataset(client);
   } finally {
     await client.end();
   }
