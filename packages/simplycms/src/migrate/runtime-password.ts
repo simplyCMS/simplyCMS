@@ -1,5 +1,5 @@
 import type pg from 'pg';
-import { newScramVerifier } from './scram';
+import { newScramVerifier, scramSha256Verifier } from './scram';
 
 /** Роль, якою застосунок конектиться в рантаймі (`0000_prelude.sql`). */
 const RUNTIME_ROLE = 'app_runtime';
@@ -75,6 +75,10 @@ export async function syncRuntimePassword(
     );
     return false;
   }
+  if (await alreadySet(client, credentials.password)) {
+    log(`[migrate] пароль ${RUNTIME_ROLE} уже синхронізовано`);
+    return true;
+  }
   const verifier = newScramVerifier(credentials.password);
   try {
     await client.query(
@@ -91,4 +95,38 @@ export async function syncRuntimePassword(
   }
   log(`[migrate] пароль ${RUNTIME_ROLE} синхронізовано`);
   return true;
+}
+
+/** `SCRAM-SHA-256$<iter>:<salt>$<StoredKey>:<ServerKey>` → сіль і ітерації (інше — `null`). */
+const SCRAM = /^SCRAM-SHA-256\$(\d+):([^$]+)\$/;
+
+/**
+ * Чи пароль `app_runtime` уже той самий: верифікатор із ТІЄЮ САМОЮ сіллю й ітераціями, що лежить
+ * у `pg_authid`, збігається з нашим. Тоді `alter role` не потрібен — і не пишеться: рядок ролі
+ * живе в спільному каталозі кластера, а безумовний запис щоразу (верифікатор із випадковою сіллю)
+ * при паралельних накатах на різні БД давав `tuple concurrently updated`. `pg_authid` читає лише
+ * суперкористувач: без права — `false` (запис, як раніше). Пароль у запит не йде.
+ */
+async function alreadySet(
+  client: pg.ClientBase,
+  password: string,
+): Promise<boolean> {
+  const can = await client.query<{ ok: boolean }>(
+    "select has_table_privilege('pg_catalog.pg_authid', 'select') as ok",
+  );
+  if (!can.rows[0]?.ok) return false;
+  const res = await client.query<{ pw: string | null }>(
+    'select rolpassword as pw from pg_catalog.pg_authid where rolname = $1',
+    [RUNTIME_ROLE],
+  );
+  const stored = res.rows[0]?.pw ?? '';
+  const m = SCRAM.exec(stored);
+  if (!m) return false;
+  return (
+    scramSha256Verifier(
+      password,
+      Buffer.from(m[2]!, 'base64'),
+      Number(m[1]),
+    ) === stored
+  );
 }
