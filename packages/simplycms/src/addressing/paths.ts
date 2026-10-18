@@ -22,8 +22,17 @@ import { publicNames } from './public-names';
 /** Сутність, якій належить адреса (М2 розширює union). */
 export type AddressTarget = { kind: 'product'; id: string };
 
+/**
+ * Колонка-ціль реєстру `url_paths` для кожного виду сутності — ОДИН носій для запису й читання
+ * (`column`, `currentPathOwners`): новий вид у `AddressTarget` без рядка тут не скомпілюється.
+ */
+export const PATH_TARGET_COLUMNS = {
+  product: 'product_id',
+} as const satisfies Record<AddressTarget['kind'], string>;
+
 /** Колонка реєстру для виду сутності. */
-const column = (_target: AddressTarget) => sql.raw('product_id');
+const column = (target: AddressTarget) =>
+  sql.raw(PATH_TARGET_COLUMNS[target.kind]);
 
 const reservedFor = (langs: readonly string[]) => (candidate: string) =>
   isReservedPath(candidate, langs, publicNames());
