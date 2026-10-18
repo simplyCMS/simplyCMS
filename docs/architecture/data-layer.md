@@ -869,14 +869,24 @@ email в іншому регістрі — не конфлікт, записує
   `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
   Саме NO KEY UPDATE, а не UPDATE: `FOR UPDATE` конфліктував би з `FOR KEY SHARE` FK-вставок і
   вибірок fill/`languages.setStatus` і повернув би цикл 40P01.
-- **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів:
-  (1) `languages-set` → корені за id → дочірні; (2) власник ексклюзивного `languages-set`
-  (`languages.setStatus`, add/remove/reorder мов, `reconcileProductTexts`) рядкових замків коренів не бере;
-  (3) видалення кореня — `FOR UPDATE` першим кроком після set; (4) рядки `product_modifications`
-  видаляє лише `deleteModifications` (`FOR UPDATE … ORDER BY id`), узагальнений DELETE фабрики
-  на цій таблиці відмовляє; (5) `languages.fill` і звірка беруть на товарах і модифікаціях не
-  сильніше за `FOR KEY SHARE`, корінь раніше за дочірні. Тести й мутації кожного пункту названо в
-  самому JSDoc (`aggregate-language-locks.test.ts`, `catalog-projection-locks.test.ts`).
+- **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів з
+  УСІМА носіями кожного; де носіїв кілька, вони надлишкові (послаблення одного гарантію не знімає), тож
+  мутація-доказ послаблює всі разом:
+  (1) `languages-set` → корені за id → дочірні; носій — лише `lockAggregateRoots`.
+  (2) Власник ексклюзивного `languages-set` (`languages.setStatus`, add/remove/reorder мов,
+  `reconcileProductTexts`) рядкових замків коренів не бере; носій тесту — ексклюзивний замок звірки.
+  (3) `products.remove`: корінь `FOR UPDATE` — `lockProductForRemove` і `snapshotCascadeMedia` (батько),
+  надлишково; порядок модифікацій за id — той самий знімок (`via`) і `deleteModifications`, надлишково.
+  (4) Рядки `product_modifications` видаляє лише `deleteModifications` (`FOR UPDATE … ORDER BY id`); у
+  `saveDescription` він єдиний носій, у видаленні товару порядок дублює знімок. Узагальнений DELETE
+  фабрики на цій таблиці відмовляє.
+  (5) `languages.fill` і звірка беруть на товарах і модифікаціях не сильніше за `FOR KEY SHARE` (носії:
+  `keyShare` копіювання адрес і токенів, `buildMissingProjection`, звірка), корінь раніше за модифікації
+  (носій — копіювання токенів).
+  Тести: `aggregate-language-locks.test.ts` (1), `catalog-projection-locks.test.ts` (2),
+  `catalog-projection-order.test.ts` (3)–(5). Сигнали: (1), (3), (5) «корінь раніше» — 40P01; (4) і (5)
+  KEY SHARE — зі строгою передумовою кейсу (`settles`) тест падає «другий учасник завершився до відпускання
+  T0» (учасник став у чергу — причина дедлоку), без неї — 40P01.
 - **Значення властивостей (Р18):** форму тримає БД — складені FK `(property_id, value_kind)` і
   `(property_id, option_id)`, CHECK «рівно одна колонка за `value_kind`», частковий UNIQUE скалярних
   значень. Команда читає властивості `FOR KEY SHARE` у своїй транзакції (`loadKnownProperties`) — той

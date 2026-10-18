@@ -56,7 +56,7 @@
   стара версія → 412, свіжа версія зі старими хешами → 409 `source_changed`. Переклад ніколи не
   стає `current` щодо джерела, якого перекладач не бачив (`translation-race.test.ts`).
 - Порядок замків агрегата товару — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`):
-  `languages-set` → корені за id → дочірні; деталі й тести — [`data-layer.md`](./data-layer.md) §13.
+  `languages-set` → корені за id → дочірні; деталі й тести — [`data-layer.md`](./data-layer.md) §15.
 
 ## 3. Реєстри адрес і мовних токенів (майстер §3.1–3.2)
 
