@@ -82,17 +82,21 @@ export async function completeness(
     union all
     (select id, 'token' from (select distinct m.product_id::text as id ${noToken}) d
       order by id limit ${INCOMPLETE_SAMPLE})`);
-  const mismatches = await localeProjectionMismatches(db, code);
+  const projection = await localeProjectionMismatches(
+    db,
+    code,
+    INCOMPLETE_SAMPLE,
+  );
   const missingPaths = Number(counts.rows[0]?.paths ?? 0);
   const missingTokens = Number(counts.rows[0]?.tokens ?? 0);
   return {
-    complete: missingPaths + missingTokens + mismatches.length === 0,
+    complete: missingPaths + missingTokens + projection.count === 0,
     missingPaths,
     missingTokens,
-    missingProjection: mismatches.length,
+    missingProjection: projection.count,
     incomplete: sample([
       ...examples.rows.map((r) => ({ productId: r.id, stage: r.stage })),
-      ...mismatches.map((k) => ({
+      ...projection.sample.map((k) => ({
         productId: k.productId,
         stage: 'projection' as const,
       })),

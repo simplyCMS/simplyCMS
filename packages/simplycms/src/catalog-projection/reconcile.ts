@@ -20,10 +20,7 @@ import {
 export type { MismatchKey };
 
 /** Відсутні, застарілі й зайві рядки: повний порівняльний FULL JOIN очікуваного зі збереженим. */
-async function setMismatches(
-  db: ActorDb,
-  o: FindOptions,
-): Promise<MismatchKey[]> {
+function setMismatchSql(o: FindOptions) {
   const scope = {
     productIds: o.productIds,
     locales: o.locale ? [o.locale] : undefined,
@@ -42,7 +39,7 @@ async function setMismatches(
       : sql`true`,
     o.locale ? sql`c.locale = ${o.locale}` : sql`true`,
   ];
-  const res = await db.execute<{ product_id: string; locale: string }>(sql`
+  return sql`
     select coalesce(e.product_id, c.product_id) as product_id,
            coalesce(e.locale, c.locale) as locale
       from (${expectedRows(scope)}) e
@@ -50,7 +47,15 @@ async function setMismatches(
                   where ${sql.join(stored, sql` and `)}) c
         on c.product_id = e.product_id and c.locale = e.locale
      where e.product_id is null or c.product_id is null
-        or (${row('e')}) is distinct from (${row('c')})
+        or (${row('e')}) is distinct from (${row('c')})`;
+}
+
+async function setMismatches(
+  db: ActorDb,
+  o: FindOptions,
+): Promise<MismatchKey[]> {
+  const res = await db.execute<{ product_id: string; locale: string }>(sql`
+    ${setMismatchSql(o)}
      order by 1, 2
      ${o.limit === undefined ? sql`` : sql`limit ${o.limit}`}`);
   return res.rows.map((r) => ({ productId: r.product_id, locale: r.locale }));
@@ -72,17 +77,41 @@ export async function findProjectionMismatches(
 }
 
 /**
- * Рядки проєкції мови, що розходяться з джерелом (відсутні + застарілі + зайві +
- * непаритетні). Read-only режим тієї самої звірки: для повноти мови — і лік
- * (`completeness.missingProjection`), і які саме товари винні (відмова публікації їх
- * називає). Набір мов читається під спільним замком.
+ * Розбіжності проєкції мови з джерелом (відсутні + застарілі + зайві + непаритетні) для повноти
+ * мови: `count` — повний лік, `sample` — перші `sampleLimit` ключів (відмова публікації їх
+ * називає). Лік відсутніх/застарілих/зайвих — агрегатом у SQL: щойно додана мова на 10k товарів
+ * не має тягнути 10k ключів у Node на кожну спробу публікації. Непаритетні (доменне правило в TS)
+ * сканує `parityMismatches` сторінками й тримає лише самі розбіжності; дублі з першим класом
+ * віднімаються точково. Набір мов читається під спільним замком.
  */
 export async function localeProjectionMismatches(
   db: ActorDb,
   locale: string,
-): Promise<MismatchKey[]> {
+  sampleLimit: number,
+): Promise<{ count: number; sample: MismatchKey[] }> {
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
-  return findProjectionMismatches(db, { locale });
+  const counted = await db.execute<{ n: string }>(
+    sql`select count(*) as n from (${setMismatchSql({ locale })}) m`,
+  );
+  const parity = await parityMismatches(
+    db,
+    { locale },
+    Number.POSITIVE_INFINITY,
+  );
+  const both =
+    parity.length === 0
+      ? []
+      : await setMismatches(db, {
+          locale,
+          productIds: [...new Set(parity.map((k) => k.productId))],
+        });
+  const seen = new Set(both.map(keyOf));
+  const extra = parity.filter((k) => !seen.has(keyOf(k)));
+  const head = await setMismatches(db, { locale, limit: sampleLimit });
+  return {
+    count: Number(counted.rows[0]?.n ?? 0) + extra.length,
+    sample: [...head, ...extra].slice(0, sampleLimit),
+  };
 }
 
 /**
