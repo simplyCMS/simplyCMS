@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { maskKeepingOffsets } from '../support/source-text';
 import { DIR, ROOT, walk } from './scan';
 
 /**
@@ -33,43 +34,13 @@ import { DIR, ROOT, walk } from './scan';
 type Fn = { name: string; start: number; end: number; top: boolean };
 type Src = { file: string; text: string; masked: string; fns: Fn[] };
 
-/** Коментарі → пробіли (довжина й позиції збережені). */
-function blankComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
-    .replace(
-      /(^|[^:])\/\/.*$/gm,
-      (m, p: string) => p + ' '.repeat(m.length - p.length),
-    );
-}
-
-/** Заміна вмісту рядкових літералів пробілами: дужки в рядках не збивають розбір. */
-function maskStrings(src: string): string {
-  let out = '';
-  for (let i = 0; i < src.length;) {
-    const c = src[i]!;
-    if (c === "'" || c === '"' || c === '`') {
-      let j = i + 1;
-      while (j < src.length && src[j] !== c) j += src[j] === '\\' ? 2 : 1;
-      out += c + src.slice(i + 1, j).replace(/[^\n]/g, ' ') + c;
-      i = j + 1;
-    } else {
-      out += c;
-      i += 1;
-    }
-  }
-  return out;
-}
-
 /** Індекс закриваючої дужки до відкриваючої на `open`. */
 function matchClose(t: string, open: number): number {
-  const pairs: Record<string, string> = { '(': ')', '{': '}', '[': ']' };
   let depth = 0;
   for (let i = open; i < t.length; i++) {
     if ('({['.includes(t[i]!)) depth += 1;
     else if (')}]'.includes(t[i]!) && --depth === 0) return i;
   }
-  void pairs;
   return t.length;
 }
 
@@ -123,8 +94,11 @@ function functionsOf(t: string): Fn[] {
 
 export function parseSources(files: Record<string, string>): Src[] {
   return Object.entries(files).map(([file, raw]) => {
-    const text = blankComments(raw);
-    const masked = maskStrings(text);
+    // Лексер TS (спільний помічник): регекс-маска ламалась на вкладених шаблонах і `//` у
+    // рядку, а зсунуті лапки давали хибні межі функцій — хибно-зелений гард. Зсуви однакові
+    // в `text` і `masked`: межі з маски ріжуть немаскований текст.
+    const text = maskKeepingOffsets(raw, file, false);
+    const masked = maskKeepingOffsets(raw, file, true);
     return { file, text, masked, fns: functionsOf(masked) };
   });
 }

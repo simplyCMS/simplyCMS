@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { maskKeepingOffsets } from '../support/source-text';
 
 /**
  * Сканер миттєвих читань у `scripts/live-smoke/**` для
@@ -13,19 +14,14 @@ export const DIR = join(ROOT, 'scripts/live-smoke');
 const INSTANT =
   /\.(?:isVisible|isHidden|isChecked|isEnabled|isDisabled|isEditable|textContent|innerText|inputValue|allTextContents|allInnerTexts)\(|\.count\(\)/;
 
-/** Лише код: коментарі з поясненням «чому не isVisible» не рахуються. */
-export function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
-
 /** Миттєві читання тексту: `{file, call}` на кожен збіг (з повторами). */
 export function findInstantReads(
   file: string,
   src: string,
 ): { file: string; call: string }[] {
-  const lines = stripComments(src).split('\n');
+  // Лише код (лексер TS): коментарі з поясненням «чому не isVisible» не рахуються, а `//` у
+  // рядку чи вкладеному шаблоні код не ріже. Переноси рядків збережено — розбір порядковий.
+  const lines = maskKeepingOffsets(src, file, false).split('\n');
   const out: { file: string; call: string }[] = [];
   lines.forEach((line, i) => {
     if (!INSTANT.test(line)) return;

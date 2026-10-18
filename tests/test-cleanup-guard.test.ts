@@ -40,11 +40,18 @@ describe('гард: render без cleanup', () => {
   });
 
   it('негативний контроль: фікстура без cleanup червоніє', () => {
-    expect(checkCleanup(fixture('no-cleanup.fixture.tsx'))).not.toBeNull();
+    expect(
+      checkCleanup(fixture('no-cleanup.fixture.tsx'), 'no-cleanup.fixture.tsx'),
+    ).not.toBeNull();
   });
 
   it('позитивний контроль: канонічна форма зелена', () => {
-    expect(checkCleanup(fixture('with-cleanup.fixture.tsx'))).toBeNull();
+    expect(
+      checkCleanup(
+        fixture('with-cleanup.fixture.tsx'),
+        'with-cleanup.fixture.tsx',
+      ),
+    ).toBeNull();
   });
 
   it.each([
@@ -61,7 +68,7 @@ describe('гард: render без cleanup', () => {
       "import { render } from '@testing-library/react';\nafterEach(cleanup);",
     ],
   ])('негативний контроль: %s', (_, src) => {
-    expect(checkCleanup(src)).not.toBeNull();
+    expect(checkCleanup(src, 'case.test.tsx')).not.toBeNull();
   });
 
   it.each([
@@ -79,6 +86,6 @@ describe('гард: render без cleanup', () => {
     ],
     ['файл без render', "import { screen } from '@testing-library/react';"],
   ])('легальна форма: %s', (_, src) => {
-    expect(checkCleanup(src)).toBeNull();
+    expect(checkCleanup(src, 'case.test.tsx')).toBeNull();
   });
 });

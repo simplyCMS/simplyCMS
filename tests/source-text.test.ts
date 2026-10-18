@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { codeOnly, stripCommentsAndStrings } from './support/source-text';
+import {
+  codeOnly,
+  maskKeepingOffsets,
+  stripCommentsAndStrings,
+} from './support/source-text';
 
 // Спільний помічник текстових гейтів (Task 17б fix-3): токени — від лексера TypeScript,
 // тож `//` і `/*` поза коментарем (у вкладеному шаблоні, регекс-літералі, JSX-тексті) код не ріжуть.
@@ -72,5 +76,26 @@ describe('codeOnly / stripCommentsAndStrings', () => {
   it('CSS: /* */ — коментар, рядки за правилами CSS', () => {
     const src = '.a { content: "/* x */"; } /* .ghost {} */ .b {}';
     expect(codeOnly(src, 's.css')).toBe('.a { content: "/* x */"; }   .b {}');
+  });
+});
+
+describe('maskKeepingOffsets (зсуви збережено)', () => {
+  it('вкладений шаблон з // і /* — довжина та сама, код після нього живий, дужки в рядках зникли', () => {
+    const src = `const a = sql\`x(\${f(sql\`m // n /* k)\`)} y\`; // (\n${TAIL}`;
+    const masked = maskKeepingOffsets(src, 'a.mjs', true);
+    expect(masked).toHaveLength(src.length);
+    expect(masked.endsWith(TAIL)).toBe(true);
+    // Дужки лишились лише кодові: виклики f(...) і toGallery(...) з TAIL.
+    expect(masked.match(/\(/g)).toHaveLength(2);
+  });
+
+  it('без strings — лише коментарі стають пробілами, рядок лишається', () => {
+    const src = "q('a // b'); // c(\n/* d( */ e();";
+    const text = maskKeepingOffsets(src, 'a.mjs', false);
+    expect(text).toHaveLength(src.length);
+    expect(text).toContain("q('a // b');");
+    expect(text).not.toContain('c(');
+    expect(text).not.toContain('d(');
+    expect(text.split('\n')).toHaveLength(src.split('\n').length);
   });
 });

@@ -4,11 +4,6 @@
  */
 
 /**
- * @param {string[]} exportsKeys
- * @param {string} subpath без провідного `./`
- * @returns {string | null} ключ, що збігся, або `null`
- */
-/**
  * Файл, на який `subpath` реально вказує за ключем `key` і його ціллю з `exports`
  * (рядок): `*` ключа підставляється в ціль. `null` — ціль не рядок або без
  * розширення (її резолвить бандлер/TS: `./src/admin/pages/*`), тож існування не
@@ -35,6 +30,11 @@ export function exportTargetFile(key, target, subpath) {
   return /\.[a-z]+$/i.test(file) ? file : null;
 }
 
+/**
+ * @param {string[]} exportsKeys
+ * @param {string} subpath без провідного `./`
+ * @returns {string | null} ключ, що збігся, або `null`
+ */
 export function resolveExportKey(exportsKeys, subpath) {
   const target = `./${subpath}`;
   if (exportsKeys.includes(target)) return target;

@@ -160,10 +160,11 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   коду з `simplycms/schema/types`.
 - Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `@supabase/*` у репо
   заборонено лінтом (`no-supabase-import`).
-- 🔴 Запис адмінки й API — лише операції реєстру `simplycms/operations`; serverFn — тонка обгортка
+- 🔴 Запис адмінки й API — лише операції реєстру `simplycms/operations` (нові операції; легасі-перелік
+  serverFn `eslint-rules/legacy-admin-server-fns.json` скорочується до нуля в М3); serverFn — тонка обгортка
   (`invokeFromServerFn`), `withActor`/ядра поза `run` операції — лінт (`docs/architecture/operations-api.md`).
-- Тексти сутностей — у таблицях перекладів, вітрина товару читає їх лише з проєкції
-  (`docs/architecture/translations.md`).
+- Тексти товару — у таблицях перекладів (М1; решта сутностей — М2), вітрина товару читає їх лише з
+  проєкції (`docs/architecture/translations.md`).
 
 **Роути й рендеринг** (`docs/architecture/rendering-and-routing.md`)
 

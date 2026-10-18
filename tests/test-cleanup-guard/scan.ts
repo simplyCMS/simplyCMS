@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { codeOnly } from '../support/source-text';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 
@@ -16,13 +17,6 @@ const SKIP_DIRS = new Set([
 
 const RTL_IMPORT =
   /import\s*(?:type\s+)?\{([^}]*)\}\s*from\s*['"]@testing-library\/react['"]/g;
-
-/** Знімає коментарі, щоб згадка `cleanup` у тексті не рахувалась викликом. */
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
 
 /** Імена, імпортовані з RTL (до `as` — оригінальна назва, після — локальна). */
 function rtlImports(src: string): Map<string, string> {
@@ -42,8 +36,10 @@ function rtlImports(src: string): Map<string, string> {
  * `afterEach(() => cleanup())`, `afterEach(() => { …; cleanup(); })`.
  * Повертає текст порушення або null.
  */
-export function checkCleanup(src: string): string | null {
-  const code = stripComments(src);
+export function checkCleanup(src: string, fileName: string): string | null {
+  // Коментар зі згадкою `cleanup` викликом не є; лексер TS (спільний помічник), а не регекс:
+  // `//` у рядку чи вкладеному шаблоні код не ріже.
+  const code = codeOnly(src, fileName);
   const imports = rtlImports(code);
   if (!imports.has('render') && !imports.has('renderHook')) return null;
   const cleanup = imports.get('cleanup');
@@ -74,7 +70,7 @@ export function testFiles(root = ROOT): string[] {
 export function scanCleanup(root = ROOT): string[] {
   const bad: string[] = [];
   for (const f of testFiles(root)) {
-    const why = checkCleanup(readFileSync(join(root, f), 'utf8'));
+    const why = checkCleanup(readFileSync(join(root, f), 'utf8'), f);
     if (why) bad.push(`${f}: ${why}`);
   }
   return bad;

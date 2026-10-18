@@ -28,6 +28,9 @@ export const isCorePackage = (name) =>
 // Розширення файлів, де реально бувають import/require-специфікатори.
 // `*.md` навмисно виключені: доки згадують шляхи в прозі (не імпорти), і
 // дали б хибні спрацювання (перевірено вручну на цьому репо).
+// `*.tpl` — код, який CLI скаффолдить у магазини (`packages/cli/template-theme`): його
+// імпорт неекспортованого субшляху інакше побачив би лише повний pilot. Сканер бере лише
+// імпорт-форми, тож шуму від шаблонів немає.
 const CODE_GLOBS = [
   '*.ts',
   '*.tsx',
@@ -37,6 +40,7 @@ const CODE_GLOBS = [
   '*.jsx',
   '*.mjs',
   '*.cjs',
+  '*.tpl',
 ];
 
 // Згенеровані файли — не джерело правди про реальне вживання; власний
@@ -133,8 +137,8 @@ export function extractSpecifiers(text) {
   return [...text.matchAll(SPECIFIER_RE)].map((m) => m[2]);
 }
 
-/** Збирає всі унікальні специфікатори ядра з коду репо (див. `extractSpecifiers`). */
-export function collectSpecifiers() {
+/** Файли-джерела специфікаторів (шляхи відносно кореня репо). */
+export function codeFiles() {
   // `--untracked`/`--others`: сусідній audit-deps обходить ФС і бачить усе, тож
   // без цього новий (ще не доданий у git) файл проходив би повз гейт exports.
   // node_modules і артефакти збірки й далі відсікає `.gitignore`.
@@ -151,13 +155,15 @@ export function collectSpecifiers() {
     ],
     { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
   );
+  // Файл у індексі, але видалений з диска (ще не staged) — не джерело.
+  return raw.split('\n').filter((file) => file && existsSync(join(ROOT, file)));
+}
 
+/** Збирає всі унікальні специфікатори ядра з коду репо (див. `extractSpecifiers`). */
+export function collectSpecifiers() {
   const specifiers = new Set();
-  for (const file of raw.split('\n')) {
-    if (!file) continue;
-    // Файл у індексі, але видалений з диска (ще не staged) — не джерело.
+  for (const file of codeFiles()) {
     const path = join(ROOT, file);
-    if (!existsSync(path)) continue;
     for (const spec of extractSpecifiers(readFileSync(path, 'utf8'))) {
       specifiers.add(spec);
     }

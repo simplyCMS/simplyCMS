@@ -148,6 +148,13 @@ describe('audit-exports: специфікатори лише з імпорт-ф�
 describe('audit-exports: ціль патерна існує, імпорти з routes/** видно', () => {
   const ENTITY = 'simplycms/storefront-routes/pages/entity-route';
 
+  it('шаблони CLI (*.tpl) — теж джерело специфікаторів (код, що їде в магазин)', async () => {
+    const { codeFiles } = await import('../scripts/audit-exports/collect.mjs');
+    expect(codeFiles()).toContain(
+      'packages/cli/template-theme/conformance.test.ts.tpl',
+    );
+  });
+
   it('сканер бачить специфікатор файл-роуту сутності', async () => {
     const { collectSpecifiers } =
       await import('../scripts/audit-exports/collect.mjs');

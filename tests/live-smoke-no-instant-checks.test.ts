@@ -68,6 +68,23 @@ describe('миттєві читання UI у live-smoke', () => {
     ).toEqual([]);
   });
 
+  it("лексер TS (фінальне рев'ю C M1): `//` у рядку й вкладений шаблон не ховають читань", () => {
+    // Регекс-зачистка різала рядок після `//` у літералі — миттєве читання за ним зникало.
+    expect(
+      findInstantReads('x.mjs', "const u = 'a // b'; await el.isVisible();"),
+    ).toHaveLength(1);
+    // Регекс-маска закінчувала зовнішній шаблон на бектику вкладеного: решта функції
+    // ставала «рядком», і читання після detached ховалось (хибно-зелений гард).
+    const nested = [
+      'export async function f({ page, dbUrl }) {',
+      '  const m = `a ${`b`} c`;',
+      "  await page.getByRole('row').waitFor({ state: 'detached' });",
+      "  const n = await sql(dbUrl, 'select 1');",
+      '}',
+    ].join('\n');
+    expect(findDetachedDbReads({ 'x.mjs': nested })).toHaveLength(1);
+  });
+
   it('негативні контролі: підміна виклику й новий textContent червоніють', () => {
     const hit = (call: string) => [{ file: 'x.mjs', call }];
     const list = new Map([['x.mjs :: const a = await row.count();', 1]]);

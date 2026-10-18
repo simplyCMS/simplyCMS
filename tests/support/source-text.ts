@@ -156,3 +156,76 @@ export function stripCommentsAndStrings(
  */
 export const codeOnly = (src: string, fileName: string): string =>
   stripCommentsAndStrings(src, fileName, true);
+
+/** Вміст між збереженими краями токена → пробіли (переноси рядків лишаються). */
+const blank = (text: string, head: number, tail: number): string =>
+  text.slice(0, head) +
+  text.slice(head, text.length - tail).replace(/[^\n]/g, ' ') +
+  text.slice(text.length - tail);
+
+/** Скільки символів країв лишити літералу: лапки, бектики, `${` і `}` шаблону. */
+function edges(kind: ts.SyntaxKind): [number, number] {
+  switch (kind) {
+    case ts.SyntaxKind.TemplateHead:
+      return [1, 2];
+    case ts.SyntaxKind.TemplateMiddle:
+      return [1, 2];
+    default:
+      return [1, 1];
+  }
+}
+
+/**
+ * Те саме, що `stripCommentsAndStrings`, але ЗІ ЗБЕРЕЖЕННЯМ ЗСУВІВ: коментарі й (з `strings`)
+ * вміст літералів стають пробілами тієї ж довжини, переноси рядків лишаються. Для гейтів, що
+ * рахують межі функцій по маскованому тексту й вирізають шматки з немаскованого за тими
+ * самими індексами (`live-smoke-no-instant-checks/scan-db-reads.ts`).
+ */
+export function maskKeepingOffsets(
+  src: string,
+  fileName: string,
+  strings: boolean,
+): string {
+  const kind = scriptKind(fileName);
+  if (kind === undefined)
+    throw new Error(
+      `[source-text] maskKeepingOffsets: лише скрипти, не «${fileName}»`,
+    );
+  const sf = ts.createSourceFile(
+    fileName,
+    src,
+    ts.ScriptTarget.Latest,
+    false,
+    kind,
+  );
+  const triviaBlank = (from: number, to: number): string => {
+    let out = '';
+    trivia.setText(src, from, to - from);
+    for (
+      let k = trivia.scan();
+      k !== ts.SyntaxKind.EndOfFileToken;
+      k = trivia.scan()
+    ) {
+      const piece = trivia.getTokenText();
+      out +=
+        k === ts.SyntaxKind.SingleLineCommentTrivia ||
+        k === ts.SyntaxKind.MultiLineCommentTrivia
+          ? piece.replace(/[^\n]/g, ' ')
+          : piece;
+    }
+    return out;
+  };
+  let out = '';
+  let cursor = 0;
+  for (const token of tokens(sf)) {
+    const start = token.getStart(sf);
+    out += triviaBlank(cursor, start);
+    const text = src.slice(start, token.end);
+    out +=
+      strings && STRING_KINDS.has(token.kind)
+        ? blank(text, ...edges(token.kind))
+        : text;
+    cursor = token.end;
+  }
+  return out + triviaBlank(cursor, src.length);
+}
