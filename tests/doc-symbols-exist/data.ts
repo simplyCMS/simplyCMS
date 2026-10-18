@@ -15,6 +15,12 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   resolveAgainstImporter:
     'внутрішня функція import-protection плагіна Start (start-plugin-core), запис START-IP-1',
   resolveId: 'хук Vite/Rolldown-плагіна, запис START-IP-1',
+  handleServerAction:
+    'внутрішня функція обробника server functions (start-server-core), запис START-SFN-404-1',
+  getServerFnById:
+    'генерований резолвер server functions Start, запис START-SFN-404-1',
+  toResponse:
+    'внутрішня функція h3 (відповідь на помилку), запис START-SFN-404-1',
   // --- Supabase (історичні розділи контурів) ---
   generateLink: 'Supabase Auth admin API у розділі про обхід листа',
   API_URL: 'ключ виводу `supabase status -o json` у історичному розділі',
