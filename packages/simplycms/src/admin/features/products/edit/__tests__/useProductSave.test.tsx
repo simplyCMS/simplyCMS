@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * `useProductCreate` (М1, Task 13): `products.create` з id наперед, фото —
- * другим кроком на версію зі створення; помилка сервера лягає на поле, а не
- * губить введене; після успіху — навігація на картку.
+ * `useProductCreate` (М1, Task 13; фінальне рев'ю B-I2): `products.create` з id наперед —
+ * ОДНА команда разом із фото; помилка сервера лягає на поле, а не губить введене; після
+ * успіху — навігація на картку, навіть якщо перечитування списку впало.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
@@ -19,6 +19,14 @@ vi.mock('simplycms/admin-server', async () =>
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
   ).createAdminServerMock(mocks),
 );
+// Перечитування списку товарів — керований мок: збій після створення не має блокувати навігацію.
+const { refetchMock } = vi.hoisted(() => ({
+  refetchMock: vi.fn(async () => undefined),
+}));
+vi.mock('simplycms/admin-data', async (orig) => ({
+  ...(await orig<typeof import('simplycms/admin-data')>()),
+  useCollection: () => ({ utils: { refetch: refetchMock } }),
+}));
 const navigateMock = vi.fn();
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigateMock }));
 const { toastSuccess, toastError, toastInfo } = vi.hoisted(() => ({
@@ -80,7 +88,7 @@ describe('useProductCreate', () => {
     });
   });
 
-  it('фото йдуть другим кроком saveDescription на версію зі створення', async () => {
+  it('фото йдуть у ТІЙ САМІЙ команді products.create, другого кроку немає', async () => {
     const v = values();
     v.images = [
       { id: ID, storageKey: 'k', sortOrder: 0, alt: {}, overrides: {} },
@@ -90,12 +98,23 @@ describe('useProductCreate', () => {
     });
     await result.current(v);
 
-    expect(mocks.saveProductDescription).toHaveBeenCalledWith({
-      data: {
-        id: ID,
-        expectedVersion: 1,
-        images: { upsert: [v.images[0]] },
-      },
+    expect(mocks.createProduct).toHaveBeenCalledTimes(1);
+    expect(mocks.createProduct).toHaveBeenCalledWith({
+      data: expect.objectContaining({ images: { upsert: [v.images[0]] } }),
+    });
+    expect(mocks.saveProductDescription).not.toHaveBeenCalled();
+  });
+
+  it('збій перечитування списку після створення — все одно навігація на картку', async () => {
+    const { result } = renderHook(() => useProductCreate(ID, sink(), 'uk'), {
+      wrapper,
+    });
+    refetchMock.mockRejectedValueOnce(new Error('мережа'));
+    await result.current(values());
+
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/admin/products/$productId',
+      params: { productId: ID },
     });
   });
 

@@ -143,7 +143,10 @@ function changedLocales(
 
 export const isEmptyInput = (i: SaveInput) => Object.keys(i).length === 0;
 
-/** Вхід `products.create`: лише непорожні тексти, адреса основної мови — за бажанням. */
+/**
+ * Вхід `products.create`: лише непорожні тексти, адреса основної мови — за бажанням, фото —
+ * у тій самій команді (одна транзакція: збій не лишає товару без фото).
+ */
 export function buildCreateInput(id: string, v: ProductFormValues) {
   const texts: Record<string, Obj> = {};
   for (const [l, row] of Object.entries(v.texts)) {
@@ -161,5 +164,6 @@ export function buildCreateInput(id: string, v: ProductFormValues) {
     stockStatus: v.hasModifications ? ('in_stock' as const) : v.stockStatus,
     texts,
     ...(v.path !== '' && { path: v.path }),
+    ...(v.images.length > 0 && { images: { upsert: v.images } }),
   };
 }

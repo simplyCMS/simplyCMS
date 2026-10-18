@@ -15,6 +15,10 @@ import {
   primaryLocaleCode,
   sourceFieldHash,
 } from 'simplycms/translations';
+import { knownLocales } from './children-common';
+import { imagesInput } from './children-schemas';
+import { assertImageKeys } from './image-media';
+import { planImages } from './images';
 import { assertKnownLocales } from './load';
 import {
   productBase,
@@ -35,6 +39,13 @@ const input = productBase.extend({
   texts: textsByLocale,
   /** Адреса основної мови; без неї — `slugify(name)`. Для нелатинського письма без пакета обов'язкова. */
   path: z.string().max(255).optional(),
+  /**
+   * Фото — у ТІЙ САМІЙ транзакції, що й товар (агрегат пишеться однією командою, Р14): окремий
+   * другий крок після збою лишав би товар без фото, а повтор «Створити» з тим самим id — дубль
+   * ключа. Файли вантажаться в сховище ДО команди; якщо вона впала, осиротілі рядки `media`
+   * прибирає sweep. `remove` на створенні безглуздий — лише `upsert`.
+   */
+  images: imagesInput.pick({ upsert: true }).optional(),
 });
 
 const pathRequired = () =>
@@ -83,6 +94,18 @@ export const productsCreate = defineOperation({
     if (!SLUG_FORMAT.test(baseSlug))
       throw new ValidationError([{ path: ['path'], code: 'invalid_format' }]);
     const { id } = data;
+    // Перевірка фото (400) — до будь-якого запису; модифікацій на створенні ще немає.
+    const images = await planImages(
+      {
+        db,
+        productId: id,
+        primary,
+        locales: await knownLocales(db),
+        modificationIds: new Set(),
+      },
+      data.images,
+    );
+    if (images.keys.length > 0) await assertImageKeys(db, id, [], images.keys);
     // Рядок товару, переклади й адреси — в одній транзакції: відкладені тригери
     // джерела (І4) і наявності адреси (І16) перевіряють їх разом на COMMIT.
     await db.insert(products).values({
@@ -103,6 +126,7 @@ export const productsCreate = defineOperation({
     );
     const own = paths.get(primary);
     if (!own) throw new Error('[products.create] немає адреси основної мови');
+    await images.apply();
     // Проєкція для ВСІХ мов draft/published: fallback-рядки теж потрібні вітрині (І23).
     await refreshProductTexts(db, [id]);
     return { id, version: 1, paths: Object.fromEntries(paths) };

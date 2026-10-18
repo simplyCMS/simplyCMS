@@ -153,7 +153,8 @@
   (`simplycms/db/lock-keys`).
 - **serverFn віддає вихід, розібраний схемою операції:** поля поза `output` відсікаються (раніше serverFn
   віддавав сирий результат `run`, а HTTP — відсічений); обидва транспорти беруть одне значення.
-- **Агрегат товару через реєстр операцій (М1, Task 11):** `products.create` (ідемпотентна), `products.get`,
+- **Агрегат товару через реєстр операцій (М1, Task 11):** `products.create` (ідемпотентна; фото — полем `images.upsert` у тій
+  самій транзакції, тож створення з фото — одна команда), `products.get`,
   `products.saveDescription`, `products.saveTranslation`, `products.deleteTranslation`, `products.setPath`,
   `products.remove` + serverFn-обгортки (`createProduct`, `getProduct`, …). Кожна команда: `FOR NO KEY UPDATE` кореня →
   версія (412) → хеш джерела (409) → запис → `version + 1`. Поля текстів на дроті camelCase (`shortDescription`),

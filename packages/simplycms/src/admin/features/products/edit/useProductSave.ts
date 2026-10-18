@@ -5,7 +5,6 @@ import { createProduct, saveProductDescription } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { adminPath } from '../../../lib/adminLinks';
 import { useAggregateCommand } from '../../translations/useAggregateCommand';
-import { blankForm } from './product-aggregate';
 import type { ProductFormValues } from './product-form-schema';
 import {
   buildCreateInput,
@@ -55,10 +54,9 @@ export function useProductUpdate(o: UpdateOptions) {
 }
 
 /**
- * Створення: `products.create` (тексти, база, адреса основної мови), а якщо
- * до збереження завантажено фото — другий крок `saveDescription` на версію зі
- * створення (створення дітей агрегата не приймає). id генерує форма наперед:
- * фото привʼязуються до нього ще до збереження.
+ * Створення — ОДНА команда `products.create` (тексти, база, адреса основної мови, фото): збій
+ * не лишає товару без фото, тож повтор «Створити» з тим самим id не впирається в дубль ключа.
+ * id генерує форма наперед: фото привʼязуються до нього ще до збереження.
  */
 export function useProductCreate(
   entityId: string,
@@ -68,42 +66,34 @@ export function useProductCreate(
   const t = useT();
   const navigate = useNavigate();
   const products = useCollection(productsCollection);
-  const empty: SaveIndex = {
-    modifications: [],
-    propertyValues: [],
-    images: [],
-  };
-
   return async (values: ProductFormValues) => {
+    // Помилка `images.upsert.<i>` лягає на рядок фото картки.
+    const index: SaveIndex = {
+      modifications: [],
+      propertyValues: [],
+      images: values.images.map((i) => i.id),
+    };
+    let created;
     try {
-      const created = await createProduct({
+      created = await createProduct({
         data: buildCreateInput(entityId, values),
       });
-      // Явна адреса, яку генератор змінив (зайнята → `-2`), не лишається тихою.
-      const actual = created.paths[primary];
-      if (values.path !== '' && actual && actual !== values.path)
-        toast.info(t('admin.translations.path.adjusted', { path: actual }));
-      const { input } = buildSaveInput(blankForm([]), {
-        ...blankForm([]),
-        images: values.images,
-      });
-      if (input.images)
-        await saveProductDescription({
-          data: {
-            id: entityId,
-            expectedVersion: created.version,
-            images: input.images,
-          },
-        });
-      // Список товарів — колекція лише для читання: новий рядок тягнемо перечитуванням.
-      await products.utils.refetch();
-      toast.success(t('admin.products.created'));
-      await navigate({
-        to: adminPath('products/$productId'),
-        params: { productId: entityId },
-      });
     } catch (e) {
-      reportSaveError(e, t, empty, sink);
+      reportSaveError(e, t, index, sink);
+      return;
     }
+    // Явна адреса, яку генератор змінив (зайнята → `-2`), не лишається тихою.
+    const actual = created.paths[primary];
+    if (values.path !== '' && actual && actual !== values.path)
+      toast.info(t('admin.translations.path.adjusted', { path: actual }));
+    // Товар уже створено: збій перечитування списку (колекція лише для читання) не має
+    // лишати форму «Новий товар» з тим самим id — повтор дав би дубль ключа. Список
+    // дотягнеться при наступному відкритті.
+    await products.utils.refetch().catch(() => undefined);
+    toast.success(t('admin.products.created'));
+    await navigate({
+      to: adminPath('products/$productId'),
+      params: { productId: entityId },
+    });
   };
 }
