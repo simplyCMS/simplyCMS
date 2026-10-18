@@ -64,32 +64,39 @@ export async function completeness(
   db: ActorDb,
   code: string,
 ): Promise<Completeness> {
-  const res = await db.execute<{ id: string; stage: 'path' | 'token' }>(sql`
-    select p.id::text as id, 'path' as stage from public.products p
-     where not exists (
+  // Лічильники — агрегатом у SQL, приклади — `LIMIT`: каталог на 10k товарів і 30k
+  // модифікацій не має тягнутись у Node лише заради 20 прикладів.
+  const noPath = sql`from public.products p where not exists (
        select 1 from public.url_paths t
-        where t.locale = ${code} and t.product_id = p.id and t.is_current)
-    union all
-    select m.product_id::text, 'token' from public.product_modifications m
-     where not exists (
+        where t.locale = ${code} and t.product_id = p.id and t.is_current)`;
+  const noToken = sql`from public.product_modifications m where not exists (
        select 1 from public.slug_tokens t
-        where t.locale = ${code} and t.modification_id = m.id and t.is_current)`);
+        where t.locale = ${code} and t.modification_id = m.id and t.is_current)`;
+  const counts = await db.execute<{ paths: string; tokens: string }>(sql`
+    select (select count(*) ${noPath}) as paths, (select count(*) ${noToken}) as tokens`);
+  const examples = await db.execute<{
+    id: string;
+    stage: 'path' | 'token';
+  }>(sql`
+    (select p.id::text as id, 'path' as stage ${noPath} order by p.id limit ${INCOMPLETE_SAMPLE})
+    union all
+    (select id, 'token' from (select distinct m.product_id::text as id ${noToken}) d
+      order by id limit ${INCOMPLETE_SAMPLE})`);
   const mismatches = await localeProjectionMismatches(db, code);
-  const rows: IncompleteItem[] = [
-    ...res.rows.map((r) => ({ productId: r.id, stage: r.stage })),
-    ...mismatches.map((k) => ({
-      productId: k.productId,
-      stage: 'projection' as const,
-    })),
-  ];
-  const count = (s: IncompleteStage) =>
-    rows.filter((r) => r.stage === s).length;
+  const missingPaths = Number(counts.rows[0]?.paths ?? 0);
+  const missingTokens = Number(counts.rows[0]?.tokens ?? 0);
   return {
-    complete: rows.length === 0,
-    missingPaths: count('path'),
-    missingTokens: count('token'),
-    missingProjection: count('projection'),
-    incomplete: sample(rows),
+    complete: missingPaths + missingTokens + mismatches.length === 0,
+    missingPaths,
+    missingTokens,
+    missingProjection: mismatches.length,
+    incomplete: sample([
+      ...examples.rows.map((r) => ({ productId: r.id, stage: r.stage })),
+      ...mismatches.map((k) => ({
+        productId: k.productId,
+        stage: 'projection' as const,
+      })),
+    ]),
   };
 }
 
