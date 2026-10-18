@@ -7,27 +7,7 @@
 // регекс-літерал і що `//` у JSX-тексті — не коментар. Помилка там зрізала б код після
 // «коментаря», а отже давала б хибний вердикт гейтам, що на цьому помічнику стоять.
 import ts from 'typescript';
-
-const STRING_KINDS = new Set<ts.SyntaxKind>([
-  ts.SyntaxKind.StringLiteral,
-  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
-  ts.SyntaxKind.TemplateHead,
-  ts.SyntaxKind.TemplateMiddle,
-  ts.SyntaxKind.TemplateTail,
-]);
-
-/**
- * Вид скрипта за розширенням: JSX розбирається лише там, де він можливий. Невідоме
- * розширення — помилка, а не «мовчки TS»: без імені файла `.tsx` з `//` у JSX-тексті
- * лексер TS прочитав би як коментар і зрізав би код після нього (хибно-зелений гейт).
- */
-function scriptKind(fileName: string): ts.ScriptKind | undefined {
-  if (/\.tsx$/.test(fileName)) return ts.ScriptKind.TSX;
-  if (/\.jsx$/.test(fileName)) return ts.ScriptKind.JSX;
-  if (/\.[mc]?ts$/.test(fileName)) return ts.ScriptKind.TS;
-  if (/\.[mc]?js$/.test(fileName)) return ts.ScriptKind.JS;
-  return undefined;
-}
+import { rewriteScript, scriptKind } from './source-lexer';
 
 /**
  * Лексика не-скриптових файлів, які читають текстові гейти (`doc-symbols-exist` індексує
@@ -52,43 +32,11 @@ function stripForeign(
   });
 }
 
-/** Листові токени файла по порядку (JSDoc-вузли — це коментарі, їх пропускаємо). */
-function tokens(sf: ts.SourceFile): ts.Node[] {
-  const out: ts.Node[] = [];
-  const visit = (node: ts.Node): void => {
-    if (ts.isJSDoc(node) || node.kind === ts.SyntaxKind.JSDocComment) return;
-    const children = node.getChildren(sf);
-    if (children.length === 0) out.push(node);
-    else for (const child of children) visit(child);
-  };
-  visit(sf);
-  return out;
-}
-
-const trivia = ts.createScanner(ts.ScriptTarget.Latest, false);
-
-/**
- * Тривіа між токенами без коментарів; рядки не зливаються. Між двома токенами парсера лежать
- * ЛИШЕ пробіли й коментарі, тож сканер тут контексту не потребує (на відміну від регексу по
- * всьому файлу).
- */
-function triviaWithoutComments(text: string, from: number, to: number): string {
-  let out = '';
-  trivia.setText(text, from, to - from);
-  for (
-    let k = trivia.scan();
-    k !== ts.SyntaxKind.EndOfFileToken;
-    k = trivia.scan()
-  ) {
-    const piece = trivia.getTokenText();
-    if (k === ts.SyntaxKind.SingleLineCommentTrivia) continue;
-    // Блоковий коментар → його переноси рядків або пробіл: сусідні токени не склеюються.
-    if (k === ts.SyntaxKind.MultiLineCommentTrivia)
-      out += piece.replace(/[^\n]/g, '') || ' ';
-    else out += piece;
-  }
-  return out;
-}
+/** Коментар геть: рядковий — порожньо, блоковий — його переноси або пробіл (без злипання). */
+const dropComment = (piece: string, kind: ts.SyntaxKind): string =>
+  kind === ts.SyntaxKind.SingleLineCommentTrivia
+    ? ''
+    : piece.replace(/[^\n]/g, '') || ' ';
 
 /** Текст літерала без вмісту: лапки, бектики й `${`/`}` шаблону лишаються. */
 function emptied(token: string, kind: ts.SyntaxKind): string {
@@ -127,26 +75,10 @@ export function stripCommentsAndStrings(
       );
     return stripForeign(src, lexicon, keepStrings);
   }
-  const sf = ts.createSourceFile(
-    fileName,
-    src,
-    ts.ScriptTarget.Latest,
-    false,
-    kind,
-  );
-  let out = '';
-  let cursor = 0;
-  for (const token of tokens(sf)) {
-    const start = token.getStart(sf);
-    out += triviaWithoutComments(src, cursor, start);
-    const text = src.slice(start, token.end);
-    out +=
-      !keepStrings && STRING_KINDS.has(token.kind)
-        ? emptied(text, token.kind)
-        : text;
-    cursor = token.end;
-  }
-  return out + triviaWithoutComments(src, cursor, src.length);
+  return rewriteScript(src, fileName, kind, {
+    comment: dropComment,
+    literal: keepStrings ? null : emptied,
+  });
 }
 
 /**
@@ -157,22 +89,20 @@ export function stripCommentsAndStrings(
 export const codeOnly = (src: string, fileName: string): string =>
   stripCommentsAndStrings(src, fileName, true);
 
-/** Вміст між збереженими краями токена → пробіли (переноси рядків лишаються). */
-const blank = (text: string, head: number, tail: number): string =>
-  text.slice(0, head) +
-  text.slice(head, text.length - tail).replace(/[^\n]/g, ' ') +
-  text.slice(text.length - tail);
+/** Усе, крім переносів рядків, — пробілами тієї ж довжини. */
+const spaces = (text: string): string => text.replace(/[^\n]/g, ' ');
 
-/** Скільки символів країв лишити літералу: лапки, бектики, `${` і `}` шаблону. */
-function edges(kind: ts.SyntaxKind): [number, number] {
-  switch (kind) {
-    case ts.SyntaxKind.TemplateHead:
-      return [1, 2];
-    case ts.SyntaxKind.TemplateMiddle:
-      return [1, 2];
-    default:
-      return [1, 1];
-  }
+/** Вміст літерала → пробіли; краї (лапки, бектики, `${`, `}`) лишаються. */
+function blankLiteral(text: string, kind: ts.SyntaxKind): string {
+  const tail =
+    kind === ts.SyntaxKind.TemplateHead || kind === ts.SyntaxKind.TemplateMiddle
+      ? 2
+      : 1;
+  return (
+    text.slice(0, 1) +
+    spaces(text.slice(1, text.length - tail)) +
+    text.slice(text.length - tail)
+  );
 }
 
 /**
@@ -191,41 +121,8 @@ export function maskKeepingOffsets(
     throw new Error(
       `[source-text] maskKeepingOffsets: лише скрипти, не «${fileName}»`,
     );
-  const sf = ts.createSourceFile(
-    fileName,
-    src,
-    ts.ScriptTarget.Latest,
-    false,
-    kind,
-  );
-  const triviaBlank = (from: number, to: number): string => {
-    let out = '';
-    trivia.setText(src, from, to - from);
-    for (
-      let k = trivia.scan();
-      k !== ts.SyntaxKind.EndOfFileToken;
-      k = trivia.scan()
-    ) {
-      const piece = trivia.getTokenText();
-      out +=
-        k === ts.SyntaxKind.SingleLineCommentTrivia ||
-        k === ts.SyntaxKind.MultiLineCommentTrivia
-          ? piece.replace(/[^\n]/g, ' ')
-          : piece;
-    }
-    return out;
-  };
-  let out = '';
-  let cursor = 0;
-  for (const token of tokens(sf)) {
-    const start = token.getStart(sf);
-    out += triviaBlank(cursor, start);
-    const text = src.slice(start, token.end);
-    out +=
-      strings && STRING_KINDS.has(token.kind)
-        ? blank(text, ...edges(token.kind))
-        : text;
-    cursor = token.end;
-  }
-  return out + triviaBlank(cursor, src.length);
+  return rewriteScript(src, fileName, kind, {
+    comment: spaces,
+    literal: strings ? blankLiteral : null,
+  });
 }

@@ -267,8 +267,9 @@ seroval бере перший плагін, чий `test()` збігся. Мар
   (`scripts/pilot-pack/server-fn-404-probe.mjs`), GET і POST;
 - збірка з нестандартною базою `serverFns.base: '/_custom/fn/'` — `tests/server-fn-base-build.test.ts`
   (база там конфігурована, бо цей тест і є доказом інлайну бази; шлях обробника той самий).
-Знято 2026-10-18: `GET` → `Internal server error [ref …]` (маскування `server-guard`), `POST` →
-`{"status":500,"unhandled":true,"message":"HTTPError"}` (h3).
+Знято 2026-10-18: магазин пілота (`/_serverFn/`) — GET і POST → `{"status":500,"unhandled":true,
+"message":"HTTPError"}` (h3); збірка з `/_custom/fn/` — GET → `Internal server error [ref …]`
+(маскування `server-guard`), POST → те саме тіло h3.
 404 дав би лише правильнішу семантику, а обхід (middleware ловить `Error` з цим текстом для
 `handlerType === 'serverFn'` → 404) прив'язав би нас до тексту апстріму — не варте.
 
