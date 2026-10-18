@@ -57,6 +57,16 @@ function UpperNameWithLang(vm: ProductDetailViewModel) {
   );
 }
 
+/** Дефект (R2-5): назва ОБРІЗАНА (до 18 символів, як крихти на мобільному) і без `lang`. */
+function TruncatedNameWithoutLang(vm: ProductDetailViewModel) {
+  return (
+    <>
+      <h1>{vm.summary.name.slice(0, 18)}</h1>
+      <GoodProductDetail {...vm} />
+    </>
+  );
+}
+
 /** Дефект: `alt` фото з основної мови без `lang` на `img`. */
 function AltWithoutLang(vm: ProductDetailViewModel) {
   const image = vm.gallery.images[0];
@@ -103,5 +113,13 @@ describe('assertThemeViewsConformance — lang fallback-фрагментів (І
         makeTheme({ ProductDetail: UpperNameWithLang }),
       ),
     ).resolves.toEqual(['ProductDetail']);
+  });
+
+  it('обрізаний текст без lang — червоно (R2-5: маркери різняться з першого символу)', async () => {
+    await expect(
+      assertThemeViewsConformance(
+        makeTheme({ ProductDetail: TruncatedNameWithoutLang }),
+      ),
+    ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
   });
 });

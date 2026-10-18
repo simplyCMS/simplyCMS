@@ -83,9 +83,13 @@ export const FALLBACK_FIELDS: readonly FallbackField[] = [
 /** Мова джерела у фікстурі (усі fallback-поля фікстури — з основної мови). */
 const SOURCE_LANG = productDetailFallbackFixture.summary.name_lang ?? 'uk';
 
-/** Тексти-маркери: два різні значення кожного поля для перевірки «показує чи ні». */
-const TEXT_A = 'fallback-fragment-a';
-const TEXT_B = 'fallback-fragment-b';
+/**
+ * Тексти-маркери: два різні значення кожного поля для перевірки «показує чи ні». Різняться З
+ * ПЕРШОГО символу (і довжиною): тема, що обрізає поле до N символів, інакше дала б однакову
+ * розмітку для обох — поле вважалось би «не показаним», і прохід був би вакуумним.
+ */
+const TEXT_A = 'alpha fallback text';
+const TEXT_B = 'Zulu other content here';
 
 /** Фікстура з усіма полями без `lang` і текстом `TEXT_A`: точка відліку диференціалу. */
 export function fallbackBase(): Vm {
