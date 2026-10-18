@@ -94,7 +94,7 @@
   `fallbackFieldsOf`.
 - **Один будівник** очікуваного стану — `expectedRows` (`catalog-projection/expected.ts`): з нього
   беруть і `refreshProductTexts` (синхронно в транзакції кожної команди товару), і
-  `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), і звірка
+  `buildMissingProjection` (етап виклику проєкції `languages.fill` під ексклюзивним `languages-set`, лише `DO NOTHING`), і звірка
   `findProjectionMismatches`/`localeProjectionMismatches`/`reconcileProductTexts`. Три читачі однієї
   істини не розходяться між собою.
 - Парність SQL-предиката `is_translated` і `fallback_fields` з доменними

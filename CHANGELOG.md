@@ -174,7 +174,7 @@
 - **`setExplicitPath`/`setExplicitToken`** самі беруть спільний замок `languages-set`.
 - **Проєкція тексту товару (М1 Task 14):** новий субшлях `simplycms/catalog-projection` (server-only) —
   `refreshProductTexts` (синхронно в транзакції команд товару, спільний замок `languages-set`),
-  `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), `dropLocaleProjection`,
+  `buildMissingProjection` (етап виклику проєкції `languages.fill` під ексклюзивним `languages-set`, лише `DO NOTHING`), `dropLocaleProjection`,
   `reconcileProductTexts`/`localeProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
   `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
   дозбирає при поверненні, а відмова `language_incomplete` називає товари й етап
