@@ -11,10 +11,15 @@ import { lockAggregateRoots } from '../products/aggregate/lock-order';
 import { deleteModifications } from './delete';
 
 /**
- * ЛИШЕ ЧИТАННЯ колекцій і видалення (М1, Task 17): модифікацію створює й править
- * команда агрегата `products.saveDescription` — рядок без перекладу основної мови й
- * поточного токена не комітиться (І4, І16). `isDefault` ставить лише
- * `setDefaultModification`, порядок — `reorder`.
+ * ЛИШЕ ЧИТАННЯ колекцій і видалення (М1, Task 17): модифікацію створює й править — разом
+ * з `isDefault` і порядком — команда агрегата `products.saveDescription` (рядок без перекладу
+ * основної мови й поточного токена не комітиться, І4, І16; версія агрегата піднімається).
+ * Окремих операцій дефолту й порядку немає: вони йшли повз корінь агрегата і не піднімали
+ * `products.version`.
+ *
+ * Узагальнений `remove` (з `lockOnRemove`) у проді serverFn не має — його кличуть лише тести
+ * медіа-контуру. Лишається свідомо як захист фабрики: будь-хто, хто відкриє його назовні,
+ * отримає видалення в порядку ієрархії замків (`lock-order.ts`, пункт (4)), а не обхід.
  */
 export const productModificationsOps = defineAdminResource({
   entity: ENTITY.productModifications,

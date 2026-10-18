@@ -93,7 +93,7 @@ export async function planModifications(
           ids: removes,
         });
       if (defaults[0]) {
-        // Той самий замок, що в `setDefaultModification`: дефолт — один на товар.
+        // Ключ дефолту товару (`mod-default:<id>`): дефолт — один на товар.
         await advisoryXactLock(
           db,
           `${LOCK_KEYS.modDefaultPrefix}${ctx.productId}`,

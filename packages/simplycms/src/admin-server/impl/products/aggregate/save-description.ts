@@ -7,7 +7,7 @@ import {
   sourceFieldHash,
 } from 'simplycms/translations';
 import { completeMediaErasures } from 'simplycms/storage';
-import { knownLocales, type ChildCtx } from './children-common';
+import type { ChildCtx } from './children-common';
 import {
   imagesInput,
   modificationsInput,
@@ -15,7 +15,7 @@ import {
 } from './children-schemas';
 import { assertImageKeys, eraseGone, productKeys } from './image-media';
 import { assertKnownLocales, loadState, lockProduct } from './load';
-import { bumpProduct } from './version';
+import { bumpProduct, withSectionRef } from './version';
 import { refreshAfterPlan } from './projection';
 import { modificationIdsAfter, modificationIdsOf } from './modification-scope';
 import { planImages } from './images';
@@ -56,10 +56,11 @@ export const productsSaveDescription = defineOperation({
   output: versionOut,
   async run({ db, afterCommit }, input) {
     const version = await lockProduct(db, input.id);
-    await assertKnownLocales(db, Object.keys(input.texts ?? {}), (l) => [
-      'texts',
-      l,
-    ]);
+    const locales = await assertKnownLocales(
+      db,
+      Object.keys(input.texts ?? {}),
+      (l) => ['texts', l],
+    );
     const state = await loadState(db, input.id);
     const plan = remapPlanIssues(['texts'], () =>
       planTranslationWrite({
@@ -76,7 +77,7 @@ export const productsSaveDescription = defineOperation({
       db,
       productId: input.id,
       primary: state.primary,
-      locales: await knownLocales(db),
+      locales,
       modificationIds: modificationIdsAfter(existing, input.modifications),
     };
     const modifications = await planModifications(
@@ -105,7 +106,9 @@ export const productsSaveDescription = defineOperation({
       if (discard.length > 0) afterCommit(() => completeMediaErasures(discard));
     }
     return {
-      version: await bumpProduct(db, input.id, input.base),
+      version: await withSectionRef(['base', 'sectionId'], () =>
+        bumpProduct(db, input.id, input.base),
+      ),
     };
   },
 });

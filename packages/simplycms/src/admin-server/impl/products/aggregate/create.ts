@@ -15,11 +15,11 @@ import {
   primaryLocaleCode,
   sourceFieldHash,
 } from 'simplycms/translations';
-import { knownLocales } from './children-common';
 import { imagesInput } from './children-schemas';
 import { assertImageKeys } from './image-media';
 import { planImages } from './images';
 import { assertKnownLocales } from './load';
+import { withSectionRef } from './version';
 import {
   productBase,
   remapPlanIssues,
@@ -67,7 +67,11 @@ export const productsCreate = defineOperation({
     // бачать один незмінний набір (Review Focus 1).
     await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
     const primary = await primaryLocaleCode(db);
-    await assertKnownLocales(db, Object.keys(data.texts), (l) => ['texts', l]);
+    const locales = await assertKnownLocales(
+      db,
+      Object.keys(data.texts),
+      (l) => ['texts', l],
+    );
     const plan = remapPlanIssues(['texts'], () =>
       planTranslationWrite({
         spec: SPEC,
@@ -100,7 +104,7 @@ export const productsCreate = defineOperation({
         db,
         productId: id,
         primary,
-        locales: await knownLocales(db),
+        locales,
         modificationIds: new Set(),
       },
       data.images,
@@ -108,16 +112,18 @@ export const productsCreate = defineOperation({
     if (images.keys.length > 0) await assertImageKeys(db, id, [], images.keys);
     // Рядок товару, переклади й адреси — в одній транзакції: відкладені тригери
     // джерела (І4) і наявності адреси (І16) перевіряють їх разом на COMMIT.
-    await db.insert(products).values({
-      id,
-      sectionId: data.sectionId,
-      sku: data.sku,
-      isActive: data.isActive,
-      isFeatured: data.isFeatured,
-      hasModifications: data.hasModifications,
-      stockStatus: data.stockStatus,
-      version: 1,
-    });
+    await withSectionRef(['sectionId'], () =>
+      db.insert(products).values({
+        id,
+        sectionId: data.sectionId,
+        sku: data.sku,
+        isActive: data.isActive,
+        isFeatured: data.isFeatured,
+        hasModifications: data.hasModifications,
+        stockStatus: data.stockStatus,
+        version: 1,
+      }),
+    );
     await applyTranslationPlan(db, SPEC, id, plan);
     const paths = await createPathsForEntity(
       db,

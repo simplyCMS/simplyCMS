@@ -31,14 +31,6 @@ export { listMailOutboxOp, retryMailOutboxOp } from './mail-outbox/outbox';
 export type { SubsetInput, SubsetPayload } from './subset';
 export { productsOps } from './products/resource';
 export { productModificationsOps } from './product-modifications/resource';
-export {
-  setDefaultModificationInput,
-  setDefaultModificationOp,
-} from './product-modifications/set-default';
-export {
-  reorderModificationInput,
-  reorderModificationOp,
-} from './product-modifications/reorder';
 export { productPricesOps } from './product-prices/resource';
 export {
   saveProductPrices,

@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import {
   AdminNotFoundError,
   ValidationError,
@@ -12,6 +12,7 @@ import {
   toSourceRow,
 } from 'simplycms/domain/translations';
 import { products } from 'simplycms/schema';
+import { knownLocales } from './children-common';
 import { loadChildren } from './children-read';
 import type { TextsRow } from './schemas';
 import {
@@ -28,22 +29,23 @@ const SPEC = TRANSLATABLE.product;
 // Замки кореня й порядок замків агрегата — `lock-order.ts` (тут реекспорт для викликачів).
 export { lockProduct, lockProductForRemove } from './lock-order';
 
-/** Мови, що існують у магазині (будь-який статус): запис у невідому дав би сирий FK-збій. */
+/**
+ * Мови, що існують у магазині (будь-який статус): запис у невідому дав би сирий FK-збій.
+ * Набір мов читає ОДИН запит (`knownLocales`) і повертається викликачу — дочірні кроки
+ * агрегата беруть той самий набір, а не перечитують його.
+ */
 export async function assertKnownLocales(
   db: ActorDb,
   locales: readonly string[],
   at: (locale: string) => readonly string[],
-): Promise<void> {
-  if (locales.length === 0) return;
-  const res = await db.execute<{ code: string }>(
-    sql`select code from public.languages`,
-  );
-  const known = new Set(res.rows.map((r) => r.code));
+): Promise<Set<string>> {
+  const known = await knownLocales(db);
   const bad = locales.filter((l) => !known.has(l));
   if (bad.length > 0)
     throw new ValidationError(
       bad.map((l) => ({ path: at(l), code: 'invalid_value' as const })),
     );
+  return known;
 }
 
 /** Рядки перекладів товару: основна мова окремо від решти (вхід плану запису). */

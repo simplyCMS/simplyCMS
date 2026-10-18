@@ -1,5 +1,5 @@
-// Е3, Task 4: іменовані операції каталогу проти живої БД (дефолт і порядок
-// модифікацій, атомарний набір цін, залишки з гвардом статусу). Шапка —
+// Е3, Task 4: іменовані операції каталогу проти живої БД (атомарний набір цін, залишки з
+// гвардом статусу; дефолт і порядок модифікацій — команда `products.saveDescription`, М1). Шапка —
 // ДОСЛІВНО патерн admin-catalog.test.ts (Task 3): createTempDatabase →
 // канон → app_runtime → afterAll із closeDbPool() ПЕРШИМ; setResponseStatus
 // і requireGrant мокаються з тієї самої причини (поза HTTP-запитом
@@ -17,10 +17,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
-import {
-  insertModificationAt,
-  insertProductGraphAt,
-} from './fixtures/product-graph';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 
@@ -33,8 +30,6 @@ vi.mock('simplycms/auth', async (orig) => ({
 }));
 
 import {
-  setDefaultModificationOp,
-  reorderModificationOp,
   saveProductPricesOp,
   saveProductPricesInput,
   saveStockOp,
@@ -114,92 +109,6 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     );
     return id;
   };
-
-  // Модифікація графа (переклад і токени): узагальненого insert модифікацій немає (М1).
-  const mod = async (slug: string, sortOrder?: number) => {
-    const id = crypto.randomUUID();
-    await insertModificationAt(dbUrl, PRODUCT, {
-      id,
-      slug,
-      name: slug,
-      ...(sortOrder !== undefined && { sortOrder }),
-    });
-    return { id };
-  };
-
-  it('Review Focus 5: setDefault двічі поспіль — рівно один дефолт на товар, без 23505', async () => {
-    const a = await mod('a');
-    const b = await mod('b');
-    await setDefaultModificationOp({ data: { id: a.id } });
-    const { rows } = await setDefaultModificationOp({ data: { id: b.id } });
-    expect(rows.map((r) => [r.id, r.isDefault])).toEqual(
-      expect.arrayContaining([
-        [a.id, false],
-        [b.id, true],
-      ]),
-    );
-    const defaults = await queryRows(
-      dbUrl,
-      `select id from public.product_modifications where product_id = $1 and is_default`,
-      [PRODUCT],
-    );
-    expect(defaults).toEqual([{ id: b.id }]);
-  });
-
-  it('setDefault не чіпає дефолти ІНШИХ товарів', async () => {
-    const other = crypto.randomUUID();
-    await insertProductGraphAt(dbUrl, {
-      id: other,
-      slug: 'ops-other',
-      name: 'O',
-    });
-    const x = crypto.randomUUID();
-    await insertModificationAt(dbUrl, other, {
-      id: x,
-      slug: 'x',
-      name: 'X',
-      isDefault: true,
-    });
-    const c = await mod('c');
-    await setDefaultModificationOp({ data: { id: c.id } });
-    expect(
-      await queryRows(
-        dbUrl,
-        `select is_default from public.product_modifications where id = $1`,
-        [x],
-      ),
-    ).toEqual([{ is_default: true }]);
-  });
-
-  it('reorder свапає в межах товару; на краю — no-op', async () => {
-    // 🔴 Відхилення від плану (діагностовано прогоном): `mod()` без явного
-    // sortOrder дає default 0 — товар до цього кроку вже має a/b/c з тим
-    // самим 0 (попередні тести), тож "up"/"down" не знаходять сусіда взагалі
-    // (однакові sort_order — задокументовано окремим кейсом нижче). Тут —
-    // явні РІЗНІ sortOrder, щоб довести сам свап; нормалізацію дає Task 8.
-    const d = await mod('d', 100);
-    const { swapped: bottomEdge } = await reorderModificationOp({
-      data: { id: d.id, direction: 'down' },
-    });
-    expect(bottomEdge).toEqual([]); // немає рядка з sort_order > 100 — край
-    const neighbor = await mod('d2', 50);
-    const up = await reorderModificationOp({
-      data: { id: d.id, direction: 'up' },
-    });
-    expect(up.swapped).toHaveLength(2);
-    expect(up.swapped.every((r) => r!.productId === PRODUCT)).toBe(true);
-    expect(up.swapped.find((r) => r!.id === d.id)!.sortOrder).toBe(50);
-    expect(up.swapped.find((r) => r!.id === neighbor.id)!.sortOrder).toBe(100);
-  });
-
-  it('reorder: однаковий sort_order (легасі) — сусіда немає, no-op (нормалізація — Task 8)', async () => {
-    await mod('g');
-    const h = await mod('h');
-    const { swapped } = await reorderModificationOp({
-      data: { id: h.id, direction: 'up' },
-    });
-    expect(swapped).toEqual([]);
-  });
 
   it('saveProductPrices: вставка, оновлення і видалення одним атомарним актом', async () => {
     const pt = await retail();
@@ -343,21 +252,6 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   // 🔴 Конкурентність (знахідка аудиту Codex 2026-09-23): дві вкладки / подвійний
   // клік по одній цілі. Без серіалізації друга транзакція падала б 23505 на
   // частковому unique-індексі (дефолт, перший рядок ціни/залишку).
-  it('два одночасні setDefault різних модифікацій товару — обидва успішні, дефолт рівно один', async () => {
-    const e = await mod('e');
-    const f = await mod('f');
-    await Promise.all([
-      setDefaultModificationOp({ data: { id: e.id } }),
-      setDefaultModificationOp({ data: { id: f.id } }),
-    ]);
-    const defaults = await queryRows(
-      dbUrl,
-      `select id from public.product_modifications where product_id = $1 and is_default`,
-      [PRODUCT],
-    );
-    expect(defaults).toHaveLength(1);
-  });
-
   it('два одночасні ПЕРШІ saveProductPrices однієї пари — обидва успішні, рядок один', async () => {
     const pt = await retail();
     const fresh = crypto.randomUUID();
@@ -417,35 +311,9 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   // операція (`pg_advisory_xact_lock(hashtextextended(key, 0))`,
   // `impl/catalog-lock.ts`), і тримає його у ВІДКРИТІЙ транзакції — виклик
   // операції не сміє резолвитись, доки конкурент не відпустить лок COMMIT-ом.
-  describe('advisory-lock: доказ серіалізації (mod-default/prices/stock)', () => {
+  describe('advisory-lock: доказ серіалізації (prices/stock)', () => {
     // Хелпери — спільний модуль fixtures/advisory-lock.ts (Е4-12).
     const holdLock = (key: string) => holdAdvisoryLock(dbUrl, key);
-
-    it('mod-default: конкурент тримає лок → setDefault чекає ~300мс, резолвиться лише після release', async () => {
-      const fresh = crypto.randomUUID();
-      await insertProductGraphAt(dbUrl, {
-        id: fresh,
-        slug: 'ops-lock-md',
-        name: 'LM',
-      });
-      const m = [{ id: crypto.randomUUID() }];
-      await insertModificationAt(dbUrl, fresh, {
-        id: m[0]!.id,
-        slug: 'lm1',
-        name: 'LM1',
-      });
-      const lock = await holdLock(`mod-default:${fresh}`);
-      try {
-        const op = setDefaultModificationOp({
-          data: { id: (m[0] as { id: string }).id },
-        });
-        expect(await stillPending(op, 300)).toBe(true);
-        await lock.release();
-        await expect(op).resolves.toBeDefined();
-      } finally {
-        await lock.cleanup();
-      }
-    });
 
     it('prices: конкурент тримає лок → saveProductPrices чекає ~300мс, резолвиться лише після release', async () => {
       const pt = await retail();

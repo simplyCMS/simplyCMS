@@ -16,9 +16,9 @@ export const setDefaultPriceTypeInput = z.object({ id: z.uuid() });
  * Дефолтний тип ціни рівно один (Е4-2). Вітрина й `PriceValidator` беруть
  * дефолт як fallback для гостя, тож вікна «нуль дефолтів» бути не може.
  *
- * 🔴 Порядок (ред.2, аудит Codex, знахідка 2) — НЕ копія
- * `product-modifications/set-default.ts`, який читає ціль до локу й не
- * перевіряє результат UPDATE:
+ * 🔴 Порядок (ред.2, аудит Codex, знахідка 2) — НЕ копія колишнього
+ * `product-modifications/set-default.ts` (знесений у М1), що читав ціль до локу
+ * й не перевіряв результат UPDATE:
  *  1. advisory-lock `price-type-default` — ПЕРШИЙ запит транзакції. Той
  *     самий бере `removeManyPriceTypesOp`, тож remove(X) не може
  *     завершитись між читанням X і UPDATE цілі незалежно від того, чи

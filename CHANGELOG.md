@@ -50,7 +50,8 @@
   «Зберегти»), адреса мови — `products.setPath`, ціни й залишки — `products.savePrices`/`products.saveStock`, видалення —
   `products.remove` з версією. Прибрано serverFn-обгортки `insertProducts`/`updateProducts`/`removeProducts`,
   `insert|update|remove` для `ProductModifications`, `ProductPropertyValues`, `ModificationPropertyValues`,
-  `setDefaultProductModification`, `reorderProductModification` і старі `saveProductPrices`/`saveStock`; колекції товару,
+  `setDefaultProductModification`, `reorderProductModification` (разом з операціями `setDefaultModificationOp`/`reorderModificationOp`
+  у `simplycms/admin-server/impl`: йшли повз корінь агрегата й не піднімали версію) і старі `saveProductPrices`/`saveStock`; колекції товару,
   модифікацій і значень властивостей `admin-data` — лише читання (без `persistenceHandlers`). Ручний статус наявності
   модифікації — поле `stockStatus` у `modifications.upsert` і у виході `products.get` (як `base.stockStatus` товару); `saveStock` далі виводить його з залишків. 412 при збереженні — діалог «Товар змінив хтось інший».
 - **Решта читачів товару — на перекладах і проєкції** (`simplycms/storefront/loaders`, `simplycms/storefront-routes`,
