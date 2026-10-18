@@ -1,6 +1,10 @@
 import pg from 'pg';
 import { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
-import { MigrationChecksumError, UnjournaledDatabaseError } from './errors';
+import {
+  MigrationChecksumError,
+  SUPERUSER_HINT,
+  UnjournaledDatabaseError,
+} from './errors';
 import {
   checksumOf,
   listMigrationFiles,
@@ -142,8 +146,12 @@ async function applyOne(
     await client.query('commit');
   } catch (err) {
     await client.query('rollback').catch(() => {});
+    // 42501 — брак права: найчастіше роль накату не суперкористувач (прелюдія задає атрибути
+    // ролей `app_*`, а їх Postgres дозволяє міняти лише суперкористувачу) — кажемо це прямо.
+    const hint =
+      (err as { code?: string }).code === '42501' ? SUPERUSER_HINT : '';
     throw new Error(
-      `[simplycms/migrate] Накат ${file.name} впав: ${(err as Error).message}`,
+      `[simplycms/migrate] Накат ${file.name} впав: ${(err as Error).message}${hint}`,
       { cause: err },
     );
   }

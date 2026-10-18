@@ -90,3 +90,12 @@ export class MigrationTransactionControlError extends Error {
     this.reason = reason;
   }
 }
+
+/**
+ * Підказка до помилки накату з кодом `42501` (брак права). Прелюдія створює ролі `app_*` і
+ * задає їм атрибути `nosuperuser`/`nobypassrls`, а їх Postgres дозволяє міняти лише
+ * суперкористувачу, тож найчастіша причина — роль накату без SUPERUSER.
+ */
+export const SUPERUSER_HINT =
+  '; роль накату (MIGRATION_DATABASE_URL) мусить бути SUPERUSER кластера — керовані Postgres ' +
+  'лише з CREATEROLE не підтримуються (docs/development/ENVIRONMENT.md)';
