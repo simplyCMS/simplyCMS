@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { codeOnly } from './support/source-text';
 
 const FILES = [
   'src/start.ts',
@@ -16,7 +17,8 @@ const FILES = [
 
 describe('domainErrorAdapter зареєстровано в createStart', () => {
   it.each(FILES)('%s', (file) => {
-    const src = readFileSync(resolve(__dirname, '..', file), 'utf8');
+    // Лише код: закоментована реєстрація адаптер не реєструє (N1, Task 17б fix-2).
+    const src = codeOnly(readFileSync(resolve(__dirname, '..', file), 'utf8'));
     expect(src).toMatch(
       /serializationAdapters:\s*\[[^\]]*\bdomainErrorAdapter\b[^\]]*\]/,
     );

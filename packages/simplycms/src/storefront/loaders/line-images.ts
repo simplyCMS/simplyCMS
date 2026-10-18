@@ -39,13 +39,10 @@ export async function loadLineImages(
     select x.product_id, x.modification_id,
            ${lineImageSql(sql`x.product_id`, sql`x.modification_id`, text.locale, text.primary)} as image
       from (values ${rows}) as x(product_id, modification_id)`);
-  for (const r of res.rows) {
-    // Декодер стоїть у формі виклику за аліасом проєкції — так його бачить гейт `media-read-resolve`.
-    const decoded = { image: toGalleryImage(r.image) };
+  for (const r of res.rows)
     out.set(
       lineKey({ productId: r.product_id, modificationId: r.modification_id }),
-      decoded.image,
+      toGalleryImage(r.image),
     );
-  }
   return out;
 }

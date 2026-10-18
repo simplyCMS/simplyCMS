@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { codeOnly } from '../support/source-text';
 
 /**
  * Збір файлів, розбір імпортів і пошук serverFn без споживача для
@@ -35,7 +36,8 @@ export function collect(root = ROOT): SourceFile[] {
         if (!SKIP_DIRS.has(e.name)) walk(full);
       } else if (SOURCE_EXT.test(e.name)) {
         const path = relative(root, full).replaceAll('\\', '/');
-        out.push({ path, text: readFileSync(full, 'utf8') });
+        // Лише код: закоментований імпорт не робить файл споживачем serverFn (N1).
+        out.push({ path, text: codeOnly(readFileSync(full, 'utf8')) });
       }
     }
   };

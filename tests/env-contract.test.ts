@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { S3_KEYS, SMTP_KEYS } from 'simplycms/env';
+import { codeOnly } from './support/source-text';
 
 /**
  * Пін контракту env магазину (К2-Е0, Е0-7): три документи (.env.example,
@@ -45,7 +46,8 @@ describe('контракт env магазину', () => {
       resolve(ROOT, 'packages/cli/src/doctor-checks.mjs'),
       'utf8',
     );
-    const m = /const REQUIRED_ENV_VARS = \[([^\]]*)\]/.exec(src);
+    // Лише код: закоментована стара декларація не підміняє справжню (N1).
+    const m = /const REQUIRED_ENV_VARS = \[([^\]]*)\]/.exec(codeOnly(src));
     expect(m, 'REQUIRED_ENV_VARS не знайдено').not.toBeNull();
     const required = m![1]
       .split(',')

@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { codeOnly } from './support/source-text';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TAILWIND_CONFIG = join(
@@ -37,7 +38,8 @@ function templateContentGlobs(): string[] {
   const block = /\n {2}content: \[\n([\s\S]*?)\n {2}\],\n/.exec(source);
   if (!block)
     throw new Error('У шаблонному tailwind.config.ts немає content: []');
-  return [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  // Закоментований глоб сканером Tailwind не є — коментарі прибрано до вичитки (N1).
+  return [...codeOnly(block[1]).matchAll(/'([^']+)'/g)].map((m) => m[1]);
 }
 
 /** Фікстура: файл із усіма проміжними теками. */

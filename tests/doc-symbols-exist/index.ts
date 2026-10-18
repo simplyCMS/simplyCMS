@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { stripCommentsAndStrings } from '../support/source-text';
 import { CODE_EXT, ROOT, walk } from './scan';
 
 /**
@@ -16,22 +17,6 @@ const SELF = [
 /** Не продакшн-код: тести, харнес, моки, e2e — їхні згадки не доводять існування символу. */
 const NON_PRODUCTION =
   /(?:^|\/)(?:__tests__|test-harness|tests|e2e)\/|\.test\.|\.spec\.|\.e2e\.|mock/i;
-
-/**
- * Прибирає коментарі й ВМІСТ рядкових літералів (лапки лишаються): згадка імені
- * в коментарі чи назві тесту не є його визначенням. Жадібний на рядки/шаблони,
- * щоб `//` усередині URL не вважався коментарем.
- */
-export function stripCommentsAndStrings(
-  src: string,
-  keepStrings = false,
-): string {
-  return src.replace(
-    /("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
-    (_m, str: string | undefined) =>
-      str ? (keepStrings ? str : str[0] + str[0]) : '',
-  );
-}
 
 const IDENT = '[A-Za-z_$][\\w$]*';
 const DEF_RES: RegExp[] = [

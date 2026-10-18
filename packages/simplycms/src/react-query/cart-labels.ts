@@ -14,6 +14,7 @@ export interface CartNameUpdate {
   image: ProductImageViewModel | null;
 }
 
+/** Те саме фото: файл, alt і мова alt (`undefined`/`null` мови — одне й те саме). */
 const sameImage = (
   a: ProductImageViewModel | undefined,
   b: ProductImageViewModel | undefined,
@@ -23,8 +24,9 @@ const sameImage = (
   (a?.alt_lang ?? null) === (b?.alt_lang ?? null);
 
 /**
- * Записати в рядки назви й мініатюру з квоти разом з їх мовою (одна мітка `namesLocale`). Повертає ТОЙ САМИЙ масив, якщо нічого не
- * змінилось, щоб ефект синхронізації не писав у сховище (і не будив підписників) даремно.
+ * Записати в рядки назви й мініатюру з квоти разом з їх мовою (одна мітка `namesLocale`).
+ * Повертає ТОЙ САМИЙ масив, якщо нічого не змінилось, щоб ефект синхронізації не писав у
+ * сховище (і не будив підписників) даремно.
  */
 export function applyNameUpdates(
   prev: readonly CartItem[],
@@ -45,7 +47,8 @@ export function applyNameUpdates(
     )
       return item;
     changed = true;
-    // Підпис модифікації й фото міняються разом із назвою: старий ключ не лишаємо, нового — без значення.
+    // Підпис модифікації й фото міняються разом із назвою: старий ключ не лишаємо,
+    // нового — без значення.
     const rest: CartItem = { ...item, name: u.name, namesLocale };
     delete rest.modificationName;
     delete rest.image;
