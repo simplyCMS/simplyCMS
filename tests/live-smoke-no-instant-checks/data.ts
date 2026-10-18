@@ -183,7 +183,8 @@ export const INSTANT_CHECK_EXEMPTIONS: readonly {
 /**
  * Виїмки структурного гарда «читання БД після очікування зникнення»
  * (`scan-db-reads.ts`). Ключ — `file :: <функція>: <читач> після <очікувач>`
- * (кратність враховано). Список лише скорочується.
+ * (кратність враховано). Список лише скорочується; поповнюється лише разом
+ * із посиленням самого гарда (транзитивні очікувачі — Task 18 п. 10.2).
  */
 const TOAST =
   '`deactivateAndDelete` завершується `waitToast` успіху від сервера — COMMIT уже був, читання безпечне';
@@ -192,18 +193,20 @@ export const DETACHED_DB_READ_EXEMPTIONS: readonly {
   call: string;
   reason: string;
 }[] = [
+  // Мітки — найближчий очікувач: `del` і `methodStep` — локальні обгортки
+  // `deactivateAndDelete` (очікувачі транзитивно, Task 18 п. 10.2), причина та сама.
   ...[
-    'methodByCode',
-    'pointNameById',
-    'methodByCode',
-    'ratesOf',
-    'methodStep',
-    'methodStep',
-    'prepare',
-    'leftovers',
-  ].map((read) => ({
+    ['methodByCode', 'deactivateAndDelete'],
+    ['pointNameById', 'del'],
+    ['methodByCode', 'del'],
+    ['ratesOf', 'del'],
+    ['methodStep', 'del'],
+    ['methodStep', 'methodStep'],
+    ['prepare', 'methodStep'],
+    ['leftovers', 'methodStep'],
+  ].map(([read, after]) => ({
     file: 'admin-shipping-cleanup.mjs',
-    call: `dropShippingConfig: ${read} після deactivateAndDelete`,
+    call: `dropShippingConfig: ${read} після ${after}`,
     reason: TOAST,
   })),
   ...['defaultPriceTypeName', 'priceTypeCount', 'priceCountByType'].map(
@@ -231,6 +234,33 @@ export const DETACHED_DB_READ_EXEMPTIONS: readonly {
     call: 'createPart: seedPointStock після addRate',
     reason:
       '`addRate` чекає закриття діалогу створення; seedPointStock ПИШЕ залишок іншої таблиці, а не читає видалене',
+  },
+  // Оркестратори кроків (Task 18 п. 10.2, транзитивні очікувачі): очікування
+  // всередині попередньої частини — закриття діалогу чи індикатора, а не зникнення
+  // рядка, а кожна частина сама дочікується своїх записів через pollUntil.
+  {
+    file: 'admin-discounts.mjs',
+    call: 'runAdminDiscountsStep: thresholdPart після setupPart',
+    reason:
+      'setupPart чекає закриття діалогу створення (`createDiscount`), свої групи, знижку, категорію й правило дочікується pollUntil; thresholdPart читає замовлення й профіль після ВЛАСНОГО checkout',
+  },
+  {
+    file: 'admin-discounts.mjs',
+    call: 'runAdminDiscountsStep: vipFlowPart після disablePart',
+    reason:
+      'disablePart чекає зникнення індикатора кошика (`putInCart`), а не видалення рядка; vipFlowPart читає замовлення після власного checkout, профіль — через pollUntil',
+  },
+  {
+    file: 'admin-discounts.mjs',
+    call: 'runAdminDiscountsStep: cleanupDiscountsStep після disablePart',
+    reason:
+      'прибирання видаляє через адмінку з тостом успіху сервера (`waitToast` у deleteGroup/deleteFromCard) — COMMIT уже був; очікування disablePart — індикатор кошика',
+  },
+  {
+    file: 'admin-shipping.mjs',
+    call: 'runAdminShippingStep: cleanupShippingStep після createPart',
+    reason:
+      'createPart чекає закриття діалогу створення (`addRate`), а створене дочікується pollUntil; прибирання видаляє з тостом успіху (`deactivateAndDelete`) і опитує зони pollUntil',
   },
   {
     file: 'admin-shipping.mjs',

@@ -192,7 +192,8 @@ export async function f({ page }) {
       ).toHaveLength(1);
     });
 
-    it('обмеження гарда: очікувачі не транзитивні, функція з page не читач — strict їх вмикає', () => {
+    it('🔴 очікувачі транзитивні: очікування на другому рівні хелперів — червоне', () => {
+      // Негативний контроль Task 18 п. 10.2: `wait` прямо, `step` — лише через `wait`.
       const src = `const wait = async (page) => { ${wait} };
 const step = async (page) => { await wait(page); };
 const q = async () => sql(u, 'select 1');
@@ -200,10 +201,16 @@ export async function top(page) {
   await step(page);
   return q();
 }`;
-      expect(run(src)).toHaveLength(0);
-      expect(
-        findDetachedDbReads({ 'x.mjs': src }, { strict: true }),
-      ).toHaveLength(1);
+      expect(run(src).map((h) => h.call)).toEqual(['top: q після step']);
+      // третій рівень — те саме
+      const deeper = src.replace(
+        'export async function top(page) {\n  await step(page);',
+        'const outer = async (page) => { await step(page); };\nexport async function top(page) {\n  await outer(page);',
+      );
+      expect(run(deeper).map((h) => h.call)).toEqual(['top: q після outer']);
+    });
+
+    it('обмеження гарда: функція з page не читач — strict її вмикає', () => {
       const withPage = `const q = async () => sql(u, 'select 1');
 const stepWithPage = async (page) => { await q(); await page.goto('x'); };
 export async function top(page) {
