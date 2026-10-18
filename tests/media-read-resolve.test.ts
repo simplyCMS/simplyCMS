@@ -78,6 +78,7 @@ function loaderFiles(dir: string): string[] {
 const GALLERY_READERS = [
   'productGallerySql',
   'modificationGallerySql',
+  'lineImageSql',
   'mainImageSql',
 ];
 
@@ -89,8 +90,9 @@ const RESOLVED_BY: Record<string, string> = {
   'reviews.ts#images': 'toImageList',
   // Галерея товару мовою сторінки (М1, Task 17б): декодер з alt, а не список URL.
   'products.ts#images': 'toGallery',
-  'catalog-products.ts#images': 'toGallery',
   'entities/home-product.ts#images': 'toGallery',
+  // Мініатюра позиції кошика (Task 17б fix-1): одне фото тим самим декодером.
+  'line-images.ts#image': 'toGalleryImage',
   'entities/banner.ts#image_url': 'resolveMediaUrl',
   'entities/banner.ts#desktop_image_url': 'resolveMediaUrl',
   'entities/banner.ts#mobile_image_url': 'resolveMediaUrl',
@@ -110,10 +112,10 @@ const RESOLVED_BY_CONSUMERS: Record<
   string,
   { resolver: string; files: readonly string[] }
 > = {
-  // Галерею сторінки товару (окремий запит після версій мови) декодує `loadProduct`.
-  'product-page.ts#images': {
+  // Колонкова мапа товару (функція мови) лише ЧИТАЄ галерею; декодують сторінка й каталог.
+  'entities/product.ts#images': {
     resolver: 'toGallery',
-    files: ['product-detail.ts'],
+    files: ['product-detail.ts', 'catalog-products.ts'],
   },
   // Сирий SQL модифікацій мапить `toModificationRow` (`entities/modification.ts`).
   'product-modifications.ts#images': {

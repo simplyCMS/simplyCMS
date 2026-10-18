@@ -82,7 +82,9 @@ describe('фото товару мовою сторінки (Task 17б)', () => 
     ) => Promise<T>,
   ) => withViewerPricesDb(null, run);
   const page = (locale: string) =>
-    view((tx, v) => loadProduct(tx, { locale, path: cable.paths[locale]! }, v));
+    view((tx, v) =>
+      loadProduct(tx, { locale, path: cable.paths[locale]! }, v, 'uk'),
+    );
   const gallery = (images: ProductImageViewModel[]) =>
     renderToStaticMarkup(
       createElement(I18nProvider, {

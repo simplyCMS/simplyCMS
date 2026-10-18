@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
@@ -17,13 +18,15 @@ export interface CartItem {
   name: string;
   modificationName?: string;
   /**
-   * Мова, якою отримано `name`/`modificationName` (мова сторінки в момент додавання або
-   * останньої квоти). Кеш назв показується лише на сторінці тієї ж мови; інакше — скелетон,
-   * доки квота не віддасть назви потрібною (І37: без мерехтіння мови й хибного `lang`).
+   * Мова, якою отримано `name`/`modificationName` і `image` (мова сторінки в момент додавання
+   * або останньої квоти). Кеш назв і фото показується лише на сторінці тієї ж мови; інакше —
+   * скелетон, доки квота не віддасть їх потрібною (І37: без мерехтіння мови й хибного `lang`;
+   * фото теж перевизначається для мови, Task 17б).
    */
   namesLocale?: string;
   quantity: number;
-  image?: string;
+  /** Мініатюра мовою `namesLocale` (файл і alt); немає — фото не було. */
+  image?: ProductImageViewModel;
   sku?: string;
 }
 
@@ -41,7 +44,15 @@ const storedLineSchema = z.object({
   quantity: z.number().int().min(1).max(MAX_LINE_QUANTITY),
   modificationName: z.string().optional().catch(undefined),
   namesLocale: z.string().optional().catch(undefined),
-  image: z.string().optional().catch(undefined),
+  // Старий формат (рядок URL без alt і мови) не проходить і відкидається: фото прийде з квоти.
+  image: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+      alt_lang: z.string().nullable().optional().catch(undefined),
+    })
+    .optional()
+    .catch(undefined),
   sku: z.string().optional().catch(undefined),
 });
 
@@ -135,44 +146,4 @@ function withoutUndefined(line: z.infer<typeof storedLineSchema>): CartItem {
   if (line.image !== undefined) item.image = line.image;
   if (line.sku !== undefined) item.sku = line.sku;
   return item;
-}
-
-/** Оновлення підписів рядка з квоти: назви мовою `namesLocale`. */
-export interface CartNameUpdate {
-  productId: string;
-  modificationId: string | null;
-  name: string;
-  /** `null` — позиція без модифікації. */
-  modificationName: string | null;
-}
-
-/**
- * Записати в рядки назви з квоти разом з їх мовою. Повертає ТОЙ САМИЙ масив, якщо нічого не
- * змінилось, щоб ефект синхронізації не писав у сховище (і не будив підписників) даремно.
- */
-export function applyNameUpdates(
-  prev: readonly CartItem[],
-  updates: readonly CartNameUpdate[],
-  namesLocale: string,
-): readonly CartItem[] {
-  let changed = false;
-  const next = prev.map((item) => {
-    const u = updates.find((x) => sameLine(x, item));
-    if (!u) return item;
-    const modificationName = u.modificationName ?? undefined;
-    if (
-      item.name === u.name &&
-      item.modificationName === modificationName &&
-      item.namesLocale === namesLocale
-    )
-      return item;
-    changed = true;
-    // Підпис модифікації міняється разом із назвою: старий ключ не лишаємо, нового — без значення.
-    const rest: CartItem = { ...item, name: u.name, namesLocale };
-    delete rest.modificationName;
-    if (modificationName !== undefined)
-      rest.modificationName = modificationName;
-    return rest;
-  });
-  return changed ? next : prev;
 }

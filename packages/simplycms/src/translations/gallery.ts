@@ -16,7 +16,10 @@ const ORDER = sql.raw(GALLERY_ORDER);
  * - `key` — перевизначення файлу ЦІЄЇ мови, інакше спільний. Саме не `withFallback`:
  *   перевизначення — заміна для однієї мови, а не текст, що «протікає» в інші; основна
  *   мова (і її власне перевизначення) — це той самий `t_loc`, коли мова сторінки основна;
- * - `alt` — переклад мови, інакше основної (`withFallback`), `null` — жодного;
+ * - `alt` — переклад мови, інакше основної (`withFallback`), `null` — жодного. `''` у рядку
+ *   мови — ЯВНЕ «декоративне в цій мові» (записувач зберігає `''` як є): fallback на основну
+ *   не застосовується, бо `coalesce` бере `''`, а ознака fallback — лише `t_loc.alt is null`;
+ *   `null` чи відсутній рядок — «перекладу немає» → alt основної;
  * - `alt_lang` — код основної, коли alt узято з неї: ознака з ДАНИХ (`t_loc.alt is null and
  *   t_src.alt is not null`), а не з порівняння текстів (І37).
  * Псевдоніми `t_loc`/`t_src` живуть у власному підзапиті: зовнішній `withFallback`
@@ -56,6 +59,21 @@ export const modificationGallerySql = (
   primary: string,
 ): SQL<unknown> =>
   gallerySql(sql`i.modification_id = ${owner}`, locale, primary);
+
+/**
+ * Головне фото ПОЗИЦІЇ (мініатюра кошика) мовою сторінки jsonb-об'єктом `{ key, alt, alt_lang }`
+ * або `null`: перше фото модифікації, а без них — перше фото товару. Те саме правило, що й
+ * галерея сторінки товару з вибраною модифікацією (`useProductContent`), і той самий читач —
+ * нового SQL вибору немає. `modification` — вираз id модифікації або `NULL`.
+ */
+export const lineImageSql = (
+  product: SQLWrapper,
+  modification: SQLWrapper,
+  locale: string,
+  primary: string,
+): SQL<unknown> =>
+  sql`coalesce(${modificationGallerySql(modification, locale, primary)} -> 0,
+    ${productGallerySql(product, locale, primary)} -> 0)`;
 
 /**
  * Головне фото товару — перше в галереї, `null` без фото (мініатюра списку адмінки).

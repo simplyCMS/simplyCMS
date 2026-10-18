@@ -1,5 +1,6 @@
 // Складання позиції кошика (перенесено з контейнера).
 
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import type { AddToCartItem } from '../../views/slots/ProductAddToCart';
 import type {
   CurrentPricing,
@@ -13,8 +14,11 @@ export interface CartItemInput {
   selectedModId: string;
   selectedMod: ProductModificationRow | undefined;
   current: CurrentPricing;
-  /** Перше зображення галереї — прев'ю позиції в кошику. */
-  image: string | undefined;
+  /**
+   * Перше фото галереї мовою сторінки — кеш мініатюри кошика до приходу квоти (під тією ж
+   * міткою мови, що й назви).
+   */
+  image: ProductImageViewModel | undefined;
 }
 
 /**

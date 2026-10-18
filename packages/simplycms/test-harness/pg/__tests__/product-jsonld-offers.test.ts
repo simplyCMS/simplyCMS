@@ -41,7 +41,7 @@ describe('JSON-LD offers сторінки товару — гостьова ці
 
   const offersOf = async (slug: string, userId: string | null = null) => {
     const product = await withViewerPricesDb(userId, (tx, v) =>
-      loadProduct(tx, { locale: 'uk', path: slug }, v),
+      loadProduct(tx, { locale: 'uk', path: slug }, v, 'uk'),
     );
     if (!product) throw new Error(`товару ${slug} немає`);
     const head = productHead(matches, product);

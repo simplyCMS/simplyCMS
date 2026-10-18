@@ -284,6 +284,8 @@ describe('єдиний записувач графа товару', () => {
   const HARNESS = join(import.meta.dirname, '../..');
   const REGISTRIES =
     /insert\s+into\s+(public\.)?(url_paths|slug_tokens)\b|insert\(\s*[\w.]*(urlPaths|slugTokens)\b|insertInto\(\s*['"](url_paths|slug_tokens)['"]/i;
+  // Дозволені білдери графа — єдиний записувач: лише вони пишуть у таблиці товару й лише
+  // вони мають право називати таблицю змінною (`insertInto(table, …)` у `product-graph-values`).
   const BUILDERS = (f: string) =>
     f.startsWith('pg/__tests__/fixtures/product-graph');
   // Цей файл і модуль гарда містять зразки заборонених форм як дані.
@@ -416,5 +418,20 @@ describe('єдиний записувач графа товару', () => {
     'insertInto(`public.plg_${name}_items`, row)',
   ])('нерозкривний шаблон білдера %j — порушення, а не пропуск', (sample) => {
     expect(templatedTargets(sample).unexpandable).toHaveLength(1);
+  });
+
+  // Task 17б fix-1 (M3): ім'я таблиці змінною — порушення поза білдерами.
+  it.each([
+    'insertInto(table, row)',
+    'db.insertInto(tableName)',
+    'insertInto( owner.table , {})',
+  ])('insertInto зі змінною %j — порушення, а не пропуск', (sample) => {
+    expect(templatedTargets(sample).unexpandable).toHaveLength(1);
+  });
+
+  it('insertInto зі змінною в справжньому білдері — є (інакше виключення BUILDERS ні від чого)', () => {
+    const builder = 'pg/__tests__/fixtures/product-graph-values.ts';
+    expect(BUILDERS(builder)).toBe(true);
+    expect(templatedTargets(text(builder)).unexpandable).not.toEqual([]);
   });
 });

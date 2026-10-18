@@ -7,6 +7,7 @@ import { loadPricingContext, priceCart } from 'simplycms/commerce';
 import type { TextLocale } from 'simplycms/domain/translations';
 import { toCents } from 'simplycms/domain/pricing';
 import { withCustomerDb, withStorefrontDb, type ActorDb } from './db';
+import { lineKey, loadLineImages } from './line-images';
 
 const EMPTY_QUOTE: CartQuote = { lines: [], subtotal: 0 };
 
@@ -34,9 +35,22 @@ export async function quoteCartFor(
 ): Promise<CartQuote> {
   if (items.length === 0) return EMPTY_QUOTE;
 
-  const load = async (db: ActorDb) =>
-    priceCart(db, await loadPricingContext(db, userId), items, text);
-  const { lines } = userId
+  // Мініатюри — у тій самій транзакції, мовою назв (Task 17б): кошик на `/en` показує фото en.
+  const load = async (db: ActorDb) => {
+    const priced = await priceCart(
+      db,
+      await loadPricingContext(db, userId),
+      items,
+      text,
+    );
+    const images = await loadLineImages(
+      db,
+      priced.lines.filter((l) => l.available),
+      text,
+    );
+    return { lines: priced.lines, images };
+  };
+  const { lines, images } = userId
     ? await withCustomerDb(userId, load)
     : await withStorefrontDb(load);
 
@@ -56,6 +70,7 @@ export async function quoteCartFor(
       modificationName: line.modificationName,
       productNameLang: line.productNameLang,
       modificationNameLang: line.modificationNameLang,
+      image: images.get(lineKey(line)) ?? null,
       basePrice: line.basePrice,
       price: line.price,
       applied: line.applied.map(({ name, calculatedAmount }) => ({

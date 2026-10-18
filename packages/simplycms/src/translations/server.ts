@@ -16,6 +16,7 @@ export {
 export { applyTranslationPlan, deleteTranslation } from './upsert';
 export {
   GALLERY_ORDER,
+  lineImageSql,
   mainImageSql,
   modificationGallerySql,
   productGallerySql,

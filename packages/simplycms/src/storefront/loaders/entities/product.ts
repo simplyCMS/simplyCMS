@@ -3,24 +3,26 @@ import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
 import { resolveMediaUrls } from 'simplycms/domain/media';
+import { productGallerySql } from 'simplycms/translations';
 
 /**
  * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
  * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8).
- * Фото тут НЕМАЄ: галерея залежить від мови (`productGallerySql(…, locale, primary)`),
- * а статична мапа колонок мови не знає — викликач додає її сам (Task 17б).
+ * Фото — галерея мови сторінки (`productGallerySql`, Task 17б), тож мапа — функція мови,
+ * як `homeProductColumns`: один спосіб зібрати галерею для сторінки й каталогу.
  */
-export const productBaseColumns = {
+export const productBaseColumns = (locale: string, primary: string) => ({
   id: products.id,
   section_id: products.sectionId,
   is_active: products.isActive,
   is_featured: products.isFeatured,
   created_at: products.createdAt,
   updated_at: products.updatedAt,
+  images: productGallerySql(products.id, locale, primary).as('images'),
   has_modifications: products.hasModifications,
   sku: products.sku,
   stock_status: products.stockStatus,
-};
+});
 
 /** Повний рядок товару (без приєднаних гілок). */
 export type ProductRow = {

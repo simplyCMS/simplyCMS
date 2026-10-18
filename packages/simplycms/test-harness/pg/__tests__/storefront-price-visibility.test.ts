@@ -33,6 +33,7 @@ async function allPublicPrices(
     db,
     { locale: 'uk', path: STATION_SLUG },
     viewer,
+    'uk',
   );
   const catalog = await loadCatalogProducts(db, viewer, UK);
   const home = await loadHomePageData(db, viewer, UK);
@@ -106,7 +107,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
 
   it('гість: getProduct (картка) без гуртового виду', async () => {
     const product = await withViewerPricesDb(null, (tx, v) =>
-      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v),
+      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v, 'uk'),
     );
     expect(typesOf(product!.product_prices)).toEqual(new Set([guestTypeId]));
   });
@@ -144,7 +145,7 @@ describe('ціни вітрини лише для виду глядача (Р29)
     expect(types.has(WHOLESALE_TYPE)).toBe(true);
     expect(types.has(guestTypeId)).toBe(true);
     const product = await withViewerPricesDb(db.wholesale, (tx, v) =>
-      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v),
+      loadProduct(tx, { locale: 'uk', path: STATION_SLUG }, v, 'uk'),
     );
     expect(
       product!.product_prices.find((p) => p.price_type_id === WHOLESALE_TYPE)

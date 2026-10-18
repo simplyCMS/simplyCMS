@@ -40,6 +40,7 @@ const QUOTE_EN: CartQuote = {
       modificationName: 'Синій',
       productNameLang: null,
       modificationNameLang: 'uk',
+      image: null,
       basePrice: 100,
       price: 100,
       applied: [],

@@ -34,6 +34,9 @@ const TEMPLATED_TARGET =
 // Білдер: увесь вміст шаблонного літерала з інтерполяцією, а не лише `\w`-символи — інакше
 // `${schema}.products` не збігся б зовсім і пройшов би повз гард мовчки.
 const TEMPLATED_INSERT_INTO = /insertInto\(\s*`([^`]*\$\{[^`]*)`/gi;
+// Ім'я таблиці ЗМІННОЮ (`insertInto(table, row)`) гард не розкриє взагалі — це той самий клас,
+// що нерозкривний шаблон: порушення поза файлами-білдерами графа, а не тихий пропуск.
+const VARIABLE_INSERT_INTO = /insertInto\(\s*([A-Za-z_$][\w$.]*)\s*[,)]/g;
 
 export interface TemplatedTargets {
   /** Розкриті імена, що потрапили в `GUARDED_TABLES`. */
@@ -52,6 +55,8 @@ export function templatedTargets(text: string): TemplatedTargets {
       m[1]!.replace(/^public\./, ''),
     ),
   ];
+  for (const [, variable] of text.matchAll(VARIABLE_INSERT_INTO))
+    unexpandable.push(variable!);
   for (const name of names) {
     const parts = name.split(INTERPOLATION);
     const suffix = parts[1] ?? '';

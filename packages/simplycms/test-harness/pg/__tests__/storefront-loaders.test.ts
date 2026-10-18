@@ -96,7 +96,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
   it('товар за slug приходить із розділом, цінами й характеристиками', async () => {
     const product = await withViewerPricesDb(null, (db, v) =>
-      loadProduct(db, { locale: 'uk', path: VISIBLE_PRODUCT_SLUG }, v),
+      loadProduct(db, { locale: 'uk', path: VISIBLE_PRODUCT_SLUG }, v, 'uk'),
     );
 
     expect(product?.slug).toBe(VISIBLE_PRODUCT_SLUG);
@@ -117,6 +117,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
             db,
             { locale: 'uk', path: HIDDEN_PRODUCT_SLUG },
             v,
+            'uk',
           ),
           inSection: await loadProductList(db, v, UK, section?.id),
         };

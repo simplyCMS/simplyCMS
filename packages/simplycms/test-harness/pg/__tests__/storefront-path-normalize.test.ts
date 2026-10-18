@@ -39,7 +39,9 @@ describe('адреса товару: реєстр, нормалізація і �
   const location = async (path: string) =>
     (await run(path))?.headers.get('location');
   const page = (locale: string, path: string) =>
-    withViewerPricesDb(null, (tx, v) => loadProduct(tx, { locale, path }, v));
+    withViewerPricesDb(null, (tx, v) =>
+      loadProduct(tx, { locale, path }, v, 'uk'),
+    );
   const version = async (id: string) =>
     (await db.q(`select version from public.products where id = $1`, [id]))[0]!
       .version as number;

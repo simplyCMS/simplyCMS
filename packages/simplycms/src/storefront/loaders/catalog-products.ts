@@ -9,7 +9,6 @@ import {
   sections,
 } from 'simplycms/schema';
 import type { TextLocale } from 'simplycms/domain/translations';
-import { productGallerySql } from 'simplycms/translations';
 import { calculateProductAvailability } from 'simplycms/domain/inventory';
 import type { ActorDb } from './db';
 import {
@@ -91,12 +90,7 @@ export async function loadCatalogProductsWhere(
 
   const rows = await db
     .select({
-      product: {
-        ...productBaseColumns,
-        images: productGallerySql(products.id, text.locale, text.primary).as(
-          'images',
-        ),
-      },
+      product: productBaseColumns(text.locale, text.primary),
       text: listTextColumns,
       section: sectionRefColumns,
     })

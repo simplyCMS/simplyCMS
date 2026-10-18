@@ -22,6 +22,7 @@ const loaders = vi.hoisted(() => ({
   loadHomeProducts: vi.fn(),
   loadOneSectionProducts: vi.fn(),
   resolveTextLocale: vi.fn(),
+  loadLocaleSet: vi.fn(),
   requirePublishedTextLocale: vi.fn(),
   loadSections: vi.fn(),
   loadSectionBySlug: vi.fn(),
@@ -94,6 +95,12 @@ beforeEach(() => {
   for (const fn of Object.values(loaders)) fn.mockReset();
   payload.loadProductListPayload.mockReset();
   loaders.resolveTextLocale.mockResolvedValue(TEXT);
+  // Сторінка товару бере основну мову з кешу мов до транзакції (Task 17б fix-1, I1).
+  loaders.loadLocaleSet.mockResolvedValue({
+    primary: 'uk',
+    published: ['uk', 'en'],
+    known: ['uk', 'en'],
+  });
   loaders.requirePublishedTextLocale.mockResolvedValue(TEXT);
   loaders.optionalSessionUserId.mockResolvedValue(null);
   loaders.withStorefrontDb.mockImplementation(
@@ -110,7 +117,7 @@ describe('serverFn вітрини з цінами — через withViewerDb (�
       'getProduct',
       () => call(getProduct, { locale: 'uk', path: 'x' }),
       'loadProduct',
-      [TX, { locale: 'uk', path: 'x' }, VIEWER],
+      [TX, { locale: 'uk', path: 'x' }, VIEWER, 'uk'],
     ],
     [
       'getCatalogProducts',

@@ -113,7 +113,7 @@ export default function ProductDetailPage({
       selectedModId,
       selectedMod,
       current,
-      image: images[0]?.url,
+      image: images[0],
     }),
     isInStock: current.isInStock,
     availabilityProductId: hasModifications ? null : product.id,

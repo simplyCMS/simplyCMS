@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import {
   catalogProductTexts as texts,
   languages,
@@ -6,7 +6,6 @@ import {
   sections,
 } from 'simplycms/schema';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
-import { productGallerySql } from 'simplycms/translations';
 import type { ActorDb } from './db';
 import { productBaseColumns } from './entities/product';
 import { sectionRefColumns } from './entities/section';
@@ -35,14 +34,19 @@ const projectionText = {
  * а не лише в нормалізації, бо `getProduct` викликається й напряму з клієнта),
  * товар — `is_active`. Історичної адреси тут немає: її віддає ОДИН 301
  * нормалізації до роутера, а видалена сутність не лишає рядків — це 404.
+ * `primary` — основна мова з кешу мов (`loadLocaleSet().primary` на межі): fallback alt
+ * фото, `lang` полів і SEO-політика.
  */
 export async function loadProductPageBase(
   db: ActorDb,
   address: ProductAddress,
+  primary: string,
 ): Promise<ProductPageBase | null> {
   const [row] = await db
     .select({
-      product: productBaseColumns,
+      // Галерея мовою сторінки — у тому самому запиті: основну мову викликач знає ДО
+      // запиту (кеш мов, `loadLocaleSet`), окремого походу по фото немає.
+      product: productBaseColumns(address.locale, primary),
       section: sectionRefColumns,
       text: projectionText,
       isTranslated: texts.isTranslated,
@@ -68,7 +72,6 @@ export async function loadProductPageBase(
       code: texts.locale,
       path: texts.path,
       isTranslated: texts.isTranslated,
-      isDefault: languages.isDefault,
     })
     .from(texts)
     .innerJoin(
@@ -78,13 +81,6 @@ export async function loadProductPageBase(
     .where(eq(texts.productId, row.product.id))
     .orderBy(asc(languages.sortOrder), asc(languages.code));
 
-  const primaryRow = versions.find((v) => v.isDefault);
-  const primary = primaryRow?.code ?? address.locale;
-  // Галерея мовою сторінки окремим запитом: їй потрібна основна мова (fallback alt), а
-  // вона відома лише з версій вище — у першу вибірку вираз галереї не вбудувати.
-  const gallery = await db.execute<{ images: unknown }>(
-    sql`select ${productGallerySql(sql`${row.product.id}::uuid`, address.locale, primary)} as images`,
-  );
   const languageVersions: LanguageVersion[] = versions.map((v) => ({
     code: v.code,
     isTranslated: v.isTranslated,
@@ -92,7 +88,7 @@ export async function loadProductPageBase(
   }));
 
   return {
-    product: { ...row.product, images: gallery.rows[0]?.images ?? [] },
+    product: row.product,
     section: row.section?.id ? row.section : null,
     text: {
       ...row.text,

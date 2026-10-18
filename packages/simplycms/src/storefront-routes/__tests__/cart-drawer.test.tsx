@@ -41,6 +41,7 @@ const QUOTE: CartQuote = {
       modificationName: null,
       productNameLang: null,
       modificationNameLang: null,
+      image: null,
       basePrice: 1000,
       price: 900,
       applied: [{ name: 'Весняна −10%', calculatedAmount: 100 }],

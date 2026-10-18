@@ -2,6 +2,7 @@
 // пораховані сервером тим самим ядром, що й чек. Тільки типи — 0 runtime.
 
 import type { ThresholdHint } from './discount';
+import type { ProductImageViewModel } from '../views/common';
 
 /** Знижка, що увійшла в ціну рядка: назва для покупця й сума на одиницю. */
 export interface CartQuoteAppliedDiscount {
@@ -26,6 +27,12 @@ export interface AvailableCartQuoteLine {
   modificationName: string | null;
   productNameLang: string | null;
   modificationNameLang: string | null;
+  /**
+   * Мініатюра мовою запиту (М1, Task 17б): головне фото модифікації, інакше товару — файл і
+   * alt мови, fallback alt з `alt_lang`. `null` — фото немає. Кошик показує її замість
+   * фото, збереженого при додаванні (інша мова).
+   */
+  image: ProductImageViewModel | null;
   basePrice: number;
   price: number;
   applied: CartQuoteAppliedDiscount[];

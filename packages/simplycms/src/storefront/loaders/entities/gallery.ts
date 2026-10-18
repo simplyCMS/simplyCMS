@@ -18,11 +18,20 @@ export function toGallery(value: unknown): ProductImageViewModel[] {
     const { key, alt, alt_lang } = item as Record<string, unknown>;
     const url = typeof key === 'string' ? resolveMediaUrl(key) : null;
     if (url === null) continue;
+    const text = typeof alt === 'string' ? alt : '';
     out.push({
       url,
-      alt: typeof alt === 'string' ? alt : '',
-      alt_lang: typeof alt_lang === 'string' ? alt_lang : null,
+      alt: text,
+      // Порожній alt мови не має: `lang` описує мову тексту, а тексту немає (основна мова
+      // сама поставила `''` — fallback дає декоративне фото, а не «українську порожнечу»).
+      alt_lang: text !== '' && typeof alt_lang === 'string' ? alt_lang : null,
     });
   }
   return out;
 }
+
+/** Одне фото (`lineImageSql`) тим самим декодером; `null` — фото немає. */
+export const toGalleryImage = (value: unknown): ProductImageViewModel | null =>
+  value === null || value === undefined
+    ? null
+    : (toGallery([value])[0] ?? null);

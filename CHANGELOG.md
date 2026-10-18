@@ -125,9 +125,14 @@
   `ProductCardViewModel`, `ProductDetailGallery`, рядках лоадерів товару й модифікації — масив
   `ProductImageViewModel` (`{ url, alt, alt_lang? }`) замість рядків URL; тема з власним view рендерить
   `<img src={url} alt={alt} lang={alt_lang}>`. `productGallerySql`/`modificationGallerySql` приймають `(owner, locale,
-  primary)`; декодер галереї — `toGallery` (`toImageList` лишився для фото відгуків); `productBaseColumns` більше не
-  містить `images`, `homeProductColumns` — функція мови; `ProductListItem.imageUrl` → `image`; `ProductGallery` без
-  пропа `productName`, мініатюри мають `aria-label` (новий ключ `product.galleryThumb`).
+  primary)`; декодер галереї — `toGallery` (`toImageList` лишився для фото відгуків); `productBaseColumns` і
+  `homeProductColumns` — функції мови; `loadProduct`/`loadProductPageBase` дістали обов'язковий параметр `primary`
+  (основна мова з `loadLocaleSet()` на межі — галерея в тому самому запиті, що й мовна версія);
+  `ProductListItem.imageUrl` → `image`; `ProductGallery` без пропа `productName`, мініатюри мають `aria-label` (новий
+  ключ `product.galleryThumb`). Кошик: рядок квоти (`AvailableCartQuoteLine.image`) несе мініатюру мовою запиту
+  (`lineImageSql`: перше фото модифікації, інакше товару), `CartItem.image` у localStorage — `ProductImageViewModel` під
+  міткою `namesLocale` (кеш іншої мови до квоти — скелетон, після квоти оновлюється); старий рядок URL відкидається.
+  У даних alt `''` — явно декоративне в мові (без fallback), `null` — перекладу немає (alt основної).
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
   `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі
   беруться з реєстру: `LOCK_KEYS.adminRoles`, `LOCK_KEYS.customerConfig`, `LOCK_KEYS.discountConfig` тощо

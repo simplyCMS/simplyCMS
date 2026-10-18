@@ -8,13 +8,12 @@ import React, {
 } from 'react';
 import {
   addLine,
-  applyNameUpdates,
   clampQuantity,
   isQuantity,
   sameLine,
   type AddItemResult,
-  type CartNameUpdate,
 } from './cart-normalize';
+import { applyNameUpdates, type CartNameUpdate } from './cart-labels';
 import {
   EMPTY_CART,
   subscribe,
@@ -31,7 +30,8 @@ import {
 // (контекст, провайдер, дії).
 
 export type { CartItem };
-export type { AddItemResult, CartNameUpdate } from './cart-normalize';
+export type { AddItemResult } from './cart-normalize';
+export type { CartNameUpdate } from './cart-labels';
 
 interface CartContextType {
   items: readonly CartItem[];

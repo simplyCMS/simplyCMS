@@ -80,6 +80,7 @@ export function useCartQuote(): CartQuoteState {
                 modificationId: l.modificationId,
                 name: l.productName,
                 modificationName: l.modificationName,
+                image: l.image,
               },
             ]
           : [],

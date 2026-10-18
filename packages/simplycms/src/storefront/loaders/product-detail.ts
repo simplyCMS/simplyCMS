@@ -60,6 +60,8 @@ export type ProductDetailRow = ProductRow & {
  * 🔴 `is_active = true` тут ОБОВʼЯЗКОВИЙ: без нього чернетка товару відкривалася
  * б прямим посиланням і потрапляла в JSON-LD. Мова — лише `published`.
  *
+ * `primary` — основна мова з кешу мов (`loadLocaleSet().primary` на межі, до транзакції).
+ *
  * 🔴 Ціни — лише видів `viewer` (Р29): гість гуртового прайсу не дістає ні в
  * payload, ні в SSR-HTML. Набір рахує `withViewerDb` із серверної сесії.
  */
@@ -67,8 +69,9 @@ export async function loadProduct(
   db: ActorDb,
   address: ProductAddress,
   viewer: ViewerPriceTypes,
+  primary: string,
 ): Promise<ProductDetailRow | null> {
-  const base = await loadProductPageBase(db, address);
+  const base = await loadProductPageBase(db, address, primary);
   if (!base) return null;
 
   // Послідовно — причина та сама, що в `./products`: одне зʼєднання.

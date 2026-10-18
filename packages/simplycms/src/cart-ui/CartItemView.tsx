@@ -8,6 +8,8 @@ import { FallbackText } from 'simplycms/ui/fallback-text';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { CartLinePrice } from './CartLinePrice';
 import { resolveCartItemNames } from './cart-item-names';
+import { resolveCartItemImage } from './cart-item-image';
+import { CartItemThumb } from './CartItemThumb';
 
 // Presentational-компонент позиції кошика: лише props, без data/стану.
 // HUB може реюзати його зі своїм контейнером.
@@ -38,25 +40,12 @@ export function CartItemView({
   const locale = useLocale();
   // Назви: з квоти, з кешу тієї ж мови або скелетон (`resolveCartItemNames`).
   const names = resolveCartItemNames(item, line, locale, failed ?? false);
+  // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`, Task 17б).
+  const image = resolveCartItemImage(item, line, locale, failed ?? false);
 
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
-      {/* Image */}
-      <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-muted">
-        {item.image ? (
-          <img
-            src={item.image}
-            alt={names?.product ?? ''}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <span className="text-2xl">&#x1F4E6;</span>
-          </div>
-        )}
-      </div>
+      <CartItemThumb image={image} />
 
       {/* Details */}
       <div className="flex-1 min-w-0">

@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
+  loadLocaleSet,
   loadModificationIds,
   resolveTextLocale,
   loadModificationStock,
@@ -29,7 +30,12 @@ export const getProduct = createServerFn({ method: 'GET' })
   .validator(z.object({ locale: localeInput, path: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const address = input as { locale: string; path: string };
-    return withViewerDb((db, viewer) => loadProduct(db, address, viewer));
+    // Основна мова — з кешу мов ДО транзакції (як `resolveTextLocale` у лістингах): галерея й
+    // fallback-ознаки сторінки збираються в тому самому запиті, що й мовна версія товару.
+    const { primary } = await loadLocaleSet();
+    return withViewerDb((db, viewer) =>
+      loadProduct(db, address, viewer, primary),
+    );
   });
 
 /**
