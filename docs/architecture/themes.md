@@ -183,8 +183,8 @@ TS2786), тож `views` тягне type-only імпорт react. Барель `s
 основної (переклад поля відсутній), vm несе `lang` цього фрагмента, а view
 мусить огорнути його атрибутом `lang`: інакше скрінрідер читає чужий текст з
 вимовою мови сторінки. Необов'язкові поля (`null`/відсутнє — текст мовою
-сторінки, обгортки не треба): `ProductDetailSummary.nameLang`,
-`shortDescriptionLang`, `ProductDetailDescription.lang`, `BreadcrumbItem.lang`
+сторінки, обгортки не треба): `ProductDetailSummary.name_lang`,
+`short_description_lang`, `ProductDetailDescription.lang`, `BreadcrumbItem.lang`
 (остання ланка — назва товару), `ProductPropertyValueViewModel.value_lang`
 (текстове значення характеристики), `name_lang` у модифікації, яку отримує
 реквізит вибору, а також `name_lang` / `short_description_lang` картки списку

@@ -74,7 +74,7 @@ export function ProductSummaryCard({
 
       <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
         {/* І37: неперекладена назва — мовою джерела, зі своїм `lang`. */}
-        <FallbackText lang={summary.nameLang}>{summary.name}</FallbackText>
+        <FallbackText lang={summary.name_lang}>{summary.name}</FallbackText>
       </h1>
 
       {/* Реквізит: ціна (типографіка всередині — ядра) */}
@@ -82,7 +82,7 @@ export function ProductSummaryCard({
 
       {summary.short_description && (
         <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
-          <FallbackText lang={summary.shortDescriptionLang}>
+          <FallbackText lang={summary.short_description_lang}>
             {summary.short_description}
           </FallbackText>
         </p>

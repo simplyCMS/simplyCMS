@@ -136,8 +136,8 @@ export default function ProductDetailPage({
           sku: current.sku ?? null,
           short_description: product.short_description,
           discountPercent: current.discountPercent,
-          nameLang: fallback.has('name') ? primary : null,
-          shortDescriptionLang: fallback.has('short_description')
+          name_lang: fallback.has('name') ? primary : null,
+          short_description_lang: fallback.has('short_description')
             ? primary
             : null,
         }}

@@ -23,14 +23,14 @@ export interface ProductDetailSummary {
    * неперекладеного поля): view обгортає їх `lang=<цей код>` (І37). `null` або
    * відсутнє — текст мовою сторінки, обгортки не треба.
    */
-  nameLang?: string | null;
-  shortDescriptionLang?: string | null;
+  name_lang?: string | null;
+  short_description_lang?: string | null;
 }
 
 /** Повний опис товару (HTML з редактора). */
 export interface ProductDetailDescription {
   html: SanitizedHtml | null;
-  /** Мова опису, коли він узятий з основної мови (fallback); див. `ProductDetailSummary.nameLang`. */
+  /** Мова опису, коли він узятий з основної мови (fallback); див. `ProductDetailSummary.name_lang`. */
   lang?: string | null;
 }
 

@@ -1,4 +1,4 @@
-// І37 у conformance: view картки товару на фікстурі з fallback-полями (`*_lang`/`*Lang`) мусить
+// І37 у conformance: view картки товару на фікстурі з fallback-полями (`*_lang`) мусить
 // дати кожному такому фрагменту `lang` мови джерела. Канонічний view це робить, а тема з власним
 // view — ні, якщо автор не знає правила (так було з темою `default`): без перевірки тут кожен
 // view, згенерований редизайном магазину, повторив би пропуск.
@@ -39,11 +39,11 @@ export function fallbackLangExpectations(): LangExpectation[] {
     kind: 'text',
   });
   return [
-    text('summary.name', f.summary.name, f.summary.nameLang),
+    text('summary.name', f.summary.name, f.summary.name_lang),
     text(
       'summary.short_description',
       f.summary.short_description,
-      f.summary.shortDescriptionLang,
+      f.summary.short_description_lang,
     ),
     // Вміст опису — текст HTML фікстури без тегів (вона — один абзац).
     text(

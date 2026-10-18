@@ -94,8 +94,8 @@ export const productDetailFallbackFixture: ViewModelData<ProductDetailViewModel>
       sku: null,
       short_description: 'Короткий опис основною мовою',
       discountPercent: null,
-      nameLang: 'uk',
-      shortDescriptionLang: 'uk',
+      name_lang: 'uk',
+      short_description_lang: 'uk',
     },
     description: {
       html: '<p>Опис основною мовою</p>' as SanitizedHtml,

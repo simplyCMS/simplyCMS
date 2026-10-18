@@ -14,7 +14,7 @@ function NameWithLang(vm: ProductDetailViewModel) {
   return (
     <>
       <h1>
-        <FallbackText lang={vm.summary.nameLang}>
+        <FallbackText lang={vm.summary.name_lang}>
           {vm.summary.name}
         </FallbackText>
       </h1>

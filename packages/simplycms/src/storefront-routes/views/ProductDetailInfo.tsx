@@ -36,7 +36,7 @@ export function ProductDetailInfo({
         )}
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold">
-            <FallbackText lang={summary.nameLang}>{summary.name}</FallbackText>
+            <FallbackText lang={summary.name_lang}>{summary.name}</FallbackText>
           </h1>
           <div className="flex items-center gap-2 shrink-0 pt-1">
             {/* Реквізити: бейдж наявності + бейджі плагінів */}
@@ -59,7 +59,7 @@ export function ProductDetailInfo({
       {/* Short description */}
       {summary.short_description && (
         <p className="text-muted-foreground">
-          <FallbackText lang={summary.shortDescriptionLang}>
+          <FallbackText lang={summary.short_description_lang}>
             {summary.short_description}
           </FallbackText>
         </p>

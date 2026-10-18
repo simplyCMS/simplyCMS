@@ -23,7 +23,7 @@
    (`pnpm simplycms theme:conformance <slug>`, потребує `jsdom`) — інакше
    магазин лишиться без реквізиту, бо рантайм-fallback ядро НЕ робить. Той самий
    гейт вимагає `lang` на неперекладених фрагментах картки товару (назва, описи,
-   крихта, значення, `alt`): поля `*Lang`/`*_lang` view-model обгортай
+   крихта, значення, `alt`): поля `*_lang` view-model обгортай
    `FallbackText` з `simplycms/ui/fallback-text`.
    Механізм — `docs/architecture/themes.md` §2.1, how-to —
    `docs/guides/themes.md` §3.5. Сторінок поза пʼятіркою (checkout, auth,

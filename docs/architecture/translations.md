@@ -128,7 +128,7 @@
   сторінки, sitemap і резолв історичної адреси. Інакше 301 з історії неактивного товару розкрив би
   його поточну адресу.
 - **Розмітка fallback (І37):** фрагмент, узятий з основної мови, має `lang` основної —
-  `FallbackText` (`simplycms/ui/fallback-text`); view-моделі несуть `*_lang`/`nameLang`.
+  `FallbackText` (`simplycms/ui/fallback-text`); view-моделі несуть `*_lang` (snake_case за полем: `name_lang`, `short_description_lang`, `value_lang`, `alt_lang`).
 - **Фото мовою сторінки** — один читач `simplycms/translations/gallery.ts`: порядок `GALLERY_ORDER`
   (канон і для live-smoke, парність — `live-smoke-gallery-order.test.ts`), `productGallerySql`/
   `modificationGallerySql`/`mainImageSql`/`lineImageSql`; декодер `toGallery`, view

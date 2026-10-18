@@ -43,8 +43,8 @@
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
   назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
-  `lang` мови джерела. Тема `default` (і її копія в шаблоні магазину) виправлена — `FallbackText` за `nameLang`,
-  `shortDescriptionLang`, `description.lang`, `BreadcrumbItem.lang`, `value_lang`.
+  `lang` мови джерела. Тема `default` (і її копія в шаблоні магазину) виправлена — `FallbackText` за `name_lang`,
+  `short_description_lang`, `description.lang`, `BreadcrumbItem.lang`, `value_lang`.
 - **Адмінка товару — на командах агрегата** (`simplycms/admin-server`, `simplycms/admin-data`): картка з вкладками мов;
   модифікації, значення властивостей і фото зберігаються одним `products.saveDescription` разом із текстами (кнопка
   «Зберегти»), адреса мови — `products.setPath`, ціни й залишки — `products.savePrices`/`products.saveStock`, видалення —
@@ -85,7 +85,7 @@
   (`slug_tokens`). Історична адреса й історичний `?mod=` дають ОДИН 301 разом із префіксом основної мови, слешем і формою
   query; `title`/`description`/`og:*` беруть `meta_title`/`meta_description` (опис без HTML-тегів), `robots`, hreflang з
   `x-default`, `og:locale` — мовою версії; sitemap товарів — рядок на опубліковану мову з `<xhtml:link>`. View-моделі
-  `ProductDetailSummary`/`ProductDetailDescription`/`BreadcrumbItem` дістали необов'язкові `nameLang`, `shortDescriptionLang`,
+  `ProductDetailSummary`/`ProductDetailDescription`/`BreadcrumbItem` дістали необов'язкові `name_lang`, `short_description_lang`,
   `lang` (fallback-фрагменти мають `lang` основної мови); тема, що підмінює view, мусить їх застосувати.
 - **Baseline змінено — базу перестворити** (до `1.0.0-rc.1` baseline `0000…0004` не заморожено):
   `mail_outbox` злито в `0001_init.sql`, окремий `0005_mail_outbox.sql` прибрано;
