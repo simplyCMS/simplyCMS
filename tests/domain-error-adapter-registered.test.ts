@@ -18,7 +18,10 @@ const FILES = [
 describe('domainErrorAdapter зареєстровано в createStart', () => {
   it.each(FILES)('%s', (file) => {
     // Лише код: закоментована реєстрація адаптер не реєструє (N1, Task 17б fix-2).
-    const src = codeOnly(readFileSync(resolve(__dirname, '..', file), 'utf8'));
+    const src = codeOnly(
+      readFileSync(resolve(__dirname, '..', file), 'utf8'),
+      file,
+    );
     expect(src).toMatch(
       /serializationAdapters:\s*\[[^\]]*\bdomainErrorAdapter\b[^\]]*\]/,
     );

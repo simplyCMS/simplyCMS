@@ -39,7 +39,9 @@ function templateContentGlobs(): string[] {
   if (!block)
     throw new Error('У шаблонному tailwind.config.ts немає content: []');
   // Закоментований глоб сканером Tailwind не є — коментарі прибрано до вичитки (N1).
-  return [...codeOnly(block[1]).matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  return [...codeOnly(block[1], TAILWIND_CONFIG).matchAll(/'([^']+)'/g)].map(
+    (m) => m[1],
+  );
 }
 
 /** Фікстура: файл із усіма проміжними теками. */

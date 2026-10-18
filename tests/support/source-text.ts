@@ -16,12 +16,40 @@ const STRING_KINDS = new Set<ts.SyntaxKind>([
   ts.SyntaxKind.TemplateTail,
 ]);
 
-/** Вид скрипта за розширенням: JSX розбирається лише там, де він можливий. */
-function scriptKind(fileName: string): ts.ScriptKind {
+/**
+ * Вид скрипта за розширенням: JSX розбирається лише там, де він можливий. Невідоме
+ * розширення — помилка, а не «мовчки TS»: без імені файла `.tsx` з `//` у JSX-тексті
+ * лексер TS прочитав би як коментар і зрізав би код після нього (хибно-зелений гейт).
+ */
+function scriptKind(fileName: string): ts.ScriptKind | undefined {
   if (/\.tsx$/.test(fileName)) return ts.ScriptKind.TSX;
   if (/\.jsx$/.test(fileName)) return ts.ScriptKind.JSX;
+  if (/\.[mc]?ts$/.test(fileName)) return ts.ScriptKind.TS;
   if (/\.[mc]?js$/.test(fileName)) return ts.ScriptKind.JS;
-  return ts.ScriptKind.TS;
+  return undefined;
+}
+
+/**
+ * Лексика не-скриптових файлів, які читають текстові гейти (`doc-symbols-exist` індексує
+ * SQL-функції й CSS): коментарі й рядкові літерали за правилами САМЕ цієї мови. Тіла
+ * `$$…$$` у SQL — код (PL/pgSQL), а не рядок: у них визначення й виклики.
+ */
+const FOREIGN_LEXICON: Record<string, RegExp> = {
+  sql: /('(?:[^']|'')*')|--[^\n]*|\/\*[\s\S]*?\*\//g,
+  css: /("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|\/\*[\s\S]*?\*\//g,
+};
+
+function stripForeign(
+  src: string,
+  lexicon: RegExp,
+  keepStrings: boolean,
+): string {
+  return src.replace(lexicon, (whole, literal: string | undefined) => {
+    if (literal !== undefined)
+      return keepStrings ? literal : literal[0]! + literal[0]!;
+    // Блоковий коментар → його переноси рядків або пробіл: сусідні токени не склеюються.
+    return whole.startsWith('--') ? '' : whole.replace(/[^\n]/g, '') || ' ';
+  });
 }
 
 /** Листові токени файла по порядку (JSDoc-вузли — це коментарі, їх пропускаємо). */
@@ -80,20 +108,31 @@ function emptied(token: string, kind: ts.SyntaxKind): string {
 /**
  * Прибирає коментарі й ВМІСТ рядкових літералів (лапки лишаються): згадка імені
  * в коментарі чи назві тесту не є його визначенням. Вирази в `${…}` шаблонів — код і
- * лишаються. `keepStrings` — літерали як є (лише коментарі геть). `fileName` — лише для
- * виду скрипта (`.tsx`/`.jsx` — з JSX); за замовчуванням TypeScript без JSX.
+ * лишаються. `keepStrings` — літерали як є (лише коментарі геть).
+ *
+ * @param fileName обов'язковий: від розширення залежить лексика (`.tsx`/`.jsx` — з JSX,
+ *   `.sql`, `.css` — власні правила); невідоме розширення — помилка.
  */
 export function stripCommentsAndStrings(
   src: string,
+  fileName: string,
   keepStrings = false,
-  fileName = 'source.ts',
 ): string {
+  const kind = scriptKind(fileName);
+  if (kind === undefined) {
+    const lexicon = FOREIGN_LEXICON[/\.([a-z]+)$/.exec(fileName)?.[1] ?? ''];
+    if (!lexicon)
+      throw new Error(
+        `[source-text] невідоме розширення «${fileName}»: лексика файла невизначена`,
+      );
+    return stripForeign(src, lexicon, keepStrings);
+  }
   const sf = ts.createSourceFile(
     fileName,
     src,
     ts.ScriptTarget.Latest,
     false,
-    scriptKind(fileName),
+    kind,
   );
   let out = '';
   let cursor = 0;
@@ -113,7 +152,7 @@ export function stripCommentsAndStrings(
 /**
  * Лише код: коментарі прибрано, рядкові й шаблонні літерали лишено як є (SQL у
  * шаблонах, специфікатори імпортів, URL з `//`). Обгортка для гейтів, що матчать форму
- * виклику чи імпорт, а не імена.
+ * виклику чи імпорт, а не імена. `fileName` обов'язковий — як у `stripCommentsAndStrings`.
  */
-export const codeOnly = (src: string, fileName?: string): string =>
-  stripCommentsAndStrings(src, true, fileName);
+export const codeOnly = (src: string, fileName: string): string =>
+  stripCommentsAndStrings(src, fileName, true);

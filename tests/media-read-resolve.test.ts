@@ -196,12 +196,14 @@ describe('резолв медіа-колонок при читанні', () => {
   // Негативні контролі зачистки: коментар вердикт не змінює, `//` у рядку код не ріже.
   it('коментар із формою виклику резолвера не задовольняє гейт', () => {
     const src = 'const r = { images: raw };\n// images: toGallery(rows)\n';
-    expect(callForm('images', 'toGallery').test(code(src))).toBe(false);
+    expect(callForm('images', 'toGallery').test(code(src, 'source.ts'))).toBe(
+      false,
+    );
   });
 
   it('коментар із формою проєкції не створює сайт', () => {
     const src = '/* images: productGallerySql(products.id) */\nconst x = 1;';
-    expect(projectionAliases(code(src), refs)).toEqual([]);
+    expect(projectionAliases(code(src, 'source.ts'), refs)).toEqual([]);
   });
 
   it('резолвер над полем рядка (`resolver(row.alias)`) — теж форма виклику; над іншим полем — ні', () => {
@@ -216,7 +218,9 @@ describe('резолв медіа-колонок при читанні', () => {
   it('рядковий літерал з `//` не ріже код після нього', () => {
     const src =
       "const u = 'https://cdn.example/x'; const r = { images: toGallery(v) };";
-    expect(callForm('images', 'toGallery').test(code(src))).toBe(true);
+    expect(callForm('images', 'toGallery').test(code(src, 'source.ts'))).toBe(
+      true,
+    );
   });
 
   it('вирази галереї читають колонку реєстру `product_images.storage_key`', () => {

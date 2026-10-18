@@ -81,18 +81,19 @@ describe('негативний контроль індексу визначен�
   it('середня гілка тернарника не є ключем об’єкта', () => {
     const ids = definedIdentifiers(
       'const x = ok ? deleteMedia : other;\nconst y = ok\n  ? multiLine\n  : z;',
+      'source.ts',
     );
     expect(ids).not.toContain('deleteMedia');
     expect(ids).not.toContain('multiLine');
-    expect(definedIdentifiers('const r = { realKey: 1, opt?: 2 };')).toEqual(
-      expect.arrayContaining(['realKey']),
-    );
+    expect(
+      definedIdentifiers('const r = { realKey: 1, opt?: 2 };', 'source.ts'),
+    ).toEqual(expect.arrayContaining(['realKey']));
   });
 
   it('закоментований імпорт стороннього пакета не потрапляє в індекс', () => {
     const src =
       "// import { ghostImport } from 'react';\n/* import { ghostTwo } from 'react'; */\nimport { liveImport } from 'react';";
-    const ids = definedIdentifiers(src);
+    const ids = definedIdentifiers(src, 'source.ts');
     expect(ids).not.toContain('ghostImport');
     expect(ids).not.toContain('ghostTwo');
     expect(ids).toContain('liveImport');

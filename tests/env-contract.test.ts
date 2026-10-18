@@ -47,7 +47,9 @@ describe('контракт env магазину', () => {
       'utf8',
     );
     // Лише код: закоментована стара декларація не підміняє справжню (N1).
-    const m = /const REQUIRED_ENV_VARS = \[([^\]]*)\]/.exec(codeOnly(src));
+    const m = /const REQUIRED_ENV_VARS = \[([^\]]*)\]/.exec(
+      codeOnly(src, 'doctor-checks.mjs'),
+    );
     expect(m, 'REQUIRED_ENV_VARS не знайдено').not.toBeNull();
     const required = m![1]
       .split(',')
