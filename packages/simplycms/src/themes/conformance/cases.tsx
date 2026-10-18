@@ -8,7 +8,11 @@
 // vm — червоний `pnpm typecheck`.
 
 import type { ReactElement } from 'react';
-import type { StorefrontViewName } from 'simplycms/contracts/views';
+import type {
+  ProductDetailViewModel,
+  StorefrontViewName,
+  ViewModelData,
+} from 'simplycms/contracts/views';
 import {
   productDetailFallbackFixture,
   viewModelFixtures,
@@ -109,12 +113,12 @@ export function buildConformanceCases(views: ThemeViews): ConformanceCase[] {
  * Картка товару на фікстурі, де кожне перекладне поле — fallback з основної мови (І37):
  * окремий прогін, а не третій стан для всіх сторінок — `*_lang` є лише в цій view-model.
  */
-export function buildFallbackLangCase(views: ThemeViews): ReactElement | null {
+export function buildFallbackLangCase(
+  views: ThemeViews,
+  vm: ViewModelData<ProductDetailViewModel> = productDetailFallbackFixture,
+): ReactElement | null {
   const ProductDetail = views.ProductDetail;
   return ProductDetail ? (
-    <ProductDetail
-      {...productDetailFallbackFixture}
-      slots={productDetailSlotStubs}
-    />
+    <ProductDetail {...vm} slots={productDetailSlotStubs} />
   ) : null;
 }

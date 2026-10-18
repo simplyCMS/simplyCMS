@@ -11,7 +11,11 @@ import {
   buildFallbackLangCase,
   CONFORMANCE_STATES,
 } from './cases';
-import { missingFallbackLang, type LangProblem } from './fallback-lang';
+import {
+  missingFallbackLang,
+  snapshotOf,
+  type Snapshot,
+} from './fallback-lang';
 import { renderThemeView } from './render';
 
 export interface ThemeViewsConformanceOptions {
@@ -70,32 +74,34 @@ function ensureRegistered(theme: ThemeModule): boolean {
  * підняти роутер, або замокати модуль — kit роутера не піднімає навмисно
  * (він перевіряє тему, а не навігацію).
  */
-/** `поле «текст»: lang=знайдено → очікувано`; `∅` — без `lang`. */
-const describeLang = (p: LangProblem) =>
-  `${p.expectation.field} «${p.expectation.text}»: lang=${p.found ?? '∅'} → ${p.expectation.lang}`;
-
 /**
- * 3. (І37) картка товару на фікстурі fallback-полів дає кожному такому фрагменту `lang`
- * мови джерела — назві, короткому опису, опису, крихті, значенню характеристики, `alt` фото.
+ * 3. (І37) картка товару: кожне fallback-поле, яке view ПОКАЗУЄ (назва, короткий опис, опис,
+ * остання крихта, значення характеристики, `alt` фото), отримує `lang` мови джерела.
+ * Диференційно за даними фікстури (`fallback-lang.ts`), а не пошуком тексту в розмітці.
  */
 async function assertFallbackLang(theme: ThemeModule, locale: Locale) {
-  const element = theme.views ? buildFallbackLangCase(theme.views) : null;
-  if (!element) return;
-  const { error, probed } = await renderThemeView(
-    element,
-    theme,
-    locale,
-    (root) => missingFallbackLang(root),
-  );
-  if (error !== null)
-    throw new Error(
-      `[theme:conformance] "${theme.manifest.name}": views.ProductDetail впав на ` +
-        `стані "fallback": ${describe(error)}`,
-      { cause: error },
+  const views = theme.views;
+  if (!views?.ProductDetail) return;
+  const render = async (
+    vm: Parameters<typeof buildFallbackLangCase>[1],
+  ): Promise<Snapshot> => {
+    const { error, probed } = await renderThemeView(
+      buildFallbackLangCase(views, vm)!,
+      theme,
+      locale,
+      (root) => [snapshotOf(root)],
     );
-  if (probed.length > 0)
+    if (error !== null)
+      throw new Error(
+        `[theme:conformance] "${theme.manifest.name}": views.ProductDetail впав на стані "fallback": ${describe(error)}`,
+        { cause: error },
+      );
+    return probed[0] as Snapshot;
+  };
+  const missing = await missingFallbackLang(render);
+  if (missing.length > 0)
     throw new Error(
-      `[theme:conformance] "${theme.manifest.name}": views.ProductDetail не дав lang фрагментам основної мови (І37; ∅ — без lang): ${(probed as LangProblem[]).map(describeLang).join('; ')}`,
+      `[theme:conformance] "${theme.manifest.name}": views.ProductDetail показує fallback-фрагменти основної мови без lang (І37): ${missing.join(', ')}`,
     );
 }
 

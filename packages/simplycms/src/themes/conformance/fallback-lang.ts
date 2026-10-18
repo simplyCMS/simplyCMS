@@ -1,93 +1,126 @@
-// І37 у conformance: view картки товару на фікстурі з fallback-полями (`*_lang`) мусить
-// дати кожному такому фрагменту `lang` мови джерела. Канонічний view це робить, а тема з власним
-// view — ні, якщо автор не знає правила (так було з темою `default`): без перевірки тут кожен
-// view, згенерований редизайном магазину, повторив би пропуск.
+// І37 у conformance: view картки товару, що показує fallback-фрагмент (поле, узяте з основної
+// мови), мусить дати йому `lang` мови джерела. Канонічний view це робить, а тема з власним view —
+// ні, якщо автор не знає правила (так було з темою `default`).
+//
+// 🔴 Перевірка ДИФЕРЕНЦІЙНА за даними фікстури, а не пошук тексту в розмітці: пошук підрядка
+// сліпий до трансформованого чи розбитого тексту (`toUpperCase`, обрізання, підсвітка по слову),
+// і тема без `lang` проходила вакуумно. Тут для кожного поля:
+//   1. чи показує view це поле взагалі — розмітка змінюється, коли змінюється ЙОГО текст;
+//   2. якщо показує — виставлення ЛИШЕ його `*_lang` мусить додати в розмітку елемент з `lang`.
 import { productDetailFallbackFixture } from 'simplycms/contracts/views/fixtures';
+import type {
+  ProductDetailViewModel,
+  ViewModelData,
+} from 'simplycms/contracts/views';
+import type { SanitizedHtml } from 'simplycms/contracts';
 
-/** Фрагмент із фікстури: текст (чи `alt` фото) і мова, яку він мусить отримати. */
-export interface LangExpectation {
+type Vm = ViewModelData<ProductDetailViewModel>;
+
+/** Поле fallback: як підставити йому текст і мову (решта view-model — як у фікстурі). */
+interface FallbackField {
   readonly field: string;
-  readonly text: string;
-  readonly lang: string;
-  /** `alt` — шукати `img[alt]`, а не текстовий вузол. */
-  readonly kind: 'text' | 'alt';
+  readonly set: (vm: Vm, text: string, lang: string | null) => Vm;
 }
+
+const lastCrumb = (vm: Vm, text: string, lang: string | null): Vm => ({
+  ...vm,
+  breadcrumbs: vm.breadcrumbs.map((c, i) =>
+    i === vm.breadcrumbs.length - 1 ? { ...c, label: text, lang } : c,
+  ),
+});
+
+export const FALLBACK_FIELDS: readonly FallbackField[] = [
+  {
+    field: 'summary.name',
+    set: (vm, text, lang) => ({
+      ...vm,
+      summary: { ...vm.summary, name: text, name_lang: lang },
+    }),
+  },
+  {
+    field: 'summary.short_description',
+    set: (vm, text, lang) => ({
+      ...vm,
+      summary: {
+        ...vm.summary,
+        short_description: text,
+        short_description_lang: lang,
+      },
+    }),
+  },
+  {
+    field: 'description',
+    set: (vm, text, lang) => ({
+      ...vm,
+      description: { html: `<p>${text}</p>` as SanitizedHtml, lang },
+    }),
+  },
+  { field: 'breadcrumbs[last]', set: lastCrumb },
+  {
+    field: 'characteristics.value',
+    set: (vm, text, lang) => ({
+      ...vm,
+      characteristics: {
+        items: vm.characteristics.items.map((v, i) =>
+          i === 0 ? { ...v, value: text, value_lang: lang } : v,
+        ),
+      },
+    }),
+  },
+  {
+    field: 'gallery.alt',
+    set: (vm, text, lang) => ({
+      ...vm,
+      gallery: {
+        images: vm.gallery.images.map((im, i) =>
+          i === 0 ? { ...im, alt: text, alt_lang: lang } : im,
+        ),
+      },
+    }),
+  },
+];
+
+/** Мова джерела у фікстурі (усі fallback-поля фікстури — з основної мови). */
+const SOURCE_LANG = productDetailFallbackFixture.summary.name_lang ?? 'uk';
+
+/** Тексти-маркери: два різні значення кожного поля для перевірки «показує чи ні». */
+const TEXT_A = 'fallback-fragment-a';
+const TEXT_B = 'fallback-fragment-b';
+
+/** Фікстура з усіма полями без `lang` і текстом `TEXT_A`: точка відліку диференціалу. */
+export function fallbackBase(): Vm {
+  return FALLBACK_FIELDS.reduce(
+    (vm, f) => f.set(vm, TEXT_A, null),
+    productDetailFallbackFixture as Vm,
+  );
+}
+
+/** Знімок відрендереної розмітки: HTML і кількість елементів з `lang`. */
+export interface Snapshot {
+  readonly html: string;
+  readonly langs: number;
+}
+
+export const snapshotOf = (root: HTMLElement): Snapshot => ({
+  html: root.innerHTML,
+  langs: root.querySelectorAll('[lang]').length,
+});
 
 /**
- * Порушення: фрагмент без потрібного `lang` (`found` — мова, що стоїть замість; `null` — без
- * `lang`). Фрагмент, якого тема не показує, порушенням не є: І37 — про те, що в розмітці.
+ * Поля, які view ПОКАЗУЄ, але не дає їм `lang`. `render` — рендер view-model у знімок
+ * (conformance-kit підставляє справжній рендер теми).
  */
-export interface LangProblem {
-  readonly expectation: LangExpectation;
-  readonly found: string | null;
-}
-
-/** Очікування — з тієї самої фікстури, на якій рендериться view (одне джерело). */
-export function fallbackLangExpectations(): LangExpectation[] {
-  const f = productDetailFallbackFixture;
-  const crumb = f.breadcrumbs[f.breadcrumbs.length - 1]!;
-  const value = f.characteristics.items[0]!;
-  const image = f.gallery.images[0]!;
-  const text = (
-    field: string,
-    t: string | null | undefined,
-    lang: string | null | undefined,
-  ): LangExpectation => ({
-    field,
-    text: t ?? '',
-    lang: lang ?? '',
-    kind: 'text',
-  });
-  return [
-    text('summary.name', f.summary.name, f.summary.name_lang),
-    text(
-      'summary.short_description',
-      f.summary.short_description,
-      f.summary.short_description_lang,
-    ),
-    // Вміст опису — текст HTML фікстури без тегів (вона — один абзац).
-    text(
-      'description',
-      f.description.html?.replace(/<[^>]+>/g, ''),
-      f.description.lang,
-    ),
-    text('breadcrumbs[last]', crumb.label, crumb.lang),
-    text('characteristics.value', value.value, value.value_lang),
-    { ...text('gallery.alt', image.alt, image.alt_lang), kind: 'alt' },
-  ];
-}
-
-/** Мова найближчого предка з `lang` (включно з самим елементом). */
-const langOf = (el: Element | null) =>
-  el?.closest('[lang]')?.getAttribute('lang') ?? null;
-
-/** Усі елементи розмітки, що несуть фрагмент очікування. */
-function occurrences(
-  root: HTMLElement,
-  e: LangExpectation,
-): (Element | null)[] {
-  if (e.kind === 'alt')
-    return [...root.querySelectorAll('img')].filter(
-      (img) => img.getAttribute('alt') === e.text,
-    );
-  const found: (Element | null)[] = [];
-  // 4 = NodeFilter.SHOW_TEXT: глобального `NodeFilter` поза DOM-середовищем немає.
-  const walker = root.ownerDocument.createTreeWalker(root, 4);
-  for (let n = walker.nextNode(); n; n = walker.nextNode())
-    if (n.nodeValue?.includes(e.text)) found.push(n.parentElement);
-  return found;
-}
-
-/** Кожне входження кожного фрагмента мусить мати `lang` мови джерела. */
-export function missingFallbackLang(
-  root: HTMLElement,
-  expectations: readonly LangExpectation[] = fallbackLangExpectations(),
-): LangProblem[] {
-  const problems: LangProblem[] = [];
-  for (const e of expectations) {
-    for (const el of occurrences(root, e))
-      if (langOf(el) !== e.lang)
-        problems.push({ expectation: e, found: langOf(el) });
+export async function missingFallbackLang(
+  render: (vm: Vm) => Promise<Snapshot>,
+): Promise<string[]> {
+  const base = fallbackBase();
+  const before = await render(base);
+  const missing: string[] = [];
+  for (const f of FALLBACK_FIELDS) {
+    const changed = await render(f.set(base, TEXT_B, null));
+    if (changed.html === before.html) continue; // поле view не показує
+    const withLang = await render(f.set(base, TEXT_A, SOURCE_LANG));
+    if (withLang.langs <= before.langs) missing.push(f.field);
   }
-  return problems;
+  return missing;
 }

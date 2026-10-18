@@ -33,6 +33,30 @@ function NameWithoutLang(vm: ProductDetailViewModel) {
   );
 }
 
+/** Дефект, невидимий для пошуку тексту (N3): назва трансформована й без `lang`. */
+function UpperNameWithoutLang(vm: ProductDetailViewModel) {
+  return (
+    <>
+      <h1>{vm.summary.name.toUpperCase()}</h1>
+      <GoodProductDetail {...vm} />
+    </>
+  );
+}
+
+/** Та сама трансформація, але з `lang` — зелено: перевірка не залежить від тексту. */
+function UpperNameWithLang(vm: ProductDetailViewModel) {
+  return (
+    <>
+      <h1>
+        <FallbackText lang={vm.summary.name_lang}>
+          {vm.summary.name.toUpperCase()}
+        </FallbackText>
+      </h1>
+      <GoodProductDetail {...vm} />
+    </>
+  );
+}
+
 /** Дефект: `alt` фото з основної мови без `lang` на `img`. */
 function AltWithoutLang(vm: ProductDetailViewModel) {
   const image = vm.gallery.images[0];
@@ -56,12 +80,28 @@ describe('assertThemeViewsConformance — lang fallback-фрагментів (І
       assertThemeViewsConformance(
         makeTheme({ ProductDetail: NameWithoutLang }),
       ),
-    ).rejects.toThrow(/summary\.name «Назва основною мовою»: lang=∅ → uk/);
+    ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
   });
 
   it('alt фото без lang — червоно', async () => {
     await expect(
       assertThemeViewsConformance(makeTheme({ ProductDetail: AltWithoutLang })),
-    ).rejects.toThrow(/gallery\.alt «Фото основною мовою»: lang=∅ → uk/);
+    ).rejects.toThrow(/без lang \(І37\): gallery\.alt$/);
+  });
+
+  it('трансформований текст без lang — червоно (N3: пошук підрядка цього не бачив)', async () => {
+    await expect(
+      assertThemeViewsConformance(
+        makeTheme({ ProductDetail: UpperNameWithoutLang }),
+      ),
+    ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
+  });
+
+  it('трансформований текст із lang — зелено', async () => {
+    await expect(
+      assertThemeViewsConformance(
+        makeTheme({ ProductDetail: UpperNameWithLang }),
+      ),
+    ).resolves.toEqual(['ProductDetail']);
   });
 });
