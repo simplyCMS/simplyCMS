@@ -75,7 +75,9 @@ export async function syncRuntimePassword(
     );
     return false;
   }
-  if (await alreadySet(client, credentials.password)) {
+  // Перевірка — лише оптимізація запису: її збій (права, мережа) веде звичайним шляхом `alter role`,
+  // а сирий текст помилки читання сюди не потрапляє.
+  if (await alreadySet(client, credentials.password).catch(() => false)) {
     log(`[migrate] пароль ${RUNTIME_ROLE} уже синхронізовано`);
     return true;
   }

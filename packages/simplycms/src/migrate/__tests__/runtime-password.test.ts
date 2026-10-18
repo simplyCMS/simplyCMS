@@ -79,11 +79,13 @@ describe('syncRuntimePassword', () => {
       (line) => lines.push(line),
     );
     expect(synced).toBe(true);
-    expect(sql).toHaveLength(1);
-    expect(sql[0]).toMatch(
+    // Перед записом — лише читання (чи пароль уже той самий, R2-4); запис — один.
+    const alter = sql.filter((q) => /^alter role/.test(q));
+    expect(alter).toHaveLength(1);
+    expect(alter[0]).toMatch(
       /^alter role app_runtime password 'SCRAM-SHA-256\$4096:[^$]+\$[^:]+:[^']+'$/,
     );
-    expect(sql[0]).not.toContain('N3w-P@ss');
+    for (const q of sql) expect(q).not.toContain('N3w-P@ss');
     expect(lines.join('\n')).not.toContain('N3w-P@ss');
   });
 
