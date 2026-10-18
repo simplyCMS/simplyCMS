@@ -50,6 +50,34 @@ describe('прелюдія на спільному кластері: парал�
     }
   });
 
+  it('прелюдія проходить повз сусіда, що тримає тотожний grant членства (замок групової ролі)', async () => {
+    const url = await freshDb();
+    // Тотожний `grant` нічого не пише, але тримає ShareUpdateExclusiveLock на `app_user` до
+    // кінця транзакції; безумовний `grant` прелюдії став би на цей замок (фінальне рев'ю, N4).
+    const t0 = new pg.Client({ connectionString: harness.url });
+    await t0.connect();
+    try {
+      await t0.query('begin');
+      await t0.query(
+        'grant app_user to app_runtime with inherit false, set true',
+      );
+      // Передумова: T0 справді тримає замок ролі (інакше кейс нічого не доводить).
+      const held = await t0.query(
+        `select 1 from pg_locks l join pg_roles r on r.oid = l.objid
+          where l.pid = pg_backend_pid() and l.locktype = 'object'
+            and l.classid = 'pg_authid'::regclass and r.rolname = 'app_user'
+            and l.mode = 'ShareUpdateExclusiveLock'`,
+      );
+      expect(held.rowCount).toBe(1);
+      const prelude = H.applySqlFiles(url, [PRELUDE]);
+      await waitForSettled('прелюдія завершилась повз замок ролі T0', prelude);
+      await prelude;
+    } finally {
+      await t0.query('rollback');
+      await t0.end();
+    }
+  });
+
   it('N паралельних накатів канону на одному кластері — усі ok', async () => {
     const urls = await Promise.all(Array.from({ length: 6 }, () => freshDb()));
     const results = await Promise.allSettled(urls.map((u) => H.applyCanon(u)));
