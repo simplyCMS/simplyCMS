@@ -94,7 +94,11 @@ describe.each(PACKAGES)('dist %s: ядро зовнішнє', (pkg) => {
   });
 
   it('🔴 sourcemap dist — лише власні джерела пакета', () => {
-    const foreign = walk(dist, /\.js\.map$/).flatMap((map) => {
+    // Мапи — частина доказу: без них перевірка нижче проходила б вакуумно, тож
+    // вимкнений `sourcemap` у `tsdown.config.ts` має червоніти тут, а не тихо.
+    const maps = walk(dist, /\.js\.map$/);
+    expect(maps.length, `у ${pkg}/dist немає .js.map`).toBe(js().length);
+    const foreign = maps.flatMap((map) => {
       const { sources } = JSON.parse(readFileSync(map, 'utf8')) as {
         sources: string[];
       };
