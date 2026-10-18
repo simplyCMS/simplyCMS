@@ -81,6 +81,8 @@ const GALLERY_READERS = [
   'modificationGallerySql',
   'lineImageSql',
   'mainImageSql',
+  // Мініатюра SSR-списку (фінальне рев'ю М1, B M7): перше фото без агрегату галереї.
+  'productFirstImageSql',
 ];
 
 /** Сайт проєкції → резолвер, виклик якого мусить стояти в тому ж файлі. */
@@ -90,7 +92,8 @@ const RESOLVED_BY: Record<string, string> = {
   // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
   'reviews.ts#images': 'toImageList',
   // Галерея товару мовою сторінки (М1, Task 17б): декодер з alt, а не список URL.
-  'products.ts#images': 'toGallery',
+  // SSR-список (B M7): лише мініатюра — тим самим декодером одного фото.
+  'products.ts#image': 'toGalleryImage',
   'entities/home-product.ts#images': 'toGallery',
   // Мініатюра позиції кошика (Task 17б fix-1): одне фото тим самим декодером.
   'line-images.ts#image': 'toGalleryImage',
