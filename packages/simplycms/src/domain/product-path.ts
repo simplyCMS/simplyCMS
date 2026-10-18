@@ -32,13 +32,38 @@ export type ProductPath = {
   href: string;
 };
 
+/**
+ * Сегмент префікса мови в URL — `lower(code)` (§3.2). ЄДИНЕ місце правила: розбір префікса
+ * (`localePrefix`), hreflang/canonical/sitemap (`localizedPath`) і посилання на товар
+ * (`productPath`) кличуть його, тож зміна правила не розведе їх.
+ */
+export function localePrefixSegment(code: string): string {
+  return code.toLowerCase();
+}
+
+/**
+ * Шлях від кореня мовою `code`: основна — без префікса, інші — `/<lower(code)>/…`; порожній
+ * `path` — корінь мови (`/` або `/en`).
+ */
+export function localizedPath(
+  code: string,
+  primary: string,
+  path: string,
+): string {
+  if (code === primary) return `/${path}`;
+  const prefix = `/${localePrefixSegment(code)}`;
+  return path === '' ? prefix : `${prefix}/${path}`;
+}
+
 /** Канонічний шлях товару в мові `locale`. */
 export function productPath(product: ProductPathInput): ProductPath {
   const { path, locale, primary } = product;
-  const prefixed = locale !== undefined && locale !== primary;
   return {
     to: PRODUCT_ROUTE,
     params: { path },
-    href: prefixed ? `/${locale.toLowerCase()}/${path}` : `/${path}`,
+    href:
+      locale === undefined
+        ? `/${path}`
+        : localizedPath(locale, primary ?? '', path),
   };
 }

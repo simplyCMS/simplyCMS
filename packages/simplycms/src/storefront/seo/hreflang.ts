@@ -1,3 +1,5 @@
+import { localizedPath } from 'simplycms/domain';
+
 /**
  * Мовні версії сутності й адреси за ними (майстер §3.2, §3.4, І33/І37).
  * Чиста логіка без БД: нею користуються `indexPolicy`, sitemap і head.
@@ -17,21 +19,8 @@ export type HreflangLink = { hrefLang: string; href: string };
 /** `x-default` — службове значення hreflang для сторінки «мова не визначена». */
 export const X_DEFAULT = 'x-default';
 
-/**
- * Кореневий шлях версії: основна мова — без префікса, інші — `/<lower(code)>/…`
- * (§3.2). Порожній `path` — корінь мови (`/` або `/en`), тож шлях сутності тут
- * не потрібен, але функція лишається єдиним складачем префікса.
- */
-export function localizedPath(
-  code: string,
-  primary: string,
-  path: string,
-): string {
-  if (code === primary) return `/${path}`;
-  return path === ''
-    ? `/${code.toLowerCase()}`
-    : `/${code.toLowerCase()}/${path}`;
-}
+// Складач шляху мови — один на домен (`simplycms/domain`), тут лише реекспорт для SEO.
+export { localizedPath };
 
 /**
  * hreflang сторінки: ЛИШЕ перекладені версії (основна — завжди), взаємно, плюс

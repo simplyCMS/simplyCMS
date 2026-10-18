@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { productPath } from '../product-path';
+import {
+  localePrefixSegment,
+  localizedPath,
+  productPath,
+} from '../product-path';
 
 describe('productPath (М1, §3.2)', () => {
   it('основна мова: /<path> без префікса, to+params для роуту сутності', () => {
@@ -23,5 +27,14 @@ describe('productPath (М1, §3.2)', () => {
     expect(
       productPath({ path: 'a', locale: 'en', primary: 'uk' }).href,
     ).not.toContain('//');
+  });
+
+  it('одне правило префікса (B M3): товар, SEO-шлях і сегмент мови збігаються', () => {
+    expect(localePrefixSegment('pt-BR')).toBe('pt-br');
+    expect(localizedPath('pt-BR', 'uk', 'x')).toBe(
+      productPath({ path: 'x', locale: 'pt-BR', primary: 'uk' }).href,
+    );
+    expect(localizedPath('uk', 'uk', 'x')).toBe('/x');
+    expect(localizedPath('en', 'uk', '')).toBe('/en');
   });
 });

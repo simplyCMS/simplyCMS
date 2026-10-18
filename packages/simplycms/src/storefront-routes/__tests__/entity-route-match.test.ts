@@ -9,6 +9,7 @@ const getActiveTheme = vi.hoisted(() => vi.fn(async () => null));
 vi.mock('../server/themes', () => ({ getActiveTheme }));
 vi.mock('../server/products', () => ({
   getProduct,
+  getMovedProductPath: async () => null,
   getModificationData: async () => ({ propertyValues: {}, stock: {} }),
 }));
 

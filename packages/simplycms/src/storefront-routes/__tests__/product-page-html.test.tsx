@@ -50,6 +50,7 @@ const products = vi.hoisted(() => ({
 vi.mock('../server/products', () => ({
   getProduct: async ({ data }: { data: { locale: string; path: string } }) =>
     products.byAddress.get(`${data.locale}/${data.path}`) ?? null,
+  getMovedProductPath: async () => null,
   getModificationData: async () => ({ propertyValues: {}, stock: {} }),
 }));
 

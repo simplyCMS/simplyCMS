@@ -7,6 +7,7 @@ import {
   loadModificationStock,
   loadProduct,
   loadProductModificationValues,
+  lookupProductAddress,
   withStorefrontDb,
   withViewerDb,
   type ModificationStockRow,
@@ -69,4 +70,18 @@ export const getModificationData = createServerFn({ method: 'GET' })
         await loadModificationIds(db, productId),
       ),
     }));
+  });
+
+/**
+ * Поточна адреса для ІСТОРИЧНОЇ адреси товару (`null` — адреса невідома чи вже поточна). Той
+ * самий резолвер і предикат видимості `pageVisible()`, що в нормалізації до роутера: клієнтська
+ * навігація (кеш лістингу, «назад») нормалізацію оминає, і без цього покупець бачив би 404
+ * там, де повне завантаження дає 301.
+ */
+export const getMovedProductPath = createServerFn({ method: 'GET' })
+  .validator(z.object({ locale: localeInput, path: z.string().min(1) }))
+  .handler(async ({ data: input }) => {
+    const { locale, path } = input as { locale: string; path: string };
+    const hit = await lookupProductAddress(locale, path, null);
+    return hit && hit.path !== path ? hit.path : null;
   });

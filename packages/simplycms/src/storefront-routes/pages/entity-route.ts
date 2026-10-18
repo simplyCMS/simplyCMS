@@ -1,10 +1,11 @@
-import { notFound } from '@tanstack/react-router';
+import { notFound, redirect } from '@tanstack/react-router';
+import { productPath } from 'simplycms/domain';
 import { RESERVED_SEGMENTS, SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { localeOfHref } from '../locale/root-data';
 import type { LocaleSet } from '../locale/resolve';
 import { productHead } from '../head/product';
 import type { HeadMatch } from '../head/head';
-import { getProduct } from '../server/products';
+import { getMovedProductPath, getProduct } from '../server/products';
 
 /**
  * Query сторінки сутності: лише `mod`, і токен — ЗАВЖДИ рядок. Роутер JSON-розбирає
@@ -31,8 +32,9 @@ export function entitySearch(search: Record<string, unknown>): {
 /**
  * Вхід сторінки сутності за адресою `/<path>` та `/<мова>/<path>` (М1, §3.2):
  * тип сутності визначає реєстр адрес, а не форма URL. У М1 сутність одна —
- * товар; адреса, якої немає в реєстрі, — 404 (історичну адресу вже перетворила
- * на один 301 нормалізація до роутера, видалена сутність не лишає рядків).
+ * товар; адреса, якої немає в реєстрі, — 404 (історичну адресу на серверному GET
+ * перетворює на один 301 нормалізація до роутера, на клієнтській навігації — редирект
+ * тут; видалена сутність не лишає рядків).
  *
  * Route-файл — тонка обгортка над цим модулем, щоб тест гнав той самий
  * лоадер без файлового роутера.
@@ -50,7 +52,26 @@ export async function loadEntityPage(input: {
     throw notFound();
   const locale = localeOfHref(input.publicHref, input.locales);
   const product = await getProduct({ data: { locale, path: input.path } });
-  if (!product) throw notFound();
+  if (!product) {
+    // Клієнтська навігація на історичну адресу: нормалізація (301) працює лише на серверному
+    // GET, тож тут той самий резолвер дає редирект замість 404. На сервері історію вже
+    // перевірила нормалізація до роутера — другий запит на кожен промах бота зайвий.
+    if (typeof window !== 'undefined') {
+      const moved = await getMovedProductPath({
+        data: { locale, path: input.path },
+      });
+      if (moved)
+        throw redirect({
+          href: productPath({
+            path: moved,
+            locale,
+            primary: input.locales.primary,
+          }).href,
+          replace: true,
+        });
+    }
+    throw notFound();
+  }
   return { product };
 }
 

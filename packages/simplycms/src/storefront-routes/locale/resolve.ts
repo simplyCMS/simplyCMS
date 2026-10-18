@@ -1,3 +1,4 @@
+import { localePrefixSegment } from 'simplycms/domain';
 import type { Locale, LocaleSet } from 'simplycms/i18n';
 
 export type { LocaleSet };
@@ -53,7 +54,7 @@ export function isStorefrontPath(pathname: string): boolean {
  * на адресу, а `/EN/x` мовою не є — порівняння йде з уже нижнім регістром.
  */
 export function localePrefix(code: Locale): string {
-  return code.toLowerCase();
+  return localePrefixSegment(code);
 }
 
 /**
