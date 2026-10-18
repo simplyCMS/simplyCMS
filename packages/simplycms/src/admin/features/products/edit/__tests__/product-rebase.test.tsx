@@ -93,4 +93,63 @@ describe('rebase: колекції по елементах', () => {
       [M3, ''],
     ]);
   });
+
+  // Фікс-раунд 1 Task 18 (M9): одне правило «чуже видалення» для обох гілок порядку.
+  describe('інший редактор видалив елемент під час збереження', () => {
+    const deletedM2 = () => {
+      const fresh = sentForm();
+      fresh.modifications = [mod(M1)];
+      return fresh;
+    };
+
+    it('🔴 (а) змінив елемент, сервер його видалив → елемент лишається з правкою (склад не мінявся)', () => {
+      const now = sentForm();
+      now.modifications[1] = mod(M2, 'MINE');
+      expect(
+        rebase(deletedM2(), sentForm(), now).modifications.map((m) => [
+          m.id,
+          m.sku,
+        ]),
+      ).toEqual([
+        [M1, ''],
+        [M2, 'MINE'],
+      ]);
+    });
+
+    it('🔴 (а) те саме, коли склад змінено (переставлено) — правка теж лишається', () => {
+      const now = sentForm();
+      now.modifications = [mod(M2, 'MINE'), mod(M1)];
+      expect(
+        rebase(deletedM2(), sentForm(), now).modifications.map((m) => [
+          m.id,
+          m.sku,
+        ]),
+      ).toEqual([
+        [M2, 'MINE'],
+        [M1, ''],
+      ]);
+    });
+
+    it('(б) не змінював, сервер видалив → елемент зникає (обидві гілки)', () => {
+      expect(
+        rebase(deletedM2(), sentForm(), sentForm()).modifications.map(
+          (m) => m.id,
+        ),
+      ).toEqual([M1]);
+      const swapped = sentForm();
+      swapped.modifications = [mod(M2), mod(M1)];
+      expect(
+        rebase(deletedM2(), sentForm(), swapped).modifications.map((m) => m.id),
+      ).toEqual([M1]);
+    });
+
+    it('правка видаленого елемента лишається зміною форми (dirty)', () => {
+      const form = formAfter((f) => (f.modifications[1] = mod(M2, 'MINE')));
+      act(() => resetAfterSave(form.current, deletedM2(), sentForm()));
+      expect(form.current.getValues('modifications').map((m) => m.sku)).toEqual(
+        ['', 'MINE'],
+      );
+      expect(form.current.formState.isDirty).toBe(true);
+    });
+  });
 });

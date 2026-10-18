@@ -18,28 +18,35 @@ type Item = { readonly id: string };
 const ids = (xs: readonly Item[]) => xs.map((x) => x.id);
 
 /**
- * Колекція по елементах: елемент, який користувач змінив чи додав ПІСЛЯ відправки,
- * лишається його, решта — з БД (паралельна зміна елемента, якого він не чіпав, не
- * перезаписується наступним збереженням). Порядок — з БД, якщо після відправки
- * склад і порядок не мінялись; інакше — користувача, а додане паралельно — в кінці.
+ * Колекція по елементах. ОДНЕ правило для обох гілок порядку: елемент, який користувач
+ * змінив чи додав ПІСЛЯ відправки, лишається його — навіть якщо інший редактор його
+ * паралельно видалив (правка не губиться мовчки, форма dirty; конфлікт із чужим
+ * видаленням проявить наступне збереження через версію агрегата, 412). Елемент, якого
+ * користувач не чіпав, береться з БД: змінений — свіжим, видалений — зникає.
+ * Порядок — з БД, якщо після відправки склад і порядок не мінялись (власні правки,
+ * яких у БД уже немає, — у кінці); інакше — користувача, а додане паралельно — в кінці.
  */
 function mergeById<T extends Item>(fresh: T[], sent: T[], now: T[]): T[] {
   const sentById = new Map(sent.map((x) => [x.id, x]));
   const freshById = new Map(fresh.map((x) => [x.id, x]));
-  const touched = (x: T) => !same(x, sentById.get(x.id));
   const nowById = new Map(now.map((x) => [x.id, x]));
-  if (same(ids(now), ids(sent)))
-    return fresh.map((x) => {
-      const mine = nowById.get(x.id);
-      return mine && touched(mine) ? mine : x;
-    });
-  const kept = now.flatMap((x) => {
+  const touched = (x: T) => !same(x, sentById.get(x.id));
+  /** Елемент користувача після перечитування: правка — його, інакше стан БД (або нічого). */
+  const resolve = (x: T): T[] => {
     if (touched(x)) return [x];
     const db = freshById.get(x.id);
     return db ? [db] : [];
-  });
+  };
+  if (same(ids(now), ids(sent))) {
+    const base = fresh.map((x) => {
+      const mine = nowById.get(x.id);
+      return mine ? resolve(mine)[0]! : x;
+    });
+    const orphans = now.filter((x) => !freshById.has(x.id) && touched(x));
+    return [...base, ...orphans];
+  }
   const added = fresh.filter((x) => !sentById.has(x.id) && !nowById.has(x.id));
-  return [...kept, ...added];
+  return [...now.flatMap(resolve), ...added];
 }
 
 /**
