@@ -56,8 +56,14 @@ export default defineConfig({
     },
   },
   test: {
-    // Ролі кластера — один раз до паралельних накатів (`global-roles.mjs`).
-    globalSetup: ['packages/simplycms/test-harness/pg/global-roles.mjs'],
+    // Ролі кластера — один раз до паралельних накатів (`global-roles.mjs`). Шлях абсолютний:
+    // конфіг запускають і з іншим `--root` (`tests/gate-env-isolation.test.ts`).
+    globalSetup: [
+      resolve(
+        import.meta.dirname,
+        'packages/simplycms/test-harness/pg/global-roles.mjs',
+      ),
+    ],
     projects: [
       {
         extends: true,
