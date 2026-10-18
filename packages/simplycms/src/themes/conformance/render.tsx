@@ -14,6 +14,8 @@ export interface ThemeViewRenderResult {
   error: unknown;
   /** Імена знайдених у DOM маркерів реквізитів (у порядку документа). */
   requisites: string[];
+  /** Результат `probe` над відрендереною розміткою (до розмонтування); без `probe` — `[]`. */
+  probed: unknown[];
 }
 
 /** Render-контекст, який kit гарантує кожному view теми (спека §7, п.3). */
@@ -45,6 +47,7 @@ export async function renderThemeView(
   element: ReactElement,
   theme: ThemeModule,
   locale: Locale,
+  probe?: (container: HTMLElement) => unknown[],
 ): Promise<ThemeViewRenderResult> {
   let error: unknown = null;
   const container = document.createElement('div');
@@ -94,7 +97,7 @@ export async function renderThemeView(
       .map((node) => node.getAttribute(REQUISITE_ATTRIBUTE))
       .filter((name): name is string => name !== null);
 
-    return { error, requisites };
+    return { error, requisites, probed: probe?.(container) ?? [] };
   } finally {
     await act(async () => {
       root.unmount();

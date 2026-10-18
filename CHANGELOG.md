@@ -40,6 +40,11 @@
 
 ### 🔴 BREAKING для магазинів
 
+- **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
+  теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
+  назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
+  `lang` мови джерела. Тема `default` (і її копія в шаблоні магазину) виправлена — `FallbackText` за `nameLang`,
+  `shortDescriptionLang`, `description.lang`, `BreadcrumbItem.lang`, `value_lang`.
 - **Адмінка товару — на командах агрегата** (`simplycms/admin-server`, `simplycms/admin-data`): картка з вкладками мов;
   модифікації, значення властивостей і фото зберігаються одним `products.saveDescription` разом із текстами (кнопка
   «Зберегти»), адреса мови — `products.setPath`, ціни й залишки — `products.savePrices`/`products.saveStock`, видалення —

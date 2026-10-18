@@ -193,8 +193,12 @@ TS2786), тож `views` тягне type-only імпорт react. Барель `s
 `withFallback`), а не з порівняння текстів: переклад, що збігся з джерелом
 буквально («iPhone 15»), `lang` не отримує. Канонічні view роблять це через
 `FallbackText` (`simplycms/ui/fallback-text`) — `<span lang>` або `<div lang>`
-для розмітки; тема з власним view застосовує ті самі поля, інакше зберігає лише
-текст без мови (контракт не ламається, але І37 не виконано).
+для розмітки; тема з власним view застосовує ті самі поля. 🔴 Це гейт, а не порада:
+`theme:conformance` рендерить власний view картки товару на фікстурі
+`productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
+fallback-фрагмент — назва, короткий опис, опис, остання крихта, текстове значення
+характеристики, `alt` фото — не має `lang` мови джерела (`themes/conformance/fallback-lang.ts`).
+Фрагмент, якого view не показує, порушенням не є.
 
 **Фото мовою сторінки (М1, Task 17б).** `ProductDetailGallery.images`,
 `ProductCardViewModel.images` і `images` модифікації — масиви

@@ -68,3 +68,48 @@ const edge: ViewModelData<ProductDetailViewModel> = {
 };
 
 export const productDetailViewModelFixtures = { full, edge } as const;
+
+/**
+ * Сторінка іншою мовою, де кожне перекладне поле — fallback з основної (`uk`): conformance
+ * перевіряє, що view дав кожному такому фрагменту `lang` (І37). Тексти — унікальні маркери,
+ * щоб пошук у розмітці не сплутав поля між собою.
+ */
+export const productDetailFallbackFixture: ViewModelData<ProductDetailViewModel> =
+  {
+    breadcrumbs: [
+      { label: 'Home', href: '/en' },
+      { label: 'Крихта основною мовою', lang: 'uk' },
+    ],
+    gallery: {
+      images: [
+        {
+          url: '/img/fallback.jpg',
+          alt: 'Фото основною мовою',
+          alt_lang: 'uk',
+        },
+      ],
+    },
+    summary: {
+      name: 'Назва основною мовою',
+      sku: null,
+      short_description: 'Короткий опис основною мовою',
+      discountPercent: null,
+      nameLang: 'uk',
+      shortDescriptionLang: 'uk',
+    },
+    description: {
+      html: '<p>Опис основною мовою</p>' as SanitizedHtml,
+      lang: 'uk',
+    },
+    characteristics: {
+      items: [
+        {
+          ...characteristic,
+          numeric_value: null,
+          value: 'Значення основною мовою',
+          value_lang: 'uk',
+          property: { ...characteristic.property!, property_type: 'text' },
+        },
+      ],
+    },
+  };

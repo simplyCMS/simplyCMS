@@ -4,6 +4,7 @@ import type {
   ProductDetailSummary,
 } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 import { MONO_STACK } from '../../components/mono';
 import { ProductHighlights } from './ProductHighlights';
 import { ProductTrustRow } from './ProductTrustRow';
@@ -72,7 +73,8 @@ export function ProductSummaryCard({
       </div>
 
       <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl">
-        {summary.name}
+        {/* І37: неперекладена назва — мовою джерела, зі своїм `lang`. */}
+        <FallbackText lang={summary.nameLang}>{summary.name}</FallbackText>
       </h1>
 
       {/* Реквізит: ціна (типографіка всередині — ядра) */}
@@ -80,7 +82,9 @@ export function ProductSummaryCard({
 
       {summary.short_description && (
         <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
-          {summary.short_description}
+          <FallbackText lang={summary.shortDescriptionLang}>
+            {summary.short_description}
+          </FallbackText>
         </p>
       )}
 

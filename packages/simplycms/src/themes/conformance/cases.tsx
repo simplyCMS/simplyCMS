@@ -9,7 +9,10 @@
 
 import type { ReactElement } from 'react';
 import type { StorefrontViewName } from 'simplycms/contracts/views';
-import { viewModelFixtures } from 'simplycms/contracts/views/fixtures';
+import {
+  productDetailFallbackFixture,
+  viewModelFixtures,
+} from 'simplycms/contracts/views/fixtures';
 import type { ThemeViews } from '../types';
 import {
   cartSlotStubs,
@@ -100,4 +103,18 @@ export function buildConformanceCases(views: ThemeViews): ConformanceCase[] {
   }
 
   return cases;
+}
+
+/**
+ * Картка товару на фікстурі, де кожне перекладне поле — fallback з основної мови (І37):
+ * окремий прогін, а не третій стан для всіх сторінок — `*_lang` є лише в цій view-model.
+ */
+export function buildFallbackLangCase(views: ThemeViews): ReactElement | null {
+  const ProductDetail = views.ProductDetail;
+  return ProductDetail ? (
+    <ProductDetail
+      {...productDetailFallbackFixture}
+      slots={productDetailSlotStubs}
+    />
+  ) : null;
 }

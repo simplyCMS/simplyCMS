@@ -5,6 +5,7 @@ import type {
   ProductDetailSlots,
 } from 'simplycms/contracts/views';
 import { useT } from 'simplycms/i18n';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 import { ProductCharacteristics } from 'simplycms/core/components/catalog/ProductCharacteristics';
 import { ViewPanel, ViewPanelHeading } from '../parts/ViewPanel';
 
@@ -36,10 +37,13 @@ export function ProductPanels({
       <ViewPanel className="mt-4">
         <ViewPanelHeading>{t('product.description')}</ViewPanelHeading>
         {description.html ? (
-          <RichHtml
-            className="prose prose-sm max-w-none dark:prose-invert"
-            html={description.html}
-          />
+          // Опис — блокова розмітка: обгортка `div`, не `span` (І37).
+          <FallbackText lang={description.lang} as="div">
+            <RichHtml
+              className="prose prose-sm max-w-none dark:prose-invert"
+              html={description.html}
+            />
+          </FallbackText>
         ) : (
           <p className="text-muted-foreground">{t('product.noDescription')}</p>
         )}

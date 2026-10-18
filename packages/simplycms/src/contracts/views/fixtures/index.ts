@@ -15,7 +15,10 @@ export {
   catalogViewModelFixtures,
   catalogSectionViewModelFixtures,
 } from './catalog';
-export { productDetailViewModelFixtures } from './product-detail';
+export {
+  productDetailFallbackFixture,
+  productDetailViewModelFixtures,
+} from './product-detail';
 export { cartViewModelFixtures } from './cart';
 export { STORE_PROFILE_FIXTURE } from './store-profile';
 

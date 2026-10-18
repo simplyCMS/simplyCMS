@@ -52,7 +52,11 @@ export function ProductHighlights({
             <Check className="h-3 w-3 text-primary-foreground" />
           </span>
           <span className="text-sm leading-relaxed text-foreground">
-            {item.property?.name}: {formatValue(item, yes, no)}
+            {item.property?.name}:{' '}
+            {/* І37: текстове значення з основної мови — зі своїм `lang`; опція й число — ні. */}
+            <span lang={(!item.option && item.value_lang) || undefined}>
+              {formatValue(item, yes, no)}
+            </span>
           </span>
         </div>
       ))}

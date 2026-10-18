@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import type { BreadcrumbItem } from 'simplycms/contracts/views';
+import { FallbackText } from 'simplycms/ui/fallback-text';
 import { MONO_STACK } from '../../components/mono';
 import { ViewLink } from './ViewLink';
 
@@ -31,10 +32,15 @@ export function ViewBreadcrumbs({
               to={item.href}
               className="transition-colors duration-150 ease-in-out hover:text-foreground"
             >
-              {item.label}
+              <FallbackText lang={item.lang}>{item.label}</FallbackText>
             </ViewLink>
           ) : (
-            <span className="font-medium text-foreground">{item.label}</span>
+            <span
+              className="font-medium text-foreground"
+              lang={item.lang ?? undefined}
+            >
+              {item.label}
+            </span>
           )}
         </Fragment>
       ))}
