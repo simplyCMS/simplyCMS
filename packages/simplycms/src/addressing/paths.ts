@@ -23,8 +23,10 @@ import { publicNames } from './public-names';
 export type AddressTarget = { kind: 'product'; id: string };
 
 /**
- * Колонка-ціль реєстру `url_paths` для кожного виду сутності — ОДИН носій для запису й читання
- * (`column`, `currentPathOwners`): новий вид у `AddressTarget` без рядка тут не скомпілюється.
+ * Колонка-ціль реєстру `url_paths` для кожного виду сутності — носій для `column()` (оновлення й
+ * вибірки за ціллю) і `currentPathOwners`: новий вид у `AddressTarget` без рядка тут не
+ * скомпілюється. 🔴 Вставки (`createPathsForEntity`, `setExplicitPath`, `copyPathsForLocale` у
+ * `copy.ts`) пишуть `productId` напряму — новий вид М2 мусить перевести й їх, тип цього не змусить.
  */
 export const PATH_TARGET_COLUMNS = {
   product: 'product_id',
