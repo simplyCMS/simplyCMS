@@ -56,6 +56,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Ролі кластера — один раз до паралельних накатів (`global-roles.mjs`).
+    globalSetup: ['packages/simplycms/test-harness/pg/global-roles.mjs'],
     projects: [
       {
         extends: true,

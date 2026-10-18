@@ -52,11 +52,15 @@ $$;
 -- `SET LOCAL ROLE` знову працював би тихо, і весь fail-closed дизайн
 -- зводився б нанівець. Права мусять зʼявлятись лише явним перемиканням.
 --
--- 🔴 Атрибути виставляються БЕЗУМОВНО, а не тільки при створенні. Ідемпотентність
--- «if not exists ⇒ пропустити» лишає стару роль із чужими атрибутами: ролі в
--- PostgreSQL кластерні, тож у кластері з попереднім життям `app_user` цілком
--- може вже існувати з LOGIN. Канон описує ФОРМУ ролі, а не факт її наявності —
--- інакше він нічого не гарантує (спіймано на харнесі 2026-08-23).
+-- 🔴 Атрибути приводяться до канону й тоді, коли роль уже є, а не тільки при створенні.
+-- Ідемпотентність «if not exists ⇒ пропустити» лишає стару роль із чужими атрибутами: ролі в
+-- PostgreSQL кластерні, тож у кластері з попереднім життям `app_user` цілком може вже існувати
+-- з LOGIN. Канон описує ФОРМУ ролі, а не факт її наявності — інакше він нічого не гарантує
+-- (спіймано на харнесі 2026-08-23).
+-- 🔴 Але `alter role`/`grant` — ЛИШЕ коли стан відрізняється від канону: рядок ролі живе в
+-- спільному каталозі кластера (`pg_authid`), і безумовний запис у ньому з двох паралельних
+-- накатів на різні БД того самого кластера дає `tuple concurrently updated`. Повторний накат на
+-- підготовленому кластері в каталог ролей не пише нічого.
 do $$
 begin
   -- Пароль тут не задається: секрет живе в оточенні деплою, а не в
@@ -71,9 +75,21 @@ begin
     create role app_admin;
   end if;
 
-  alter role app_runtime login noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
-  alter role app_user nologin noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
-  alter role app_admin nologin noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
+  if exists (select 1 from pg_roles where rolname = 'app_runtime'
+      and not (rolcanlogin and not rolinherit and not rolbypassrls
+               and not rolsuper and not rolcreatedb and not rolcreaterole)) then
+    alter role app_runtime login noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'app_user'
+      and (rolcanlogin or rolinherit or rolbypassrls
+           or rolsuper or rolcreatedb or rolcreaterole)) then
+    alter role app_user nologin noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
+  end if;
+  if exists (select 1 from pg_roles where rolname = 'app_admin'
+      and (rolcanlogin or rolinherit or rolbypassrls
+           or rolsuper or rolcreatedb or rolcreaterole)) then
+    alter role app_admin nologin noinherit nobypassrls nosuperuser nocreatedb nocreaterole;
+  end if;
 end
 $$;
 
@@ -91,8 +107,29 @@ $$;
 -- тихо, і fail-closed зникає, не червонячи жодного гейта.
 -- `SET TRUE` виписано явно, бо саме воно й дозволяє `SET LOCAL ROLE`.
 -- Спіймано поведінковим гейтом RLS на харнесі 2026-08-23 (Task 5).
-grant app_user to app_runtime with inherit false, set true;
-grant app_admin to app_runtime with inherit false, set true;
+-- Грант — лише коли членства з потрібними опціями ще немає (той самий спільний каталог, що й
+-- ролі вище). Повторний голий `grant` неправильного членства не виправив би, а грант з опціями
+-- оновлює наявний рядок `pg_auth_members`.
+do $$
+begin
+  if not exists (select 1 from pg_auth_members
+      where roleid = 'app_user'::regrole and member = 'app_runtime'::regrole
+        and not inherit_option and set_option)
+     or exists (select 1 from pg_auth_members
+      where roleid = 'app_user'::regrole and member = 'app_runtime'::regrole
+        and inherit_option) then
+    grant app_user to app_runtime with inherit false, set true;
+  end if;
+  if not exists (select 1 from pg_auth_members
+      where roleid = 'app_admin'::regrole and member = 'app_runtime'::regrole
+        and not inherit_option and set_option)
+     or exists (select 1 from pg_auth_members
+      where roleid = 'app_admin'::regrole and member = 'app_runtime'::regrole
+        and inherit_option) then
+    grant app_admin to app_runtime with inherit false, set true;
+  end if;
+end
+$$;
 
 -- Доступ до самого хелпера — обом акторським ролям: предикат політики
 -- обчислюється правами того, хто читає таблицю.
