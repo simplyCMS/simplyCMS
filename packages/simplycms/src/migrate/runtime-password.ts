@@ -11,6 +11,20 @@ const RUNTIME_ROLE = 'app_runtime';
  */
 const PASSWORD_ALPHABET = /^[\x20-\x7e]+$/;
 
+/**
+ * Підказка — за кодом помилки, а не одна на всі: `XX000` (`tuple concurrently updated`) і
+ * `40001` означають, що рядок ролі одночасно змінило інше з'єднання (роль кластерна, а не
+ * бази), і порада «дайте право ALTER ROLE» там вела б не туди. Інші коди — без діагнозу.
+ */
+const CONCURRENT_HINT =
+  "; найімовірніше, роль одночасно змінило інше з'єднання (роль спільна для всього " +
+  'кластера Postgres) — повторіть старт';
+const HINTS: Record<string, string> = {
+  '42501': "; з'єднання накату мусить мати право ALTER ROLE",
+  XX000: CONCURRENT_HINT,
+  '40001': CONCURRENT_HINT,
+};
+
 const fail = (reason: string) =>
   new Error(`[simplycms/migrate] runtimeUrl: ${reason}`);
 
@@ -85,8 +99,8 @@ export async function syncRuntimePassword(
     // могли б повторити шматок запиту, тобто верифікатор.
     const code = (err as { code?: string }).code ?? 'невідомий';
     throw new Error(
-      `[simplycms/migrate] пароль ${RUNTIME_ROLE} не змінено (код ${code}); ` +
-        "з'єднання накату мусить мати право ALTER ROLE",
+      `[simplycms/migrate] пароль ${RUNTIME_ROLE} не змінено (код ${code})` +
+        (HINTS[code] ?? ''),
     );
   }
   log(`[migrate] пароль ${RUNTIME_ROLE} синхронізовано`);

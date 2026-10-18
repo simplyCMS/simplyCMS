@@ -103,4 +103,23 @@ describe('syncRuntimePassword', () => {
     expect((err as Error).message).not.toMatch(/SCRAM|N3w-P@ss/);
     expect((err as Error).cause).toBeUndefined();
   });
+
+  // R3-6: підказка за кодом — одночасна зміна рядка ролі не є браком права.
+  it.each([
+    ['42501', /право ALTER ROLE/, /одночасно/],
+    ['XX000', /одночасно змінило інше з'єднання/, /право/],
+    ['40001', /одночасно змінило інше з'єднання/, /право/],
+    ['42601', /код 42601\)$/, /право|одночасно/],
+  ])('код %s → підказка за причиною', async (code, has, hasNot) => {
+    const { client } = fakeClient(
+      Object.assign(new Error('tuple concurrently updated'), { code }),
+    );
+    const err = await syncRuntimePassword(
+      client,
+      { password: 'N3w-P@ss' },
+      () => {},
+    ).catch((e: unknown) => e as Error);
+    expect((err as Error).message).toMatch(has);
+    expect((err as Error).message).not.toMatch(hasNot);
+  });
 });
