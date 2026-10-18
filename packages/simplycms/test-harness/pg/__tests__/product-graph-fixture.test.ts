@@ -393,4 +393,28 @@ describe('єдиний записувач графа товару', () => {
   ])('нерозкривний шаблон %j — порушення, а не пропуск', (sample) => {
     expect(templatedTargets(sample).unexpandable).toHaveLength(1);
   });
+
+  // Task 17б (хвіст рев'ю 17): та сама дисципліна для білдер-форми `insertInto(`…`)`.
+  it.each(VALUE_OWNERS)(
+    'insertInto(`${owner}_property_values`) розкривається і в «%s_property_values»',
+    (owner) => {
+      const sample = 'db.insertInto(`${owner}_property_values`, row)';
+      expect(templatedTargets(sample).guarded).toContain(
+        `${owner}_property_values`,
+      );
+      expect(writesProductTables(sample)).toBe(true);
+    },
+  );
+
+  it('insertInto з літералом у зворотних лапках — та сама заборона', () => {
+    expect(writesProductTables('insertInto(`products`, {})')).toBe(true);
+  });
+
+  it.each([
+    'insertInto(`${table}`, row)',
+    'insertInto(`${schema}.products`, row)',
+    'insertInto(`public.plg_${name}_items`, row)',
+  ])('нерозкривний шаблон білдера %j — порушення, а не пропуск', (sample) => {
+    expect(templatedTargets(sample).unexpandable).toHaveLength(1);
+  });
 });
