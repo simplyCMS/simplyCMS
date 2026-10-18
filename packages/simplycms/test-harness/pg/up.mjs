@@ -10,6 +10,7 @@
 // 150 рядків (coding-style).
 import pg from 'pg';
 import { startEphemeralCluster } from './ephemeral-cluster.mjs';
+import { prepareClusterRoles } from './roles.mjs';
 
 async function assertReachable(url) {
   const client = new pg.Client({ connectionString: url });
@@ -22,7 +23,8 @@ async function assertReachable(url) {
 }
 
 /**
- * Резолвить підключення до Postgres. Повертає `{ url, teardown }`.
+ * Резолвить підключення до Postgres. Повертає `{ url, teardown }`. На обох шляхах кластер має
+ * ролі канону (`prepareClusterRoles`): тест не залежить від того, чи готував їх `globalSetup`.
  */
 export async function resolveHarness() {
   const envUrl = process.env.PG_HARNESS_URL;
@@ -34,7 +36,10 @@ export async function resolveHarness() {
         `PG_HARNESS_URL заданий (${envUrl}), але конект не вдався: ${err.message}`,
       );
     }
+    await prepareClusterRoles(envUrl);
     return { url: envUrl, teardown: async () => {} };
   }
-  return startEphemeralCluster();
+  const cluster = await startEphemeralCluster();
+  await prepareClusterRoles(cluster.url);
+  return cluster;
 }
