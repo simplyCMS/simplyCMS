@@ -73,7 +73,6 @@ describe('toProductListItem', () => {
       nameLang: null,
       image: { url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' },
       price: 4200,
-      sectionSlug: 'invertory',
     });
   });
 
@@ -121,7 +120,6 @@ describe('toProductListItem', () => {
       nameLang: null,
       image: null,
       price: null,
-      sectionSlug: 'invertory',
     });
   });
 

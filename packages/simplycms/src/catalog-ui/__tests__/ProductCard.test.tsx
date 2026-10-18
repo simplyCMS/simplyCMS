@@ -28,23 +28,17 @@ vi.mock('simplycms/react-query', () => ({
 
 afterEach(cleanup);
 
-const renderCard = (section: { slug: string } | null) =>
+const renderCard = () =>
   render(
     <I18nProvider locale="uk">
-      <ProductCard
-        product={{ id: 'p1', name: 'Товар', slug: 'orphan', section }}
-      />
+      <ProductCard product={{ id: 'p1', name: 'Товар', slug: 'orphan' }} />
     </I18nProvider>,
   );
 
 describe('ProductCard: шлях товару', () => {
-  it('веде на сторінку сутності /<path>, розділ у шляху не бере участі', () => {
-    renderCard(null);
-    expect(screen.getByTestId('card').getAttribute('href')).toBe('/orphan');
-  });
-
-  it('товар з розділом має ту саму адресу: розділ не частина URL товару', () => {
-    renderCard({ slug: 'shoes' });
+  // Розділу в пропсах картки немає: адреса — лише поточна адреса мови (`slug`).
+  it('веде на сторінку сутності /<path>', () => {
+    renderCard();
     expect(screen.getByTestId('card').getAttribute('href')).toBe('/orphan');
   });
 });

@@ -23,7 +23,7 @@ import type {
 
 export interface ProductDetailPageProps {
   product?: ProductDetailProduct;
-  /** Адреса товару в мові сторінки; без неї береться splat-параметр роуту. */
+  /** Адреса товару в мові сторінки; без неї береться параметр `$path` роуту. */
   path?: string;
 }
 

@@ -14,8 +14,10 @@ interface Product {
   name: string;
   slug: string;
   short_description?: string | null;
+  /** Мова fallback-назви / короткого опису (І37): картка обгортає їх `lang`. */
+  name_lang?: string | null;
+  short_description_lang?: string | null;
   images?: ProductImageViewModel[];
-  section?: { slug: string } | null;
   price?: number | null;
   old_price?: number | null;
   stock_status?: string;

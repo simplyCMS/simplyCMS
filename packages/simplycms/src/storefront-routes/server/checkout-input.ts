@@ -60,8 +60,9 @@ export const checkoutInputSchema = z.object({
 
 /**
  * Запит оформлення / квоти чекауту: форма замовлення + мова назв позицій. Мова — не поле
- * контракту `PlaceOrderInput` (не бізнес-вхід замовлення), а параметр читання: сервер
- * звіряє її з опублікованими й невідому читає основною. Знімок `order_items.name` у М1 —
+ * контракту `PlaceOrderInput` (не бізнес-вхід замовлення), а параметр читання: квота читає
+ * невідому чи неопубліковану мову основною (`resolveTextLocale`), а оформлення відмовляє
+ * (`requirePublishedTextLocale`, R87). Знімок `order_items.name` у М1 —
  * назва мовою запиту; двомовний знімок і `orders.locale` — М2.
  */
 export const checkoutRequestSchema = checkoutInputSchema.extend({

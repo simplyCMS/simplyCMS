@@ -38,7 +38,7 @@ export interface HomeProductRow {
   name_lang: string | null;
   short_description_lang: string | null;
   stock_status: Product['stockStatus'];
-  /** Slug розділу — потрібен лише для href картки. */
+  /** Slug розділу — дані картки для теми; href від нього не залежить (адреса — `slug`). */
   section: { slug: string } | null;
   /** Розділ — ціль знижок `section` для `priceForCard` (Е6в-11). */
   section_id: Product['sectionId'];

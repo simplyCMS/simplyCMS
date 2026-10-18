@@ -37,7 +37,6 @@ describe('fallback-назва картки', () => {
               nameLang: 'uk',
               image: null,
               price: null,
-              sectionSlug: null,
             },
             {
               id: 'p2',
@@ -46,7 +45,6 @@ describe('fallback-назва картки', () => {
               nameLang: null,
               image: null,
               price: null,
-              sectionSlug: null,
             },
           ]}
         />
@@ -106,7 +104,6 @@ describe('мініатюра картки: alt і його мова з дани�
               nameLang: null,
               image: { url: '/media/c.png', alt: 'Кабель', alt_lang: 'uk' },
               price: null,
-              sectionSlug: null,
             },
           ]}
         />

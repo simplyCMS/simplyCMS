@@ -32,8 +32,6 @@ export interface ProductListItem {
   /** Мініатюра — головне фото мовою списку (файл і alt мови, Task 17б); `null` — без фото. */
   image: ProductImageViewModel | null;
   price: number | null;
-  /** Slug секції — потрібен для коректного href картки в серверному HTML. */
-  sectionSlug: string | null;
 }
 
 /** Список товарів для SSR разом із контекстом цін — одним раундтрипом. */
@@ -80,7 +78,6 @@ export function toProductListItem(
     nameLang: row.name_lang,
     image: row.images[0] ?? null,
     price,
-    sectionSlug: row.sections?.slug ?? null,
   };
 }
 

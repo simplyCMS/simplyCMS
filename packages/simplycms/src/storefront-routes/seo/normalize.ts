@@ -133,7 +133,7 @@ export function withStorefrontNormalize<TArgs extends unknown[]>(
     // Сторінку рендерять лише GET/HEAD вітринних шляхів. Решта (POST, server
     // functions, API, медіа, статика, адмінка) іде далі БЕЗ читання мов: CSRF
     // і авторизація спрацьовують раніше за БД, а набір мов для сторінки, що
-    // все ж відрендериться (404 під `/api`, адмінка), роутер дочитає лінивo
+    // все ж відрендериться (404 під `/api`, адмінка), роутер дочитає ліниво
     // (`resolveRouterLocales` у `beforeLoad` кореня).
     const isPageRequest =
       (request.method === 'GET' || request.method === 'HEAD') &&

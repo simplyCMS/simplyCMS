@@ -24,7 +24,6 @@ interface ProductCardProps {
     short_description_lang?: string | null;
     /** Фото мовою сторінки; мініатюра — перше (alt і його `lang` — з даних, Task 17б). */
     images?: ProductImageViewModel[];
-    section?: { slug: string } | null;
     has_modifications?: boolean;
     price?: number | null;
     old_price?: number | null;

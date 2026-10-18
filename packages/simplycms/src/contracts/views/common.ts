@@ -52,7 +52,10 @@ export interface ProductCardViewModel {
    */
   name_lang?: string | null;
   short_description_lang?: string | null;
-  /** Розділ потрібен для href картки; null — товар поза розділом. */
+  /**
+   * Розділ товару (slug); `null` — поза розділом. Href картки від нього НЕ залежить: адреса —
+   * `slug` (поточна адреса мови, `productPath`).
+   */
   section: { slug: string } | null;
   stock_status: string;
   price: number | null;
