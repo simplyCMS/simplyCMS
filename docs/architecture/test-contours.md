@@ -655,6 +655,14 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 Проєкти `storage` і `mail` потребують Garage і Mailpit (`pnpm harness:up`): без них вони
 падають, а не скіпаються.
 
+🔴 Кластер харнеса спільний для паралельних проєктів і для одночасних прогонів (інша сесія,
+worktree), а ролі — об'єкти кластера. Тому ролі готує `resolveHarness` на обох шляхах
+(`test-harness/pg/roles.mjs`), а файл, що пише рядок ролі (пароль `app_runtime`:
+`start-migrate`, `migrate-password`), увесь час запису тримає замок кластера
+`RUNTIME_PASSWORD_LOCK` (`test-harness/pg/cluster-lock.mjs`): два одночасні `alter role` одного
+рядка дають `tuple concurrently updated`. Замок береться в БД `postgres`, бо advisory-замок діє
+в межах однієї БД. Новий файл, що пише в рядок ролі, бере той самий замок.
+
 ### Що доводить
 
 | Файл | Твердження, яке він доводить |

@@ -11,6 +11,8 @@
 //
 // 🔴 `ALTER ROLE` кластерний, а харнес спільний: верифікатор `app_runtime`
 // зберігається до кейсу й відновлюється після, оракул ходить тимчасовою роллю.
+// Увесь файл — під замком кластера `RUNTIME_PASSWORD_LOCK`: інший прогін на тому
+// самому кластері, що пише пароль одночасно, дав би `tuple concurrently updated`.
 import pg from 'pg';
 import {
   afterAll,
@@ -25,6 +27,7 @@ import {
 import { applyMigrations, scramSha256Verifier } from 'simplycms/migrate';
 import { resolveHarness } from '../up.mjs';
 import { queryRows, randomDbName } from '../apply.mjs';
+import { holdClusterLock, RUNTIME_PASSWORD_LOCK } from '../cluster-lock.mjs';
 import { CANON_DIR, freshDb } from './fixtures/migrate';
 
 const PASSWORD = 'N3w-P@ss';
@@ -66,9 +69,11 @@ describe('пароль app_runtime: верифікатор SCRAM', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   let db: Awaited<ReturnType<typeof freshDb>>;
   let saved: string | null;
+  let lock: { release: () => Promise<void> } | undefined;
 
   beforeAll(async () => {
     harness = await resolveHarness();
+    lock = await holdClusterLock(harness.url, RUNTIME_PASSWORD_LOCK);
     db = await freshDb(harness.url);
     await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
   }, 120_000);
@@ -89,6 +94,7 @@ describe('пароль app_runtime: верифікатор SCRAM', () => {
   });
 
   afterAll(async () => {
+    await lock?.release();
     await db?.drop();
     await harness?.teardown();
   });

@@ -2,11 +2,17 @@
 // `applyMigrations` і фейковим `execve` на чистій БД → журнал повний, а
 // `execve` отримує оточення без пароля власника схеми. Юніт порядку кроків
 // на фейках — `prod-start/__tests__/run-start.test.ts`; реальний `execve` — Gate B пілота.
+//
+// `DATABASE_URL` — під `app_runtime` з паролем, як у магазині, тож накат синкає пароль ролі
+// кластера. Файл тримає замок кластера `RUNTIME_PASSWORD_LOCK` (одночасний запис того самого
+// рядка ролі іншим прогоном — `tuple concurrently updated`) і повертає пароль, як був.
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { resolveDriverEnv } from 'simplycms/env';
 import { applyMigrations } from 'simplycms/migrate';
 import { runStart } from 'simplycms/prod-start';
+import { queryRows } from '../apply.mjs';
+import { holdClusterLock, RUNTIME_PASSWORD_LOCK } from '../cluster-lock.mjs';
 import { resolveHarness } from '../up.mjs';
 import { canonNames, freshDb, journalOf } from './fixtures/migrate';
 
@@ -17,12 +23,35 @@ const STORE_DIR = join(
 
 describe('runStart: накат і execve на справжній БД', () => {
   let harness: { url: string; teardown: () => Promise<void> };
+  let lock: { release: () => Promise<void> } | undefined;
+  let saved: string | null = null;
+  const rolpassword = async () =>
+    (
+      (await queryRows(
+        harness.url,
+        `select rolpassword from pg_authid where rolname = 'app_runtime'`,
+      )) as { rolpassword: string | null }[]
+    )[0]!.rolpassword;
 
   beforeAll(async () => {
     harness = await resolveHarness();
-  }, 60_000);
+    lock = await holdClusterLock(harness.url, RUNTIME_PASSWORD_LOCK);
+    saved = await rolpassword();
+  }, 120_000);
 
   afterAll(async () => {
+    if (lock) {
+      try {
+        await queryRows(
+          harness.url,
+          saved === null
+            ? 'alter role app_runtime password null'
+            : `alter role app_runtime password '${saved.replace(/'/g, "''")}'`,
+        );
+      } finally {
+        await lock.release();
+      }
+    }
     await harness?.teardown();
   });
 
