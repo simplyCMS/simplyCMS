@@ -5,6 +5,7 @@ import {
   InUseError,
 } from 'simplycms/contracts/domain-errors';
 import { defineOperation } from 'simplycms/operations';
+import { assertCodeNotAnAddress } from './code-address';
 import { advisoryXactLockShared, isForeignKeyViolation } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
@@ -45,6 +46,7 @@ export const languagesAdd = defineOperation({
     // Ексклюзивно ПЕРШИМ запитом: чекаємо транзакції, що створюють адреси під
     // спільним замком, і бачимо всі їхні закомічені сутності (Review Focus 1).
     await lockLanguageSet(db);
+    await assertCodeNotAnAddress(db, input.code);
     const next = await db.execute<{ n: number }>(
       sql`select coalesce(max(sort_order), 0) + 1 as n from public.languages`,
     );

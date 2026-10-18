@@ -56,7 +56,7 @@ export type DomainErrorFieldValue =
 export const DOMAIN_ERROR_FIELD_KEYS: Readonly<
   Record<DomainErrorName, readonly string[]>
 > = {
-  [DOMAIN_ERROR_NAME.adminConflict]: ['kind', 'constraint'],
+  [DOMAIN_ERROR_NAME.adminConflict]: ['kind', 'constraint', 'owners'],
   [DOMAIN_ERROR_NAME.authz]: ['operation'],
   // Тема 12: єдине НЕ-примітивне поле (`issues`) їде окремим каналом
   // `SerializableDomainError.issues` — крізь білий список
@@ -191,6 +191,9 @@ export const ADMIN_STATE_CONSTRAINT = {
   // М1 Task 14: поточну адресу/токен мови паралельно вставив інший запис (`languages.fill`
   // чи команда) — дані вільні, а не зайняті; дію варто просто повторити.
   concurrentChange: 'concurrent_change',
+  // Фінальне рев'ю М1 (I-2, І19): код нової мови = поточна адреса основної мови — префікс мови
+  // перекрив би сторінку сутності. Хто займає — `AdminConflictError.owners`.
+  languageCodeTaken: 'language_code_taken',
 } as const;
 
 /** Код правила стану — значення `ADMIN_STATE_CONSTRAINT`. */
@@ -242,9 +245,15 @@ export class AdminNotFoundError extends Error {
  */
 export class AdminConflictError extends Error {
   override readonly name = DOMAIN_ERROR_NAME.adminConflict;
+  /**
+   * `owners` — хто займає значення (опційно): ключ `<тип>:<id>` сутності, значення — її
+   * адреса. Плоский словник рядків, бо лише така форма перетинає межу serverFn
+   * (`DomainErrorFieldValue`); problem+json розгортає його в `conflicts`.
+   */
   constructor(
     readonly kind: AdminConflictKind,
     readonly constraint: string | null,
+    readonly owners: Readonly<Record<string, string>> | null = null,
   ) {
     super(
       `[admin-server] конфлікт ${kind}: ${constraint ?? 'невідоме обмеження'}`,

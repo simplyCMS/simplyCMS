@@ -66,6 +66,8 @@ export const messages: Catalog = {
     'Review not found — the list has been refreshed',
   'admin.errors.concurrentChange':
     'The data was just changed concurrently — please retry',
+  'admin.errors.languageCodeTaken':
+    'The language code matches a product address in the primary language — change the product address or pick another code',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
 };

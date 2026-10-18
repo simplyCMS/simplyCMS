@@ -55,6 +55,8 @@ export interface ProblemBody {
   }[];
   readonly currentVersion?: number;
   readonly currentSourceHashes?: Readonly<Record<string, string>>;
+  /** Лише для 409 з відомим власником значення: які сутності його займають. */
+  readonly conflicts?: readonly { type: string; id: string; path: string }[];
 }
 
 export type ProblemExtra = Omit<

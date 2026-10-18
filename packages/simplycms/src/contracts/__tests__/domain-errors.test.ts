@@ -26,10 +26,12 @@ describe('DOMAIN_ERROR_FIELD_KEYS', () => {
       expect(DOMAIN_ERROR_FIELD_KEYS[name]).toBeDefined();
   });
 
-  it('AdminConflictError несе kind і constraint, AuthzError — operation', () => {
+  it('AdminConflictError несе kind, constraint і owners, AuthzError — operation', () => {
+    // `owners` (фінальне рев'ю М1, I-2): хто займає значення — словник рядків.
     expect(DOMAIN_ERROR_FIELD_KEYS[DOMAIN_ERROR_NAME.adminConflict]).toEqual([
       'kind',
       'constraint',
+      'owners',
     ]);
     expect(DOMAIN_ERROR_FIELD_KEYS[DOMAIN_ERROR_NAME.authz]).toEqual([
       'operation',

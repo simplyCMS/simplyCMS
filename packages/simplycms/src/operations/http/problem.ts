@@ -32,16 +32,26 @@ export class ProblemError extends Error {
 
 type Mapped = { kind: ProblemKind; extra?: Extra };
 
+/** `owners` конфлікту (`<тип>:<id>` → адреса) → перелік сутностей тіла problem+json. */
+const conflictsOf = (owners: Readonly<Record<string, string>>) =>
+  Object.entries(owners).map(([key, path]) => {
+    const at = key.indexOf(':');
+    return { type: key.slice(0, at), id: key.slice(at + 1), path };
+  });
+
 /**
  * Доменна помилка → проблема. `Record<DomainErrorName, …>` робить мапу
  * ВИЧЕРПНОЮ за побудовою: нове ім'я в `DOMAIN_ERROR_NAME` без рядка тут не
  * скомпілюється (інакше воно тихо стало б 500).
  */
 const BY_NAME: Record<DomainErrorName, (e: Error) => Mapped> = {
-  [DOMAIN_ERROR_NAME.adminConflict]: (e) => ({
-    kind:
-      (e as AdminConflictError).kind === 'reference' ? 'reference' : 'conflict',
-  }),
+  [DOMAIN_ERROR_NAME.adminConflict]: (e) => {
+    const { kind, owners } = e as AdminConflictError;
+    return {
+      kind: kind === 'reference' ? 'reference' : 'conflict',
+      ...(owners ? { extra: { conflicts: conflictsOf(owners) } } : {}),
+    };
+  },
   [DOMAIN_ERROR_NAME.authz]: () => ({ kind: 'forbidden' }),
   [DOMAIN_ERROR_NAME.validation]: (e) => ({
     kind: 'validation',

@@ -6,6 +6,7 @@ export {
   setExplicitPath,
 } from './paths';
 export type { AddressTarget } from './paths';
+export { currentPathOwners } from './owners';
 export {
   createTokensForEntity,
   resolveToken,

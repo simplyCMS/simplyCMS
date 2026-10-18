@@ -122,6 +122,18 @@ export const COMPONENTS = {
           type: 'object',
           additionalProperties: { type: 'string' },
         },
+        conflicts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['type', 'id', 'path'],
+            properties: {
+              type: { type: 'string' },
+              id: { type: 'string' },
+              path: { type: 'string' },
+            },
+          },
+        },
       },
     },
   },

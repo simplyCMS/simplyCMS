@@ -225,7 +225,7 @@
   `buildOpenApi`. Токени `Authorization: Bearer scms_<prefix>_<secret>` (у БД лише хеш; права = роль ∩ scopes;
   `last_used_at` з тротлінгом), операції `api-tokens.{create,revoke,list}` і `service-accounts.create` (лише з
   cookie-сесії, право `apiToken.manage`). Ідемпотентність — рядок ключа в транзакції команди (К5, лише 2xx, 24 год).
-  `GET /api/v1/openapi.json`: валідний Bearer або cookie-сесія з `admin.access`. Сервісний запис — рядок `service_accounts`; `OwnerInviteError('email_taken')` для пошти сервісного запису. `languages.add` має `idempotent: 'create'`. Id операцій токенів — з дефісом (`api-tokens.*`): формат id майстра
+  `GET /api/v1/openapi.json`: валідний Bearer або cookie-сесія з `admin.access`. Сервісний запис — рядок `service_accounts`; `OwnerInviteError('email_taken')` для пошти сервісного запису. `languages.add` має `idempotent: 'create'` і відмовляє 409 (`state`/`language_code_taken`), якщо код мови — поточна адреса основної мови (І19 у зворотному напрямку; `AdminConflictError.owners` і поле `conflicts` problem+json називають тип, id і адресу). Id операцій токенів — з дефісом (`api-tokens.*`): формат id майстра
   (`^[a-z][a-z-]*(\.…)`) не допускає великої літери в першому сегменті.
 - `simplycms/operations` (server-only) — реєстр операцій і виконавець з явним суб'єктом
   (`defineOperation`, `executeOperation`, `assertVersionThenHash`), `simplycms/operations/server` —

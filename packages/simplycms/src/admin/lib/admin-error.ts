@@ -100,6 +100,8 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
   // М1 Task 14: паралельна зміна поточної адреси/токена — повторити.
   [ADMIN_STATE_CONSTRAINT.concurrentChange]: 'admin.errors.concurrentChange',
+  // Фінальне рев'ю М1 (I-2): код мови зайнятий поточною адресою.
+  [ADMIN_STATE_CONSTRAINT.languageCodeTaken]: 'admin.errors.languageCodeTaken',
   // Е6д-22: файл ще використовується.
 } satisfies Record<AdminStateConstraint, MessageKey>;
 

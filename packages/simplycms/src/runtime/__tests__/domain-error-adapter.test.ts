@@ -63,6 +63,20 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
+  it('AdminConflictError owners (I-2): хто займає значення, переживає межу', async () => {
+    const src = Object.assign(new Error('конфлікт'), {
+      name: 'AdminConflictError',
+      kind: 'state',
+      constraint: 'language_code_taken',
+      owners: { 'product:11111111-1111-4111-8111-111111111111': 'it' },
+    });
+    const out = await roundTrip(src, withAdapter);
+    expect(out).toMatchObject({
+      constraint: 'language_code_taken',
+      owners: { 'product:11111111-1111-4111-8111-111111111111': 'it' },
+    });
+  });
+
   it('AdminConflictError kind reference: поля переживають межу', async () => {
     const src = Object.assign(new Error('конфлікт'), {
       name: 'AdminConflictError',
