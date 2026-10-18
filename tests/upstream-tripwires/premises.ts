@@ -72,6 +72,27 @@ export const startHandlerType: Premise = need({
 });
 
 /**
+ * START-SFN-404-1: невідомий id server function — генерований резолвер кидає
+ * `Error('Server function info not found for ' + id)`, а `handleServerAction` кличе його ДО
+ * свого `try`: помилка виходить у h3 як 500. Рішення «прийнято» тримається на тому, що тіло
+ * 500 нічого не розкриває (жива проба — `tests/server-fn-base-build.test.ts`); якщо Start почне
+ * віддавати 404 сам, передумова червоніє — запис закривають.
+ */
+export const startUnknownFnResolverThrows: Premise = need({
+  'резолвер кидає «Server function info not found» на невідомий id': (s) =>
+    /throw new Error\('Server function info not found for ' \+ id\)/.test(s),
+});
+
+export const startUnknownFnBeforeTry: Premise = (src) => {
+  const from = src.indexOf('var handleServerAction');
+  const lookup = src.indexOf('await getServerFnById(', from);
+  const guard = src.indexOf('try {', from);
+  return from >= 0 && lookup > from && guard > lookup
+    ? []
+    : ['handleServerAction більше не кличе getServerFnById до свого try'];
+};
+
+/**
  * START-IP-1: import-protection плагін Start перерезолвлює кожен імпорт через `this.resolve()`
  * БЕЗ `kind` і ПОВЕРТАЄ цей результат — `require()` усередині вклеєного пакета резолвиться за
  * умовою `import` (ESM-вхід dual-пакета). Передумова обходу: обидві половини досі на місці.

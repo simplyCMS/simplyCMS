@@ -104,6 +104,33 @@ describe('база serverFn зі справжньої збірки (Р20′)', (
     expect(server).not.toMatch(/=\s*process\.env\.TSS_SERVER_FN_BASE/);
   });
 
+  // UPSTREAM:START-SFN-404-1 — невідомий id server function: Start кидає до свого `try`, h3
+  // віддає 500. Рішення «прийнято, обходу немає» тримається на цьому доказі: тіло відповіді не
+  // несе стеку, id функції, шляхів ФС і тексту помилки апстріму.
+  it('невідомий id server function → 500 без стеку, id, шляхів і тексту помилки', async () => {
+    const id = 'probe-unknown-fn-7f3a';
+    for (const method of ['GET', 'POST']) {
+      const res = await fetch(`http://127.0.0.1:${port}/_custom/fn/${id}`, {
+        method,
+        headers: {
+          origin: 'https://shop.test',
+          'sec-fetch-site': 'same-origin',
+        },
+      });
+      const body = await res.text();
+      expect(res.status, `${method}: ${body}`).toBe(500);
+      for (const leak of [
+        id,
+        'Server function info not found',
+        'node_modules',
+        ROOT,
+        'file://',
+      ])
+        expect(body, `${method}: ${leak}`).not.toContain(leak);
+      expect(body, `${method}: стек`).not.toMatch(/\n\s+at\s/);
+    }
+  });
+
   it('multipart 20 МіБ на нестандартній базі проходить стелю, на /_serverFn/ — 413', async () => {
     const head = (path: string) =>
       multipart.replace('%PATH%', path).replace('%LEN%', String(20 * MIB));

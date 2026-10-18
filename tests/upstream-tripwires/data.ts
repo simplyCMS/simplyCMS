@@ -12,6 +12,8 @@ import {
   startFormBeforeHandler,
   startHandlerType,
   startImportProtectionNoKind,
+  startUnknownFnBeforeTry,
+  startUnknownFnResolverThrows,
   subsetOptionsNotReexported,
   tsEslintPeer,
   type Premise,
@@ -53,6 +55,20 @@ export const TRIPWIRES: Record<string, Tripwire> = {
           'dist/esm/ssr/serializer/ShallowErrorPlugin.js',
         ),
       premise: shallowError,
+    },
+  ],
+  'START-SFN-404-1': [
+    {
+      read: () =>
+        readInstalledFile(
+          ['@tanstack/react-start', '@tanstack/start-plugin-core'],
+          'dist/esm/start-compiler/server-fn-resolver-module.js',
+        ),
+      premise: startUnknownFnResolverThrows,
+    },
+    {
+      read: () => readInstalledFile(SSC, HANDLER),
+      premise: startUnknownFnBeforeTry,
     },
   ],
   'START-IP-1': [

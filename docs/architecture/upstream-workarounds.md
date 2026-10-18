@@ -248,6 +248,35 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 
 ---
 
+### START-SFN-404-1 · невідомий id server function → 500 замість 404
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/react-start` (`@tanstack/start-server-core` обробник, `@tanstack/start-plugin-core` генерований резолвер) |
+| Знайдено на | `@tanstack/react-start` 1.168.60 (start-server-core 1.169.39, start-plugin-core 1.171.49), М1 Task 9 |
+| Перевірено на версії | ті самі — 2026-10-18: `start-compiler/server-fn-resolver-module.js` кидає `Error('Server function info not found for ' + id)`, `handleServerAction` (`server-functions-handler.js`) кличе резолвер до свого `try`, h3 `toResponse` віддає 500 `unhandled` |
+| Статус апстріму | не повідомлено |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (текст помилки резолвера; `getServerFnById` раніше за `try` у `handleServerAction`) |
+
+**Симптом.** `GET|POST /_serverFn/<невідомий id>` → 500, а не 404. Сканер `/_serverFn/*` дає 5xx і
+шум у лозі/алертах; у лозі — повний текст помилки (id з URL, секретів немає).
+
+**Рішення: прийнято, обходу немає.** Тексту помилки клієнт не бачить — жива проба на справжній
+збірці (`tests/server-fn-base-build.test.ts`, маркер `UPSTREAM:START-SFN-404-1`): тіло 500 без стеку,
+id функції, шляхів ФС і тексту апстріму. Знято 2026-10-18: `GET` → `Internal server error [ref …]`
+(маскування `server-guard`), `POST` → `{"status":500,"unhandled":true,"message":"HTTPError"}` (h3).
+404 дав би лише правильнішу семантику, а обхід (middleware ловить `Error` з цим текстом для
+`handlerType === 'serverFn'` → 404) прив'язав би нас до тексту апстріму — не варте.
+
+**Перевірка виправлення.** Розтяжка червоніє, якщо резолвер перестане кидати цей текст або обробник
+загорне виклик у `try`; тоді `GET /_serverFn/nope` на зібраному сервері має дати 404.
+
+**Коли виправлять.** Перенести запис у «Закриті», прибрати маркер і кейс 500 у
+`server-fn-base-build.test.ts` замінити на 404. Переглянути й тоді, коли моніторинг 5xx почне
+шуміти від сканерів.
+
+---
+
 ### START-IP-1 · import-protection плагін Start перерезолвлює імпорти без `kind`: `require()` вклеєного dual-пакета йде в ESM-вхід
 
 | Поле | Значення |
