@@ -86,7 +86,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   waitFor: 'утиліта Testing Library',
   renderHook: 'утиліта Testing Library (гард cleanup у test-contours)',
   expectTypeOf: 'утиліта Vitest',
-  globalSetup: 'опція Playwright/Vitest',
   createPluginSetupTasks: 'внутрішнє імʼя Playwright',
   execValidator: 'внутрішнє імʼя Start (start-client-core)',
   extractSimpleComparisons: 'внутрішнє імʼя @tanstack/db',
