@@ -40,6 +40,13 @@ export async function resolveHarness() {
     return { url: envUrl, teardown: async () => {} };
   }
   const cluster = await startEphemeralCluster();
-  await prepareClusterRoles(cluster.url);
+  try {
+    await prepareClusterRoles(cluster.url);
+  } catch (err) {
+    // Кластер уже піднятий, а `teardown` викликач не отримає: без цього процес `postgres` і
+    // tmp-тека лишились би сиротами.
+    await cluster.teardown().catch(() => {});
+    throw err;
+  }
   return cluster;
 }
