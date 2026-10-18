@@ -5,8 +5,8 @@
  * відправки лишається значенням користувача І лишається зміною (форма dirty);
  * елемент колекції, якого він після відправки не чіпав, бере паралельну зміну з БД.
  */
-import { describe, expect, it } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { blankForm } from '../product-aggregate';
 import type { ProductFormValues } from '../product-form-schema';
@@ -30,6 +30,8 @@ const sentForm = (): ProductFormValues => {
   f.modifications = [mod(M1), mod(M2)];
   return f;
 };
+
+afterEach(cleanup);
 
 /** Форма в стані «запит відправлено, користувач щось ввів під час нього». */
 function formAfter(edit: (f: ProductFormValues) => void) {
