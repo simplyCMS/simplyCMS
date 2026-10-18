@@ -856,3 +856,34 @@ email в іншому регістрі — не конфлікт, записує
   й зняття ролі з 403 адмін-serverFn, бан із гостьовою вкладкою, видалення зі
   знеособленням, дашборд = прямий SQL; негативні контролі — без `delete from sessions`
   у бані і без `eraseOrderPersonalData` у видаленні).
+
+## 15. Мультимовність: агрегат товару й порядок замків (М1)
+
+Переклади, реєстри адрес, проєкція й читання вітрини — [`translations.md`](./translations.md);
+реєстр операцій, виконавець і HTTP API — [`operations-api.md`](./operations-api.md). Тут — те, що
+стосується транзакцій і замків.
+
+- 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockAggregateRoots`** — першим кроком
+  кожної команди товару (`lockProduct`); `products.remove` — `FOR UPDATE` (`lockProductForRemove`).
+  Рядкові замки `products`, сильніші за `KEY SHARE`, бере ЛИШЕ цей хелпер (сканер
+  `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
+  Саме NO KEY UPDATE, а не UPDATE: `FOR UPDATE` конфліктував би з `FOR KEY SHARE` FK-вставок і
+  вибірок fill/`languages.setStatus` і повернув би цикл 40P01.
+- **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів:
+  (1) `languages-set` → корені за id → дочірні; (2) власник ексклюзивного `languages-set`
+  (`languages.setStatus`, add/remove/reorder мов, `reconcileProductTexts`) рядкових замків коренів не бере;
+  (3) видалення кореня — `FOR UPDATE` першим кроком після set; (4) рядки `product_modifications`
+  видаляє лише `deleteModifications` (`FOR UPDATE … ORDER BY id`), узагальнений DELETE фабрики
+  на цій таблиці відмовляє; (5) `languages.fill` і звірка беруть на товарах і модифікаціях не
+  сильніше за `FOR KEY SHARE`, корінь раніше за дочірні. Тести й мутації кожного пункту названо в
+  самому JSDoc (`aggregate-language-locks.test.ts`, `catalog-projection-locks.test.ts`).
+- **Значення властивостей (Р18):** форму тримає БД — складені FK `(property_id, value_kind)` і
+  `(property_id, option_id)`, CHECK «рівно одна колонка за `value_kind`», частковий UNIQUE скалярних
+  значень. Команда читає властивості `FOR KEY SHARE` у своїй транзакції (`loadKnownProperties`) — той
+  самий замок, який візьме складений FK значення: паралельне видалення властивості або чекає на
+  запис, або вже закомічене й рядка не видно (інакше хибне 23503 на полі `kind` замість
+  `propertyId`). 23503/23514 команда розпізнає за ІМЕНЕМ обмеження
+  (`isForeignKeyViolation`, `isCheckViolation` у `simplycms/db`), а не за таблицею: Postgres кладе в
+  `TABLE NAME` таблицю, що посилається.
+- **Видалення мови** (`languages.remove`) мапить будь-який 23503 навколо СВОГО DELETE у 409
+  `language_in_use` локально — за таблицею помилки цього не розпізнати (І2).

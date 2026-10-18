@@ -723,7 +723,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `tests/handler-canon.test.ts` | `return { refetch: false }` без БЕЗУМОВНОГО write-back у persistence-хендлері; порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота по рядках батчу (борг Е3 — поведінковий кейс у тесті колекції) |
 | `tests/tanstack-db-single-instance.test.ts` | два фізичні інстанси `@tanstack/db` у дереві (peer-контекст) — за `path` з `pnpm ls --json`, не за семвером | `pnpm test` | не сканує `.pnpm` напряму (сироти) |
 | тір-зони `admin-server` (T2) / `admin-data` (T4) — `tests/tier-boundary.test.ts`, виняток-файл `migrate` → `db/lock-keys` — `tests/tier-boundary/exempt-files.test.ts` | імпорт угору по шарах, обидві форми специфікатора; виняток відкриває рівно один модуль, решта `db` закрита | `pnpm lint` / `pnpm test` | — |
-| `tests/domain-translations-client-safe.test.ts` | `domain/translations` і `domain/slugs` (T1, їх імпортує й клієнтський бандл адмінки) не тягнуть `node:`, server-only субшлях чи серверну залежність — ні прямо, ні в транзитивному замиканні локальних імпортів; sha256 живе лише в `simplycms/translations`. Перелік server-only — з `contracts/server-only`; негативний контроль — тимчасове дерево з транзитивним порушенням | `pnpm test` | статичний розбір import-специфікаторів; динамічний `import()` з обчисленим аргументом не бачить |
+| `tests/domain-translations-client-safe.test.ts` | `domain/translations` і `domain/slugs` (T1, їх імпортує й клієнтський бандл адмінки) не тягнуть `node:`, голий вбудований модуль чи його підшлях (`fs`, `path/posix` — за `builtinModules`), server-only субшлях чи серверну залежність — ні прямо, ні в транзитивному замиканні локальних імпортів (специфікатор із розширенням `.js` резолвиться в `.ts`, тож замикання не обривається); sha256 живе лише в `simplycms/translations`. Перелік server-only — з `contracts/server-only`. Шість негативних контролів — по одному на кожну гілку детектора (`node:`, голий вбудований, вбудований підшлях, server-only, серверна залежність) у ТРАНЗИТИВНОМУ імпорті тимчасового дерева і `.js`-специфікатор; плюс позитивний контроль чистого дерева і сентинели «скан бачить обидва дерева», «декларація server-only непорожня» | `pnpm test` | статичний розбір import-специфікаторів; динамічний `import()` з обчисленим аргументом не бачить |
 | `test-harness/pg/__tests__/aggregate-deps.test.ts` | неповні `deps` агрегатів — за ФАКТИЧНИМ SQL (spy на `pg.Client.prototype.query`), сценарії по гілках лоадерів | `pnpm test:schema` | реєстр сценаріїв ручний; `seen.size > 0` у кожному кейсі |
 | `test-harness/pg/__tests__/single-default.test.ts` | часткові unique-індекси `is_default` на 7 таблицях (23505), GLOBAL (шість таблиць) не покладається на сід — перед вставкою reset `is_default`; `shipping_zones` у GLOBAL немає, бо сід тримає основну зону (`MAIN_SHIPPING_ZONE_ID`), а reset відкладений тригер відхилив би | `pnpm test:schema` | «не більше одного»; «принаймні один» для зон доставки — `shipping-zone-invariant.test.ts` нижче, для решти таблиць — контракт операцій |
 | `test-harness/pg/__tests__/shipping-zone-invariant.test.ts` (К3-Е8) | «рівно одна основна зона доставки» у БД: сід `MAIN_SHIPPING_ZONE_ID`, CHECK «основна активна», відкладений constraint-тригер «≥1 основна» (delete / зняття прапорця → 23514 на COMMIT, заміна двома UPDATE в одній транзакції проходить), і що адмін-операції відмовляють `AdminConflictError` РАНІШЕ за БД (тригер і CHECK зняті) | `pnpm test:schema` | `TRUNCATE` рядкові тригери обминає (так тести чистять таблицю); доводить інваріант лише для `shipping_zones` |
@@ -1139,3 +1139,58 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 | i18n-каталоги (ядро / тема / плагін) | `pnpm test` (тести парності; зелений лінт повноти не доводить) |
 | `package.json` залежності, `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` першим |
 | `scripts/showcase/**` | `pnpm typecheck:showcase` |
+
+## 14. Контури хвилі мультимовності М1 (2026-10-18)
+
+Канон підсистем — [`translations.md`](./translations.md) і [`operations-api.md`](./operations-api.md);
+рядки матриці інваріантів І1–І37 і їхні тести — майстер-план §4. Тут — механізми, яких до хвилі в
+контурах не було.
+
+### Тести гонок без пауз
+
+Учасників гонки розводить СПОСТЕРЕЖУВАНИЙ стан Postgres, а не `sleep`: під навантаженням пауза
+закінчується раніше, ніж учасник справді став у чергу, і тест «зелений» на сценарії, якого не було.
+`fixtures/lock-holders.ts` — тримач транзакційного замка (`hold`: pid бекенда першим запитом
+транзакції, потім замок, утримання до `release`); `fixtures/blocked-tree.ts` — дерево очікування
+від тримача через `pg_blocking_pids` (`blockedTree`), три режими очікування:
+
+- СТРОГИЙ `waitForBlockedTree` — блокування і є суттю кейсу (40P01, `FOR UPDATE` ↔ `KEY SHARE`):
+  не дочекались дерева потрібного розміру — тест падає;
+- НЕСТРОГИЙ `waitForBlockedTreeOrSettled` — учасник міг узагалі не блокуватись;
+- `waitForSettled` — учасник мусить ЗАВЕРШИТИСЬ, поки тримач тримає замок (передумова «команда
+  комітить повз застряглий fill»).
+
+Самі фікстури мають тести (`lock-holders.test.ts`). Контур `pnpm test:race`
+(`vitest.race.config.ts`, `tests/race-teardown/**`) — окремий: вкладені прогони vitest у
+середовищі-форсері гонки teardown.
+
+### Парності двох носіїв
+
+Значення, що живе в двох місцях (TS і SQL, ядро і `.mjs`-скрипт), тримає тест парності, а не
+пам'ять рев'ю:
+
+| Тест | Носії |
+|---|---|
+| `test-harness/pg/__tests__/language-code-format-parity.test.ts` | `LANGUAGE_CODE_FORMAT` ↔ CHECK формату коду в `languages` (один набір векторів проти обох) |
+| `test-harness/pg/__tests__/color-format-parity.test.ts` | zod-регекс кольору вводу команди ↔ CHECK `*_color_format` (вставкою, CHECK за іменем) |
+| `tests/live-smoke-gallery-order.test.ts` | `GALLERY_ORDER` (`translations/gallery.ts`) ↔ копія порядку в SQL live-smoke |
+| звірка проєкції (`catalog-projection/parity.ts`) | SQL `is_translated`/`fallback_fields` ↔ `isTranslatedForSeo`/`fallbackFieldsOf` |
+
+### Гард «єдиного записувача» графа товару
+
+Тести пишуть товари, модифікації, значення й переклади ЛИШЕ билдером графа
+(`fixtures/product-graph*.ts`): інакше фікстура, що вставляє рядок повз нього, обходить
+обов'язковий переклад і адресу, і тест доводить стан, якого продукт не створює. Гард —
+`fixtures/writer-guard.ts` (чисті функції над текстом), тест `product-graph-fixture.test.ts`:
+шаблонне ім'я таблиці (`public.${owner}_property_values`, `` insertInto(`…`) ``) розкривається за
+скінченним переліком власників, а шаблон, який розкрити не можна, — порушення, а не тихий пропуск.
+
+### Гейти, додані закриттям М1 (Task 18)
+
+| Гейт | Що ловить | Крок |
+|---|---|---|
+| `tests/dist-theme-plugin-external.test.ts` | `simplycms/*` вклеєно в dist референс-теми чи плагіна (власна копія `AsyncLocalStorage` контексту запиту, якої `checkRequestContextSingle` пілота не бачить): кожен імпорт значення з джерела лишився bare-імпортом у dist, sourcemap — лише власні джерела пакета, у dist немає `AsyncLocalStorage` | `pnpm test:packaging` |
+| `tests/live-smoke-no-instant-checks.test.ts` (структурний гард) | читання БД після очікування зникнення рядка без `pollUntil`; очікувачі ТРАНЗИТИВНІ (хелпер, що лише кличе очікувача, теж очікувач) — негативний контроль на другому й третьому рівні | `pnpm test` |
+| `test-harness/pg/__tests__/harness.test.ts` (стеля одноразових з'єднань) | рахує лише `backend_type = 'client backend'`: `autovacuum worker`, що заходить у свіжу БД під навантаженням, давав хибне «5 > 4» (доведено логом у момент падіння); мутація «без стелі» → 24 | `pnpm test:schema` |
+| `tests/source-text.test.ts` | помічник текстових гейтів вимагає ім'я файла: без нього `.tsx` з `//` у JSX-тексті лексер TS різав би код після «коментаря» (хибно-зелений гейт); невідоме розширення — помилка; SQL і CSS — власна лексика | `pnpm test` |
+

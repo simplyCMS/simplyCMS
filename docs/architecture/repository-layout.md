@@ -55,7 +55,9 @@ simplyCMS/
 │   │   ├── src/schema/types.ts   # T1 Типи рядків із Drizzle — джерело типів для НОВОГО серверного коду
 │   │   ├── src/db/               # T2 pg-пул + `withActor` — ЄДИНИЙ спосіб дістати зʼєднання
 │   │   │                         #    (GUC актора + SET LOCAL ROLE у транзакції); гола фабрика
-│   │   │                         #    `db/client` закрита лінт-зоною й не має субшляху в exports
+│   │   │                         #    `db/client` закрита лінт-зоною й не має субшляху в exports;
+│   │   │                         #    ./lock-keys — ЄДИНИЙ реєстр ключів advisory-замків (LOCK_KEYS),
+│   │   │                         #    pg-errors — розпізнавання обмежень за іменем (isForeignKeyViolation)
 │   │   ├── src/auth/             # T2 Серверний Better Auth (інстанс, databaseHooks, invite
 │   │   │                         #    власника, authz-матриця); вхід, сесія й guard адмінки
 │   │   ├── src/admin-server/     # T2 Серверний шар адмінки — defineAdminResource (операції+схеми)
@@ -102,8 +104,10 @@ simplyCMS/
 │   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
 │   │   ├── src/i18n/             # T2 createTranslator(locale, fallback), I18nProvider, каталоги uk/en,
 │   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getLanguagePack); Locale — відкритий рядок
-│   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto). Upward-винятків
-│   │   │                         #    немає. server-only (Мультимовність М1, Task 3)
+│   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto), реєстр TRANSLATABLE,
+│   │   │                         #    читання (loadTranslations, withFallback) і запис (applyTranslationPlan,
+│   │   │                         #    deleteTranslation), галерея мовою сторінки (gallery.ts, GALLERY_ORDER).
+│   │   │                         #    Канон — translations.md. server-only (Мультимовність М1, Task 3–17б)
 │   │   ├── src/addressing/       # T2 Реєстри адрес і мовних токенів: createPathsForEntity, setExplicitPath,
 │   │   │                         #    copyPathsForLocale, resolvePath, publicNames. Upward: db. Класи
 │   │   │                         #    помилок — з T0. server-only (Мультимовність М1, Task 5)

@@ -162,7 +162,11 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   404 (відома, але не опублікована мова), інакше пише `{ locales }` у `RequestContext.storefront`.
   Роутерна канонізація router-core дає лише 307 без опцій — вона лишається страховкою; тому
   інтерсептор віддає рівно той шлях, який роутер вважає канонічним (без слеша), і циклу немає.
-  Task 15 дописує в ту саму функцію історію адрес і `?mod=` кроками тієї ж кінцевої адреси.
+  Історична адреса сутності й історичний `?mod=` (`applyHistory`, `seo/history.ts`) — кроки ТІЄЇ Ж
+  кінцевої адреси: будь-яка неканонічна адреса дає рівно один 301 (І20, `path-normalize.test.ts`).
+  Токен `?mod=` береться рядком із сирого query (`parseQueryKeepingToken`), бо роутер JSON-розбирає
+  значення (`1e5` → число); вихід кожного кроку проходить `sameOriginPath` (захист від відкритого
+  редиректу `/uk//evil.example`).
 - **Роутер:** `getRouter()` кличе `createRouterLocale()`: набір мов — з контексту запиту (сервер)
   або `window.__SCMS_LOCALES__` (клієнт; скрипт у `<head>` пише кореневий роут). Набір їде в
   `router.options.context.locales`, `rewrite` (`createLocaleRewrite`) знімає префікс на вході й
@@ -171,4 +175,12 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - **Корінь:** лоадер `loadStorefrontRoot(location.publicHref, context.locales)` повертає
   `locale` і `languages: { primary, published }`; `<html {...htmlLangAttrs(locale)}>`
   (`lang` + `dir` з `Intl.Locale.getTextInfo()`), `<I18nProvider locale fallback={primary}>`.
-
+- **Сторінка сутності** — роут `routes/storefront/_storefront/$path.tsx`: іменований параметр на ОДИН
+  сегмент (адреса сутності — один сегмент, майстер §3.2), тож `/admin/…`, `/api/…`, `/auth/…` він не
+  перехоплює, а статичні роути (`/cart`, `/catalog`) специфічніші. Тип сутності визначає реєстр
+  адрес (`url_paths`), а не форма адреси; у М1 сутність — товар. Видимість — `pageVisible()`,
+  текст — з проєкції ([`translations.md`](./translations.md) §5).
+- **SEO сторінки** — одна політика `indexPolicy` (`simplycms/storefront/seo`): неперекладена версія
+  — `noindex`, canonical на основну, поза hreflang і sitemap (ручний `robots` цього не перекриває);
+  інакше self-canonical і взаємний hreflang із `x-default` на основну (`X_DEFAULT`, І33/І37).
+  Sitemap товарів — рядок на опубліковану мову з `<xhtml:link>`.

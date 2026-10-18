@@ -29,6 +29,15 @@
 [`2026-10-15-multilingual-wave-master.md`](docs/superpowers/plans/2026-10-15-multilingual-wave-master.md).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
+**Зведення М1** (реалізовано, чекає приймання архітектора; реліз — з кінця хвилі): мови з машиною станів
+у БД (`languages`, операції `languages.*`); товар наскрізно в перекладах — тексти, модифікації, значення
+властивостей і фото по мовах з обов'язковим перекладом основної мови на коміті; реєстри адрес
+(`url_paths`) і мовних токенів (`slug_tokens`) з історією й рівно одним 301; реєстр операцій з єдиним
+виконавцем, serverFn-обгортками й HTTP API `/api/v1` (токени, `Idempotency-Key`, problem+json, OpenAPI);
+проєкція тексту товару `catalog_product_texts`; сторінка товару `/<path>` і `/<мова>/<path>` з hreflang,
+`noindex` і canonical; картка товару в адмінці з вкладками мов. Канон —
+`docs/architecture/translations.md` і `docs/architecture/operations-api.md`. Решта сутностей — М2.
+
 ### 🔴 BREAKING для магазинів
 
 - **Адмінка товару — на командах агрегата** (`simplycms/admin-server`, `simplycms/admin-data`): картка з вкладками мов;
@@ -238,11 +247,22 @@
 - **Реєстри адрес і мовних токенів** (Мультимовність М1): таблиці `url_paths` і `slug_tokens`
   (унікальність у мові, історія адрес, одна поточна на сутність і мову, складений FK області
   токена), відкладені тригери наявності поточної адреси/токена (`require_current_address`,
-  `require_current_token`; тригери на `products`/`product_modifications` вимкнено до Task 17) і
+  `require_current_token`; на `products`/`product_modifications` увімкнено в Task 17) і
   `simplycms/addressing` (server-only): `createPathsForEntity`, `setExplicitPath`,
   `copyPathsForLocale`, `resolvePath`, `currentPaths` та дзеркальні для токенів, `publicNames`.
 - `simplycms/vite`: `simplycmsPublicManifest()` пише `dist/client/.simplycms-public.json` — верхньорівневі
   імена `public/`, яким не може дорівнювати адреса сутності.
+- Лінт `server-fn-top-level`: реекспорт `createServerFn` з модуля Start (`export { createServerFn } from
+  '@tanstack/react-start'`, `export * from …`) — помилка (компілятор Start не трансформує виклик через
+  локальний реекспорт); трекер аліасів бачить присвоєння (`let f; f = createServerFn`) і `ns.createServerFn`.
+- Гейт `test:packaging` `dist-theme-plugin-external`: ядро `simplycms/*` лишається зовнішнім у dist
+  референс-теми й плагіна (без власної копії контексту запиту).
+
+### Виправлено
+
+- Картка товару в адмінці: після власного збереження введене ПІСЛЯ відправки лишається зміною (форма
+  dirty), а елемент колекції, якого користувач не чіпав, бере стан БД замість перезапису наступним
+  збереженням.
 
 ---
 

@@ -160,6 +160,10 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   коду з `simplycms/schema/types`.
 - Адмінка пишеться на `simplycms/admin-server` + `simplycms/admin-data`; `@supabase/*` у репо
   заборонено лінтом (`no-supabase-import`).
+- 🔴 Запис адмінки й API — лише операції реєстру `simplycms/operations`; serverFn — тонка обгортка
+  (`invokeFromServerFn`), `withActor`/ядра поза `run` операції — лінт (`docs/architecture/operations-api.md`).
+- Тексти сутностей — у таблицях перекладів, вітрина товару читає їх лише з проєкції
+  (`docs/architecture/translations.md`).
 
 **Роути й рендеринг** (`docs/architecture/rendering-and-routing.md`)
 
@@ -190,6 +194,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - Нові рядки інтерфейсу — через `useT`/`createTranslator`; кириличний літерал у зоні валить лінт.
   Каталогів ТРИ рівні (ядро / тема / плагін) — не змішувати. Зелений лінт повноти i18n не доводить —
   доводять тести парності.
+- 🔴 Мова вітрини — лише з URL (перший сегмент шляху, `resolveRequestLocale`): без cookie, сесії й
+  `Accept-Language`.
 
 **Файли й сховище** (`docs/architecture/storage.md`)
 
@@ -252,8 +258,8 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 ## Куди дивитись далі
 
 - **`docs/architecture/`** — канон підсистем: `data-layer`, `rendering-and-routing`, `ui`,
-  `themes`, `plugins`, `storage`, `i18n`, `cli`, `release-process`, `test-contours`,
-  `upstream-workarounds`, `repository-layout`.
+  `themes`, `plugins`, `storage`, `i18n`, `translations`, `operations-api`, `cli`, `release-process`,
+  `test-contours`, `upstream-workarounds`, `repository-layout`.
 - **`docs/development/`** — `TOOLING.md` (команди, гейти, лінт, CI), `ENVIRONMENT.md` (env, запуск),
   `CODEBASE_MEMORY.md` (код-шар пошуку).
 - **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/simplycms-redesign.md`** — редизайн за референсом.
