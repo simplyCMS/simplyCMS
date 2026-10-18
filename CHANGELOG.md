@@ -252,9 +252,11 @@
   `copyPathsForLocale`, `resolvePath`, `currentPaths` та дзеркальні для токенів, `publicNames`.
 - `simplycms/vite`: `simplycmsPublicManifest()` пише `dist/client/.simplycms-public.json` — верхньорівневі
   імена `public/`, яким не може дорівнювати адреса сутності.
-- Лінт `server-fn-top-level`: реекспорт `createServerFn` з модуля Start (`export { createServerFn } from
-  '@tanstack/react-start'`, `export * from …`) — помилка (компілятор Start не трансформує виклик через
-  локальний реекспорт); трекер аліасів бачить присвоєння (`let f; f = createServerFn`) і `ns.createServerFn`.
+- Лінт `server-fn-top-level`: реекспорт `createServerFn` — помилка в усіх формах: специфікатором
+  (`export { createServerFn } from '@tanstack/react-start'`, `export * from …`, `export { mk as csf }`) і
+  оголошенням (`export const csf = createServerFn`, `export default createServerFn`, `export const x =
+  rs.createServerFn`) — компілятор Start не трансформує виклик через модуль-хелпер; трекер аліасів бачить
+  присвоєння (`let f; f = createServerFn`) і `ns.createServerFn`.
 - Гейт `test:packaging` `dist-theme-plugin-external`: ядро `simplycms/*` лишається зовнішнім у dist
   референс-теми й плагіна (без власної копії контексту запиту).
 
@@ -262,7 +264,8 @@
 
 - Картка товару в адмінці: після власного збереження введене ПІСЛЯ відправки лишається зміною (форма
   dirty), а елемент колекції, якого користувач не чіпав, бере стан БД замість перезапису наступним
-  збереженням.
+  збереженням. Елемент, який користувач змінив, а інший редактор паралельно видалив, лишається з правкою
+  (не губиться мовчки); конфлікт проявляє наступне збереження через версію агрегата (412).
 
 ---
 

@@ -90,7 +90,7 @@
 | `admin-server/impl/__tests__/registry-parity.test.ts` | І24: кожна операція реєстру має serverFn-обгортку й доступна через HTTP; кожна обгортка посилається на операцію; усі операції токенів — `sessionOnly` |
 | `eslint-rules/thin-server-fn.mjs` (`simplycms-ops/thin-server-fn`) | І25: обгортка рівно тонкої форми; `invokeFromServerFn`/`passThrough` — лише з `simplycms/operations/server` |
 | `eslint-rules/no-core-outside-operation.mjs` (`simplycms-ops/no-core-outside-operation`) | І25: `withActor`, `runAdmin`, `runAdminTransactions`, `*In` — лише в `run` операції; зона — роути, `src/admin`, вітринні серверні модулі, файли serverFn |
-| `eslint-rules/server-fn-top-level.mjs` | `createServerFn` лише топ-рівневим `const`; реекспорт `createServerFn` з модуля Start заборонено; трекер бачить аліаси (імпорт, namespace, оголошення, присвоєння) |
+| `eslint-rules/server-fn-top-level.mjs` | `createServerFn` лише топ-рівневим `const`; реекспорт `createServerFn` заборонено і специфікатором, і оголошенням (`export const csf = createServerFn`, `export default …`); трекер бачить аліаси (імпорт, namespace, оголошення, присвоєння) |
 | `eslint-rules/legacy-admin-server-fns.json` + `tests/eslint-rules/legacy-ratchet.test.ts` | перелік serverFn, ще не перенесених на реєстр (М3 його знесе), лише скорочується |
 | `admin-server/impl/__tests__/user-accessible-operations.test.ts` | які операції доступні покупцю (роль `user`) |
 
