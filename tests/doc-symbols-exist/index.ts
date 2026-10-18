@@ -82,15 +82,20 @@ function thirdPartyImports(code: string): string[] {
 }
 
 /** Ідентифікатори, ВИЗНАЧЕНІ (не лише згадані) у тексті продакшн-файла. */
-export function definedIdentifiers(src: string, isJson = false): string[] {
+export function definedIdentifiers(
+  src: string,
+  isJson = false,
+  fileName?: string,
+): string[] {
   if (isJson)
     return [...src.matchAll(/"([A-Za-z_$][\w$]*)"\s*:/g)].map(
       (m) => m[1] as string,
     );
-  const code = stripCommentsAndStrings(src);
+  // Ім'я файла — лише вид скрипта для лексера (`.tsx` — з JSX).
+  const code = stripCommentsAndStrings(src, false, fileName);
   const out = [
     ...bracedNames(code),
-    ...thirdPartyImports(stripCommentsAndStrings(src, true)),
+    ...thirdPartyImports(stripCommentsAndStrings(src, true, fileName)),
   ];
   for (const re of DEF_RES)
     for (const m of code.matchAll(re)) out.push(m[1] as string);
@@ -98,8 +103,8 @@ export function definedIdentifiers(src: string, isJson = false): string[] {
 }
 
 /** Гейт-символи з файлів тестів: лише експорти та `UPPER_SNAKE`-константи. */
-export function gateIdentifiers(src: string): string[] {
-  const code = stripCommentsAndStrings(src);
+export function gateIdentifiers(src: string, fileName?: string): string[] {
+  const code = stripCommentsAndStrings(src, false, fileName);
   const out: string[] = [];
   for (const m of code.matchAll(
     new RegExp(
@@ -151,7 +156,8 @@ export function buildIndex(): Set<string> {
   ];
   for (const file of gateFiles) {
     if (SELF.some((p) => file === p || file.startsWith(p))) continue;
-    for (const id of gateIdentifiers(readFileSync(file, 'utf8'))) index.add(id);
+    for (const id of gateIdentifiers(readFileSync(file, 'utf8'), file))
+      index.add(id);
   }
   for (const file of files) {
     let text: string;
@@ -167,7 +173,7 @@ export function buildIndex(): Set<string> {
       for (const k of text.matchAll(/['"]([\w.]+)['"]\s*:/g))
         for (const seg of (k[1] as string).split('.')) index.add(seg);
     index.add(basename(file).replace(/(?:\.d)?\.[a-z]+$/, ''));
-    for (const id of definedIdentifiers(text, file.endsWith('.json')))
+    for (const id of definedIdentifiers(text, file.endsWith('.json'), file))
       index.add(id);
   }
   return index;

@@ -37,7 +37,7 @@ export function collect(root = ROOT): SourceFile[] {
       } else if (SOURCE_EXT.test(e.name)) {
         const path = relative(root, full).replaceAll('\\', '/');
         // Лише код: закоментований імпорт не робить файл споживачем serverFn (N1).
-        out.push({ path, text: codeOnly(readFileSync(full, 'utf8')) });
+        out.push({ path, text: codeOnly(readFileSync(full, 'utf8'), full) });
       }
     }
   };

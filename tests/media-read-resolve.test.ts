@@ -186,7 +186,7 @@ describe('резолв медіа-колонок при читанні', () => {
   const sources = new Map<string, string>();
   const sites: { site: string; alias: string; source: string }[] = [];
   for (const file of loaderFiles(LOADERS)) {
-    const source = code(readFileSync(file, 'utf8'));
+    const source = code(readFileSync(file, 'utf8'), file);
     const rel = relative(LOADERS, file).replaceAll('\\', '/');
     sources.set(rel, source);
     for (const alias of projectionAliases(source, refs))
