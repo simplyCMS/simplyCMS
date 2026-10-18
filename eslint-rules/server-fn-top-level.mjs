@@ -6,8 +6,16 @@
  * топ-рівень, тож нетоплевел-виклик МОВЧКИ лишається нетрансформованим і
  * серверний граф їде в клієнтський бандл. Це правило робить обидва режими
  * гучними на pnpm lint.
+ *
+ * Реекспорт `createServerFn` (`export { createServerFn } from '@tanstack/react-start'`,
+ * `export * from …`, `export { createServerFn as csf }`) заборонено: компілятор Start
+ * впізнає виклик за імпортом зі СВОГО пакета, тож виклик через локальний реекспорт
+ * він не трансформує — і та сама мовчазна втеча серверного графа в клієнт.
  */
 import { createServerFnTracker } from './lib/create-server-fn.mjs';
+
+/** Модулі Start, що експортують `createServerFn`. */
+const START_MODULE = /^@tanstack\/(?:react-start|start-[\w-]+)(?:\/|$)/;
 
 /** @type {import('eslint').Rule.RuleModule} */
 export default {
@@ -18,6 +26,9 @@ export default {
       notTopLevel:
         'createServerFn мусить бути топ-рівневим `const ім’я = createServerFn(...)` — ' +
         'інакше компілятор Start або впаде, або МОВЧКИ пропустить трансформацію (К3-4′).',
+      reexport:
+        'Реекспорт createServerFn заборонено: компілятор Start не трансформує виклик через ' +
+        'локальний реекспорт — імпортуй його прямо з @tanstack/react-start (К3-4′).',
     },
   },
   create(context) {
@@ -25,6 +36,21 @@ export default {
     const tracker = createServerFnTracker();
     return {
       ...tracker.visitors,
+      ExportAllDeclaration(node) {
+        if (START_MODULE.test(node.source.value))
+          context.report({ node, messageId: 'reexport' });
+      },
+      ExportNamedDeclaration(node) {
+        const fromStart = node.source && START_MODULE.test(node.source.value);
+        for (const s of node.specifiers) {
+          const local = s.local.type === 'Identifier' ? s.local.name : null;
+          // З джерелом — ім'я в модулі Start; без джерела — локальний аліас.
+          const hit = fromStart
+            ? local === 'createServerFn'
+            : !node.source && local !== null && tracker.names.has(local);
+          if (hit) context.report({ node: s, messageId: 'reexport' });
+        }
+      },
       CallExpression(node) {
         if (!tracker.isCreateCall(node)) return;
         // Легальна форма: … → VariableDeclarator(id=Identifier) →

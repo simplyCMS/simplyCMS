@@ -87,4 +87,58 @@ describe('server-fn-top-level (К3-4′)', () => {
     );
     expect(re).toHaveLength(1);
   });
+
+  // Пункт 10.1 Task 18: природні рефакторинги не виводять виклик з-під правила.
+  const raw = (code: string) =>
+    linter.verify(code, config, { filename: 'f.ts' });
+
+  it.each([
+    [
+      'простий реекспорт',
+      `export { createServerFn } from '@tanstack/react-start';`,
+    ],
+    [
+      'реекспорт з перейменуванням',
+      `export { createServerFn as csf } from '@tanstack/react-start';`,
+    ],
+    ['export * з модуля Start', `export * from '@tanstack/react-start';`],
+    [
+      'export * as з модуля Start',
+      `export * as rs from '@tanstack/react-start';`,
+    ],
+    [
+      'реекспорт імпортованого імені',
+      `import { createServerFn as mk } from '@tanstack/react-start';\nexport { mk };`,
+    ],
+  ])('реекспорт — офендер: %s', (_n, code) => {
+    const msgs = raw(code);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.messageId).toBe('reexport');
+  });
+
+  it('реекспорт інших імен Start і createServerFn з чужого модуля — не офендер', () => {
+    expect(raw(`export { createStart } from '@tanstack/react-start';`)).toEqual(
+      [],
+    );
+    expect(raw(`export { createServerFn } from './local';`)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'let-аліас',
+      `import { createServerFn } from '@tanstack/react-start';\nlet f = createServerFn;\nconst o = { fn: f().handler(h) };`,
+    ],
+    [
+      'присвоєння після оголошення',
+      `import { createServerFn } from '@tanstack/react-start';\nlet f;\nf = createServerFn;\nconst o = { fn: f().handler(h) };`,
+    ],
+    [
+      'аліас з namespace',
+      `import * as rs from '@tanstack/react-start';\nconst f = rs.createServerFn;\nconst o = { fn: f().handler(h) };`,
+    ],
+  ])('аліас присвоєнням — трекер бачить виклик: %s', (_n, code) => {
+    const msgs = raw(code);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.messageId).toBe('notTopLevel');
+  });
 });
