@@ -107,25 +107,30 @@ $$;
 -- тихо, і fail-closed зникає, не червонячи жодного гейта.
 -- `SET TRUE` виписано явно, бо саме воно й дозволяє `SET LOCAL ROLE`.
 -- Спіймано поведінковим гейтом RLS на харнесі 2026-08-23 (Task 5).
--- Грант — лише коли членства з потрібними опціями ще немає (той самий спільний каталог, що й
--- ролі вище). Повторний голий `grant` неправильного членства не виправив би, а грант з опціями
--- оновлює наявний рядок `pg_auth_members`.
+-- Грант — лише коли ВЛАСНОГО членства з потрібними опціями ще немає (той самий спільний
+-- каталог, що й ролі вище). «Власне» = рядок `pg_auth_members` того грантора, яким Postgres
+-- (16+) запише цей `grant`: у суперкористувача — бутстрап-суперкористувач (OID 10), інакше —
+-- поточна роль. Лише цей рядок `grant` з опціями й оновлює. Рядок ІНШОГО грантора з INHERIT
+-- прелюдія бачить, але виправити не може (`grant` його не чіпає, а `revoke … granted by` чужого
+-- членства — не її справа): перевидавати своє щоразу означало б марний запис у каталог
+-- кластера на кожному накаті. Такий рядок знімає fail-closed — сигнал про нього дає
+-- `doctor --online` (М5), див. `docs/architecture/data-layer.md` §1. Якщо поточна роль має
+-- ADMIN лише успадковано від іншої, грантором стане та інша — тоді умова тут не знайде
+-- «свого» рядка й `grant` піде щоразу, як до цієї перевірки (зайвий запис, не дірка).
+-- Читаються лише `pg_roles` і `pg_auth_members` — без секретів (`pg_authid`).
 do $$
+declare
+  me oid := case when (select rolsuper from pg_roles where rolname = current_user)
+               then 10 else (select oid from pg_roles where rolname = current_user) end;
 begin
   if not exists (select 1 from pg_auth_members
       where roleid = 'app_user'::regrole and member = 'app_runtime'::regrole
-        and not inherit_option and set_option)
-     or exists (select 1 from pg_auth_members
-      where roleid = 'app_user'::regrole and member = 'app_runtime'::regrole
-        and inherit_option) then
+        and grantor = me and not inherit_option and set_option) then
     grant app_user to app_runtime with inherit false, set true;
   end if;
   if not exists (select 1 from pg_auth_members
       where roleid = 'app_admin'::regrole and member = 'app_runtime'::regrole
-        and not inherit_option and set_option)
-     or exists (select 1 from pg_auth_members
-      where roleid = 'app_admin'::regrole and member = 'app_runtime'::regrole
-        and inherit_option) then
+        and grantor = me and not inherit_option and set_option) then
     grant app_admin to app_runtime with inherit false, set true;
   end if;
 end
