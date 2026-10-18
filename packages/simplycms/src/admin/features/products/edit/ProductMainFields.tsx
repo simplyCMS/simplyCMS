@@ -101,7 +101,7 @@ export function ProductMainFields({ mode }: Props) {
               )
             ) : (
               <PathField
-                key={l}
+                key={`${l}:${card.paths[l] ?? ''}`}
                 productId={card.productId!}
                 locale={l}
                 languageName={language?.name ?? l}

@@ -66,7 +66,12 @@ export function useProductCardState({
     setState({ agg: fresh, baseline });
     if (sent) resetAfterSave(form, baseline, sent);
     else form.reset(baseline);
-    store.set(fresh.version);
+    // Після ВЛАСНОГО збереження стор уже тримає версію з відповіді команди. Якщо перечитаний
+    // агрегат новіший, між збереженням і перечитуванням записав хтось інший: лишаємо версію
+    // збереження, і наступне «Зберегти» дасть 412 і діалог, а не тихо відтворить чуже
+    // видалення чи перезапише чужу правку (обіцянка `product-rebase.ts`). Свідоме
+    // «Перезавантажити» бере версію БД.
+    if (!sent) store.set(fresh.version);
     rows.reset();
     setConflict(false);
     // Список товарів читає ту саму назву з перекладу основної мови (read-model колекції): перечитуємо його.
