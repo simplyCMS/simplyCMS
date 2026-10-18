@@ -141,4 +141,41 @@ describe('server-fn-top-level (К3-4′)', () => {
     expect(msgs).toHaveLength(1);
     expect(msgs[0]!.messageId).toBe('notTopLevel');
   });
+
+  // Фікс-раунд 1 Task 18 (I1): реекспорт ОГОЛОШЕННЯМ — модуль-хелпер, споживач якого
+  // імпортує `csf` і виводить виклик з-під трекера й трансформації Start.
+  it.each([
+    [
+      'export const = createServerFn',
+      `import { createServerFn } from '@tanstack/react-start';\nexport const csf = createServerFn;`,
+    ],
+    [
+      'export let = createServerFn',
+      `import { createServerFn } from '@tanstack/react-start';\nexport let csf = createServerFn;`,
+    ],
+    [
+      'export default createServerFn',
+      `import { createServerFn } from '@tanstack/react-start';\nexport default createServerFn;`,
+    ],
+    [
+      'export const = ns.createServerFn',
+      `import * as rs from '@tanstack/react-start';\nexport const csf = rs.createServerFn;`,
+    ],
+    [
+      'export const = аліас',
+      `import { createServerFn as mk } from '@tanstack/react-start';\nexport const csf = mk;`,
+    ],
+  ])('реекспорт оголошенням — офендер: %s', (_n, code) => {
+    const msgs = raw(code);
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]!.messageId).toBe('reexport');
+  });
+
+  it('експорт serverFn (виклик, а не посилання) лишається легальним', () => {
+    expect(
+      raw(
+        `import { createServerFn } from '@tanstack/react-start';\nexport const list = createServerFn({ method: 'GET' }).handler(h);`,
+      ),
+    ).toEqual([]);
+  });
 });

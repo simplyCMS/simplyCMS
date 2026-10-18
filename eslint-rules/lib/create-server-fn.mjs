@@ -22,6 +22,7 @@ export function createServerFnTracker() {
       n.property.name === 'createServerFn');
   return {
     names,
+    isRef,
     visitors: {
       ImportDeclaration(node) {
         for (const s of node.specifiers) {

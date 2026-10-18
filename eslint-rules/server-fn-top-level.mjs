@@ -7,10 +7,15 @@
  * серверний граф їде в клієнтський бандл. Це правило робить обидва режими
  * гучними на pnpm lint.
  *
- * Реекспорт `createServerFn` (`export { createServerFn } from '@tanstack/react-start'`,
- * `export * from …`, `export { createServerFn as csf }`) заборонено: компілятор Start
- * впізнає виклик за імпортом зі СВОГО пакета, тож виклик через локальний реекспорт
- * він не трансформує — і та сама мовчазна втеча серверного графа в клієнт.
+ * Реекспорт `createServerFn` заборонено в УСІХ формах — специфікатором
+ * (`export { createServerFn } from '@tanstack/react-start'`, `export * from …`,
+ * `export { mk as csf }`) і оголошенням (`export const csf = createServerFn`,
+ * `export default createServerFn`, `export const x = rs.createServerFn`): компілятор Start
+ * впізнає виклик за імпортом зі СВОГО пакета, тож виклик через модуль-хелпер він не
+ * трансформує — і та сама мовчазна втеча серверного графа в клієнт. Заборона, а не
+ * трекінг споживачів: правило бачить один файл, а споживач хелпера живе в іншому.
+ * Прийнята межа: `export { f }`, записаний ДО `const f = createServerFn`, не ловиться
+ * (ESLint іде одним проходом, аліас ще невідомий) — така форма видна на рев'ю.
  */
 import { createServerFnTracker } from './lib/create-server-fn.mjs';
 
@@ -50,6 +55,17 @@ export default {
             : !node.source && local !== null && tracker.names.has(local);
           if (hit) context.report({ node: s, messageId: 'reexport' });
         }
+      },
+      // Реекспорт оголошенням: `export const|let|var x = <посилання на createServerFn>`.
+      'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator'(
+        node,
+      ) {
+        if (tracker.isRef(node.init))
+          context.report({ node, messageId: 'reexport' });
+      },
+      ExportDefaultDeclaration(node) {
+        if (tracker.isRef(node.declaration))
+          context.report({ node, messageId: 'reexport' });
       },
       CallExpression(node) {
         if (!tracker.isCreateCall(node)) return;
