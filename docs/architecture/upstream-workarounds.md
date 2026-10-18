@@ -261,10 +261,14 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 **Симптом.** `GET|POST /_serverFn/<невідомий id>` → 500, а не 404. Сканер `/_serverFn/*` дає 5xx і
 шум у лозі/алертах; у лозі — повний текст помилки (id з URL, секретів немає).
 
-**Рішення: прийнято, обходу немає.** Тексту помилки клієнт не бачить — жива проба на справжній
-збірці (`tests/server-fn-base-build.test.ts`, маркер `UPSTREAM:START-SFN-404-1`): тіло 500 без стеку,
-id функції, шляхів ФС і тексту апстріму. Знято 2026-10-18: `GET` → `Internal server error [ref …]`
-(маскування `server-guard`), `POST` → `{"status":500,"unhandled":true,"message":"HTTPError"}` (h3).
+**Рішення: прийнято, обходу немає.** Тексту помилки клієнт не бачить — дві живі проби (маркер
+`UPSTREAM:START-SFN-404-1`), тіло 500 без стеку, id функції, шляхів ФС і тексту апстріму:
+- справжній магазин пілота з базою за замовчуванням `/_serverFn/` — Gate B
+  (`scripts/pilot-pack/server-fn-404-probe.mjs`), GET і POST;
+- збірка з нестандартною базою `serverFns.base: '/_custom/fn/'` — `tests/server-fn-base-build.test.ts`
+  (база там конфігурована, бо цей тест і є доказом інлайну бази; шлях обробника той самий).
+Знято 2026-10-18: `GET` → `Internal server error [ref …]` (маскування `server-guard`), `POST` →
+`{"status":500,"unhandled":true,"message":"HTTPError"}` (h3).
 404 дав би лише правильнішу семантику, а обхід (middleware ловить `Error` з цим текстом для
 `handlerType === 'serverFn'` → 404) прив'язав би нас до тексту апстріму — не варте.
 

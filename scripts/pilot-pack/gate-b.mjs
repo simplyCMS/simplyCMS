@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { get } from 'node:http';
 import pg from 'pg';
 import { checkApiV1 } from './gate-b-api.mjs';
+import { checkUnknownServerFn } from './server-fn-404-probe.mjs';
 
 /** Товари з БД — очікувані рядки для SSR-перевірок. */
 export async function expectedProducts(env) {
@@ -161,6 +162,7 @@ export async function gateHttp(port, env) {
   );
 
   await checkApiV1(base, check);
+  await checkUnknownServerFn(base, check);
 
   const health = await fetch(`${base}/api/health`);
   const healthJson = await health.json();
