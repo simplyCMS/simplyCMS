@@ -28,7 +28,7 @@ pnpm simplycms doctor
 | `simplycms theme:conformance <name>` | Conformance-гейт контракту тем v3: рендерить заявлені темою `views` на фікстурах ядра й падає, якщо загублено комерційний реквізит. `<name>` — ключ теми в `simplycms.config.ts`; потребує `jsdom` у магазині (`pnpm add -D jsdom`) |
 | `simplycms update [--check \| --write] [--to <version>] [--no-install]` | Оновлення пакетів ядра (`simplycms` + сателіти `@simplycms/*`) до `--to` або latest із реєстру, лагодження лінків агентних скілів і файлів агента + доганяння host-файлів (канон — тека `host/` цього пакета). Без прапорців — **з мережею**: питає реєстр, ставить пакети (`pnpm add`), передає звірку новому CLI; дрейф host-файлів без `--write` — exit 1. `--write` — те саме, але ще й перезаписує host-файли. `--check` — **без мережі й install**, нічого не пише, придатне для CI: exit `0` — збігається, `3` — є розбіжності, `1` — помилка. Межу сумісності (мінорна для 0.x, мажорна з 1.0) без `--to` не перетинає: exit 3 і посилання на BREAKING у CHANGELOG |
 | `simplycms db:diff [--write]` | Порівняння `db/migrations/` магазину з міграціями встановленого ядра (`node_modules/simplycms/migrations`): нові міграції ядра `--write` докопіює (forward-only); змінений спільний файл — error без запису |
-| `simplycms db:apply [--dry-run \| --check]` | Накат `db/migrations` магазину через ядро (`simplycms/migrate`): журнал із контрольними сумами, advisory-лок, транзакція на файл. Потребує `MIGRATION_DATABASE_URL` (власник схеми, не `app_runtime`). Exit `0` — гаразд, `3` — `--check` і є ненакочені, `1` — помилка |
+| `simplycms db:apply [--dry-run \| --check]` | Накат `db/migrations` магазину через ядро (`simplycms/migrate`): журнал із контрольними сумами, advisory-лок, транзакція на файл. Потребує `MIGRATION_DATABASE_URL` (суперкористувач кластера, не `app_runtime`). Exit `0` — гаразд, `3` — `--check` і є ненакочені, `1` — помилка |
 
 ## Наскрізний сценарій: оновлення ядра
 
@@ -37,7 +37,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра + звіт дрейфу host-файлів
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-pnpm simplycms db:apply          # накатити після ревʼю (MIGRATION_DATABASE_URL — власник схеми, не app_runtime)
+pnpm simplycms db:apply          # накатити після ревʼю (MIGRATION_DATABASE_URL — суперкористувач кластера, не app_runtime)
 pnpm build && pnpm start         # rebuild
 ```
 

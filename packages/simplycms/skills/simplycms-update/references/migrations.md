@@ -13,7 +13,7 @@
 3. `pnpm simplycms db:diff --write` — копіює нові файли в `db/migrations` (прев'ю = крок 1–2,
    згода власника, потім `--write`). Закоміть їх разом з оновленням.
 4. Локально: `pnpm simplycms db:apply --dry-run`, потім `pnpm simplycms db:apply` на
-   локальній БД (потрібен `MIGRATION_DATABASE_URL`, роль-власник схеми). Далі `pnpm build` і
+   локальній БД (потрібен `MIGRATION_DATABASE_URL`, роль — суперкористувач кластера). Далі `pnpm build` і
    `pnpm simplycms doctor --online`.
 5. `pnpm simplycms db:apply --check` — код `3`, якщо на цільовій БД є ненакочені; `0` — усе накочено.
 

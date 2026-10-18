@@ -11,7 +11,10 @@
 ## 1. Модель
 
 - Дані — **Drizzle поверх чистого PostgreSQL 17** (`pg`-пул), auth — **Better Auth**
-  (`simplycms/auth`). Supabase — лише один із можливих провайдерів Postgres.
+  (`simplycms/auth`). Postgres — власний кластер магазину; роль накату — **SUPERUSER** кластера: прелюдія (`0000_prelude.sql`) створює ролі `app_*` і
+  приводить їх атрибути до канону (`alter role … nosuperuser nobypassrls nocreatedb …`), а атрибути
+  SUPERUSER/BYPASSRLS Postgres дозволяє міняти лише суперкористувачу. Керовані Postgres, де роль має лише
+  CREATEROLE (Supabase, RDS тощо), не підтримуються.
 - Браузер до БД не звертається: усе через серверні функції (`createServerFn`).
 - 🔴 Єдиний спосіб дістати зʼєднання — **`withActor`** (`simplycms/db`): транзакція +
   GUC актора (`app.user_id`, `app.order_token`) + `SET LOCAL ROLE app_user|app_admin`.
@@ -19,10 +22,10 @@
   `SET LOCAL ROLE` падає з `permission denied`, а не тихо працює з правами власника
   таблиць (fail-closed). Прелюдія (`0000_prelude.sql`) приводить до канону атрибути ролей і ВЛАСНЕ
   членство `app_runtime` в `app_user`/`app_admin` (`inherit false, set true`; «власне» — рядок того
-  грантора, яким Postgres запише її `grant`) і пише лише за відмінності. Членство `app_runtime` в
-  `app_user`/`app_admin` з INHERIT від ІНШОГО грантора вона бачить, але не виправляє (`grant` чужого
-  рядка не чіпає) і своє через нього не перевидає; членство `app_runtime`/`app_*` у будь-яких інших
-  ролях з INHERIT не перевіряє зовсім. Таке членство дає права без `SET LOCAL ROLE` і знімає
+  грантора, яким Postgres запише її `grant`) і пише лише за відмінності (тотожний `grant` не пише, але
+  тримав би замок групової ролі до коміту — тому й він умовний). Членство від ІНШИХ гранторів — і в
+  `app_user`/`app_admin`, і в будь-яких інших ролях з INHERIT — вона не перевіряє й не виправляє (`grant`
+  чужого рядка не чіпає). Таке членство дає права без `SET LOCAL ROLE` і знімає
   fail-closed (сигнал — `doctor --online`, план М5). Гола фабрика пулу (`db/client`) закрита лінт-зоною
   (`eslint.db-client-zone.mjs`) і не має субшляху в `exports`.
 - `fn` у `withActor` отримує drizzle над зʼєднанням САМЕ цієї транзакції, не над
@@ -286,7 +289,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   накоченого файлу; змінений накочений файл — `MigrationChecksumError` до будь-якого
   DDL, база зі схемою без журналу — `UnjournaledDatabaseError` (адопції немає),
   паралельні накати однієї бази серіалізує `pg_advisory_lock`. У магазині накат —
-  `pnpm simplycms db:apply` (`MIGRATION_DATABASE_URL` власника схеми); ручний
+  `pnpm simplycms db:apply` (`MIGRATION_DATABASE_URL` — суперкористувач кластера, §1); ручний
   накат повз журнал лишає базу, яку наступний накат відмовиться чіпати.
 - 🔴 Файл міграції виконується в ОДНІЙ транзакції накату разом зі своїм записом у
   журнал: файл, що впав, відкочується цілком. Тому `concurrently` і власні

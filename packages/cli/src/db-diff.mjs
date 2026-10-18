@@ -365,7 +365,7 @@ export async function run(argv) {
   // людського ревʼю SQL, у порядку імен, лише файли без запису в журналі.
   showSteps([
     'git diff                        # ревʼю доданих міграцій',
-    'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — власник схеми)',
+    'pnpm simplycms db:apply         # накат (MIGRATION_DATABASE_URL — суперкористувач)',
   ]);
   finish('Готово.');
 }

@@ -77,7 +77,11 @@
 
 `MEDIA_ROOT` разом з повною групою S3 не помилка: драйвер `s3`, а `warnings` резолвера несе рівно
 одне попередження, що `MEDIA_ROOT` проігноровано. Також опційний `MIGRATION_DATABASE_URL` —
-зʼєднання власника БД, яке бачать лише `simplycms db:apply` і `scripts/start.mjs`. Ключі груп закоментовані в обох `env.example`; парність їх множин і
+зʼєднання ролі накату, яке бачать лише `simplycms db:apply` і `scripts/start.mjs`. 🔴 Ця роль — **SUPERUSER**
+кластера (у Dokploy — `postgres` образу): прелюдія `0000_prelude.sql` створює ролі `app_*` і приводить їх атрибути
+до канону (`alter role … nosuperuser nobypassrls nocreatedb …`), а атрибути SUPERUSER/BYPASSRLS Postgres дозволяє
+міняти лише суперкористувачу. Керовані Postgres, де роль має лише CREATEROLE (Supabase, RDS тощо), не підтримуються;
+накат там падає з кодом `42501` і підказкою про цю вимогу. Ключі груп закоментовані в обох `env.example`; парність їх множин і
 контракт активних ключів стереже `tests/env-contract.test.ts`.
 
 ## 2. Запуск у проді
@@ -97,7 +101,7 @@ HTTP-сервер. Теки `.output/` немає.
 - `pnpm start` = `node server.mjs` — лише локальний запуск зібраного бандла, **не для проду**
   (без накату міграцій і без `execve`). У проді стартова команда платформи — рівно
   `node scripts/start.mjs` (шим під `simplycms update`, логіка — `simplycms/prod-start`; скрипта `start:prod` немає, `pnpm` у контейнері не потрібен): спершу накат міграцій (`simplycms/migrate`) під
-  `MIGRATION_DATABASE_URL` (пароль власника схеми; не задано — накат пропущено), далі
+  `MIGRATION_DATABASE_URL` (суперкористувач кластера, див. вище; не задано — накат пропущено), далі
   `process.execve` підміняє процес на `server.mjs` БЕЗ цієї змінної (потрібен Node ≥ 24).
   🔴 `start.mjs` читає лише `process.env` і `.env*` не читає (у проді env дає Dokploy); локальний
   накат — `pnpm simplycms db:apply`, який `.env.local` читає. `server.mjs` теж не підтягує

@@ -20,7 +20,8 @@
 - **Мова:** TypeScript strict — 🔴 **TS 6.0; TS 7 заблоковано лише `typescript-eslint`** (причина нижче).
 - **Лінт:** ESLint 10 (flat config) + typescript-eslint 8; форматування — Prettier (exact-версія в `devDependencies`).
 - **Дані:** чистий **PostgreSQL 17** (Drizzle + `pg`-пул, `simplycms/db`), auth — **Better Auth**.
-  Supabase — лише один із можливих провайдерів Postgres.
+  Роль накату — SUPERUSER власного кластера; керовані Postgres лише з CREATEROLE не підтримуються
+  (`docs/architecture/data-layer.md` §1).
 - **UI:** Tailwind CSS v4 + shadcn/ui (Radix); форми — react-hook-form + Zod 4; rich text — Tiptap v3.
 - **Дані на клієнті:** TanStack React Query (+ TanStack DB колекції адмінки) і route loaders / `createServerFn`.
 - **Тести:** Vitest + Testing Library + jsdom; схемний контур — Postgres-харнес.

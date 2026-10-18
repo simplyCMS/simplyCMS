@@ -13,6 +13,8 @@ node .claude/skills/simplycms-onboarding/scripts/dokploy.mjs provision --name <s
 `--server` — сервер застосунків (той самий `serverId`, що й у `prod-run`): без нього ресурси стануть на
 хості панелі, і §7 не знайде контейнер. Створює (лише відсутнє, пошук за іменем): проєкт `<slug>`,
 Postgres `<slug>-db` (і запускає його), застосунок `<slug>-web`, домен. Паролі БД лягають у файл секретів (`MIGRATION_DATABASE_URL`, `DATABASE_URL`), не у вивід.
+`MIGRATION_DATABASE_URL` — користувач `postgres` сервісу, суперкористувач: накат цього вимагає (прелюдія
+задає атрибути ролей `app_*`), тож окремого «власника БД» без SUPERUSER туди не підставляй.
 Ідентифікатори йдуть у `.simplycms/deploy.json` через `pnpm simplycms deploy:record set`.
 
 - **Власний екземпляр Postgres на магазин**: ролі `app_runtime`/`app_admin` кластерні, синк пароля

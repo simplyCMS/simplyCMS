@@ -86,7 +86,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 
 Онлайн-перевірки (лише з `--online`, К3-Е8, `src/doctor-db-checks.mjs`) ходять у БД
 з `DATABASE_URL` (роль `app_runtime`), а не з `MIGRATION_DATABASE_URL`: doctor
-read-only, ключ власника схеми не мусить лежати на кожній машині. Журнал читає ядро
+read-only, ключ ролі накату (суперкористувача) не мусить лежати на кожній машині. Журнал читає ядро
 (`simplycms/migrate` через `importFromStore`, Е8-Р13) у read-only транзакції під
 `SET ROLE app_admin`. Бюджет 3 с і на з'єднання, і на запит: ядро приймає його як
 `readJournal(url, { timeoutMs })` (`connectionTimeoutMillis` + `statement_timeout` сесії). Немає
@@ -336,7 +336,7 @@ tables … from public`, тож файл `0001_plg_*` ліг би перед н�
 `public.simplycms_migrations` із sha256 файлів, `pg_advisory_lock`, кожен файл в
 одній транзакції зі своїм записом. Команда лише розбирає env, делегує й друкує.
 
-- Підключення — **лише** `MIGRATION_DATABASE_URL` (власник схеми; `process.env` >
+- Підключення — **лише** `MIGRATION_DATABASE_URL` (суперкористувач кластера — `ENVIRONMENT.md`; `process.env` >
   `.env.local` > `.env`). Назад на `DATABASE_URL` команда не падає ніколи: без
   `MIGRATION_DATABASE_URL` — exit 1 з назвою змінної. `DATABASE_URL`, якщо заданий,
   іде як `runtimeUrl` — ядро синхронізує пароль `app_runtime` (лише друкований ASCII).
@@ -448,7 +448,7 @@ pnpm simplycms doctor            # стартова діагностика
 pnpm simplycms update            # бамп пакетів ядра + лінки скілів + файли агента + звіт дрейфу
 pnpm simplycms update --write    # догнати host-файли (ревʼю: git diff)
 pnpm simplycms db:diff --write   # донести нові core-міграції (ревʼю: git diff)
-pnpm simplycms db:apply          # накатити (після ревʼю!; MIGRATION_DATABASE_URL — власник схеми)
+pnpm simplycms db:apply          # накатити (після ревʼю!; MIGRATION_DATABASE_URL — суперкористувач)
 pnpm build && pnpm start         # rebuild
 ```
 
