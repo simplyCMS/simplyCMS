@@ -6,12 +6,11 @@ import {
   missingProjectionRows,
 } from 'simplycms/catalog-projection';
 import { z } from 'zod';
-import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { defineOperation } from 'simplycms/operations';
 import { languages } from 'simplycms/schema';
 import type { Language } from 'simplycms/schema/types';
 import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
-import { completeness } from './completeness';
+import { completeness, languageIncompleteError } from './completeness';
 import { stuckFill } from './fill';
 import {
   code,
@@ -78,10 +77,7 @@ export const languagesSetStatus = defineOperation({
     // відмова відкочує всю транзакцію, тож мова лишається в попередньому статусі.
     if (input.status === 'published') {
       const c = await completeness(db, input.code);
-      if (!c.complete)
-        throw new ValidationError([
-          { path: ['status'], code: 'language_incomplete' },
-        ]);
+      if (!c.complete) throw languageIncompleteError(c.incomplete);
     }
     await bumpCacheGeneration(db, CACHE_KEYS.languages);
     return toView(updated!);

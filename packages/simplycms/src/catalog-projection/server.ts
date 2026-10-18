@@ -6,8 +6,8 @@ export {
   refreshProductTexts,
 } from './product-texts';
 export {
-  countProjectionMismatches,
   findProjectionMismatches,
+  localeProjectionMismatches,
   reconcileProductTexts,
   type MismatchKey,
 } from './reconcile';

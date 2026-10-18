@@ -88,14 +88,22 @@
 - **Один будівник** очікуваного стану — `expectedRows` (`catalog-projection/expected.ts`): з нього
   беруть і `refreshProductTexts` (синхронно в транзакції кожної команди товару), і
   `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), і звірка
-  `findProjectionMismatches`/`countProjectionMismatches`/`reconcileProductTexts`. Три читачі однієї
+  `findProjectionMismatches`/`localeProjectionMismatches`/`reconcileProductTexts`. Три читачі однієї
   істини не розходяться між собою.
 - Парність SQL-предиката `is_translated` і `fallback_fields` з доменними
   `isTranslatedForSeo`/`fallbackFieldsOf` перевіряє звірка (`parity.ts`): плоскі поля зводить CHECK у
   БД, rich-поле SQL бачить лише як `IS NULL`.
 - Мова `disabled` — проєкцію знімає `dropLocaleProjection`; повернення в `published` —
   дозаповнення адрес, токенів і проєкції після звірки (машина станів — §3.5 майстра).
-  `languages.setStatus` у `published` відмовляє, доки звірка не дасть 0 розбіжностей.
+  `languages.setStatus` у `published` відмовляє, доки звірка не дасть 0 розбіжностей; відмова
+  `language_incomplete` називає товари й етап (`['products', id, 'path'|'token'|'projection']` у
+  `path` проблеми — єдине, що несуть і problem+json, і serverFn; до 20 прикладів).
+- 🔴 **`languages.fill` будує проєкцію лише з адрес, закомічених ПОПЕРЕДНІМ викликом:** пакет, що
+  скопіював хоч одну адресу, етап проєкції пропускає (`done: false`). Інакше паралельна команда товару
+  незакоміченої адреси не бачила б, рядка мови не писала б, і fill закомітив би текст зі знімка до
+  команди — застарілий назавжди (І23). З закоміченою адресою fill пише `DO NOTHING`, команда —
+  `DO UPDATE`: за будь-якого порядку комітів перемагає свіжий текст. Кейс —
+  `fill-projection-race.test.ts`.
 
 ## 5. Читання на вітрині
 

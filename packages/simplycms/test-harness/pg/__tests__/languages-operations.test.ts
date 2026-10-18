@@ -88,9 +88,11 @@ describe('операції мов (M1, Task 6)', () => {
       status: 'published',
     }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ValidationError);
-    expect((err as ValidationError).issues).toEqual([
-      { path: ['status'], code: 'language_incomplete' },
-    ]);
+    // Перша проблема — на поле статусу; далі товари без адреси (деталі — `fill-projection-race`).
+    expect((err as ValidationError).issues[0]).toEqual({
+      path: ['status'],
+      code: 'language_incomplete',
+    });
     expect(await stat('cs')).toBe('draft');
   });
 

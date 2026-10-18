@@ -15,7 +15,7 @@ import {
 } from './parity';
 
 // Звірка проєкції з джерелом (І23). Одна логіка в двох режимах: read-only підрахунок
-// (`countProjectionMismatches`, для повноти мови) і виправлення (`reconcileProductTexts`).
+// (`localeProjectionMismatches`, для повноти мови) і виправлення (`reconcileProductTexts`).
 
 export type { MismatchKey };
 
@@ -72,16 +72,17 @@ export async function findProjectionMismatches(
 }
 
 /**
- * Скільки рядків проєкції мови розходяться з джерелом (відсутні + застарілі +
- * зайві + непаритетні). Read-only режим тієї самої звірки: для повноти мови
- * (`completeness.missingProjection`). Набір мов читається під спільним замком.
+ * Рядки проєкції мови, що розходяться з джерелом (відсутні + застарілі + зайві +
+ * непаритетні). Read-only режим тієї самої звірки: для повноти мови — і лік
+ * (`completeness.missingProjection`), і які саме товари винні (відмова публікації їх
+ * називає). Набір мов читається під спільним замком.
  */
-export async function countProjectionMismatches(
+export async function localeProjectionMismatches(
   db: ActorDb,
   locale: string,
-): Promise<number> {
+): Promise<MismatchKey[]> {
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
-  return (await findProjectionMismatches(db, { locale })).length;
+  return findProjectionMismatches(db, { locale });
 }
 
 /**

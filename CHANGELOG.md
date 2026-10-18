@@ -166,9 +166,12 @@
 - **Проєкція тексту товару (М1 Task 14):** новий субшлях `simplycms/catalog-projection` (server-only) —
   `refreshProductTexts` (синхронно в транзакції команд товару, спільний замок `languages-set`),
   `buildMissingProjection` (етап `languages.fill`, лише `DO NOTHING`), `dropLocaleProjection`,
-  `reconcileProductTexts`/`countProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
+  `reconcileProductTexts`/`localeProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
   `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
-  дозбирає при поверненні; `languages.fill` і звірка беруть на товарах і модифікаціях лише `FOR KEY SHARE`
+  дозбирає при поверненні, а відмова `language_incomplete` називає товари й етап
+  (`['products', id, 'path'|'token'|'projection']`); `languages.fill` будує проєкцію лише з адрес,
+  закомічених попереднім викликом (пакет, що скопіював адресу, повертає `done: false` без проєкції —
+  інакше паралельна команда лишала б рядок мови застарілим, І23); `languages.fill` і звірка беруть на товарах і модифікаціях лише `FOR KEY SHARE`
   (за id, корінь раніше за модифікації). Порядок замків агрегата — `languages-set` -> корені -> дочірні: замок кореня
   (`lockAggregateRoots`: команди `FOR NO KEY UPDATE`, `products.remove` — `FOR UPDATE`, пакетний remove модифікацій) сам
   бере спільний `languages-set` перед рядком кореня; рядки `product_modifications` видаляє лише `deleteModifications`
