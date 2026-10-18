@@ -1,3 +1,4 @@
+import { ValidationError } from 'simplycms/contracts/domain-errors';
 import type { TextLocale } from 'simplycms/domain/translations';
 import { loadLocaleSet } from './languages';
 
@@ -19,4 +20,20 @@ export async function resolveTextLocale(
       ? requested
       : set.primary;
   return { locale, primary: set.primary };
+}
+
+/**
+ * Мова ОФОРМЛЕННЯ замовлення: лише `published`, інакше ВІДМОВА (помилка валідації), а не
+ * тихий fallback на основну. Читання (лістинги, квота) лишаються на `resolveTextLocale` —
+ * там неправильна мова дає основну без шкоди; а оформлення пише ЗНІМОК `order_items.name`,
+ * тож замовлення мовою, якої покупець не бачив, не оформлюється. Перевірка — на межі
+ * (серверна функція), `loadCatalog` лише приймає вже перевірений `TextLocale`.
+ */
+export async function requirePublishedTextLocale(
+  requested: string,
+): Promise<TextLocale> {
+  const set = await loadLocaleSet();
+  if (!set.published.includes(requested))
+    throw new ValidationError([{ path: ['locale'], code: 'invalid_value' }]);
+  return { locale: requested, primary: set.primary };
 }

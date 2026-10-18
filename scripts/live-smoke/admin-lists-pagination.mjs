@@ -8,6 +8,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
+import { PRIMARY_LOCALE } from './product-address.mjs';
+import { deleteProductsByPrefix, seedProducts } from './product-rows.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
 import { expectVisible } from './wait.mjs';
 
@@ -65,13 +67,13 @@ export async function runAdminListsPaginationStep({
   const tag = randomUUID().slice(0, 6);
   try {
     const section = await sectionBySlug(dbUrl, 'sonyachni-paneli');
-    await sql(
-      dbUrl,
-      `insert into public.products (id, slug, name, section_id, created_at, updated_at)
-       select gen_random_uuid(), 'pg-${tag}-' || i, 'Пагін ${tag} ' || lpad(i::text, 3, '0'), $1, ${TS}, ${TS}
-         from generate_series(1, ${SEEDED}) i`,
-      [section.id],
-    );
+    await seedProducts(dbUrl, {
+      prefix: `pg-${tag}-`,
+      nameSql: `'Пагін ${tag} ' || lpad(i::text, 3, '0')`,
+      count: SEEDED,
+      sectionId: section.id,
+      createdSql: TS,
+    });
     await sql(
       dbUrl,
       `insert into public.orders (id, order_number, first_name, last_name, email, phone,
@@ -88,9 +90,12 @@ export async function runAdminListsPaginationStep({
         loadMore: 'Показати ще',
         rowKeys: (p) => p.locator('tbody tr td.font-medium').allTextContents(),
         expected: async () =>
-          (await sql(dbUrl, `select name from public.products`)).map(
-            (r) => r.name,
-          ),
+          (
+            await sql(
+              dbUrl,
+              `select name from public.product_translations where locale = ${PRIMARY_LOCALE}`,
+            )
+          ).map((r) => r.name),
       },
       {
         name: 'замовлення',
@@ -136,7 +141,7 @@ export async function runAdminListsPaginationStep({
   } finally {
     // Кожне прибирання ізольоване: відмова одного не лишає сміття в іншому.
     await Promise.allSettled([
-      sql(dbUrl, `delete from public.products where slug like 'pg-${tag}-%'`),
+      deleteProductsByPrefix(sql, dbUrl, `pg-${tag}-`),
       sql(
         dbUrl,
         `delete from public.orders where order_number like 'PG-${tag}-%'`,

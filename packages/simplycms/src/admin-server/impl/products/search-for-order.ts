@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { primaryLocaleCode } from 'simplycms/translations';
 import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 
@@ -51,6 +52,7 @@ export const searchProductsForOrderOp = async ({
   if (query.length < MIN_SEARCH_LENGTH) return { items: [] };
   const pattern = `%${escapeLike(query)}%`;
   return runAdmin('order.manage', async (db) => {
+    const primary = await primaryLocaleCode(db);
     const result = await db.execute<{
       productId: string;
       name: string;
@@ -64,7 +66,7 @@ export const searchProductsForOrderOp = async ({
         from public.products p
         join public.product_translations pt
           on pt.product_id = p.id
-         and pt.locale = (select code from public.languages where is_default)
+         and pt.locale = ${primary}
        where p.is_active
          and (exists (
                 select 1 from public.product_translations t

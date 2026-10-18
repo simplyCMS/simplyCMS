@@ -9,6 +9,8 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
+import { PRIMARY_LOCALE } from './product-address.mjs';
+import { deleteProductsByPrefix, seedProducts } from './product-rows.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
 import { expectVisible, waitToast } from './wait.mjs';
 
@@ -28,32 +30,27 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
   const tag = randomUUID().slice(0, 6);
   const old = `Збер ${tag} 001`;
   const renamed = `${old} ЗМІНЕНО`;
+  const modId = randomUUID();
   try {
     const section = await sectionBySlug(dbUrl, 'sonyachni-paneli');
-    await sql(
-      dbUrl,
-      `insert into public.products (id, slug, name, section_id, created_at, updated_at)
-       select gen_random_uuid(), 'sr-${tag}-' || i, 'Збер ${tag} ' || lpad(i::text, 3, '0'), $1, ${TS}, ${TS}
-         from generate_series(1, ${SEEDED}) i`,
-      [section.id],
-    );
+    await seedProducts(dbUrl, {
+      prefix: `sr-${tag}-`,
+      nameSql: `'Збер ${tag} ' || lpad(i::text, 3, '0')`,
+      count: SEEDED,
+      sectionId: section.id,
+      createdSql: TS,
+    });
     const [product] = await sql(
       dbUrl,
-      `select id from public.products where name = $1`,
+      `select product_id as id from public.product_translations
+        where name = $1 and locale = ${PRIMARY_LOCALE}`,
       [old],
     );
-    const modId = randomUUID();
+    // М1-TEMP: зноситься в Task 17 — `product_modifications.slug`/`name` ще NOT NULL.
     await sql(
       dbUrl,
       `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, 'sr-mod-${tag}', 'Мод ${tag}')`,
       [modId, product.id],
-    );
-    // М1: картка читає `products.get` — тексти беруться з перекладів основної
-    // мови, а не з колонок-дзеркал (повний перехід сіду — Task 17).
-    await sql(
-      dbUrl,
-      `insert into public.product_translations (product_id, locale, name) values ($1, 'uk', $2)`,
-      [product.id, old],
     );
     await sql(
       dbUrl,
@@ -104,7 +101,10 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
     const top = (
       await sql(
         dbUrl,
-        `select name from public.products order by created_at desc limit ${PAGE}`,
+        `select t.name from public.products p
+           join public.product_translations t
+             on t.product_id = p.id and t.locale = ${PRIMARY_LOCALE}
+          order by p.created_at desc limit ${PAGE}`,
       )
     ).map((r) => r.name);
     check(
@@ -125,11 +125,11 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
   } finally {
     // Послідовно (FK: залишки → модифікація → товар), кожен запит ізольовано.
     for (const q of [
-      `delete from public.stock_by_pickup_point where modification_id in (select id from public.product_modifications where slug = 'sr-mod-${tag}')`,
-      `delete from public.product_modifications where slug = 'sr-mod-${tag}'`,
-      `delete from public.products where slug like 'sr-${tag}-%'`,
+      `delete from public.stock_by_pickup_point where modification_id = '${modId}'`,
+      `delete from public.product_modifications where id = '${modId}'`,
     ])
       await sql(dbUrl, q).catch(() => {});
+    await deleteProductsByPrefix(sql, dbUrl, `sr-${tag}-`).catch(() => {});
     await page.close().catch(() => {});
   }
 }

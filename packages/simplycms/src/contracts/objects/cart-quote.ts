@@ -15,7 +15,17 @@ export interface AvailableCartQuoteLine {
   productId: string;
   modificationId: string | null;
   quantity: number;
+  /** Склейка `<товар> - <модифікація>` мовою запиту (так само пишеться знімок замовлення). */
   name: string;
+  /**
+   * Назви ОКРЕМО мовою запиту: видимий кошик показує їх замість назв, збережених при
+   * додаванні (інша мова). `*NameLang` — мова основної, коли назву взято з fallback
+   * (ознака з даних, І37): кошик обгортає її `lang`.
+   */
+  productName: string;
+  modificationName: string | null;
+  productNameLang: string | null;
+  modificationNameLang: string | null;
   basePrice: number;
   price: number;
   applied: CartQuoteAppliedDiscount[];

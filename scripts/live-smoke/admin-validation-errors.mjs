@@ -9,6 +9,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
+import { deleteProductsByPrefix, seedProducts } from './product-rows.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
 import { expectCount } from './wait.mjs';
 
@@ -25,25 +26,26 @@ export async function runAdminValidationErrorsStep({
   page.on('pageerror', (e) => errors.push(String(e)));
   const tag = randomUUID().slice(0, 6);
   const name = `Валід ${tag}`;
+  const modId = randomUUID();
   try {
     const section = await sectionBySlug(dbUrl, 'sonyachni-paneli');
-    const productId = randomUUID();
-    const modId = randomUUID();
-    await sql(
+    await seedProducts(dbUrl, {
+      prefix: `ve-${tag}`,
+      nameSql: `'${name}'`,
+      count: 1,
+      sectionId: section.id,
+      createdSql: 'now()',
+    });
+    const [{ id: productId }] = await sql(
       dbUrl,
-      `insert into public.products (id, slug, name, section_id, has_modifications) values ($1, $2, $3, $4, true)`,
-      [productId, `ve-${tag}`, name, section.id],
+      `select product_id as id from public.url_paths where path = $1`,
+      [`ve-${tag}1`],
     );
     await sql(
       dbUrl,
+      // М1-TEMP: зноситься в Task 17 — `product_modifications.slug`/`name` ще NOT NULL.
       `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, $3, $4)`,
       [modId, productId, `ve-mod-${tag}`, `Мод ${tag}`],
-    );
-    // М1: картка читає переклади основної мови (повний перехід сіду — Task 17).
-    await sql(
-      dbUrl,
-      `insert into public.product_translations (product_id, locale, name) values ($1, 'uk', $2)`,
-      [productId, name],
     );
     await sql(
       dbUrl,
@@ -83,11 +85,11 @@ export async function runAdminValidationErrorsStep({
     );
   } finally {
     for (const q of [
-      `delete from public.stock_by_pickup_point where modification_id in (select id from public.product_modifications where slug = 've-mod-${tag}')`,
-      `delete from public.product_modifications where slug = 've-mod-${tag}'`,
-      `delete from public.products where slug = 've-${tag}'`,
+      `delete from public.stock_by_pickup_point where modification_id = '${modId}'`,
+      `delete from public.product_modifications where id = '${modId}'`,
     ])
       await sql(dbUrl, q).catch(() => {});
+    await deleteProductsByPrefix(sql, dbUrl, `ve-${tag}`).catch(() => {});
     await page.close().catch(() => {});
   }
 }

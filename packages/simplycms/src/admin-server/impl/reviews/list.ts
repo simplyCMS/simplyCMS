@@ -6,6 +6,7 @@ import type {
   AdminReviewRow,
 } from 'simplycms/contracts';
 import { REVIEW_STATUSES } from 'simplycms/contracts';
+import { primaryLocaleCode } from 'simplycms/translations';
 import { runAdmin } from '../run';
 import { isoTs, isoVersion, toDate } from '../sql-timestamps';
 import { parseAdminInput } from '../validation';
@@ -55,6 +56,7 @@ export const listReviewsOp = async ({
     : sql``;
 
   return runAdmin('review.moderate', async (db) => {
+    const primary = await primaryLocaleCode(db);
     const result = await db.execute<Raw>(sql`
       select r.id, r.product_id as "productId", pt.name as "productName",
              r.user_id as "userId",
@@ -70,7 +72,7 @@ export const listReviewsOp = async ({
         join public.products p on p.id = r.product_id
         join public.product_translations pt
           on pt.product_id = p.id
-         and pt.locale = (select code from public.languages where is_default)
+         and pt.locale = ${primary}
         left join public.users u on u.id = r.user_id
         left join public.profiles pr on pr.user_id = u.id
         ${whereSql}

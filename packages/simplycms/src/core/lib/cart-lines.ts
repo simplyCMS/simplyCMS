@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { localeInput } from './locale-input';
 import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
@@ -42,5 +43,5 @@ export const cartLinesSchema = z
  */
 export const quoteCartInputSchema = z.object({
   items: cartLinesSchema,
-  locale: z.string().min(1),
+  locale: localeInput,
 });

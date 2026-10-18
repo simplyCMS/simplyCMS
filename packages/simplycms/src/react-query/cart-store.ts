@@ -81,7 +81,10 @@ export const getHydratedServerSnapshot = (): boolean => false;
 export function writeCart(
   update: (prev: readonly CartItem[]) => readonly CartItem[],
 ): void {
-  snapshot = update(snapshot);
+  const next = update(snapshot);
+  // Той самий масив — нічого не змінилось: не пишемо в сховище й не будимо підписників.
+  if (next === snapshot) return;
+  snapshot = next;
   try {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(snapshot));
   } catch (e) {

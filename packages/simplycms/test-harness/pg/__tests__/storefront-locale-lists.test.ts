@@ -29,6 +29,9 @@ describe('читачі товару: лістинг, головна, значе�
 
   beforeAll(async () => {
     await db.language('en');
+    // Чернетка мови ДО створення товарів: проєкція тоді МАЄ її рядки, тож тест видимості
+    // червоніє без предиката `published`, а не порожній через відсутність рядків.
+    await db.language('de', 'draft');
     await db.q(
       `insert into public.sections (id, slug, name, sort_order, is_active)
        values ($1, 'kabeli', 'Кабелі', 1, true)`,
@@ -170,12 +173,22 @@ describe('читачі товару: лістинг, головна, значе�
     });
   });
 
-  it('мова draft не показується у вітрині: список порожній, а не чернетковий текст', async () => {
-    await db.language('de', 'draft');
-    const list = await view((tx, v) =>
-      loadProductList(tx, v, { locale: 'de', primary: 'uk' }, sectionId),
+  it('мова draft не показується у вітрині: рядки проєкції є, але список порожній (pageVisible)', async () => {
+    const rows = await db.q(
+      `select 1 from public.catalog_product_texts where locale = 'de' and product_id = $1`,
+      [cable.id],
     );
-    expect(list).toEqual([]);
+    expect(rows).toHaveLength(1);
+    const draft = { locale: 'de', primary: 'uk' };
+    expect(
+      await view((tx, v) => loadProductList(tx, v, draft, sectionId)),
+    ).toEqual([]);
+    expect(
+      await view((tx, v) => loadCatalogProducts(tx, v, draft, sectionId)),
+    ).toEqual([]);
+    expect(await view((tx, v) => loadHomeProducts(tx, true, v, draft))).toEqual(
+      [],
+    );
   });
 });
 

@@ -8,10 +8,12 @@ import React, {
 } from 'react';
 import {
   addLine,
+  applyNameUpdates,
   clampQuantity,
   isQuantity,
   sameLine,
   type AddItemResult,
+  type CartNameUpdate,
 } from './cart-normalize';
 import {
   EMPTY_CART,
@@ -29,7 +31,7 @@ import {
 // (контекст, провайдер, дії).
 
 export type { CartItem };
-export type { AddItemResult } from './cart-normalize';
+export type { AddItemResult, CartNameUpdate } from './cart-normalize';
 
 interface CartContextType {
   items: readonly CartItem[];
@@ -43,6 +45,11 @@ interface CartContextType {
     quantity: number,
   ) => void;
   clearCart: () => void;
+  /**
+   * Оновити збережені назви рядків назвами з квоти (мова `namesLocale`): кеш для першого
+   * кадру наступного відкриття сторінки тією ж мовою. Нічого не міняється — сховище не пишеться.
+   */
+  syncNames: (updates: readonly CartNameUpdate[], namesLocale: string) => void;
   totalItems: number;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -118,6 +125,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => writeCart(() => EMPTY_CART), []);
 
+  const syncNames = useCallback(
+    (updates: readonly CartNameUpdate[], namesLocale: string) => {
+      writeCart((prev) => applyNameUpdates(prev, updates, namesLocale));
+    },
+    [],
+  );
+
   // Суми тут немає (Е6в-13): її рахує лише серверна квота (`useCartQuote`).
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -129,6 +143,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
+        syncNames,
         totalItems,
         isOpen,
         setIsOpen,

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CartQuote } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
@@ -43,7 +44,7 @@ export interface CartQuoteState {
  * доходять ні до кошика, ні до `indicativeSubtotal`, ні до слотів.
  */
 export function useCartQuote(): CartQuoteState {
-  const { items, hydrated } = useCart();
+  const { items, hydrated, syncNames } = useCart();
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const lines = items.map(({ productId, modificationId, quantity }) => ({
@@ -65,6 +66,27 @@ export function useCartQuote(): CartQuoteState {
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[2] === userId ? previous : undefined,
   });
+  // Назви з квоти (мова сторінки) — у збережені рядки кошика: кеш для наступного відкриття тією
+  // ж мовою. Placeholder (квота попереднього складу) не пишемо: він міг бути інакшого складу.
+  const fresh = query.isPlaceholderData ? undefined : query.data;
+  useEffect(() => {
+    if (!fresh) return;
+    syncNames(
+      fresh.lines.flatMap((l) =>
+        l.available
+          ? [
+              {
+                productId: l.productId,
+                modificationId: l.modificationId,
+                name: l.productName,
+                modificationName: l.modificationName,
+              },
+            ]
+          : [],
+      ),
+      locale,
+    );
+  }, [fresh, locale, syncNames]);
   const refetch = () => void query.refetch();
   const idle = { isError: false, isFetching: false, isPlaceholderData: false };
 

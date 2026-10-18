@@ -4,7 +4,7 @@ import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
 } from 'simplycms/contracts/cart-limits';
-import { useT } from 'simplycms/i18n';
+import { useLocale, useT } from 'simplycms/i18n';
 import { useCart, type CartItem } from 'simplycms/react-query';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Button } from 'simplycms/ui/button';
@@ -38,13 +38,14 @@ export function ProductAddToCart({
   inStock,
 }: ProductAddToCartProps) {
   const t = useT();
+  const locale = useLocale();
   const { addItem } = useCart();
   const { toast } = useToast();
 
   const handleClick = () => {
     if (!item) return;
 
-    if (addItem(item) === 'limit_reached') {
+    if (addItem({ ...item, namesLocale: locale }) === 'limit_reached') {
       toast({
         title: t('cart.limitReached', {
           lines: MAX_CART_LINES,

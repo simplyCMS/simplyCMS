@@ -186,11 +186,13 @@ TS2786), тож `views` тягне type-only імпорт react. Барель `s
 сторінки, обгортки не треба): `ProductDetailSummary.nameLang`,
 `shortDescriptionLang`, `ProductDetailDescription.lang`, `BreadcrumbItem.lang`
 (остання ланка — назва товару), `ProductPropertyValueViewModel.value_lang`
-(текстове значення характеристики) і `name_lang` у модифікації, яку отримує
-реквізит вибору. Ознаку бере з ДАНИХ сервер (`catalog_product_texts.fallback_fields`,
+(текстове значення характеристики), `name_lang` у модифікації, яку отримує
+реквізит вибору, а також `name_lang` / `short_description_lang` картки списку
+(`ProductCardViewModel`) і `productNameLang` / `modificationNameLang` рядка квоти кошика
+(`CartQuoteLine`). Ознаку бере з ДАНИХ сервер (`catalog_product_texts.fallback_fields`,
 `withFallback`), а не з порівняння текстів: переклад, що збігся з джерелом
 буквально («iPhone 15»), `lang` не отримує. Канонічні view роблять це через
-`FallbackText` (`storefront-routes/components`) — `<span lang>` або `<div lang>`
+`FallbackText` (`simplycms/ui/fallback-text`) — `<span lang>` або `<div lang>`
 для розмітки; тема з власним view застосовує ті самі поля, інакше зберігає лише
 текст без мови (контракт не ламається, але І37 не виконано).
 

@@ -15,7 +15,6 @@ export interface CatalogModificationRow {
 /** Значення характеристики у вибірці — форма предикатів фільтрів каталогу. */
 export interface CatalogPropertyValueRow {
   property_id: string;
-  value: string | null;
   /** Булеве значення (Р18): фільтр «Так» читає його, а не текст `'true'`. */
   bool_value: boolean | null;
   numeric_value: number | null;

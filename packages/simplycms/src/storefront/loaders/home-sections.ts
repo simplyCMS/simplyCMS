@@ -1,4 +1,4 @@
-import { and, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, inArray, lte, sql } from 'drizzle-orm';
 import {
   catalogProductTexts as texts,
   languages,
@@ -12,7 +12,8 @@ import {
   type HomeProductRow,
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
-import { publishedLanguageOn, textJoinOn } from './product-list-text';
+import { languageOf, textJoinOn } from './product-list-text';
+import { pageVisible } from './product-visibility';
 import {
   loadGuestPriceTypes,
   loadViewerPricesByProduct,
@@ -60,11 +61,9 @@ export async function loadSectionProducts(
     .from(products)
     // Текст мови запиту (П7): товар без рядка проєкції в цій мові в добірку не йде.
     .innerJoin(texts, textJoinOn(text))
-    .innerJoin(languages, publishedLanguageOn())
+    .innerJoin(languages, languageOf())
     // Предикат видимості — див. коментар у `./sections`.
-    .where(
-      and(eq(products.isActive, true), inArray(products.sectionId, sectionIds)),
-    )
+    .where(and(pageVisible(), inArray(products.sectionId, sectionIds)))
     .as('ranked');
 
   const rows = await db

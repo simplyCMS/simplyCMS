@@ -14,7 +14,6 @@ export type CatalogFiltersState = Record<string, FilterValue>;
 /** Значення характеристики товару у вибірці каталогу. */
 export interface CatalogPropertyValue {
   property_id: string;
-  value: string | null;
   numeric_value: number | null;
   option_id: string | null;
 }

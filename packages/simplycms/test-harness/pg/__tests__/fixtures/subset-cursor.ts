@@ -1,7 +1,7 @@
 // Спільний сід харнесів курсора subset (admin-subset-cursor / -pagination):
 // тимчасова БД з каноном, товари й замовлення з міткою `created_at` на межі
 // мілісекундного Date курсора і µs-хвостом у БД.
-import { productsOps } from 'simplycms/admin-server/impl';
+import { insertProductGraphAt } from './product-graph';
 import { resolveHarness } from '../../up.mjs';
 import {
   applyCanon,
@@ -66,7 +66,8 @@ export async function seedCursorDb(): Promise<CursorDb> {
     product('Мінус'),
     product('Плюс'),
   ];
-  await productsOps.insert({ data: rows });
+  // Список читає назву з перекладу основної мови: рядки сіє фікстура графа, не generic-insert.
+  for (const row of rows) await insertProductGraphAt(dbUrl, row);
   const pids = {
     tail: rows.slice(0, 5).map((r) => r.id),
     minus: rows[5]!.id,

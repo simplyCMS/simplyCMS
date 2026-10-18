@@ -15,7 +15,6 @@ export interface FilterableProduct {
   section: { id: string } | null;
   propertyValues: Array<{
     property_id: string;
-    value: string | null;
     /** Булеве значення (Р18); фільтр «Так» читає його, а не текст `value`. */
     bool_value?: boolean | null;
     numeric_value: number | null;

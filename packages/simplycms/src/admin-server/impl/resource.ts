@@ -14,6 +14,7 @@ import type { ResourceWriteContext } from './resource-write';
 import { defineWriteOps } from './resource-write-ops';
 import { assertMediaColumns } from './resource-write-media';
 import { assertCascadeMedia, cascadeCoverage } from './resource-cascade-media';
+import { type ReadRow, type ReadModelSpec } from './resource-read-model';
 import { runAdmin } from './run';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
@@ -38,8 +39,9 @@ export function defineAdminResource<
   const R extends ColumnName<T>,
   const I extends ColumnName<T> = never,
   const O extends ColumnName<T> = never,
+  const RM extends ReadModelSpec | undefined = undefined,
 >(
-  config: AdminResourceConfigBase<T, W, R, I, O> &
+  config: AdminResourceConfigBase<T, W, R, I, O, RM> &
     AdminResourceColumnGuards<T, W, R, I, O>,
 ) {
   const { rowSchema, insertSchema, updateSchema, removeSchema } =
@@ -67,6 +69,7 @@ export function defineAdminResource<
     picked,
     touch: config.touch,
     richHtml: config.richHtml,
+    readModel: config.readModel,
   };
 
   /**
@@ -121,7 +124,7 @@ export function defineAdminResource<
         // джерелі (`schema/json.ts`), тож рядок серіалізовний для
         // createServerFn (`ValidateSerializable`).
         const rows = await listResourceRows(db, ctx, data.subset ?? {});
-        return rows as Row[];
+        return rows as ReadRow<Row, RM>[];
       }),
 
     // Е6а-16: lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а

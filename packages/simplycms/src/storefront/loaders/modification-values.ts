@@ -24,7 +24,6 @@ export async function loadModificationValues(
     .select({
       modification_id: modificationPropertyValues.modificationId,
       property_id: modificationPropertyValues.propertyId,
-      value: modificationPropertyValues.value,
       bool_value: modificationPropertyValues.boolValue,
       numeric_value: modificationPropertyValues.numericValue,
       option_id: modificationPropertyValues.optionId,
@@ -35,7 +34,6 @@ export async function loadModificationValues(
   for (const row of rows) {
     (grouped[row.modification_id] ??= []).push({
       property_id: row.property_id,
-      value: row.value,
       bool_value: row.bool_value,
       numeric_value: toNumericValue(row.numeric_value),
       option_id: row.option_id,

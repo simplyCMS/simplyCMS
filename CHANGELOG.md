@@ -53,6 +53,14 @@
   Адмін-читачі (позиції замовлення, діагностика ціни, відгуки) читають назву основною мовою; пошук товару для замовлення —
   за назвою будь-якою мовою й артикулом; `AdminReviewCard.productSlug` → `productPath` (шлях основної мови або `null`).
   Знімок замовлення одномовний (мова запиту); двомовний знімок і `orders.locale` — М2.
+  `placeOrder` відмовляє (помилка валідації) для мови, що не `published`; читання з невідомою/неопублікованою мовою
+  віддають основну. `CartQuoteLine` дістав `productName`/`modificationName` окремо та `productNameLang`/`modificationNameLang`;
+  позиція кошика в localStorage — `namesLocale` (мова збережених назв): видимий кошик показує назви з квоти, а кеш — лише
+  коли його мова = мова сторінки (інакше скелетон). `useCart` дістав `syncNames`; слот `ProductAddToCart` ставить `namesLocale`.
+  Колекції адмінки `products`/`product_modifications` читають назву з перекладу ОСНОВНОЇ мови (read-model фабрики ресурсу:
+  `readModel` у конфігу `defineAdminResource`; рядок `list` без `slug`, описів і `meta_*`, типи `ProductReadRow`/
+  `ProductModificationReadRow`); товар без перекладу основної мови в колекцію не потрапляє. Рядки значень характеристик у
+  вибірці каталогу не несуть `value` (фільтри читають `option_id`/`bool_value`/`numeric_value`).
 - **Сторінка товару — за адресою з реєстру** (`simplycms/storefront-routes`, `simplycms/domain`, `simplycms/contracts`):
   товар відкривається на `/<path>` і `/<мова>/<path>` (роут сутності `routes/storefront/_storefront/$path.tsx`); прибрано роут
   `/catalog/$sectionSlug/$productSlug`, редірект сегмента розділу та зарезервований slug розділу `all` (`NO_SECTION_SLUG`,

@@ -8,6 +8,7 @@ import {
   withStorefrontDb,
   withViewerDb,
 } from 'simplycms/storefront/loaders';
+import { localeInput } from 'simplycms/core/lib/locale-input';
 
 /** Отримати всі характеристики з публічною сторінкою. */
 export const getProperties = createServerFn({ method: 'GET' }).handler(
@@ -28,7 +29,7 @@ export const getPropertyOption = createServerFn({ method: 'GET' })
     z.object({
       propertySlug: z.string().min(1),
       optionSlug: z.string().min(1),
-      locale: z.string().min(1),
+      locale: localeInput,
     }),
   )
   .handler(async ({ data: input }) => {

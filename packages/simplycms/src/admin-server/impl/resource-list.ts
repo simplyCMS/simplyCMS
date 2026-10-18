@@ -3,6 +3,11 @@ import type { ActorDb } from 'simplycms/db';
 import { toDrizzleSubset, type SubsetAllow, type SubsetInput } from './subset';
 import { effectiveLimit } from './resource-projection';
 import { sanitizeRichRows, type RichHtmlColumns } from './rich-html';
+import {
+  readJoinOn,
+  readSelection,
+  type ReadModelSpec,
+} from './resource-read-model';
 
 /**
  * Те, що `list` фабрики (`resource.ts`) бере з конфігу ресурсу. Винесено
@@ -18,6 +23,8 @@ export interface ResourceListContext {
   picked: Record<string, Column>;
   /** Тема 9: колонки з розміткою → профіль санітизатора (віддача клієнту). */
   richHtml?: RichHtmlColumns;
+  /** Читальна вибірка з таблиці перекладів основної мови (`resource-read-model.ts`). */
+  readModel?: ReadModelSpec;
 }
 
 /**
@@ -30,14 +37,26 @@ export async function listResourceRows(
   ctx: ResourceListContext,
   subset: SubsetInput,
 ): Promise<unknown[]> {
-  const columns = ctx.table as unknown as Record<string, Column | undefined>;
-  const s = toDrizzleSubset(ctx.table, ctx.allow, subset);
+  const rm = ctx.readModel;
+  // Поля read-model перекривають однойменні колонки таблиці скрізь: SELECT, фільтр,
+  // сортування й `defaultOrder` бачать ту саму колонку (без латок у споживачах).
+  const columns = { ...(ctx.table as object), ...rm?.fields } as Record<
+    string,
+    Column | undefined
+  >;
+  const s = toDrizzleSubset(ctx.table, ctx.allow, subset, rm?.fields);
   // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
   // каст лише проєкції, `.from(ctx.table)` кастів не потребує.
+  const selection = rm ? readSelection(ctx.picked, rm) : ctx.picked;
   let q = db
-    .select(ctx.picked as never)
+    .select(selection as never)
     .from(ctx.table)
     .$dynamic();
+  if (rm)
+    q = q.innerJoin(
+      rm.translations,
+      await readJoinOn(db, rm, columns['id'] as Column),
+    );
   if (s.where) q = q.where(s.where);
   // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не
   // унікальний (сід/масовий імпорт дають однакові мітки) — без

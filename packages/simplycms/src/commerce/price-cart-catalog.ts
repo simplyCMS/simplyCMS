@@ -16,7 +16,15 @@ import { loadPricesByProduct } from './pricing';
 
 /** Позиція, яку можна купити: назва, розділ (ціль знижки) і базова ціна. */
 export type CatalogItem = {
+  /** Склеєна назва `<товар> - <модифікація>`: її пише знімок `order_items.name` (М2 — двомовний). */
   name: string;
+  /** Назва товару окремо — для видимого кошика (`FallbackText` по частинах). */
+  productName: string;
+  /** Назва модифікації окремо; `null` — позиція без модифікації. */
+  modificationName: string | null;
+  /** Мова назви товару, коли її узято з основної мови (fallback); `null` — мовою запиту. */
+  productNameLang: string | null;
+  modificationNameLang: string | null;
   sectionId: string | null;
   basePrice: number;
 };
@@ -48,6 +56,8 @@ export async function loadCatalog(
     .select({
       id: products.id,
       name: sql<string | null>`coalesce(${locText.name}, ${srcText.name})`,
+      locName: locText.name,
+      locFallback: locText.fallbackFields,
       sectionId: products.sectionId,
       stockStatus: products.stockStatus,
       isActive: products.isActive,
@@ -70,6 +80,7 @@ export async function loadCatalog(
           id: productModifications.id,
           productId: productModifications.productId,
           name: sql<string | null>`coalesce(${locMod.name}, ${srcMod.name})`,
+          locName: locMod.name,
           stockStatus: productModifications.stockStatus,
         })
         .from(productModifications)
@@ -113,6 +124,23 @@ export async function loadCatalog(
     // куплений бути не може; модифікація без назви в обох мовах — теж несправний рядок.
     if (product.name === null || (mod && mod.name === null)) return null;
     const name = mod ? `${product.name} - ${mod.name}` : product.name;
-    return { name, sectionId: product.sectionId, basePrice: price };
+    // Ознака fallback — з даних (рядка перекладу немає / поле порожнє), не порівнянням текстів (І37).
+    const own = text.locale === text.primary;
+    const productNameLang =
+      !own &&
+      (product.locName === null || product.locFallback?.includes('name'))
+        ? text.primary
+        : null;
+    const modificationNameLang =
+      mod && !own && mod.locName === null ? text.primary : null;
+    return {
+      name,
+      productName: product.name,
+      modificationName: mod?.name ?? null,
+      productNameLang,
+      modificationNameLang,
+      sectionId: product.sectionId,
+      basePrice: price,
+    };
   };
 }

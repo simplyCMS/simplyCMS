@@ -12,14 +12,21 @@ import { TestEngineProvider } from './engine-stub';
  * (`CartProvider` — справжній, на localStorage: реквізити купівлі
  * перевіряються наскрізь, а не проти мока).
  */
-export function SlotHarness({ children }: { children: ReactNode }) {
+export function SlotHarness({
+  children,
+  locale = 'uk',
+}: {
+  children: ReactNode;
+  /** Мова сторінки (за замовчуванням основна `uk`). */
+  locale?: string;
+}) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   return (
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <I18nProvider locale={locale}>
         <TestEngineProvider>
           <CartProvider>{children}</CartProvider>
         </TestEngineProvider>

@@ -19,8 +19,9 @@ export interface ProductListRow {
   readonly id: string;
   /** Для `products.remove` (expectedVersion). */
   readonly version: number;
-  /** Назва основною мовою: колонку дзеркалить команда агрегата (М1-TEMP до Task 17). */
+  /** Назва основною мовою: read-model колекції (переклад основної мови), не дзеркальна колонка. */
   readonly name: string;
+  // М1-TEMP: зноситься в Task 17 — мініатюра береться з дзеркала `products.images`.
   readonly images: readonly string[] | null;
   readonly isActive: boolean;
   readonly stockStatus: StockStatus;

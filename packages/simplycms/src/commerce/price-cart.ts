@@ -21,6 +21,11 @@ export interface PricedLine {
   productId: string;
   modificationId: string | null;
   name: string;
+  /** Назви окремо й ознаки fallback (видимий кошик, `FallbackText`); `name` — склейка для знімка. */
+  productName: string;
+  modificationName: string | null;
+  productNameLang: string | null;
+  modificationNameLang: string | null;
   quantity: number;
   basePrice: number;
   price: number;
@@ -96,6 +101,10 @@ export async function priceCart(
         productId,
         modificationId,
         name: found.name,
+        productName: found.productName,
+        modificationName: found.modificationName,
+        productNameLang: found.productNameLang,
+        modificationNameLang: found.modificationNameLang,
         quantity,
         basePrice: found.basePrice,
         price: result.finalPrice,

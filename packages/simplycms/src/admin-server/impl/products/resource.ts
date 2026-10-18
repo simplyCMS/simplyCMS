@@ -6,6 +6,7 @@ import {
   productImages,
   productModifications,
   productReviews,
+  productTranslations,
   products,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
@@ -34,6 +35,23 @@ export const productsOps = defineAdminResource({
   refine: {
     images: () => z.array(z.string()),
     slug: (s: z.ZodString) => s.regex(SLUG_RE),
+  },
+  // М1 (Task 16): колекції адмінки читають НАЗВУ з перекладу основної мови (INNER JOIN),
+  // а дзеркала текстів (`slug`, описи, `meta_*`) з читальної форми зникають: споживачам
+  // потрібна лише назва, решту дає команда `products.get`. Task 17 зносить колонки без
+  // сюрпризів у споживачах. Запис (writable нижче) лишається на дзеркалах до Task 17.
+  readModel: {
+    translations: productTranslations,
+    owner: productTranslations.productId,
+    fields: { name: productTranslations.name },
+    required: ['name'],
+    exclude: [
+      'slug',
+      'shortDescription',
+      'description',
+      'metaTitle',
+      'metaDescription',
+    ],
   },
   writable: [
     'sectionId',

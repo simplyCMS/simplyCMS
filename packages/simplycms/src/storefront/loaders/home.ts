@@ -16,7 +16,8 @@ import {
 } from './entities/home-product';
 import type { SectionRef } from './entities/section';
 import { loadSectionProducts } from './home-sections';
-import { publishedLanguageOn, textJoinOn } from './product-list-text';
+import { languageOf, textJoinOn } from './product-list-text';
+import { pageVisible } from './product-visibility';
 import {
   loadGuestPriceTypes,
   loadViewerPricesByProduct,
@@ -81,14 +82,14 @@ export async function loadHomeProducts(
   text: TextLocale,
 ): Promise<HomeProductRow[]> {
   const visible = featuredOnly
-    ? and(eq(products.isActive, true), eq(products.isFeatured, true))
-    : eq(products.isActive, true);
+    ? and(pageVisible(), eq(products.isFeatured, true))
+    : pageVisible();
 
   const rows = await db
     .select({ ...homeProductColumns, section_slug: sections.slug })
     .from(products)
     .innerJoin(texts, textJoinOn(text))
-    .innerJoin(languages, publishedLanguageOn())
+    .innerJoin(languages, languageOf())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     // Другий ключ — щоб LIMIT не відсікав «які трапляться» серед рядків з

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { PlaceOrderInput } from 'simplycms/contracts';
 import { cartLinesSchema } from 'simplycms/core/lib/cart-lines';
+import { localeInput } from 'simplycms/core/lib/locale-input';
 
 /**
  * Схема оформлення — ЄДИНЕ джерело валідації запиту НА СЕРВЕРІ.
@@ -64,5 +65,5 @@ export const checkoutInputSchema = z.object({
  * назва мовою запиту; двомовний знімок і `orders.locale` — М2.
  */
 export const checkoutRequestSchema = checkoutInputSchema.extend({
-  locale: z.string().min(1),
+  locale: localeInput,
 });

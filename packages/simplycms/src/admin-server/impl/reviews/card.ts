@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AdminReviewCard } from 'simplycms/contracts';
 import { normalizeMediaRefs } from 'simplycms/domain/media';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
+import { primaryLocaleCode } from 'simplycms/translations';
 import { runAdmin } from '../run';
 import { isoTs, isoVersion, toDate } from '../sql-timestamps';
 import { parseAdminInput } from '../validation';
@@ -34,6 +35,7 @@ export const getReviewCardOp = async ({
 }): Promise<AdminReviewCard | null> => {
   const { id } = parseAdminInput(getReviewCardInput, data);
   return runAdmin('review.moderate', async (db) => {
+    const primary = await primaryLocaleCode(db);
     const result = await db.execute<Raw>(sql`
       select r.id, r.product_id as "productId", pt.name as "productName",
              up.path as "productPath", s.slug as "sectionSlug",
@@ -50,10 +52,10 @@ export const getReviewCardOp = async ({
         join public.products p on p.id = r.product_id
         join public.product_translations pt
           on pt.product_id = p.id
-         and pt.locale = (select code from public.languages where is_default)
+         and pt.locale = ${primary}
         left join public.url_paths up
           on up.product_id = p.id and up.is_current
-         and up.locale = (select code from public.languages where is_default)
+         and up.locale = ${primary}
         left join public.sections s on s.id = p.section_id
         left join public.users u on u.id = r.user_id
         left join public.profiles pr on pr.user_id = u.id

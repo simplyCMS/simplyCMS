@@ -12,10 +12,8 @@ import {
   type SectionRow,
 } from 'simplycms/storefront/loaders';
 import type { ProductListPayload } from './product-list-item';
+import { localeOnlyInput } from 'simplycms/core/lib/locale-input';
 import { loadProductListPayload } from './product-list-payload';
-
-/** Мова читання тексту товарів: дає її роут (з префікса адреси), не сесія. */
-const localeInput = z.object({ locale: z.string().min(1) });
 
 export interface CatalogPageData {
   sections: SectionRow[];
@@ -34,7 +32,7 @@ export interface SectionPageData extends CatalogPageData {
  * з різних знімків БД і платила зайвими раундтрипами. Тут усе в одній.
  */
 export const getCatalogPageData = createServerFn({ method: 'GET' })
-  .validator(localeInput)
+  .validator(localeOnlyInput)
   .handler(async ({ data: input }): Promise<CatalogPageData> => {
     const text = await resolveTextLocale((input as { locale: string }).locale);
     return withStorefrontDb(async (db) => ({
@@ -52,7 +50,7 @@ export const getCatalogPageData = createServerFn({ method: 'GET' })
  * замість одного.
  */
 export const getSectionPageData = createServerFn({ method: 'GET' })
-  .validator(localeInput.extend({ slug: z.string().min(1) }))
+  .validator(localeOnlyInput.extend({ slug: z.string().min(1) }))
   .handler(async ({ data: input }): Promise<SectionPageData | null> => {
     const { slug, locale } = input as { slug: string; locale: string };
     const text = await resolveTextLocale(locale);
@@ -90,7 +88,9 @@ export const getCatalogSection = createServerFn({ method: 'GET' })
  * лише видів глядача сесії (Р29, `withViewerDb`).
  */
 export const getCatalogProducts = createServerFn({ method: 'GET' })
-  .validator(localeInput.extend({ sectionId: z.string().min(1).optional() }))
+  .validator(
+    localeOnlyInput.extend({ sectionId: z.string().min(1).optional() }),
+  )
   .handler(async ({ data: input }) => {
     const { sectionId, locale } = input as {
       sectionId?: string;

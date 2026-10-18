@@ -78,8 +78,13 @@ export function toDrizzleSubset(
   table: Table,
   allow: SubsetAllow,
   input: SubsetInput,
+  /** Read-model: поля, що перекривають колонки таблиці (`resource-read-model.ts`). */
+  override: Readonly<Record<string, unknown>> = {},
 ) {
-  const columns = table as unknown as Record<string, never>;
+  const columns = { ...(table as object), ...override } as unknown as Record<
+    string,
+    never
+  >;
 
   /** Колонка з allowlist мусить існувати в таблиці — одрук автора ресурсу
    *  падає тут чіткою помилкою, а не невиразно всередині SQL-білдера. */

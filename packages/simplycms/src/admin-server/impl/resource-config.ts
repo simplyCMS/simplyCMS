@@ -4,6 +4,7 @@ import type { ActorDb } from 'simplycms/db';
 import type { MediaEntityType } from 'simplycms/domain/media';
 import type { RichHtmlProfile } from 'simplycms/sanitize';
 import type { ResourceCascadeMedia } from './resource-cascade-media';
+import type { ReadModelSpec } from './resource-read-model';
 import type {
   ColumnName,
   InsertPick,
@@ -40,6 +41,7 @@ export interface AdminResourceConfigBase<
   R extends ColumnName<T>,
   I extends ColumnName<T>,
   O extends ColumnName<T>,
+  RM extends ReadModelSpec | undefined = undefined,
 > {
   entity: string;
   table: T;
@@ -64,6 +66,9 @@ export interface AdminResourceConfigBase<
   /** Е5-7: колонки, яких немає ні в SELECT/RETURNING, ні в типі рядка, ні
    *  в схемах — секрети на кшталт `orders.access_token`, браузеру зайві. */
   omit?: readonly O[];
+  /** М1 (Task 16): читальна вибірка `list` з таблиці перекладів основної мови замість
+   *  дзеркальних колонок (`resource-read-model.ts`). Тип рядка `list` стає read-model. */
+  readModel?: RM;
   /** Е5-12: серверна межа сторінки `list` — ефективний ліміт
    *  `min(subset.limit ?? maxLimit, maxLimit)`. Без неї — як раніше. */
   maxLimit?: number;

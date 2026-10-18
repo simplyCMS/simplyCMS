@@ -11,11 +11,8 @@ import type { PriceEntry } from 'simplycms/contracts';
 import type { TextLocale } from 'simplycms/domain/translations';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
-import {
-  listLangs,
-  publishedLanguageOn,
-  textJoinOn,
-} from './product-list-text';
+import { pageVisible } from './product-visibility';
+import { listLangs, languageOf, textJoinOn } from './product-list-text';
 import { listModificationColumns } from './entities/modification';
 import {
   groupPricesByProduct,
@@ -75,8 +72,8 @@ export async function loadProductList(
   sectionId?: string,
 ): Promise<ProductListRow[]> {
   const visible = sectionId
-    ? and(eq(products.isActive, true), eq(products.sectionId, sectionId))
-    : eq(products.isActive, true);
+    ? and(pageVisible(), eq(products.sectionId, sectionId))
+    : pageVisible();
 
   const rows = await db
     .select({
@@ -90,7 +87,7 @@ export async function loadProductList(
     })
     .from(products)
     .innerJoin(texts, textJoinOn(text))
-    .innerJoin(languages, publishedLanguageOn())
+    .innerJoin(languages, languageOf())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     .orderBy(desc(products.createdAt));

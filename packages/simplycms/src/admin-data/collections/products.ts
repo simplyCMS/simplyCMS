@@ -1,11 +1,17 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { Product } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
 import { listProducts } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
+
+/**
+ * Рядок колекції — read-model ресурсу (М1, Task 16): назва з перекладу основної мови, без
+ * дзеркальних текстових колонок. Тип виведено з `listProducts`, а не з `Product` схеми, щоб
+ * Task 17 зносив колонки без сюрпризу в споживачах.
+ */
+export type ProductReadRow = Awaited<ReturnType<typeof listProducts>>[number];
 
 /**
  * Каталог росте — on-demand (К3-5): у памʼяті лише зрізи, які реально
@@ -18,7 +24,7 @@ import { toSubsetPayload } from '../subset-payload';
  */
 function create(queryClient: QueryClient) {
   const collection = createCollection(
-    onDemandCollectionOptions<Product>({
+    onDemandCollectionOptions<ProductReadRow>({
       id: ENTITY.products,
       queryClient,
       queryKey: collectionKey(ENTITY.products),

@@ -37,6 +37,10 @@ const QUOTE: CartQuote = {
       modificationId: null,
       quantity: 2,
       name: 'Панель',
+      productName: 'Панель',
+      modificationName: null,
+      productNameLang: null,
+      modificationNameLang: null,
       basePrice: 1000,
       price: 900,
       applied: [{ name: 'Весняна −10%', calculatedAmount: 100 }],
@@ -68,8 +72,20 @@ beforeEach(() => {
   localStorage.setItem(
     'simplycms-cart',
     JSON.stringify([
-      { productId: P1, modificationId: null, name: 'Панель', quantity: 2 },
-      { productId: P2, modificationId: null, name: 'Зниклий', quantity: 1 },
+      {
+        productId: P1,
+        modificationId: null,
+        name: 'Панель',
+        namesLocale: 'uk',
+        quantity: 2,
+      },
+      {
+        productId: P2,
+        modificationId: null,
+        name: 'Зниклий',
+        namesLocale: 'uk',
+        quantity: 1,
+      },
     ]),
   );
   server.quoteCart.mockReset();

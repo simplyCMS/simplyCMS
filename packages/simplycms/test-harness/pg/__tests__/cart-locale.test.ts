@@ -19,6 +19,7 @@ describe('назва позиції кошика й знімка мовою за
   const product = randomUUID();
   const red = randomUUID();
   const blue = randomUUID();
+  const solo = randomUUID();
 
   beforeAll(async () => {
     await db.language('en');
@@ -44,6 +45,21 @@ describe('назва позиції кошика й знімка мовою за
         ],
       }),
     );
+    // Товар лише з основною мовою: його назва на /en — fallback (рядок проєкції є, поле порожнє).
+    await db.run(
+      productGraphSql({
+        id: solo,
+        slug: 'solo-tovar',
+        name: 'Єдиний',
+        isActive: true,
+        hasModifications: false,
+        stockStatus: 'in_stock',
+      }),
+    );
+    await db.run(
+      `insert into public.product_prices (id, price_type_id, product_id, modification_id, price)
+       select gen_random_uuid(), t.id, '${solo}', null, 50 from public.price_types t where t.is_default`,
+    );
     for (const mod of [red, blue, null])
       await db.run(
         `insert into public.product_prices (id, price_type_id, product_id, modification_id, price)
@@ -66,6 +82,44 @@ describe('назва позиції кошика й знімка мовою за
 
   it('модифікація без англійської назви — основною мовою, товар — англійською', async () => {
     expect(await names(EN, blue)).toBe('Cable - Синій');
+  });
+
+  it('квота віддає назви товару й модифікації ОКРЕМО з ознаками fallback (видимий кошик)', async () => {
+    const lineOf = async (text: typeof UK, mod: string | null) => {
+      const l = (await quoteCartFor([line(product, 1, mod)], null, text))
+        .lines[0]!;
+      if (!l.available) throw new Error('позиція недоступна');
+      return l;
+    };
+    expect(await lineOf(EN, red)).toMatchObject({
+      productName: 'Cable',
+      modificationName: 'Red',
+      productNameLang: null,
+      modificationNameLang: null,
+    });
+    // «Синій» без англійської назви: основна мова з ознакою; товар перекладено.
+    expect(await lineOf(EN, blue)).toMatchObject({
+      productName: 'Cable',
+      modificationName: 'Синій',
+      productNameLang: null,
+      modificationNameLang: 'uk',
+    });
+    // Основна мова: fallback не буває.
+    expect(await lineOf(UK, blue)).toMatchObject({
+      productName: 'Кабель',
+      productNameLang: null,
+      modificationNameLang: null,
+    });
+    const soloLine = (await quoteCartFor([line(solo)], null, EN)).lines[0]!;
+    expect(soloLine).toMatchObject({
+      available: true,
+      productName: 'Єдиний',
+      productNameLang: 'uk',
+    });
+    expect(await lineOf(EN, null)).toMatchObject({
+      modificationName: null,
+      modificationNameLang: null,
+    });
   });
 
   it('позиція без модифікації: назва товару мовою запиту', async () => {

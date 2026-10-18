@@ -29,9 +29,12 @@ export const listTextColumns = {
 export const textJoinOn = (text: TextLocale) =>
   and(eq(texts.productId, products.id), eq(texts.locale, text.locale));
 
-/** Умова приєднання мови: лише `published` показується у вітрині (як `pageVisible`). */
-export const publishedLanguageOn = () =>
-  and(eq(languages.code, texts.locale), eq(languages.status, 'published'));
+/**
+ * Умова приєднання мови рядка проєкції. Видимість (мова `published`, товар `is_active`) —
+ * ЄДИНИЙ предикат `pageVisible()` у `where` лістингу: ту саму умову читають сторінка товару,
+ * sitemap, історія адрес і всі списки, тож правило змінюється в одному місці.
+ */
+export const languageOf = () => eq(languages.code, texts.locale);
 
 /** `lang` основної мови для полів назви й короткого опису, узятих з fallback. */
 export function listLangs(

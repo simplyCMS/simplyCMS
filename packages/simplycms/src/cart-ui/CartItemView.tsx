@@ -3,8 +3,11 @@ import { Minus, Plus, X } from 'lucide-react';
 import { MAX_LINE_QUANTITY } from 'simplycms/contracts/cart-limits';
 import type { CartQuoteLine } from 'simplycms/contracts';
 import type { CartItem as CartItemType } from 'simplycms/react-query';
-import { useT } from 'simplycms/i18n';
+import { useLocale, useT } from 'simplycms/i18n';
+import { FallbackText } from 'simplycms/ui/fallback-text';
+import { Skeleton } from 'simplycms/ui/skeleton';
 import { CartLinePrice } from './CartLinePrice';
+import { resolveCartItemNames } from './cart-item-names';
 
 // Presentational-компонент позиції кошика: лише props, без data/стану.
 // HUB може реюзати його зі своїм контейнером.
@@ -32,6 +35,9 @@ export function CartItemView({
   onRemove,
 }: CartItemViewProps) {
   const t = useT();
+  const locale = useLocale();
+  // Назви: з квоти, з кешу тієї ж мови або скелетон (`resolveCartItemNames`).
+  const names = resolveCartItemNames(item, line, locale, failed ?? false);
 
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
@@ -40,7 +46,7 @@ export function CartItemView({
         {item.image ? (
           <img
             src={item.image}
-            alt={item.name}
+            alt={names?.product ?? ''}
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
             decoding="async"
@@ -56,13 +62,26 @@ export function CartItemView({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h4 className="font-medium text-sm leading-tight line-clamp-2">
-              {item.name}
-            </h4>
-            {item.modificationName && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {item.modificationName}
-              </p>
+            {names === null ? (
+              <Skeleton
+                data-testid="cart-item-names-skeleton"
+                className="h-4 w-32"
+              />
+            ) : (
+              <>
+                <h4 className="font-medium text-sm leading-tight line-clamp-2">
+                  <FallbackText lang={names.productLang}>
+                    {names.product}
+                  </FallbackText>
+                </h4>
+                {names.modification && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <FallbackText lang={names.modificationLang}>
+                      {names.modification}
+                    </FallbackText>
+                  </p>
+                )}
+              </>
             )}
             {item.sku && (
               <p className="text-xs text-muted-foreground">

@@ -23,7 +23,7 @@ import { productBaseColumns, toImageList } from './entities/product';
 import {
   listLangs,
   listTextColumns,
-  publishedLanguageOn,
+  languageOf,
   textJoinOn,
 } from './product-list-text';
 import {
@@ -34,6 +34,7 @@ import {
 } from 'simplycms/commerce';
 import { sectionRefColumns } from './entities/section';
 import { loadModificationValues } from './modification-values';
+import { pageVisible } from './product-visibility';
 
 /**
  * Вибірка каталогу з усім, що потрібно фільтрам: модифікації, ціни,
@@ -84,9 +85,7 @@ export async function loadCatalogProductsWhere(
   text: TextLocale,
   extra?: SQL,
 ): Promise<CatalogProductRow[]> {
-  const visible = extra
-    ? and(eq(products.isActive, true), extra)
-    : eq(products.isActive, true);
+  const visible = extra ? and(pageVisible(), extra) : pageVisible();
 
   const rows = await db
     .select({
@@ -96,7 +95,7 @@ export async function loadCatalogProductsWhere(
     })
     .from(products)
     .innerJoin(texts, textJoinOn(text))
-    .innerJoin(languages, publishedLanguageOn())
+    .innerJoin(languages, languageOf())
     .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     .orderBy(desc(products.createdAt));
@@ -116,7 +115,6 @@ export async function loadCatalogProductsWhere(
     .select({
       product_id: productPropertyValues.productId,
       property_id: productPropertyValues.propertyId,
-      value: productPropertyValues.value,
       bool_value: productPropertyValues.boolValue,
       numeric_value: productPropertyValues.numericValue,
       option_id: productPropertyValues.optionId,
@@ -138,7 +136,6 @@ export async function loadCatalogProductsWhere(
   for (const row of valueRows) {
     (valuesByProduct[row.product_id] ??= []).push({
       property_id: row.property_id,
-      value: row.value,
       bool_value: row.bool_value,
       numeric_value: toNumericValue(row.numeric_value),
       option_id: row.option_id,

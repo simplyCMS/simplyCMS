@@ -106,7 +106,6 @@ describe('filterAndSortProducts', () => {
       propertyValues: [
         {
           property_id: 'prop-color',
-          value: null,
           numeric_value: null,
           option_id: 'o1,o2',
         },
@@ -128,7 +127,6 @@ describe('filterAndSortProducts', () => {
         propertyValues: [
           {
             property_id: power.id,
-            value: null,
             numeric_value: 500,
             option_id: null,
           },
@@ -138,7 +136,6 @@ describe('filterAndSortProducts', () => {
         propertyValues: [
           {
             property_id: power.id,
-            value: null,
             numeric_value: 900,
             option_id: null,
           },
@@ -220,7 +217,6 @@ describe('похідні діапазони вибірки', () => {
         propertyValues: [
           {
             property_id: power.id,
-            value: null,
             numeric_value: 300,
             option_id: null,
           },
@@ -231,7 +227,6 @@ describe('похідні діапазони вибірки', () => {
         propertyValues: [
           {
             property_id: power.id,
-            value: null,
             numeric_value: 900,
             option_id: null,
           },
@@ -295,7 +290,6 @@ describe('похідні діапазони вибірки', () => {
             boolValue('true'),
             {
               property_id: 'prop-color',
-              value: null,
               numeric_value: null,
               option_id: 'o1',
             },

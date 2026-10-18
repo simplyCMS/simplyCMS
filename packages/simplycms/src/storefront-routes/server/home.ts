@@ -9,16 +9,14 @@ import {
   withStorefrontDb,
   withViewerDb,
 } from 'simplycms/storefront/loaders';
-
-/** Мова читання тексту товарів: дає її роут (з префікса адреси), не сесія. */
-const localeInput = z.object({ locale: z.string().min(1) });
+import { localeInput, localeOnlyInput } from 'simplycms/core/lib/locale-input';
 
 /**
  * Дані головної — однією транзакцією. Прайси карток у цьому файлі — лише
  * видів глядача сесії, залогіненому `private, no-store` (Р29, `withViewerDb`).
  */
 export const getHomePageData = createServerFn({ method: 'GET' })
-  .validator(localeInput)
+  .validator(localeOnlyInput)
   .handler(async ({ data: input }) => {
     const text = await resolveTextLocale((input as { locale: string }).locale);
     return withViewerDb((db, viewer) => loadHomePageData(db, viewer, text));
@@ -26,7 +24,7 @@ export const getHomePageData = createServerFn({ method: 'GET' })
 
 /** Популярні товари (`is_featured`) — канонічна добірка головної. */
 export const getFeaturedProducts = createServerFn({ method: 'GET' })
-  .validator(localeInput)
+  .validator(localeOnlyInput)
   .handler(async ({ data: input }) => {
     const text = await resolveTextLocale((input as { locale: string }).locale);
     return withViewerDb((db, viewer) =>
@@ -36,7 +34,7 @@ export const getFeaturedProducts = createServerFn({ method: 'GET' })
 
 /** Новинки — канонічна добірка головної. */
 export const getNewProducts = createServerFn({ method: 'GET' })
-  .validator(localeInput)
+  .validator(localeOnlyInput)
   .handler(async ({ data: input }) => {
     const text = await resolveTextLocale((input as { locale: string }).locale);
     return withViewerDb((db, viewer) =>
@@ -62,7 +60,7 @@ export const getSectionProducts = createServerFn({ method: 'GET' })
       id: z.string().min(1),
       name: z.string(),
       slug: z.string().min(1),
-      locale: z.string().min(1),
+      locale: localeInput,
     }),
   )
   .handler(async ({ data: input }) => {

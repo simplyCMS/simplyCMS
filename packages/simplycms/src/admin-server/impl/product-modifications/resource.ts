@@ -4,6 +4,7 @@ import { SLUG_RE } from 'simplycms/domain';
 import {
   productImageTranslations,
   productImages,
+  productModificationTranslations,
   productModifications,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
@@ -34,6 +35,15 @@ export const productModificationsOps = defineAdminResource({
   refine: {
     images: () => z.array(z.string()),
     slug: (s: z.ZodString) => s.regex(SLUG_RE),
+  },
+  // М1 (Task 16): назва модифікації для колекцій — з перекладу основної мови (INNER JOIN);
+  // дзеркальні `name`/`slug` з читальної форми зникають (як у `products/resource.ts`).
+  readModel: {
+    translations: productModificationTranslations,
+    owner: productModificationTranslations.modificationId,
+    fields: { name: productModificationTranslations.name },
+    required: ['name'],
+    exclude: ['slug'],
   },
   writable: [
     'productId',

@@ -52,6 +52,10 @@ export async function quoteCartFor(
       modificationId: line.modificationId,
       quantity: line.quantity,
       name: line.name,
+      productName: line.productName,
+      modificationName: line.modificationName,
+      productNameLang: line.productNameLang,
+      modificationNameLang: line.modificationNameLang,
       basePrice: line.basePrice,
       price: line.price,
       applied: line.applied.map(({ name, calculatedAmount }) => ({

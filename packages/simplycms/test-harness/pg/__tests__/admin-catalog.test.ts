@@ -41,6 +41,7 @@ import {
   sectionsOps,
 } from 'simplycms/admin-server/impl';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
+import { insertProductGraphAt } from './fixtures/product-graph';
 // 🔴 requireGrant тут — вже ЗМОКАНА функція (vi.fn з блоку вище); resolveGrant
 // і AuthzError — реальні, бо фабрика мока робить `...(await orig())` і
 // перекриває лише requireGrant. Потрібні для Е3-6 нижче.
@@ -91,6 +92,9 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       'e3-product-1',
       'e3-product-2',
     ]);
+    // `list` читає назву з перекладу основної мови (read-model): рядки без перекладу
+    // у вибірку не потрапляють, тож для списку товари сіє фікстура графа.
+    for (const n of [70, 71]) await insertProductGraphAt(dbUrl, product(n));
     const listed = await productsOps.list({
       data: {
         subset: {
@@ -107,7 +111,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // Postgres на малій таблиці може дати той самий порядок.
   it('Review Focus 3: однакові created_at — три сторінки по 3 дають 7 різних id', async () => {
     const batch = Array.from({ length: 7 }, (_, i) => product(100 + i));
-    await productsOps.insert({ data: batch });
+    for (const row of batch) await insertProductGraphAt(dbUrl, row);
     await queryRows(
       dbUrl,
       `update public.products set created_at = $1 where slug like 'e3-product-1__'`,
@@ -126,7 +130,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       });
     const seen = (await Promise.all([page(0), page(3), page(6), page(9)]))
       .flat()
-      .filter((r) => r.slug.startsWith('e3-product-1') && r.slug.length === 14)
+      .filter((r) => /^Товар 10\d$/.test(r.name))
       .map((r) => r.id);
     expect(new Set(seen).size).toBe(seen.length);
     expect(seen).toHaveLength(7);
