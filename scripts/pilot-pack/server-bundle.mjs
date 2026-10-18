@@ -88,7 +88,22 @@ export function checkServerBundle(stats, allowlist) {
  */
 const normalizeModuleId = (id) => id.replace(/^\0/, '').replace(/\?.*$/, '');
 
-/** Файл контексту запиту ядра: `dist/site/request-context.js` (чи `src/…` у dev-збірці). */
+/**
+ * Файл контексту запиту ядра: `dist/site/request-context.js` (чи `src/…` у dev-збірці).
+ *
+ * Гейт `checkRequestContextSingle` спирається на чотири факти, кожен поза цим файлом:
+ * (1) `./site/request-context` — окремий entry `exports` ядра, тож у dist є свій файл
+ *     `dist/site/request-context.js` (там і живе `AsyncLocalStorage`);
+ * (2) `tsdown.config.ts` ядра тримає `deps.neverBundle: simplycms/*` — інші субшляхи
+ *     імпортують його bare, а не вклеюють копію у свої чанки (відносний `./request-context`
+ *     у `site/cache-generations.ts` резолвиться в той самий модуль);
+ * (3) Vite магазину вклеює `simplycms` у серверний бандл (не `ssr.external`) — інакше
+ *     модуля в stats нуль, і гейт падає;
+ * (4) регекс матчить будь-який `.../site/request-context.*`, зокрема власний файл магазину з
+ *     таким іменем — тоді входжень два, і гейт падає.
+ * (3) і (4) падають закрито; копію ALS у dist теми чи плагіна стереже
+ * `tests/dist-theme-plugin-external.test.ts`.
+ */
 const REQUEST_CONTEXT_MODULE = /[\\/]site[\\/]request-context\.[cm]?[jt]s$/;
 
 /**
