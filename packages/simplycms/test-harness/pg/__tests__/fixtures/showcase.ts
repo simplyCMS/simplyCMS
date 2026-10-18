@@ -5,6 +5,7 @@
 // перевірялися б.
 
 import { percentDiscountStatements } from './discounts';
+import { modificationIdBySlug, productIdBySlug } from './product-sql';
 
 /** Категорія, на яку націлена акція. Тип ціни в неї той САМИЙ, що в роздрібу: */
 /** інакше гуртовик не побачив би роздрібних правил і тест доводив би не те. */
@@ -124,27 +125,25 @@ export const SHOWCASE_FIXTURE_STATEMENTS: string[] = [
   // видачі, тож голий `cross join public.pickup_points` підхопив би і її,
   // подвоївши залишок цієї модифікації на непричетній до фікстури точці.
   `insert into public.stock_by_pickup_point (id, pickup_point_id, modification_id, quantity)
-   select gen_random_uuid(), pp.id, m.id,
+   select gen_random_uuid(), pp.id,
+          ${modificationIdBySlug(productIdBySlug(`'${STOCK_PRODUCT_SLUG}'`), `'${STOCK_MOD_SLUG}'`)},
           case when pp.is_active then ${OPEN_POINT_QUANTITY} else ${CLOSED_POINT_QUANTITY} end
      from public.pickup_points pp
-     cross join public.product_modifications m
-     join public.products p on p.id = m.product_id
-    where p.slug = '${STOCK_PRODUCT_SLUG}' and m.slug = '${STOCK_MOD_SLUG}'
-      and pp.name in ('${OPEN_POINT_NAME}', '${CLOSED_POINT_NAME}')`,
+    where pp.name in ('${OPEN_POINT_NAME}', '${CLOSED_POINT_NAME}')`,
 
   // ── Відгуки: дві схвалені оцінки й одна нерозглянута ─────────────────────
   `insert into public.product_reviews (id, product_id, user_id, rating, title, status)
-   select gen_random_uuid(), p.id, u.id, ${APPROVED_RATINGS[0]}, 'Чудова панель', 'approved'
-     from public.products p cross join public.users u
-    where p.slug = '${REVIEWED_PRODUCT_SLUG}' and u.email = '${REVIEWER_EMAIL}'`,
+   select gen_random_uuid(), ${productIdBySlug(`'${REVIEWED_PRODUCT_SLUG}'`)}, u.id, ${APPROVED_RATINGS[0]}, 'Чудова панель', 'approved'
+     from public.users u
+    where u.email = '${REVIEWER_EMAIL}'`,
 
   `insert into public.product_reviews (id, product_id, user_id, rating, title, status)
-   select gen_random_uuid(), p.id, u.id, ${APPROVED_RATINGS[1]}, 'Норм', 'approved'
-     from public.products p cross join public.users u
-    where p.slug = '${REVIEWED_PRODUCT_SLUG}' and u.email = '${RETAIL_EMAIL}'`,
+   select gen_random_uuid(), ${productIdBySlug(`'${REVIEWED_PRODUCT_SLUG}'`)}, u.id, ${APPROVED_RATINGS[1]}, 'Норм', 'approved'
+     from public.users u
+    where u.email = '${RETAIL_EMAIL}'`,
 
   `insert into public.product_reviews (id, product_id, user_id, rating, title, status)
-   select gen_random_uuid(), p.id, u.id, ${PENDING_RATING}, 'Ще на модерації', 'pending'
-     from public.products p cross join public.users u
-    where p.slug = '${REVIEWED_PRODUCT_SLUG}' and u.email = '${WHOLESALE_EMAIL}'`,
+   select gen_random_uuid(), ${productIdBySlug(`'${REVIEWED_PRODUCT_SLUG}'`)}, u.id, ${PENDING_RATING}, 'Ще на модерації', 'pending'
+     from public.users u
+    where u.email = '${WHOLESALE_EMAIL}'`,
 ];

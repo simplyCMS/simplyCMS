@@ -7,11 +7,7 @@ import { MEDIA_COLUMNS } from 'simplycms/domain/media';
 import { findMediaReferences } from 'simplycms/storage';
 import * as H from '../apply.mjs';
 import { useReviewsDb } from './fixtures/reviews';
-import {
-  insertProductGraph,
-  modificationGraphSql,
-  viaRows,
-} from './fixtures/product-graph';
+import { insertProductGraph, viaRows } from './fixtures/product-graph';
 
 describe('findMediaReferences (Е6д-22)', () => {
   const d = useReviewsDb('simplycms_e6d_media_refs');
@@ -38,31 +34,6 @@ describe('findMediaReferences (Е6д-22)', () => {
 
   /** Сіятель на запис реєстру: кладе `key` у колонку нового рядка, повертає його id. */
   const SEEDERS: Record<string, (key: string) => Promise<string>> = {
-    'products.images': async (key) => {
-      const id = crypto.randomUUID();
-      await insertProductGraph(
-        viaRows((sql) => f.rows(sql)),
-        {
-          id,
-          slug: `s-${id}`,
-          name: 'T',
-          images: ['ab/other.png', key],
-        },
-      );
-      return id;
-    },
-    'product_modifications.images': async (key) => {
-      const id = crypto.randomUUID();
-      await f.rows(
-        modificationGraphSql(f.ids.panel, {
-          id,
-          slug: `m-${id}`,
-          name: 'M',
-          images: ['ab/other.png', key],
-        }),
-      );
-      return id;
-    },
     'product_images.storage_key': async (key) => (await image(key)).imageId,
     'product_image_translations.storage_key': async (key) => {
       // Мова FK `ON DELETE RESTRICT`: рядок мови потрібен до перекладу.
@@ -174,7 +145,7 @@ describe('findMediaReferences (Е6д-22)', () => {
 
   it('неприв’язаний ключ — порожньо; підрядок у jsonb не збігається', async () => {
     const key = fresh();
-    await SEEDERS['products.images']!(`${key}.bak`);
+    await SEEDERS['product_reviews.images']!(`${key}.bak`);
     expect(await find(key)).toEqual([]);
   });
 });

@@ -218,12 +218,14 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     pointInactive = await one(
       `select id from public.pickup_points where name = 'Точка неактивної зони'`,
     );
-    panel = await one(`select id from public.products where slug = $1`, [
-      PANEL_SLUG,
-    ]);
-    outOfStock = await one(`select id from public.products where slug = $1`, [
-      OUT_OF_STOCK_SLUG,
-    ]);
+    panel = await one(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [PANEL_SLUG],
+    );
+    outOfStock = await one(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [OUT_OF_STOCK_SLUG],
+    );
     await queryRows(
       dbUrl,
       `update public.products set stock_status = 'out_of_stock' where id = $1`,
@@ -233,15 +235,17 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
     // товар, у якого ціна є ЛИШЕ на модифікаціях (продукт-рівневого рядка
     // `product_prices` немає взагалі) — обидва вже в сіді, лише читаємо id.
     inactiveProduct = await one(
-      `select id from public.products where slug = $1`,
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
       [INACTIVE_SLUG],
     );
     noPriceProduct = await one(
-      `select id from public.products where slug = $1`,
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
       [NO_PRICE_SLUG],
     );
     foreignMod = await one(
-      `select id from public.product_modifications where product_id = $1 and slug = 'odnofazny'`,
+      `select modification_id as id from public.slug_tokens
+        where scope_id = $1 and slug = 'odnofazny' and is_current
+          and locale = (select code from public.languages where is_default)`,
       [noPriceProduct],
     );
     await queryRows(
@@ -249,9 +253,10 @@ describe('placeOrderFor: воронка й доменні відмови', () =>
       `update public.products set is_active = false where id = $1`,
       [inactiveProduct],
     );
-    untracked = await one(`select id from public.products where slug = $1`, [
-      UNTRACKED_SLUG,
-    ]);
+    untracked = await one(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [UNTRACKED_SLUG],
+    );
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
 

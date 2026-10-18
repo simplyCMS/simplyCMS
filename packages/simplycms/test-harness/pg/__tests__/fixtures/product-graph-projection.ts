@@ -1,6 +1,6 @@
-// Адреси інших мов і проєкція тексту для графа товару (М1, Task 14, І23): фікстура
-// доводиться до стану, який лишають команди, — інакше тести вітрини й звірки бачили б
-// товар, якого команди створити не можуть (без адреси в мові й без рядка проєкції).
+// Адреси й токени мов і проєкція тексту для графа товару (М1, Task 14/17, І16, І23):
+// фікстура доводиться до стану, який лишають команди, — товар без адреси в мові чи
+// модифікація без токена на COMMIT відхиляються тригерами наявності.
 // SQL — свідома друга копія `catalog-projection/expected.ts`: її еквівалентність
 // доводить `catalog-projection.test.ts` (звірка після фікстури: `mismatched: 0`).
 import { PRIMARY } from './product-graph-rows';
@@ -14,12 +14,27 @@ const FIELDS = [
   'meta_description',
 ];
 
-/** Поточна адреса товару в кожній `draft`/`published` мові, крім основної (її пише граф). */
-export const otherLocalePathsSql = (productId: Id, path: string): string => `
+/** Поточна адреса `path` у кожній `draft`/`published` мові, де явної ще немає. */
+export const missingPathsSql = (productId: Id, path: string): string => `
   insert into public.url_paths (id, locale, path, product_id, is_current)
   select gen_random_uuid(), l.code, ${lit(path)}, ${idSql(productId)}, true
     from public.languages l
-   where l.status in ('draft', 'published') and not l.is_default`;
+   where l.status in ('draft', 'published')
+     and not exists (select 1 from public.url_paths u
+                      where u.product_id = ${idSql(productId)} and u.locale = l.code and u.is_current)`;
+
+/** Поточний токен `slug` модифікації в кожній `draft`/`published` мові, де явного ще немає. */
+export const missingTokensSql = (
+  productId: Id,
+  modificationId: string,
+  slug: string,
+): string => `
+  insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
+  select gen_random_uuid(), l.code, ${idSql(productId)}, ${lit(slug)}, ${lit(modificationId)}, true
+    from public.languages l
+   where l.status in ('draft', 'published')
+     and not exists (select 1 from public.slug_tokens t
+                      where t.modification_id = ${lit(modificationId)} and t.locale = l.code and t.is_current)`;
 
 /** Поля з основної мови: у джерелі є, у мові — NULL (двійник `fallback_fields`). */
 const fallback = FIELDS.map(

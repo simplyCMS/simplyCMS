@@ -29,6 +29,11 @@ import {
 import { sql } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
 import {
+  mainImageSql,
+  modificationGallerySql,
+  productGallerySql,
+} from 'simplycms/translations';
+import {
   completeMediaErasures,
   eraseMediaRows,
   findMediaReferences,
@@ -139,13 +144,10 @@ describe('зображення товару й медіа-контур (Task 12)
     });
   });
 
-  it('М1-TEMP: jsonb products.images і product_modifications.images дзеркалять рядки', async () => {
+  // jsonb `images` знесено (М1, Task 17): вітрина й мініатюра адмінки читають ці самі
+  // рядки виразами галереї (`simplycms/translations`) — один порядок для всіх читачів.
+  it('галерея: фото товару й модифікації — з product_images у порядку sort_order', async () => {
     const { id, version, main } = await seed();
-    const [row] = await db.q(
-      `select images from public.products where id = $1`,
-      [id],
-    );
-    expect(row!.images).toEqual([main]);
     const mod = randomUUID();
     const key = await upload(id);
     await saveDescription(id, version, {
@@ -157,11 +159,15 @@ describe('зображення товару й медіа-контур (Task 12)
     await saveDescription(id, v2, {
       images: { upsert: [img(key, { modificationId: mod })] },
     });
-    const [m] = await db.q(
-      `select images from public.product_modifications where id = $1`,
-      [mod],
-    );
-    expect(m!.images).toEqual([key]);
+    const [row] = (
+      await db.admin((d) =>
+        d.execute<{ p: unknown; m: unknown; first: unknown }>(sql`
+          select ${productGallerySql(sql`${id}::uuid`)} as p,
+                 ${modificationGallerySql(sql`${mod}::uuid`)} as m,
+                 ${mainImageSql(sql`${id}::uuid`)} as first`),
+      )
+    ).rows;
+    expect(row).toEqual({ p: [main], m: [key], first: main });
   });
 
   it('remove фото → файл стерто, рядок прибрано, outbox порожній', async () => {
@@ -608,26 +614,6 @@ describe('зображення товару й медіа-контур (Task 12)
           [key],
         ),
       ).toHaveLength(0);
-    });
-
-    it('старий шлях products.images: заміна масиву не стирає файл, що лишився в product_images', async () => {
-      const p = await create({ uk: { name: 'Кабель' } });
-      const [k1, k2] = [await upload(p.id), await upload(p.id)];
-      await saveDescription(p.id, p.version, {
-        images: { upsert: [img(k1), img(k2, { sortOrder: 1 })] },
-      });
-      const discard: string[] = [];
-      await withActor({ role: 'app_admin' }, (tx) =>
-        productsOps.updateIn(
-          tx,
-          [{ id: p.id, patch: { images: [k2] } }],
-          discard,
-        ),
-      );
-      await completeMediaErasures(discard);
-      expect(discard).toEqual([]);
-      await alive(k1);
-      await alive(k2);
     });
   });
 });

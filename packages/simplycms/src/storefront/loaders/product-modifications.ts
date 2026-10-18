@@ -1,5 +1,9 @@
 import { sql } from 'drizzle-orm';
-import { TRANSLATABLE, withFallback } from 'simplycms/translations';
+import {
+  TRANSLATABLE,
+  modificationGallerySql,
+  withFallback,
+} from 'simplycms/translations';
 import type { ActorDb } from './db';
 import {
   toModificationRow,
@@ -25,7 +29,7 @@ export async function loadProductModifications(
   const res = await db.execute<RawModification>(sql`
     select m.id, m.product_id, coalesce(tk.slug, tp.slug) as slug,
            ${fb.columns.name} as name, ${fb.fallback.name} as name_fallback, m.sku, m.is_default, m.sort_order,
-           m.stock_status, m.images
+           m.stock_status, ${modificationGallerySql(sql`m.id`)} as images
       from public.product_modifications m ${fb.joinOn(sql`m.id`)}
       left join public.slug_tokens tk
         on tk.modification_id = m.id and tk.locale = ${locale} and tk.is_current

@@ -46,9 +46,10 @@ export function useOrderItemStockDb(prefix: string) {
     );
     ids.point = await id(`select id from public.pickup_points where is_system`);
     for (const [key, slug] of Object.entries(SLUGS))
-      ids[key] = await id(`select id from public.products where slug = $1`, [
-        slug,
-      ]);
+      ids[key] = await id(
+        `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+        [slug],
+      );
     process.env.DATABASE_URL = H.withUser(dbUrl, 'app_runtime');
   }, 120_000);
 

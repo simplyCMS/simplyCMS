@@ -88,7 +88,8 @@ describe('підключення тригера обовʼязкового ря�
       attach(OK),
       `select tgrelid::regclass::text as rel, tgname, pg_get_triggerdef(oid) as def
          from pg_trigger
-        where tgname like '%\\_src\\_%' order by 1`,
+        where tgname like '%\\_src\\_%' and tgrelid in ('public.t_b'::regclass, 'public.t_t'::regclass)
+        order by 1`,
     );
     expect(rows.map((r) => [r.rel, r.tgname])).toEqual([
       ['t_b', 't_b_src_base'],
@@ -128,7 +129,9 @@ describe('підключення тригера обовʼязкового ря�
       ...pair('zz_mpv', long),
       ...pair(hugeBase, hugeTrans),
       `select tgname, length(tgname) as len from pg_trigger
-        where tgname like '%\\_src\\_%' order by 1`,
+        where tgname like '%\\_src\\_%'
+          and tgrelid::regclass::text in ('zz_mpv', '${long}', '${hugeBase}', '${hugeTrans}')
+        order by 1`,
     ]);
     expect(rows).toHaveLength(4);
     expect(rows.map((r) => r.tgname)).toContain(`${long}_src_tr`);

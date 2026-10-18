@@ -174,14 +174,19 @@ CREATE TABLE "modification_property_values" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"modification_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
-	"value" text,
+	"value_kind" "property_type" NOT NULL,
 	"numeric_value" numeric(15, 4),
 	"option_id" uuid,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"value_kind" "property_type",
 	"bool_value" boolean,
 	"color_value" text,
-	CONSTRAINT "modification_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("modification_id","property_id","option_id")
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "modification_property_values_owner_property_option_key" UNIQUE("modification_id","property_id","option_id"),
+	CONSTRAINT "modification_property_values_value_shape" CHECK (num_nonnulls(option_id, numeric_value, bool_value, color_value) = (CASE WHEN value_kind = 'text' THEN 0 ELSE 1 END)
+		AND (option_id IS NOT NULL) = (value_kind IN ('select', 'multiselect'))
+		AND (numeric_value IS NOT NULL) = (value_kind IN ('number', 'range'))
+		AND (bool_value IS NOT NULL) = (value_kind = 'boolean')
+		AND (color_value IS NOT NULL) = (value_kind = 'color')),
+	CONSTRAINT "modification_property_values_color_format" CHECK (color_value IS NULL OR color_value ~ '^#[0-9a-f]{6}$')
 );
 --> statement-breakpoint
 CREATE TABLE "order_items" (
@@ -329,16 +334,12 @@ CREATE TABLE "product_modification_translations" (
 CREATE TABLE "product_modifications" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
-	"slug" varchar(255) NOT NULL,
-	"name" text NOT NULL,
 	"sku" varchar(100),
 	"is_default" boolean DEFAULT false NOT NULL,
-	"images" jsonb DEFAULT '[]'::jsonb,
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"stock_status" "stock_status" DEFAULT 'in_stock' NOT NULL,
-	CONSTRAINT "product_modifications_product_slug_unique" UNIQUE("product_id","slug"),
 	CONSTRAINT "product_modifications_product_id_id_key" UNIQUE("product_id","id")
 );
 --> statement-breakpoint
@@ -367,14 +368,19 @@ CREATE TABLE "product_property_values" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"product_id" uuid NOT NULL,
 	"property_id" uuid NOT NULL,
-	"value" text,
+	"value_kind" "property_type" NOT NULL,
 	"numeric_value" numeric(15, 4),
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"option_id" uuid,
-	"value_kind" "property_type",
 	"bool_value" boolean,
 	"color_value" text,
-	CONSTRAINT "product_property_values_owner_property_option_key" UNIQUE NULLS NOT DISTINCT("product_id","property_id","option_id")
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "product_property_values_owner_property_option_key" UNIQUE("product_id","property_id","option_id"),
+	CONSTRAINT "product_property_values_value_shape" CHECK (num_nonnulls(option_id, numeric_value, bool_value, color_value) = (CASE WHEN value_kind = 'text' THEN 0 ELSE 1 END)
+		AND (option_id IS NOT NULL) = (value_kind IN ('select', 'multiselect'))
+		AND (numeric_value IS NOT NULL) = (value_kind IN ('number', 'range'))
+		AND (bool_value IS NOT NULL) = (value_kind = 'boolean')
+		AND (color_value IS NOT NULL) = (value_kind = 'color')),
+	CONSTRAINT "product_property_values_color_format" CHECK (color_value IS NULL OR color_value ~ '^#[0-9a-f]{6}$')
 );
 --> statement-breakpoint
 CREATE TABLE "product_reviews" (
@@ -416,24 +422,14 @@ CREATE TABLE "product_translations" (
 CREATE TABLE "products" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"section_id" uuid,
-	"slug" varchar(255) NOT NULL,
-	"name" text NOT NULL,
-	"short_description" text,
-	"description" text,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"is_featured" boolean DEFAULT false NOT NULL,
-	"meta_title" text,
-	"meta_description" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"images" jsonb DEFAULT '[]'::jsonb,
 	"has_modifications" boolean DEFAULT true,
 	"sku" varchar,
 	"stock_status" "stock_status" DEFAULT 'in_stock' NOT NULL,
-	"return_policy" jsonb,
-	"shipping_details" jsonb,
-	"version" integer DEFAULT 1 NOT NULL,
-	CONSTRAINT "products_slug_key" UNIQUE("slug")
+	"version" integer DEFAULT 1 NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "profiles" (
@@ -801,8 +797,8 @@ ALTER TABLE "discounts" ADD CONSTRAINT "discounts_price_type_id_fkey" FOREIGN KE
 ALTER TABLE "modification_property_value_translations" ADD CONSTRAINT "modification_property_value_translations_value_id_fkey" FOREIGN KEY ("value_id") REFERENCES "public"."modification_property_values"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "modification_property_value_translations" ADD CONSTRAINT "modification_property_value_translations_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property_values_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."property_options"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property_values_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "public"."section_properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property_values_property_kind_fkey" FOREIGN KEY ("property_id","value_kind") REFERENCES "public"."section_properties"("id","property_type") ON DELETE cascade ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "modification_property_values" ADD CONSTRAINT "modification_property_values_option_fkey" FOREIGN KEY ("property_id","option_id") REFERENCES "public"."property_options"("property_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_modification_id_fkey" FOREIGN KEY ("modification_id") REFERENCES "public"."product_modifications"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -829,9 +825,9 @@ ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_price_type_id_fkey" 
 ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_value_translations" ADD CONSTRAINT "product_property_value_translations_value_id_fkey" FOREIGN KEY ("value_id") REFERENCES "public"."product_property_values"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_value_translations" ADD CONSTRAINT "product_property_value_translations_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_option_id_fkey" FOREIGN KEY ("option_id") REFERENCES "public"."property_options"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "public"."section_properties"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_property_kind_fkey" FOREIGN KEY ("property_id","value_kind") REFERENCES "public"."section_properties"("id","property_type") ON DELETE cascade ON UPDATE restrict;--> statement-breakpoint
+ALTER TABLE "product_property_values" ADD CONSTRAINT "product_property_values_option_fkey" FOREIGN KEY ("property_id","option_id") REFERENCES "public"."property_options"("property_id","id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_translations" ADD CONSTRAINT "product_translations_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -889,6 +885,7 @@ CREATE UNIQUE INDEX "idx_languages_single_default" ON "languages" USING btree ("
 CREATE INDEX "idx_modification_property_value_translations_locale" ON "modification_property_value_translations" USING btree ("locale");--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_mod" ON "modification_property_values" USING btree ("modification_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_option" ON "modification_property_values" USING btree ("option_id" uuid_ops);--> statement-breakpoint
+CREATE UNIQUE INDEX "modification_property_values_scalar_key" ON "modification_property_values" USING btree ("modification_id","property_id") WHERE value_kind <> 'multiselect';--> statement-breakpoint
 CREATE INDEX "idx_modification_property_values_property" ON "modification_property_values" USING btree ("property_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
@@ -919,6 +916,7 @@ CREATE INDEX "idx_product_prices_product_id" ON "product_prices" USING btree ("p
 CREATE INDEX "idx_product_prices_modification_id" ON "product_prices" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_product_property_value_translations_locale" ON "product_property_value_translations" USING btree ("locale");--> statement-breakpoint
 CREATE INDEX "idx_product_property_values_option_id" ON "product_property_values" USING btree ("option_id" uuid_ops);--> statement-breakpoint
+CREATE UNIQUE INDEX "product_property_values_scalar_key" ON "product_property_values" USING btree ("product_id","property_id") WHERE value_kind <> 'multiselect';--> statement-breakpoint
 CREATE INDEX "idx_product_property_values_property_id" ON "product_property_values" USING btree ("property_id");--> statement-breakpoint
 CREATE INDEX "idx_product_reviews_user_id" ON "product_reviews" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_product_translations_locale" ON "product_translations" USING btree ("locale");--> statement-breakpoint

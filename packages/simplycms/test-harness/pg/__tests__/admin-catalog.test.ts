@@ -41,7 +41,10 @@ import {
   sectionsOps,
 } from 'simplycms/admin-server/impl';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
-import { insertProductGraphAt } from './fixtures/product-graph';
+import {
+  insertModificationAt,
+  insertProductGraphAt,
+} from './fixtures/product-graph';
 // 🔴 requireGrant тут — вже ЗМОКАНА функція (vi.fn з блоку вище); resolveGrant
 // і AuthzError — реальні, бо фабрика мока робить `...(await orig())` і
 // перекриває лише requireGrant. Потрібні для Е3-6 нижче.
@@ -86,15 +89,15 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     await harness?.teardown();
   });
 
-  it('insert з клієнтським id і list з фільтром sectionId', async () => {
-    const rows = await productsOps.insert({ data: [product(1), product(2)] });
-    expect(rows.map((r) => r.slug).sort()).toEqual([
-      'e3-product-1',
-      'e3-product-2',
-    ]);
-    // `list` читає назву з перекладу основної мови (read-model): рядки без перекладу
-    // у вибірку не потрапляють, тож для списку товари сіє фікстура графа.
-    for (const n of [70, 71]) await insertProductGraphAt(dbUrl, product(n));
+  /** Товар графа (переклад основної мови, адреси) — запис лише так (М1, Task 17). */
+  const seedProduct = async (i: number) => {
+    const row = product(i);
+    await insertProductGraphAt(dbUrl, row);
+    return row;
+  };
+
+  it('list з фільтром sectionId', async () => {
+    for (const n of [70, 71]) await seedProduct(n);
     const listed = await productsOps.list({
       data: {
         subset: {
@@ -110,12 +113,12 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // resource.test.ts «id asc — ОСТАННІЙ ключ сортування»): без тай-брейкера
   // Postgres на малій таблиці може дати той самий порядок.
   it('Review Focus 3: однакові created_at — три сторінки по 3 дають 7 різних id', async () => {
-    const batch = Array.from({ length: 7 }, (_, i) => product(100 + i));
-    for (const row of batch) await insertProductGraphAt(dbUrl, row);
+    const batch = [];
+    for (let i = 0; i < 7; i += 1) batch.push(await seedProduct(100 + i));
     await queryRows(
       dbUrl,
-      `update public.products set created_at = $1 where slug like 'e3-product-1__'`,
-      [at],
+      `update public.products set created_at = $1 where id = any($2::uuid[])`,
+      [at, batch.map((r) => r.id)],
     );
     const page = (offset: number) =>
       productsOps.list({
@@ -136,32 +139,36 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     expect(seen).toHaveLength(7);
   });
 
-  it('touch: update ставить updated_at свіжішим за created_at', async () => {
-    const [p] = await productsOps.insert({ data: [product(3)] });
+  it('touch: update ставить updated_at свіжішим за created_at (розділ)', async () => {
+    const [sec] = await sectionsOps.insert({
+      data: [{ id: crypto.randomUUID(), slug: 'e3-touch', name: 'Т' }],
+    });
     await queryRows(
       dbUrl,
-      `update public.products set updated_at = $1 where id = $2`,
-      [at, p!.id],
+      `update public.sections set updated_at = $1 where id = $2`,
+      [at, sec!.id],
     );
-    const [u] = await productsOps.update({
-      data: [{ id: p!.id, patch: { name: 'Нова назва' } }],
+    const [u] = await sectionsOps.update({
+      data: [{ id: sec!.id, patch: { name: 'Нова назва' } }],
     });
     expect(u!.updatedAt.getTime()).toBeGreaterThan(at.getTime());
   });
 
-  it('Review Focus 1: дубль slug → AdminConflictError unique з назвою обмеження', async () => {
-    const err = await productsOps
-      .insert({ data: [{ ...product(4), slug: 'e3-product-1' }] })
+  it('Review Focus 1: дубль slug → AdminConflictError unique з назвою обмеження (розділ)', async () => {
+    const err = await sectionsOps
+      .insert({
+        data: [{ id: crypto.randomUUID(), slug: 'e3-section', name: 'Дубль' }],
+      })
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(AdminConflictError);
     expect(err).toMatchObject({
       kind: 'unique',
-      constraint: 'products_slug_key',
+      constraint: 'sections_slug_key',
     });
   });
 
   it('Review Focus 2: товар у замовленні → AdminConflictError reference, рядок живий', async () => {
-    const [p] = await productsOps.insert({ data: [product(5)] });
+    const p = await seedProduct(5);
     const orderId = crypto.randomUUID();
     // 🔴 Відхилення від брифа (факт коду, не помилка плану): `orders` у
     // schema.ts не має колонки `status` (є nullable `status_id`, FK на
@@ -178,10 +185,10 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       dbUrl,
       `insert into public.order_items (id, order_id, product_id, name, price, quantity, total)
        values ($1, $2, $3, 'Товар 5', 1, 1, 1)`,
-      [crypto.randomUUID(), orderId, p!.id],
+      [crypto.randomUUID(), orderId, p.id],
     );
     const err = await productsOps
-      .remove({ data: [{ id: p!.id }] })
+      .remove({ data: [{ id: p.id }] })
       .catch((e: unknown) => e);
     expect(err).toMatchObject({
       name: 'AdminConflictError',
@@ -189,45 +196,15 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     });
     expect(
       await queryRows(dbUrl, `select 1 from public.products where id = $1`, [
-        p!.id,
+        p.id,
       ]),
     ).toHaveLength(1);
   });
 
-  it('Review Focus 1 для модифікації: дубль slug у товарі → конфлікт на product_modifications_product_slug_unique', async () => {
-    const [p] = await productsOps.insert({ data: [product(7)] });
-    const mod = (id: string) => ({
-      id,
-      productId: p!.id,
-      slug: 'same',
-      name: 'M',
-    });
-    await productModificationsOps.insert({ data: [mod(crypto.randomUUID())] });
-    const err = await productModificationsOps
-      .insert({ data: [mod(crypto.randomUUID())] })
-      .catch((e: unknown) => e);
-    // 🔴 Імʼя НЕ за конвенцією *_slug_key — задане руками (schema.ts:445).
-    expect(err).toMatchObject({
-      kind: 'unique',
-      constraint: 'product_modifications_product_slug_unique',
-    });
-  });
-
-  it('Д5: slug товару й модифікації з пробілом/верхнім регістром → ValidationError', async () => {
+  it('Д5: slug розділу з пробілом/верхнім регістром → ValidationError', async () => {
     await expect(
-      productsOps.insert({ data: [{ ...product(30), slug: 'Bad Slug' }] }),
-    ).rejects.toMatchObject({ name: 'ValidationError' });
-    const [p] = await productsOps.insert({ data: [product(31)] });
-    await expect(
-      productModificationsOps.insert({
-        data: [
-          {
-            id: crypto.randomUUID(),
-            productId: p!.id,
-            slug: 'Bad Slug',
-            name: 'M',
-          },
-        ],
+      sectionsOps.insert({
+        data: [{ id: crypto.randomUUID(), slug: 'Bad Slug', name: 'Р' }],
       }),
     ).rejects.toMatchObject({ name: 'ValidationError' });
   });
@@ -244,54 +221,35 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     ).rejects.toThrow(/недозволеній колонці/);
   });
 
-  // 🔴 А2 (рішення архітектора): `ops.insert()` ТЕПЕР сам парсить вхід своєю
-  // ж `insertSchema` ДО `runAdmin` — інваріант «readonly-поле не пишеться
-  // generic-write» тримає ОПЕРАЦІЯ, а не лише `validator` serverFn з
-  // admin-server/index.ts (Task 3). Буквальний виклик (як у плані):
-  // `isDefault: true` у payload,
-  // `as never` — той самий обхід TS excess-property check, що обходив би
-  // РЕАЛЬНИЙ виклик з мережі (там TS не існує). Schema strip-ить readonly-
-  // ключ мовчки, ще ДО `db.insert().values()`.
-  it('модифікація: insert без isDefault у writable — прапорець лишається false', async () => {
-    const [p] = await productsOps.insert({ data: [product(6)] });
-    const [m] = await productModificationsOps.insert({
-      data: [
-        {
-          id: crypto.randomUUID(),
-          productId: p!.id,
-          slug: 'm1',
-          name: 'M1',
-          isDefault: true,
-        } as never,
-      ],
+  // 🔴 М1 (Task 17): узагальнений запис товару й модифікації вимкнено (`writable: []`) —
+  // запис лише командами агрегата. Пряме `update` будь-яким полем: `patchSchema` пікає
+  // лише writable-ключі, патч стає ПОРОЖНІМ, і рефайн валить парсинг ДО транзакції
+  // (ValidationError), а значення в БД не змінюється.
+  it('узагальнений update товару й модифікації → ValidationError, рядок не змінився', async () => {
+    const p = await seedProduct(9);
+    const modId = crypto.randomUUID();
+    await insertModificationAt(dbUrl, p.id, {
+      id: modId,
+      slug: 'm9',
+      name: 'M9',
     });
-    expect(m!.isDefault).toBe(false);
-  });
-
-  // 🔴 А2, новий кейс: прямий `ops.update()` лише readonly-полем, повз
-  // серверну межу (харнес-виклик, як у решті цього файла). `patchSchema`
-  // (resource-schemas.ts) пікає ЛИШЕ writable-ключі — `isDefault` strip-иться
-  // ще ДО `.refine()`, тож патч стає ПОРОЖНІМ і саме РЕФАЙН валить парсинг
-  // («patch не може бути порожнім»): фактична поведінка — ValidationError (Тема 12, раніше ZodError) ДО
-  // транзакції, а не мовчазний no-op зі збереженим старим значенням.
-  it('А2: пряме update лише readonly-полем (isDefault) — ValidationError від порожнього patch, прапорець не змінився', async () => {
-    const [p] = await productsOps.insert({ data: [product(9)] });
-    const [m] = await productModificationsOps.insert({
-      data: [
-        { id: crypto.randomUUID(), productId: p!.id, slug: 'm9', name: 'M9' },
-      ],
-    });
-    const err = await productModificationsOps
-      .update({ data: [{ id: m!.id, patch: { isDefault: true } as never }] })
+    const errP = await productsOps
+      .update({ data: [{ id: p.id, patch: { isActive: false } as never }] })
       .catch((e: unknown) => e);
-    expect((err as { name?: string }).name).toBe('ValidationError');
+    expect((errP as { name?: string }).name).toBe('ValidationError');
+    const errM = await productModificationsOps
+      .update({ data: [{ id: modId, patch: { isDefault: true } as never }] })
+      .catch((e: unknown) => e);
+    expect((errM as { name?: string }).name).toBe('ValidationError');
     expect(
       await queryRows(
         dbUrl,
-        `select is_default from public.product_modifications where id = $1`,
-        [m!.id],
+        `select p.is_active, m.is_default from public.products p
+           join public.product_modifications m on m.product_id = p.id
+          where m.id = $1`,
+        [modId],
       ),
-    ).toEqual([{ is_default: false }]);
+    ).toEqual([{ is_active: true, is_default: false }]);
   });
 
   it('читальний ресурс розділів бачить і неактивні (адмін-поверхня)', async () => {
@@ -331,16 +289,12 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // цін рівня товару проти живої БД. price_types сідиться каноном
   // (0003_seed.sql, код 'retail'), тож окремої фікстури типу ціни не треба.
   it('Е3-14: isNull на modification_id повертає рівно ціни рівня товару', async () => {
-    const [p] = await productsOps.insert({ data: [product(8)] });
-    const [m] = await productModificationsOps.insert({
-      data: [
-        {
-          id: crypto.randomUUID(),
-          productId: p!.id,
-          slug: 'e3-mod-8',
-          name: 'Модифікація 8',
-        },
-      ],
+    const p = await seedProduct(8);
+    const m = { id: crypto.randomUUID() };
+    await insertModificationAt(dbUrl, p.id, {
+      id: m.id,
+      slug: 'e3-mod-8',
+      name: 'Модифікація 8',
     });
     const [priceType] = (await queryRows(
       dbUrl,
@@ -351,19 +305,19 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
       dbUrl,
       `insert into public.product_prices (id, price_type_id, product_id, modification_id, price)
        values ($1, $2, $3, null, '10.00')`,
-      [productLevelId, priceType!.id, p!.id],
+      [productLevelId, priceType!.id, p.id],
     );
     await queryRows(
       dbUrl,
       `insert into public.product_prices (id, price_type_id, product_id, modification_id, price)
        values ($1, $2, $3, $4, '12.00')`,
-      [crypto.randomUUID(), priceType!.id, p!.id, m!.id],
+      [crypto.randomUUID(), priceType!.id, p.id, m.id],
     );
     const rows = await productPricesOps.list({
       data: {
         subset: {
           filters: [
-            { field: ['productId'], operator: 'eq', value: p!.id },
+            { field: ['productId'], operator: 'eq', value: p.id },
             { field: ['modificationId'], operator: 'isNull', value: null },
           ],
         },

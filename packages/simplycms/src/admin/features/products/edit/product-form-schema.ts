@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import { SLUG_RE } from 'simplycms/domain';
-
-// Формат адреси живе в T1 (`simplycms/domain`); реекспорт лишено, щоб не
-// правити наявних споживачів.
-export { SLUG_RE };
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 
 /** Поля, що перекладаються (`products.saveDescription`.texts.<мова>). */
 export const TEXT_FIELDS = [
@@ -105,7 +101,7 @@ export function productFormSchemaFor(primary: string) {
         path: ['texts', primary, 'name'],
         message: 'name',
       });
-    if (v.path !== '' && !SLUG_RE.test(v.path))
+    if (v.path !== '' && !SLUG_FORMAT.test(v.path))
       ctx.addIssue({ code: 'custom', path: ['path'], message: 'path' });
   });
 }

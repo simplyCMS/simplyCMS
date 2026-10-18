@@ -1,14 +1,12 @@
-// К3-Е6д-1: фото каталогу — розділ, опція властивості, модифікація — стирається
+// К3-Е6д-1: фото каталогу — розділ, опція властивості — стирається
 // заміною, прибиранням і каскадом видалення предка (розділ, властивість).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  productModificationsOps,
   propertyOptionsOps,
   sectionPropertiesOps,
   sectionsOps,
 } from 'simplycms/admin-server/impl';
 import { useCatalogMediaDb } from './fixtures/catalog-media';
-import { modificationGraphSql } from './fixtures/product-graph';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -78,31 +76,5 @@ describe('фото каталогу стираються двофазно (К3-�
     });
     await gone(ref!);
     expect(d.hasFile(next)).toBe(true);
-  });
-
-  it('модифікація: прибрати фото з галереї стирає його', async () => {
-    const productId = await d.product();
-    const id = crypto.randomUUID();
-    const [a, b] = [
-      await d.upload('product_modification', id),
-      await d.upload('product_modification', id),
-    ];
-    await d.f.rows(
-      modificationGraphSql(productId, {
-        id,
-        slug: 'm1',
-        name: 'Мод',
-        images: [a, b],
-      }),
-    );
-    // Стан «лише старий jsonb» (див. resource-media-jsonb): без рядків `product_images`.
-    await d.f.rows(`delete from public.product_images where product_id = $1`, [
-      productId,
-    ]);
-    await productModificationsOps.update({
-      data: [{ id, patch: { images: [b] } }],
-    });
-    await gone(a);
-    expect(d.hasFile(b)).toBe(true);
   });
 });

@@ -5,32 +5,17 @@ import type { PropertyKind, PropertyValuesInput } from './children-schemas';
 
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
 
-export interface ValueRefs {
-  /** `section_properties.property_type` за id властивості. */
-  readonly kinds: ReadonlyMap<string, PropertyKind>;
-  /** `property_options.property_id` за id опції. */
-  readonly optionOwner: ReadonlyMap<string, string>;
-}
-
-/** Типи властивостей і власники опцій одним читанням (для звірки до запису). */
-export async function loadRefs(
+/** Наявні властивості з входу одним читанням (рання помилка поля `propertyId`). */
+export async function loadKnownProperties(
   ctx: Pick<ChildCtx, 'db'>,
   upserts: readonly Upsert[],
-): Promise<ValueRefs> {
-  if (upserts.length === 0) return { kinds: new Map(), optionOwner: new Map() };
-  const props = await ctx.db.execute<{ id: string; t: PropertyKind }>(
-    sql`select id, property_type as t from public.section_properties
+): Promise<ReadonlySet<string>> {
+  if (upserts.length === 0) return new Set();
+  const props = await ctx.db.execute<{ id: string }>(
+    sql`select id from public.section_properties
          where id = any(${uuidArray(upserts.map((u) => u.propertyId))})`,
   );
-  const optionIds = upserts.flatMap((u) => (u.optionId ? [u.optionId] : []));
-  const opts = await ctx.db.execute<{ id: string; property_id: string }>(
-    sql`select id, property_id from public.property_options
-         where id = any(${uuidArray(optionIds)})`,
-  );
-  return {
-    kinds: new Map(props.rows.map((r) => [r.id, r.t])),
-    optionOwner: new Map(opts.rows.map((r) => [r.id, r.property_id])),
-  };
+  return new Set(props.rows.map((r) => r.id));
 }
 
 /** Яку колонку значення дозволяє тип (Р18: рівно одна, `text` — жодної). */
@@ -46,17 +31,19 @@ const COLUMN_OF: Readonly<Record<PropertyKind, string | null>> = {
 const VALUE_FIELDS = ['optionId', 'number', 'bool', 'color'] as const;
 
 /**
- * Тип значення збігається з типом властивості, заповнена рівно потрібна колонка,
- * опція належить властивості, `text` — лише для `kind = 'text'`.
+ * Форма вводу: властивість існує, заповнена рівно колонка свого `kind`, `text` — лише
+ * для `kind = 'text'`. Звірку `kind` ↔ `property_type` і власника опції тримає БД
+ * (складені FK, І6/І7): їхню відмову команда перекладає в ту саму помилку поля
+ * (`property-value-write.ts`), а друга копія правила в коді лише розійшлася б з першою.
+ * Наявність властивості лишається тут: відсутня властивість порушила б ТОЙ САМИЙ
+ * складений FK, що й чужий тип, і як окрема помилка `propertyId` не розрізнялася б.
  */
 export function checkShape(
   u: Upsert,
-  refs: ValueRefs,
+  known: ReadonlySet<string>,
   at: (...rest: string[]) => (string | number)[],
 ): void {
-  const kind = refs.kinds.get(u.propertyId);
-  if (!kind) throw fail(at('propertyId'), 'invalid_value');
-  if (kind !== u.kind) throw fail(at('kind'), 'invalid_value');
+  if (!known.has(u.propertyId)) throw fail(at('propertyId'), 'invalid_value');
   const wanted = COLUMN_OF[u.kind];
   for (const field of VALUE_FIELDS) {
     const present = u[field] !== undefined;
@@ -65,6 +52,4 @@ export function checkShape(
   }
   if (u.text !== undefined && u.kind !== 'text')
     throw fail(at('text'), 'unrecognized_keys');
-  if (u.optionId && refs.optionOwner.get(u.optionId) !== u.propertyId)
-    throw fail(at('optionId'), 'invalid_value');
 }

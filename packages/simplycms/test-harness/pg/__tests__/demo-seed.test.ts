@@ -7,6 +7,8 @@
 // файлу вдруге не має міняти лічильники (демо-файл теж описує це в шапці).
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { reconcileProductTexts } from 'simplycms/catalog-projection';
+import { closeDbPool, withActor } from 'simplycms/db';
 import { resolveHarness } from '../up.mjs';
 import {
   applyCanon,
@@ -16,7 +18,13 @@ import {
   queryRows,
   randomDbName,
   withDbName,
+  withUser,
 } from '../apply.mjs';
+
+const ADMIN = {
+  role: 'app_admin',
+  userId: '33333333-3333-4333-8333-333333333333',
+} as const;
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 const DEMO_FILE = join(MIGRATIONS_DIR, 'demo/demo-seed.sql');
@@ -32,9 +40,11 @@ describe('демо-сід: накат поверх канону', () => {
     dbUrl = withDbName(harness.url, dbName);
     await applyCanon(dbUrl);
     await applySqlFiles(dbUrl, [DEMO_FILE]);
+    process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
   }, 120_000);
 
   afterAll(async () => {
+    await closeDbPool();
     if (dbUrl) await dropTempDatabase(harness.url, dbName);
     await harness?.teardown();
   });
@@ -98,7 +108,7 @@ describe('демо-сід: накат поверх канону', () => {
   it('кожен демо-товар має переклад основною мовою й поточну адресу', async () => {
     const missing = await queryRows(
       dbUrl,
-      `select p.slug from public.products p
+      `select p.id from public.products p
         where not exists (
                 select 1 from public.product_translations t
                   join public.languages l on l.code = t.locale and l.is_default
@@ -106,7 +116,7 @@ describe('демо-сід: накат поверх канону', () => {
            or not exists (
                 select 1 from public.url_paths u
                   join public.languages l on l.code = u.locale and l.is_default
-                 where u.product_id = p.id and u.is_current and u.path = p.slug)`,
+                 where u.product_id = p.id and u.is_current)`,
     );
     expect(missing).toEqual([]);
   });
@@ -114,7 +124,7 @@ describe('демо-сід: накат поверх канону', () => {
   it('кожна демо-модифікація має переклад основною мовою й поточний токен', async () => {
     const missing = await queryRows(
       dbUrl,
-      `select m.slug from public.product_modifications m
+      `select m.id from public.product_modifications m
         where not exists (
                 select 1 from public.product_modification_translations t
                   join public.languages l on l.code = t.locale and l.is_default
@@ -123,17 +133,16 @@ describe('демо-сід: накат поверх канону', () => {
                 select 1 from public.slug_tokens s
                   join public.languages l on l.code = s.locale and l.is_default
                  where s.modification_id = m.id and s.scope_id = m.product_id
-                   and s.is_current and s.slug = m.slug)`,
+                   and s.is_current)`,
     );
     expect(missing).toEqual([]);
   });
 
-  it('значення властивостей демо мають value_kind', async () => {
-    const rows = await queryRows(
-      dbUrl,
-      'select id from public.product_property_values where value_kind is null',
-    );
-    expect(rows).toEqual([]);
+  // М1 Task 17: проєкція тексту, яку сід пише сам, — та сама, що дала б команда (І23).
+  it('звірка проєкції після демо-сіду: розбіжностей 0', async () => {
+    expect(
+      await withActor(ADMIN, (d) => reconcileProductTexts(d, { limit: 1000 })),
+    ).toEqual({ mismatched: 0, fixed: 0 });
   });
 
   it('дерево секцій: є батьківська й дочірні', async () => {
@@ -152,13 +161,13 @@ describe('демо-сід: накат поверх канону', () => {
   it("усі активні товари прив'язані до секцій і мають ціну", async () => {
     const orphanProducts = await queryRows(
       dbUrl,
-      `select slug from public.products where is_active and section_id is null`,
+      `select id from public.products where is_active and section_id is null`,
     );
     expect(orphanProducts).toHaveLength(0);
 
     const withoutPrice = await queryRows(
       dbUrl,
-      `select p.slug from public.products p
+      `select p.id from public.products p
         where p.is_active
           and not exists (
             select 1 from public.product_prices pp where pp.product_id = p.id

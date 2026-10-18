@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { propertyOptions, sectionProperties } from 'simplycms/schema';
-import { SLUG_RE } from 'simplycms/domain';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
@@ -13,7 +13,7 @@ import { defineAdminResource } from '../resource';
  * 🔴 `sectionId` — readonly: нові властивості глобальні (`NULL`), до
  * розділу їх привʼязує призначення. `options` — легасі-jsonb, адмінка його
  * не пише (опції — окрема таблиця `property_options`).
- * 🔴 Е4-6/Е4-7: slug унікальний глобально (DDL) і в форматі `SLUG_RE`.
+ * 🔴 Е4-6/Е4-7: slug унікальний глобально (DDL) і в форматі `SLUG_FORMAT`.
  */
 export const sectionPropertiesOps = defineAdminResource({
   entity: ENTITY.sectionProperties,
@@ -22,7 +22,7 @@ export const sectionPropertiesOps = defineAdminResource({
   mode: 'on-demand',
   filterable: ['id'],
   sortable: ['sortOrder', 'name'],
-  refine: { slug: (s: z.ZodString) => s.regex(SLUG_RE) },
+  refine: { slug: (s: z.ZodString) => s.regex(SLUG_FORMAT) },
   writable: [
     'name',
     'slug',

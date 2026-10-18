@@ -21,13 +21,16 @@
 (`product_translations`, `product_modification_translations`,
 `product_property_value_translations`), зображення (`product_images`,
 `product_image_translations`), реєстри адрес і токенів (`url_paths`,
-`slug_tokens`), `product_prices`. До Task 17 фото ще й у jsonb `products.images`
-(публічні URL-и Storage; локальне дзеркалення — опція, не вимога).
+`slug_tokens`), `product_prices`. Товар і модифікація — лише нетекстові колонки:
+тексти — у перекладах, адреса й токен — у реєстрах, фото — у `product_images`
+(колонок `slug`/`name`/`images` у базових таблицях немає).
 
 Мова перекладів, адрес і токенів на стенді — ЛИШЕ основна: `locale` не дампиться, а
 підставляється підзапитом `languages.is_default` локальної БД (мова з джерела там
 може не існувати), дамп бере рядки основної мови джерела. Сід — одна транзакція
-під спільним замком `languages-set` (тригер SC004 на `url_paths`/`slug_tokens`).
+під спільним замком `languages-set` (тригер SC004 на `url_paths`/`slug_tokens`): відкладені
+тригери перекладу основної мови (І4) і наявності адреси й токена (І16) перевіряють граф
+товару на COMMIT, тож рядок товару без перекладу чи адреси відхиляє весь сід.
 Персональних даних немає за побудовою: `profiles`, `orders`, `order_items`,
 `user_*` в allowlist-і відсутні, і додавати їх туди не
 можна. `created_at`/`updated_at` теж поза allowlist-ом — на стенді доречніші
@@ -81,7 +84,7 @@ slug властивості глобальна (`section_properties_slug_key UNI
 (id)` його не побачить, спробує вставити новий — і впаде на унікальному
 констрейнті слага. Як упізнати: `psql` завершується помилкою на кшталт
 `duplicate key value violates unique constraint "sections_slug_key"` (або
-`products_slug_key`) з `DETAIL: Key (slug)=(…) already exists`. Що робити:
+`url_paths_locale_path_key` для адреси товару) з `DETAIL: Key (…)=(…) already exists`. Що робити:
 перестворити локальну БД і накотити сід стенда наново на чисту — це штатний
 шлях. Падіння тут гучне й самодіагностоване, а не мовчазне псування даних.
 

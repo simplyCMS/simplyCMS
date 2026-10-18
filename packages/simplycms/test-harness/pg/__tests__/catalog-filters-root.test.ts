@@ -5,6 +5,7 @@
 // Стан до хвилі мультимовності: дизайн `2026-10-14-multilingual-wave-design.md`
 // §8 переводить каталог на сервер і замінює `/catalog` — тут мінімально
 // коректний корінь, нічого понад.
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
 import {
@@ -22,7 +23,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
-import { productGraphSql } from './fixtures/product-graph';
+import { productGraphSql, valueGraphSql } from './fixtures/product-graph';
 
 const uid = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -116,13 +117,31 @@ describe('фільтри каталогу без розділу', () => {
         );
       }
     }
+    // Форма значення — за типом властивості (Р18: складений FK і CHECK колонки).
+    const OPTION = uid(0xe1);
+    statements.push(
+      `insert into public.property_options (id, property_id, name, slug, sort_order)
+       values ('${OPTION}', '${pid(4)}', 'Опція', 'root-opt', 1)`,
+    );
     const value = (
       owner: 'product' | 'modification',
       n: number,
       ownerId: string,
-    ) =>
-      `insert into public.${owner}_property_values (id, ${owner}_id, property_id, value)
-       values (gen_random_uuid(), '${ownerId}', '${pid(n)}', '1')`;
+    ) => {
+      const type = PROPS.find((p) => p.n === n)!.type;
+      return valueGraphSql(
+        { kind: owner, id: ownerId },
+        {
+          id: randomUUID(),
+          propertyId: pid(n),
+          ...(type === 'boolean'
+            ? { kind: 'boolean' as const, bool: true }
+            : type === 'select'
+              ? { kind: 'select' as const, optionId: OPTION }
+              : { kind: 'number' as const, number: 1 }),
+        },
+      );
+    };
     statements.push(
       value('product', 1, PROD_ON),
       value('product', 2, PROD_ON),
@@ -131,8 +150,6 @@ describe('фільтри каталогу без розділу', () => {
       value('product', 6, PROD_ON), // значення є, але розділ неактивний
       value('product', 7, PROD_OFF), // значення лише в неактивному товарі
       value('product', 8, PROD_ON), // значення є, але нефільтровна
-      `insert into public.property_options (id, property_id, name, slug, sort_order)
-       values (gen_random_uuid(), '${pid(4)}', 'Опція', 'root-opt', 1)`,
     );
     for (const statement of statements) await queryRows(dbUrl, statement);
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');

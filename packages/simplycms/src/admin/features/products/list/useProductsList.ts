@@ -21,8 +21,8 @@ export interface ProductListRow {
   readonly version: number;
   /** Назва основною мовою: read-model колекції (переклад основної мови), не дзеркальна колонка. */
   readonly name: string;
-  // М1-TEMP: зноситься в Task 17 — мініатюра береться з дзеркала `products.images`.
-  readonly images: readonly string[] | null;
+  /** Мініатюра: головне фото агрегата (read-model `mainImage`, порядок галереї вітрини). */
+  readonly mainImage: string | null;
   readonly isActive: boolean;
   readonly stockStatus: StockStatus;
   readonly sectionName: string | undefined;
@@ -63,7 +63,7 @@ export function useProductsList(filters: ProductFilters) {
           id: p.id,
           version: p.version,
           name: p.name,
-          images: p.images,
+          mainImage: p.mainImage,
           isActive: p.isActive,
           stockStatus: p.stockStatus,
           sectionName: s?.name,

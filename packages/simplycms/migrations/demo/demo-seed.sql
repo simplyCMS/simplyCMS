@@ -80,106 +80,100 @@ values (
 )
 on conflict (slug) do nothing;
 
--- ── 2. Товари ────────────────────────────────────────────────────────────
-insert into public.products (
-  id, slug, name, short_description, description, section_id, sku,
-  is_active, is_featured, has_modifications, stock_status, images
-)
-select
-  v.id, v.slug, v.name, v.short_description, v.description, s.id, v.sku,
-  true, v.is_featured, v.has_modifications, 'in_stock', '[]'::jsonb
-from (
-  values
-    ('10000002-0000-4000-8000-000000000001'::uuid, 'sonyachna-panel-450w-mono', 'Сонячна панель 450 Вт монокристалічна',
-     'Висока ефективність для дахових систем.',
-     'Монокристалічна сонячна панель потужністю 450 Вт із ККД понад 21%. Підходить для житлових і комерційних дахових установок.',
-     'sonyachni-paneli', 'SP-450M', true, false),
-    ('10000002-0000-4000-8000-000000000002'::uuid, 'sonyachna-panel-550w-mono', 'Сонячна панель 550 Вт монокристалічна',
-     'Панель підвищеної потужності.',
-     'Монокристалічна панель 550 Вт для великих дахових масивів — менше панелей на той самий обсяг генерації.',
-     'sonyachni-paneli', 'SP-550M', false, false),
-    ('10000002-0000-4000-8000-000000000003'::uuid, 'sonyachna-panel-600w-bifacial', 'Сонячна панель 600 Вт бі-фаціальна',
-     'Генерація з обох сторін панелі.',
-     'Бі-фаціальна панель 600 Вт: додаткова генерація від відбитого світла з тильної сторони, до +15% річної віддачі.',
-     'sonyachni-paneli', 'SP-600B', true, false),
-    ('10000002-0000-4000-8000-000000000004'::uuid, 'invertor-merezhevyi-5kw', 'Мережевий інвертор 5 кВт',
-     'On-grid інвертор для мережевих систем.',
-     '<p>Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><ul><li>Однофазне та трифазне підключення</li><li>Моніторинг через мобільний застосунок</li></ul><p><a href="/catalog/invertory">Усі інвертори</a></p>',
-     'invertory', 'INV-5K', true, true),
-    ('10000002-0000-4000-8000-000000000005'::uuid, 'invertor-gibrydnyi-8kw', 'Гібридний інвертор 8 кВт',
-     'Робота з мережею та акумулятором одночасно.',
-     'Гібридний інвертор 8 кВт: автономна робота від акумулятора, підзарядка від мережі, підтримка резервного живлення.',
-     'invertory', 'INV-8H', true, false),
-    ('10000002-0000-4000-8000-000000000006'::uuid, 'akumulyator-lifepo4-100ah', 'Акумулятор LiFePO4 100 Аг',
-     'Літій-залізо-фосфатний акумулятор 100 Аг.',
-     'LiFePO4-акумулятор 100 Аг, ресурс понад 6000 циклів, вбудована BMS. Доступний у чорному та сірому корпусі.',
-     'akumulyatory', 'BAT-100', false, true),
-    ('10000002-0000-4000-8000-000000000007'::uuid, 'akumulyator-lifepo4-200ah', 'Акумулятор LiFePO4 200 Аг',
-     'Літій-залізо-фосфатний акумулятор 200 Аг.',
-     'LiFePO4-акумулятор 200 Аг для систем накопичення середньої потужності, ресурс понад 6000 циклів.',
-     'akumulyatory', 'BAT-200', false, false),
-    ('10000002-0000-4000-8000-000000000008'::uuid, 'stantsiya-nakopychennya-10kwh', 'Домашня станція накопичення енергії 10 кВт·год',
-     'Комплексне рішення для автономності дому.',
-     'Домашня станція накопичення 10 кВт·год: акумулятор, інвертор і контролер в одному корпусі, підтримка резервного живлення.',
-     'akumulyatory', 'ESS-10', true, false)
-) as v(id, slug, name, short_description, description, section_slug, sku, is_featured, has_modifications)
-join public.sections s on s.slug = v.section_slug
-on conflict (slug) do nothing;
-
--- ── 3. Модифікації (варіанти двох товарів) ──────────────────────────────
-insert into public.product_modifications (
-  id, product_id, slug, name, sku, is_default, sort_order, stock_status, images
-)
-select v.id, p.id, v.slug, v.name, v.sku, v.is_default, v.sort_order, 'in_stock', '[]'::jsonb
-from (
-  values
-    ('10000003-0000-4000-8000-000000000001'::uuid, 'invertor-merezhevyi-5kw', 'odnofazny', 'Однофазний', 'INV-5K-1PH', true, 0),
-    ('10000003-0000-4000-8000-000000000002'::uuid, 'invertor-merezhevyi-5kw', 'tryfazny', 'Трифазний', 'INV-5K-3PH', false, 1),
-    ('10000003-0000-4000-8000-000000000003'::uuid, 'akumulyator-lifepo4-100ah', 'chornyi', 'Чорний корпус', 'BAT-100-BLK', true, 0),
-    ('10000003-0000-4000-8000-000000000004'::uuid, 'akumulyator-lifepo4-100ah', 'siryi', 'Сірий корпус', 'BAT-100-GRY', false, 1)
-) as v(id, product_slug, slug, name, sku, is_default, sort_order)
-join public.products p on p.slug = v.product_slug
-on conflict (product_id, slug) do nothing;
-
--- ── 3а. Переклади, адреси й токени (М1, expand) ─────────────────────────
--- Кожен демо-товар і модифікація мають рядок перекладу ОСНОВНОЮ мовою та поточну
--- адресу/токен тієї ж мови (slug = поточний шлях). `languages.is_default` —
--- підзапит, а не літерал: основну мову задає магазин.
--- М1-TEMP: зноситься в Task 17 — старі колонки `products.slug/name/...` вище ще
--- пишуться для читачів до Task 15/16; тоді ці вставки стануть єдиним джерелом.
-insert into public.product_translations (product_id, locale, name, short_description, description)
-select p.id, l.code, p.name, p.short_description, p.description
-from public.products p
-cross join (select code from public.languages where is_default) l
-where p.id::text like '10000002-0000-4000-8000-%'
-on conflict (product_id, locale) do nothing;
-
-insert into public.product_modification_translations (product_id, modification_id, locale, name)
-select m.product_id, m.id, l.code, m.name
-from public.product_modifications m
-cross join (select code from public.languages where is_default) l
-where m.id::text like '10000003-0000-4000-8000-%'
-on conflict (modification_id, locale) do nothing;
-
--- 🔴 Запис у реєстри адрес і токенів — лише під замком `languages-set` (тригер SC004),
--- а замок `xact` живе до кінця транзакції: `do`-блок тримає його рівно на час запису
--- і в одній транзакції файлу, і під `psql -f` в автокоміті.
+-- ── 2–3. Товари й модифікації (М1: граф агрегата) ───────────────────────
+-- 🔴 Тексти товару й модифікації живуть лише в перекладах основної мови, адреса —
+-- у `url_paths`, токен модифікації — у `slug_tokens`; колонок `slug`/`name` у базових
+-- таблицях немає. Відкладені тригери (І4 — переклад основної мови, І16 — поточна адреса
+-- й токен у кожній мові draft/published) перевіряють граф на COMMIT, тож база, переклад
+-- і адреса пишуться ОДНИМ `do`-блоком (одна транзакція і в `psql -f` в автокоміті, і в
+-- накаті файлу однією транзакцією). Природний ключ товару для решти файлу — його
+-- поточна адреса основної мови, модифікації — токен основної мови в межах товару.
+-- `languages.is_default` — підзапит, а не літерал: основну мову задає магазин. Запис у
+-- реєстри адрес і токенів — лише під замком `languages-set` (тригер SC004).
 do $$
 begin
   perform pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));
 
+  with v(id, slug, name, short_description, description, section_slug, sku, is_featured, has_modifications) as (
+    values
+      ('10000002-0000-4000-8000-000000000001'::uuid, 'sonyachna-panel-450w-mono', 'Сонячна панель 450 Вт монокристалічна',
+       'Висока ефективність для дахових систем.',
+       'Монокристалічна сонячна панель потужністю 450 Вт із ККД понад 21%. Підходить для житлових і комерційних дахових установок.',
+       'sonyachni-paneli', 'SP-450M', true, false),
+      ('10000002-0000-4000-8000-000000000002'::uuid, 'sonyachna-panel-550w-mono', 'Сонячна панель 550 Вт монокристалічна',
+       'Панель підвищеної потужності.',
+       'Монокристалічна панель 550 Вт для великих дахових масивів — менше панелей на той самий обсяг генерації.',
+       'sonyachni-paneli', 'SP-550M', false, false),
+      ('10000002-0000-4000-8000-000000000003'::uuid, 'sonyachna-panel-600w-bifacial', 'Сонячна панель 600 Вт бі-фаціальна',
+       'Генерація з обох сторін панелі.',
+       'Бі-фаціальна панель 600 Вт: додаткова генерація від відбитого світла з тильної сторони, до +15% річної віддачі.',
+       'sonyachni-paneli', 'SP-600B', true, false),
+      ('10000002-0000-4000-8000-000000000004'::uuid, 'invertor-merezhevyi-5kw', 'Мережевий інвертор 5 кВт',
+       'On-grid інвертор для мережевих систем.',
+       '<p>Мережевий інвертор 5 кВт із ККД до <strong>98%</strong>, доступний в однофазному та трифазному виконанні.</p><ul><li>Однофазне та трифазне підключення</li><li>Моніторинг через мобільний застосунок</li></ul><p><a href="/catalog/invertory">Усі інвертори</a></p>',
+       'invertory', 'INV-5K', true, true),
+      ('10000002-0000-4000-8000-000000000005'::uuid, 'invertor-gibrydnyi-8kw', 'Гібридний інвертор 8 кВт',
+       'Робота з мережею та акумулятором одночасно.',
+       'Гібридний інвертор 8 кВт: автономна робота від акумулятора, підзарядка від мережі, підтримка резервного живлення.',
+       'invertory', 'INV-8H', true, false),
+      ('10000002-0000-4000-8000-000000000006'::uuid, 'akumulyator-lifepo4-100ah', 'Акумулятор LiFePO4 100 Аг',
+       'Літій-залізо-фосфатний акумулятор 100 Аг.',
+       'LiFePO4-акумулятор 100 Аг, ресурс понад 6000 циклів, вбудована BMS. Доступний у чорному та сірому корпусі.',
+       'akumulyatory', 'BAT-100', false, true),
+      ('10000002-0000-4000-8000-000000000007'::uuid, 'akumulyator-lifepo4-200ah', 'Акумулятор LiFePO4 200 Аг',
+       'Літій-залізо-фосфатний акумулятор 200 Аг.',
+       'LiFePO4-акумулятор 200 Аг для систем накопичення середньої потужності, ресурс понад 6000 циклів.',
+       'akumulyatory', 'BAT-200', false, false),
+      ('10000002-0000-4000-8000-000000000008'::uuid, 'stantsiya-nakopychennya-10kwh', 'Домашня станція накопичення енергії 10 кВт·год',
+       'Комплексне рішення для автономності дому.',
+       'Домашня станція накопичення 10 кВт·год: акумулятор, інвертор і контролер в одному корпусі, підтримка резервного живлення.',
+       'akumulyatory', 'ESS-10', true, false)
+  ),
+  l as (select code from public.languages where is_default),
+  base as (
+    insert into public.products (id, section_id, sku, is_active, is_featured, has_modifications, stock_status)
+    select v.id, s.id, v.sku, true, v.is_featured, v.has_modifications, 'in_stock'
+      from v join public.sections s on s.slug = v.section_slug
+    on conflict (id) do nothing
+  ),
+  tr as (
+    insert into public.product_translations (product_id, locale, name, short_description, description)
+    select v.id, l.code, v.name, v.short_description, v.description from v cross join l
+    on conflict (product_id, locale) do nothing
+  )
   insert into public.url_paths (id, locale, path, product_id, is_current)
-  select overlay(p.id::text placing '1000000e' from 1 for 8)::uuid, l.code, p.slug, p.id, true
-  from public.products p
-  cross join (select code from public.languages where is_default) l
-  where p.id::text like '10000002-0000-4000-8000-%'
+  select overlay(v.id::text placing '1000000e' from 1 for 8)::uuid, l.code, v.slug, v.id, true
+    from v cross join l
   on conflict (locale, path) do nothing;
 
+  -- Товар модифікації — за його поточною адресою основної мови (рядки попереднього
+  -- оператора того самого блоку вже видно), а не повтором UUID-літерала.
+  with l as (select code from public.languages where is_default),
+  v as (
+    select v.id, pa.product_id, v.slug, v.name, v.sku, v.is_default, v.sort_order
+      from (
+        values
+          ('10000003-0000-4000-8000-000000000001'::uuid, 'invertor-merezhevyi-5kw', 'odnofazny', 'Однофазний', 'INV-5K-1PH', true, 0),
+          ('10000003-0000-4000-8000-000000000002'::uuid, 'invertor-merezhevyi-5kw', 'tryfazny', 'Трифазний', 'INV-5K-3PH', false, 1),
+          ('10000003-0000-4000-8000-000000000003'::uuid, 'akumulyator-lifepo4-100ah', 'chornyi', 'Чорний корпус', 'BAT-100-BLK', true, 0),
+          ('10000003-0000-4000-8000-000000000004'::uuid, 'akumulyator-lifepo4-100ah', 'siryi', 'Сірий корпус', 'BAT-100-GRY', false, 1)
+      ) as v(id, product_slug, slug, name, sku, is_default, sort_order)
+      join public.url_paths pa on pa.path = v.product_slug and pa.is_current
+       and pa.product_id is not null and pa.locale = (select code from l)
+  ),
+  base as (
+    insert into public.product_modifications (id, product_id, sku, is_default, sort_order, stock_status)
+    select v.id, v.product_id, v.sku, v.is_default, v.sort_order, 'in_stock' from v
+    on conflict (id) do nothing
+  ),
+  tr as (
+    insert into public.product_modification_translations (product_id, modification_id, locale, name)
+    select v.product_id, v.id, l.code, v.name from v cross join l
+    on conflict (modification_id, locale) do nothing
+  )
   insert into public.slug_tokens (id, locale, scope_id, slug, modification_id, is_current)
-  select overlay(m.id::text placing '1000000f' from 1 for 8)::uuid, l.code, m.product_id, m.slug, m.id, true
-  from public.product_modifications m
-  cross join (select code from public.languages where is_default) l
-  where m.id::text like '10000003-0000-4000-8000-%'
+  select overlay(v.id::text placing '1000000f' from 1 for 8)::uuid, l.code, v.product_id, v.slug, v.id, true
+    from v cross join l
   on conflict do nothing;
 end
 $$;
@@ -210,7 +204,9 @@ from (
     ('10000004-0000-4000-8000-000000000005'::uuid, 'akumulyator-lifepo4-200ah', 21000::numeric, null::numeric),
     ('10000004-0000-4000-8000-000000000006'::uuid, 'stantsiya-nakopychennya-10kwh', 68000::numeric, 75000::numeric)
 ) as v(id, slug, price, old_price)
-join public.products p on p.slug = v.slug
+join public.url_paths pa on pa.path = v.slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
 cross join (select id from public.price_types where code = 'retail' limit 1) pt
 on conflict do nothing;
 
@@ -224,8 +220,12 @@ from (
     ('10000004-0000-4000-8000-000000000009'::uuid, 'akumulyator-lifepo4-100ah', 'chornyi', 15400::numeric),
     ('10000004-0000-4000-8000-000000000010'::uuid, 'akumulyator-lifepo4-100ah', 'siryi', 15600::numeric)
 ) as v(id, product_slug, mod_slug, price)
-join public.products p on p.slug = v.product_slug
-join public.product_modifications m on m.product_id = p.id and m.slug = v.mod_slug
+join public.url_paths pa on pa.path = v.product_slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
+join public.slug_tokens mt on mt.scope_id = p.id and mt.slug = v.mod_slug and mt.is_current
+  and mt.locale = pa.locale
+join public.product_modifications m on m.id = mt.modification_id
 cross join (select id from public.price_types where code = 'retail' limit 1) pt
 on conflict do nothing;
 
@@ -275,9 +275,11 @@ from (
     ('10000008-0000-4000-8000-000000000002'::uuid, 'sonyachna-panel-550w-mono', 550::numeric),
     ('10000008-0000-4000-8000-000000000003'::uuid, 'sonyachna-panel-600w-bifacial', 600::numeric)
 ) as v(id, product_slug, numeric_value)
-join public.products p on p.slug = v.product_slug
+join public.url_paths pa on pa.path = v.product_slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
 join public.section_properties sp on sp.slug = 'potuzhnist'
-on conflict (product_id, property_id, option_id) do nothing;
+on conflict do nothing;
 
 insert into public.product_property_values (id, product_id, property_id, value_kind, option_id)
 select v.id, p.id, sp.id, 'select'::property_type, po.id
@@ -287,10 +289,12 @@ from (
     ('10000008-0000-4000-8000-000000000005'::uuid, 'sonyachna-panel-550w-mono', 'mono'),
     ('10000008-0000-4000-8000-000000000006'::uuid, 'sonyachna-panel-600w-bifacial', 'bifacial')
 ) as v(id, product_slug, option_slug)
-join public.products p on p.slug = v.product_slug
+join public.url_paths pa on pa.path = v.product_slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
 join public.section_properties sp on sp.slug = 'tip-paneli'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
-on conflict (product_id, property_id, option_id) do nothing;
+on conflict do nothing;
 
 insert into public.product_property_values (id, product_id, property_id, value_kind, option_id)
 select v.id, p.id, sp.id, 'select'::property_type, po.id
@@ -299,10 +303,12 @@ from (
     ('10000008-0000-4000-8000-000000000007'::uuid, 'invertor-merezhevyi-5kw', 'on-grid'),
     ('10000008-0000-4000-8000-000000000008'::uuid, 'invertor-gibrydnyi-8kw', 'hybrid')
 ) as v(id, product_slug, option_slug)
-join public.products p on p.slug = v.product_slug
+join public.url_paths pa on pa.path = v.product_slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
 join public.section_properties sp on sp.slug = 'tip-invertora'
 join public.property_options po on po.property_id = sp.id and po.slug = v.option_slug
-on conflict (product_id, property_id, option_id) do nothing;
+on conflict do nothing;
 
 -- 🔴 Плейсхолдер-SVG інлайном. Чотири обмеження, які не можна порушити:
 -- (1) усередині SVG — ЛИШЕ подвійні лапки: одинарна в SQL-літералі вимагала
@@ -396,7 +402,9 @@ from (
     ('1000000d-0000-4000-8000-000000000001'::uuid, 'sonyachna-panel-450w-mono', 5),
     ('1000000d-0000-4000-8000-000000000002'::uuid, 'sonyachna-panel-550w-mono', 3)
 ) as v(id, product_slug, quantity)
-join public.products p on p.slug = v.product_slug
+join public.url_paths pa on pa.path = v.product_slug and pa.is_current and pa.product_id is not null
+  and pa.locale = (select code from public.languages where is_default)
+join public.products p on p.id = pa.product_id
 join public.pickup_points pp on pp.name = 'Склад у Києві'
 on conflict (pickup_point_id, product_id) where product_id is not null and modification_id is null do nothing;
 

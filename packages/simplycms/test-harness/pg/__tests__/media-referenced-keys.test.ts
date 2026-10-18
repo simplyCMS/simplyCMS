@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { findReferencedKeys, mediaReferenceExists } from 'simplycms/storage';
 import { useReviewsDb } from './fixtures/reviews';
-import { insertProductGraph, viaRows } from './fixtures/product-graph';
 
 describe('findReferencedKeys', () => {
   const d = useReviewsDb('simplycms_referenced_keys');
@@ -46,30 +45,11 @@ describe('findReferencedKeys', () => {
       `insert into public.banners (id, title, image_url) values ($1, 'B', $2)`,
       [bannerId, text],
     );
-    const productId = crypto.randomUUID();
-    await insertProductGraph(
-      viaRows((q) => f.rows(q)),
-      { id: productId, slug: `s-${productId}`, name: 'T', images: [arr] },
-    );
-    // Лише jsonb-колонка: фікстура графа дзеркалить фото в `product_images` (text-гілка).
-    await f.rows(`delete from public.product_images where product_id = $1`, [
-      productId,
-    ]);
+    // jsonb-масив референсів — фото відгуку (jsonb `products.images` знесено, М1).
+    await d.seedReview({ images: [arr] });
     // `images` — не масив: об'єкт і рядок не є посиланнями.
-    for (const [value, slug] of [
-      [{ k: objKey }, 'o'],
-      [strKey, 's'],
-    ] as const) {
-      const id = crypto.randomUUID();
-      await insertProductGraph(
-        viaRows((q) => f.rows(q)),
-        { id, slug: `${slug}-${id}`, name: 'N' },
-      );
-      await f.rows(
-        `update public.products set images = $2::jsonb where id = $1`,
-        [id, JSON.stringify(value)],
-      );
-    }
+    for (const value of [{ k: objKey }, strKey])
+      await d.seedReview({ images: value });
     await f.rows(
       `insert into public.system_settings (id, key, value) values ($1, 'store_profile', $2::jsonb)
        on conflict (key) do update set value = excluded.value`,

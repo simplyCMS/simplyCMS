@@ -10,7 +10,11 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
 import { PRIMARY_LOCALE } from './product-address.mjs';
-import { deleteProductsByPrefix, seedProducts } from './product-rows.mjs';
+import {
+  deleteProductsByPrefix,
+  seedModification,
+  seedProducts,
+} from './product-rows.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
 import { expectVisible, waitToast } from './wait.mjs';
 
@@ -46,17 +50,12 @@ export async function runAdminSaveReturnStep({ context, base, dbUrl, check }) {
         where name = $1 and locale = ${PRIMARY_LOCALE}`,
       [old],
     );
-    // М1-TEMP: зноситься в Task 17 — `product_modifications.slug`/`name` ще NOT NULL.
-    await sql(
-      dbUrl,
-      `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, 'sr-mod-${tag}', 'Мод ${tag}')`,
-      [modId, product.id],
-    );
-    await sql(
-      dbUrl,
-      `insert into public.product_modification_translations (product_id, modification_id, locale, name) values ($1, $2, 'uk', $3)`,
-      [product.id, modId, `Мод ${tag}`],
-    );
+    await seedModification(dbUrl, {
+      id: modId,
+      productId: product.id,
+      slug: `sr-mod-${tag}`,
+      name: `Мод ${tag}`,
+    });
 
     // (б) залишки модифікації в діалозі картки.
     await page.goto(`${base}/admin/products`, { waitUntil: 'networkidle' });

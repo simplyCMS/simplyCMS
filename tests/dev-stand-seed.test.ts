@@ -61,6 +61,11 @@ describe('dev-stand: allowlist і санітизація', () => {
   const sql = generateSeedSql(SAMPLE_DATASET);
 
   it('колонки поза allowlist-ом у вивід не потрапляють', () => {
+    // Знесені дзеркала товару й значення (М1, Task 17) зі старого дампу.
+    expect(sql).not.toContain('panel-mono-450-legacy');
+    expect(sql).not.toContain('Застаріла назва з бази');
+    expect(sql).not.toContain('legacy-ref');
+    expect(sql).not.toContain('legacy-450');
     expect(sql).not.toContain('owner_email');
     expect(sql).not.toContain('created_at');
     expect(sql).not.toContain('updated_at');
@@ -310,6 +315,6 @@ describe('dev-stand: детермінізм', () => {
       products: [...SAMPLE_DATASET.products, ...SAMPLE_DATASET.products],
     };
     const sql = generateSeedSql(doubled);
-    expect(blockOf(sql, 'products').match(/panel-mono-450/g)?.length).toBe(1);
+    expect(blockOf(sql, 'products').match(/'PM-450'/g)?.length).toBe(1);
   });
 });

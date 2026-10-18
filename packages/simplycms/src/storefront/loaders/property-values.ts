@@ -59,7 +59,7 @@ export const propertyValueColumns = {
 export interface RawPropertyValueRow {
   value_id: string;
   property_id: string;
-  value_kind: PropertyType | null;
+  value_kind: PropertyType;
   bool_value: boolean | null;
   color_value: string | null;
   numeric_value: string | null;
@@ -75,21 +75,16 @@ export interface RawPropertyValueRow {
 }
 
 /**
- * Відображуване значення за ТИПОМ значення (Р18); колонку `value` не читаємо (її зносить
- * Task 17): текст — з перекладів (мова, інакше основна), булеве — з
+ * Відображуване значення за ТИПОМ значення (`value_kind`, Р18; збіг із типом властивості
+ * тримає складений FK): текст — з перекладів (мова, інакше основна), булеве — з
  * `bool_value` (`'true'`/`'false'`), колір — з `color_value`. Число й опція
  * читаються з `numeric_value`/`option`, тож `value` у них `null`.
- * Тип береться з `value_kind`, а для рядків без нього (до Task 17) — з типу властивості.
  */
 export function displayValue(
-  row: Pick<
-    RawPropertyValueRow,
-    'value_kind' | 'bool_value' | 'color_value' | 'property'
-  >,
+  row: Pick<RawPropertyValueRow, 'value_kind' | 'bool_value' | 'color_value'>,
   text: string | null | undefined,
 ): string | null {
-  const kind = row.value_kind ?? row.property?.property_type ?? null;
-  switch (kind) {
+  switch (row.value_kind) {
     case 'boolean':
       return row.bool_value === null ? null : String(row.bool_value);
     case 'color':

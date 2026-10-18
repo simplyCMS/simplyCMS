@@ -32,9 +32,6 @@ export const textRow = (texts: Partial<ProductTexts>): Row =>
       .map((k) => [TEXT_COLUMNS[k], lit(texts[k])]),
   );
 
-export const jsonList = (keys: string[]): string =>
-  `${lit(JSON.stringify(keys))}::jsonb`;
-
 export const imageSql = (
   productId: Id,
   modificationId: Id | null,

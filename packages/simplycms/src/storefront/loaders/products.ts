@@ -9,6 +9,7 @@ import {
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
 import type { TextLocale } from 'simplycms/domain/translations';
+import { productGallerySql } from 'simplycms/translations';
 import type { ActorDb } from './db';
 import { toImageList } from './entities/product';
 import { pageVisible } from './product-visibility';
@@ -81,7 +82,7 @@ export async function loadProductList(
       slug: texts.path,
       name: texts.name,
       fallback: texts.fallbackFields,
-      images: products.images,
+      images: productGallerySql(products.id).as('images'),
       has_modifications: products.hasModifications,
       section_slug: sections.slug,
     })

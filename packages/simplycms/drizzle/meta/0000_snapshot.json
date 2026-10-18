@@ -1485,11 +1485,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "value": {
-          "name": "value",
-          "type": "text",
+        "value_kind": {
+          "name": "value_kind",
+          "type": "property_type",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "numeric_value": {
           "name": "numeric_value",
@@ -1500,20 +1501,6 @@
         "option_id": {
           "name": "option_id",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "value_kind": {
-          "name": "value_kind",
-          "type": "property_type",
-          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -1528,6 +1515,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -1563,6 +1557,28 @@
           "method": "btree",
           "with": {}
         },
+        "modification_property_values_scalar_key": {
+          "name": "modification_property_values_scalar_key",
+          "columns": [
+            {
+              "expression": "modification_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "property_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "value_kind <> 'multiselect'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "idx_modification_property_values_property": {
           "name": "idx_modification_property_values_property",
           "columns": [
@@ -1593,27 +1609,31 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "modification_property_values_option_id_fkey": {
-          "name": "modification_property_values_option_id_fkey",
-          "tableFrom": "modification_property_values",
-          "tableTo": "property_options",
-          "columnsFrom": [
-            "option_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "modification_property_values_property_id_fkey": {
-          "name": "modification_property_values_property_id_fkey",
+        "modification_property_values_property_kind_fkey": {
+          "name": "modification_property_values_property_kind_fkey",
           "tableFrom": "modification_property_values",
           "tableTo": "section_properties",
           "columnsFrom": [
-            "property_id"
+            "property_id",
+            "value_kind"
           ],
           "columnsTo": [
+            "id",
+            "property_type"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "restrict"
+        },
+        "modification_property_values_option_fkey": {
+          "name": "modification_property_values_option_fkey",
+          "tableFrom": "modification_property_values",
+          "tableTo": "property_options",
+          "columnsFrom": [
+            "property_id",
+            "option_id"
+          ],
+          "columnsTo": [
+            "property_id",
             "id"
           ],
           "onDelete": "cascade",
@@ -1624,7 +1644,7 @@
       "uniqueConstraints": {
         "modification_property_values_owner_property_option_key": {
           "name": "modification_property_values_owner_property_option_key",
-          "nullsNotDistinct": true,
+          "nullsNotDistinct": false,
           "columns": [
             "modification_id",
             "property_id",
@@ -1633,7 +1653,16 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "modification_property_values_value_shape": {
+          "name": "modification_property_values_value_shape",
+          "value": "num_nonnulls(option_id, numeric_value, bool_value, color_value) = (CASE WHEN value_kind = 'text' THEN 0 ELSE 1 END)\n\t\tAND (option_id IS NOT NULL) = (value_kind IN ('select', 'multiselect'))\n\t\tAND (numeric_value IS NOT NULL) = (value_kind IN ('number', 'range'))\n\t\tAND (bool_value IS NOT NULL) = (value_kind = 'boolean')\n\t\tAND (color_value IS NOT NULL) = (value_kind = 'color')"
+        },
+        "modification_property_values_color_format": {
+          "name": "modification_property_values_color_format",
+          "value": "color_value IS NULL OR color_value ~ '^#[0-9a-f]{6}$'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.order_items": {
@@ -3176,18 +3205,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "slug": {
-          "name": "slug",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "sku": {
           "name": "sku",
           "type": "varchar(100)",
@@ -3200,13 +3217,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "images": {
-          "name": "images",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
         },
         "sort_order": {
           "name": "sort_order",
@@ -3273,14 +3283,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "product_modifications_product_slug_unique": {
-          "name": "product_modifications_product_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "product_id",
-            "slug"
-          ]
-        },
         "product_modifications_product_id_id_key": {
           "name": "product_modifications_product_id_id_key",
           "nullsNotDistinct": false,
@@ -3578,11 +3580,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "value": {
-          "name": "value",
-          "type": "text",
+        "value_kind": {
+          "name": "value_kind",
+          "type": "property_type",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "numeric_value": {
           "name": "numeric_value",
@@ -3590,23 +3593,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
         "option_id": {
           "name": "option_id",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "value_kind": {
-          "name": "value_kind",
-          "type": "property_type",
-          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -3621,6 +3610,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -3636,6 +3632,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "product_property_values_scalar_key": {
+          "name": "product_property_values_scalar_key",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "property_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "value_kind <> 'multiselect'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -3657,19 +3675,6 @@
         }
       },
       "foreignKeys": {
-        "product_property_values_option_id_fkey": {
-          "name": "product_property_values_option_id_fkey",
-          "tableFrom": "product_property_values",
-          "tableTo": "property_options",
-          "columnsFrom": [
-            "option_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "product_property_values_product_id_fkey": {
           "name": "product_property_values_product_id_fkey",
           "tableFrom": "product_property_values",
@@ -3683,14 +3688,31 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "product_property_values_property_id_fkey": {
-          "name": "product_property_values_property_id_fkey",
+        "product_property_values_property_kind_fkey": {
+          "name": "product_property_values_property_kind_fkey",
           "tableFrom": "product_property_values",
           "tableTo": "section_properties",
           "columnsFrom": [
-            "property_id"
+            "property_id",
+            "value_kind"
           ],
           "columnsTo": [
+            "id",
+            "property_type"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "restrict"
+        },
+        "product_property_values_option_fkey": {
+          "name": "product_property_values_option_fkey",
+          "tableFrom": "product_property_values",
+          "tableTo": "property_options",
+          "columnsFrom": [
+            "property_id",
+            "option_id"
+          ],
+          "columnsTo": [
+            "property_id",
             "id"
           ],
           "onDelete": "cascade",
@@ -3701,7 +3723,7 @@
       "uniqueConstraints": {
         "product_property_values_owner_property_option_key": {
           "name": "product_property_values_owner_property_option_key",
-          "nullsNotDistinct": true,
+          "nullsNotDistinct": false,
           "columns": [
             "product_id",
             "property_id",
@@ -3710,7 +3732,16 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "product_property_values_value_shape": {
+          "name": "product_property_values_value_shape",
+          "value": "num_nonnulls(option_id, numeric_value, bool_value, color_value) = (CASE WHEN value_kind = 'text' THEN 0 ELSE 1 END)\n\t\tAND (option_id IS NOT NULL) = (value_kind IN ('select', 'multiselect'))\n\t\tAND (numeric_value IS NOT NULL) = (value_kind IN ('number', 'range'))\n\t\tAND (bool_value IS NOT NULL) = (value_kind = 'boolean')\n\t\tAND (color_value IS NOT NULL) = (value_kind = 'color')"
+        },
+        "product_property_values_color_format": {
+          "name": "product_property_values_color_format",
+          "value": "color_value IS NULL OR color_value ~ '^#[0-9a-f]{6}$'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.product_reviews": {
@@ -4062,30 +4093,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "slug": {
-          "name": "slug",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "short_description": {
-          "name": "short_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
@@ -4100,18 +4107,6 @@
           "notNull": true,
           "default": false
         },
-        "meta_title": {
-          "name": "meta_title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "meta_description": {
-          "name": "meta_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -4125,13 +4120,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "images": {
-          "name": "images",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
         },
         "has_modifications": {
           "name": "has_modifications",
@@ -4153,18 +4141,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'in_stock'"
-        },
-        "return_policy": {
-          "name": "return_policy",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "shipping_details": {
-          "name": "shipping_details",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
         },
         "version": {
           "name": "version",
@@ -4207,15 +4183,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "products_slug_key": {
-          "name": "products_slug_key",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

@@ -157,7 +157,7 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
     );
     // Товар без обліку залишку: тест не залежить від порядку списань.
     product = await id(
-      `select id from public.products where slug = 'invertor-gibrydnyi-8kw'`,
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = 'invertor-gibrydnyi-8kw'`,
     );
     userId = crypto.randomUUID();
     await queryRows(
@@ -295,7 +295,7 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
     const tracked = (
       (await queryRows(
         dbUrl,
-        `select id from public.products where slug = 'sonyachna-panel-450w-mono'`,
+        `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = 'sonyachna-panel-450w-mono'`,
       )) as { id: string }[]
     )[0]!.id;
     const before = await ordersCount();

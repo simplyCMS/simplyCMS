@@ -3,6 +3,7 @@
 // гуртова ціна панелі (знижку на неї додає `percentDiscountStatements`) і
 // ціни з копійками/під поріг мінімуму курʼєра.
 import { COURIER_CODE } from './commerce';
+import { productIdBySlug } from './product-sql';
 
 /** Курʼєр із ФІКСОВАНИМ тарифом 70.10 — копійки доставки (Е5б-13). */
 export const FIXED_CODE = 'e5b-fixed';
@@ -29,16 +30,16 @@ const courier = (code: string, type: string, cost: string): string[] => [
 const retailPrice = (slug: string, price: string | number): string =>
   `update public.product_prices set price = ${price}
     where modification_id is null
-      and product_id = (select id from public.products where slug = '${slug}')
+      and product_id = ${productIdBySlug(`'${slug}'`)}
       and price_type_id = (select id from public.price_types where code = 'retail')`;
 
 export const EDIT_FIXTURE_STATEMENTS: string[] = [
   ...courier(FIXED_CODE, 'flat', FIXED_COST),
   ...courier(PERCENT_CODE, 'order_total', '100'),
   `insert into public.product_prices (id, price_type_id, product_id, modification_id, price)
-   select gen_random_uuid(), pt.id, p.id, null, ${WHOLESALE_PANEL_PRICE}
-     from public.price_types pt, public.products p
-    where pt.code = 'commerce-wholesale' and p.slug = 'sonyachna-panel-450w-mono'`,
+   select gen_random_uuid(), pt.id, ${productIdBySlug("'sonyachna-panel-450w-mono'")}, null, ${WHOLESALE_PANEL_PRICE}
+     from public.price_types pt
+    where pt.code = 'commerce-wholesale'`,
   retailPrice('invertor-gibrydnyi-8kw', INVERTER_PRICE),
   retailPrice('sonyachna-panel-600w-bifacial', BIFACIAL_PRICE),
 ];

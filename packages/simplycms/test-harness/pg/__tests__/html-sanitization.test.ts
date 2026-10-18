@@ -36,7 +36,6 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import {
   getReviewCardOp,
-  productsOps,
   propertyOptionsOps,
   sectionsOps,
 } from 'simplycms/admin-server/impl';
@@ -138,7 +137,9 @@ describe('санітизація HTML: запис і віддача проти �
     expect(stored).toContain('клік');
   });
 
-  it('🔴 запис: розділ, опція й товар через generic-write адмінки', async () => {
+  // Опис ТОВАРУ пишуть лише команди агрегата (М1): його санітизацію на записі доводить
+  // `product-aggregate.test.ts` («опис з <script> → хеш = хеш санітизованого»).
+  it('🔴 запис: розділ і опція через generic-write адмінки', async () => {
     const [section] = await sectionsOps.insert({
       data: [
         { id: rnd(), slug: 'xss-section', name: 'Розділ', description: EVIL },
@@ -155,20 +156,9 @@ describe('санітизація HTML: запис і віддача проти �
         },
       ],
     });
-    const [product] = await productsOps.insert({
-      data: [
-        {
-          id: rnd(),
-          slug: 'xss-product-2',
-          name: 'Товар 2',
-          description: EVIL,
-        },
-      ],
-    });
     for (const [table, id] of [
       ['sections', section!.id],
       ['property_options', option!.id],
-      ['products', product!.id],
     ] as const) {
       const stored = await scalar(
         `select description from public.${table} where id = $1`,

@@ -15,12 +15,11 @@ import { code } from '../../languages/view';
 import {
   assertKnownLocales,
   getProductAggregate,
-  loadState,
   lockProduct,
   lockProductForRemove,
 } from './load';
 import { childrenOut } from './children-read';
-import { bumpProduct } from './mirror';
+import { bumpProduct } from './version';
 import { expectedVersion, textsRow, stockStatus, versionOut } from './schemas';
 
 export { productsCreate } from './create';
@@ -100,13 +99,7 @@ export const productsSetPath = defineOperation({
     );
     // Адреса — частина проєкції: нова поточна адреса мови в тій самій транзакції (І23).
     await refreshProductTexts(db, [input.id], [input.locale]);
-    const { primary } = await loadState(db, input.id);
-    return {
-      version: await bumpProduct(db, input.id, {
-        // М1-TEMP: зноситься в Task 17 — slug дзеркалить адресу основної мови.
-        slug: input.locale === primary ? input.path : undefined,
-      }),
-    };
+    return { version: await bumpProduct(db, input.id) };
   },
 });
 

@@ -6,6 +6,7 @@ import {
   orderItems,
   orders,
   products,
+  sections,
   sectionProperties,
   productPrices,
 } from 'simplycms/schema';
@@ -25,8 +26,8 @@ describe('columnsToZod: frozen intent на реальних таблицях', (
     expect(ok(s, '10.50')).toBe(true);
     expect(ok(s, 10.5)).toBe(false);
   });
-  it('products.slug (varchar 255) — 255 так, 256 ні', () => {
-    const s = col(products, 'select', 'slug');
+  it('sections.slug (varchar 255) — 255 так, 256 ні', () => {
+    const s = col(sections, 'select', 'slug');
     expect(ok(s, 'a'.repeat(255))).toBe(true);
     expect(ok(s, 'a'.repeat(256))).toBe(false);
   });
@@ -35,8 +36,8 @@ describe('columnsToZod: frozen intent на реальних таблицях', (
       false,
     );
   });
-  it('products.name (text) — довгий рядок проходить', () => {
-    expect(ok(col(products, 'select', 'name'), 'a'.repeat(10_001))).toBe(true);
+  it('sections.name (text) — довгий рядок проходить', () => {
+    expect(ok(col(sections, 'select', 'name'), 'a'.repeat(10_001))).toBe(true);
   });
   it('integer (orderItems.quantity): 2147483648 і дробове відхилені', () => {
     const s = col(orderItems, 'insert', 'quantity');
@@ -65,8 +66,8 @@ describe('columnsToZod: frozen intent на реальних таблицях', (
   it('boolean: products.isActive не приймає рядок', () => {
     expect(ok(col(products, 'select', 'isActive'), 'true')).toBe(false);
   });
-  it('insert: notNull без default (products.name) — обовʼязкова', () => {
-    expect(ok(col(products, 'insert', 'name'), undefined)).toBe(false);
+  it('insert: notNull без default (sections.name) — обовʼязкова', () => {
+    expect(ok(col(sections, 'insert', 'name'), undefined)).toBe(false);
   });
   it('insert: notNull з default (isActive) — optional', () => {
     expect(ok(col(products, 'insert', 'isActive'), undefined)).toBe(true);
@@ -77,7 +78,7 @@ describe('columnsToZod: frozen intent на реальних таблицях', (
     }
   });
   it('notNull не приймає null', () => {
-    expect(ok(col(products, 'insert', 'name'), null)).toBe(false);
+    expect(ok(col(sections, 'insert', 'name'), null)).toBe(false);
   });
   it('update: усі колонки optional; select: жодна', () => {
     const upd = columnsToZod(productPrices, 'update');

@@ -60,7 +60,7 @@ describe('агрегат товару (М1, Task 11)', () => {
     expect(await rejects(create({ uk: {} }))).toBeInstanceOf(ValidationError);
   });
 
-  it('create → paths для draft і published мов; slug і назва дзеркалені', async () => {
+  it('create → paths для draft і published мов, назва — у перекладі основної мови', async () => {
     const { id, version, paths } = await create({
       uk: { name: 'Кабель HDMI' },
     });
@@ -71,14 +71,12 @@ describe('агрегат товару (М1, Task 11)', () => {
       uk: 'kabel-hdmi',
     });
     const [p] = await db.q(
-      `select slug, name, version from public.products where id = $1`,
+      `select p.version, t.name from public.products p
+         join public.product_translations t on t.product_id = p.id and t.locale = 'uk'
+        where p.id = $1`,
       [id],
     );
-    expect(p).toMatchObject({
-      slug: 'kabel-hdmi',
-      name: 'Кабель HDMI',
-      version: 1,
-    });
+    expect(p).toMatchObject({ name: 'Кабель HDMI', version: 1 });
     expect((await get(id)).paths).toEqual(paths);
   });
 
@@ -256,14 +254,7 @@ describe('агрегат товару (М1, Task 11)', () => {
       texts: { uk: { name: 'Зовсім інша назва' } },
     });
     expect((await get(id)).paths).toEqual(paths);
-    const [p] = await db.q(
-      `select slug, name from public.products where id = $1`,
-      [id],
-    );
-    expect(p).toMatchObject({
-      slug: 'persha-nazva',
-      name: 'Зовсім інша назва',
-    });
+    expect((await get(id)).texts.uk?.name).toBe('Зовсім інша назва');
   });
 
   it('опис з <script> → хеш = хеш санітизованого', async () => {
@@ -312,7 +303,7 @@ describe('агрегат товару (М1, Task 11)', () => {
     ).toBeInstanceOf(AdminNotFoundError);
   });
 
-  it('setPath: версія росте, стара адреса в історії, slug дзеркалить основну мову', async () => {
+  it('setPath: версія росте, стара адреса в історії', async () => {
     const { id, version } = await create({ uk: { name: 'Адреса тест' } });
     const out = await exec(productsSetPath, {
       id,
@@ -322,10 +313,6 @@ describe('агрегат товару (М1, Task 11)', () => {
     });
     expect(out.version).toBe(version + 1);
     expect((await get(id)).paths.uk).toBe('moya-adresa');
-    const [p] = await db.q(`select slug from public.products where id = $1`, [
-      id,
-    ]);
-    expect(p?.slug).toBe('moya-adresa');
     const hist = await db.q(
       `select path from public.url_paths where product_id = $1 and locale = 'uk' and not is_current`,
       [id],

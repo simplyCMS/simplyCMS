@@ -19,8 +19,7 @@ vi.mock('simplycms/db', () => ({
 }));
 
 import { defineAdminResource } from '../resource';
-import { productsOps } from '../products/resource';
-import { productModificationsOps } from '../product-modifications/resource';
+import { bannersOps } from '../banners/resource';
 
 const ops = defineAdminResource({
   entity: 'order_statuses',
@@ -182,26 +181,17 @@ describe('defineAdminResource (К3-4′)', () => {
       touch: 'updatedAt',
       writable: [
         'sectionId',
-        'slug',
-        'name',
-        'shortDescription',
-        'description',
         'isActive',
         'isFeatured',
-        'metaTitle',
-        'metaDescription',
-        'images',
         'hasModifications',
         'sku',
         'stockStatus',
-        'returnPolicy',
-        'shippingDetails',
       ],
       readonly: ['id', 'createdAt', 'updatedAt', 'version'],
     });
-    await productOps.update({ data: [{ id: ID, patch: { name: 'X' } }] });
+    await productOps.update({ data: [{ id: ID, patch: { sku: 'X' } }] });
     expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'X', updatedAt: expect.any(Date) }),
+      expect.objectContaining({ sku: 'X', updatedAt: expect.any(Date) }),
     );
   });
 
@@ -258,85 +248,54 @@ describe('defineAdminResource (К3-4′)', () => {
   });
 });
 
-// m3 (рев'ю хвилі B): `images` — jsonb БЕЗ власної форми в drizzle-zod
-// (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем);
-// дефолтна схема рушія — вільний `jsonSchema` (приймає `{}` як валідний
-// JSON). `refine` у products/resource.ts і product-modifications/resource.ts
-// звужує це до `z.array(z.string())`, зберігаючи nullable/optional (колонка
-// без `.notNull()`, з DEFAULT `[]`).
-describe('m3: refine ресурсу — images звужено до масиву рядків', () => {
-  const P_ID = '0e300000-0000-4000-8000-000000000001';
-  const M_ID = '0e300000-0000-4000-8000-000000000002';
+// m3 (рев'ю хвилі B): jsonb БЕЗ власної форми в drizzle-zod (`.$type<>()` бачить лише
+// Drizzle, не генератор Zod-схем); дефолтна схема рушія — вільний `jsonSchema` (приймає
+// `{}` як валідний JSON). `refine` звужує колонку, зберігаючи nullable/optional рушія.
+// Носій — `banners.buttons` (jsonb-масив кнопок; `products.images` знесено в М1 Task 17).
+describe('m3: refine ресурсу — jsonb-колонку звужено до масиву', () => {
+  const B_ID = '0e300000-0000-4000-8000-000000000003';
+  const row = { id: B_ID, title: 'Банер', imageUrl: 'ab/banner.png' };
+  const button = {
+    text: 'Кнопка',
+    url: '/catalog',
+    target: '_self',
+    variant: 'primary',
+  };
 
-  it('products.insert: images: {} — ZodError; [] і [рядок] — валідні; відсутнє/null — валідні (nullable+optional)', () => {
-    const row = { id: P_ID, slug: 'p1', name: 'P1' };
+  it('banners.insert: buttons: {} — ZodError; [] і [кнопка] — валідні; відсутнє — валідне', () => {
+    expect(bannersOps.insertSchema.safeParse([row]).success).toBe(true);
     expect(
-      productsOps.insertSchema.safeParse([{ ...row, images: {} }]).success,
+      bannersOps.insertSchema.safeParse([{ ...row, buttons: {} }]).success,
     ).toBe(false);
     expect(
-      productsOps.insertSchema.safeParse([{ ...row, images: [] }]).success,
+      bannersOps.insertSchema.safeParse([{ ...row, buttons: [] }]).success,
     ).toBe(true);
     expect(
-      productsOps.insertSchema.safeParse([{ ...row, images: ['ref'] }]).success,
-    ).toBe(true);
-    expect(productsOps.insertSchema.safeParse([row]).success).toBe(true);
-    expect(
-      productsOps.insertSchema.safeParse([{ ...row, images: null }]).success,
+      bannersOps.insertSchema.safeParse([{ ...row, buttons: [button] }])
+        .success,
     ).toBe(true);
   });
 
-  it("products.update: patch.images: 'str' — ZodError; масив рядків — валідний", () => {
+  it("banners.update: patch.buttons: 'str' — ZodError; масив кнопок — валідний", () => {
     expect(
-      productsOps.updateSchema.safeParse([
-        { id: P_ID, patch: { images: 'str' } },
+      bannersOps.updateSchema.safeParse([
+        { id: B_ID, patch: { buttons: 'str' } },
       ]).success,
     ).toBe(false);
     expect(
-      productsOps.updateSchema.safeParse([
-        { id: P_ID, patch: { images: ['a', 'b'] } },
+      bannersOps.updateSchema.safeParse([
+        { id: B_ID, patch: { buttons: [button] } },
       ]).success,
     ).toBe(true);
   });
 
-  it('products.update: patch БЕЗ images — ok (рефайнена колонка лишається optional, а не стає required)', () => {
+  it('banners.update: patch БЕЗ buttons — ok (рефайнена колонка лишається optional, а не стає required)', () => {
     // Ловить розходження, яке НЕ зловили б тести вище: `refine` замінює
     // саму zod-схему колонки, а nullable/optional довішує ПОВЕРХ рушій
     // drizzle-zod (`updateConditions.optional` — завжди `true` для update).
-    // Якщо цю формулу загубити (наприклад, узяти рефайнер СИРИМ, без
-    // подальшого `.optional()`), `images` стала б обовʼязковим полем
-    // patch-а — кожен `update`, що не чіпає картинки, впав би.
     expect(
-      productsOps.updateSchema.safeParse([{ id: P_ID, patch: { name: 'P2' } }])
-        .success,
-    ).toBe(true);
-  });
-
-  it('product-modifications.insert: images: {} — ZodError; [] і [рядок] — валідні', () => {
-    const row = { id: M_ID, productId: P_ID, slug: 'm1', name: 'M1' };
-    expect(
-      productModificationsOps.insertSchema.safeParse([{ ...row, images: {} }])
-        .success,
-    ).toBe(false);
-    expect(
-      productModificationsOps.insertSchema.safeParse([{ ...row, images: [] }])
-        .success,
-    ).toBe(true);
-    expect(
-      productModificationsOps.insertSchema.safeParse([
-        { ...row, images: ['ref'] },
-      ]).success,
-    ).toBe(true);
-  });
-
-  it("product-modifications.update: patch.images: 'str' — ZodError; масив рядків — валідний", () => {
-    expect(
-      productModificationsOps.updateSchema.safeParse([
-        { id: M_ID, patch: { images: 'str' } },
-      ]).success,
-    ).toBe(false);
-    expect(
-      productModificationsOps.updateSchema.safeParse([
-        { id: M_ID, patch: { images: ['a'] } },
+      bannersOps.updateSchema.safeParse([
+        { id: B_ID, patch: { title: 'Інший' } },
       ]).success,
     ).toBe(true);
   });

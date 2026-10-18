@@ -35,9 +35,21 @@ export function isUniqueViolation(
   );
 }
 
-/** `foreign_key_violation` (23503): рядок, на який посилаються, чи відсутня ціль. */
-export function isForeignKeyViolation(error: unknown): boolean {
-  return pgErrorInfo(error).code === '23503';
+/**
+ * `foreign_key_violation` (23503): рядок, на який посилаються, чи відсутня ціль; за
+ * потреби — саме на цьому обмеженні. 🔴 Розпізнавати конкретний FK — лише за ІМЕНЕМ
+ * обмеження: у `error.table` Postgres кладе таблицю-посилача, тож інший FK тієї ж
+ * таблиці дав би хибний збіг.
+ */
+export function isForeignKeyViolation(
+  error: unknown,
+  constraint?: string,
+): boolean {
+  const info = pgErrorInfo(error);
+  return (
+    info.code === '23503' &&
+    (constraint === undefined || info.constraint === constraint)
+  );
 }
 
 /**

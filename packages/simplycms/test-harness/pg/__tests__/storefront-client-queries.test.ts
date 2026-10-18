@@ -148,7 +148,7 @@ describe('вибірки вітрини, знятi з браузера', () => {
     const { stock, values } = await withStorefrontDb(async (db) => {
       const [product] = (await queryRows(
         dbUrl,
-        `select id from public.products where slug = $1`,
+        `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
         [MODIFIED_PRODUCT_SLUG],
       )) as IdRow[];
       const ids = await loadModificationIds(db, product.id);
@@ -160,16 +160,18 @@ describe('вибірки вітрини, знятi з браузера', () => {
 
     const [withStock] = (await queryRows(
       dbUrl,
-      `select m.id from public.product_modifications m
-         join public.products p on p.id = m.product_id
-        where p.slug = $1 and m.slug = $2`,
+      `select t.modification_id as id from public.slug_tokens t
+         join public.url_paths u on u.product_id = t.scope_id and u.is_current and u.locale = t.locale
+        where t.is_current and t.locale = (select code from public.languages where is_default)
+          and u.path = $1 and t.slug = $2`,
       [MODIFIED_PRODUCT_SLUG, IN_STOCK_MOD_SLUG],
     )) as IdRow[];
     const [without] = (await queryRows(
       dbUrl,
-      `select m.id from public.product_modifications m
-         join public.products p on p.id = m.product_id
-        where p.slug = $1 and m.slug = $2`,
+      `select t.modification_id as id from public.slug_tokens t
+         join public.url_paths u on u.product_id = t.scope_id and u.is_current and u.locale = t.locale
+        where t.is_current and t.locale = (select code from public.languages where is_default)
+          and u.path = $1 and t.slug = $2`,
       [MODIFIED_PRODUCT_SLUG, OUT_OF_STOCK_MOD_SLUG],
     )) as IdRow[];
 

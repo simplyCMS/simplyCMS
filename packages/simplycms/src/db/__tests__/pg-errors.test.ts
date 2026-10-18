@@ -33,8 +33,10 @@ describe('pg-errors (єдиний розбір DRZ-1)', () => {
     expect(isUniqueViolation(wrapped('23503'))).toBe(false);
   });
 
-  it('isForeignKeyViolation: лише 23503', () => {
+  it('isForeignKeyViolation: лише 23503, за потреби — на названому обмеженні', () => {
     expect(isForeignKeyViolation(wrapped('23503', 'fk'))).toBe(true);
+    expect(isForeignKeyViolation(wrapped('23503', 'fk'), 'fk')).toBe(true);
+    expect(isForeignKeyViolation(wrapped('23503', 'fk'), 'other')).toBe(false);
     expect(isForeignKeyViolation(wrapped('23505'))).toBe(false);
   });
 

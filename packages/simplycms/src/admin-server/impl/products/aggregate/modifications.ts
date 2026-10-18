@@ -75,7 +75,8 @@ export async function planModifications(
     const name = plan.upserts.find((x) => x.locale === ctx.primary)?.values
       .name;
     const isNew = !existing.has(u.id);
-    // Нова модифікація без назви основної мови: `name` NOT NULL (до Task 17) і І4.
+    // Нова модифікація без назви основної мови (І4): рання помилка поля (400), а не
+    // загальна відмова тригера джерела на COMMIT.
     if (isNew && !name)
       throw fail([...at, 'texts', ctx.primary, 'name'], 'too_small');
     return { u, i, plan, name, isNew };
@@ -103,13 +104,9 @@ export async function planModifications(
       }
       for (const { u, i, plan, name, isNew } of prepared) {
         if (isNew)
-          // М1-TEMP: зноситься в Task 17 — `slug` (NOT NULL) спершу id, далі токен
-          // основної мови; `name` дзеркалить назву основної мови.
           await db.insert(productModifications).values({
             id: u.id,
             productId: ctx.productId,
-            slug: u.id,
-            name: name!,
             sku: u.sku ?? null,
             isDefault: u.isDefault === true,
             sortOrder: u.sortOrder ?? 0,
@@ -123,7 +120,6 @@ export async function planModifications(
               ...(u.isDefault === undefined ? {} : { isDefault: u.isDefault }),
               ...(u.sortOrder === undefined ? {} : { sortOrder: u.sortOrder }),
               ...(u.stockStatus ? { stockStatus: u.stockStatus } : {}),
-              ...(name ? { name } : {}), // М1-TEMP: зноситься в Task 17
               updatedAt: new Date(),
             })
             .where(eq(productModifications.id, u.id));

@@ -1,5 +1,6 @@
 // М1 Task 11: products.remove стирає файли товару ПІСЛЯ коміту (Е6д-14), як
 // старий generic remove; команда з реєстру отримує це через ctx.afterCommit.
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,7 +9,7 @@ import { productsRemove } from 'simplycms/admin-server/impl';
 import { withActor } from 'simplycms/db';
 import { writeMedia } from 'simplycms/storage';
 import { useAddressingDb } from './fixtures/addressing-db';
-import { create, exec } from './fixtures/product-aggregate';
+import { create, exec, saveDescription } from './fixtures/product-aggregate';
 
 describe('products.remove: файли після коміту', () => {
   const state = { root: '' };
@@ -36,12 +37,12 @@ describe('products.remove: файли після коміту', () => {
         }),
       )
     ).ref;
-    await db.q(`update public.products set images = $2::jsonb where id = $1`, [
-      id,
-      JSON.stringify([ref]),
-    ]);
+    // Фото — рядком `product_images` командою агрегата (jsonb `images` знесено, М1).
+    const saved = await saveDescription(id, version, {
+      images: { upsert: [{ id: randomUUID(), storageKey: ref, sortOrder: 0 }] },
+    });
     expect(existsSync(join(state.root, ref))).toBe(true);
-    await exec(productsRemove, { id, expectedVersion: version });
+    await exec(productsRemove, { id, expectedVersion: saved.version });
     expect(existsSync(join(state.root, ref))).toBe(false);
     expect(
       await db.q(`select 1 from public.media where storage_key = $1`, [ref]),

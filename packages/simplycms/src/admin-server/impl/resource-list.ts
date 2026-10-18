@@ -47,7 +47,9 @@ export async function listResourceRows(
   const s = toDrizzleSubset(ctx.table, ctx.allow, subset, rm?.fields);
   // UPSTREAM:DRZ-2 — docs/architecture/upstream-workarounds.md: проєкція `Record<string, Column>` (з `getTableColumns(Table)`) не є pg `SelectedFields`;
   // каст лише проєкції, `.from(ctx.table)` кастів не потребує.
-  const selection = rm ? readSelection(ctx.picked, rm) : ctx.picked;
+  const selection = rm
+    ? readSelection(ctx.picked, rm, columns['id'] as Column)
+    : ctx.picked;
   let q = db
     .select(selection as never)
     .from(ctx.table)

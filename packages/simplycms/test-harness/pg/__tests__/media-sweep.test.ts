@@ -60,13 +60,10 @@ describe('sweepUnreferencedMediaOp (Е6д-22)', () => {
     expect(d.hasFile(ref)).toBe(true);
   });
 
-  it('25 год з референсом у products.images → цілий', async () => {
-    const productId = await d.product();
+  it('25 год з референсом у product_images → цілий', async () => {
+    const productId = crypto.randomUUID();
     const ref = await d.upload('product', productId);
-    await f.rows(
-      'update public.products set images = $2::jsonb where id = $1',
-      [productId, JSON.stringify([ref])],
-    );
+    await d.product([ref], productId);
     await age(ref, 25);
     await sweepUnreferencedMediaOp();
     expect(await alive(ref)).toBe(true);

@@ -51,7 +51,7 @@ export async function seedStore(dbUrl: string) {
     `select id from public.pickup_points where name = 'Склад у Києві'`,
   );
   const product = await id(
-    `select id from public.products where slug = 'invertor-gibrydnyi-8kw'`,
+    `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = 'invertor-gibrydnyi-8kw'`,
   );
   await queryRows(
     dbUrl,

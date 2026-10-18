@@ -1,24 +1,23 @@
-import { z } from 'zod';
-import { SLUG_RE } from 'simplycms/domain';
 import { REVIEW_MEDIA_ENTITY } from 'simplycms/domain/media';
 import {
   productImageTranslations,
   productImages,
-  productModifications,
   productReviews,
   productTranslations,
   products,
 } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
+import { mainImageSql } from 'simplycms/translations';
 import { deleteModifications } from '../product-modifications/delete';
 import { defineAdminResource } from '../resource';
 import { removeResourceRows } from '../resource-write';
 
 /**
- * Товар — перший on-demand ресурс (К3-5). filterable — рівно ті поля, якими
- * фільтрує список адмінки (Е3-2) + id для картки (findOne). stockStatus
- * writable: власник ставить «Під замовлення» вручну; автоматичний перехід
- * за кількістю робить saveStock (Е3-3), гвард on_order не чіпає.
+ * Товар — перший on-demand ресурс (К3-5). ЛИШЕ ЧИТАННЯ колекцій і видалення
+ * (М1, Task 17): створення й правки — команди агрегата (`products.create`,
+ * `saveDescription`, `setPath`), бо рядок товару без перекладу основної мови й
+ * адреси не комітиться (І4, І16), а узагальнений insert/update їх не пише.
+ * filterable — рівно ті поля, якими фільтрує список адмінки (Е3-2) + id для картки.
  */
 export const productsOps = defineAdminResource({
   entity: ENTITY.products,
@@ -29,60 +28,35 @@ export const productsOps = defineAdminResource({
   sortable: ['createdAt', 'updatedAt', 'name'],
   defaultOrder: { column: 'createdAt', direction: 'desc' },
   touch: 'updatedAt',
-  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в генераторі схем,
-  // те саме, що й у product-modifications/resource.ts.
-  // Д5: slug товару — частина URL, формат перевіряє й сервер (як у розділу).
-  refine: {
-    images: () => z.array(z.string()),
-    slug: (s: z.ZodString) => s.regex(SLUG_RE),
-  },
   // М1 (Task 16): колекції адмінки читають НАЗВУ з перекладу основної мови (INNER JOIN),
-  // а дзеркала текстів (`slug`, описи, `meta_*`) з читальної форми зникають: споживачам
-  // потрібна лише назва, решту дає команда `products.get`. Task 17 зносить колонки без
-  // сюрпризів у споживачах. Запис (writable нижче) лишається на дзеркалах до Task 17.
+  // а мініатюру — головне фото агрегата (`product_images`, порядок галереї вітрини).
   readModel: {
     translations: productTranslations,
     owner: productTranslations.productId,
     fields: { name: productTranslations.name },
     required: ['name'],
-    exclude: [
-      'slug',
-      'shortDescription',
-      'description',
-      'metaTitle',
-      'metaDescription',
-    ],
+    computed: { mainImage: mainImageSql },
   },
-  writable: [
+  writable: [],
+  readonly: [
+    'id',
     'sectionId',
-    'slug',
-    'name',
-    'shortDescription',
-    'description',
     'isActive',
     'isFeatured',
-    'metaTitle',
-    'metaDescription',
-    'images',
     'hasModifications',
     'sku',
     'stockStatus',
-    'returnPolicy',
-    'shippingDetails',
+    'createdAt',
+    'updatedAt',
+    // `version` — оптимістична версія агрегата (М1, І14): її піднімає лише команда.
+    'version',
   ],
-  // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
-  richHtml: { description: 'content' },
-  // `version` — оптимістична версія агрегата (М1, І14): її піднімає лише команда
-  // опису (Task 11), узагальнений CRUD її не пише.
-  readonly: ['id', 'createdAt', 'updatedAt', 'version'],
   // М1 (Task 14): модифікації — ЄДИНИМ видалячем (`FOR UPDATE` за id) після знімків
   // медіа й до DELETE товару: порядок «корінь -> модифікації за id», як у fill.
   deleteRows: async (db, ids) => {
     await deleteModifications(db, { productIds: ids });
     return removeResourceRows(db, products, ids);
   },
-  // К3-Е6д-1: фото товару — власник `product`; заміна/прибирання стирає файл.
-  media: { entityType: 'product', columns: ['images'] },
   // Е6д-19: FK `product_reviews.product_id` — CASCADE; без опції фото
   // відгуків пережили б товар (публічні за URL, недосяжні для `deleteCustomer`).
   cascadeMedia: [
@@ -90,12 +64,6 @@ export const productsOps = defineAdminResource({
       fk: productReviews.productId,
       column: productReviews.images,
       entityType: REVIEW_MEDIA_ENTITY,
-    },
-    // К3-Е6д-1: FK `product_modifications.product_id` — CASCADE.
-    {
-      fk: productModifications.productId,
-      column: productModifications.images,
-      entityType: 'product_modification',
     },
     // М1 (Task 12): фото й мовні перевизначення — рядки `product_images` /
     // `product_image_translations`; файли належать ТОВАРУ (media.entity_id = id товару).

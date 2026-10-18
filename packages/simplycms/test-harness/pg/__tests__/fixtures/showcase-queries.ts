@@ -28,8 +28,9 @@ export type Volume = Record<
 export const VOLUME = `
   select (select count(*)::int from public.sections) as sections,
          (select count(*)::int from public.products) as products,
-         (select count(*)::int from public.products
-           where jsonb_array_length(coalesce(images, '[]')) = 0) as "productsWithoutImages",
+         (select count(*)::int from public.products p where not exists (
+            select 1 from public.product_images i
+             where i.product_id = p.id and i.modification_id is null)) as "productsWithoutImages",
          (select count(*)::int from public.price_types) as "priceTypes",
          (select count(*)::int from public.pickup_points) as "pickupPoints",
          (select count(*)::int from public.products p where not exists (
@@ -53,8 +54,10 @@ export const BY_STATUS = `
     from public.orders o join public.order_statuses s on s.id = o.status_id
    group by s.code`;
 
+/** Референси фото товарів (без фото модифікацій) — рядки `product_images`. */
 export const PRODUCT_IMAGE_REFS = `
-  select jsonb_array_elements_text(images) as ref from public.products order by 1`;
+  select storage_key as ref from public.product_images
+   where modification_id is null order by 1`;
 
 export type Revenue = Record<
   | 'newOrders'

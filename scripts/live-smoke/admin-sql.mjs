@@ -64,13 +64,17 @@ export async function productPrice(url, productId, priceTypeId) {
 }
 
 /**
- * Залишок і статус наявності товару (одна точка видачі в демо) + `images`
- * картки — той самий рядок, куди `saveStock` (Е3-3) пише перерахований статус.
+ * Залишок і статус наявності товару (одна точка видачі в демо) + `images` — референси
+ * галереї товару з `product_images` у порядку картки (М1: jsonb `products.images` знесено).
  */
 export async function productStockAndImages(url, productId) {
   const [row] = await sql(
     url,
-    `select s.quantity, p.stock_status, p.images from public.stock_by_pickup_point s
+    `select s.quantity, p.stock_status,
+            coalesce((select jsonb_agg(i.storage_key order by i.sort_order, i.created_at, i.id)
+                        from public.product_images i
+                       where i.product_id = p.id and i.modification_id is null), '[]'::jsonb) as images
+       from public.stock_by_pickup_point s
        join public.products p on p.id = s.product_id
       where s.product_id = $1`,
     [productId],

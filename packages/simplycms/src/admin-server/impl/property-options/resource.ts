@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { propertyOptions } from 'simplycms/schema';
-import { SLUG_RE } from 'simplycms/domain';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
@@ -20,7 +20,7 @@ export const propertyOptionsOps = defineAdminResource({
   filterable: ['propertyId', 'id'],
   sortable: ['sortOrder'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
-  refine: { slug: (s: z.ZodString) => s.regex(SLUG_RE) },
+  refine: { slug: (s: z.ZodString) => s.regex(SLUG_FORMAT) },
   writable: [
     'name',
     'slug',

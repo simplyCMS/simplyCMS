@@ -135,13 +135,14 @@ describe('вітрина: знижки, банери, залишки, відгу
       [REVIEWER_EMAIL],
     );
     ids.reviewedProduct = await firstId(
-      `select id from public.products where slug = $1`,
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
       [REVIEWED_PRODUCT_SLUG],
     );
     ids.stockModification = await firstId(
-      `select m.id from public.product_modifications m
-         join public.products p on p.id = m.product_id
-        where p.slug = $1 and m.slug = $2`,
+      `select t.modification_id as id from public.slug_tokens t
+         join public.url_paths u on u.product_id = t.scope_id and u.is_current and u.locale = t.locale
+        where t.is_current and t.locale = (select code from public.languages where is_default)
+          and u.path = $1 and t.slug = $2`,
       [STOCK_PRODUCT_SLUG, STOCK_MOD_SLUG],
     );
 

@@ -9,7 +9,11 @@
  */
 import { randomUUID } from 'node:crypto';
 import { sql } from './sql.mjs';
-import { deleteProductsByPrefix, seedProducts } from './product-rows.mjs';
+import {
+  deleteProductsByPrefix,
+  seedModification,
+  seedProducts,
+} from './product-rows.mjs';
 import { sectionBySlug } from './admin-sql.mjs';
 import { expectCount } from './wait.mjs';
 
@@ -41,17 +45,12 @@ export async function runAdminValidationErrorsStep({
       `select product_id as id from public.url_paths where path = $1`,
       [`ve-${tag}1`],
     );
-    await sql(
-      dbUrl,
-      // М1-TEMP: зноситься в Task 17 — `product_modifications.slug`/`name` ще NOT NULL.
-      `insert into public.product_modifications (id, product_id, slug, name) values ($1, $2, $3, $4)`,
-      [modId, productId, `ve-mod-${tag}`, `Мод ${tag}`],
-    );
-    await sql(
-      dbUrl,
-      `insert into public.product_modification_translations (product_id, modification_id, locale, name) values ($1, $2, 'uk', $3)`,
-      [productId, modId, `Мод ${tag}`],
-    );
+    await seedModification(dbUrl, {
+      id: modId,
+      productId,
+      slug: `ve-mod-${tag}`,
+      name: `Мод ${tag}`,
+    });
 
     await page.goto(`${base}/admin/products/${productId}`, {
       waitUntil: 'networkidle',

@@ -6,15 +6,20 @@ import type { PropertyValuesInput } from './children-schemas';
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
 type Owned = { id: string; mine: boolean; owner: string | null };
 
-// М1-TEMP: зноситься в Task 17 — ім'я дасть частковий UNIQUE `(owner, property_id)`.
-const taken = () =>
+/**
+ * Другий рядок скалярної властивості (не multiselect) того самого власника. Те саме
+ * ім'я дає і передперевірка нижче, і відмова часткового UNIQUE `*_scalar_key` (І8).
+ */
+export const scalarTaken = () =>
   new AdminConflictError('unique', 'property_value_scalar_taken');
 
 /**
  * Рядок значення належить цьому товару: id не чужий і не лежить в іншій
  * таблиці значень (товар ↔ модифікація). Далі скалярна властивість (не
  * multiselect) має один рядок на власника: другий з іншим id — конфлікт.
- * Часткового UNIQUE ще немає (Task 17), тож рубіж — тут.
+ * Це лише швидкий шлях з помилкою ДО запису: незакомічений рядок паралельної
+ * транзакції він не бачить, тож рубіж — частковий UNIQUE `(власник, property_id)`
+ * (І8), чию відмову `writeValueRow` перекладає в той самий конфлікт.
  */
 export async function assertRowsOwned(
   ctx: ChildCtx,
@@ -54,7 +59,7 @@ export async function assertRowsOwned(
   const wanted = new Set<string>();
   for (const u of scalar) {
     const k = key(u.modificationId ?? null, u.propertyId);
-    if (wanted.has(k)) throw taken();
+    if (wanted.has(k)) throw scalarTaken();
     wanted.add(k);
   }
   const props = uuidArray(scalar.map((u) => u.propertyId));
@@ -78,5 +83,5 @@ export async function assertRowsOwned(
       !removing.has(r.id) &&
       wanted.has(key(r.owner, r.property_id))
     )
-      throw taken();
+      throw scalarTaken();
 }

@@ -131,7 +131,7 @@ export const sectionProperties = pgTable("section_properties", {
 	// Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
 	unique("section_properties_slug_key").on(table.slug),
 	// Ціль складеного FK значень `(property_id, value_kind)` (М1, І6, Р18): колонку значення
-	// прив'язує до типу властивості БД, а не код. Сам FK вмикає Task 17.
+	// прив'язує до типу властивості БД, а не код.
 	unique("section_properties_id_property_type_key").on(table.id, table.propertyType),
 ]);
 
@@ -281,20 +281,37 @@ export const orderItems = pgTable("order_items", {
 	pgPolicy("order_items_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
+// ── Значення властивостей (М1, Р18, І5–І8) ─────────────────────────────────
+// Колонку значення прив'язує до типу властивості БД, а не код команди:
+//  • складений FK `(property_id, value_kind) → section_properties(id, property_type)`
+//    (І6): тип значення = тип властивості; `ON UPDATE RESTRICT` — зміна типу
+//    властивості з наявними значеннями відхиляється, а не лишає їх невідповідними;
+//  • складений FK `(property_id, option_id) → property_options(property_id, id)` (І7):
+//    опція належить своїй властивості; `MATCH SIMPLE` рядок без опції не перевіряє;
+//  • CHECK «рівно одна колонка за `value_kind`» (І6); `text` — жодної, текст у перекладі;
+//  • частковий UNIQUE `(власник, property_id)` для всіх видів, крім `multiselect` (І8),
+//    і UNIQUE `(власник, property_id, option_id)` — рядок на опцію для `multiselect`.
+// Вираз CHECK спільний для обох таблиць: розбіжність між ними не мала б тесту.
+const valueShape = (name: string) =>
+	check(name, sql`num_nonnulls(option_id, numeric_value, bool_value, color_value) = (CASE WHEN value_kind = 'text' THEN 0 ELSE 1 END)
+		AND (option_id IS NOT NULL) = (value_kind IN ('select', 'multiselect'))
+		AND (numeric_value IS NOT NULL) = (value_kind IN ('number', 'range'))
+		AND (bool_value IS NOT NULL) = (value_kind = 'boolean')
+		AND (color_value IS NOT NULL) = (value_kind = 'color')`);
+const colorFormat = (name: string) =>
+	check(name, sql`color_value IS NULL OR color_value ~ '^#[0-9a-f]{6}$'`);
+
 export const modificationPropertyValues = pgTable("modification_property_values", {
 	id: uuid().primaryKey().notNull(),
 	modificationId: uuid("modification_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
-	value: text(),
+	valueKind: propertyType("value_kind").notNull(),
 	// Як у товару: `numeric(15,4)`, а не голий `numeric` (М1, Р18).
 	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
 	optionId: uuid("option_id"),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	// Expand М1 (Р18): тип, булеве й колір значення. NULLABLE до Task 17, коли не лишається
-	// записувача повз команду й вмикаються складені FK та CHECK «одна колонка за типом».
-	valueKind: propertyType("value_kind"),
 	boolValue: boolean("bool_value"),
 	colorValue: text("color_value"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_modification_property_values_mod").using("btree", table.modificationId.asc().nullsLast().op("uuid_ops")),
 	index("idx_modification_property_values_option").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
@@ -304,20 +321,20 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 			name: "modification_property_values_modification_id_fkey"
 		}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.optionId],
-			foreignColumns: [propertyOptions.id],
-			name: "modification_property_values_option_id_fkey"
-		}).onDelete("set null"),
+			columns: [table.propertyId, table.valueKind],
+			foreignColumns: [sectionProperties.id, sectionProperties.propertyType],
+			name: "modification_property_values_property_kind_fkey"
+		}).onUpdate("restrict").onDelete("cascade"),
 	foreignKey({
-			columns: [table.propertyId],
-			foreignColumns: [sectionProperties.id],
-			name: "modification_property_values_property_id_fkey"
+			columns: [table.propertyId, table.optionId],
+			foreignColumns: [propertyOptions.propertyId, propertyOptions.id],
+			name: "modification_property_values_option_fkey"
 		}).onDelete("cascade"),
-	// Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
-	// скалярну властивість в одному рядку (option_id NULL)
+	valueShape("modification_property_values_value_shape"),
+	colorFormat("modification_property_values_color_format"),
+	uniqueIndex("modification_property_values_scalar_key").on(table.modificationId, table.propertyId).where(sql`value_kind <> 'multiselect'`),
 	unique("modification_property_values_owner_property_option_key")
-		.on(table.modificationId, table.propertyId, table.optionId)
-		.nullsNotDistinct(),
+		.on(table.modificationId, table.propertyId, table.optionId),
 	index("idx_modification_property_values_property").on(table.propertyId),
 ]);
 
@@ -325,36 +342,34 @@ export const productPropertyValues = pgTable("product_property_values", {
 	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
-	value: text(),
+	valueKind: propertyType("value_kind").notNull(),
 	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	optionId: uuid("option_id"),
-	// Expand М1 (Р18): див. `modificationPropertyValues`.
-	valueKind: propertyType("value_kind"),
 	boolValue: boolean("bool_value"),
 	colorValue: text("color_value"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_product_property_values_option_id").using("btree", table.optionId.asc().nullsLast().op("uuid_ops")),
-	foreignKey({
-			columns: [table.optionId],
-			foreignColumns: [propertyOptions.id],
-			name: "product_property_values_option_id_fkey"
-		}).onDelete("set null"),
 	foreignKey({
 			columns: [table.productId],
 			foreignColumns: [products.id],
 			name: "product_property_values_product_id_fkey"
 		}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.propertyId],
-			foreignColumns: [sectionProperties.id],
-			name: "product_property_values_property_id_fkey"
+			columns: [table.propertyId, table.valueKind],
+			foreignColumns: [sectionProperties.id, sectionProperties.propertyType],
+			name: "product_property_values_property_kind_fkey"
+		}).onUpdate("restrict").onDelete("cascade"),
+	foreignKey({
+			columns: [table.propertyId, table.optionId],
+			foreignColumns: [propertyOptions.propertyId, propertyOptions.id],
+			name: "product_property_values_option_fkey"
 		}).onDelete("cascade"),
-	// Е3-13: multiselect — рядок на опцію; NULLS NOT DISTINCT тримає
-	// скалярну властивість в одному рядку (option_id NULL)
+	valueShape("product_property_values_value_shape"),
+	colorFormat("product_property_values_color_format"),
+	uniqueIndex("product_property_values_scalar_key").on(table.productId, table.propertyId).where(sql`value_kind <> 'multiselect'`),
 	unique("product_property_values_owner_property_option_key")
-		.on(table.productId, table.propertyId, table.optionId)
-		.nullsNotDistinct(),
+		.on(table.productId, table.propertyId, table.optionId),
 	index("idx_product_property_values_property_id").on(table.propertyId),
 ]);
 
@@ -409,32 +424,15 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 export const products = pgTable("products", {
 	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id"),
-	slug: varchar({ length: 255 }).notNull(),
-	name: text().notNull(),
-	shortDescription: text("short_description"),
-	description: text(),
+	// Тексти й адреса товару — у `product_translations` і `url_paths` (М1, Task 17), фото —
+	// у `product_images`; дзеркальних колонок основної мови в базі немає.
 	isActive: boolean("is_active").default(true).notNull(),
 	isFeatured: boolean("is_featured").default(false).notNull(),
-	metaTitle: text("meta_title"),
-	metaDescription: text("meta_description"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	images: jsonb().$type<string[]>().default([]),
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
 	stockStatus: stockStatus("stock_status").default('in_stock').notNull(),
-	// B7: `MerchantReturnPolicy` і `OfferShippingDetails` у JSON-LD стають
-	// обовʼязковими, а рендер приїде в К2 — колонки додаються зараз, поки
-	// схема молода. Рівнів ДВА, і другий не потребує DDL: магазинний дефолт
-	// живе в `system_settings` (та сама k/v-таблиця з jsonb-значенням —
-	// ключі `commerce.return_policy` / `commerce.shipping_details`), а тут —
-	// НЕОБОВʼЯЗКОВЕ перевизначення для конкретного товару (крихке скло,
-	// негабарит, товар без повернення). Рендерер накладає перше на друге.
-	// jsonb, а не розкладка в колонки: форма — вкладений обʼєкт schema.org
-	// зі своїм словником, і розкладати його в 8-10 колонок означало б
-	// версіонувати чужий словник міграціями.
-	returnPolicy: jsonb("return_policy").$type<JsonValue>(),
-	shippingDetails: jsonb("shipping_details").$type<JsonValue>(),
 	// Оптимістична версія агрегата опису (М1, І14): будь-яка команда опису збільшує її
 	// на 1 у своїй транзакції; ціни й залишки версію не чіпають.
 	version: integer().default(1).notNull(),
@@ -444,18 +442,16 @@ export const products = pgTable("products", {
 			foreignColumns: [sections.id],
 			name: "products_section_id_fkey"
 		}).onDelete("set null"),
-	unique("products_slug_key").on(table.slug),
 	index("idx_products_section_id").on(table.sectionId),
 ]);
 
 export const productModifications = pgTable("product_modifications", {
 	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
-	slug: varchar({ length: 255 }).notNull(),
-	name: text().notNull(),
+	// Назва — `product_modification_translations`, токен — `slug_tokens`, фото —
+	// `product_images` (М1, Task 17).
 	sku: varchar({ length: 100 }),
 	isDefault: boolean("is_default").default(false).notNull(),
-	images: jsonb().$type<string[]>().default([]),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -466,7 +462,6 @@ export const productModifications = pgTable("product_modifications", {
 			foreignColumns: [products.id],
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
-	unique("product_modifications_product_slug_unique").on(table.productId, table.slug),
 	// Ціль складеного FK `slug_tokens (scope_id, modification_id)`: токен
 	// модифікації не може вказати на модифікацію чужого товару (М1, К2).
 	unique("product_modifications_product_id_id_key").on(table.productId, table.id),
@@ -479,7 +474,7 @@ export const productModifications = pgTable("product_modifications", {
 // `id` (природний ключ), `locale → languages(code) ON DELETE RESTRICT`, `source_hashes`
 // з хешами джерела на момент перекладу. Перекладні колонки NULLABLE навмисно:
 // обов'язковість (`name`) стосується лише рядка ОСНОВНОЇ мови й живе в
-// `require_source_translation` (Task 17), а рядок іншої мови може бути частково порожнім
+// `require_source_translation` (`0004_functions.sql`), а рядок іншої мови може бути частково порожнім
 // (статус `missing`, майстер §3.4).
 const sourceHashes = () =>
 	jsonb("source_hashes").$type<Record<string, string>>().default({}).notNull();

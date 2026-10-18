@@ -1,6 +1,7 @@
 // М1 Task 4 (І4, І5 майстра): кожна перекладна сутність має на COMMIT рядок
 // основної мови з непорожніми обовʼязковими полями. Доводиться на одноразових
-// probe-таблицях (продуктові підключає Task 17) і під ОБОМА писарями каталогу.
+// probe-таблицях під ОБОМА писарями каталогу, а на реальних таблицях товару
+// (підключено в Task 17) — `describe('товар')` у кінці файлу.
 //
 // 🔴 Відкладений тригер стріляє на COMMIT, тож кожен кейс іде через `withActor`
 // (BEGIN → set_config → SET LOCAL ROLE → … → COMMIT): відмову кидає саме
@@ -20,6 +21,12 @@ import {
   withUser,
 } from '../apply.mjs';
 import { withActor } from '../actors.mjs';
+import { useAddressingDb } from './fixtures/addressing-db';
+import { bareModificationSql, bareProductSql } from './fixtures/product-graph';
+import {
+  missingPathsSql,
+  missingTokensSql,
+} from './fixtures/product-graph-projection';
 import {
   deleteBase,
   deleteTranslation,
@@ -243,3 +250,77 @@ describe.each(Object.entries(ACTORS))(
     });
   },
 );
+
+// М1 Task 17 (І4 на реальних таблицях): тригери джерела підключено до товару й
+// модифікації. Рядок перекладу основної мови обовʼязковий з першого коміту; адреси й
+// токени в кейсах пишуться разом із базою, тож відмову дає саме тригер джерела, а не
+// тригер наявності (І16). Писар каталогу — `app_admin` (`db.tx` — сира транзакція під ним).
+describe('товар', () => {
+  const db = useAddressingDb('simplycms_source_translation_product');
+  const productIs = async (id: string) =>
+    (await db.q(`select 1 from public.products where id = $1`, [id])).length;
+
+  it('товар без перекладу основної мови — відмова на коміті під app_admin', async () => {
+    const id = randomUUID();
+    await expect(
+      db.tx(bareProductSql(id), missingPathsSql(id, `nt-${id}`)),
+    ).rejects.toMatchObject({
+      ...REFUSED,
+      message: 'products: потрібен переклад основною мовою (name)',
+    });
+    expect(await productIs(id)).toBe(0);
+  });
+
+  it('видалення перекладу основної мови товару — відмова; видалення товару каскадом — коміт', async () => {
+    const id = await db.product();
+    await expect(
+      db.tx(
+        `delete from public.product_translations where product_id = '${id}' and locale = (select code from public.languages where is_default)`,
+      ),
+    ).rejects.toMatchObject(REFUSED);
+    await db.tx(`delete from public.products where id = '${id}'`);
+    expect(await productIs(id)).toBe(0);
+  });
+
+  it('модифікація без перекладу основної мови — відмова на коміті', async () => {
+    const productId = await db.product();
+    const id = randomUUID();
+    await expect(
+      db.tx(
+        bareModificationSql(productId, id),
+        missingTokensSql(productId, id, `nt-${id}`),
+      ),
+    ).rejects.toMatchObject({
+      ...REFUSED,
+      message: 'product_modifications: потрібен переклад основною мовою (name)',
+    });
+  });
+
+  // Task 4 minor → Task 17: функція джерела читає базу, переклади й `languages` правами
+  // писаря; RLS цих таблиць не ховає від нього рядків (інакше тихий пропуск чи хибна
+  // відмова — конвенція в `0004_functions.sql`).
+  it('права писаря: SELECT на базу, переклади й languages, RLS на перекладах немає', async () => {
+    const tables = [
+      'products',
+      'product_translations',
+      'product_modifications',
+      'product_modification_translations',
+      'product_property_values',
+      'product_property_value_translations',
+      'modification_property_values',
+      'modification_property_value_translations',
+      'languages',
+    ];
+    const rows = await db.q(
+      `select c.relname as t, c.relrowsecurity as rls,
+              has_table_privilege('app_admin', c.oid, 'SELECT') as can
+         from pg_class c
+        where c.relnamespace = 'public'::regnamespace and c.relname = any($1)
+        order by 1`,
+      [tables],
+    );
+    expect(rows).toEqual(
+      [...tables].sort().map((t) => ({ t, rls: false, can: true })),
+    );
+  });
+});

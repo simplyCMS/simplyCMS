@@ -2,11 +2,12 @@ import type { SanitizedHtml } from 'simplycms/contracts';
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
 import { resolveMediaUrls } from 'simplycms/domain/media';
+import { productGallerySql } from 'simplycms/translations';
 
 /**
  * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
  * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8),
- * а не з колонок `products`, які ще дзеркалять лише основну мову.
+ * фото — з рядків `product_images` у порядку галереї (`productGallerySql`).
  */
 export const productBaseColumns = {
   id: products.id,
@@ -15,7 +16,7 @@ export const productBaseColumns = {
   is_featured: products.isFeatured,
   created_at: products.createdAt,
   updated_at: products.updatedAt,
-  images: products.images,
+  images: productGallerySql(products.id).as('images'),
   has_modifications: products.hasModifications,
   sku: products.sku,
   stock_status: products.stockStatus,
@@ -48,7 +49,7 @@ export type ProductRow = {
 };
 
 /**
- * Нормалізує jsonb-колонку `images` у масив ГОТОВИХ URL.
+ * Нормалізує jsonb-масив референсів фото (`productGallerySql`) у масив ГОТОВИХ URL.
  *
  * 🔴 Резолв саме тут, а не на сторінці: через цю функцію проходять УСІ
  * читання `images` у вітрині (товар, картка, модифікація, деталь) — один

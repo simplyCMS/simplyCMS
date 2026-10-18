@@ -235,7 +235,10 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
       await clean();
     });
 
-    it('missingProjection рахує відсутні, застарілі й зайві', async () => {
+    // Зайвих рядків у мові draft/published не буває: джерело без назви відхиляє тригер
+    // джерела (І4), товар без адреси — тригер наявності (І16). Зайві рядки мови, що вийшла
+    // з набору, — кейс «звірка бачить і виправляє відсутні, застарілі й зайві» вище.
+    it('missingProjection рахує відсутні й застарілі', async () => {
       await seed();
       await seed();
       await add('sk');
@@ -244,7 +247,7 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
       const rows = await db.q(
         `select product_id from public.catalog_product_texts where locale = 'sk' order by product_id limit 3`,
       );
-      const [stale, gone, nameless] = rows.map((r) => r.product_id);
+      const [stale, gone] = rows.map((r) => r.product_id);
       await db.q(
         `update public.catalog_product_texts set name = 'хибне' where product_id = $1 and locale = 'sk'`,
         [stale],
@@ -253,16 +256,7 @@ describe('проєкція тексту товару (М1, Task 14)', () => {
         `delete from public.catalog_product_texts where product_id = $1 and locale = 'sk'`,
         [gone],
       );
-      // Джерело без назви: очікуваного рядка вже немає, збережений — зайвий.
-      await db.q(
-        `update public.product_translations set name = null where product_id = $1 and locale = 'uk'`,
-        [nameless],
-      );
-      expect(await missingProjection('sk')).toBe(3);
-      await db.q(
-        `update public.product_translations set name = 'Кабель' where product_id = $1 and locale = 'uk'`,
-        [nameless],
-      );
+      expect(await missingProjection('sk')).toBe(2);
       await reconcile();
       await clean();
     });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SLUG_RE } from '../edit/product-form-schema';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 
 /**
  * Значення форми модифікації. Назва й токен — за мовами (`names`, `tokens`);
@@ -22,7 +22,7 @@ export function modificationFormSchemaFor(primary: string) {
     if (!v.names[primary])
       ctx.addIssue({ code: 'custom', path: ['names', primary], message: 'n' });
     for (const [l, slug] of Object.entries(v.tokens))
-      if (slug !== '' && !SLUG_RE.test(slug))
+      if (slug !== '' && !SLUG_FORMAT.test(slug))
         ctx.addIssue({ code: 'custom', path: ['tokens', l], message: 't' });
   });
 }

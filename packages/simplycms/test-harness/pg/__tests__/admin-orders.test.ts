@@ -98,12 +98,14 @@ describe('admin: замовлення (Е5, Task 4)', () => {
     ids.point = await id(
       `select id from public.pickup_points where name = 'Склад у Києві'`,
     );
-    ids.panel = await id(`select id from public.products where slug = $1`, [
-      PANEL,
-    ]);
-    ids.untracked = await id(`select id from public.products where slug = $1`, [
-      UNTRACKED,
-    ]);
+    ids.panel = await id(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [PANEL],
+    );
+    ids.untracked = await id(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [UNTRACKED],
+    );
     ids.user = await id(
       `insert into public.users (id, name, email, email_verified)
        values (gen_random_uuid(), 'Покупець', 'e5-buyer@example.test', true) returning id`,

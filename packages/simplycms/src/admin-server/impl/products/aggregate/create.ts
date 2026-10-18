@@ -1,4 +1,3 @@
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { defineOperation } from 'simplycms/operations';
@@ -17,7 +16,6 @@ import {
   sourceFieldHash,
 } from 'simplycms/translations';
 import { assertKnownLocales } from './load';
-import { mirrorColumns } from './mirror';
 import {
   productBase,
   remapPlanIssues,
@@ -69,8 +67,9 @@ export const productsCreate = defineOperation({
       }),
     );
     const name = plan.upserts.find((u) => u.locale === primary)?.values.name;
-    // Основна мова з назвою обов'язкова (І4, до тригера Task 17 — тут): план
-    // перевіряє її лише коли основну мову надіслано, а відсутню мову не бачить.
+    // Основна мова з назвою обов'язкова (І4). Тригер `require_source_translation`
+    // відмовив би лише на COMMIT загальним 23514; тут — рання помилка поля (400).
+    // План перевіряє назву лише коли основну мову надіслано, а відсутню мову не бачить.
     if (!name)
       throw new ValidationError([
         {
@@ -84,8 +83,8 @@ export const productsCreate = defineOperation({
     if (!SLUG_FORMAT.test(baseSlug))
       throw new ValidationError([{ path: ['path'], code: 'invalid_format' }]);
     const { id } = data;
-    // М1-TEMP: зноситься в Task 17 — старі колонки дзеркалять основну мову, а
-    // `slug` (NOT NULL UNIQUE) спершу `id`: адреса виникає лише після рядка товару.
+    // Рядок товару, переклади й адреси — в одній транзакції: відкладені тригери
+    // джерела (І4) і наявності адреси (І16) перевіряють їх разом на COMMIT.
     await db.insert(products).values({
       id,
       sectionId: data.sectionId,
@@ -95,9 +94,6 @@ export const productsCreate = defineOperation({
       hasModifications: data.hasModifications,
       stockStatus: data.stockStatus,
       version: 1,
-      slug: id,
-      name,
-      ...mirrorColumns(plan, primary),
     });
     await applyTranslationPlan(db, SPEC, id, plan);
     const paths = await createPathsForEntity(
@@ -107,8 +103,6 @@ export const productsCreate = defineOperation({
     );
     const own = paths.get(primary);
     if (!own) throw new Error('[products.create] немає адреси основної мови');
-    // М1-TEMP: зноситься в Task 17
-    await db.update(products).set({ slug: own }).where(eq(products.id, id));
     // Проєкція для ВСІХ мов draft/published: fallback-рядки теж потрібні вітрині (І23).
     await refreshProductTexts(db, [id]);
     return { id, version: 1, paths: Object.fromEntries(paths) };

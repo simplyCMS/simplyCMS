@@ -13,12 +13,12 @@ import { slugTokenRowSql, urlPathRowSql } from './fixtures/product-graph';
 
 describe('паритет адрес і токенів на реальних генераторах (І22)', () => {
   const db = useAddressingDb('simplycms_addressing_parity');
-  const { admin } = db;
 
   it('однакова картина зайнятих → однакові slug-и, включно з -2/-3 і історією', async () => {
     // Картина зайнятих (у мові uk): panel — поточний, panel-2 — історичний.
-    const owner = await db.product();
-    const ownerMod = await db.modification(owner);
+    // Поточні — від фікстури (товару й модифікації без них не буває, І16).
+    const owner = await db.product('panel');
+    const ownerMod = await db.modification(owner, 'panel');
     const insertPath = (path: string, current: boolean) =>
       db.w(
         urlPathRowSql({
@@ -38,28 +38,25 @@ describe('паритет адрес і токенів на реальних ге
           isCurrent: current,
         }),
       );
-    await insertPath('panel', true);
     await insertPath('panel-2', false);
-    await insertToken('panel', true);
     await insertToken('panel-2', false);
 
     const viaPaths: string[] = [];
     const viaTokens: string[] = [];
     for (let i = 0; i < 4; i += 1) {
-      const p = await db.product();
+      // Нова сутність і її адреса/токен — одна транзакція, як у команді агрегата.
       viaPaths.push(
         (
-          await admin((d) =>
-            createPathsForEntity(d, { kind: 'product', id: p }, 'panel'),
+          await db.fresh((d, id) =>
+            createPathsForEntity(d, { kind: 'product', id }, 'panel'),
           )
         ).get('uk')!,
       );
       // Токени живуть в області товару: усі нові модифікації — одного товару,
       // тож простір імен той самий, що в адрес (одна мова, одна область).
-      const id = await db.modification(owner);
       viaTokens.push(
         (
-          await admin((d) =>
+          await db.freshModification(owner, (d, id) =>
             createTokensForEntity(
               d,
               { kind: 'modification', id, scopeId: owner },

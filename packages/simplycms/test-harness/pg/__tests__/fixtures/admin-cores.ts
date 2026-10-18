@@ -29,7 +29,10 @@ export function useCoresDb(prefix: string) {
   const id = async (sql: string, p: unknown[] = []) =>
     (await one<{ id: string }>(sql, p)).id;
   const product = (slug: string) =>
-    id(`select id from public.products where slug = $1`, [slug]);
+    id(
+      `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
+      [slug],
+    );
 
   beforeAll(async () => {
     harness = await resolveHarness();

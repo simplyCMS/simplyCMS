@@ -16,7 +16,7 @@ import {
 } from 'simplycms/translations';
 import { refreshProductTexts } from 'simplycms/catalog-projection';
 import { assertKnownLocales, loadState, lockProduct } from './load';
-import { bumpProduct } from './mirror';
+import { bumpProduct } from './version';
 import {
   expectedVersion,
   fromWireKeys,

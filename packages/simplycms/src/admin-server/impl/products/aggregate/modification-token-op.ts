@@ -6,9 +6,8 @@ import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
 import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { fail } from './children-common';
-import { assertKnownLocales, loadState, lockProduct } from './load';
-import { bumpProduct } from './mirror';
-import { mirrorSlug } from './modification-tokens';
+import { assertKnownLocales, lockProduct } from './load';
+import { bumpProduct } from './version';
 import { expectedVersion, versionOut } from './schemas';
 import { code } from '../../languages/view';
 
@@ -54,9 +53,6 @@ export const productsSetModificationToken = defineOperation({
       input.locale,
       input.slug,
     );
-    const { primary } = await loadState(db, productId);
-    if (input.locale === primary)
-      await mirrorSlug({ db, primary }, input.modificationId);
     return { version: await bumpProduct(db, productId) };
   },
 });

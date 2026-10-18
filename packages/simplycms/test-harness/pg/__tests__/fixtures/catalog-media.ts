@@ -30,8 +30,8 @@ export function useCatalogMediaDb(prefix: string) {
       )
     ).ref;
 
-  const product = async (images: string[] = []) => {
-    const id = crypto.randomUUID();
+  /** Товар графа; `id` наперед — коли файл фото завантажено з власником ДО товару. */
+  const product = async (images: string[] = [], id = crypto.randomUUID()) => {
     await insertProductGraph(
       viaRows((sql) => f.rows(sql)),
       {
@@ -43,8 +43,11 @@ export function useCatalogMediaDb(prefix: string) {
     );
     return id;
   };
-  const modification = async (productId: string, images: string[] = []) => {
-    const id = crypto.randomUUID();
+  const modification = async (
+    productId: string,
+    images: string[] = [],
+    id = crypto.randomUUID(),
+  ) => {
     await f.rows(
       modificationGraphSql(productId, {
         id,

@@ -132,7 +132,7 @@ describe('замовлення списує залишок і повертає �
     (
       (await queryRows(
         dbUrl,
-        `select id from public.products where slug = $1`,
+        `select u.product_id as id from public.url_paths u where u.is_current and u.product_id is not null and u.locale = (select code from public.languages where is_default) and u.path = $1`,
         [slug],
       )) as IdRow[]
     )[0].id;
@@ -644,7 +644,9 @@ describe('замовлення списує залишок і повертає �
   it('🔴 I2: списання й повернення працюють так само для МОДИФІКАЦІЇ, не лише простого товару', async () => {
     const [{ id: modificationId }] = (await queryRows(
       dbUrl,
-      `select id from public.product_modifications where slug = 'chornyi' and product_id = $1`,
+      `select modification_id as id from public.slug_tokens
+        where slug = 'chornyi' and scope_id = $1 and is_current
+          and locale = (select code from public.languages where is_default)`,
       [ids[FALLBACK_SLUG]],
     )) as IdRow[];
     const [{ id: pointId }] = (await queryRows(

@@ -1,4 +1,5 @@
 import { products } from 'simplycms/schema';
+import { productGallerySql } from 'simplycms/translations';
 import type { Product } from 'simplycms/schema/types';
 import type { PriceTypes } from 'simplycms/commerce';
 import type { PriceEntry } from 'simplycms/contracts';
@@ -14,7 +15,7 @@ export const homeProductColumns = {
   id: products.id,
   name: listTextColumns.name,
   slug: listTextColumns.slug,
-  images: products.images,
+  images: productGallerySql(products.id).as('images'),
   short_description: listTextColumns.short_description,
   fallback: listTextColumns.fallback,
   stock_status: products.stockStatus,
@@ -23,11 +24,11 @@ export const homeProductColumns = {
 
 export interface HomeProductRow {
   id: Product['id'];
-  name: Product['name'];
+  name: string;
   /** Поточна адреса товару в мові запиту (не основної мови). */
-  slug: Product['slug'];
+  slug: string;
   images: string[];
-  short_description: Product['shortDescription'];
+  short_description: string | null;
   /** Мова назви/короткого опису, коли текст узято з основної мови (fallback). */
   name_lang: string | null;
   short_description_lang: string | null;
@@ -47,7 +48,7 @@ export interface HomeProductRow {
   prices: PriceEntry[];
 }
 
-/** Сирий рядок картки: `images` — нетипізований jsonb. */
+/** Сирий рядок картки: `images` — нетипізований jsonb-масив галереї. */
 export interface RawHomeProductRow {
   id: string;
   name: string;

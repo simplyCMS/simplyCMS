@@ -69,6 +69,18 @@ function loaderFiles(dir: string): string[] {
   return out;
 }
 
+/**
+ * Вирази галереї агрегата товару (`simplycms/translations`, М1 Task 17): читають
+ * `product_images.storage_key` (запис реєстру `MEDIA_COLUMNS`) підзапитом, а не
+ * проєкцією колонки — тож дискавер шукає і їх: `alias: productGallerySql(` у Drizzle-
+ * вибірці та `${modificationGallerySql(…)} as alias` у сирому SQL.
+ */
+const GALLERY_READERS = [
+  'productGallerySql',
+  'modificationGallerySql',
+  'mainImageSql',
+];
+
 /** Сайт проєкції → резолвер, виклик якого мусить стояти в тому ж файлі. */
 const RESOLVED_BY: Record<string, string> = {
   'profile.ts#avatar_url': 'resolveMediaUrl',
@@ -105,6 +117,11 @@ const RESOLVED_BY_CONSUMERS: Record<
       'catalog-products.ts',
       'entities/home-product.ts',
     ],
+  },
+  // Сирий SQL модифікацій мапить `toModificationRow` (`entities/modification.ts`).
+  'product-modifications.ts#images': {
+    resolver: 'toImageList',
+    files: ['entities/modification.ts'],
   },
 };
 
@@ -146,7 +163,23 @@ describe('резолв медіа-колонок при читанні', () => {
       for (const match of source.matchAll(pattern))
         sites.push({ site: `${rel}#${match[1]}`, alias: match[1], source });
     }
+    for (const reader of GALLERY_READERS)
+      for (const pattern of [
+        new RegExp(`([A-Za-z_]\\w*)\\s*:\\s*${reader}\\(`, 'g'),
+        new RegExp(`\\$\\{${reader}\\([^\\n]*?\\)\\}\\s+as\\s+(\\w+)`, 'g'),
+      ])
+        for (const match of source.matchAll(pattern))
+          sites.push({ site: `${rel}#${match[1]}`, alias: match[1], source });
   }
+
+  it('вирази галереї читають колонку реєстру `product_images.storage_key`', () => {
+    expect(MEDIA_COLUMNS).toContainEqual(
+      expect.objectContaining({
+        table: 'product_images',
+        column: 'storage_key',
+      }),
+    );
+  });
 
   it('дискавер бачить проєкції — інакше гейт зелений через порожній вхід', () => {
     expect(sites.length).toBeGreaterThanOrEqual(

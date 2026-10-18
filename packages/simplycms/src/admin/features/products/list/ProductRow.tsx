@@ -18,7 +18,7 @@ export default function ProductRow({
   onDeleteRequest,
 }: Props) {
   const t = useT();
-  const thumb = resolveMediaUrl(product.images?.[0] ?? null);
+  const thumb = resolveMediaUrl(product.mainImage);
 
   return (
     <TableRow

@@ -6,17 +6,22 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Expand М1 (Р18): `valueKind`/`boolValue`/`colorValue` пише команда агрегата
- * (Task 12); складеного FK і CHECK ще немає, тож узагальнений CRUD їх не чіпає.
+ * Значення властивостей — ЛИШЕ ЧИТАННЯ колекцій (М1, Task 17): пише команда агрегата
+ * `products.saveDescription` разом з перекладом тексту. Форму рядка тримає БД (Р18:
+ * складені FK, CHECK колонки, частковий UNIQUE скаляра), а текст `value_kind = text`
+ * без рядка основної мови не комітиться (І5) — узагальнений insert його не пише.
  */
-const VALUE_SERVER_COLUMNS = ['valueKind', 'boolValue', 'colorValue'] as const;
+const VALUE_COLUMNS = [
+  'id',
+  'propertyId',
+  'valueKind',
+  'optionId',
+  'numericValue',
+  'boolValue',
+  'colorValue',
+  'createdAt',
+] as const;
 
-/**
- * Значення властивостей — автозбереження на зміну (Е3-11): фабричні
- * insert/update/remove. Унікальність тримає БД: (власник, властивість,
- * опція) NULLS NOT DISTINCT — скалярна властивість має рівно один рядок
- * (option_id NULL), multiselect — рядок на кожну обрану опцію (Е3-13).
- */
 export const productPropertyValuesOps = defineAdminResource({
   entity: ENTITY.productPropertyValues,
   table: productPropertyValues,
@@ -24,8 +29,8 @@ export const productPropertyValuesOps = defineAdminResource({
   mode: 'on-demand',
   filterable: ['productId', 'propertyId'],
   sortable: ['createdAt'],
-  writable: ['productId', 'propertyId', 'value', 'numericValue', 'optionId'],
-  readonly: [...VALUE_SERVER_COLUMNS, 'id', 'createdAt'],
+  writable: [],
+  readonly: [...VALUE_COLUMNS, 'productId'],
 });
 
 export const modificationPropertyValuesOps = defineAdminResource({
@@ -35,12 +40,6 @@ export const modificationPropertyValuesOps = defineAdminResource({
   mode: 'on-demand',
   filterable: ['modificationId', 'propertyId'],
   sortable: ['createdAt'],
-  writable: [
-    'modificationId',
-    'propertyId',
-    'value',
-    'numericValue',
-    'optionId',
-  ],
-  readonly: [...VALUE_SERVER_COLUMNS, 'id', 'createdAt'],
+  writable: [],
+  readonly: [...VALUE_COLUMNS, 'modificationId'],
 });

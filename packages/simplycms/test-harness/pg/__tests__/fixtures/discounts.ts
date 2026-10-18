@@ -2,6 +2,7 @@
 // До цього файлу showcase тримав його інлайном, а тест воронки скопіював би
 // вдруге. К3-Е6в: тип ціни `null` («для всіх»), оператор і вкладеність груп,
 // порогова умова — для лісу знижок і ядра `priceCart`.
+import { productIdBySlug } from './product-sql';
 
 type GroupOperator = 'and' | 'or' | 'not' | 'min' | 'max';
 
@@ -100,9 +101,9 @@ export function percentDiscountStatements(s: PercentDiscountSpec): string[] {
         ? `insert into public.discount_targets (id, discount_id, target_type, target_id)
            select gen_random_uuid(), d.id, 'product', ${product} ${byName}`
         : `insert into public.discount_targets (id, discount_id, target_type, target_id)
-           select gen_random_uuid(), d.id, 'product', p.id
-             from public.discounts d cross join public.products p
-            where d.name = '${s.name}' and p.slug = '${t.slug}'`,
+           select gen_random_uuid(), d.id, 'product', ${productIdBySlug(`'${t.slug}'`)}
+             from public.discounts d
+            where d.name = '${s.name}'`,
   );
   return out;
 }

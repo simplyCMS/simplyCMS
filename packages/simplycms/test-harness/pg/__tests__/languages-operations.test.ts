@@ -17,13 +17,12 @@ import {
 import { executeOperation } from 'simplycms/operations';
 import type { OperationDef } from 'simplycms/operations';
 import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
-import { ADMIN, tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { ADMIN, useAddressingDb } from './fixtures/addressing-db';
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
 describe('операції мов (M1, Task 6)', () => {
   const db = useAddressingDb('simplycms_languages_operations');
-  const { tok } = tokenHelpers(db);
   const exec = async <I, O>(def: OperationDef<I, O>, raw: unknown) => {
     const res = await executeOperation(def, raw, subject);
     if (res.replayed) throw new Error('replay');
@@ -41,7 +40,7 @@ describe('операції мов (M1, Task 6)', () => {
       await db.q(`select status from public.languages where code = $1`, [code])
     )[0]?.status;
   /** Товар графа з поточною адресою основної мови (`insertProductGraph`, Task 10). */
-  const seedProduct = (slug: string) => db.product(slug, true);
+  const seedProduct = (slug: string) => db.product(slug);
   const pathCount = async (locale: string) =>
     Number(
       (
@@ -184,8 +183,7 @@ describe('операції мов (M1, Task 6)', () => {
 
   it('remove draft-мови з адресами й токенами товарів → коміт', async () => {
     const p = await seedProduct('f-1');
-    const m = { id: await db.modification(p, 'red'), scopeId: p };
-    await tok('uk', 'red', m);
+    await db.modification(p, 'red');
     await add('ro');
     await fillAll('ro');
     expect(

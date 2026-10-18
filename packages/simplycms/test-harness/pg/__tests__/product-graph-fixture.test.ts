@@ -120,7 +120,7 @@ describe('insertProductGraph (М1 Task 10)', () => {
       `select locale, path, is_current from public.url_paths where product_id = $1 order by locale`,
       [ids.product],
     );
-    // Основна мова пише граф; інші draft/published мови — фікстура, як команди (М1, Task 14).
+    // Поточна адреса в КОЖНІЙ мові draft/published — стан команд (тригер наявності, І16).
     expect(rows).toEqual([
       { locale: 'en', path: 'pg-product', is_current: true },
       { locale: 'uk', path: 'pg-product', is_current: true },
@@ -129,14 +129,21 @@ describe('insertProductGraph (М1 Task 10)', () => {
 
   it('по токену на кожну модифікацію та переклад назви модифікації', async () => {
     const tokens = await q(
-      `select slug, scope_id, is_current from public.slug_tokens
-        where scope_id = $1 order by slug`,
+      `select locale, slug, scope_id, is_current from public.slug_tokens
+        where scope_id = $1 order by slug, locale`,
       [ids.product],
     );
-    expect(tokens).toEqual([
-      { slug: 'pg-mod-a', scope_id: ids.product, is_current: true },
-      { slug: 'pg-mod-b', scope_id: ids.product, is_current: true },
-    ]);
+    // Токен у кожній мові draft/published (тригер наявності, І16).
+    expect(tokens).toEqual(
+      ['pg-mod-a', 'pg-mod-b'].flatMap((slug) =>
+        ['en', 'uk'].map((locale) => ({
+          locale,
+          slug,
+          scope_id: ids.product,
+          is_current: true,
+        })),
+      ),
+    );
     const names = await q(
       `select name from public.product_modification_translations
         where product_id = $1 order by name`,
@@ -186,41 +193,30 @@ describe('insertProductGraph (М1 Task 10)', () => {
     ]);
   });
 
-  it('М1-TEMP: старі колонки дзеркалять джерело (читачі до Task 15/16)', async () => {
-    const [row] = await q(
-      `select p.slug, p.name, p.images, v.value
-         from public.products p
-         join public.product_property_values v on v.product_id = p.id
-        where p.id = $1 and v.id = $2`,
-      [ids.product, ids.vText],
+  it('у базових таблицях товару немає текстових колонок, фото й тексту значення (М1, Task 17)', async () => {
+    const rows = await q(
+      `select table_name || '.' || column_name as c from information_schema.columns
+        where table_schema = 'public'
+          and (table_name, column_name) in (
+            ('products', 'slug'), ('products', 'name'), ('products', 'short_description'),
+            ('products', 'description'), ('products', 'meta_title'), ('products', 'meta_description'),
+            ('products', 'images'), ('products', 'return_policy'), ('products', 'shipping_details'),
+            ('product_modifications', 'slug'), ('product_modifications', 'name'),
+            ('product_modifications', 'images'), ('product_property_values', 'value'),
+            ('modification_property_values', 'value'))`,
     );
-    expect(row).toEqual({
-      slug: 'pg-product',
-      name: 'Товар графа',
-      images: ['key-1', 'key-2'],
-      value: 'Текст',
-    });
+    expect(rows).toEqual([]);
   });
 
   it('запис адреси без замка languages-set відхиляє SC004, хелпер його бере сам', async () => {
-    const id = randomUUID();
-    await insertProductGraph(client, {
-      id,
-      slug: 'pg-lock',
-      name: 'L',
-      addresses: false,
-    });
-    expect(
-      await q(`select 1 from public.url_paths where product_id = $1`, [id]),
-    ).toHaveLength(0);
     // Той самий рядок без замка: негативний контроль самого тригера, а не хелпера.
     await expect(
       q(
         urlPathRowSql({
           locale: 'uk',
-          path: 'pg-lock',
-          productId: id,
-          isCurrent: true,
+          path: 'pg-lock-old',
+          productId: ids.product,
+          isCurrent: false,
         }),
       ),
     ).rejects.toMatchObject({ code: 'SC004' });
@@ -236,6 +232,21 @@ describe('insertProductGraph (М1 Task 10)', () => {
         [other],
       ),
     ).toHaveLength(1);
+  });
+
+  it('граф без адрес (`addresses: false`) і без власних адрес у транзакції — відмова на коміті (І16)', async () => {
+    const id = randomUUID();
+    await expect(
+      insertProductGraph(client, {
+        id,
+        slug: 'pg-bare',
+        name: 'B',
+        addresses: false,
+      }),
+    ).rejects.toMatchObject({ code: '23514' });
+    expect(
+      await q(`select 1 from public.products where id = $1`, [id]),
+    ).toEqual([]);
   });
 
   it('значення поза графом: підзапит замість UUID працює (sqlRef)', async () => {

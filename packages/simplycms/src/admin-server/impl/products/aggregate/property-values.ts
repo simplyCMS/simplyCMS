@@ -16,7 +16,7 @@ import {
   type Step,
 } from './children-common';
 import type { PropertyValuesInput } from './children-schemas';
-import { checkShape, loadRefs } from './property-value-checks';
+import { checkShape, loadKnownProperties } from './property-value-checks';
 import { writeValueRow, type ValueTable } from './property-value-write';
 import { assertRowsOwned } from './property-value-owned';
 import { remapPlanIssues } from './schemas';
@@ -31,10 +31,10 @@ const specOf = (t: ValueTable) =>
     : TRANSLATABLE.productPropertyValue;
 
 /**
- * Значення властивостей товару й модифікації (Р18). Складеного FK
- * `(property_id, value_kind)` і CHECK ще немає (Task 17), тому команда САМА
- * звіряє `kind` з `section_properties.property_type`, колонку значення — з
- * `kind`, а опцію — з її властивістю.
+ * Значення властивостей товару й модифікації (Р18). Форму вводу (колонка за
+ * `kind`, `text` лише для тексту) команда звіряє сама; тип властивості й власника
+ * опції — складені FK у БД (І6/І7), чию відмову `writeValueRow` перекладає в помилку
+ * поля, а один рядок скаляра — частковий UNIQUE (І8).
  */
 export async function planPropertyValues(
   ctx: ChildCtx,
@@ -54,13 +54,13 @@ export async function planPropertyValues(
     (i) => at(i, 'id'),
   );
   const removing = new Set(removes);
-  const refs = await loadRefs(ctx, upserts);
+  const known = await loadKnownProperties(ctx, upserts);
   upserts.forEach((u, i) => {
     if (removing.has(u.id)) throw fail(at(i, 'id'), 'invalid_value');
     if (u.modificationId && !ctx.modificationIds.has(u.modificationId))
       throw fail(at(i, 'modificationId'), 'invalid_value');
     requireLocales(ctx, u.text, (l) => at(i, 'text', l));
-    checkShape(u, refs, (...rest) => at(i, ...rest));
+    checkShape(u, known, (...rest) => at(i, ...rest));
   });
   await assertRowsOwned(ctx, upserts, removing);
 
@@ -92,7 +92,17 @@ export async function planPropertyValues(
         hash: sourceFieldHash,
       }),
     );
-    return { u, plan };
+    // І5: текстове значення має текст основної мови. Тригер джерела відмовив би лише
+    // на COMMIT загальним 23514, тут — рання помилка поля (400).
+    if (u.kind === 'text') {
+      const sent = plan.upserts.find((x) => x.locale === ctx.primary)?.values;
+      const after =
+        sent && 'value' in sent
+          ? sent.value
+          : all.get(ctx.primary)?.values.value;
+      if (!after) throw fail(at(i, 'text', ctx.primary), 'too_small');
+    }
+    return { u, i, plan };
   });
 
   return {
@@ -105,11 +115,11 @@ export async function planPropertyValues(
           where id = any(${uuidArray(removes)}) and modification_id in
             (select id from public.product_modifications where product_id = ${ctx.productId})`);
       }
-      for (const { u, plan } of prepared) {
+      for (const { u, i, plan } of prepared) {
         const table = tableOf(u);
-        const primaryText = plan.upserts.find((x) => x.locale === ctx.primary)
-          ?.values.value;
-        await writeValueRow(db, ctx.productId, table, u, primaryText);
+        await writeValueRow(db, ctx.productId, table, u, (...rest) =>
+          at(i, ...rest),
+        );
         if (u.kind === 'text')
           await applyTranslationPlan(db, specOf(table), u.id, plan);
         // Не-text значення переклад не має: після зміни типу залишки прибираємо.

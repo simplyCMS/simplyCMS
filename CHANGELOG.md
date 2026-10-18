@@ -87,8 +87,8 @@
   (складений FK на `(product_id, id)` модифікації), `product_images`, `product_image_translations`,
   `product_property_value_translations`, `modification_property_value_translations` (PK `(<e>_id, locale)` без `id`,
   `locale → languages(code) ON DELETE RESTRICT`, `source_hashes`, права `app_user` SELECT / `app_admin` CRUD);
-  у `product_property_values` і `modification_property_values` — NULLABLE `value_kind`, `bool_value`,
-  `color_value` (обмеження Р18 і тригери джерела вмикає Task 17), `modification_property_values.numeric_value` →
+  у `product_property_values` і `modification_property_values` — `value_kind NOT NULL`, `bool_value`,
+  `color_value` (обмеження Р18 — див. пункт «Contract товару» нижче), `modification_property_values.numeric_value` →
   `numeric(15,4)`; `products.version`; `UNIQUE(id, property_type)` на `section_properties` і `UNIQUE(property_id, id)`
   на `property_options`; демо-сід пише переклад основною мовою, адресу й токен для товарів і модифікацій;
   проєкція тексту товару (М1 Task 14, І23): нова таблиця `catalog_product_texts` (PK `(product_id, locale)`, CASCADE на товар і мову,
@@ -98,6 +98,23 @@
   демо-сід пише проєкцію основної мови;
   Локально — порожня БД і
   `pnpm simplycms db:apply`, на сервері — новий порожній екземпляр БД.
+- **Contract товару (М1 Task 17): старі колонки знесено, форму тримає БД** (`simplycms/schema`, `simplycms/admin-server`,
+  `simplycms/storefront`, `simplycms/domain`): з `products` прибрано `slug`, `name`, `short_description`, `description`,
+  `meta_title`, `meta_description`, `images`, а також `return_policy`/`shipping_details` (Р8: мертві дані без
+  читача); з `product_modifications` —
+  `slug`, `name`, `images`; з `*_property_values` — `value`. Тексти — лише в перекладах, адреса товару — `url_paths`
+  (сторінка `/<path>`), токен модифікації — `slug_tokens`, фото — `product_images` (вітрина й мініатюра адмінки читають
+  галерею `productGallerySql`/`modificationGallerySql`/`mainImageSql` з `simplycms/translations`; read-model фабрики
+  дістав обчислені поля `computed`, рядок колекції товарів — `mainImage` замість `images`). Значення властивостей:
+  складені FK `(property_id, value_kind) → section_properties(id, property_type)` (`ON UPDATE RESTRICT`: тип властивості
+  з наявними значеннями не змінюється) і `(property_id, option_id) → property_options(property_id, id)` (`ON DELETE
+  CASCADE`), CHECK «рівно одна колонка за `value_kind`» і формату кольору, частковий UNIQUE `(власник, property_id)
+  WHERE value_kind <> 'multiselect'`. Увімкнено constraint-тригери обов'язкового перекладу основної мови (товар,
+  модифікація, текстове значення) і наявності поточної адреси/токена на базі (рядок товару без перекладу основної мови
+  чи без поточної адреси в кожній мові `draft`/`published` не комітиться). Узагальнений CRUD товару, модифікацій і
+  значень (`productsOps`, `productModificationsOps`, `*PropertyValuesOps`) — лише читання й видалення; тип медіа
+  `product_modification` прибрано з `MEDIA_ENTITY_TYPES`; `SLUG_RE` (`simplycms/domain`) → `SLUG_FORMAT`
+  (`simplycms/domain/slugs`); `isForeignKeyViolation(error, constraint?)` (`simplycms/db`) розпізнає FK за іменем.
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
   `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі
   беруться з реєстру: `LOCK_KEYS.adminRoles`, `LOCK_KEYS.customerConfig`, `LOCK_KEYS.discountConfig` тощо

@@ -108,7 +108,7 @@ describe('оновлюваність 1.0: магазин із даними і н
     );
     canon.write(
       '0006_e8_probe_backfill.sql',
-      'update products set e8_probe = slug;\n',
+      'update products set e8_probe = id::text;\n',
     );
   }, 180_000);
 
@@ -142,7 +142,7 @@ describe('оновлюваність 1.0: магазин із даними і н
     expect(await counts()).toEqual(snapshot);
     const [unfilled] = (await queryRows(
       dbUrl,
-      'select count(*)::int as n from public.products where e8_probe is distinct from slug',
+      'select count(*)::int as n from public.products where e8_probe is distinct from id::text',
     )) as { n: number }[];
     expect(unfilled!.n).toBe(0);
   });

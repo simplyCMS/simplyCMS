@@ -2,7 +2,7 @@
 // кожен товар, створений до й під час додавання, мусить мати адресу в новій
 // мові. Порядок «замок → набір мов» доводять три сценарії.
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import {
@@ -21,7 +21,12 @@ import {
 } from 'simplycms/admin-server/impl';
 import { executeOperation } from 'simplycms/operations';
 import { languages } from 'simplycms/schema';
-import { ADMIN, useAddressingDb } from './fixtures/addressing-db';
+import {
+  ADMIN,
+  freshModificationSql,
+  freshProductSql,
+  useAddressingDb,
+} from './fixtures/addressing-db';
 import { hold, until, waiters } from './fixtures/lock-holders';
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
@@ -46,13 +51,18 @@ describe('languages.add проти паралельного створення �
       `select path from public.url_paths where product_id = $1 and locale = $2 and is_current`,
       [productId, locale],
     );
+  /**
+   * «Створення товару»: новий рядок графа й адреси генератором в ОДНІЙ транзакції, що
+   * тримається до `release` (як `products.create`; тригер наявності — на її COMMIT).
+   */
   const createAddress = (productId: string, slug: string) =>
-    hold(db, (d) =>
-      createPathsForEntity(d, { kind: 'product', id: productId }, slug),
-    );
+    hold(db, async (d) => {
+      await d.execute(sql.raw(freshProductSql(productId, slug)));
+      await createPathsForEntity(d, { kind: 'product', id: productId }, slug);
+    });
 
   it('A створює адресу під спільним замком і тримається → add чекає → після обох комітів fill дає товару адресу в новій мові', async () => {
-    const product = await db.product('conc-a');
+    const product = randomUUID();
     const a = createAddress(product, 'conc-a');
     await until('A отримала замок і вставила адресу', a.acquired);
 
@@ -74,7 +84,7 @@ describe('languages.add проти паралельного створення �
 
   it('товар, створений ПІСЛЯ коміту мови, одразу має адресу в draft-мові', async () => {
     await addLanguage('cs');
-    const product = await db.product('conc-b');
+    const product = randomUUID();
     const a = createAddress(product, 'conc-b');
     await until('адреси створено', a.acquired);
     a.release();
@@ -84,7 +94,7 @@ describe('languages.add проти паралельного створення �
   });
 
   it('add тримає ексклюзивний замок → створення товару чекає й бачить нову мову (замок ДО читання набору)', async () => {
-    const product = await db.product('conc-c');
+    const product = randomUUID();
     const b = hold(db, async (d) => {
       await advisoryXactLock(d, LOCK_KEYS.languagesSet);
       await d
@@ -114,18 +124,20 @@ describe('languages.add проти паралельного створення �
       `select slug from public.slug_tokens where modification_id = $1 and locale = $2 and is_current`,
       [modificationId, locale],
     );
+  /** Дзеркало `createAddress` для нової модифікації наявного товару. */
   const createToken = (productId: string, id: string, slug: string) =>
-    hold(db, (d) =>
-      createTokensForEntity(
+    hold(db, async (d) => {
+      await d.execute(sql.raw(freshModificationSql(productId, id, slug)));
+      await createTokensForEntity(
         d,
         { kind: 'modification', id, scopeId: productId },
         slug,
-      ),
-    );
+      );
+    });
 
   it('токени: A створює токен модифікації під спільним замком → add чекає → fill дає токен у новій мові', async () => {
     const product = await db.product('conc-t1');
-    const mod = await db.modification(product, 'conc-t1-m');
+    const mod = randomUUID();
     const a = createToken(product, mod, 'conc-t1-m');
     await until('A отримала замок і вставила токен', a.acquired);
     let addDone = false;
@@ -142,7 +154,7 @@ describe('languages.add проти паралельного створення �
 
   it('токени: add тримає ексклюзивний замок → створення токена чекає й бачить нову мову (замок ДО читання набору)', async () => {
     const product = await db.product('conc-t2');
-    const mod = await db.modification(product, 'conc-t2-m');
+    const mod = randomUUID();
     const b = hold(db, async (d) => {
       await advisoryXactLock(d, LOCK_KEYS.languagesSet);
       await d
@@ -230,7 +242,7 @@ describe('languages.add проти паралельного створення �
       { code: 'ja', status: 'disabled' },
       subject,
     );
-    const product = await db.product('conc-d1');
+    const product = randomUUID();
     const a = createAddress(product, 'conc-d1');
     await until(
       'A вставила адресу (ja disabled — без адреси в ja)',
@@ -257,7 +269,7 @@ describe('languages.add проти паралельного створення �
 
   it('remove чекає творця адреси; творець комітиться без 23514/409', async () => {
     await addLanguage('ko');
-    const product = await db.product('conc-r1');
+    const product = randomUUID();
     const a = createAddress(product, 'conc-r1');
     await until('A вставила адреси (у тому числі ko)', a.acquired);
     let done = false;

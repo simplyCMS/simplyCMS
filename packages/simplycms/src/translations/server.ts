@@ -14,3 +14,8 @@ export {
   type StoredTranslation,
 } from './read';
 export { applyTranslationPlan, deleteTranslation } from './upsert';
+export {
+  mainImageSql,
+  modificationGallerySql,
+  productGallerySql,
+} from './gallery';

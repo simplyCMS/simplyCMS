@@ -47,7 +47,6 @@ export const ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_MIME.join(',');
  */
 export const MEDIA_ENTITY_TYPES = [
   'product',
-  'product_modification',
   'section',
   'banner',
   'property_option',
@@ -198,15 +197,9 @@ export function normalizeMediaRefs(value: unknown): string[] {
  *     проєкції і читачі поза лоадерами — зокрема `src/admin/**`.
  */
 export const MEDIA_COLUMNS = [
-  { table: 'products', column: 'images', entityType: 'product', kind: 'jsonb' },
-  {
-    table: 'product_modifications',
-    column: 'images',
-    entityType: 'product_modification',
-    kind: 'jsonb',
-  },
-  // М1 (Task 12): фото товару — рядок на зображення; власник файлу завжди
-  // товар (`entityType: 'product'`), і для зображення модифікації теж.
+  // М1: фото товару — рядок на зображення (jsonb `images` товару й модифікації
+  // знесено в Task 17); власник файлу завжди товар (`entityType: 'product'`), і для
+  // зображення модифікації теж.
   {
     table: 'product_images',
     column: 'storage_key',

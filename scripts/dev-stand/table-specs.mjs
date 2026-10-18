@@ -76,26 +76,24 @@ export const TABLE_SPECS = [
     columns: cols('id section_id property_id sort_order applies_to'),
     conflictKey: ['section_id', 'property_id'],
   },
+  // 🔴 Товар і модифікація — лише нетекстові колонки (М1): назви й описи — у перекладах,
+  // адреса й токен — у реєстрах, фото — у `product_images`. Сід — одна транзакція, тож
+  // відкладені тригери (І4 джерела, І16 наявності адреси/токена) перевіряють граф на COMMIT.
   {
     table: 'products',
-    // М1-TEMP (Task 17): фото ще й у jsonb `images` (публічні URL-и клауд-Storage;
-    // дзеркалення — опція, не вимога); нове джерело — таблиця `product_images`.
-    columns: cols(`id section_id slug name short_description description
-      is_active is_featured meta_title meta_description images
-      has_modifications sku stock_status`),
-    jsonColumns: ['images'],
-    conflictKey: ['slug'],
+    columns: cols(`id section_id is_active is_featured has_modifications sku
+      stock_status`),
+    conflictKey: ['id'],
   },
   {
     table: 'product_modifications',
-    columns: cols(`id product_id slug name sku is_default images sort_order
-      stock_status`),
-    jsonColumns: ['images'],
-    conflictKey: ['product_id', 'slug'],
+    columns: cols('id product_id sku is_default sort_order stock_status'),
+    conflictKey: ['product_id', 'sort_order', 'id'],
   },
   {
+    // Текст значення `value_kind = text` — у перекладі (І5), не в рядку значення.
     table: 'product_property_values',
-    columns: cols(`id product_id property_id value value_kind numeric_value
+    columns: cols(`id product_id property_id value_kind numeric_value
       bool_value color_value option_id`),
     conflictKey: ['product_id', 'property_id'],
   },

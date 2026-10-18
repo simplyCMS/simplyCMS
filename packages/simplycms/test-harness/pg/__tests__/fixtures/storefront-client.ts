@@ -7,6 +7,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { sqlRef, valueGraphSql } from './product-graph';
+import { modificationIdBySlug, productIdBySlug } from './product-sql';
 
 /** Розділ, на якому міряється звуження вибірки й панель фільтрів. */
 export const FILTERED_SECTION_SLUG = 'sonyachni-paneli';
@@ -23,6 +24,13 @@ export const STOCK_QUANTITY = 7;
 /** Код способу доставки — потрібен і точці видачі, і оформленню замовлення. */
 export const SHIPPING_METHOD_CODE = 'pickup';
 
+/** Модифікація товару фікстури за її токеном основної мови. */
+const modId = (slug: string) =>
+  modificationIdBySlug(
+    productIdBySlug(`'${MODIFIED_PRODUCT_SLUG}'`),
+    `'${slug}'`,
+  );
+
 export const CLIENT_FIXTURE_STATEMENTS: string[] = [
   // Спосіб доставки `pickup` — із демо-сіду; точка видачі без `method_id`
   // не вставляється, тож заводимо власну точку тут.
@@ -32,33 +40,22 @@ export const CLIENT_FIXTURE_STATEMENTS: string[] = [
 
   // Залишок рівно однієї модифікації: друга мусить лишитись недоступною.
   `insert into public.stock_by_pickup_point (id, pickup_point_id, modification_id, quantity)
-   select gen_random_uuid(), pp.id, m.id, ${STOCK_QUANTITY}
+   select gen_random_uuid(), pp.id, ${modId(IN_STOCK_MOD_SLUG)}, ${STOCK_QUANTITY}
      from public.pickup_points pp
-     cross join public.product_modifications m
-     join public.products p on p.id = m.product_id
-    where p.slug = '${MODIFIED_PRODUCT_SLUG}'
-      and m.slug = '${IN_STOCK_MOD_SLUG}'
-      and pp.name = 'Склад №1'`,
+    where pp.name = 'Склад №1'`,
 
   // Негативний контроль правила «статус — джерело правди»: без цього рядка
   // модифікація без залишку була б ДОСТУПНОЮ (DEFAULT статусу — in_stock).
-  `update public.product_modifications m
+  `update public.product_modifications
       set stock_status = 'out_of_stock'
-     from public.products p
-    where p.id = m.product_id
-      and p.slug = '${MODIFIED_PRODUCT_SLUG}'
-      and m.slug = '${OUT_OF_STOCK_MOD_SLUG}'`,
+    where id = ${modId(OUT_OF_STOCK_MOD_SLUG)}`,
 
   // Характеристика НА МОДИФІКАЦІЇ: саме її старий клієнт тягнув окремим
   // запитом, а наявність — ще й окремим RPC на кожну модифікацію.
   valueGraphSql(
     {
       kind: 'modification',
-      id: sqlRef(
-        `(select m.id from public.product_modifications m
-            join public.products p on p.id = m.product_id
-           where p.slug = '${MODIFIED_PRODUCT_SLUG}' and m.slug = '${IN_STOCK_MOD_SLUG}')`,
-      ),
+      id: sqlRef(modId(IN_STOCK_MOD_SLUG)),
     },
     {
       id: randomUUID(),

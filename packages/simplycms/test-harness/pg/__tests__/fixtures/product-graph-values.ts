@@ -1,7 +1,7 @@
 // Значення властивостей у графі товару (М1, Task 10, Р18): рядок значення з `value_kind`,
-// переклади тексту, дзеркало в старі колонки.
+// переклади тексту (для `text` основна мова обов'язкова — тригер І5).
 import { idSql, lit, type Id, type ValueSpec } from './product-graph-types';
-import { PRIMARY, insertInto, optional } from './product-graph-rows';
+import { insertInto, optional } from './product-graph-rows';
 
 /** Значення властивості товару чи модифікації; текст — у перекладах. */
 export function valueSql(
@@ -15,12 +15,6 @@ export function valueSql(
   const translations = product
     ? 'product_property_value_translations'
     : 'modification_property_value_translations';
-  const mirror =
-    v.kind === 'boolean'
-      ? lit(String(v.bool ?? false))
-      : v.kind === 'color'
-        ? lit(v.color)
-        : undefined;
   const out = [
     insertInto(table, {
       id: lit(v.id),
@@ -31,8 +25,6 @@ export function valueSql(
       numeric_value: optional(v.number, (n) => lit(n)),
       bool_value: optional(v.bool, (b) => lit(b)),
       color_value: optional(v.color, lit),
-      // М1-TEMP: зноситься в Task 17 — старі читачі беруть текст із `value`.
-      value: mirror,
     }),
   ];
   for (const [locale, text] of Object.entries(v.text ?? {})) {
@@ -42,13 +34,6 @@ export function valueSql(
         locale: lit(locale),
         value: lit(text),
       }),
-    );
-  }
-  if (v.text) {
-    // М1-TEMP: зноситься в Task 17 — дзеркало тексту основної мови в `value`.
-    out.push(
-      `update public.${table} set value = (select value from public.${translations}
-         where value_id = ${lit(v.id)} and locale = ${PRIMARY}) where id = ${lit(v.id)}`,
     );
   }
   return out;

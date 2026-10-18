@@ -33,7 +33,6 @@ vi.mock('simplycms/auth', async (orig) => ({
 }));
 
 import {
-  productModificationsOps,
   setDefaultModificationOp,
   reorderModificationOp,
   saveProductPricesOp,
@@ -116,19 +115,16 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     return id;
   };
 
+  // Модифікація графа (переклад і токени): узагальненого insert модифікацій немає (М1).
   const mod = async (slug: string, sortOrder?: number) => {
-    const [m] = await productModificationsOps.insert({
-      data: [
-        {
-          id: crypto.randomUUID(),
-          productId: PRODUCT,
-          slug,
-          name: slug,
-          ...(sortOrder !== undefined && { sortOrder }),
-        },
-      ],
+    const id = crypto.randomUUID();
+    await insertModificationAt(dbUrl, PRODUCT, {
+      id,
+      slug,
+      name: slug,
+      ...(sortOrder !== undefined && { sortOrder }),
     });
-    return m!;
+    return { id };
   };
 
   it('Review Focus 5: setDefault двічі поспіль — рівно один дефолт на товар, без 23505', async () => {

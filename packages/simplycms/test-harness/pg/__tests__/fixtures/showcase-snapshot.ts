@@ -6,26 +6,34 @@
 // ключі (назва, email, вміст замовлення), а не через id. Кожен запит
 // впорядкований повністю, тож рівність знімків = рівність даних.
 import type { SeededShowcase } from './showcase-seed';
+import {
+  modificationNameOf,
+  productImageCountOf,
+  productNameOf,
+  productSlugOf,
+} from './product-sql';
 
 const DAY = `round(extract(epoch from now() - %s) / 86400)::int`;
 const day = (col: string) => DAY.replace('%s', col);
 
 const QUERIES = {
   sections: `select name, slug from public.sections order by slug`,
-  products: `select p.name, p.slug, s.slug as section,
-                    jsonb_array_length(coalesce(p.images, '[]')) as images,
+  products: `select ${productNameOf('p.id')} as name, ${productSlugOf('p.id')} as slug,
+                    s.slug as section, ${productImageCountOf('p.id')} as images,
                     (select count(*)::int from public.product_modifications m
                       where m.product_id = p.id) as modifications
                from public.products p left join public.sections s on s.id = p.section_id
-              order by p.slug`,
-  prices: `select p.slug, m.name as modification, t.name as type, pp.price::text, pp.old_price::text
+              order by 2`,
+  prices: `select ${productSlugOf('p.id')} as slug, ${modificationNameOf('m.id')} as modification,
+                  t.name as type, pp.price::text, pp.old_price::text
              from public.product_prices pp
              join public.products p on p.id = pp.product_id
              join public.price_types t on t.id = pp.price_type_id
              left join public.product_modifications m on m.id = pp.modification_id
             order by 1, 2 nulls first, 3`,
   // Рядок модифікації має `product_id NULL` — товар береться через неї.
-  stock: `select pt.name as point, p.slug, m.name as modification, s.quantity
+  stock: `select pt.name as point, ${productSlugOf('p.id')} as slug,
+                 ${modificationNameOf('m.id')} as modification, s.quantity
             from public.stock_by_pickup_point s
             join public.pickup_points pt on pt.id = s.pickup_point_id
             left join public.product_modifications m on m.id = s.modification_id
@@ -51,7 +59,7 @@ const QUERIES = {
              left join public.shipping_methods sm on sm.id = o.shipping_method_id
              left join public.pickup_points pt on pt.id = o.pickup_point_id
             order by 1 desc, 2 nulls first, 3, 4, 5, 6, 7, 8, 9`,
-  reviews: `select p.slug, u.email, r.rating, r.title, r.status
+  reviews: `select ${productSlugOf('p.id')} as slug, u.email, r.rating, r.title, r.status
               from public.product_reviews r
               join public.products p on p.id = r.product_id
               left join public.users u on u.id = r.user_id

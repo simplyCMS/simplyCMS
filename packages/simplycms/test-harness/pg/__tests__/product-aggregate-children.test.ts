@@ -13,7 +13,11 @@ import {
   productsSetModificationToken,
 } from 'simplycms/admin-server/impl';
 import { TRANSLATABLE, deleteTranslation } from 'simplycms/translations';
+import { sql } from 'drizzle-orm';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { outcome } from './fixtures/latch-race';
+import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
+import { valueGraphSql } from './fixtures/product-graph';
 import {
   create,
   exec,
@@ -106,15 +110,13 @@ describe('агрегат товару: модифікації, значення,
     const rows = await tokens(mod);
     expect(rows.map((r) => r.locale)).toEqual(['de', 'en', 'uk']);
     expect(rows.every((r) => r.is_current)).toBe(true);
-    // Старі колонки (М1-TEMP) дзеркалять основну мову.
-    const [legacy] = await db.q(
-      `select name, slug from public.product_modifications where id = $1`,
-      [mod],
-    );
-    expect(legacy).toMatchObject({
-      name: 'Червоний',
-      slug: rows.find((r) => r.locale === 'uk')!.slug,
-    });
+    // Назва — лише в перекладі основної мови (колонки `name` у базі немає).
+    expect(
+      await db.q(
+        `select locale, name from public.product_modification_translations where modification_id = $1`,
+        [mod],
+      ),
+    ).toEqual([{ locale: 'uk', name: 'Червоний' }]);
   });
 
   it('нова модифікація без назви основної мови → validation, без токенів', async () => {
@@ -321,15 +323,32 @@ describe('агрегат товару: модифікації, значення,
           [nv],
         ),
       ).toHaveLength(0);
-      // М1-TEMP: текст основної мови дзеркалиться в `value`.
+    });
+
+    it('текстове значення без тексту основної мови → validation на text.<основна> (І5), нічого не записано', async () => {
+      const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+      const t = await property('text');
+      const tv = randomUUID();
+      const err = await rejects(
+        saveDescription(id, v, {
+          propertyValues: {
+            upsert: [
+              { id: tv, propertyId: t.pid, kind: 'text', text: { en: 'Only' } },
+            ],
+          },
+        }),
+      );
+      expect(err).toBeInstanceOf(ValidationError);
+      expect((err as ValidationError).issues[0]).toMatchObject({
+        path: ['propertyValues', 'upsert', 0, 'text', 'uk'],
+        code: 'too_small',
+      });
       expect(
-        (
-          await db.q(
-            `select value from public.product_property_values where id = $1`,
-            [tv],
-          )
-        )[0]!.value,
-      ).toBe('Мідь');
+        await db.q(
+          `select 1 from public.product_property_values where id = $1`,
+          [tv],
+        ),
+      ).toHaveLength(0);
     });
 
     it('значення модифікації: select з опцією, multiselect — рядок на опцію', async () => {
@@ -374,7 +393,9 @@ describe('агрегат товару: модифікації, значення,
       expect(rows).toHaveLength(3);
     });
 
-    it('kind ≠ property_type → validation (звірка до складеного FK Task 17)', async () => {
+    // Звірку `kind` ↔ `property_type` тримає складений FK (І6, рішення архітектора Task 17):
+    // його 23503 команда перекладає в помилку поля `kind` за ІМЕНЕМ обмеження.
+    it('kind ≠ property_type → validation на kind (складений FK)', async () => {
       const { id, version: v } = await create({ uk: { name: 'Кабель' } });
       const p = await property('number');
       const err = await rejects(
@@ -399,6 +420,83 @@ describe('агрегат товару: модифікації, значення,
         'kind',
       ]);
       expect(await version(id)).toBe(v);
+    });
+
+    it('інший FK тієї ж вставки (опція чужої властивості) → помилка optionId, а не kind', async () => {
+      const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+      const sel = await property('select', ['A']);
+      const other = await property('select', ['Z']);
+      const err = await rejects(
+        saveDescription(id, v, {
+          propertyValues: {
+            upsert: [
+              {
+                id: randomUUID(),
+                propertyId: sel.pid,
+                kind: 'select',
+                optionId: other.ids[0],
+              },
+            ],
+          },
+        }),
+      );
+      expect(err).toBeInstanceOf(ValidationError);
+      expect((err as ValidationError).issues).toEqual([
+        {
+          path: ['propertyValues', 'upsert', 0, 'optionId'],
+          code: 'invalid_value',
+        },
+      ]);
+      expect(await version(id)).toBe(v);
+    });
+
+    // І8: передперевірка `assertRowsOwned` не бачить незакомічений рядок паралельної
+    // транзакції; гонку закриває частковий UNIQUE `(product_id, property_id)`, а команда
+    // перекладає його відмову в той самий конфлікт. Розведення — станом Postgres.
+    it('гонка: другий рядок скаляра з паралельної транзакції → 409 property_value_scalar_taken (частковий UNIQUE)', async () => {
+      const { id, version: v } = await create({ uk: { name: 'Кабель' } });
+      const p = await property('number');
+      const t0 = hold(db, (d) =>
+        d.execute(
+          sql.raw(
+            valueGraphSql(
+              { kind: 'product', id },
+              {
+                id: randomUUID(),
+                propertyId: p.pid,
+                kind: 'number',
+                number: 1,
+              },
+            ),
+          ),
+        ),
+      );
+      await until('T0 вставив рядок скаляра', t0.acquired);
+      const second = outcome(
+        saveDescription(id, v, {
+          propertyValues: {
+            upsert: [
+              {
+                id: randomUUID(),
+                propertyId: p.pid,
+                kind: 'number',
+                number: '2',
+              },
+            ],
+          },
+        }),
+      );
+      // Строго: вставка команди мусить стати в чергу за унікальним індексом T0.
+      await waitForBlockedTree(db, t0, 1, { releaseOnFail: true });
+      t0.release();
+      await t0.done;
+      expect(await second).toBe('unique:property_value_scalar_taken');
+      expect(
+        await db.q(
+          `select count(*)::int as n from public.product_property_values where product_id = $1`,
+          [id],
+        ),
+      ).toEqual([{ n: 1 }]);
     });
 
     it('колонка значення не за типом, чужа опція, дубль скаляра → відмова', async () => {

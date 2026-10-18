@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SLUG_RE } from 'simplycms/domain';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import type { MessageKey } from 'simplycms/i18n';
 import type { SectionProperty } from 'simplycms/schema/types';
 
@@ -32,13 +32,13 @@ export const hasOptions = (type: PropertyType) =>
   type === 'select' || type === 'multiselect';
 
 /**
- * Форма властивості (Е4, Task 8). slug — `SLUG_RE` (T1), його ж перевіряє
+ * Форма властивості (Е4, Task 8). slug — `SLUG_FORMAT` (T1), його ж перевіряє
  * сервер (Е4-7). `propertyType` є у формі, але в patch не йде (Е4-5:
  * insertOnly) — редагування показує його текстом.
  */
 export const propertyFormSchema = z.object({
   name: z.string().trim().min(1),
-  slug: z.string().trim().regex(SLUG_RE),
+  slug: z.string().trim().regex(SLUG_FORMAT),
   propertyType: z.enum(PROPERTY_TYPES),
   isRequired: z.boolean(),
   isFilterable: z.boolean(),

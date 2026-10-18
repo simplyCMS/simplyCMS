@@ -3,6 +3,7 @@
 // фікстури товарів/модифікацій/мов власником і raw-транзакції від app_admin.
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll } from 'vitest';
+import { sql } from 'drizzle-orm';
 import {
   advisoryXactLockShared,
   closeDbPool,
@@ -14,8 +15,11 @@ import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 import { withActor as rawActor } from '../../actors.mjs';
 import {
+  inLockedBlock,
   insertProductGraphAt,
   modificationGraphSql,
+  modificationSql,
+  productGraphStatements,
   slugTokenRowSql,
   urlPathRowSql,
 } from './product-graph';
@@ -41,12 +45,50 @@ export interface AddressingDb {
   shared: <T>(fn: (db: ActorDb) => Promise<T>) => Promise<T>;
   /** Сирі стейтменти однією транзакцією app_admin ПІД замком `languages-set`; відкладені тригери — на COMMIT. */
   tx: (...statements: string[]) => Promise<unknown>;
-  /** Товар графа: без адреси (за замовчуванням) чи з поточною адресою основної мови = slug. */
-  product: (slug?: string, withAddress?: boolean) => Promise<string>;
-  modification: (productId: string, slug?: string) => Promise<string>;
+  /**
+   * Товар графа з поточною адресою в кожній мові `draft`/`published`: `paths` — явні за
+   * мовами, решта = `slug`. Товару без адреси не буває (тригер наявності, І16).
+   */
+  product: (slug?: string, paths?: Record<string, string>) => Promise<string>;
+  /**
+   * Новий товар БЕЗ адрес і `fn` над ним в ОДНІЙ транзакції app_admin під спільним
+   * замком мов — як `products.create`: адреси пише `fn` (генератор, рядки реєстру), а
+   * тригер наявності перевіряє їх на COMMIT.
+   */
+  fresh: <T>(fn: (db: ActorDb, id: string) => Promise<T>) => Promise<T>;
+  /** Модифікація графа з поточним токеном у кожній мові: `tokens` — явні, решта = `slug`. */
+  modification: (
+    productId: string,
+    slug?: string,
+    tokens?: Record<string, string>,
+  ) => Promise<string>;
+  /** Нова модифікація БЕЗ токенів і `fn` над нею в одній транзакції (дзеркало `fresh`). */
+  freshModification: <T>(
+    productId: string,
+    fn: (db: ActorDb, id: string) => Promise<T>,
+  ) => Promise<T>;
   /** Додає мову (за замовчуванням `published`). */
   language: (code: string, status?: string) => Promise<void>;
 }
+
+/**
+ * Новий товар графа БЕЗ адрес одним `do`-блоком під спільним замком мов: для транзакції
+ * викликача, яка САМА пише адреси до свого COMMIT (тригер наявності, І16).
+ */
+export const freshProductSql = (id: string, slug = `p-${id}`): string =>
+  inLockedBlock(
+    productGraphStatements({ id, slug, name: slug, addresses: false }),
+  );
+
+/** Нова модифікація БЕЗ токенів (дзеркало `freshProductSql`). */
+export const freshModificationSql = (
+  productId: string,
+  id: string,
+  slug = `m-${id}`,
+): string =>
+  inLockedBlock(
+    modificationSql(productId, { id, slug, name: slug, addresses: false }),
+  );
 
 export function useAddressingDb(prefix: string): AddressingDb {
   let harness: { url: string; teardown: () => Promise<void> };
@@ -90,29 +132,30 @@ export function useAddressingDb(prefix: string): AddressingDb {
       }),
     tx: (...statements) =>
       rawActor(runtimeUrl, ADMIN, [H.LANGUAGES_LOCK_SQL, ...statements]),
-    product: async (slug = `p-${randomUUID()}`, withAddress = false) => {
+    product: async (slug = `p-${randomUUID()}`, paths) => {
       const id = randomUUID();
-      // Без адреси за замовчуванням: тести реєстрів самі створюють її генератором чи рядком.
-      await insertProductGraphAt(dbUrl, {
-        id,
-        slug,
-        name: slug,
-        addresses: withAddress,
-      });
+      await insertProductGraphAt(dbUrl, { id, slug, name: slug, paths });
       return id;
     },
-    modification: async (productId, slug = `m-${randomUUID()}`) => {
+    fresh: (fn) =>
+      withActor({ role: 'app_admin', userId: ADMIN.userId }, async (d) => {
+        const id = randomUUID();
+        await d.execute(sql.raw(freshProductSql(id)));
+        return fn(d, id);
+      }),
+    modification: async (productId, slug = `m-${randomUUID()}`, tokens) => {
       const id = randomUUID();
       await q(
-        modificationGraphSql(productId, {
-          id,
-          slug,
-          name: slug,
-          addresses: false,
-        }),
+        modificationGraphSql(productId, { id, slug, name: slug, tokens }),
       );
       return id;
     },
+    freshModification: (productId, fn) =>
+      withActor({ role: 'app_admin', userId: ADMIN.userId }, async (d) => {
+        const id = randomUUID();
+        await d.execute(sql.raw(freshModificationSql(productId, id)));
+        return fn(d, id);
+      }),
     language: async (code, status = 'published') => {
       await H.queryRowsLockingLanguages(
         dbUrl,

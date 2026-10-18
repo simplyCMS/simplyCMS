@@ -16,7 +16,7 @@ import {
   productsRemove,
 } from 'simplycms/admin-server/impl';
 import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
-import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { useAddressingDb } from './fixtures/addressing-db';
 import {
   hold,
   until,
@@ -36,7 +36,6 @@ const RELEASE = { releaseOnFail: true } as const;
 
 describe('замки команди товару проти setStatus і fill (М1, Task 14, I-1)', () => {
   const db = useAddressingDb('simplycms_catalog_projection_locks');
-  const { tok } = tokenHelpers(db);
   const add = (code: string) =>
     exec(languagesAdd, { id: randomUUID(), code, name: code });
   const fillAll = async (code: string) => {
@@ -194,9 +193,8 @@ describe('замки команди товару проти setStatus і fill (�
     });
 
     it('fill (токени) проти видалення модифікації: модифікацію пропущено, 23503 немає', async () => {
-      const product = await db.product('mod-race', true);
+      const product = await db.product('mod-race');
       const mod = await db.modification(product, 'mod-race-m');
-      await tok('uk', 'mod-race-m', { id: mod, scopeId: product });
       await add('hu');
       expect(
         await raceWith(

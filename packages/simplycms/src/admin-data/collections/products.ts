@@ -7,9 +7,9 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * Рядок колекції — read-model ресурсу (М1, Task 16): назва з перекладу основної мови, без
- * дзеркальних текстових колонок. Тип виведено з `listProducts`, а не з `Product` схеми, щоб
- * Task 17 зносив колонки без сюрпризу в споживачах.
+ * Рядок колекції — read-model ресурсу (М1, Task 16): назва з перекладу основної мови,
+ * мініатюра — головне фото агрегата (`mainImage`). Тип виведено з `listProducts`, а не з
+ * `Product` схеми: форму рядка задає read-model, а не таблиця `products`.
  */
 export type ProductReadRow = Awaited<ReturnType<typeof listProducts>>[number];
 

@@ -1,6 +1,4 @@
 import { inArray } from 'drizzle-orm';
-import { z } from 'zod';
-import { SLUG_RE } from 'simplycms/domain';
 import {
   productImageTranslations,
   productImages,
@@ -13,10 +11,10 @@ import { lockAggregateRoots } from '../products/aggregate/lock-order';
 import { deleteModifications } from './delete';
 
 /**
- * 🔴 isDefault — readonly (контракт хвиль Е1б для таблиць із single-default
- * індексом `idx_product_modifications_single_default`): прапорець ставить
- * лише setDefaultModification (Task 4). sortOrder — writable: клієнт рахує
- * max+1 з уже завантаженого зрізу товару; переставляння — reorder (Task 4).
+ * ЛИШЕ ЧИТАННЯ колекцій і видалення (М1, Task 17): модифікацію створює й править
+ * команда агрегата `products.saveDescription` — рядок без перекладу основної мови й
+ * поточного токена не комітиться (І4, І16). `isDefault` ставить лише
+ * `setDefaultModification`, порядок — `reorder`.
  */
 export const productModificationsOps = defineAdminResource({
   entity: ENTITY.productModifications,
@@ -27,36 +25,24 @@ export const productModificationsOps = defineAdminResource({
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
   touch: 'updatedAt',
-  // m3 (рев'ю хвилі B): `images` — jsonb без власної форми в генераторі схем
-  // (`.$type<string[]>()` бачить лише Drizzle, не генератор Zod-схем) —
-  // без рефайнменту insert `{}`/update `'str'` проходили б як валідний
-  // `any`. Функція, не голий ZodType — `resource-schemas.ts` пояснює чому.
-  // Д5: slug модифікації — частина URL, формат перевіряє й сервер.
-  refine: {
-    images: () => z.array(z.string()),
-    slug: (s: z.ZodString) => s.regex(SLUG_RE),
-  },
-  // М1 (Task 16): назва модифікації для колекцій — з перекладу основної мови (INNER JOIN);
-  // дзеркальні `name`/`slug` з читальної форми зникають (як у `products/resource.ts`).
+  // М1 (Task 16): назва модифікації для колекцій — з перекладу основної мови (INNER JOIN).
   readModel: {
     translations: productModificationTranslations,
     owner: productModificationTranslations.modificationId,
     fields: { name: productModificationTranslations.name },
     required: ['name'],
-    exclude: ['slug'],
   },
-  writable: [
+  writable: [],
+  readonly: [
+    'id',
     'productId',
-    'slug',
-    'name',
     'sku',
-    'images',
+    'isDefault',
     'sortOrder',
     'stockStatus',
+    'createdAt',
+    'updatedAt',
   ],
-  readonly: ['id', 'isDefault', 'createdAt', 'updatedAt'],
-  // К3-Е6д-1: прибране з галереї фото стирає файл після COMMIT.
-  media: { entityType: 'product_modification', columns: ['images'] },
   // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
   // зникають; їхні файли належать товару, а не модифікації.
   // М1: каскад фото модифікації серіалізується з командами агрегата товару: корені —

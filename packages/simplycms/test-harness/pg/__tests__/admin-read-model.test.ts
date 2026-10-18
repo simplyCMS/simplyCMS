@@ -1,7 +1,8 @@
 // М1 Task 16 (фікс-раунд 1, A1–A3): колекції адмінки товару й модифікації читають НАЗВУ з
-// перекладу основної мови (read-model фабрики ресурсу), а не з дзеркальних колонок. Сортування
-// й пошук за `name` ідуть через JOIN; товар без перекладу основної мови (дефект даних) у
-// вибірку не потрапляє.
+// перекладу основної мови (read-model фабрики ресурсу). Сортування й пошук за `name` ідуть
+// через JOIN. Task 17: текстових колонок у базі немає; INNER JOIN спирається на І4 (рядок
+// основної мови обов'язковий — тригер), мініатюра — обчислене поле `mainImage` (перше фото
+// галереї агрегата в порядку вітрини).
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -20,6 +21,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { useAddressingDb } from './fixtures/addressing-db';
 import { create, saveDescription } from './fixtures/product-aggregate';
+import { insertProductGraphAt } from './fixtures/product-graph';
 
 describe('read-model колекцій адмінки: назва з перекладу основної мови (Task 16)', () => {
   const db = useAddressingDb('simplycms_admin_read_model');
@@ -37,21 +39,16 @@ describe('read-model колекцій адмінки: назва з перекл
     );
   });
 
-  it('назва береться з product_translations, а не з дзеркальної колонки products.name', async () => {
+  it('назва береться з product_translations основної мови', async () => {
     const { id } = await create(
       { uk: { name: 'Перекладена назва' } },
       { sectionId: section },
     );
-    // Псуємо дзеркало напряму: read-model мусить його ігнорувати.
-    await db.q(`update public.products set name = 'ДЗЕРКАЛО' where id = $1`, [
-      id,
-    ]);
 
     const rows = await list({
       filters: [{ ...inSection }, { field: ['id'], operator: 'eq', value: id }],
     });
     expect(rows.map((r) => r.name)).toEqual(['Перекладена назва']);
-    // Дзеркальні тексти з читальної форми зникли — Task 17 зносить колонки без сюрпризів.
     expect(Object.keys(rows[0]!)).not.toEqual(
       expect.arrayContaining(['slug', 'description']),
     );
@@ -62,13 +59,7 @@ describe('read-model колекцій адмінки: назва з перекл
       { uk: { name: 'Сорт Альфа' } },
       { sectionId: section },
     );
-    const b = await create(
-      { uk: { name: 'Сорт Бета' } },
-      { sectionId: section },
-    );
-    // Дзеркала в зворотному порядку: сортування за дзеркалом дало б інший результат.
-    await db.q(`update public.products set name = 'Яя' where id = $1`, [a.id]);
-    await db.q(`update public.products set name = 'Аа' where id = $1`, [b.id]);
+    await create({ uk: { name: 'Сорт Бета' } }, { sectionId: section });
     const sorted = async () =>
       (
         await list({
@@ -94,19 +85,44 @@ describe('read-model колекцій адмінки: назва з перекл
     expect(rows.map((r) => r.name)).toEqual(['Точна назва']);
   });
 
-  it('товар без перекладу основної мови (дефект даних) не потрапляє у вибірку, а не з порожньою назвою', async () => {
-    const [orphan] = await productsOps.insert({
-      data: [
-        {
-          id: randomUUID(),
-          slug: 'rm-orphan',
-          name: 'Сирота',
-          sectionId: section,
-        },
+  // Передумова INNER JOIN: товару без рядка основної мови не буває — тригер джерела (І4)
+  // відхиляє і видалення цього рядка, тож рядок у вибірці не «губиться» мовчки.
+  it('видалення перекладу основної мови — відмова (І4), товар лишається у вибірці', async () => {
+    const { id } = await create(
+      { uk: { name: 'Без сироти' } },
+      { sectionId: section },
+    );
+    await expect(
+      db.tx(
+        `delete from public.product_translations where product_id = '${id}' and locale = 'uk'`,
+      ),
+    ).rejects.toMatchObject({ code: '23514' });
+    const ids = (await list({ filters: [inSection] })).map((r) => r.id);
+    expect(ids).toContain(id);
+  });
+
+  it('mainImage: перше фото галереї товару (sort_order), без фото — null', async () => {
+    const withPhotos = randomUUID();
+    await insertProductGraphAt(db.url(), {
+      id: withPhotos,
+      slug: 'rm-photos',
+      name: 'Фото',
+      sectionId: section,
+      images: ['ab/first.png', 'ab/second.png'],
+      modifications: [
+        { id: randomUUID(), slug: 'rm-m', name: 'М', images: ['ab/mod.png'] },
       ],
     });
-    const ids = (await list({ filters: [inSection] })).map((r) => r.id);
-    expect(ids).not.toContain(orphan!.id);
+    const bare = (
+      await create({ uk: { name: 'Без фото' } }, { sectionId: section })
+    ).id;
+    const rows = (await list({ filters: [inSection] })) as unknown as {
+      id: string;
+      mainImage: string | null;
+    }[];
+    const byId = new Map(rows.map((r) => [r.id, r.mainImage]));
+    expect(byId.get(withPhotos)).toBe('ab/first.png');
+    expect(byId.get(bare)).toBeNull();
   });
 
   it('модифікація: назва з перекладу основної мови, slug немає, сортування за name', async () => {
@@ -124,10 +140,6 @@ describe('read-model колекцій адмінки: назва з перекл
         ],
       },
     });
-    await db.q(
-      `update public.product_modifications set name = 'ДЗЕРКАЛО' where id = $1`,
-      [m1],
-    );
 
     const rows = (await productModificationsOps.list({
       data: {

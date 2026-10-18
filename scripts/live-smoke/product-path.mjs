@@ -39,26 +39,28 @@ async function insertProduct(dbUrl, id) {
     await client.query(
       "select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0))",
     );
-    // М1-TEMP: зноситься в Task 17 — `products.slug`/`name` ще NOT NULL.
     await client.query(
-      `insert into public.products (id, slug, name, is_active) values ($1, $2, 'Smoke адреса', true)`,
-      [id, SLUG],
+      `insert into public.products (id, is_active) values ($1, true)`,
+      [id],
     );
     await client.query(
       `insert into public.product_translations (product_id, locale, name)
        select $1, code, 'Smoke адреса' from public.languages where is_default`,
       [id],
     );
-    for (const [path, current] of [
-      [SLUG, true],
-      [OLD_SLUG, false],
-    ]) {
-      await client.query(
-        `insert into public.url_paths (id, locale, path, product_id, is_current)
-         select gen_random_uuid(), code, $2, $1, $3 from public.languages where is_default`,
-        [id, path, current],
-      );
-    }
+    // Поточна адреса — у КОЖНІЙ мові draft/published (тригер наявності, І16), історична —
+    // лише основною мовою (її 301 і перевіряє крок).
+    await client.query(
+      `insert into public.url_paths (id, locale, path, product_id, is_current)
+       select gen_random_uuid(), code, $2, $1, true from public.languages
+        where status in ('draft', 'published')`,
+      [id, SLUG],
+    );
+    await client.query(
+      `insert into public.url_paths (id, locale, path, product_id, is_current)
+       select gen_random_uuid(), code, $2, $1, false from public.languages where is_default`,
+      [id, OLD_SLUG],
+    );
     await client.query(
       `insert into public.catalog_product_texts (product_id, locale, name, path, is_translated)
        select $1, code, 'Smoke адреса', $2, true from public.languages where is_default`,

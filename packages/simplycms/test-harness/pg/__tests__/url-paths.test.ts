@@ -2,6 +2,11 @@
 // Генератори ядра ганяються проти живої БД через `withActor`; стан фікстур і
 // перевірки — власником; відкладений тригер наявності ловиться на COMMIT сирих
 // транзакцій app_admin.
+//
+// З Task 17 тригер наявності на базі увімкнений: товару без поточної адреси в кожній мові
+// `draft`/`published` не буває. `db.product(slug, paths)` створює товар разом з адресами,
+// `db.fresh(fn)` — новий товар без адрес і генератор над ним В ОДНІЙ транзакції (як
+// `products.create`); рядки реєстру поверх наявних — історичні або явна заміна.
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -16,7 +21,17 @@ import {
   setExplicitPath,
 } from 'simplycms/addressing';
 import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
+import { sql } from 'drizzle-orm';
+import { languagesAdd } from 'simplycms/admin-server/impl';
 import { pathHelpers, useAddressingDb } from './fixtures/addressing-db';
+import { exec } from './fixtures/product-aggregate';
+import {
+  inLockedBlock,
+  modificationSql,
+  productGraphStatements,
+  urlPathRowSql,
+} from './fixtures/product-graph';
+import { missingPathsSql } from './fixtures/product-graph-projection';
 import { LANGUAGES_LOCK_SQL } from '../apply.mjs';
 import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
 
@@ -34,15 +49,15 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   });
 
   it('UNIQUE(locale, path)', async () => {
-    const [a, b] = [await db.product(), await db.product()];
-    await addr('uk', 'uniq-x', a);
-    await expect(addr('uk', 'uniq-x', b)).rejects.toMatchObject(UNIQUE);
-    await addr('en', 'uniq-x', b); // інша мова — можна
+    await db.product('uniq-x', { en: 'uniq-a-en' });
+    const b = await db.product();
+    // Шлях зайнятий будь-яким рядком мови, і поточним, і історичним.
+    await expect(addr('uk', 'uniq-x', b, false)).rejects.toMatchObject(UNIQUE);
+    await addr('en', 'uniq-x', b, false); // інша мова — можна
   });
 
   it('другий поточний для (товар, мова) — unique_violation', async () => {
-    const p = await db.product();
-    await addr('uk', 'cur-1', p);
+    const p = await db.product('cur-1');
     await expect(addr('uk', 'cur-2', p)).rejects.toMatchObject(UNIQUE);
     await addr('uk', 'cur-2', p, false); // історичних може бути багато
   });
@@ -54,26 +69,24 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   it.each(['a/b', 'Upper', 'привіт', 'a--b', '-a', 'a-', 'a b'])(
     'формат шляху: %s — check_violation',
     async (path) => {
-      await expect(addr('uk', path, await db.product())).rejects.toMatchObject(
-        CHECK,
-      );
+      await expect(
+        addr('uk', path, await db.product(), false),
+      ).rejects.toMatchObject(CHECK);
     },
   );
 
   it('видалення товару видаляє історію', async () => {
-    const p = await db.product();
-    await addr('uk', 'hist-now', p);
+    const p = await db.product('hist-now');
     await addr('uk', 'hist-old', p, false);
     await q(`delete from public.products where id = $1`, [p]);
     expect(await rows(p)).toEqual([]);
   });
 
   it('createPathsForEntity: однакова назва → -2, -3', async () => {
-    const ids = [await db.product(), await db.product(), await db.product()];
     const got = [];
-    for (const id of ids)
+    for (let i = 0; i < 3; i += 1)
       got.push(
-        await admin((d) =>
+        await db.fresh((d, id) =>
           createPathsForEntity(d, { kind: 'product', id }, 'panel'),
         ),
       );
@@ -90,14 +103,12 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
   });
 
   it('createPathsForEntity: зарезервоване й код мови не стають адресою', async () => {
-    const p = await db.product();
-    const got = await admin((d) =>
-      createPathsForEntity(d, { kind: 'product', id: p }, 'cart'),
+    const got = await db.fresh((d, id) =>
+      createPathsForEntity(d, { kind: 'product', id }, 'cart'),
     );
     expect(got.get('uk')).toBe('cart-2');
-    const e = await db.product();
-    const en = await admin((d) =>
-      createPathsForEntity(d, { kind: 'product', id: e }, 'en'),
+    const en = await db.fresh((d, id) =>
+      createPathsForEntity(d, { kind: 'product', id }, 'en'),
     );
     expect(en.get('uk')).toBe('en-2');
   });
@@ -125,8 +136,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     });
 
     it('на чужий історичний або поточний → path_taken', async () => {
-      const [a, b] = [await db.product(), await db.product()];
-      await addr('uk', 'own-a', a);
+      const [a, b] = [await db.product('own-a'), await db.product()];
       await addr('uk', 'old-a', a, false);
       for (const taken of ['old-a', 'own-a'])
         await expect(
@@ -140,21 +150,19 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     });
 
     it('на власний історичний → він поточний, колишній — історія', async () => {
-      const p = await db.product();
-      await addr('uk', 'back-new', p);
+      const p = await db.product('back-new');
       await addr('uk', 'back-old', p, false);
       await admin((d) =>
         setExplicitPath(d, { kind: 'product', id: p }, 'uk', 'back-old'),
       );
-      expect(await rows(p)).toEqual([
+      expect((await rows(p)).filter((r) => r.locale === 'uk')).toEqual([
         { locale: 'uk', path: 'back-old', is_current: true },
         { locale: 'uk', path: 'back-new', is_current: false },
       ]);
     });
 
     it('нова вільна адреса: стара йде в історію, resolve дає currentPath', async () => {
-      const p = await db.product();
-      await addr('uk', 'free-old', p);
+      const p = await db.product('free-old');
       await admin((d) =>
         setExplicitPath(d, { kind: 'product', id: p }, 'uk', 'free-new'),
       );
@@ -170,14 +178,18 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       expect(await admin((d) => resolvePath(d, 'uk', 'nope-x'))).toBeNull();
       expect(
         await admin((d) => currentPaths(d, { kind: 'product', id: p })),
-      ).toEqual(new Map([['uk', 'free-new']]));
+      ).toEqual(
+        new Map([
+          ['en', 'free-old'],
+          ['uk', 'free-new'],
+        ]),
+      );
     });
 
     it.each(['cart', 'admin', 'assets', 'uk', 'en'])(
       'зарезервований сегмент і код мови (%s) → reserved (І19)',
       async (path) => {
-        const p = await db.product();
-        await addr('uk', `res-${path}`, p);
+        const p = await db.product(`res-${path}`);
         await expect(
           admin((d) =>
             setExplicitPath(d, { kind: 'product', id: p }, 'uk', path),
@@ -192,8 +204,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     it.each(['sitemap.xml', 'robots.txt', 'Cart', 'a b'])(
       'не slug (%s) → invalid_format, а не reserved',
       async (path) => {
-        const p = await db.product();
-        await addr('uk', `fmt-${randomUUID().slice(0, 8)}`, p);
+        const p = await db.product(`fmt-${randomUUID().slice(0, 8)}`);
         await expect(
           admin((d) =>
             setExplicitPath(d, { kind: 'product', id: p }, 'uk', path),
@@ -214,8 +225,7 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       );
       const restore = overridePublicNamesRootForTests(root);
       try {
-        const p = await db.product();
-        await addr('uk', 'pub-own', p);
+        const p = await db.product('pub-own');
         await expect(
           admin((d) =>
             setExplicitPath(
@@ -228,9 +238,8 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
         ).rejects.toMatchObject({
           issues: [{ path: ['path'], code: 'reserved' }],
         });
-        const q2 = await db.product();
-        const got = await admin((d) =>
-          createPathsForEntity(d, { kind: 'product', id: q2 }, 'favicon'),
+        const got = await db.fresh((d, id) =>
+          createPathsForEntity(d, { kind: 'product', id }, 'favicon'),
         );
         expect(got.get('uk')).toBe('favicon-2');
       } finally {
@@ -242,37 +251,36 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
 
   describe('відкладена наявність поточної адреси (К4, тригер реєстру)', () => {
     it('видалення поточної адреси без заміни — відмова на коміті; заміна в тій самій транзакції — коміт', async () => {
-      const p = await db.product();
-      await addr('uk', 'trg-a', p);
+      const p = await db.product('trg-a');
+      const uk = `product_id = '${p}' and locale = 'uk'`;
       await expect(
-        tx(`delete from public.url_paths where product_id = '${p}'`),
+        tx(`delete from public.url_paths where ${uk}`),
       ).rejects.toMatchObject(CHECK);
       await tx(
-        `update public.url_paths set is_current = false where product_id = '${p}'`,
+        `update public.url_paths set is_current = false where ${uk}`,
         `insert into public.url_paths (id, locale, path, product_id, is_current)
          values (gen_random_uuid(), 'uk', 'trg-b', '${p}', true)`,
       );
-      expect((await rows(p)).map((r) => r.path)).toEqual(['trg-b', 'trg-a']);
+      expect(
+        (await rows(p)).filter((r) => r.locale === 'uk').map((r) => r.path),
+      ).toEqual(['trg-b', 'trg-a']);
     });
 
     it('перенесення поточної адреси в іншу мову — відмова', async () => {
+      // Мова з'являється ПІСЛЯ товару: у ній адреси ще немає (її дасть fill), тож
+      // перенесення поточної адреси uk у hu лишає без поточної саме uk.
+      const p = await db.product('move-a');
       await db.language('hu', 'draft');
-      const p = await db.product();
-      await addr('uk', 'move-a', p);
       await expect(
         tx(
-          `update public.url_paths set locale = 'hu' where product_id = '${p}'`,
+          `update public.url_paths set locale = 'hu' where product_id = '${p}' and locale = 'uk'`,
         ),
       ).rejects.toMatchObject(CHECK);
     });
 
     it('видалення мови draft з адресами в кількох товарів (каскад) — коміт', async () => {
       await db.language('de', 'draft');
-      for (let i = 0; i < 3; i += 1) {
-        const p = await db.product();
-        await addr('uk', `lang-del-${i}`, p);
-        await addr('de', `lang-del-${i}`, p);
-      }
+      for (let i = 0; i < 3; i += 1) await db.product(`lang-del-${i}`);
       await tx(
         LANGUAGES_LOCK_SQL,
         `delete from public.languages where code = 'de'`,
@@ -283,18 +291,14 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     });
 
     it('видалення товару з адресами (каскад) — коміт', async () => {
-      const p = await db.product();
-      await addr('uk', 'prod-del', p);
-      await addr('en', 'prod-del', p);
+      const p = await db.product('prod-del');
       await tx(`delete from public.products where id = '${p}'`);
       expect(await rows(p)).toEqual([]);
     });
 
     it('вимкнення мови (disabled) не чіпає її адрес і комітиться; видалення адреси disabled-мови — коміт', async () => {
       await db.language('fr');
-      const p = await db.product();
-      await addr('uk', 'dis-a', p);
-      await addr('fr', 'dis-a', p);
+      const p = await db.product('dis-a');
       await tx(
         LANGUAGES_LOCK_SQL,
         `update public.languages set status = 'disabled' where code = 'fr'`,
@@ -307,16 +311,98 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
     });
   });
 
-  // М1-TEMP: Task 17 — тригер бази вмикається, очікування стає 'O'.
-  it('стан тригерів: база вимкнена (D), реєстр увімкнений (O)', async () => {
+  it('стан тригерів: база й реєстр увімкнені (O)', async () => {
     const got = await q(
       `select tgname, tgenabled from pg_trigger
         where tgname in ('products_cur_addr_b', 'url_paths_cur_addr_r') order by tgname`,
     );
     expect(got).toEqual([
-      { tgname: 'products_cur_addr_b', tgenabled: 'D' },
+      { tgname: 'products_cur_addr_b', tgenabled: 'O' },
       { tgname: 'url_paths_cur_addr_r', tgenabled: 'O' },
     ]);
+  });
+
+  // К4, І16: тригер БАЗИ на COMMIT — кожна мова draft/published зі знімка транзакції.
+  describe('наявність на коміті', () => {
+    const graph = (id: string, slug: string) =>
+      productGraphStatements({ id, slug, name: slug, addresses: false });
+
+    it('товар без поточної адреси в draft-мові — відмова на коміті', async () => {
+      await db.language('ka', 'draft');
+      const id = randomUUID();
+      await expect(
+        tx(
+          ...graph(id, 'no-ka'),
+          urlPathRowSql({
+            locale: 'uk',
+            path: 'no-ka',
+            productId: id,
+            isCurrent: true,
+          }),
+          urlPathRowSql({
+            locale: 'en',
+            path: 'no-ka',
+            productId: id,
+            isCurrent: true,
+          }),
+        ),
+      ).rejects.toMatchObject({
+        ...CHECK,
+        message:
+          'products: потрібна поточна адреса для кожної мови (draft/published)',
+      });
+      expect(
+        await q(`select 1 from public.products where id = $1`, [id]),
+      ).toEqual([]);
+      // Поточна адреса в кожній мові draft/published знімка — коміт.
+      await tx(...graph(id, 'all-ka'), missingPathsSql(id, 'all-ka'));
+    });
+
+    it('модифікація без поточного токена — відмова на коміті', async () => {
+      const p = await db.product('tok-owner');
+      await expect(
+        tx(
+          ...modificationSql(p, {
+            id: randomUUID(),
+            slug: 'no-tok',
+            name: 'М',
+            addresses: false,
+          }),
+        ),
+      ).rejects.toMatchObject({
+        ...CHECK,
+        message:
+          'product_modifications: потрібна поточна токен для кожної мови (draft/published)',
+      });
+    });
+
+    it('створення під спільним замком проти languages.add: без хибної відмови, нову мову дозаповнює fill', async () => {
+      const id = randomUUID();
+      // T0 — «команда створення»: граф + адреси генератором у всіх мовах СВОГО знімка,
+      // тримає спільний замок мов до коміту.
+      const t0 = hold(db, async (d) => {
+        await d.execute(sql.raw(inLockedBlock(graph(id, 'race-lang'))));
+        await createPathsForEntity(d, { kind: 'product', id }, 'race-lang');
+      });
+      await until('T0 записав товар і адреси', t0.acquired);
+      const add = exec(languagesAdd, {
+        id: randomUUID(),
+        code: 'hy',
+        name: 'hy',
+      });
+      add.catch(() => undefined);
+      // Строго: add мусить стати в чергу за спільним замком T0 (ексклюзивний `languages-set`).
+      await waitForBlockedTree(db, t0, 1, { releaseOnFail: true });
+      t0.release();
+      await t0.done;
+      await add;
+      // Мова hy з'явилась після знімка T0: адреси в ній немає, і тригер її не вимагав.
+      expect((await rows(id)).filter((r) => r.locale === 'hy')).toEqual([]);
+      await db.shared((d) => copyPathsForLocale(d, 'hy', 100));
+      expect((await rows(id)).filter((r) => r.locale === 'hy')).toEqual([
+        { locale: 'hy', path: 'race-lang', is_current: true },
+      ]);
+    });
   });
 });
 
@@ -329,10 +415,9 @@ describe('copyPathsForLocale: ізольовано (Review Focus 2)', () => {
     (await rows(id)).filter((r) => r.locale === locale);
 
   it('копія зайнята історією → суфікс; повторний виклик вставляє 0', async () => {
+    // Товари — до мови: у новій мові адрес ще немає, їх і дає копіювання.
+    const [x, z] = [await db.product('copy-x'), await db.product('copy-z')];
     await db.language('cs', 'draft');
-    const [x, z] = [await db.product(), await db.product()];
-    await addr('uk', 'copy-x', x);
-    await addr('uk', 'copy-z', z);
     // Мова cs уже має товар Z з поточною адресою й історичним рядком, що займає copy-x.
     await addr('cs', 'copy-z', z);
     await addr('cs', 'copy-x', z, false);
@@ -350,12 +435,10 @@ describe('copyPathsForLocale: пакет з колізією', () => {
   const { addr, rows } = pathHelpers(db);
 
   it('товари пакета з однаковою базою в новій мові не отримують однаковий slug', async () => {
+    const [a, b] = [await db.product('batch-a'), await db.product('batch-a-2')];
+    const other = await db.product('batch-other');
     await db.language('pl', 'draft');
-    const [a, b] = [await db.product(), await db.product()];
-    await addr('uk', 'batch-a', a);
-    await addr('uk', 'batch-a-2', b);
     // batch-a зайнятий історією іншого товару: a → batch-a-2, і b мусить піти далі.
-    const other = await db.product();
     await addr('pl', 'batch-a', other, false);
     await addr('pl', 'other-now', other);
     expect(await db.shared((d) => copyPathsForLocale(d, 'pl', 100))).toBe(2);
@@ -368,12 +451,10 @@ describe('copyPathsForLocale: пакет з колізією', () => {
 
 describe('copyPathsForLocale: limit', () => {
   const db = useAddressingDb('simplycms_copy_paths_c');
-  const { addr } = pathHelpers(db);
 
   it('limit обмежує пакет; пакети продовжують до 0', async () => {
+    for (let i = 0; i < 3; i += 1) await db.product(`lim-${i}`);
     await db.language('sk', 'draft');
-    for (let i = 0; i < 3; i += 1)
-      await addr('uk', `lim-${i}`, await db.product());
     const run = () => db.shared((d) => copyPathsForLocale(d, 'sk', 2));
     expect([await run(), await run(), await run()]).toEqual([2, 1, 0]);
   });
@@ -381,7 +462,7 @@ describe('copyPathsForLocale: limit', () => {
 
 describe('copyPathsForLocale: імена з public/ збірки', () => {
   const db = useAddressingDb('simplycms_copy_paths_d');
-  const { addr, rows } = pathHelpers(db);
+  const { rows } = pathHelpers(db);
 
   it('копія, що збіглася б з іменем у public/, отримує суфікс', async () => {
     const root = mkdtempSync(join(tmpdir(), 'scms-public-copy-'));
@@ -392,9 +473,8 @@ describe('copyPathsForLocale: імена з public/ збірки', () => {
     );
     const restore = overridePublicNamesRootForTests(root);
     try {
+      const p = await db.product('pub-copy');
       await db.language('hu', 'draft');
-      const p = await db.product();
-      await addr('uk', 'pub-copy', p);
       expect(await db.shared((d) => copyPathsForLocale(d, 'hu', 100))).toBe(1);
       expect((await rows(p)).filter((r) => r.locale === 'hu')).toEqual([
         { locale: 'hu', path: 'pub-copy-2', is_current: true },

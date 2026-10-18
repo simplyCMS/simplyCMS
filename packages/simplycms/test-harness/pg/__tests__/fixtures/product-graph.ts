@@ -1,6 +1,8 @@
-// Єдиний запис графа товару для харнесу (М1, Task 10): база, переклади, адреса,
+// Єдиний запис графа товару для харнесу (М1, Task 10): база, переклади, адреси,
 // модифікації з токенами, значення властивостей, зображення. Пряма вставка в ці
 // таблиці з тестів заборонена (`product-graph-fixture.test.ts` це доводить grep-ом).
+// Граф — стан, який лишають команди: переклад основної мови (І4) і поточна адреса й
+// токен у кожній мові `draft`/`published` (І16) — тригери перевіряють їх на COMMIT.
 //
 // 🔴 Усе йде ОДНИМ оператором `do`-блока: так спільний замок `languages-set`
 // (тригер SC004 на `url_paths`/`slug_tokens`) живе рівно стільки, скільки запис,
@@ -20,14 +22,13 @@ import {
   PRIMARY,
   imageSql,
   insertInto,
-  jsonList,
   optional,
   textRow,
   urlPathRowSql,
 } from './product-graph-rows';
 import { modificationSql } from './product-graph-modification';
 import { valueSql } from './product-graph-values';
-import { otherLocalePathsSql, projectionSql } from './product-graph-projection';
+import { missingPathsSql, projectionSql } from './product-graph-projection';
 
 export * from './product-graph-types';
 export { PRIMARY, slugTokenRowSql, urlPathRowSql } from './product-graph-rows';
@@ -49,10 +50,6 @@ export function productGraphStatements(spec: ProductGraphSpec): string[] {
       has_modifications: optional(spec.hasModifications, lit),
       sku: optional(spec.sku, lit),
       stock_status: optional(spec.stockStatus, lit),
-      // М1-TEMP: зноситься в Task 17 — дзеркало джерела у старі колонки.
-      slug: lit(spec.slug),
-      images: spec.images ? jsonList(spec.images) : undefined,
-      ...textRow(texts),
     }),
     insertInto('product_translations', {
       product_id: lit(spec.id),
@@ -61,14 +58,10 @@ export function productGraphStatements(spec: ProductGraphSpec): string[] {
     }),
   ];
   if (spec.addresses !== false)
-    out.push(
-      urlPathRowSql({
-        locale: PRIMARY,
-        path: spec.slug,
-        productId: spec.id,
-        isCurrent: true,
-      }),
-    );
+    for (const [locale, path] of Object.entries(spec.paths ?? {}))
+      out.push(
+        urlPathRowSql({ locale, path, productId: spec.id, isCurrent: true }),
+      );
   for (const [locale, t] of Object.entries(spec.translations ?? {}))
     out.push(
       insertInto('product_translations', {
@@ -82,11 +75,23 @@ export function productGraphStatements(spec: ProductGraphSpec): string[] {
     out.push(...modificationSql(spec.id, m));
   for (const v of spec.values ?? [])
     out.push(...valueSql({ kind: 'product', id: spec.id }, v));
-  // Стан, еквівалентний командам (І23): адреса в кожній активній мові й рядки проєкції.
+  // Стан, еквівалентний командам (І16, І23): адреса в кожній активній мові й рядки проєкції.
   if (spec.addresses !== false)
-    out.push(otherLocalePathsSql(spec.id, spec.slug), projectionSql(spec.id));
+    out.push(missingPathsSql(spec.id, spec.slug), projectionSql(spec.id));
   return out;
 }
+
+/**
+ * ЛИШЕ рядок бази товару чи модифікації — для негативних контролів тригерів джерела (І4)
+ * і наявності (І16): без перекладу, адрес і токенів коміт такої транзакції відхиляється.
+ */
+export const bareProductSql = (id: string): string =>
+  insertInto('products', { id: lit(id) });
+export const bareModificationSql = (productId: Id, id: string): string =>
+  insertInto('product_modifications', {
+    id: lit(id),
+    product_id: idSql(productId),
+  });
 
 /** Оператори під спільним замком одним `do`-блоком: готовий SQL для масивів фікстур. */
 export function inLockedBlock(statements: string[]): string {

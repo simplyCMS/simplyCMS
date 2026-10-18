@@ -1,17 +1,17 @@
 import { z } from 'zod';
-import { SLUG_RE } from 'simplycms/domain';
+import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import type { Section } from 'simplycms/schema/types';
 
 const optionalText = z.string().trim();
 
 /**
  * Значення форми картки розділу (Е4, Task 7). Формат slug — спільна
- * константа T1 (`SLUG_RE`), яку перевіряє й сервер (Е4-7). `images` —
+ * константа T1 (`SLUG_FORMAT`), яку перевіряє й сервер (Е4-7). `images` —
  * 0..1 РЕФЕРЕНС сховища (↔ `imageUrl`, Е4-10).
  */
 export const sectionFormSchema = z.object({
   name: z.string().trim().min(1),
-  slug: z.string().trim().regex(SLUG_RE),
+  slug: z.string().trim().regex(SLUG_FORMAT),
   description: optionalText,
   metaTitle: optionalText,
   metaDescription: optionalText,

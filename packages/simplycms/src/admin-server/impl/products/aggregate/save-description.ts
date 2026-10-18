@@ -14,9 +14,8 @@ import {
   propertyValuesInput,
 } from './children-schemas';
 import { assertImageKeys, eraseGone, productKeys } from './image-media';
-import { mirrorImages } from './image-mirror';
 import { assertKnownLocales, loadState, lockProduct } from './load';
-import { bumpProduct } from './mirror';
+import { bumpProduct } from './version';
 import { refreshAfterPlan } from './projection';
 import { modificationIdsAfter, modificationIdsOf } from './modification-scope';
 import { planImages } from './images';
@@ -100,18 +99,13 @@ export const productsSaveDescription = defineOperation({
     await values.apply();
     await images.apply();
     if (touchesFiles) {
-      await mirrorImages(db, input.id);
       // Рядки `media` — у транзакції, файли — після коміту; намір (outbox)
       // записано тут же, хвіст його лише добирає.
       const discard = await eraseGone(db, input.id, before);
       if (discard.length > 0) afterCommit(() => completeMediaErasures(discard));
     }
     return {
-      version: await bumpProduct(db, input.id, {
-        base: input.base,
-        plan,
-        primary: state.primary,
-      }),
+      version: await bumpProduct(db, input.id, input.base),
     };
   },
 });
