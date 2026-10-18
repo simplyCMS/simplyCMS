@@ -93,7 +93,7 @@ const product = (id: string, sectionSlug: string): HomeProduct => ({
   id,
   name: `Товар ${id}`,
   slug: id,
-  images: ['/img.jpg'],
+  images: [{ url: '/img.jpg', alt: '' }],
   short_description: null,
   stock_status: 'in_stock',
   section: { slug: sectionSlug },

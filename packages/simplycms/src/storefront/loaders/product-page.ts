@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import {
   catalogProductTexts as texts,
   languages,
@@ -6,6 +6,7 @@ import {
   sections,
 } from 'simplycms/schema';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
+import { productGallerySql } from 'simplycms/translations';
 import type { ActorDb } from './db';
 import { productBaseColumns } from './entities/product';
 import { sectionRefColumns } from './entities/section';
@@ -79,6 +80,11 @@ export async function loadProductPageBase(
 
   const primaryRow = versions.find((v) => v.isDefault);
   const primary = primaryRow?.code ?? address.locale;
+  // Галерея мовою сторінки окремим запитом: їй потрібна основна мова (fallback alt), а
+  // вона відома лише з версій вище — у першу вибірку вираз галереї не вбудувати.
+  const gallery = await db.execute<{ images: unknown }>(
+    sql`select ${productGallerySql(sql`${row.product.id}::uuid`, address.locale, primary)} as images`,
+  );
   const languageVersions: LanguageVersion[] = versions.map((v) => ({
     code: v.code,
     isTranslated: v.isTranslated,
@@ -86,7 +92,7 @@ export async function loadProductPageBase(
   }));
 
   return {
-    product: row.product,
+    product: { ...row.product, images: gallery.rows[0]?.images ?? [] },
     section: row.section?.id ? row.section : null,
     text: {
       ...row.text,

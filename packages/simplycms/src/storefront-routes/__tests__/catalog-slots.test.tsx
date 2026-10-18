@@ -53,7 +53,7 @@ const ssrItem = {
   id: 'prod-2',
   name: 'Item B',
   slug: 'item-b',
-  imageUrl: null,
+  image: null,
   nameLang: null,
   sectionSlug: 'sec',
   price: 999,

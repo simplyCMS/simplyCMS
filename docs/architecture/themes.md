@@ -196,6 +196,21 @@ TS2786), тож `views` тягне type-only імпорт react. Барель `s
 для розмітки; тема з власним view застосовує ті самі поля, інакше зберігає лише
 текст без мови (контракт не ламається, але І37 не виконано).
 
+**Фото мовою сторінки (М1, Task 17б).** `ProductDetailGallery.images`,
+`ProductCardViewModel.images` і `images` модифікації — масиви
+`ProductImageViewModel` (`simplycms/contracts/views`), а не рядків URL: `url` — готовий
+URL файлу мови сторінки (перевизначення `product_image_translations.storage_key`,
+інакше спільний файл), `alt` — переклад мови сторінки, інакше alt основної мови, а
+коли немає жодного — `''`, `alt_lang` — код основної мови, коли alt узято з неї
+(ознака з даних, як вище; `null`/відсутнє — alt мовою сторінки). View рендерить
+`<img src={url} alt={alt} lang={alt_lang ?? undefined}>`: атрибут `lang` стоїть на
+самому `<img>` (мова елемента застосовується до його `alt`), а не обгорткою
+`FallbackText`, що змінила б розмітку фото. Порожній `alt` не підміняють назвою
+товару чи файлу — це чесне «декоративне» для скрінрідера; кнопкам-мініатюрам ім'я
+дає `aria-label`, а не alt фото. Порядок і головне фото (перше) — `GALLERY_ORDER`; читач
+один — `productGallerySql`/`modificationGallerySql` (`simplycms/translations`) і декодер
+`toGallery` (`simplycms/storefront/loaders`).
+
 **Слоти комерційних реквізитів.** `vm.slots` — прибінджені ядром компоненти,
 які тема лише розставляє: `<slots.AddToCart />`, `<slots.PriceBlock />`,
 `<slots.Summary />`… Логіка всередині (кошик, ціни зі знижками, стани

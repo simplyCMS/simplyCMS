@@ -2,13 +2,13 @@
 // Секційна структура — форвард-сумісність із треком B: gallery / summary /
 // description / characteristics.
 
-import type { BreadcrumbItem } from './common';
+import type { BreadcrumbItem, ProductImageViewModel } from './common';
 import type { SanitizedHtml } from '../sanitized-html';
 import type { SlotComponent } from './slots';
 
 /** Галерея: зображення обраної модифікації або самого товару. */
 export interface ProductDetailGallery {
-  images: string[];
+  images: ProductImageViewModel[];
 }
 
 /** Шапка картки: назва, артикул, короткий опис, бейдж знижки. */

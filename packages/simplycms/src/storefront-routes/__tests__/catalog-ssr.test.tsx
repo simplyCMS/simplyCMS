@@ -66,7 +66,7 @@ const fixtureRow: ProductListRow = {
   slug: 'invertor-5kw',
   name: 'Інвертор 5 кВт SSR',
   name_lang: null,
-  images: ['https://cdn.example.com/invertor.jpg'],
+  images: [{ url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' }],
   has_modifications: true,
   sections: { slug: 'invertory' },
   product_modifications: [{ id: 'mod-b', is_default: true, sort_order: 1 }],

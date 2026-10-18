@@ -21,7 +21,7 @@ function makeRow(overrides: Partial<ProductListRow> = {}): ProductListRow {
     slug: 'invertor-5kw',
     name: 'Інвертор 5 кВт',
     name_lang: null,
-    images: ['https://cdn.example.com/invertor.jpg'],
+    images: [{ url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' }],
     has_modifications: true,
     sections: { slug: 'invertory' },
     product_modifications: [
@@ -71,7 +71,7 @@ describe('toProductListItem', () => {
       slug: 'invertor-5kw',
       name: 'Інвертор 5 кВт',
       nameLang: null,
-      imageUrl: 'https://cdn.example.com/invertor.jpg',
+      image: { url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' },
       price: 4200,
       sectionSlug: 'invertory',
     });
@@ -119,7 +119,7 @@ describe('toProductListItem', () => {
       slug: 'invertor-5kw',
       name: 'Інвертор 5 кВт',
       nameLang: null,
-      imageUrl: null,
+      image: null,
       price: null,
       sectionSlug: 'invertory',
     });

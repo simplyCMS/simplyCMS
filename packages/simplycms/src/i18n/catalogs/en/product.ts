@@ -5,6 +5,7 @@ export const messages: Catalog = {
   'product.notFound': 'Product not found',
   'product.goBack': 'Go back',
   'product.sku': 'SKU: {sku}',
+  'product.galleryThumb': 'Photo {index}',
   'product.metaDescription': 'Buy {name}',
 
   'product.inStock': 'In stock',

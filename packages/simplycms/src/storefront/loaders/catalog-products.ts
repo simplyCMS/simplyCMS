@@ -9,6 +9,7 @@ import {
   sections,
 } from 'simplycms/schema';
 import type { TextLocale } from 'simplycms/domain/translations';
+import { productGallerySql } from 'simplycms/translations';
 import { calculateProductAvailability } from 'simplycms/domain/inventory';
 import type { ActorDb } from './db';
 import {
@@ -19,7 +20,8 @@ import {
   type CatalogProductRow,
   type CatalogPropertyValueRow,
 } from './entities/catalog-product';
-import { productBaseColumns, toImageList } from './entities/product';
+import { productBaseColumns } from './entities/product';
+import { toGallery } from './entities/gallery';
 import {
   listLangs,
   listTextColumns,
@@ -89,7 +91,12 @@ export async function loadCatalogProductsWhere(
 
   const rows = await db
     .select({
-      product: productBaseColumns,
+      product: {
+        ...productBaseColumns,
+        images: productGallerySql(products.id, text.locale, text.primary).as(
+          'images',
+        ),
+      },
       text: listTextColumns,
       section: sectionRefColumns,
     })
@@ -153,7 +160,7 @@ export async function loadCatalogProductsWhere(
       ...listLangs(fallback, text.primary),
       // Список каталогу розмітки опису не несе (картка читає лише картку товару).
       description: null,
-      images: toImageList(product.images),
+      images: toGallery(product.images),
       has_modifications: product.has_modifications ?? true,
       // `leftJoin` без збігу дає рядок із порожнім `id` (див. `./product-detail`).
       section: section?.id ? section : null,

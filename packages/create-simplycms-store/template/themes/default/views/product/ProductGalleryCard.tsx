@@ -58,9 +58,12 @@ export function ProductGalleryCard({
         )}
 
         {current ? (
+          // alt і його `lang` (fallback основної мови) — з даних мови сторінки (Task 17б),
+          // а не назва товару: фото без опису лишається з порожнім alt.
           <img
-            src={current}
-            alt={summary.name}
+            src={current.url}
+            alt={current.alt}
+            lang={current.alt_lang ?? undefined}
             className="h-full w-full object-contain transition-transform duration-500 ease-in-out group-hover:scale-105"
           />
         ) : (
@@ -75,7 +78,7 @@ export function ProductGalleryCard({
         <div className="mt-4 grid grid-cols-4 gap-3">
           {images.slice(0, 4).map((image, index) => (
             <button
-              key={image}
+              key={image.url}
               type="button"
               onClick={() => setActiveIndex(index)}
               aria-label={tt('theme.view.photo', { number: index + 1 })}
@@ -83,7 +86,7 @@ export function ProductGalleryCard({
               className={thumbClass(index === activeIndex)}
             >
               <img
-                src={image}
+                src={image.url}
                 alt=""
                 className="h-full w-full object-contain"
                 loading="lazy"

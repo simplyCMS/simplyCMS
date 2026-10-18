@@ -147,7 +147,7 @@ describe('зображення товару й медіа-контур (Task 12)
   // jsonb `images` знесено (М1, Task 17): вітрина й мініатюра адмінки читають ці самі
   // рядки виразами галереї (`simplycms/translations`) — один порядок для всіх читачів.
   it('галерея: фото товару й модифікації — з product_images у порядку sort_order', async () => {
-    const { id, version, main } = await seed();
+    const { id, version, main, en } = await seed();
     const mod = randomUUID();
     const key = await upload(id);
     await saveDescription(id, version, {
@@ -161,13 +161,21 @@ describe('зображення товару й медіа-контур (Task 12)
     });
     const [row] = (
       await db.admin((d) =>
-        d.execute<{ p: unknown; m: unknown; first: unknown }>(sql`
-          select ${productGallerySql(sql`${id}::uuid`)} as p,
-                 ${modificationGallerySql(sql`${mod}::uuid`)} as m,
+        d.execute<{ p: unknown; e: unknown; m: unknown; first: unknown }>(sql`
+          select ${productGallerySql(sql`${id}::uuid`, 'uk', 'uk')} as p,
+                 ${productGallerySql(sql`${id}::uuid`, 'en', 'uk')} as e,
+                 ${modificationGallerySql(sql`${mod}::uuid`, 'uk', 'uk')} as m,
                  ${mainImageSql(sql`${id}::uuid`)} as first`),
       )
     ).rows;
-    expect(row).toEqual({ p: [main], m: [key], first: main });
+    // Мовою сторінки (Task 17б): записане адмінкою перевизначення й alt en — на en, спільне
+    // фото й alt uk — на основній; мініатюра адмінки — спільне фото.
+    expect(row).toEqual({
+      p: [{ key: main, alt: 'Кабель', alt_lang: null }],
+      e: [{ key: en, alt: 'Cable', alt_lang: null }],
+      m: [{ key, alt: null, alt_lang: null }],
+      first: main,
+    });
   });
 
   it('remove фото → файл стерто, рядок прибрано, outbox порожній', async () => {

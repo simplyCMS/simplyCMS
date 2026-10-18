@@ -7,13 +7,14 @@ import { useT } from 'simplycms/i18n';
 // секції головної в ядрі не мають власного варіанта картки.
 import { ProductCard } from 'simplycms/catalog-ui/ProductCard';
 import type { ThresholdHint } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 
 interface Product {
   id: string;
   name: string;
   slug: string;
   short_description?: string | null;
-  images?: string[];
+  images?: ProductImageViewModel[];
   section?: { slug: string } | null;
   price?: number | null;
   old_price?: number | null;

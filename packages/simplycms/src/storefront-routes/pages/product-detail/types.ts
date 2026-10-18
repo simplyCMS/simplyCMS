@@ -1,6 +1,7 @@
 // Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
 
 import type { StockStatus, ThresholdHint } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import type { ProductDetailRow } from 'simplycms/storefront/loaders';
 
 /**
@@ -24,7 +25,7 @@ export interface ProductModificationRow {
   sort_order: number;
   stock_status: StockStatus;
   sku: string | null;
-  images: unknown;
+  images: ProductImageViewModel[];
 }
 
 /** Розділ товару — потрібен крихтам і контексту знижок. */

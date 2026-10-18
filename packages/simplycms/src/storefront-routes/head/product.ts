@@ -1,3 +1,4 @@
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { richTextToPlain } from 'simplycms/domain/translations';
 import {
   readStorefrontRoot,
@@ -18,7 +19,8 @@ export type ProductHeadInput = ProductOffersInput & {
   description: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
-  images: unknown;
+  /** Фото мовою сторінки: `og:image` і JSON-LD беруть їхні URL (файл мови, Task 17б). */
+  images: readonly ProductImageViewModel[];
   /** Мовний контекст сторінки: мова й рішення політики індексації (М1, І33). */
   page: {
     locale: string;
@@ -63,7 +65,7 @@ export function productHead(
 } {
   const { siteUrl } = readStorefrontRoot(matches);
   const { page } = product;
-  const images: unknown[] = Array.isArray(product.images) ? product.images : [];
+  const images = product.images.map((image) => image.url);
   const title = product.meta_title || product.name;
 
   // Опис рахується один раз: той самий текст іде в meta, og:description і JSON-LD.
@@ -103,7 +105,7 @@ export function productHead(
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
       { property: 'og:locale', content: ogLocale(page.locale) },
-      ...(typeof images[0] === 'string'
+      ...(images[0] !== undefined
         ? [{ property: 'og:image', content: images[0] }]
         : []),
     ],

@@ -1,13 +1,21 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
+import { useT } from 'simplycms/i18n';
 import { cn } from 'simplycms/ui/utils';
 
 interface ProductGalleryProps {
-  images: string[];
-  productName: string;
+  /** Фото мовою сторінки: `alt` і його `lang` (fallback основної) — з даних (Task 17б). */
+  images: ProductImageViewModel[];
 }
 
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+/**
+ * Галерея картки товару. `alt` кожного фото — з даних мови сторінки, а не назва товару:
+ * порожній alt (фото без опису) лишається порожнім. `lang` стоїть на самому `<img>` —
+ * атрибут мови елемента застосовується до його `alt` (І37), без обгорток у розмітці фото.
+ */
+export function ProductGallery({ images }: ProductGalleryProps) {
+  const t = useT();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const hasImages = images.length > 0;
@@ -27,8 +35,9 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       <div className="aspect-square rounded-lg bg-muted overflow-hidden cursor-zoom-in relative group">
         {currentImage ? (
           <img
-            src={currentImage}
-            alt={productName}
+            src={currentImage.url}
+            alt={currentImage.alt}
+            lang={currentImage.alt_lang ?? undefined}
             className="absolute inset-0 w-full h-full object-contain transition-transform group-hover:scale-105"
             fetchPriority="high"
             loading="eager"
@@ -71,6 +80,9 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           {images.map((image, index) => (
             <button
               key={index}
+              // Ім'я кнопки — номер фото: alt фото може бути порожнім, а кнопка без імені для
+              // скрінрідера німа. Сама мініатюра тоді декоративна (`alt=""`), як у теми default.
+              aria-label={t('product.galleryThumb', { index: index + 1 })}
               onClick={() => setCurrentIndex(index)}
               className={cn(
                 'relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-colors',
@@ -80,8 +92,8 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               )}
             >
               <img
-                src={image}
-                alt={`${productName} ${index + 1}`}
+                src={image.url}
+                alt=""
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 decoding="async"

@@ -1,13 +1,14 @@
 import type { SanitizedHtml } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { products } from 'simplycms/schema';
 import type { Product } from 'simplycms/schema/types';
 import { resolveMediaUrls } from 'simplycms/domain/media';
-import { productGallerySql } from 'simplycms/translations';
 
 /**
  * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
- * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8),
- * фото — з рядків `product_images` у порядку галереї (`productGallerySql`).
+ * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8).
+ * Фото тут НЕМАЄ: галерея залежить від мови (`productGallerySql(…, locale, primary)`),
+ * а статична мапа колонок мови не знає — викликач додає її сам (Task 17б).
  */
 export const productBaseColumns = {
   id: products.id,
@@ -16,7 +17,6 @@ export const productBaseColumns = {
   is_featured: products.isFeatured,
   created_at: products.createdAt,
   updated_at: products.updatedAt,
-  images: productGallerySql(products.id).as('images'),
   has_modifications: products.hasModifications,
   sku: products.sku,
   stock_status: products.stockStatus,
@@ -42,18 +42,18 @@ export type ProductRow = {
   meta_description: string | null;
   created_at: Product['createdAt'];
   updated_at: Product['updatedAt'];
-  images: string[];
+  /** Фото мовою сторінки (`toGallery`). */
+  images: ProductImageViewModel[];
   has_modifications: Product['hasModifications'];
   sku: Product['sku'];
   stock_status: Product['stockStatus'];
 };
 
 /**
- * Нормалізує jsonb-масив референсів фото (`productGallerySql`) у масив ГОТОВИХ URL.
+ * Нормалізує jsonb-масив референсів фото ВІДГУКУ (`product_reviews.images`) у масив
+ * ГОТОВИХ URL. Фото товару й модифікації декодує `toGallery` (вони несуть alt мови).
  *
- * 🔴 Резолв саме тут, а не на сторінці: через цю функцію проходять УСІ
- * читання `images` у вітрині (товар, картка, модифікація, деталь) — один
- * шов замість шести. У колонці лежить РЕФЕРЕНС (рішення Е2-1), і саме
+ * 🔴 Резолв саме тут, а не на сторінці. У колонці лежить РЕФЕРЕНС (рішення Е2-1), і саме
  * `resolveMediaUrls` лишає зовнішні URL та `data:`-плейсхолдери як є.
  */
 export function toImageList(value: unknown): string[] {

@@ -8,10 +8,11 @@ import {
   sections,
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import type { TextLocale } from 'simplycms/domain/translations';
 import { productGallerySql } from 'simplycms/translations';
 import type { ActorDb } from './db';
-import { toImageList } from './entities/product';
+import { toGallery } from './entities/gallery';
 import { pageVisible } from './product-visibility';
 import { listLangs, languageOf, textJoinOn } from './product-list-text';
 import { listModificationColumns } from './entities/modification';
@@ -40,7 +41,8 @@ export interface ProductListRow {
   name: string;
   /** Мова назви, коли її узято з основної мови (fallback), інакше `null`. */
   name_lang: string | null;
-  images: string[];
+  /** Фото мовою запиту (перевизначення файлу й alt мови, Task 17б). */
+  images: ProductImageViewModel[];
   has_modifications: boolean | null;
   sections: { slug: string } | null;
   product_modifications: ProductListModification[];
@@ -82,7 +84,9 @@ export async function loadProductList(
       slug: texts.path,
       name: texts.name,
       fallback: texts.fallbackFields,
-      images: productGallerySql(products.id).as('images'),
+      images: productGallerySql(products.id, text.locale, text.primary).as(
+        'images',
+      ),
       has_modifications: products.hasModifications,
       section_slug: sections.slug,
     })
@@ -123,7 +127,7 @@ export async function loadProductList(
     slug: row.slug,
     name: row.name,
     ...listLangs(row.fallback, text.primary),
-    images: toImageList(row.images),
+    images: toGallery(row.images),
     has_modifications: row.has_modifications,
     sections: row.section_slug === null ? null : { slug: row.section_slug },
     product_modifications: modificationsByProduct[row.id] ?? [],

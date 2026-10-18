@@ -1,7 +1,10 @@
 // Зображення й характеристики картки: обидва залежать від вибраної модифікації.
 
 import { useMemo } from 'react';
-import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
+import type {
+  ProductImageViewModel,
+  ProductPropertyValueViewModel,
+} from 'simplycms/contracts/views';
 import { mergePropertyValues } from './merge-property-values';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
@@ -15,7 +18,7 @@ export interface ProductContentInput {
 }
 
 export interface ProductContent {
-  images: string[];
+  images: ProductImageViewModel[];
   propertyValues: ProductPropertyValueViewModel[];
 }
 
@@ -29,14 +32,11 @@ export function useProductContent({
 }: ProductContentInput): ProductContent {
   // Зображення товару й модифікації разом
   const images = useMemo(() => {
-    const productImages = Array.isArray(product?.images)
-      ? (product.images as string[])
-      : [];
+    // Обидва списки — з одного декодера галереї (`toGallery`), мовою сторінки.
+    const productImages = product?.images ?? [];
 
     if (hasModifications && selectedMod) {
-      const modImages = Array.isArray(selectedMod.images)
-        ? (selectedMod.images as string[])
-        : [];
+      const modImages = selectedMod.images;
       // Фото модифікації пріоритетніші, інакше — фото товару
       return modImages.length > 0 ? modImages : productImages;
     }

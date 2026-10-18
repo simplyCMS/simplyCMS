@@ -118,6 +118,16 @@
   (`simplycms/db`) розпізнають обмеження за іменем. Фабрика `defineAdminResource` (`simplycms/admin-server/impl`): опція
   `media` приймає лише `text`-колонки (jsonb-масив референсів — помилка конфігу; каскад `cascadeMedia` jsonb лишається),
   поле `readModel.exclude` знесено (споживача не лишилось), поле перекладу без `required` типізоване з `null`.
+- **Фото товару мовою сторінки (М1 Task 17б)** (`simplycms/contracts/views`, `simplycms/translations`,
+  `simplycms/storefront/loaders`, `simplycms/storefront-routes`, `simplycms/catalog-ui`): сторінка товару, галерея
+  модифікації й мініатюри лістингів показують перевизначення файлу мови (`product_image_translations.storage_key`) і alt
+  мови сторінки, інакше alt основної мови з `lang`, а без жодного — `alt=""` (не назва товару). `images` у
+  `ProductCardViewModel`, `ProductDetailGallery`, рядках лоадерів товару й модифікації — масив
+  `ProductImageViewModel` (`{ url, alt, alt_lang? }`) замість рядків URL; тема з власним view рендерить
+  `<img src={url} alt={alt} lang={alt_lang}>`. `productGallerySql`/`modificationGallerySql` приймають `(owner, locale,
+  primary)`; декодер галереї — `toGallery` (`toImageList` лишився для фото відгуків); `productBaseColumns` більше не
+  містить `images`, `homeProductColumns` — функція мови; `ProductListItem.imageUrl` → `image`; `ProductGallery` без
+  пропа `productName`, мініатюри мають `aria-label` (новий ключ `product.galleryThumb`).
 - **Псевдоніми замків прибрано:** `ADMIN_ROLES_LOCK` (`simplycms/auth`), `CUSTOMER_CONFIG_LOCK` і
   `DISCOUNT_CONFIG_LOCK` (`simplycms/admin-server/impl`) та внутрішні `*_LOCK` модулів видалено; ключі
   беруться з реєстру: `LOCK_KEYS.adminRoles`, `LOCK_KEYS.customerConfig`, `LOCK_KEYS.discountConfig` тощо

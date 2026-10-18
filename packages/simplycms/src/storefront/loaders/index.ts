@@ -69,6 +69,7 @@ export type { ModificationRow } from './entities/modification';
 export { toModificationRow } from './entities/modification';
 export type { ProductRow } from './entities/product';
 export { toImageList } from './entities/product';
+export { toGallery } from './entities/gallery';
 export type { JsonValue, PropertyRow, OptionRow } from './entities/property';
 export { toPropertyRow } from './entities/property';
 export type { NewOrderInput } from './entities/new-order';

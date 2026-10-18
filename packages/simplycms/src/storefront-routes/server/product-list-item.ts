@@ -1,3 +1,4 @@
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { resolvePrice } from 'simplycms/domain/pricing';
 import type {
   ProductListModification,
@@ -28,7 +29,8 @@ export interface ProductListItem {
   name: string;
   /** Мова назви, коли її узято з основної мови (fallback): картка обгортає її `lang`. */
   nameLang: string | null;
-  imageUrl: string | null;
+  /** Мініатюра — головне фото мовою списку (файл і alt мови, Task 17б); `null` — без фото. */
+  image: ProductImageViewModel | null;
   price: number | null;
   /** Slug секції — потрібен для коректного href картки в серверному HTML. */
   sectionSlug: string | null;
@@ -76,7 +78,7 @@ export function toProductListItem(
     slug: row.slug,
     name: row.name,
     nameLang: row.name_lang,
-    imageUrl: row.images[0] ?? null,
+    image: row.images[0] ?? null,
     price,
     sectionSlug: row.sections?.slug ?? null,
   };

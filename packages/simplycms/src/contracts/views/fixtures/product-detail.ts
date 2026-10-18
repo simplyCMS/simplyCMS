@@ -32,7 +32,13 @@ const full: ViewModelData<ProductDetailViewModel> = {
     { label: 'Панелі', href: '/catalog/panels' },
     { label: 'Панель 550 Вт' },
   ],
-  gallery: { images: ['/img/panel-550.jpg', '/img/panel-550-back.jpg'] },
+  gallery: {
+    images: [
+      { url: '/img/panel-550.jpg', alt: 'Панель 550 Вт, фронт' },
+      // Фото без опису: alt порожній, а не назва товару (Task 17б).
+      { url: '/img/panel-550-back.jpg', alt: '' },
+    ],
+  },
   summary: {
     name: 'Панель 550 Вт',
     sku: 'PNL-550',

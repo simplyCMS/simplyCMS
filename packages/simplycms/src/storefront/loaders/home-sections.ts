@@ -48,7 +48,7 @@ export async function loadSectionProducts(
 
   const ranked = db
     .select({
-      ...homeProductColumns,
+      ...homeProductColumns(text),
       // Другий ключ у вікні — та сама причина, що й у `loadHomeProducts`:
       // усі рядки одного `insert … select` дістають один `created_at`.
       position: sql<number>`

@@ -35,7 +35,7 @@ describe('fallback-назва картки', () => {
               slug: 'rozetka',
               name: 'Розетка',
               nameLang: 'uk',
-              imageUrl: null,
+              image: null,
               price: null,
               sectionSlug: null,
             },
@@ -44,7 +44,7 @@ describe('fallback-назва картки', () => {
               slug: 'cable',
               name: 'Cable',
               nameLang: null,
-              imageUrl: null,
+              image: null,
               price: null,
               sectionSlug: null,
             },
@@ -86,5 +86,66 @@ describe('fallback-назва картки', () => {
     );
     expect(langOf('Розетка')).toBe('uk');
     expect(langOf('Подвійна розетка')).toBe('uk');
+  });
+});
+
+// М1 Task 17б: мініатюра картки — фото мовою сторінки з даних (`toGallery`), не назва товару.
+describe('мініатюра картки: alt і його мова з даних', () => {
+  const img = () => screen.getByRole('img', { hidden: true });
+
+  it('SsrProductGrid: fallback alt основної мови → lang на самому <img>', () => {
+    render(
+      <I18nProvider locale="en">
+        <SsrProductGrid
+          viewMode="grid"
+          items={[
+            {
+              id: 'p1',
+              slug: 'cable',
+              name: 'Cable',
+              nameLang: null,
+              image: { url: '/media/c.png', alt: 'Кабель', alt_lang: 'uk' },
+              price: null,
+              sectionSlug: null,
+            },
+          ]}
+        />
+      </I18nProvider>,
+    );
+    expect(img().getAttribute('src')).toBe('/media/c.png');
+    expect(img().getAttribute('alt')).toBe('Кабель');
+    expect(img().getAttribute('lang')).toBe('uk');
+  });
+
+  it('alt мовою сторінки — без lang; фото без alt — alt="", а не назва товару', () => {
+    const { unmount } = render(
+      <I18nProvider locale="en">
+        <ProductCard
+          product={{
+            id: 'p1',
+            name: 'Cable',
+            slug: 'cable',
+            images: [{ url: '/media/c.png', alt: 'Cable front' }],
+          }}
+        />
+      </I18nProvider>,
+    );
+    expect(img().getAttribute('alt')).toBe('Cable front');
+    expect(img().hasAttribute('lang')).toBe(false);
+    unmount();
+
+    const { container } = render(
+      <I18nProvider locale="en">
+        <ProductCard
+          product={{
+            id: 'p1',
+            name: 'Cable',
+            slug: 'cable',
+            images: [{ url: '/media/c.png', alt: '' }],
+          }}
+        />
+      </I18nProvider>,
+    );
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
   });
 });

@@ -48,7 +48,7 @@ const SSR_ITEM = {
   id: F.PRODUCT_ID,
   slug: 'panel',
   name: 'Панель SSR',
-  imageUrl: null,
+  image: null,
   nameLang: null,
   price: 1000,
   sectionSlug: 'panels',

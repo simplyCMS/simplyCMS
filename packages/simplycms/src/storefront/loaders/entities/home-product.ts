@@ -3,31 +3,36 @@ import { productGallerySql } from 'simplycms/translations';
 import type { Product } from 'simplycms/schema/types';
 import type { PriceTypes } from 'simplycms/commerce';
 import type { PriceEntry } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { resolvePrice } from 'simplycms/domain/pricing';
-import { toImageList } from './product';
+import { toGallery } from './gallery';
 import { listLangs, listTextColumns } from '../product-list-text';
 
 /**
  * Мінімальний товар для карток головної. Назва, адреса й короткий опис — з проєкції
  * `catalog_product_texts` у мові запиту (П7); запит приєднує її через `textJoinOn`.
+ * Фото — галерея тієї ж мови (Task 17б), тож мапа колонок — функція мови.
  */
-export const homeProductColumns = {
+export const homeProductColumns = (text: TextLocale) => ({
   id: products.id,
   name: listTextColumns.name,
   slug: listTextColumns.slug,
-  images: productGallerySql(products.id).as('images'),
+  images: productGallerySql(products.id, text.locale, text.primary).as(
+    'images',
+  ),
   short_description: listTextColumns.short_description,
   fallback: listTextColumns.fallback,
   stock_status: products.stockStatus,
   section_id: products.sectionId,
-};
+});
 
 export interface HomeProductRow {
   id: Product['id'];
   name: string;
   /** Поточна адреса товару в мові запиту (не основної мови). */
   slug: string;
-  images: string[];
+  images: ProductImageViewModel[];
   short_description: string | null;
   /** Мова назви/короткого опису, коли текст узято з основної мови (fallback). */
   name_lang: string | null;
@@ -80,7 +85,7 @@ export function toHomeProduct(
     id: row.id,
     name: row.name,
     slug: row.slug,
-    images: toImageList(row.images),
+    images: toGallery(row.images),
     short_description: row.short_description,
     ...listLangs(row.fallback, primary),
     stock_status: row.stock_status,

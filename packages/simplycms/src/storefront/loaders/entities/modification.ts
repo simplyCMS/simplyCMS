@@ -1,6 +1,7 @@
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { productModifications } from 'simplycms/schema';
 import type { ProductModification } from 'simplycms/schema/types';
-import { toImageList } from './product';
+import { toGallery } from './gallery';
 
 export type ModificationRow = {
   id: ProductModification['id'];
@@ -11,12 +12,13 @@ export type ModificationRow = {
   is_default: ProductModification['isDefault'];
   sort_order: ProductModification['sortOrder'];
   stock_status: ProductModification['stockStatus'];
-  images: string[];
+  /** Фото модифікації мовою сторінки (`toGallery`). */
+  images: ProductImageViewModel[];
   /** Мова назви, коли вона узята з основної мови (fallback): вітрина огортає її `lang` (І37). */
   name_lang?: string | null;
 };
 
-/** Нормалізує `images` модифікації тим самим правилом, що й у товару. */
+/** Декодує `images` модифікації тим самим шовом, що й у товару (`toGallery`). */
 export function toModificationRow(row: {
   id: string;
   product_id: string;
@@ -28,7 +30,7 @@ export function toModificationRow(row: {
   stock_status: ProductModification['stockStatus'];
   images: unknown;
 }): ModificationRow {
-  return { ...row, images: toImageList(row.images) };
+  return { ...row, images: toGallery(row.images) };
 }
 
 /**

@@ -18,6 +18,7 @@ type RawModification = Parameters<typeof toModificationRow>[0] & {
  * Модифікації товару для картки у мові запиту: назва — `withFallback` (мова,
  * інакше основна), токен `?mod=` — поточний токен мови з `slug_tokens`, а за його
  * відсутності токен основної (мова `draft` без звірки). Порядок — `sort_order`.
+ * Фото — та сама галерея мови, що й у товару (`modificationGallerySql`, Task 17б).
  */
 export async function loadProductModifications(
   db: ActorDb,
@@ -29,7 +30,7 @@ export async function loadProductModifications(
   const res = await db.execute<RawModification>(sql`
     select m.id, m.product_id, coalesce(tk.slug, tp.slug) as slug,
            ${fb.columns.name} as name, ${fb.fallback.name} as name_fallback, m.sku, m.is_default, m.sort_order,
-           m.stock_status, ${modificationGallerySql(sql`m.id`)} as images
+           m.stock_status, ${modificationGallerySql(sql`m.id`, locale, primary)} as images
       from public.product_modifications m ${fb.joinOn(sql`m.id`)}
       left join public.slug_tokens tk
         on tk.modification_id = m.id and tk.locale = ${locale} and tk.is_current

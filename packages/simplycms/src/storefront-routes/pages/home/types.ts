@@ -1,11 +1,12 @@
 import type { PriceEntry } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 
 /** Мінімальний набір полів товару для карток на головній */
 export interface HomeProduct {
   id: string;
   name: string;
   slug: string;
-  images: string[];
+  images: ProductImageViewModel[];
   short_description: string | null;
   /** Мова назви / короткого опису, коли текст узято з основної мови (fallback). */
   name_lang?: string | null;

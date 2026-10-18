@@ -5,6 +5,8 @@ export const messages = {
   'product.sku': 'Артикул: {sku}',
   // Meta description картки без власного опису товару (`head()` роуту).
   'product.metaDescription': 'Купити {name}',
+  // Підпис мініатюри галереї: alt фото може бути порожнім (Task 17б), а кнопці потрібне ім'я.
+  'product.galleryThumb': 'Фото {index}',
 
   // Наявність
   'product.inStock': 'В наявності',

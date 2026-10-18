@@ -21,7 +21,7 @@ const PROFILE: StorefrontProfile = {
 const PRODUCT: ProductHeadInput = {
   name: 'Панель',
   description: null,
-  images: ['/media/panel.jpg'],
+  images: [{ url: '/media/panel.jpg', alt: 'Панель' }],
   stock_status: 'in_stock',
   has_modifications: false,
   product_modifications: [],

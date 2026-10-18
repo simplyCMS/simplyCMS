@@ -86,7 +86,7 @@ export async function loadHomeProducts(
     : pageVisible();
 
   const rows = await db
-    .select({ ...homeProductColumns, section_slug: sections.slug })
+    .select({ ...homeProductColumns(text), section_slug: sections.slug })
     .from(products)
     .innerJoin(texts, textJoinOn(text))
     .innerJoin(languages, languageOf())

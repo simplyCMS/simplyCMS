@@ -42,7 +42,7 @@ const product: ProductCardViewModel = {
   id: 'product-1',
   name: 'Панель 550 Вт',
   slug: 'panel-550',
-  images: ['/img/panel-550.jpg'],
+  images: [{ url: '/img/panel-550.jpg', alt: 'Панель 550 Вт, фронт' }],
   short_description: 'Монокристал, 25 років гарантії',
   section: { slug: 'panels' },
   stock_status: 'in_stock',

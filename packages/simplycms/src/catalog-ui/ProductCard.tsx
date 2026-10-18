@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { ImageIcon, Star } from 'lucide-react';
 import { useT } from 'simplycms/i18n';
 import type { ThresholdHint } from 'simplycms/contracts';
+import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { useFormatPrice } from 'simplycms/react-query';
 import { productPath } from 'simplycms/domain';
 import { FallbackText } from 'simplycms/ui/fallback-text';
@@ -21,7 +22,8 @@ interface ProductCardProps {
      */
     name_lang?: string | null;
     short_description_lang?: string | null;
-    images?: string[];
+    /** Фото мовою сторінки; мініатюра — перше (alt і його `lang` — з даних, Task 17б). */
+    images?: ProductImageViewModel[];
     section?: { slug: string } | null;
     has_modifications?: boolean;
     price?: number | null;
@@ -48,9 +50,12 @@ export function ProductCard({ product, rating }: ProductCardProps) {
       <div className="group h-full overflow-hidden rounded-lg border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
         <div className="aspect-square overflow-hidden bg-muted relative">
           {firstImage ? (
+            // `lang` на самому `<img>`: атрибут мови елемента застосовується до його `alt`,
+            // а обгортка-`span` (`FallbackText`) змінила б розмітку абсолютно позиціонованого фото.
             <img
-              src={firstImage}
-              alt={product.name}
+              src={firstImage.url}
+              alt={firstImage.alt}
+              lang={firstImage.alt_lang ?? undefined}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
               decoding="async"

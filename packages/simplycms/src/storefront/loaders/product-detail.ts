@@ -7,7 +7,8 @@ import {
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
 import type { ActorDb } from './db';
-import { toImageList, type ProductRow } from './entities/product';
+import { type ProductRow } from './entities/product';
+import { toGallery } from './entities/gallery';
 import { type ModificationRow } from './entities/modification';
 import {
   loadGuestPriceTypes,
@@ -109,7 +110,7 @@ export async function loadProduct(
     ...product,
     ...base.text,
     slug: page.path,
-    images: toImageList(product.images),
+    images: toGallery(product.images),
     sections: base.section,
     product_modifications: modificationRows,
     product_prices: priceRows.map(toPriceEntry),

@@ -87,8 +87,10 @@ const RESOLVED_BY: Record<string, string> = {
   'reviews.ts#avatar_url': 'resolveMediaUrl',
   // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
   'reviews.ts#images': 'toImageList',
-  'products.ts#images': 'toImageList',
-  'entities/home-product.ts#images': 'toImageList',
+  // Галерея товару мовою сторінки (М1, Task 17б): декодер з alt, а не список URL.
+  'products.ts#images': 'toGallery',
+  'catalog-products.ts#images': 'toGallery',
+  'entities/home-product.ts#images': 'toGallery',
   'entities/banner.ts#image_url': 'resolveMediaUrl',
   'entities/banner.ts#desktop_image_url': 'resolveMediaUrl',
   'entities/banner.ts#mobile_image_url': 'resolveMediaUrl',
@@ -99,28 +101,23 @@ const RESOLVED_BY: Record<string, string> = {
 /**
  * Проєкції, які резолвить не свій файл, а СПОЖИВАЧІ — з поіменним переліком.
  *
- * 🔴 Випадок рівно один і він конструктивний: `entities/product.ts` — чиста
- * колонкова мапа плюс визначення самої `toImageList`, тож форми виклику
- * `images: toImageList(` у ньому нема й бути не може. Замість послаблення
- * гейта на весь реєстр — список файлів, де ця форма справді стоїть: зняти
- * резолв у будь-якому з них так само червоно, як лишити проєкцію мовчазною.
+ * 🔴 Випадки конструктивні: сирий SQL лише читає jsonb галереї, а декодує її
+ * (`toGallery`) мапер у файлі-споживачі. Замість послаблення гейта на весь реєстр —
+ * список файлів, де форма виклику справді стоїть: зняти резолв у будь-якому з них так
+ * само червоно, як лишити проєкцію мовчазною.
  */
 const RESOLVED_BY_CONSUMERS: Record<
   string,
   { resolver: string; files: readonly string[] }
 > = {
-  'entities/product.ts#images': {
-    resolver: 'toImageList',
-    files: [
-      'products.ts',
-      'product-detail.ts',
-      'catalog-products.ts',
-      'entities/home-product.ts',
-    ],
+  // Галерею сторінки товару (окремий запит після версій мови) декодує `loadProduct`.
+  'product-page.ts#images': {
+    resolver: 'toGallery',
+    files: ['product-detail.ts'],
   },
   // Сирий SQL модифікацій мапить `toModificationRow` (`entities/modification.ts`).
   'product-modifications.ts#images': {
-    resolver: 'toImageList',
+    resolver: 'toGallery',
     files: ['entities/modification.ts'],
   },
 };

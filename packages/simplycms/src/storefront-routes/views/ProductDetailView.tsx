@@ -27,7 +27,7 @@ export function ProductDetailView({
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Gallery */}
         <div>
-          <ProductGallery images={gallery.images} productName={summary.name} />
+          <ProductGallery images={gallery.images} />
         </div>
 
         {/* Product info */}
