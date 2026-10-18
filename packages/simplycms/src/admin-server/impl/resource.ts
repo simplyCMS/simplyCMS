@@ -14,7 +14,11 @@ import type { ResourceWriteContext } from './resource-write';
 import { defineWriteOps } from './resource-write-ops';
 import { assertMediaColumns } from './resource-write-media';
 import { assertCascadeMedia, cascadeCoverage } from './resource-cascade-media';
-import { type ReadRow, type ReadModelSpec } from './resource-read-model';
+import {
+  type ReadModelGuards,
+  type ReadModelSpec,
+  type ReadRow,
+} from './resource-read-model';
 import { runAdmin } from './run';
 
 // Споживачі (`impl/orders/change-status.ts`, тести) імпортують звідси.
@@ -39,10 +43,11 @@ export function defineAdminResource<
   const R extends ColumnName<T>,
   const I extends ColumnName<T> = never,
   const O extends ColumnName<T> = never,
-  const RM extends ReadModelSpec | undefined = undefined,
+  const RM extends ReadModelSpec<T> | undefined = undefined,
 >(
   config: AdminResourceConfigBase<T, W, R, I, O, RM> &
-    AdminResourceColumnGuards<T, W, R, I, O>,
+    AdminResourceColumnGuards<T, W, R, I, O> &
+    ReadModelGuards<RM>,
 ) {
   const { rowSchema, insertSchema, updateSchema, removeSchema } =
     buildResourceSchemas(
@@ -69,7 +74,8 @@ export function defineAdminResource<
     picked,
     touch: config.touch,
     richHtml: config.richHtml,
-    readModel: config.readModel,
+    // Імена `exclude` уже звірено типом конфігу; для списку це просто рядки.
+    readModel: config.readModel as ReadModelSpec | undefined,
   };
 
   /**

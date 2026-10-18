@@ -17,7 +17,11 @@ export {
   type TranslationRow,
 } from './status';
 export { hasRichText, hasText, normalizeTextInput } from './text';
-export { LANGUAGE_CODE_FORMAT, type TextLocale } from './text-locale';
+export {
+  LANGUAGE_CODE_FORMAT,
+  checkedTextLocale,
+  type TextLocale,
+} from './text-locale';
 export { richTextToPlain } from './plain-text';
 export {
   planTranslationWrite,

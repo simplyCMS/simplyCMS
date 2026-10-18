@@ -2,6 +2,7 @@
 // й сторінка значення характеристики читають назву й адресу товару мовою запиту з проєкції
 // `catalog_product_texts`; неперекладене — з основної мови з ознакою `lang`.
 import { randomUUID } from 'node:crypto';
+import { checkedTextLocale } from 'simplycms/domain/translations';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   loadCatalogProducts,
@@ -179,7 +180,7 @@ describe('читачі товару: лістинг, головна, значе�
       [cable.id],
     );
     expect(rows).toHaveLength(1);
-    const draft = { locale: 'de', primary: 'uk' };
+    const draft = checkedTextLocale('de', 'uk');
     expect(
       await view((tx, v) => loadProductList(tx, v, draft, sectionId)),
     ).toEqual([]);

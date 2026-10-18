@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { checkedTextLocale } from 'simplycms/domain/translations';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orderItems } from 'simplycms/schema';
@@ -77,7 +78,7 @@ export const addOrderItemOp = async ({
       db,
       order.userId,
       [{ productId, modificationId, quantity }],
-      { locale: primary, primary },
+      checkedTextLocale(primary, primary),
       { extraCartTotal: extraCents / 100 },
     );
     if (priced === 'not_purchasable')

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TextLocale } from 'simplycms/domain/translations';
 
 /**
  * Р29: кожен публічний serverFn вітрини, що віддає `product_prices`, іде
@@ -9,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const VIEWER = { ids: ['retail'] };
 const TX = { tx: true };
 /** Мова читання тексту, яку «визначив» `resolveTextLocale` (мок): передається лоадеру як є. */
-const TEXT = { locale: 'en', primary: 'uk' };
+const TEXT = { locale: 'en', primary: 'uk' } as TextLocale;
 
 const loaders = vi.hoisted(() => ({
   withViewerDb: vi.fn(),

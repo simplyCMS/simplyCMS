@@ -1,5 +1,7 @@
 import { and, eq, getTableColumns, type Column } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
+import type { Table } from 'drizzle-orm';
+import type { ColumnName } from './resource-schemas';
 import type { ActorDb } from 'simplycms/db';
 import { primaryLocaleCode } from 'simplycms/translations';
 
@@ -17,18 +19,41 @@ import { primaryLocaleCode } from 'simplycms/translations';
  *
  * `INNER JOIN` перекладу основної мови: рядок БЕЗ нього — дефект даних (І4 це забороняє
  * тригером; фікстури без перекладу — виняток). Такий ресурс у `list` НЕ потрапляє, а не
- * з'являється з порожньою назвою: порожній рядок у таблиці прихував би дефект, відсутній —
- * видно в лічильниках і сторінкуванні.
+ * з'являється з порожньою назвою (`name` в усіх споживачів — не `null`). До Task 17 він
+ * невидимий у колекції: лічильника у списку немає, але й створити такий стан через API
+ * не можна (лише прямим SQL); з Task 17 його робить неможливим constraint-тригер І4.
  */
-export interface ReadModelSpec {
+export interface ReadModelSpec<T extends Table = Table> {
   /** Таблиця перекладів (`<entity>_translations`) з колонками `locale` і FK-власником. */
   readonly translations: PgTable;
   /** FK перекладу на `id` ресурсу. */
   readonly owner: Column;
   readonly fields: Readonly<Record<string, Column>>;
   readonly required?: readonly string[];
-  readonly exclude?: readonly string[];
+  /** Колонки таблиці ресурсу, яких немає в read-model (імена перевіряє typecheck). */
+  readonly exclude?: readonly ColumnName<T>[];
 }
+
+/** Імена полів read-model: їх можна називати в `filterable`/`sortable`/`defaultOrder`, хоч колонки з таким іменем у таблиці вже може не бути (Task 17). */
+export type ReadFieldName<RM> = RM extends ReadModelSpec
+  ? Extract<keyof RM['fields'], string>
+  : never;
+
+/**
+ * Гард конфігу: `required` називає лише поля read-model (одрук ловить typecheck, а не мовчить).
+ */
+export type ReadModelGuards<RM> = RM extends ReadModelSpec
+  ? [Exclude<NonNullable<RM['required']>[number], keyof RM['fields']>] extends [
+      never,
+    ]
+    ? unknown
+    : {
+        __unknownRequiredFields: Exclude<
+          NonNullable<RM['required']>[number],
+          keyof RM['fields']
+        >;
+      }
+  : unknown;
 
 /** Тип поля read-model: дані колонки перекладу, без `null` для `required`. */
 type FieldValue<

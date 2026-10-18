@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { checkedTextLocale } from 'simplycms/domain/translations';
 
 /**
  * Порожній кошик (Е6в-13): нульова квота без жодної транзакції. Ціни
@@ -23,7 +24,7 @@ describe('quoteCartFor: порожній кошик', () => {
     'userId %s — { lines: [], subtotal: 0 } без БД',
     async (userId) => {
       await expect(
-        quoteCartFor([], userId, { locale: 'uk', primary: 'uk' }),
+        quoteCartFor([], userId, checkedTextLocale('uk', 'uk')),
       ).resolves.toEqual({
         lines: [],
         subtotal: 0,

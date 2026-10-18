@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
   loadModificationIds,
-  loadLocaleSet,
+  resolveTextLocale,
   loadModificationStock,
   loadProduct,
   loadProductModificationValues,
@@ -10,6 +10,7 @@ import {
   withViewerDb,
   type ModificationStockRow,
 } from 'simplycms/storefront/loaders';
+import { localeInput } from 'simplycms/core/lib/locale-input';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 
 /** Характеристики й наявність модифікацій одного товару. */
@@ -25,7 +26,7 @@ export interface ModificationDataPayload {
  * інакше `null`: чернетки мови відкривати не можна навіть прямим викликом.
  */
 export const getProduct = createServerFn({ method: 'GET' })
-  .validator(z.object({ locale: z.string().min(1), path: z.string().min(1) }))
+  .validator(z.object({ locale: localeInput, path: z.string().min(1) }))
   .handler(async ({ data: input }) => {
     const address = input as { locale: string; path: string };
     return withViewerDb((db, viewer) => loadProduct(db, address, viewer));
@@ -40,25 +41,22 @@ export const getProduct = createServerFn({ method: 'GET' })
  * достатньо двох запитів. Самої функції в схемі v2 вже й немає (B13).
  */
 export const getModificationData = createServerFn({ method: 'GET' })
-  .validator(
-    z.object({ productId: z.string().min(1), locale: z.string().min(1) }),
-  )
+  .validator(z.object({ productId: z.string().min(1), locale: localeInput }))
   .handler(async ({ data: input }): Promise<ModificationDataPayload> => {
     const { productId, locale } = input as {
       productId: string;
       locale: string;
     };
     // Мова з клієнта — лише вибір тексту: невідома чи неопублікована мова
-    // читається основною, а не помилкою.
-    const set = await loadLocaleSet();
-    const shown = set.published.includes(locale) ? locale : set.primary;
+    // читається основною (та сама `resolveTextLocale`, що в усіх читаннях).
+    const text = await resolveTextLocale(locale);
 
     return withStorefrontDb(async (db) => ({
       propertyValues: await loadProductModificationValues(
         db,
         productId,
-        shown,
-        set.primary,
+        text.locale,
+        text.primary,
       ),
       stock: await loadModificationStock(
         db,

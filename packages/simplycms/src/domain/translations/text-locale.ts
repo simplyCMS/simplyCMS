@@ -16,4 +16,19 @@ export interface TextLocale {
   readonly locale: string;
   /** Основна мова магазину: джерело fallback і мова адмінських читань. */
   readonly primary: string;
+  /**
+   * Бренд «мову перевірено»: літерал `{ locale, primary }` не компілюється, а `loadCatalog`,
+   * `priceCart`, `priceItems` і читальні лоадери беруть лише значення, яке виробила межа
+   * (`checkedTextLocale`). Властивість лише типова — у рантаймі її немає.
+   */
+  readonly __checked: true;
+}
+
+/**
+ * Єдиний конструктор `TextLocale`. Викликають ЛИШЕ межі, що самі перевірили мову:
+ * `resolveTextLocale` (опублікована або основна), `requirePublishedTextLocale` (оформлення) і
+ * адмін-читачі, для яких мова — основна за визначенням. Решта коду значення лише передає.
+ */
+export function checkedTextLocale(locale: string, primary: string): TextLocale {
+  return { locale, primary } as TextLocale;
 }

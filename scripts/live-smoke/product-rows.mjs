@@ -4,7 +4,7 @@
  * не видно. Одна транзакція під замком `languages-set`: корінь, переклад основної мови й
  * поточна адреса в кожній `draft`/`published` мові — стан, еквівалентний командам агрегата.
  *
- * `M1-TEMP`-дзеркало: колонки `products.slug`/`name` ще NOT NULL (Task 17 їх знесе, і ці два
+ * `М1-TEMP`-дзеркало: колонки `products.slug`/`name` ще NOT NULL (Task 17 їх знесе, і ці два
  * поля зникнуть з ОДНОГО `insert` нижче — більше ніде скрипти їх не пишуть).
  */
 import pg from 'pg';
@@ -30,6 +30,7 @@ export async function seedProducts(url, o) {
     );
     await client.query(
       `with ins as (
+         -- М1-TEMP: зноситься в Task 17 — дзеркала slug/name (і returning/ins.slug нижче).
          insert into public.products (id, slug, name, section_id, has_modifications, created_at, updated_at)
          select gen_random_uuid(), $1 || i, ${o.nameSql}, $2, $4, ${o.createdSql}, ${o.createdSql}
            from generate_series(1, $3::int) i

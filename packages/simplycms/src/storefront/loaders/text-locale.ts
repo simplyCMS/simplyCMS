@@ -1,5 +1,8 @@
 import { ValidationError } from 'simplycms/contracts/domain-errors';
-import type { TextLocale } from 'simplycms/domain/translations';
+import {
+  checkedTextLocale,
+  type TextLocale,
+} from 'simplycms/domain/translations';
 import { loadLocaleSet } from './languages';
 
 /**
@@ -19,7 +22,7 @@ export async function resolveTextLocale(
     requested !== undefined && set.published.includes(requested)
       ? requested
       : set.primary;
-  return { locale, primary: set.primary };
+  return checkedTextLocale(locale, set.primary);
 }
 
 /**
@@ -35,5 +38,5 @@ export async function requirePublishedTextLocale(
   const set = await loadLocaleSet();
   if (!set.published.includes(requested))
     throw new ValidationError([{ path: ['locale'], code: 'invalid_value' }]);
-  return { locale: requested, primary: set.primary };
+  return checkedTextLocale(requested, set.primary);
 }

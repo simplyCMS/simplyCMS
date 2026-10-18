@@ -7,15 +7,14 @@ import {
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
+import { LANGUAGE_CODE_FORMAT } from 'simplycms/domain/translations';
 import type { Language } from 'simplycms/schema/types';
 import { hasLanguagePack } from 'simplycms/site';
 
 // Спільні схеми й хелпери операцій мов (М1, Task 6).
 
 export const status = z.enum(['draft', 'published', 'disabled']);
-export const code = z
-  .string()
-  .regex(/^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/);
+export const code = z.string().regex(LANGUAGE_CODE_FORMAT);
 export const view = z.object({
   code: z.string(),
   name: z.string(),

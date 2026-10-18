@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { checkedTextLocale } from 'simplycms/domain/translations';
 import type { AppliedDiscount, RejectedDiscount } from 'simplycms/contracts';
 import { loadPricingContext, priceCart } from 'simplycms/commerce';
 import { primaryLocaleCode } from 'simplycms/translations';
@@ -49,7 +50,7 @@ export const diagnosePriceOp = async ({
           quantity: input.quantity,
         },
       ],
-      { locale: primary, primary },
+      checkedTextLocale(primary, primary),
       { extraCartTotal: input.otherCartTotal },
     );
     const line = lines[0]!;

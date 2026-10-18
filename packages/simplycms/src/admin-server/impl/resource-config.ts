@@ -4,7 +4,7 @@ import type { ActorDb } from 'simplycms/db';
 import type { MediaEntityType } from 'simplycms/domain/media';
 import type { RichHtmlProfile } from 'simplycms/sanitize';
 import type { ResourceCascadeMedia } from './resource-cascade-media';
-import type { ReadModelSpec } from './resource-read-model';
+import type { ReadFieldName, ReadModelSpec } from './resource-read-model';
 import type {
   ColumnName,
   InsertPick,
@@ -41,7 +41,7 @@ export interface AdminResourceConfigBase<
   R extends ColumnName<T>,
   I extends ColumnName<T>,
   O extends ColumnName<T>,
-  RM extends ReadModelSpec | undefined = undefined,
+  RM extends ReadModelSpec<T> | undefined = undefined,
 > {
   entity: string;
   table: T;
@@ -52,10 +52,12 @@ export interface AdminResourceConfigBase<
   // filterable — eq/gt/gte/lt/lte/in/isNull; sortable — сортування і, крім того,
   //   eq/gt/gte/lt/lte (курсор «Показати ще», див. `subset.ts`); in/isNull по
   //   sortable заборонені.
-  filterable: readonly Exclude<ColumnName<T>, O>[];
-  sortable: readonly Exclude<ColumnName<T>, O>[];
+  // Поля read-model (`readModel.fields`) теж можна називати: після зносу дзеркальної колонки
+  // `sortable: ['name']` лишається чинним, а одрук ловить typecheck.
+  filterable: readonly (Exclude<ColumnName<T>, O> | ReadFieldName<RM>)[];
+  sortable: readonly (Exclude<ColumnName<T>, O> | ReadFieldName<RM>)[];
   defaultOrder?: {
-    column: Exclude<ColumnName<T>, O>;
+    column: Exclude<ColumnName<T>, O> | ReadFieldName<RM>;
     direction: 'asc' | 'desc';
   };
   writable: readonly W[];

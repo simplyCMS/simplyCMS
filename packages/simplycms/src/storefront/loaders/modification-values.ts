@@ -63,7 +63,6 @@ export async function loadProductModificationValues(
       modification_id: modificationPropertyValues.modificationId,
       value_id: modificationPropertyValues.id,
       property_id: modificationPropertyValues.propertyId,
-      value: modificationPropertyValues.value,
       value_kind: modificationPropertyValues.valueKind,
       bool_value: modificationPropertyValues.boolValue,
       color_value: modificationPropertyValues.colorValue,

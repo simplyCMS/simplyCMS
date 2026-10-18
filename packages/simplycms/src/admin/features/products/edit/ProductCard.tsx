@@ -75,7 +75,7 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
     store.set(fresh.version);
     rows.reset();
     setConflict(false);
-    // Список товарів читає ту саму назву з колонки-дзеркала: перечитуємо його.
+    // Список товарів читає ту саму назву з перекладу основної мови (read-model колекції): перечитуємо його.
     await products.utils.refetch();
   };
 
