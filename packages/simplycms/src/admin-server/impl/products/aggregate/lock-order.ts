@@ -12,9 +12,12 @@ import { products } from 'simplycms/schema';
  * `catalog-projection-order.test.ts`; сканер — `aggregate-lock-order.test.ts`.
  *
  * (1) Завжди `languages-set` (спільний чи ексклюзивний) -> корені товарів (за id) ->
- *     дочірні рядки. Носій — ЄДИНИЙ: `lockAggregateRoots` (рядкові замки `products`,
- *     сильніші за KEY SHARE, бере лише він — сканер), що сам бере спільний `languages-set`
- *     перед коренем. Тому команда не пише дочірніх рядків з FK на `languages` раніше, ніж
+ *     дочірні рядки. Носій порядку «set -> корінь» — ЄДИНИЙ: `lockAggregateRoots` (рядкові
+ *     замки `products`, сильніші за KEY SHARE, бере лише він — сканер), що сам бере спільний
+ *     `languages-set` перед коренем. Надлишковий носій спільного set на шляху СТВОРЕННЯ —
+ *     генератори адрес і токенів (`createPathsForEntity`/`createTokensForEntity`) беруть його
+ *     самі, але викликачі (`products.create`, фікстура `inLockedBlock`) беруть його раніше, тож
+ *     мутація лише цього носія («генератор читає мови до свого замка») зелена. Тому команда не пише дочірніх рядків з FK на `languages` раніше, ніж
  *     дочекається ексклюзивного власника (`languages.remove`). Мутації: set ПІСЛЯ кореня ->
  *     «products.remove <-> setStatus» 40P01; set прибрано -> ще «saveTranslation <->
  *     languages.remove» і «products.remove <-> languages.remove» 40P01.

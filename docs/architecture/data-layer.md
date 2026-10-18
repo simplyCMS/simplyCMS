@@ -872,7 +872,10 @@ email в іншому регістрі — не конфлікт, записує
 - **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів з
   УСІМА носіями кожного; де носіїв кілька, вони надлишкові (послаблення одного гарантію не знімає), тож
   мутація-доказ послаблює всі разом:
-  (1) `languages-set` → корені за id → дочірні; носій — лише `lockAggregateRoots`.
+  (1) `languages-set` → корені за id → дочірні; носій порядку — лише `lockAggregateRoots`; спільний set на
+  шляху створення надлишково беруть ще генератори адрес і токенів (`createPathsForEntity`/
+  `createTokensForEntity`), але викликачі (`products.create`, фікстура `inLockedBlock`) беруть його раніше —
+  мутація лише цього носія зелена.
   (2) Власник ексклюзивного `languages-set` (`languages.setStatus`, add/remove/reorder мов,
   `reconcileProductTexts`) рядкових замків коренів не бере; носій тесту — ексклюзивний замок звірки.
   (3) `products.remove`: корінь `FOR UPDATE` — `lockProductForRemove` і `snapshotCascadeMedia` (батько),
