@@ -49,54 +49,90 @@ export function stuckFill(
   );
 }
 
+/** Режим виклику fill: лише адреси й токени (спільний set) або все з проєкцією (ексклюзивний). */
+export type FillMode = 'addresses' | 'projection';
+
 /**
- * 🔴 Етап проєкції — лише коли цей виклик НЕ скопіював жодної адреси: рядок проєкції
- * будується з адрес, закомічених ПОПЕРЕДНІМ викликом (І23). Якби fill копіював адресу
- * (L, P) і в тій самій транзакції будував рядок (P, L), паралельна команда товару
- * незакоміченої адреси не бачила б: її `refreshProductTexts` рядка (P, L) не пише, конфлікту
- * рядків немає, і fill комітив би текст зі знімка до команди — застарілий назавжди (звірки в
- * М1 немає). Коли адреса вже закомічена, команда бачить мову й сама пише рядок: fill —
- * `DO NOTHING`, команда — `DO UPDATE`, тож за будь-якого порядку комітів перемагає свіжий
- * текст. Токени модифікацій проєкція не читає — вони йдуть разом із нею.
+ * Чи бракує мові адрес або токенів — з тих самих фрагментів, що копіювання. Читається ДО
+ * першого замка виклику лише для вибору режиму: застаріла відповідь безпечна (режим
+ * `projection` теж копіює адреси, режим `addresses` проєкції не будує взагалі).
  */
-async function stages(db: ActorDb, code: string, batch: number) {
-  const paths = await copyPathsForLocale(db, code, batch);
-  const tokens = await copyTokensForLocale(db, code, batch);
-  if (paths > 0) return paths + tokens;
-  return tokens + (await buildMissingProjection(db, code, batch));
+export async function needsAddresses(
+  db: ActorDb,
+  code: string,
+): Promise<boolean> {
+  const primary = sql`(select code from public.languages where is_default)`;
+  const res = await db.execute<{ yes: boolean }>(sql`
+    select exists (${pathCandidates(primary, code)})
+        or exists (${tokenCandidates(primary, code)}) as yes`);
+  return res.rows[0]?.yes === true;
 }
 
 /**
- * Один пакет заповнення мови: адреси й токени, а проєкція тексту — у НАСТУПНОМУ виклику,
- * після коміту адрес (див. `stages`). Ідемпотентне — копіюються лише сутності без
- * поточного запису в мові; наявні рядки проєкції fill не перезаписує (їх оновлює лише
- * команда, І23). Для мови `disabled` проєкції нема.
- * Замки — лише `FOR KEY SHARE` на товарах і модифікаціях (порядок —
+ * Етапи пакета за режимом. 🔴 Проєкцію будує лише виклик під ЕКСКЛЮЗИВНИМ `languages-set`
+ * (`languagesFill`, пункт (2) `lock-order.ts`): кожна команда товару тримає СПІЛЬНИЙ set від
+ * `lockAggregateRoots` до коміту, тож такий виклик чекає коміту всіх команд у польоті й читає
+ * закомічене джерело; команди, що стартують після нього, бачать закомічені адреси й рядки
+ * проєкції і пишуть свій рядок самі (`DO UPDATE`). Під спільним set побудова зі знімка
+ * програвала б команді, чий refresh пройшов ДО коміту адрес, а коміт — після побудови: рядок
+ * лишався б застарілим назавжди (І23, проба фінального рев'ю). Адреси й токени копіюються під
+ * спільним set — команди й створення товарів у цей час не чекають.
+ */
+async function stages(
+  db: ActorDb,
+  code: string,
+  batch: number,
+  mode: FillMode,
+) {
+  const paths = await copyPathsForLocale(db, code, batch);
+  const tokens = await copyTokensForLocale(db, code, batch);
+  if (mode === 'addresses') return paths + tokens;
+  return paths + tokens + (await buildMissingProjection(db, code, batch));
+}
+
+/** Що ще лишилось зробити В ЦЬОМУ режимі (для запобіжника прогресу). */
+async function pendingFor(
+  db: ActorDb,
+  code: string,
+  batch: number,
+  mode: FillMode,
+): Promise<string[]> {
+  if (mode === 'projection') return pendingFill(db, code, batch);
+  return (await needsAddresses(db, code)) ? pendingFill(db, code, batch) : [];
+}
+
+/**
+ * Один пакет заповнення мови. Режим `addresses` — адреси й токени під спільним set;
+ * `projection` — те саме плюс проєкція тексту під ексклюзивним (див. `stages`). Ідемпотентне —
+ * копіюються лише сутності без поточного запису в мові; наявні рядки проєкції fill не
+ * перезаписує (їх оновлює лише команда, І23). Для мови `disabled` проєкції нема.
+ * Замки рядків — лише `FOR KEY SHARE` на товарах і модифікаціях (порядок —
  * `products/aggregate/lock-order.ts`, пункт (5)).
  * `inserted` — фактично вставлені рядки (`RETURNING`). `done` — за ТИМ САМИМ предикатом
- * (`pendingFill`) після пакета роботи для мови не лишилось (адреса, скопійована цим пакетом,
- * у тій самій транзакції вже видна `pendingFill` разом із відсутнім рядком проєкції, тож
- * `done: true` з незбудованою проєкцією неможливе); не «вставили менше за ліміт»:
- * рядок, який пропустив `ON CONFLICT` чи паралельне видалення, зменшує лічильник, але не
- * означає, що решта мови готова. Клієнт кличе, доки `done` не стане `true`; остаточну
- * істину дає `completeness`.
+ * (`pendingFill`) після пакета роботи для мови не лишилось: у режимі `addresses` відсутні
+ * рядки проєкції лишаються в `pendingFill`, тож `done: true` з незбудованою проєкцією
+ * неможливе; не «вставили менше за ліміт»: рядок, який пропустив `ON CONFLICT` чи
+ * паралельне видалення, зменшує лічильник, але не означає, що решта мови готова. Клієнт
+ * кличе, доки `done` не стане `true`; остаточну істину дає `completeness`.
  */
 export async function fillBatch(
   db: ActorDb,
   code: string,
-  batch: number = FILL_BATCH,
+  batch: number,
+  mode: FillMode,
 ): Promise<{ inserted: number; done: boolean }> {
-  const inserted = await stages(db, code, batch);
-  const left = await pendingFill(db, code, batch);
+  const inserted = await stages(db, code, batch, mode);
+  const done = async () => (await pendingFill(db, code, 1)).length === 0;
+  const left = await pendingFor(db, code, batch, mode);
   if (inserted > 0 || left.length === 0)
-    return { inserted, done: left.length === 0 };
-  // Нічого не вставлено, а робота лишилась: кандидат міг з'явитись у чужій транзакції вже
-  // після вибірки етапів — ще один прохід його підбере. Відмова — лише для товарів, що
-  // лишились незробленими в обох перевірках.
-  const again = await stages(db, code, batch);
-  const still = await pendingFill(db, code, batch);
+    return { inserted, done: await done() };
+  // Нічого не вставлено, а робота цього режиму лишилась: кандидат міг з'явитись у чужій
+  // транзакції вже після вибірки етапів — ще один прохід його підбере. Відмова — лише для
+  // товарів, що лишились незробленими в обох перевірках.
+  const again = await stages(db, code, batch, mode);
+  const still = await pendingFor(db, code, batch, mode);
   if (again > 0 || still.length === 0)
-    return { inserted: again, done: still.length === 0 };
+    return { inserted: again, done: await done() };
   const both = left.filter((id) => still.includes(id));
   if (both.length > 0) throw stuckFill('fill', code, both);
   return { inserted: 0, done: false };

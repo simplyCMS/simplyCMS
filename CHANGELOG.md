@@ -178,9 +178,10 @@
   `reconcileProductTexts`/`localeProjectionMismatches` (звірка з джерелом, паритет SQL-предиката
   `is_translated` з `isTranslatedForSeo`). `languages.setStatus` знімає проєкцію мови при `disabled` і
   дозбирає при поверненні, а відмова `language_incomplete` називає товари й етап
-  (`['products', id, 'path'|'token'|'projection']`); `languages.fill` будує проєкцію лише з адрес,
-  закомічених попереднім викликом (пакет, що скопіював адресу, повертає `done: false` без проєкції —
-  інакше паралельна команда лишала б рядок мови застарілим, І23); `languages.fill` і звірка беруть на товарах і модифікаціях лише `FOR KEY SHARE`
+  (`['products', id, 'path'|'token'|'projection']`); `languages.fill` копіює адреси й токени під
+  спільним `languages-set`, а проєкцію будує лише у виклику під ЕКСКЛЮЗИВНИМ set (узятим першим): він чекає
+  коміту команд товару в польоті й читає закомічене джерело — інакше паралельна команда лишала б рядок
+  мови застарілим (І23); на час пакета проєкції команди й створення товарів чекають; `languages.fill` і звірка беруть на товарах і модифікаціях лише `FOR KEY SHARE`
   (за id, корінь раніше за модифікації). Порядок замків агрегата — `languages-set` -> корені -> дочірні: замок кореня
   (`lockAggregateRoots`: команди `FOR NO KEY UPDATE`, `products.remove` — `FOR UPDATE`, пакетний remove модифікацій) сам
   бере спільний `languages-set` перед рядком кореня; рядки `product_modifications` видаляє лише `deleteModifications`

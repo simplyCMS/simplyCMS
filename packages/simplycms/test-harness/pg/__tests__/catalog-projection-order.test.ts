@@ -145,11 +145,14 @@ describe('порядок замків агрегата: корінь -> моди
         saveDescription(id, (await get(id)).version, {
           modifications: { remove: [a, b] },
         }),
-      () => fillAll('fi'),
-      // fill бере KEY SHARE, сумісний із засувкою й видаленням за id: мусить завершитись без черги.
+      // ОДИН виклик fill — режим адрес (мова нова): спільний set і KEY SHARE, сумісні із
+      // засувкою й видаленням за id, тож мусить завершитись без черги. Виклик проєкції
+      // (ексклюзивний set) стояв би за спільним set команди за побудовою (N1) — не про це.
+      () => exec(languagesFill, { code: 'fi' }),
       { second: 'settles' },
     );
     expect(out).toEqual(['ok', 'ok']);
+    await fillAll('fi');
     await clean();
   });
 });

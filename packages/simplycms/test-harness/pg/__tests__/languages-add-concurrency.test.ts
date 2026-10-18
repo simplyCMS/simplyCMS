@@ -27,7 +27,12 @@ import {
   freshProductSql,
   useAddressingDb,
 } from './fixtures/addressing-db';
-import { hold, until, waiters } from './fixtures/lock-holders';
+import {
+  hold,
+  until,
+  waiters,
+  waitForBlockedTree,
+} from './fixtures/lock-holders';
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
@@ -112,10 +117,12 @@ describe('languages.add проти паралельного створення �
     await b.done;
     await until('A вставила адреси', a.acquired);
 
-    // fill проходить, поки A не закомічена: товару він не бачить.
-    await fillAll('sv');
+    // Виклик fill, що будує проєкцію, бере ЕКСКЛЮЗИВНИЙ languages-set і стає в чергу за
+    // спільним замком A (фінальне рев'ю М1, N1): адресу в sv A створила сама.
+    const fill = fillAll('sv');
+    await waitForBlockedTree(db, a, 1, { releaseOnFail: true });
     a.release();
-    await a.done;
+    await Promise.all([a.done, fill]);
     expect(await pathIn(product, 'sv')).toHaveLength(1);
   });
 
@@ -170,9 +177,11 @@ describe('languages.add проти паралельного створення �
     b.release();
     await b.done;
     await until('A вставила токени', a.acquired);
-    await fillAll('no');
+    // Той самий порядок, що для адрес: fill проєкції чекає коміту A.
+    const fill = fillAll('no');
+    await waitForBlockedTree(db, a, 1, { releaseOnFail: true });
     a.release();
-    await a.done;
+    await Promise.all([a.done, fill]);
     expect(await tokenIn(mod, 'no')).toHaveLength(1);
   });
 

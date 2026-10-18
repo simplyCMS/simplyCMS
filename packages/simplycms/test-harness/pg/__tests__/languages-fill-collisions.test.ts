@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 5: fill (KEY SHARE, не чекає команду) і команда, що пише ту саму
+// М1 Task 14, фікс-раунд 5: fill у режимі адрес (KEY SHARE, спільний set — не чекає команду) і команда, що пише ту саму
 // поточну адресу/токен у тій самій новій мові. Fill пропускає рядок, якщо поточний уже є
 // (`ON CONFLICT` на частковий UNIQUE поточного запису); команда, що програла, — 409
 // «паралельна зміна, повторіть» (`concurrent_change`), а не `path_taken`/`slug_taken`.
@@ -14,6 +14,10 @@ import {
 } from 'simplycms/admin-server/impl';
 import { useAddressingDb } from './fixtures/addressing-db';
 import { latchRace, outcome } from './fixtures/latch-race';
+import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
+import { advisoryXactLockShared } from 'simplycms/db';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+import { fillBatch } from '../../../src/admin-server/impl/languages/fill';
 import { insertModificationAt } from './fixtures/product-graph';
 import { create, exec, get } from './fixtures/product-aggregate';
 
@@ -130,17 +134,23 @@ describe('fill <-> команда в новій мові (Task 14, раунд 5)
 
   it('токен: fill першим — команда отримує 409 «паралельна зміна», повтор — ok', async () => {
     const pm = await withMod('Токен T2 p');
-    const q = await create({ uk: { name: 'Токен T2 q' } });
     await add('bs');
     await db.shared((d) => copyPathsForLocale(d, 'bs', 1000));
-    // fill вставив токени pm і застряг на проєкції q (адреси є, проєкції bs ще немає)
-    const out = await latchRace(
-      db,
-      `select 1 from public.products where id = '${q.id}' for update`,
-      () => fillAll('bs'),
-      setToken(pm.id, pm.mod, 'bs', 'explicit-t'),
-    );
-    expect(out).toEqual(['ok', 'state:concurrent_change']);
+    // Виклик fill у режимі адрес (як операція: спільний set) вставив токен pm і тримає
+    // транзакцію: проєкцію він більше не будує, тож «застрягти» на ній нема де (N1).
+    const fill = hold(db, async (d) => {
+      await advisoryXactLockShared(d, LOCK_KEYS.languagesSet);
+      return fillBatch(d, 'bs', 1000, 'addresses');
+    });
+    await until('fill вставив токен і тримає транзакцію', fill.acquired);
+    const command = outcome(setToken(pm.id, pm.mod, 'bs', 'explicit-t')());
+    // Строго: команда стає на незакомічений поточний токен fill.
+    await waitForBlockedTree(db, fill, 1, { releaseOnFail: true });
+    fill.release();
+    expect([await outcome(fill.done), await command]).toEqual([
+      'ok',
+      'state:concurrent_change',
+    ]);
     expect(await outcome(setToken(pm.id, pm.mod, 'bs', 'explicit-t')())).toBe(
       'ok',
     );

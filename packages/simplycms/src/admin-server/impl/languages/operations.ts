@@ -10,7 +10,7 @@ import { advisoryXactLockShared, isForeignKeyViolation } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
 import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
-import { FILL_BATCH, fillBatch } from './fill';
+import { FILL_BATCH, fillBatch, needsAddresses } from './fill';
 import { code, invalid, load, lockLanguageSet, toView, view } from './view';
 
 // Операції мов (М1, Task 6): перші живі споживачі реєстру операцій. Усі під
@@ -75,13 +75,21 @@ export const languagesFill = defineOperation({
   }),
   output: z.object({ inserted: z.number().int(), done: z.boolean() }),
   async run({ db }, input) {
-    // Спільний замок першим кроком: fill серіалізується з remove/setStatus
-    // (ексклюзивними), але не блокує створення товарів (теж спільні). Без нього
-    // remove мови між читанням і вставкою дав би сирий 23503 (500).
-    await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+    // Режим — ДО першого замка, і замок ОДИН на транзакцію (`fill.ts`, `stages`):
+    // - адреси/токени — СПІЛЬНИЙ set: серіалізується з remove/setStatus (ексклюзивними),
+    //   але не блокує команд і створення товарів (теж спільні). Без нього remove мови між
+    //   читанням і вставкою дав би сирий 23503 (500);
+    // - проєкція — ЕКСКЛЮЗИВНИЙ set, узятий ПЕРШИМ, без спільного перед ним: підвищення
+    //   спільного до ексклюзивного у двох паралельних fill — взаємне блокування (40P01).
+    const mode = (await needsAddresses(db, input.code))
+      ? 'addresses'
+      : 'projection';
+    if (mode === 'addresses')
+      await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
+    else await lockLanguageSet(db);
     await load(db, input.code);
     // Рядок мови не змінюється, тож покоління кешу мов не піднімаємо.
-    return fillBatch(db, input.code, input.batch);
+    return fillBatch(db, input.code, input.batch, mode);
   },
 });
 

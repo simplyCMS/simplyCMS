@@ -17,12 +17,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { lockProduct } from '../../../src/admin-server/impl/products/aggregate/load';
 import { useAddressingDb } from './fixtures/addressing-db';
-import {
-  hold,
-  until,
-  waitForBlockedTree,
-  waitForSettled,
-} from './fixtures/lock-holders';
+import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
 import { insertModificationAt } from './fixtures/product-graph';
 import {
   create,
@@ -101,9 +96,10 @@ describe('замки команди товару проти setStatus і fill (�
     const cmd = command(id);
     await until('команда тримає рядок товару', cmd.locked);
     const fill = fillAll('bg');
-    // Усі адреси вже скопійовано: fill рядка товару не торкається й мусить завершитись
-    // ok повз команду (стати в чергу — інша поведінка, кейс тоді не про це).
-    await waitForSettled('fill завершився повз команду', fill, cmd);
+    // Усі адреси вже скопійовано: виклик fill будує проєкцію під ЕКСКЛЮЗИВНИМ languages-set
+    // і мусить стати в чергу за спільним set команди (фінальне рев'ю М1, N1) — інакше
+    // збудував би рядок зі знімка до коміту команди.
+    await waitForBlockedTree(db, cmd, 1, RELEASE);
     cmd.proceed();
     expect(await Promise.all([settled(cmd.done), settled(fill)])).toEqual([
       'ok',
