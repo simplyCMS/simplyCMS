@@ -51,6 +51,12 @@ describe('pg harness (up.mjs + apply.mjs)', () => {
   // («too many clients», `admin-reviews-moderate` зі 101 id). Кожен запит
   // спершу спить, а потім рахує живі з'єднання до своєї БД: без стелі тут
   // було б ~24, під стелею — не більше 4.
+  //
+  // Рахуємо лише `backend_type = 'client backend'`: у свіжу БД під
+  // навантаженням заходить `autovacuum worker` (доведено логом у момент
+  // падіння: `autovacuum: VACUUM ANALYZE pg_catalog.pg_shdepend`), і він давав
+  // хибне «5 > 4». Стеля обмежує з'єднання ХАРНЕСА — фоновий бекенд кластера
+  // до неї не належить, тож фільтр, а не вищий поріг.
   it("🔴 паралельні queryRows не перевищують стелю одноразових з'єднань", async () => {
     const dbName = `simplycms_harness_ceiling_${Date.now()}`;
     await createTempDatabase(harness.url, dbName);
@@ -61,7 +67,8 @@ describe('pg harness (up.mjs + apply.mjs)', () => {
           queryRows(
             dbUrl,
             `select (select count(*)::int from pg_stat_activity
-                      where datname = current_database()) as n
+                      where datname = current_database()
+                        and backend_type = 'client backend') as n
                from pg_sleep(0.1)`,
           ),
         ),
