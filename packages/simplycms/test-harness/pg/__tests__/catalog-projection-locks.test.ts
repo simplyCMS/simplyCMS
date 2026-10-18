@@ -207,7 +207,7 @@ describe('замки команди товару проти setStatus і fill (�
     });
   });
 
-  describe('fill проти видалення модифікацій у протилежному порядку (корінь, 40P01)', () => {
+  describe('fill проти видалення модифікацій у протилежному порядку (порядок замків)', () => {
     /** Дві модифікації: id a < b, а slug навпаки — fill копіює токени b -> a, видаляч бере a -> b. */
     const withTwoModifications = async (name: string) => {
       const { id } = await create({ uk: { name } });
