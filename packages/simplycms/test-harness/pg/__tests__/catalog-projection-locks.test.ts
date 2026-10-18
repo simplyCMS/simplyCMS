@@ -1,5 +1,6 @@
-// М1 Task 14, фікс-раунд 1 (I-1): порядок замків «рядок товару -> languages-set» команди
-// проти «languages-set -> FK на рядок товару» у setStatus/fill не дає 40P01.
+// М1 Task 14, фікс-раунд 1 (I-1): команда бере спільний `languages-set` ДО кореня, тож
+// порядок «languages-set -> корінь» проти «languages-set -> FK на рядок товару» у
+// setStatus/fill не дає 40P01 (цикл неможливий за побудовою).
 // Команда тут бере СПРАВЖНІЙ `lockProduct`, а refresh викликає після паузи.
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
