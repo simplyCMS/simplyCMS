@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LocaleSet } from '../locale/resolve';
 
 const getProduct = vi.hoisted(() => vi.fn(async () => null));
+type Moved = { path: string; mod: string | null } | null;
 const getMovedProductPath = vi.hoisted(() =>
-  vi.fn(async (): Promise<string | null> => 'new-path'),
+  vi.fn(async (): Promise<Moved> => ({ path: 'new-path', mod: null })),
 );
 vi.mock('../server/products', () => ({ getProduct, getMovedProductPath }));
 
@@ -21,11 +22,12 @@ const LOCALES: LocaleSet = {
   published: ['uk', 'en'],
   known: ['uk', 'en'],
 };
-const load = (href: string) =>
+const load = (href: string, search?: Record<string, unknown>) =>
   loadEntityPage({
     path: 'old-path',
     publicHref: href,
     locales: LOCALES,
+    search,
   }).catch((e: unknown) => e);
 
 afterEach(() => {
@@ -41,7 +43,7 @@ describe('сторінка сутності: історична адреса н�
       '/en/new-path',
     );
     expect(getMovedProductPath).toHaveBeenCalledWith({
-      data: { locale: 'en', path: 'old-path' },
+      data: { locale: 'en', path: 'old-path', mod: null },
     });
   });
 
@@ -49,6 +51,20 @@ describe('сторінка сутності: історична адреса н�
     const out = await load('/old-path');
     expect((out as { options: { href: string } }).options.href).toBe(
       '/new-path',
+    );
+  });
+
+  it('query зберігається, історичний ?mod= — поточним токеном (те саме правило, що сервер, N2)', async () => {
+    getMovedProductPath.mockResolvedValueOnce({ path: 'new-path', mod: 'red' });
+    const out = await load('/en/old-path?mod=old-red&utm=x', {
+      mod: 'old-red',
+      utm: 'x',
+    });
+    expect(getMovedProductPath).toHaveBeenCalledWith({
+      data: { locale: 'en', path: 'old-path', mod: 'old-red' },
+    });
+    expect((out as { options: { href: string } }).options.href).toBe(
+      '/en/new-path?mod=red&utm=x',
     );
   });
 

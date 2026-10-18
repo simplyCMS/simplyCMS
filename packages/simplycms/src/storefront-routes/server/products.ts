@@ -73,15 +73,26 @@ export const getModificationData = createServerFn({ method: 'GET' })
   });
 
 /**
- * Поточна адреса для ІСТОРИЧНОЇ адреси товару (`null` — адреса невідома чи вже поточна). Той
+ * Поточна адреса (і поточний токен `?mod=`) для ІСТОРИЧНОЇ адреси товару (`null` — адреса
+ * невідома чи вже поточна). Той
  * самий резолвер і предикат видимості `pageVisible()`, що в нормалізації до роутера: клієнтська
  * навігація (кеш лістингу, «назад») нормалізацію оминає, і без цього покупець бачив би 404
  * там, де повне завантаження дає 301.
  */
 export const getMovedProductPath = createServerFn({ method: 'GET' })
-  .validator(z.object({ locale: localeInput, path: z.string().min(1) }))
+  .validator(
+    z.object({
+      locale: localeInput,
+      path: z.string().min(1),
+      mod: z.string().nullable(),
+    }),
+  )
   .handler(async ({ data: input }) => {
-    const { locale, path } = input as { locale: string; path: string };
-    const hit = await lookupProductAddress(locale, path, null);
-    return hit && hit.path !== path ? hit.path : null;
+    const { locale, path, mod } = input as {
+      locale: string;
+      path: string;
+      mod: string | null;
+    };
+    const hit = await lookupProductAddress(locale, path, mod);
+    return hit && hit.path !== path ? hit : null;
   });

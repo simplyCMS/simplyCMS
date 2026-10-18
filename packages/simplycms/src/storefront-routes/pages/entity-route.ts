@@ -1,4 +1,8 @@
-import { notFound, redirect } from '@tanstack/react-router';
+import {
+  defaultStringifySearch,
+  notFound,
+  redirect,
+} from '@tanstack/react-router';
 import { productPath } from 'simplycms/domain';
 import { RESERVED_SEGMENTS, SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { localeOfHref } from '../locale/root-data';
@@ -6,6 +10,7 @@ import type { LocaleSet } from '../locale/resolve';
 import { productHead } from '../head/product';
 import type { HeadMatch } from '../head/head';
 import { getMovedProductPath, getProduct } from '../server/products';
+import { queryAfterHistory, tokenOf } from './entity-history';
 
 /**
  * Query сторінки сутності: лише `mod`, і токен — ЗАВЖДИ рядок. Роутер JSON-розбирає
@@ -45,6 +50,8 @@ export async function loadEntityPage(input: {
   /** Публічний href роутера: мову сторінки дає префікс у ньому. */
   publicHref: string;
   locales: LocaleSet;
+  /** Розібраний query сторінки: редирект історичної адреси його зберігає. */
+  search?: Record<string, unknown>;
 }) {
   // Шлях сутності — один сегмент формату slug і не службовий: усе інше (`/Foo`,
   // `/my`) 404 без звернення до БД, а не запит на кожен промах бота.
@@ -56,19 +63,25 @@ export async function loadEntityPage(input: {
     // Клієнтська навігація на історичну адресу: нормалізація (301) працює лише на серверному
     // GET, тож тут той самий резолвер дає редирект замість 404. На сервері історію вже
     // перевірила нормалізація до роутера — другий запит на кожен промах бота зайвий.
+    // Query — тим самим правилом, що серверна нормалізація: решта параметрів як є, історичний
+    // `?mod=` — поточним токеном (`entity-history.ts`).
     if (typeof window !== 'undefined') {
+      const search = input.search ?? {};
       const moved = await getMovedProductPath({
-        data: { locale, path: input.path },
+        data: { locale, path: input.path, mod: tokenOf(search) },
       });
-      if (moved)
+      if (moved) {
+        const href = productPath({
+          path: moved.path,
+          locale,
+          primary: input.locales.primary,
+        }).href;
         throw redirect({
-          href: productPath({
-            path: moved,
-            locale,
-            primary: input.locales.primary,
-          }).href,
+          href:
+            href + defaultStringifySearch(queryAfterHistory(search, moved.mod)),
           replace: true,
         });
+      }
     }
     throw notFound();
   }

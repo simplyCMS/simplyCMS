@@ -19,6 +19,7 @@ export const Route = createFileRoute('/_storefront/$path')({
       path: params.path,
       publicHref: location.publicHref,
       locales: context.locales,
+      search: location.search as Record<string, unknown>,
     }),
   head: ({ loaderData, matches }) => entityHead(matches, loaderData),
   component: EntityPage,

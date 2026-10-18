@@ -1,16 +1,11 @@
 import { SLUG_FORMAT, RESERVED_SEGMENTS } from 'simplycms/domain/slugs';
 import type { AddressResolution } from 'simplycms/storefront/loaders';
+import { queryAfterHistory, tokenOf } from '../pages/entity-history';
 import {
   localePrefix,
   resolveRequestLocale,
   type LocaleSet,
 } from '../locale/resolve';
-
-const isPrimitive = (v: unknown): boolean =>
-  typeof v === 'string' ||
-  typeof v === 'number' ||
-  typeof v === 'boolean' ||
-  v === null;
 
 /** Резолвер реєстру адрес: ін'єкція, щоб крок історії тестувався без БД. */
 export type AddressLookup = (
@@ -37,19 +32,13 @@ export async function applyHistory(
   if (!SLUG_FORMAT.test(path) || RESERVED_SEGMENTS.includes(path)) {
     return { pathname, query };
   }
-  // Токен іде як рядок: роутер JSON-розбирає query, і `?mod=5`/`true`/`null` для нього
-  // не рядки (див. `entitySearch`). Не примітив (масив, об'єкт) роутер відкине сам.
-  const mod = isPrimitive(query.mod) ? String(query.mod) : null;
-  const hit = await lookup(resolved.locale, path, mod);
+  const hit = await lookup(resolved.locale, path, tokenOf(query));
   if (!hit) return { pathname, query };
 
   const prefix = resolved.prefixed ? `/${localePrefix(resolved.locale)}` : '';
-  const next = { ...query };
-  // `mod` у кінцевій адресі — завжди рядок (як його бачить `entitySearch`): токен з цифр
-  // тоді серіалізується лапкованою формою, яку роутер вважає канонічною, і другого
-  // (307) редіректу немає. Історичний токен замінюється поточним; не примітив — геть.
-  if (hit.mod !== null) next.mod = hit.mod;
-  else if (mod !== null) next.mod = mod;
-  else delete next.mod;
-  return { pathname: `${prefix}/${hit.path}`, query: next };
+  // Правило query — спільне з клієнтським редиректом (`pages/entity-history.ts`).
+  return {
+    pathname: `${prefix}/${hit.path}`,
+    query: queryAfterHistory(query, hit.mod),
+  };
 }
