@@ -42,7 +42,7 @@ describe('create-store: інструкція «призначити власни
     expect(readme).not.toContain('psql');
     expect(readme).not.toContain('for f in');
     expect(readme).toContain('MIGRATION_DATABASE_URL');
-    expect(readme).toContain('власника БД');
+    expect(readme).toContain('суперкористувача');
   });
 
   // 🔴 Р18г: фолбеку на localhost немає. Раніше дефолт мусив збігатися з портом
