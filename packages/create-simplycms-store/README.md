@@ -82,7 +82,7 @@ ls dist/client/assets/*.js | wc -l   # одиниці → вас стосуєт�
 pnpm create simplycms-store my-shop \
   --database-url postgresql://app_runtime:пароль@localhost:5432/postgres --yes
 cd my-shop
-# MIGRATION_DATABASE_URL (власник схеми) — у .env.local або в env процесу
+# MIGRATION_DATABASE_URL (роль накату, SUPERUSER кластера) — у .env.local або в env процесу
 pnpm simplycms db:apply
 OWNER_EMAIL=you@example.com pnpm run owner:invite
 pnpm run dev

@@ -58,13 +58,13 @@ export async function run(argv, deps = {}) {
   try {
     const storeRoot = deps.storeRoot ?? findStoreRoot();
     const env = deps.env ?? readStoreEnv(storeRoot);
-    // 🔴 Лише MIGRATION_DATABASE_URL (власник схеми). Падати назад на
+    // 🔴 Лише MIGRATION_DATABASE_URL (роль накату, SUPERUSER). Падати назад на
     // DATABASE_URL не можна: роль app_runtime схему створювати не вміє, а
     // «мовчки вдалося б» на чужій базі гірше за відмову.
     const connectionString = env.MIGRATION_DATABASE_URL;
     if (!connectionString) {
       ui.error(
-        'Не задано MIGRATION_DATABASE_URL — підключення ВЛАСНИКА схеми (не ' +
+        'Не задано MIGRATION_DATABASE_URL — підключення ролі накату (SUPERUSER кластера, не ' +
           'app_runtime із DATABASE_URL). Додай його в .env.local або в env процесу.',
       );
       ui.finish('Накат не виконано.');

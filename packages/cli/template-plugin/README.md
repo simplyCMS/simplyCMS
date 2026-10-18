@@ -21,8 +21,8 @@
   `__MIGRATION_TS_____PLUGIN_TABLE_PREFIX__init.sql` (таймстамп скаффолду, UTC). Чіпати можна ЛИШЕ
   таблиці `__PLUGIN_TABLE_PREFIX__*` (межа довіри — `simplycms db:diff` це
   лінтить). Забрати в магазин: `pnpm simplycms db:diff --write` → ревʼю →
-  `pnpm simplycms db:apply` (підключення — `MIGRATION_DATABASE_URL` власника
-  схеми: `app_runtime` не має прав на `create table`). Доступ із коду — `usePluginTable`.
+  `pnpm simplycms db:apply` (підключення — `MIGRATION_DATABASE_URL` — роль накату,
+  SUPERUSER кластера: `app_runtime` не має прав на `create table`). Доступ із коду — `usePluginTable`.
 - **Сторінки адмінки** — тека `routes/` із запеченими id
   `/admin/__PLUGIN_NAME__/…` + рядок `physical()` у `routes.ts` магазину
   (див. якір-коментар там); приклад — пакет `@simplycms/plugin-faq`.

@@ -87,7 +87,7 @@ pnpm simplycms add <pkg> --plugin|--theme   # встановити плагін/
 pnpm simplycms create (plugin|theme) <name> # скаффолд ВЛАСНОГО плагіна/теми в plugins/ або themes/ магазину
 pnpm simplycms update --write    # оновити ядро (simplycms + @simplycms/*) + догнати host-файли
 pnpm simplycms db:diff --write   # донести нові міграції ядра І плагінів (далі: git diff →
-                                  # pnpm simplycms db:apply — з MIGRATION_DATABASE_URL власника схеми)
+                                  # pnpm simplycms db:apply — з MIGRATION_DATABASE_URL — роль накату, SUPERUSER)
 ```
 
 Повна інструкція (команди, exit-коди, наскрізні сценарії, канон host-файлів) —

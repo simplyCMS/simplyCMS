@@ -97,5 +97,6 @@ export class MigrationTransactionControlError extends Error {
  * суперкористувачу, тож найчастіша причина — роль накату без SUPERUSER.
  */
 export const SUPERUSER_HINT =
-  '; роль накату (MIGRATION_DATABASE_URL) мусить бути SUPERUSER кластера — керовані Postgres ' +
-  'лише з CREATEROLE не підтримуються (docs/development/ENVIRONMENT.md)';
+  '; ймовірна причина — роль накату (MIGRATION_DATABASE_URL) не SUPERUSER кластера (вимога: ' +
+  'SUPERUSER; керовані Postgres лише з CREATEROLE не підтримуються, docs/development/ENVIRONMENT.md); ' +
+  'якщо роль — суперкористувач, причина в грантах міграції';

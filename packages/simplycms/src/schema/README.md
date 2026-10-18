@@ -95,8 +95,8 @@ SQL. Нумерація в них своя в кожної: drizzle рахує �
 - Між `db:diff` і накатом — **обовʼязкове людське ревʼю SQL**: drizzle-kit не
   розпізнає перейменувань (видасть `DROP COLUMN` + `ADD COLUMN`) і не діфить
   ролі, гранти та функції.
-- 🔴 Накат у магазині — `pnpm simplycms db:apply` (`MIGRATION_DATABASE_URL` власника
-  схеми): ядро `simplycms/migrate` накочує `db/migrations/*.sql` у порядку імен із
+- 🔴 Накат у магазині — `pnpm simplycms db:apply` (`MIGRATION_DATABASE_URL` — роль накату,
+  SUPERUSER кластера): ядро `simplycms/migrate` накочує `db/migrations/*.sql` у порядку імен із
   журналом контрольних сум; на чистий Postgres канон накочує `pnpm test:schema`.
 - `drizzle-kit` запускається з cwd = тека цього пакета, а `schema`/`out` у конфізі
   мусять лишатися **відносними**: 0.31 у `generate` склеює `./${out}` і на

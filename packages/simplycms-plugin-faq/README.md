@@ -17,7 +17,7 @@
 ```bash
 pnpm simplycms add @simplycms/plugin-faq --plugin
 pnpm simplycms db:diff --write   # міграція плагіна → db/migrations (ревʼю!)
-pnpm simplycms db:apply          # MIGRATION_DATABASE_URL — власник схеми; накочує лише нові файли
+pnpm simplycms db:apply          # MIGRATION_DATABASE_URL — роль накату (SUPERUSER кластера); накочує лише нові файли
 pnpm build
 ```
 

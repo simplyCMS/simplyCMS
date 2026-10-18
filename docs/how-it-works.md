@@ -43,7 +43,7 @@ simplycms add @vendor/simplycms-plugin-novaposhta
 simplycms db:diff --write              ← окремий крок, ЛЮДСЬКЕ РЕВʼЮ обовʼязкове
 ├─ N канонів: міграції ядра + кожного встановленого плагіна
 ├─ SQL-лінт межі довіри: плагін чіпає лише свої таблиці plg_<name>_*
-└─ далі: git diff → pnpm simplycms db:apply (з MIGRATION_DATABASE_URL власника схеми; журнал накочує лише нові файли; плагінні
+└─ далі: git diff → pnpm simplycms db:apply (з MIGRATION_DATABASE_URL — роль накату, SUPERUSER; журнал накочує лише нові файли; плагінні
    таблиці типізуються власним generic-ом плагіна, не автогенератом)
 ```
 
@@ -76,7 +76,7 @@ simplycms db:diff --write              ← окремий крок, ЛЮДСЬК
 ```bash
 pnpm create simplycms-store my-shop   # тонка збірка: конфіг + ~8 файлів
 # заповнити .env.local (DATABASE_URL, BETTER_AUTH_SECRET, VITE_SITE_URL) і
-# MIGRATION_DATABASE_URL — підключення ВЛАСНИКА схеми, лише для накату
+# MIGRATION_DATABASE_URL — підключення ролі накату (SUPERUSER кластера), лише для накату
 pnpm simplycms db:apply                # схема ядра з коробки
 OWNER_EMAIL=you@example.com pnpm owner:invite   # власник магазину
 pnpm dev                               # повний магазин: вітрина + адмінка + default-тема

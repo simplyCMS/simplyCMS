@@ -36,7 +36,7 @@ describe('накат під роллю без SUPERUSER', () => {
     expect(err).toBeInstanceOf(Error);
     expect((err as { cause?: { code?: string } }).cause?.code).toBe('42501');
     expect((err as Error).message).toMatch(
-      /^\[simplycms\/migrate\] Накат 0000_prelude\.sql впав: .*мусить бути SUPERUSER кластера/,
+      /^\[simplycms\/migrate\] Накат 0000_prelude\.sql впав: .*ймовірна причина.*не SUPERUSER кластера/,
     );
     const rows = await H.queryRows(
       H.withDbName(harness.url, db),

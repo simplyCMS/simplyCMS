@@ -11,7 +11,8 @@
 ## 1. Модель
 
 - Дані — **Drizzle поверх чистого PostgreSQL 17** (`pg`-пул), auth — **Better Auth**
-  (`simplycms/auth`). Postgres — власний кластер магазину; роль накату — **SUPERUSER** кластера: прелюдія (`0000_prelude.sql`) створює ролі `app_*` і
+  (`simplycms/auth`). Postgres — власний кластер магазину; роль накату — **SUPERUSER** кластера:
+прелюдія (`0000_prelude.sql`) створює ролі `app_*` і
   приводить їх атрибути до канону (`alter role … nosuperuser nobypassrls nocreatedb …`), а атрибути
   SUPERUSER/BYPASSRLS Postgres дозволяє міняти лише суперкористувачу. Керовані Postgres, де роль має лише
   CREATEROLE (Supabase, RDS тощо), не підтримуються.
