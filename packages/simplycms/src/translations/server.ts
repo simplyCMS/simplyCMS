@@ -19,5 +19,6 @@ export {
   lineImageSql,
   mainImageSql,
   modificationGallerySql,
+  productFirstImageSql,
   productGallerySql,
 } from './gallery';

@@ -88,10 +88,9 @@ describe('лоадери вітрини проти живого Postgres', () =>
 
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.map((row) => row.slug)).not.toContain(HIDDEN_PRODUCT_SLUG);
-    // Ціни й розділ приходять тим самим запитом — інакше картка списку не
-    // мала б ні href, ні ціни в серверному HTML.
+    // Ціни приходять тим самим запитом — інакше картка списку не мала б ціни в серверному
+    // HTML (href — поточна адреса мови з проєкції, розділ для нього не потрібен).
     expect(rows.some((row) => row.product_prices.length > 0)).toBe(true);
-    expect(rows.some((row) => row.sections !== null)).toBe(true);
   });
 
   it('товар за slug приходить із розділом, цінами й характеристиками', async () => {

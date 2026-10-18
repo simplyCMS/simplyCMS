@@ -27,14 +27,39 @@ const ORDER = sql.raw(GALLERY_ORDER);
  */
 function gallerySql(where: SQL, locale: string, primary: string): SQL<unknown> {
   const fb = withFallback(TRANSLATABLE.productImage, locale, primary);
-  return sql`coalesce((select jsonb_agg(jsonb_build_object(
-        'key', coalesce(t_loc.storage_key, i.storage_key),
-        'alt', ${fb.columns.alt},
-        'alt_lang', case when ${fb.fallback.alt} then ${primary}::text end
-      ) order by ${ORDER})
+  return sql`coalesce((select jsonb_agg(${elementSql(fb, primary)} order by ${ORDER})
       from public.product_images i ${fb.joinOn(sql`i.id`)}
      where ${where}), '[]'::jsonb)`;
 }
+
+/** Один елемент галереї (`{ key, alt, alt_lang }`) — спільний для масиву й першого фото. */
+function elementSql(
+  fb: ReturnType<typeof withFallback>,
+  primary: string,
+): SQL<unknown> {
+  return sql`jsonb_build_object(
+        'key', coalesce(t_loc.storage_key, i.storage_key),
+        'alt', ${fb.columns.alt},
+        'alt_lang', case when ${fb.fallback.alt} then ${primary}::text end
+      )`;
+}
+
+/**
+ * ПЕРШЕ фото товару мовою `locale` jsonb-об'єктом (`null` — без фото): той самий елемент і
+ * порядок, що в `productGallerySql`, але `LIMIT 1` замість агрегату всієї галереї — для
+ * списків, яким потрібна лише мініатюра (SSR-список, `loadProductList`).
+ */
+export const productFirstImageSql = (
+  owner: SQLWrapper,
+  locale: string,
+  primary: string,
+): SQL<unknown> => {
+  const fb = withFallback(TRANSLATABLE.productImage, locale, primary);
+  return sql`(select ${elementSql(fb, primary)}
+      from public.product_images i ${fb.joinOn(sql`i.id`)}
+     where i.product_id = ${owner} and i.modification_id is null
+     order by ${ORDER} limit 1)`;
+};
 
 /**
  * Фото товару (без фото модифікацій) мовою `locale` jsonb-масивом у порядку галереї;

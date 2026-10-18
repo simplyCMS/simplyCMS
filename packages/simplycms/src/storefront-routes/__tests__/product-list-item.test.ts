@@ -21,9 +21,8 @@ function makeRow(overrides: Partial<ProductListRow> = {}): ProductListRow {
     slug: 'invertor-5kw',
     name: 'Інвертор 5 кВт',
     name_lang: null,
-    images: [{ url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' }],
+    image: { url: 'https://cdn.example.com/invertor.jpg', alt: 'Інвертор' },
     has_modifications: true,
-    sections: { slug: 'invertory' },
     product_modifications: [
       { id: 'mod-a', is_default: false, sort_order: 1 },
       { id: 'mod-b', is_default: true, sort_order: 2 },
@@ -111,7 +110,7 @@ describe('toProductListItem', () => {
   });
 
   it('(б) без цін → price: null (решта полів на місці)', () => {
-    const row = makeRow({ product_prices: [], images: [] });
+    const row = makeRow({ product_prices: [], image: null });
 
     expect(toProductListItem(row, GUEST_DEFAULT)).toEqual({
       id: 'prod-1',

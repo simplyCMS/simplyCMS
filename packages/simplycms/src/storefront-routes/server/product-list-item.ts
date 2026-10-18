@@ -76,7 +76,7 @@ export function toProductListItem(
     slug: row.slug,
     name: row.name,
     nameLang: row.name_lang,
-    image: row.images[0] ?? null,
+    image: row.image,
     price,
   };
 }

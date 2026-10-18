@@ -11,6 +11,11 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 import { I18nProvider } from 'simplycms/i18n';
 import { ProductGallery } from 'simplycms/catalog-ui/ProductGallery';
 import type { ProductImageViewModel } from 'simplycms/contracts/views';
+import { sql } from 'drizzle-orm';
+import {
+  productFirstImageSql,
+  productGallerySql,
+} from 'simplycms/translations';
 import {
   loadCatalogProducts,
   loadHomePageData,
@@ -125,10 +130,14 @@ describe('фото товару мовою сторінки (Task 17б)', () => 
   it('мініатюри лістингів /en (SSR-список, каталог, головна, розділ головної) — перевизначення en', async () => {
     const first = (rows: { id: string; images: ProductImageViewModel[] }[]) =>
       rows.find((r) => r.id === cable.id)?.images[0];
+    // SSR-список несе лише мініатюру (`image`, перше фото — `productFirstImageSql`).
+    const thumb = (
+      rows: { id: string; image: ProductImageViewModel | null }[],
+    ) => rows.find((r) => r.id === cable.id)?.image;
     const front = { url: url('ab/main-en.png'), alt: 'Cable front' };
 
     expect(
-      first(await view((tx, v) => loadProductList(tx, v, EN, sectionId))),
+      thumb(await view((tx, v) => loadProductList(tx, v, EN, sectionId))),
     ).toMatchObject(front);
     expect(
       first(await view((tx, v) => loadCatalogProducts(tx, v, EN, sectionId))),
@@ -140,7 +149,7 @@ describe('фото товару мовою сторінки (Task 17б)', () => 
     expect(first(home.sectionProducts[sectionId] ?? [])).toMatchObject(front);
     // Основною мовою мініатюра — спільний файл.
     expect(
-      first(await view((tx, v) => loadProductList(tx, v, UK, sectionId))),
+      thumb(await view((tx, v) => loadProductList(tx, v, UK, sectionId))),
     ).toMatchObject({ url: url('ab/main.png'), alt: 'Кабель спереду' });
   });
 
@@ -154,5 +163,17 @@ describe('фото товару мовою сторінки (Task 17б)', () => 
     const bare = gallery([images[2]!]);
     expect(bare).toMatch(/<img [^>]*alt=""/);
     expect(bare).not.toMatch(/alt="(Cable|Кабель|ab\/bare\.png)/);
+  });
+
+  it('перше фото (LIMIT 1) = перший елемент галереї в кожній мові (B M7)', async () => {
+    for (const t of [EN, UK]) {
+      const res = await db.admin((d) =>
+        d.execute<{ first: unknown; gallery: unknown }>(sql`
+          select ${productFirstImageSql(sql`${cable.id}::uuid`, t.locale, t.primary)} as first,
+                 ${productGallerySql(sql`${cable.id}::uuid`, t.locale, t.primary)} -> 0 as gallery`),
+      );
+      expect(res.rows[0]?.first).not.toBeNull();
+      expect(res.rows[0]?.first).toEqual(res.rows[0]?.gallery);
+    }
   });
 });

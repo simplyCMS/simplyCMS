@@ -131,7 +131,8 @@
   `FallbackText` (`simplycms/ui/fallback-text`); view-моделі несуть `*_lang` (snake_case за полем: `name_lang`, `short_description_lang`, `value_lang`, `alt_lang`).
 - **Фото мовою сторінки** — один читач `simplycms/translations/gallery.ts`: порядок `GALLERY_ORDER`
   (канон і для live-smoke, парність — `live-smoke-gallery-order.test.ts`), `productGallerySql`/
-  `modificationGallerySql`/`mainImageSql`/`lineImageSql`; декодер `toGallery`, view
+  `modificationGallerySql`/`mainImageSql`/`lineImageSql`, `productFirstImageSql` (лише мініатюра,
+  `LIMIT 1` замість агрегату галереї — SSR-список `loadProductList`); декодер `toGallery`, view
   `ProductImageViewModel` (`{ url, alt, alt_lang? }`). Семантика: файл — перевизначення мови, інакше
   спільний; alt — мови, інакше основної з `alt_lang`; `''` у рядку мови — ЯВНО декоративне (без
   fallback), `null` — перекладу немає (alt основної).

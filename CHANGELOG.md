@@ -62,6 +62,8 @@
   `simplycms/domain/translations`); серверні функції `getCatalogPageData`, `getSectionPageData`, `getCatalogProducts`,
   `getHomePageData`, `getFeaturedProducts`, `getNewProducts`, `getSectionProducts`, `getPropertyOption`, `quoteCart`,
   `quoteCheckout`, `placeOrder` приймають `locale`; невідома чи неопублікована мова читається основною (`resolveTextLocale`).
+  `ProductListRow` (`loadProductList`, SSR-список) несе лише мініатюру `image` (перше фото, `productFirstImageSql`) замість
+  усієї галереї `images` і без `sections`; DTO `ProductListItem` — без `sectionSlug`.
   `slug` картки списку — поточна адреса ЦІЄЇ мови (`/en/<path en>`), `ProductCardViewModel`/`ProductCard` дістали
   `name_lang`/`short_description_lang` (fallback-текст має `lang` основної мови; тема з власною карткою мусить їх застосувати).
   Ключ квоти кошика — `[…AGGREGATE.cartQuote.keyFor(locale), userId, …]`. `FallbackText` переїхав у `simplycms/ui/fallback-text`.

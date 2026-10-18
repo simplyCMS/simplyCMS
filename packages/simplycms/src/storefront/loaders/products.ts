@@ -5,14 +5,13 @@ import {
   productModifications,
   productPrices,
   products,
-  sections,
 } from 'simplycms/schema';
 import type { PriceEntry } from 'simplycms/contracts';
 import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import type { TextLocale } from 'simplycms/domain/translations';
-import { productGallerySql } from 'simplycms/translations';
+import { productFirstImageSql } from 'simplycms/translations';
 import type { ActorDb } from './db';
-import { toGallery } from './entities/gallery';
+import { toGalleryImage } from './entities/gallery';
 import { pageVisible } from './product-visibility';
 import { listLangs, languageOf, textJoinOn } from './product-list-text';
 import { listModificationColumns } from './entities/modification';
@@ -41,10 +40,13 @@ export interface ProductListRow {
   name: string;
   /** Мова назви, коли її узято з основної мови (fallback), інакше `null`. */
   name_lang: string | null;
-  /** Фото мовою запиту (перевизначення файлу й alt мови, Task 17б). */
-  images: ProductImageViewModel[];
+  /**
+   * Мініатюра — ПЕРШЕ фото мовою запиту (перевизначення файлу й alt мови, Task 17б); `null` —
+   * без фото. Лише перше: списку більше не треба, а агрегат усієї галереї на кожен рядок —
+   * зайва робота БД, що росте з каталогом.
+   */
+  image: ProductImageViewModel | null;
   has_modifications: boolean | null;
-  sections: { slug: string } | null;
   product_modifications: ProductListModification[];
   product_prices: PriceEntry[];
 }
@@ -84,16 +86,14 @@ export async function loadProductList(
       slug: texts.path,
       name: texts.name,
       fallback: texts.fallbackFields,
-      images: productGallerySql(products.id, text.locale, text.primary).as(
-        'images',
+      image: productFirstImageSql(products.id, text.locale, text.primary).as(
+        'image',
       ),
       has_modifications: products.hasModifications,
-      section_slug: sections.slug,
     })
     .from(products)
     .innerJoin(texts, textJoinOn(text))
     .innerJoin(languages, languageOf())
-    .leftJoin(sections, eq(products.sectionId, sections.id))
     .where(visible)
     .orderBy(desc(products.createdAt));
 
@@ -127,9 +127,8 @@ export async function loadProductList(
     slug: row.slug,
     name: row.name,
     ...listLangs(row.fallback, text.primary),
-    images: toGallery(row.images),
+    image: toGalleryImage(row.image),
     has_modifications: row.has_modifications,
-    sections: row.section_slug === null ? null : { slug: row.section_slug },
     product_modifications: modificationsByProduct[row.id] ?? [],
     product_prices: pricesByProduct[row.id] ?? [],
   }));
