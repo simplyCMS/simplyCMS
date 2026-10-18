@@ -4,7 +4,8 @@
  * значення й фото йдуть тим самим запитом.
  */
 import { describe, expect, it } from 'vitest';
-import { blankForm, rebase, withStockStatus } from '../product-aggregate';
+import { blankForm, withStockStatus } from '../product-aggregate';
+import { rebase } from '../product-rebase';
 import type { ProductFormValues } from '../product-form-schema';
 import {
   buildCreateInput,
@@ -265,7 +266,7 @@ describe('rebase / withStockStatus', () => {
     expect(out.isFeatured).toBe(true);
   });
 
-  it('колекція, змінена після відправки, береться цілком', () => {
+  it('колекція: елемент, доданий після відправки, лишається', () => {
     const sent = was();
     const now = { ...sent, modifications: [mod(M1)] };
     expect(rebase(was(), sent, now).modifications).toHaveLength(1);

@@ -21,13 +21,13 @@ import { ProductForm } from './ProductForm';
 import {
   aggregateToForm,
   localeStatuses,
-  rebase,
   type ProductAggregate,
 } from './product-aggregate';
 import {
   productFormSchemaFor,
   type ProductFormValues,
 } from './product-form-schema';
+import { resetAfterSave } from './product-rebase';
 import { useProductUpdate } from './useProductSave';
 import { useRowErrors } from './useRowErrors';
 import { useStockStatusSync } from './useStockStatusSync';
@@ -61,7 +61,7 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
   /**
    * Перечитування: знімок стає станом БД. Свідоме («Перезавантажити») скидає
    * форму цілком; після власного збереження (`sent`) поля, які користувач
-   * змінив ПІСЛЯ відправки запиту, лишаються його (`rebase`).
+   * змінив ПІСЛЯ відправки запиту, лишаються його й лишаються змінами (`resetAfterSave`).
    */
   const reload = async (sent?: ProductFormValues) => {
     const fresh = await refetch();
@@ -71,7 +71,8 @@ function Body({ productId, aggregate, languages, refetch }: Props): ReactNode {
     }
     const baseline = aggregateToForm(fresh, codes);
     setState({ agg: fresh, baseline });
-    form.reset(sent ? rebase(baseline, sent, form.getValues()) : baseline);
+    if (sent) resetAfterSave(form, baseline, sent);
+    else form.reset(baseline);
     store.set(fresh.version);
     rows.reset();
     setConflict(false);

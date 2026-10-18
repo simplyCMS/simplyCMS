@@ -4,7 +4,6 @@ import type {
   LocaleStatuses,
   TranslationStatus,
 } from '../../translations/translation-context';
-import { same } from './product-diff';
 import {
   TEXT_FIELDS,
   type DraftTexts,
@@ -111,37 +110,4 @@ export function withStockStatus(
           m.id === modificationId ? { ...m, stockStatus: status } : m,
         ),
       };
-}
-
-/**
- * Свіжий знімок БД + те, що користувач змінив ПІСЛЯ відправки запиту: поле,
- * що відрізняється між відправленим (`sent`) і поточним (`now`), лишається
- * поточним, решту бере БД. Тексти — по полях, колекції — цілком.
- */
-export function rebase(
-  fresh: ProductFormValues,
-  sent: ProductFormValues,
-  now: ProductFormValues,
-): ProductFormValues {
-  const out: ProductFormValues = structuredClone(fresh);
-  for (const [locale, row] of Object.entries(now.texts)) {
-    for (const f of TEXT_FIELDS)
-      if (row[f] !== (sent.texts[locale]?.[f] ?? '')) {
-        out.texts[locale] ??= emptyTexts();
-        out.texts[locale][f] = row[f];
-      }
-  }
-  for (const k of [
-    'sectionId',
-    'isActive',
-    'isFeatured',
-    'hasModifications',
-    'sku',
-    'stockStatus',
-    'path',
-  ] as const)
-    if (now[k] !== sent[k]) Object.assign(out, { [k]: now[k] });
-  for (const k of ['modifications', 'propertyValues', 'images'] as const)
-    if (!same(now[k], sent[k])) Object.assign(out, { [k]: now[k] });
-  return out;
 }
