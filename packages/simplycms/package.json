@@ -181,6 +181,10 @@
         "types": "./dist/contracts/server-only.d.ts",
         "import": "./dist/contracts/server-only.js"
       },
+      "./contracts/thenable": {
+        "types": "./dist/contracts/thenable.d.ts",
+        "import": "./dist/contracts/thenable.js"
+      },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",
         "import": "./dist/contracts/objects/index.js"
