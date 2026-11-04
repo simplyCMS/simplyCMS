@@ -82,27 +82,50 @@ const CATALOG_MODULE =
 
 /**
  * Той самий модуль за ВМІСТОМ: статичний імпорт каталогу з пакета мови Rolldown вбудовує в
- * чанк імпортера (`dist/i18n/index.js`), і за іменем файла його не видно — зате кожен
- * вбудований модуль лишає в чанку маркер `//#region src/i18n/catalogs/…`. Файл читається
- * лише з `simplycms/dist` і лише якщо id — реальний шлях (синтетичні id тестів — ні).
+ * чанк імпортера (`dist/i18n/index.js`), і за іменем файла його не видно. Надійне джерело —
+ * `sources` зі сорсмапи чанка (`sourcemap: true` у `tsdown.config.ts`, мапи їдуть у пакеті):
+ * вона перелічує всі вбудовані вихідні модулі й переживає мініфікацію, яка прибрала б
+ * коментарі `//#region`. Коментар лишається запасним шляхом для чанка без мапи.
+ * Файл читається лише з `simplycms/dist` і лише якщо id — реальний шлях (синтетичні id
+ * тестів — ні).
  */
+const CATALOG_SOURCE = /(?:^|\/)src\/i18n\/catalogs\//;
 const CATALOG_REGION = /^\/\/#region .*\bi18n\/catalogs\//m;
-const regionCache = new Map();
-function hasCatalogRegion(id) {
-  if (!/simplycms\/dist\//.test(id)) return false;
-  if (!regionCache.has(id)) {
-    let hit = false;
-    try {
-      hit =
-        statSync(id).isFile() && CATALOG_REGION.test(readFileSync(id, 'utf8'));
-    } catch {
-      // id без файла на диску — нема що читати.
+/** id -> { mapped: чанк має читабельні вихідні шляхи, catalog: серед них є каталог ядра } */
+const inspectCache = new Map();
+function inspectDist(id) {
+  if (!/simplycms\/dist\//.test(id)) return { mapped: false, catalog: false };
+  if (inspectCache.has(id)) return inspectCache.get(id);
+  let result = { mapped: false, catalog: false };
+  try {
+    if (statSync(id).isFile()) {
+      let sources = null;
+      try {
+        sources = JSON.parse(readFileSync(`${id}.map`, 'utf8')).sources;
+      } catch {
+        // Мапи немає — лишається коментар `//#region`.
+      }
+      if (Array.isArray(sources)) {
+        result = {
+          mapped: sources.some((src) => /(?:^|\/)src\//.test(src)),
+          catalog: sources.some((src) => CATALOG_SOURCE.test(src)),
+        };
+      } else {
+        const code = readFileSync(id, 'utf8');
+        result = {
+          mapped: /^\/\/#region src\//m.test(code),
+          catalog: CATALOG_REGION.test(code),
+        };
+      }
     }
-    regionCache.set(id, hit);
+  } catch {
+    // id без файла на диску — нема що читати.
   }
-  return regionCache.get(id);
+  inspectCache.set(id, result);
+  return result;
 }
-const isCatalogModule = (id) => CATALOG_MODULE.test(id) || hasCatalogRegion(id);
+const isCatalogModule = (id) =>
+  CATALOG_MODULE.test(id) || inspectDist(id).catalog;
 
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
@@ -234,6 +257,16 @@ export function gateBundle(storeDir) {
   details.push(
     `initial-чанків: ${initial.length}, модулів у них: ${initialModules.length}`,
   );
+  // Канарка: перевірка вмісту має що читати. Якщо жоден чанк `simplycms/dist` не віддає
+  // вихідних шляхів (мініфікація без сорсмап, інший формат), правило каталогів сліпе за
+  // побудовою — тож це FAIL, а не тихий OK.
+  if (!allModules.some((id) => inspectDist(id).mapped)) {
+    ok = false;
+    details.push(
+      'FAIL канарка вмісту: жоден чанк simplycms/dist не віддає вихідних шляхів (сорсмапа чи //#region src/) — ' +
+        'перевірка вбудованих каталогів сліпа, бандл зібрано без мап або з мініфікацією',
+    );
+  }
   for (const {
     label,
     rx,

@@ -33,6 +33,15 @@ beforeEach(() => {
   }
 });
 
+/** Справжній чанк пакета з сорсмапою: джерело канарки вмісту (gate читає лише реальні файли). */
+function writeChunk(name: string, sources: string[], withMap = true): string {
+  const file = join(store, 'node_modules/simplycms/dist', name);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, '//#region src/stub.ts\n');
+  if (withMap) writeFileSync(`${file}.map`, JSON.stringify({ sources }));
+  return file;
+}
+
 afterEach(() => {
   rmSync(store, { recursive: true, force: true });
 });
@@ -44,7 +53,12 @@ const LAZY_CATALOGS: Record<string, Chunk> = {
 };
 
 const run = (stats: Record<string, Chunk>) => {
-  stats = { ...LAZY_CATALOGS, ...stats };
+  const canary = writeChunk('canary.js', ['../src/stub.ts']);
+  stats = {
+    ...LAZY_CATALOGS,
+    'canary.js': { modules: [canary], isEntry: false, imports: [] },
+    ...stats,
+  };
   writeFileSync(join(store, 'bundle-stats.client.json'), JSON.stringify(stats));
   return gateBundle(store);
 };
@@ -148,19 +162,35 @@ describe('Gate C: каталоги ядра лише через import() (І43)'
     );
   });
 
-  it('каталог, ВБУДОВАНИЙ у чанк імпортера (статичний імпорт), ловиться за вмістом', () => {
-    const chunk = join(store, 'node_modules/simplycms/dist/i18n/index.js');
-    mkdirSync(dirname(chunk), { recursive: true });
-    writeFileSync(chunk, '//#region src/i18n/catalogs/uk/admin/banners.ts\n');
+  it('каталог, ВБУДОВАНИЙ у чанк імпортера, ловиться за сорсмапою — навіть мініфікований без //#region', () => {
+    const chunk = writeChunk('i18n/index.js', [
+      '../../src/i18n/registry.ts',
+      '../../src/i18n/catalogs/uk/admin/banners.ts',
+    ]);
+    writeFileSync(chunk, 'const a=1;'); // мініфікація: коментарів `//#region` немає
     const result = run({ 'entry.js': entry([chunk]) });
     expect(result.ok).toBe(false);
     expect(result.details.join('\n')).toMatch(/FAIL каталоги ядра/);
   });
 
-  it('той самий чанк без маркера каталогу — OK', () => {
-    const chunk = join(store, 'node_modules/simplycms/dist/i18n/index.js');
-    mkdirSync(dirname(chunk), { recursive: true });
-    writeFileSync(chunk, '//#region src/i18n/registry.ts\n');
+  it('чанк, у мапі якого немає каталогів, — OK', () => {
+    const chunk = writeChunk('i18n/index.js', ['../../src/i18n/registry.ts']);
     expect(run({ 'entry.js': entry([chunk]) }).ok).toBe(true);
+  });
+
+  it('чанк без мапи: запасний шлях — маркер //#region', () => {
+    const chunk = writeChunk('i18n/index.js', [], false);
+    writeFileSync(chunk, '//#region src/i18n/catalogs/uk/admin/banners.ts\n');
+    expect(run({ 'entry.js': entry([chunk]) }).ok).toBe(false);
+  });
+
+  it('канарка: жоден чанк пакета не віддає вихідних шляхів — FAIL, а не сліпий OK', () => {
+    writeFileSync(
+      join(store, 'bundle-stats.client.json'),
+      JSON.stringify({ ...LAZY_CATALOGS, 'entry.js': entry() }),
+    );
+    const result = gateBundle(store);
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL канарка вмісту/);
   });
 });
