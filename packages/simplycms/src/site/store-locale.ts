@@ -1,5 +1,5 @@
 import {
-  createTranslator,
+  loadTranslator,
   toUiLocale,
   type Translator,
   type UiLocale,
@@ -51,12 +51,16 @@ export function getStoreLocale(): UiLocale {
 }
 
 /**
- * Транслятор листів магазину: мова магазину → `uk` → ключ.
+ * Транслятор листів магазину: частини `base` і `mail` мови (за замовчуванням — мови
+ * магазину). Каталоги ядра повні для кожної мови, тож fallback-мови немає. Єдине місце, де
+ * листи й CLI вантажать каталоги (частини ледачі): викликачі лише `await`.
  * Тимчасовий міст, не публічний контракт; зноситься в Task 6.
  */
 // М2а-TEMP: Task 6
-export function getStoreTranslator(): Translator {
-  return createTranslator(getStoreLocale(), STORE_UI_FALLBACK);
+export function getStoreTranslator(
+  locale: UiLocale = getStoreLocale(),
+): Promise<Translator> {
+  return loadTranslator(locale, ['base', 'mail']);
 }
 
 /** Скидає стан (teardown тестів). */

@@ -3,8 +3,8 @@ import {
   redactUrls,
   resolveDriverEnv,
 } from 'simplycms/env';
-import { createTranslator, type UiLocale } from 'simplycms/i18n';
-import { STORE_UI_FALLBACK } from 'simplycms/site';
+import type { UiLocale } from 'simplycms/i18n';
+import { STORE_UI_FALLBACK, getStoreTranslator } from 'simplycms/site';
 import {
   deliverMail,
   scheduleMail,
@@ -91,7 +91,7 @@ export async function runOwnerInvite({
       // CLI не бачить `simplycms.config` магазину — локаль листа з env.
       // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
       // М2а-TEMP: Task 6
-      t: createTranslator(locale, STORE_UI_FALLBACK),
+      t: await getStoreTranslator(locale),
     });
   } catch (error) {
     // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду;

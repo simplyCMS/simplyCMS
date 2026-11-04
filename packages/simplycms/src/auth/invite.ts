@@ -149,7 +149,7 @@ export async function issueOwnerInvite(
     ttlMs,
     // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
     // М2а-TEMP: Task 6
-    t: input.t ?? getStoreTranslator(),
+    t: input.t ?? (await getStoreTranslator()),
   });
   const mailIds = await (input.schedule ?? scheduleMail)([
     { kind: 'owner_invite', message },
