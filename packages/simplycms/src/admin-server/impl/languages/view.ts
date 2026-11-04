@@ -7,12 +7,9 @@ import {
 import { advisoryXactLock, type ActorDb } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
-import {
-  LANGUAGE_CODE_FORMAT,
-  checkedContentLocale,
-} from 'simplycms/domain/translations';
+import { LANGUAGE_CODE_FORMAT } from 'simplycms/domain/translations';
 import type { Language } from 'simplycms/schema/types';
-import { hasUiPack } from 'simplycms/i18n';
+import { hasLanguagePack } from 'simplycms/i18n';
 
 // Спільні схеми й хелпери операцій мов (М1, Task 6).
 
@@ -34,8 +31,8 @@ export const toView = (r: Language): View => ({
   status: r.status,
   isDefault: r.isDefault,
   sortOrder: r.sortOrder,
-  // Рядок `languages` — довірене джерело коду; пакет шукається й за базовою мовою (`en-GB` → `en`).
-  hasPack: hasUiPack(checkedContentLocale(r.code)),
+  // Пакет шукається й за базовою мовою (`en-GB` → `en`) і має містити `base` та `mail`.
+  hasPack: hasLanguagePack(r.code),
 });
 
 export async function load(db: ActorDb, c: string): Promise<Language> {

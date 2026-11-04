@@ -29,7 +29,12 @@ export type PartCatalog = Readonly<Record<string, string>>;
 export interface LanguagePack {
   readonly code: string;
   readonly name: string;
-  readonly ui: Record<UiCatalogPart, () => Promise<PartCatalog>>;
+  /** `base` і `mail` обов'язкові (мову без них не опублікувати, §19.15); `admin` — ні. */
+  readonly ui: {
+    readonly base: () => Promise<PartCatalog>;
+    readonly mail: () => Promise<PartCatalog>;
+    readonly admin?: () => Promise<PartCatalog>;
+  };
   readonly content: {
     /** Транслітерація для slug; без неї нелатинський текст `slugify` не передасть. */
     readonly slugify?: (text: string) => string;

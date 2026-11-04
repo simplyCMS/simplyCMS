@@ -41,6 +41,9 @@ export function loadUiCatalog(
   if (cached) return cached;
 
   const loader = getUiPack(ui).ui[part];
+  // Частина `admin` необов'язкова (§19.15): її просять лише для мови, вибраної за `admin`.
+  if (!loader)
+    throw new Error(`simplycms/i18n: у пакета «${ui}» немає частини «${part}»`);
   const promise = trackThenable(
     // `new Promise` ловить і синхронний викид лоадера: він теж має шлях очищення кешу.
     new Promise<PartCatalog>((resolve) => resolve(loader())).catch(

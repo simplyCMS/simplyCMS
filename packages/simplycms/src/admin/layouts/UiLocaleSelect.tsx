@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Languages } from 'lucide-react';
 import { setAdminUiLocale } from 'simplycms/admin-server';
 import { useToast } from 'simplycms/core/hooks/use-toast';
-import { LANGUAGE_PACKS, useT, useUiLocale } from 'simplycms/i18n';
+import { listLanguagePacks, useT, useUiLocale } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +12,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from 'simplycms/ui/dropdown-menu';
+
+/** Лише пакети з частиною `admin` (§19.15): інші адмінка показати не може. */
+const adminPacks = listLanguagePacks().filter((pack) =>
+  pack.parts.includes('admin'),
+);
 
 /**
  * Вибір мови інтерфейсу адмінки (І45): пишеться в `profiles.ui_locale` власного профілю.
@@ -58,7 +63,7 @@ export function UiLocaleSelect() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={current} onValueChange={choose}>
-          {[...LANGUAGE_PACKS.values()].map((pack) => (
+          {adminPacks.map((pack) => (
             <DropdownMenuRadioItem key={pack.code} value={pack.code}>
               {pack.name}
             </DropdownMenuRadioItem>

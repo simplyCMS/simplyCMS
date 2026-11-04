@@ -6,12 +6,18 @@
 export { createTranslator, languageOfConfigLocale } from './translator';
 export { loadUiCatalog, loadTranslator, useUiCatalogs } from './registry';
 export { interpolate, lookupMessage } from './lookup';
-export { LANGUAGE_PACKS, getUiPack, getContentTools } from './packs';
+export {
+  listLanguagePacks,
+  hasLanguagePack,
+  getUiPack,
+  getContentTools,
+} from './packs';
+export type { LanguagePackInfo, UiPart } from './packs';
 export {
   resolveUiLocale,
   resolveUiLocalePair,
+  resolveAdminUiLocale,
   toUiLocale,
-  hasUiPack,
 } from './ui-locale';
 export type { UiLocale, UiLocalePair } from './ui-locale';
 export {
