@@ -13,5 +13,10 @@ export const messages = {
   'app.error.fallback': 'Сталася непередбачувана помилка.',
   'app.error.reference': 'Код помилки: {id}',
   'app.error.reloading': 'Оновлюємо сторінку…',
+  // Екрани `/admin` до завантаження частини `admin`: pending і errorComponent рендеряться
+  // у кореневому провайдері, де є лише `base`, тож їхні рядки живуть тут.
+  'app.admin.loading': 'Завантаження адмінки…',
+  'app.error.insecureContext':
+    'Адмінка працює лише в захищеному контексті (https:// або localhost).',
   'app.backHome': 'На головну',
 } as const;

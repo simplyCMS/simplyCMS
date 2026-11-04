@@ -1,6 +1,6 @@
 import type { LocaleSet } from 'simplycms/contracts';
 import { NO_LOCALES, localeOfHref } from 'simplycms/domain';
-import { resolveUiLocalePair } from 'simplycms/i18n';
+import { loadUiCatalog, resolveUiLocalePair } from 'simplycms/i18n';
 import { loadLocaleSetLazily } from './context';
 import { getStorefrontRoot } from '../server/root';
 import type { StorefrontRootData } from '../head/head';
@@ -37,12 +37,20 @@ export async function loadStorefrontRoot(
     );
   }
   const locale = localeOfHref(publicHref, locales);
+  // Інтерфейс — окрема вісь (І41): мова без пакета (`pl`) не ламає тексти, а береться за
+  // основною. `<html lang>` і дані сторінки лишаються на `locale`.
+  const ui = resolveUiLocalePair(locale, locales.primary);
+  // Лоадер біжить і на SSR, і на клієнтській навігації, а `head()` синхронний: частину
+  // `base` обох мов треба дочекатись тут, щоб `use` у корені й `peekTranslator` у `head()`
+  // знайшли її вже завантаженою (Д2).
+  await Promise.all([
+    loadUiCatalog(ui.locale, 'base'),
+    loadUiCatalog(ui.fallback, 'base'),
+  ]);
   return {
     ...(await getStorefrontRoot()),
     locale,
-    // Інтерфейс — окрема вісь (І41): мова без пакета (`pl`) не ламає тексти, а береться за
-    // основною. `<html lang>` і дані сторінки лишаються на `locale`.
-    ui: resolveUiLocalePair(locale, locales.primary),
+    ui,
     languages: { primary: locales.primary, published: locales.published },
   };
 }

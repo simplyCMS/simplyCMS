@@ -1,9 +1,15 @@
 import { useMemo } from 'react';
 import { useRouteContext, useRouterState } from '@tanstack/react-router';
-import { createTranslator, resolveUiLocalePair } from 'simplycms/i18n';
+import {
+  createTranslator,
+  resolveUiLocalePair,
+  useUiCatalogs,
+} from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 import type { RouterContext } from 'simplycms/runtime';
 import { localeOfHref } from 'simplycms/domain';
+
+const BASE = ['base'] as const;
 
 /**
  * Транслятор для екранів, що рендеряться ПОЗА `I18nProvider`: `NotFound` і
@@ -19,12 +25,14 @@ export function useRequestTranslator(): Translator {
   // Контекст матчу, а не `router.options`: `beforeLoad` кореня міг дочитати
   // набір мов, а опції роутера бачать лише початковий.
   const { locales }: RouterContext = useRouteContext({ strict: false });
-  return useMemo(() => {
-    // Екран помилки говорить мовою ІНТЕРФЕЙСУ: `/pl/x` без пакета pl — основною мовою.
-    const ui = resolveUiLocalePair(
-      localeOfHref(publicHref, locales),
-      locales.primary,
-    );
-    return createTranslator(ui.locale, ui.fallback);
-  }, [publicHref, locales]);
+  // Екран помилки говорить мовою ІНТЕРФЕЙСУ: `/pl/x` без пакета pl — основною мовою.
+  const ui = useMemo(
+    () =>
+      resolveUiLocalePair(localeOfHref(publicHref, locales), locales.primary),
+    [publicHref, locales],
+  );
+  // Не `peekTranslator`: корінь міг упасти ДО завантаження каталогу, тож хук має право
+  // призупинитись (а не кинути), поки `base` дозавантажується.
+  const catalogs = useUiCatalogs(ui.locale, BASE);
+  return useMemo(() => createTranslator(catalogs), [catalogs]);
 }

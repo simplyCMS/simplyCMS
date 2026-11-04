@@ -1,7 +1,7 @@
 import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { ContentLocale } from 'simplycms/contracts';
-import { createTranslator } from 'simplycms/i18n';
+import { peekTranslator } from 'simplycms/i18n';
 import type { Translator, UiLocalePair } from 'simplycms/i18n';
 
 /**
@@ -97,7 +97,8 @@ export function storefrontHead(
   page: (t: Translator) => PageHead,
 ): { meta: HeadMeta[] } {
   const { storeProfile, ui } = readStorefrontRoot(matches);
-  const own = page(createTranslator(ui.locale, ui.fallback));
+  // Частину `base` уже дочекався кореневий лоадер (`loadStorefrontRoot`): `head()` синхронний.
+  const own = page(peekTranslator(ui.locale, ['base']));
   return {
     meta: toMeta(
       composeTitle(own.title, storeProfile.name),

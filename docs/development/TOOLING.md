@@ -220,7 +220,7 @@ Error-зони й кастомні правила (селектори й опц�
   Зона — host `src/`, обидві роут-теки ядра (`routes/storefront`, `routes/admin`),
   `src/storefront-routes`, `src/admin`, п'ять `src/*-ui` пакета ядра, компоненти тем. У
   `routes/admin` живий React-компонент `AdminPending` використовує `useT()` (ключ
-  `admin.common.loading`).
+  `app.admin.loading`).
 - **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): п'ять модулів
   env-контракту (`SERVER_ENV_FILES`) — `seo/robots`, `seo/sitemap`, `server/root`, `api/health.tsx`,
   `src/start.ts`. Негативний контроль — `tests/eslint-server-env.test.ts`.

@@ -1,7 +1,13 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
-import { useT } from 'simplycms/i18n';
+import {
+  I18nProvider,
+  loadUiCatalog,
+  resolveUiLocale,
+  useT,
+  useUiCatalogs,
+} from 'simplycms/i18n';
 import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
 import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
 
@@ -33,7 +39,7 @@ class InsecureContextError extends Error {
 
 export const Route = createFileRoute('/admin')({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ context }) => {
     // ПЕРШИЙ рядок beforeLoad: роут client-only (`ssr:false`), тож це
     // виконується рівно один раз на старті адмінки, до будь-якого запиту.
     if (
@@ -54,6 +60,18 @@ export const Route = createFileRoute('/admin')({
     if (!ok) {
       throw redirect({ to: '/' });
     }
+    // Мова адмінки — основна мова магазину (мова з профілю — Task 5). Частини `base` і
+    // `admin` вантажимо тут, до рендера: layout розгортає їх через `use` синхронно.
+    // М2а-TEMP: Task 5
+    const adminUi = resolveUiLocale(
+      context.locales.primary,
+      context.locales.primary,
+    );
+    await Promise.all([
+      loadUiCatalog(adminUi, 'base'),
+      loadUiCatalog(adminUi, 'admin'),
+    ]);
+    return { adminUi };
   },
   // `ssr: false` маршруту потрібен pendingComponent: сервер рендерить його як
   // fallback, він гідрується змонтованим, і перехід pending→loaded на клієнті
@@ -63,36 +81,45 @@ export const Route = createFileRoute('/admin')({
   component: AdminRoot,
 });
 
+const ADMIN_PARTS = ['base', 'admin'] as const;
+
+/**
+ * Вкладений провайдер: кореневий несе лише `base` вітрини, а каталог адмінки потрібен
+ * тільки тут (І43 — вітрина його не тягне). Мова адмінки не залежить від мови сторінки.
+ */
 function AdminRoot() {
+  const { adminUi } = Route.useRouteContext();
+  const catalogs = useUiCatalogs(adminUi, ADMIN_PARTS);
   return (
-    <AdminLayout>
-      <Outlet />
-    </AdminLayout>
+    <I18nProvider locale={adminUi} fallback={adminUi} catalogs={catalogs}>
+      <AdminLayout>
+        <Outlet />
+      </AdminLayout>
+    </I18nProvider>
   );
 }
 
 /**
  * Fallback під час client-side guard/завантаження адмінки.
  *
- * `useT()` тут безпечний: `pendingComponent` рендериться на тому самому місці
- * дерева, що й `component` цього ж роуту, тобто всередині `I18nProvider` з
- * host-`__root.tsx` (той самий контекст, який уже споживає `AdminLayout`).
+ * `useT()` тут безпечний: `pendingComponent` рендериться всередині `I18nProvider` з
+ * host-`__root.tsx`. Там лише частина `base`, а `admin` ще вантажиться в `beforeLoad`,
+ * тож рядок — з неймспейсу `app` (оболонка), а не `admin.*`.
  */
 function AdminPending() {
   const t = useT();
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-muted-foreground">
-        {t('admin.common.loading')}
-      </p>
+      <p className="text-sm text-muted-foreground">{t('app.admin.loading')}</p>
     </div>
   );
 }
 
 /**
- * Помилки `beforeLoad`/`loader` адмінки. `useT()` тут так само безпечний,
- * як у `AdminPending` — той самий рівень дерева, всередині `I18nProvider`.
+ * Помилки `beforeLoad`/`loader` адмінки. `useT()` тут так само безпечний, як у
+ * `AdminPending` (кореневий провайдер), і з тієї ж причини — лише ключі `base`: помилка
+ * могла статись до завантаження частини `admin`.
  *
  * Відомий код (`InsecureContextError`) отримує перекладений рядок; решта —
  * як кореневий `ErrorBoundary` (`src/routes/__root.tsx`): `error.message`
@@ -118,7 +145,7 @@ function AdminError({ error }: ErrorComponentProps) {
     typeof error === 'object' && error !== null ? error : {};
   const message =
     fields.name === 'InsecureContextError'
-      ? t('admin.common.insecureContext')
+      ? t('app.error.insecureContext')
       : typeof fields.message === 'string'
         ? fields.message
         : t('app.error.fallback');
