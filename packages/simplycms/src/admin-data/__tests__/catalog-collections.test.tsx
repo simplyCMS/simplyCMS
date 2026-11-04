@@ -64,8 +64,8 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { createMutableServer } from './support/mutable-server';
-import { awaitRevalidation } from './support/revalidation';
-import { getCollection } from '../registry';
+import { expectNoRefetch } from './support/revalidation';
+import { getCollection, type CollectionDef } from '../registry';
 import { productsCollection } from '../collections/products';
 import { productPricesCollection } from '../collections/product-prices';
 import { sectionsCollection } from '../collections/sections';
@@ -80,12 +80,12 @@ afterEach(cleanup);
 /** Мінімальна поверхня колекції, яку перевіряють тести запису. */
 type WritableCollection = {
   preload(): Promise<void>;
-  insert(rows: never): { isPersisted: { promise: Promise<unknown> } };
-  delete(id: string): { isPersisted: { promise: Promise<unknown> } };
+  insert(rows: never): { when(state: 'settled'): Promise<unknown> };
+  delete(id: string): { when(state: 'settled'): Promise<unknown> };
   has(id: string): boolean;
   get(id: string): { createdAt?: unknown } | undefined;
 };
-type AnyDef = { id: string; create: (qc: QueryClient) => unknown };
+type AnyDef = CollectionDef<unknown>;
 const writable = (def: AnyDef) =>
   getCollection(new QueryClient(), def) as unknown as WritableCollection;
 
@@ -139,42 +139,38 @@ describe('колекції каталогу', () => {
   });
 
   it.each([
-    ['sections', sectionsCollection, 'insertSections', listSections, false],
+    ['sections', sectionsCollection, 'insertSections', listSections],
     [
       'price_types',
       priceTypesCollection,
       'insertPriceTypes',
       dict.listPriceTypes,
-      false,
     ],
     [
       'section_properties',
       sectionPropertiesCollection,
       'insertSectionProperties',
       dict.listSectionProperties,
-      true,
     ],
     [
       'property_options',
       propertyOptionsCollection,
       'insertPropertyOptions',
       dict.listPropertyOptions,
-      true,
     ],
     [
       'section_property_assignments',
       sectionPropertyAssignmentsCollection,
       'insertSectionPropertyAssignments',
       dict.listSectionPropertyAssignments,
-      true,
     ],
   ] as const)(
     '%s: insert викликає serverFn з УСІМА рядками транзакції і пише серверний рядок',
-    async (_e, def, fn, list, onDemand) => {
+    async (_e, def, fn, list) => {
       const insert = dict[fn];
       insert.mockClear();
-      // Сервер зі станом (TSDB-1): запис ревалідує зріз, тож list мусить
-      // бачити те, що зберіг insert, інакше ревалідація затре write-back.
+      // Сервер зі станом: list бачить те, що зберіг insert, — перезапит
+      // (якщо він повернеться) не маскував би відсутність write-back.
       const srv = createMutableServer<{ id: string }>([]);
       list.mockImplementation(srv.list as never);
       insert.mockImplementation((async ({ data }: { data: { id: string }[] }) =>
@@ -201,7 +197,7 @@ describe('колекції каталогу', () => {
       const tx = c.insert(
         ids.map((id, i) => ({ id, name: `N${i}`, slug: `n-${i}` })) as never,
       );
-      await tx.isPersisted.promise;
+      await tx.when('settled');
       expect(insert).toHaveBeenCalledTimes(1);
       expect(insert.mock.calls[0]![0].data.map((r) => r.id)).toEqual(ids);
       for (const id of ids) {
@@ -211,14 +207,9 @@ describe('колекції каталогу', () => {
           'write-back не доніс серверний рядок',
         ).toEqual(SERVER_CREATED_AT);
       }
-      if (onDemand) {
-        // ціна TSDB-1: +N запитів після запису (по одному на живий зріз).
-        await awaitRevalidation(list, listCalls);
-        expect(list.mock.calls.length).toBeLessThanOrEqual(listCalls + 1);
-      } else {
-        // Eager-довідник: один патч кешу, жодного перезапиту (К3-7).
-        expect(list.mock.calls.length).toBe(listCalls);
-      }
+      // Eager і on-demand однаково: write-back — патч кешу без мережі
+      // (К3-7; на on-demand — з qdc 1.4.4, M1 TSDB-1 закрито).
+      await expectNoRefetch(list, listCalls);
     },
   );
 
@@ -232,7 +223,7 @@ describe('колекції каталогу', () => {
     await c.preload();
     expect(c.has(id)).toBe(true);
     const tx = c.delete(id);
-    await tx.isPersisted.promise;
+    await tx.when('settled');
     expect(dict.removePriceTypes).toHaveBeenCalledTimes(1);
     expect(dict.removePriceTypes).toHaveBeenCalledWith({ data: [{ id }] });
     expect(c.has(id)).toBe(false);
@@ -250,7 +241,7 @@ describe('колекції каталогу', () => {
     await c.preload();
     const tx = c.delete(id);
     expect(c.has(id), 'оптимістичне видалення не спрацювало').toBe(false);
-    await expect(tx.isPersisted.promise).rejects.toThrow(/дефолтний/);
+    await expect(tx.when('settled')).rejects.toThrow(/дефолтний/);
     expect(c.has(id), 'рядок не повернувся після відмови').toBe(true);
   });
 });

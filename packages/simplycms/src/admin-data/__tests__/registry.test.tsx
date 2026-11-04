@@ -5,13 +5,15 @@ import { describe, expect, it, afterEach } from 'vitest';
 import { renderHook, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { ENTITY } from 'simplycms/contracts/entities';
 import { getCollection, useCollection, type CollectionDef } from '../registry';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
 
 const probeDef: CollectionDef<{ marker: string }> = {
-  id: 'probe',
+  // Будь-яка сутність реєстру: реєстр ключує інстанс за `id`, зміст не важить.
+  id: ENTITY.banners,
   create: () => ({ marker: Math.random().toString(36) }),
 };
 
