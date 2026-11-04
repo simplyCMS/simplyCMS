@@ -2,12 +2,13 @@
  * Частина `base` українського каталогу: усе, що потрібне вітрині від першого рендера
  * (17 кореневих неймспейсів без `mail`; адмінка й листи — окремі частини, вантажаться
  * лише там, де їх просять). Українська — джерело правди набору ключів: `BaseKey`
- * виводиться звідси, а англійська частина `satisfies Record<BaseKey, string>`.
+ * виводиться звідси, а англійська частина `satisfies ShapeOf<…>` цього каталогу.
  *
  * 🔴 Частину зведено spread-ом із неймспейсних модулів, бо повний набір ключів не
  * вміщається в ліміт 150 рядків на файл. Ціна — дублікат ключа в двох модулях
  * перетерся б МОВЧКИ; стереже `catalog-integrity.test.ts`.
  */
+import type { CatalogValue } from '../../types';
 import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
@@ -42,4 +43,4 @@ export const messages = {
   ...auth,
   ...reviews,
   ...errors,
-} satisfies Record<string, string>;
+} satisfies Record<string, CatalogValue>;

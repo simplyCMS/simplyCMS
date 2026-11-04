@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { ShoppingCart } from 'lucide-react';
 import type { AvailableCartQuoteLine, CartQuote } from 'simplycms/contracts';
 import { useCart } from 'simplycms/react-query';
-import { useT, type MessageKey } from 'simplycms/i18n';
+import { plural, useT } from 'simplycms/i18n';
 import { CartItem } from './CartItem';
 import { CartDrawerFooter } from './CartDrawerFooter';
 import { findQuoteLine, hasUnavailableItem } from './quote-line';
@@ -20,22 +20,6 @@ export interface CartDrawerProps {
   onRetry?: () => void;
   /** Порогові підказки доступного рядка — рендерить контейнер. */
   renderHints?: (line: AvailableCartQuoteLine) => ReactNode;
-}
-
-/**
- * Українська форма множини лічильника ("товар" / "товари" / "товарів").
- *
- * 🔴 Наївна умова `count < 5` (яку це замінює) хибно давала "few" для
- * 12–14 і 22–24: mod-100-виняток для 11..14 (завжди "many") має вищий
- * пріоритет за mod-10-правило "few" для 2..4.
- */
-function pluralItemsKey(count: number): MessageKey {
-  const mod100 = count % 100;
-  const mod10 = count % 10;
-  if (mod100 >= 11 && mod100 <= 14) return 'cart.itemsMany';
-  if (mod10 === 1) return 'cart.itemsOne';
-  if (mod10 >= 2 && mod10 <= 4) return 'cart.itemsFew';
-  return 'cart.itemsMany';
 }
 
 export function CartDrawer({
@@ -64,7 +48,7 @@ export function CartDrawer({
             {t('cart.title')}
             {totalItems > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                ({totalItems} {t(pluralItemsKey(totalItems))})
+                ({plural(t, 'cart.items', totalItems)})
               </span>
             )}
           </h2>

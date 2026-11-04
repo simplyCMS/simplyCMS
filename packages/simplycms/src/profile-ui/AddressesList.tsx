@@ -13,7 +13,7 @@ import {
   useAddressBook,
   type AddressRow,
 } from 'simplycms/core/hooks/useAddressBook';
-import { useT } from 'simplycms/i18n';
+import { plural, useT } from 'simplycms/i18n';
 import { Checkbox } from 'simplycms/ui/checkbox';
 
 /**
@@ -177,12 +177,7 @@ export function AddressesList() {
                     </p>
                     {addr.usage_count !== undefined && addr.usage_count > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {t(
-                          addr.usage_count === 1
-                            ? 'profile.usedInOrders.one'
-                            : 'profile.usedInOrders.many',
-                          { count: addr.usage_count },
-                        )}
+                        {plural(t, 'profile.usedInOrders', addr.usage_count)}
                       </p>
                     )}
                   </div>

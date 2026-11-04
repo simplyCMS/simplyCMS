@@ -1,9 +1,12 @@
 /** Відгуки на товар: рейтинг, форма, картка відгуку, лайтбокс фото. */
 export const messages = {
-  // Лічильник відгуків (форми множини — див. `pluralReviewsKey` у reviews-ui)
-  'reviews.countOne': 'відгук',
-  'reviews.countFew': 'відгуки',
-  'reviews.countMany': 'відгуків',
+  // Лічильник відгуків: форми множини, вибір — `plural`.
+  'reviews.count': {
+    one: '{count} відгук',
+    few: '{count} відгуки',
+    many: '{count} відгуків',
+    other: '{count} відгуку',
+  },
 
   'reviews.alreadySubmitted': 'Ви вже залишили відгук на цей товар.',
   'reviews.edit': 'Редагувати',

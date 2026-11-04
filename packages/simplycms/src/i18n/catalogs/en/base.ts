@@ -1,8 +1,9 @@
 /**
- * Англійська частина `base` — повна (`satisfies Record<BaseKey, string>`): пропущений
+ * Англійська частина `base` — повна (`satisfies ShapeOf<uk base>`: рядок — рядком, множина — формами): пропущений
  * ключ не компілюється. Структура модулів — дзеркало `uk/`, файл у файл.
  */
-import type { BaseKey } from '../../types';
+import type { ShapeOf } from '../../types';
+import type { messages as ukBase } from '../uk/base';
 import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
@@ -37,4 +38,4 @@ export const messages = {
   ...auth,
   ...reviews,
   ...errors,
-} satisfies Record<BaseKey, string>;
+} satisfies ShapeOf<typeof ukBase>;

@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { Loader2, LogIn } from 'lucide-react';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useProductReviews } from 'simplycms/core/hooks/useProductReviews';
-import { useT, type MessageKey } from 'simplycms/i18n';
+import { plural, useT } from 'simplycms/i18n';
 import { StarRating } from './StarRating';
 import { ReviewCard } from './ReviewCard';
 import { ReviewForm } from './ReviewForm';
@@ -21,22 +21,6 @@ interface ProductReviewsProps {
   }) => React.ReactNode;
   /** Optional image upload component */
   renderImageUpload?: (props: ReviewImageUploadProps) => React.ReactNode;
-}
-
-/**
- * Українська форма множини лічильника відгуків ("відгук" / "відгуки" / "відгуків").
- *
- * 🔴 Наївна умова `count < 5` (яку це замінює) хибно давала "few" для
- * 12–14 і 22–24: mod-100-виняток для 11..14 (завжди "many") має вищий
- * пріоритет за mod-10-правило "few" для 2..4.
- */
-function pluralReviewsKey(count: number): MessageKey {
-  const mod100 = count % 100;
-  const mod10 = count % 10;
-  if (mod100 >= 11 && mod100 <= 14) return 'reviews.countMany';
-  if (mod10 === 1) return 'reviews.countOne';
-  if (mod10 >= 2 && mod10 <= 4) return 'reviews.countFew';
-  return 'reviews.countMany';
 }
 
 export function ProductReviews({
@@ -85,7 +69,7 @@ export function ProductReviews({
           </span>
           <StarRating value={avgRating} readonly size="md" />
           <span className="text-sm text-muted-foreground mt-1">
-            {reviewCount} {t(pluralReviewsKey(reviewCount))}
+            {plural(t, 'reviews.count', reviewCount)}
           </span>
         </div>
 
