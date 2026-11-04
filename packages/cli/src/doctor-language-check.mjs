@@ -18,7 +18,14 @@ export async function languagePackCheck(storeRoot, publishedLanguages, i18n) {
   try {
     core ??= await importFromStore(storeRoot, 'simplycms/i18n');
   } catch (error) {
-    return check('language-packs', TITLE, 'skip', reason(error));
+    // warn, не skip: збій імпорту не мусить ховати сигнал про мови (І46) — власник має знати,
+    // що перевірку пакетів не виконано.
+    return check(
+      'language-packs',
+      TITLE,
+      'warn',
+      `не вдалося імпортувати simplycms/i18n з магазину — перевірку пакетів мов не виконано: ${reason(error)}`,
+    );
   }
   const missing = publishedLanguages.filter(
     (code) => !core.hasLanguagePack(code),
