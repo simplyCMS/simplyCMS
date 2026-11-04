@@ -23,7 +23,7 @@ import {
   productsSetModificationToken,
   productsSetPath,
 } from './products/aggregate/operations';
-import { profilesGetUiLocale, profilesSetUiLocale } from './profiles/ui-locale';
+import { profilesSetUiLocale } from './profiles/ui-locale';
 import { productsSavePrices } from './product-prices/operations';
 import { productsSaveStock } from './stock/operations';
 
@@ -55,7 +55,6 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   productsSetModificationToken,
   productsSavePrices,
   productsSaveStock,
-  profilesGetUiLocale,
   profilesSetUiLocale,
 ] as readonly OperationDef<unknown, unknown>[];
 

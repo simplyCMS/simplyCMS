@@ -31,8 +31,7 @@ vi.mock('simplycms/admin/layouts/AdminLayout', () => ({
 }));
 
 vi.mock('simplycms/storefront-routes/server/auth', () => ({
-  getUser: vi.fn(),
-  isAdmin: vi.fn(),
+  getAdminSession: vi.fn(),
 }));
 
 // Предикат справжній, перезавантаження — шпигун: jsdom не дає підмінити

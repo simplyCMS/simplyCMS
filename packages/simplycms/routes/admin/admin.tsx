@@ -1,14 +1,12 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import { getAdminUiLocale } from 'simplycms/admin-server';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
 import {
   I18nProvider,
   loadUiCatalog,
-  resolveUiLocale,
-  toUiLocale,
+  resolveAdminUiLocale,
   useUiCatalogs,
 } from 'simplycms/i18n';
-import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
+import { getAdminSession } from 'simplycms/storefront-routes/server/auth';
 import { AdminError, AdminPending } from './AdminBoundaries';
 
 /**
@@ -52,21 +50,21 @@ export const Route = createFileRoute('/admin')({
     }
     // Розрізняємо кейси так само, як серверний guard у start.ts:
     // немає сесії → /auth; є сесія, але не admin → / (без bounce на /auth).
-    const user = await getUser();
-    if (!user) {
+    const session = await getAdminSession();
+    if (!session) {
       throw redirect({ to: '/auth' });
     }
-    const ok = await isAdmin();
-    if (!ok) {
+    if (!session.isAdmin) {
       throw redirect({ to: '/' });
     }
-    // Мова адмінки — з власного профілю (І45): `NULL` чи код без пакета → основна мова
-    // магазину. Частини `base` і `admin` вантажимо тут, до рендера: layout розгортає їх
-    // через `use` синхронно. Повторний виклик після `router.invalidate()` перечитує вибір.
-    const { uiLocale } = await getAdminUiLocale({ data: {} });
-    const adminUi =
-      toUiLocale(uiLocale) ??
-      resolveUiLocale(context.locales.primary, context.locales.primary);
+    // Мова адмінки — з власного профілю, прочитаного РАЗОМ із сесією (§19.6): збережена з
+    // частиною `admin` → основна з `admin` → `en`. Частини `base` і `admin` вантажимо тут,
+    // до рендера: layout розгортає їх через `use` синхронно. Повторний виклик після
+    // `router.invalidate()` перечитує вибір.
+    const adminUi = resolveAdminUiLocale(
+      session.uiLocale,
+      context.locales.primary,
+    );
     await Promise.all([
       loadUiCatalog(adminUi, 'base'),
       loadUiCatalog(adminUi, 'admin'),

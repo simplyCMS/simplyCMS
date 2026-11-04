@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import { readSessionSubject } from 'simplycms/auth';
-import { checkIsAdmin } from 'simplycms/storefront/loaders';
+import { readProfileUiLocale, readSessionSubject } from 'simplycms/auth';
 
 /** Ідентичність, яку ядро віддає роутам і компонентам. */
 export interface SessionUser {
@@ -32,14 +31,26 @@ export const getUser = createServerFn({ method: 'GET' }).handler(
   },
 );
 
+/** Сесія для guard-а адмінки: роль і збережена мова інтерфейсу одним викликом. */
+export interface AdminSession {
+  readonly isAdmin: boolean;
+  /** `profiles.ui_locale` адміна; не-адміну не читається. */
+  readonly uiLocale: string | null;
+}
+
 /**
- * Перевірити чи поточний користувач має роль admin (serverFn для роутів/компонентів).
- *
- * 🔴 Сама перевірка живе в `./is-admin` і навмисно НЕ реекспортується звідси:
- * цей модуль клієнтські роути імпортують заради `getUser`, і будь-який живий
- * не-serverFn експорт тут затягнув би серверний auth-контур (а з ним пул
- * Postgres) у клієнтський бандл — див. коментар у `is-admin.ts`.
+ * Сесія для `beforeLoad` `/admin` (§19.6): `null` без сесії; `isAdmin` за ролями; мова
+ * адмінки з профілю — тим самим викликом, а не окремим запитом після нього (три послідовні
+ * serverFn-и на кожен вхід в адмінку були б три мережеві обміни).
  */
-export const isAdmin = createServerFn({ method: 'GET' }).handler(async () =>
-  checkIsAdmin(),
+export const getAdminSession = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<AdminSession | null> => {
+    const subject = await readSessionSubject(getRequest().headers);
+    if (!subject) return null;
+    const isAdmin = subject.roles.includes('admin');
+    return {
+      isAdmin,
+      uiLocale: isAdmin ? await readProfileUiLocale(subject.userId) : null,
+    };
+  },
 );
