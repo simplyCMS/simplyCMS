@@ -108,7 +108,7 @@ export function usePickupPointCard(pointId: string | undefined) {
           ...patch,
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -124,7 +124,8 @@ export function usePickupPointCard(pointId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.shipping.points.deleted'));
         goList();
       })

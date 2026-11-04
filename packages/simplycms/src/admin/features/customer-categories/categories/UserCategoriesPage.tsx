@@ -57,9 +57,8 @@ export default function UserCategoriesPage() {
     setDeleteId(null);
     collection
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.users.categories.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.users.categories.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

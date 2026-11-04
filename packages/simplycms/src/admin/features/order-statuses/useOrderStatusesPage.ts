@@ -80,9 +80,8 @@ export function useOrderStatusesPage() {
   const remove = (id: string) => {
     collection
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.orders.statuses.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.orders.statuses.deleted')))
       .catch((e: unknown) =>
         toast.error(failureText(t, t('admin.orders.statuses.deleteFailed'), e)),
       );

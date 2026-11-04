@@ -60,9 +60,8 @@ export function SectionPropertyAssignmentsPanel({
     };
     assignmentsCol
       .insert(draft)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.properties.section.added')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.properties.section.added')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 
@@ -70,9 +69,8 @@ export function SectionPropertyAssignmentsPanel({
     setRemoveId(null);
     assignmentsCol
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.properties.section.removed')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.properties.section.removed')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

@@ -18,7 +18,7 @@ export function useShippingZoneDefault(): (id: string) => Promise<void> {
   const queryClient = useQueryClient();
   return async (id) => {
     const { rows } = await setDefaultShippingZone({ data: { id } });
-    zones.utils.writeBatch(() => {
+    await zones.utils.writeBatch(() => {
       for (const row of rows) zones.utils.writeUpsert(row);
     });
     await invalidateShippingConsumers(queryClient);

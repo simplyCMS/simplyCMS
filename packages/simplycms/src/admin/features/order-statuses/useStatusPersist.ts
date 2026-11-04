@@ -37,14 +37,14 @@ export function useStatusPersist(
   };
 
   const persist = (
-    tx: { isPersisted: { promise: Promise<unknown> } },
+    tx: { when(state: 'settled'): Promise<unknown> },
     id: string,
     isDefault: boolean,
     okKey: OkKey,
     failKey: FailKey,
   ) => {
     setIsSubmitting(true);
-    tx.isPersisted.promise
+    tx.when('settled')
       .then(async () => {
         toast.success(t(okKey));
         await afterPersist(id, isDefault);

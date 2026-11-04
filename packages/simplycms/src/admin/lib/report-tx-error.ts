@@ -6,7 +6,7 @@ import { adminErrorKey } from './admin-error';
  * Тост помилки миттєвої транзакції колекції (рев'ю C6, item 2) — патерн
  * `ProductsTable.handleDelete`, винесений у спільний хелпер для контролів
  * над ЖИВИМ рядком (`SimpleProductPanel`, `ModificationStatusControl`):
- * `products.update`/`mods.update` без `.catch` на `tx.isPersisted.promise`
+ * `products.update`/`mods.update` без `.catch` на `tx.when('settled')`
  * давали тихий rollback колекції (бібліотека відкочує сама) і unhandled
  * rejection у консолі — відхилена мутація нікому не звітувала.
  */

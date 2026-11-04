@@ -57,7 +57,7 @@ export function PropertyCreateDialog({ open, onOpenChange }: Props) {
       toPropertyDraft(v, crypto.randomUUID(), new Date()),
     );
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;

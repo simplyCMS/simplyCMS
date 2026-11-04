@@ -57,10 +57,10 @@ export function useOrderItemsEdit(orderId: string) {
             : await removeOrderItem({
                 data: { orderId, orderItemId: a.orderItemId },
               });
-      orders.utils.writeBatch(() => {
+      await orders.utils.writeBatch(() => {
         orders.utils.writeUpsert(res.order);
       });
-      items.utils.writeBatch(() => {
+      await items.utils.writeBatch(() => {
         for (const row of res.upserted) items.utils.writeUpsert(row);
         for (const id of res.removedIds) items.utils.writeDelete(id);
       });

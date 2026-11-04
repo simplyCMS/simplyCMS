@@ -20,8 +20,8 @@ type OnDemandConfig<T extends object> = Omit<
  * (структурний гейт — `__tests__/on-demand-factory-only.test.ts`).
  *
  * `gcTime` фабрика НЕ ставить (обхід `gcTime: 0` знято 2026-10-05): на
- * query-db-collection 1.3.4 запис ревалідує кожен кешований ключ колекції,
- * тож ghost-запис неактивного зрізу не лишається стейл. `gcTime` лишається
+ * query-db-collection 1.5 write-back патчить рядок у кожному кешованому
+ * ключі колекції, де він присутній, тож неактивний зріз не лишається стейл. `gcTime` лишається
  * в `Omit` — колекція не перевизначає його поза фабрикою.
  * Доказ — `__tests__/on-demand-inactive-key.test.tsx`; ціна й ізоляція
  * ключів — TSDB-1 у docs/architecture/upstream-workarounds.md.

@@ -44,9 +44,8 @@ export default function PropertiesPage() {
     setDeleteId(null);
     collection
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.properties.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.properties.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

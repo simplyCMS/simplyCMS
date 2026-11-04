@@ -80,23 +80,22 @@ export function useDiscountTree() {
       .update(id, (d) => {
         d.isActive = isActive;
       })
-      .isPersisted.promise.then(() => toast.success(t('common.statusUpdated')))
+      .when('settled')
+      .then(() => toast.success(t('common.statusUpdated')))
       .catch((e: unknown) => reportTxError(t, e));
 
   const deleteGroup = (id: string) =>
     groups
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.discounts.groupDeleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.discounts.groupDeleted')))
       .catch((e: unknown) => reportTxError(t, e));
 
   const deleteDiscount = (id: string) =>
     discounts
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.discounts.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.discounts.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
 
   return {

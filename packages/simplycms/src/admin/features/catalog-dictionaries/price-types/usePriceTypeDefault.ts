@@ -9,7 +9,7 @@ export function usePriceTypeDefault(): (id: string) => Promise<void> {
   const types = useCollection(priceTypesCollection);
   return async (id) => {
     const { rows } = await setDefaultPriceType({ data: { id } });
-    types.utils.writeBatch(() => {
+    await types.utils.writeBatch(() => {
       for (const row of rows) types.utils.writeUpsert(row);
     });
   };

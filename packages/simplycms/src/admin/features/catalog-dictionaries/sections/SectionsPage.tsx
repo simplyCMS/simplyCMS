@@ -44,9 +44,8 @@ export default function SectionsPage() {
     setDeleteId(null);
     collection
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.sections.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.sections.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

@@ -49,7 +49,8 @@ export default function CategoryRulesPage() {
       .update(id, (d) => {
         Object.assign(d, patch);
       })
-      .isPersisted.promise.then(() => toast.success(t('common.changesSaved')))
+      .when('settled')
+      .then(() => toast.success(t('common.changesSaved')))
       .catch((e: unknown) => reportTxError(t, e));
 
   if (isLoading) return <PageSpinner />;

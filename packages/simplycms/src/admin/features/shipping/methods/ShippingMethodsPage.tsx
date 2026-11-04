@@ -41,16 +41,16 @@ export default function ShippingMethodsPage() {
       .update(id, (d) => {
         d.isActive = isActive;
       })
-      .isPersisted.promise.then(() => toast.success(t('common.statusUpdated')))
+      .when('settled')
+      .then(() => toast.success(t('common.statusUpdated')))
       .catch((e: unknown) => reportTxError(t, e));
 
   const handleDelete = (id: string) => {
     setDeleteId(null);
     collection
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.shipping.methods.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.shipping.methods.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

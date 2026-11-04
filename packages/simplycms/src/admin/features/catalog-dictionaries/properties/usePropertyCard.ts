@@ -68,7 +68,7 @@ export function usePropertyCard(propertyId: string) {
       Object.assign(d, patch);
     });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -81,7 +81,8 @@ export function usePropertyCard(propertyId: string) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.properties.deleted'));
         goList();
       })

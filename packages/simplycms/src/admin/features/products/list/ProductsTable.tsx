@@ -60,7 +60,7 @@ export default function ProductsTable({
       await removeProduct({
         data: { id: row.id, expectedVersion: row.version },
       });
-      products.utils.writeDelete(row.id);
+      await products.utils.writeDelete(row.id);
       toast.success(t('admin.products.deleted'));
     } catch (e: unknown) {
       const key = adminErrorKey(e);
