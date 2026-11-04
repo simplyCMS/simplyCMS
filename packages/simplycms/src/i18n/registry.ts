@@ -77,7 +77,7 @@ export function useUiCatalogs(
   return catalogs;
 }
 
-/** Транслятор поза React (листи, CLI): чекає частини й збирає синхронний транслятор. */
+/** Транслятор поза React (`head()`, листи, CLI): чекає частини й збирає синхронний транслятор. */
 export async function loadTranslator(
   ui: UiLocale,
   parts: readonly UiCatalogPart[],

@@ -10,8 +10,7 @@ import { readActiveThemeName } from '../active-theme';
  *
  * Каталог `base` тут НЕ прогрівається (виміряно маркером ідентичності SSR-вузлів у
  * `live:smoke`): `head` маршрутів чекає `loadTranslator` усередині `router.hydrate()`, а
- * корінь без Suspense-межі, призупинившись, лишає SSR-DOM. Збій каталогу бачить
- * `installStaleChunkGuard`.
+ * корінь без Suspense-межі, призупинившись, лишає SSR-DOM.
  *
  * Збій теми не блокує гідрацію: її обробить `use()`/error boundary.
  */
