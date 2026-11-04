@@ -73,9 +73,10 @@ export const startHandlerType: Premise = need({
 /**
  * START-SFN-404-1: невідомий id server function — генерований резолвер кидає
  * `Error('Server function info not found for ' + id)`, а `handleServerAction` кличе його ДО
- * свого `try`: помилка виходить у h3 як 500. Рішення «прийнято» тримається на тому, що тіло
- * 500 нічого не розкриває (жива проба — `tests/server-fn-base-build.test.ts`); якщо Start почне
- * віддавати 404 сам, передумова червоніє — запис закривають.
+ * свого `try`: помилка йде в `createServerFnErrorResponse` як 500. Рішення «прийнято» тримається
+ * на нашій масці (`maskUnexpectedError`): тіло 500 нічого не розкриває (жива проба —
+ * `tests/server-fn-base-build.test.ts`); якщо Start почне віддавати 404 сам, передумова
+ * червоніє — запис закривають.
  */
 export const startUnknownFnResolverThrows: Premise = need({
   'резолвер кидає «Server function info not found» на невідомий id': (s) =>

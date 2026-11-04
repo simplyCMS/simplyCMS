@@ -19,8 +19,12 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
     'внутрішня функція обробника server functions (start-server-core), запис START-SFN-404-1',
   getServerFnById:
     'генерований резолвер server functions Start, запис START-SFN-404-1',
+  createServerFnErrorResponse:
+    'внутрішня функція start-server-core (відповідь на помилку server function), запис START-SFN-404-1',
+  executeMiddleware:
+    'внутрішня функція start-server-core (виконання request middleware), запис START-SFN-404-1',
   toResponse:
-    'внутрішня функція h3 (відповідь на помилку), запис START-SFN-404-1',
+    'внутрішня функція h3 (до start-server-core 1.169.45), історія запису START-SFN-404-1',
   // --- Supabase (історичні розділи контурів) ---
   generateLink: 'Supabase Auth admin API у розділі про обхід листа',
   API_URL: 'ключ виводу `supabase status -o json` у історичному розділі',
