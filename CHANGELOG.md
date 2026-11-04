@@ -342,8 +342,7 @@
 
 ### Залежності
 
-- TanStack Start 1.168 → **1.169.4** (Router 1.170, router-core 1.171): `head` маршруту await-иться й на
-  гідрації; h3/srvx більше не вклеюються в серверний бандл (allowlist Gate SB скорочено), предикат форми
+- TanStack Start 1.168 → **1.169.4** (Router 1.170, router-core 1.171): h3/srvx більше не вклеюються в серверний бандл (allowlist Gate SB скорочено), предикат форми
   в обробнику тіла — inline (премісу `START-BODY-1` оновлено).
 - better-auth 1.7.16 (security), zod 4.6.7, nodemailer 10.3.1, seroval 1.7, vite 8.3.5, vitest 5.1, eslint 10.14,
   tsdown 0.23.5, React 19.3.1, tiptap 3.32, lucide 1.67, Radix, drizzle-orm 0.45.4 — у межах мажорних.
