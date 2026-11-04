@@ -55,6 +55,11 @@ import {
   type ProductListRow,
 } from '../server/product-list-item';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 const ctx: PriceContext = {
   priceTypeId: 'pt-default',
   defaultPriceTypeId: 'pt-default',

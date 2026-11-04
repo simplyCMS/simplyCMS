@@ -6,6 +6,11 @@ import { I18nProvider } from 'simplycms/i18n';
 import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { FilterSidebar } from '../FilterSidebar';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 vi.mock('simplycms/core/lib/section-filters', () => ({
   getSectionFilters: vi.fn(async () => ({
     properties: [

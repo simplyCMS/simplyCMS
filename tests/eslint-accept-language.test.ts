@@ -12,12 +12,12 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
  * 🔴 Зелений `pnpm lint` не доводить, що селектор живий: правило, що мовчки
  * відвалилось або файл, який випав із зони, теж дає зелений лінт. Тому ESLint
  * отримує СИНТЕТИЧНЕ порушення з filePath усередині зони (кожна підтека, де
- * живе розбір мови) і поза нею, а справжній `resolve.ts` лінтиться своїм
+ * живе розбір мови) і поза нею, а справжній `request-locale.ts` лінтиться своїм
  * реальним текстом — мутація «функція читає заголовок» валить саме цей тест.
  */
 
 const ZONE_PATHS = [
-  'packages/simplycms/src/storefront-routes/locale/resolve.ts',
+  'packages/simplycms/src/domain/request-locale.ts',
   'packages/simplycms/src/storefront-routes/seo/normalize.ts',
   'packages/simplycms/src/storefront-routes/pages/Home.tsx',
   'packages/simplycms/src/storefront/loaders/products.ts',
@@ -73,7 +73,7 @@ describe('І30: Accept-Language заборонено в зоні вітрини'
   });
 
   it('справжній resolveRequestLocale не читає заголовка', async () => {
-    const path = 'packages/simplycms/src/storefront-routes/locale/resolve.ts';
+    const path = 'packages/simplycms/src/domain/request-locale.ts';
     const text = readFileSync(join(REPO, path), 'utf8');
     expect(await acceptLanguageMessages(path, text)).toEqual([]);
   });

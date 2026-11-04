@@ -18,13 +18,14 @@ vi.mock('../db', () => db);
 vi.mock('simplycms/commerce', () => commerce);
 
 import { quoteCartFor } from '../quote-cart';
+import { cl } from '../../../../test-harness/locale';
 
 describe('quoteCartFor: порожній кошик', () => {
   it.each([null, 'u1'])(
     'userId %s — { lines: [], subtotal: 0 } без БД',
     async (userId) => {
       await expect(
-        quoteCartFor([], userId, checkedTextLocale('uk', 'uk')),
+        quoteCartFor([], userId, checkedTextLocale(cl('uk'), cl('uk'))),
       ).resolves.toEqual({
         lines: [],
         subtotal: 0,

@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import PropertyOptionPage from 'simplycms/storefront-routes/pages/PropertyPage';
 import { getPropertyOption } from 'simplycms/storefront-routes/server/properties';
-import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
+import { localeOfHref } from 'simplycms/domain';
 import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute(

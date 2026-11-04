@@ -7,6 +7,12 @@ import type { ReactNode } from 'react';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { catalogKeys, priceViewKey } from 'simplycms/react-query';
 import { useSectionProducts } from '../pages/home/queries';
+import { cl } from '../../../test-harness/locale';
+
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -104,7 +110,10 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     // Іменований ключ хука — фабрика react-query, не сирий рядок каталогу.
     expect(
       qc.getQueryData(
-        priceViewKey(catalogKeys.sectionProducts(SECTION_ID, 'uk'), 'guest'),
+        priceViewKey(
+          catalogKeys.sectionProducts(SECTION_ID, cl('uk')),
+          'guest',
+        ),
       ),
     ).toEqual(result.current.data);
   });

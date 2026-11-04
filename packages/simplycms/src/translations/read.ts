@@ -1,6 +1,10 @@
 import { sql, type SQL } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
-import type { TranslationRow } from 'simplycms/domain/translations';
+import type { ContentLocale } from 'simplycms/contracts';
+import {
+  checkedContentLocale,
+  type TranslationRow,
+} from 'simplycms/domain/translations';
 import { assertIdent, type TranslatableEntity } from './specs';
 
 /** Рядок перекладу з БД: значення полів і `source_hashes` (мова → цей запис). */
@@ -10,13 +14,13 @@ export type StoredTranslation = TranslationRow & {
 };
 
 /** Код основної мови магазину (рівно одна — тримає `languages_guard`). */
-export async function primaryLocaleCode(db: ActorDb): Promise<string> {
+export async function primaryLocaleCode(db: ActorDb): Promise<ContentLocale> {
   const res = await db.execute<{ code: string }>(
     sql`select code from public.languages where is_default`,
   );
   const code = res.rows[0]?.code;
   if (!code) throw new Error('[simplycms/translations] немає основної мови');
-  return code;
+  return checkedContentLocale(code);
 }
 
 /**

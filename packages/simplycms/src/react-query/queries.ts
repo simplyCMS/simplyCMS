@@ -6,6 +6,7 @@
 // Ключі лишились: ними лоадер і клієнт домовляються про одну комірку кешу.
 
 import type { ProductQuery } from 'simplycms/contracts';
+import type { ContentLocale } from 'simplycms/contracts';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 
 /**
@@ -22,7 +23,11 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
  * ключ під різні типи payload при двох заданих id.
  */
 export const catalogKeys = {
-  sectionProducts: (sectionId: string, locale: string, q?: ProductQuery) =>
+  sectionProducts: (
+    sectionId: string,
+    locale: ContentLocale,
+    q?: ProductQuery,
+  ) =>
     [
       ...entityKey(ENTITY.products, locale).scoped('section', sectionId),
       q ?? null,

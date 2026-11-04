@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CartQuote } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useCart } from 'simplycms/react-query';
 import { quoteCart } from '../lib/cart-quote';
 import { useAuth } from './useAuth';
@@ -53,7 +53,7 @@ export function useCartQuote(): CartQuoteState {
     quantity,
   }));
   // Назви рядків квоти — мовою сторінки (М1), тож мова — перший сегмент ключа (І36).
-  const locale = useLocale();
+  const locale = useContentLocale();
   const query = useQuery({
     queryKey: [
       ...AGGREGATE.cartQuote.keyFor(locale),

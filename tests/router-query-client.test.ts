@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { withRequestContext } from 'simplycms/site/request-context';
 import { getRouter as getRouterInRequest } from '../src/router';
+import { localeSet } from '../packages/simplycms/test-harness/locale';
 
 // `getRouter()` читає набір мов із контексту запиту (його виставляє серверний
 // вхід), тож тест народжує роутер у запиті, як це робить Start.
@@ -17,7 +18,7 @@ async function getRouter() {
     const { getRequestContext } =
       await import('simplycms/site/request-context');
     getRequestContext()!.storefront = {
-      locales: { primary: 'uk', published: ['uk'], known: ['uk'] },
+      locales: localeSet('uk', ['uk'], ['uk']),
     };
     router = getRouterInRequest();
     return new Response('ok');
@@ -43,11 +44,9 @@ describe('топологія: клієнт роутера — той самий,
   it('мовний контекст: набір мов у context.locales і rewrite префіксів', async () => {
     const router = await getRouter();
     // Без цього `/en/x` не розібрався б у роутері, а посилання не отримали б префікс.
-    expect(router.options.context.locales).toEqual({
-      primary: 'uk',
-      published: ['uk'],
-      known: ['uk'],
-    });
+    expect(router.options.context.locales).toEqual(
+      localeSet('uk', ['uk'], ['uk']),
+    );
     expect(router.options.rewrite?.input).toBeTypeOf('function');
     expect(router.options.rewrite?.output).toBeTypeOf('function');
   });

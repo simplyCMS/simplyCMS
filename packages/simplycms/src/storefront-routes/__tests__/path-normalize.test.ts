@@ -9,12 +9,13 @@ import {
 } from '@tanstack/react-router';
 import type { RouterContext } from 'simplycms/runtime';
 import { createLocaleRewrite } from '../locale/rewrite';
-import type { LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
 import { entitySearch } from '../pages/entity-route';
 import {
   normalizeStorefrontRequest,
   type AddressLookup,
 } from '../seo/normalize';
+import { localeSet } from '../../../test-harness/locale';
 
 /**
  * І20: рівно ОДИН 301 на будь-яку неканонічну адресу сутності — мова, історія
@@ -22,11 +23,7 @@ import {
  * адресу. Реєстр тут — пам'ять із тією самою семантикою, що SQL
  * `resolveProductAddress` (БД-сторона доведена `storefront-path-normalize.test.ts`).
  */
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 /** Реєстр: (мова, шлях) → поточна адреса товару; токени `?mod=` по товару й мові. */
 const PATHS: Record<string, string> = {

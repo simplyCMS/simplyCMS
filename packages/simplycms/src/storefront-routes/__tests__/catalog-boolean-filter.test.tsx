@@ -18,6 +18,11 @@ import {
 import { useActiveFilters } from '../pages/catalog/useActiveFilters';
 import type { CatalogFiltersState } from '../pages/catalog/types';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
 

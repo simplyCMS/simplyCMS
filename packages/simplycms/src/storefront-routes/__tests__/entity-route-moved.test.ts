@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { isRedirect, isNotFound } from '@tanstack/react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
 
 const getProduct = vi.hoisted(() => vi.fn(async () => null));
 type Moved = { path: string; mod: string | null } | null;
@@ -11,17 +11,14 @@ const getMovedProductPath = vi.hoisted(() =>
 vi.mock('../server/products', () => ({ getProduct, getMovedProductPath }));
 
 import { loadEntityPage } from '../pages/entity-route';
+import { localeSet } from '../../../test-harness/locale';
 
 /**
  * Фінальне рев'ю М1 (B M2): клієнтська навігація на ІСТОРИЧНУ адресу (кеш лістингу, «назад»)
  * дає редирект на поточну, а не «Товар не знайдено»: нормалізація з 301 працює лише на
  * серверному GET. На сервері другого запиту немає — історію вже перевірила нормалізація.
  */
-const LOCALES: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const LOCALES: LocaleSet = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 const load = (href: string, search?: Record<string, unknown>) =>
   loadEntityPage({
     path: 'old-path',

@@ -5,7 +5,7 @@ import {
   homeHead,
   readStorefrontRoot,
 } from 'simplycms/storefront-routes/head/head';
-import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
+import { localeOfHref } from 'simplycms/domain';
 import { buildOrganizationJsonLd } from 'simplycms/storefront-routes/head/organization';
 
 export const Route = createFileRoute('/_storefront/')({

@@ -1,19 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { AGGREGATE, ENTITY, collectionKey, entityKey } from '../entities';
+import { cl } from '../../../test-harness/locale';
 
 describe('ключі вітрини містять мову (І36)', () => {
   const ID = 'p1';
 
   it('той самий id у двох мовах → різні ключі, [entity, locale, …]', () => {
-    const en = entityKey(ENTITY.products, 'en').detail(ID);
-    const uk = entityKey(ENTITY.products, 'uk').detail(ID);
+    const en = entityKey(ENTITY.products, cl('en')).detail(ID);
+    const uk = entityKey(ENTITY.products, cl('uk')).detail(ID);
     expect(en).toEqual(['products', 'en', 'detail', ID]);
     expect(uk).toEqual(['products', 'uk', 'detail', ID]);
     expect(en).not.toEqual(uk);
   });
 
   it('усі форми ключа несуть мову другим сегментом', () => {
-    const k = entityKey(ENTITY.sections, 'en');
+    const k = entityKey(ENTITY.sections, cl('en'));
     expect(k.scoped('section', 'x')[1]).toBe('en');
     expect(k.variant('storefront')).toEqual([
       'sections',
@@ -31,10 +32,10 @@ describe('ключі вітрини містять мову (І36)', () => {
   });
 
   it('сегмент 0 і префікс-інвалідація незмінні: all() — [entity] для всіх мов', () => {
-    const en = entityKey(ENTITY.products, 'en');
+    const en = entityKey(ENTITY.products, cl('en'));
     expect(en.all()).toEqual(['products']);
     expect(en.detail(ID).slice(0, 1)).toEqual(en.all());
-    expect(entityKey(ENTITY.products, 'uk').detail(ID).slice(0, 1)).toEqual(
+    expect(entityKey(ENTITY.products, cl('uk')).detail(ID).slice(0, 1)).toEqual(
       en.all(),
     );
   });
@@ -49,8 +50,8 @@ describe('ключі вітрини містять мову (І36)', () => {
   });
 
   it('агрегат: keyFor(locale) = [name, locale], префікс key зберігається', () => {
-    const en = AGGREGATE.catalogProducts.keyFor('en');
-    const uk = AGGREGATE.catalogProducts.keyFor('uk');
+    const en = AGGREGATE.catalogProducts.keyFor(cl('en'));
+    const uk = AGGREGATE.catalogProducts.keyFor(cl('uk'));
     expect(en).toEqual(['catalog-products', 'en']);
     expect(en).not.toEqual(uk);
     expect(en[0]).toBe(AGGREGATE.catalogProducts.key[0]);

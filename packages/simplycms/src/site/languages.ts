@@ -2,7 +2,8 @@ import { asc } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { languages } from 'simplycms/schema';
 import type { Language } from 'simplycms/schema/types';
-import type { LocaleSet } from 'simplycms/i18n';
+import type { LocaleSet } from 'simplycms/contracts';
+import { checkedContentLocale } from 'simplycms/domain/translations';
 
 /** Рядок мови для вітрини: без службових полів. */
 export type LanguageSummary = Pick<
@@ -36,8 +37,10 @@ export function toLocaleSet(rows: readonly LanguageSummary[]): LocaleSet {
     throw new Error('[simplycms/site] у БД немає основної мови (is_default)');
   }
   return {
-    primary: primary.code,
-    published: rows.filter((r) => r.status === 'published').map((r) => r.code),
-    known: rows.map((r) => r.code),
+    primary: checkedContentLocale(primary.code),
+    published: rows
+      .filter((r) => r.status === 'published')
+      .map((r) => checkedContentLocale(r.code)),
+    known: rows.map((r) => checkedContentLocale(r.code)),
   };
 }

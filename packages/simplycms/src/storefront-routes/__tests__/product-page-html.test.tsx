@@ -57,7 +57,8 @@ vi.mock('../server/products', () => ({
 import { htmlLangAttrs } from '../locale/lang-attrs';
 import { createLocaleRewrite } from '../locale/rewrite';
 import { loadStorefrontRoot } from '../locale/root-data';
-import type { LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { localeSet } from '../../../test-harness/locale';
 import ProductDetailPage from '../pages/ProductDetail';
 import {
   entityHead,
@@ -65,11 +66,7 @@ import {
   loadEntityPage,
 } from '../pages/entity-route';
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 /** Рядок товару так, як його віддає `loadProduct`: текст і SEO вже з проєкції. */
 function row(over: {

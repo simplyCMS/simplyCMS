@@ -22,6 +22,7 @@ export {
   checkedTextLocale,
   type TextLocale,
 } from './text-locale';
+export { checkedContentLocale } from './content-locale';
 export { richTextToPlain } from './plain-text';
 export {
   planTranslationWrite,

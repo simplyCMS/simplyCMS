@@ -1,7 +1,8 @@
 import type { LocationRewrite } from '@tanstack/react-router';
 import { readLocaleSet } from './context';
 import { createLocaleRewrite } from './rewrite';
-import { NO_LOCALES, type LocaleSet } from './resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { NO_LOCALES } from 'simplycms/domain';
 
 /**
  * Мовна частина `createRouter` для `getRouter()` host-а: набір мов (в контекст

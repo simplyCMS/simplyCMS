@@ -43,6 +43,11 @@ import PropertyPage from '../PropertyPage';
 import { CatalogCards } from './support/CatalogCards';
 import { ProductPrice } from './support/ProductPrice';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
+
 const ITEM = { productId: F.PRODUCT_ID, modificationId: null, sectionId: 's1' };
 
 const newClient = () =>

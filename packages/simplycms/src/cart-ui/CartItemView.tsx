@@ -3,7 +3,8 @@ import { Minus, Plus, X } from 'lucide-react';
 import { MAX_LINE_QUANTITY } from 'simplycms/contracts/cart-limits';
 import type { CartQuoteLine } from 'simplycms/contracts';
 import type { CartItem as CartItemType } from 'simplycms/react-query';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { FallbackText } from 'simplycms/ui/fallback-text';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { CartLinePrice } from './CartLinePrice';
@@ -37,7 +38,7 @@ export function CartItemView({
   onRemove,
 }: CartItemViewProps) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useContentLocale();
   // Назви: з квоти, з кешу тієї ж мови або скелетон (`resolveCartItemNames`).
   const names = resolveCartItemNames(item, line, locale, failed ?? false);
   // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`, Task 17б).

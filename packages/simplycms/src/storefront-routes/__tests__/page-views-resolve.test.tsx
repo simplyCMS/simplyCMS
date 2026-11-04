@@ -66,6 +66,11 @@ import ProductDetailPage, {
   type ProductDetailPageProps,
 } from '../pages/ProductDetail';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 function ThemeViewStub() {
   return <div data-testid="theme-view" />;
 }

@@ -17,7 +17,6 @@ export {
 } from './I18nProvider';
 export type {
   Locale,
-  LocaleSet,
   MessageKey,
   MessageParams,
   Catalog,

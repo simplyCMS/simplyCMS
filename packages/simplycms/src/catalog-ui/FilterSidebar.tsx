@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { X } from 'lucide-react';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { FilterCheckbox } from './FilterCheckbox';
 
 /**
@@ -88,7 +89,10 @@ export function FilterSidebar({
    * другий чекав на перший, бо будував `in (…)` з його ж результату. Тепер
    * характеристики й опції приходять однією транзакцією.
    */
-  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
+  const sectionProperties = entityKey(
+    ENTITY.sectionProperties,
+    useContentLocale(),
+  );
   const { data } = useQuery({
     // Без розділу — окремий scope кореня каталогу, не порожній id розділу.
     queryKey: sectionId

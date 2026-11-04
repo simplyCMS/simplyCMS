@@ -1,12 +1,16 @@
-import type { Locale, LocaleSet } from 'simplycms/i18n';
+import type { LocaleSet } from 'simplycms/contracts';
+import { checkedContentLocale } from 'simplycms/domain/translations';
 
 /** Ключ у `window`, під яким лежить набір мов магазину для клієнтського `rewrite`. */
 export const LOCALES_GLOBAL = '__SCMS_LOCALES__';
 
-/** Що сервер віддає клієнту: чернеток і вимкнених мов у HTML немає. */
+/**
+ * Що сервер віддає клієнту: чернеток і вимкнених мов у HTML немає. Дротовий формат — прості
+ * рядки: бренд `ContentLocale` повертає `readClientLocaleSet` через `checkedContentLocale`.
+ */
 export type PublicLocales = {
-  readonly primary: Locale;
-  readonly published: readonly Locale[];
+  readonly primary: string;
+  readonly published: readonly string[];
 };
 
 /**
@@ -39,9 +43,9 @@ export function readClientLocaleSet(): LocaleSet {
     );
   }
   return {
-    primary: raw.primary,
-    published: raw.published,
-    known: raw.published,
+    primary: checkedContentLocale(raw.primary),
+    published: raw.published.map(checkedContentLocale),
+    known: raw.published.map(checkedContentLocale),
   };
 }
 

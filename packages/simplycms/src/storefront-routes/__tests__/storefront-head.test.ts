@@ -6,6 +6,7 @@ import {
   storefrontHead,
   type StorefrontRootData,
 } from '../head/head';
+import { cl } from '../../../test-harness/locale';
 
 /**
  * `head()` роутів вітрини бере назву магазину й локаль із кореневого лоадера
@@ -27,7 +28,7 @@ function rootMatches(profile: StorefrontProfile, locale = 'uk') {
     activeThemeName: 'default',
     storeProfile: profile,
     siteUrl: 'https://shop.example',
-    locale,
+    locale: cl(locale),
     languages: { primary: 'uk', published: ['uk', 'en'] },
   };
   return [

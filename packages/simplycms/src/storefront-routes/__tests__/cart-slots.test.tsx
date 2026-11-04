@@ -45,6 +45,11 @@ import {
 } from '../views/slots/CartSlots';
 import { CartSummary } from '../views/slots/CartSummary';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 const storedCart = [
   {
     productId: '10000002-0000-4000-8000-000000000004',

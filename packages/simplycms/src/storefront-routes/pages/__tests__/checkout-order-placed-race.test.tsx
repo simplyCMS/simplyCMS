@@ -114,6 +114,11 @@ vi.mock('simplycms/checkout-ui', () => ({
 
 import Checkout from '../Checkout';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
+
 afterEach(() => {
   cleanup();
   cart.reset();

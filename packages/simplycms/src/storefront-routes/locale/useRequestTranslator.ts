@@ -3,7 +3,7 @@ import { useRouteContext, useRouterState } from '@tanstack/react-router';
 import { createTranslator } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 import type { RouterContext } from 'simplycms/runtime';
-import { localeOfHref } from './root-data';
+import { localeOfHref } from 'simplycms/domain';
 
 /**
  * Транслятор для екранів, що рендеряться ПОЗА `I18nProvider`: `NotFound` і

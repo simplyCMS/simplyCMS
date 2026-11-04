@@ -11,7 +11,8 @@ import { useCart } from 'simplycms/core/hooks/useCart';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { getProfileSettings } from '../server/profile';
 import { placeOrder } from '../server/checkout';
-import { useLocale, useT, type Translator } from 'simplycms/i18n';
+import { useT, type Translator } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useStoreProfile } from 'simplycms/themes/store-profile';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import {
@@ -115,7 +116,7 @@ type CheckoutFormData = z.infer<ReturnType<typeof buildCheckoutSchema>>;
 
 export default function Checkout() {
   const t = useT();
-  const locale = useLocale();
+  const locale = useContentLocale();
   const storeProfile = useStoreProfile();
   const navigate = useNavigate();
   const { items, clearCart, hydrated } = useCart();

@@ -108,6 +108,8 @@ const I18N_MIGRATED_FILES = [
   // Серверні лоадери вітрини, її роут-файли й серверний вхід host-а: саме там
   // заголовки запиту доступні, тож заборона І30 має стояти й тут.
   'packages/simplycms/src/storefront/**/*.{ts,tsx}',
+  // Розбір мови з URL (`resolveRequestLocale`) переїхав у `domain` (T1): І30 тримає й там.
+  'packages/simplycms/src/domain/request-locale.ts',
   'packages/simplycms/routes/storefront/**/*.ts',
   'src/server.ts',
   'packages/simplycms/src/admin/**/*.tsx',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
 import { productHead, type ProductHeadInput } from '../head/product';
+import { cl } from '../../../test-harness/locale';
 
 /**
  * `head()` картки товару: canonical, hreflang і `url` JSON-LD будуються від
@@ -35,7 +36,7 @@ const PRODUCT: ProductHeadInput = {
   ],
   guest_price_types: { priceTypeId: 'retail', defaultPriceTypeId: 'retail' },
   page: {
-    locale: 'uk',
+    locale: cl('uk'),
     seo: {
       robots: 'index, follow',
       canonical: '/panel',
@@ -53,7 +54,7 @@ function matches(siteUrl: string) {
     activeThemeName: 'default',
     storeProfile: PROFILE,
     siteUrl,
-    locale: 'uk',
+    locale: cl('uk'),
     languages: { primary: 'uk', published: ['uk', 'en'] },
   };
   return [{ routeId: '__root__', loaderData: data }];

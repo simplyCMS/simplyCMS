@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
 import { productHead, type ProductHeadInput } from '../head/product';
+import { cl } from '../../../test-harness/locale';
 
 /**
  * F9 фінального рев'ю К3-Е6в: `offers` JSON-LD — ГОСТЬОВА ціна (тип з
@@ -21,7 +22,7 @@ const matches = () => {
     activeThemeName: 'default',
     storeProfile: PROFILE,
     siteUrl: '',
-    locale: 'uk',
+    locale: cl('uk'),
     languages: { primary: 'uk', published: ['uk'] },
   };
   return [{ routeId: '__root__', loaderData: data }];
@@ -43,7 +44,7 @@ const BASE: ProductHeadInput = {
   description: null,
   images: [],
   page: {
-    locale: 'uk',
+    locale: cl('uk'),
     seo: { robots: 'index, follow', canonical: '/panel', hreflang: [] },
   },
   stock_status: 'in_stock',

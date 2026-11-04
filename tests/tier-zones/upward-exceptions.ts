@@ -15,7 +15,6 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'auth→i18n': 'тексти листів auth (Е8-Т11)',
   'auth→env': 'база посилань siteUrl у листах (Е8-Т11)',
   // --- runtime / storefront / admin-server ---
-  'runtime→i18n': 'RouterContext.locales типізується LocaleSet (type-only)',
   'storefront→db': 'єдиний канал до Postgres — withActor (лоадери вітрини)',
   'storefront→auth':
     'читання сесії для лоадерів, userId лише з серверної сесії',

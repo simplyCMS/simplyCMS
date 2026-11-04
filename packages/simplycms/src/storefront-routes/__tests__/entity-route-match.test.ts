@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, createRouter } from '@tanstack/react-router';
-import type { LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
 import { routeTree } from '../../../../../src/routeTree.gen';
 
 const getProduct = vi.hoisted(() => vi.fn(async () => null));
@@ -14,6 +14,7 @@ vi.mock('../server/products', () => ({
 }));
 
 import { loadEntityPage } from '../pages/entity-route';
+import { localeSet } from '../../../test-harness/locale';
 
 /**
  * Роут сутності не перехоплює чужі префікси (фікс-раунд, перевірка C): адреса сутності —
@@ -21,7 +22,7 @@ import { loadEntityPage } from '../pages/entity-route';
  * без оболонки вітрини, без лоадера сутності й без запиту до `url_paths`. Перевірка
  * на справжньому згенерованому дереві роутів.
  */
-const LOCALES: LocaleSet = { primary: 'uk', published: ['uk'], known: ['uk'] };
+const LOCALES: LocaleSet = localeSet('uk', ['uk'], ['uk']);
 
 const matched = (url: string): string[] => {
   const router = createRouter({

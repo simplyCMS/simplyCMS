@@ -5,6 +5,7 @@ import {
   checkedTextLocale,
   type TextLocale,
 } from 'simplycms/domain/translations';
+import { cl } from '../packages/simplycms/test-harness/locale';
 
 /**
  * М1 Task 16 (m6): `TextLocale` — брендований тип. Літерал `{ locale, primary }` не
@@ -29,7 +30,7 @@ describe('TextLocale: бренд «мову перевірено»', () => {
   });
 
   it('checkedTextLocale повертає пару без зайвих рантайм-полів', () => {
-    expect(checkedTextLocale('en', 'uk')).toEqual({
+    expect(checkedTextLocale(cl('en'), cl('uk'))).toEqual({
       locale: 'en',
       primary: 'uk',
     });

@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { LocaleSet } from 'simplycms/i18n';
+import type { LocaleSet } from 'simplycms/contracts';
 
 /**
  * Стан вітрини в межах одного HTTP-запиту, який виставляє нормалізація на

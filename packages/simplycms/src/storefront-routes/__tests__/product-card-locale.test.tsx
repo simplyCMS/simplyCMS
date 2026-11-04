@@ -16,6 +16,7 @@ import {
   type LocaleRewriteState,
 } from '../locale/rewrite';
 import { ProductCard } from 'simplycms/catalog-ui/ProductCard';
+import { localeSet } from '../../../test-harness/locale';
 
 vi.mock('simplycms/react-query', () => ({
   useFormatPrice: () => (n: number) => String(n),
@@ -23,7 +24,7 @@ vi.mock('simplycms/react-query', () => ({
 
 afterEach(cleanup);
 
-const SET = { primary: 'uk', published: ['uk', 'en'], known: ['uk', 'en'] };
+const SET = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 async function renderAt(
   url: string,

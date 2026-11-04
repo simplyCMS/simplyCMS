@@ -1,4 +1,4 @@
-import type { LocaleSet } from 'simplycms/i18n';
+import type { LocaleSet } from 'simplycms/contracts';
 import {
   languagesCache,
   readLanguages,

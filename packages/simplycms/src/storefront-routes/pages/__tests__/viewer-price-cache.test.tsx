@@ -89,6 +89,11 @@ import {
 } from '../home/queries';
 import PropertyPage from '../PropertyPage';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
+
 const SECTION = { id: 's1', name: 'Панелі', slug: 'panels' };
 
 function Surfaces() {

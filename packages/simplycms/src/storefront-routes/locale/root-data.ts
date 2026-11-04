@@ -1,17 +1,8 @@
+import type { LocaleSet } from 'simplycms/contracts';
+import { NO_LOCALES, localeOfHref } from 'simplycms/domain';
 import { loadLocaleSetLazily } from './context';
 import { getStorefrontRoot } from '../server/root';
 import type { StorefrontRootData } from '../head/head';
-import { NO_LOCALES, resolveRequestLocale, type LocaleSet } from './resolve';
-
-/**
- * Мова сторінки з публічного href роутера (`location.publicHref`: шлях + query +
- * hash з префіксом мови, ДО `rewrite`). Це та сама `resolveRequestLocale`, що в
- * інтерсепторі й `rewrite`, — лише з витягнутим шляхом.
- */
-export function localeOfHref(publicHref: string, locales: LocaleSet): string {
-  const { pathname } = new URL(publicHref, 'http://localhost');
-  return resolveRequestLocale(pathname, locales).locale;
-}
 
 /**
  * `beforeLoad` кореня: якщо запит прийшов без набору мов (нормалізація не
@@ -37,7 +28,7 @@ export async function loadStorefrontRoot(
   publicHref: string,
   locales: LocaleSet,
 ): Promise<StorefrontRootData> {
-  if (locales.primary === '') {
+  if (locales === NO_LOCALES) {
     throw new Error(
       'simplycms: the root loader ran without a storefront locale set — the ' +
         'host root route must call resolveRouterLocales in beforeLoad',

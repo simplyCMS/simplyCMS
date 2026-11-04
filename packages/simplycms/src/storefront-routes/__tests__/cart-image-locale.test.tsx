@@ -26,6 +26,11 @@ vi.mock('@tanstack/react-router', () => ({
 import { CartDrawer } from 'simplycms/core/components/cart/CartDrawer';
 import { SlotHarness } from './slots-harness';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 const P = '10000002-0000-4000-8000-000000000001';
 const UK_IMAGE = { url: '/media/main.png', alt: 'Кабель спереду' };
 const EN_IMAGE = { url: '/media/main-en.png', alt: 'Cable front' };

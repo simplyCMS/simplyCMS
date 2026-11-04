@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from 'simplycms/i18n';
 import { CartProvider } from 'simplycms/react-query';
+import { TestContentLocale } from '../../../test-harness/content-locale';
 import { TestEngineProvider } from './engine-stub';
 
 /**
@@ -28,7 +29,9 @@ export function SlotHarness({
     <QueryClientProvider client={client}>
       <I18nProvider locale={locale}>
         <TestEngineProvider>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <TestContentLocale locale={locale}>{children}</TestContentLocale>
+          </CartProvider>
         </TestEngineProvider>
       </I18nProvider>
     </QueryClientProvider>

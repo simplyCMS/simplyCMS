@@ -71,6 +71,11 @@ vi.mock('../components/BannerSlider', () => ({
 
 import { Route } from '../../../routes/storefront/_storefront/index';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
 

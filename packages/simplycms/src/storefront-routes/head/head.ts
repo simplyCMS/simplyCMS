@@ -1,5 +1,6 @@
 import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
+import type { ContentLocale } from 'simplycms/contracts';
 import { createTranslator } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 
@@ -21,7 +22,7 @@ export type StorefrontRootData = {
   storeProfile: StorefrontProfile;
   siteUrl: string;
   /** Мова сторінки (з префікса URL): `<html lang>` і тексти `head()`. */
-  locale: string;
+  locale: ContentLocale;
   /** Мови магазину в HTML: основна — кінцева ланка fallback, опубліковані — для hreflang. */
   languages: { primary: string; published: readonly string[] };
 };

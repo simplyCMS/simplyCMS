@@ -12,3 +12,4 @@ export * from './slug';
 export * from './product-path';
 export * from './banner';
 export * from './css-value';
+export * from './request-locale';

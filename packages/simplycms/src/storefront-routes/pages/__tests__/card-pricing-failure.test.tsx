@@ -43,6 +43,11 @@ import PropertyPage from '../PropertyPage';
 import { CatalogCards } from './support/CatalogCards';
 import { ProductPrice } from './support/ProductPrice';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
+
 /** SSR-рядок каталогу: до фіксу сітка назавжди лишалась на ньому. */
 const SSR_ITEM = {
   id: F.PRODUCT_ID,

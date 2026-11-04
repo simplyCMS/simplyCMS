@@ -674,7 +674,8 @@ SimplyCMS — платформа для магазинів, де мов конт
 
 ### 19.3 Типи
 
-- **`ContentLocale`** (брендований рядок) живе в `simplycms/domain/translations` поруч із `LANGUAGE_CODE_FORMAT`.
+- **`ContentLocale`** (брендований рядок): тип живе в `simplycms/contracts/content-locale` (T0, як `SanitizedHtml`),
+  конструктор `checkedContentLocale` — у `simplycms/domain/translations` поруч із `LANGUAGE_CODE_FORMAT`.
   - Конструюють його лише межі, що перевірили код: `resolveRequestLocale`, читання рядків `languages`,
     валідатор `localeInput`.
   - Наявний `TextLocale` лишається контекстом читання тексту й стає `{ locale: ContentLocale; primary:
@@ -682,7 +683,7 @@ SimplyCMS — платформа для магазинів, де мов конт
 - **`UiLocale`** (брендований рядок) живе в `simplycms/i18n`. Конструюють його лише `resolveUiLocale` (§19.4) і
   `toUiLocale` для `profiles.ui_locale` (§19.6).
 - `LocaleSet` (набір мов магазину: основна + опубліковані) — це вісь контенту. Він переходить з `i18n/types` до
-  `simplycms/domain/translations` (T1: його читають `runtime`, `site` і `storefront-routes`), поля стають
+  `simplycms/contracts/content-locale` (T0: його читають `contracts/entities`, `runtime`, `site` і `storefront-routes`), поля стають
   `ContentLocale`.
 - Ключі кешу приймають лише `ContentLocale`: `entityKey`, `AGGREGATE.<x>.keyFor`, `createReadCache`
   (`variant`). Змішування осей ловить `tsc`; окремого лінту не потрібно.

@@ -30,7 +30,16 @@ describe('serializeLocalesScript / readClientLocaleSet (Д2)', () => {
     });
     expect(code).not.toContain('</script>');
     run(code);
-    expect(readClientLocaleSet().published).toEqual(['</script><b>']);
+    // Сирий глобал: значення збережено як є; до `readClientLocaleSet` воно не дійде (нижче).
+    const raw = (window as unknown as Record<string, { published: string[] }>)[
+      LOCALES_GLOBAL
+    ];
+    expect(raw?.published).toEqual(['</script><b>']);
+  });
+
+  it('код мови не форми BCP 47 у глобалі відхиляється на межі', () => {
+    run(serializeLocalesScript({ primary: 'uk', published: ['</script><b>'] }));
+    expect(() => readClientLocaleSet()).toThrow(/мови контенту/);
   });
 
   it('без глобала клієнт відмовляє гучно, з підказкою про кореневий роут', () => {
