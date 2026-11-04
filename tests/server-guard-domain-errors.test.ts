@@ -137,7 +137,9 @@ describe('дегідратація SSR: помилка лоадера поза s
         { matches: [{ id: 'm', status: 'error', e: error }] },
         {
           plugins: ssrPlugins,
-          onParse: (node) => chunks.push(JSON.stringify(node)),
+          onParse: (node) => {
+            chunks.push(JSON.stringify(node));
+          },
           onDone: () => resolve(chunks.join('\n')),
           onError: reject,
         },

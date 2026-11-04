@@ -19,13 +19,12 @@ const need =
       .map(([what]) => what);
 
 export const startBody: Premise = need({
+  // 1.169.x: предикат inline (`contentType.includes("…")`), без константи
+  // FORM_DATA_CONTENT_TYPES — семантика та сама: форма читається повністю.
   "предикат форми через includes('multipart/form-data')": (s) =>
-    /FORM_DATA_CONTENT_TYPES\s*=\s*\[[^\]]*"multipart\/form-data"/.test(s) &&
-    /contentType\.includes\(type\)/.test(s),
+    /contentType\.includes\("multipart\/form-data"\)/.test(s),
   "предикат форми через includes('application/x-www-form-urlencoded')": (s) =>
-    /FORM_DATA_CONTENT_TYPES\s*=\s*\[[^\]]*"application\/x-www-form-urlencoded"/.test(
-      s,
-    ),
+    /contentType\.includes\("application\/x-www-form-urlencoded"\)/.test(s),
   'тіло форми читається await request.formData()': (s) =>
     /await request\.formData\(\)/.test(s),
 });
