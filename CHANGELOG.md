@@ -79,7 +79,7 @@
   приймає проміс у `head()`, а помилку синхронного читання реєстру в ньому ковтає, тож синхронного читача каталогів
   немає (`loadTranslator` — єдиний шлях поза React). Кореневий лоадер `loadStorefrontRoot` чекає лише `base` мови
   інтерфейсу (каталог ядра повний для кожної мови, мови fallback клієнт не тягне). Нове:
-  `prepareStorefrontHydration()` (`simplycms/storefront-routes/hydration`) — прогрів теми й `base` ДО `hydrateRoot`
+  `prepareStorefrontHydration()` (`simplycms/storefront-routes/hydration`) — прогрів активної теми ДО `hydrateRoot`
   (host-`client.tsx` лише чекає його). Gate C пілота забороняє каталоги ядра в початковому графі вітрини.
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо

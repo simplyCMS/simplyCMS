@@ -8,9 +8,8 @@ import { prepareStorefrontHydration } from 'simplycms/storefront-routes/hydratio
 import './theme-registry';
 
 /**
- * Прогрів активної теми й каталогу мови інтерфейсу ДО hydrateRoot — інакше route-компоненти
- * й корінь суспендяться під час першого клієнтського рендеру (деталі —
- * `prepareStorefrontHydration`). Його збій не ковтаємо: його бачить installStaleChunkGuard.
+ * Прогрів активної теми ДО hydrateRoot — інакше route-компоненти суспендяться під час
+ * першого клієнтського рендеру (деталі — `prepareStorefrontHydration`).
  */
 async function hydrate() {
   await prepareStorefrontHydration();
