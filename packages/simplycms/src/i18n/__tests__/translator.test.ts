@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../translator';
+import { ui } from '../../../test-harness/locale';
 import { messages as ukBase } from '../catalogs/uk/base';
 import { messages as enBase } from '../catalogs/en/base';
 
-const uk = createTranslator([ukBase]);
-const en = createTranslator([enBase]);
+const uk = createTranslator([ukBase], ui('uk'));
+const en = createTranslator([enBase], ui('en'));
 
 describe('createTranslator', () => {
   it('віддає українське повідомлення для локалі uk', () => {
@@ -16,8 +17,8 @@ describe('createTranslator', () => {
   });
 
   it('підставляє параметри у плейсхолдери {name}', () => {
-    expect(uk('cart.items', { count: 5 })).toBe('Товари (5)');
-    expect(en('cart.items', { count: 5 })).toBe('Items (5)');
+    expect(uk('cart.itemsTitle', { count: 5 })).toBe('Товари (5)');
+    expect(en('cart.itemsTitle', { count: 5 })).toBe('Items (5)');
   });
 
   it('повертає сам ключ, якщо повідомлення немає в жодному каталозі', () => {
@@ -29,10 +30,13 @@ describe('createTranslator', () => {
 
 describe('createTranslator — порядок каталогів', () => {
   it('перший каталог із ключем виграє, відсутній ключ добирає наступний', () => {
-    const t = createTranslator([
-      { 'cart.title': 'Перший' },
-      { 'cart.title': 'Другий', 'cart.empty.title': 'Лише в другому' },
-    ]);
+    const t = createTranslator(
+      [
+        { 'cart.title': 'Перший' },
+        { 'cart.title': 'Другий', 'cart.empty.title': 'Лише в другому' },
+      ],
+      ui('uk'),
+    );
 
     expect(t('cart.title')).toBe('Перший');
     expect(t('cart.empty.title')).toBe('Лише в другому');

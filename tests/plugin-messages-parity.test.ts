@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { CatalogValue } from '../packages/simplycms/src/i18n/types';
+import {
+  kindMismatchesByLocale,
+  placeholdersOf,
+  pluralProblemsByLocale,
+  textsOf,
+} from './helpers/catalog-values';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -10,10 +17,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  * `ThemeModule.messages`, план Фази 3 Р6). Форма: `{ uk: {...}, en: {...} }`.
  */
 interface PluginMessagesModule {
-  messages: {
-    uk?: Record<string, string>;
-    en?: Record<string, string>;
-  };
+  messages: Partial<Record<string, Record<string, CatalogValue>>>;
 }
 
 /**
@@ -60,11 +64,6 @@ async function loadMessages(
   return mod.messages;
 }
 
-/** Плейсхолдери `{name}` рядка, відсортовані для порівняння без урахування порядку. */
-function placeholders(s: string): string {
-  return (s.match(/\{(\w+)\}/g) ?? []).sort().join(',');
-}
-
 describe('каталоги перекладів плагінів (definePlugin messages)', () => {
   const plugins = pluginDirs();
 
@@ -95,7 +94,9 @@ describe('каталоги перекладів плагінів (definePlugin m
           expect(key, `${locale}: ${key}`).toMatch(
             new RegExp(`^${prefix.replace(/[.]/g, '\\.')}`),
           );
-          expect(text.trim(), `${locale}: ${key} порожній`).not.toBe('');
+          for (const piece of textsOf(text)) {
+            expect(piece.trim(), `${locale}: ${key} порожній`).not.toBe('');
+          }
         }
       }
     });
@@ -106,10 +107,21 @@ describe('каталоги перекладів плагінів (definePlugin m
 
       for (const key of Object.keys(messages.uk)) {
         expect(
-          placeholders(messages.en[key] ?? ''),
+          placeholdersOf(messages.en[key] ?? ''),
           `плейсхолдери "${key}" розійшлися`,
-        ).toBe(placeholders(messages.uk[key]));
+        ).toBe(placeholdersOf(messages.uk[key]!));
       }
+    });
+
+    it('ключ-множина має рівно категорії Intl.PluralRules своєї мови', async () => {
+      const messages = await loadMessages(dir);
+      if (!messages) return;
+
+      // Мови — з ключів каталогу: `pl` у темі теж мусить мати рівно свої категорії.
+      expect([
+        ...pluralProblemsByLocale(messages),
+        ...kindMismatchesByLocale(messages.uk ?? {}, messages),
+      ]).toEqual([]);
     });
   });
 });

@@ -93,7 +93,9 @@ describe('транслятор мови інтерфейсу', () => {
 
   it('підставляє параметри', async () => {
     expect(
-      (await loadTranslator(ui('uk'), ['base']))('cart.items', { count: 3 }),
+      (await loadTranslator(ui('uk'), ['base']))('cart.itemsTitle', {
+        count: 3,
+      }),
     ).toBe('Товари (3)');
   });
 });

@@ -106,6 +106,22 @@ describe('validatePluginModule', () => {
     );
   });
 
+  it('ключ-множина (PluralForms) валідна, а без other — throw', () => {
+    const forms = { one: '{count} а', other: '{count} б' };
+    expect(() =>
+      validatePluginModule(
+        makeModule({ messages: { uk: { 'plugin.demo.n': forms } } }),
+        '0.3.0',
+      ),
+    ).not.toThrow();
+    expect(() =>
+      validatePluginModule(
+        makeModule({ messages: { uk: { 'plugin.demo.n': { one: 'а' } } } }),
+        '0.3.0',
+      ),
+    ).toThrow(/messages\.uk\.plugin\.demo\.n/);
+  });
+
   it('ключ messages без префікса plugin.<name>. — попередження', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const module = makeModule({

@@ -96,6 +96,24 @@ describe('validateThemeModule', () => {
     expect(() => validateThemeModule(mod)).toThrow(/messages\.uk\.theme\.foo/);
   });
 
+  it('приймає ключ-множину (PluralForms), відхиляє форми без other чи з чужою категорією', () => {
+    const ok = makeValidModule();
+    ok.messages = {
+      uk: { 'theme.n': { one: '{count} а', other: '{count} б' } },
+    };
+    expect(() => validateThemeModule(ok)).not.toThrow();
+
+    const noOther = makeValidModule();
+    noOther.messages = { uk: { 'theme.n': { one: '{count} а' } } };
+    expect(() => validateThemeModule(noOther)).toThrow(
+      /messages\.uk\.theme\.n/,
+    );
+
+    const alien = makeValidModule();
+    alien.messages = { uk: { 'theme.n': { other: 'б', several: 'в' } } };
+    expect(() => validateThemeModule(alien)).toThrow(/messages\.uk\.theme\.n/);
+  });
+
   it('приймає модуль без fonts (поле опційне)', () => {
     expect(() => validateThemeModule(makeValidModule())).not.toThrow();
   });

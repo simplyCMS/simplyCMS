@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { CatalogValue } from '../packages/simplycms/src/i18n/types';
+import {
+  kindMismatchesByLocale,
+  placeholdersOf,
+  pluralProblemsByLocale,
+  textsOf,
+} from './helpers/catalog-values';
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -10,10 +17,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  * v2 §12). Форма: `{ uk: {...}, en: {...} }`.
  */
 interface ThemeMessagesModule {
-  messages: {
-    uk?: Record<string, string>;
-    en?: Record<string, string>;
-  };
+  messages: Partial<Record<string, Record<string, CatalogValue>>>;
 }
 
 /**
@@ -62,11 +66,6 @@ async function loadThemeMessages(
   return mod.messages;
 }
 
-/** Плейсхолдери `{name}` рядка, відсортовані для порівняння без урахування порядку. */
-function placeholders(s: string): string {
-  return (s.match(/\{(\w+)\}/g) ?? []).sort().join(',');
-}
-
 describe('каталоги перекладів тем (ThemeModule.messages)', () => {
   const themes = themeDirs();
 
@@ -111,10 +110,9 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
 
       const uk = messages.uk ?? {};
       const en = messages.en ?? {};
-      const empty = [
-        ...Object.keys(uk).filter((k) => !uk[k]?.trim()),
-        ...Object.keys(en).filter((k) => !en[k]?.trim()),
-      ];
+      const blank = (c: Record<string, CatalogValue>) =>
+        Object.keys(c).filter((k) => textsOf(c[k]!).some((x) => !x.trim()));
+      const empty = [...blank(uk), ...blank(en)];
 
       expect(empty).toEqual([]);
     });
@@ -127,11 +125,22 @@ describe('каталоги перекладів тем (ThemeModule.messages)', 
       const en = messages.en ?? {};
       const mismatched = Object.keys(uk)
         .filter((k) => k in en)
-        .filter((k) => placeholders(uk[k]!) !== placeholders(en[k]!));
+        .filter((k) => placeholdersOf(uk[k]!) !== placeholdersOf(en[k]!));
 
       expect(mismatched, `теми "${name}": розбіжність плейсхолдерів`).toEqual(
         [],
       );
+    });
+
+    it('ключ-множина має рівно категорії Intl.PluralRules своєї мови', async () => {
+      const messages = await loadThemeMessages(dir);
+      if (!messages) return;
+
+      // Мови — з ключів каталогу: `pl` у темі теж мусить мати рівно свої категорії.
+      expect([
+        ...pluralProblemsByLocale(messages),
+        ...kindMismatchesByLocale(messages.uk ?? {}, messages),
+      ]).toEqual([]);
     });
 
     it('усі ключі теми мають префікс "theme."', async () => {
