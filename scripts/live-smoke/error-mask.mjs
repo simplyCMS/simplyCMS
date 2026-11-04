@@ -13,29 +13,14 @@
  */
 import { join } from 'node:path';
 import { startStore, freePort } from '../pilot-pack/build.mjs';
+import { leaked } from './leaks.mjs';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-
-/** Фрагменти, яких у відповіді бути НЕ може (SQL, параметри, адреса БД, дефолт TanStack). */
-const LEAKS = [
-  /Failed query/,
-  /\bselect\b/i,
-  /\bparams\b/i,
-  /invalid byte sequence/,
-  /ECONNREFUSED/,
-  /Something went wrong/,
-  /Show Error/,
-];
 
 const REF = /Internal server error \[ref ([a-z0-9]{8})\]/;
 
 /** `host:port` БД із рядка підключення — адреса, якої клієнт бачити не мусить. */
 const dbAddress = (url) => new URL(url).host;
-
-const leaked = (text, addresses) => [
-  ...LEAKS.filter((re) => re.test(text)).map(String),
-  ...addresses.filter((a) => text.includes(a)),
-];
 
 /** Перевіряє тіло відповіді й лог сервера: без витоку, ідентифікатор збігається. */
 function checkMasked(check, label, status, body, logs, mustLog, addresses) {
