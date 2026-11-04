@@ -3,7 +3,7 @@
 // гостя (`loadGuestPriceTypes`), `productHead` рахує `resolvePrice` — і ціна
 // дорівнює тій, що гість бачить після гідрації (квота кошика). Знижки в
 // JSON-LD не йдуть (К3-Е6в-1).
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { loadProduct, quoteCartFor } from 'simplycms/storefront/loaders';
 // Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
@@ -12,7 +12,10 @@ import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';
 import { UK } from './fixtures/text-locale';
-import { ui } from '../../locale';
+import { preloadBase, ui } from '../../locale';
+
+// `head()` синхронний: частину `base` у продакшні дочікується кореневий лоадер.
+beforeAll(() => preloadBase('uk'));
 
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
 const DEFAULT_CATEGORY = '00000004-0000-4000-8000-000000000001';
