@@ -7,16 +7,17 @@
 **Architecture:**
 - Брендовані `ContentLocale` (вісь даних: тип — `simplycms/contracts` (файл `contracts/content-locale.ts`), конструктор — `simplycms/domain/translations`) і `UiLocale` (вісь інтерфейсу, `simplycms/i18n`). Змішування ловить `tsc`.
 - Міст `resolveUiLocale` — єдине місце, де мова контенту перетворюється на мову інтерфейсу.
+- Мова магазину — лише мова з пакетом (спека §19.15, ред. 2): публікація без пакета неможлива, тож на вітрині міст — тотожність; крок «основна мова» лишається лише для деградованого режиму й листів старих даних, з гучним сигналом.
 - Каталоги ядра — ліниві частини `base`/`admin`/`mail` у реєстрі з протоколом thenable. Протокол спільний із `ThemeRegistry`. Прогрів — у кореневому лоадері, у `beforeLoad` адмінки й перед гідрацією.
 - Каталоги тем і плагінів не змінюються. Спільний у них лише пошук рядка `lookupMessage`.
 
 **Tech Stack:** TypeScript 6 strict, React 19 (`use`), TanStack Start/Router (лоадери, `beforeLoad`, `ssr:false` адмінки), Drizzle + PostgreSQL 17 (`test:schema`), Vitest + Testing Library, `Intl.NumberFormat`/`DateTimeFormat`/`PluralRules`.
 
-**Spec:** `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` **§19**: усі рішення цього плану, терміни §19.2, рішення власника §19.12.
+**Spec:** `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` **§19**: усі рішення цього плану, терміни §19.2, рішення власника §19.12 (п. 7–10 — ревізія ред. 2), **§19.15** — мова магазину лише з пакетом (пріоритет над §19.4–19.10 там, де розходяться).
 **Майстер-план:** `docs/superpowers/plans/2026-10-15-multilingual-wave-master.md`:
 - §3.1 — `profiles.ui_locale`;
 - §3.6 — Р7, уточнення «пакет є»;
-- §4 — І41–І45;
+- §4 — І41–І46;
 - §5 — рядок М2;
 - §6 — процес;
 - §7 — Review Focus 6.
@@ -38,7 +39,7 @@
   - Одна поведінка — один рівень.
   - Доказ мутацією — для рядків матриці (І41–І45) і гейтів (сканер, Gate C, парність).
   - Змінюєш файл тестів — прибери дубль у зоні зміни.
-- **Без зворотної сумісності.** Старі імена (`Locale`, `useLocale`, `useFallbackLocale`, `getLanguagePack`, `LanguagePack.catalog`, `languageOfConfigLocale`, `getStoreLocale`, `declareStoreLocale`, `config.locale`, `VITE_LOCALE`) зносяться в задачі, що їх замінює, без реекспортів і шимів. Кожне знесене публічне ім'я — рядок BREAKING у `CHANGELOG.md` `[Unreleased]`, у тій самій задачі.
+- **Без зворотної сумісності.** Старі імена (`Locale`, `useLocale`, `useFallbackLocale`, `getLanguagePack`, `LanguagePack.catalog`, `languageOfConfigLocale`, `getStoreLocale`, `declareStoreLocale`, `config.locale`, `VITE_LOCALE`, публічний експорт `LANGUAGE_PACKS`) зносяться в задачі, що їх замінює, без реекспортів і шимів. Кожне знесене публічне ім'я — рядок BREAKING у `CHANGELOG.md` `[Unreleased]`, у тій самій задачі.
 - **Host-копії** (`src/`, `packages/create-simplycms-store/template/src/`, `packages/cli/host/src/`) правляться лише в `src/`, далі `pnpm template:sync`. Паритет — `tests/create-store-template-parity.test.ts`.
 - **Схема** (Task 5) — виняток baseline:
   - `schema.ts` → `pnpm db:rebaseline`;
@@ -63,6 +64,7 @@
 | Д9 | Мова листа | `resolveMailUiLocale(recipient: MailRecipient, primary: ContentLocale): UiLocale` (§19.9). Колонок `orders.locale`/`profiles.locale` ще немає (наступний план), тож зараз: лист покупцю бере опубліковану мову чекауту (`requirePublishedTextLocale`); користувачу — `profiles.ui_locale`, інакше основна; магазину — основна; запрошенню — основна. Наступний план лише подасть нові поля в ту саму функцію |
 | Д10 | Гейт складу клієнтського графа (І43) | Правило в наявному Gate C пілота (`scripts/pilot-pack/gate-c.mjs`, `NOT_IN_INITIAL`): у початковому графі вхідного чанка вітрини немає ЖОДНОГО модуля з `packages/simplycms/src/i18n/catalogs/` (усі частини — лише `import()`). Юніт-контроль — `tests/pilot-gate-c.test.ts` |
 | Д11 | `useFormatDate` | Переїжджає з `admin/lib/` у `simplycms/i18n/format.ts` (форматування — вісь інтерфейсу), Імпорти оновлюються, реекспорту немає. Окремий `useFormatNumber` не створюється (YAGNI) |
+| Д12 | Мова магазину лише з пакетом (§19.15) | Один пошук пакета `findLanguagePack(code)` (точний код → базова мова) у `i18n/packs` — на ньому стоять і `resolveUiLocale` (кроки 1–2), і `hasLanguagePack`; дві реалізації пошуку заборонені. Відмова публікації — `ValidationError` `{ path: ['status'], code: 'language_pack_missing' }` за зразком `languageIncompleteError` (`impl/languages/completeness.ts:114`): код у `contracts/domain-errors.ts`, мапа `admin/lib/apply-server-validation.ts`, рядок `admin.validation.language_pack_missing` у каталогах `uk`/`en`. Сигнал деградації — серверний `loadLocaleSet()` (`storefront/loaders/languages.ts`): опублікована мова без пакета → одне попередження в лог на процес і мову (механізм логування сервера — той, що вже є в коді; `console.log` не можна) |
 
 ---
 
@@ -256,7 +258,7 @@
     - `location.pathname='/en/x'` → після `await` стан `loadUiCatalog('en','base')` — `fulfilled`, а `admin` не вантажилась;
     - `'/pl/x'` → `fulfilled` для `uk`;
     - `'/admin'` → `fulfilled` для `uk` (основна; свою мову адмінка вантажить сама).
-  - `no-raw-keys-html.test.tsx` (І44), зразок `ssr(url)` з `product-page-html.test.tsx`: для `/`, `/<товар>`, `/cart` × мови `uk`, `en`, `pl` (без пакета) жоден текстовий вузол і жодне значення атрибута HTML не дорівнює ключу з `BaseKey ∪ AdminKey ∪ MailKey`.
+  - `no-raw-keys-html.test.tsx` (І44), зразок `ssr(url)` з `product-page-html.test.tsx`: для `/`, `/<товар>`, `/cart` × мови `uk`, `en`, `pl` (без пакета; після Task 5б — «деградований режим», §19.15) жоден текстовий вузол і жодне значення атрибута HTML не дорівнює ключу з `BaseKey ∪ AdminKey ∪ MailKey`.
   - Клієнтський перехід `/x` → `/en/x` у тому ж тесті (`router.navigate`): після `router.load()` рендер англійський, без сирих ключів.
   - `pilot-gate-c.test.ts`: синтетичний граф, де вхідний чанк статично імпортує модуль `…/i18n/catalogs/en/base` → гейт червоний; через `import()` → зелений.
 - [ ] **Step 2:** FAIL.
@@ -288,7 +290,7 @@
   - каталоги `admin/common` (`uk`, `en`): підпис селектора.
 
 **Interfaces:**
-- Consumes: `toUiLocale`, `resolveUiLocale`, `useUiCatalogs`, `I18nProvider` (Tasks 2–3), `LANGUAGE_PACKS` (назви мов).
+- Consumes: `toUiLocale`, `resolveUiLocale`, `useUiCatalogs`, `I18nProvider` (Tasks 2–3), `LANGUAGE_PACKS` (назви мов; Task 5б замінює на `listLanguagePacks()` з фільтром частини `admin`).
 - Produces:
   - Операції Д7 з ідентифікаторами `profiles.getUiLocale` / `profiles.setUiLocale`.
   - Контекст адмінки `ui: UiLocale` = `toUiLocale(value) ?? resolveUiLocale(primary, primary)`.
@@ -307,6 +309,49 @@
 - [ ] **Step 3: Реалізація** за Interfaces. Схема — виняток baseline (Global Constraints).
 - [ ] **Step 4:** PASS; `pnpm test:schema` → PASS; `pnpm vitest run packages/simplycms/routes packages/simplycms/src/admin` → PASS.
 - [ ] **Step 5:** Мутація: `beforeLoad` ігнорує колонку → `admin-ui-locale` червоний. CHANGELOG — «перестворити БД» і новий пункт. `pnpm gates` + `pnpm live:smoke`. Commit `feat(admin): мова інтерфейсу адмінки з профілю (profiles.ui_locale)`.
+
+---
+
+### Task 5б: Мова магазину лише з пакетом (§19.15, І46)
+
+> Додано ред. 2 плану (ревізія власника 2026-11-04). Виконується після переставлення Task 5 поверх Task 4 і ДО Task 6. Від вікна К1 (оновлення залежностей) не залежить.
+
+**Files:**
+- Modify:
+  - `i18n/packs/index.ts`: тип `LanguagePack.ui` → `{ base; mail; admin? }`; реєстр не експортується; `findLanguagePack(code)` (внутрішній, Д12), `listLanguagePacks()`, `hasLanguagePack()`; коментарі `:2`, `:27` (стара модель «для більшості мов пакета немає») переписати;
+  - `i18n/index.ts:9` — експорт `listLanguagePacks`, `hasLanguagePack`, `getLanguagePack`, тип `LanguagePackInfo`; `LANGUAGE_PACKS` геть;
+  - `i18n/ui-locale.ts` — кроки 1–2 через `findLanguagePack`; `toUiLocale(value, parts?)` перевіряє наявність частин;
+  - `admin/layouts/UiLocaleSelect.tsx` — `listLanguagePacks()` з частиною `admin`;
+  - `admin-server/impl/profiles/ui-locale.ts` — `setUiLocale`: пакет без `admin` → 400;
+  - `routes/admin/admin.tsx` (`beforeLoad`) — ланцюг читання §19.6/§19.15: `ui_locale` з `admin` → основна з `admin` → `en`;
+  - `admin-server/impl/languages/status.ts` (+ відмова поруч із `languageIncompleteError`), `contracts/domain-errors.ts`, `admin/lib/apply-server-validation.ts`, каталоги `admin/validation` `uk`/`en`;
+  - `storefront/loaders/languages.ts` (`loadLocaleSet`) — сигнал деградації (Д12);
+  - `packages/cli/src/doctor-db-checks.mjs` — перевірка «опублікована мова без пакета». Спершу звір, як doctor уже читає ядро магазину (`doctor-theme-checks.mjs`, `doctor-engines.mjs`). Якщо доступу до реєстру пакетів ядра з CLI немає — СТОП і питання архітектору, не дублюй перелік пакетів у CLI;
+  - коментарі старої моделі: `storefront-routes/locale/root-data.ts:40`, `storefront-routes/locale/useRequestTranslator.ts:28`, `test-harness/locale.ts:25`;
+  - тести старої моделі — переформулювати, не дублювати: `i18n/__tests__/resolve-ui-locale.test.ts:17`, `i18n/packs/__tests__/packs.test.ts:14,19,55`, `storefront-routes/__tests__/no-raw-keys-html.test.tsx:279`, тест І41 `content-vs-ui-locale` (Task 2): `pl` у них = «опублікована мова, пакета якої немає» (деградований режим), назви кейсів — відповідно;
+  - канон, що описує чинний код: `docs/architecture/i18n.md:54,66`, `docs/architecture/repository-layout.md:106`, `packages/simplycms/src/i18n/README.md:31`.
+
+**Interfaces:**
+- Consumes: `resolveUiLocale`, `toUiLocale` (Task 2), реєстр частин (Task 3), `profiles.setUiLocale` і `UiLocaleSelect` (Task 5).
+- Produces:
+  - `type UiPart = 'base' | 'admin' | 'mail'`;
+  - `type LanguagePackInfo = { readonly code: string; readonly name: string; readonly parts: readonly UiPart[] }`;
+  - `listLanguagePacks(): readonly LanguagePackInfo[]`;
+  - `hasLanguagePack(code: string, parts: readonly UiPart[] = ['base', 'mail']): boolean` — точний код або базова мова (`pt-BR` → `pt`);
+  - `getLanguagePack(code)` — без змін семантики (§19.10);
+  - відмова `languages.setStatus` → `published`: `ValidationError` `{ path: ['status'], code: 'language_pack_missing' }`.
+- Task 6 бере ці імена як є: `resolveMailUiLocale` не змінюється, гілка `order-customer` `'pl'` → `'uk'` — це лист старого замовлення мовою, що втратила пакет.
+
+- [ ] **Step 1: Тести.**
+  - `packs.test.ts`: `listLanguagePacks()` → `uk`, `en` з `parts` `['base','admin','mail']`; `hasLanguagePack('pt-BR')` за наявного лише `pt` (тестовий реєстр) → `true`; пакет без `admin` → `hasLanguagePack(code)` `true`, `hasLanguagePack(code, ['admin'])` `false`; `pl` → `false`.
+  - `test:schema` поряд з наявними тестами `languages.setStatus`: `pl` `draft` → ок; `pl` → `published` → `language_pack_missing` на `status`, рядок лишився `draft`; `en` → `published` → ок; неповна `en` і далі дає `language_incomplete` (порядок перевірок: пакет, потім повнота).
+  - `admin-ui-locale.test.tsx`: пакет без `admin` (тестовий реєстр) не потрапляє в селектор; `ui_locale` з таким кодом → основна; основна без `admin` → `en`. `setUiLocale` з кодом пакета без `admin` → 400.
+  - Сигнал: шпигун логу на `loadLocaleSet()` — опублікована `pl` без пакета → рівно одне попередження за два виклики; `uk`/`en` → нуль.
+  - Переформульовані тести старої моделі зелені й кажуть «деградований режим».
+- [ ] **Step 2:** FAIL.
+- [ ] **Step 3: Реалізація** за Interfaces і Д12.
+- [ ] **Step 4:** PASS; `git grep -n "LANGUAGE_PACKS" -- packages/simplycms/src ':!packages/simplycms/src/i18n/packs/**'` → порожньо; `git grep -nE "мова без пакета|без пакета pl|для більшості з них пакета немає" -- packages docs/architecture` → порожньо (крім `slugify`-контекстів §18.4 і `product-aggregate` про path); `pnpm api:snapshot`, якщо код відмови потрапляє в OpenAPI.
+- [ ] **Step 5:** Мутації: прибрати перевірку пакета з `setStatus` → `test:schema` червоний; прибрати попередження → шпигун червоний. BREAKING у `CHANGELOG`: `LANGUAGE_PACKS` не експортується; `LanguagePack.ui.admin` необов'язкова; мову без пакета не опублікувати (`language_pack_missing`). `pnpm gates` + `pnpm live:smoke`. Commit(и) логічні: `feat(i18n): API пакетів мов, admin необов'язкова`, `feat(languages): публікація лише з пакетом мови`, `feat(storefront): гучний сигнал деградованого режиму мови`, `test: …`, `docs: …`.
 
 ---
 
@@ -330,7 +375,7 @@
     - `VITE_LOCALE` (`src/vite-env.d.ts:9`, `tests/e2e/support/env.ts:27`, `tests/e2e/support/i18n.ts`, `docs/development/ENVIRONMENT.md`).
 
 **Interfaces:**
-- Consumes: `resolveUiLocale`, `toUiLocale`, `loadTranslator` (Tasks 2–3), `profiles.ui_locale` (Task 5), `loadLocaleSet()` (`storefront/loaders/languages.ts:20`) як джерело основної мови на сервері; у CLI — `readLanguages(db)`.
+- Consumes: `resolveUiLocale`, `toUiLocale`, `loadTranslator` (Tasks 2–3), `profiles.ui_locale` (Task 5), `hasLanguagePack` (Task 5б), `loadLocaleSet()` (`storefront/loaders/languages.ts:20`) як джерело основної мови на сервері; у CLI — `readLanguages(db)`.
 - Produces:
   - `type MailRecipient =`
     - `| { kind: 'order-customer'; orderLocale: ContentLocale }`
@@ -347,7 +392,7 @@
 
 - [ ] **Step 1: Тести.**
   - `locale.test.ts`: кожна гілка `MailRecipient` з основною `uk`:
-    - `order-customer` `'en'` → `'en'`, `'pl'` → `'uk'`;
+    - `order-customer` `'en'` → `'en'`, `'pl'` → `'uk'` (замовлення мовою, що втратила пакет — деградований режим §19.15);
     - `user` `{ uiLocale: 'en', locale: null }` → `'en'`, `{ uiLocale: null, locale: null }` → `'uk'`, `{ uiLocale: 'xx', locale: null }` → `'uk'`;
     - `store` → `'uk'`.
   - `format.test.ts`: `formatPrice(1234.5, { locale: en, currency: 'UAH' }, { minimumFractionDigits: 2 })` → `'1,234.50 ₴'`; для `uk` → `` `${new Intl.NumberFormat('uk', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(1234.5)} ₴` ``.
@@ -394,18 +439,18 @@
 - Modify:
   - `docs/architecture/i18n.md` — переписати:
     - перший рядок — «власний механізм SimplyCMS, не i18next»;
-    - терміни §19.2, міст, частини й реєстр, прогрів, гейти;
+    - терміни §19.2, міст, частини й реєстр, прогрів, гейти; модель «мова магазину лише з пакетом» і деградований режим (§19.15), джерело пакета — PR;
     - прибрати рядки 44–52, 62–65 і 80–82 (змішування осей, `languageOfConfigLocale`);
   - `docs/architecture/translations.md` (`ContentLocale` у `TextLocale`, рядки ~126–128);
   - `docs/architecture/themes.md` (`useUiLocale`, `PluralForms`, «не i18next»);
   - `packages/simplycms/src/i18n/README.md` (таблиця символів; «`en` частковий» — геть);
   - `packages/README.md:36` (рядок `i18n/`);
-  - `AGENTS.md` (розділ i18n, один рядок: «мова контенту (`ContentLocale`) і мова інтерфейсу (`UiLocale`) — різні типи; міст — лише `resolveUiLocale`; i18n = вісь інтерфейсу»);
+  - `AGENTS.md` (розділ i18n, один рядок: «мова контенту (`ContentLocale`) і мова інтерфейсу (`UiLocale`) — різні типи; міст — лише `resolveUiLocale`; мову без пакета не опублікувати (§19.15); i18n = вісь інтерфейсу»);
   - `docs/tasks/{platform-roadmap.md,v2-state-map.md}` (стан), `CHANGELOG.md` `[Unreleased]` (зведення блоку, BREAKING задач 2–7 зібрані).
 
 - [ ] **Step 1:** `pnpm test` (тест `doc-symbols-exist`: нові символи в доках існують, знесені — позначені `(знесено)` або прибрані). `orient --doctor`.
 - [ ] **Step 2:** `pnpm gates` + `pnpm live:smoke`. Звіт приймання:
-  - таблиця «рядок матриці → тест → мутація → результат» для І41–І45;
+  - таблиця «рядок матриці → тест → мутація → результат» для І41–І46;
   - Review Focus 1–5 цього плану з назвами тестів;
   - виміри gzip «до/після» з Task 3/4;
   - `git grep` порожніх збігів знесених імен.
@@ -424,6 +469,7 @@
 3. **Вкладка, відкрита до деплою, просить частину каталогу з новим хешем.** Очікування: невдалий `import()` не кешується, повтор можливий, помилку бачить `installStaleChunkGuard`. Тест — `registry.test.ts` «лоадер, що впав, не кешується» (Task 3).
 4. **Адмін вибрав мову, пакет якої прибрали в наступному релізі.** Очікування: адмінка основною мовою, без помилки; селектор показує основну. Тест — `admin-ui-locale.test.tsx`, кейс `'de'` (Task 5).
 5. **Замовлення англійською в українському магазині.** Очікування: покупцю — англійський лист і англійський формат цін; магазину — український. Тест — `mail/render/__tests__/order.test.ts` (Task 6).
+6. **Власник публікує мову, для якої пакета ще немає (ред. 2).** Очікування: відмова з поясненням у формі (`language_pack_missing` → рядок `admin.validation`), мова лишається чернеткою, переклади даних збережено. Тест — `test:schema` `languages.setStatus` (Task 5б).
 
 Сценарій 6 майстра:
 - вітрина `/pl/x` — Task 2 (`content-vs-ui-locale`) і Task 4 (`no-raw-keys-html`, Gate C);
