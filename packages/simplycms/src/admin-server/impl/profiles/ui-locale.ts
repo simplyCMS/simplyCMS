@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import { toUiLocale } from 'simplycms/i18n';
@@ -8,7 +8,8 @@ import type { CoreActor } from 'simplycms/auth';
 
 // Мова інтерфейсу адмінки з профілю (М2а Д7, І45). Обидві операції — лише для
 // власного рядка: `userId` береться з актора, а не з входу, тож чужий профіль
-// недосяжний за побудовою (RLS `profiles_*_own` додає другий рубіж для ролі user).
+// недосяжний за побудовою. Для ролі user запис дозволяє колонковий грант
+// `ui_locale` (0002_grants) і RLS `profiles_update_own`.
 
 /** Власний `userId`; актор `system` профілю не має — відмова, а не мовчазний no-op. */
 function ownUserId(actor: CoreActor): string {
@@ -51,11 +52,25 @@ export const profilesSetUiLocale = defineOperation({
       .update(profiles)
       .set({ uiLocale: input.uiLocale, updatedAt: new Date() })
       .where(eq(profiles.userId, userId))
-      .returning({ uiLocale: profiles.uiLocale });
+      .returning({ id: profiles.id });
+    // Профілю ще немає (його звичайно створює провізія при реєстрації): одна атомарна
+    // вставка з тими ж значеннями за замовчуванням, що й `provisionUserInDb`; гонка двох
+    // викликів стає оновленням, а не 409. INSERT-право є лише в admin — для ролі user
+    // профіль уже існує, і цю гілку вона не досягає.
     if (updated.length === 0)
       await db
         .insert(profiles)
-        .values({ id: crypto.randomUUID(), userId, uiLocale: input.uiLocale });
+        .values({
+          id: crypto.randomUUID(),
+          userId,
+          uiLocale: input.uiLocale,
+          email: sql`(select email from public.users where id = ${userId})`,
+          categoryId: sql`(select id from public.user_categories where is_default limit 1)`,
+        })
+        .onConflictDoUpdate({
+          target: profiles.userId,
+          set: { uiLocale: input.uiLocale, updatedAt: new Date() },
+        });
     return { uiLocale: input.uiLocale };
   },
 });
