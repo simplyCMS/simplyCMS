@@ -6,6 +6,7 @@
 // нього лише через `SET ROLE app_admin` у read-only транзакції.
 import { storeMigrationsDir } from './db-diff.mjs';
 import { clusterCheck, clusterSkip } from './doctor-cluster-check.mjs';
+import { languagePackCheck } from './doctor-language-check.mjs';
 import {
   check,
   JOURNAL,
@@ -53,6 +54,7 @@ async function probeConnection(storeRoot, connectionString) {
  * @param {{ storeRoot: string; env: Record<string, string> }} ctx
  * @param {{
  *   core?: { readJournal: Function; readStoreFacts: Function; listMigrationFiles: Function; pendingMigrations: Function; findForeignDatabases: Function };
+ *   i18n?: { hasLanguagePack: (code: string) => boolean };
  *   probe?: (url: string) => Promise<void>;
  * }} [deps] ін'єкція для тестів
  * @returns {Promise<import('./ui.mjs').Check[]>}
@@ -113,11 +115,13 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
         };
       }
     })(),
-    core
-      .readStoreFacts(url, options)
-      .then(storeFactChecks, (error) => [
-        check('store-state', FACTS, 'error', reason(error)),
-      ]),
+    core.readStoreFacts(url, options).then(
+      async (facts) => [
+        ...storeFactChecks(facts),
+        await languagePackCheck(storeRoot, facts.publishedLanguages, deps.i18n),
+      ],
+      (error) => [check('store-state', FACTS, 'error', reason(error))],
+    ),
     clusterCheck(url, core, CONNECT_TIMEOUT_MS),
   ]);
   // Без журналу немає й схеми: факти впали б тим самим, друга помилка лише шумить.

@@ -18,6 +18,7 @@ const GOOD = {
   owners: 1,
   profile: { name: 'Shop', email: 'shop@example.com' },
   failedMail: 0,
+  publishedLanguages: ['uk'],
 };
 type Row = { id: string; status: string; details?: string };
 const byId = (checks: Row[]) =>
@@ -33,9 +34,15 @@ const core = (facts: unknown | Error) => ({
     return facts;
   },
 });
+// Пакети ядра магазину — ін'єкція: CLI перелік не тримає, а питає `hasLanguagePack` ядра.
+const i18n = { hasLanguagePack: (code: string) => ['uk', 'en'].includes(code) };
 const facts = async (value: unknown | Error) =>
   byId(
-    await runOnlineChecks(ctx, { probe: async () => {}, core: core(value) }),
+    await runOnlineChecks(ctx, {
+      probe: async () => {},
+      core: core(value),
+      i18n,
+    }),
   );
 
 describe('наповнення магазину (спільне для status і doctor --online)', () => {
@@ -44,6 +51,18 @@ describe('наповнення магазину (спільне для status і
     expect(c['store-owner']!.status).toBe('ok');
     expect(c['store-profile']!.status).toBe('ok');
     expect(c['mail-outbox']!.status).toBe('ok');
+  });
+
+  it('опублікована мова без пакета → error language-packs з кодом мови (§19.15)', async () => {
+    const c = await facts({ ...GOOD, publishedLanguages: ['uk', 'en', 'pl'] });
+    expect(c['language-packs']!.status).toBe('error');
+    expect(c['language-packs']!.details).toContain('pl');
+    expect(c['language-packs']!.details).not.toContain('uk,');
+  });
+
+  it('усі опубліковані мови мають пакети → language-packs ok', async () => {
+    const c = await facts({ ...GOOD, publishedLanguages: ['uk', 'en'] });
+    expect(c['language-packs']!.status).toBe('ok');
   });
 
   it('власника немає → warn з командою створення', async () => {

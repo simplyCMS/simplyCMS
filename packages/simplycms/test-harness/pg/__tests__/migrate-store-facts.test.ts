@@ -27,6 +27,8 @@ describe('readStoreFacts', () => {
         owners: 0,
         profile: { name: 'Мій магазин', email: null },
         failedMail: 0,
+        // Сід: основна мова — єдина опублікована.
+        publishedLanguages: ['uk'],
       });
     } finally {
       await db.drop();
@@ -72,6 +74,7 @@ describe('readStoreFacts', () => {
         owners: 1,
         profile: { name: 'Мій магазин', email: 'shop@example.com' },
         failedMail: 1,
+        publishedLanguages: ['uk'],
       });
     } finally {
       await db.drop();
