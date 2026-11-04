@@ -34,7 +34,7 @@
   - гілка `claude/multilingual-wave`; імплементер — `model: sonnet`, рецензенти — `model: opus`; Fable — ніде;
   - коміти задач — локально;
   - після коміту субагента `git log --format=%B <база>..HEAD | grep -ciE "co-authored|generated with"` = `0`.
-- **Доказ задачі** — штамп `pnpm gates` (`.gates-stamp.json`: `head` = голова, усі `ok`, без `dirtyAfter`) плюс `pnpm live:smoke`. `pilot:pack` повний pilot не замінює.
+- **Доказ задачі** (рішення власника 2026-11-04, ред. 3): Step 5 задач читати як ШВИДКИЙ ланцюг (`format:check → lint → build → typecheck → test`; `install --frozen-lockfile` першим, якщо правлено `package.json`) + цільові гейти задачі (бриф) + мутації, що їх вимагає план (smoke-мутації — лише де план прямо каже `live:smoke`). Повний `pnpm gates` (штамп `.gates-stamp.json`: `head` = голова, усі `ok`, без `dirtyAfter`) + `pnpm live:smoke` — на контрольних точках: К-1 (Task 5 + вікно залежностей К1), К-2 (Task 5б + Task 6), К-3 (СТОП після Task 8; штамп для приймання). `pilot:pack` повний pilot не замінює. Причина: повний ланцюг 12–15 хв (test:schema ≈7), ×2–3 на задачу перевищував саму імплементацію.
 - **Нові тести — за `docs/architecture/test-contours.md` § 0.**
   - Одна поведінка — один рівень.
   - Доказ мутацією — для рядків матриці (І41–І45) і гейтів (сканер, Gate C, парність).

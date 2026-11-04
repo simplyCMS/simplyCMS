@@ -378,6 +378,7 @@ Zod 4 (`z.toJSONSchema`, `draft-2020-12` → OpenAPI 3.1), Vitest + харнес
 - **Моделі:** виконання — SDD (`superpowers:subagent-driven-development`). Імплементерам — явний `model: sonnet`, рев'юерам і верифікаторам — `model: opus`. Fable — ніде.
 - **БЛ** = `pnpm install --frozen-lockfile → format:check → lint → build → typecheck → typecheck:showcase → test → test:schema → build:packages → typecheck:template → test:packaging`.
   - «Прогнати перед комітом» = БЛ + названі тести. Проміжні TDD-кроки — вибірковий тест.
+  - 🔴 З М2 (рішення власника 2026-11-04): на задачу й фікс-раунд — швидкий ланцюг (`format:check → lint → build → typecheck → test`) + цільові гейти задачі; повний БЛ + повний pilot (`pnpm gates`) і `live:smoke` — лише на контрольних точках, які план підхвилі називає наперед (обов'язково — перед злиттям між деревами чи вікнами залежностей і на СТОП). Штамп СТОП — доказ для приймання.
   - 🔴 Docs-коміти теж проганяють повний `pnpm test`: `doc-symbols-exist` уже ламав реліз 0.15.0.
   - Задача, що чіпає сід чи назви довідників, ганяє `pnpm live:smoke`.
 - **Негативний контроль:** кожен новий тест має негативний контроль прогоном. У звіті рядок «мутація → червоний → відкат → зелений» з назвою тесту. Мутує лише одна сесія чи worktree.
