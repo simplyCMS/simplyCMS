@@ -7,7 +7,7 @@
  * кожного чанка). Тільки за ним видно, ЩО саме приїхало в initial-чанк.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 // 🔴 Розширення `.ts`: скрипт виконує Node без транспіляції.
 import {
@@ -76,9 +76,33 @@ const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
  */
 const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 
-/** Модуль каталогу ядра в id клієнтського бандла (форми `dist` — у коментарі правила нижче). */
+/** Модуль каталогу ядра за ІМЕНЕМ у id клієнтського бандла (форми `dist` — у коментарі правила нижче). */
 const CATALOG_MODULE =
   /simplycms\/dist\/(?:i18n\/catalogs\/|(?:base|admin|mail)-[A-Za-z0-9_-]{8}\.js$)/;
+
+/**
+ * Той самий модуль за ВМІСТОМ: статичний імпорт каталогу з пакета мови Rolldown вбудовує в
+ * чанк імпортера (`dist/i18n/index.js`), і за іменем файла його не видно — зате кожен
+ * вбудований модуль лишає в чанку маркер `//#region src/i18n/catalogs/…`. Файл читається
+ * лише з `simplycms/dist` і лише якщо id — реальний шлях (синтетичні id тестів — ні).
+ */
+const CATALOG_REGION = /^\/\/#region .*\bi18n\/catalogs\//m;
+const regionCache = new Map();
+function hasCatalogRegion(id) {
+  if (!/simplycms\/dist\//.test(id)) return false;
+  if (!regionCache.has(id)) {
+    let hit = false;
+    try {
+      hit =
+        statSync(id).isFile() && CATALOG_REGION.test(readFileSync(id, 'utf8'));
+    } catch {
+      // id без файла на диску — нема що читати.
+    }
+    regionCache.set(id, hit);
+  }
+  return regionCache.get(id);
+}
+const isCatalogModule = (id) => CATALOG_MODULE.test(id) || hasCatalogRegion(id);
 
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
@@ -90,11 +114,12 @@ const NOT_IN_INITIAL = [
   // й частини `admin`/`mail`. У `dist` пакета каталоги — не теки, а чанки `base|admin|mail`
   // з 8-символьним хешем (`dist/base-C2UX6O0_.js`; `admin-error-<хеш>` під шаблон не
   // потрапляє), тож id модуля в bundle-stats несе саме таку форму; гілка `i18n/catalogs/`
-  // тримає розкладку теками. `mustExist`: правило, що нічого не знайшло в бандлі, — не
+  // тримає розкладку теками; каталог, вбудований статичним імпортом у чанк імпортера, ловить
+  // перевірка вмісту (`hasCatalogRegion`). `mustExist`: правило, що нічого не знайшло в бандлі, — не
   // доказ, а зламана назва чанка, тому це FAIL.
   {
     label: 'каталоги ядра (i18n/catalogs)',
-    rx: CATALOG_MODULE,
+    test: isCatalogModule,
     mustExist: true,
   },
   { label: '@tiptap/*', rx: /@tiptap\// },
@@ -209,9 +234,14 @@ export function gateBundle(storeDir) {
   details.push(
     `initial-чанків: ${initial.length}, модулів у них: ${initialModules.length}`,
   );
-  for (const { label, rx, mustExist } of NOT_IN_INITIAL) {
-    const inBundle = allModules.filter((id) => rx.test(id)).length;
-    const inInitial = initialModules.filter((id) => rx.test(id)).length;
+  for (const {
+    label,
+    rx,
+    test = (id) => rx.test(id),
+    mustExist,
+  } of NOT_IN_INITIAL) {
+    const inBundle = allModules.filter(test).length;
+    const inInitial = initialModules.filter(test).length;
     if (inInitial > 0 || (mustExist && inBundle === 0)) ok = false;
     details.push(
       `${inInitial === 0 && !(mustExist && inBundle === 0) ? 'OK  ' : 'FAIL'} ${label}: у бандлі ${inBundle}, в initial ${inInitial}`,

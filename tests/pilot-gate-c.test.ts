@@ -147,4 +147,20 @@ describe('Gate C: каталоги ядра лише через import() (І43)'
       /FAIL каталоги ядра .*: у бандлі 0/,
     );
   });
+
+  it('каталог, ВБУДОВАНИЙ у чанк імпортера (статичний імпорт), ловиться за вмістом', () => {
+    const chunk = join(store, 'node_modules/simplycms/dist/i18n/index.js');
+    mkdirSync(dirname(chunk), { recursive: true });
+    writeFileSync(chunk, '//#region src/i18n/catalogs/uk/admin/banners.ts\n');
+    const result = run({ 'entry.js': entry([chunk]) });
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL каталоги ядра/);
+  });
+
+  it('той самий чанк без маркера каталогу — OK', () => {
+    const chunk = join(store, 'node_modules/simplycms/dist/i18n/index.js');
+    mkdirSync(dirname(chunk), { recursive: true });
+    writeFileSync(chunk, '//#region src/i18n/registry.ts\n');
+    expect(run({ 'entry.js': entry([chunk]) }).ok).toBe(true);
+  });
 });
