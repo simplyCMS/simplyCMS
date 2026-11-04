@@ -57,7 +57,16 @@ describe('форматування за мовою інтерфейсу (§19.8)
     expect(dateIn('uk')).not.toBe(dateIn('en'));
   });
 
-  it('useFormatDate: datetime додає час', () => {
-    expect(dateIn('en', 'datetime')).toMatch(/3:30/);
+  it('useFormatDate: datetime — довга дата й час за мовою інтерфейсу', () => {
+    const at = new Date(2026, 10, 4, 15, 30);
+    for (const locale of ['en', 'uk'] as const) {
+      expect(dateIn(locale, 'datetime')).toBe(
+        new Intl.DateTimeFormat(locale, {
+          dateStyle: 'long',
+          timeStyle: 'short',
+        }).format(at),
+      );
+    }
+    expect(dateIn('en', 'datetime')).not.toBe(dateIn('uk', 'datetime'));
   });
 });
