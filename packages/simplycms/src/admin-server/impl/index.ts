@@ -253,8 +253,5 @@ export {
 } from './products/aggregate/operations';
 export { productsSavePrices } from './product-prices/operations';
 export { productsSaveStock } from './stock/operations';
-export {
-  profilesGetUiLocale,
-  profilesSetUiLocale,
-} from './profiles/ui-locale';
+export { profilesGetUiLocale, profilesSetUiLocale } from './profiles/ui-locale';
 export { CORE_OPERATIONS, getOperation } from './operations-registry';

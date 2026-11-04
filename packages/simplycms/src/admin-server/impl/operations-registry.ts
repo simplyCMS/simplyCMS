@@ -23,10 +23,7 @@ import {
   productsSetModificationToken,
   productsSetPath,
 } from './products/aggregate/operations';
-import {
-  profilesGetUiLocale,
-  profilesSetUiLocale,
-} from './profiles/ui-locale';
+import { profilesGetUiLocale, profilesSetUiLocale } from './profiles/ui-locale';
 import { productsSavePrices } from './product-prices/operations';
 import { productsSaveStock } from './stock/operations';
 
