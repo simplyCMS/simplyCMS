@@ -130,6 +130,9 @@
   `x-default`, `og:locale` — мовою версії; sitemap товарів — рядок на опубліковану мову з `<xhtml:link>`. View-моделі
   `ProductDetailSummary`/`ProductDetailDescription`/`BreadcrumbItem` дістали необов'язкові `name_lang`, `short_description_lang`,
   `lang` (fallback-фрагменти мають `lang` основної мови); тема, що підмінює view, мусить їх застосувати.
+- **Baseline змінено (М2а, Task 5) — базу перестворити:** `profiles` дістала колонку `ui_locale text NULL` (мова інтерфейсу
+  адмінки, без FK: це код мовного пакета, а не рядок `languages`). Мова адмінки більше не береться з основної мови
+  магазину, а з профілю поточного адміна; `NULL` чи код без пакета → основна мова.
 - **Baseline змінено — базу перестворити** (до `1.0.0-rc.1` baseline `0000…0004` не заморожено):
   `mail_outbox` злито в `0001_init.sql`, окремий `0005_mail_outbox.sql` прибрано;
   `languages` перебудовано (`code text` з CHECK формату BCP 47, `status` замість
@@ -269,6 +272,8 @@
 
 ### Додано
 
+- Мова інтерфейсу адмінки (І45): операції реєстру `profiles.getUiLocale` / `profiles.setUiLocale` (лише власний
+  профіль; невідомий код → 400, `null` скидає), селектор мови в шапці адмінки, `lang` на корені адмінки.
 - HTTP API операцій `/api/v1`: `POST /api/v1/<op>` (конверт майстра §3.3: `application/problem+json`, `If-Match` ↔
   `expectedVersion`, `Idempotency-Key`), `GET /api/v1/openapi.json` (OpenAPI 3.1 з реєстру; лише автентифікованому
   адміну; знімок ядра — `packages/simplycms/api/openapi.core.json`, регенерація `pnpm api:snapshot`).
