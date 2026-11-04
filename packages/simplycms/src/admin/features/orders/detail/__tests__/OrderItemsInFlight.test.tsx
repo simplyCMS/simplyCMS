@@ -21,7 +21,7 @@ import {
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -125,8 +125,8 @@ describe('позиції замовлення: запит у польоті', ()
       h.release(applyOutcome({ order, upserted: [], removedIds: ['i0002'] }));
     });
     expect(screen.queryByText('Товар 2')).toBeNull();
-    // Ревалідація (TSDB-1) віддає стан сервера — позиція не повертається.
-    await awaitRevalidation(listOrderItems, before);
+    // Без перезапиту — позиція не повертається.
+    await expectNoRefetch(listOrderItems, before);
     expect(screen.queryByText('Товар 2')).toBeNull();
   });
 });

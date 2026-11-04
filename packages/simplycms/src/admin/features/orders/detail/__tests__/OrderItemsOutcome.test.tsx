@@ -30,7 +30,7 @@ import {
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const { server, toastError } = vi.hoisted(() => ({
@@ -146,8 +146,8 @@ describe('позиції замовлення: наслідки операцій
     await screen.findByText(money(150));
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(50))).toBeTruthy();
-    // Ревалідація (TSDB-1) віддає стан сервера — підсумки не відкотились.
-    await awaitRevalidation(listOrderItems, before);
+    // Без перезапиту — підсумки не відкотились.
+    await expectNoRefetch(listOrderItems, before);
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(150))).toBeTruthy();
   });

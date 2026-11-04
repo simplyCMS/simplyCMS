@@ -42,7 +42,7 @@ const SEED: Row[] = [
 ];
 
 function makeCollection(mode: 'on-demand' | 'eager') {
-  // Сервер зі станом (TSDB-1): запис ревалідує зрізи, відповідь авторитетна.
+  // Сервер зі станом: наступний list бачить записане, як справжній сервер.
   const server = createMutableServer(SEED);
   const queryClient = new QueryClient();
   const base = {

@@ -22,7 +22,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -115,10 +115,9 @@ describe('OrderDetailPage: редагування позицій', () => {
     });
     await waitFor(() => expect(screen.queryByText('Товар 2')).toBeNull());
     expect(screen.queryByText('Товар 1')).toBeTruthy();
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    await awaitRevalidation(listOrderItems, before);
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
-    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    // Write-back без перезапиту (M1 TSDB-1 закрито).
+    await expectNoRefetch(listOrderItems, before);
+    // Результат запису тримається (його доніс write-back).
     expect(screen.queryByText('Товар 2')).toBeNull();
     expect(screen.queryByText('Товар 1')).toBeTruthy();
   });

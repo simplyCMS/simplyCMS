@@ -1,11 +1,11 @@
 /**
- * «Сервер зі змінним станом» для тестів колекцій адмінки (Task 4, TSDB-1).
- * 🔴 Причина: після ручного запису (writeUpsert/writeDelete) @tanstack/
- * query-db-collection 1.3.4 ревалідує кожен активний on-demand зріз
- * (query.ts `updateCacheData`), а відповідь list-serverFn авторитетна.
- * Статичний стаб (`mockResolvedValueOnce`, константний SEED) тому «відкочує»
- * write-back. Тут стан живе в `rows`: мутації стаба (`upsert`/`remove`/
- * `applyOutcome`) його змінюють, наступний `list` це бачить.
+ * «Сервер зі змінним станом» для тестів колекцій адмінки (Task 4).
+ * 🔴 Причина: будь-який наступний list (ремаунт після `staleTime`, явний
+ * `utils.refetch()`, ordered-source repair M2 — TSDB-1) має бачити записане,
+ * інакше статичний стаб (`mockResolvedValueOnce`, константний SEED) «відкотив»
+ * би write-back і тест перевіряв би стаб, а не продукт. Тут стан живе в
+ * `rows`: мутації стаба (`upsert`/`remove`/`applyOutcome`) його змінюють,
+ * наступний `list` це бачить.
  *
  * `applySubset` — виконання subset за WIRE-контрактом `admin-server/impl/
  * subset-schema.ts` (eq/in/isNull/gt/gte/lt/lte, сорт + тай-брейкер id, межа

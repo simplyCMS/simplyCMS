@@ -72,7 +72,7 @@ describe('колекції доставки: інвалідація довідн
       directory: false,
       stock: false,
     });
-    await c.insert({ id: 'p2', name: 'Нова' } as never).isPersisted.promise;
+    await c.insert({ id: 'p2', name: 'Нова' } as never).when('settled');
     expect(c.get('p2')?.name).toBe('Нова');
     expect(invalidated()).toEqual(ALL);
     expect(m.list).toHaveBeenCalledTimes(1);
@@ -81,7 +81,7 @@ describe('колекції доставки: інвалідація довідн
   it('update точки: write-back + інвалідація без refetch колекції', async () => {
     const { c, invalidated } = await setup();
     m.update.mockResolvedValue([{ ...row, name: 'Інша' }]);
-    await c.update('p1', (d) => void (d.name = 'Інша')).isPersisted.promise;
+    await c.update('p1', (d) => void (d.name = 'Інша')).when('settled');
     expect(c.get('p1')?.name).toBe('Інша');
     expect(invalidated()).toEqual(ALL);
     expect(m.list).toHaveBeenCalledTimes(1);
@@ -90,7 +90,7 @@ describe('колекції доставки: інвалідація довідн
   it('remove точки: іменований guarded remove + інвалідація без refetch', async () => {
     const { c, invalidated } = await setup();
     m.remove.mockResolvedValue({ count: 1 });
-    await c.delete('p1').isPersisted.promise;
+    await c.delete('p1').when('settled');
     expect(m.remove).toHaveBeenCalledWith({ data: [{ id: 'p1' }] });
     expect(c.get('p1')).toBeUndefined();
     expect(invalidated()).toEqual(ALL);
@@ -100,9 +100,7 @@ describe('колекції доставки: інвалідація довідн
   it('409 від guarded remove не ковтається і не інвалідує', async () => {
     const { c, invalidated } = await setup();
     m.remove.mockRejectedValue(new Error('conflict'));
-    await expect(c.delete('p1').isPersisted.promise).rejects.toThrow(
-      'conflict',
-    );
+    await expect(c.delete('p1').when('settled')).rejects.toThrow('conflict');
     expect(invalidated().directory).toBe(false);
   });
 
@@ -117,10 +115,10 @@ describe('колекції доставки: інвалідація довідн
     m.other.mockImplementation(async ({ data }) => data);
     const c = getCollection(qc, def as never) as {
       preload(): Promise<void>;
-      insert(r: unknown): { isPersisted: { promise: Promise<unknown> } };
+      insert(r: unknown): { when(state: 'settled'): Promise<unknown> };
     };
     await c.preload();
-    await c.insert({ id: 'x' }).isPersisted.promise;
+    await c.insert({ id: 'x' }).when('settled');
     expect(
       qc.getQueryState([...AGGREGATE.shippingDirectory.key])?.isInvalidated,
     ).toBe(true);

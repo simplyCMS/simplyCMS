@@ -87,12 +87,12 @@ describe.each([
     const c = getCollection(qc, def as never) as unknown as {
       preload(): Promise<void>;
       get(id: string): { name: string } | undefined;
-      insert(r: unknown): { isPersisted: { promise: Promise<unknown> } };
+      insert(r: unknown): { when(state: 'settled'): Promise<unknown> };
       update(
         id: string,
         cb: (d: { name: string }) => void,
-      ): { isPersisted: { promise: Promise<unknown> } };
-      delete(id: string): { isPersisted: { promise: Promise<unknown> } };
+      ): { when(state: 'settled'): Promise<unknown> };
+      delete(id: string): { when(state: 'settled'): Promise<unknown> };
     };
     await c.preload();
     return { qc, c, state: warm(qc) };
@@ -103,7 +103,7 @@ describe.each([
     const { c, state } = await setup();
     ins.mockImplementation(async ({ data }) => data);
     expect(state()).toEqual({ env: false, quote: false });
-    await c.insert({ id: `${p}2`, name: 'Нова' }).isPersisted.promise;
+    await c.insert({ id: `${p}2`, name: 'Нова' }).when('settled');
     expect(c.get(`${p}2`)?.name).toBe('Нова');
     expect(state()).toEqual(BOTH);
     expect(list).toHaveBeenCalledTimes(1);
@@ -112,7 +112,7 @@ describe.each([
   it('update: write-back + інвалідація без refetch колекції', async () => {
     const { c, state } = await setup();
     upd.mockResolvedValue([{ ...row, name: 'Інша' }]);
-    await c.update(row.id, (d) => void (d.name = 'Інша')).isPersisted.promise;
+    await c.update(row.id, (d) => void (d.name = 'Інша')).when('settled');
     expect(c.get(row.id)?.name).toBe('Інша');
     expect(state()).toEqual(BOTH);
     expect(list).toHaveBeenCalledTimes(1);
@@ -122,7 +122,7 @@ describe.each([
     const { c, state } = await setup();
     // Групи повертають `{ removed }`, решта — `{ count }`.
     rem.mockResolvedValue({ removed: [row.id], count: 1 });
-    await c.delete(row.id).isPersisted.promise;
+    await c.delete(row.id).when('settled');
     expect(rem).toHaveBeenCalledWith({ data: [{ id: row.id }] });
     expect(c.get(row.id)).toBeUndefined();
     expect(state()).toEqual(BOTH);
@@ -132,9 +132,7 @@ describe.each([
   it('відмова сервера при remove не інвалідує і лишає рядок', async () => {
     const { c, state } = await setup();
     rem.mockRejectedValue(new Error('conflict'));
-    await expect(c.delete(row.id).isPersisted.promise).rejects.toThrow(
-      'conflict',
-    );
+    await expect(c.delete(row.id).when('settled')).rejects.toThrow('conflict');
     expect(state()).toEqual({ env: false, quote: false });
     expect(c.get(row.id)).toBeDefined();
   });
@@ -150,7 +148,7 @@ describe('колекція знижок', () => {
     await c.preload();
     const state = warm(qc);
     m.removeDiscounts.mockResolvedValue({ count: 1 });
-    await c.delete('d1').isPersisted.promise;
+    await c.delete('d1').when('settled');
     expect(m.removeDiscounts).toHaveBeenCalledWith({ data: [{ id: 'd1' }] });
     expect(c.get('d1')).toBeUndefined();
     expect(state()).toEqual(BOTH);
@@ -178,7 +176,7 @@ describe('видалення групи з піддеревом', () => {
     await Promise.all([groups.preload(), discounts.preload()]);
     const state = warm(qc);
     m.removeGroups.mockResolvedValue({ removed: ['g1', 'g2'] });
-    await groups.delete('g1').isPersisted.promise;
+    await groups.delete('g1').when('settled');
     expect(m.removeGroups).toHaveBeenCalledWith({ data: [{ id: 'g1' }] });
     expect(groups.get('g2')).toBeUndefined();
     expect(groups.get('g3')).toBeDefined();
@@ -197,7 +195,7 @@ describe('видалення групи з піддеревом', () => {
     await groups.preload();
     const spy = vi.spyOn(qc, 'invalidateQueries');
     m.removeGroups.mockResolvedValue({ removed: ['g1'] });
-    await groups.delete('g1').isPersisted.promise;
+    await groups.delete('g1').when('settled');
     expect(groups.get('g1')).toBeUndefined();
     // Без гілки `status !== 'ready'` цей виклик зникає — тест червоніє.
     expect(spy).toHaveBeenCalledWith({
@@ -211,7 +209,7 @@ describe('видалення групи з піддеревом', () => {
     const groups = getCollection(qc, discountGroupsCollection);
     await groups.preload();
     m.removeGroups.mockResolvedValue({ removed: ['g1', 'gX'] });
-    await groups.delete('g1').isPersisted.promise;
+    await groups.delete('g1').when('settled');
     expect(groups.get('g1')).toBeUndefined();
   });
 });

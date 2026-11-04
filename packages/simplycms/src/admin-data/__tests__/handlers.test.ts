@@ -47,7 +47,7 @@ describe('persistenceHandlers', () => {
       { id: 'a', name: 'A' },
       { id: 'b', name: 'B' },
     ]);
-    await tx.isPersisted.promise;
+    await tx.when('settled');
     expect(insert).toHaveBeenCalledTimes(1);
     expect(c.get('b')?.name).toBe('B');
   });
@@ -56,7 +56,7 @@ describe('persistenceHandlers', () => {
     const c = build(async () => [{ id: 'server', name: 'A' }]);
     await c.preload();
     const tx = c.insert({ id: 'client', name: 'A' });
-    await expect(tx.isPersisted.promise).rejects.toThrow(/замість "client"/);
+    await expect(tx.when('settled')).rejects.toThrow(/замість "client"/);
     expect(c.get('server')).toBeUndefined();
   });
 });

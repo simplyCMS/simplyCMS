@@ -50,7 +50,7 @@ function buildWithFailingUpdate() {
 }
 
 describe('adminErrorKey через реальну транзакцію TanStack DB', () => {
-  it('Error(name/kind/constraint) serverFn → tx.isPersisted.promise reject → adminErrorKey → slugTaken', async () => {
+  it('Error(name/kind/constraint) serverFn → tx.when(settled) reject → adminErrorKey → slugTaken', async () => {
     const collection = buildWithFailingUpdate();
     await collection.preload();
 
@@ -60,7 +60,7 @@ describe('adminErrorKey через реальну транзакцію TanStack 
 
     let caught: unknown;
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       caught = e;
     }

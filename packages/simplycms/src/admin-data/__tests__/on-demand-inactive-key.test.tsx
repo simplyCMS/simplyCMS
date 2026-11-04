@@ -3,8 +3,10 @@
  * TSDB-1, симптом (а): що лежить у кеш-ключі НЕАКТИВНОГО зрізу on-demand
  * колекції після write-back з іншого зрізу, і що бачить ремаунт. Фабрика
  * (`on-demand-options.ts`) `gcTime` НЕ ставить — тест доводить, що без
- * обходу запис зрізу A не лишається стейл/обрізаним. Сервер зі станом
- * (`support/mutable-server.ts`): відповіді ревалідації авторитетні.
+ * обходу запис зрізу A не лишається стейл/обрізаним. qdc 1.5: write-back
+ * патчить рядок у КОЖНОМУ кешованому ключі, де він присутній (і в
+ * неактивному), без мережі — ремаунт бере все з кешу. Сервер зі станом
+ * (`support/mutable-server.ts`): правда, з якою звіряємо кеш.
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
@@ -20,7 +22,7 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 import { createMutableServer, type Payload } from './support/mutable-server';
-import { awaitRevalidation } from './support/revalidation';
+import { expectNoRefetch } from './support/revalidation';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -114,13 +116,12 @@ describe('TSDB-1 (а): вміст кеш-ключів неактивного з�
         d.name = 'Рядок 2 (перейменовано)';
       });
     });
-    await awaitRevalidation(list as never, before);
+    await expectNoRefetch(list as never, before);
     // Контракт: після запису жоден кешований ключ колекції не містить
     // стейл-рядка — кожен рядок у кеші збігається з поточним станом сервера
     // (за id). Нижня межа: жоден ключ неактивного списку не відкинуто —
-    // щонайменше ключ на кожну переглянуту сторінку + на картку. Кількість
-    // запитів — не магічне число: кожен кешований ключ ревалідується рівно
-    // раз (M1).
+    // щонайменше ключ на кожну переглянуту сторінку + на картку. Запитів
+    // нуль: кеш виправив write-back, а не перезапит (M1 TSDB-1 закрито).
     const queries = qc.getQueryCache().findAll({ queryKey: BASE });
     expect(queries.length).toBeGreaterThanOrEqual(PAGES_VIEWED + CARDS);
     const current = new Map(server.rows.map((r) => [r.id, r]));
@@ -129,8 +130,8 @@ describe('TSDB-1 (а): вміст кеш-ключів неактивного з�
       for (const row of q.state.data as Row[])
         expect(row).toEqual(current.get(row.id));
     }
-    expect(list.mock.calls.length - before).toBe(queries.length);
     b.unmount();
+    const beforeRemount = list.mock.calls.length;
 
     const again = renderHook(() => useListQuery(collection), { wrapper });
     await waitFor(() =>
@@ -143,5 +144,8 @@ describe('TSDB-1 (а): вміст кеш-ключів неактивного з�
     expect(names(again.result.current.data)).toEqual(
       SEED.map((r) => (r.id === 'r2' ? 'Рядок 2 (перейменовано)' : r.name)),
     );
+    // Ремаунт у межах staleTime — з кешу, без мережі: оновлений X лежить
+    // у кеш-ключах неактивного списку.
+    expect(list.mock.calls.length).toBe(beforeRemount);
   });
 });

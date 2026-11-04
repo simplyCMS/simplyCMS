@@ -10,7 +10,7 @@ import {
 } from '@testing-library/react';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { ID, OPTIONS, wrapper } from './render-support';
 
 const { toastError, toastSuccess, navigate } = vi.hoisted(() => ({
@@ -38,8 +38,8 @@ import { ukT } from '../../../../../../test-harness/i18n';
 
 const t = ukT;
 
-// Сервер зі станом (TSDB-1): після запису зріз ревалідується, і статична
-// відповідь повернула б видалену опцію.
+// Сервер зі станом: перезапит (якщо він повернеться) не маскував би
+// відсутність write-back статичною відповіддю з видаленою опцією.
 let srv = createMutableServer<(typeof OPTIONS)[number]>([]);
 beforeEach(() => {
   vi.clearAllMocks();
@@ -130,8 +130,8 @@ describe('PropertyOptionsTable', () => {
       ),
     );
     expect(screen.queryByText('Apple')).toBeNull();
-    // Ревалідація (TSDB-1) віддає стан сервера — опція не повертається.
-    await awaitRevalidation(listPropertyOptions, before);
+    // Без перезапиту — опція не повертається.
+    await expectNoRefetch(listPropertyOptions, before);
     expect(screen.queryByText('Apple')).toBeNull();
   });
 });

@@ -29,7 +29,7 @@ describe('mutation-cache-sync (function-scope)', () => {
     expect(
       ids(`export function Page() {
       const collection = useCollection(orderStatusesCollection);
-      const handleCreate = (form) => { const tx = collection.insert({ id: 'x', ...form }); tx.isPersisted.promise.then(() => {}); };
+      const handleCreate = (form) => { const tx = collection.insert({ id: 'x', ...form }); tx.when('settled').then(() => {}); };
       const handleUpdate = (id, form) => { collection.update(id, (d) => { d.name = form.name; }); };
       const handleDelete = (id) => { collection.delete(id); };
       const applyDefault = async (id) => { await setDefaultOrderStatus({ data: { id } }); await collection.utils.refetch(); };
