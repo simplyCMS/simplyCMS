@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { ContentLocale } from 'simplycms/contracts';
-import { withActor } from 'simplycms/db';
+import { withActor, type ActorDb } from 'simplycms/db';
 import type { Translator } from 'simplycms/i18n';
 import {
   loadMailTranslator,
@@ -23,12 +23,13 @@ export const readStoreName = (): Promise<string> =>
     (profile) => profile.name || 'SimplyCMS',
   );
 
-/** Основна мова магазину з БД (`languages.is_default`): кінцева ланка вибору мови листа. */
+/** Основна мова магазину (`languages.is_default`) у вже відкритій транзакції: єдине читання. */
+const primaryOf = async (db: ActorDb): Promise<ContentLocale> =>
+  toLocaleSet(await readLanguages(db)).primary;
+
+/** Основна мова магазину з БД: кінцева ланка вибору мови листа. */
 export const readPrimaryLocale = (): Promise<ContentLocale> =>
-  withActor(
-    { role: 'app_admin' },
-    async (db) => toLocaleSet(await readLanguages(db)).primary,
-  );
+  withActor({ role: 'app_admin' }, primaryOf);
 
 /**
  * Транслятор листа користувачу: мова інтерфейсу з його профілю (`profiles.ui_locale`),
@@ -47,10 +48,7 @@ export async function loadUserMailTranslator(
         .from(profiles)
         .where(eq(profiles.userId, userId))
         .limit(1);
-      return [
-        toLocaleSet(await readLanguages(db)).primary,
-        row?.uiLocale ?? null,
-      ] as const;
+      return [await primaryOf(db), row?.uiLocale ?? null] as const;
     },
   );
   return loadMailTranslator({ kind: 'user', uiLocale, locale: null }, primary);

@@ -3,7 +3,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { createAuth } from 'simplycms/auth';
+import { createAuth, issueOwnerInvite, ownerInviteStore } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import type { MailMessage, MailTransport } from 'simplycms/mail';
 import * as F from './fixtures/customer-categories';
@@ -103,6 +103,45 @@ describe('скидання пароля через порт пошти (Е8-Т11
     await auth.api.requestPasswordReset({ body: { email: 'reset-uk@x.test' } });
     await waitFor(() => sent.length === 1);
     expect(sent[0]!.subject).not.toContain('Password reset');
+  });
+
+  /**
+   * Підміна коду основної мови в обхід тригера «код незмінний» (`replica` вимикає користувацькі
+   * тригери на цьому зʼєднанні): тест доводить ЧИТАННЯ основної мови з БД, а не її зміну.
+   */
+  const setPrimaryCode = (code: string) =>
+    F.rows(
+      url(),
+      `set session_replication_role = replica;
+       update public.languages set code = '${code}' where is_default;
+       reset session_replication_role;`,
+    );
+
+  it('I3 (§19.9): основна мова магазину en → скидання без ui_locale і запрошення приходять англійською з БД', async () => {
+    // Основна мова — рядок `languages.is_default`: читання з БД, а не зашите `uk`.
+    await setPrimaryCode('en');
+    try {
+      await F.seedCustomer(url(), { email: 'reset-primary@x.test' });
+      await auth.api.requestPasswordReset({
+        body: { email: 'reset-primary@x.test' },
+      });
+      await waitFor(() => sent.length === 1);
+      expect(sent[0]!.subject).toBe(`Password reset — ${STORE}`);
+
+      const invited: MailMessage[] = [];
+      await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule: async (items) => {
+          invited.push(...items.map((i) => i.message));
+          return [];
+        },
+        email: 'invitee-primary@x.test',
+        env: { VITE_SITE_URL: SITE },
+      });
+      expect(invited[0]!.subject).toMatch(/^Owner invitation/);
+    } finally {
+      await setPrimaryCode('uk');
+    }
   });
 
   it('таймінг (Е8-О1): відповідь не чекає транспорт, рядок в outbox уже є', async () => {

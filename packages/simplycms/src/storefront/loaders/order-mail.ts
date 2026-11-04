@@ -1,8 +1,8 @@
 import type { PlaceOrderInput, PlacedOrder } from 'simplycms/contracts';
 import type { TextLocale } from 'simplycms/domain/translations';
-import { loadTranslator } from 'simplycms/i18n';
 import {
   enqueueMail,
+  loadMailTranslator,
   resolveMailUiLocale,
   renderOrderCustomerMail,
   renderOrderOwnerMail,
@@ -78,16 +78,17 @@ export async function enqueueOrderMails(
   const storeName = profile.name || 'SimplyCMS';
   // Два листи — дві мови: покупець читає мовою свого замовлення, власник — основною
   // мовою магазину. Один транслятор на обидва був би помилкою в одному з них.
-  const customerUi = resolveMailUiLocale(
-    { kind: 'order-customer', orderLocale: ctx.text.locale },
-    ctx.text.primary,
-  );
-  const ownerUi = resolveMailUiLocale({ kind: 'store' }, ctx.text.primary);
-  const mailParts = ['base', 'mail'] as const;
+  const customer = {
+    kind: 'order-customer',
+    orderLocale: ctx.text.locale,
+  } as const;
+  const owner = { kind: 'store' } as const;
   const [customerT, ownerT] = await Promise.all([
-    loadTranslator(customerUi, mailParts),
-    loadTranslator(ownerUi, mailParts),
+    loadMailTranslator(customer, ctx.text.primary),
+    loadMailTranslator(owner, ctx.text.primary),
   ]);
+  const customerUi = resolveMailUiLocale(customer, ctx.text.primary);
+  const ownerUi = resolveMailUiLocale(owner, ctx.text.primary);
   const items: MailItem[] = [];
   if (to)
     items.push({

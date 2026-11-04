@@ -97,7 +97,8 @@ export async function run(argv) {
     );
     // Мова інтерфейсу рендеру — параметр kit-а без дефолту. Перевірка відповідності тем
     // не залежить від мови магазину (вона лише рендерить в'ю в jsdom без БД), тож
-    // фіксуємо `uk` явно: пакет `uk` є в ядрі завжди.
+    // беремо `uk` — мову-джерело ключів (`MessageKey` виводиться з `catalogs/uk`):
+    // її каталог повний за побудовою.
     const { resolveUiLocale } =
       await environment.runner.import('simplycms/i18n');
     const { checkedContentLocale } = await environment.runner.import(
