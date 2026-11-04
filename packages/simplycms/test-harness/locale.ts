@@ -22,7 +22,7 @@ export function localeSet(
 
 /**
  * Мова інтерфейсу в тесті: через міст `resolveUiLocale`, а не приведення `as UiLocale`
- * (спека §19.2). Код без пакета й без пакета основної мови кидає — так само, як у продакшні.
+ * (спека §19.2). Код без пакета (а його основної мови — теж) кидає — так само, як у продакшні.
  */
 export function ui(code: string): UiLocale {
   return resolveUiLocale(cl(code), cl(code));

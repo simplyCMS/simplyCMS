@@ -88,7 +88,7 @@ describe('у HTML вітрини немає сирих ключів катало
     ]);
   });
 
-  it('/en/x — інтерфейс англійською, а /pl/x (без пакета pl) — основною мовою', async () => {
+  it('/en/x — інтерфейс англійською, а /pl/x (опублікована, пакета немає — деградований режим) — основною мовою', async () => {
     const { ssr } = await loadApp();
     expect((await ssr('/en/x')).body.textContent).toContain('Add to cart');
     expect((await ssr('/pl/x')).body.textContent).not.toContain('Add to cart');

@@ -25,7 +25,8 @@ export function useRequestTranslator(): Translator {
   // Контекст матчу, а не `router.options`: `beforeLoad` кореня міг дочитати
   // набір мов, а опції роутера бачать лише початковий.
   const { locales }: RouterContext = useRouteContext({ strict: false });
-  // Екран помилки говорить мовою ІНТЕРФЕЙСУ: `/pl/x` без пакета pl — основною мовою.
+  // Екран помилки говорить мовою ІНТЕРФЕЙСУ: нормально це мова сторінки, а `/pl/x` опублікованої мови, пакет якої зник
+  // (деградований режим, §19.15), — основною.
   const ui = useMemo(
     () =>
       resolveUiLocalePair(localeOfHref(publicHref, locales), locales.primary),
