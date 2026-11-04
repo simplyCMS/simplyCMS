@@ -210,7 +210,7 @@ simplyCMS/
 ├── tsconfig.showcase.json            # tsconfig гейта `pnpm typecheck:showcase` (`scripts/showcase/*.mts`
 │                                     # кореневий tsconfig не бачить, а tsx типів не перевіряє)
 ├── vitest.schema.config.ts           # Схемний контур (`pnpm test:schema`)
-├── simplycms.config.ts               # defineConfig: locale, currency, themes, plugins
+├── simplycms.config.ts               # defineConfig: currency, themes, plugins
 ├── eslint.db-client-zone.mjs         # Зона: гола фабрика пулу `db/client` закрита, лише `withActor`
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра;
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора

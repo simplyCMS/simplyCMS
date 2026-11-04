@@ -48,8 +48,9 @@
   `simplycms/auth/owner-invite-cli`; `runOwnerInvite` більше не бере `locale` (основна мова — з БД або `primary`).
   `formatPrice(value, config)` і `formatShippingCost(cost, config, labels)` беруть `{ locale: UiLocale; currency }` (тип `PriceFormat`);
   `useFormatPrice` форматує за `useUiLocale()`. `useFormatDate` переїхав з `admin/lib` у `simplycms/i18n` (+ стиль `datetime`);
-  `OrderMailMoney.locale` — `UiLocale`; `OrderMailContext` несе `text: TextLocale` замість `locale`. `UiLocale` тепер
-  оголошено в `simplycms/contracts` (з `simplycms/i18n` лишається реекспорт типу). Лист мовою одержувача:
+  `OrderMailMoney.locale` — `UiLocale`; `OrderMailContext` несе `text: TextLocale` замість `locale`. Тип `UiLocale`
+  переїхав з `simplycms/i18n` у `simplycms/contracts` без реекспорту (імпортуйте `type UiLocale` з `simplycms/contracts`;
+  конструктори `resolveUiLocale`/`toUiLocale` лишились у `simplycms/i18n`); upward-виняток тір-зони `site→i18n` знято. Лист мовою одержувача:
   `resolveMailUiLocale`/`loadMailTranslator` у `simplycms/mail` — покупцю мовою замовлення, власнику й запрошенню основною,
   користувачу `profiles.ui_locale`. Магазин без `locale` у `simplycms.config.ts` збирається; рядок `locale` у конфізі треба видалити.
 - **Вісь мови контенту (М2, блок 1):** `LocaleSet` більше не експортується з `simplycms/i18n` — тепер це тип
