@@ -15,8 +15,10 @@ let warned = false;
 
 /**
  * Кінцева ланка fallback листів: каталог `uk`.
- * М2а-TEMP: Task 6 замінить її основною мовою магазину (`resolveMailUiLocale`).
+ * Тимчасовий міст, не публічний контракт; зноситься в Task 6 (замість нього —
+ * основна мова магазину через `resolveMailUiLocale`).
  */
+// М2а-TEMP: Task 6
 export const STORE_UI_FALLBACK: UiLocale = (() => {
   const uk = toUiLocale('uk');
   if (!uk) throw new Error('simplycms/site: у ядрі немає мовного пакета uk');
@@ -48,7 +50,11 @@ export function getStoreLocale(): UiLocale {
   return STORE_UI_FALLBACK;
 }
 
-/** Транслятор листів магазину: мова магазину → `uk` → ключ. */
+/**
+ * Транслятор листів магазину: мова магазину → `uk` → ключ.
+ * Тимчасовий міст, не публічний контракт; зноситься в Task 6.
+ */
+// М2а-TEMP: Task 6
 export function getStoreTranslator(): Translator {
   return createTranslator(getStoreLocale(), STORE_UI_FALLBACK);
 }

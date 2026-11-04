@@ -62,6 +62,7 @@ export async function runOwnerInvite({
   email,
   siteUrl,
   storeName = 'SimplyCMS',
+  // М2а-TEMP: Task 6
   locale = STORE_UI_FALLBACK,
   printLink = false,
   env = process.env,
@@ -89,6 +90,7 @@ export async function runOwnerInvite({
       storeName,
       // CLI не бачить `simplycms.config` магазину — локаль листа з env.
       // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
+      // М2а-TEMP: Task 6
       t: createTranslator(locale, STORE_UI_FALLBACK),
     });
   } catch (error) {

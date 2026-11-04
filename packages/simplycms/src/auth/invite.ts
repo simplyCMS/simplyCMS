@@ -148,6 +148,7 @@ export async function issueOwnerInvite(
     storeName: input.storeName ?? 'SimplyCMS',
     ttlMs,
     // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
+    // М2а-TEMP: Task 6
     t: input.t ?? getStoreTranslator(),
   });
   const mailIds = await (input.schedule ?? scheduleMail)([

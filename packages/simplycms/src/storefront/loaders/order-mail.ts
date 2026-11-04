@@ -71,6 +71,7 @@ export async function enqueueOrderMails(
   const to = customerEmail.trim();
   const storeName = profile.name || 'SimplyCMS';
   // М2: фолбек стане основною мовою магазину (лист іде мовою замовлення).
+  // М2а-TEMP: Task 6
   const t = createTranslator(ctx.locale, STORE_UI_FALLBACK);
   const money = { locale: ctx.locale, currency: ctx.currency };
   const items: MailItem[] = [];

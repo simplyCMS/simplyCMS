@@ -23,8 +23,6 @@ vi.mock('../../../server/checkout-quote', () => ({
   quoteCheckout: (...args: unknown[]) => quoteCheckoutMock(...args),
 }));
 
-// Мова сторінки йде в запит квоти (назви позицій); провайдера i18n тест не піднімає.
-vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <CartProvider>{children}</CartProvider>

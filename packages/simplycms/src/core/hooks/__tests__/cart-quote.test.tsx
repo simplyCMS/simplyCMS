@@ -24,7 +24,6 @@ const cart = vi.hoisted(() => ({
 
 vi.mock('../../lib/cart-quote', () => server);
 vi.mock('../useAuth', () => ({ useAuth: () => ({ user: auth.user }) }));
-vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
 vi.mock('simplycms/react-query', () => ({
   useCart: () => ({
     items: cart.items,

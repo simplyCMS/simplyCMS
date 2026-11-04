@@ -11,7 +11,12 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { I18nProvider, useUiLocale } from 'simplycms/i18n';
+import {
+  I18nProvider,
+  createTranslator,
+  resolveUiLocale,
+  useUiLocale,
+} from 'simplycms/i18n';
 import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { CartProvider } from 'simplycms/react-query';
 import type { RouterContext } from 'simplycms/runtime';
@@ -60,7 +65,6 @@ import { createLocaleRewrite } from '../locale/rewrite';
 import { loadStorefrontRoot } from '../locale/root-data';
 import type { LocaleSet } from 'simplycms/contracts';
 import { localeSet } from '../../../test-harness/locale';
-import { ukT } from '../../../test-harness/i18n';
 import ProductDetailPage from '../pages/ProductDetail';
 import {
   entityHead,
@@ -69,6 +73,12 @@ import {
 } from '../pages/entity-route';
 
 const SET: LocaleSet = localeSet('uk', ['uk', 'en', 'pl'], ['uk', 'en', 'pl']);
+
+// Очікуваний рядок — з каталогу uk через справжній міст, а не з фікстури (тест механізму).
+const UK_ADD_TO_CART = createTranslator(
+  resolveUiLocale(SET.primary, SET.primary),
+  resolveUiLocale(SET.primary, SET.primary),
+)('product.addToCart');
 
 const PL_PRODUCT = {
   id: 'prod-1',
@@ -186,7 +196,7 @@ describe('мова контенту ≠ мова інтерфейсу (І41)', (
     expect(requested.locales).not.toContain('uk');
     expect(html).toContain('Kabel testowy');
     // Рядок інтерфейсу — з каталогу uk (основна мова), а не pl: пакета pl немає.
-    expect(html).toContain(ukT('product.addToCart'));
+    expect(html).toContain(UK_ADD_TO_CART);
     expect(html).toContain('<html lang="pl"');
     // Хуки різних осей на одній сторінці: контент — pl, інтерфейс — uk.
     expect(html).toContain('data-content="pl"');
