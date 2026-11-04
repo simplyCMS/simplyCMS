@@ -40,12 +40,11 @@ export async function loadStorefrontRoot(
   // Інтерфейс — окрема вісь (І41): мова без пакета (`pl`) не ламає тексти, а береться за
   // основною. `<html lang>` і дані сторінки лишаються на `locale`.
   const ui = resolveUiLocalePair(locale, locales.primary);
-  // Лоадер біжить і на SSR, і на клієнтській навігації: частину `base` треба дочекатись
-  // тут, щоб `use` у корені знайшов її вже завантаженою (Д2).
-  await Promise.all([
-    loadUiCatalog(ui.locale, 'base'),
-    loadUiCatalog(ui.fallback, 'base'),
-  ]);
+  // Лоадер біжить і на SSR, і на клієнтській навігації: частину `base` мови інтерфейсу треба
+  // дочекатись тут, щоб `use` у корені знайшов її вже завантаженою (Д2). Мови fallback тут
+  // немає: каталог ядра повний для кожної мови (спека §19.12(1)), тож клієнт тягне один
+  // каталог ядра; `ui.fallback` лишається в даних кореня для тем і плагінів.
+  await loadUiCatalog(ui.locale, 'base');
   return {
     ...(await getStorefrontRoot()),
     locale,
