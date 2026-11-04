@@ -54,6 +54,10 @@ import { loadApp } from './no-raw-keys-app';
 
 fixtures.product = product;
 
+// Кожен кейс імпортує граф вітрини наново (свіжий реєстр): холодний імпорт під навантаженням
+// повного прогону перевищує дефолтні 5 с.
+vi.setConfig({ testTimeout: 30_000 });
+
 describe('у HTML вітрини немає сирих ключів каталогу (І44)', () => {
   for (const lang of ['uk', 'en', 'pl']) {
     const prefix = lang === 'uk' ? '' : `/${lang}`;
