@@ -53,11 +53,11 @@
 | # | Питання | Рішення |
 |---|---|---|
 | Д1 | Де `LocaleSet` | `simplycms/contracts` (файл `contracts/content-locale.ts`) (T0, лише типи, разом із `ContentLocale`): його читають `contracts/entities`, `runtime/router-context`, `site`, `storefront-routes`, `storefront/loaders`. Конструктор `checkedContentLocale` — у `simplycms/domain/translations`. Поля стають `ContentLocale`. Поле `known` лишається |
-| Д2 | Де кореневий `UiLocale` | У даних кореня: `loadStorefrontRoot` повертає `ui: { locale, fallback }` і до повернення чекає `loadUiCatalog(…, 'base')` для обох мов. `beforeLoad` кореня не змінюється: лоадер уже біжить і на SSR, і на клієнтській навігації, і `head()` бере дані з `matches` |
+| Д2 | Де кореневий `UiLocale` | У даних кореня: `loadStorefrontRoot` повертає `ui: { locale, fallback }` і до повернення чекає `loadUiCatalog(ui.locale, 'base')` (без мови fallback: спека §19.4, §19.12(1) — один каталог ядра на клієнт; `ui.fallback` лишається в даних кореня для тем і плагінів). `beforeLoad` кореня не змінюється: лоадер уже біжить і на SSR, і на клієнтській навігації, і `head()` бере дані з `matches` |
 | Д3 | Як провайдер отримує каталоги | `I18nProvider` стає чистим контекстом: `{ locale: UiLocale; fallback: UiLocale; catalogs: readonly PartCatalog[] }`. Вантажить роут: хук `useUiCatalogs(locale, parts)` = `parts.map((p) => use(loadUiCatalog(locale, p)))`. Тести передають статичні каталоги з `packages/simplycms/test-harness/i18n.tsx` без реєстру |
-| Д4 | Транслятор поза React | `createTranslator(catalogs: readonly PartCatalog[]): Translator` — синхронний над завантаженим. Також `loadTranslator(ui: UiLocale, parts): Promise<Translator>` (сервер: листи, CLI) і `peekTranslator(ui, parts): Translator` (синхронно з реєстру для `head()`; незавантажена частина — помилка інваріанта) |
+| Д4 | Транслятор поза React | `createTranslator(catalogs: readonly PartCatalog[]): Translator` — синхронний над завантаженим. `loadTranslator(ui: UiLocale, parts): Promise<Translator>` — єдиний шлях поза React (head, листи, CLI). Синхронного peek немає: `head` у router-core асинхронний (`Awaitable`, `route.ts:1372+`), а помилки в ньому роутер ковтає (`load-client.ts:1283`, `load-server.ts:671`), тож «кидати з інваріантом» там — мовчазний дефект |
 | Д5 | Спільний протокол thenable | `packages/simplycms/src/contracts/thenable.ts` (T0, клієнтобезпечний): `type ReactThenable<T>` і `trackThenable<T>(p: Promise<T>): ReactThenable<T>`. Ним користуються `ThemeRegistry` і реєстр каталогів |
-| Д6 | Прогрів перед гідрацією | `prepareStorefrontHydration(): Promise<void>` у `simplycms/storefront-routes/hydration` (новий модуль поруч із `locale`). Вантажить активну тему (як зараз `client.tsx:22-26`) і `base` для `resolveUiLocale(resolveRequestLocale(location.pathname, readClientLocaleSet()).locale, primary)` та для мови fallback. `client.tsx` лише чекає цю функцію |
+| Д6 | Прогрів перед гідрацією | `prepareStorefrontHydration(): Promise<void>` у `simplycms/storefront-routes/hydration` (новий модуль поруч із `locale`). Вантажить активну тему (як зараз `client.tsx:22-26`) і `base` для `resolveUiLocale(resolveRequestLocale(location.pathname, readClientLocaleSet()).locale, primary)`. Прогрів — для компонентів (`use()` у корені під час гідрації), не для `head()`. `client.tsx` лише чекає цю функцію |
 | Д7 | Мова адмінки: читання й запис | Дві операції реєстру: `profiles.getUiLocale` (permission `profile.read`, output `{ uiLocale: string \| null }`) і `profiles.setUiLocale` (permission `profile.update`, input `{ uiLocale: string \| null }`, значення — код наявного пакета або `null`, інакше 400). Обидві — для власного рядка `actor.userId`; актор `system` → відмова. Обидві стають «доступними ролі user» — рядок у знімку `user-accessible-operations` з причиною «власний профіль» |
 | Д8 | Де вибір мови в адмінці | Селектор у шапці `AdminLayout` поруч із `ThemeToggle`. Окремої сторінки профілю адміністратора немає, і цей блок її не створює |
 | Д9 | Мова листа | `resolveMailUiLocale(recipient: MailRecipient, primary: ContentLocale): UiLocale` (§19.9). Колонок `orders.locale`/`profiles.locale` ще немає (наступний план), тож зараз: лист покупцю бере опубліковану мову чекауту (`requirePublishedTextLocale`); користувачу — `profiles.ui_locale`, інакше основна; магазину — основна; запрошенню — основна. Наступний план лише подасть нові поля в ту саму функцію |
@@ -176,7 +176,7 @@
 **Files:**
 - Create:
   - `packages/simplycms/src/contracts/thenable.ts` + `contracts/__tests__/thenable.test.ts`;
-  - `packages/simplycms/src/i18n/registry.ts` (`loadUiCatalog`, `useUiCatalogs`, `loadTranslator`, `peekTranslator`) + `i18n/__tests__/registry.test.ts`;
+  - `packages/simplycms/src/i18n/registry.ts` (`loadUiCatalog`, `useUiCatalogs`, `loadTranslator`) + `i18n/__tests__/registry.test.ts`;
   - `packages/simplycms/src/i18n/catalogs/{uk,en}/base.ts` (зведення 17 кореневих неймспейсів без `mail`);
   - `packages/simplycms/test-harness/i18n.tsx` (`TestI18nProvider`, `ukT`, `enT` — статичні імпорти частин, лише для тестів).
 - Modify:
@@ -186,7 +186,7 @@
   - `i18n/__tests__/catalog-integrity.test.ts`, `tests/i18n-catalog-parity.test.ts`: за частинами;
   - `domain/slugs` споживачі: `admin-server/impl/products/aggregate/{create.ts:96,modification-tokens.ts:12}` → `getContentTools(primary)`;
   - `routes/admin/admin.tsx` (layout вантажить `admin` + `base` мовою основної; мова з профілю — Task 5);
-  - `storefront-routes/locale/{root-data.ts,useRequestTranslator.ts}`, `storefront-routes/head/head.ts` (`peekTranslator`);
+  - `storefront-routes/locale/{root-data.ts,useRequestTranslator.ts}`, `storefront-routes/head/head.ts` (async `head()` на `loadTranslator`);
   - серверні творці транслятора: `auth/{reset-mail.ts:44,verification-mail.ts:54,invite.ts:151}`, `auth/owner-invite-cli/run.ts:91`, `storefront/loaders/order-mail.ts:73`. Тут лише `await loadTranslator(ui, ['base','mail'])`; джерело мови не змінюється до Task 6, позначка `// М2а-TEMP: Task 6`;
   - `tests/e2e/support/i18n.ts:19`;
   - `tests/i18n-coverage/scan.ts` + `tests/i18n-coverage.test.ts` (нове правило ключів частин);
@@ -201,11 +201,11 @@
   - `getUiPack(ui: UiLocale): LanguagePack` (кидає, якщо немає — `UiLocale` гарантує наявність); `getContentTools(code: ContentLocale): LanguagePack['content'] | null` (точний код). `getLanguagePack` зноситься.
   - `loadUiCatalog(ui: UiLocale, part: UiCatalogPart): ReactThenable<PartCatalog>` — кеш за `${ui}:${part}`. Відхилений проміс видаляється з кешу (як `ThemeRegistry.ts:91`): наступний виклик повторює завантаження.
   - `useUiCatalogs(ui: UiLocale, parts: readonly UiCatalogPart[]): readonly PartCatalog[]` (`use` у циклі).
-  - `createTranslator(catalogs: readonly PartCatalog[]): Translator`; `loadTranslator(ui, parts): Promise<Translator>`; `peekTranslator(ui, parts): Translator` (кидає, якщо частина не `fulfilled`).
+  - `createTranslator(catalogs: readonly PartCatalog[]): Translator`; `loadTranslator(ui, parts): Promise<Translator>` (синхронного peek немає, Д4).
   - `I18nProvider({ locale, fallback, catalogs, children })` (Д3). Root: `catalogs = useUiCatalogs(ui.locale, ['base'])`. Layout адмінки: вкладений провайдер з `['base','admin']`.
-  - `loadStorefrontRoot` перед поверненням чекає `loadUiCatalog(ui.locale,'base')` і `(ui.fallback,'base')` (Д2).
+  - `loadStorefrontRoot` перед поверненням чекає `loadUiCatalog(ui.locale,'base')` (Д2).
   - `beforeLoad` адмінки (до Task 5): `ui = resolveUiLocale(context.locales.primary, context.locales.primary)`, чекає `loadUiCatalog(ui,'base')` і `(ui,'admin')`.
-  - `useRequestTranslator` (екрани `NotFound`/помилки поза провайдером) — `useUiCatalogs(ui, ['base'])`, а не `peekTranslator`: корінь міг упасти до завантаження, тож хук має право призупинитись.
+  - `useRequestTranslator` (екрани `NotFound`/помилки поза провайдером) — `useUiCatalogs(ui, ['base'])`, а не синхронне читання реєстру: корінь міг упасти до завантаження, тож хук має право призупинитись.
   - Тип значення каталогу Task 7 розширить до `string | PluralForms`; `PartCatalog` і `lookupMessage` тоді змінюються там.
   - `TestI18nProvider({ locale?: 'uk' | 'en'; children })` і `ukT`/`enT` — у `test-harness`, у продакшн-граф не потрапляють.
 - **Сканер** (`scan.ts`):
@@ -219,7 +219,7 @@
   - `thenable.test.ts`: після `await` — `status: 'fulfilled'`, `value`; відхилений — `status: 'rejected'`, `reason`.
   - `registry.test.ts`:
     - два виклики `loadUiCatalog(uk,'base')` повертають ТОЙ САМИЙ проміс;
-    - `peekTranslator` до завантаження кидає, після — перекладає;
+    - `loadTranslator` чекає лише названі частини;
     - лоадер, що впав, не кешується (другий виклик знову кличе лоадер);
     - частина `admin` не вантажиться, доки її не попросили (шпигун на лоадері).
   - `i18n-coverage.test.ts`: негативні контролі нового правила (`'admin.common.title'` у фікстурі вітрини → порушення; `'mail.reset.subject'` у фікстурі `storefront-routes` → порушення).
