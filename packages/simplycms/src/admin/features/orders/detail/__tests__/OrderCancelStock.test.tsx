@@ -18,11 +18,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 
-const { saveStock, changeOrderStatus, listStock } = vi.hoisted(() => ({
-  saveStock: vi.fn(),
-  changeOrderStatus: vi.fn(),
-  listStock: vi.fn(),
-}));
+const { saveStock, changeOrderStatus, listStock, listProducts, listMods } =
+  vi.hoisted(() => ({
+    saveStock: vi.fn(),
+    changeOrderStatus: vi.fn(),
+    listStock: vi.fn(),
+    listProducts: vi.fn(async () => [] as unknown[]),
+    listMods: vi.fn(async () => [] as unknown[]),
+  }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 vi.mock('simplycms/admin-server', async () => {
   const stub =
@@ -33,8 +36,8 @@ vi.mock('simplycms/admin-server', async () => {
     listOrders: stub.listOrders,
     listOrderItems: stub.listOrderItems,
     listStock,
-    listProducts: async () => [],
-    listProductModifications: async () => [],
+    listProducts,
+    listProductModifications: listMods,
     changeOrderStatus,
     saveStockCommand: saveStock,
   });

@@ -33,14 +33,12 @@ const mocks = vi.hoisted(() => ({
   listLanguages: vi.fn(),
   saveProductDescription: vi.fn(),
   listProducts: vi.fn(),
+  listProductModifications: vi.fn(async () => [] as unknown[]),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    ...mocks,
-    listProductModifications: async () => [],
-  }),
+  ).createAdminServerMock(mocks),
 );
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
@@ -101,15 +99,16 @@ describe('картка → список: свіжий version після збе�
           </EngineProvider>
         </QueryClientProvider>
       );
-      const useRow = (id: string) => () => {
-        const products = useCollection(productsCollection);
-        return useLiveQuery((q) =>
-          q
-            .from({ p: products })
-            .where(({ p }) => eq(p.id, id))
-            .findOne(),
-        );
-      };
+      const useRow = (id: string) =>
+        function useRowQuery() {
+          const products = useCollection(productsCollection);
+          return useLiveQuery((q) =>
+            q
+              .from({ p: products })
+              .where(({ p }) => eq(p.id, id))
+              .findOne(),
+          );
+        };
       // Підписка на інший рядок тримає колекцію живою, поки відкрита картка.
       renderHook(useRow('other'), { wrapper });
       const list = renderHook(useRow(ID), { wrapper });
