@@ -3,6 +3,7 @@ export const messages = {
   'admin.common.title': 'Адмін-панель',
   'admin.common.toSite': 'На сайт',
   'admin.common.uiLocale': 'Мова інтерфейсу',
+  'admin.common.uiLocaleFailed': 'Не вдалося змінити мову інтерфейсу',
   'admin.common.signedOut': 'Вихід виконано',
   'admin.common.signedOutHint': 'Ви успішно вийшли з системи',
 

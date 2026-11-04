@@ -3,6 +3,7 @@ export const messages = {
   'admin.common.title': 'Admin panel',
   'admin.common.toSite': 'View site',
   'admin.common.uiLocale': 'Interface language',
+  'admin.common.uiLocaleFailed': 'Could not change the interface language',
   'admin.common.signedOut': 'Signed out',
   'admin.common.signedOutHint': 'You have been signed out',
 

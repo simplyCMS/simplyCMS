@@ -1,6 +1,8 @@
 import { useRouter } from '@tanstack/react-router';
+import { useState } from 'react';
 import { Languages } from 'lucide-react';
 import { setAdminUiLocale } from 'simplycms/admin-server';
+import { useToast } from 'simplycms/core/hooks/use-toast';
 import { LANGUAGE_PACKS, useT, useUiLocale } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import {
@@ -20,17 +22,35 @@ export function UiLocaleSelect() {
   const t = useT();
   const current = useUiLocale();
   const router = useRouter();
+  const { toast } = useToast();
+  const [pending, setPending] = useState(false);
 
   const choose = async (code: string) => {
-    if (code === current) return;
-    await setAdminUiLocale({ data: { uiLocale: code } });
-    await router.invalidate();
+    if (code === current || pending) return;
+    setPending(true);
+    try {
+      await setAdminUiLocale({ data: { uiLocale: code } });
+      await router.invalidate();
+    } catch {
+      // Мова лишилась попередньою: без повідомлення вибір мовчки «не спрацював» би.
+      toast({
+        title: t('admin.common.uiLocaleFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-9 gap-1 px-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 gap-1 px-2"
+          disabled={pending}
+        >
           <Languages className="h-4 w-4" />
           <span className="text-xs uppercase">{current}</span>
           <span className="sr-only">{t('admin.common.uiLocale')}</span>

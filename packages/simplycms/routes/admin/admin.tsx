@@ -8,8 +8,8 @@ import {
   toUiLocale,
   useUiCatalogs,
 } from 'simplycms/i18n';
-import { AdminError, AdminPending } from './AdminBoundaries';
 import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
+import { AdminError, AdminPending } from './AdminBoundaries';
 
 /**
  * Layout-роут адмінки.
