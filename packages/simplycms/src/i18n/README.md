@@ -27,10 +27,10 @@ pnpm add simplycms
 | `lookupMessage(catalogs, key, params?)` | Єдиний ланцюг пошуку: перший каталог із ключем → підстановка `{name}`; ніде немає → сам ключ. Спільний для ядра, `useThemeT`, `usePluginT` |
 | `resolveUiLocale(content, primary)` | Міст осі контенту до осі інтерфейсу: пакет мови → пакет базової мови → ті самі кроки для основної → помилка з переліком пакетів |
 | `toUiLocale(value, parts?)`, `resolveAdminUiLocale(stored, primary)` | Точний код наявного пакета з частинами (типово `base`+`mail`) або `null`; мова адмінки: збережена з `admin` → основна з `admin` → `en` |
-| `languageOfConfigLocale(tag)` | Тимчасовий міст до М2 (знос `config.locale`): `'uk-UA'` → `'uk'`, `'EN'` → `'en'`. Не для кодів мов магазину (`pt-BR` — окрема мова) |
 | `listLanguagePacks()`, `hasLanguagePack(code, parts?)`, `getUiPack(ui)`, `getContentTools(code)` | Мовні пакети ядра (`uk`, `en`; реєстр не експортується): `ui` = `base` + `mail` + необов'язкова `admin`, `content` — таблиця транслітерації адрес. Мову публікують лише з пакетом `base`+`mail` (`hasLanguagePack`, точний код або базова мова); `getContentTools` без пакета → `null` |
 | `I18nProvider`               | React-провайдер `{ locale, fallback }` (обидві — `UiLocale`): мемоїзує транслятор по парі мов |
 | `useT()`, `useUiLocale()`, `useUiLocalePair()` | Транслятор поточного рендера; мова інтерфейсу для форматування; пара мов для каталогів теми й плагіна. Кидають поза провайдером |
+| `useFormatDate(style?)` | Форматувач дати за мовою інтерфейсу (`medium` / `short` / `datetime`); єдине місце, де вітрина й адмінка форматують дати |
 | `UiLocale`, `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. `UiLocale` — код наявного пакета (бренд; не мова контенту); `MessageKey` виводиться з uk-каталогу — union замкнений |
 
 ## Приклад

@@ -27,7 +27,6 @@ const engine: EngineContext = {
     auth: () => '/auth',
   },
   config: {
-    locale: 'uk-UA',
     currency: 'UAH',
   },
 };

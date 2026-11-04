@@ -2,7 +2,7 @@
 // ДЕФЕКТ, який лагодить цей модуль: `new Intl.NumberFormat(locale, { style:
 // 'currency', currency }).format(n)` бере символ валюти з ICU-даних, вшитих у
 // рушій, а вони різняться між Node (SSR) і Chromium (клієнт) — той самий
-// виклик на uk-UA/UAH віддає "₴" на сервері й "грн" у браузері. Наслідок —
+// виклик на uk/UAH віддає "₴" на сервері й "грн" у браузері. Наслідок —
 // гідраційний мисматч на кожній картці товару. Групування розрядів (напр.
 // "4 200") в обох рантаймах ІДЕНТИЧНЕ (перевірено побайтово), тому число й
 // далі форматуємо через Intl (`style: 'decimal'` — без символу валюти), а сам
@@ -12,7 +12,7 @@
 // (T0, лише типи) — це виконуваний код, і не в react-query (T2) — форматування
 // ціни потрібне й поза React (напр. SSR-генератори SEO/метатегів).
 
-import type { ConfigProvider } from 'simplycms/contracts';
+import type { UiLocale } from 'simplycms/contracts';
 
 /**
  * Символи валют, які фактично використовує вітрина. Явна мапа замість
@@ -49,17 +49,25 @@ export interface FormatPriceOptions {
 }
 
 /**
- * Форматує ціну як "<число><NBSP><символ>" — саме такий порядок і роздільник
- * (U+00A0, не звичайний пробіл) віддає `Intl.NumberFormat('uk-UA', { style:
- * 'currency', ... })` для гривні, і його явно збережено, бо валютний хвіст
- * тепер формуємо самі, а не Intl. 🔴 Порядок "число-символ" зафіксований під
- * поточну вітрину (лише uk-UA в експлуатації, `simplycms.config.ts`) —
- * per-locale розташування символу (напр. "$100" в en-US) поза межами цього
- * фікса: воно б знову зажадало `style: 'currency'` з тими самими CLDR-ризиками.
+ * Мова й валюта форматування ціни. Мова — ІНТЕРФЕЙСУ (спека §19.8): число читається за
+ * правилами мови кнопок поруч (`1 234,50` / `1,234.50`), а не за регіоном із конфігу
+ * магазину. Валюта — властивість магазину, не мови.
+ */
+export interface PriceFormat {
+  locale: UiLocale;
+  currency: string;
+}
+
+/**
+ * Форматує ціну як "<число><NBSP><символ>": такий порядок і роздільник (U+00A0, не
+ * звичайний пробіл) віддає `Intl.NumberFormat('uk', { style: 'currency', ... })` для
+ * гривні, і його явно збережено, бо валютний хвіст формуємо самі, а не Intl.
+ * 🔴 Порядок "число-символ" однаковий для всіх мов: per-locale розташування символу
+ * (напр. "$100" в `en`) зажадало б знову `style: 'currency'` з тими самими CLDR-ризиками.
  */
 export function formatPrice(
   value: number,
-  config: Pick<ConfigProvider, 'locale' | 'currency'>,
+  config: PriceFormat,
   options: FormatPriceOptions = {},
 ): string {
   const { minimumFractionDigits = 0, maximumFractionDigits = 2 } = options;
@@ -74,7 +82,7 @@ export function formatPrice(
   const symbol = CURRENCY_SYMBOLS[code] ?? config.currency;
 
   // Роздільник \u00a0 (NBSP) -- саме такий байт (не звичайний пробіл, U+0020)
-  // Intl.NumberFormat('uk-UA', { style: 'currency' }) ставить між числом і
+  // Intl.NumberFormat('uk', { style: 'currency' }) ставить між числом і
   // символом валюти (перевірено побайтово). Escape-літерал у джерелі, а не
   // сирий символ, -- щоб NBSP не загубився під час майбутнього редагування.
   return `${number}\u00a0${symbol}`;

@@ -9,7 +9,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { formatPrice } from 'simplycms/domain/money';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import { PRICE_FORMAT } from '../../../products/edit/__tests__/test-engine-stub';
 import { mocks, page, renderPage, row, stubDom } from './render-support';
 import { ukT } from '../../../../../../test-harness/i18n';
 
@@ -49,7 +49,7 @@ describe('CustomersPage', () => {
     expect(screen.getByText('buyer2@shop.test')).toBeTruthy();
     expect(screen.getByText('Опт')).toBeTruthy();
     expect(
-      screen.getByText(formatPrice(200, ENGINE.config).replace(/\s/g, ' ')),
+      screen.getByText(formatPrice(200, PRICE_FORMAT).replace(/\s/g, ' ')),
     ).toBeTruthy();
   });
 

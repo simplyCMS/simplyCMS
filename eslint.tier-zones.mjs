@@ -59,7 +59,9 @@ export const TIER_ZONES = [
   // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
   ['src/auth', 2, 'auth', ['db', 'mail', 'site', 'i18n', 'env']],
-  ['src/react-query', 2, 'react-query', []],
+  // `i18n` (М2а Task 6, §19.8): `useFormatPrice` форматує за мовою ІНТЕРФЕЙСУ (`useUiLocale`),
+  // а валюту бере з `useEngine`. Ребро односпрямоване: `i18n` про `react-query` не знає.
+  ['src/react-query', 2, 'react-query', ['i18n']],
   ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
   // SSR-лоадери вітрини (В2-К1а) — T2, і `db` у винятку `upward` з тієї

@@ -5,7 +5,7 @@ import type { CheckoutQuote } from 'simplycms/contracts';
 
 vi.mock('simplycms/react-query', async (orig) => ({
   ...(await orig()),
-  useEngine: () => ({ config: { locale: 'uk-UA', currency: 'UAH' } }),
+  useEngine: () => ({ config: { currency: 'UAH' } }),
   useFormatPrice: () => (n: number) => `${n} грн`,
 }));
 

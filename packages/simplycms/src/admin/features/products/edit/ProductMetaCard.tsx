@@ -1,6 +1,6 @@
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import { productsCollection, useCollection } from 'simplycms/admin-data';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
  */
 export function ProductMetaCard({ id }: Props) {
   const t = useT();
+  const formatDate = useFormatDate();
   const products = useCollection(productsCollection);
   const { data: row } = useLiveQuery({
     query: (q) =>
@@ -31,12 +32,10 @@ export function ProductMetaCard({ id }: Props) {
         {row && (
           <>
             <p>
-              {t('admin.products.createdAt')}{' '}
-              {row.createdAt.toLocaleDateString('uk-UA')}
+              {t('admin.products.createdAt')} {formatDate(row.createdAt)}
             </p>
             <p>
-              {t('admin.products.updatedAt')}{' '}
-              {row.updatedAt.toLocaleDateString('uk-UA')}
+              {t('admin.products.updatedAt')} {formatDate(row.updatedAt)}
             </p>
           </>
         )}

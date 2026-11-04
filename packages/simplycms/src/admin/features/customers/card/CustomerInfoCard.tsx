@@ -1,9 +1,8 @@
 import { resolveMediaUrl } from 'simplycms/domain/media';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import type { AdminCustomerCard } from 'simplycms/contracts/objects';
 import { Badge } from 'simplycms/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
-import { useFormatDate } from '../../../lib/useFormatDate';
 
 /** Повне імʼя або email, коли імені немає. */
 export const customerLabel = (c: AdminCustomerCard) =>

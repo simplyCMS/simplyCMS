@@ -1,4 +1,5 @@
 import type { EngineContext } from 'simplycms/contracts';
+import { ui } from '../../../../../../test-harness/locale';
 
 /**
  * `ModificationsTable` → `useFormatPrice()` → `useEngine()` — мінімальний
@@ -17,7 +18,6 @@ export const ENGINE: EngineContext = {
     auth: () => '/auth',
   },
   config: {
-    locale: 'uk-UA',
     currency: 'UAH',
   },
 };
@@ -27,3 +27,9 @@ export class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
+
+/** Формат цін тестових екранів: мова інтерфейсу `uk` (її дає `TestI18nProvider`) і валюта конфігу. */
+export const PRICE_FORMAT = {
+  locale: ui('uk'),
+  currency: ENGINE.config.currency,
+};

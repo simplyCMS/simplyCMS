@@ -12,7 +12,10 @@ import type { ReactNode } from 'react';
 
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   listOrders,
   makeOrder,
@@ -82,7 +85,7 @@ describe('OrdersPage', () => {
     const link = await screen.findByRole('link', { name: 'N-2' });
     expect(link.getAttribute('href')).toBe('/admin/orders/o0002');
     expect(
-      screen.getByText(formatPrice(1234.5, ENGINE.config).replace(/\s/g, ' ')),
+      screen.getByText(formatPrice(1234.5, PRICE_FORMAT).replace(/\s/g, ' ')),
     ).toBeTruthy();
     expect(screen.getAllByText('Нове')).toHaveLength(2);
     expect(screen.getByText(t('admin.orders.subtitle'))).toBeTruthy();

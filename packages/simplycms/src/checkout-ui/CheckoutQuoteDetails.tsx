@@ -1,7 +1,7 @@
 import { useEngine, useFormatPrice } from 'simplycms/react-query';
 import { formatShippingCost } from 'simplycms/domain/shipping';
 import type { CheckoutQuote } from 'simplycms/contracts';
-import { useT } from 'simplycms/i18n';
+import { useT, useUiLocale } from 'simplycms/i18n';
 
 interface CheckoutQuoteDetailsProps {
   quote: CheckoutQuote;
@@ -18,6 +18,7 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
   // Локаль і валюта для `formatShippingCost` — це чиста T1-функція, вона не
   // має доступу ні до конфігу, ні до перекладів (див. коментар у shipping.ts).
   const { config } = useEngine();
+  const locale = useUiLocale();
 
   return (
     <>
@@ -59,10 +60,14 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
             {/* Е6а-18: нуль у режимі carrier — не «Безкоштовно». */}
             {quote.shippingPricing === 'carrier'
               ? t('checkout.shipping.carrier')
-              : formatShippingCost(quote.shippingCost, config, {
-                  byTariff: t('common.shipping.byTariff'),
-                  free: t('common.shipping.free'),
-                })}
+              : formatShippingCost(
+                  quote.shippingCost,
+                  { locale, currency: config.currency },
+                  {
+                    byTariff: t('common.shipping.byTariff'),
+                    free: t('common.shipping.free'),
+                  },
+                )}
           </span>
         </div>
       </div>

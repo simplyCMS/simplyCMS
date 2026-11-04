@@ -29,7 +29,7 @@ vi.mock('simplycms/core/hooks/useAddressBook', () => ({
 }));
 vi.mock('simplycms/react-query', async (orig) => ({
   ...(await orig()),
-  useEngine: () => ({ config: { locale: 'uk-UA', currency: 'UAH' } }),
+  useEngine: () => ({ config: { currency: 'UAH' } }),
 }));
 
 import { CheckoutDeliveryForm } from '../CheckoutDeliveryForm';

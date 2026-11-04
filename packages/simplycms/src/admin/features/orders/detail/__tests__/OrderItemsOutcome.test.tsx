@@ -19,7 +19,10 @@ import {
 } from 'simplycms/admin-data';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   applyOutcome,
   listOrderItems,
@@ -67,7 +70,7 @@ const wrap = ({ children }: { children: ReactNode }) => (
     </EngineProvider>
   </QueryClientProvider>
 );
-const money = (n: number) => formatPrice(n, ENGINE.config).replace(/\s/g, ' ');
+const money = (n: number) => formatPrice(n, PRICE_FORMAT).replace(/\s/g, ' ');
 const order = {
   ...makeOrder(1, new Date(Date.UTC(2026, 9, 1, 10))),
   ...{ subtotal: '200.00', shippingCost: '50.00', total: '250.00' },

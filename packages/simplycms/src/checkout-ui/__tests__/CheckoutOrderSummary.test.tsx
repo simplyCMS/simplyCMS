@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // резолву модуля) — простіше й чесніше замінити форматер напряму.
 vi.mock('simplycms/react-query', async (orig) => ({
   ...(await orig()),
-  useEngine: () => ({ config: { locale: 'uk-UA', currency: 'UAH' } }),
+  useEngine: () => ({ config: { currency: 'UAH' } }),
   useFormatPrice: () => (value: number) => `${value}₴`,
 }));
 

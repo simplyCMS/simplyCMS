@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import type { AdminCustomerCard } from 'simplycms/contracts/objects';
 import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
@@ -9,7 +9,6 @@ import { Switch } from 'simplycms/ui/switch';
 import CustomerBanDialog from './CustomerBanDialog';
 import CustomerDeleteDialog from './CustomerDeleteDialog';
 import { useCustomerAccess } from './useCustomerAccess';
-import { useFormatDate } from '../../../lib/useFormatDate';
 
 /** Доступ: роль адміна, блокування й видалення акаунта. */
 export default function CustomerAccessCard({

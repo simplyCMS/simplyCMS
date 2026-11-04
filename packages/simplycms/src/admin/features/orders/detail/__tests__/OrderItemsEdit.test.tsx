@@ -15,7 +15,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   listOrderItems,
   listOrders,
@@ -67,7 +70,7 @@ const wrap = ({ children }: { children: ReactNode }) => (
     </EngineProvider>
   </QueryClientProvider>
 );
-const money = (n: number) => formatPrice(n, ENGINE.config).replace(/\s/g, ' ');
+const money = (n: number) => formatPrice(n, PRICE_FORMAT).replace(/\s/g, ' ');
 const at = new Date(Date.UTC(2026, 9, 1, 10));
 const qty = (n: number) =>
   screen.findByLabelText(`${t('common.quantity')}: Товар ${n}`);

@@ -3,7 +3,8 @@
 // Контракт: транслятор створюється per-request/per-render від мови інтерфейсу.
 // Глобального mutable-стану (`setLocale`) немає навмисно — SSR-safety.
 
-export { createTranslator, languageOfConfigLocale } from './translator';
+export { createTranslator } from './translator';
+export { useFormatDate } from './format';
 export { loadUiCatalog, loadTranslator, useUiCatalogs } from './registry';
 export { interpolate, lookupMessage } from './lookup';
 export {

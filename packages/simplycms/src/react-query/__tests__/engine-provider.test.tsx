@@ -21,7 +21,6 @@ const mockEngine: EngineContext = {
     auth: () => '/auth',
   },
   config: {
-    locale: 'uk-UA',
     currency: 'UAH',
   },
 };

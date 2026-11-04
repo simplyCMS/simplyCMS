@@ -2,7 +2,10 @@ import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../products/edit/__tests__/test-engine-stub';
 import DashboardPage from '../DashboardPage';
 import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
@@ -32,7 +35,7 @@ export const summary = (over = {}) => ({
   ...over,
 });
 export const fmt = (cents: number) =>
-  formatPrice(cents / 100, ENGINE.config).replace(/\s/g, ' ');
+  formatPrice(cents / 100, PRICE_FORMAT).replace(/\s/g, ' ');
 
 export const renderPage = (
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),

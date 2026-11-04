@@ -3,7 +3,6 @@ import {
   getContentTools,
   getUiPack,
   hasLanguagePack,
-  languageOfConfigLocale,
   listLanguagePacks,
   loadTranslator,
   resolveUiLocale,
@@ -96,17 +95,5 @@ describe('транслятор мови інтерфейсу', () => {
     expect(
       (await loadTranslator(ui('uk'), ['base']))('cart.items', { count: 3 }),
     ).toBe('Товари (3)');
-  });
-});
-
-describe('languageOfConfigLocale (тимчасовий міст до config.locale з регіоном, М2)', () => {
-  it('зрізає регіон і регістр: uk-UA → uk, EN → en', () => {
-    expect(languageOfConfigLocale('uk-UA')).toBe('uk');
-    expect(languageOfConfigLocale('en-US')).toBe('en');
-    expect(languageOfConfigLocale('EN')).toBe('en');
-  });
-
-  it('не прив’язується до наявності пакета: fr-FR → fr', () => {
-    expect(languageOfConfigLocale('fr-FR')).toBe('fr');
   });
 });

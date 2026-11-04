@@ -2,12 +2,11 @@
 // (findZone лишається у data-шарі — він робить IO; домен працює з готовими rates/zone).
 
 import type {
-  ConfigProvider,
   ShippingRate,
   ShippingCalculationContext,
   ShippingCalculationResult,
 } from 'simplycms/contracts';
-import { formatPrice } from './money';
+import { formatPrice, type PriceFormat } from './money';
 import { roundMoney } from './pricing';
 
 // Е6а-21: читачі знімка беруть парсер із наявного субшляху `simplycms/domain/shipping`.
@@ -177,14 +176,12 @@ export interface ShippingCostLabels {
  * Форматує вартість доставки для відображення.
  *
  * 🔴 `config` — обов'язковий (без дефолту), як і в `formatPrice`: це чиста
- * T1-функція без доступу до `useEngine()`, тож локаль/валюту зобов'язаний
- * передати кол-сайт (React-компонент бере їх з `useEngine().config`).
- * Дефолт на кшталт `{ locale: 'uk-UA', currency: 'UAH' }` тут був би тим самим
- * хардкодом, який цей модуль лагодить: магазин з іншою конфігурацією
- * (`simplycms.config.ts`) мовчки отримав би не свою валюту.
- * Раніше форматування йшло через `new Intl.NumberFormat('uk-UA', { style:
- * 'currency', currency: 'UAH', minimumFractionDigits: 0 })` — дефолти
- * `formatPrice` (0/2) відтворюють цей виклик побайтово (перевірено тестами).
+ * T1-функція без доступу до `useEngine()` й `useUiLocale()`, тож мову інтерфейсу й
+ * валюту зобов'язаний передати кол-сайт. Дефолт на кшталт `uk` + `UAH` тут був би тим
+ * самим хардкодом, який цей модуль лагодить: англомовний магазин мовчки отримав би
+ * українське форматування, а магазин з іншою валютою — не свою.
+ * Дефолти `formatPrice` (0/2) відтворюють колишній `Intl.NumberFormat(…, { style:
+ * 'currency', minimumFractionDigits: 0 })` побайтово (перевірено тестами).
  *
  * 🔴 `labels` теж обов'язкові: до 2026-08-09 функція повертала «За тарифами» і
  * «Безкоштовно» рядковими літералами, і саме через це англомовний магазин
@@ -193,7 +190,7 @@ export interface ShippingCostLabels {
  */
 export function formatShippingCost(
   cost: number | null,
-  config: Pick<ConfigProvider, 'locale' | 'currency'>,
+  config: PriceFormat,
   labels: ShippingCostLabels,
 ): string {
   if (cost === null || cost < 0) {

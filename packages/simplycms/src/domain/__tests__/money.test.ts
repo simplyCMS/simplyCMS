@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { ui } from '../../../test-harness/locale';
 import { formatPrice, isMoney, normalizeMoneyInput } from '../money';
 
-const UA = { locale: 'uk-UA', currency: 'UAH' };
+const UA = { locale: ui('uk'), currency: 'UAH' };
 
 describe('formatPrice', () => {
   /**
    * 🔴 ЦЕЙ ТЕСТ СТЕРЕЖЕ КОНКРЕТНИЙ БАГ, а не «форматування взагалі».
    *
-   * `new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH' })`
+   * `new Intl.NumberFormat('uk', { style: 'currency', currency: 'UAH' })`
    * бере символ валюти з CLDR-даних, вшитих у рушій, а вони РІЗНІ:
    *   Node 24 (SSR)        → "4 200 ₴"   (U+20B4)
    *   Chromium 149 (клієнт) → "4 200 грн" (кирилиця)
@@ -56,21 +57,21 @@ describe('formatPrice', () => {
   });
 
   it('невідома валюта показує свій ISO-код, а не зникає', () => {
-    expect(formatPrice(100, { locale: 'uk-UA', currency: 'PLN' })).toContain(
+    expect(formatPrice(100, { locale: ui('uk'), currency: 'PLN' })).toContain(
       'PLN',
     );
   });
 
   it('код валюти нечутливий до регістру', () => {
-    expect(formatPrice(100, { locale: 'uk-UA', currency: 'uah' })).toContain(
+    expect(formatPrice(100, { locale: ui('uk'), currency: 'uah' })).toContain(
       '₴',
     );
   });
 
   it('локаль впливає на групування розрядів', () => {
-    // en-US групує комою, uk-UA — нерозривним пробілом. Це та частина Intl,
+    // `en` групує комою, `uk` — нерозривним пробілом. Це та частина Intl,
     // що між рантаймами НЕ розходиться, тож її лишаємо рушію.
-    expect(formatPrice(4200, { locale: 'en-US', currency: 'USD' })).toBe(
+    expect(formatPrice(4200, { locale: ui('en'), currency: 'USD' })).toBe(
       '4,200 $',
     );
   });

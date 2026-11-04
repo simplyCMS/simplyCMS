@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { Loader2 } from 'lucide-react';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import type { AdminReviewRow } from 'simplycms/contracts/objects';
 import { StarRating } from 'simplycms/reviews-ui';
 import { Button } from 'simplycms/ui/button';
@@ -14,7 +14,6 @@ import {
   TableRow,
 } from 'simplycms/ui/table';
 import { adminPath } from '../../../lib/adminLinks';
-import { useFormatDate } from '../../../lib/useFormatDate';
 import ReviewAuthor from '../ReviewAuthor';
 import ReviewStatusBadge from '../ReviewStatusBadge';
 

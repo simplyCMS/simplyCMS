@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from 'simplycms/ui/alert-dialog';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useT, type MessageKey } from 'simplycms/i18n';
+import { useFormatDate, useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -79,20 +79,11 @@ export default function ProfileOrderDetailPage() {
     enabled: !!user && !!orderId,
   });
 
-  // Форматування ціни — через конфіг магазину (locale/currency), а не
-  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. simplycms/domain/money).
+  // Ціна й дата — за мовою інтерфейсу, валюта — з конфігу магазину; символ валюти не
+  // залежить від CLDR рушія (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('uk-UA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
+  const formatDate = useFormatDate('datetime');
 
   const canCancel = order?.status?.code === ORDER_STATUS_CODE.new;
 

@@ -37,7 +37,7 @@ export type AllowEntry = {
  */
 // Кількість кириличних рядків CLI `owner:invite` (див. `AllowEntry.strings`).
 const RUN_STRINGS = 11;
-const CLI_STRINGS = 3;
+const CLI_STRINGS = 2;
 
 export const ALLOWLIST: Record<string, AllowEntry> = {
   // Логи сервера: дивиться розробник у терміналі.
@@ -158,8 +158,8 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     strings: RUN_STRINGS,
   },
   'packages/simplycms/src/auth/owner-invite-cli/cli.ts': {
-    kind: ['throw', 'log-sink'],
-    reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+    kind: 'throw',
+    reason: 'вивід CLI owner:invite оператору (throw), не інтерфейс',
     strings: CLI_STRINGS,
   },
   'packages/simplycms/src/mail/log.ts': {

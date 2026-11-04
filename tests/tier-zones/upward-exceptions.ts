@@ -6,6 +6,9 @@
  * а не побічний ефект правки. Причина обов'язкова й непорожня. Модель — `doc-symbols-exist/data.ts`.
  */
 export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
+  // --- react-query (T2) ---
+  'react-query→i18n':
+    'useFormatPrice форматує за мовою інтерфейсу (useUiLocale), валюта — з useEngine; i18n про react-query не знає (М2а Task 6, §19.8)',
   // --- auth (T2) ---
   'auth→db':
     'єдиний канал до Postgres — withActor; без нього auth пішов би на голий пул',
