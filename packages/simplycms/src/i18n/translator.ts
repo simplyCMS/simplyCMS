@@ -1,7 +1,10 @@
 import { lookupMessage } from './lookup';
-import { getLanguagePack } from './packs';
-import type { UiLocale } from './ui-locale';
-import type { MessageKey, MessageParams, Translator } from './types';
+import type {
+  MessageKey,
+  MessageParams,
+  PartCatalog,
+  Translator,
+} from './types';
 
 // М2: зноситься разом із `config.locale` (мова магазину — з БД).
 /**
@@ -18,25 +21,18 @@ export function languageOfConfigLocale(tag: string): string {
 }
 
 /**
- * Створює транслятор під мову інтерфейсу.
+ * Створює транслятор над УЖЕ завантаженими частинами каталогу (завантаження — реєстр
+ * `loadUiCatalog`, тут чиста синхронна функція).
  *
- * Ланцюг (`lookupMessage`): каталог мови → каталог `fallback` → сам ключ (видимий
- * сигнал про пропущений переклад). `fallback` обов'язковий і НЕ має дефолту: це основна
- * мова магазину, яка не обов'язково українська, а тихий `uk` віддав би англомовному
- * магазину українські рядки.
+ * Ланцюг (`lookupMessage`): перший каталог, що має ключ → сам ключ (видимий сигнал про
+ * пропущений переклад). Каталоги ядра повні для кожної мови (англійські частини
+ * `satisfies Record<…Key, string>`), тож fallback-мови тут немає: вона потрібна лише
+ * каталогам теми й плагіна, які можуть бути неповними (`useThemeT`).
  *
- * Транслятор — замикання без модульного mutable-стану: жодного `setLocale`.
- * Тому SSR може тримати кілька трансляторів різних мов одночасно
- * (per-request), і вони не впливають один на одного.
+ * Транслятор — замикання без модульного mutable-стану: жодного `setLocale`. Тому SSR може
+ * тримати кілька трансляторів різних мов одночасно (per-request).
  */
-export function createTranslator(
-  locale: UiLocale,
-  fallback: UiLocale,
-): Translator {
-  const catalogs = [
-    getLanguagePack(locale)?.catalog,
-    getLanguagePack(fallback)?.catalog,
-  ];
+export function createTranslator(catalogs: readonly PartCatalog[]): Translator {
   return (key: MessageKey, params?: MessageParams): string =>
     lookupMessage(catalogs, key, params);
 }

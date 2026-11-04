@@ -14,22 +14,28 @@ export type AdminKey = keyof typeof ukAdmin;
 export type MailKey = keyof typeof ukMail;
 export type MessageKey = BaseKey | AdminKey | MailKey;
 
-/** Каталог перекладів: неповний за визначенням — решту добирає fallback-мова. */
-export type Catalog = Partial<Record<MessageKey, string>>;
+/**
+ * Завантажена частина каталогу. Тип значення Task 7 розширить до `string | PluralForms`;
+ * разом із ним зміниться й `lookupMessage`.
+ */
+export type PartCatalog = Readonly<Record<string, string>>;
 
 /**
- * Мовний пакет ядра: каталог інтерфейсу і (необов'язково) таблиця для адрес.
- * Мова без пакета не помилка: її адреси вимагають ручного вводу, а інтерфейс
- * іде фолбеком.
+ * Мовний пакет ядра. Вісь інтерфейсу (`ui`) і вісь контенту (`content`) — окремі частини
+ * (спека §19): мова може мати лише одну з них. `ui` — ЛІНИВІ лоадери частин каталогу, щоб
+ * початковий граф вітрини не тягнув текст адмінки й листів (І43); розбір лоадерів — лише
+ * через реєстр `loadUiCatalog`, який кешує проміс.
  */
 export interface LanguagePack {
   readonly code: string;
   readonly name: string;
-  readonly catalog: Catalog;
-  /** Транслітерація для slug; без неї нелатинський текст `slugify` не передасть. */
-  readonly slugify?: (text: string) => string;
-  /** Місце під токенізацію пошуку наступної хвилі — поки порожнє за типом. */
-  readonly tokenize?: never;
+  readonly ui: Record<UiCatalogPart, () => Promise<PartCatalog>>;
+  readonly content: {
+    /** Транслітерація для slug; без неї нелатинський текст `slugify` не передасть. */
+    readonly slugify?: (text: string) => string;
+    /** Місце під токенізацію пошуку наступної хвилі — поки порожнє за типом. */
+    readonly tokenize?: never;
+  };
 }
 
 /** Параметри підстановки у плейсхолдери `{name}`. */

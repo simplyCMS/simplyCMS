@@ -4,8 +4,14 @@
 // Глобального mutable-стану (`setLocale`) немає навмисно — SSR-safety.
 
 export { createTranslator, languageOfConfigLocale } from './translator';
+export {
+  loadUiCatalog,
+  loadTranslator,
+  peekTranslator,
+  useUiCatalogs,
+} from './registry';
 export { interpolate, lookupMessage } from './lookup';
-export { LANGUAGE_PACKS, getLanguagePack } from './packs';
+export { LANGUAGE_PACKS, getUiPack, getContentTools } from './packs';
 export {
   resolveUiLocale,
   resolveUiLocalePair,
@@ -21,8 +27,12 @@ export {
 } from './I18nProvider';
 export type {
   MessageKey,
+  BaseKey,
+  AdminKey,
+  MailKey,
+  UiCatalogPart,
+  PartCatalog,
   MessageParams,
-  Catalog,
   LanguagePack,
   Translator,
 } from './types';

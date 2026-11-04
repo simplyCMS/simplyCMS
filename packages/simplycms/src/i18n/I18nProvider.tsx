@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { createTranslator } from './translator';
 import type { UiLocale, UiLocalePair } from './ui-locale';
-import type { Translator } from './types';
+import type { PartCatalog, Translator } from './types';
 
 /** Значення контексту: транслятор + пара мов, що його породила. */
 interface I18nContextValue extends UiLocalePair {
@@ -19,7 +19,11 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * Мову контенту він НЕ несе (спека §19.2): її читає `useContentLocale`, а сюди мова
  * приходить уже з моста `resolveUiLocale`.
  *
- * Транслятор мемоїзується по парі мов і живе рівно стільки, скільки дерево рендера —
+ * Провайдер — чистий контекст (Д3): каталоги вантажить роут (`useUiCatalogs`), тести
+ * передають статичні. Тому вкладений провайдер (адмінка додає частину `admin`) просто
+ * подає ширший набір, не знаючи про реєстр.
+ *
+ * Транслятор мемоїзується по каталогах і живе рівно стільки, скільки дерево рендера —
  * жодного глобального стану, тож SSR кількох запитів безпечний. Пара лежить у тому
  * самому значенні контексту (не окремі провайдери): `useThemeT`/`usePluginT`
  * потребують її для ланцюжка fallback каталогів теми й плагіна.
@@ -30,11 +34,15 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({
   locale,
   fallback,
+  catalogs,
   children,
-}: UiLocalePair & { children: ReactNode }) {
+}: UiLocalePair & {
+  catalogs: readonly PartCatalog[];
+  children: ReactNode;
+}) {
   const value = useMemo<I18nContextValue>(
-    () => ({ t: createTranslator(locale, fallback), locale, fallback }),
-    [locale, fallback],
+    () => ({ t: createTranslator(catalogs), locale, fallback }),
+    [catalogs, locale, fallback],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

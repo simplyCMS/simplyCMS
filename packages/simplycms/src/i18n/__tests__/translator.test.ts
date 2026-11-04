@@ -1,56 +1,46 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ui } from '../../../test-harness/locale';
+import { describe, it, expect } from 'vitest';
 import { createTranslator } from '../translator';
+import { messages as ukBase } from '../catalogs/uk/base';
+import { messages as enBase } from '../catalogs/en/base';
+
+const uk = createTranslator([ukBase]);
+const en = createTranslator([enBase]);
 
 describe('createTranslator', () => {
   it('віддає українське повідомлення для локалі uk', () => {
-    expect(createTranslator(ui('uk'), ui('uk'))('cart.title')).toBe('Кошик');
+    expect(uk('cart.title')).toBe('Кошик');
   });
 
   it('віддає англійське повідомлення для локалі en', () => {
-    expect(createTranslator(ui('en'), ui('uk'))('cart.title')).toBe('Cart');
+    expect(en('cart.title')).toBe('Cart');
   });
 
   it('підставляє параметри у плейсхолдери {name}', () => {
-    expect(
-      createTranslator(ui('uk'), ui('uk'))('cart.items', { count: 5 }),
-    ).toBe('Товари (5)');
-    expect(
-      createTranslator(ui('en'), ui('uk'))('cart.items', { count: 5 }),
-    ).toBe('Items (5)');
+    expect(uk('cart.items', { count: 5 })).toBe('Товари (5)');
+    expect(en('cart.items', { count: 5 })).toBe('Items (5)');
   });
 
   it('повертає сам ключ, якщо повідомлення немає в жодному каталозі', () => {
-    const t = createTranslator(ui('uk'), ui('uk'));
+    const t = uk;
     // Ключ поза каталогом — рантайм-страховка на випадок розсинхрону типів.
     expect(t('missing.key' as Parameters<typeof t>[0])).toBe('missing.key');
   });
 });
 
-describe('createTranslator — fallback-мова', () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
+describe('createTranslator — порядок каталогів', () => {
+  it('перший каталог із ключем виграє, відсутній ключ добирає наступний', () => {
+    const t = createTranslator([
+      { 'cart.title': 'Перший' },
+      { 'cart.title': 'Другий', 'cart.empty.title': 'Лише в другому' },
+    ]);
 
-  it('бере українське повідомлення, якщо ключа немає в en-каталозі', async () => {
-    // Мокаємо en-каталог неповним — так перевіряємо сам механізм fallback,
-    // не псуючи реальні каталоги штучно неперекладеними ключами.
-    vi.doMock('../catalogs/en/base', () => ({
-      messages: { 'cart.title': 'Cart' },
-    }));
-    const { createTranslator: create } = await import('../translator');
-
-    const t = create(ui('en'), ui('uk'));
-    expect(t('cart.title')).toBe('Cart');
-    expect(t('cart.empty.title')).toBe('Кошик порожній');
+    expect(t('cart.title')).toBe('Перший');
+    expect(t('cart.empty.title')).toBe('Лише в другому');
   });
 });
 
 describe('createTranslator — конкурентність (без глобального стану)', () => {
   it('два транслятори з різними локалями не впливають один на одного', async () => {
-    const uk = createTranslator(ui('uk'), ui('uk'));
-    const en = createTranslator(ui('en'), ui('uk'));
-
     // Interleaved-виклики з поступкою мікрозадачі між ними: якби локаль жила
     // в модульному mutable-стані (setLocale), другий транслятор перебив би перший.
     const results: string[] = [];

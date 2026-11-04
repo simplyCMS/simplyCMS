@@ -3,6 +3,7 @@ import {
   ValidationError,
   type ValidationIssue,
 } from 'simplycms/contracts/domain-errors';
+import type { ContentLocale } from 'simplycms/contracts';
 import type { ActorDb } from 'simplycms/db';
 
 // Спільне для дочірніх колекцій агрегата (М1, Task 12): контекст команди, крок
@@ -12,7 +13,7 @@ import type { ActorDb } from 'simplycms/db';
 export interface ChildCtx {
   readonly db: ActorDb;
   readonly productId: string;
-  readonly primary: string;
+  readonly primary: ContentLocale;
   readonly locales: ReadonlySet<string>;
   /** Модифікації товару ПІСЛЯ команди: наявні + нові − видалені. */
   readonly modificationIds: ReadonlySet<string>;

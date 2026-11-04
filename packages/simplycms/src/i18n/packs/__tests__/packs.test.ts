@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   LANGUAGE_PACKS,
-  createTranslator,
-  getLanguagePack,
+  getContentTools,
+  getUiPack,
   languageOfConfigLocale,
+  loadTranslator,
   resolveUiLocale,
 } from 'simplycms/i18n';
 import { cl, ui } from '../../../../test-harness/locale';
@@ -11,52 +12,57 @@ import { cl, ui } from '../../../../test-harness/locale';
 describe('мовні пакети', () => {
   it('поставляються uk і en', () => {
     expect([...LANGUAGE_PACKS.keys()].sort()).toEqual(['en', 'uk']);
-    expect(getLanguagePack('uk')?.name).toBe('Українська');
-    expect(getLanguagePack('en')?.code).toBe('en');
+    expect(getUiPack(ui('uk')).name).toBe('Українська');
+    expect(getUiPack(ui('en')).code).toBe('en');
   });
 
-  it('невідомого пакета немає → null (мова без пакета — легальний випадок)', () => {
-    expect(getLanguagePack('pt')).toBeNull();
-    expect(getLanguagePack('')).toBeNull();
+  it('інструментів контенту для мови без пакета немає → null (легальний випадок)', () => {
+    expect(getContentTools(cl('pt'))).toBeNull();
+  });
+
+  it('інструменти контенту — за ТОЧНИМ кодом, без пошуку за базовою мовою', () => {
+    expect(getContentTools(cl('en-GB'))).toBeNull();
   });
 
   it('uk несе таблицю адрес КМУ-2010, en — ні', () => {
-    expect(getLanguagePack('uk')?.slugify?.('Згорани')).toBe('zghorany');
-    expect(getLanguagePack('en')?.slugify).toBeUndefined();
+    expect(getContentTools(cl('uk'))?.slugify?.('Згорани')).toBe('zghorany');
+    expect(getContentTools(cl('en'))?.slugify).toBeUndefined();
   });
 
   it('місце під пошук порожнє: tokenize не оголошено', () => {
-    expect(getLanguagePack('uk')).not.toHaveProperty('tokenize');
-    expect(getLanguagePack('en')).not.toHaveProperty('tokenize');
+    expect(getContentTools(cl('uk'))).not.toHaveProperty('tokenize');
+    expect(getContentTools(cl('en'))).not.toHaveProperty('tokenize');
   });
 
-  it('каталог пакета — той самий, що віддає транслятор', () => {
-    expect(getLanguagePack('uk')?.catalog['common.save']).toBe('Зберегти');
-    expect(getLanguagePack('en')?.catalog['common.save']).toBe('Save');
+  it('частина base пакета — той самий каталог, що віддає транслятор', async () => {
+    expect((await getUiPack(ui('uk')).ui.base())['common.save']).toBe(
+      'Зберегти',
+    );
+    expect((await getUiPack(ui('en')).ui.base())['common.save']).toBe('Save');
   });
 });
 
-describe('createTranslator(locale, fallback)', () => {
-  it('мова з пакетом — її рядок', () => {
-    expect(createTranslator(ui('en'), ui('uk'))('common.save')).toBe('Save');
-    expect(createTranslator(ui('uk'), ui('en'))('common.save')).toBe(
+describe('транслятор мови інтерфейсу', () => {
+  it('мова з пакета — її рядок', async () => {
+    expect((await loadTranslator(ui('en'), ['base']))('common.save')).toBe(
+      'Save',
+    );
+    expect((await loadTranslator(ui('uk'), ['base']))('common.save')).toBe(
       'Зберегти',
     );
   });
 
-  it('мова без пакета потрапляє на пакет основної мови через міст, а не через тихий uk', () => {
+  it('мова без пакета потрапляє на пакет основної мови через міст, а не через тихий uk', async () => {
     const pl = cl('pl');
-    expect(
-      createTranslator(resolveUiLocale(pl, cl('uk')), ui('uk'))('common.save'),
-    ).toBe('Зберегти');
-    expect(
-      createTranslator(resolveUiLocale(pl, cl('en')), ui('en'))('common.save'),
-    ).toBe('Save');
+    const viaUk = await loadTranslator(resolveUiLocale(pl, cl('uk')), ['base']);
+    const viaEn = await loadTranslator(resolveUiLocale(pl, cl('en')), ['base']);
+    expect(viaUk('common.save')).toBe('Зберегти');
+    expect(viaEn('common.save')).toBe('Save');
   });
 
-  it('підставляє параметри', () => {
+  it('підставляє параметри', async () => {
     expect(
-      createTranslator(ui('uk'), ui('uk'))('cart.items', { count: 3 }),
+      (await loadTranslator(ui('uk'), ['base']))('cart.items', { count: 3 }),
     ).toBe('Товари (3)');
   });
 });

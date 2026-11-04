@@ -7,7 +7,7 @@ import { createPathsForEntity } from 'simplycms/addressing';
 import { refreshProductTexts } from 'simplycms/catalog-projection';
 import { SLUG_FORMAT, slugify } from 'simplycms/domain/slugs';
 import { planTranslationWrite } from 'simplycms/domain/translations';
-import { getLanguagePack } from 'simplycms/i18n';
+import { getContentTools } from 'simplycms/i18n';
 import { products } from 'simplycms/schema';
 import {
   TRANSLATABLE,
@@ -93,7 +93,7 @@ export const productsCreate = defineOperation({
           params: { minimum: 1, origin: 'string' },
         },
       ]);
-    const baseSlug = data.path ?? slugify(name, getLanguagePack(primary));
+    const baseSlug = data.path ?? slugify(name, getContentTools(primary));
     if (!baseSlug) throw pathRequired();
     if (!SLUG_FORMAT.test(baseSlug))
       throw new ValidationError([{ path: ['path'], code: 'invalid_format' }]);
