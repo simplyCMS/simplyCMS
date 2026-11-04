@@ -21,9 +21,11 @@ import {
   makeOrder,
   reset,
   applyOutcome,
+  server,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
-import { NEW, CANCELLED, DONE } from './support';
+import { getCollection, orderItemsCollection } from 'simplycms/admin-data';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
+import { NEW, CANCELLED, DONE, makeItem } from './support';
 
 const { listOrderStatuses, changeOrderStatus, toastError, params } = vi.hoisted(
   () => ({
@@ -55,8 +57,14 @@ import OrderDetailPage from '../OrderDetailPage';
 import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 const t = ukT;
-const wrap = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={new QueryClient()}>
+const wrap = ({
+  children,
+  client = new QueryClient(),
+}: {
+  children: ReactNode;
+  client?: QueryClient;
+}) => (
+  <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
       <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
@@ -95,7 +103,7 @@ describe('OrderDetailPage', () => {
     expect(changeOrderStatus).not.toHaveBeenCalled();
   });
 
-  it('підтвердження → один виклик; write-back оновлює статус, ревалідація його зберігає', async () => {
+  it('підтвердження → один виклик; write-back оновлює статус без перезапиту', async () => {
     const order = makeOrder(1, at);
     reset([order]);
     changeOrderStatus.mockImplementation(async () =>
@@ -119,11 +127,35 @@ describe('OrderDetailPage', () => {
     await waitFor(async () =>
       expect((await select()).hasAttribute('disabled')).toBe(true),
     );
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    await awaitRevalidation(listOrders, before);
-    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(before + 1);
-    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    // Write-back без перезапиту (M1 TSDB-1 закрито).
+    await expectNoRefetch(listOrders, before);
+    // Результат запису тримається (його доніс write-back).
     expect((await select()).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('скасування: резерв позицій у кеші = серверному (сусідня таблиця перечитана)', async () => {
+    const order = makeOrder(1, at);
+    reset([order], [makeItem(1, { stockPointId: 'pp1', stockReserved: 2 })]);
+    // Як `releaseOrderStock`: сервер обнуляє резерв позицій, але у відповіді
+    // повертає лише рядок замовлення.
+    changeOrderStatus.mockImplementation(async () => {
+      server.items = server.items.map((i) => ({ ...i, stockReserved: 0 }));
+      return applyOutcome({ order: { ...order, statusId: CANCELLED.id } });
+    });
+    const qc = new QueryClient();
+    render(<OrderDetailPage />, {
+      wrapper: ({ children }) => wrap({ children, client: qc }),
+    });
+    const items = getCollection(qc, orderItemsCollection);
+    await waitFor(() => expect(items.get('i0001')?.stockReserved).toBe(2));
+    fireEvent.change(await select(), { target: { value: CANCELLED.id } });
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: t('admin.orders.cancelConfirm'),
+      }),
+    );
+    await waitFor(() => expect(items.get('i0001')?.stockReserved).toBe(0));
   });
 
   it('409 state → тост orderCancelledFinal, стан колекції незмінний', async () => {
