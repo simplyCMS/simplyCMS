@@ -269,14 +269,26 @@
   мовою: `entityKey(entity, locale)`, `AGGREGATE.<x>.keyFor(locale)`, `catalogKeys.sectionProducts(id,
   locale, q)`; `createReadCache.get(load, { variant })`. `/<основна>/x` і `/x/` віддають 301, префікс
   неопублікованої мови — 404. Лінт забороняє літерал `accept-language` у зоні вітрини.
+- **Мова магазину лише з пакета (М2, блок 1, §19.15, І46):** `LANGUAGE_PACKS` більше не експортується з
+  `simplycms/i18n` (реєстр закритий) — публічні `listLanguagePacks()`, `hasLanguagePack(code, parts?)`, типи
+  `LanguagePackInfo`, `UiPart`; `hasUiPack` знесено (його замінює `hasLanguagePack`). `LanguagePack.ui.admin`
+  необов'язкова. `languages.setStatus` → `published` без пакета з частинами `base` і `mail` відмовляє
+  `ValidationError` `{ path: ['status'], code: 'language_pack_missing' }` (мову без пакета можна лише тримати
+  чернеткою); код `language_pack_missing` додано до `VALIDATION_ISSUE_CODES`. Опублікована мова, пакет якої
+  зник, працює деградовано (інтерфейс основною мовою): сервер раз на процес і мову пише попередження, а
+  `simplycms doctor --online` звітує помилкою `language-packs`. Операцію `profiles.getUiLocale` (і serverFn
+  `getAdminUiLocale`) знесено: мову адмінки `beforeLoad` `/admin` бере разом із сесією — новий serverFn
+  `getAdminSession` у `simplycms/storefront-routes/server/auth`; `profiles.setUiLocale` лише оновлює наявний
+  профіль і приймає тільки пакети з частиною `admin`. `toUiLocale(value, parts?)` перевіряє частини пакета.
+  `readStoreFacts` повертає ще й `publishedLanguages`.
 
 - **Залежність магазину `nodemailer`:** peer ядра (точний пін) 10.1.0 → **10.3.1**. Магазин оновлює її сам
   (`pnpm add nodemailer@10.3.1`); doctor №14 звіряє версію з peer ядра.
 
 ### Додано
 
-- Мова інтерфейсу адмінки (І45): операції реєстру `profiles.getUiLocale` / `profiles.setUiLocale` (лише власний
-  профіль; невідомий код → 400, `null` скидає), селектор мови в шапці адмінки, `lang` на корені адмінки.
+- Мова інтерфейсу адмінки (І45): операція реєстру `profiles.setUiLocale` (лише власний
+  профіль; код пакета без частини `admin` → 400, `null` скидає; читання — разом із сесією, `getAdminSession`), селектор мови в шапці адмінки, `lang` на корені адмінки.
 - HTTP API операцій `/api/v1`: `POST /api/v1/<op>` (конверт майстра §3.3: `application/problem+json`, `If-Match` ↔
   `expectedVersion`, `Idempotency-Key`), `GET /api/v1/openapi.json` (OpenAPI 3.1 з реєстру; лише автентифікованому
   адміну; знімок ядра — `packages/simplycms/api/openapi.core.json`, регенерація `pnpm api:snapshot`).
