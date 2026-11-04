@@ -2,6 +2,7 @@
 // `checkedContentLocale`, а не приведення `as ContentLocale` (спека §19.2).
 import type { ContentLocale, LocaleSet } from 'simplycms/contracts';
 import { checkedContentLocale } from 'simplycms/domain/translations';
+import { resolveUiLocale, type UiLocale } from 'simplycms/i18n';
 
 /** Коротка назва конструктора для фікстур. */
 export const cl: (code: string) => ContentLocale = checkedContentLocale;
@@ -17,4 +18,12 @@ export function localeSet(
     published: published.map(cl),
     known: known.map(cl),
   };
+}
+
+/**
+ * Мова інтерфейсу в тесті: через міст `resolveUiLocale`, а не приведення `as UiLocale`
+ * (спека §19.2). Код без пакета й без пакета основної мови кидає — так само, як у продакшні.
+ */
+export function ui(code: string): UiLocale {
+  return resolveUiLocale(cl(code), cl(code));
 }

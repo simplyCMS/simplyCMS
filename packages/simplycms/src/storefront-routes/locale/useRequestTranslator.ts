@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useRouteContext, useRouterState } from '@tanstack/react-router';
-import { createTranslator } from 'simplycms/i18n';
+import { createTranslator, resolveUiLocalePair } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 import type { RouterContext } from 'simplycms/runtime';
 import { localeOfHref } from 'simplycms/domain';
@@ -19,8 +19,12 @@ export function useRequestTranslator(): Translator {
   // Контекст матчу, а не `router.options`: `beforeLoad` кореня міг дочитати
   // набір мов, а опції роутера бачать лише початковий.
   const { locales }: RouterContext = useRouteContext({ strict: false });
-  return useMemo(
-    () => createTranslator(localeOfHref(publicHref, locales), locales.primary),
-    [publicHref, locales],
-  );
+  return useMemo(() => {
+    // Екран помилки говорить мовою ІНТЕРФЕЙСУ: `/pl/x` без пакета pl — основною мовою.
+    const ui = resolveUiLocalePair(
+      localeOfHref(publicHref, locales),
+      locales.primary,
+    );
+    return createTranslator(ui.locale, ui.fallback);
+  }, [publicHref, locales]);
 }

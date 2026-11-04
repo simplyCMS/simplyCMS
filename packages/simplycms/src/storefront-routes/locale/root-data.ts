@@ -1,5 +1,6 @@
 import type { LocaleSet } from 'simplycms/contracts';
 import { NO_LOCALES, localeOfHref } from 'simplycms/domain';
+import { resolveUiLocalePair } from 'simplycms/i18n';
 import { loadLocaleSetLazily } from './context';
 import { getStorefrontRoot } from '../server/root';
 import type { StorefrontRootData } from '../head/head';
@@ -18,8 +19,9 @@ export async function resolveRouterLocales(
 
 /**
  * Дані кореня вітрини для лоадера `__root.tsx`: те, що віддає серверний
- * `getStorefrontRoot`, плюс мова сторінки й набір опублікованих мов (для
- * `<html lang>`, `window.__SCMS_LOCALES__` і майбутніх hreflang).
+ * `getStorefrontRoot`, плюс мова сторінки (контент), мова інтерфейсу з моста
+ * `resolveUiLocale` і набір опублікованих мов (для `<html lang>`,
+ * `window.__SCMS_LOCALES__` і майбутніх hreflang).
  *
  * Набір мов приходить з контексту роутера, а не з ALS: лоадер на клієнті не
  * має серверного контексту, а на сервері не повинен залежати від нього.
@@ -34,9 +36,13 @@ export async function loadStorefrontRoot(
         'host root route must call resolveRouterLocales in beforeLoad',
     );
   }
+  const locale = localeOfHref(publicHref, locales);
   return {
     ...(await getStorefrontRoot()),
-    locale: localeOfHref(publicHref, locales),
+    locale,
+    // Інтерфейс — окрема вісь (І41): мова без пакета (`pl`) не ламає тексти, а береться за
+    // основною. `<html lang>` і дані сторінки лишаються на `locale`.
+    ui: resolveUiLocalePair(locale, locales.primary),
     languages: { primary: locales.primary, published: locales.published },
   };
 }

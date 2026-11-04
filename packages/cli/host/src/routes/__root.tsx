@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
-  const { activeThemeName, storeProfile, locale, languages } =
+  const { activeThemeName, storeProfile, locale, ui, languages } =
     Route.useLoaderData();
   const { queryClient } = Route.useRouteContext();
 
@@ -101,7 +101,7 @@ function RootComponent() {
       </head>
       <body className="font-sans antialiased">
         {/* I18nProvider — над усіма групами роутів (storefront, auth, protected) */}
-        <I18nProvider locale={locale} fallback={languages.primary}>
+        <I18nProvider locale={ui.locale} fallback={ui.fallback}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

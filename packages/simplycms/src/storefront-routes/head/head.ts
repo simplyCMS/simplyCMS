@@ -2,7 +2,7 @@ import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { ContentLocale } from 'simplycms/contracts';
 import { createTranslator } from 'simplycms/i18n';
-import type { Translator } from 'simplycms/i18n';
+import type { Translator, UiLocalePair } from 'simplycms/i18n';
 
 /**
  * Хелпери `head()` роутів вітрини (Е6б-10).
@@ -23,6 +23,8 @@ export type StorefrontRootData = {
   siteUrl: string;
   /** Мова сторінки (з префікса URL): `<html lang>` і тексти `head()`. */
   locale: ContentLocale;
+  /** Мова інтерфейсу з моста `resolveUiLocale`: тексти `head()` і `I18nProvider` кореня. */
+  ui: UiLocalePair;
   /** Мови магазину в HTML: основна — кінцева ланка fallback, опубліковані — для hreflang. */
   languages: { primary: string; published: readonly string[] };
 };
@@ -45,6 +47,9 @@ function isRootData(x: unknown): x is StorefrontRootData {
     typeof x.activeThemeName === 'string' &&
     typeof x.siteUrl === 'string' &&
     typeof x.locale === 'string' &&
+    isRecord(x.ui) &&
+    typeof x.ui.locale === 'string' &&
+    typeof x.ui.fallback === 'string' &&
     isRecord(x.languages) &&
     typeof x.languages.primary === 'string' &&
     Array.isArray(x.languages.published) &&
@@ -84,15 +89,15 @@ function toMeta(title: string, description: string | null): HeadMeta[] {
 }
 
 /**
- * `head()` сторінки вітрини: заголовок через i18n локалі магазину + назва
+ * `head()` сторінки вітрини: заголовок через i18n мови інтерфейсу сторінки + назва
  * магазину; опис сторінки, а за його відсутності — опис профілю.
  */
 export function storefrontHead(
   matches: ReadonlyArray<HeadMatch>,
   page: (t: Translator) => PageHead,
 ): { meta: HeadMeta[] } {
-  const { storeProfile, locale, languages } = readStorefrontRoot(matches);
-  const own = page(createTranslator(locale, languages.primary));
+  const { storeProfile, ui } = readStorefrontRoot(matches);
+  const own = page(createTranslator(ui.locale, ui.fallback));
   return {
     meta: toMeta(
       composeTitle(own.title, storeProfile.name),
