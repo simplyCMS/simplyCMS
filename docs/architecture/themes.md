@@ -78,7 +78,7 @@ ThemeModule = {
   tokens: DesignTokens;        // значення НАЯВНИХ semantic-змінних shadcn
   components: ThemeComponents; // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
   settings?: Record<string, ThemeSettingDefinition>;
-  messages?: { uk: {...}, en: {...} };   // опційний каталог, контракт v2.1
+  messages?: { uk: {...}, en: {...} };   // опційний каталог, контракт v2.1; значення — рядок або PluralForms
   fonts?: ReadonlyArray<{ stylesheet: string }>;  // https:-URL, контракт v2.2
 }
 ```
@@ -601,7 +601,9 @@ Playwright): гейт мусить бути доступним і магазин
      пакета, `manifest.name` = хвіст теки, `displayName` непорожній.
      Дискаверить ЛИШЕ `packages/simplycms-theme-*` — `themes/default` під
      parity НЕ підпадає свідомо (private, власна версія, еталон fallback).
-   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en,
+   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en; ключ
+     множини (`PluralForms`, `other` обов'язкова) має рівно категорії
+     `Intl.PluralRules` своєї мови, вид значення в мовах збігається,
      дискаверить ОБИДВА корені (`themes/<name>/messages.ts` і
      `packages/simplycms-theme-*/src/messages.ts`).
    - `tests/i18n-coverage` `SCANNED_ROOTS` — теми дискаверяться з диска

@@ -48,11 +48,13 @@ const { locale, ui } = Route.useLoaderData();
 </html>;
 
 // сторінка: packages/simplycms/src/storefront-routes/pages/Cart.tsx
-import { useT } from 'simplycms/i18n';
+import { plural, useT } from 'simplycms/i18n';
 
 const t = useT();
 <h1>{t('cart.title')}</h1>;
-<span>{t('cart.items', { count: items.length })}</span>;
+<span>{t('cart.itemsTitle', { count: items.length })}</span>;
+// множина: значення ключа — PluralForms, форму вибирає Intl.PluralRules мови інтерфейсу
+<span>{plural(t, 'cart.items', items.length)}</span>;
 ```
 
 ## 🔴 Глобального `setLocale` (замінено на `createTranslator` для кожного запиту) немає навмисно

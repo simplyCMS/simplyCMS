@@ -297,6 +297,21 @@
 - **Знесено serverFn `isAdmin`** (`simplycms/storefront-routes/server/auth`) і функцію `checkIsAdmin`
   (`simplycms/storefront/loaders`): без викликачів після `getAdminSession`. Заміна: `getAdminSession().isAdmin` /
   `getUser().isAdmin` у роутах і `isAdminRequest(headers)` з `simplycms/auth` у server-route handler-ах.
+- **Множина на `Intl.PluralRules` (М2, блок 1):** значення ключа каталогу — `string | PluralForms`
+  (`{ one?, two?, few?, many?, zero?, other }`; `other` обов'язкова), форму вибирає нова `plural(t, key, count,
+  params?)` з `simplycms/i18n`. Це зміна ФОРМИ каталогів тем і плагінів: `ThemeMessages` і `PluginMessages` тепер
+  `Record<locale, Record<key, string | PluralForms>>`, `validateThemeModule`/`validatePluginModule` приймають форми,
+  а парність каталогів вимагає форми РІВНО за `Intl.PluralRules(мова)`. Транслятори повертають `PluralTranslator`
+  (функція + `locale` + `forms`): `createTranslator(catalogs, locale: UiLocale)` тепер приймає мову інтерфейсу
+  другим аргументом, `useThemeT`/`usePluginT` повертають `PluralTranslator`. Знесено суфіксні ключі й ручні `pluralItemsKey`/
+  `pluralReviewsKey`: `cart.itemsOne/Few/Many` → `cart.items`, `reviews.countOne/Few/Many` → `reviews.count`,
+  `profile.usedInOrders.one/.many` → `profile.usedInOrders` (значення — форми з `{count}`); колишній заголовок
+  `cart.items` («Товари ({count})») перейменовано на `cart.itemsTitle`, бо ім'я зайняла множина.
+  Нові публічні експорти `simplycms/i18n`: `plural`, `createLookupTranslator` і `CatalogLink` (ланка ланцюга
+  каталогів: каталог + його мова, щоб форми з fallback-каталогу множились за правилами ЙОГО мови),
+  `isCatalogValue`, типи `PluralForms`, `CatalogValue`, `PluralKey`, `PluralKeyOf`, `StringKeyOf`,
+  `PluralTranslator`, `FoundForms`. `MessageKey` лишається ЄДИНИМ іменем рядкових ключів (за спекою §19.8),
+  але тепер це лише ключі зі значенням-рядком; ключі множини — `PluralKey`.
 
 - **Залежність магазину `nodemailer`:** peer ядра (точний пін) 10.1.0 → **10.3.1**. Магазин оновлює її сам
   (`pnpm add nodemailer@10.3.1`); doctor №14 звіряє версію з peer ядра.
