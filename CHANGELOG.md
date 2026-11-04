@@ -40,6 +40,18 @@
 
 ### 🔴 BREAKING для магазинів
 
+- **Листи й форматування за мовою інтерфейсу (М2, блок 1, §19.8–§19.9):** поле `locale` знесено з `ConfigProvider`,
+  `SimplyCmsConfig` (`simplycms.config.ts`) і host-`appConfig`; змінну збірки `VITE_LOCALE` знесено (з `.env.example`,
+  `vite-env.d.ts`, `ENVIRONMENT.md`) — мова вітрини з URL, мова інтерфейсу з пакетів і профілю, основна мова з `languages`.
+  Знесено `declareStoreLocale`/`getStoreLocale` (і виклик у `src/server.ts`), тимчасові `getStoreTranslator` і
+  `STORE_UI_FALLBACK` з `simplycms/site`, `languageOfConfigLocale` з `simplycms/i18n`, `resolveInviteLocale` з
+  `simplycms/auth/owner-invite-cli`; `runOwnerInvite` більше не бере `locale` (основна мова — з БД або `primary`).
+  `formatPrice(value, config)` і `formatShippingCost(cost, config, labels)` беруть `{ locale: UiLocale; currency }` (тип `PriceFormat`);
+  `useFormatPrice` форматує за `useUiLocale()`. `useFormatDate` переїхав з `admin/lib` у `simplycms/i18n` (+ стиль `datetime`);
+  `OrderMailMoney.locale` — `UiLocale`; `OrderMailContext` несе `text: TextLocale` замість `locale`. `UiLocale` тепер
+  оголошено в `simplycms/contracts` (з `simplycms/i18n` лишається реекспорт типу). Лист мовою одержувача:
+  `resolveMailUiLocale`/`loadMailTranslator` у `simplycms/mail` — покупцю мовою замовлення, власнику й запрошенню основною,
+  користувачу `profiles.ui_locale`. Магазин без `locale` у `simplycms.config.ts` збирається; рядок `locale` у конфізі треба видалити.
 - **Вісь мови контенту (М2, блок 1):** `LocaleSet` більше не експортується з `simplycms/i18n` — тепер це тип
   `simplycms/contracts` (разом із брендованим `ContentLocale`; конструктор — `checkedContentLocale` у
   `simplycms/domain/translations`). Поля `LocaleSet`/`TextLocale`, `entityKey(entity, locale)` і
