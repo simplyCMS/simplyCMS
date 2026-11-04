@@ -8,7 +8,8 @@
  *   за `gcTime` живого запиту (5 с, `@tanstack/db` collection-config-builder) —
  *   після інвалідації його ремаунт приходить із сервера. `utils.refetch()`
  *   цього не робить: перезапитує лише живий зріз картки, а ремаунт списку бере
- *   застарілий кеш (виміряно 2026-11-04, мутацією);
+ *   застарілий кеш (виміряно 2026-11-04, мутацією). Спливання `gcTime` —
+ *   фейковими таймерами, без реального очікування;
  * - живий зріз перечитується одразу.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -32,8 +33,24 @@ import { createMutableServer, type Payload } from './support/mutable-server';
 afterEach(cleanup);
 
 type Row = { id: string; name: string; order: number };
-/** Дефолтний `gcTime` живого запиту — 5 с; чекаємо з запасом. */
+/** Дефолтний `gcTime` живого запиту — 5 с (`collection-config-builder.ts`). */
 const LIVE_QUERY_GC_MS = 5000;
+
+/**
+ * Спливає `gcTime` щойно розмонтованого живого запиту без реального очікування:
+ * `CleanupQueue` TanStack DB міряє час `performance.now()` і чекає `setTimeout`,
+ * тож фейкові таймери лише на цей відрізок (waitFor з ними зависає).
+ */
+async function expireLiveQueryGc() {
+  vi.useFakeTimers({
+    toFake: ['setTimeout', 'clearTimeout', 'performance'],
+  });
+  try {
+    await act(() => vi.advanceTimersByTimeAsync(LIVE_QUERY_GC_MS + 500));
+  } finally {
+    vi.useRealTimers();
+  }
+}
 
 function setup() {
   const server = createMutableServer<Row>(
@@ -90,37 +107,26 @@ function setup() {
 }
 
 describe('invalidateCollection', () => {
-  it(
-    'список, зібраний під відкритою карткою, після інвалідації приходить із сервера',
-    { timeout: 20_000 },
-    async () => {
-      const { server, def, qc, wrapper, useList, useCard } = setup();
-      const list = renderHook(useList, { wrapper });
-      await waitFor(() => expect(list.result.current.data).toHaveLength(2));
-      list.unmount();
-      // Повільний свідомо: справжній `gcTime` живого запиту (опції в
-      // `useLiveInfiniteQuery` немає) — лише після нього зріз списку лишається
-      // в кеші QueryClient без спостерігача.
-      await act(
-        () => new Promise((r) => setTimeout(r, LIVE_QUERY_GC_MS + 500)),
-      );
-      const card = renderHook(useCard('r3'), { wrapper });
-      await waitFor(() =>
-        expect(card.result.current.data?.name).toBe('Рядок 3'),
-      );
-      // Чужа операція (напр. `products.setPath` піднімає version) змінила
-      // рядок списку на сервері, відповідь його не несе.
-      server.upsert({ id: 'r0', name: 'Змінено', order: 0 });
-      await act(() => invalidateCollection(qc, def));
-      // Список повертається, поки живий запит картки ще тримає колекцію
-      // (його `gcTime` 5 с після навігації): без підписника колекція
-      // перечитала б усе сама, і тест не розрізняв би механізми.
-      const again = renderHook(useList, { wrapper });
-      await waitFor(() =>
-        expect(again.result.current.data[0]?.name).toBe('Змінено'),
-      );
-    },
-  );
+  it('список, зібраний під відкритою карткою, після інвалідації приходить із сервера', async () => {
+    const { server, def, qc, wrapper, useList, useCard } = setup();
+    const list = renderHook(useList, { wrapper });
+    await waitFor(() => expect(list.result.current.data).toHaveLength(2));
+    list.unmount();
+    await expireLiveQueryGc();
+    const card = renderHook(useCard('r3'), { wrapper });
+    await waitFor(() => expect(card.result.current.data?.name).toBe('Рядок 3'));
+    // Чужа операція (напр. `products.setPath` піднімає version) змінила
+    // рядок списку на сервері, відповідь його не несе.
+    server.upsert({ id: 'r0', name: 'Змінено', order: 0 });
+    await act(() => invalidateCollection(qc, def));
+    // Список повертається, поки живий запит картки ще тримає колекцію
+    // (його `gcTime` 5 с після навігації): без підписника колекція
+    // перечитала б усе сама, і тест не розрізняв би механізми.
+    const again = renderHook(useList, { wrapper });
+    await waitFor(() =>
+      expect(again.result.current.data[0]?.name).toBe('Змінено'),
+    );
+  });
 
   it('живий зріз перечитується одразу', async () => {
     const { server, def, qc, wrapper, useCard } = setup();

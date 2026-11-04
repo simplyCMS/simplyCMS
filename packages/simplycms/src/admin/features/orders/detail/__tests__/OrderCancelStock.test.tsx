@@ -8,9 +8,11 @@
  * Рівень — хуки `useStock` + `useChangeOrderStatus` на справжніх колекціях і
  * спільному QueryClient з `staleTime` 5 хв (як `src/router.tsx`): розмітка
  * діалогу тут нічого не додає, а різницю механізмів дає лише тривалість життя
- * зрізу. Зріз залишків розмонтовано довше за `gcTime` живого запиту (5 с),
- * поки колекцію тримає інша підписка, — тоді `utils.refetch()` його не бачить,
- * а `invalidateCollection` перечитує.
+ * зрізу. Зріз залишків розмонтовано, поки колекцію тримає інша підписка, —
+ * без `invalidateCollection` у `useChangeOrderStatus` ремаунт бере застарілий
+ * кеш (мутація: прибрати виклик → кількість 5 замість 8). Чим `invalidateCollection`
+ * відрізняється від `utils.refetch()` — тест хелпера (`invalidate-collection`),
+ * тут це не повторюється: реальний `gcTime` не чекаємо.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
@@ -61,9 +63,6 @@ import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 import { useStock } from '../../../products/stock/useStock';
 import { useChangeOrderStatus } from '../useChangeOrderStatus';
 
-/** Дефолтний `gcTime` живого запиту — 5 с; чекаємо з запасом. */
-const LIVE_QUERY_GC_MS = 5000;
-
 type StockRow = {
   id: string;
   productId: string;
@@ -83,84 +82,74 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
 describe('скасування замовлення → діалог залишків', () => {
-  it(
-    'після скасування залишки показують і надсилають серверну кількість',
-    { timeout: 30_000 },
-    async () => {
-      const server = createMutableServer<StockRow>([
-        row('s1', 'p1', 5),
-        row('s2', 'other', 1),
-      ]);
-      listStock.mockImplementation(({ data }: { data: Payload }) =>
-        server.list({ data }),
-      );
-      const order = makeOrder(1, new Date(Date.UTC(2026, 9, 1, 10)));
-      reset([order]);
-      // Сервер повертає резерв на склад: рядок залишку змінено поза відповіддю.
-      changeOrderStatus.mockImplementation(async () => {
-        server.upsert(row('s1', 'p1', 8));
-        return applyOutcome({ order: { ...order, statusId: 's-canc' } });
-      });
-      saveStock.mockResolvedValue({ count: 1, stockStatus: 'in_stock' });
+  it('після скасування залишки показують і надсилають серверну кількість', async () => {
+    const server = createMutableServer<StockRow>([
+      row('s1', 'p1', 5),
+      row('s2', 'other', 1),
+    ]);
+    listStock.mockImplementation(({ data }: { data: Payload }) =>
+      server.list({ data }),
+    );
+    const order = makeOrder(1, new Date(Date.UTC(2026, 9, 1, 10)));
+    reset([order]);
+    // Сервер повертає резерв на склад: рядок залишку змінено поза відповіддю.
+    changeOrderStatus.mockImplementation(async () => {
+      server.upsert(row('s1', 'p1', 8));
+      return applyOutcome({ order: { ...order, statusId: 's-canc' } });
+    });
+    saveStock.mockResolvedValue({ count: 1, stockStatus: 'in_stock' });
 
-      const qc = new QueryClient({
-        defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: false } },
-      });
-      const wrapper = ({ children }: { children: ReactNode }) => (
-        <QueryClientProvider client={qc}>
-          <TestI18nProvider>{children}</TestI18nProvider>
-        </QueryClientProvider>
-      );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: false } },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>
+        <TestI18nProvider>{children}</TestI18nProvider>
+      </QueryClientProvider>
+    );
 
-      // Підписка на ІНШИЙ зріз тримає колекцію залишків живою (як відкрита
-      // картка товару): без неї колекція перечитала б усе сама.
-      renderHook(
-        () => {
-          const stock = useCollection(stockCollection);
-          return useLiveQuery((q) =>
-            q.from({ s: stock }).where(({ s }) => eq(s.productId, 'other')),
-          );
-        },
-        { wrapper },
-      );
-      // Скасування живе на сторінці замовлення; колекція замовлень мусить бути
-      // завантажена, щоб write-back відповіді мав куди писати.
-      const cancel = renderHook(
-        () => {
-          const orders = useCollection(ordersCollection);
-          useLiveQuery((q) => q.from({ o: orders }));
-          return useChangeOrderStatus();
-        },
-        { wrapper },
-      );
+    // Підписка на ІНШИЙ зріз тримає колекцію залишків живою (як відкрита
+    // картка товару): без неї колекція перечитала б усе сама.
+    renderHook(
+      () => {
+        const stock = useCollection(stockCollection);
+        return useLiveQuery((q) =>
+          q.from({ s: stock }).where(({ s }) => eq(s.productId, 'other')),
+        );
+      },
+      { wrapper },
+    );
+    // Скасування живе на сторінці замовлення; колекція замовлень мусить бути
+    // завантажена, щоб write-back відповіді мав куди писати.
+    const cancel = renderHook(
+      () => {
+        const orders = useCollection(ordersCollection);
+        useLiveQuery((q) => q.from({ o: orders }));
+        return useChangeOrderStatus();
+      },
+      { wrapper },
+    );
 
-      const first = renderHook(() => useStock('p1', null), { wrapper });
-      await waitFor(() =>
-        expect(first.result.current.rows[0]?.quantity).toBe(5),
-      );
-      first.unmount();
-      await act(
-        () => new Promise((r) => setTimeout(r, LIVE_QUERY_GC_MS + 500)),
-      );
+    const first = renderHook(() => useStock('p1', null), { wrapper });
+    await waitFor(() => expect(first.result.current.rows[0]?.quantity).toBe(5));
+    first.unmount();
 
-      await act(() => cancel.result.current(order.id, 's-canc'));
+    await act(() => cancel.result.current(order.id, 's-canc'));
 
-      const reopened = renderHook(() => useStock('p1', null), { wrapper });
-      await waitFor(
-        () => expect(reopened.result.current.rows[0]?.quantity).toBe(8),
-        { timeout: 2000 },
-      );
-      // «Зберегти» діалогу шле кількості з цього зрізу.
-      await act(() =>
-        reopened.result.current.save({
-          pp1: String(reopened.result.current.rows[0]?.quantity),
-        }),
-      );
-      expect(saveStock).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          quantities: [{ pickupPointId: 'pp1', quantity: 8 }],
-        }),
-      });
-    },
-  );
+    const reopened = renderHook(() => useStock('p1', null), { wrapper });
+    await waitFor(() =>
+      expect(reopened.result.current.rows[0]?.quantity).toBe(8),
+    );
+    // «Зберегти» діалогу шле кількості з цього зрізу.
+    await act(() =>
+      reopened.result.current.save({
+        pp1: String(reopened.result.current.rows[0]?.quantity),
+      }),
+    );
+    expect(saveStock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        quantities: [{ pickupPointId: 'pp1', quantity: 8 }],
+      }),
+    });
+  });
 });
