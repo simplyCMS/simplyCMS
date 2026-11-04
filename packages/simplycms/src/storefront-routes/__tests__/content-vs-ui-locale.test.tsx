@@ -11,7 +11,8 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { I18nProvider } from 'simplycms/i18n';
+import { I18nProvider, useUiLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { CartProvider } from 'simplycms/react-query';
 import type { RouterContext } from 'simplycms/runtime';
 import type { ProductDetailProduct } from '../pages/product-detail/types';
@@ -108,6 +109,11 @@ const PL_PRODUCT = {
   },
 } as unknown as ProductDetailProduct;
 
+/** Обидві осі поруч у розмітці: хуки справжні, роутер справжній. */
+function AxesProbe() {
+  return <i data-content={useContentLocale()} data-ui={useUiLocale()} />;
+}
+
 /** SSR сторінки за публічною адресою — той самий каркас, що й у `__root.tsx` host-а. */
 async function ssr(url: string): Promise<string> {
   const rewriteState = { current: SET.primary };
@@ -155,7 +161,12 @@ async function ssr(url: string): Promise<string> {
       const { product } = entity.useLoaderData() as Awaited<
         ReturnType<typeof loadEntityPage>
       >;
-      return <ProductDetailPage product={product} path={product.page.path} />;
+      return (
+        <>
+          <AxesProbe />
+          <ProductDetailPage product={product} path={product.page.path} />
+        </>
+      );
     },
   });
   const router = createRouter({
@@ -177,5 +188,8 @@ describe('мова контенту ≠ мова інтерфейсу (І41)', (
     // Рядок інтерфейсу — з каталогу uk (основна мова), а не pl: пакета pl немає.
     expect(html).toContain(ukT('product.addToCart'));
     expect(html).toContain('<html lang="pl"');
+    // Хуки різних осей на одній сторінці: контент — pl, інтерфейс — uk.
+    expect(html).toContain('data-content="pl"');
+    expect(html).toContain('data-ui="uk"');
   });
 });
