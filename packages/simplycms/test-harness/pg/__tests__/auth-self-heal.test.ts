@@ -84,4 +84,29 @@ describe('Better Auth: провізія при вході', () => {
     );
     expect(roles.map((r) => r.role)).toEqual(['admin']);
   });
+
+  // Профіль уже є: повторний insert мусить не падати (onConflictDoNothing), інакше роль не
+  // добудується — а хук ковтає помилку, тож без цього кейсу збій лишився б непоміченим.
+  it('є профіль, немає ролей → після входу роль user, профіль не змінився', async () => {
+    const id = await signUp('profile-only@example.test');
+    await q(`delete from public.user_roles where user_id = $1`, [id]);
+    await q(
+      `update public.profiles set first_name = 'Власне' where user_id = $1`,
+      [id],
+    );
+    const before = await q(`select * from public.profiles where user_id = $1`, [
+      id,
+    ]);
+
+    await signIn('profile-only@example.test');
+
+    expect(
+      await q(`select * from public.profiles where user_id = $1`, [id]),
+    ).toEqual(before);
+    const roles = await q(
+      `select role from public.user_roles where user_id = $1`,
+      [id],
+    );
+    expect(roles.map((r) => r.role)).toEqual(['user']);
+  });
 });

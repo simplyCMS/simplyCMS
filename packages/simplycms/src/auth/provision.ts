@@ -39,6 +39,8 @@ async function writeProvision(
     .onConflictDoNothing();
 
   // Роль — лише якщо немає ЖОДНОЇ: адмін ніколи не отримує другу роль `user`.
+  // Перевірку й вставку не захищено замком від гонки з `grantAdminRole`: найгірший наслідок —
+  // стан `[admin, user]`, той самий, що на штатному шляху «покупець → owner-invite». Свідомо.
   const [anyRole] = await db
     .select({ id: userRoles.id })
     .from(userRoles)
