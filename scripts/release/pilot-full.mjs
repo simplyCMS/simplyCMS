@@ -7,7 +7,7 @@
  * піднімає харнес (`pnpm harness:up`, ідемпотентно: Postgres, Garage, Mailpit), накочує канон + демо-сід на СВІЖУ БД
  * (`db:demo` дропає й створює її наново) і ганяє `pnpm pilot` з цим DSN. Gate B не скорочується.
  *
- * Харнес після прогону не гаситься: `harness:up` ідемпотентний, а контейнер
+ * БД прогону (`release_pilot_<pid>_<суфікс>`) дропається у `finally`. Харнес після прогону не гаситься: `harness:up` ідемпотентний, а контейнер
  * (`simplycms-harness-pg`) потрібен і `test:schema`; прибрати — `pnpm harness:down`.
  */
 import { execSync } from 'node:child_process';
@@ -15,9 +15,12 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { join } from 'node:path';
+import { dropDatabaseQuietly, uniqueDbName } from '../unique-db-name.mjs';
 
 const ROOT = join(import.meta.dirname, '../..');
-const DB_NAME = 'release_pilot';
+// 🔴 Унікальна БД на прогін: `db:demo` дропає БД із тим самим імʼям, тож два
+// паралельні прогони (або pilot поруч із live:smoke) скидали б її один одному.
+const DB_NAME = uniqueDbName('release_pilot');
 const run = (cmd, env = {}) =>
   execSync(cmd, {
     cwd: ROOT,
@@ -49,15 +52,20 @@ const missing = needed.filter((k) => !harness[k]);
 if (missing.length > 0)
   throw new Error(`У .env.harness немає ключів: ${missing.join(', ')}`);
 
-run(`pnpm db:demo --name ${DB_NAME}`);
-const databaseUrl = new URL(harnessUrl);
-databaseUrl.pathname = `/${DB_NAME}`;
-run(`node scripts/pilot-pack/apply-probe.mjs ${databaseUrl.toString()}`);
-run('pnpm pilot', {
-  PILOT_DATABASE_URL: databaseUrl.toString(),
-  PILOT_BETTER_AUTH_SECRET: randomBytes(24).toString('hex'),
-  ...Object.fromEntries(S3.map((k) => [`PILOT_S3_${k}`, harness[`S3_${k}`]])),
-  PILOT_SMTP_URL: harness.HARNESS_SMTP_URL,
-  PILOT_MAIL_FROM: 'pilot@simplycms.test',
-  PILOT_MAILPIT_URL: harness.HARNESS_MAILPIT_URL,
-});
+try {
+  run(`pnpm db:demo --name ${DB_NAME}`);
+  const databaseUrl = new URL(harnessUrl);
+  databaseUrl.pathname = `/${DB_NAME}`;
+  run(`node scripts/pilot-pack/apply-probe.mjs ${databaseUrl.toString()}`);
+  run('pnpm pilot', {
+    PILOT_DATABASE_URL: databaseUrl.toString(),
+    PILOT_BETTER_AUTH_SECRET: randomBytes(24).toString('hex'),
+    ...Object.fromEntries(S3.map((k) => [`PILOT_S3_${k}`, harness[`S3_${k}`]])),
+    PILOT_SMTP_URL: harness.HARNESS_SMTP_URL,
+    PILOT_MAIL_FROM: 'pilot@simplycms.test',
+    PILOT_MAILPIT_URL: harness.HARNESS_MAILPIT_URL,
+  });
+} finally {
+  // БД прогону не лишається на кластері ні після успіху, ні після падіння.
+  await dropDatabaseQuietly(harnessUrl, DB_NAME);
+}

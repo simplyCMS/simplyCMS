@@ -64,6 +64,7 @@ import {
 } from './live-smoke/mail-steps.mjs';
 import { signUp } from './live-smoke/register.mjs';
 import { withClientIps } from './live-smoke/client-ip.mjs';
+import { dropDatabaseQuietly, uniqueDbName } from './unique-db-name.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -72,7 +73,9 @@ const ROOT = join(import.meta.dirname, '..');
 if (!process.env.LIVE_SMOKE_LOGGED) {
   process.exit(await runLogged(ROOT, import.meta.filename));
 }
-const DB_NAME = 'simplycms_live_smoke';
+// 🔴 Унікальна БД на прогін: demo-db дропає БД з тим самим імʼям, тож два паралельні
+// прогони на одному кластері з фіксованим імʼям скидали БД один одному.
+const DB_NAME = uniqueDbName('simplycms_live_smoke');
 
 // `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.
 loadHarnessEnv(ROOT);
@@ -112,35 +115,15 @@ const printRows = () => {
 };
 
 async function main() {
-  stage('чиста демо-БД');
-  // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
-  execFileSync(
-    'node',
-    ['scripts/demo-db.mjs', '--url', adminUrl, '--name', DB_NAME],
-    { cwd: ROOT, stdio: 'inherit' },
-  );
-  const dbUrl = withDbName(adminUrl, DB_NAME);
-  // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
-  // про серверний sanitize-html червоніє (демо-сід чистий).
-  await applyProbe(dbUrl);
-  const port = await freePort();
-  // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
-  // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
-  // лише для відсутніх ключів (M9 аудиту r1) — process.env виграє.
-  const env = {
-    DATABASE_URL: dbUrl,
-    BETTER_AUTH_SECRET: randomBytes(32).toString('hex'),
-    BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
-    VITE_SITE_URL: `http://127.0.0.1:${port}`,
-  };
-
   let server;
   let browser;
   const shutdown = async () => {
     // 🔴 Один шлях прибирання для finally і для сигналів: падіння чи Ctrl+C
-    // не лишають ні Chromium, ні server.mjs.
+    // не лишають ні Chromium, ні server.mjs, ні БД прогону (дроп — після зупинки
+    // сервера, інакше його зʼєднання б'ються об щойно скинуту БД).
     await browser?.close().catch(() => {});
     server?.stop();
+    await dropDatabaseQuietly(adminUrl, DB_NAME);
   };
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.once(signal, () => {
@@ -149,6 +132,28 @@ async function main() {
   }
 
   try {
+    stage('чиста демо-БД');
+    // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
+    execFileSync(
+      'node',
+      ['scripts/demo-db.mjs', '--url', adminUrl, '--name', DB_NAME],
+      { cwd: ROOT, stdio: 'inherit' },
+    );
+    const dbUrl = withDbName(adminUrl, DB_NAME);
+    // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
+    // про серверний sanitize-html червоніє (демо-сід чистий).
+    await applyProbe(dbUrl);
+    const port = await freePort();
+    // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
+    // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
+    // лише для відсутніх ключів (M9 аудиту r1) — process.env виграє.
+    const env = {
+      DATABASE_URL: dbUrl,
+      BETTER_AUTH_SECRET: randomBytes(32).toString('hex'),
+      BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
+      VITE_SITE_URL: `http://127.0.0.1:${port}`,
+    };
+
     stage('збірка й старт сервера');
     execFileSync('pnpm', ['build'], {
       cwd: ROOT,
