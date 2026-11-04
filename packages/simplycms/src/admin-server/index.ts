@@ -137,6 +137,8 @@ import {
   productsSaveTranslation,
   productsSetModificationToken,
   productsSetPath,
+  profilesGetUiLocale,
+  profilesSetUiLocale,
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
@@ -744,3 +746,12 @@ export const saveProductPricesCommand = createServerFn({ method: 'POST' })
 export const saveStockCommand = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsSaveStock, data));
+
+// М2а, Task 5: мова інтерфейсу адмінки з власного профілю (І45).
+export const getAdminUiLocale = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(profilesGetUiLocale, data));
+
+export const setAdminUiLocale = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(profilesSetUiLocale, data));

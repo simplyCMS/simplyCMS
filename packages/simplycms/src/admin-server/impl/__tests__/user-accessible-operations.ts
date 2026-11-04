@@ -5,4 +5,7 @@
  * би покупцю неактивні товари й хеші перекладів).
  * Ключ — id операції, значення — причина (непорожня).
  */
-export const USER_ACCESSIBLE_OPERATIONS: Readonly<Record<string, string>> = {};
+export const USER_ACCESSIBLE_OPERATIONS: Readonly<Record<string, string>> = {
+  'profiles.getUiLocale': 'власний профіль: читає лише свій рядок (userId з актора)',
+  'profiles.setUiLocale': 'власний профіль: пише лише свій рядок (userId з актора)',
+};
