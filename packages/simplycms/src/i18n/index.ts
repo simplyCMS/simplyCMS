@@ -1,22 +1,25 @@
 // Кореневий барель пакета i18n.
 //
-// Контракт: транслятор створюється per-request/per-render від локалі з конфіга.
+// Контракт: транслятор створюється per-request/per-render від мови інтерфейсу.
 // Глобального mutable-стану (`setLocale`) немає навмисно — SSR-safety.
 
-export {
-  createTranslator,
-  languageOfConfigLocale,
-  interpolate,
-} from './translator';
+export { createTranslator, languageOfConfigLocale } from './translator';
+export { interpolate, lookupMessage } from './lookup';
 export { LANGUAGE_PACKS, getLanguagePack } from './packs';
+export {
+  resolveUiLocale,
+  resolveUiLocalePair,
+  toUiLocale,
+  hasUiPack,
+} from './ui-locale';
+export type { UiLocale, UiLocalePair } from './ui-locale';
 export {
   I18nProvider,
   useT,
-  useLocale,
-  useFallbackLocale,
+  useUiLocale,
+  useUiLocalePair,
 } from './I18nProvider';
 export type {
-  Locale,
   MessageKey,
   MessageParams,
   Catalog,

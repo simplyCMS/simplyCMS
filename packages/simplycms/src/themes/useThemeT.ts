@@ -1,8 +1,7 @@
 import { use, useCallback } from 'react';
 import {
-  interpolate,
-  useFallbackLocale,
-  useLocale,
+  lookupMessage,
+  useUiLocalePair,
   type MessageParams,
 } from 'simplycms/i18n';
 import { useTheme } from './ThemeContext';
@@ -11,11 +10,9 @@ import { ThemeRegistry } from './ThemeRegistry';
 /**
  * Транслятор каталогу ТЕМИ (не ядра).
  *
- * Ланцюжок fallback — `messages[locale][key] → messages[основна][key] → сам key`
- * (видимий сигнал про пропущений переклад, як і в core-транслятора
- * `createTranslator`). Підстановка `{param}` — та сама функція `interpolate`
- * з `simplycms/i18n`: дублювати її тут означало б два джерела правди для
- * одного форматування.
+ * Ланцюжок — `lookupMessage` з `simplycms/i18n`, спільний із core-транслятором
+ * і `usePluginT`: `messages[locale][key] → messages[основна][key] → сам key`.
+ * Мови — мови ІНТЕРФЕЙСУ (пара з `I18nProvider`), не мова контенту сторінки.
  *
  * Generic `K extends string` — це навмисно НЕ `MessageKey` ядра: кожна тема
  * оголошує СВІЙ union (`export type DefaultThemeKey = keyof typeof
@@ -39,17 +36,18 @@ export function useThemeT<K extends string = string>(): (
   key: K,
   params?: MessageParams,
 ) => string {
-  const locale = useLocale();
-  const fallback = useFallbackLocale();
+  const { locale, fallback } = useUiLocalePair();
   const { themeName } = useTheme();
   const theme = use(ThemeRegistry.load(themeName));
 
   return useCallback(
     (key: K, params?: MessageParams): string => {
       const messages = theme.messages;
-      const template =
-        messages?.[locale]?.[key] ?? messages?.[fallback]?.[key] ?? key;
-      return interpolate(template, params);
+      return lookupMessage(
+        [messages?.[locale], messages?.[fallback]],
+        key,
+        params,
+      );
     },
     [theme, locale, fallback],
   );

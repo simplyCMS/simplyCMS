@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import {
-  interpolate,
-  useFallbackLocale,
-  useLocale,
+  lookupMessage,
+  useUiLocalePair,
   type MessageParams,
 } from 'simplycms/i18n';
 import type { PluginMessages } from './types';
@@ -10,8 +9,8 @@ import type { PluginMessages } from './types';
 /**
  * Транслятор каталогу ПЛАГІНА (не ядра) — двійник `useThemeT`.
  *
- * Ланцюжок fallback — `messages[locale][key] → messages[основна][key] → сам key`;
- * підстановка `{param}` — та сама `interpolate` з `simplycms/i18n`.
+ * Ланцюжок — той самий `lookupMessage` з `simplycms/i18n`:
+ * `messages[locale][key] → messages[основна][key] → сам key`.
  *
  * Каталог передається АРГУМЕНТОМ (компонент плагіна імпортує власний
  * `messages.ts`), а не читається з реєстру плагінів: реєстр наповнюється в
@@ -26,14 +25,15 @@ import type { PluginMessages } from './types';
 export function usePluginT<K extends string = string>(
   messages: PluginMessages | undefined,
 ): (key: K, params?: MessageParams) => string {
-  const locale = useLocale();
-  const fallback = useFallbackLocale();
+  const { locale, fallback } = useUiLocalePair();
 
   return useCallback(
     (key: K, params?: MessageParams): string => {
-      const template =
-        messages?.[locale]?.[key] ?? messages?.[fallback]?.[key] ?? key;
-      return interpolate(template, params);
+      return lookupMessage(
+        [messages?.[locale], messages?.[fallback]],
+        key,
+        params,
+      );
     },
     [messages, locale, fallback],
   );

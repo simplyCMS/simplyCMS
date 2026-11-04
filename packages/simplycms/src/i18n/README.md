@@ -23,24 +23,27 @@ pnpm add simplycms
 
 | Символ | Опис |
 |--------|------|
-| `createTranslator(locale, fallback)` | Транслятор-замикання: каталог мови → каталог `fallback` (основна мова магазину) → сам ключ |
+| `createTranslator(locale, fallback)` | Транслятор-замикання над `UiLocale`: каталог мови → каталог `fallback` (основна мова магазину) → сам ключ |
+| `lookupMessage(catalogs, key, params?)` | Єдиний ланцюг пошуку: перший каталог із ключем → підстановка `{name}`; ніде немає → сам ключ. Спільний для ядра, `useThemeT`, `usePluginT` |
+| `resolveUiLocale(content, primary)` | Міст осі контенту до осі інтерфейсу: пакет мови → пакет базової мови → ті самі кроки для основної → помилка з переліком пакетів |
+| `toUiLocale(value)`, `hasUiPack(code)` | Точний код наявного пакета або `null`; чи знаходить міст пакет для мови контенту |
 | `languageOfConfigLocale(tag)` | Тимчасовий міст до М2 (знос `config.locale`): `'uk-UA'` → `'uk'`, `'EN'` → `'en'`. Не для кодів мов магазину (`pt-BR` — окрема мова) |
 | `LANGUAGE_PACKS`, `getLanguagePack(code)` | Мовні пакети ядра (`uk`, `en`): каталог + (необов'язково) таблиця транслітерації адрес; мова без пакета → `null` |
-| `I18nProvider`               | React-провайдер: мемоїзує транслятор по `locale` |
-| `useT()`                     | Транслятор поточного рендера; кидає поза провайдером |
-| `Locale`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. `Locale` — відкритий рядок BCP 47; `MessageKey` виводиться з uk-каталогу — union замкнений |
+| `I18nProvider`               | React-провайдер `{ locale, fallback }` (обидві — `UiLocale`): мемоїзує транслятор по парі мов |
+| `useT()`, `useUiLocale()`, `useUiLocalePair()` | Транслятор поточного рендера; мова інтерфейсу для форматування; пара мов для каталогів теми й плагіна. Кидають поза провайдером |
+| `UiLocale`, `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. `UiLocale` — код наявного пакета (бренд; не мова контенту); `MessageKey` виводиться з uk-каталогу — union замкнений |
 
 ## Приклад
 
 ```tsx
 // host: src/routes/__root.tsx — провайдер над усіма групами роутів
-import { I18nProvider, languageOfConfigLocale } from 'simplycms/i18n';
-import config from '../../simplycms.config';
-
-const locale = languageOfConfigLocale(config.locale);
+// `locale` — мова контенту (для <html lang>), `ui` — мова інтерфейсу з моста resolveUiLocale
+const { locale, ui } = Route.useLoaderData();
 <html lang={locale}>
   <body>
-    <I18nProvider locale={locale}>{children}</I18nProvider>
+    <I18nProvider locale={ui.locale} fallback={ui.fallback}>
+      {children}
+    </I18nProvider>
   </body>
 </html>;
 
