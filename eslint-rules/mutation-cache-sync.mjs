@@ -11,6 +11,8 @@
  * (стрілка/function/метод), і В НІЙ мусить бути синк:
  *   collection.utils.{refetch,writeUpsert,writeUpdate,writeDelete,writeBatch}
  *   АБО collection.insert/update/delete (оптимістичний шлях сам синкає)
+ *   АБО голий виклик invalidateCollection(queryClient, def) з
+ *   simplycms/admin-data (перечитує зрізи колекції, і неспостережувані теж)
  *   АБО invalidateQueries/setQueryData/refetchQueries (легасі React Query;
  *   але якщо файл імпортує simplycms/admin-data — цього НЕ досить,
  *   інвалідація колекцію не будить → invalidateOnly).
@@ -176,6 +178,14 @@ export default {
           )
         )
           return;
+        // invalidateCollection — хелпер admin-data, що інвалідує ключі колекції
+        // (на відміну від сирого invalidateQueries) — повноцінний синк.
+        if (
+          n.type === 'CallExpression' &&
+          n.callee.type === 'Identifier' &&
+          n.callee.name === 'invalidateCollection'
+        )
+          collectionSync = true;
         if (
           n.type === 'CallExpression' &&
           n.callee.type === 'MemberExpression'

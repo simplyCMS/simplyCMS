@@ -39,6 +39,17 @@ describe('mutation-cache-sync (function-scope)', () => {
     ).toEqual([]);
   });
 
+  it('invalidateCollection у функції — синк; без нього той самий код — noSync', () => {
+    const body = (sync: string) => `export function Page() {
+      const handleReorder = async (id) => { await reorderOrderStatus({ data: { id } }); ${sync} };
+      return null;
+    }`;
+    expect(
+      ids(body('await invalidateCollection(qc, orderStatusesCollection);')),
+    ).toEqual([]);
+    expect(ids(body(''))).toEqual(['noSync']);
+  });
+
   it('прибраний refetch у handleReorder — noSync САМЕ там (сусідній синк не покриває)', () => {
     expect(
       ids(`export function Page() {
