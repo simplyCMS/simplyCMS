@@ -57,7 +57,6 @@ import { runLocaleChecks } from './live-smoke/locale-context.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
 import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
-import { clearMailpit } from './live-smoke/mail.mjs';
 import {
   runMailChecks,
   runSignupConfirmation,
@@ -160,8 +159,8 @@ async function main() {
       stdio: 'inherit',
       env: { ...process.env, ...env },
     });
-    // Чиста скринька ДО старту: листи цього прогону — єдині в ній.
-    await clearMailpit();
+    // Скриньку НЕ чистимо: Mailpit спільний на машину, а листи шукаються за
+    // унікальним одержувачем/темою; DELETE усіх листів ламав паралельні прогони.
     server = await startStore(ROOT, port, {
       ...env,
       SMTP_URL: mailEnv.SMTP_URL,

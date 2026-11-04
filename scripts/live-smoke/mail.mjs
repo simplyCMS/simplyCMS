@@ -8,12 +8,7 @@
  * 🔴 Відсутній Mailpit — FAIL прогону, не skip: з SMTP реєстрація вимагає
  * підтвердження пошти (Р30), тож без скриньки не пройде жоден крок із покупцем.
  */
-import {
-  clearMailbox,
-  findMail,
-  firstLink,
-  toWithSubject,
-} from '../mailpit.mjs';
+import { findMail, firstLink, toWithSubject } from '../mailpit.mjs';
 
 /** Пароль, яким покупці прогону входять після підтвердження пошти. */
 export const MAIL_STEP_PASSWORD = 'live-smoke-2026';
@@ -27,9 +22,6 @@ export function mailpitApi() {
     );
   return api.replace(/\/+$/, '');
 }
-
-/** Чистка скриньки на старті. */
-export const clearMailpit = () => clearMailbox(mailpitApi());
 
 /**
  * Чекає лист на `to` із темою, що містить `subject`. `mail: null` — вердикт у
