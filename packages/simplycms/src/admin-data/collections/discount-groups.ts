@@ -11,6 +11,7 @@ import {
 } from 'simplycms/admin-server';
 import { getCollection, type CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
+import { invalidateCollection } from '../invalidate-collection';
 import { invalidateDiscountConsumers } from '../discount-cache';
 import { discountsCollection } from './discounts';
 
@@ -67,7 +68,7 @@ function create(queryClient: QueryClient) {
  * Каскад БД видалив знижки піддерева — прибираємо їх із колекції знижок
  * write-back-ом (без мережі, К3-7), рядки беремо з неї ж за `groupId`.
  * Колекція ще не завантажена — write-back неможливий, але й осиротілих
- * рядків у ній немає; точковий refetch лише скасовує запит, що летить.
+ * рядків у ній немає; інвалідація скасовує запит, що летить, і позначає зріз застарілим.
  */
 async function dropCascadedDiscounts(
   queryClient: QueryClient,
@@ -77,9 +78,7 @@ async function dropCascadedDiscounts(
   // стартує лише з підпискою) і дає одну точку правди про стан завантаження.
   const discounts = getCollection(queryClient, discountsCollection);
   if (discounts.status !== 'ready') {
-    void queryClient.invalidateQueries({
-      queryKey: collectionKey(ENTITY.discounts),
-    });
+    await invalidateCollection(queryClient, discountsCollection);
     return;
   }
   const ids = [...discounts.values()]

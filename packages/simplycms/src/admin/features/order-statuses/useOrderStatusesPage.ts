@@ -1,8 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { failureText } from '../../lib/report-tx-error';
-import { useCollection, orderStatusesCollection } from 'simplycms/admin-data';
+import {
+  invalidateCollection,
+  useCollection,
+  orderStatusesCollection,
+} from 'simplycms/admin-data';
 import { reorderOrderStatus } from 'simplycms/admin-server';
 import type { OrderStatus } from 'simplycms/schema/types';
 import { useT } from 'simplycms/i18n';
@@ -12,11 +17,12 @@ import { EMPTY_STATUS_FORM, type StatusFormData } from './form-data';
 /**
  * Стан і мутації сторінки статусів замовлень. Читання — жива eager-колекція;
  * мутації — оптимістичні з write-back, крім `setDefault`/`reorder` (міняють
- * N рядків — межа канону write-back, завершуються `refetch()`).
+ * N рядків — межа канону write-back, завершуються `invalidateCollection`).
  */
 export function useOrderStatusesPage() {
   const t = useT();
   const collection = useCollection(orderStatusesCollection);
+  const queryClient = useQueryClient();
   // 🔴 Форма react-db 0.5.3 — обʼєкт { query }; dependency-масиви задепрековані.
   const { data: statuses, isLoading } = useLiveQuery({
     query: (q) =>
@@ -33,7 +39,7 @@ export function useOrderStatusesPage() {
     setForm(EMPTY_STATUS_FORM);
   };
 
-  const { isSubmitting, persist } = useStatusPersist(collection, close);
+  const { isSubmitting, persist } = useStatusPersist(close);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -91,7 +97,7 @@ export function useOrderStatusesPage() {
   const reorder = async (id: string, direction: 'up' | 'down') => {
     try {
       await reorderOrderStatus({ data: { id, direction } });
-      await collection.utils.refetch();
+      await invalidateCollection(queryClient, orderStatusesCollection);
     } catch (e) {
       toast.error(failureText(t, t('admin.orders.statuses.reorderFailed'), e));
     }

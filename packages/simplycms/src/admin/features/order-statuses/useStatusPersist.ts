@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { failureText } from '../../lib/report-tx-error';
+import {
+  invalidateCollection,
+  orderStatusesCollection,
+} from 'simplycms/admin-data';
 import { setDefaultOrderStatus } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 
@@ -10,20 +15,18 @@ type FailKey =
 
 /**
  * Персист оптимістичної мутації статусу у дві фази: insert/update, потім —
- * за потреби — `setDefault` (міняє N рядків, тож завершується `refetch()`).
+ * за потреби — `setDefault` (міняє N рядків, тож завершується `invalidateCollection`).
  * Діалог закривається ЛИШЕ після успішного персисту (рев'ю р3); падіння
  * дефолту — окрема помилка, а не «створення не вдалося» (рядок уже є).
  */
-export function useStatusPersist(
-  collection: { utils: { refetch: () => Promise<unknown> } },
-  close: () => void,
-) {
+export function useStatusPersist(close: () => void) {
   const t = useT();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const applyDefault = async (id: string) => {
     await setDefaultOrderStatus({ data: { id } });
-    await collection.utils.refetch();
+    await invalidateCollection(queryClient, orderStatusesCollection);
   };
 
   const afterPersist = async (id: string, isDefault: boolean) => {

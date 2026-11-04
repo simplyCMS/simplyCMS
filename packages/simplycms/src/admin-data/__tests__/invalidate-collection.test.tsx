@@ -77,13 +77,15 @@ function setup() {
       (q) => q.from({ r: collection }).orderBy(({ r }) => r.order, 'asc'),
       { pageSize: 2 },
     );
-  const useCard = (id: string) => () =>
-    useLiveQuery((q) =>
-      q
-        .from({ r: collection })
-        .where(({ r }) => eq(r.id, id))
-        .findOne(),
-    );
+  const useCard = (id: string) =>
+    function useCardQuery() {
+      return useLiveQuery((q) =>
+        q
+          .from({ r: collection })
+          .where(({ r }) => eq(r.id, id))
+          .findOne(),
+      );
+    };
   return { server, def, qc, wrapper, useList, useCard };
 }
 

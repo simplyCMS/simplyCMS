@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { and, eq, isNull, useLiveQuery } from '@tanstack/react-db';
 import {
+  invalidateCollection,
   productModificationsCollection,
   productsCollection,
   stockCollection,
@@ -12,13 +14,13 @@ import type { StockStatus } from 'simplycms/contracts';
  * Ручний облік залишків — команда `products.saveStock` (кількості + гвардований
  * перехід `stockStatus` цілі в одній транзакції). Відповідь не несе рядків, тож
  * після збереження колекції лише для читання (залишки, цільовий товар чи
- * модифікація) перечитуються: інакше бейдж статусу лишався б застарілим.
+ * модифікація) інвалідуються (`invalidateCollection`, а не `utils.refetch()`:
+ * закритий діалог не має спостерігача): інакше бейдж статусу лишався б застарілим.
  * Версію агрегата команда не чіпає.
  */
 export function useStock(productId: string, modificationId: string | null) {
   const stock = useCollection(stockCollection);
-  const products = useCollection(productsCollection);
-  const mods = useCollection(productModificationsCollection);
+  const queryClient = useQueryClient();
   const { data: rows } = useLiveQuery({
     query: (q) =>
       q
@@ -48,8 +50,11 @@ export function useStock(productId: string, modificationId: string | null) {
       },
     });
     await Promise.all([
-      stock.utils.refetch(),
-      modificationId ? mods.utils.refetch() : products.utils.refetch(),
+      invalidateCollection(queryClient, stockCollection),
+      invalidateCollection(
+        queryClient,
+        modificationId ? productModificationsCollection : productsCollection,
+      ),
     ]);
     return { stockStatus: res.stockStatus };
   };

@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { invalidateCollection, productsCollection } from 'simplycms/admin-data';
 import type { TranslationStatus } from '../../translations/translation-context';
 import type { ProductCardContextValue } from './product-card-context';
 import type { ProductCardState } from './useProductCardState';
@@ -10,6 +12,7 @@ import type { ProductCardState } from './useProductCardState';
 export function editCardContext(
   productId: string,
   s: ProductCardState,
+  queryClient: QueryClient,
 ): ProductCardContextValue {
   const { state, rows } = s;
   return {
@@ -24,11 +27,15 @@ export function editCardContext(
     clearValueError: rows.clearValueError,
     onConflict: () => s.setConflict(true),
     onStockStatus: s.onStockStatus,
-    onPathSaved: (locale, path) =>
+    // `products.setPath` піднімає `products.version`, а колекцію клієнт не чіпає:
+    // без інвалідації список видалив би товар зі старою версією (412).
+    onPathSaved: (locale, path) => {
+      void invalidateCollection(queryClient, productsCollection);
       s.setState((cur) => ({
         ...cur,
         agg: { ...cur.agg, paths: { ...cur.agg.paths, [locale]: path } },
-      })),
+      }));
+    },
     statusOfModificationName: (id, l) =>
       state.agg.modifications.find((m) => m.id === id)?.texts[l]?.status as
         TranslationStatus | undefined,
