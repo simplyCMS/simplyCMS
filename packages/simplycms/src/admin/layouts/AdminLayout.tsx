@@ -11,6 +11,7 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { ThemeToggle } from 'simplycms/core/components/ThemeToggle';
 import { useT } from 'simplycms/i18n';
+import { UiLocaleSelect } from './UiLocaleSelect';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useT();
@@ -40,6 +41,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <UiLocaleSelect />
             <ThemeToggle />
             <Button
               variant="ghost"
