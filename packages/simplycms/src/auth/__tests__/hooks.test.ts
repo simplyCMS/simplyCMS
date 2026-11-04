@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildUserProvision,
+  createSessionProvisionHook,
   createUserCreateHook,
   splitName,
   SIGNUP_ROLE,
@@ -78,5 +79,30 @@ describe('createUserCreateHook', () => {
     const hook = createUserCreateHook(vi.fn().mockRejectedValue(boom));
 
     await expect(hook({ id: 'u-1', email: 'a@t.test' })).rejects.toBe(boom);
+  });
+});
+
+describe('createSessionProvisionHook', () => {
+  it('віддає userId у порт самовідновлення', async () => {
+    const seen: string[] = [];
+    await createSessionProvisionHook(async (id) => {
+      seen.push(id);
+    })({ userId: 'u-1' });
+    expect(seen).toEqual(['u-1']);
+  });
+
+  it('збій не ламає вхід: лог із ref без пароля з URL', async () => {
+    const lines: string[] = [];
+    await expect(
+      createSessionProvisionHook(
+        async () => {
+          throw new Error('connect postgres://u:hunter2@db:5432/x failed');
+        },
+        (line) => lines.push(line),
+      )({ userId: 'u-2' }),
+    ).resolves.toBeUndefined();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/\[ref [0-9a-f]{8}\]/);
+    expect(lines[0]).not.toContain('hunter2');
   });
 });

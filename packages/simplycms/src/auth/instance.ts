@@ -14,8 +14,13 @@ import {
   resolveAuthBaseUrl,
   resolveAuthSecret,
 } from './auth-env';
-import { createUserCreateHook, type ProvisionUser } from './hooks';
-import { provisionUserInDb } from './provision';
+import {
+  createSessionProvisionHook,
+  createUserCreateHook,
+  type EnsureProvisioned,
+  type ProvisionUser,
+} from './hooks';
+import { ensureUserProvisionedInDb, provisionUserInDb } from './provision';
 import { createResetPasswordSender } from './reset-mail';
 import { isResetStillValid, type ResetGuard } from './reset-guard';
 import { createEmailVerification } from './verification-mail';
@@ -44,6 +49,8 @@ export interface AuthDeps {
   readonly database?: Parameters<typeof betterAuth>[0]['database'];
   /** Провізія `profiles`+`user_roles`. За замовчуванням — запис у Postgres. */
   readonly provisionUser?: ProvisionUser;
+  /** Провізія при вході (самовідновлення профілю). За замовчуванням — запис у Postgres. */
+  readonly ensureProvisioned?: EnsureProvisioned;
   /** Чи забанений користувач (Е6г-13). За замовчуванням — читання `users.banned_at`. */
   readonly isUserBanned?: IsUserBanned;
   /** Guard скидання пароля (Е6г-18). За замовчуванням — `FOR SHARE` по `users`. */
@@ -138,6 +145,9 @@ export function createAuth(deps: AuthDeps = {}) {
       session: {
         create: {
           before: createSessionBanHook(deps.isUserBanned ?? isUserBannedInDb),
+          after: createSessionProvisionHook(
+            deps.ensureProvisioned ?? ensureUserProvisionedInDb,
+          ),
         },
       },
     },
