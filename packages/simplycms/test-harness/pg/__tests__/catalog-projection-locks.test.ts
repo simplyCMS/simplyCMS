@@ -4,7 +4,7 @@
 // Команда тут бере СПРАВЖНІЙ `lockProduct`, а refresh викликає після паузи.
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { copyPathsForLocale } from 'simplycms/addressing';
 import {
   reconcileProductTexts,
@@ -26,6 +26,25 @@ import {
   get,
   saveDescription,
 } from './fixtures/product-aggregate';
+
+// Вигадані мови цього файлу отримують тестовий пакет (§19.15): тут перевіряються замки й
+// проєкція, а не наявність пакета.
+vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
+  const { testPackRegistry } = await import('../../language-packs');
+  const real =
+    await importOriginal<typeof import('../../../src/i18n/packs/registry')>();
+  return {
+    PACKS: testPackRegistry(real.PACKS, [
+      'bg',
+      'cs',
+      'da',
+      'hu',
+      'lt',
+      'no',
+      'sk',
+    ]),
+  };
+});
 
 // Кейс, що не дочекався черги, відпускає тримача: інакше його замок висів би до кінця файла.
 const RELEASE = { releaseOnFail: true } as const;

@@ -105,6 +105,17 @@ export async function completeness(
 }
 
 /**
+ * Відмова публікації мови без пакета (§19.15, І46): на поле `status`, тим самим шляхом, що
+ * й `language_incomplete`. Пакет перевіряється ДО повноти: неповну мову без пакета
+ * однаково не опублікувати, а відмова про пакет не залежить від кількості даних.
+ */
+export function languagePackMissingError(): ValidationError {
+  return new ValidationError([
+    { path: ['status'], code: 'language_pack_missing' },
+  ]);
+}
+
+/**
  * Відмова публікації неповної мови. Перша проблема — на поле `status` (форма), далі по одній
  * на кожен приклад: `['products', id, етап]`. Деталі — саме в `path`, бо це єдине, що
  * несуть обидва транспорти (problem+json `/api/v1` віддає лише path і code, serverFn —

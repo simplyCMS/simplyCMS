@@ -10,7 +10,12 @@ import { defineOperation } from 'simplycms/operations';
 import { languages } from 'simplycms/schema';
 import type { Language } from 'simplycms/schema/types';
 import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
-import { completeness, languageIncompleteError } from './completeness';
+import { hasLanguagePack } from 'simplycms/i18n';
+import {
+  completeness,
+  languageIncompleteError,
+  languagePackMissingError,
+} from './completeness';
 import { stuckFill } from './fill';
 import {
   code,
@@ -64,6 +69,10 @@ export const languagesSetStatus = defineOperation({
     if (row.status === input.status) return toView(row);
     if (row.isDefault || !TRANSITIONS[row.status].includes(input.status))
       throw invalid('status');
+    // Мову публікують лише з пакетом (§19.15, І46); `draft` і `disabled` його не вимагають —
+    // перекладачі заповнюють дані до появи пакета. Перевірка до запису: відмова не лишає слідів.
+    if (input.status === 'published' && !hasLanguagePack(input.code))
+      throw languagePackMissingError();
     const [updated] = await db
       .update(languages)
       .set({ status: input.status })

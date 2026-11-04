@@ -2,7 +2,7 @@
 // проєкцію будує лише під ЕКСКЛЮЗИВНИМ — після коміту всіх команд у польоті. Інакше команда товару,
 // чий refresh пройшов до коміту адрес, а коміт — після побудови, лишала б рядок застарілим назавжди.
 import { randomUUID } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { findProjectionMismatches } from 'simplycms/catalog-projection';
 import { advisoryXactLock, advisoryXactLockShared } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
@@ -23,6 +23,17 @@ import {
 } from './fixtures/lock-holders';
 import { outcome } from './fixtures/latch-race';
 import { create, exec, saveDescription } from './fixtures/product-aggregate';
+
+// Вигадані мови цього файлу отримують тестовий пакет (§19.15): тут перевіряються замки й
+// проєкція, а не наявність пакета.
+vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
+  const { testPackRegistry } = await import('../../language-packs');
+  const real =
+    await importOriginal<typeof import('../../../src/i18n/packs/registry')>();
+  return {
+    PACKS: testPackRegistry(real.PACKS, ['bg', 'hr', 'ky', 'mt', 'ro']),
+  };
+});
 
 describe('fill ↔ команда товару без попереднього коміту адрес (I-1, І23)', () => {
   const db = useAddressingDb('simplycms_fill_projection_race');

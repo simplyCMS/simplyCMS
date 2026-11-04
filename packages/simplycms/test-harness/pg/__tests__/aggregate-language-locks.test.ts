@@ -3,7 +3,7 @@
 // ДО рядка кореня і будь-яких дочірніх рядків; власники ексклюзивного (`languages.remove`,
 // `setStatus`) рядкових замків коренів не беруть, але видаляють/блокують ті самі таблиці.
 import { randomUUID } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { advisoryXactLockShared } from 'simplycms/db';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import {
@@ -23,6 +23,15 @@ import {
   get,
   saveTranslation,
 } from './fixtures/product-aggregate';
+
+// Вигадані мови цього файлу отримують тестовий пакет (§19.15): тут перевіряються замки й
+// проєкція, а не наявність пакета.
+vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
+  const { testPackRegistry } = await import('../../language-packs');
+  const real =
+    await importOriginal<typeof import('../../../src/i18n/packs/registry')>();
+  return { PACKS: testPackRegistry(real.PACKS, ['hr', 'lt', 'lv']) };
+});
 
 describe('languages-set перед коренем агрегата (Task 14, раунд 5)', () => {
   const db = useAddressingDb('simplycms_aggregate_language_locks');

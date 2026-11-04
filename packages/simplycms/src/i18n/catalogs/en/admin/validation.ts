@@ -28,4 +28,6 @@ export const messages = {
     'Enter the address manually: it cannot be derived from the name',
   'admin.validation.language_incomplete':
     'The language is incomplete: finish filling addresses before publishing',
+  'admin.validation.language_pack_missing':
+    'There is no language pack for this language: it cannot be published, the draft stays',
 } satisfies Record<string, string>;
