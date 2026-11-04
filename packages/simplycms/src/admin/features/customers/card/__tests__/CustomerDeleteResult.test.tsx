@@ -70,7 +70,7 @@ describe('видалення', () => {
   const confirmBtn = () =>
     screen.getByRole('button', { name: t('admin.users.card.deleteConfirm') });
 
-  it('успіх → [profiles], [orders] для дашборду, інвалідація колекції замовлень, перехід, тост', async () => {
+  it('успіх → [profiles], префікс [orders] (дашборд і колекція замовлень), перехід, тост', async () => {
     mocks.deleteCustomer.mockResolvedValue({});
     renderCard();
     const input = await open();
@@ -90,16 +90,12 @@ describe('видалення', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
-    // Дашборд тримає імʼя клієнта в `[orders, 'admin-dashboard']`.
+    // Префікс `[orders]` покриває і дашборд (`[orders,'admin-dashboard']`), і
+    // зрізи колекції замовлень (`collectionKey` = `[orders,'list']`).
     await waitFor(() =>
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['orders'] }),
+      expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.orders] }),
     );
-    // Колекція замовлень (on-demand) — через її ключ `collectionKey`, не лише `[orders]`.
-    await waitFor(() =>
-      expect(spy).toHaveBeenCalledWith({
-        queryKey: collectionKey(ENTITY.orders),
-      }),
-    );
+    expect(collectionKey(ENTITY.orders).slice(0, 1)).toEqual([ENTITY.orders]);
   });
 
   it('409 customer_is_admin → тост, діалог лишається, переходу немає', async () => {

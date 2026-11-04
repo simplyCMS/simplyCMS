@@ -1,6 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { invalidateCollection, ordersCollection } from 'simplycms/admin-data';
 import { deleteCustomer } from 'simplycms/admin-server';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { useT } from 'simplycms/i18n';
@@ -16,11 +15,12 @@ export interface DeleteResult {
 }
 
 /**
- * Видалення акаунта (Е6г-15). Знеособлення зачіпає замовлення, а вони в
- * колекції on-demand: `invalidateQueries` колекцію не будить (урок №6),
- * тож окрім `[profiles]` кличемо `invalidateCollection` (Е6г-6), а інвалідація
- * `[orders]` лишається для дашборду (`[orders,'admin-dashboard']`). Після
- * успіху — на список; відмови 409 — тост, діалог лишається.
+ * Видалення акаунта (Е6г-15). Знеособлення зачіпає замовлення, тож окрім
+ * `[profiles]` інвалідуємо префікс `[orders]`: він покриває і зрізи колекції
+ * замовлень (`[orders,'list',…]`, активні перечитуються одразу, неактивні
+ * стають stale), і дашборд (`[orders,'admin-dashboard']`). Окремий
+ * `invalidateCollection` був би дублем того самого префікса. Після успіху —
+ * на список; відмови 409 — тост, діалог лишається.
  */
 export function useDeleteCustomer(userId: string) {
   const t = useT();
@@ -54,11 +54,9 @@ export function useDeleteCustomer(userId: string) {
     navigate({ to: adminPath('users') }).catch(() => {});
     await Promise.allSettled([
       qc.invalidateQueries({ queryKey: [ENTITY.profiles] }),
-      // Дашборд (`[orders, 'admin-dashboard']`) показує імʼя клієнта в
-      // останніх замовленнях — знеособлене не має лишитись у кеші.
+      // Префікс покриває і колекцію замовлень, і дашборд, що показує імʼя
+      // клієнта в останніх замовленнях — знеособлене не має лишитись у кеші.
       qc.invalidateQueries({ queryKey: [ENTITY.orders] }),
-      // Колекція замовлень (on-demand) — через invalidateCollection (урок №6).
-      invalidateCollection(qc, ordersCollection),
     ]);
     return { ok: true };
   };
