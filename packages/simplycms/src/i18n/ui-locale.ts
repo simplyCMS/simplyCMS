@@ -1,9 +1,9 @@
 import type { ContentLocale, UiLocale } from 'simplycms/contracts';
 import { findLanguagePack, listLanguagePacks, type UiPart } from './packs';
 
-// Тип — у T0 (`contracts/ui-locale`), щоб його приймала T1-логіка; значення створюють ЛИШЕ
-// `resolveUiLocale` і `toUiLocale` цього файлу, приведення `as UiLocale` деінде заборонене.
-export type { UiLocale };
+// Тип `UiLocale` — у T0 (`simplycms/contracts`), щоб його приймала T1-логіка; реекспорту звідси
+// немає. Значення створюють ЛИШЕ `resolveUiLocale` і `toUiLocale` цього файлу, приведення
+// `as UiLocale` деінде заборонене.
 
 /** Пара мов інтерфейсу сторінки: власна і кінцева ланка fallback (пакет основної мови). */
 export type UiLocalePair = {

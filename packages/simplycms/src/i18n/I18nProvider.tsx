@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { createTranslator } from './translator';
-import type { UiLocale, UiLocalePair } from './ui-locale';
+import type { UiLocale } from 'simplycms/contracts';
+import type { UiLocalePair } from './ui-locale';
 import type { PartCatalog, Translator } from './types';
 
 /** Значення контексту: транслятор + пара мов, що його породила. */

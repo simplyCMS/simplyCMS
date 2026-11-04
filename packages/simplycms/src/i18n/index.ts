@@ -20,7 +20,7 @@ export {
   resolveAdminUiLocale,
   toUiLocale,
 } from './ui-locale';
-export type { UiLocale, UiLocalePair } from './ui-locale';
+export type { UiLocalePair } from './ui-locale';
 export {
   I18nProvider,
   useT,

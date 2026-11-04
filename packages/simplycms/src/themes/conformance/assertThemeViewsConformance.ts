@@ -1,4 +1,4 @@
-import type { UiLocale } from 'simplycms/i18n';
+import type { UiLocale } from 'simplycms/contracts';
 import {
   REQUIRED_REQUISITES,
   type StorefrontViewName,

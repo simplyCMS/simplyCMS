@@ -4,7 +4,7 @@
 // деградовано: інтерфейс іде за основною (`resolveUiLocale`, крок 3), сервер подає сигнал
 // (`loadLocaleSet`), а інструменти контенту чесно віддають `null`.
 import type { ContentLocale } from 'simplycms/contracts';
-import type { UiLocale } from '../ui-locale';
+import type { UiLocale } from 'simplycms/contracts';
 import type { LanguagePack, UiCatalogPart } from '../types';
 import { PACKS } from './registry';
 

@@ -1,8 +1,8 @@
 // Фікстури осі контенту для тестів: літерали мов проходять через єдиний конструктор
 // `checkedContentLocale`, а не приведення `as ContentLocale` (спека §19.2).
-import type { ContentLocale, LocaleSet } from 'simplycms/contracts';
+import type { ContentLocale, LocaleSet, UiLocale } from 'simplycms/contracts';
 import { checkedContentLocale } from 'simplycms/domain/translations';
-import { resolveUiLocale, type UiLocale } from 'simplycms/i18n';
+import { resolveUiLocale } from 'simplycms/i18n';
 
 /** Коротка назва конструктора для фікстур. */
 export const cl: (code: string) => ContentLocale = checkedContentLocale;

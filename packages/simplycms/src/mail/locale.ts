@@ -1,10 +1,9 @@
-import type { ContentLocale } from 'simplycms/contracts';
+import type { ContentLocale, UiLocale } from 'simplycms/contracts';
 import {
   loadTranslator,
   resolveUiLocale,
   toUiLocale,
   type Translator,
-  type UiLocale,
 } from 'simplycms/i18n';
 
 /**

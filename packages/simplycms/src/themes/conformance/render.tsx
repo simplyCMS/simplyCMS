@@ -1,6 +1,7 @@
 import { Suspense, act, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { I18nProvider, loadUiCatalog, type UiLocale } from 'simplycms/i18n';
+import type { UiLocale } from 'simplycms/contracts';
+import { I18nProvider, loadUiCatalog } from 'simplycms/i18n';
 import { REQUISITE_ATTRIBUTE } from 'simplycms/contracts/views';
 import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import { ThemeContext } from '../theme-context';

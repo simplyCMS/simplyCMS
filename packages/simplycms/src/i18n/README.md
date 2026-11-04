@@ -31,7 +31,7 @@ pnpm add simplycms
 | `I18nProvider`               | React-провайдер `{ locale, fallback }` (обидві — `UiLocale`): мемоїзує транслятор по парі мов |
 | `useT()`, `useUiLocale()`, `useUiLocalePair()` | Транслятор поточного рендера; мова інтерфейсу для форматування; пара мов для каталогів теми й плагіна. Кидають поза провайдером |
 | `useFormatDate(style?)` | Форматувач дати за мовою інтерфейсу (`medium` / `short` / `datetime`); єдине місце, де вітрина й адмінка форматують дати |
-| `UiLocale`, `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. `UiLocale` — код наявного пакета (бренд; не мова контенту); `MessageKey` виводиться з uk-каталогу — union замкнений |
+| `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. Тип `UiLocale` (код наявного пакета; бренд, не мова контенту) живе в `simplycms/contracts` — звідси його немає, конструктори `resolveUiLocale`/`toUiLocale` — тут; `MessageKey` виводиться з uk-каталогу — union замкнений |
 
 ## Приклад
 

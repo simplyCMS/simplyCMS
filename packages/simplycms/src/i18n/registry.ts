@@ -5,7 +5,7 @@ import {
 } from 'simplycms/contracts/thenable';
 import { getUiPack } from './packs';
 import { createTranslator } from './translator';
-import type { UiLocale } from './ui-locale';
+import type { UiLocale } from 'simplycms/contracts';
 import type { PartCatalog, Translator, UiCatalogPart } from './types';
 
 /**
