@@ -18,6 +18,7 @@
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
     "./contracts/store-profile": "./src/contracts/store-profile.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
+    "./contracts/thenable": "./src/contracts/thenable.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
