@@ -48,6 +48,19 @@
   `NON_STOREFRONT_SEGMENTS` переїхали з `simplycms/storefront-routes/locale/{resolve,root-data}` у `simplycms/domain`. Новий хук
   `useContentLocale` — `simplycms/runtime/content-locale`. `primaryLocaleCode` повертає `ContentLocale`. Звужені сигнатури: `checkedTextLocale(ContentLocale, ContentLocale)`,
   `catalogKeys.sectionProducts(…, ContentLocale)` (`simplycms/react-query`), `LocaleRewriteState.current: ContentLocale`.
+- **Вісь мови інтерфейсу (М2, блок 1):** нове — брендований `UiLocale` (код наявного мовного пакета),
+  міст `resolveUiLocale(content, primary)`, `resolveUiLocalePair`, `toUiLocale`, `hasUiPack`, `lookupMessage`,
+  `useUiLocale`, `useUiLocalePair` (усе з `simplycms/i18n`). Знесено без реекспорту: тип `Locale`
+  (`simplycms/i18n`) → `UiLocale`; `useLocale` → `useUiLocale`; `useFallbackLocale` (пару мов для тем і
+  плагінів дає `useUiLocalePair`); `hasLanguagePack` (`simplycms/site`; файл `site/language-pack.ts`
+  видалено) → `hasUiPack(code)` з `simplycms/i18n`, який знаходить пакет і за базовою мовою (`en-GB` → `en`).
+  `I18nProvider` приймає `locale: UiLocale` і ОБОВ'ЯЗКОВИЙ `fallback: UiLocale` (раніше `locale: string`,
+  `fallback` необов'язковий); `createTranslator(locale: UiLocale, fallback: UiLocale)`; `getStoreLocale()`
+  повертає `UiLocale`. `StorefrontRootData` отримує обов'язкове поле `ui: { locale, fallback }`: host-`__root.tsx`
+  передає в `I18nProvider` його, а не мову сторінки (`locale` лишається для `<html lang>`). Мова сторінки без
+  пакета (`/pl/…`) більше не дає голих ключів: інтерфейс іде основною мовою магазину, а за відсутності пакета
+  й для неї — помилка з переліком пакетів. `assertThemeViewsConformance(theme, { locale })` вимагає
+  `locale: UiLocale` (дефолту `uk` немає; шаблон теми й CLI передають явно).
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
   назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
