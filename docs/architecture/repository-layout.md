@@ -102,8 +102,8 @@ simplyCMS/
 │   │   │                         #    src/start.ts serializationAdapters)
 │   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
 │   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
-│   │   ├── src/i18n/             # T2 createTranslator(locale, fallback), I18nProvider, каталоги uk/en,
-│   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getLanguagePack); UiLocale + resolveUiLocale — вісь інтерфейсу
+│   │   ├── src/i18n/             # T2 createTranslator(catalogs), I18nProvider, каталоги uk/en (частини base/admin/mail),
+│   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getUiPack, getContentTools); registry.ts — ліниві частини каталогу; UiLocale + resolveUiLocale — вісь інтерфейсу
 │   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto), реєстр TRANSLATABLE,
 │   │   │                         #    читання (loadTranslations, withFallback) і запис (applyTranslationPlan,
 │   │   │                         #    deleteTranslation), галерея мовою сторінки (gallery.ts, GALLERY_ORDER).
