@@ -50,8 +50,8 @@ import { runFunnel } from './live-smoke/funnel.mjs';
 import {
   collectConsoleErrors,
   runHeadTitleChecks,
-  runHydrationIdentityChecks,
 } from './live-smoke/head-console.mjs';
+import { runHydrationIdentityChecks } from './live-smoke/hydration-identity.mjs';
 import { PRODUCT_SLUG } from './live-smoke/selectors.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
