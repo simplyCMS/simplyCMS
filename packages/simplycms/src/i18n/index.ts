@@ -3,10 +3,13 @@
 // Контракт: транслятор створюється per-request/per-render від мови інтерфейсу.
 // Глобального mutable-стану (`setLocale`) немає навмисно — SSR-safety.
 
-export { createTranslator } from './translator';
+export { createTranslator, createLookupTranslator } from './translator';
 export { useFormatDate } from './format';
+export { plural } from './plural';
+export { isCatalogValue } from './catalog-value';
 export { loadUiCatalog, loadTranslator, useUiCatalogs } from './registry';
 export { interpolate, lookupMessage } from './lookup';
+export type { CatalogLink } from './lookup';
 export {
   listLanguagePacks,
   hasLanguagePack,
@@ -32,6 +35,13 @@ export type {
   BaseKey,
   AdminKey,
   MailKey,
+  PluralKey,
+  StringKeyOf,
+  PluralKeyOf,
+  PluralForms,
+  PluralTranslator,
+  FoundForms,
+  CatalogValue,
   UiCatalogPart,
   PartCatalog,
   MessageParams,

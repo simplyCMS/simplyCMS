@@ -1,8 +1,8 @@
-import { use, useCallback } from 'react';
+import { use, useMemo } from 'react';
 import {
-  lookupMessage,
+  createLookupTranslator,
   useUiLocalePair,
-  type MessageParams,
+  type PluralTranslator,
 } from 'simplycms/i18n';
 import { useTheme } from './ThemeContext';
 import { ThemeRegistry } from './ThemeRegistry';
@@ -13,6 +13,9 @@ import { ThemeRegistry } from './ThemeRegistry';
  * Ланцюжок — `lookupMessage` з `simplycms/i18n`, спільний із core-транслятором
  * і `usePluginT`: `messages[locale][key] → messages[основна][key] → сам key`.
  * Мови — мови ІНТЕРФЕЙСУ (пара з `I18nProvider`), не мова контенту сторінки.
+ *
+ * Транслятор — `PluralTranslator`: той самий контракт, що в ядра й плагіна, тож
+ * `plural(t, key, n)` працює з ним без змін. Ключ-множина — значення `PluralForms`.
  *
  * Generic `K extends string` — це навмисно НЕ `MessageKey` ядра: кожна тема
  * оголошує СВІЙ union (`export type DefaultThemeKey = keyof typeof
@@ -32,23 +35,23 @@ import { ThemeRegistry } from './ThemeRegistry';
  * (`storefront-routes/src/shells/useActiveThemeModule.ts`) уже дістає
  * `components` теми на сервері.
  */
-export function useThemeT<K extends string = string>(): (
-  key: K,
-  params?: MessageParams,
-) => string {
+export function useThemeT<
+  K extends string = string,
+  P extends string = string,
+>(): PluralTranslator<K, P> {
   const { locale, fallback } = useUiLocalePair();
   const { themeName } = useTheme();
   const theme = use(ThemeRegistry.load(themeName));
 
-  return useCallback(
-    (key: K, params?: MessageParams): string => {
-      const messages = theme.messages;
-      return lookupMessage(
-        [messages?.[locale], messages?.[fallback]],
-        key,
-        params,
-      );
-    },
-    [theme, locale, fallback],
-  );
+  return useMemo(() => {
+    const messages = theme.messages;
+    // Кожна ланка несе свою мову: форми з каталогу fallback множаться за його правилами.
+    return createLookupTranslator<K, P>(
+      [
+        { locale, catalog: messages?.[locale] },
+        { locale: fallback, catalog: messages?.[fallback] },
+      ],
+      locale,
+    );
+  }, [theme, locale, fallback]);
 }

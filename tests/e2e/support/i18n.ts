@@ -9,9 +9,11 @@
  * читає `paths` кореневого `tsconfig.json` так само, як Vite/vitest.
  */
 import { createTranslator } from '../../../packages/simplycms/src/i18n/translator';
+import type { UiLocale } from 'simplycms/contracts';
+import { toUiLocale } from '../../../packages/simplycms/src/i18n/ui-locale';
 import type {
-  MessageKey,
   PartCatalog,
+  MessageKey,
 } from '../../../packages/simplycms/src/i18n/types';
 import { messages as ukBase } from '../../../packages/simplycms/src/i18n/catalogs/uk/base';
 import { messages as ukAdmin } from '../../../packages/simplycms/src/i18n/catalogs/uk/admin/index';
@@ -22,7 +24,14 @@ import { messages as ukMail } from '../../../packages/simplycms/src/i18n/catalog
  */
 const CATALOGS: readonly PartCatalog[] = [ukBase, ukAdmin, ukMail];
 
+/** Мова прогону — код з наявного мовного пакета, а не приведення типу. */
+function runLocale(): UiLocale {
+  const locale = toUiLocale('uk');
+  if (locale === null) throw new Error('e2e: немає мовного пакета «uk»');
+  return locale;
+}
+
 /** Текст мови прогону для ключа каталогу. */
 export function t(key: MessageKey): string {
-  return createTranslator(CATALOGS)(key);
+  return createTranslator(CATALOGS, runLocale())(key);
 }

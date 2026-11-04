@@ -1,4 +1,5 @@
 import { CORE_VERSION, satisfies } from 'simplycms/contracts/semver';
+import { isCatalogValue } from 'simplycms/i18n';
 import type { ThemeModule } from './types';
 import { validateThemeViews } from './validateThemeViews';
 
@@ -92,13 +93,13 @@ export function validateThemeModule(m: unknown): asserts m is ThemeModule {
     for (const [locale, catalog] of Object.entries(messages)) {
       if (!isRecord(catalog)) {
         throw new Error(
-          `[theme] "${manifest.name}": messages.${locale} має бути обʼєктом рядок→рядок`,
+          `[theme] "${manifest.name}": messages.${locale} має бути обʼєктом ключ→рядок або форми множини`,
         );
       }
       for (const [key, value] of Object.entries(catalog)) {
-        if (typeof value !== 'string') {
+        if (!isCatalogValue(value)) {
           throw new Error(
-            `[theme] "${manifest.name}": messages.${locale}.${key} має бути рядком`,
+            `[theme] "${manifest.name}": messages.${locale}.${key} має бути рядком або формами множини (обовʼязкова рядкова other)`,
           );
         }
       }

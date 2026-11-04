@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useMemo } from 'react';
 import {
-  lookupMessage,
+  createLookupTranslator,
   useUiLocalePair,
-  type MessageParams,
+  type PluralTranslator,
 } from 'simplycms/i18n';
 import type { PluginMessages } from './types';
 
@@ -22,19 +22,22 @@ import type { PluginMessages } from './types';
  * (`export type FaqKey = keyof typeof messages.uk` у `messages.ts` плагіна),
  * НЕ `MessageKey` ядра: SDK про ключі конкретного плагіна нічого не знає.
  */
-export function usePluginT<K extends string = string>(
-  messages: PluginMessages | undefined,
-): (key: K, params?: MessageParams) => string {
+export function usePluginT<
+  K extends string = string,
+  P extends string = string,
+>(messages: PluginMessages | undefined): PluralTranslator<K, P> {
   const { locale, fallback } = useUiLocalePair();
 
-  return useCallback(
-    (key: K, params?: MessageParams): string => {
-      return lookupMessage(
-        [messages?.[locale], messages?.[fallback]],
-        key,
-        params,
-      );
-    },
+  return useMemo(
+    () =>
+      createLookupTranslator<K, P>(
+        // Кожна ланка несе свою мову: форми з каталогу fallback множаться за його правилами.
+        [
+          { locale, catalog: messages?.[locale] },
+          { locale: fallback, catalog: messages?.[fallback] },
+        ],
+        locale,
+      ),
     [messages, locale, fallback],
   );
 }

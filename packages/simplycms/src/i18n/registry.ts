@@ -87,5 +87,6 @@ export async function loadTranslator(
 ): Promise<Translator> {
   return createTranslator(
     await Promise.all(parts.map((part) => loadUiCatalog(ui, part))),
+    ui,
   );
 }

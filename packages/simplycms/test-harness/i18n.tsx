@@ -30,10 +30,10 @@ const CATALOGS: Record<'uk' | 'en', readonly PartCatalog[]> = {
 const PRIMARY = ui('uk');
 
 /** Транслятор `uk`: точні тексти українського каталогу для асертів. */
-export const ukT: Translator = createTranslator(CATALOGS.uk);
+export const ukT: Translator = createTranslator(CATALOGS.uk, PRIMARY);
 
 /** Транслятор `en`: повний англійський каталог (fallback ядру не потрібен). */
-export const enT: Translator = createTranslator(CATALOGS.en);
+export const enT: Translator = createTranslator(CATALOGS.en, ui('en'));
 
 /** Провайдер мови інтерфейсу для тесту; за замовчуванням `uk`. */
 export function TestI18nProvider({

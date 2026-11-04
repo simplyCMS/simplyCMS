@@ -42,7 +42,7 @@ export function I18nProvider({
   children: ReactNode;
 }) {
   const value = useMemo<I18nContextValue>(
-    () => ({ t: createTranslator(catalogs), locale, fallback }),
+    () => ({ t: createTranslator(catalogs, locale), locale, fallback }),
     [catalogs, locale, fallback],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

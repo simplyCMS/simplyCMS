@@ -35,5 +35,8 @@ export function useRequestTranslator(): Translator {
   // Корінь міг упасти ДО завантаження каталогу, тож хук має право призупинитись (а не
   // кинути), поки `base` дозавантажується.
   const catalogs = useUiCatalogs(ui.locale, BASE);
-  return useMemo(() => createTranslator(catalogs), [catalogs]);
+  return useMemo(
+    () => createTranslator(catalogs, ui.locale),
+    [catalogs, ui.locale],
+  );
 }

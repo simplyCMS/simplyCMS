@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { CatalogValue } from 'simplycms/i18n';
 import type { Banner } from 'simplycms/contracts/objects';
 import type {
   CartViewModel,
@@ -131,14 +132,19 @@ export interface ThemeViews {
  * Ключ каталогу — код мови як відкритий рядок (`Locale` ядра відкритий так
  * само: мови додає власник магазину), тож `useThemeT` (нижче) читає обидва
  * каталоги (ядра й теми) під одну локаль.
- * `Record<string, string>`, а НЕ union конкретних ключів: theme-system не
+ * `Record<string, CatalogValue>`, а НЕ union конкретних ключів: theme-system не
  * знає наперед ключів жодної теми (кожна оголошує власний `keyof typeof
  * messages.uk` локально) — це навмисно ширший за `MessageKey` ядра тип,
  * інакше довелося б розширювати замкнений `MessageKey` ключами тем, а це
  * якраз те, чого контракт уникає (втрата захисту від одруків для 961
  * core-ключа).
+ *
+ * Значення — рядок або `PluralForms` (ключ множини, спека §19): набір форм мови —
+ * рівно категорії `Intl.PluralRules`, це стереже тест парності.
  */
-export type ThemeMessages = Partial<Record<string, Record<string, string>>>;
+export type ThemeMessages = Partial<
+  Record<string, Record<string, CatalogValue>>
+>;
 
 /**
  * Одне зовнішнє font stylesheet-джерело теми (контракт v2.2).
