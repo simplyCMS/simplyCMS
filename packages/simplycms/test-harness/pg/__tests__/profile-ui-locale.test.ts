@@ -1,6 +1,6 @@
 // М2а Task 5 (І45): мова інтерфейсу адмінки в `profiles.ui_locale` проти живого Postgres.
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { AuthzError } from 'simplycms/auth';
+import { AuthzError, readProfileUiLocale } from 'simplycms/auth';
 import {
   AdminNotFoundError,
   ValidationError,
@@ -85,6 +85,15 @@ describe('мова інтерфейсу адмінки: profiles.ui_locale (І45
       exec(profilesSetUiLocale, { uiLocale: 'de' }),
     ).rejects.toBeInstanceOf(ValidationError);
     expect(await stored(ADMIN.userId)).toBe('en');
+  });
+
+  // Читання мови адмінки в сесії (`getAdminSession`, §19.6): власний рядок під app_user + RLS.
+  it('readProfileUiLocale: збережена мова адміна → вона; без мови чи без профілю → null', async () => {
+    await seed(ADMIN.userId, 'en');
+    expect(await readProfileUiLocale(ADMIN.userId)).toBe('en');
+    await seed(ADMIN.userId, null);
+    expect(await readProfileUiLocale(ADMIN.userId)).toBeNull();
+    expect(await readProfileUiLocale(NO_PROFILE)).toBeNull();
   });
 
   it('null скидає вибір', async () => {
