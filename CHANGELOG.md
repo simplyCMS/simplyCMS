@@ -281,6 +281,9 @@
   `getAdminSession` у `simplycms/storefront-routes/server/auth`; `profiles.setUiLocale` лише оновлює наявний
   профіль і приймає тільки пакети з частиною `admin`. `toUiLocale(value, parts?)` перевіряє частини пакета.
   `readStoreFacts` повертає ще й `publishedLanguages`.
+- **Знесено serverFn `isAdmin`** (`simplycms/storefront-routes/server/auth`) і функцію `checkIsAdmin`
+  (`simplycms/storefront/loaders`): без викликачів після `getAdminSession`. Заміна: `getAdminSession().isAdmin` /
+  `getUser().isAdmin` у роутах і `isAdminRequest(headers)` з `simplycms/auth` у server-route handler-ах.
 
 - **Залежність магазину `nodemailer`:** peer ядра (точний пін) 10.1.0 → **10.3.1**. Магазин оновлює її сам
   (`pnpm add nodemailer@10.3.1`); doctor №14 звіряє версію з peer ядра.
