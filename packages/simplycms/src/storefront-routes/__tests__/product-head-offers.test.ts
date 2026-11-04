@@ -1,10 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
 import { productHead, type ProductHeadInput } from '../head/product';
-import { cl, preloadBase, ui } from '../../../test-harness/locale';
-
-beforeAll(() => preloadBase('uk', 'en'));
+import { cl, ui } from '../../../test-harness/locale';
 
 /**
  * F9 фінального рев'ю К3-Е6в: `offers` JSON-LD — ГОСТЬОВА ціна (тип з
@@ -30,8 +28,8 @@ const matches = () => {
   };
   return [{ routeId: '__root__', loaderData: data }];
 };
-const offersOf = (product: ProductHeadInput): unknown => {
-  const head = productHead(matches(), product);
+const offersOf = async (product: ProductHeadInput): Promise<unknown> => {
+  const head = await productHead(matches(), product);
   const ld = JSON.parse(head.scripts[0]!.children) as Record<string, unknown>;
   return ld.offers;
 };
@@ -65,8 +63,8 @@ const mod = (
 ) => ({ id, is_default, sort_order: 0, stock_status });
 
 describe('productHead: offers за гостьовою ціною (F9)', () => {
-  it('гуртова ціна перша в списку → Offer з роздрібною (гостьовою)', () => {
-    expect(offersOf(BASE)).toEqual({
+  it('гуртова ціна перша в списку → Offer з роздрібною (гостьовою)', async () => {
+    expect(await offersOf(BASE)).toEqual({
       '@type': 'Offer',
       priceCurrency: 'UAH',
       price: 1000,
@@ -74,21 +72,23 @@ describe('productHead: offers за гостьовою ціною (F9)', () => {
     });
   });
 
-  it('тип гостя — гуртовий (дефолтна категорія) → ціна гуртова', () => {
+  it('тип гостя — гуртовий (дефолтна категорія) → ціна гуртова', async () => {
     const guest = { priceTypeId: 'wholesale', defaultPriceTypeId: 'retail' };
-    expect(offersOf({ ...BASE, guest_price_types: guest })).toMatchObject({
-      price: 800,
-    });
+    expect(await offersOf({ ...BASE, guest_price_types: guest })).toMatchObject(
+      {
+        price: 800,
+      },
+    );
   });
 
-  it('без гостьової ціни (лише чужий тип) → offers немає (не 0 і не інший тип)', () => {
+  it('без гостьової ціни (лише чужий тип) → offers немає (не 0 і не інший тип)', async () => {
     expect(
-      offersOf({ ...BASE, product_prices: [entry('wholesale', 800)] }),
+      await offersOf({ ...BASE, product_prices: [entry('wholesale', 800)] }),
     ).toBeUndefined();
   });
 
-  it('модифікації → AggregateOffer за гостьовими цінами доступних модифікацій', () => {
-    const offers = offersOf({
+  it('модифікації → AggregateOffer за гостьовими цінами доступних модифікацій', async () => {
+    const offers = await offersOf({
       ...BASE,
       has_modifications: true,
       product_modifications: [
@@ -113,9 +113,9 @@ describe('productHead: offers за гостьовою ціною (F9)', () => {
     });
   });
 
-  it('модифікації без гостьових цін → offers немає', () => {
+  it('модифікації без гостьових цін → offers немає', async () => {
     expect(
-      offersOf({
+      await offersOf({
         ...BASE,
         has_modifications: true,
         product_modifications: [mod('m1', 'in_stock', true)],

@@ -68,7 +68,7 @@
   (мова інтерфейсу) і `getContentTools(code)` (точний код мови контенту або `null`), тип `Catalog` (англійські частини
   повні: `satisfies Record<…Key, string>`), зведення `catalogs/{uk,en}/index.ts`. `createTranslator(locale, fallback)` →
   `createTranslator(catalogs: readonly PartCatalog[])` над УЖЕ завантаженими частинами; завантаження — нові
-  `loadUiCatalog`, `useUiCatalogs`, `loadTranslator`, `peekTranslator` (`simplycms/i18n`). `I18nProvider` приймає ще й
+  `loadUiCatalog`, `useUiCatalogs`, `loadTranslator` (`simplycms/i18n`). `I18nProvider` приймає ще й
   обов'язковий проп `catalogs`; host-`__root.tsx` розгортає `useUiCatalogs(ui.locale, ['base'])`, layout адмінки дає
   вкладений провайдер з `['base','admin']`. `getStoreTranslator()` (`simplycms/site`) стає асинхронним
   (`Promise<Translator>`). Нове: `simplycms/contracts/thenable` (`ReactThenable`, `trackThenable`). Ключі `app.admin.loading`

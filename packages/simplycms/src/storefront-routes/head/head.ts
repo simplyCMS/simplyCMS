@@ -1,7 +1,7 @@
 import { rootRouteId } from '@tanstack/react-router';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { ContentLocale } from 'simplycms/contracts';
-import { peekTranslator } from 'simplycms/i18n';
+import { loadTranslator } from 'simplycms/i18n';
 import type { Translator, UiLocalePair } from 'simplycms/i18n';
 
 /**
@@ -91,14 +91,18 @@ function toMeta(title: string, description: string | null): HeadMeta[] {
 /**
  * `head()` сторінки вітрини: заголовок через i18n мови інтерфейсу сторінки + назва
  * магазину; опис сторінки, а за його відсутності — опис профілю.
+ *
+ * Асинхронна: `head()` у router-core може повернути проміс, а синхронного читання реєстру
+ * каталогів немає — помилку в `head()` роутер ковтає, тож «кинути з інваріантом» було б
+ * мовчазним дефектом. Частина `base` вже завантажена кореневим лоадером, тож `loadTranslator`
+ * повертає той самий кешований проміс без мережі.
  */
-export function storefrontHead(
+export async function storefrontHead(
   matches: ReadonlyArray<HeadMatch>,
   page: (t: Translator) => PageHead,
-): { meta: HeadMeta[] } {
+): Promise<{ meta: HeadMeta[] }> {
   const { storeProfile, ui } = readStorefrontRoot(matches);
-  // Частину `base` уже дочекався кореневий лоадер (`loadStorefrontRoot`): `head()` синхронний.
-  const own = page(peekTranslator(ui.locale, ['base']));
+  const own = page(await loadTranslator(ui.locale, ['base']));
   return {
     meta: toMeta(
       composeTitle(own.title, storeProfile.name),

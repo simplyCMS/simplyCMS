@@ -1,12 +1,10 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { renderSitemapXml } from 'simplycms/storefront/seo';
 import { indexPolicy } from 'simplycms/storefront/seo';
 import type { SitemapData } from 'simplycms/storefront/loaders';
 import { productHead, type ProductHeadInput } from '../head/product';
-import { preloadBase, ui } from '../../../test-harness/locale';
-
-beforeAll(() => preloadBase('uk', 'en'));
+import { ui } from '../../../test-harness/locale';
 
 /**
  * Паритет sitemap ↔ сторінка (М1, І33): кожен URL sitemap є self-canonical сторінки
@@ -56,7 +54,7 @@ const entries = (xml: string) =>
     ].map((a) => ({ rel: 'alternate', hrefLang: a[1]!, href: a[2]! })),
   }));
 
-function headOf(
+async function headOf(
   p: SitemapData['products'][number],
   locale: string,
   isTranslated: boolean,
@@ -101,11 +99,11 @@ function headOf(
 describe('паритет sitemap і head() сторінки товару', () => {
   const xml = renderSitemapXml(DATA, BASE);
 
-  it('URL sitemap = canonical сторінки; alternates = hreflang її head; неіндексовані версії поза sitemap', () => {
+  it('URL sitemap = canonical сторінки; alternates = hreflang її head; неіндексовані версії поза sitemap', async () => {
     const inSitemap = entries(xml);
     for (const p of DATA.products) {
       for (const v of p.languages) {
-        const head = headOf(p, v.code, v.isTranslated);
+        const head = await headOf(p, v.code, v.isTranslated);
         const canonical = head.links.find((l) => l.rel === 'canonical')!.href;
         const own = `${BASE}${v.code === p.primary ? '' : `/${v.code}`}/${v.path}`;
         const entry = inSitemap.find((e) => e.loc === own);

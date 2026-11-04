@@ -86,25 +86,3 @@ export async function loadTranslator(
     await Promise.all(parts.map((part) => loadUiCatalog(ui, part))),
   );
 }
-
-/**
- * Синхронний транслятор з уже завантажених частин — для `head()`, що не може чекати.
- * Незавантажена частина — порушення інваріанта (кореневий лоадер мав її дочекатись), а не
- * привід тихо віддати голі ключі; тому кидає, не запускаючи завантаження.
- */
-export function peekTranslator(
-  ui: UiLocale,
-  parts: readonly UiCatalogPart[],
-): Translator {
-  const catalogs = parts.map((part) => {
-    const entry = cache.get(cacheKey(ui, part));
-    if (entry?.status !== 'fulfilled' || entry.value === undefined) {
-      throw new Error(
-        `simplycms/i18n: частину «${part}» мови «${ui}» не завантажено — ` +
-          'кореневий лоадер мав дочекатись loadUiCatalog до head()',
-      );
-    }
-    return entry.value;
-  });
-  return createTranslator(catalogs);
-}

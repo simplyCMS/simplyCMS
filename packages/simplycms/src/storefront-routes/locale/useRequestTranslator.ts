@@ -31,8 +31,8 @@ export function useRequestTranslator(): Translator {
       resolveUiLocalePair(localeOfHref(publicHref, locales), locales.primary),
     [publicHref, locales],
   );
-  // Не `peekTranslator`: корінь міг упасти ДО завантаження каталогу, тож хук має право
-  // призупинитись (а не кинути), поки `base` дозавантажується.
+  // Корінь міг упасти ДО завантаження каталогу, тож хук має право призупинитись (а не
+  // кинути), поки `base` дозавантажується.
   const catalogs = useUiCatalogs(ui.locale, BASE);
   return useMemo(() => createTranslator(catalogs), [catalogs]);
 }

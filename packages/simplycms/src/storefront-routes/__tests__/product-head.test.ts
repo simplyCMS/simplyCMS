@@ -1,10 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
 import { productHead, type ProductHeadInput } from '../head/product';
-import { cl, preloadBase, ui } from '../../../test-harness/locale';
-
-beforeAll(() => preloadBase('uk', 'en'));
+import { cl, ui } from '../../../test-harness/locale';
 
 /**
  * `head()` картки товару: canonical, hreflang і `url` JSON-LD будуються від
@@ -63,11 +61,16 @@ function matches(siteUrl: string) {
   return [{ routeId: '__root__', loaderData: data }];
 }
 
-function jsonLd(head: ReturnType<typeof productHead>): Record<string, unknown> {
+function jsonLd(
+  head: Awaited<ReturnType<typeof productHead>>,
+): Record<string, unknown> {
   return JSON.parse(head.scripts[0]!.children) as Record<string, unknown>;
 }
 
-function content(head: ReturnType<typeof productHead>, key: string): unknown {
+function content(
+  head: Awaited<ReturnType<typeof productHead>>,
+  key: string,
+): unknown {
   const m = head.meta.find(
     (x) =>
       ('name' in x && x.name === key) ||
@@ -76,20 +79,20 @@ function content(head: ReturnType<typeof productHead>, key: string): unknown {
   return m && 'content' in m ? m.content : undefined;
 }
 
-const titleOf = (head: ReturnType<typeof productHead>): unknown => {
+const titleOf = (head: Awaited<ReturnType<typeof productHead>>): unknown => {
   const titled = head.meta.find((m) => 'title' in m);
   return titled && 'title' in titled ? titled.title : null;
 };
 
 describe('productHead', () => {
-  it('порожній siteUrl → без canonical, hreflang і url у JSON-LD', () => {
-    const head = productHead(matches(''), PRODUCT);
+  it('порожній siteUrl → без canonical, hreflang і url у JSON-LD', async () => {
+    const head = await productHead(matches(''), PRODUCT);
     expect(head.links).toEqual([]);
     expect(jsonLd(head)).not.toHaveProperty('url');
   });
 
-  it('з siteUrl → canonical, hreflang із x-default і url від адреси з реєстру', () => {
-    const head = productHead(matches('https://shop.example'), PRODUCT);
+  it('з siteUrl → canonical, hreflang із x-default і url від адреси з реєстру', async () => {
+    const head = await productHead(matches('https://shop.example'), PRODUCT);
     expect(head.links).toEqual([
       { rel: 'canonical', href: 'https://shop.example/panel' },
       { rel: 'alternate', hrefLang: 'uk', href: 'https://shop.example/panel' },
@@ -107,8 +110,8 @@ describe('productHead', () => {
     expect(jsonLd(head).url).toBe('https://shop.example/panel');
   });
 
-  it('ручний canonical на інший сайт лишається абсолютним', () => {
-    const head = productHead(matches('https://shop.example'), {
+  it('ручний canonical на інший сайт лишається абсолютним', async () => {
+    const head = await productHead(matches('https://shop.example'), {
       ...PRODUCT,
       page: {
         ...PRODUCT.page,
@@ -124,8 +127,8 @@ describe('productHead', () => {
     ]);
   });
 
-  it('robots і og:locale — мовою версії; pt-BR → pt_BR', () => {
-    const head = productHead(matches(''), {
+  it('robots і og:locale — мовою версії; pt-BR → pt_BR', async () => {
+    const head = await productHead(matches(''), {
       ...PRODUCT,
       page: {
         locale: 'pt-BR',
@@ -136,15 +139,15 @@ describe('productHead', () => {
     expect(content(head, 'og:locale')).toBe('pt_BR');
   });
 
-  it('опис без власного тексту товару — i18n-шаблон, однаковий у meta і og', () => {
-    const head = productHead(matches(''), PRODUCT);
+  it('опис без власного тексту товару — i18n-шаблон, однаковий у meta і og', async () => {
+    const head = await productHead(matches(''), PRODUCT);
     expect(content(head, 'description')).toBe('Купити Панель');
     expect(content(head, 'og:description')).toBe('Купити Панель');
     expect(titleOf(head)).toBe('Панель — Крамниця');
   });
 
-  it('meta_title і meta_description мають пріоритет над назвою й описом', () => {
-    const head = productHead(matches(''), {
+  it('meta_title і meta_description мають пріоритет над назвою й описом', async () => {
+    const head = await productHead(matches(''), {
       ...PRODUCT,
       meta_title: 'Сонячна панель 450 Вт',
       meta_description: 'Мета-опис',
@@ -156,8 +159,8 @@ describe('productHead', () => {
     expect(content(head, 'og:title')).toBe('Сонячна панель 450 Вт');
   });
 
-  it('опис із HTML → у meta description, og:description і JSON-LD без тегів', () => {
-    const head = productHead(matches(''), {
+  it('опис із HTML → у meta description, og:description і JSON-LD без тегів', async () => {
+    const head = await productHead(matches(''), {
       ...PRODUCT,
       description: '<p>Опис <b>x</b></p>',
     });

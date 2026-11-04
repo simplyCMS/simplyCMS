@@ -2,7 +2,7 @@
 // `checkedContentLocale`, а не приведення `as ContentLocale` (спека §19.2).
 import type { ContentLocale, LocaleSet } from 'simplycms/contracts';
 import { checkedContentLocale } from 'simplycms/domain/translations';
-import { loadUiCatalog, resolveUiLocale, type UiLocale } from 'simplycms/i18n';
+import { resolveUiLocale, type UiLocale } from 'simplycms/i18n';
 
 /** Коротка назва конструктора для фікстур. */
 export const cl: (code: string) => ContentLocale = checkedContentLocale;
@@ -26,13 +26,4 @@ export function localeSet(
  */
 export function ui(code: string): UiLocale {
   return resolveUiLocale(cl(code), cl(code));
-}
-
-/**
- * Частина `base` названих мов у реєстрі: `head()` синхронний (`peekTranslator`) і не
- * вантажить сам — у продакшні її дочікується кореневий лоадер, у тесті `head()` викликають
- * напряму, тож тест робить те саме в `beforeAll`.
- */
-export async function preloadBase(...codes: string[]): Promise<void> {
-  await Promise.all(codes.map((code) => loadUiCatalog(ui(code), 'base')));
 }

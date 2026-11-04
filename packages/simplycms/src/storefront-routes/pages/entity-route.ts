@@ -93,5 +93,5 @@ export function entityHead(
   matches: ReadonlyArray<HeadMatch>,
   data: Awaited<ReturnType<typeof loadEntityPage>> | undefined,
 ) {
-  return data ? productHead(matches, data.product) : {};
+  return data ? productHead(matches, data.product) : Promise.resolve({});
 }

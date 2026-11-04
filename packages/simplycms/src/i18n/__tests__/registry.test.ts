@@ -63,18 +63,7 @@ describe('loadUiCatalog', () => {
   });
 });
 
-describe('peekTranslator і loadTranslator', () => {
-  it('peekTranslator до завантаження кидає й не запускає завантаження, після — перекладає', async () => {
-    const { peekTranslator, loadUiCatalog, uk, pack } = await fresh();
-    const loader = vi.spyOn(pack.ui, 'base');
-
-    expect(() => peekTranslator(uk, ['base'])).toThrow(/не завантажено/);
-    expect(loader).not.toHaveBeenCalled();
-
-    await loadUiCatalog(uk, 'base');
-    expect(peekTranslator(uk, ['base'])('common.save')).toBe('Зберегти');
-  });
-
+describe('loadTranslator', () => {
   it('loadTranslator вантажить лише названі частини', async () => {
     const { loadTranslator, uk, pack } = await fresh();
     const admin = vi.spyOn(pack.ui, 'admin');

@@ -40,9 +40,8 @@ export async function loadStorefrontRoot(
   // Інтерфейс — окрема вісь (І41): мова без пакета (`pl`) не ламає тексти, а береться за
   // основною. `<html lang>` і дані сторінки лишаються на `locale`.
   const ui = resolveUiLocalePair(locale, locales.primary);
-  // Лоадер біжить і на SSR, і на клієнтській навігації, а `head()` синхронний: частину
-  // `base` обох мов треба дочекатись тут, щоб `use` у корені й `peekTranslator` у `head()`
-  // знайшли її вже завантаженою (Д2).
+  // Лоадер біжить і на SSR, і на клієнтській навігації: частину `base` треба дочекатись
+  // тут, щоб `use` у корені знайшов її вже завантаженою (Д2).
   await Promise.all([
     loadUiCatalog(ui.locale, 'base'),
     loadUiCatalog(ui.fallback, 'base'),

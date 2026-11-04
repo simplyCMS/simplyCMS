@@ -4,12 +4,7 @@
 // Глобального mutable-стану (`setLocale`) немає навмисно — SSR-safety.
 
 export { createTranslator, languageOfConfigLocale } from './translator';
-export {
-  loadUiCatalog,
-  loadTranslator,
-  peekTranslator,
-  useUiCatalogs,
-} from './registry';
+export { loadUiCatalog, loadTranslator, useUiCatalogs } from './registry';
 export { interpolate, lookupMessage } from './lookup';
 export { LANGUAGE_PACKS, getUiPack, getContentTools } from './packs';
 export {
