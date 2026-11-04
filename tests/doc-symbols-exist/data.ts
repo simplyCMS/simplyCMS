@@ -52,10 +52,8 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   entityKind: 'символ Drizzle, на якому ламаються подвійні копії',
   xIn: 'узагальнена позначка пари `insertIn`/`updateIn`/`removeIn` у поясненні',
   // --- @tanstack/db, query-db-collection (внутрішні імена бібліотеки в записах реєстру) ---
-  removeQueries: 'метод TanStack Query, у записі TSDB-1',
   loadOrderedPrefixRepair: 'внутрішнє імʼя @tanstack/db, у записі TSDB-1',
-  handleDeprecatedAutoRefetch:
-    'внутрішнє імʼя query-db-collection, у записі TSDB-1',
+  writeDirectCache: 'внутрішнє імʼя query-db-collection, у записі TSDB-1',
   loadPage: 'внутрішнє імʼя @tanstack/db, у записі TSDB-2',
   startSyncIfIdle:
     'внутрішнє імʼя query-db-collection, у закритому записі TSDB-B1',

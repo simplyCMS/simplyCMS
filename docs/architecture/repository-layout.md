@@ -218,6 +218,7 @@ simplyCMS/
 │                                     # з ВЛАСНИМ імʼям плагіна: query-key-from-entity.mjs,
 │                                     # server-fn-top-level.mjs (createServerFn лише топ-рівнем),
 │                                     # mutation-cache-sync.mjs (мутація синхронізує кеш),
+│                                     # awaited-write-back.mjs (write-back колекції під await),
 │                                     # server-only-relative.mjs (відносний імпорт у server-only
 │                                     # дерево ззовні нього), no-side-effect-import.mjs
 │                                     # (side-effect-імпорт у пакетах із sideEffects:false),
