@@ -122,6 +122,7 @@
     "./core/components/*": "./src/core/components/*",
     "./storefront-routes": "./src/storefront-routes/index.ts",
     "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
+    "./storefront-routes/hydration": "./src/storefront-routes/hydration/index.ts",
     "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
     "./storefront-routes/seo/*": "./src/storefront-routes/seo/*.ts",
     "./storefront-routes/head/*": "./src/storefront-routes/head/*.ts",
@@ -596,6 +597,10 @@
       "./storefront-routes/active-theme": {
         "types": "./dist/storefront-routes/active-theme.d.ts",
         "import": "./dist/storefront-routes/active-theme.js"
+      },
+      "./storefront-routes/hydration": {
+        "types": "./dist/storefront-routes/hydration/index.d.ts",
+        "import": "./dist/storefront-routes/hydration/index.js"
       },
       "./storefront-routes/server/*": {
         "types": "./dist/storefront-routes/server/*.d.ts",
