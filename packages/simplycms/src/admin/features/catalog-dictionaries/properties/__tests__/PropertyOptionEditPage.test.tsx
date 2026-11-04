@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import {
   ID,
   OPTIONS,
@@ -82,8 +81,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PropertyOptionEditPage from '../PropertyOptionEditPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const fill = (name: string, slug: string) => {
   fireEvent.change(screen.getByLabelText(t('common.name')), {

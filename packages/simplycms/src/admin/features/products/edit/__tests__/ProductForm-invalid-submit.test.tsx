@@ -10,7 +10,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { ResizeObserverStub } from './test-engine-stub';
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
@@ -34,6 +33,7 @@ import {
   productFormSchemaFor,
   type ProductFormValues,
 } from '../product-form-schema';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 const LANGS = [{ code: 'uk', name: 'Українська', isDefault: true }];
 
@@ -79,9 +79,9 @@ describe('ProductForm: невалідна назва — інлайн-помил
     const onSubmit = vi.fn();
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <Harness onSubmit={onSubmit} />
-        </I18nProvider>
+        </TestI18nProvider>
       </QueryClientProvider>,
     );
 

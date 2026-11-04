@@ -13,7 +13,6 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ResizeObserverStub } from '../../products/edit/__tests__/test-engine-stub';
 import { LanguageTabs } from '../LanguageTabs';
 import { PathField } from '../PathField';
@@ -23,6 +22,7 @@ import {
   useAggregateCommand,
   useAggregateVersionStore,
 } from '../useAggregateCommand';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 const mocks = vi.hoisted(() => ({ setProductPath: vi.fn() }));
@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 const i18n = ({ children }: { children: ReactNode }) => (
-  <I18nProvider locale="uk">{children}</I18nProvider>
+  <TestI18nProvider>{children}</TestI18nProvider>
 );
 
 describe('TranslationStatusBadge', () => {

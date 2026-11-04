@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
@@ -41,12 +40,13 @@ vi.mock('@tanstack/react-router', () => ({
 import OrderDetailPage from '../OrderDetailPage';
 import { useOrderItemsEdit } from '../useOrderItemsEdit';
 import { renderHook, act } from '@testing-library/react';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );

@@ -7,12 +7,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from 'simplycms/i18n';
 import {
   serverValidationError,
   throughServerFnBoundary,
 } from '../../../../lib/__tests__/support/serverfn-boundary';
 import { StockEditor } from '../StockEditor';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
@@ -50,9 +50,9 @@ afterEach(() => {
 function setup(points: typeof mocks.points) {
   mocks.points = points;
   return render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <StockEditor productId="p" modificationId={null} showCard={false} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 }
 

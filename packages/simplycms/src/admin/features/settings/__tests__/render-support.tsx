@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import type { StoreProfile } from 'simplycms/contracts/store-profile';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 export const PROFILE: StoreProfile = {
   name: 'Мій магазин',
@@ -22,7 +22,7 @@ export function makeWrapper(client: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={client}>
-        <I18nProvider locale="uk">{children}</I18nProvider>
+        <TestI18nProvider>{children}</TestI18nProvider>
       </QueryClientProvider>
     );
   };

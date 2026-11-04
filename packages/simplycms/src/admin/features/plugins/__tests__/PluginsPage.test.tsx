@@ -10,7 +10,6 @@ import {
   within,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { makeWrapper } from '../../settings/__tests__/render-support';
 import { pluginRow } from './plugin-rows';
 
@@ -42,8 +41,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PluginsPage from '../PluginsPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client: QueryClient;
 
 beforeEach(() => {

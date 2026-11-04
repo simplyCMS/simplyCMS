@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { makeOrder } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { OrderDeliveryCard } from '../OrderDeliveryCard';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 afterEach(cleanup);
 
@@ -14,7 +14,7 @@ const renderCard = (
   pickupPointId: string | null = null,
 ) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <OrderDeliveryCard
         order={{
           ...makeOrder(1, new Date()),
@@ -22,7 +22,7 @@ const renderCard = (
           shippingData: shippingData as never,
         }}
       />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 describe('OrderDeliveryCard — знімок доставки (Е6а-8)', () => {

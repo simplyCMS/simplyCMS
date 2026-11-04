@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Редагування позицій у картці (Task 5, Е5б-11): справжні колекції + стаб
- * межі serverFn. Асерти — точні тексти `createTranslator('uk', 'uk')`.
+ * межі serverFn. Асерти — точні тексти `ukT`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -13,7 +13,6 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
@@ -57,13 +56,14 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import OrderDetailPage from '../OrderDetailPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );

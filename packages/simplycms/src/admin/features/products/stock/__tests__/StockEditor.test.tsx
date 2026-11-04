@@ -5,8 +5,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { StockEditor } from '../StockEditor';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 const mocks = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock('sonner', () => ({
@@ -33,16 +33,16 @@ afterEach(() => {
 describe('StockEditor: валідація кількості', () => {
   it('від’ємний залишок → повідомлення про кількість, не про ціну', async () => {
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <StockEditor productId="p" modificationId={null} showCard={false} />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     fireEvent.change(screen.getByLabelText('Кількість на складі'), {
       target: { value: '-1' },
     });
     fireEvent.click(screen.getByText('Зберегти залишки'));
     await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledTimes(1));
-    const t = createTranslator('uk', 'uk');
+    const t = ukT;
     expect(mocks.toastError).toHaveBeenCalledWith(
       t('admin.products.stock.saveFailed', {
         message: t('admin.products.stock.invalidQuantity'),

@@ -6,7 +6,6 @@ import { useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { shippingZonesCollection, useCollection } from 'simplycms/admin-data';
 import { AGGREGATE, ENTITY, entityKey } from 'simplycms/contracts/entities';
-import { I18nProvider } from 'simplycms/i18n';
 import { ZONES } from './render-support';
 
 const m = vi.hoisted(() => ({
@@ -20,6 +19,7 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { useShippingZoneDefault } from '../useShippingZoneDefault';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -43,7 +43,7 @@ describe('useShippingZoneDefault', () => {
     for (const k of Object.values(KEYS)) qc.setQueryData([...k], { warm: 1 });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={qc}>
-        <I18nProvider locale="uk">{children}</I18nProvider>
+        <TestI18nProvider>{children}</TestI18nProvider>
       </QueryClientProvider>
     );
     const { result } = renderHook(

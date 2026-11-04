@@ -3,7 +3,6 @@
 // власник фото (`entityId` картки), і в `products.create` (`useProductCreate`).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 
 const mocks = vi.hoisted(() => ({
   useProductCreate: vi.fn((_id: string) => vi.fn()),
@@ -25,6 +24,7 @@ vi.mock('../ProductForm', () => ({
 vi.mock('simplycms/plugins/PluginSlot', () => ({ PluginSlot: () => null }));
 
 import { NewProductPage } from '../NewProductPage';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 afterEach(() => {
   cleanup();
@@ -34,9 +34,9 @@ afterEach(() => {
 describe('NewProductPage: наперед згенерований id', () => {
   it('create отримує той самий id, що й власник фото в картці', () => {
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <NewProductPage />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     const entityId = screen.getByTestId('form').getAttribute('data-entity-id');
     expect(entityId).toMatch(/^[0-9a-f-]{36}$/);

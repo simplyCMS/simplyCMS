@@ -8,10 +8,10 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import { mocks, page, renderPage, row, stubDom } from './render-support';
+import { ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -30,7 +30,7 @@ vi.mock('@tanstack/react-router', () => ({
   }) => <a href={to.replace('$userId', params.userId)}>{children}</a>,
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 beforeEach(() => {
   stubDom();

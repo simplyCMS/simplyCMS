@@ -3,10 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { createTranslator } from 'simplycms/i18n';
 import { CORE_VERSION } from 'simplycms/contracts/semver';
 import { dashboardSummary, listOrderStatuses, slot } from './dashboard-mocks';
 import { NEW, fmt, recent, renderPage, summary } from './render-support';
+import { ukT } from '../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -45,7 +45,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 beforeEach(() => {
   slot.mockClear();

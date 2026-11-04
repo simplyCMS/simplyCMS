@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { resolveMediaUrl } from 'simplycms/domain/media';
 import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
@@ -35,8 +34,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { PropertyOptionsTable } from '../PropertyOptionsTable';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 // Сервер зі станом (TSDB-1): після запису зріз ревалідується, і статична
 // відповідь повернула б видалену опцію.

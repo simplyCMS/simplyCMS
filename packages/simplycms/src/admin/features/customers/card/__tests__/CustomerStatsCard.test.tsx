@@ -1,20 +1,20 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import CustomerStatsCard from '../CustomerStatsCard';
 import { card } from './render-support';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/react-query', () => ({
   useFormatPrice: () => (n: number) => String(n),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const show = (over: Record<string, unknown>) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <CustomerStatsCard card={card(over) as never} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 /** Р30: правило email_domain не бачить домену непідтвердженої пошти — адмін це бачить. */

@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import {
   POINTS,
   ZONES,
@@ -41,8 +40,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PickupPointsPage from '../PickupPointsPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const rowOf = (name: string) => screen.getByText(name).closest('tr')!;
 
 beforeEach(() => {

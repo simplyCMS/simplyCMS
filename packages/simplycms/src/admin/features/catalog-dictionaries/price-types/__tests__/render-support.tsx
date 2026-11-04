@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 export const ROWS = [
   {
@@ -24,7 +24,7 @@ export const ROWS = [
 export function wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </QueryClientProvider>
   );
 }

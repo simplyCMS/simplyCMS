@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../products/edit/__tests__/test-engine-stub';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 export { mocks, ui } from './mocks';
 export { stubDom } from '../../shipping/methods/__tests__/render-support';
@@ -50,7 +50,7 @@ export function renderWithClient(ui: ReactElement) {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
       <EngineProvider value={ENGINE}>
-        <I18nProvider locale="uk">{children}</I18nProvider>
+        <TestI18nProvider>{children}</TestI18nProvider>
       </EngineProvider>
     </QueryClientProvider>
   );

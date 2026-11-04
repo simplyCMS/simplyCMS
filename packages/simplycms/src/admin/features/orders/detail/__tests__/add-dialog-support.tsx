@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, beforeEach, vi, type Mock } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
@@ -17,8 +16,9 @@ import {
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { CANCELLED, makeItem, NEW } from './support';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-export const t = createTranslator('uk', 'uk');
+export const t = ukT;
 export const at = new Date(Date.UTC(2026, 9, 1, 10));
 export const hit = (
   productId: string,
@@ -54,7 +54,7 @@ let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );

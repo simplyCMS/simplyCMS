@@ -8,7 +8,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { makeWrapper } from './render-support';
 
@@ -31,8 +30,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { MailOutboxCard } from '../MailOutboxCard';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const KEY = entityKey(ENTITY.mailOutbox).all();
 const SECRET = 'https://shop.test/reset?token=TOP-SECRET-TOKEN';
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);

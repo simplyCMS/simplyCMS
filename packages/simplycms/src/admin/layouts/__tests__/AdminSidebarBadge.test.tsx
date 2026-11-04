@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { SidebarProvider } from 'simplycms/ui/sidebar';
 import { AdminSidebar } from '../AdminSidebar';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 const pending = vi.hoisted(() => vi.fn());
 vi.mock('simplycms/admin-server', () => ({ countPendingReviews: pending }));
@@ -30,11 +30,11 @@ afterEach(cleanup);
 const renderSidebar = () =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <SidebarProvider>
           <AdminSidebar />
         </SidebarProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 

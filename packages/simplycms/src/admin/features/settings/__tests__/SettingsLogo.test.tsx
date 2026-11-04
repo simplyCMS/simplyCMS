@@ -8,7 +8,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { makeWrapper, SETTINGS } from './render-support';
 
 const { toastError, toastSuccess, invalidate } = vi.hoisted(() => ({
@@ -40,8 +39,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import SettingsPage from '../SettingsPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client: QueryClient;
 
 const open = async () => {

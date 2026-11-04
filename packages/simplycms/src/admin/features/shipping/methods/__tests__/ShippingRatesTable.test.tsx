@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { METHODS, RATES, ZONES, stubDom, wrapper } from './render-support';
 
 stubDom();
@@ -29,8 +28,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { ShippingRatesTable } from '../ShippingRatesTable';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const methodId = METHODS[0]!.id;
 
 beforeEach(() => {

@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ResizeObserverStub } from './test-engine-stub';
 import { aggregate, ID, LANGUAGES } from './ProductEditPage-fixtures';
 
@@ -31,11 +30,12 @@ vi.mock('../../../../components/RichTextEditor', () => ({
 }));
 
 import { ProductEditPage } from '../ProductEditPage';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </QueryClientProvider>
   );
 }

@@ -2,18 +2,18 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { AdminOrder } from 'simplycms/admin-data';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import { makeOrder } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { OrderCustomerCard } from '../OrderCustomerCard';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 afterEach(cleanup);
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const renderCard = (over: Partial<AdminOrder>) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <OrderCustomerCard order={{ ...makeOrder(1, new Date()), ...over }} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 describe('OrderCustomerCard — знеособлене замовлення (Е6г)', () => {

@@ -1,10 +1,10 @@
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../products/edit/__tests__/test-engine-stub';
 import DashboardPage from '../DashboardPage';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 export const NEW = {
   id: 's-new',
@@ -40,9 +40,9 @@ export const renderPage = (
   render(
     <QueryClientProvider client={client}>
       <EngineProvider value={ENGINE}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <DashboardPage />
-        </I18nProvider>
+        </TestI18nProvider>
       </EngineProvider>
     </QueryClientProvider>,
   );

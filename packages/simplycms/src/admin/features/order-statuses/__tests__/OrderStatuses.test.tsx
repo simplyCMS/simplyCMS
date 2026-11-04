@@ -9,7 +9,6 @@ import {
   within,
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import type { OrderStatus } from 'simplycms/schema/types';
 
 // jsdom без ResizeObserver (Radix Switch у діалозі).
@@ -40,8 +39,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import OrderStatuses from '../../../pages/OrderStatuses';
+import { TestI18nProvider, ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const row = (p: Partial<OrderStatus>): OrderStatus => ({
   id: '00000001-0000-4000-8000-000000000001',
@@ -65,9 +65,9 @@ const CUSTOM = row({
 function renderPage() {
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <OrderStatuses />
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

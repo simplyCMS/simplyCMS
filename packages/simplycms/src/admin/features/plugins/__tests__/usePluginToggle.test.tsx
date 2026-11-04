@@ -2,7 +2,6 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { PluginRow } from 'simplycms/admin-server';
 import { makeWrapper } from '../../settings/__tests__/render-support';
@@ -33,11 +32,12 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { usePluginToggle } from '../usePluginToggle';
+import { ukT } from '../../../../../test-harness/i18n';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const KEY = entityKey(ENTITY.plugins).all();
 let client: QueryClient;
 

@@ -3,7 +3,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { getCollection, ordersCollection } from 'simplycms/admin-data';
-import { createTranslator } from 'simplycms/i18n';
 import {
   ADMIN_STATE_CONSTRAINT,
   DOMAIN_ERROR_NAME,
@@ -17,6 +16,7 @@ import {
   stubDom,
   ui,
 } from './render-support';
+import { ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -40,7 +40,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const conflict = (constraint: string) =>
   Object.assign(new Error('conflict'), {
     name: DOMAIN_ERROR_NAME.adminConflict,
