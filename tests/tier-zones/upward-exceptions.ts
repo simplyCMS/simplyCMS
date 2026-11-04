@@ -64,7 +64,6 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'commerce→db': 'рушій читає прайси/знижки/тарифи через ActorDb (Е5б-5)',
   'site→db':
     'тип ActorDb; власного каналу до Postgres модуль не відкриває (Е6б-7)',
-  'site→i18n': 'тип Locale для декларації локалі магазину',
   'server-guard→env': 'прод-предикат і redactUrls беруться з env (Е8, Р23/Р27)',
   'mail→env': 'вибір драйвера за групою SMTP_* і прод-предикат (Е8, Task 9)',
   'mail→db': 'запис outbox mail_outbox лише через withActor (Task 10)',
