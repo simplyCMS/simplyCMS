@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Види цін — дзеркало `uk/admin/prices.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.prices.subtitle': 'Manage product price types',
   'admin.prices.add': 'Add a price type',
   'admin.prices.empty': 'No price types yet',
@@ -20,4 +18,4 @@ export const messages: Catalog = {
   'admin.prices.defaultKeep':
     'To change the default, make another type the default',
   'admin.prices.notFound': 'Price type not found',
-};
+} satisfies Record<string, string>;

@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Користувачі — дзеркало `uk/admin/users.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.users.subtitle': 'Manage system users',
   'admin.users.searchPlaceholder': 'Search by email, name, phone...',
   'admin.users.allCategories': 'All categories',
@@ -141,4 +139,4 @@ export const messages: Catalog = {
   'admin.users.card.deleteConfirmLabel': 'Type the email {email} to confirm',
   'admin.users.card.deleteConfirm': 'Delete permanently',
   'admin.users.card.deleted': 'Account deleted',
-};
+} satisfies Record<string, string>;

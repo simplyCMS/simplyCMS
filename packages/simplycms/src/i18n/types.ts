@@ -1,10 +1,18 @@
-import type { messages as ukMessages } from './catalogs/uk/index';
+import type { messages as ukBase } from './catalogs/uk/base';
+import type { messages as ukAdmin } from './catalogs/uk/admin/index';
+import type { messages as ukMail } from './catalogs/uk/mail';
+
+/** Частина каталогу ядра: вантажиться окремо, лише де потрібна (вітрина — `base`). */
+export type UiCatalogPart = 'base' | 'admin' | 'mail';
 
 /**
- * Ключі повідомлень. Виводяться з українського каталогу — він повний, решта
- * каталогів часткові, тож `keyof` саме uk дає замкнений і чесний union.
+ * Ключі частин виводяться з українських каталогів — вони повні, тож `keyof` саме uk дає
+ * замкнений і чесний union. Англійські частини `satisfies Record<…Key, string>`.
  */
-export type MessageKey = keyof typeof ukMessages;
+export type BaseKey = keyof typeof ukBase;
+export type AdminKey = keyof typeof ukAdmin;
+export type MailKey = keyof typeof ukMail;
+export type MessageKey = BaseKey | AdminKey | MailKey;
 
 /** Каталог перекладів: неповний за визначенням — решту добирає fallback-мова. */
 export type Catalog = Partial<Record<MessageKey, string>>;

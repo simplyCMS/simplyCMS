@@ -35,7 +35,7 @@ describe('createTranslator — fallback-мова', () => {
   it('бере українське повідомлення, якщо ключа немає в en-каталозі', async () => {
     // Мокаємо en-каталог неповним — так перевіряємо сам механізм fallback,
     // не псуючи реальні каталоги штучно неперекладеними ключами.
-    vi.doMock('../catalogs/en/index', () => ({
+    vi.doMock('../catalogs/en/base', () => ({
       messages: { 'cart.title': 'Cart' },
     }));
     const { createTranslator: create } = await import('../translator');

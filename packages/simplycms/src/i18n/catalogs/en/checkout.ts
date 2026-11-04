@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Оформлення замовлення — дзеркало `uk/checkout.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'checkout.title': 'Checkout',
 
   'checkout.emptyCart': 'Your cart is empty',
@@ -136,4 +134,4 @@ export const messages: Catalog = {
   'checkout.recipientSelector.sortByName': 'By name',
   'checkout.recipientSelector.sortByDate': 'By date',
   'checkout.recipientSelector.emptyState': 'No saved recipients yet',
-};
+} satisfies Record<string, string>;

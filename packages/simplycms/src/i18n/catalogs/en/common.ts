@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Спільна лексика інтерфейсу — дзеркало `uk/common.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'common.save': 'Save',
   'common.saving': 'Saving...',
   'common.cancel': 'Cancel',
@@ -92,4 +90,4 @@ export const messages: Catalog = {
   // «За тарифами» in the order summary.
   'common.shipping.byTariff': 'By carrier rates',
   'common.shipping.free': 'Free',
-};
+} satisfies Record<string, string>;

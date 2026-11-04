@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Особистий кабінет — дзеркало `uk/profile.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'profile.title': 'My profile',
   'profile.personalData': 'Personal details',
   'profile.recentOrders': 'Recent orders',
@@ -110,4 +108,4 @@ export const messages: Catalog = {
   'profile.avatar.tooLarge': 'File too large',
   'profile.avatar.maxSize': 'Maximum size: 5 MB',
   'profile.avatar.failed': 'Could not save the photo',
-};
+} satisfies Record<string, string>;

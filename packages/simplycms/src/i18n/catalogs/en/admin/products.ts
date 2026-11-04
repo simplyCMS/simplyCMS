@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Товари — дзеркало `uk/admin/products.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.products.subtitle': 'Manage the product catalog',
   'admin.products.add': 'Add a product',
   'admin.products.all': 'All products',
@@ -104,4 +102,4 @@ export const messages: Catalog = {
   'admin.products.editor.placeholder': 'Enter text...',
   'admin.products.editor.linkUrl': 'Link URL',
   'admin.products.editor.imageUrl': 'Image URL',
-};
+} satisfies Record<string, string>;

@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Повідомлення валідації форм — дзеркало `uk/validation.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'validation.nameRequired': 'Name is required',
   'validation.codeRequired': 'Code is required',
   'validation.cityRequired': 'City is required',
@@ -30,4 +28,4 @@ export const messages: Catalog = {
   'validation.groupRequired': 'Choose a group',
   'validation.priceTypeRequired': 'Choose a price type',
   'validation.targetCategoryRequired': 'Choose a target category',
-};
+} satisfies Record<string, string>;

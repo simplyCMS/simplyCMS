@@ -1,14 +1,8 @@
 /**
- * Український каталог — джерело правди набору ключів.
- *
- * `MessageKey` виводиться саме звідси (`keyof typeof messages`), тож новий ключ
- * додається спершу тут; решта каталогів — часткові й падають у fallback на uk.
- *
- * 🔴 Каталог зведено spread-ом із неймспейсних модулів, бо повний набір ключів
- * не вміщається в ліміт 150 рядків на файл. Ціна цього рішення — дублікат ключа
- * у двох модулях перетерся б МОВЧКИ; стереже `catalog-integrity.test.ts`, який
- * звіряє суму ключів модулів із розміром зведеного обʼєкта.
+ * Англійська частина `base` — повна (`satisfies Record<BaseKey, string>`): пропущений
+ * ключ не компілюється. Структура модулів — дзеркало `uk/`, файл у файл.
  */
+import type { BaseKey } from '../../types';
 import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
@@ -25,8 +19,6 @@ import { messages as orders } from './orders';
 import { messages as auth } from './auth';
 import { messages as reviews } from './reviews';
 import { messages as errors } from './errors';
-import { messages as mail } from './mail';
-import { messages as admin } from './admin/index';
 
 export const messages = {
   ...app,
@@ -45,6 +37,4 @@ export const messages = {
   ...auth,
   ...reviews,
   ...errors,
-  ...mail,
-  ...admin,
-} satisfies Record<string, string>;
+} satisfies Record<BaseKey, string>;

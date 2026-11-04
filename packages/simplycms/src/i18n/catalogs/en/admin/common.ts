@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Каркас адмінки — дзеркало `uk/admin/common.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.common.title': 'Admin panel',
   'admin.common.toSite': 'View site',
   'admin.common.signedOut': 'Signed out',
@@ -21,4 +19,4 @@ export const messages: Catalog = {
   'admin.common.seo': 'SEO',
   'admin.common.metaTitle': 'Meta Title',
   'admin.common.metaDescription': 'Meta Description',
-};
+} satisfies Record<string, string>;

@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Валідатор цін — дзеркало `uk/admin/validator.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.validator.subtitle':
     'Shows the price a customer gets, which discounts applied and why others did not',
   'admin.validator.params': 'Check parameters',
@@ -52,4 +50,4 @@ export const messages: Catalog = {
     'Lost to another discount under the group operator',
   'admin.validator.reason.exceeds_price':
     'Did not fit: discounts already brought the price to zero',
-};
+} satisfies Record<string, string>;

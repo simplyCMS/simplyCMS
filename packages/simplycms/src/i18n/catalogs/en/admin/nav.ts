@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Бічне меню адмінки — дзеркало `uk/admin/nav.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.nav.group.catalog': 'Catalog',
   'admin.nav.group.orders': 'Orders',
   'admin.nav.group.shipping': 'Shipping',
@@ -29,4 +27,4 @@ export const messages: Catalog = {
   'admin.nav.userCategories': 'User categories',
   'admin.nav.languages': 'Languages',
   'admin.nav.settings': 'Settings',
-};
+} satisfies Record<string, string>;

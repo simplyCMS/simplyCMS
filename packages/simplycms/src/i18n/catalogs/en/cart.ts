@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Кошик — дзеркало `uk/cart.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'cart.title': 'Cart',
   'cart.items': 'Items ({count})',
   // English has only 2 plural forms; "few"/"many" collapse onto the same word.
@@ -29,4 +27,4 @@ export const messages: Catalog = {
   'cart.summary.shippingHint': 'Calculated at checkout',
   'cart.summary.total': 'Total',
   'cart.summary.checkout': 'Place order',
-};
+} satisfies Record<string, string>;

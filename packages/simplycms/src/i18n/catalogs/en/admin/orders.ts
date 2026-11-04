@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Замовлення — дзеркало `uk/admin/orders.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.orders.product': 'Product',
   'admin.orders.noStatus': 'No status',
   'admin.orders.loadMore': 'Show more',
@@ -90,4 +88,4 @@ export const messages: Catalog = {
   'admin.orders.cancelConfirm': 'Cancel order',
   'admin.orders.itemsMayBeTruncated':
     'Showing {count} items — there may be more',
-};
+} satisfies Record<string, string>;

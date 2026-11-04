@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Загальні налаштування — дзеркало `uk/admin/settings.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.settings.subtitle': 'General system settings',
   'admin.settings.stock': 'Stock management',
   'admin.settings.stockHint': 'Automatic product stock accounting',
@@ -76,4 +74,4 @@ export const messages: Catalog = {
   'admin.settings.mail.kind.owner_invite': 'Owner invitation',
   'admin.settings.mail.kind.order_customer': 'Order email to the customer',
   'admin.settings.mail.kind.order_owner': 'Order email to the owner',
-};
+} satisfies Record<string, string>;

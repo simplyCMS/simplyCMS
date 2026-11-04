@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Банери — дзеркало `uk/admin/banners.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.banners.add': 'Add a banner',
   'admin.banners.empty': 'No banners yet',
   'admin.banners.deleted': 'Banner deleted',
@@ -84,4 +82,4 @@ export const messages: Catalog = {
   'admin.banners.variant.primary': 'Primary',
   'admin.banners.variant.secondary': 'Secondary',
   'admin.banners.variant.outline': 'Outline',
-};
+} satisfies Record<string, string>;

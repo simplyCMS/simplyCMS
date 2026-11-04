@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Властивості товарів — дзеркало `uk/admin/properties.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.properties.subtitle': 'Global product properties',
   'admin.properties.add': 'Add a property',
   'admin.properties.new': 'New property',
@@ -85,4 +83,4 @@ export const messages: Catalog = {
   'admin.properties.values.noOptions':
     'No options found. Add options to the property.',
   'admin.properties.values.inputPlaceholder': 'Enter {name}',
-};
+} satisfies Record<string, string>;

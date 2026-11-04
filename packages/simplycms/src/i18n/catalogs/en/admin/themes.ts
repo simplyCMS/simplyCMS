@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Теми оформлення — дзеркало `uk/admin/themes.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.themes.title': 'Themes',
   'admin.themes.subtitle': 'Manage the look and feel of the store',
   'admin.themes.empty': 'No themes registered',
@@ -23,4 +21,4 @@ export const messages: Catalog = {
   'admin.themes.loadError': 'Could not load the theme list',
   'admin.themes.settingMin': 'Value must be at least {min}',
   'admin.themes.settingMax': 'Value must be at most {max}',
-};
+} satisfies Record<string, string>;

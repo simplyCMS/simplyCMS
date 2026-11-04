@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Публічні сторінки властивостей — дзеркало `uk/properties.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'properties.title': 'Properties',
   'properties.pageTitle': 'Product properties',
   'properties.subtitle': 'Browse products by their characteristics',
@@ -17,4 +15,4 @@ export const messages: Catalog = {
   'properties.products': 'Products',
   'properties.productsFiltered': 'Products ({property}: {option})',
   'properties.productsEmpty': 'No products with this characteristic yet',
-};
+} satisfies Record<string, string>;

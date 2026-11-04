@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Картка товару — дзеркало `uk/product.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'product.notFound': 'Product not found',
   'product.goBack': 'Go back',
   'product.sku': 'SKU: {sku}',
@@ -34,4 +32,4 @@ export const messages: Catalog = {
   'product.review.submitted': 'Review submitted',
   'product.review.submittedDescription': 'It will appear after moderation',
   'product.review.deleted': 'Review deleted',
-};
+} satisfies Record<string, string>;
