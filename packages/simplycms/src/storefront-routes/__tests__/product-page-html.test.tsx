@@ -11,7 +11,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { I18nProvider } from 'simplycms/i18n';
+import { I18nProvider, useUiCatalogs } from 'simplycms/i18n';
 import { CartProvider } from 'simplycms/react-query';
 import type { RouterContext } from 'simplycms/runtime';
 import type { ProductDetailProduct } from '../pages/product-detail/types';
@@ -271,6 +271,8 @@ async function ssr(url: string): Promise<string> {
     head: () => ({ meta: [{ charSet: 'utf-8' }] }),
     component: function Root() {
       const data = root.useLoaderData();
+      // Як у host-корені: лоадер уже дочекався `base`, `use` розгортає її синхронно.
+      const catalogs = useUiCatalogs(data.ui.locale, ['base']);
       const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
@@ -280,7 +282,11 @@ async function ssr(url: string): Promise<string> {
             <HeadContent />
           </head>
           <body>
-            <I18nProvider locale={data.ui.locale} fallback={data.ui.fallback}>
+            <I18nProvider
+              locale={data.ui.locale}
+              fallback={data.ui.fallback}
+              catalogs={catalogs}
+            >
               <QueryClientProvider client={client}>
                 <TestEngineProvider>
                   <CartProvider>

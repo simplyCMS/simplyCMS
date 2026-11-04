@@ -13,8 +13,9 @@ import {
 } from '@tanstack/react-router';
 import {
   I18nProvider,
-  createTranslator,
+  loadTranslator,
   resolveUiLocale,
+  useUiCatalogs,
   useUiLocale,
 } from 'simplycms/i18n';
 import { useContentLocale } from 'simplycms/runtime/content-locale';
@@ -75,9 +76,8 @@ import {
 const SET: LocaleSet = localeSet('uk', ['uk', 'en', 'pl'], ['uk', 'en', 'pl']);
 
 // Очікуваний рядок — з каталогу uk через справжній міст, а не з фікстури (тест механізму).
-const UK_ADD_TO_CART = createTranslator(
-  resolveUiLocale(SET.primary, SET.primary),
-  resolveUiLocale(SET.primary, SET.primary),
+const UK_ADD_TO_CART = (
+  await loadTranslator(resolveUiLocale(SET.primary, SET.primary), ['base'])
 )('product.addToCart');
 
 const PL_PRODUCT = {
@@ -133,6 +133,8 @@ async function ssr(url: string): Promise<string> {
     head: () => ({ meta: [{ charSet: 'utf-8' }] }),
     component: function Root() {
       const data = root.useLoaderData();
+      // Як у host-корені: лоадер уже дочекався `base`, `use` розгортає її синхронно.
+      const catalogs = useUiCatalogs(data.ui.locale, ['base']);
       const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
@@ -142,7 +144,11 @@ async function ssr(url: string): Promise<string> {
             <HeadContent />
           </head>
           <body>
-            <I18nProvider locale={data.ui.locale} fallback={data.ui.fallback}>
+            <I18nProvider
+              locale={data.ui.locale}
+              fallback={data.ui.fallback}
+              catalogs={catalogs}
+            >
               <QueryClientProvider client={client}>
                 <TestEngineProvider>
                   <CartProvider>

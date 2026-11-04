@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import {
   homeHead,
@@ -6,7 +6,9 @@ import {
   storefrontHead,
   type StorefrontRootData,
 } from '../head/head';
-import { cl, ui } from '../../../test-harness/locale';
+import { cl, preloadBase, ui } from '../../../test-harness/locale';
+
+beforeAll(() => preloadBase('uk', 'en'));
 
 /**
  * `head()` роутів вітрини бере назву магазину й локаль із кореневого лоадера

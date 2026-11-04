@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { createTranslator } from 'simplycms/i18n';
-import { ui } from '../../../../test-harness/locale';
 import {
   renderEmailVerificationMail,
   renderOwnerInviteMail,
@@ -14,7 +12,7 @@ const URL_ = 'https://shop.example/api/auth/reset-password/tok?callbackURL=%2F';
 const STORE = 'Магазин "Сонце" <тест>';
 
 describe.each(['uk', 'en'] as const)('рендер листів, локаль %s', (locale) => {
-  const t = createTranslator(ui(locale), ui('uk'));
+  const t = locale === 'uk' ? ukT : enT;
 
   it('скидання: тема й текст несуть storeName, у тексті є url, у темі його немає', () => {
     const mail = renderPasswordResetMail({

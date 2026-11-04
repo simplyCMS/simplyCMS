@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { renderSitemapXml } from 'simplycms/storefront/seo';
 import { indexPolicy } from 'simplycms/storefront/seo';
 import type { SitemapData } from 'simplycms/storefront/loaders';
 import { productHead, type ProductHeadInput } from '../head/product';
-import { ui } from '../../../test-harness/locale';
+import { preloadBase, ui } from '../../../test-harness/locale';
+
+beforeAll(() => preloadBase('uk', 'en'));
 
 /**
  * Паритет sitemap ↔ сторінка (М1, І33): кожен URL sitemap є self-canonical сторінки

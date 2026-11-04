@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import type { StorefrontRootData } from '../head/head';
 import { productHead, type ProductHeadInput } from '../head/product';
-import { cl, ui } from '../../../test-harness/locale';
+import { cl, preloadBase, ui } from '../../../test-harness/locale';
+
+beforeAll(() => preloadBase('uk', 'en'));
 
 /**
  * F9 фінального рев'ю К3-Е6в: `offers` JSON-LD — ГОСТЬОВА ціна (тип з

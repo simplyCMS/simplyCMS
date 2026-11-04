@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { checkedContentLocale } from 'simplycms/domain/translations';
-import { I18nProvider, resolveUiLocale } from 'simplycms/i18n';
+import { I18nProvider, loadUiCatalog, resolveUiLocale } from 'simplycms/i18n';
 import { ThemeProvider } from 'simplycms/themes/ThemeContext';
 import { ThemeRegistry } from 'simplycms/themes/ThemeRegistry';
 import { StoreProfileProvider } from 'simplycms/themes/store-profile';
@@ -15,6 +15,8 @@ const uk = resolveUiLocale(
   checkedContentLocale('uk'),
   checkedContentLocale('uk'),
 );
+// Каталог ядра ледачий: тест чекає `base`, як це робить кореневий лоадер.
+const catalogs = [await loadUiCatalog(uk, 'base')];
 
 // Роутер, кошик, авторизація й запит розділів тут не потрібні: перевіряється
 // лише те, що Header/Footer беруть із профілю.
@@ -52,7 +54,7 @@ const { Header, Footer } = theme.components;
 
 function renderWith(ui: ReactNode, profile: StorefrontProfile) {
   return render(
-    <I18nProvider locale={uk} fallback={uk}>
+    <I18nProvider locale={uk} fallback={uk} catalogs={catalogs}>
       <ThemeProvider initialThemeName="solarstore">
         <StoreProfileProvider profile={profile}>
           <Suspense fallback={null}>{ui}</Suspense>
