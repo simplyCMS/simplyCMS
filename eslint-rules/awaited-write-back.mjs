@@ -12,7 +12,12 @@
  *
  * Що вважається обробленим:
  * - `await x.utils.writeUpsert(row)`;
- * - `return x.utils.writeBatch(…)` або concise-стрілка `() => x.utils.writeDelete(id)`;
+ * - `return x.utils.writeBatch(…)` або окрема concise-стрілка `() => x.utils.writeDelete(id)`
+ *   (її Promise повертається викликачу);
+ * - стрілка-аргумент `xs.map((r) => x.utils.writeUpsert(r))`, лише якщо `map`
+ *   загорнуто в `Promise.all/allSettled/any/race(…)`, який сам оброблено
+ *   (`await`/`return`/concise-стрілка). Без цього `forEach`/`map` губить
+ *   Promise кожного рядка, а concise-стрілка лише ЗДАЄТЬСЯ поверненням;
  * - `void x.utils.write…(…)` ЛИШЕ з коментарем `// write-back-void: <причина>`
  *   рядком вище statement-а.
  * Виклики `write*` ВСЕРЕДИНІ callback-а `writeBatch` — поза правилом: callback
@@ -47,6 +52,60 @@ const writeOp = (call) => {
   return obj?.type === 'MemberExpression' && propName(obj) === 'utils'
     ? op
     : null;
+};
+
+const PROMISE_COMBINATORS = new Set(['all', 'allSettled', 'any', 'race']);
+
+const TS_WRAPPERS = new Set([
+  'TSAsExpression',
+  'TSNonNullExpression',
+  'ChainExpression',
+]);
+
+/** Піднімається над TS-обгортками: повертає [вузол, його батько]. */
+const unwrap = (node) => {
+  let child = node;
+  let parent = node.parent;
+  while (parent && TS_WRAPPERS.has(parent.type)) {
+    child = parent;
+    parent = parent.parent;
+  }
+  return [child, parent];
+};
+
+/** `Promise.all(…)` та подібні. */
+const isPromiseCombinator = (call) =>
+  call?.type === 'CallExpression' &&
+  call.callee.type === 'MemberExpression' &&
+  call.callee.object.type === 'Identifier' &&
+  call.callee.object.name === 'Promise' &&
+  PROMISE_COMBINATORS.has(propName(call.callee));
+
+/**
+ * Чи Promise-значення `expr` дійшло до того, хто його чекає: `await`,
+ * `return` або concise-тіло стрілки, яку НЕ віддано аргументом виклику
+ * (там значення губить `forEach`/`map`).
+ */
+const isHandled = (expr) => {
+  const [child, parent] = unwrap(expr);
+  if (parent?.type === 'AwaitExpression') return true;
+  if (parent?.type === 'ReturnStatement') return true;
+  if (parent?.type !== 'ArrowFunctionExpression' || parent.body !== child)
+    return false;
+  const [arrow, holder] = unwrap(parent);
+  if (holder?.type !== 'CallExpression' || !holder.arguments.includes(arrow))
+    return true;
+  // Стрілка передана в `xs.map(cb)`: Promise-и рядків живуть, лише якщо
+  // масив одразу віддано в `Promise.all(…)`, який оброблено.
+  if (
+    holder.callee.type !== 'MemberExpression' ||
+    propName(holder.callee) !== 'map'
+  )
+    return false;
+  const [mapCall, all] = unwrap(holder);
+  return (
+    isPromiseCombinator(all) && all.arguments[0] === mapCall && isHandled(all)
+  );
 };
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -95,21 +154,8 @@ export default {
       CallExpression(node) {
         if (!writeOp(node) || insideBatchCallback(node)) return;
         // TS-обгортки (`x as never`, `x!`) не міняють, чи оброблено Promise.
-        let child = node;
-        let parent = node.parent;
-        while (
-          parent &&
-          (parent.type === 'TSAsExpression' ||
-            parent.type === 'TSNonNullExpression' ||
-            parent.type === 'ChainExpression')
-        ) {
-          child = parent;
-          parent = parent.parent;
-        }
-        if (parent?.type === 'AwaitExpression') return;
-        if (parent?.type === 'ReturnStatement') return;
-        if (parent?.type === 'ArrowFunctionExpression' && parent.body === child)
-          return;
+        if (isHandled(node)) return;
+        const [, parent] = unwrap(node);
         if (
           parent?.type === 'UnaryExpression' &&
           parent.operator === 'void' &&

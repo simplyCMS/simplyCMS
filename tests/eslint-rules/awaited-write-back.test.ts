@@ -42,6 +42,18 @@ describe('awaited-write-back', () => {
       `async function f() {\n  // write-back-void: причина\n\n  void c.utils.writeUpsert(row);\n}`,
     ],
     [
+      'forEach з concise-стрілкою',
+      `function f() { rows.forEach((r) => c.utils.writeUpsert(r)); }`,
+    ],
+    [
+      'map з concise-стрілкою без Promise.all',
+      `function f() { rows.map((r) => c.utils.writeUpsert(r)); }`,
+    ],
+    [
+      'map у Promise.all, який не оброблено',
+      `function f() { Promise.all(rows.map((r) => c.utils.writeUpsert(r))); }`,
+    ],
+    [
       'Promise у змінній без await',
       `async function f() { const p = c.utils.writeBatch(() => {}); }`,
     ],
@@ -59,7 +71,15 @@ describe('awaited-write-back', () => {
       `async function f() { await ref.current!.utils.writeDelete(id); }`,
     ],
     ['return', `function f() { return c.utils.writeUpsert(row); }`],
-    ['concise-стрілка', `const f = () => c.utils.writeDelete(id);`],
+    ['окрема concise-стрілка', `const f = () => c.utils.writeDelete(id);`],
+    [
+      'map у await Promise.all',
+      `async function f() { await Promise.all(rows.map((r) => c.utils.writeUpsert(r))); }`,
+    ],
+    [
+      'map у return Promise.all',
+      `function f() { return Promise.all(rows.map((r) => c.utils.writeUpsert(r))); }`,
+    ],
     [
       'write* усередині callback-а writeBatch',
       `async function f() {\n  await c.utils.writeBatch(() => {\n    for (const r of rows) c.utils.writeUpsert(r);\n    c.utils.writeDelete(x);\n  });\n}`,
