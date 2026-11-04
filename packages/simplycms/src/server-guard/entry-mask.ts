@@ -7,8 +7,9 @@ import { maskUnexpectedError, type MaskOptions } from './mask-errors';
  * нашого entry й віддає `{"status":500,"unhandled":true,"message":"HTTPError"}`
  * (`handleStartError` → `createErrorResponse`): помилка поза роутером
  * (`loadLocaleSet` у нормалізації, мертва БД) не доходить до `catch` у
- * `server.mjs`, тож без цього шару вона лишається без ідентифікатора й без
- * запису в лозі, а клієнт бачить німий JSON.
+ * `server.mjs`, тож без цього шару вона лишається без ref: Start лише
+ * `console.error`-ить її без id, рядок у лозі не зіставити з відповіддю, а
+ * клієнт бачить німий JSON.
  */
 
 /**
@@ -49,8 +50,10 @@ type FetchHandler<A extends unknown[]> = (
 /**
  * Маска винятків серверного входу (Р23 для шляху поза роутером). Ловить те, що
  * кинув `fetch` entry:
- *  - HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect/notFound) —
- *    кидаємо далі: Start відповість як задумано;
+ *  - HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect) — кидаємо
+ *    далі: Start відповість як задумано. Router-`notFound()` — не `Response`, а
+ *    звичайний обʼєкт: `maskUnexpectedError` його пропускає, Start віддає 500
+ *    `unhandled` без ref (у ланцюжку entry його ніхто не кидає);
  *  - решта в проді — через `maskUnexpectedError` (ТОЙ САМИЙ шлях, що в масці
  *    server functions: один формат логу, `redactUrls`, `Internal server error
  *    [ref <id>]`); статус ≥ 500 з помилки зберігається, інакше 500;

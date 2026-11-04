@@ -2,6 +2,7 @@ import { notFound, redirect } from '@tanstack/react-router';
 import { createServerEntry } from '@tanstack/react-start/server-entry';
 import { describe, expect, it } from 'vitest';
 import { parseMaskedErrorRef } from 'simplycms/contracts/masked-error';
+import { HTTP_ERROR_STATUS_CASES } from '../../../../../tests/upstream-tripwires/httpErrorStatusCases';
 import { httpErrorStatus, withEntryErrorMask } from '../entry-mask';
 
 const PROD = { NODE_ENV: 'production' } as const;
@@ -71,14 +72,32 @@ describe('withEntryErrorMask поверх createServerEntry', () => {
     expect(lines).toEqual([]);
   });
 
-  it('redirect і notFound проходять без маскування', async () => {
+  it('redirect (Response) проходить без маскування', async () => {
     const redirected = await entryOf(() => redirect({ to: '/cart' })).call();
     expect(redirected.status).toBeGreaterThanOrEqual(300);
     expect(redirected.status).toBeLessThan(400);
     expect(parseMaskedErrorRef(await redirected.text())).toBeNull();
+  });
 
-    const missing = await entryOf(() => notFound()).call();
-    expect(parseMaskedErrorRef(await missing.text())).toBeNull();
+  // router-core `notFound()` — звичайний обʼєкт `{isNotFound:true}`, не Response:
+  // `maskUnexpectedError` пропускає його як керування потоком, маска кидає далі, а
+  // Start на рівні entry віддає на нього 500 JSON `unhandled` (+ `console.error`
+  // без ref). У ланцюжку entry його ніхто не кидає (нормалізація має власний
+  // `notFound(): Response`), тож поведінку не міняємо — фіксуємо фактичну.
+  it('router-notFound — не Response: маска не чіпає, Start віддає свій 500', async () => {
+    const { call, lines } = entryOf(() => notFound());
+    const original = console.error;
+    console.error = () => {};
+    let res: Response;
+    try {
+      res = await call();
+    } finally {
+      console.error = original;
+    }
+
+    expect(res.status).toBe(500);
+    expect(parseMaskedErrorRef(await res.text())).toBeNull();
+    expect(lines).toEqual([]);
   });
 
   it('поза продом помилку не маскуємо (Start залогує сам)', async () => {
@@ -92,16 +111,13 @@ describe('withEntryErrorMask поверх createServerEntry', () => {
 });
 
 describe('httpErrorStatus (дзеркало getErrorStatus upstream)', () => {
-  it.each([
-    [{ status: 404 }, 404],
-    [{ statusCode: '413' }, 413],
-    [{ cause: { status: 502 } }, 502],
-    [{ status: 302 }, undefined],
-    [{ status: 700 }, undefined],
-    [{ status: 4.5 }, undefined],
-    [new Error('x'), undefined],
-    ['text', undefined],
-  ])('%j → %s', (error, expected) => {
-    expect(httpErrorStatus(error)).toBe(expected);
-  });
+  // Та сама таблиця, що в розтяжці START-ENTRY-1: вона ж звіряє її зі справжнім Start.
+  it.each(HTTP_ERROR_STATUS_CASES.map((c) => [c.name, c] as const))(
+    '%s',
+    (_name, c) => {
+      const status = httpErrorStatus(c.make());
+      // 200..399 і поза діапазоном — не HTTP-помилка; 400+ збігається зі статусом Start.
+      expect(status).toBe(c.status);
+    },
+  );
 });

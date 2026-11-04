@@ -92,7 +92,7 @@ export default createServerEntry({
   fetch: withRequestContext(
     withSecurityHeaders(
       // UPSTREAM:START-ENTRY-1 — без маски Start сам перетворює виняток entry на
-      // німий JSON 500 (без ref і логу). Всередині заголовків безпеки: маскована
+      // німий JSON 500 (без ref; Start лише console.error без id). Всередині заголовків безпеки: маскована
       // 500 теж їх отримує.
       withEntryErrorMask(
         withStorefrontNormalize(
