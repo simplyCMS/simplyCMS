@@ -708,8 +708,9 @@ SimplyCMS — платформа для магазинів, де мов конт
     валідатор `localeInput`.
   - Наявний `TextLocale` лишається контекстом читання тексту й стає `{ locale: ContentLocale; primary:
     ContentLocale }` — паралельного типу не з'являється.
-- **`UiLocale`** (брендований рядок) живе в `simplycms/i18n`. Конструюють його лише `resolveUiLocale` (§19.4) і
-  `toUiLocale` для `profiles.ui_locale` (§19.6).
+- **`UiLocale`** (брендований рядок) — тип у `simplycms/contracts` (`contracts/ui-locale.ts`, T0, як `ContentLocale`:
+  бренд потрібен уже в T1, `formatPrice`); конструктори — лише в `simplycms/i18n`: `resolveUiLocale` (§19.4) і
+  `toUiLocale` для `profiles.ui_locale` (§19.6). Реекспорту типу з `simplycms/i18n` немає (амендмент Task 6).
 - `LocaleSet` (набір мов магазину: основна + опубліковані) — це вісь контенту. Він переходить з `i18n/types` до
   `simplycms/contracts` (файл `contracts/content-locale.ts`) (T0: його читають `contracts/entities`, `runtime`, `site` і `storefront-routes`), поля стають
   `ContentLocale`.
