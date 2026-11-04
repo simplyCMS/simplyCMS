@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { HTTP_ERROR_STATUS_CASES } from './httpErrorStatusCases';
 
 /**
  * Передумови обходів для `upstream-tripwires.test.ts` (що стереже і чому — у
@@ -199,8 +200,10 @@ const probe = async (
 /**
  * START-ENTRY-1: `createServerEntry` САМ перетворює виняток entry на відповідь
  * 500 (резолвиться `Response`, а не rejection) — через це `catch` у `server.mjs`
- * його не бачить і потрібен наш шар `withEntryErrorMask`. Якщо апстрім почне
- * віддавати виняток назовні (або віддавати ref), шар треба переглянути.
+ * його не бачить і потрібен наш шар `withEntryErrorMask`. Перевіряє лише статус
+ * відповіді (виняток не доходить назовні, статус 500); ref Start не віддає — це
+ * і є причина шару. Якщо апстрім почне віддавати виняток назовні, шар треба
+ * переглянути.
  */
 export const startEntrySwallowsThrow =
   (create: EntryFactory): BehaviorPremise =>
@@ -216,17 +219,30 @@ export const startEntrySwallowsThrow =
   };
 
 /**
- * START-ENTRY-1: предикат HTTP-помилки upstream — виняток зі `status` < 500
- * віддається цим статусом (наш шар дзеркалить його в `httpErrorStatus`).
+ * START-ENTRY-1: предикат HTTP-помилки upstream. Кожен кейс спільної таблиці
+ * (`HTTP_ERROR_STATUS_CASES`, ту саму читає тест нашого `httpErrorStatus`)
+ * проганяється крізь справжній `createServerEntry`: статус відповіді Start мусить
+ * збігтись з очікуваним (HTTP-помилка → її статус, решта → 500). Якщо upstream
+ * змінить читання `status`/`statusCode`/`cause`, рядків чи межі, наш предикат
+ * розійдеться з ним, і помилка піде в Start без ref.
  */
 export const startEntryHttpErrorStatus =
   (create: EntryFactory): BehaviorPremise =>
   async () => {
-    const r = await probe(create, () => {
-      throw Object.assign(new Error('bad'), { status: 400 });
-    });
-    if ('rejected' in r) return ['HTTP-помилка 400 доходить назовні'];
-    return r.status === 400
-      ? []
-      : [`виняток зі status 400 дає ${r.status}, очікувалось 400`];
+    const broken: string[] = [];
+    for (const c of HTTP_ERROR_STATUS_CASES) {
+      const r = await probe(create, () => {
+        throw c.make();
+      });
+      if ('rejected' in r) {
+        broken.push(`${c.name}: виняток доходить назовні`);
+        continue;
+      }
+      const expected = c.status ?? 500;
+      if (r.status !== expected)
+        broken.push(
+          `${c.name}: Start віддав ${r.status}, очікувалось ${expected}`,
+        );
+    }
+    return broken;
   };

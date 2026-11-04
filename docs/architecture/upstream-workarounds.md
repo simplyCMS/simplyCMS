@@ -299,7 +299,7 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 
 ---
 
-### START-ENTRY-1 · `createServerEntry` сам ловить виняток entry: помилка поза роутером без ref і без логу
+### START-ENTRY-1 · `createServerEntry` сам ловить виняток entry: помилка поза роутером без ref (Start лише console.error без id)
 
 | Поле | Значення |
 |---|---|
@@ -307,7 +307,7 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 | Знайдено на | `react-start` 1.169.4 / `start-server-core` 1.169.45 (2026-11-04, `live:smoke` крок «Р23 SSR, БД недоступна» червоний) |
 | Перевірено на версії | `react-start` 1.169.4 / `start-server-core` 1.169.45 — 2026-11-04 |
 | Статус апстріму | не повідомлено (поведінка задокументована в коментарі апстріму: «call handleStartError in a custom catch»; це задумана, а не помилкова поведінка) |
-| Розтяжка | `tests/upstream-tripwires.test.ts` (поведінкова: виконує справжній `createServerEntry` — виняток entry → резолвиться 500, виняток зі `status` 400 → 400) |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (поведінкова: виконує справжній `createServerEntry` — виняток entry → резолвиться 500; уся спільна таблиця кейсів предиката статусу `tests/upstream-tripwires/httpErrorStatusCases.ts` проти статусу відповіді Start) |
 
 **Корінь.** `node_modules/.pnpm/@tanstack+start-server-core@1.169.45/node_modules/@tanstack/start-server-core/dist/esm/internal-request-response.js`:
 `createServerEntry` (:460-468) загортає `entry.fetch` у `try { … } catch (error) { return handleStartError(error) }`;
@@ -318,15 +318,17 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 `catch` у `server.mjs` (`logRequestError`: ref + лог).
 
 **Симптом.** Помилка поза роутером (`loadLocaleSet` у `withStorefrontNormalize` при мертвій БД) віддається німим JSON
-без `Internal server error [ref …]`, а в лозі немає `[server] …` із ref (Р23 порушено).
+без `Internal server error [ref …]`; Start лише `console.error(error)` без id, тож рядок у лозі не зіставити з відповіддю
+(Р23 порушено).
 
 **Наш обхід.** `withEntryErrorMask` (`packages/simplycms/src/server-guard/entry-mask.ts`, підключено в `src/server.ts`
-всередині `withSecurityHeaders`): HTTP-помилка зі статусом < 500 і кинутий `Response` — далі в Start (його предикат
+всередині `withSecurityHeaders`): HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect) — далі в Start (його предикат
 дзеркалить `httpErrorStatus`); решта в проді — через `maskUnexpectedError` (один формат логу й ref з масками server
 functions), статус ≥ 500 зберігається. Маркери `UPSTREAM:START-ENTRY-1` — там же.
 
 **Перевірка виправлення.** Розтяжка червоніє, якщо Start перестане повертати 500 на виняток entry (віддасть назовні)
-або змінить предикат статусу. Тоді: чи `server.mjs` знову бачить виняток і наш шар зайвий / чи предикат ще збігається.
+або його статус відповіді розійдеться з будь-яким кейсом спільної таблиці предиката (status/statusCode, `cause`,
+числовий рядок, межі 200/399/400/499/500/599/600) — ту саму таблицю звіряє тест нашого `httpErrorStatus`. Тоді: чи `server.mjs` знову бачить виняток і наш шар зайвий / чи предикат ще збігається.
 Живий доказ — `pnpm live:smoke`, Р23 «БД недоступна».
 
 **Коли виправлять.** Якщо виняток знову доходить до `server.mjs` — прибрати `withEntryErrorMask`, маркери й запис
