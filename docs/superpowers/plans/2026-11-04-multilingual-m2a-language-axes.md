@@ -317,7 +317,7 @@
 **Files:**
 - Modify:
   - `i18n/packs/index.ts`: тип `LanguagePack.ui` → `{ base; mail; admin? }`; реєстр не експортується; `findLanguagePack(code)` (внутрішній, Д12), `listLanguagePacks()`, `hasLanguagePack()`; коментарі `:2`, `:27` (стара модель «для більшості мов пакета немає») переписати;
-  - `i18n/index.ts:9` — експорт `listLanguagePacks`, `hasLanguagePack`, `getLanguagePack`, тип `LanguagePackInfo`; `LANGUAGE_PACKS` геть;
+  - `i18n/index.ts:9` — експорт `listLanguagePacks`, `hasLanguagePack`, тип `LanguagePackInfo` (поруч із наявними `getUiPack`, `getContentTools`); `LANGUAGE_PACKS` геть;
   - `i18n/ui-locale.ts` — кроки 1–2 через `findLanguagePack`; `toUiLocale(value, parts?)` перевіряє наявність частин;
   - `admin/layouts/UiLocaleSelect.tsx` — `listLanguagePacks()` з частиною `admin`;
   - `admin-server/impl/profiles/ui-locale.ts` — `setUiLocale`: пакет без `admin` → 400;
@@ -336,7 +336,7 @@
   - `type LanguagePackInfo = { readonly code: string; readonly name: string; readonly parts: readonly UiPart[] }`;
   - `listLanguagePacks(): readonly LanguagePackInfo[]`;
   - `hasLanguagePack(code: string, parts: readonly UiPart[] = ['base', 'mail']): boolean` — точний код або базова мова (`pt-BR` → `pt`);
-  - `getLanguagePack(code)` — без змін семантики (§19.10);
+  - `getUiPack`, `getContentTools` — без змін (Task 3, §19.10); `getLanguagePack` знесено в Task 3 і не повертається;
   - відмова `languages.setStatus` → `published`: `ValidationError` `{ path: ['status'], code: 'language_pack_missing' }`.
 - Task 6 бере ці імена як є: `resolveMailUiLocale` не змінюється, гілка `order-customer` `'pl'` → `'uk'` — це лист старого замовлення мовою, що втратила пакет.
 

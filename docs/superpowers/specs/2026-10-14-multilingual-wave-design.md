@@ -669,7 +669,7 @@ SimplyCMS — платформа для магазинів, де мов конт
 |---|---|---|
 | **Мова контенту** — тип `ContentLocale` | які ДАНІ читати (переклади, проєкція, адреси, токени); ключі кешу; hreflang, canonical, `<html lang>` вітрини; мова замовлення й листа | вітрина — лише URL (`resolveRequestLocale`); замовлення — `orders.locale`; профіль — `profiles.locale`; адмін-форми — явний перемикач (§12) |
 | **Мова інтерфейсу** — тип `UiLocale` | рядки ядра, теми й плагіна; форматування чисел, дат і цін; правила множини | лише міст `resolveUiLocale` (вітрина, листи, CLI) або `profiles.ui_locale` (адмінка) |
-| **Мовний пакет** | одиниця постачання мови платформою (Р-ML-17), дві частини: `ui` і `content`; без нього мову не опублікувати (§19.15) | реєстр пакетів ядра; публічно — лише `listLanguagePacks`, `hasLanguagePack`, `getLanguagePack` (§19.15) |
+| **Мовний пакет** | одиниця постачання мови платформою (Р-ML-17), дві частини: `ui` і `content`; без нього мову не опублікувати (§19.15) | реєстр пакетів ядра; публічно — лише `listLanguagePacks`, `hasLanguagePack`, `getUiPack`, `getContentTools` (§19.10, §19.15) |
 
 - **«i18n»** у каноні й коді означає ЛИШЕ вісь інтерфейсу: рядки, форматування, множину. Вісь контенту
   називається «переклади»: `simplycms/translations`, `simplycms/domain/translations`, `translations.md`.
@@ -845,7 +845,8 @@ LanguagePack = {
 }
 ```
 
-- `getLanguagePack(code)` замінюють два пошуки: `getUiPack(UiLocale)` і `getContentTools(ContentLocale)`.
+- Два пошуки — `getUiPack(UiLocale)` і `getContentTools(ContentLocale)` — замінюють `getLanguagePack(code)`, який
+  зноситься.
   `slugify` мови без пакета — загальна транслітерація (§18.4), як і зараз.
 - **Р7 уточнено:** «пакет основної мови є» = `resolveUiLocale` знаходить пакет на кроці 1 або 2 (точний чи
   базової мови), без кроку 3.
@@ -943,7 +944,7 @@ OC мову без пакета не забороняє й падає на `en-g
   - `listLanguagePacks(): readonly LanguagePackInfo[]` — `{ code, name, parts }` (назва мови її ж мовою; `parts` —
     наявні частини `ui`);
   - `hasLanguagePack(code, parts = ['base', 'mail']): boolean`;
-  - `getLanguagePack(code)` (§19.10).
+  - `getUiPack(ui)` і `getContentTools(code)` (§19.10; `getLanguagePack` знесено там же).
   Так пізніший механізм постачання пакетів ззовні додає лише нове джерело реєстру (minor), не ламаючи
   споживачів. Схеми він не потребує: БД пакетів не знає, `languages` зберігає лише код мови — заморожування
   baseline у `1.0.0-rc.1` його не зачіпає.
