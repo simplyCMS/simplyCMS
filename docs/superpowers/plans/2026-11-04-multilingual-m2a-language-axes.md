@@ -5,7 +5,7 @@
 **Goal:** Мова контенту й мова інтерфейсу стають двома типами з одним мостом між ними. На клієнт вітрини потрапляє лише каталог ядра своєї мови й своєї частини. Адмінка показується мовою з профілю. Листи, ціни, дати й множина йдуть за мовою інтерфейсу.
 
 **Architecture:**
-- Брендовані `ContentLocale` (вісь даних: тип — `simplycms/contracts/content-locale`, конструктор — `simplycms/domain/translations`) і `UiLocale` (вісь інтерфейсу, `simplycms/i18n`). Змішування ловить `tsc`.
+- Брендовані `ContentLocale` (вісь даних: тип — `simplycms/contracts` (файл `contracts/content-locale.ts`), конструктор — `simplycms/domain/translations`) і `UiLocale` (вісь інтерфейсу, `simplycms/i18n`). Змішування ловить `tsc`.
 - Міст `resolveUiLocale` — єдине місце, де мова контенту перетворюється на мову інтерфейсу.
 - Каталоги ядра — ліниві частини `base`/`admin`/`mail` у реєстрі з протоколом thenable. Протокол спільний із `ThemeRegistry`. Прогрів — у кореневому лоадері, у `beforeLoad` адмінки й перед гідрацією.
 - Каталоги тем і плагінів не змінюються. Спільний у них лише пошук рядка `lookupMessage`.
@@ -52,7 +52,7 @@
 
 | # | Питання | Рішення |
 |---|---|---|
-| Д1 | Де `LocaleSet` | `simplycms/contracts/content-locale` (T0, лише типи, разом із `ContentLocale`): його читають `contracts/entities`, `runtime/router-context`, `site`, `storefront-routes`, `storefront/loaders`. Конструктор `checkedContentLocale` — у `simplycms/domain/translations`. Поля стають `ContentLocale`. Поле `known` лишається |
+| Д1 | Де `LocaleSet` | `simplycms/contracts` (файл `contracts/content-locale.ts`) (T0, лише типи, разом із `ContentLocale`): його читають `contracts/entities`, `runtime/router-context`, `site`, `storefront-routes`, `storefront/loaders`. Конструктор `checkedContentLocale` — у `simplycms/domain/translations`. Поля стають `ContentLocale`. Поле `known` лишається |
 | Д2 | Де кореневий `UiLocale` | У даних кореня: `loadStorefrontRoot` повертає `ui: { locale, fallback }` і до повернення чекає `loadUiCatalog(…, 'base')` для обох мов. `beforeLoad` кореня не змінюється: лоадер уже біжить і на SSR, і на клієнтській навігації, і `head()` бере дані з `matches` |
 | Д3 | Як провайдер отримує каталоги | `I18nProvider` стає чистим контекстом: `{ locale: UiLocale; fallback: UiLocale; catalogs: readonly PartCatalog[] }`. Вантажить роут: хук `useUiCatalogs(locale, parts)` = `parts.map((p) => use(loadUiCatalog(locale, p)))`. Тести передають статичні каталоги з `packages/simplycms/test-harness/i18n.tsx` без реєстру |
 | Д4 | Транслятор поза React | `createTranslator(catalogs: readonly PartCatalog[]): Translator` — синхронний над завантаженим. Також `loadTranslator(ui: UiLocale, parts): Promise<Translator>` (сервер: листи, CLI) і `peekTranslator(ui, parts): Translator` (синхронно з реєстру для `head()`; незавантажена частина — помилка інваріанта) |

@@ -44,9 +44,10 @@
   `simplycms/contracts` (разом із брендованим `ContentLocale`; конструктор — `checkedContentLocale` у
   `simplycms/domain/translations`). Поля `LocaleSet`/`TextLocale`, `entityKey(entity, locale)` і
   `AGGREGATE.<x>.keyFor(locale)` беруть `ContentLocale`, а не `string`; `localeInput` дає `ContentLocale`.
-  `resolveRequestLocale`, `localeOfHref`, `NO_LOCALES`, `isStorefrontPath`, `localePrefix`, `NON_STOREFRONT_SEGMENTS`
-  переїхали з `simplycms/storefront-routes/locale/{resolve,root-data}` у `simplycms/domain`. Новий хук
-  `useContentLocale` — `simplycms/runtime/content-locale`. `primaryLocaleCode` повертає `ContentLocale`.
+  `resolveRequestLocale`, `ResolvedLocale`, `localeOfHref`, `NO_LOCALES`, `isStorefrontPath`, `localePrefix`,
+  `NON_STOREFRONT_SEGMENTS` переїхали з `simplycms/storefront-routes/locale/{resolve,root-data}` у `simplycms/domain`. Новий хук
+  `useContentLocale` — `simplycms/runtime/content-locale`. `primaryLocaleCode` повертає `ContentLocale`. Звужені сигнатури: `checkedTextLocale(ContentLocale, ContentLocale)`,
+  `catalogKeys.sectionProducts(…, ContentLocale)` (`simplycms/react-query`), `LocaleRewriteState.current: ContentLocale`.
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
   назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
