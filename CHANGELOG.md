@@ -324,6 +324,17 @@
 
 - **Залежність магазину `nodemailer`:** peer ядра (точний пін) 10.1.0 → **10.3.1**. Магазин оновлює її сам
   (`pnpm add nodemailer@10.3.1`); doctor №14 звіряє версію з peer ядра.
+- **Залежності магазину (оновлення стека):** peer-діапазони ядра змінились — `@hookform/resolvers` ^5 → **^7**,
+  `react-day-picker` ^9 → **^10**, `@tanstack/react-db` → **1.0.0-rc.1.2**, `@tanstack/query-db-collection` →
+  **~1.5.1**. Магазин вирівнює `package.json` за шаблоном (`pnpm add @hookform/resolvers@^7
+  react-day-picker@^10`, далі `pnpm dedupe`).
+- **`Calendar` (`simplycms/ui`)** перегенеровано з реєстру shadcn під react-day-picker 10: зник тип
+  `CalendarProps` (бери `React.ComponentProps<typeof Calendar>`), зʼявився `CalendarDayButton`,
+  ключі `classNames` — API v9/v10 (v8-ключі `caption`, `nav_button`, `head_row`, `day_selected`…
+  більше не діють), інший вигляд за замовчуванням.
+- **Власний код магазину на TanStack DB** (якщо є): `tx.isPersisted.promise` → `tx.when('settled')`;
+  `utils.write*`/`writeBatch` повертають Promise (його треба `await`); хендлери колекцій не
+  повертають `{ refetch: false }`, а запис у кеш не перезапитує сервер.
 
 ### Додано
 
@@ -401,9 +412,14 @@
   Start 1.169 сам перехоплює виняток нашого entry (`createServerEntry` → `handleStartError`) і віддає власний
   JSON без ref (лише `console.error` без id — рядок у лозі не зіставити з відповіддю): маска entry `server-guard` повертає `Internal server error [ref …]` з тим самим id у лозі
   (`UPSTREAM:START-ENTRY-1`), HTTP-помилки < 500 пропускає, як і Start.
+- **TanStack DB 1.0** (`@tanstack/react-db` 1.0.0-rc.1.2, `@tanstack/query-db-collection` 1.5.1):
+  write-back колекції патчить кеш БЕЗ перезапиту і для on-demand (ревалідацію M1 знято,
+  `UPSTREAM:TSDB-1` переписано — запис у чужі ключі під `[entity,'list']` лишився, Е3-15′ живе).
+  Хендлери колекцій більше не повертають `{ refetch: false }`; новий канон `tests/handler-canon.test.ts`
+  (await-нутий write-back на кожному шляху) і лінт-правило `awaited-write-back`.
 - better-auth 1.7.16 (security), zod 4.6.7, nodemailer 10.3.1, seroval 1.7, vite 8.3.5, vitest 5.1, eslint 10.14,
   tsdown 0.23.5, React 19.3.1, tiptap 3.32, lucide 1.67, Radix, drizzle-orm 0.45.4 — у межах мажорних.
-  TanStack DB, `@hookform/resolvers` і `react-day-picker` — окремим кроком (мажорні).
+- `@hookform/resolvers` 5 → **7**, `react-day-picker` 9 → **10** (календар — з реєстру shadcn).
 - 🔴 Після `pnpm up` у монорепо — обовʼязково `pnpm dedupe`: автопіри пакета `simplycms` інакше лишаються
   старими й дають дві копії React/Router.
 
