@@ -37,7 +37,14 @@ afterEach(() => {
   rmSync(store, { recursive: true, force: true });
 });
 
+/** Ліниві каталоги ядра: чанки `base-<хеш>`, досяжні лише через `import()`. */
+const CATALOG_BASE = `${NM}/simplycms/dist/base-C2UX6O0_.js`;
+const LAZY_CATALOGS: Record<string, Chunk> = {
+  'base.js': { modules: [CATALOG_BASE], isEntry: false, imports: [] },
+};
+
 const run = (stats: Record<string, Chunk>) => {
+  stats = { ...LAZY_CATALOGS, ...stats };
   writeFileSync(join(store, 'bundle-stats.client.json'), JSON.stringify(stats));
   return gateBundle(store);
 };
@@ -93,5 +100,51 @@ describe('Gate C: важкі підсистеми поза initial-чанком'
       'admin.js': { modules: [ADMIN_MODULE], isEntry: false, imports: [] },
     });
     expect(result.ok).toBe(true);
+  });
+});
+
+describe('Gate C: каталоги ядра лише через import() (І43)', () => {
+  const ADMIN_CATALOG = `${NM}/simplycms/dist/admin-BcKAsf47.js`;
+
+  it('чанк каталогу, статично імпортований з entry, — FAIL', () => {
+    const result = run({
+      'entry.js': { ...entry(), imports: ['base.js'] },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL каталоги ядра/);
+  });
+
+  it('каталог частини admin у статичному графі entry — FAIL', () => {
+    const result = run({
+      'entry.js': { ...entry(), imports: ['admin.js'] },
+      'admin.js': { modules: [ADMIN_CATALOG], isEntry: false, imports: [] },
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('форма теками (i18n/catalogs) ловиться так само', () => {
+    const result = run({
+      'entry.js': entry([`${NM}/simplycms/dist/i18n/catalogs/en/base.js`]),
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('чанк `admin-error-<хеш>` — не каталог', () => {
+    const result = run({
+      'entry.js': entry([`${NM}/simplycms/dist/admin-error-DI5_n184.js`]),
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('жодного каталогу в бандлі (зламана назва чанка) — FAIL, а не вакуумний OK', () => {
+    writeFileSync(
+      join(store, 'bundle-stats.client.json'),
+      JSON.stringify({ 'entry.js': entry() }),
+    );
+    const result = gateBundle(store);
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(
+      /FAIL каталоги ядра .*: у бандлі 0/,
+    );
   });
 });

@@ -76,11 +76,27 @@ const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
  */
 const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 
+/** Модуль каталогу ядра в id клієнтського бандла (форми `dist` — у коментарі правила нижче). */
+const CATALOG_MODULE =
+  /simplycms\/dist\/(?:i18n\/catalogs\/|(?:base|admin|mail)-[A-Za-z0-9_-]{8}\.js$)/;
+
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
   // 🔴 Саме `dist/admin/`, а не `dist/admin`: `dist/admin-routes/` — тонкі
   // обгортки роутів, вони в initial-чанку бути МАЮТЬ.
   { label: 'simplycms/admin', rx: /simplycms\/dist\/admin\// },
+  // 🔴 Каталоги ядра — лише через `import()` (І43, спека §19.4): клієнт тягне ОДНУ частину
+  // ОДНІЄЇ мови, а статичний імпорт з пакета мови повернув би в початковий чанк усі мови
+  // й частини `admin`/`mail`. У `dist` пакета каталоги — не теки, а чанки `base|admin|mail`
+  // з 8-символьним хешем (`dist/base-C2UX6O0_.js`; `admin-error-<хеш>` під шаблон не
+  // потрапляє), тож id модуля в bundle-stats несе саме таку форму; гілка `i18n/catalogs/`
+  // тримає розкладку теками. `mustExist`: правило, що нічого не знайшло в бандлі, — не
+  // доказ, а зламана назва чанка, тому це FAIL.
+  {
+    label: 'каталоги ядра (i18n/catalogs)',
+    rx: CATALOG_MODULE,
+    mustExist: true,
+  },
   { label: '@tiptap/*', rx: /@tiptap\// },
   { label: 'recharts', rx: /\/recharts\// },
 ];
@@ -193,12 +209,12 @@ export function gateBundle(storeDir) {
   details.push(
     `initial-чанків: ${initial.length}, модулів у них: ${initialModules.length}`,
   );
-  for (const { label, rx } of NOT_IN_INITIAL) {
+  for (const { label, rx, mustExist } of NOT_IN_INITIAL) {
     const inBundle = allModules.filter((id) => rx.test(id)).length;
     const inInitial = initialModules.filter((id) => rx.test(id)).length;
-    if (inInitial > 0) ok = false;
+    if (inInitial > 0 || (mustExist && inBundle === 0)) ok = false;
     details.push(
-      `${inInitial === 0 ? 'OK  ' : 'FAIL'} ${label}: у бандлі ${inBundle}, в initial ${inInitial}`,
+      `${inInitial === 0 && !(mustExist && inBundle === 0) ? 'OK  ' : 'FAIL'} ${label}: у бандлі ${inBundle}, в initial ${inInitial}`,
     );
   }
 
