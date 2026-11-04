@@ -23,7 +23,6 @@ vi.mock('../../../server/checkout-quote', () => ({
   quoteCheckout: (...args: unknown[]) => quoteCheckoutMock(...args),
 }));
 
-
 const wrapper = ({ children }: { children: ReactNode }) => (
   <CartProvider>{children}</CartProvider>
 );
