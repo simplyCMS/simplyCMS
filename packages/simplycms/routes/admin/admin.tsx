@@ -1,10 +1,12 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
+import { getAdminUiLocale } from 'simplycms/admin-server';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
 import {
   I18nProvider,
   loadUiCatalog,
   resolveUiLocale,
+  toUiLocale,
   useT,
   useUiCatalogs,
 } from 'simplycms/i18n';
@@ -60,13 +62,13 @@ export const Route = createFileRoute('/admin')({
     if (!ok) {
       throw redirect({ to: '/' });
     }
-    // Мова адмінки — основна мова магазину (мова з профілю — Task 5). Частини `base` і
-    // `admin` вантажимо тут, до рендера: layout розгортає їх через `use` синхронно.
-    // М2а-TEMP: Task 5
-    const adminUi = resolveUiLocale(
-      context.locales.primary,
-      context.locales.primary,
-    );
+    // Мова адмінки — з власного профілю (І45): `NULL` чи код без пакета → основна мова
+    // магазину. Частини `base` і `admin` вантажимо тут, до рендера: layout розгортає їх
+    // через `use` синхронно. Повторний виклик після `router.invalidate()` перечитує вибір.
+    const { uiLocale } = await getAdminUiLocale({ data: {} });
+    const adminUi =
+      toUiLocale(uiLocale) ??
+      resolveUiLocale(context.locales.primary, context.locales.primary);
     await Promise.all([
       loadUiCatalog(adminUi, 'base'),
       loadUiCatalog(adminUi, 'admin'),
@@ -85,16 +87,19 @@ const ADMIN_PARTS = ['base', 'admin'] as const;
 
 /**
  * Вкладений провайдер: кореневий несе лише `base` вітрини, а каталог адмінки потрібен
- * тільки тут (І43 — вітрина його не тягне). Мова адмінки не залежить від мови сторінки.
+ * тільки тут (І43 — вітрина його не тягне). Мова адмінки — з профілю, а не з мови сторінки.
  */
 function AdminRoot() {
   const { adminUi } = Route.useRouteContext();
   const catalogs = useUiCatalogs(adminUi, ADMIN_PARTS);
   return (
     <I18nProvider locale={adminUi} fallback={adminUi} catalogs={catalogs}>
-      <AdminLayout>
-        <Outlet />
-      </AdminLayout>
+      {/* `contents`: обгортка лише несе `lang` і не втручається в розкладку. */}
+      <div lang={adminUi} className="contents">
+        <AdminLayout>
+          <Outlet />
+        </AdminLayout>
+      </div>
     </I18nProvider>
   );
 }
