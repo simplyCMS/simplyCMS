@@ -61,6 +61,20 @@
   пакета (`/pl/…`) більше не дає голих ключів: інтерфейс іде основною мовою магазину, а за відсутності пакета
   й для неї — помилка з переліком пакетів. `assertThemeViewsConformance(theme, { locale })` вимагає
   `locale: UiLocale` (дефолту `uk` немає; шаблон теми й CLI передають явно).
+- **Каталоги ядра — ліниві частини (М2, блок 1):** каталог інтерфейсу поділено на частини `base` (вітрина), `admin` і
+  `mail`; кожна вантажиться окремим `import()`, і початковий граф вітрини їх не тягне. Знесено без реекспорту:
+  `LanguagePack.catalog`, `LanguagePack.slugify`, `LanguagePack.tokenize` (пакет тепер
+  `{ code, name, ui: лоадери частин, content: { slugify?, tokenize? } }`), `getLanguagePack(code)` → `getUiPack(ui)`
+  (мова інтерфейсу) і `getContentTools(code)` (точний код мови контенту або `null`), тип `Catalog` (англійські частини
+  повні: `satisfies Record<…Key, string>`), зведення `catalogs/{uk,en}/index.ts`. `createTranslator(locale, fallback)` →
+  `createTranslator(catalogs: readonly PartCatalog[])` над УЖЕ завантаженими частинами; завантаження — нові
+  `loadUiCatalog`, `useUiCatalogs`, `loadTranslator`, `peekTranslator` (`simplycms/i18n`). `I18nProvider` приймає ще й
+  обов'язковий проп `catalogs`; host-`__root.tsx` розгортає `useUiCatalogs(ui.locale, ['base'])`, layout адмінки дає
+  вкладений провайдер з `['base','admin']`. `getStoreTranslator()` (`simplycms/site`) стає асинхронним
+  (`Promise<Translator>`). Нове: `simplycms/contracts/thenable` (`ReactThenable`, `trackThenable`). Ключі `app.admin.loading`
+  і `app.error.insecureContext` замінили `admin.common.loading` і `admin.common.insecureContext` (екрани `/admin` рендеряться
+  до завантаження частини `admin`). Сканер `i18n-coverage` забороняє ключ `admin` поза адмінкою й ключ `mail` поза
+  `simplycms/mail`.
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
   назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
