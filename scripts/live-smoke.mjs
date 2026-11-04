@@ -47,6 +47,11 @@ import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
 import { applyProbe } from './pilot-pack/apply-probe.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
+import {
+  collectConsoleErrors,
+  runHeadTitleChecks,
+} from './live-smoke/head-console.mjs';
+import { PRODUCT_SLUG } from './live-smoke/selectors.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { runErrorMaskChecks } from './live-smoke/error-mask.mjs';
@@ -209,7 +214,17 @@ async function main() {
       if (r.method() === 'POST' && pathname.startsWith('/_serverFn/'))
         serverFnPaths.add(pathname);
     });
+    // `console.error` — лише на сторінках воронки: далі той самий `page` ходить сторінками
+    // з навмисними помилками (CSRF, маскування), їхній шум — не дефект гідрації.
+    const consoleErrors = collectConsoleErrors(page);
     const { email } = await runFunnel({ page, base, dbUrl, check });
+    await runHeadTitleChecks({ page, base, productSlug: PRODUCT_SLUG, check });
+    const unexpected = consoleErrors.stop();
+    check(
+      'console.error на сторінках воронки (гідрація без suspense/mismatch)',
+      unexpected.length === 0,
+      unexpected.length === 0 ? '0' : unexpected.join(' | '),
+    );
 
     stage('пошта');
     // 3.1. Пошта (К3-Е8): лист замовлення, скидання пароля, підтвердження
