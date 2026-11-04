@@ -32,6 +32,7 @@ const VALUES: Record<string, string> = {
   last_name: `'Прізвище'`,
   phone: `'+380000000077'`,
   avatar_url: `'avatars/e6v.webp'`,
+  ui_locale: `'en'`,
   updated_at: 'now()',
 };
 
