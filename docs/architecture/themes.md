@@ -519,7 +519,7 @@ activate.
 
 ### 7.1 Гейт заявлених `views` (контракт v3)
 
-`assertThemeViewsConformance(theme)` — публічний kit,
+`assertThemeViewsConformance(theme, { locale })` — публічний kit (мова інтерфейсу рендеру — обов'язковий `UiLocale`, без дефолту),
 `packages/simplycms/src/themes/conformance/`, експорт **субшляхом**
 `simplycms/themes/conformance` (барель тягне серверний шар
 `themes/server` — та сама ідіома, що `safeFontStylesheets`).

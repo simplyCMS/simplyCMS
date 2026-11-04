@@ -95,7 +95,18 @@ export async function run(argv) {
     const { assertThemeViewsConformance } = await environment.runner.import(
       'simplycms/themes/conformance',
     );
-    const ran = await assertThemeViewsConformance(theme);
+    // Мова інтерфейсу рендеру — параметр kit-а без дефолту. CLI не знає основної мови
+    // магазину (її читає БД), тож перевіряє українським інтерфейсом — явно, а не тихо.
+    // М2а-TEMP: Task 6 бере мову з налаштувань магазину.
+    const { resolveUiLocale } =
+      await environment.runner.import('simplycms/i18n');
+    const { checkedContentLocale } = await environment.runner.import(
+      'simplycms/domain/translations',
+    );
+    const uk = checkedContentLocale('uk');
+    const ran = await assertThemeViewsConformance(theme, {
+      locale: resolveUiLocale(uk, uk),
+    });
     say.success(conformanceSummary(ran));
   } finally {
     await environment.close();

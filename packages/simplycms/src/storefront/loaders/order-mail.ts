@@ -1,5 +1,5 @@
 import type { PlaceOrderInput, PlacedOrder } from 'simplycms/contracts';
-import { createTranslator, type Locale } from 'simplycms/i18n';
+import { createTranslator, type UiLocale } from 'simplycms/i18n';
 import {
   enqueueMail,
   renderOrderCustomerMail,
@@ -7,7 +7,7 @@ import {
   type MailItem,
   type OrderMailData,
 } from 'simplycms/mail';
-import { readStoreProfile } from 'simplycms/site';
+import { STORE_UI_FALLBACK, readStoreProfile } from 'simplycms/site';
 import type { ActorDb } from './db';
 import type { NewOrderInput } from './entities/new-order';
 
@@ -44,7 +44,8 @@ export function toOrderMailData(
 export type OrderMailContext = {
   /** `siteUrl('/admin/orders/')` — id замовлення дописується вже в транзакції. */
   adminBase: string;
-  locale: Locale;
+  /** Мова інтерфейсу листа; ідентично їй форматуються гроші (М2а-TEMP: Task 6 розведе осі). */
+  locale: UiLocale;
   currency: string;
 };
 
@@ -70,7 +71,7 @@ export async function enqueueOrderMails(
   const to = customerEmail.trim();
   const storeName = profile.name || 'SimplyCMS';
   // М2: фолбек стане основною мовою магазину (лист іде мовою замовлення).
-  const t = createTranslator(ctx.locale, 'uk');
+  const t = createTranslator(ctx.locale, STORE_UI_FALLBACK);
   const money = { locale: ctx.locale, currency: ctx.currency };
   const items: MailItem[] = [];
   if (to)

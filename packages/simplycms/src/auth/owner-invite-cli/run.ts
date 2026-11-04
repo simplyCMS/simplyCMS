@@ -3,7 +3,8 @@ import {
   redactUrls,
   resolveDriverEnv,
 } from 'simplycms/env';
-import { createTranslator } from 'simplycms/i18n';
+import { createTranslator, type UiLocale } from 'simplycms/i18n';
+import { STORE_UI_FALLBACK } from 'simplycms/site';
 import {
   deliverMail,
   scheduleMail,
@@ -33,7 +34,7 @@ export type RunOwnerInviteOptions = {
   email: string;
   siteUrl: string;
   storeName?: string;
-  locale?: string;
+  locale?: UiLocale;
   printLink?: boolean;
   env?: Readonly<Record<string, string | undefined>>;
   log: (message: string) => void;
@@ -61,7 +62,7 @@ export async function runOwnerInvite({
   email,
   siteUrl,
   storeName = 'SimplyCMS',
-  locale = 'uk',
+  locale = STORE_UI_FALLBACK,
   printLink = false,
   env = process.env,
   log,
@@ -88,7 +89,7 @@ export async function runOwnerInvite({
       storeName,
       // CLI не бачить `simplycms.config` магазину — локаль листа з env.
       // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-      t: createTranslator(locale, 'uk'),
+      t: createTranslator(locale, STORE_UI_FALLBACK),
     });
   } catch (error) {
     // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду;

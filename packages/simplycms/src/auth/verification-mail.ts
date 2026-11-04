@@ -1,10 +1,9 @@
-import { createTranslator } from 'simplycms/i18n';
 import {
   deliverMail,
   renderEmailVerificationMail,
   scheduleMail,
 } from 'simplycms/mail';
-import { getStoreLocale } from 'simplycms/site';
+import { getStoreTranslator } from 'simplycms/site';
 import {
   logDeliveryFailure,
   readStoreName,
@@ -51,7 +50,7 @@ export function createEmailVerification(deps: MailDeps) {
       url,
       storeName: deps.storeName ?? (await readStoreName()),
       // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-      t: createTranslator(getStoreLocale(), 'uk'),
+      t: getStoreTranslator(),
     });
     const ids = await schedule([{ kind: 'email_verification', message }]);
     void deliverMail(ids, deps.mailTransport).catch(

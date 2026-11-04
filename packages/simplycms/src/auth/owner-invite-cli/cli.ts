@@ -1,8 +1,9 @@
 import {
-  getLanguagePack,
   languageOfConfigLocale,
-  type Locale,
+  toUiLocale,
+  type UiLocale,
 } from 'simplycms/i18n';
+import { STORE_UI_FALLBACK } from 'simplycms/site';
 import { runOwnerInvite } from './run';
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -14,15 +15,16 @@ type Env = Readonly<Record<string, string | undefined>>;
 export function resolveInviteLocale(
   env: Env,
   log: (message: string) => void,
-): Locale {
+): UiLocale {
   const raw = env.VITE_LOCALE;
-  if (!raw) return 'uk';
-  const locale = languageOfConfigLocale(raw);
-  if (getLanguagePack(locale)) return locale;
+  if (!raw) return STORE_UI_FALLBACK;
+  // М2а-TEMP: Task 6 — мова листа піде з основної мови магазину, а не з VITE_LOCALE.
+  const locale = toUiLocale(languageOfConfigLocale(raw));
+  if (locale) return locale;
   log(
     `VITE_LOCALE="${raw}" не підтримується — лист запрошення піде мовою "uk".`,
   );
-  return 'uk';
+  return STORE_UI_FALLBACK;
 }
 
 /** Аргументи й обов'язкові ключі env; відмова — помилкою з текстом для оператора. */

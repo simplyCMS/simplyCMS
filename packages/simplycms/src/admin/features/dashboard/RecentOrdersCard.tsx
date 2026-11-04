@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import { Link } from '@tanstack/react-router';
 import { orderStatusesCollection, useCollection } from 'simplycms/admin-data';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useUiLocale, useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import type { AdminDashboardRecentOrder } from 'simplycms/contracts/objects';
 import { Badge } from 'simplycms/ui/badge';
@@ -24,7 +24,7 @@ interface Props {
 /** 10 останніх замовлень; назва статусу — з eager-довідника статусів. */
 export default function RecentOrdersCard({ orders }: Props) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useUiLocale();
   const formatPrice = useFormatPrice();
   const statuses = useCollection(orderStatusesCollection);
   const { data: rows } = useLiveQuery({

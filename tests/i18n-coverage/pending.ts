@@ -73,6 +73,12 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'throw',
     reason: 'throw new Error — діагностика для автора теми',
   },
+  // Той самий клас: фікстура fallback-перевірки conformance-kit без мови джерела —
+  // помилка АВТОРУ kit-а в терміналі, не текст інтерфейсу.
+  'packages/simplycms/src/themes/conformance/fallback-lang.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика для автора теми',
+  },
   // console.warn на невалідному записі fonts — читає автор теми в консолі
   // складання, не покупець (контракт v2.2, Р4).
   'packages/simplycms/src/themes/safeFontStylesheets.ts': {

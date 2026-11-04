@@ -1,6 +1,6 @@
 import { Suspense, act, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { I18nProvider, type Locale } from 'simplycms/i18n';
+import { I18nProvider, type UiLocale } from 'simplycms/i18n';
 import { REQUISITE_ATTRIBUTE } from 'simplycms/contracts/views';
 import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import { ThemeContext } from '../theme-context';
@@ -46,7 +46,7 @@ function contextValue(theme: ThemeModule): ThemeContextType {
 export async function renderThemeView(
   element: ReactElement,
   theme: ThemeModule,
-  locale: Locale,
+  locale: UiLocale,
   probe?: (container: HTMLElement) => unknown[],
 ): Promise<ThemeViewRenderResult> {
   let error: unknown = null;
@@ -69,7 +69,7 @@ export async function renderThemeView(
   try {
     await act(async () => {
       root.render(
-        <I18nProvider locale={locale}>
+        <I18nProvider locale={locale} fallback={locale}>
           <ThemeContext.Provider value={contextValue(theme)}>
             {/* Профіль — дані ядра, які host монтує над `Outlet`; тема читає
                 з нього бренд і контакти (`useStoreProfile` без провайдера

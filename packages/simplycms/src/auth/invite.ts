@@ -1,8 +1,8 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { createTranslator, type Translator } from 'simplycms/i18n';
+import type { Translator } from 'simplycms/i18n';
 import { siteUrl } from 'simplycms/env';
 import { renderOwnerInviteMail, scheduleMail } from 'simplycms/mail';
-import { getStoreLocale } from 'simplycms/site';
+import { getStoreTranslator } from 'simplycms/site';
 
 /**
  * Invite власника — заміна механіки `inviteUserByEmail` (Task 7, В2-К1а).
@@ -148,7 +148,7 @@ export async function issueOwnerInvite(
     storeName: input.storeName ?? 'SimplyCMS',
     ttlMs,
     // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-    t: input.t ?? createTranslator(getStoreLocale(), 'uk'),
+    t: input.t ?? getStoreTranslator(),
   });
   const mailIds = await (input.schedule ?? scheduleMail)([
     { kind: 'owner_invite', message },

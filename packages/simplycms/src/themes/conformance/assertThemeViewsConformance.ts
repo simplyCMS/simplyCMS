@@ -1,4 +1,4 @@
-import type { Locale } from 'simplycms/i18n';
+import type { UiLocale } from 'simplycms/i18n';
 import {
   REQUIRED_REQUISITES,
   type StorefrontViewName,
@@ -19,8 +19,11 @@ import {
 import { renderThemeView } from './render';
 
 export interface ThemeViewsConformanceOptions {
-  /** Локаль рендеру; за замовчуванням `uk` — як і fallback core-каталогу. */
-  locale?: Locale;
+  /**
+   * Мова інтерфейсу рендеру. Обов'язкова, без дефолту: тихий `uk` перевіряв би тему
+   * лише українською, навіть якщо магазин говорить іншою.
+   */
+  locale: UiLocale;
 }
 
 function describe(error: unknown): string {
@@ -79,7 +82,7 @@ function ensureRegistered(theme: ThemeModule): boolean {
  * остання крихта, значення характеристики, `alt` фото), отримує `lang` мови джерела.
  * Диференційно за даними фікстури (`fallback-lang.ts`), а не пошуком тексту в розмітці.
  */
-async function assertFallbackLang(theme: ThemeModule, locale: Locale) {
+async function assertFallbackLang(theme: ThemeModule, locale: UiLocale) {
   const views = theme.views;
   if (!views?.ProductDetail) return;
   const render = async (
@@ -107,7 +110,7 @@ async function assertFallbackLang(theme: ThemeModule, locale: Locale) {
 
 export async function assertThemeViewsConformance(
   theme: ThemeModule,
-  options: ThemeViewsConformanceOptions = {},
+  options: ThemeViewsConformanceOptions,
 ): Promise<StorefrontViewName[]> {
   if (typeof document === 'undefined') {
     throw new Error(
@@ -121,7 +124,7 @@ export async function assertThemeViewsConformance(
   const cases = theme.views ? buildConformanceCases(theme.views) : [];
   if (cases.length === 0) return [];
 
-  const locale = options.locale ?? 'uk';
+  const { locale } = options;
   const themeName = theme.manifest.name;
   const registeredByKit = ensureRegistered(theme);
 

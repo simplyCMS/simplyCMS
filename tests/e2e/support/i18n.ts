@@ -11,10 +11,21 @@ import {
   createTranslator,
   languageOfConfigLocale,
 } from '../../../packages/simplycms/src/i18n/translator';
+import { toUiLocale } from '../../../packages/simplycms/src/i18n/ui-locale';
 import type { MessageKey } from '../../../packages/simplycms/src/i18n/types';
 import { e2eLocale } from './env';
 
+/** Мова інтерфейсу з пакета, а не з довільного рядка: хибний код прогону — помилка, не тихий `uk`. */
+function uiOf(code: string) {
+  const locale = toUiLocale(code);
+  if (!locale) throw new Error(`e2e: немає мовного пакета «${code}»`);
+  return locale;
+}
+
 /** Текст активної локалі прогону для ключа каталогу. */
 export function t(key: MessageKey): string {
-  return createTranslator(languageOfConfigLocale(e2eLocale()), 'uk')(key);
+  return createTranslator(
+    uiOf(languageOfConfigLocale(e2eLocale())),
+    uiOf('uk'),
+  )(key);
 }

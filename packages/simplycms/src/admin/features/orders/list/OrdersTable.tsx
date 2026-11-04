@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useFormatPrice } from 'simplycms/react-query';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useUiLocale, useT } from 'simplycms/i18n';
 import { Badge } from 'simplycms/ui/badge';
 import { Button } from 'simplycms/ui/button';
 import {
@@ -34,7 +34,7 @@ export default function OrdersTable({
   onLoadMore,
 }: Props) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useUiLocale();
   const formatPrice = useFormatPrice();
   // Форматтер — один на локаль, а не новий на кожен рендер.
   const formatDate = useMemo(

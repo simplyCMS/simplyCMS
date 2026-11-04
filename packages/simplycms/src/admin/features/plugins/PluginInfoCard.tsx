@@ -1,13 +1,13 @@
 import { Fragment } from 'react';
 import type { PluginRow } from 'simplycms/admin-server';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useUiLocale, useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Separator } from 'simplycms/ui/separator';
 
 /** Довідка про плагін: системна назва, версія, автор, дата оновлення рядка. */
 export function PluginInfoCard({ plugin }: { plugin: PluginRow }) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useUiLocale();
   const rows: [string, string][] = [
     [t('common.name'), plugin.name],
     [t('admin.plugins.version'), plugin.version],
