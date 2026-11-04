@@ -601,8 +601,9 @@ Playwright): гейт мусить бути доступним і магазин
      пакета, `manifest.name` = хвіст теки, `displayName` непорожній.
      Дискаверить ЛИШЕ `packages/simplycms-theme-*` — `themes/default` під
      parity НЕ підпадає свідомо (private, власна версія, еталон fallback).
-   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en; ключ
-     множини (`PluralForms`, `other` обов'язкова) має рівно категорії
+   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en
+     (ключі, плейсхолдери); ключ множини в КОЖНІЙ мові каталогу (мови беруться з
+     ключів `messages`, не фіксовані uk/en) (`PluralForms`, `other` обов'язкова) має рівно категорії
      `Intl.PluralRules` своєї мови, вид значення в мовах збігається,
      дискаверить ОБИДВА корені (`themes/<name>/messages.ts` і
      `packages/simplycms-theme-*/src/messages.ts`).

@@ -24,6 +24,13 @@ const theme = makeTheme(undefined, {
         many: '{count} штук',
         other: '{count} штуки',
       },
+      // Форми лише в uk: інтерфейс en добирає їх з fallback-ланки.
+      'theme.ukOnly': {
+        one: '{count} товар',
+        few: '{count} товари',
+        many: '{count} товарів',
+        other: '{count} товару',
+      },
     },
     en: {
       'theme.title': 'Title',
@@ -54,6 +61,12 @@ describe('useThemeT', () => {
     // Fixture-провайдер ставить fallback = uk; interface = en.
     const { result } = renderHook(() => useThemeT(), { wrapper: wrap('en') });
     expect(result.current('theme.title')).toBe('Title');
+  });
+
+  it('форми з fallback-ланки множаться за правилами fallback-мови: en + uk-форми, 5 → товарів', () => {
+    const { result } = renderHook(() => useThemeT(), { wrapper: wrap('en') });
+    expect(plural(result.current, 'theme.ukOnly', 5)).toBe('5 товарів');
+    expect(plural(result.current, 'theme.ukOnly', 21)).toBe('21 товар');
   });
 
   it('ключа немає ні в мові інтерфейсу, ні у fallback — сам ключ', () => {
