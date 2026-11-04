@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
-import { act, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   HeadContent,
@@ -244,6 +244,8 @@ async function ssr(url: string): Promise<Document> {
   const html = renderToString(<RouterProvider router={router} />);
   return new DOMParser().parseFromString(html, 'text/html');
 }
+
+afterEach(cleanup);
 
 describe('у HTML вітрини немає сирих ключів каталогу (І44)', () => {
   for (const lang of ['uk', 'en', 'pl']) {
