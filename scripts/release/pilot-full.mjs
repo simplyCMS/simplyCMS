@@ -52,6 +52,11 @@ const missing = needed.filter((k) => !harness[k]);
 if (missing.length > 0)
   throw new Error(`У .env.harness немає ключів: ${missing.join(', ')}`);
 
+// 🔴 Ctrl-C/SIGTERM: сигнал групи б'є і по дочірньому процесу `execSync`, а наш
+// порожній обробник не дає Node померти за замовчуванням — `execSync` кидає виняток,
+// і спрацьовує `finally` з дропом БД. Без обробника Node вмирав би до `finally`.
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {});
+
 try {
   run(`pnpm db:demo --name ${DB_NAME}`);
   const databaseUrl = new URL(harnessUrl);
