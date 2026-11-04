@@ -50,6 +50,7 @@ import { runFunnel } from './live-smoke/funnel.mjs';
 import {
   collectConsoleErrors,
   runHeadTitleChecks,
+  runHydrationIdentityChecks,
 } from './live-smoke/head-console.mjs';
 import { PRODUCT_SLUG } from './live-smoke/selectors.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
@@ -219,6 +220,12 @@ async function main() {
     const consoleErrors = collectConsoleErrors(page);
     const { email } = await runFunnel({ page, base, dbUrl, check });
     await runHeadTitleChecks({ page, base, productSlug: PRODUCT_SLUG, check });
+    await runHydrationIdentityChecks({
+      browser,
+      base,
+      productSlug: PRODUCT_SLUG,
+      check,
+    });
     const unexpected = consoleErrors.stop();
     check(
       'console.error на сторінках воронки (гідрація без suspense/mismatch)',
