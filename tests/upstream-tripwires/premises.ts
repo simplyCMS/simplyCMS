@@ -171,3 +171,62 @@ export function buildInsertSql(): string {
     .values({ id: '00000000-0000-4000-8000-000000000000' })
     .toSQL().sql;
 }
+
+// ---------- поведінкові передумови: виконують бібліотеку, а не читають її текст ----------
+
+/** Поведінкова передумова: порожній масив = тримається. */
+export type BehaviorPremise = () => Promise<string[]>;
+
+/** Мінімальна форма `createServerEntry`, щоб негативний контроль підставив фальшивку. */
+type EntryFactory = (entry: { fetch: (request: Request) => Response }) => {
+  fetch: (request: Request) => Promise<Response> | Response;
+};
+
+const probe = async (
+  create: EntryFactory,
+  thrower: () => never,
+): Promise<{ status: number } | { rejected: unknown }> => {
+  try {
+    const res = await create({ fetch: thrower }).fetch(
+      new Request('http://store.test/'),
+    );
+    return { status: res.status };
+  } catch (rejected) {
+    return { rejected };
+  }
+};
+
+/**
+ * START-ENTRY-1: `createServerEntry` САМ перетворює виняток entry на відповідь
+ * 500 (резолвиться `Response`, а не rejection) — через це `catch` у `server.mjs`
+ * його не бачить і потрібен наш шар `withEntryErrorMask`. Якщо апстрім почне
+ * віддавати виняток назовні (або віддавати ref), шар треба переглянути.
+ */
+export const startEntrySwallowsThrow =
+  (create: EntryFactory): BehaviorPremise =>
+  async () => {
+    const r = await probe(create, () => {
+      throw new Error('x');
+    });
+    if ('rejected' in r)
+      return ['виняток entry тепер доходить назовні (rejection), а не 500'];
+    return r.status === 500
+      ? []
+      : [`виняток entry дає статус ${r.status}, очікувалось 500`];
+  };
+
+/**
+ * START-ENTRY-1: предикат HTTP-помилки upstream — виняток зі `status` < 500
+ * віддається цим статусом (наш шар дзеркалить його в `httpErrorStatus`).
+ */
+export const startEntryHttpErrorStatus =
+  (create: EntryFactory): BehaviorPremise =>
+  async () => {
+    const r = await probe(create, () => {
+      throw Object.assign(new Error('bad'), { status: 400 });
+    });
+    if ('rejected' in r) return ['HTTP-помилка 400 доходить назовні'];
+    return r.status === 400
+      ? []
+      : [`виняток зі status 400 дає ${r.status}, очікувалось 400`];
+  };

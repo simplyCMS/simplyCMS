@@ -142,6 +142,12 @@ const server = createServer((req, res) => {
       );
       sendWebResponse(res, response);
     } catch (error) {
+      // Виняток з entry сюди вже не доходить: `createServerEntry` Start ловить його
+      // сам і віддає німий JSON 500, а ref і лог ставить шар `withEntryErrorMask`
+      // у `src/server.ts` (UPSTREAM:START-ENTRY-1). Тут лишається те, що ПОЗА
+      // entry: збій `toWebRequest`/`sendWebResponse` і винятки Start до виклику
+      // entry (напр. нерозбірливий URL). Ядро раннер не імпортує (Е8-Р7′), тож
+      // це власна копія формату логу.
       const body = logRequestError(error);
       // Клієнт відпав (aborted request) — писати вже нікуди.
       if (res.destroyed || res.writableEnded) return;

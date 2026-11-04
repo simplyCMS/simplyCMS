@@ -11,7 +11,10 @@ import { withStorefrontNormalize } from 'simplycms/storefront-routes/seo/normali
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
-import { withSecurityHeaders } from 'simplycms/server-guard';
+import {
+  withEntryErrorMask,
+  withSecurityHeaders,
+} from 'simplycms/server-guard';
 import { withRequestContext } from 'simplycms/site/request-context';
 import { languageOfConfigLocale } from 'simplycms/i18n';
 import {
@@ -88,7 +91,14 @@ const seoInterceptor = createSeoInterceptor({
 export default createServerEntry({
   fetch: withRequestContext(
     withSecurityHeaders(
-      withStorefrontNormalize(withSeoInterceptor(seoInterceptor, startHandler)),
+      // UPSTREAM:START-ENTRY-1 — без маски Start сам перетворює виняток entry на
+      // німий JSON 500 (без ref і логу). Всередині заголовків безпеки: маскована
+      // 500 теж їх отримує.
+      withEntryErrorMask(
+        withStorefrontNormalize(
+          withSeoInterceptor(seoInterceptor, startHandler),
+        ),
+      ),
       process.env.VITE_SITE_URL,
     ),
   ),

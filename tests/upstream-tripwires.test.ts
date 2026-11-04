@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readInstalledFile } from './lib/installed-package';
-import { HANDLER, SSC, TRIPWIRES } from './upstream-tripwires/data';
+import {
+  BEHAVIORAL_TRIPWIRES,
+  HANDLER,
+  SSC,
+  TRIPWIRES,
+} from './upstream-tripwires/data';
 import {
   activeRecords,
   codeMarkers,
@@ -18,6 +23,8 @@ import {
   parseSubsetNoOffset,
   shallowError,
   startBody,
+  startEntryHttpErrorStatus,
+  startEntrySwallowsThrow,
   startFnBase,
   startFormBeforeHandler,
   startHandlerType,
@@ -62,6 +69,30 @@ describe('розтяжки upstream: передумова обходу досі 
       expect(broken, hint(id, broken.join('; '))).toEqual([]);
     });
   }
+});
+
+describe('поведінкові розтяжки upstream: бібліотека поводиться, як ми припускаємо', () => {
+  for (const [id, premises] of Object.entries(BEHAVIORAL_TRIPWIRES)) {
+    it(`UPSTREAM:${id}`, async () => {
+      const broken = (await Promise.all(premises.map((p) => p()))).flat();
+      expect(broken, hint(id, broken.join('; '))).toEqual([]);
+    });
+  }
+
+  it('START-ENTRY-1: негативний контроль — виняток назовні або інший статус червоніє', async () => {
+    const rejecting = () => ({
+      fetch: async () => {
+        throw new Error('x');
+      },
+    });
+    const wrongStatus = () => ({
+      fetch: () => new Response(null, { status: 200 }),
+    });
+    expect(await startEntrySwallowsThrow(rejecting)()).not.toEqual([]);
+    expect(await startEntrySwallowsThrow(wrongStatus)()).not.toEqual([]);
+    expect(await startEntryHttpErrorStatus(rejecting)()).not.toEqual([]);
+    expect(await startEntryHttpErrorStatus(wrongStatus)()).not.toEqual([]);
+  });
 });
 
 describe('негативний контроль: зниклий файл бібліотеки', () => {
@@ -204,7 +235,7 @@ describe('негативний контроль: підмінений текст
 describe('парність реєстру обходів і коду', () => {
   const registry = readFileSync(REGISTRY_PATH, 'utf8');
   const markers = codeMarkers();
-  const ids = Object.keys(TRIPWIRES);
+  const ids = [...Object.keys(TRIPWIRES), ...Object.keys(BEHAVIORAL_TRIPWIRES)];
 
   it('реєстр і код узгоджені в обидва боки', () => {
     expect(parityProblems(registry, markers, ids)).toEqual([]);

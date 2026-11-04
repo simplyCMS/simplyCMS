@@ -299,6 +299,41 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 
 ---
 
+### START-ENTRY-1 · `createServerEntry` сам ловить виняток entry: помилка поза роутером без ref і без логу
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/react-start` (`@tanstack/start-server-core`, `internal-request-response.js`) |
+| Знайдено на | `react-start` 1.169.4 / `start-server-core` 1.169.45 (2026-11-04, `live:smoke` крок «Р23 SSR, БД недоступна» червоний) |
+| Перевірено на версії | `react-start` 1.169.4 / `start-server-core` 1.169.45 — 2026-11-04 |
+| Статус апстріму | не повідомлено (поведінка задокументована в коментарі апстріму: «call handleStartError in a custom catch»; це задумана, а не помилкова поведінка) |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (поведінкова: виконує справжній `createServerEntry` — виняток entry → резолвиться 500, виняток зі `status` 400 → 400) |
+
+**Корінь.** `node_modules/.pnpm/@tanstack+start-server-core@1.169.45/node_modules/@tanstack/start-server-core/dist/esm/internal-request-response.js`:
+`createServerEntry` (:460-468) загортає `entry.fetch` у `try { … } catch (error) { return handleStartError(error) }`;
+`handleStartError` (:343) → `createErrorResponse` (:321) віддає JSON
+`{status, statusText, unhandled:true, message:"HTTPError"}`, а статус бере з `getErrorStatus`/`getHttpErrorStatus`
+(:50, :286: `status`/`statusCode` на помилці чи `cause`, ціле 200..599, HTTP-помилка — від 400); `console.error(error)`
+лише для помилок без такого статусу (:299). До 1.169.x `createServerEntry` був чистою обгорткою, і виняток доходив до
+`catch` у `server.mjs` (`logRequestError`: ref + лог).
+
+**Симптом.** Помилка поза роутером (`loadLocaleSet` у `withStorefrontNormalize` при мертвій БД) віддається німим JSON
+без `Internal server error [ref …]`, а в лозі немає `[server] …` із ref (Р23 порушено).
+
+**Наш обхід.** `withEntryErrorMask` (`packages/simplycms/src/server-guard/entry-mask.ts`, підключено в `src/server.ts`
+всередині `withSecurityHeaders`): HTTP-помилка зі статусом < 500 і кинутий `Response` — далі в Start (його предикат
+дзеркалить `httpErrorStatus`); решта в проді — через `maskUnexpectedError` (один формат логу й ref з масками server
+functions), статус ≥ 500 зберігається. Маркери `UPSTREAM:START-ENTRY-1` — там же.
+
+**Перевірка виправлення.** Розтяжка червоніє, якщо Start перестане повертати 500 на виняток entry (віддасть назовні)
+або змінить предикат статусу. Тоді: чи `server.mjs` знову бачить виняток і наш шар зайвий / чи предикат ще збігається.
+Живий доказ — `pnpm live:smoke`, Р23 «БД недоступна».
+
+**Коли виправлять.** Якщо виняток знову доходить до `server.mjs` — прибрати `withEntryErrorMask`, маркери й запис
+перенести в «Закриті».
+
+---
+
 ### START-IP-1 · import-protection плагін Start перерезолвлює імпорти без `kind`: `require()` вклеєного dual-пакета йде в ESM-вхід
 
 | Поле | Значення |
