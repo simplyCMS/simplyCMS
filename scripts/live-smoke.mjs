@@ -63,6 +63,7 @@ import {
 } from './live-smoke/mail-steps.mjs';
 import { signUp } from './live-smoke/register.mjs';
 import { withClientIps } from './live-smoke/client-ip.mjs';
+import { acquireTreeLock } from './tree-lock.mjs';
 import { dropDatabaseQuietly, uniqueDbName } from './unique-db-name.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -74,6 +75,13 @@ if (!process.env.LIVE_SMOKE_LOGGED) {
 }
 // 🔴 Унікальна БД на прогін: demo-db дропає БД з тим самим імʼям, тож два паралельні
 // прогони на одному кластері з фіксованим імʼям скидали БД один одному.
+// Замок дерева (`dist/` спільний): другий прогін у цьому ж дереві відмовляє одразу.
+try {
+  acquireTreeLock(ROOT, 'pnpm live:smoke');
+} catch (e) {
+  console.error(`[live-smoke] ${e.message}`);
+  process.exit(1);
+}
 const DB_NAME = uniqueDbName('simplycms_live_smoke');
 
 // `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.

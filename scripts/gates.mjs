@@ -14,6 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GATES, execGate } from './release/gates.mjs';
+import { acquireTreeLock } from './tree-lock.mjs';
 
 export const STAMP_FILE = '.gates-stamp.json';
 
@@ -72,6 +73,12 @@ export function runChain({
 
 function main() {
   const root = join(import.meta.dirname, '..');
+  try {
+    acquireTreeLock(root, 'pnpm gates');
+  } catch (e) {
+    console.error(`❌ gates: ${e.message}`);
+    process.exit(1);
+  }
   const git = (...args) =>
     execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
   const dirty = git('status', '--porcelain');

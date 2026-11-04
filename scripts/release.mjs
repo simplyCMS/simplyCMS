@@ -16,6 +16,7 @@
  * 🔴 Скрипт свідомо НЕ пушить і НЕ створює PR: реліз — рішення людини, і
  * останній погляд на діф має лишатися за нею.
  */
+import { join } from 'node:path';
 import {
   assertNewerVersion,
   bumpTo,
@@ -24,6 +25,7 @@ import {
 } from './release/bump.mjs';
 import { bumpCreateReadmeTag } from './release/readme-tag.mjs';
 import { runGates } from './release/gates.mjs';
+import { acquireTreeLock } from './tree-lock.mjs';
 import {
   assertCleanTree,
   commitRelease,
@@ -45,6 +47,12 @@ try {
       `Вкажи версію у форматі X.Y.Z або X.Y.Z-rc.N:  pnpm release 0.2.0\n` +
         `  Отримано: ${version ?? '(нічого)'}`,
     );
+  }
+
+  try {
+    acquireTreeLock(join(import.meta.dirname, '..'), 'pnpm release');
+  } catch (e) {
+    fail(e.message);
   }
 
   const from = currentVersion();

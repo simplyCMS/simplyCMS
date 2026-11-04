@@ -116,6 +116,15 @@ pnpm live:smoke       # живий прогін: db:demo → build → server �
                       # (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням
                       # БД прогону унікальна (simplycms_live_smoke_<pid>_<суфікс>, дропається у finally і на SIGINT/SIGTERM):
                       # паралельні прогони на одному кластері не заважають один одному.
+                      # 🔴 Модель паралельності (live:smoke, pilot, gates): (а) ресурс, спільний на МАШИНУ
+                      # (кластер БД, Mailpit, /tmp) — ідентичність на кожен прогін (унікальна БД, скретч
+                      # pilot на дерево, листи за унікальним одержувачем/темою), жодної глобальної
+                      # руйнівної дії (ні фіксованих імен, ні «очистити скриньку»); (б) ресурс, спільний
+                      # на ДЕРЕВО (dist/, packages/<пакет>/dist, routeTree.gen, скретч pilot) — в одному
+                      # дереві одночасно один прогін-доказ: замок `.proof-run.lock` (scripts/tree-lock.mjs)
+                      # беруть лише `pnpm gates`, `pnpm release`, `pnpm live:smoke`; другий відмовляє
+                      # одразу з pid власника. Самостійні `pnpm pilot` і `pnpm build` замка НЕ беруть —
+                      # свідома межа.
                       # Журнал: .live-smoke/last.log (+ <timestamp>.log, 10 останніх); при FAIL — шлях і рядки FAIL наприкінці.
 pnpm db:pull / db:diff
                       # Схема БД — див. docs/architecture/data-layer.md § «Міграції»

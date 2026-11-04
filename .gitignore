@@ -88,3 +88,4 @@ scripts/dev-stand/seed-demo.sql
 
 # Штамп повного ланцюга гейтів (pnpm gates)
 .gates-stamp.json
+.proof-run.lock
