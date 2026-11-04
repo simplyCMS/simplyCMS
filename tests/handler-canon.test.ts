@@ -11,17 +11,29 @@ import { join, relative } from 'node:path';
 import ts from 'typescript';
 
 /**
- * Кожен `return { refetch: false }` усередині onInsert/onUpdate/onDelete
- * мусить мати write-back (collection.utils.writeUpsert/writeUpdate/
- * writeInsert/writeDelete/writeBatch) СЕРЕД STATEMENT-ів, що передують
- * цьому return у його ланцюжку блоків (усі попередні сиблінги в кожному
- * батьківському Block аж до тіла хендлера).
+ * Канон persistence-хендлерів (onInsert/onUpdate/onDelete) у `admin-data`:
+ * хендлер ПОВЕРТАЄ результат сервера в кеш колекції — `await`-нутий
+ * write-back (`utils.write*` або `utils.writeBatch(cb)` з write*-викликом
+ * у cb) на КОЖНОМУ шляху завершення.
  *
- * 🔴 Path-sensitive рівно настільки: `if (x) return {refetch:false}` без
- * write-back вище по ланцюжку — офендер; write-back у ЧУЖІЙ гілці не
- * рахується, бо він не передує return-у в його ланцюжку. Виняток —
- * коментар `// canon-exempt: <причина>` рядком вище return.
- * BASELINE порожній і лишається порожнім: гейт постійний.
+ * 🔴 Чому інваріант тримає саме хендлер: поля, які рахує сервер
+ * (`createdAt`, `version`, `sort_order`, нормалізований slug, проєкції
+ * перекладів), оптимістичний драфт не знає. Ревалідації після запису
+ * немає (TanStack DB 1.0 / query-db-collection 1.5 — M1 TSDB-1 закрито),
+ * тож без write-back у кеші лишилося б оптимістичне значення.
+ * `await` обовʼязковий: `write*` повертають Promise, і без нього помилка
+ * запису губиться, а `tx.when('settled')` може резолвитись раніше, ніж
+ * кеш прийняв рядок сервера.
+ *
+ * Path-sensitive рівно настільки:
+ * - write-back має бути БЕЗУМОВНИМ statement-ом тіла хендлера (у гілці
+ *   `if` чи циклі він не покриває всі шляхи);
+ * - кожен `return` у тілі (поза вкладеними функціями) мусить мати такий
+ *   write-back серед попередніх сиблінгів свого ланцюжка блоків.
+ * Виняток — коментар `// canon-exempt: <причина>` рядком вище хендлера.
+ * BASELINE порожній і лишається порожнім: гейт постійний. Що сервер
+ * повертає ПОВНИЙ змінений набір рядків, сканер не бачить — це доводять
+ * поведінкові тести колекцій (серверне поле в кеші після `when('settled')`).
  */
 const ROOT = join(import.meta.dirname, '../packages/simplycms/src/admin-data');
 const HANDLERS = new Set(['onInsert', 'onUpdate', 'onDelete']);
@@ -45,20 +57,9 @@ function offendersIn(file: string): string[] {
   const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true);
   const out: string[] = [];
 
-  const isRefetchFalse = (node: ts.Node): boolean =>
-    ts.isReturnStatement(node) &&
-    !!node.expression &&
-    ts.isObjectLiteralExpression(node.expression) &&
-    node.expression.properties.some(
-      (p) =>
-        ts.isPropertyAssignment(p) &&
-        p.name.getText() === 'refetch' &&
-        p.initializer.kind === ts.SyntaxKind.FalseKeyword,
-    );
-
   /**
-   * Opt-out `// canon-exempt: <причина>` — РІВНО рядком вище return-а
-   * (R13: сирий пошук по 200 символах глушив детекцію коментарем за три
+   * Opt-out `// canon-exempt: <причина>` — РІВНО рядком вище вузла
+   * (сирий пошук по сусідніх рядках глушив би детекцію коментарем за три
    * рядки вище; механіка та сама, що hasExempt у mutation-cache-sync).
    */
   const hasExempt = (node: ts.Node): boolean => {
@@ -75,7 +76,7 @@ function offendersIn(file: string): string[] {
     );
   };
 
-  /** Чи є в піддереві фактичний CallExpression collection.utils.write*(…). */
+  /** Чи є в піддереві фактичний CallExpression `<x>.write*(…)`. */
   const containsWriteCall = (n: ts.Node): boolean => {
     if (
       ts.isCallExpression(n) &&
@@ -85,41 +86,39 @@ function offendersIn(file: string): string[] {
       return true;
     return ts.forEachChild(n, containsWriteCall) ?? false;
   };
+
   /**
-   * Statement — справжній write-back: або прямий write*-виклик, або
-   * `writeBatch(cb)`, чий callback САМ містить write*-виклик. Порожній
-   * batch — не write-back.
+   * Statement — справжній write-back: `await <x>.write*(…)` або
+   * `await <x>.writeBatch(cb)`, чий callback САМ містить write*-виклик.
+   * Порожній batch чи виклик без `await` — не write-back (за AST, не
+   * regex: слово в коментарі чи рядку не рахується).
    */
-  const isRealWrite = (st: ts.ExpressionStatement): boolean => {
-    const expr = st.expression;
+  const isRealWrite = (st: ts.Statement): boolean => {
+    if (!ts.isExpressionStatement(st) || !ts.isAwaitExpression(st.expression))
+      return false;
+    const call = st.expression.expression;
     if (
-      !ts.isCallExpression(expr) ||
-      !ts.isPropertyAccessExpression(expr.expression)
+      !ts.isCallExpression(call) ||
+      !ts.isPropertyAccessExpression(call.expression)
     )
       return false;
-    const name = expr.expression.name.text;
+    const name = call.expression.name.text;
     if (WRITE_OPS.has(name)) return true;
     if (name === 'writeBatch') {
-      const cb = expr.arguments[0];
+      const cb = call.arguments[0];
       return !!cb && containsWriteCall(cb);
     }
     return false;
   };
 
-  const precededByWrite = (ret: ts.Node, boundary: ts.Node): boolean => {
-    let cur: ts.Node = ret;
-    while (cur !== boundary && cur.parent) {
+  const precededByWrite = (node: ts.Node, body: ts.Block): boolean => {
+    let cur: ts.Node = node;
+    while (cur !== body && cur.parent) {
       const parent = cur.parent;
       if (ts.isBlock(parent)) {
         for (const st of parent.statements) {
           if (st === cur) break;
-          // 🔴 Зараховуємо лише БЕЗУМОВНИЙ write-statement (рев'ю р2:
-          // `if (cond) writeUpsert(...)` — попередній сиблінг, але
-          // write у чужій гілці; такий НЕ рахується — це IfStatement,
-          // не ExpressionStatement). І лише за AST, не regex по тексту
-          // (рев'ю р3): порожній `writeBatch(() => {})` чи слово в
-          // коментарі/рядку — не write-back.
-          if (ts.isExpressionStatement(st) && isRealWrite(st)) return true;
+          if (isRealWrite(st)) return true;
         }
       }
       cur = parent;
@@ -132,34 +131,23 @@ function offendersIn(file: string): string[] {
       `${relative(process.cwd(), file)}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1}`,
     );
 
-  const isRefetchFalseExpr = (e: ts.Node): boolean => {
-    const inner = ts.isParenthesizedExpression(e) ? e.expression : e;
-    return (
-      ts.isObjectLiteralExpression(inner) &&
-      inner.properties.some(
-        (p) =>
-          ts.isPropertyAssignment(p) &&
-          p.name.getText() === 'refetch' &&
-          p.initializer.kind === ts.SyntaxKind.FalseKeyword,
-      )
-    );
-  };
+  const isFn = (n: ts.Node) =>
+    ts.isArrowFunction(n) ||
+    ts.isFunctionExpression(n) ||
+    ts.isFunctionDeclaration(n) ||
+    ts.isMethodDeclaration(n);
 
-  const visitHandlerBody = (body: ts.Node) => {
-    // Concise-arrow `async () => ({ refetch: false })` — тіло не Block: це
-    // «return <expr>» без жодного місця для write-back → офендер за
-    // побудовою (окрім exempt). R13-дрібниця: явний ReturnStatement — не
-    // єдина форма return-а.
-    if (!ts.isBlock(body)) {
-      if (isRefetchFalseExpr(body) && !hasExempt(body.parent)) report(body);
-      return;
-    }
+  const checkHandler = (handler: ts.Node, body: ts.ConciseBody) => {
+    if (hasExempt(handler)) return;
+    // Concise-arrow — тіло-вираз, місця для write-back statement-а немає.
+    if (!ts.isBlock(body)) return report(body);
+    if (!body.statements.some(isRealWrite)) return report(handler);
     const walk = (n: ts.Node) => {
-      if (isRefetchFalse(n) && !hasExempt(n) && !precededByWrite(n, body))
-        report(n);
+      if (isFn(n)) return; // return вкладеної функції — не шлях хендлера
+      if (ts.isReturnStatement(n) && !precededByWrite(n, body)) report(n);
       ts.forEachChild(n, walk);
     };
-    walk(body);
+    body.statements.forEach(walk);
   };
 
   const visit = (n: ts.Node) => {
@@ -174,7 +162,7 @@ function offendersIn(file: string): string[] {
           ts.isMethodDeclaration(fn)) &&
         fn.body
       )
-        visitHandlerBody(fn.body);
+        checkHandler(n, fn.body);
     }
     ts.forEachChild(n, visit);
   };
@@ -184,14 +172,12 @@ function offendersIn(file: string): string[] {
 
 /**
  * Одноразовий .ts-фікстур для юніт-тестів `offendersIn` напряму, без
- * торкання реальних колекцій (R13: раніше canon-exempt і concise-arrow не
- * мали ЖОДНОГО автоматичного кейса — лише ручні негативні контролі на
- * `collections/order-statuses.ts`).
+ * торкання реальних колекцій — негативні контролі кожної гілки сканера.
  */
-function withFixture(code: string, run: (file: string) => void) {
+function withFixture(lines: string[], run: (file: string) => void) {
   const dir = mkdtempSync(join(tmpdir(), 'handler-canon-'));
   const file = join(dir, 'fixture.ts');
-  writeFileSync(file, code, 'utf8');
+  writeFileSync(file, [...lines, ''].join('\n'), 'utf8');
   try {
     run(file);
   } finally {
@@ -199,92 +185,98 @@ function withFixture(code: string, run: (file: string) => void) {
   }
 }
 
-describe('handler-canon: refetch:false ⇒ write-back у своєму ланцюжку', () => {
+const handler = (body: string[]) => [
+  'export const c = {',
+  '  onUpdate: async ({ transaction }) => {',
+  '    const rows = await update(transaction);',
+  ...body.map((l) => `    ${l}`),
+  '  },',
+  '};',
+];
+
+describe('handler-canon: хендлер повертає рядок сервера в кеш', () => {
   it('офендерів немає (BASELINE порожній назавжди)', () => {
     const offenders = [...tsFiles(ROOT)].flatMap(offendersIn);
     expect(offenders).toEqual([]);
   });
+
+  it('await writeBatch з write*-викликом — канон; await write* напряму — теж', () => {
+    withFixture(
+      handler([
+        'await c.utils.writeBatch(() => {',
+        '  for (const r of rows) c.utils.writeUpsert(r);',
+        '});',
+      ]),
+      (file) => expect(offendersIn(file)).toEqual([]),
+    );
+    withFixture(handler(['await c.utils.writeDelete(rows[0].id);']), (file) =>
+      expect(offendersIn(file)).toEqual([]),
+    );
+  });
+
+  it('офендер: без write-back, без await, лише в гілці if, порожній batch', () => {
+    for (const body of [
+      [],
+      ['c.utils.writeBatch(() => { c.utils.writeUpsert(rows[0]); });'],
+      ['if (rows.length) await c.utils.writeUpsert(rows[0]);'],
+      ['await c.utils.writeBatch(() => {});'],
+      ['// await c.utils.writeUpsert(rows[0]);'],
+    ])
+      withFixture(handler(body), (file) =>
+        expect(offendersIn(file), body.join(' ')).toHaveLength(1),
+      );
+  });
+
+  it('офендер: ранній return до write-back; return вкладеної функції — ні', () => {
+    withFixture(
+      handler([
+        'if (!rows.length) return;',
+        'await c.utils.writeUpsert(rows[0]);',
+      ]),
+      (file) => expect(offendersIn(file)).toHaveLength(1),
+    );
+    withFixture(
+      handler([
+        'await c.utils.writeBatch(() => {',
+        '  rows.forEach((r) => { if (!r) return; c.utils.writeUpsert(r); });',
+        '});',
+        'return;',
+      ]),
+      (file) => expect(offendersIn(file)).toEqual([]),
+    );
+  });
+
+  it('concise-arrow — офендер за побудовою (write-back неможливий у виразі)', () => {
+    withFixture(
+      ['export const c = {', '  onDelete: async () => remove(),', '};'],
+      (file) => expect(offendersIn(file)).toHaveLength(1),
+    );
+  });
 });
 
-describe('canon-exempt: заякорений рядком вище, з причиною (R13)', () => {
-  it('директива РІВНО рядком вище return-а — офендера немає', () => {
-    withFixture(
-      [
-        'export const c = {',
-        '  onDelete: async () => {',
-        '    // canon-exempt: тестова причина',
-        '    return { refetch: false };',
-        '  },',
-        '};',
-        '',
-      ].join('\n'),
-      (file) => expect(offendersIn(file)).toEqual([]),
+describe('canon-exempt: заякорений рядком вище хендлера, з причиною', () => {
+  const exempt = (comment: string[]) => [
+    'export const c = {',
+    ...comment,
+    '  onDelete: async () => {',
+    '    await remove();',
+    '  },',
+    '};',
+  ];
+
+  it('директива РІВНО рядком вище — офендера немає', () => {
+    withFixture(exempt(['  // canon-exempt: тестова причина']), (file) =>
+      expect(offendersIn(file)).toEqual([]),
     );
   });
 
   it('директива за три рядки вище, і окремо — без причини: офендер в обох випадках', () => {
-    // Три рядки вище (два порожні рядки між коментарем і return-ом) —
-    // саме той кейс, який стара 200-символьна евристика мовчки глушила.
     withFixture(
-      [
-        'export const c = {',
-        '  onDelete: async () => {',
-        '    // canon-exempt: тестова причина',
-        '',
-        '',
-        '    return { refetch: false };',
-        '  },',
-        '};',
-        '',
-      ].join('\n'),
+      exempt(['  // canon-exempt: тестова причина', '', '']),
       (file) => expect(offendersIn(file)).toHaveLength(1),
     );
-    // Директива рівно рядком вище, але БЕЗ причини після ":" — теж не opt-out.
-    withFixture(
-      [
-        'export const c = {',
-        '  onDelete: async () => {',
-        '    // canon-exempt:',
-        '    return { refetch: false };',
-        '  },',
-        '};',
-        '',
-      ].join('\n'),
-      (file) => expect(offendersIn(file)).toHaveLength(1),
-    );
-  });
-});
-
-describe('concise-arrow тіло — офендер за побудовою (R13)', () => {
-  it('async () => ({ refetch: false }) без write-back — завжди офендер (write-back неможливий у виразі)', () => {
-    withFixture(
-      [
-        'export const c = {',
-        '  onUpdate: async () => ({ refetch: false }),',
-        '};',
-        '',
-      ].join('\n'),
-      (file) => expect(offendersIn(file)).toHaveLength(1),
-    );
-  });
-
-  it('той самий concise-arrow з canon-exempt рядком вище — офендера немає', () => {
-    // 🔴 Для concise-arrow «сам вузол» — це ArrowFunction, а не
-    // PropertyAssignment: коментар над УСІМ рядком `onUpdate: async () =>`
-    // прикріпився б як leading trivia до імені властивості, не до стрілки
-    // (getFullStart() ArrowFunction — одразу після токена `:`). Тому
-    // директива стоїть МІЖ `:` і `async`, рівно рядком вище стрілки —
-    // так само, як для Block-форми вона стоїть рядком вище return-а.
-    withFixture(
-      [
-        'export const c = {',
-        '  onUpdate:',
-        '    // canon-exempt: тестова причина',
-        '    async () => ({ refetch: false }),',
-        '};',
-        '',
-      ].join('\n'),
-      (file) => expect(offendersIn(file)).toEqual([]),
+    withFixture(exempt(['  // canon-exempt:']), (file) =>
+      expect(offendersIn(file)).toHaveLength(1),
     );
   });
 });
