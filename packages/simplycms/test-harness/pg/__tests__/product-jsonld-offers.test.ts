@@ -12,6 +12,7 @@ import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';
 import { UK } from './fixtures/text-locale';
+import { ui } from '../../locale';
 
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
 const DEFAULT_CATEGORY = '00000004-0000-4000-8000-000000000001';
@@ -31,6 +32,7 @@ const matches = [
       storeProfile: PROFILE,
       siteUrl: '',
       locale: 'uk',
+      ui: { locale: ui('uk'), fallback: ui('uk') },
       languages: { primary: 'uk', published: ['uk'] },
     },
   },
