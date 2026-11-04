@@ -161,6 +161,8 @@ export function createAdminServerMock(
     setProductModificationToken: vi.fn(),
     saveProductPricesCommand: vi.fn(),
     saveStockCommand: vi.fn(),
+    getAdminUiLocale: vi.fn(),
+    setAdminUiLocale: vi.fn(),
   } satisfies AdminServerMock;
   return { ...defaults, ...overrides };
 }
