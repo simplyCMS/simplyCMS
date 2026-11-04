@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { inviteIdentifier, verifyOwnerInvite } from 'simplycms/auth';
 import type { OwnerInviteStore } from 'simplycms/auth';
 import type { MailItem, MailMessage, MailTransport } from 'simplycms/mail';
+import { cl } from '../../../../test-harness/locale';
 import { runOwnerInvite } from '../run';
 import { runOwnerInviteCli } from '../cli';
 
@@ -13,6 +14,8 @@ import { runOwnerInviteCli } from '../cli';
 // Postgres. Що той самий механізм працює й на живій БД, доводить
 // `packages/simplycms/test-harness/pg/__tests__/owner-invite-flow.test.ts`.
 
+/** Основна мова магазину: у юніті без БД її подає шов `primary`, а не `readLanguages`. */
+const PRIMARY = cl('uk');
 const EMAIL = 'owner@example.com';
 const SITE = 'https://shop.test';
 
@@ -93,6 +96,7 @@ async function run(
   const result = await runOwnerInvite({
     email: EMAIL,
     siteUrl: SITE,
+    primary: PRIMARY,
     store,
     env: {},
     schedule: mail.schedule,
@@ -165,6 +169,7 @@ describe('owner-invite (скрипт шаблону)', () => {
       error: (m) => lines.push(m),
       run: (opts) =>
         runOwnerInvite({
+          primary: PRIMARY,
           ...opts,
           store,
           schedule: mail.schedule,
@@ -327,6 +332,7 @@ describe('owner-invite CLI-обгортка', () => {
         error: (m: string) => errors.push(m),
         run: (o) =>
           runOwnerInvite({
+            primary: PRIMARY,
             ...o,
             store,
             schedule: mail.schedule,
@@ -351,21 +357,20 @@ describe('owner-invite CLI-обгортка', () => {
     expect(errors.join('\n')).not.toContain('localhost');
   });
 
-  /** CLI з реальним ядром і фейковою поштою; повертає надіслане й попередження. */
-  const withLocale = async (locale: string | undefined) => {
+  /** CLI з реальним ядром і фейковою поштою; основну мову подає шов `primary` (у проді — БД). */
+  const withPrimary = async (primary: string) => {
     const { store } = makeStore();
     const mail = makeMail();
     const errors: string[] = [];
-    const env: Record<string, string> = { ...baseEnv, ...SMTP_ENV };
-    if (locale !== undefined) env.VITE_LOCALE = locale;
     const code = await runOwnerInviteCli({
       argv: [],
-      env,
+      env: { ...baseEnv, ...SMTP_ENV },
       log: () => {},
       error: (m: string) => errors.push(m),
       run: (o) =>
         runOwnerInvite({
           ...o,
+          primary: cl(primary),
           store,
           schedule: mail.schedule,
           deliver: mail.deliver,
@@ -375,23 +380,15 @@ describe('owner-invite CLI-обгортка', () => {
     return { code, mail, errors };
   };
 
-  it('M3: VITE_LOCALE=en-US — лист запрошення англійською, без попереджень', async () => {
-    const { code, mail, errors } = await withLocale('en-US');
+  it('М2: основна мова магазину en → лист запрошення англійською, без попереджень', async () => {
+    const { code, mail, errors } = await withPrimary('en');
     expect(code).toBe(0);
     expect(mail.sent[0]!.subject).toMatch(/^Owner invitation/);
     expect(errors).toHaveLength(0);
   });
 
-  it('M3: невалідна VITE_LOCALE — одне попередження й uk', async () => {
-    const { code, mail, errors } = await withLocale('xx-YY');
-    expect(code).toBe(0);
-    expect(mail.sent[0]!.subject).toMatch(/^Запрошення власника/);
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain('VITE_LOCALE');
-  });
-
-  it('M3: без VITE_LOCALE — uk без попередження', async () => {
-    const { mail, errors } = await withLocale(undefined);
+  it('М2: основна мова магазину uk → лист українською', async () => {
+    const { mail, errors } = await withPrimary('uk');
     expect(mail.sent[0]!.subject).toMatch(/^Запрошення власника/);
     expect(errors).toHaveLength(0);
   });

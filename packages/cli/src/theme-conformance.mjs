@@ -95,9 +95,9 @@ export async function run(argv) {
     const { assertThemeViewsConformance } = await environment.runner.import(
       'simplycms/themes/conformance',
     );
-    // Мова інтерфейсу рендеру — параметр kit-а без дефолту. CLI не знає основної мови
-    // магазину (її читає БД), тож перевіряє українським інтерфейсом — явно, а не тихо.
-    // М2а-TEMP: Task 6 бере мову з налаштувань магазину.
+    // Мова інтерфейсу рендеру — параметр kit-а без дефолту. Перевірка відповідності тем
+    // не залежить від мови магазину (вона лише рендерить в'ю в jsdom без БД), тож
+    // фіксуємо `uk` явно: пакет `uk` є в ядрі завжди.
     const { resolveUiLocale } =
       await environment.runner.import('simplycms/i18n');
     const { checkedContentLocale } = await environment.runner.import(

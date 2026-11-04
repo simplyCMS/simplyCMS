@@ -3,8 +3,8 @@ import {
   renderEmailVerificationMail,
   scheduleMail,
 } from 'simplycms/mail';
-import { getStoreTranslator } from 'simplycms/site';
 import {
+  loadUserMailTranslator,
   logDeliveryFailure,
   readStoreName,
   type MailDeps,
@@ -42,16 +42,15 @@ export function createEmailVerification(deps: MailDeps) {
     user,
     url,
   }: {
-    user: { email: string };
+    user: { id: string; email: string };
     url: string;
   }): Promise<void> => {
     const message = renderEmailVerificationMail({
       to: user.email,
       url,
       storeName: deps.storeName ?? (await readStoreName()),
-      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-      // М2а-TEMP: Task 6
-      t: await getStoreTranslator(),
+      // Мова листа — вибір користувача в профілі, інакше основна мова магазину (§19.9).
+      t: await loadUserMailTranslator(user.id),
     });
     const ids = await schedule([{ kind: 'email_verification', message }]);
     void deliverMail(ids, deps.mailTransport).catch(

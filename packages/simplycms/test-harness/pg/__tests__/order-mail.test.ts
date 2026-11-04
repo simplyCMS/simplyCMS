@@ -32,7 +32,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { blockCommitOn } from './fixtures/commit-block';
-import { UK } from './fixtures/text-locale';
+import { EN, UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 
@@ -129,7 +129,11 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
         }),
       ],
     );
-  const place = (overrides: Partial<PlaceOrderInput> = {}, user?: string) =>
+  const place = (
+    overrides: Partial<PlaceOrderInput> = {},
+    user?: string,
+    text = UK,
+  ) =>
     placeOrderFor(
       input({
         shippingMethodId: pickup,
@@ -138,7 +142,7 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
         ...overrides,
       }),
       user ?? null,
-      UK,
+      text,
     );
 
   beforeAll(async () => {
@@ -214,6 +218,16 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
       expect(mail.text).toContain('$');
       expect(mail.text).not.toContain('₴');
     }
+  });
+
+  it('М2 (§19.9): замовлення мовою en → лист покупцю англійський, лист власнику — основною мовою (uk)', async () => {
+    expect((await place({}, undefined, EN)).ok).toBe(true);
+    await vi.waitFor(() => expect(sent).toHaveLength(2));
+    const customer = sent.find((m) => m.kind === 'order_customer')!;
+    const owner = sent.find((m) => m.kind === 'order_owner')!;
+    expect(customer.subject).toMatch(/^Order /);
+    expect(owner.subject).not.toMatch(/^New order/);
+    expect(owner.subject).toMatch(/[А-Яа-яІіЇї]/);
   });
 
   it('відсутній VITE_SITE_URL відмовляє ДО транзакції: замовлення немає, рядків немає', async () => {

@@ -24,6 +24,5 @@ export const appLinks: LinkResolver = {
  * Назва магазину й описи — профіль у БД, URL сайту — серверний env (Е6б-11).
  */
 export const appConfig: ConfigProvider = {
-  locale: config.locale,
   currency: config.currency,
 };

@@ -22,12 +22,6 @@ export {
 export type { CacheKey } from './cache-generations';
 export { readStoreProfile, toStorefrontProfile } from './store-profile';
 export { declareBuiltThemes, isBuiltTheme } from './built-themes';
-export {
-  declareStoreLocale,
-  getStoreLocale,
-  getStoreTranslator,
-  STORE_UI_FALLBACK,
-} from './store-locale';
 export { declareStoreCurrency, getStoreCurrency } from './store-currency';
 export { readLanguages, toLocaleSet } from './languages';
 export type { LanguageSummary } from './languages';

@@ -3,8 +3,8 @@ import {
   renderPasswordResetMail,
   scheduleMail,
 } from 'simplycms/mail';
-import { getStoreTranslator } from 'simplycms/site';
 import {
+  loadUserMailTranslator,
   logDeliveryFailure,
   readStoreName,
   type MailDeps,
@@ -39,9 +39,8 @@ export function createResetPasswordSender(deps: ResetMailDeps) {
       to: user.email,
       url,
       storeName: deps.storeName ?? (await readStoreName()),
-      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-      // М2а-TEMP: Task 6
-      t: await getStoreTranslator(),
+      // Мова листа — вибір користувача в профілі, інакше основна мова магазину (§19.9).
+      t: await loadUserMailTranslator(user.id),
     });
     const ids = await schedule([{ kind: 'password_reset', message }]);
     void deliverMail(ids, deps.mailTransport).catch(

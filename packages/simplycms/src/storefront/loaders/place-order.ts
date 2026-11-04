@@ -5,7 +5,7 @@ import { applyCategoryRules } from 'simplycms/commerce';
 import { InsufficientStockError } from 'simplycms/inventory';
 import { siteUrl } from 'simplycms/env';
 import { deliverMail } from 'simplycms/mail';
-import { getStoreCurrency, getStoreLocale } from 'simplycms/site';
+import { getStoreCurrency } from 'simplycms/site';
 import {
   withCustomerDb,
   withOrderTokenDb,
@@ -49,7 +49,7 @@ export async function placeOrderFor(
   // відмовити одразу (fail-loud, Р18), а не відкотити вже виконане оформлення.
   const mailContext: OrderMailContext = {
     adminBase: siteUrl('/admin/orders/', process.env),
-    locale: getStoreLocale(),
+    text,
     currency: getStoreCurrency(),
   };
   const accessToken = userId === null ? randomUUID() : null;

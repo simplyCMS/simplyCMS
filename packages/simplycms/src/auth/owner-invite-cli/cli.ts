@@ -1,31 +1,6 @@
-import {
-  languageOfConfigLocale,
-  toUiLocale,
-  type UiLocale,
-} from 'simplycms/i18n';
-import { STORE_UI_FALLBACK } from 'simplycms/site';
 import { runOwnerInvite } from './run';
 
 type Env = Readonly<Record<string, string | undefined>>;
-
-/**
- * Локаль листа — з того самого `VITE_LOCALE`, що й `simplycms.config.ts` (одне
- * джерело). Невалідне значення не мовчки стає `uk`: одне попередження.
- */
-export function resolveInviteLocale(
-  env: Env,
-  log: (message: string) => void,
-): UiLocale {
-  const raw = env.VITE_LOCALE;
-  if (!raw) return STORE_UI_FALLBACK;
-  // М2а-TEMP: Task 6 — мова листа піде з основної мови магазину, а не з VITE_LOCALE.
-  const locale = toUiLocale(languageOfConfigLocale(raw));
-  if (locale) return locale;
-  log(
-    `VITE_LOCALE="${raw}" не підтримується — лист запрошення піде мовою "uk".`,
-  );
-  return STORE_UI_FALLBACK;
-}
 
 /** Аргументи й обов'язкові ключі env; відмова — помилкою з текстом для оператора. */
 function assertUsage(argv: readonly string[], env: Env): void {
@@ -78,7 +53,6 @@ export async function runOwnerInviteCli({
       email: env.OWNER_EMAIL!,
       siteUrl: env.VITE_SITE_URL!,
       storeName: env.VITE_STORE_NAME ?? 'SimplyCMS',
-      locale: resolveInviteLocale(env, error),
       printLink: argv.includes('--print-link'),
       env,
       log,

@@ -1,8 +1,13 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import type { ContentLocale } from 'simplycms/contracts';
 import type { Translator } from 'simplycms/i18n';
 import { siteUrl } from 'simplycms/env';
-import { renderOwnerInviteMail, scheduleMail } from 'simplycms/mail';
-import { getStoreTranslator } from 'simplycms/site';
+import {
+  loadMailTranslator,
+  renderOwnerInviteMail,
+  scheduleMail,
+} from 'simplycms/mail';
+import { readPrimaryLocale } from './mail-support';
 
 /**
  * Invite власника — заміна механіки `inviteUserByEmail` (Task 7, В2-К1а).
@@ -81,8 +86,10 @@ export interface IssueOwnerInviteInput {
   /** Джерело `VITE_SITE_URL` для посилання (див. `siteUrl`); за замовчуванням `process.env`. */
   readonly env?: Readonly<Record<string, string | undefined>>;
   readonly storeName?: string;
-  /** Транслятор листа; за замовчуванням — від локалі хоста. */
+  /** Транслятор листа; за замовчуванням — основна мова магазину (адресат без профілю, §19.9). */
   readonly t?: Translator;
+  /** Основна мова для `t` за замовчуванням; без неї — з БД (`languages.is_default`). */
+  readonly primary?: ContentLocale;
   readonly ttlMs?: number;
   readonly now?: Date;
   /** Тільки для тестів: детермінований токен замість випадкового. */
@@ -147,9 +154,12 @@ export async function issueOwnerInvite(
     url,
     storeName: input.storeName ?? 'SimplyCMS',
     ttlMs,
-    // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-    // М2а-TEMP: Task 6
-    t: input.t ?? (await getStoreTranslator()),
+    t:
+      input.t ??
+      (await loadMailTranslator(
+        { kind: 'invitee' },
+        input.primary ?? (await readPrimaryLocale()),
+      )),
   });
   const mailIds = await (input.schedule ?? scheduleMail)([
     { kind: 'owner_invite', message },

@@ -9,7 +9,6 @@ import {
 } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import type { MailMessage, MailTransport } from 'simplycms/mail';
-import { declareStoreLocale } from 'simplycms/site';
 import * as F from './fixtures/customer-categories';
 
 const SITE = 'https://shop.example';
@@ -67,7 +66,6 @@ describe('підтвердження пошти при реєстрації (Р3
   const linkOf = (m: MailMessage) => /https?:\/\/\S+/.exec(m.text)![0];
 
   beforeAll(() => {
-    declareStoreLocale('uk');
     process.env.VITE_SITE_URL = SITE;
     process.env.SMTP_URL = 'smtp://127.0.0.1:1';
     process.env.MAIL_FROM = 'shop@shop.example';

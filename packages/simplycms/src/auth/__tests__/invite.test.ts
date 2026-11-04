@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { MailItem, MailMessage } from 'simplycms/mail';
+import { cl } from '../../../test-harness/locale';
 import {
   inviteIdentifier,
   issueOwnerInvite,
@@ -8,6 +9,9 @@ import {
   verifyOwnerInvite,
   type OwnerInviteStore,
 } from '../invite';
+
+/** Основна мова магазину для листа запрошення: без БД, але через конструктор осі. */
+const PRIMARY = cl('uk');
 
 // Invite власника (Task 7, В2-К1а) — заміна механіки `inviteUserByEmail`.
 //
@@ -75,6 +79,7 @@ describe('issueOwnerInvite', () => {
 
   it('створює користувача й шле лист із токеном; ролі admin від випуску немає', async () => {
     const result = await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'Owner@Example.Test',
@@ -99,6 +104,7 @@ describe('issueOwnerInvite', () => {
 
   it('у БД лягає ХЕШ, а не сам токен', async () => {
     await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',
@@ -116,6 +122,7 @@ describe('issueOwnerInvite', () => {
 
   it('повторний invite наявного користувача НЕ дублює його', async () => {
     const first = await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',
@@ -124,6 +131,7 @@ describe('issueOwnerInvite', () => {
       token: 'tok-1',
     });
     const second = await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',
@@ -141,6 +149,7 @@ describe('issueOwnerInvite', () => {
   it('existingUnverified: лише для наявного непідтвердженого акаунта', async () => {
     const run = (token: string) =>
       issueOwnerInvite({
+        primary: PRIMARY,
         store: fake.store,
         schedule,
         email: 'owner@example.test',
@@ -164,6 +173,7 @@ describe('issueOwnerInvite: забанений (Е6г-19)', () => {
       return [];
     };
     const first = await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',
@@ -178,6 +188,7 @@ describe('issueOwnerInvite: забанений (Е6г-19)', () => {
     sent.length = 0;
 
     const attempt = issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',
@@ -200,6 +211,7 @@ describe('verifyOwnerInvite', () => {
   const issued = async (token: string, ttlMs?: number) => {
     const fake = createFakeStore();
     await issueOwnerInvite({
+      primary: PRIMARY,
       store: fake.store,
       schedule,
       email: 'owner@example.test',

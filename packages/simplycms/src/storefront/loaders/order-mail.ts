@@ -1,13 +1,15 @@
 import type { PlaceOrderInput, PlacedOrder } from 'simplycms/contracts';
-import type { UiLocale } from 'simplycms/i18n';
+import type { TextLocale } from 'simplycms/domain/translations';
+import { loadTranslator } from 'simplycms/i18n';
 import {
   enqueueMail,
+  resolveMailUiLocale,
   renderOrderCustomerMail,
   renderOrderOwnerMail,
   type MailItem,
   type OrderMailData,
 } from 'simplycms/mail';
-import { getStoreTranslator, readStoreProfile } from 'simplycms/site';
+import { readStoreProfile } from 'simplycms/site';
 import type { ActorDb } from './db';
 import type { NewOrderInput } from './entities/new-order';
 
@@ -44,8 +46,12 @@ export function toOrderMailData(
 export type OrderMailContext = {
   /** `siteUrl('/admin/orders/')` — id замовлення дописується вже в транзакції. */
   adminBase: string;
-  /** Мова інтерфейсу листа; ідентично їй форматуються гроші (М2а-TEMP: Task 6 розведе осі). */
-  locale: UiLocale;
+  /**
+   * Мова замовлення (опублікована мова чекауту) й основна мова магазину: з них
+   * `resolveMailUiLocale` визначає мову КОЖНОГО листа окремо (§19.9) — покупцю мовою
+   * замовлення, власнику основною. Ідентично мові листа форматуються й гроші в ньому.
+   */
+  text: TextLocale;
   currency: string;
 };
 
@@ -70,10 +76,18 @@ export async function enqueueOrderMails(
   const ownerEmail = profile.contacts.email?.trim() ?? '';
   const to = customerEmail.trim();
   const storeName = profile.name || 'SimplyCMS';
-  // М2: фолбек стане основною мовою магазину (лист іде мовою замовлення).
-  // М2а-TEMP: Task 6
-  const t = await getStoreTranslator(ctx.locale);
-  const money = { locale: ctx.locale, currency: ctx.currency };
+  // Два листи — дві мови: покупець читає мовою свого замовлення, власник — основною
+  // мовою магазину. Один транслятор на обидва був би помилкою в одному з них.
+  const customerUi = resolveMailUiLocale(
+    { kind: 'order-customer', orderLocale: ctx.text.locale },
+    ctx.text.primary,
+  );
+  const ownerUi = resolveMailUiLocale({ kind: 'store' }, ctx.text.primary);
+  const mailParts = ['base', 'mail'] as const;
+  const [customerT, ownerT] = await Promise.all([
+    loadTranslator(customerUi, mailParts),
+    loadTranslator(ownerUi, mailParts),
+  ]);
   const items: MailItem[] = [];
   if (to)
     items.push({
@@ -82,8 +96,9 @@ export async function enqueueOrderMails(
         to,
         order: data,
         storeName,
-        t,
-        ...money,
+        t: customerT,
+        locale: customerUi,
+        currency: ctx.currency,
       }),
     });
   if (ownerEmail)
@@ -95,8 +110,9 @@ export async function enqueueOrderMails(
         storeName,
         // Р18(в): база посилання лише з `VITE_SITE_URL` (ctx), не з запиту.
         adminUrl: ctx.adminBase + data.id,
-        t,
-        ...money,
+        t: ownerT,
+        locale: ownerUi,
+        currency: ctx.currency,
       }),
     });
   return enqueueMail(odb, items);
