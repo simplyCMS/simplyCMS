@@ -250,14 +250,12 @@
   - реєстрація субшляху `simplycms/storefront-routes/hydration`: `exports` у `packages/simplycms/package.json`, `eslint.tier-zones.mjs` (у зоні `storefront-routes`), таблиця `packages/README.md`.
 
 **Interfaces:**
-- Consumes: `loadUiCatalog`, `resolveUiLocale`, `readClientLocaleSet`, `resolveRequestLocale`, `ThemeRegistry`, `readActiveThemeName`.
-- Produces: `prepareStorefrontHydration(): Promise<void>` (Д6). Збій теми — як зараз (`.catch` з fallback на `default`). Збій каталогу не ковтається: його бачить `installStaleChunkGuard` (застарілий чанк після деплою).
+- Consumes: `ThemeRegistry`, `readActiveThemeName` (каталогів ядра прогрів не торкається — Д6, вимір маркером).
+- Produces: `prepareStorefrontHydration(): Promise<void>` (Д6) — лише активна тема. Збій теми — як зараз (`.catch` з fallback на `default`). Каталог `base` вантажить `head` маршрутів у `router.hydrate()` або сам корінь (призупинення без Suspense-межі зберігає SSR-DOM); збій його завантаження не ковтається — його бачить `installStaleChunkGuard` (застарілий чанк після деплою).
 
 - [ ] **Step 1: Тести.**
-  - `prepare.test.ts` (jsdom): `window.__SCMS_LOCALES__ = { primary: 'uk', published: ['uk','en','pl'] }`.
-    - `location.pathname='/en/x'` → після `await` стан `loadUiCatalog('en','base')` — `fulfilled`, а `admin` не вантажилась;
-    - `'/pl/x'` → `fulfilled` для `uk`;
-    - `'/admin'` → `fulfilled` для `uk` (основна; свою мову адмінка вантажить сама).
+  - `prepare.test.ts` (jsdom; ред. після виміру Task 4 — прогрів лише теми): вантажить активну тему з назви від сервера; без назви — `default`; збій теми не блокує гідрацію.
+  - Доказ «гідрація без прогріву `base` не перемальовує SSR» — маркер ідентичності SSR-вузлів у `live:smoke` на `/` і на товарі (постійна перевірка), разом з title SSR = після гідрації і `console.error` = 0.
   - `no-raw-keys-html.test.tsx` (І44), зразок `ssr(url)` з `product-page-html.test.tsx`: для `/`, `/<товар>`, `/cart` × мови `uk`, `en`, `pl` (без пакета; після Task 5б — «деградований режим», §19.15) жоден текстовий вузол і жодне значення атрибута HTML не дорівнює ключу з `BaseKey ∪ AdminKey ∪ MailKey`.
   - Клієнтський перехід `/x` → `/en/x` у тому ж тесті (`router.navigate`): після `router.load()` рендер англійський, без сирих ключів.
   - `pilot-gate-c.test.ts`: синтетичний граф, де вхідний чанк статично імпортує модуль `…/i18n/catalogs/en/base` → гейт червоний; через `import()` → зелений.
