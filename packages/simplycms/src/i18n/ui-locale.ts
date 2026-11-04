@@ -1,15 +1,9 @@
-import type { ContentLocale } from 'simplycms/contracts';
+import type { ContentLocale, UiLocale } from 'simplycms/contracts';
 import { findLanguagePack, listLanguagePacks, type UiPart } from './packs';
 
-/**
- * Брендований тип «мова ІНТЕРФЕЙСУ» — та, якою говорять кнопки, заголовки й листи
- * (каталоги ядра, теми, плагіна). Окремий бренд від `ContentLocale` (спека §19.2): це дві
- * осі, і мову контенту (`pl`) не можна подати замість мови інтерфейсу.
- *
- * 🔴 Значення створюють ЛИШЕ `resolveUiLocale` і `toUiLocale` цього файлу: код завжди має
- * наявний мовний пакет. Приведення `as UiLocale` деінде заборонене.
- */
-export type UiLocale = string & { readonly __axis: 'ui' };
+// Тип — у T0 (`contracts/ui-locale`), щоб його приймала T1-логіка; значення створюють ЛИШЕ
+// `resolveUiLocale` і `toUiLocale` цього файлу, приведення `as UiLocale` деінде заборонене.
+export type { UiLocale };
 
 /** Пара мов інтерфейсу сторінки: власна і кінцева ланка fallback (пакет основної мови). */
 export type UiLocalePair = {

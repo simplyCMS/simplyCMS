@@ -103,7 +103,6 @@ export interface MediaProvider {
  * URL сайту — у серверному env.
  */
 export interface ConfigProvider {
-  locale: string;
   currency: string;
 }
 
