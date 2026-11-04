@@ -4,6 +4,7 @@ import { renderSitemapXml } from 'simplycms/storefront/seo';
 import { indexPolicy } from 'simplycms/storefront/seo';
 import type { SitemapData } from 'simplycms/storefront/loaders';
 import { productHead, type ProductHeadInput } from '../head/product';
+import { ui } from '../../../test-harness/locale';
 
 /**
  * Паритет sitemap ↔ сторінка (М1, І33): кожен URL sitemap є self-canonical сторінки
@@ -86,6 +87,7 @@ function headOf(
           storeProfile: PROFILE,
           siteUrl: BASE,
           locale,
+          ui: { locale: ui('uk'), fallback: ui('uk') },
           languages: { primary: p.primary, published: ['uk', 'en', 'pl'] },
         },
       },

@@ -7,7 +7,6 @@ import {
   cleanup,
   fireEvent,
 } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { StoreProfileProvider } from 'simplycms/themes/store-profile';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 
@@ -32,6 +31,7 @@ vi.mock('simplycms/core/hooks/use-toast', () => ({
 }));
 
 import Auth from '../pages/Auth';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const PROFILE: StorefrontProfile = {
   name: 'Крамниця',
@@ -49,11 +49,11 @@ async function attemptBannedLogin(profile: StorefrontProfile) {
   });
   toast.mockClear();
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <StoreProfileProvider profile={profile}>
         <Auth />
       </StoreProfileProvider>
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   fireEvent.change(screen.getByLabelText('Email'), {
     target: { value: 'a@b.test' },

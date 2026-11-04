@@ -2,7 +2,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 
 /**
  * Хвіст рев'ю Task 10: `errorComponent: AdminError` роуту `/admin`
@@ -45,6 +44,7 @@ vi.mock('simplycms/runtime/stale-chunk', async (importOriginal) => ({
 
 import { reloadOnceForStaleChunk } from 'simplycms/runtime/stale-chunk';
 import { Route } from '../admin';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /** Симулює серіалізовану помилку з `beforeLoad`: лише `name`/`message` доїжджають до клієнта (К3-13). */
 function toClientError(name: string, message: string): Error {
@@ -65,9 +65,9 @@ function renderAdminError(error: Error) {
     }
   ).errorComponent;
   return render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <AdminError error={error} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 }
 

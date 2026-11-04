@@ -7,7 +7,6 @@ import {
   cleanup,
   fireEvent,
 } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 
 // Р30: зі SMTP signUp повертає `token: null` — чекаут не вважає покупця
 // залогованим; вхід непідтвердженого має власне повідомлення.
@@ -29,8 +28,9 @@ vi.mock('simplycms/ui/use-toast', () => ({
 }));
 
 import { CheckoutAuthBlock } from '../CheckoutAuthBlock';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const CONTACTS = { phone: null, email: null };
 const type = (id: string, value: string) =>
   fireEvent.change(document.getElementById(id)!, { target: { value } });
@@ -46,13 +46,13 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
     });
     const onAuthSuccess = vi.fn();
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <CheckoutAuthBlock
           defaultTab="register"
           storeContacts={CONTACTS}
           onAuthSuccess={onAuthSuccess}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     type('checkout-auth-first-name', 'Іван');
     type('checkout-auth-last-name', 'Тест');
@@ -83,9 +83,9 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
     });
     h.reset.mockResolvedValue({ data: { status: true }, error: null });
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <CheckoutAuthBlock defaultTab="register" storeContacts={CONTACTS} />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     type('checkout-auth-first-name', 'Іван');
     type('checkout-auth-last-name', 'Тест');
@@ -121,9 +121,9 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
       error: { code: 'EMAIL_NOT_VERIFIED', message: 'Email not verified' },
     });
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <CheckoutAuthBlock defaultTab="login" storeContacts={CONTACTS} />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'a@b.test' },
@@ -143,13 +143,13 @@ describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () =
   it('вхід: адреса обрізається перед запитом, лише пробіли — запиту немає', async () => {
     h.signIn.mockResolvedValue({ data: { token: 't' }, error: null });
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <CheckoutAuthBlock
           defaultTab="login"
           storeContacts={CONTACTS}
           onAuthSuccess={vi.fn()}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     // Перший «Увійти» — вкладка, останній — кнопка сабміту.
     const submit = () =>

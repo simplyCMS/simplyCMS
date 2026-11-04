@@ -5,7 +5,6 @@ import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { DiscountEnvironment } from 'simplycms/contracts';
-import { I18nProvider } from 'simplycms/i18n';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { isViewerPricedQuery } from 'simplycms/react-query';
 import { TestEngineProvider } from '../../__tests__/engine-stub';
@@ -88,6 +87,7 @@ import {
   useSectionProducts,
 } from '../home/queries';
 import PropertyPage from '../PropertyPage';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -122,11 +122,11 @@ function Queries() {
 let client: QueryClient;
 const tree = () => (
   <QueryClientProvider client={client}>
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <TestEngineProvider>
         <Surfaces />
       </TestEngineProvider>
-    </I18nProvider>
+    </TestI18nProvider>
   </QueryClientProvider>
 );
 const mount = () => render(tree());

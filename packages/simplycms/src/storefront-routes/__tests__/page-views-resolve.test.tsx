@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { CartProvider } from 'simplycms/react-query';
 import type { ThemeModule } from 'simplycms/themes/types';
 import { TestEngineProvider } from './engine-stub';
@@ -65,6 +64,7 @@ import HomePage from '../pages/Home';
 import ProductDetailPage, {
   type ProductDetailPageProps,
 } from '../pages/ProductDetail';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -118,11 +118,11 @@ function ssr(node: ReactNode): string {
 
   return renderToString(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <CartProvider>{node}</CartProvider>
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

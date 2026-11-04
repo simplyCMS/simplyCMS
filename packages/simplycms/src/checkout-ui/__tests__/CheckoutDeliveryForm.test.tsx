@@ -32,9 +32,9 @@ vi.mock('simplycms/react-query', async (orig) => ({
   useEngine: () => ({ config: { locale: 'uk-UA', currency: 'UAH' } }),
 }));
 
-import { I18nProvider } from 'simplycms/i18n';
 import { CheckoutDeliveryForm } from '../CheckoutDeliveryForm';
 import { expectLabelledControls } from './accessible-controls';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const PICKUP = {
   id: 'm1',
@@ -64,7 +64,7 @@ const renderForm = (
   const onChange = vi.fn();
   const onAvailabilityChange = vi.fn();
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <CheckoutDeliveryForm
         values={values}
         onChange={onChange}
@@ -72,7 +72,7 @@ const renderForm = (
         onAvailabilityChange={onAvailabilityChange}
         {...extra}
       />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   return { onChange, onAvailabilityChange };
 };

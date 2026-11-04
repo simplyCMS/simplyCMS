@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { createTranslator } from 'simplycms/i18n';
 import {
   buildActiveFilterChips,
   type ChipSources,
 } from '../pages/catalog/active-filter-chips';
 import type { NumericProperty } from '../pages/catalog/types';
+import { ukT } from '../../../test-harness/i18n';
 
 /**
  * Бейджі активних фільтрів — спільні для каталогу й сторінки розділу
  * (Фаза 4). Під тестом склад бейджів, а не їх оформлення.
  */
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const power: NumericProperty = {
   id: 'prop-power',

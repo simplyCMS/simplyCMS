@@ -9,7 +9,6 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 import { FilterSidebar } from '../../catalog-ui/FilterSidebar';
 import {
   filterAndSortProducts,
@@ -17,6 +16,7 @@ import {
 } from '../pages/catalog/filtering';
 import { useActiveFilters } from '../pages/catalog/useActiveFilters';
 import type { CatalogFiltersState } from '../pages/catalog/types';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -121,11 +121,11 @@ function Harness() {
 describe('boolean-фільтр каталогу: ланцюг панель → вибірка → бейдж', () => {
   it('клік «Так» дає непорожню вибірку й бейдж; зняття бейджем повертає все', async () => {
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <QueryClientProvider client={new QueryClient()}>
           <Harness />
         </QueryClientProvider>
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
 
     expect(screen.getByTestId('result').textContent).toBe('A,B,C');

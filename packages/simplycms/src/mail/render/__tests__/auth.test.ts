@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createTranslator } from 'simplycms/i18n';
+import { ui } from '../../../../test-harness/locale';
 import {
   renderEmailVerificationMail,
   renderOwnerInviteMail,
   renderPasswordResetMail,
 } from 'simplycms/mail';
+import { enT, ukT } from '../../../../test-harness/i18n';
 
 // Чисті рендери листів auth: тексти з каталогу `mail.*`, обидві локалі.
 
@@ -12,7 +14,7 @@ const URL_ = 'https://shop.example/api/auth/reset-password/tok?callbackURL=%2F';
 const STORE = 'Магазин "Сонце" <тест>';
 
 describe.each(['uk', 'en'] as const)('рендер листів, локаль %s', (locale) => {
-  const t = createTranslator(locale, 'uk');
+  const t = createTranslator(ui(locale), ui('uk'));
 
   it('скидання: тема й текст несуть storeName, у тексті є url, у темі його немає', () => {
     const mail = renderPasswordResetMail({
@@ -92,11 +94,11 @@ it('локалі дають різні тексти (en не падає на uk)
   const input = { to: 'a@b.test', url: URL_, storeName: 'S' };
   const uk = renderPasswordResetMail({
     ...input,
-    t: createTranslator('uk', 'uk'),
+    t: ukT,
   });
   const en = renderPasswordResetMail({
     ...input,
-    t: createTranslator('en', 'uk'),
+    t: enT,
   });
   expect(uk.subject).not.toBe(en.subject);
 });

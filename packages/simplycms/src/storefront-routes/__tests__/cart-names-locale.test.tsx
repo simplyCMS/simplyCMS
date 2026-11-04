@@ -60,7 +60,7 @@ function Opened() {
   useEffect(() => setIsOpen(true), [setIsOpen]);
   return <CartDrawer />;
 }
-const renderAt = (locale: string) =>
+const renderAt = (locale: 'uk' | 'en') =>
   render(
     <SlotHarness locale={locale}>
       <Opened />

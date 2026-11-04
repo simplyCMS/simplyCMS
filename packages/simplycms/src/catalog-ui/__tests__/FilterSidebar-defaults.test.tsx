@@ -3,8 +3,8 @@ import { Component, Profiler, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 import { FilterSidebar } from '../FilterSidebar';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -55,11 +55,11 @@ describe('FilterSidebar — default-пропси', () => {
     const client = new QueryClient();
     render(
       <QueryClientProvider client={client}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <Catch>
             <Probe />
           </Catch>
-        </I18nProvider>
+        </TestI18nProvider>
       </QueryClientProvider>,
     );
     await new Promise((r) => setTimeout(r, 100));

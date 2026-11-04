@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import { describe, expect, it, afterEach } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 import { usePluginT } from '../usePluginT';
 import type { PluginMessages } from '../types';
 
@@ -17,9 +17,7 @@ const messages: PluginMessages = {
 const wrap =
   (locale: 'uk' | 'en') =>
   ({ children }: { children: ReactNode }) => (
-    <I18nProvider locale={locale} fallback="uk">
-      {children}
-    </I18nProvider>
+    <TestI18nProvider locale={locale}>{children}</TestI18nProvider>
   );
 
 afterEach(cleanup);

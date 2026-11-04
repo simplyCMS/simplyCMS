@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from '../../__tests__/engine-stub';
 import * as F from './support/card-fixtures';
 
@@ -42,6 +41,7 @@ import HomePage from '../Home';
 import PropertyPage from '../PropertyPage';
 import { CatalogCards } from './support/CatalogCards';
 import { ProductPrice } from './support/ProductPrice';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -91,9 +91,9 @@ describe.each(surfaces)('збій середовища цін: %s', (_name, node
     });
     render(
       <QueryClientProvider client={client}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <TestEngineProvider>{node()}</TestEngineProvider>
-        </I18nProvider>
+        </TestI18nProvider>
       </QueryClientProvider>,
     );
 

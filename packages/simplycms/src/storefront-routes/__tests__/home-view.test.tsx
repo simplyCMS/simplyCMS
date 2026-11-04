@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { HOME_REQUISITES, type HomeSlots } from 'simplycms/contracts/views';
 import { homeViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
@@ -45,6 +44,7 @@ vi.mock('../components/BannerSlider', () => ({
 }));
 
 import { HomeView } from '../views/HomeView';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
 function requisiteStub(name: string) {
@@ -59,9 +59,9 @@ const stubSlots: HomeSlots = {
 
 function renderHome(state: 'full' | 'edge') {
   return render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <HomeView {...homeViewModelFixtures[state]} slots={stubSlots} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 }
 

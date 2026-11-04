@@ -7,7 +7,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 
 const uploadMyAvatar = vi.fn();
 const removeMyAvatar = vi.fn();
@@ -17,6 +16,7 @@ vi.mock('simplycms/core/lib/profile-avatar', () => ({
 }));
 
 import { AvatarUpload } from '../AvatarUpload';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const png = () =>
   new File([Uint8Array.from([0x89, 0x50, 0x4e, 0x47])], 'a.png', {
@@ -25,9 +25,9 @@ const png = () =>
 
 const mount = (props: Partial<Parameters<typeof AvatarUpload>[0]> = {}) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <AvatarUpload currentAvatarUrl={null} onUpdate={vi.fn()} {...props} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 const input = () => screen.getByTestId('avatar-file-input') as HTMLInputElement;

@@ -280,10 +280,7 @@ async function ssr(url: string): Promise<string> {
             <HeadContent />
           </head>
           <body>
-            <I18nProvider
-              locale={data.locale}
-              fallback={data.languages.primary}
-            >
+            <I18nProvider locale={data.ui.locale} fallback={data.ui.fallback}>
               <QueryClientProvider client={client}>
                 <TestEngineProvider>
                   <CartProvider>

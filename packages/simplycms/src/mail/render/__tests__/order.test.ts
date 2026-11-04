@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatPrice } from 'simplycms/domain/money';
 import { createTranslator } from 'simplycms/i18n';
+import { ui } from '../../../../test-harness/locale';
 import {
   renderOrderCustomerMail,
   renderOrderOwnerMail,
@@ -29,7 +30,7 @@ const ORDER: OrderMailData = {
 describe.each(['uk', 'en'] as const)(
   'рендер листів замовлення, %s',
   (locale) => {
-    const t = createTranslator(locale, 'uk');
+    const t = createTranslator(ui(locale), ui('uk'));
     const money = { locale, currency: 'UAH' };
 
     it('лист покупцю: номер у темі, склад і підсумки в тексті, каталог розв’язано', () => {

@@ -8,7 +8,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 
 /**
  * Гонка Task 14: після успішного замовлення `clearCart()` спорожнює кошик ще
@@ -113,6 +112,7 @@ vi.mock('simplycms/checkout-ui', () => ({
 }));
 
 import Checkout from '../Checkout';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -133,9 +133,9 @@ describe('Checkout: гонка clearCart після оформлення', () =>
       order: { id: 'o1', orderNumber: 7, accessToken: 'tok' },
     });
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <Checkout />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     fireEvent.click(screen.getByText('fill'));
     fireEvent.click(screen.getByText('submit'));

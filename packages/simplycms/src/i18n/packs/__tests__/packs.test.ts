@@ -4,7 +4,9 @@ import {
   createTranslator,
   getLanguagePack,
   languageOfConfigLocale,
+  resolveUiLocale,
 } from 'simplycms/i18n';
+import { cl, ui } from '../../../../test-harness/locale';
 
 describe('мовні пакети', () => {
   it('поставляються uk і en', () => {
@@ -36,28 +38,26 @@ describe('мовні пакети', () => {
 
 describe('createTranslator(locale, fallback)', () => {
   it('мова з пакетом — її рядок', () => {
-    expect(createTranslator('en', 'uk')('common.save')).toBe('Save');
-    expect(createTranslator('uk', 'en')('common.save')).toBe('Зберегти');
-  });
-
-  it('мова без пакета, фолбек uk → український рядок', () => {
-    expect(createTranslator('pt', 'uk')('common.save')).toBe('Зберегти');
-  });
-
-  it('мова без пакета, фолбек en → англійський рядок (фолбек — основна мова магазину, не uk)', () => {
-    expect(createTranslator('pt', 'en')('common.save')).toBe('Save');
-  });
-
-  it('ключ, відсутній і в мові, і у фолбеку, повертається як є', () => {
-    const t = createTranslator('pt', 'xx');
-    expect(t('common.save')).toBe('common.save');
-    expect(t('missing.key' as Parameters<typeof t>[0])).toBe('missing.key');
-  });
-
-  it('підставляє параметри і для фолбека', () => {
-    expect(createTranslator('pt', 'uk')('cart.items', { count: 3 })).toBe(
-      'Товари (3)',
+    expect(createTranslator(ui('en'), ui('uk'))('common.save')).toBe('Save');
+    expect(createTranslator(ui('uk'), ui('en'))('common.save')).toBe(
+      'Зберегти',
     );
+  });
+
+  it('мова без пакета потрапляє на пакет основної мови через міст, а не через тихий uk', () => {
+    const pl = cl('pl');
+    expect(
+      createTranslator(resolveUiLocale(pl, cl('uk')), ui('uk'))('common.save'),
+    ).toBe('Зберегти');
+    expect(
+      createTranslator(resolveUiLocale(pl, cl('en')), ui('en'))('common.save'),
+    ).toBe('Save');
+  });
+
+  it('підставляє параметри', () => {
+    expect(
+      createTranslator(ui('uk'), ui('uk'))('cart.items', { count: 3 }),
+    ).toBe('Товари (3)');
   });
 });
 

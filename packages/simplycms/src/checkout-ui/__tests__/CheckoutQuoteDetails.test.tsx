@@ -9,8 +9,8 @@ vi.mock('simplycms/react-query', async (orig) => ({
   useFormatPrice: () => (n: number) => `${n} грн`,
 }));
 
-import { I18nProvider } from 'simplycms/i18n';
 import { CheckoutQuoteDetails } from '../CheckoutQuoteDetails';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const quote = (over: Partial<CheckoutQuote>): CheckoutQuote => ({
   items: [],
@@ -23,9 +23,9 @@ const quote = (over: Partial<CheckoutQuote>): CheckoutQuote => ({
 
 const renderQuote = (q: CheckoutQuote) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <CheckoutQuoteDetails quote={q} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 afterEach(cleanup);

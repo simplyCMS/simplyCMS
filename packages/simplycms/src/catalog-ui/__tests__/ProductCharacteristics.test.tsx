@@ -5,13 +5,13 @@
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ProductCharacteristics } from '../ProductCharacteristics';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 afterEach(() => cleanup());
 
 function withI18n(children: ReactNode) {
-  return <I18nProvider locale="uk">{children}</I18nProvider>;
+  return <TestI18nProvider>{children}</TestI18nProvider>;
 }
 
 describe('ProductCharacteristics', () => {

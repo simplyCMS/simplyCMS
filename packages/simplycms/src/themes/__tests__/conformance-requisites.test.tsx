@@ -16,6 +16,11 @@ import {
   GoodHome,
   HomeCrashingWithoutSections,
 } from './conformance-themes-pages';
+import { ui } from '../../../test-harness/locale';
+
+// Мова рендеру — параметр kit-а без дефолту: тут явно `uk`.
+const assertUk = (theme: Parameters<typeof assertThemeViewsConformance>[0]) =>
+  assertThemeViewsConformance(theme, { locale: ui('uk') });
 
 /**
  * Негативний контроль conformance-kit-а (Р8).
@@ -26,7 +31,7 @@ import {
  */
 describe('assertThemeViewsConformance — склад реквізитів', () => {
   it('тема без views — чесний pass: перевіряти нема чого', async () => {
-    await expect(assertThemeViewsConformance(makeTheme())).resolves.toEqual([]);
+    await expect(assertUk(makeTheme())).resolves.toEqual([]);
   });
 
   it('валідна тема з views — зелено', async () => {
@@ -35,16 +40,13 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
       Cart: GoodCart,
     });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual([
-      'ProductDetail',
-      'Cart',
-    ]);
+    await expect(assertUk(theme)).resolves.toEqual(['ProductDetail', 'Cart']);
   });
 
   it('загублений slots.AddToCart — червоно, з назвою реквізиту', async () => {
     const theme = makeTheme({ ProductDetail: ProductDetailWithoutAddToCart });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+    await expect(assertUk(theme)).rejects.toThrow(
       /views\.ProductDetail[\s\S]*product-detail\.add-to-cart/,
     );
   });
@@ -52,15 +54,13 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
   it('падіння на порожньому кошику — червоно, зі станом у тексті', async () => {
     const theme = makeTheme({ Cart: CartCrashingWhenEmpty });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
-      /views\.Cart[\s\S]*"edge"/,
-    );
+    await expect(assertUk(theme)).rejects.toThrow(/views\.Cart[\s\S]*"edge"/);
   });
 
   it('порожній кошик без реквізитів — НЕ дефект (спека §5)', async () => {
     const theme = makeTheme({ Cart: GoodCart });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+    await expect(assertUk(theme)).resolves.toEqual(['Cart']);
   });
 
   it('валідні Home/Catalog/CatalogSection — зелено, і прогнані всі три', async () => {
@@ -70,7 +70,7 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
       CatalogSection: GoodCatalogSection,
     });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual([
+    await expect(assertUk(theme)).resolves.toEqual([
       'Home',
       'Catalog',
       'CatalogSection',
@@ -80,15 +80,13 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
   it('падіння головної на магазині без категорій — червоно', async () => {
     const theme = makeTheme({ Home: HomeCrashingWithoutSections });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
-      /views\.Home[\s\S]*"edge"/,
-    );
+    await expect(assertUk(theme)).rejects.toThrow(/views\.Home[\s\S]*"edge"/);
   });
 
   it('каталог без slots.ProductGrid — червоно, з назвою реквізиту', async () => {
     const theme = makeTheme({ Catalog: CatalogWithoutProductGrid });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+    await expect(assertUk(theme)).rejects.toThrow(
       /views\.Catalog[\s\S]*catalog\.product-grid/,
     );
   });
@@ -98,7 +96,7 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
       CatalogSection: CatalogSectionWithoutProductGrid,
     });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+    await expect(assertUk(theme)).rejects.toThrow(
       /views\.CatalogSection[\s\S]*catalog\.product-grid/,
     );
   });
@@ -107,8 +105,6 @@ describe('assertThemeViewsConformance — склад реквізитів', () =
     const theme = makeTheme();
     Object.assign(theme, { views: { Checkout: GoodCart } });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
-      /невідомий views\.Checkout/,
-    );
+    await expect(assertUk(theme)).rejects.toThrow(/невідомий views\.Checkout/);
   });
 });

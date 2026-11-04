@@ -2,9 +2,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 import { getSectionFilters } from 'simplycms/core/lib/section-filters';
 import { FilterSidebar } from '../FilterSidebar';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock(
   'simplycms/runtime/content-locale',
@@ -55,13 +55,13 @@ function renderSidebar(
   const onFilterChange = vi.fn();
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <FilterSidebar
           filters={{}}
           onFilterChange={onFilterChange}
           {...props}
         />
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
   return onFilterChange;

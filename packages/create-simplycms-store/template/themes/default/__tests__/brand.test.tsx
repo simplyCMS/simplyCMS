@@ -2,13 +2,19 @@
 import { Suspense, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
+import { checkedContentLocale } from 'simplycms/domain/translations';
+import { I18nProvider, resolveUiLocale } from 'simplycms/i18n';
 import { ThemeProvider } from 'simplycms/themes/ThemeContext';
 import { ThemeRegistry } from 'simplycms/themes/ThemeRegistry';
 import { StoreProfileProvider } from 'simplycms/themes/store-profile';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import theme from '../index';
+
+const uk = resolveUiLocale(
+  checkedContentLocale('uk'),
+  checkedContentLocale('uk'),
+);
 
 // Роутер і важкі споживачі стану вітрини (кошик, авторизація) тут не
 // потрібні: перевіряється лише те, що Header/Footer беруть із профілю.
@@ -27,7 +33,7 @@ const { Header, Footer } = theme.components;
 
 function renderWith(ui: ReactNode, profile: StorefrontProfile) {
   return render(
-    <I18nProvider locale="uk">
+    <I18nProvider locale={uk} fallback={uk}>
       <ThemeProvider initialThemeName="default">
         <StoreProfileProvider profile={profile}>
           <Suspense fallback={null}>{ui}</Suspense>

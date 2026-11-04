@@ -48,12 +48,18 @@ vi.mock('../packages/cli/src/theme-conformance-env.mjs', () => ({
       import: async (spec: string) =>
         spec === 'simplycms/themes/conformance'
           ? { assertThemeViewsConformance: async () => ACTUALLY_RAN }
-          : {
-              default: {
-                manifest: { name: 'fixture' },
-                views: Object.fromEntries(DECLARED.map((k) => [k, () => null])),
-              },
-            },
+          : spec === 'simplycms/i18n'
+            ? { resolveUiLocale: () => 'uk' }
+            : spec === 'simplycms/domain/translations'
+              ? { checkedContentLocale: (code: string) => code }
+              : {
+                  default: {
+                    manifest: { name: 'fixture' },
+                    views: Object.fromEntries(
+                      DECLARED.map((k) => [k, () => null]),
+                    ),
+                  },
+                },
     },
     close: async () => {},
   }),

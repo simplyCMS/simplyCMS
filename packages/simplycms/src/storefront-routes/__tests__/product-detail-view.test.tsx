@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import {
   PRODUCT_DETAIL_REQUISITES,
   REQUIRED_REQUISITES,
@@ -25,6 +24,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import { ProductDetailView } from '../views/ProductDetailView';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
 function requisiteStub(name: string) {
@@ -49,12 +49,12 @@ const stubSlots: ProductDetailSlots = {
 
 function renderView(state: 'full' | 'edge') {
   return render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <ProductDetailView
         {...productDetailViewModelFixtures[state]}
         slots={stubSlots}
       />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 }
 

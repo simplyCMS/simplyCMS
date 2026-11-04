@@ -1,26 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ui } from '../../../test-harness/locale';
 import { createTranslator } from '../translator';
 
 describe('createTranslator', () => {
   it('віддає українське повідомлення для локалі uk', () => {
-    expect(createTranslator('uk', 'uk')('cart.title')).toBe('Кошик');
+    expect(createTranslator(ui('uk'), ui('uk'))('cart.title')).toBe('Кошик');
   });
 
   it('віддає англійське повідомлення для локалі en', () => {
-    expect(createTranslator('en', 'uk')('cart.title')).toBe('Cart');
+    expect(createTranslator(ui('en'), ui('uk'))('cart.title')).toBe('Cart');
   });
 
   it('підставляє параметри у плейсхолдери {name}', () => {
-    expect(createTranslator('uk', 'uk')('cart.items', { count: 5 })).toBe(
-      'Товари (5)',
-    );
-    expect(createTranslator('en', 'uk')('cart.items', { count: 5 })).toBe(
-      'Items (5)',
-    );
+    expect(
+      createTranslator(ui('uk'), ui('uk'))('cart.items', { count: 5 }),
+    ).toBe('Товари (5)');
+    expect(
+      createTranslator(ui('en'), ui('uk'))('cart.items', { count: 5 }),
+    ).toBe('Items (5)');
   });
 
   it('повертає сам ключ, якщо повідомлення немає в жодному каталозі', () => {
-    const t = createTranslator('uk', 'uk');
+    const t = createTranslator(ui('uk'), ui('uk'));
     // Ключ поза каталогом — рантайм-страховка на випадок розсинхрону типів.
     expect(t('missing.key' as Parameters<typeof t>[0])).toBe('missing.key');
   });
@@ -39,7 +40,7 @@ describe('createTranslator — fallback-мова', () => {
     }));
     const { createTranslator: create } = await import('../translator');
 
-    const t = create('en', 'uk');
+    const t = create(ui('en'), ui('uk'));
     expect(t('cart.title')).toBe('Cart');
     expect(t('cart.empty.title')).toBe('Кошик порожній');
   });
@@ -47,8 +48,8 @@ describe('createTranslator — fallback-мова', () => {
 
 describe('createTranslator — конкурентність (без глобального стану)', () => {
   it('два транслятори з різними локалями не впливають один на одного', async () => {
-    const uk = createTranslator('uk', 'uk');
-    const en = createTranslator('en', 'uk');
+    const uk = createTranslator(ui('uk'), ui('uk'));
+    const en = createTranslator(ui('en'), ui('uk'));
 
     // Interleaved-виклики з поступкою мікрозадачі між ними: якби локаль жила
     // в модульному mutable-стані (setLocale), другий транслятор перебив би перший.

@@ -7,11 +7,10 @@ import {
   cleanup,
   fireEvent,
 } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 
 // Очікувані рядки беремо з публічного транслятора, а не з каталогу напряму:
 // підкаталог `catalogs/*` не в `exports` пакета (audit-exports це стереже).
-const uk = createTranslator('uk', 'uk');
+const uk = ukT;
 
 /**
  * Сторінка встановлення нового пароля (К1′б, Better Auth).
@@ -39,12 +38,13 @@ vi.mock('simplycms/core/lib/auth-client', () => ({
 }));
 
 import AuthSetPassword from '../pages/AuthSetPassword';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 function renderPage() {
   return render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <AuthSetPassword />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 }
 

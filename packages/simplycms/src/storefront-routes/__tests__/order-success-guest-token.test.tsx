@@ -2,10 +2,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, waitFor, cleanup, screen, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 // К3-Е5-1 (Е5б-15): після зняття `?token` з URL гість не сміє отримати
 // «не знайдено». URL — зовнішній стор: `navigate` справді міняє search, а
@@ -46,7 +46,7 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: h.user }),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const order = {
   id: 'order-1',
   order_number: 'SC-0001',
@@ -67,11 +67,11 @@ function renderPage() {
   });
   render(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <OrderSuccess />
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
   return client;

@@ -8,7 +8,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { resolveMediaUrl } from 'simplycms/domain/media';
-import { I18nProvider } from 'simplycms/i18n';
+import { TestI18nProvider } from '../../i18n';
 import { ProductGallery } from 'simplycms/catalog-ui/ProductGallery';
 import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { sql } from 'drizzle-orm';
@@ -92,7 +92,7 @@ describe('фото товару мовою сторінки (Task 17б)', () => 
     );
   const gallery = (images: ProductImageViewModel[]) =>
     renderToStaticMarkup(
-      createElement(I18nProvider, {
+      createElement(TestI18nProvider, {
         locale: 'en',
         children: createElement(ProductGallery, { images }),
       }),
