@@ -5,8 +5,6 @@
 // читаються з `process.env` у рантаймі й у бандл не потрапляють ніколи.
 interface ImportMetaEnv {
   readonly VITE_SITE_URL?: string;
-  /** Локаль прогону — задається лише тулінгом, у продукті береться з конфіга. */
-  readonly VITE_LOCALE?: string;
 }
 
 interface ImportMeta {

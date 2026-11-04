@@ -589,8 +589,7 @@ scripts/e2e.mjs
   2. startLocalStack()           — supabase start + db reset (той самий механізм, що й `pnpm pilot:e2e`)
   3. readLocalStack(port)        — VITE_SUPABASE_* + service_role з `supabase status -o json`
   4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs  (знесено)
-  5. playwright test  (VITE_LOCALE=uk-UA)   ─┐ послідовно: один vite dev
-     playwright test  (VITE_LOCALE=en-US)   ─┘ на теку одночасно (routeTree.gen.ts, node_modules/.vite)
+  5. playwright test                        — один vite dev на теку (routeTree.gen.ts, node_modules/.vite)
   6. stopLocalStack()            — завжди, у finally
 ```
 
