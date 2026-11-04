@@ -728,9 +728,10 @@ resolveUiLocale(content: ContentLocale, primary: ContentLocale): UiLocale
   - `base` — кореневий лоадер `loadStorefrontRoot` (SSR і клієнтський перехід між мовами);
   - `admin` — `beforeLoad` layout адмінки (`routes/admin/admin.tsx`, `ssr: false`);
   - `mail` — серверні функції листів.
-- **Прогрів перед гідрацією:** одна функція ядра в `client.tsx` вантажить активну тему і `base`. `UiLocale` вона
-  виводить з `readClientLocaleSet()` і `resolveUiLocale`. Host-копії (`src/`, `template/`, `packages/cli/host`)
-  зводяться до одного виклику, тож логіка не розмножується через `simplycms update`.
+- **Прогрів перед гідрацією** — одна функція ядра в `client.tsx` (host-копії зводяться до одного виклику) вантажить
+  активну тему. `base` окремо не прогрівається: призупинення кореня на гідрації зберігає SSR-DOM, а `head` маршрутів
+  дочікується `loadTranslator` в `router.hydrate()` (виміряно маркером ідентичності вузла, амендмент 2026-11-04,
+  Task 4).
 - **Гейти:**
   - правило наявного сканера `tests/i18n-coverage/scan.ts`: ключі `admin.*` — лише в коренях адмінки, ключі
     листів — лише в server-only модулях;
