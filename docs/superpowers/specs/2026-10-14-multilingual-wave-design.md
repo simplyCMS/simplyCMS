@@ -453,6 +453,8 @@ SimplyCMS — платформа для магазинів, де мов конт
 
 Нова норма `pnpm lint` — **0 errors / 3 warnings**. Оновити `AGENTS.md` і `docs/development/TOOLING.md`.
 
+> **Стан 2026-11-04:** норму перевиконано — `pnpm lint` тримає 0 errors / 0 warnings (`--max-warnings 0`, `AGENTS.md`, `TOOLING.md`).
+
 ## 16. Лишено плану (дрібне, план вирішує сам і показує архітектору)
 
 - Форма зберігання хешів полів (§5.2).
