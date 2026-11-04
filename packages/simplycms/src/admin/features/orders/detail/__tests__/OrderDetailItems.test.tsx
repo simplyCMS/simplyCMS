@@ -85,20 +85,29 @@ describe('OrderDetailPage: позиції й підсумки', () => {
     expect(screen.getByText(`Акція: -${money(265.5)}`)).toBeTruthy();
   });
 
-  it('рівно 500 позицій → попередження; 499 — без нього', async () => {
-    reset([makeOrder(1, at)], items(500));
-    render(<OrderDetailPage />, { wrapper: wrap });
-    expect(
-      await screen.findByText(
-        t('admin.orders.itemsMayBeTruncated', { count: 500 }),
-      ),
-    ).toBeTruthy();
-    cleanup();
-    reset([makeOrder(1, at)], items(499));
-    render(<OrderDetailPage />, { wrapper: wrap });
-    await screen.findByText('Товар 499');
-    expect(
-      screen.queryByText(t('admin.orders.itemsMayBeTruncated', { count: 500 })),
-    ).toBeNull();
-  });
+  // Повільний за природою: межа попередження — рівно 500 позицій, тож тест
+  // двічі рендерить ~500 рядків таблиці в jsdom (~2,3 с окремо). Під
+  // паралельним навантаженням повного `pnpm test` дефолтних 5 с замало.
+  it(
+    'рівно 500 позицій → попередження; 499 — без нього',
+    { timeout: 15_000 },
+    async () => {
+      reset([makeOrder(1, at)], items(500));
+      render(<OrderDetailPage />, { wrapper: wrap });
+      expect(
+        await screen.findByText(
+          t('admin.orders.itemsMayBeTruncated', { count: 500 }),
+        ),
+      ).toBeTruthy();
+      cleanup();
+      reset([makeOrder(1, at)], items(499));
+      render(<OrderDetailPage />, { wrapper: wrap });
+      await screen.findByText('Товар 499');
+      expect(
+        screen.queryByText(
+          t('admin.orders.itemsMayBeTruncated', { count: 500 }),
+        ),
+      ).toBeNull();
+    },
+  );
 });
