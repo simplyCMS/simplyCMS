@@ -4,6 +4,11 @@
   "description": "Скаффолдер магазину SimplyCMS: pnpm create simplycms-store my-shop",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simplyCMS/simplyCMS.git",
+    "directory": "packages/create-simplycms-store"
+  },
   "bin": {
     "create-simplycms-store": "src/index.mjs"
   },
