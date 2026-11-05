@@ -21,3 +21,31 @@ export function rebaseTexts<F extends string>(
       }
   return out;
 }
+
+/** Поле, чию правку користувач зробив після відправки запиту. */
+export interface TextEdit<F extends string> {
+  readonly locale: string;
+  readonly field: F;
+  readonly value: string;
+}
+
+/**
+ * Правки користувача ПІСЛЯ відправки, що відрізняються від свіжого знімка БД.
+ * Форма після `reset(fresh)` накладає їх через `setValue(..., { shouldDirty: true })`,
+ * тож введене лишається зміною, а не «збереженим» значенням; спільне для картки
+ * товару (`resetAfterSave`) і `useTranslatableTexts`.
+ */
+export function textsEdits<F extends string>(
+  fields: readonly F[],
+  fresh: TextsForm<F>,
+  sent: TextsForm<F>,
+  now: TextsForm<F>,
+): TextEdit<F>[] {
+  const next = rebaseTexts(fields, fresh, sent, now);
+  const out: TextEdit<F>[] = [];
+  for (const [locale, row] of Object.entries(next))
+    for (const field of fields)
+      if (row[field] !== (fresh[locale]?.[field] ?? ''))
+        out.push({ locale, field, value: row[field] });
+  return out;
+}

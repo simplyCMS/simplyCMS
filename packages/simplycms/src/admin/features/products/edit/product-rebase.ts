@@ -1,5 +1,5 @@
 import type { UseFormReturn } from 'react-hook-form';
-import { rebaseTexts } from '../../translations/texts-rebase';
+import { rebaseTexts, textsEdits } from '../../translations/texts-rebase';
 import { same } from './product-diff';
 import { TEXT_FIELDS, type ProductFormValues } from './product-form-schema';
 
@@ -88,9 +88,14 @@ export function resetAfterSave(
   fresh: ProductFormValues,
   sent: ProductFormValues,
 ): void {
-  const next = rebase(fresh, sent, form.getValues());
+  const now = form.getValues();
+  const next = rebase(fresh, sent, now);
   form.reset(fresh);
-  for (const k of ['texts', ...SCALARS, ...COLLECTIONS] as const)
+  for (const e of textsEdits(TEXT_FIELDS, fresh.texts, sent.texts, now.texts))
+    form.setValue(`texts.${e.locale}.${e.field}`, e.value, {
+      shouldDirty: true,
+    });
+  for (const k of [...SCALARS, ...COLLECTIONS] as const)
     if (!same(next[k], fresh[k]))
       form.setValue(k, next[k], { shouldDirty: true });
 }
