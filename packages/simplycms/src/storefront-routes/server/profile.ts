@@ -1,11 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { localeOnlyInput } from 'simplycms/core/lib/locale-input';
 import {
   loadProfile,
   loadUserOrders,
   updateProfile,
   type OrderListRow,
   type ProfileRow,
+  resolveTextLocale,
   withSessionDb,
 } from 'simplycms/storefront/loaders';
 
@@ -19,13 +21,18 @@ export interface ProfileOverview {
 }
 
 /** Профіль і останні замовлення власника сесії. */
-export const getProfileOverview = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<ProfileOverview> =>
-    withSessionDb(async (db, userId) => ({
+export const getProfileOverview = createServerFn({ method: 'GET' })
+  .validator(localeOnlyInput)
+  .handler(async ({ data: input }): Promise<ProfileOverview> => {
+    const text = await resolveTextLocale((input as { locale: string }).locale);
+    return withSessionDb(async (db, userId) => ({
       profile: await loadProfile(db, userId),
-      recentOrders: (await loadUserOrders(db, userId)).slice(0, RECENT_ORDERS),
-    })),
-);
+      recentOrders: (await loadUserOrders(db, userId, text)).slice(
+        0,
+        RECENT_ORDERS,
+      ),
+    }));
+  });
 
 /** Профіль для форми налаштувань. */
 export const getProfileSettings = createServerFn({ method: 'GET' }).handler(

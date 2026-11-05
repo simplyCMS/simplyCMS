@@ -9,6 +9,7 @@ export {
 export {
   loadTranslations,
   primaryLocaleCode,
+  translatedFieldSql,
   withFallback,
   type StoredTranslation,
 } from './read';

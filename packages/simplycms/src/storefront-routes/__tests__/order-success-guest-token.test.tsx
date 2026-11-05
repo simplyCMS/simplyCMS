@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, waitFor, cleanup, screen, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { cl } from '../../../test-harness/locale';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
@@ -26,6 +27,10 @@ const h = vi.hoisted(() => {
   };
 });
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 vi.mock('@tanstack/react-router', async () => {
   const { useSyncExternalStore } = await import('react');
   const subscribe = (l: () => void) => {
@@ -118,7 +123,7 @@ describe('OrderSuccess гостя — токен захоплюється оди
     const before = h.getOrderView.mock.calls.length;
     await act(() =>
       client.invalidateQueries({
-        queryKey: entityKey(ENTITY.orders).detail('order-1'),
+        queryKey: entityKey(ENTITY.orders, cl('uk')).detail('order-1'),
       }),
     );
     await waitFor(() =>

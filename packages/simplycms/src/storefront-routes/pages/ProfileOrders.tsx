@@ -17,20 +17,21 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useFormatDate, useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { QueryFailure } from '../components/QueryFailure';
 import { getMyOrders, getOrderStatuses } from '../server/profile-orders';
 
 /** Значення фільтра «усі статуси». */
 const ALL_STATUSES = 'all';
 
-// 🔴 Не `orders` — це імʼя вже займає локальний `data: orders` нижче
-// (перезапис module-level фабрики в тілі компонента дав би TDZ-помилку).
-const orderKeys = entityKey(ENTITY.orders);
-const orderStatuses = entityKey(ENTITY.orderStatuses);
-
 export default function ProfileOrdersPage() {
   const t = useT();
   const { user } = useAuth();
+  const locale = useContentLocale();
+  // Назви статусів залежать від мови контенту — вона сегмент ключів.
+  // 🔴 Не `orders` — це імʼя займає локальний `data: orders` нижче.
+  const orderKeys = entityKey(ENTITY.orders, locale);
+  const orderStatuses = entityKey(ENTITY.orderStatuses, locale);
   const [selectedStatus, setSelectedStatus] = useState<string>(ALL_STATUSES);
 
   const { data: statuses = [] } = useQuery({
@@ -39,7 +40,7 @@ export default function ProfileOrdersPage() {
     // відкриття адмінки покупець бачив би її форму рядка до спливання
     // staleTime.
     queryKey: orderStatuses.variant('storefront'),
-    queryFn: () => getOrderStatuses(),
+    queryFn: () => getOrderStatuses({ data: { locale } }),
   });
 
   /**
@@ -52,7 +53,9 @@ export default function ProfileOrdersPage() {
     queryFn: () =>
       getMyOrders({
         data:
-          selectedStatus === ALL_STATUSES ? {} : { statusId: selectedStatus },
+          selectedStatus === ALL_STATUSES
+            ? { locale }
+            : { locale, statusId: selectedStatus },
       }),
     enabled: !!user,
   });

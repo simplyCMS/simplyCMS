@@ -16,6 +16,7 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { useFormatDate, useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { QueryFailure } from '../components/QueryFailure';
 import { getProfileOverview } from '../server/profile';
 
@@ -24,11 +25,12 @@ import { getProfileOverview } from '../server/profile';
  * якорем: це «моя картка профілю», а замовлення — вкладений вихлоп для
  * блоку «останні замовлення».
  */
-const profiles = entityKey(ENTITY.profiles);
-
 export default function ProfilePage() {
   const t = useT();
   const { user } = useAuth();
+  const locale = useContentLocale();
+  // Назва статусу в останніх замовленнях залежить від мови контенту — вона в ключі.
+  const profiles = entityKey(ENTITY.profiles, locale);
 
   /**
    * 🔴 Профіль і замовлення тягне СЕРВЕР під актором власника сесії. Раніше
@@ -39,8 +41,9 @@ export default function ProfilePage() {
   const { data, isLoading, isError, refetch } = useQuery({
     // 🔴 variant('overview', …), не scoped() (борг Е1а №6, Е3-12): це форма
     // (профіль + останні замовлення), а не FK-зріз.
+    // Назва статусу в останніх замовленнях залежить від мови контенту — вона в ключі.
     queryKey: profiles.variant('overview', user?.id ?? ''),
-    queryFn: () => getProfileOverview(),
+    queryFn: () => getProfileOverview({ data: { locale } }),
     enabled: !!user,
   });
 

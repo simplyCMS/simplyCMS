@@ -3,6 +3,7 @@ import type { ActorDb } from 'simplycms/db';
 import type { ContentLocale } from 'simplycms/contracts';
 import {
   checkedContentLocale,
+  type TextLocale,
   type TranslationRow,
 } from 'simplycms/domain/translations';
 import { assertIdent, type TranslatableEntity } from './specs';
@@ -94,4 +95,30 @@ export function withFallback(
       left join ${table} t_loc on t_loc.${fk} = ${owner} and t_loc.locale = ${locale}
       left join ${table} t_src on t_src.${fk} = ${owner} and t_src.locale = ${primary}`,
   };
+}
+
+/**
+ * Скалярний підзапит «текст поля сутності мовою запиту, а де його немає — основною»
+ * (`coalesce(<мова>, <основна>)`). Вкладається в `select` Drizzle як звичайний вираз —
+ * на відміну від `withFallback` не вимагає власних JOIN-ів, тож годиться для читачів, що вже
+ * зібрані з `.leftJoin` (замовлення зі статусом). `owner` — вираз id власника у запиті
+ * викликача. Недобре, коли поле читається в багатьох рядках: два підзапити на рядок (для
+ * статусів — довідник з кількох рядків, індекс `(status_id, locale)`).
+ */
+export function translatedFieldSql(
+  spec: TranslatableEntity,
+  field: string,
+  owner: SQL,
+  text: TextLocale,
+): SQL {
+  if (!spec.fields.includes(field))
+    throw new Error(
+      `[simplycms/translations] ${spec.table}: невідоме поле ${field}`,
+    );
+  const table = sql.raw(assertIdent(spec.table));
+  const fk = sql.raw(assertIdent(spec.fk));
+  const col = sql.raw(assertIdent(field));
+  const pick = (locale: string) =>
+    sql`(select t.${col} from ${table} t where t.${fk} = ${owner} and t.locale = ${locale})`;
+  return sql`coalesce(${pick(text.locale)}, ${pick(text.primary)})`;
 }
