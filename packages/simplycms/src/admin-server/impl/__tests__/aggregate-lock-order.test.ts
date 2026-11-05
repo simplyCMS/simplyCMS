@@ -52,7 +52,7 @@ describe('замок кореня агрегата — лише lockRoots (М1 T
 
   it('хелпер бере set перед рядком кореня (позитивний контроль сканера)', () => {
     const src = files[HELPER] ?? '';
-    expect(src).toMatch(/\.orderBy\([^;]*\.for\(strength\)/);
+    expect(src).toMatch(/\.orderBy\(root\.id\)[^;]*\.for\(strength\)/);
     expect(src.indexOf('advisoryXactLockShared(db')).toBeGreaterThan(-1);
     expect(src.indexOf('advisoryXactLockShared(db')).toBeLessThan(
       src.indexOf('.for(strength)'),
