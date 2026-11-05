@@ -6,7 +6,8 @@
 // 🔴 Замок `languages-set` бере НЕ тут: оператори віддаються масивом, а блок
 // під замком збирає `inLockedBlock` (`product-graph.ts`) — ОДИН `do`, тож
 // замок живе рівно стільки, скільки запис.
-import { lit } from './product-graph-types';
+import { lit } from './sql-literal';
+import { GUARDED_TABLES } from './writer-guard';
 
 /** Основна мова — підзапит до `languages.is_default`, не літерал. */
 export const PRIMARY = '(select code from public.languages where is_default)';
@@ -46,6 +47,13 @@ export function translatableStatements(spec: {
   >;
   textColumns: Readonly<Record<string, string>>;
 }): string[] {
+  // Імена таблиць тут — звичайні поля, тож гард єдиного записувача графа товару
+  // (регекси над текстом) цей шлях не бачить; захист — відмова під час виконання.
+  for (const t of [spec.table, spec.translationTable])
+    if (GUARDED_TABLES.includes(t))
+      throw new Error(
+        `translatableStatements: «${t}» пише лише граф товару — використай productGraphStatements / modificationSql / valueSql (fixtures/product-graph*.ts)`,
+      );
   const locales = Object.keys(spec.texts).sort(
     (a, b) => Number(b === PRIMARY) - Number(a === PRIMARY),
   );

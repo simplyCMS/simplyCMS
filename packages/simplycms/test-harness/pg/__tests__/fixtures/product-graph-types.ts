@@ -1,6 +1,7 @@
 // Типи й SQL-літерали фікстурного хелпера графа товару (М1, Task 10). Сам SQL
 // збирає `product-graph.ts` — це єдиний файл харнесу, що вставляє в таблиці товару.
 import type { propertyType } from 'simplycms/schema';
+import { lit } from './sql-literal';
 
 export type PropertyType = (typeof propertyType.enumValues)[number];
 
@@ -12,13 +13,7 @@ export type Id = string | Sql;
 
 export const sqlRef = (sql: string): Sql => ({ sql });
 
-/** SQL-літерал тексту (одинарні лапки подвоюються); `null`/`undefined` → `null`. */
-export const lit = (v: string | number | boolean | null | undefined): string =>
-  v === null || v === undefined
-    ? 'null'
-    : typeof v === 'string'
-      ? `'${v.replaceAll("'", "''")}'`
-      : String(v);
+export { lit } from './sql-literal';
 
 export const idSql = (id: Id): string =>
   typeof id === 'string' ? lit(id) : id.sql;

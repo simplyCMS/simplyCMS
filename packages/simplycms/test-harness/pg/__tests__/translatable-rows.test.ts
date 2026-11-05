@@ -47,4 +47,28 @@ describe('translatableStatements', () => {
       '(select code from public.languages where is_default)',
     );
   });
+
+  it.each(['products', 'product_modifications', 'product_property_values'])(
+    'відмова для таблиці графа товару «%s» (негативний контроль гарда)',
+    (table) => {
+      const spec = {
+        base: {},
+        translationTable: 'x_translations',
+        ownerColumn: 'x_id',
+        id: 'id-1',
+        texts: {},
+        textColumns: {},
+      };
+      expect(() => translatableStatements({ ...spec, table })).toThrow(
+        /граф товару/,
+      );
+      expect(() =>
+        translatableStatements({
+          ...spec,
+          table: 'order_statuses',
+          translationTable: table,
+        }),
+      ).toThrow(/граф товару/);
+    },
+  );
 });
