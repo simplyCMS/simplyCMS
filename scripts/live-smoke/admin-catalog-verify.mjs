@@ -70,8 +70,11 @@ export async function verifyDuplicateSlugToast({
   await page.waitForURL(/\/admin\/products\/[0-9a-f-]{36}$/, {
     timeout: 15_000,
   });
-  await page.locator('#product-path-uk').waitFor({ timeout: 15_000 });
-  await page.locator('#product-path-uk').fill(slug);
+  // Поле адреси шукаємо за підписом, а не за id: `PathField` бере id з `useId()`,
+  // бо сторінка й діалог можуть мати поле тієї самої мови одночасно.
+  const pathField = page.getByLabel('Адреса (URL) мови Українська');
+  await pathField.waitFor({ timeout: 15_000 });
+  await pathField.fill(slug);
   await page.getByRole('button', { name: 'Зберегти адресу' }).click();
   // 🔴 НЕ `.isVisible({ timeout })`: `timeout` там deprecated і мовчки
   // ігнорується — `waitToast` реально чекає й ретраїть.
