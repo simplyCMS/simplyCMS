@@ -1228,3 +1228,22 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 | `test-harness/pg/__tests__/harness.test.ts` (стеля одноразових з'єднань) | рахує лише `backend_type = 'client backend'`: `autovacuum worker`, що заходить у свіжу БД під навантаженням, давав хибне «5 > 4» (доведено логом у момент падіння); мутація «без стелі» → 24 | `pnpm test:schema` |
 | `tests/source-text.test.ts` | помічник текстових гейтів вимагає ім'я файла: без нього `.tsx` з `//` у JSX-тексті лексер TS різав би код після «коментаря» (хибно-зелений гейт); невідоме розширення — помилка; SQL і CSS — власна лексика | `pnpm test` |
 
+
+## 15. Контури блоку «осі мови» (М2, блок 1, 2026-11)
+
+Канон — [`i18n.md`](./i18n.md); інваріанти І41–І46 і їхні тести — майстер-план §4. Тут — що доводить кожен
+гейт блоку й чого він не бачить.
+
+| Гейт | Що доводить | Крок | Чого не бачить |
+|---|---|---|---|
+| Gate C, правило каталогів (`scripts/pilot-pack/gate-c.mjs`, юніт `tests/pilot-gate-c.test.ts`) — І43 | каталоги ядра (`base`/`admin`/`mail` кожної мови) доступні лише через `import()`: жоден не входить у вхідний граф клієнтського бандла. Склад чанка читається з `sources` його sourcemap (переживає minify; `//#region` — запасний шлях) | `pnpm pilot:pack` / `pnpm pilot` | канарка: жоден чанк `dist` не віддає шляхів `src/` — інакше гейт сліпий і падає; каталог теми й плагіна — свідомо поза правилом (вже ліниві зі своїм чанком) |
+| `tests/i18n-coverage/part-keys.ts` (правило сканера `i18n-coverage`) | ключ частини `admin` — лише в коренях адмінки, ключ `mail` — лише в server-only модулях | `pnpm test` | ключі, зібрані динамічно |
+| `packages/simplycms/src/storefront-routes/__tests__/no-raw-keys-html.test.tsx` — І44 | HTML вітрини (головна, товар, кошик; мова з пакетом, регіональна, клієнтський перехід) не містить жодного сирого ключа `MessageKey`; реєстр свіжий на кожен кейс (`vi.resetModules`) | `pnpm test` | реальний браузер: гідрацію доводить маркер нижче |
+| маркер ідентичності SSR-вузлів, title SSR = після гідрації, перекладений title, `console.error` воронки (`scripts/live-smoke/hydration-identity.mjs`, `head-console.mjs`) | гідрація НЕ замінила SSR-DOM (`hydrateRoot`, не `createRoot`); `head()` не читає каталог синхронно; консоль порожня поза allow-list (CORS шрифтів харнеса; бюджет `Failed to fetch` = перервані fetch) | `pnpm live:smoke` | dev-попередження React (прод-збірка їх не друкує) |
+| `tests/i18n-catalog-parity.test.ts`, `tests/theme-messages-parity.test.ts`, `tests/plugin-messages-parity.test.ts` (спільний `tests/helpers/catalog-values.ts`) | множина: набір форм ключа РІВНО категорії `Intl.PluralRules(код)`; однаковий вид значення (рядок чи множина) у всіх мовах; плейсхолдери по всіх формах | `pnpm test` | змістовну правильність перекладу |
+| `tests/i18n-key-types.test.ts` | `@ts-expect-error`: `t()` не приймає ключ множини, `plural` — рядковий ключ | `pnpm typecheck` | — |
+| унікальна БД на прогін (`uniqueDbName` у `scripts/unique-db-name.mjs`) і замок `.proof-run.lock` (`scripts/tree-lock.mjs`) | `live:smoke` і `pilot` не ділять ні БД, ні дерево з паралельним прогоном | `pnpm live:smoke`, `pnpm gates`, `pnpm release` | самостійні `pnpm pilot` і `pnpm build` замка не беруть — свідома межа |
+
+Мова магазину лише з пакетом (І46): відмова публікації — `test-harness/pg/__tests__/languages-operations.test.ts`
+(`pnpm test:schema`), гучний сигнал деградованого режиму —
+`storefront/loaders/__tests__/language-degraded.test.ts`, `doctor --online` — `tests/cli-language-check.test.ts`.

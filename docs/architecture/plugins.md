@@ -280,6 +280,9 @@ switch, `number/integer` → числовий input. Непредставна д
 `useThemeT`). Typo-safety — локальний union:
 `export type FaqKey = keyof typeof messages.uk`.
 
+Рядки плагіна — той самий власний механізм ядра, що й у теми (не i18next): пошук рядка — спільний
+`lookupMessage` (мова → основна → ключ), пару мов бере `usePluginT` з провайдера (`useUiLocalePair()`).
+
 **Множина.** Значення ключа каталогу — рядок або `PluralForms`
 (`{ one?, few?, many?, zero?, two?, other }`, категорії CLDR; `other`
 обов'язкова). `usePluginT` віддає `PluralTranslator` — той самий контракт, що

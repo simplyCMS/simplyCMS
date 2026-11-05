@@ -83,6 +83,11 @@ ThemeModule = {
 }
 ```
 
+- **Рядки теми — власний механізм ядра, не i18next** (`simplycms/i18n`, [`i18n.md`](./i18n.md)): каталог читає
+  `useThemeT()` (`PluralTranslator`; множина — `plural(t, key, count)`), мову інтерфейсу для форматування дає
+  `useUiLocale()` (тип `UiLocale`, не мова контенту), пару мов для fallback — `useUiLocalePair()`. Хуки `useLocale` (знесено)
+  і `useFallbackLocale` (знесено) не казали, яка це вісь. Мову даних тема не отримує з хука: вона
+  приходить у view-моделях.
 - **Типографіка (v2.2)** — два не-кольорові токени в `tokens`: `'font-sans'`
   і `'font-heading'`. Значення — повний CSS `font-family` stack рядком
   (`"'Manrope', system-ui, sans-serif"`), не назва шрифту; `font-heading`
