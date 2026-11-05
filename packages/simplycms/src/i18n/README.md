@@ -1,8 +1,10 @@
 # simplycms/i18n
 
-Локалізація без глобального стану: транслятор створюється під конкретну локаль
-(per-request / per-render), тож SSR кількох запитів різними мовами безпечний.
-У комплекті каталоги `uk` (повний) і `en` (частковий).
+Власний механізм SimplyCMS, не i18next: локалізація інтерфейсу без глобального стану. Транслятор створюється
+під конкретну мову (per-request / per-render), тож SSR кількох запитів різними мовами безпечний. Це ВІСЬ
+ІНТЕРФЕЙСУ (рядки, форматування, множина); мова даних (`ContentLocale`) — окрема вісь, див.
+`docs/architecture/translations.md`.
+У комплекті мовні пакети `uk` і `en`; каталоги обох ПОВНІ (частини `base`, `mail`, `admin`), лінивими чанками.
 
 Шар ядра [SimplyCMS](https://github.com/simplyCMS/simplyCMS) — відкритої
 e-commerce CMS на TanStack Start + PostgreSQL. Окремим пакетом він більше не
@@ -23,12 +25,15 @@ pnpm add simplycms
 
 | Символ | Опис |
 |--------|------|
-| `createTranslator(locale, fallback)` | Транслятор-замикання над `UiLocale`: каталог мови → каталог `fallback` (основна мова магазину) → сам ключ |
+| `createTranslator(catalogs, locale)` | Транслятор над завантаженими частинами каталогу ядра однієї мови (`PluralTranslator`); fallback-мови в ядра немає — вона діє на рівні вибору мови (`resolveUiLocale`) |
+| `loadUiCatalog(ui, part)`, `useUiCatalogs(ui, parts)`, `loadTranslator(ui, parts)` | Реєстр лінивих частин (`base`/`admin`/`mail`): кешований проміс з протоколом thenable для `use()`; `loadTranslator` — єдиний шлях поза React (`head()`, листи, CLI) |
+| `plural(t, key, count, params?)` | Форма множини за `Intl.PluralRules` мови каталогу, де знайдено ключ; значення ключа — `PluralForms` |
 | `lookupMessage(catalogs, key, params?)` | Єдиний ланцюг пошуку: перший каталог із ключем → підстановка `{name}`; ніде немає → сам ключ. Спільний для ядра, `useThemeT`, `usePluginT` |
 | `resolveUiLocale(content, primary)` | Міст осі контенту до осі інтерфейсу: пакет мови → пакет базової мови → ті самі кроки для основної → помилка з переліком пакетів |
+| `resolveUiLocalePair(content, primary)` | Те саме для пари `UiLocalePair` (мова + мова основної для fallback тем і плагінів) |
 | `toUiLocale(value, parts?)`, `resolveAdminUiLocale(stored, primary)` | Точний код наявного пакета з частинами (типово `base`+`mail`) або `null`; мова адмінки: збережена з `admin` → основна з `admin` → `en` |
 | `listLanguagePacks()`, `hasLanguagePack(code, parts?)`, `getUiPack(ui)`, `getContentTools(code)` | Мовні пакети ядра (`uk`, `en`; реєстр не експортується): `ui` = `base` + `mail` + необов'язкова `admin`, `content` — таблиця транслітерації адрес. Мову публікують лише з пакетом `base`+`mail` (`hasLanguagePack`, точний код або базова мова); `getContentTools` без пакета → `null` |
-| `I18nProvider`               | React-провайдер `{ locale, fallback }` (обидві — `UiLocale`): мемоїзує транслятор по парі мов |
+| `I18nProvider` | React-провайдер `{ locale, fallback, catalogs }` (мови — `UiLocale`): мемоїзує транслятор по парі мов |
 | `useT()`, `useUiLocale()`, `useUiLocalePair()` | Транслятор поточного рендера; мова інтерфейсу для форматування; пара мов для каталогів теми й плагіна. Кидають поза провайдером |
 | `useFormatDate(style?)` | Форматувач дати за мовою інтерфейсу (`medium` / `short` / `datetime`); єдине місце, де вітрина й адмінка форматують дати |
 | `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. Тип `UiLocale` (код наявного пакета; бренд, не мова контенту) живе в `simplycms/contracts` — звідси його немає, конструктори `resolveUiLocale`/`toUiLocale` — тут; `MessageKey` виводиться з uk-каталогу — union замкнений |
@@ -60,8 +65,8 @@ const t = useT();
 ## 🔴 Глобального `setLocale` (замінено на `createTranslator` для кожного запиту) немає навмисно
 
 Модульного mutable-стану в пакеті нема — інакше два SSR-запити різними мовами
-перетирали б локаль один одному. Резолв ключа — ланцюг «каталог локалі → каталог fallback-мови →
-сам ключ»: пропущений переклад видно як `cart.title`, а не як мовчазний рядок
+перетирали б локаль один одному. Резолв ключа в темі й плагіні — ланцюг «каталог мови → каталог основної → сам ключ»
+(`lookupMessage`); у ядра каталог мови повний: пропущений переклад видно як `cart.title`, а не як мовчазний рядок
 чужою мовою.
 
 ## Ліцензія
