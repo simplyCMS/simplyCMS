@@ -1,6 +1,10 @@
 import { asc, desc, eq, gt, inArray, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
+import {
+  AdminNotFoundError,
+  VersionMismatchError,
+} from 'simplycms/contracts/domain-errors';
+import type { ActorDb } from 'simplycms/db';
 import { assertVersionThenHash, defineOperation } from 'simplycms/operations';
 import { orderStatuses } from 'simplycms/schema';
 import { bumpVersion, lockRoots } from '../translatable/roots';
@@ -27,49 +31,60 @@ export const orderStatusesReorder = defineOperation({
   }),
   output: z.object({ version: z.number().int(), swapped: z.boolean() }),
   async run({ db }, input) {
-    const [seen] = await db
-      .select({ sortOrder: orderStatuses.sortOrder })
-      .from(orderStatuses)
-      .where(eq(orderStatuses.id, input.id));
-    if (!seen) throw new AdminNotFoundError('статус замовлення');
     const up = input.direction === 'up';
-    const [next] = await db
-      .select({ id: orderStatuses.id })
-      .from(orderStatuses)
-      .where(
-        up
-          ? lt(orderStatuses.sortOrder, seen.sortOrder)
-          : gt(orderStatuses.sortOrder, seen.sortOrder),
-      )
-      .orderBy(
-        up ? desc(orderStatuses.sortOrder) : asc(orderStatuses.sortOrder),
-      )
-      .limit(1);
+    const found = await neighbour(db, input.id, up);
+    if (!found) throw new AdminNotFoundError('статус замовлення');
     const versions = await lockRoots(
       db,
       ORDER_STATUS_ROOT,
-      next ? [input.id, next.id] : [input.id],
+      found.next ? [input.id, found.next] : [input.id],
       'no key update',
     );
     const version = versions.get(input.id);
     if (version === undefined)
       throw new AdminNotFoundError('статус замовлення');
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
-    if (!next || !versions.has(next.id)) return { version, swapped: false };
-    // Значення порядку читаються ПІД замком: між пошуком сусіда й замком їх міг змінити інший своп.
+    // Сусіда знайдено ДО замка: паралельний своп іншої пари міг зробити його несуміжним, а
+    // версія цільового при цьому не змінилась. Перевірка під замком; розбіжність — 412,
+    // клієнт перечитує список.
+    const again = await neighbour(db, input.id, up);
+    if (again?.next !== found.next) throw new VersionMismatchError(version);
+    if (!found.next || !versions.has(found.next))
+      return { version, swapped: false };
+    // Значення порядку читаються ПІД замком обох рядків.
     const rows = await db
       .select({ id: orderStatuses.id, sortOrder: orderStatuses.sortOrder })
       .from(orderStatuses)
-      .where(inArray(orderStatuses.id, [input.id, next.id]));
+      .where(inArray(orderStatuses.id, [input.id, found.next]));
     const order = new Map(rows.map((r) => [r.id, r.sortOrder]));
-    await bumpVersion(db, ORDER_STATUS_ROOT, next.id, {
+    await bumpVersion(db, ORDER_STATUS_ROOT, found.next, {
       sortOrder: order.get(input.id),
     });
     return {
       version: await bumpVersion(db, ORDER_STATUS_ROOT, input.id, {
-        sortOrder: order.get(next.id),
+        sortOrder: order.get(found.next),
       }),
       swapped: true,
     };
   },
 });
+
+/** Сусід за фактичним `sort_order` у БД: `null` — рядка немає, `{next: undefined}` — край. */
+async function neighbour(db: ActorDb, id: string, up: boolean) {
+  const [seen] = await db
+    .select({ sortOrder: orderStatuses.sortOrder })
+    .from(orderStatuses)
+    .where(eq(orderStatuses.id, id));
+  if (!seen) return null;
+  const [next] = await db
+    .select({ id: orderStatuses.id })
+    .from(orderStatuses)
+    .where(
+      up
+        ? lt(orderStatuses.sortOrder, seen.sortOrder)
+        : gt(orderStatuses.sortOrder, seen.sortOrder),
+    )
+    .orderBy(up ? desc(orderStatuses.sortOrder) : asc(orderStatuses.sortOrder))
+    .limit(1);
+  return { next: next?.id };
+}
