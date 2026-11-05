@@ -8,15 +8,18 @@
 //
 // Другий сенс — довести ідемпотентність рукописних файлів: `0000_prelude`
 // створює КЛАСТЕРНІ ролі, тож друга база того самого кластера котить його
-// поверх наявних; `0003_seed` і `0004_functions` — так само. Журнал накату
+// поверх наявних; `0003_seed` і `0004_functions` — так само. Мову й довідники
+// накат не створює: їх вставляє `bootstrapStore` (М2б, Р23), тож тест стартує базу сам. Журнал накату
 // (`simplycms/migrate`, Е8) повторний накат файлу в одній базі прибрав, але
 // від кластерних об'єктів не рятує.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { bootstrapStore } from 'simplycms/migrate';
 import { resolveHarness } from '../up.mjs';
 import {
-  applyCanon,
+  applyCleanCanon,
   applySqlFiles,
   createTempDatabase,
   dropTempDatabase,
@@ -36,6 +39,17 @@ const canonFiles = (): string[] =>
     .sort()
     .map((name) => join(CANON_DIR, name));
 
+/** Старт БД з мовою `uk` (ідемпотентний): мова й довідники, яких чистий канон не має. */
+async function startStore(url: string): Promise<{ seeded: boolean }> {
+  const client = new pg.Client({ connectionString: url });
+  await client.connect();
+  try {
+    return await bootstrapStore(client, 'uk');
+  } finally {
+    await client.end();
+  }
+}
+
 describe('канон міграцій: накат на чисту БД', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_baseline');
@@ -45,7 +59,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    await applyCanon(dbUrl);
+    // Чистий накат БЕЗ старту: довідники з'являються лише в `bootstrapStore` (М2б, Р23).
+    await applyCleanCanon(dbUrl);
   }, 120_000);
 
   afterAll(async () => {
@@ -255,6 +270,10 @@ describe('канон міграцій: накат на чисту БД', () => {
         await queryRows(dbUrl, 'select key from public.system_settings')
       ).length,
     });
+    // Чистий накат: довідників і профілю немає, лишилися рядки без тексту
+    // (тема, `stock_management`).
+    expect(await counts()).toEqual({ statuses: 0, themes: 1, settings: 1 });
+    expect(await startStore(dbUrl)).toEqual({ seeded: true });
     expect(await counts()).toEqual({ statuses: 6, themes: 1, settings: 2 });
 
     // 🔴 Ідемпотентні саме рукописні файли — `0000_prelude` (ролі кластерні:
@@ -291,6 +310,7 @@ describe('канон міграцій: накат на чисту БД', () => {
   // Е6б-5: профіль магазину замість мертвого `active_theme`; `plugin_events`
   // і `plugins.migrations_applied` ніхто не писав — прибрано з baseline.
   it('сід профілю на місці, мертве зі схеми прибрано', async () => {
+    await startStore(dbUrl);
     const profile = await queryRows(
       dbUrl,
       "select value from public.system_settings where key = 'store_profile'",
@@ -322,6 +342,7 @@ describe('канон міграцій: накат на чисту БД', () => {
   // Е6д-8: домен статусу й рейтингу тримає БД. `app_admin` обходить RLS,
   // тож відмову дає саме CHECK (23514), а не політика чи грант.
   it('product_reviews: CHECK статусу й рейтингу існують і спрацьовують', async () => {
+    await startStore(dbUrl);
     const names = await queryRows(
       dbUrl,
       `select conname from pg_constraint

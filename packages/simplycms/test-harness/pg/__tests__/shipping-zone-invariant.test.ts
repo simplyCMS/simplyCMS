@@ -4,7 +4,7 @@
 // відмовляють РАНІШЕ за БД (`AdminConflictError`, а не помилка Postgres).
 import pg from 'pg';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MAIN_SHIPPING_ZONE_ID } from 'simplycms/schema';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema';
 import * as F from './fixtures/admin-shipping';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
@@ -22,7 +22,7 @@ import {
   shippingZonesOps,
 } from 'simplycms/admin-server/impl';
 
-const MAIN = MAIN_SHIPPING_ZONE_ID;
+const MAIN = SYSTEM_SEED_IDS.mainShippingZone;
 const NO_DEFAULT = 'shipping_zones: потрібна рівно одна основна зона';
 
 /** Відкрита транзакція окремого зʼєднання: тест сам вирішує, що й коли комітити. */
