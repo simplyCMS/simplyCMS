@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import { advisoryXactLockShared, type ActorDb } from 'simplycms/db';
@@ -66,12 +66,14 @@ export async function bumpVersion(
   id: string,
   base?: Readonly<Record<string, unknown>>,
 ): Promise<number> {
+  const keyOf = (col: PgColumn) =>
+    Object.entries(getTableColumns(root.table)).find(([, c]) => c === col)![0];
   const [row] = await db
     .update(root.table)
     .set({
       ...base,
-      version: sql`${root.version} + 1`,
-      ...(root.touch ? { updatedAt: new Date() } : {}),
+      [keyOf(root.version)]: sql`${root.version} + 1`,
+      ...(root.touch ? { [keyOf(root.touch)]: new Date() } : {}),
     })
     .where(eq(root.id, id))
     .returning({ version: root.version });
