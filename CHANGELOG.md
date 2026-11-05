@@ -52,57 +52,47 @@
 - **Листи й форматування за мовою інтерфейсу (М2, блок 1, §19.8–§19.9):** поле `locale` знесено з `ConfigProvider`,
   `SimplyCmsConfig` (`simplycms.config.ts`) і host-`appConfig`; змінну збірки `VITE_LOCALE` знесено (з `.env.example`,
   `vite-env.d.ts`, `ENVIRONMENT.md`) — мова вітрини з URL, мова інтерфейсу з пакетів і профілю, основна мова з `languages`.
-  Знесено `declareStoreLocale`/`getStoreLocale` (і виклик у `src/server.ts`), тимчасові `getStoreTranslator` і
-  `STORE_UI_FALLBACK` з `simplycms/site`, `languageOfConfigLocale` з `simplycms/i18n`, `resolveInviteLocale` з
+  Знесено `declareStoreLocale`/`getStoreLocale` (і виклик у `src/server.ts`) та `resolveInviteLocale` з
   `simplycms/auth/owner-invite-cli`; `runOwnerInvite` більше не бере `locale` (основна мова — з БД або `primary`).
   `formatPrice(value, config)` і `formatShippingCost(cost, config, labels)` беруть `{ locale: UiLocale; currency }` (тип `PriceFormat`);
   `useFormatPrice` форматує за `useUiLocale()`. `useFormatDate` переїхав з `admin/lib` у `simplycms/i18n` (+ стиль `datetime`);
-  `OrderMailMoney.locale` — `UiLocale`; `OrderMailContext` несе `text: TextLocale` замість `locale`. Тип `UiLocale`
-  переїхав з `simplycms/i18n` у `simplycms/contracts` без реекспорту (імпортуйте `type UiLocale` з `simplycms/contracts`;
-  конструктори `resolveUiLocale`/`toUiLocale` лишились у `simplycms/i18n`); upward-виняток тір-зони `site→i18n` знято. Лист мовою одержувача:
-  `resolveMailUiLocale`/`loadMailTranslator` у `simplycms/mail` — покупцю мовою замовлення, власнику й запрошенню основною,
-  користувачу `profiles.ui_locale`. Магазин без `locale` у `simplycms.config.ts` збирається; рядок `locale` у конфізі треба видалити.
-- **Вісь мови контенту (М2, блок 1):** `LocaleSet` більше не експортується з `simplycms/i18n` — тепер це тип
-  `simplycms/contracts` (разом із брендованим `ContentLocale`; конструктор — `checkedContentLocale` у
-  `simplycms/domain/translations`). Поля `LocaleSet`/`TextLocale`, `entityKey(entity, locale)` і
-  `AGGREGATE.<x>.keyFor(locale)` беруть `ContentLocale`, а не `string`; `localeInput` дає `ContentLocale`.
-  `resolveRequestLocale`, `ResolvedLocale`, `localeOfHref`, `NO_LOCALES`, `isStorefrontPath`, `localePrefix`,
-  `NON_STOREFRONT_SEGMENTS` переїхали з `simplycms/storefront-routes/locale/{resolve,root-data}` у `simplycms/domain`. Новий хук
-  `useContentLocale` — `simplycms/runtime/content-locale`. `primaryLocaleCode` повертає `ContentLocale`. Звужені сигнатури: `checkedTextLocale(ContentLocale, ContentLocale)`,
-  `catalogKeys.sectionProducts(…, ContentLocale)` (`simplycms/react-query`), `LocaleRewriteState.current: ContentLocale`.
-- **Вісь мови інтерфейсу (М2, блок 1):** нове — брендований `UiLocale` (код наявного мовного пакета),
-  міст `resolveUiLocale(content, primary)`, `resolveUiLocalePair`, `toUiLocale`, `hasUiPack`, `lookupMessage`,
-  `useUiLocale`, `useUiLocalePair` (усе з `simplycms/i18n`). Знесено без реекспорту: тип `Locale`
-  (`simplycms/i18n`) → `UiLocale`; `useLocale` → `useUiLocale`; `useFallbackLocale` (пару мов для тем і
-  плагінів дає `useUiLocalePair`); `hasLanguagePack` (`simplycms/site`; файл `site/language-pack.ts`
-  видалено) → `hasUiPack(code)` з `simplycms/i18n`, який знаходить пакет і за базовою мовою (`en-GB` → `en`).
-  `I18nProvider` приймає `locale: UiLocale` і ОБОВ'ЯЗКОВИЙ `fallback: UiLocale` (раніше `locale: string`,
-  `fallback` необов'язковий); `createTranslator(locale: UiLocale, fallback: UiLocale)`; `getStoreLocale()`
-  повертає `UiLocale`. `StorefrontRootData` отримує обов'язкове поле `ui: { locale, fallback }`: host-`__root.tsx`
-  передає в `I18nProvider` його, а не мову сторінки (`locale` лишається для `<html lang>`). Мова сторінки без
-  пакета (`/pl/…`) більше не дає голих ключів: інтерфейс іде основною мовою магазину, а за відсутності пакета
-  й для неї — помилка з переліком пакетів. `assertThemeViewsConformance(theme, { locale })` вимагає
-  `locale: UiLocale` (дефолту `uk` немає; шаблон теми й CLI передають явно).
+  `OrderMailMoney.locale` — `UiLocale`; `OrderMailContext` несе `text: TextLocale` замість `locale`. Upward-виняток
+  тір-зони `site→i18n` знято. Лист мовою одержувача: `resolveMailUiLocale`/`loadMailTranslator` у `simplycms/mail` — покупцю
+  мовою замовлення, власнику й запрошенню основною, користувачу `profiles.ui_locale`. Валюта листів —
+  `declareStoreCurrency`/`getStoreCurrency`. Магазин без `locale` у `simplycms.config.ts` збирається; рядок `locale` у конфізі треба видалити.
+- **Вісь мови контенту (М2, блок 1):** нові брендований `ContentLocale` і тип `LocaleSet` у `simplycms/contracts`
+  (конструктор — `checkedContentLocale` у `simplycms/domain/translations`). Поля `LocaleSet`/`TextLocale`, `entityKey(entity, locale?)`
+  і `AGGREGATE.<x>.keyFor(locale)` беруть `ContentLocale`, а не `string`; `localeInput` дає `ContentLocale`.
+  Розбір мови запиту живе в `simplycms/domain`: `resolveRequestLocale`, `ResolvedLocale`, `localeOfHref`, `NO_LOCALES`,
+  `isStorefrontPath`, `localePrefix`, `NON_STOREFRONT_SEGMENTS`. Новий хук `useContentLocale` — `simplycms/runtime/content-locale`;
+  `primaryLocaleCode` повертає `ContentLocale`; `checkedTextLocale(ContentLocale, ContentLocale)`,
+  `catalogKeys.sectionProducts(…, ContentLocale)` (`simplycms/react-query`).
+- **Вісь мови інтерфейсу (М2, блок 1):** брендований `UiLocale` (код наявного мовного пакета; тип у `simplycms/contracts`,
+  значення створюють лише конструктори `simplycms/i18n`), міст `resolveUiLocale(content, primary)`, `resolveUiLocalePair`, `toUiLocale`,
+  `lookupMessage`, `useUiLocale`, `useUiLocalePair`. Знесено без реекспорту: тип `Locale` (`simplycms/i18n`) → `UiLocale`;
+  `useLocale` → `useUiLocale`; `normalizeLocale`; тип `Catalog` → `PartCatalog` і `CatalogValue`.
+  `I18nProvider` приймає `locale: UiLocale` (раніше `Locale`) та обов'язкові `fallback: UiLocale` (основна мова магазину — кінцева
+  ланка каталогів ядра, теми й плагіна) і `catalogs`. `createTranslator(locale)` → `createTranslator(catalogs: readonly PartCatalog[],
+  locale: UiLocale)` над УЖЕ завантаженими частинами. `StorefrontRootData` отримує обов'язкове поле `ui: { locale, fallback }`:
+  host-`__root.tsx` передає в `I18nProvider` його, а не мову сторінки (`locale` лишається для `<html lang>`). Мова сторінки
+  без пакета (`/pl/…`) не дає голих ключів: інтерфейс іде основною мовою магазину, а за відсутності пакета й для неї — помилка
+  з переліком пакетів. `assertThemeViewsConformance(theme, { locale })` вимагає `locale: UiLocale` (дефолту `uk` немає;
+  шаблон теми й CLI передають явно).
 - **Каталоги ядра — ліниві частини (М2, блок 1):** каталог інтерфейсу поділено на частини `base` (вітрина), `admin` і
-  `mail`; кожна вантажиться окремим `import()`, і початковий граф вітрини їх не тягне. Знесено без реекспорту:
-  `LanguagePack.catalog`, `LanguagePack.slugify`, `LanguagePack.tokenize` (пакет тепер
-  `{ code, name, ui: лоадери частин, content: { slugify?, tokenize? } }`), `getLanguagePack(code)` → `getUiPack(ui)`
-  (мова інтерфейсу) і `getContentTools(code)` (точний код мови контенту або `null`), тип `Catalog` (англійські частини
-  повні: `satisfies Record<…Key, string>`), зведення `catalogs/{uk,en}/index.ts`. `createTranslator(locale, fallback)` →
-  `createTranslator(catalogs: readonly PartCatalog[])` над УЖЕ завантаженими частинами; завантаження — нові
-  `loadUiCatalog`, `useUiCatalogs`, `loadTranslator` (`simplycms/i18n`). `I18nProvider` приймає ще й
-  обов'язковий проп `catalogs`; host-`__root.tsx` розгортає `useUiCatalogs(ui.locale, ['base'])`, layout адмінки дає
-  вкладений провайдер з `['base','admin']`. `getStoreTranslator()` (`simplycms/site`) стає асинхронним
-  (`Promise<Translator>`). Нове: `simplycms/contracts/thenable` (`ReactThenable`, `trackThenable`). Ключі `app.admin.loading`
-  і `app.error.insecureContext` замінили `admin.common.loading` і `admin.common.insecureContext` (екрани `/admin` рендеряться
-  до завантаження частини `admin`). Сканер `i18n-coverage` забороняє ключ `admin` поза адмінкою й ключ `mail` поза
-  `simplycms/mail`. `head()` вітрини асинхронний: `storefrontHead` (`simplycms/storefront-routes/head/head`) і
-  `productHead` повертають `Promise` (раніше об'єкт), `entityHead` — `Promise` для сторінки сутності. Причина: router-core
-  приймає проміс у `head()`, а помилку синхронного читання реєстру в ньому ковтає, тож синхронного читача каталогів
-  немає (`loadTranslator` — єдиний шлях поза React). Кореневий лоадер `loadStorefrontRoot` чекає лише `base` мови
-  інтерфейсу (каталог ядра повний для кожної мови, мови fallback клієнт не тягне). Нове:
-  `prepareStorefrontHydration()` (`simplycms/storefront-routes/hydration`) — прогрів активної теми ДО `hydrateRoot`
-  (host-`client.tsx` лише чекає його). Gate C пілота забороняє каталоги ядра в початковому графі вітрини.
+  `mail`; кожна вантажиться окремим `import()`, і початковий граф вітрини їх не тягне. Мовний пакет —
+  `LanguagePack { code, name, ui: лоадери частин, content: { slugify?, tokenize? } }`; читачі — `getUiPack(ui)` (мова інтерфейсу)
+  і `getContentTools(code)` (точний код мови контенту або `null`). Англійські частини повні (`satisfies Record<…Key, string>`).
+  Завантаження — `loadUiCatalog`, `useUiCatalogs`, `loadTranslator` (`simplycms/i18n`); host-`__root.tsx` розгортає
+  `useUiCatalogs(ui.locale, ['base'])`, layout адмінки дає вкладений провайдер з `['base','admin']`. Нове:
+  `simplycms/contracts/thenable` (`ReactThenable`, `trackThenable`). Ключі `app.admin.loading` і `app.error.insecureContext`
+  замінили `admin.common.loading` і `admin.common.insecureContext` (екрани `/admin` рендеряться до завантаження частини
+  `admin`). Сканер `i18n-coverage` забороняє ключ `admin` поза адмінкою й ключ `mail` поза `simplycms/mail`. `head()` вітрини
+  асинхронний: `storefrontHead` (`simplycms/storefront-routes/head/head`) і `productHead` повертають `Promise` (раніше об'єкт),
+  `entityHead` — `Promise` для сторінки сутності. Причина: router-core приймає проміс у `head()`, а помилку синхронного читання
+  реєстру в ньому ковтає (`loadTranslator` — єдиний шлях поза React). Кореневий лоадер вітрини чекає лише `base` мови
+  інтерфейсу (мови fallback клієнт не тягне). Нове: `prepareStorefrontHydration()` (`simplycms/storefront-routes/hydration`) —
+  прогрів активної ТЕМИ ДО `hydrateRoot` (host-`client.tsx` лише чекає його). Gate C пілота забороняє каталоги ядра в початковому
+  графі вітрини.
 - **`theme:conformance` вимагає `lang` на fallback-фрагментах картки товару (І37):** власний `views.ProductDetail`
   теми рендериться на фікстурі `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
   назва, короткий опис, опис, остання крихта, текстове значення характеристики чи `alt` фото з основної мови не мають
@@ -270,39 +260,30 @@
 - **`toAdminConflict` переїхав у `simplycms/db`** (`pg-errors`: також `isUniqueViolation`,
   `isForeignKeyViolation`; єдиний розбір `.cause`, UPSTREAM:DRZ-1); `admin-server/impl/errors.ts` видалено.
   Тип `CoreActor` — з `simplycms/auth` (раніше з `simplycms/admin-server/impl`).
-- **i18n: відкритий `Locale`, `createTranslator(locale, fallback)`, `normalizeLocale` знесено:** `Locale` —
-  відкритий рядок BCP 47 (мови додає власник магазину, а не ядро). `createTranslator` приймає ДРУГИМ
-  аргументом обов'язкову fallback-мову (основна мова магазину, не обов'язково `uk`); ланцюг — «каталог
-  мови → каталог fallback → ключ». `normalizeLocale` видалено. Для `config.locale` з регіоном (`uk-UA`) є тимчасовий міст
-  `languageOfConfigLocale` (`uk-UA` → `uk`; невідому мову не підміняє, регіон кодів мов магазину
-  вона зрізати не призначена — зникне разом із `config.locale` у М2). Код магазину, що кличе
-  `createTranslator(x)` чи `normalizeLocale(x)`, переходить на
-  `createTranslator(languageOfConfigLocale(x), 'uk')`.
-  Файли `src/routes/__root.tsx`, `src/route-error.tsx`, `src/server.ts` у шаблоні магазину вже
-  оновлено. `ThemeMessages` і `PluginMessages` тепер з ключем-рядком (раніше `'uk' | 'en'`).
+- **`ThemeMessages` і `PluginMessages` — з ключем-рядком:** ключ мови каталогу тем і плагінів більше не `'uk' | 'en'`, а будь-який код
+  мови. Файли `src/routes/__root.tsx`, `src/route-error.tsx`, `src/server.ts` у
+  шаблоні магазину вже оновлено.
 - **Мовний контекст запиту вітрини** (Task 9): мова — лише з першого сегмента URL. Host-файли
   `src/server.ts` (обгортка `withStorefrontNormalize` усередині `withRequestContext`), `src/router.tsx`
   (`createRouterLocale()`: `rewrite` + `context.locales`), `src/routes/__root.tsx`
   (`loadStorefrontRoot`, `RootNotFound`, `<html {...htmlLangAttrs(locale)}>`, скрипт
-  `serializeLocalesScript`, `fallback` у `I18nProvider`) і `src/route-error.tsx` (`useRequestTranslator`)
+  `serializeLocalesScript`) і `src/route-error.tsx` (`useRequestTranslator`)
   оновлено в шаблоні; магазин без цих правок падає на старті роутера. `RouterContext` має обов'язкове
-  `locales`; `StorefrontRootData` — `languages`, а `locale` тепер код мови сторінки (не тег `uk-UA`);
-  `I18nProvider` приймає `fallback` (основна мова), `useFallbackLocale()`. Ключі кешу вітрини з
+  `locales`; `StorefrontRootData` — `languages`, а `locale` тепер код мови сторінки (не тег `uk-UA`). Ключі кешу вітрини з
   мовою: `entityKey(entity, locale)`, `AGGREGATE.<x>.keyFor(locale)`, `catalogKeys.sectionProducts(id,
   locale, q)`; `createReadCache.get(load, { variant })`. `/<основна>/x` і `/x/` віддають 301, префікс
   неопублікованої мови — 404. Лінт забороняє літерал `accept-language` у зоні вітрини.
-- **Мова магазину лише з пакета (М2, блок 1, §19.15, І46):** `LANGUAGE_PACKS` більше не експортується з
-  `simplycms/i18n` (реєстр закритий) — публічні `listLanguagePacks()`, `hasLanguagePack(code, parts?)`, типи
-  `LanguagePackInfo`, `UiPart`; `hasUiPack` знесено (його замінює `hasLanguagePack`). `LanguagePack.ui.admin`
-  необов'язкова. `languages.setStatus` → `published` без пакета з частинами `base` і `mail` відмовляє
+- **Мова магазину лише з пакета (М2, блок 1, §19.15, І46):** реєстр пакетів закритий — публічні `listLanguagePacks()`,
+  `hasLanguagePack(code, parts?)` (знаходить пакет і за базовою мовою: `en-GB` → `en`), типи `LanguagePackInfo`, `UiPart`.
+  `LanguagePack.ui.admin` необов'язкова. `languages.setStatus` → `published` без пакета з частинами `base` і `mail` відмовляє
   `ValidationError` `{ path: ['status'], code: 'language_pack_missing' }` (мову без пакета можна лише тримати
   чернеткою); код `language_pack_missing` додано до `VALIDATION_ISSUE_CODES`. Опублікована мова, пакет якої
   зник, працює деградовано (інтерфейс основною мовою): сервер раз на процес і мову пише попередження, а
-  `simplycms doctor --online` звітує помилкою `language-packs`. Операцію `profiles.getUiLocale` (і serverFn
-  `getAdminUiLocale`) знесено: мову адмінки `beforeLoad` `/admin` бере разом із сесією — новий serverFn
-  `getAdminSession` у `simplycms/storefront-routes/server/auth`; `profiles.setUiLocale` лише оновлює наявний
-  профіль і приймає тільки пакети з частиною `admin`. `toUiLocale(value, parts?)` перевіряє частини пакета.
-  `readStoreFacts` повертає ще й `publishedLanguages`.
+  `simplycms doctor --online` звітує помилкою `language-packs`. Мова адмінки (`resolveAdminUiLocale`): збережена з частиною `admin` →
+  основна з `admin` → `en` (останній запасний пакет платформи, `PLATFORM_FALLBACK_UI`; ту саму ланку бере екран помилки кореня, коли
+  мовного контексту немає). Мову адмінки `beforeLoad` `/admin` бере разом із сесією — serverFn `getAdminSession` у
+  `simplycms/storefront-routes/server/auth`; `profiles.setUiLocale` лише оновлює наявний профіль і приймає тільки пакети з частиною
+  `admin`. `toUiLocale(value, parts?)` перевіряє частини пакета. `readStoreFacts` повертає ще й `publishedLanguages`.
 - **Знесено serverFn `isAdmin`** (`simplycms/storefront-routes/server/auth`) і функцію `checkIsAdmin`
   (`simplycms/storefront/loaders`): без викликачів після `getAdminSession`. Заміна: `getAdminSession().isAdmin` /
   `getUser().isAdmin` у роутах і `isAdminRequest(headers)` з `simplycms/auth` у server-route handler-ах.
@@ -311,8 +292,7 @@
   params?)` з `simplycms/i18n`. Це зміна ФОРМИ каталогів тем і плагінів: `ThemeMessages` і `PluginMessages` тепер
   `Record<locale, Record<key, string | PluralForms>>`, `validateThemeModule`/`validatePluginModule` приймають форми,
   а парність каталогів вимагає форми РІВНО за `Intl.PluralRules(мова)`. Транслятори повертають `PluralTranslator`
-  (функція + `locale` + `forms`): `createTranslator(catalogs, locale: UiLocale)` тепер приймає мову інтерфейсу
-  другим аргументом, `useThemeT`/`usePluginT` повертають `PluralTranslator`. Знесено суфіксні ключі й ручні `pluralItemsKey`/
+  (функція + `locale` + `forms`): `createTranslator` (див. вище), `useThemeT/`usePluginT` повертають `PluralTranslator`. Знесено суфіксні ключі й ручні `pluralItemsKey`/
   `pluralReviewsKey`: `cart.itemsOne/Few/Many` → `cart.items`, `reviews.countOne/Few/Many` → `reviews.count`,
   `profile.usedInOrders.one/.many` → `profile.usedInOrders` (значення — форми з `{count}`); колишній заголовок
   `cart.items` («Товари ({count})») перейменовано на `cart.itemsTitle`, бо ім'я зайняла множина.
@@ -367,8 +347,7 @@
   `uk`, латиниця з діакритикою, `null` для письма без таблиці), `allocateSlug` (`base`, `base-2`…),
   `SLUG_FORMAT`, службові сегменти `RESERVED_SEGMENTS`/`RESERVED_QUERY_KEYS`, `isReservedPath`,
   `isReservedPropertyToken`.
-- `simplycms/i18n`: мовні пакети `LANGUAGE_PACKS` (`uk`, `en`), `getLanguagePack(code)` (`null` для
-  мови без пакета), тип `LanguagePack`, тимчасовий міст `languageOfConfigLocale` (знос у М2).
+- `simplycms/i18n`: мовні пакети (`uk`, `en`) — `listLanguagePacks`, `hasLanguagePack`, `getUiPack`, `getContentTools`, тип `LanguagePack`.
 - **Реєстри адрес і мовних токенів** (Мультимовність М1): таблиці `url_paths` і `slug_tokens`
   (унікальність у мові, історія адрес, одна поточна на сутність і мову, складений FK області
   токена), відкладені тригери наявності поточної адреси/токена (`require_current_address`,
