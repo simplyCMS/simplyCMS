@@ -1,6 +1,10 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
-import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  AdminNotFoundError,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { assertVersionThenHash, defineOperation } from 'simplycms/operations';
 import { orderStatuses } from 'simplycms/schema';
 import { lockRoots, bumpVersion } from '../translatable/roots';
@@ -41,6 +45,12 @@ export const orderStatusesSetDefault = defineOperation({
       .where(
         and(eq(orderStatuses.isDefault, true), ne(orderStatuses.id, input.id)),
       );
+    // Дефолт міг змінитись між незамкненим читанням набору й замком (новий статус став
+    // дефолтним): його рядок поза `lockRoots`, а UPDATE повз відсортований порядок дав би
+    // 40P01. Мінімальна коректна відповідь — повторювана відмова, не повторний замок
+    // (додатковий замок поза порядком id був би тим самим ризиком).
+    if (previous.some((r) => !versions.has(r.id)))
+      stateConflict(ADMIN_STATE_CONSTRAINT.concurrentChange);
     const [self] = await db
       .select({ isDefault: orderStatuses.isDefault })
       .from(orderStatuses)
