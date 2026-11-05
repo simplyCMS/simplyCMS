@@ -123,6 +123,14 @@ describe('bootstrapStore', () => {
       const before = await queryRows(url, COUNT_SQL);
       expect(await bootstrapStore(client, 'uk')).toEqual({ seeded: false });
       expect(await queryRows(url, COUNT_SQL)).toEqual(before);
+
+      // Конфіг магазину змінили на іншу мову: перевірка «БД уже засіяна» — за наявністю
+      // БУДЬ-ЯКОЇ мови, а не за кодом; інакше повтор упав би на 23505 (другий is_default).
+      expect(await bootstrapStore(client, 'en')).toEqual({ seeded: false });
+      expect(await queryRows(url, COUNT_SQL)).toEqual(before);
+      expect(await queryRows(url, 'select code from public.languages')).toEqual(
+        [{ code: 'uk' }],
+      );
     });
   }, 120_000);
 
@@ -137,7 +145,9 @@ describe('bootstrapStore', () => {
          union all select name from public.shipping_zones
          union all select name from public.languages
          union all select value::text from public.system_settings where key = 'store_profile'
-         union all select description from public.system_settings where key = 'store_profile' and description is not null`,
+         union all select description from public.system_settings where key = 'store_profile' and description is not null
+         union all select description from public.themes where description is not null
+         union all select author from public.themes where author is not null`,
       )) as { name: string }[];
       expect(texts.length).toBeGreaterThan(6);
       for (const { name } of texts) expect(name).not.toMatch(CYRILLIC);
