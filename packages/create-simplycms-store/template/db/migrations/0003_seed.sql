@@ -25,7 +25,7 @@ values
     '00000005-0000-4000-8000-000000000002',
     'stock_management',
     '{"decrease_on_order": false}'::jsonb,
-    'Налаштування управління залишками'
+    null
   )
 on conflict (key) do nothing;
 
