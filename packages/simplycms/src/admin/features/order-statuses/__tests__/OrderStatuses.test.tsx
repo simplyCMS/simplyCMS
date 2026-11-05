@@ -291,4 +291,26 @@ describe('діалог статусу: перезавантаження конф
     );
     expect(m.saveOrderStatus).toHaveBeenCalledTimes(1);
   });
+
+  it('статус зник зі списку (видалено паралельно) → перезавантаження не перебудовує форму', async () => {
+    m.saveOrderStatus.mockRejectedValue(conflict());
+    await openEditor();
+    rename('Перейменований');
+    await screen.findByText(t('admin.orders.statuses.conflict.title'));
+    m.listOrderStatuses.mockResolvedValue([NEW]);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: t('admin.translations.conflict.reload'),
+      }),
+    );
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        t('admin.translations.loadFailed'),
+      ),
+    );
+    expect(
+      (screen.getByLabelText(t('common.nameRequiredLabel')) as HTMLInputElement)
+        .value,
+    ).toBe('Перейменований');
+  });
 });

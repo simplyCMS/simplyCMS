@@ -73,10 +73,11 @@ export function StatusFormDialog(p: Props) {
               // Ознаки дефолту в агрегаті немає (її міняє `setDefault`) — вона з рядка списку.
               try {
                 const rows = await listOrderStatuses({ data: {} });
-                return {
-                  ...fresh,
-                  isDefault: rows.find((r) => r.id === fresh.id)?.isDefault,
-                };
+                const row = rows.find((r) => r.id === fresh.id);
+                // Рядка немає (видалено паралельно) — це збій перечитування: форма не
+                // перебудовується зі стану видаленого; хук покаже `loadFailed`.
+                if (!row) return undefined;
+                return { ...fresh, isDefault: row.isDefault };
               } catch {
                 return undefined;
               }
