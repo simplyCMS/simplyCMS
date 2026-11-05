@@ -21,7 +21,10 @@ const RUNTIME = 'postgres://app_runtime:rt-pass@h:5432/db';
 
 type Report = { applied: string[]; pending: string[] };
 
-function harness(env: Record<string, string>, config = "primaryLocale: 'uk'") {
+function harness(
+  env: Record<string, string>,
+  config: string | (() => string) = "primaryLocale: 'uk'",
+) {
   const applyMigrations = vi.fn(
     async (_options: Record<string, unknown>): Promise<Report> => ({
       applied: [],
@@ -44,7 +47,7 @@ function harness(env: Record<string, string>, config = "primaryLocale: 'uk'") {
       storeRoot: '/store',
       env,
       core: { applyMigrations, readPrimaryLocale },
-      readConfig: () => config,
+      readConfig: typeof config === 'function' ? config : () => config,
       ui,
     });
   return { applyMigrations, call, text: () => lines.join('\n') };
@@ -63,6 +66,17 @@ describe('simplycms db:apply', () => {
     const h = harness({ MIGRATION_DATABASE_URL: OWNER }, "currency: 'UAH'");
     expect(await h.call([])).toBe(1);
     expect(h.text()).toContain("primaryLocale: '<код>'");
+    expect(h.applyMigrations).not.toHaveBeenCalled();
+  });
+
+  it('конфіг не прочитано → 1 з файлом і причиною, ядро не кликано', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER }, () => {
+      throw new Error('ENOENT: no such file');
+    });
+    expect(await h.call([])).toBe(1);
+    expect(h.text()).toContain('simplycms.config.ts');
+    expect(h.text()).toContain('ENOENT');
+    expect(h.text()).not.toContain('Додайте основну мову');
     expect(h.applyMigrations).not.toHaveBeenCalled();
   });
 

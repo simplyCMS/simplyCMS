@@ -77,9 +77,18 @@ export async function run(argv, deps = {}) {
       deps.core ?? (await importFromStore(storeRoot, 'simplycms/migrate'));
     // Основна мова — з конфігу магазину (той самий текст, що читає прод-старт): без неї
     // накат на чисту БД не мав би з чого створити мову й довідники. Відмова ДО накату.
-    const primaryLocale = core.readPrimaryLocale(
-      (deps.readConfig ?? readConfig)(storeRoot),
-    );
+    let source;
+    try {
+      source = (deps.readConfig ?? readConfig)(storeRoot);
+    } catch (error) {
+      // Як у прод-старті: називаємо файл і справжню причину (ENOENT ≠ «немає мітки»).
+      ui.error(
+        `Не вдалося прочитати simplycms.config.ts: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      ui.finish('Накат не виконано.');
+      return 1;
+    }
+    const primaryLocale = core.readPrimaryLocale(source);
     if (primaryLocale === null) {
       ui.error(
         "У simplycms.config.ts немає primaryLocale: '<код>'. Додайте основну мову магазину.",
