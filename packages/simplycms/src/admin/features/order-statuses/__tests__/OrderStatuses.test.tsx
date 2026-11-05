@@ -235,7 +235,7 @@ describe('діалог статусу: перезавантаження конф
     );
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(
-        t('admin.translations.loadFailed'),
+        t('admin.orders.statuses.loadFailed'),
       ),
     );
     expect(
@@ -305,7 +305,7 @@ describe('діалог статусу: перезавантаження конф
     );
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(
-        t('admin.translations.loadFailed'),
+        t('admin.orders.statuses.loadFailed'),
       ),
     );
     expect(

@@ -59,6 +59,7 @@ export function useStatusForm(o: {
     languages: o.languages,
     aggregate: o.aggregate,
     required: STATUS_REQUIRED,
+    loadFailedKey: 'admin.orders.statuses.loadFailed',
     refetch: async () => {
       const fresh = await o.refetch();
       if (fresh) {

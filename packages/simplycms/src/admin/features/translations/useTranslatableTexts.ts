@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useT } from 'simplycms/i18n';
+import { useT, type MessageKey } from 'simplycms/i18n';
 import { useTextErrors } from './texts-errors';
 import { localeStatusesOf, textsToForm, type TextsForm } from './texts-form';
 import { textsEdits } from './texts-rebase';
@@ -37,6 +37,11 @@ export interface TranslatableTextsOptions<F extends string> {
   readonly required: readonly F[];
   /** Перечитати агрегат; `undefined` — не вдалося (хук покаже тост і лишить форму). */
   readonly refetch: () => Promise<TextsAggregate<F> | undefined>;
+  /**
+   * Ключ тосту, коли перечитати не вдалося: текст називає сутність споживача
+   * («статус», «товар»), тож спільний хук не тримає жорсткого.
+   */
+  readonly loadFailedKey: MessageKey;
 }
 
 export interface TranslatableTexts<F extends string> {
@@ -70,6 +75,7 @@ export function useTranslatableTexts<F extends string>({
   aggregate,
   required,
   refetch,
+  loadFailedKey,
 }: TranslatableTextsOptions<F>): TranslatableTexts<F> {
   const t = useT();
   const store = useContext(AggregateVersionContext);
@@ -91,7 +97,7 @@ export function useTranslatableTexts<F extends string>({
   const reload = async (sent?: TextsForm<F>) => {
     const fresh = await refetch();
     if (!fresh) {
-      toast.error(t('admin.translations.loadFailed'));
+      toast.error(t(loadFailedKey));
       return;
     }
     const baseline = toForm(fresh);

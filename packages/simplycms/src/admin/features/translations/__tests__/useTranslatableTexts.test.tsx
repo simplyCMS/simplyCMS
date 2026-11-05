@@ -53,6 +53,7 @@ function setup(
         aggregate: agg(1, 'A'),
         required,
         refetch,
+        loadFailedKey: 'admin.translations.loadFailed',
       });
       // formState — проксі з підпискою: читаємо помилки в рендері, як компонент форми.
       void r.form.formState.errors;
