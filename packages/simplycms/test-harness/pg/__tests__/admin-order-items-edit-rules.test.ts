@@ -5,6 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { changeOrderStatusOp } from 'simplycms/admin-server/impl';
 import { conflict, useOrderItemsEditDb } from './fixtures/order-items-edit';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -15,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-const CANCELLED = '00000001-0000-4000-8000-000000000006';
+const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
 describe('admin: правила редагування позицій (К3-Е5б, Task 3)', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_rules');

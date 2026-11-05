@@ -15,6 +15,7 @@ import {
   withDbName,
 } from '../apply.mjs';
 import { withActor } from '../actors.mjs';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const RAW = [
   'create table public.t_b (id uuid primary key, kind text)',
@@ -25,7 +26,7 @@ const RAW = [
 const attach = (args: string) =>
   `call public.attach_source_translation_triggers('public.t_b', 'public.t_t', ${args})`;
 const OK = `'b_id', array['name']`;
-const ID = '00000004-0000-4000-8000-000000000001';
+const ID = SYSTEM_SEED_IDS.customerCategoryRetail;
 
 describe('підключення тригера обовʼязкового рядка основної мови', () => {
   let harness: { url: string; teardown: () => Promise<void> };

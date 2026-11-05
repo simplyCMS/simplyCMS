@@ -16,8 +16,9 @@ vi.mock('simplycms/commerce', async (orig) => {
 });
 
 import { applyCategoryRules, loadCustomerStats } from 'simplycms/commerce';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
-const CANCELLED = '00000001-0000-4000-8000-000000000006';
+const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
 describe('автоправила після оформлення замовлення (Е6в-19)', () => {
   const db = F.useCustomersDb('simplycms_rules_after_order', { demo: true });
