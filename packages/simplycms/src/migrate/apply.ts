@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
-import { bootstrapStore } from './bootstrap';
+import { bootstrapStore, requirePrimaryPack } from './bootstrap';
 import {
   MigrationChecksumError,
   SUPERUSER_HINT,
@@ -59,11 +59,13 @@ export type ApplyReport = {
  * одній транзакції зі своїм записом → старт БД з основною мовою (`bootstrapStore`,
  * і тоді, коли файлів до накату немає) → грант журналу (роль `app_admin`
  * з'являється лише з `0000_prelude.sql`; і після падіння файлу теж) →
- * пароль `app_runtime`. `runtimeUrl` розбирається ще ДО з'єднання: поганий
- * пароль зупиняє старт, не зачепивши базу.
+ * пароль `app_runtime`. `runtimeUrl` і `primaryLocale` перевіряються ще ДО з'єднання: поганий
+ * пароль чи мова без пакета зупиняє старт, не зачепивши базу.
  */
 export async function applyMigrations(o: ApplyOptions): Promise<ApplyReport> {
   const log = o.log ?? (() => {});
+  // Невідома основна мова зупиняє накат до з'єднання (і при dryRun), а не після файлів.
+  if (o.primaryLocale !== undefined) requirePrimaryPack(o.primaryLocale);
   const files = listMigrationFiles(o.dir);
   const credentials = o.runtimeUrl
     ? parseRuntimeCredentials(o.runtimeUrl)

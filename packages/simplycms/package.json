@@ -37,6 +37,7 @@
     "./domain/slugs": "./src/domain/slugs/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/types": "./src/schema/types.ts",
+    "./schema/seed-ids": "./src/schema/seed-ids.ts",
     "./admin-server": "./src/admin-server/index.ts",
     "./admin-server/impl": "./src/admin-server/impl/index.ts",
     "./admin-data": "./src/admin-data/index.ts",
@@ -258,6 +259,10 @@
       "./schema/types": {
         "types": "./dist/schema/types.d.ts",
         "import": "./dist/schema/types.js"
+      },
+      "./schema/seed-ids": {
+        "types": "./dist/schema/seed-ids.d.ts",
+        "import": "./dist/schema/seed-ids.js"
       },
       "./admin-server": {
         "types": "./dist/admin-server/index.d.ts",

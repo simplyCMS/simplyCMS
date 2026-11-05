@@ -1,6 +1,14 @@
 import type pg from 'pg';
-import { findLanguagePack, listLanguagePacks } from 'simplycms/i18n/packs';
-import { SEED_ORDER_STATUS_CODES, SYSTEM_SEED_IDS } from 'simplycms/schema';
+import {
+  findLanguagePack,
+  listLanguagePacks,
+  type LanguagePack,
+} from 'simplycms/i18n/packs';
+import { LOCK_KEYS } from 'simplycms/db/lock-keys';
+import {
+  SEED_ORDER_STATUS_CODES,
+  SYSTEM_SEED_IDS,
+} from 'simplycms/schema/seed-ids';
 
 /** Колір і прапорець дефолту статусу — не залежать від мови, лише тексти. */
 const STATUS_COLORS: Record<(typeof SEED_ORDER_STATUS_CODES)[number], string> =
@@ -12,6 +20,21 @@ const STATUS_COLORS: Record<(typeof SEED_ORDER_STATUS_CODES)[number], string> =
     delivered: '#22C55E',
     cancelled: '#EF4444',
   };
+
+/**
+ * Пакет основної мови або відмова. Окремо від `bootstrapStore`, щоб `applyMigrations`
+ * відхилив невідому мову ДО з'єднання (як `runtimeUrl`), а не після накату всіх файлів.
+ */
+export function requirePrimaryPack(primaryLocale: string): LanguagePack {
+  const pack = findLanguagePack(primaryLocale);
+  if (pack) return pack;
+  const known = listLanguagePacks()
+    .map((p) => p.code)
+    .join(', ');
+  throw new Error(
+    `[simplycms/migrate] Для основної мови «${primaryLocale}» немає мовного пакета. Наявні: ${known}.`,
+  );
+}
 
 /**
  * Старт чистої БД з основною мовою магазину (М2б, Р23): мова й довідники, чиї
@@ -36,21 +59,14 @@ export async function bootstrapStore(
   client: pg.ClientBase,
   primaryLocale: string,
 ): Promise<{ seeded: boolean }> {
-  const pack = findLanguagePack(primaryLocale);
-  if (!pack) {
-    const known = listLanguagePacks()
-      .map((p) => p.code)
-      .join(', ');
-    throw new Error(
-      `[simplycms/migrate] Для основної мови «${primaryLocale}» немає мовного пакета. Наявні: ${known}.`,
-    );
-  }
+  const pack = requirePrimaryPack(primaryLocale);
   const seed = pack.content.seed;
   const ids = SYSTEM_SEED_IDS;
   await client.query('begin');
   try {
     await client.query(
-      "select pg_advisory_xact_lock(hashtextextended('languages-set', 0))",
+      'select pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [LOCK_KEYS.languagesSet],
     );
     const { rows } = await client.query<{ filled: boolean }>(
       'select exists (select 1 from public.languages) as filled',
@@ -94,7 +110,7 @@ export async function bootstrapStore(
     );
     await client.query(
       `insert into public.system_settings (id, key, value, description)
-       values ($1, 'store_profile', $2::jsonb, $3)`,
+       values ($1, 'store_profile', $2::jsonb, null)`,
       [
         ids.storeProfileSetting,
         JSON.stringify({
@@ -105,7 +121,6 @@ export async function bootstrapStore(
           logo: null,
           socials: [],
         }),
-        'Профіль магазину: назва, SEO, контакти, логотип, соцмережі',
       ],
     );
     await client.query(

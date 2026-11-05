@@ -38,7 +38,7 @@
 
 - Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
   `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
-- `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema`.
+- `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).
 
 ### BREAKING
 

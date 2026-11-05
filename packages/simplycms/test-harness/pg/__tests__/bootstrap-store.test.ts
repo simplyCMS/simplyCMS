@@ -117,7 +117,8 @@ describe('bootstrapStore', () => {
          union all select name from public.user_categories
          union all select name from public.shipping_zones
          union all select name from public.languages
-         union all select value->>'name' from public.system_settings where key = 'store_profile'`,
+         union all select value::text from public.system_settings where key = 'store_profile'
+         union all select description from public.system_settings where key = 'store_profile' and description is not null`,
       )) as { name: string }[];
       expect(texts.length).toBeGreaterThan(6);
       for (const { name } of texts) expect(name).not.toMatch(CYRILLIC);
@@ -209,4 +210,55 @@ describe('bootstrapStore', () => {
       await db.drop();
     }
   }, 120_000);
+
+  it('накат уже накоченої БД (pending порожній): старт усе одно виконується', async () => {
+    const db = await freshDb(harness.url);
+    try {
+      await applyCleanCanon(db.url);
+      const report = await applyMigrations({
+        connectionString: db.url,
+        dir: CANON_DIR,
+        primaryLocale: 'uk',
+      });
+      expect(report.applied).toEqual([]);
+      expect(report.bootstrapped).toBe(true);
+      expect(
+        await queryRows(db.url, 'select code from public.languages'),
+      ).toEqual([{ code: 'uk' }]);
+      expect(
+        await queryRows(
+          db.url,
+          'select count(*)::int as n from public.order_statuses',
+        ),
+      ).toEqual([{ n: 6 }]);
+    } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
+  it.each([false, true])(
+    'невідома primaryLocale (dryRun=%s): відмова до накату, база не зачеплена',
+    async (dryRun) => {
+      const db = await freshDb(harness.url);
+      try {
+        await expect(
+          applyMigrations({
+            connectionString: db.url,
+            dir: CANON_DIR,
+            primaryLocale: 'pl',
+            dryRun,
+          }),
+        ).rejects.toThrow(/«pl».*Наявні: uk, en/);
+        expect(
+          await queryRows(
+            db.url,
+            "select to_regclass('public.simplycms_migrations') as j, to_regclass('public.languages') as l",
+          ),
+        ).toEqual([{ j: null, l: null }]);
+      } finally {
+        await db.drop();
+      }
+    },
+    120_000,
+  );
 });

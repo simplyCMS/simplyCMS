@@ -2,7 +2,7 @@ import type { messages as ukBase } from './catalogs/uk/base';
 import type { messages as ukAdmin } from './catalogs/uk/admin/index';
 import type { messages as ukMail } from './catalogs/uk/mail';
 import type { UiLocale } from 'simplycms/contracts';
-import type { SeedOrderStatusCode } from 'simplycms/schema';
+import type { SeedOrderStatusCode } from 'simplycms/schema/seed-ids';
 
 /** Частина каталогу ядра: вантажиться окремо, лише де потрібна (вітрина — `base`). */
 export type UiCatalogPart = 'base' | 'admin' | 'mail';
