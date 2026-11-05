@@ -70,6 +70,11 @@
 
 ### BREAKING
 
+- **`simplycms/addressing`: реєстр видів цілей (Р22):** `resolvePath` і `resolveToken` знесено (споживачів
+  поза тестами не було; читайте `currentPaths` чи реєстри SQL-ом); `PATH_TARGET_COLUMNS` замінено реєстром
+  `PATH_KINDS`/`TOKEN_KINDS` (`targets.ts`); `AddressTarget`/`TokenTarget` виводяться з нього. Форма
+  `IncompleteItem` (мови, `simplycms/admin-server`) — `{ kind, id, stage }` замість `{ productId, stage }`;
+  дротовий шлях відмови `language_incomplete` не змінився.
 - **Назва статусу замовлення на вітрині — мовою запиту (Р19):** серверні функції `getOrderStatuses`,
   `getMyOrders`, `getMyOrder`, `getOrderView`, `getProfileOverview` приймають обов'язкове `{ locale }`
   (`ContentLocale`; невідома чи неопублікована мова читається основною); ключі кешу сторінок профілю й
