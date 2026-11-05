@@ -12,15 +12,12 @@ import {
 import { completeMediaErasures } from 'simplycms/storage';
 import { productsOps } from '../resource';
 import { code } from '../../languages/view';
-import {
-  assertKnownLocales,
-  getProductAggregate,
-  lockProduct,
-  lockProductForRemove,
-} from './load';
+import { getProductAggregate, lockProduct, lockProductForRemove } from './load';
 import { childrenOut } from './children-read';
 import { bumpProduct } from './version';
-import { expectedVersion, textsRow, stockStatus, versionOut } from './schemas';
+import { textsRow, stockStatus } from './schemas';
+import { assertKnownLocales } from '../../translatable/steps';
+import { expectedVersion, versionOut } from '../../translatable/wire';
 
 export { productsCreate } from './create';
 export { productsSaveDescription } from './save-description';

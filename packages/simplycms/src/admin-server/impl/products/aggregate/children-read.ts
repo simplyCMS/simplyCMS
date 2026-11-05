@@ -3,7 +3,7 @@ import type { ActorDb } from 'simplycms/db';
 import { TRANSLATABLE, loadTranslations } from 'simplycms/translations';
 import type { StoredTranslation } from 'simplycms/translations';
 import type { ChildrenOut } from './children-read-schema';
-import { withStatuses } from './children-status';
+import { textStatuses } from '../../translatable/state';
 import { loadPropertyValues } from './property-value-read';
 
 export { childrenOut, type ChildrenOut } from './children-read-schema';
@@ -44,7 +44,7 @@ async function loadModifications(
     stockStatus: m.stock_status,
     texts: Object.fromEntries(
       Object.entries(
-        withStatuses(
+        textStatuses(
           TRANSLATABLE.productModification,
           texts.get(m.id),
           primary,

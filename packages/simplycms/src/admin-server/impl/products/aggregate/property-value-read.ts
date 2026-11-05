@@ -2,15 +2,15 @@ import { sql } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { TRANSLATABLE, loadTranslations } from 'simplycms/translations';
 import type { ChildrenOut } from './children-read-schema';
-import { withStatuses } from './children-status';
+import { textStatuses } from '../../translatable/state';
 
 /** `text` (як на вході) і `textStatus` поруч. */
 function textFields(
-  spec: Parameters<typeof withStatuses>[0],
-  rows: Parameters<typeof withStatuses>[1],
+  spec: Parameters<typeof textStatuses>[0],
+  rows: Parameters<typeof textStatuses>[1],
   primary: string,
 ) {
-  const by = withStatuses(spec, rows, primary);
+  const by = textStatuses(spec, rows, primary);
   return {
     text: Object.fromEntries(
       Object.entries(by).map(([l, r]) => [l, r.values.value ?? null]),

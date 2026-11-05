@@ -1,9 +1,7 @@
 import { z } from 'zod';
 import { PROPERTY_KINDS } from './children-schemas';
-import {
-  fieldStatus as statusEnum,
-  stockStatus as statusStock,
-} from './schemas';
+import { fieldStatus as statusEnum } from '../../translatable/wire';
+import { stockStatus as statusStock } from './schemas';
 
 // Форма дітей агрегата у відповіді `products.get`: дзеркало входу `saveDescription`
 // (ті самі id та мапи за мовою) + статуси, як у `textsRow` (М1, Task 12).

@@ -18,15 +18,10 @@ import {
 import { imagesInput } from './children-schemas';
 import { assertImageKeys } from './image-media';
 import { planImages } from './images';
-import { assertKnownLocales } from './load';
+import { assertKnownLocales } from '../../translatable/steps';
 import { withSectionRef } from './version';
-import {
-  productBase,
-  remapPlanIssues,
-  stockStatus,
-  textsByLocale,
-  toPatchMap,
-} from './schemas';
+import { productBase, stockStatus, textsByLocale } from './schemas';
+import { remapPlanIssues, toPatchMap } from '../../translatable/wire';
 
 const SPEC = TRANSLATABLE.product;
 
@@ -77,7 +72,7 @@ export const productsCreate = defineOperation({
         spec: SPEC,
         current: { source: null, byLocale: new Map() },
         primary,
-        patch: toPatchMap(data.texts),
+        patch: toPatchMap(SPEC, data.texts),
         hash: sourceFieldHash,
       }),
     );

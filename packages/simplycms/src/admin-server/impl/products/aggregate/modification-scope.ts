@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
-import { fail, uuidArray, type ChildCtx } from './children-common';
+import { fail, uuidArray } from '../../translatable/steps';
+import type { ChildCtx } from './children-common';
 import type { ModificationsInput } from './children-schemas';
 
 type Upsert = NonNullable<ModificationsInput['upsert']>[number];

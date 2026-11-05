@@ -14,21 +14,22 @@ import {
   propertyValuesInput,
 } from './children-schemas';
 import { assertImageKeys, eraseGone, productKeys } from './image-media';
-import { assertKnownLocales, loadState, lockProduct } from './load';
+import { lockProduct } from './load';
 import { bumpProduct, withSectionRef } from './version';
 import { refreshAfterPlan } from './projection';
 import { modificationIdsAfter, modificationIdsOf } from './modification-scope';
 import { planImages } from './images';
 import { planModifications } from './modifications';
 import { planPropertyValues } from './property-values';
+import { productBase, textsByLocale } from './schemas';
+import { loadTextState } from '../../translatable/state';
+import { assertKnownLocales } from '../../translatable/steps';
 import {
   expectedVersion,
-  productBase,
   remapPlanIssues,
-  textsByLocale,
   toPatchMap,
   versionOut,
-} from './schemas';
+} from '../../translatable/wire';
 
 const SPEC = TRANSLATABLE.product;
 
@@ -61,13 +62,13 @@ export const productsSaveDescription = defineOperation({
       Object.keys(input.texts ?? {}),
       (l) => ['texts', l],
     );
-    const state = await loadState(db, input.id);
+    const state = await loadTextState(db, SPEC, input.id);
     const plan = remapPlanIssues(['texts'], () =>
       planTranslationWrite({
         spec: SPEC,
         current: { source: state.source, byLocale: state.byLocale },
         primary: state.primary,
-        patch: toPatchMap(input.texts),
+        patch: toPatchMap(SPEC, input.texts),
         hash: sourceFieldHash,
       }),
     );

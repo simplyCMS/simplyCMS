@@ -1,7 +1,8 @@
 import { createTokensForEntity, setExplicitToken } from 'simplycms/addressing';
 import { SLUG_FORMAT, slugify } from 'simplycms/domain/slugs';
 import { getContentTools } from 'simplycms/i18n';
-import { fail, type ChildCtx } from './children-common';
+import { fail } from '../../translatable/steps';
+import type { ChildCtx } from './children-common';
 import type { ModificationsInput } from './children-schemas';
 
 type Upsert = NonNullable<ModificationsInput['upsert']>[number];

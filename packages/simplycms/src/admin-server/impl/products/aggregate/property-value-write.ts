@@ -4,7 +4,7 @@ import {
   modificationPropertyValues,
   productPropertyValues,
 } from 'simplycms/schema';
-import { fail } from './children-common';
+import { fail } from '../../translatable/steps';
 import type { PropertyValuesInput } from './children-schemas';
 import { scalarTaken } from './property-value-owned';
 
