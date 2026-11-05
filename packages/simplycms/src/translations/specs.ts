@@ -1,64 +1,64 @@
 // Реєстр перекладних сутностей М1 (майстер §3.1). Єдина адреса таблиці, FK і
 // переліку полів: хелпери запису/читання беруть їх звідси, а не з рядкових
 // літералів операцій. М2 доповнює реєстр (розділи, властивості, опції).
-import type { TranslatableSpec } from 'simplycms/domain/translations';
+import {
+  TRANSLATABLE_FIELDS,
+  fieldToWire,
+  type TranslatableSpec,
+} from 'simplycms/domain/translations';
 
-/** Специфікація полів + де вони лежать: таблиця перекладів і її FK на сутність. */
+/** Специфікація полів + де вони лежать: таблиця перекладів, її FK на сутність і таблиця-база. */
 export interface TranslatableEntity extends TranslatableSpec {
   readonly table: string;
   readonly fk: string;
+  /** Таблиця сутності, що має переклади: звірка гарантій (гранти, тригер) бере її. */
+  readonly base: string;
 }
 
 /**
- * Поля названі колонками БД (snake_case): ключі `source_hashes` (І10) — рівно
- * ці імена. На дроті API поля camelCase (`fieldToWire`), як і решта вхідних
- * схем ядра.
+ * Поля беруться з клієнтобезпечного `TRANSLATABLE_FIELDS` (там же правила
+ * іменування й `fieldToWire`); тут лише серверна адреса таблиць.
  */
 export const TRANSLATABLE = {
   product: {
+    ...TRANSLATABLE_FIELDS.product,
     table: 'product_translations',
     fk: 'product_id',
-    fields: [
-      'name',
-      'short_description',
-      'description',
-      'meta_title',
-      'meta_description',
-    ],
-    required: ['name'],
-    richHtml: ['description'],
+    base: 'products',
   },
   productModification: {
+    ...TRANSLATABLE_FIELDS.productModification,
     table: 'product_modification_translations',
     fk: 'modification_id',
-    fields: ['name'],
-    required: ['name'],
+    base: 'product_modifications',
   },
   productImage: {
+    ...TRANSLATABLE_FIELDS.productImage,
     table: 'product_image_translations',
     fk: 'image_id',
-    fields: ['alt', 'storage_key'],
-    required: [],
+    base: 'product_images',
   },
   productPropertyValue: {
+    ...TRANSLATABLE_FIELDS.productPropertyValue,
     table: 'product_property_value_translations',
     fk: 'value_id',
-    fields: ['value'],
-    required: [],
+    base: 'product_property_values',
   },
   modificationPropertyValue: {
+    ...TRANSLATABLE_FIELDS.modificationPropertyValue,
     table: 'modification_property_value_translations',
     fk: 'value_id',
-    fields: ['value'],
-    required: [],
+    base: 'modification_property_values',
+  },
+  orderStatus: {
+    ...TRANSLATABLE_FIELDS.orderStatus,
+    table: 'order_status_translations',
+    fk: 'status_id',
+    base: 'order_statuses',
   },
 } as const satisfies Record<string, TranslatableEntity>;
 
 export type TranslatableKey = keyof typeof TRANSLATABLE;
-
-/** `short_description` → `shortDescription`. */
-export const fieldToWire = (field: string): string =>
-  field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
 /** `shortDescription` → поле специфікації; `null`, якщо такого поля немає. */
 export function fieldFromWire(

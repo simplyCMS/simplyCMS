@@ -3,14 +3,9 @@
 // Замок `languages-set` бере НЕ тут, а `inLockedBlock` у `product-graph.ts`.
 import { randomUUID } from 'node:crypto';
 import { idSql, lit, type Id, type ProductTexts } from './product-graph-types';
+import { PRIMARY, insertInto, textRowOf, type Row } from './translatable-rows';
 
-export const PRIMARY = '(select code from public.languages where is_default)';
-export type Row = Record<string, string | undefined>;
-
-export const insertInto = (table: string, row: Row): string => {
-  const entries = Object.entries(row).filter(([, v]) => v !== undefined);
-  return `insert into public.${table} (${entries.map(([k]) => k).join(', ')}) values (${entries.map(([, v]) => v).join(', ')})`;
-};
+export { PRIMARY, insertInto, type Row };
 
 export const optional = <T>(
   v: T | undefined,
@@ -25,12 +20,9 @@ const TEXT_COLUMNS: Record<keyof ProductTexts, string> = {
   metaDescription: 'meta_description',
 };
 
+/** Перекладні поля товару → колонки; сама збірка рядка — загальна `textRowOf`. */
 export const textRow = (texts: Partial<ProductTexts>): Row =>
-  Object.fromEntries(
-    (Object.keys(TEXT_COLUMNS) as (keyof ProductTexts)[])
-      .filter((k) => texts[k] !== undefined)
-      .map((k) => [TEXT_COLUMNS[k], lit(texts[k])]),
-  );
+  textRowOf(TEXT_COLUMNS, texts);
 
 export const imageSql = (
   productId: Id,

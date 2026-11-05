@@ -72,7 +72,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 7 | міграції: відставання від `simplycms/migrations` | warn → `db:diff --write`; змінений спільний файл — error; відсутня тека `db/migrations` магазину — error (зі старою `supabase/migrations` — з підказкою `git mv supabase/migrations db/migrations`) |
 | 8 | `routes.ts`: `realpathSync` + монтування обох роут-тек ядра (`coreRoutes('storefront')`/`coreRoutes('admin')`) | error |
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
-| 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:` | error |
+| 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:`/`primaryLocale:` (`themes:`/`plugins:` — підрядок у файлі; мітка `primaryLocale:` мусить починати рядок коду) | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх (Фаза 4) | warn |
 | 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`src/doctor-pg-check.mjs`, `src/pg-peer.mjs`; К3-Е7). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
@@ -101,6 +101,7 @@ read-only, ключ ролі накату (суперкористувача) н�
 | `store-profile` | `ok` / `warn` | профіль (`system_settings['store_profile']`): порожня назва — `warn`; порожній `contacts.email` — `warn` «листи власнику про замовлення не надходитимуть»; рядка профілю немає — обидва |
 | `mail-outbox` | `ok` / `warn` | у `mail_outbox` є листи з `attempts > 0` (пробували слати, не доставили) — `warn` із кількістю, без тіл листів. 🔴 Відомий пробіл: рядок із `attempts = 0`, що застряг (процес помер між COMMIT і першою спробою), перевірка не бачить — відрізнити «ще не пробували» від «застряг» без віку рядка неможливо, а поведінку свідомо не змінено |
 | `language-packs` | `ok` / `warn` / `error` | кожна опублікована мова (`languages.status = 'published'`, з `readStoreFacts.publishedLanguages`) має пакет за `hasLanguagePack` ядра (`simplycms/i18n`, §19.15, І46); немає — `error` з кодами мов (деградований режим: інтерфейс основною); `simplycms/i18n` з магазину не імпортується — `warn` «перевірку пакетів мов не виконано» з причиною |
+| `primary-locale` | `ok` / `warn` / `skip` | `primaryLocale` з `simplycms.config.ts` проти `languages.is_default` з БД (`readStoreFacts.primaryLocale`): розбіжність — `warn` з обома кодами (мова діє з БД; щоб конфіг став основною, БД перестворюють); збіг або БД ще не стартована — `ok`; у конфігу немає мітки — `skip` (мітку вимагає й офлайн-перевірка №10) |
 | `store-state` | `error` / `skip` | замінює три рядки вище, коли факти прочитати не вдалося (`error`, без пароля) або БД/ядро недоступні чи бази без журналу немає (`skip`, друга помилка поруч з `migrations-journal` не потрібна) |
 
 Факти (`store-owner`, `store-profile`, `mail-outbox`, перелік опублікованих мов) читає ядро: `readStoreFacts` у
@@ -341,11 +342,25 @@ tables … from public`, тож файл `0001_plg_*` ліг би перед н�
   `.env.local` > `.env`). Назад на `DATABASE_URL` команда не падає ніколи: без
   `MIGRATION_DATABASE_URL` — exit 1 з назвою змінної. `DATABASE_URL`, якщо заданий,
   іде як `runtimeUrl` — ядро синхронізує пароль `app_runtime` (лише друкований ASCII).
+- Основна мова — `primaryLocale: '<код>'` з `simplycms.config.ts` (`readPrimaryLocale` ядра;
+  мітка в одинарних лапках і ПОЧИНАЄ рядок коду — відступ дозволено, закоментований рядок не
+  рахується, однорядковий `defineConfig({ primaryLocale: 'en' })` відхиляється): ядро на чистій БД створює з неї мову, довідники й
+  профіль (`bootstrapStore`). Мітки немає — exit 1 до накату (так само нечитабельний конфіг: відмова з файлом і причиною; офлайн-перевірка №10 — `error`). Прод-старт (`scripts/start.mjs`)
+  читає той самий конфіг і так само відмовляє — але лише коли є `MIGRATION_DATABASE_URL`.
+  Мову після створення БД не змінити без її перестворення.
 - `--dry-run` — список ненакочених, базу не змінює, exit 0. `--check` — те саме, але
   exit `3`, якщо ненакочені є (контракт кодів Е8-О8: `0` гаразд, `3` є що робити,
   `1` помилка).
 - Помилка ядра друкується як `name`, `code` і `message`, пропущене через `redactUrls`
   (`scheme://user:***@host`); режиму «повний текст» немає — вивід потрапляє в лог деплою.
+
+### 3.4.2 `create-simplycms-store <тека> --locale <код>`
+
+Основна мова — обов'язковий вибір при створенні: `--locale <uk|en>` або select у діалозі;
+`--yes`/CI/не-TTY без `--locale` — помилка, невідомий код — помилка з переліком. Код потрапляє в
+`primaryLocale` шаблонного `simplycms.config.ts`. Перелік (`SUPPORTED_LOCALES`,
+`src/locales.mjs`) дзеркалить мовні пакети ядра; парність стереже
+`tests/create-store-locales-parity.test.ts`.
 
 ### 3.5 `simplycms create (plugin | theme) <name> [--dry-run]`
 

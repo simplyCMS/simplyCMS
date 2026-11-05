@@ -1,9 +1,10 @@
 // Сід читань покупців і дашборду (К3-Е6г, Task 3): замовлення й власник без
 // профілю напряму SQL-ем — повз guard, це сід, а не перевірка.
 import { rows } from './customer-categories';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
-export const STATUS_NEW = '00000001-0000-4000-8000-000000000001';
-export const STATUS_CANCELLED = '00000001-0000-4000-8000-000000000006';
+export const STATUS_NEW = SYSTEM_SEED_IDS.orderStatuses.new;
+export const STATUS_CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
 /** Власник, створений CLI: лише `users` + `user_roles`, профілю немає. */
 export async function seedOwner(url: string, createdAt?: string) {

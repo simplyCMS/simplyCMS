@@ -1,9 +1,6 @@
 import type { getProduct } from 'simplycms/admin-server';
 import type { StockStatus } from 'simplycms/contracts';
-import type {
-  LocaleStatuses,
-  TranslationStatus,
-} from '../../translations/translation-context';
+import { emptyRow, textsToForm } from '../../translations/texts-form';
 import {
   TEXT_FIELDS,
   type DraftTexts,
@@ -13,13 +10,7 @@ import {
 /** Відповідь `products.get` — тип виведено з serverFn, серверний код не імпортується. */
 export type ProductAggregate = Awaited<ReturnType<typeof getProduct>>;
 
-export const emptyTexts = (): DraftTexts => ({
-  name: '',
-  shortDescription: '',
-  description: '',
-  metaTitle: '',
-  metaDescription: '',
-});
+export const emptyTexts = (): DraftTexts => emptyRow(TEXT_FIELDS);
 
 /** Порожня форма нового товару для набору мов. */
 export function blankForm(locales: readonly string[]): ProductFormValues {
@@ -46,14 +37,6 @@ export function aggregateToForm(
   agg: ProductAggregate,
   locales: readonly string[],
 ): ProductFormValues {
-  const codes = [...new Set([...locales, ...Object.keys(agg.texts)])];
-  const texts: Record<string, DraftTexts> = {};
-  for (const l of codes) {
-    const row = agg.texts[l];
-    texts[l] = Object.fromEntries(
-      TEXT_FIELDS.map((f) => [f, row?.[f] ?? '']),
-    ) as DraftTexts;
-  }
   return {
     sectionId: agg.base.sectionId ?? '',
     isActive: agg.base.isActive,
@@ -62,7 +45,7 @@ export function aggregateToForm(
     sku: agg.base.sku ?? '',
     stockStatus: agg.base.stockStatus,
     path: '',
-    texts,
+    texts: textsToForm(TEXT_FIELDS, agg.texts, locales),
     modifications: agg.modifications.map((m) => ({
       id: m.id,
       sku: m.sku ?? '',
@@ -79,21 +62,6 @@ export function aggregateToForm(
     ),
     images: agg.images.map((i) => ({ ...i })),
   };
-}
-
-/** Статуси рядків перекладу з `products.get` для вкладок і бейджів полів. */
-export function localeStatuses(
-  agg: ProductAggregate,
-): Record<string, LocaleStatuses> {
-  return Object.fromEntries(
-    Object.entries(agg.texts).map(([l, r]) => [
-      l,
-      {
-        status: r.status as TranslationStatus,
-        fieldStatus: r.fieldStatus as Record<string, TranslationStatus>,
-      },
-    ]),
-  );
 }
 
 /** Знімок з новим статусом наявності цілі (`null` — сам товар, інакше модифікація). */

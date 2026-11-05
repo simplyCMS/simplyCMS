@@ -17,14 +17,14 @@ import {
   NOOP,
   requireDistinct,
   requireLocales,
-  type ChildCtx,
   type Step,
-} from './children-common';
+} from '../../translatable/steps';
+import type { ChildCtx } from './children-common';
 import type { ModificationsInput } from './children-schemas';
 import { deleteModifications } from '../../product-modifications/delete';
 import { assertNotForeign } from './modification-scope';
 import { applyTokens, baseSlugOf } from './modification-tokens';
-import { remapPlanIssues } from './schemas';
+import { remapPlanIssues } from '../../translatable/wire';
 
 const SPEC = TRANSLATABLE.productModification;
 export async function planModifications(

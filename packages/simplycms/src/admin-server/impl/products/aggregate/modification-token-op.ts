@@ -5,10 +5,10 @@ import { setExplicitToken } from 'simplycms/addressing';
 import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
 import { SLUG_FORMAT } from 'simplycms/domain/slugs';
-import { fail } from './children-common';
-import { assertKnownLocales, lockProduct } from './load';
+import { assertKnownLocales, fail } from '../../translatable/steps';
+import { lockProduct } from './load';
 import { bumpProduct } from './version';
-import { expectedVersion, versionOut } from './schemas';
+import { expectedVersion, versionOut } from '../../translatable/wire';
 import { code } from '../../languages/view';
 
 async function productOf(db: ActorDb, modificationId: string): Promise<string> {

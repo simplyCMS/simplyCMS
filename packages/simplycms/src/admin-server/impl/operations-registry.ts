@@ -6,6 +6,17 @@ import {
 } from './api-tokens/operations';
 import { serviceAccountsCreate } from './api-tokens/service-accounts';
 import {
+  orderStatusesCreate,
+  orderStatusesDeleteTranslation,
+  orderStatusesGet,
+  orderStatusesList,
+  orderStatusesSaveDescription,
+  orderStatusesSaveTranslation,
+} from './order-statuses/commands';
+import { orderStatusesRemove } from './order-statuses/remove';
+import { orderStatusesReorder } from './order-statuses/reorder';
+import { orderStatusesSetDefault } from './order-statuses/set-default';
+import {
   languagesAdd,
   languagesFill,
   languagesList,
@@ -55,6 +66,15 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   productsSetModificationToken,
   productsSavePrices,
   productsSaveStock,
+  orderStatusesList,
+  orderStatusesGet,
+  orderStatusesCreate,
+  orderStatusesSaveDescription,
+  orderStatusesSaveTranslation,
+  orderStatusesDeleteTranslation,
+  orderStatusesRemove,
+  orderStatusesSetDefault,
+  orderStatusesReorder,
   profilesSetUiLocale,
 ] as readonly OperationDef<unknown, unknown>[];
 

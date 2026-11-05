@@ -13,11 +13,13 @@ import { distTagFor } from '../scripts/release/dist-tag.mjs';
 // Промпти clack підміняємо цілком: справжній `text` у не-TTY зависнув би, а
 // нам потрібне лише чи його взагалі кликали.
 const textPrompt = vi.hoisted(() => vi.fn());
+const selectPrompt = vi.hoisted(() => vi.fn());
 vi.mock(
   '../packages/create-simplycms-store/node_modules/@clack/prompts',
   async (importOriginal) => ({
     ...(await importOriginal<object>()),
     text: textPrompt,
+    select: selectPrompt,
   }),
 );
 
@@ -79,6 +81,7 @@ describe('create-store: skillsPending і промпти', () => {
     try {
       const result = await promptMissing({
         storeName: 'shop',
+        locale: 'uk',
         install: false,
         git: true,
       });
@@ -87,6 +90,25 @@ describe('create-store: skillsPending і промпти', () => {
     } finally {
       textPrompt.mockClear();
     }
+  });
+
+  it('promptMissing питає основну мову лише коли --locale не задано', async () => {
+    selectPrompt.mockReset().mockResolvedValue('en');
+    const asked = await promptMissing({
+      storeName: 'shop',
+      install: false,
+      git: true,
+    });
+    expect(selectPrompt).toHaveBeenCalledOnce();
+    expect(asked.locale).toBe('en');
+    selectPrompt.mockClear();
+    await promptMissing({
+      storeName: 'shop',
+      locale: 'uk',
+      install: false,
+      git: true,
+    });
+    expect(selectPrompt).not.toHaveBeenCalled();
   });
 });
 

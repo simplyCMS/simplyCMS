@@ -4,7 +4,7 @@
 // окремого зʼєднання (патерн `holdOrderRowLock` Е5): тест доводить САМЕ лок,
 // а не FK RESTRICT, який стереже інший кейс (admin-shipping.test.ts).
 import { describe, expect, it, vi } from 'vitest';
-import { MAIN_SHIPPING_ZONE_ID } from 'simplycms/schema';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema';
 import { SHIPPING_PROVIDER } from 'simplycms/contracts/shipping-providers';
 import {
   holdAdvisoryLock,
@@ -73,7 +73,7 @@ describe('admin: доставка — локи guarded remove (Е6а, F1)', () =
   );
 
   it('гонка removeShippingZones(B) ↔ setDefaultShippingZone(B): B уже дефолтна в незакоміченій транзакції → remove відмовляє, дефолтна рівно одна', async () => {
-    const a = MAIN_SHIPPING_ZONE_ID;
+    const a = SYSTEM_SEED_IDS.mainShippingZone;
     await F.makeDefaultZone(url(), a);
     const b = await F.seedZone(url());
     // Конкурент — транзакція setDefaultShippingZoneOp(B) за мить до COMMIT

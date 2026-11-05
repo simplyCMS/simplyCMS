@@ -1,15 +1,20 @@
 import { z } from 'zod';
 import { SLUG_FORMAT } from 'simplycms/domain/slugs';
+import {
+  TRANSLATABLE_FIELDS,
+  fieldToWire,
+} from 'simplycms/domain/translations';
 
-/** Поля, що перекладаються (`products.saveDescription`.texts.<мова>). */
-export const TEXT_FIELDS = [
-  'name',
-  'shortDescription',
-  'description',
-  'metaTitle',
-  'metaDescription',
-] as const;
-export type TextField = (typeof TEXT_FIELDS)[number];
+type CamelCase<S extends string> = S extends `${infer A}_${infer B}`
+  ? `${A}${Capitalize<CamelCase<B>>}`
+  : S;
+export type TextField = CamelCase<
+  (typeof TRANSLATABLE_FIELDS.product.fields)[number]
+>;
+
+/** Поля, що перекладаються (`products.saveDescription`.texts.<мова>): перелік — з домену, на дроті camelCase. */
+export const TEXT_FIELDS: readonly TextField[] =
+  TRANSLATABLE_FIELDS.product.fields.map((f) => fieldToWire(f) as TextField);
 export type DraftTexts = Record<TextField, string>;
 
 export const PROPERTY_KINDS = [

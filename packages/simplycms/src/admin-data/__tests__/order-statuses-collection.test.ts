@@ -1,153 +1,51 @@
 import { describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 
-// 🔴 Деривація від брифу: `const insertMock = vi.fn(...)` НЕ компілюється в
-// рантаймі — `vi.mock` хоїститься над звичайним `const`, тож factory нижче
-// бачить `insertMock` ДО ініціалізації (ReferenceError: Cannot access
-// 'insertMock' before initialization; підтверджено запуском брифового коду
-// один-в-один). `vi.hoisted` — офіційний обхід саме цього випадку: він теж
-// хоїститься, але ПЕРЕД `vi.mock` у порядку появи в файлі, тож значення вже
-// готове, коли factory виконується.
-const { insertMock } = vi.hoisted(() => ({
-  insertMock: vi.fn(async ({ data }: { data: { id: string }[] }) =>
-    data.map((r) => ({
-      isDefault: false,
-      createdAt: new Date('2026-01-01'),
-      color: null,
+const { listOrderStatuses } = vi.hoisted(() => ({
+  listOrderStatuses: vi.fn(async () => [
+    {
+      id: '00000001-0000-4000-8000-000000000001',
+      name: 'Новий',
+      code: 'new',
+      color: '#3B82F6',
       sortOrder: 0,
-      ...r,
-    })),
-  ),
+      isDefault: true,
+      version: 2,
+    },
+  ]),
 }));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    insertOrderStatuses: insertMock,
-    updateOrderStatuses: vi.fn(async ({ data }) =>
-      data.map((d: { id: string }) => ({ id: d.id })),
-    ),
-    removeOrderStatuses: vi.fn(async () => ({ count: 1 })),
-  }),
+  ).createAdminServerMock({ listOrderStatuses }),
 );
 
 import { getCollection } from '../registry';
 import { orderStatusesCollection } from '../collections/order-statuses';
 
-describe('колекція order_statuses', () => {
+describe('колекція order_statuses (лише читання, М2б Р19)', () => {
   it('id колекції — з ENTITY (значення "order_statuses" з реєстру, не довільне)', () => {
     expect(orderStatusesCollection.id).toBe('order_statuses');
   });
 
-  it('batch-insert шле ВСІ мутації транзакції одним викликом', async () => {
+  it('читає список операцією order-statuses.list (eager, вхід {})', async () => {
     const c = getCollection(new QueryClient(), orderStatusesCollection);
-    // 🔴 Sync-контекст ОБОВʼЯЗКОВИЙ до мутацій: createCollection у 0.8.6
-    // стартує sync лише при явному startSync===true (collection/index.js:115),
-    // query-адаптер його не передає, а writeUpsert/writeBatch без контексту
-    // кидає SyncNotInitializedError (manual-sync.js:122). Прод-шлях це
-    // робить preload-ом у loader (Task 10) — тест дзеркалить його.
     await c.preload();
-    const rows = [
-      {
-        id: crypto.randomUUID(),
-        name: 'А',
-        code: 'a',
-        color: '#111111',
-        sortOrder: 1,
-      },
-      {
-        id: crypto.randomUUID(),
-        name: 'Б',
-        code: 'b',
-        color: '#222222',
-        sortOrder: 2,
-      },
-    ];
-    const tx = c.insert(rows as never);
-    await tx.when('settled');
-    expect(insertMock).toHaveBeenCalledTimes(1);
-    expect(insertMock.mock.calls[0][0].data).toHaveLength(2);
+    expect(listOrderStatuses).toHaveBeenCalledWith({ data: {} });
+    expect(c.get('00000001-0000-4000-8000-000000000001')?.version).toBe(2);
   });
 
-  it('live-стан живий: оптимістичний рядок видимий СИНХРОННО, після персисту — серверні значення', async () => {
-    // Позитивний контроль (рев'ю ред.2): без нього мок serverFn звів би
-    // тест до перевірки хендлерів, а заявляє він інтеграцію з колекцією.
+  it('запису через колекцію немає: insert/update/delete відмовляють без хендлерів', async () => {
     const c = getCollection(new QueryClient(), orderStatusesCollection);
-    await c.preload(); // sync-контекст (див. коментар у batch-тесті)
-    const id = crypto.randomUUID();
-    const tx = c.insert({
-      id,
-      name: 'Live',
-      code: 'live',
-      color: null,
-      sortOrder: 5,
-    } as never);
-    expect(c.has(id), 'оптимістичний рядок не зʼявився в тому ж тіку').toBe(
-      true,
-    );
-    await tx.when('settled');
-    expect(c.has(id), 'після персисту рядок зник').toBe(true);
-    expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toEqual(
-      new Date('2026-01-01'),
-    );
-  });
-
-  it('batch write-back — КОЖЕН рядок батчу в кеші після персисту (не лише rows[0])', async () => {
-    // Фінальне рев'ю Е1б, знахідка 3: `handler-canon` стереже лише
-    // НАЯВНІСТЬ write-back у хендлері, а юніт-тест колекції досі
-    // перевіряв лише що всі мутації ВІДПРАВЛЕНІ на сервер — жоден гейт не
-    // ловив регрес «дописати назад лише rows[0]». Цей кейс — поведінковий:
-    // мінімум ДВА рядки в одному batch-insert, і ПІСЛЯ персисту КОЖЕН з
-    // них мусить бути в кеші колекції з серверними полями (createdAt тут
-    // приходить лише через write-back — оптимістичний рядок його не має).
-    // Шаблон для Е3–Е6.
-    const c = getCollection(new QueryClient(), orderStatusesCollection);
-    await c.preload(); // sync-контекст (див. коментар у batch-тесті вище)
-    const ids = [crypto.randomUUID(), crypto.randomUUID()];
-    const tx = c.insert(
-      ids.map((id, i) => ({
-        id,
-        name: `B${i}`,
-        code: `b${i}`,
-        color: null,
-        sortOrder: 10 + i,
-      })) as never,
-    );
-    await tx.when('settled');
-    for (const id of ids) {
-      expect(c.has(id), `рядок ${id} відсутній у кеші після write-back`).toBe(
-        true,
-      );
-      expect(c.get(id)?.createdAt, 'серверні поля не доїхали').toEqual(
-        new Date('2026-01-01'),
-      );
-    }
-  });
-
-  it('розходження ключів — fail-loud ДО write-back, рядків-двійників немає', async () => {
-    insertMock.mockImplementationOnce(async () => [
-      {
-        id: 'server-generated',
-        name: 'X',
-        code: 'x',
-        color: null,
-        sortOrder: 0,
-        isDefault: false,
-        createdAt: new Date('2026-01-01'),
-      },
-    ]);
-    const c = getCollection(new QueryClient(), orderStatusesCollection);
-    await c.preload(); // sync-контекст (див. коментар у batch-тесті)
-    const optimisticId = crypto.randomUUID();
-    const tx = c.insert({
-      id: optimisticId,
-      name: 'X',
-      code: 'x',
-      color: null,
-      sortOrder: 0,
-    } as never);
-    await expect(tx.when('settled')).rejects.toThrow(/id/);
-    expect(c.has(optimisticId), 'оптимістичний рядок лишився').toBe(false);
-    expect(c.has('server-generated'), 'серверний двійник потрапив').toBe(false);
+    await c.preload();
+    expect(() =>
+      c.insert({ id: crypto.randomUUID(), name: 'X' } as never),
+    ).toThrow();
+    expect(() =>
+      c.update('00000001-0000-4000-8000-000000000001', (d) => {
+        d.color = '#000000';
+      }),
+    ).toThrow();
+    expect(() => c.delete('00000001-0000-4000-8000-000000000001')).toThrow();
   });
 });

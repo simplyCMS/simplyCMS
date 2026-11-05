@@ -17,6 +17,10 @@ const { getOrderViewMock, getMyOrderMock } = vi.hoisted(() => ({
   getMyOrderMock: vi.fn(),
 }));
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ orderId: 'order-1' }),
   useSearch: () => ({}),

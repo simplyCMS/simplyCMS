@@ -21,14 +21,19 @@ describe('readStoreFacts', () => {
   it('свіжа база: власників нема, профіль із сіду без email, листів нема', async () => {
     const db = await freshDb(harness.url);
     try {
-      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      await applyMigrations({
+        connectionString: db.url,
+        dir: CANON_DIR,
+        primaryLocale: 'uk',
+      });
       const facts = await readStoreFacts(withUser(db.url, 'app_runtime'));
       expect(facts).toEqual({
         owners: 0,
         profile: { name: 'Мій магазин', email: null },
         failedMail: 0,
-        // Сід: основна мова — єдина опублікована.
+        // Старт БД (`bootstrapStore`): основна мова — єдина опублікована.
         publishedLanguages: ['uk'],
+        primaryLocale: 'uk',
       });
     } finally {
       await db.drop();
@@ -40,7 +45,11 @@ describe('readStoreFacts', () => {
     const userId = '10000000-0000-4000-8000-000000000001';
     const otherId = '10000000-0000-4000-8000-000000000002';
     try {
-      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      await applyMigrations({
+        connectionString: db.url,
+        dir: CANON_DIR,
+        primaryLocale: 'uk',
+      });
       for (const [id, email] of [
         [userId, 'owner@example.com'],
         [otherId, 'buyer@example.com'],
@@ -75,7 +84,19 @@ describe('readStoreFacts', () => {
         profile: { name: 'Мій магазин', email: 'shop@example.com' },
         failedMail: 1,
         publishedLanguages: ['uk'],
+        primaryLocale: 'uk',
       });
+    } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
+  it('накат без старту (primaryLocale не задано) → primaryLocale: null', async () => {
+    const db = await freshDb(harness.url);
+    try {
+      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      const facts = await readStoreFacts(withUser(db.url, 'app_runtime'));
+      expect(facts.primaryLocale).toBeNull();
     } finally {
       await db.drop();
     }
@@ -84,7 +105,11 @@ describe('readStoreFacts', () => {
   it('рядка профілю нема → profile: null', async () => {
     const db = await freshDb(harness.url);
     try {
-      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      await applyMigrations({
+        connectionString: db.url,
+        dir: CANON_DIR,
+        primaryLocale: 'uk',
+      });
       await queryRows(
         db.url,
         "delete from public.system_settings where key = 'store_profile'",
@@ -101,7 +126,11 @@ describe('readStoreFacts', () => {
   it('канал withRuntimeAdminRead: UPDATE/INSERT → 25006 «read-only transaction»', async () => {
     const db = await freshDb(harness.url);
     try {
-      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      await applyMigrations({
+        connectionString: db.url,
+        dir: CANON_DIR,
+        primaryLocale: 'uk',
+      });
       const runtime = withUser(db.url, 'app_runtime');
       for (const sql of [
         "update public.system_settings set description = 'x'",

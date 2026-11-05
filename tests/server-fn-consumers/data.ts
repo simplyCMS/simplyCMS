@@ -5,6 +5,10 @@
  */
 export const SERVER_FN_NO_CONSUMER_ALLOWLIST: Readonly<Record<string, string>> =
   {
+    'packages/simplycms/src/admin-server/index.ts#saveOrderStatusTranslation':
+      'М2б Р19: окремий UI перекладача (знімок хешів джерела) — М3, як для товару; діалог статусу зберігає всі мови через saveOrderStatus',
+    'packages/simplycms/src/admin-server/index.ts#deleteOrderStatusTranslation':
+      'М2б Р19: окремий UI перекладача (знімок хешів джерела) — М3, як для товару; діалог статусу зберігає всі мови через saveOrderStatus',
     'packages/simplycms/src/admin-server/index.ts#addLanguage':
       'М1: UI мов — у М3; serverFn-обгортки операцій мов (І24)',
     'packages/simplycms/src/admin-server/index.ts#setLanguageStatus':

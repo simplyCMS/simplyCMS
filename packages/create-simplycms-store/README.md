@@ -12,7 +12,7 @@ e-commerce CMS на TanStack Start + Postgres. Це єдиний пакет, я�
 ## Для агента: з порожньої теки
 
 ```bash
-pnpm create simplycms-store my-shop
+pnpm create simplycms-store my-shop --locale uk
 ```
 
 Далі відкрийте агента (Claude Code чи Codex) у створеній теці й скажіть:
@@ -37,6 +37,7 @@ pnpm create simplycms-store my-shop
 | Прапорець        | Значення                                                 |
 | ---------------- | -------------------------------------------------------- |
 | `--yes`, `-y`    | Без промптів (також вмикається при `CI=true` і в не-TTY) |
+| `--locale`       | Основна мова магазину (`uk`, `en`); у `--yes`/CI обов'язковий. Після створення БД не змінюється без її перестворення |
 | `--database-url` | DSN Postgres → у `.env.local`                            |
 | `--no-install`   | Не встановлювати залежності                              |
 | `--no-git`       | Не робити `git init` + перший коміт                      |
@@ -79,7 +80,7 @@ ls dist/client/assets/*.js | wc -l   # одиниці → вас стосуєт�
 в «Наступні кроки»:
 
 ```bash
-pnpm create simplycms-store my-shop \
+pnpm create simplycms-store my-shop --locale uk \
   --database-url postgresql://app_runtime:пароль@localhost:5432/postgres --yes
 cd my-shop
 # MIGRATION_DATABASE_URL (роль накату, SUPERUSER кластера) — у .env.local або в env процесу

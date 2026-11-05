@@ -109,7 +109,7 @@ simplyCMS/
 │   │   │                         #    deleteTranslation), галерея мовою сторінки (gallery.ts, GALLERY_ORDER).
 │   │   │                         #    Канон — translations.md. server-only (Мультимовність М1, Task 3–17б)
 │   │   ├── src/addressing/       # T2 Реєстри адрес і мовних токенів: createPathsForEntity, setExplicitPath,
-│   │   │                         #    copyPathsForLocale, resolvePath, publicNames. Upward: db. Класи
+│   │   │                         #    copyPathsForLocale, реєстр видів цілей (targets.ts), publicNames. Upward: db. Класи
 │   │   │                         #    помилок — з T0. server-only (Мультимовність М1, Task 5)
 │   │   ├── src/catalog-projection/ # T2 Проєкція тексту товару catalog_product_texts (текст з fallback,
 │   │   │                         #    is_translated, поточна адреса): refreshProductTexts, buildMissingProjection,

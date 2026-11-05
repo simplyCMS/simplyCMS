@@ -1,5 +1,6 @@
 import { customType, primaryKey, pgTable, unique, pgPolicy, uuid, text, varchar, integer, boolean, timestamp, foreignKey, jsonb, check, numeric, index, uniqueIndex, time, bigint, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
+import { translationTable } from "./translation-table"
 
 // Схема ядра SimplyCMS — SSOT моделі даних v2 (рішення B3′/B5″/B13,
 // амендмент спеки 2026-08-23). Файл більше не є чистим генератом
@@ -71,14 +72,17 @@ export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 
 export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', 'on_order'])
 
 
+// Назва статусу — лише в `order_status_translations` (М2б, Р19: перша сутність на
+// фабриці команд). `version` — ETag агрегата: піднімають усі команди запису (Д7), зокрема
+// `setDefault` і `reorder`, що пишуть кілька кореневих рядків.
 export const orderStatuses = pgTable("order_statuses", {
 	id: uuid().primaryKey().notNull(),
-	name: text().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	color: varchar({ length: 7 }).default('#6B7280'),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	version: integer().default(1).notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
 	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
@@ -86,6 +90,13 @@ export const orderStatuses = pgTable("order_statuses", {
 	// перемикає is_default по всій таблиці, без scope на батька).
 	uniqueIndex("idx_order_statuses_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
+
+export const orderStatusTranslations = translationTable("order_status_translations", {
+	owner: { statusId: uuid("status_id").notNull() },
+	pk: ["statusId"],
+	ownerFks: [{ columns: ["statusId"], foreignColumns: () => [orderStatuses.id], name: "order_status_translations_status_id_fkey" }],
+	text: { name: text() },
+});
 
 export const sections = pgTable("sections", {
 	id: uuid().primaryKey().notNull(),
@@ -475,9 +486,8 @@ export const productModifications = pgTable("product_modifications", {
 // з хешами джерела на момент перекладу. Перекладні колонки NULLABLE навмисно:
 // обов'язковість (`name`) стосується лише рядка ОСНОВНОЇ мови й живе в
 // `require_source_translation` (`0004_functions.sql`), а рядок іншої мови може бути частково порожнім
-// (статус `missing`, майстер §3.4).
-const sourceHashes = () =>
-	jsonb("source_hashes").$type<Record<string, string>>().default({}).notNull();
+// (статус `missing`, майстер §3.4). Форму тримає `translationTable` (`./translation-table`).
+// `updated_at` проєкції `catalog_product_texts` — та сама колонка, але вона не таблиця перекладу.
 const translatedAt = () =>
 	timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull();
 
@@ -486,30 +496,17 @@ const NON_BLANK = sql.raw(
 	String.raw`'[^\s\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\u00AD\u180E\u200B-\u200D\u2060\uFEFF]'`,
 );
 
-export const productTranslations = pgTable("product_translations", {
-	productId: uuid("product_id").notNull(),
-	locale: text().notNull(),
-	name: text(),
-	shortDescription: text("short_description"),
-	description: text(),
-	metaTitle: text("meta_title"),
-	metaDescription: text("meta_description"),
-	sourceHashes: sourceHashes(),
-	updatedAt: translatedAt(),
-}, (table) => [
-	primaryKey({ columns: [table.productId, table.locale], name: "product_translations_pkey" }),
-	foreignKey({
-			columns: [table.productId],
-			foreignColumns: [products.id],
-			name: "product_translations_product_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.locale],
-			foreignColumns: [languages.code],
-			name: "product_translations_locale_fkey"
-		}).onDelete("restrict"),
-	index("idx_product_translations_locale").on(table.locale),
-	check("product_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
+export const productTranslations = translationTable("product_translations", {
+	owner: { productId: uuid("product_id").notNull() },
+	pk: ["productId"],
+	ownerFks: [{ columns: ["productId"], foreignColumns: () => [products.id], name: "product_translations_product_id_fkey" }],
+	text: {
+		name: text(),
+		shortDescription: text("short_description"),
+		description: text(),
+		metaTitle: text("meta_title"),
+		metaDescription: text("meta_description"),
+	},
 	// Плоске поле або NULL, або з текстом (майстер §3.4: порожнє нормалізується до NULL).
 	// Це БД-гарантія вхідної умови SQL-предиката `is_translated` проєкції
 	// `catalog_product_texts` (`src.f IS NULL OR loc.f IS NOT NULL`): `''` чи самі
@@ -517,36 +514,29 @@ export const productTranslations = pgTable("product_translations", {
 	// той самий, що `INVISIBLE_RUN` у `domain/translations/text.ts`. Паритет плоских полів звірка
 	// бачить лише як «є/немає», тож його тримає ТІЛЬКИ цей CHECK. Rich-поле `description`
 	// SQL не перевіряє: його порожнеча визначається розміткою (звірка проєкції ловить розбіжність).
-	check("product_translations_name_text", sql`${table.name} IS NULL OR ${table.name} ~ ${NON_BLANK}`),
-	check("product_translations_short_description_text", sql`${table.shortDescription} IS NULL OR ${table.shortDescription} ~ ${NON_BLANK}`),
-	check("product_translations_meta_title_text", sql`${table.metaTitle} IS NULL OR ${table.metaTitle} ~ ${NON_BLANK}`),
-	check("product_translations_meta_description_text", sql`${table.metaDescription} IS NULL OR ${table.metaDescription} ~ ${NON_BLANK}`),
-]);
+	checks: (t) => [
+		check("product_translations_name_text", sql`${t.name} IS NULL OR ${t.name} ~ ${NON_BLANK}`),
+		check("product_translations_short_description_text", sql`${t.shortDescription} IS NULL OR ${t.shortDescription} ~ ${NON_BLANK}`),
+		check("product_translations_meta_title_text", sql`${t.metaTitle} IS NULL OR ${t.metaTitle} ~ ${NON_BLANK}`),
+		check("product_translations_meta_description_text", sql`${t.metaDescription} IS NULL OR ${t.metaDescription} ~ ${NON_BLANK}`),
+	],
+});
 
 // Складений FK на `(product_id, id)` модифікації: переклад не може вказати на модифікацію
 // чужого товару, а `product_id` потрібен тригеру джерела й проєкції без JOIN.
-export const productModificationTranslations = pgTable("product_modification_translations", {
-	productId: uuid("product_id").notNull(),
-	modificationId: uuid("modification_id").notNull(),
-	locale: text().notNull(),
-	name: text(),
-	sourceHashes: sourceHashes(),
-	updatedAt: translatedAt(),
-}, (table) => [
-	primaryKey({ columns: [table.modificationId, table.locale], name: "product_modification_translations_pkey" }),
-	foreignKey({
-			columns: [table.productId, table.modificationId],
-			foreignColumns: [productModifications.productId, productModifications.id],
-			name: "product_modification_translations_modification_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.locale],
-			foreignColumns: [languages.code],
-			name: "product_modification_translations_locale_fkey"
-		}).onDelete("restrict"),
-	index("idx_product_modification_translations_locale").on(table.locale),
-	check("product_modification_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
-]);
+export const productModificationTranslations = translationTable("product_modification_translations", {
+	owner: {
+		productId: uuid("product_id").notNull(),
+		modificationId: uuid("modification_id").notNull(),
+	},
+	pk: ["modificationId"],
+	ownerFks: [{
+		columns: ["productId", "modificationId"],
+		foreignColumns: () => [productModifications.productId, productModifications.id],
+		name: "product_modification_translations_modification_fkey",
+	}],
+	text: { name: text() },
+});
 
 // Зображення товару: рядок на зображення замість jsonb-масиву `images`. Власник —
 // товар, а для модифікації складений FK `(product_id, modification_id)` не дає
@@ -575,73 +565,27 @@ export const productImages = pgTable("product_images", {
 
 // Обов'язкових полів немає й тригера джерела (І4) немає: рядок перекладу зображення
 // необов'язковий (К6) — `alt` і мовний варіант файлу.
-export const productImageTranslations = pgTable("product_image_translations", {
-	imageId: uuid("image_id").notNull(),
-	locale: text().notNull(),
-	alt: text(),
-	storageKey: text("storage_key"),
-	sourceHashes: sourceHashes(),
-	updatedAt: translatedAt(),
-}, (table) => [
-	primaryKey({ columns: [table.imageId, table.locale], name: "product_image_translations_pkey" }),
-	foreignKey({
-			columns: [table.imageId],
-			foreignColumns: [productImages.id],
-			name: "product_image_translations_image_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.locale],
-			foreignColumns: [languages.code],
-			name: "product_image_translations_locale_fkey"
-		}).onDelete("restrict"),
-	index("idx_product_image_translations_locale").on(table.locale),
-	check("product_image_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
-]);
+export const productImageTranslations = translationTable("product_image_translations", {
+	owner: { imageId: uuid("image_id").notNull() },
+	pk: ["imageId"],
+	ownerFks: [{ columns: ["imageId"], foreignColumns: () => [productImages.id], name: "product_image_translations_image_id_fkey" }],
+	text: { alt: text(), storageKey: text("storage_key") },
+});
 
 // Текст значення властивості `value_kind = 'text'` живе в перекладі, а не в колонці `value`.
-export const productPropertyValueTranslations = pgTable("product_property_value_translations", {
-	valueId: uuid("value_id").notNull(),
-	locale: text().notNull(),
-	value: text(),
-	sourceHashes: sourceHashes(),
-	updatedAt: translatedAt(),
-}, (table) => [
-	primaryKey({ columns: [table.valueId, table.locale], name: "product_property_value_translations_pkey" }),
-	foreignKey({
-			columns: [table.valueId],
-			foreignColumns: [productPropertyValues.id],
-			name: "product_property_value_translations_value_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.locale],
-			foreignColumns: [languages.code],
-			name: "product_property_value_translations_locale_fkey"
-		}).onDelete("restrict"),
-	index("idx_product_property_value_translations_locale").on(table.locale),
-	check("product_property_value_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
-]);
+export const productPropertyValueTranslations = translationTable("product_property_value_translations", {
+	owner: { valueId: uuid("value_id").notNull() },
+	pk: ["valueId"],
+	ownerFks: [{ columns: ["valueId"], foreignColumns: () => [productPropertyValues.id], name: "product_property_value_translations_value_id_fkey" }],
+	text: { value: text() },
+});
 
-export const modificationPropertyValueTranslations = pgTable("modification_property_value_translations", {
-	valueId: uuid("value_id").notNull(),
-	locale: text().notNull(),
-	value: text(),
-	sourceHashes: sourceHashes(),
-	updatedAt: translatedAt(),
-}, (table) => [
-	primaryKey({ columns: [table.valueId, table.locale], name: "modification_property_value_translations_pkey" }),
-	foreignKey({
-			columns: [table.valueId],
-			foreignColumns: [modificationPropertyValues.id],
-			name: "modification_property_value_translations_value_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.locale],
-			foreignColumns: [languages.code],
-			name: "modification_property_value_translations_locale_fkey"
-		}).onDelete("restrict"),
-	index("idx_modification_property_value_translations_locale").on(table.locale),
-	check("modification_property_value_translations_source_hashes_object", sql`jsonb_typeof(${table.sourceHashes}) = 'object'`),
-]);
+export const modificationPropertyValueTranslations = translationTable("modification_property_value_translations", {
+	owner: { valueId: uuid("value_id").notNull() },
+	pk: ["valueId"],
+	ownerFks: [{ columns: ["valueId"], foreignColumns: () => [modificationPropertyValues.id], name: "modification_property_value_translations_value_id_fkey" }],
+	text: { value: text() },
+});
 
 // drizzle-orm не має `.collate()` для text; `customType` лишає тип `string`
 // у застосунку й пише `text COLLATE "C"` у DDL.
@@ -1488,5 +1432,9 @@ export const banners = pgTable("banners", {
 		}).onDelete("set null"),
 ]);
 
-// Id рядка сіду (0003_seed.sql) — для коду й тестів, що посилаються на основну зону.
-export { MAIN_SHIPPING_ZONE_ID } from './seed-ids';
+// Id рядків сіду (bootstrapStore, 0003_seed.sql) — для коду й тестів, що посилаються на системні рядки.
+export {
+  SYSTEM_SEED_IDS,
+  SEED_ORDER_STATUS_CODES,
+  type SeedOrderStatusCode,
+} from './seed-ids';

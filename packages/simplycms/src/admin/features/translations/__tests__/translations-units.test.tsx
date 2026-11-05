@@ -158,7 +158,8 @@ describe('PathField', () => {
       return (
         <AggregateVersionContext.Provider value={store}>
           <PathField
-            productId="p"
+            entityId="p"
+            command={mocks.setProductPath}
             locale="en"
             languageName="English"
             path="cable"

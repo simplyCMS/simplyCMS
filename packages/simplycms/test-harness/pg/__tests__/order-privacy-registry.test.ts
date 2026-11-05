@@ -14,6 +14,7 @@ import {
   withOrderTokenDb,
 } from 'simplycms/storefront/loaders';
 import * as F from './fixtures/customer-categories';
+import { UK } from './fixtures/text-locale';
 
 const dbColumn = (key: string): string =>
   (getTableColumns(orders) as Record<string, { name: string }>)[key]!.name;
@@ -112,7 +113,7 @@ describe('реєстр ПД orders', () => {
     const pointBefore = (await row(ids[1]!)).shipping_data;
 
     const detail = (id: string, token: string) =>
-      withOrderTokenDb(token, (tx) => loadOrderDetail(tx, id));
+      withOrderTokenDb(token, (tx) => loadOrderDetail(tx, id, UK));
     // До стирання гість із токеном читає замовлення (контроль для «після»).
     expect((await detail(ids[0]!, `tok-${ids[0]}`))?.email).toBe('e@x.test');
 
@@ -143,7 +144,7 @@ describe('реєстр ПД orders', () => {
     for (const id of ids) {
       expect(await detail(id, `tok-${id}`)).toBeNull();
       expect(
-        await withCustomerDb(buyer, (tx) => loadOrderDetail(tx, id)),
+        await withCustomerDb(buyer, (tx) => loadOrderDetail(tx, id, UK)),
       ).toBeNull();
     }
   });

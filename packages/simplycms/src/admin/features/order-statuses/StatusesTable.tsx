@@ -14,7 +14,7 @@ import {
 
 interface Props {
   statuses: OrderStatus[];
-  onReorder: (id: string, direction: 'up' | 'down') => void;
+  onReorder: (status: OrderStatus, direction: 'up' | 'down') => void;
   onEdit: (status: OrderStatus) => void;
   onDelete: (status: OrderStatus) => void;
 }
@@ -63,7 +63,7 @@ export function StatusesTable({
                         size="icon"
                         className="h-6 w-6"
                         disabled={index === 0}
-                        onClick={() => onReorder(status.id, 'up')}
+                        onClick={() => onReorder(status, 'up')}
                       >
                         <ArrowUp className="h-3 w-3" />
                       </Button>
@@ -72,7 +72,7 @@ export function StatusesTable({
                         size="icon"
                         className="h-6 w-6"
                         disabled={index === statuses.length - 1}
-                        onClick={() => onReorder(status.id, 'down')}
+                        onClick={() => onReorder(status, 'down')}
                       >
                         <ArrowDown className="h-3 w-3" />
                       </Button>

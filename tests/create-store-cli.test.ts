@@ -36,16 +36,20 @@ describe('create-store CLI', () => {
   // Три НЕЗАЛЕЖНІ джерела `yes`. Перевіряти їх разом не можна: у сумарному
   // кейсі кожне маскує падіння двох інших.
   it('resolveOptions: CI ⇒ yes навіть у TTY', () => {
-    expect(resolveOptions([], { CI: 'true' }, true).yes).toBe(true);
+    expect(resolveOptions(['--locale', 'uk'], { CI: 'true' }, true).yes).toBe(
+      true,
+    );
   });
 
   it('resolveOptions: --yes ⇒ yes', () => {
-    expect(resolveOptions(['--yes'], {}, true).yes).toBe(true);
-    expect(resolveOptions(['-y'], {}, true).yes).toBe(true);
+    expect(resolveOptions(['--yes', '--locale', 'uk'], {}, true).yes).toBe(
+      true,
+    );
+    expect(resolveOptions(['-y', '--locale', 'uk'], {}, true).yes).toBe(true);
   });
 
   it('resolveOptions: не-TTY ⇒ yes', () => {
-    expect(resolveOptions([], {}, false).yes).toBe(true);
+    expect(resolveOptions(['--locale', 'uk'], {}, false).yes).toBe(true);
   });
 
   it('resolveOptions: значення прапорця не з’їдає позиційний аргумент', () => {
@@ -59,6 +63,33 @@ describe('create-store CLI', () => {
     expect(o.yes).toBe(false);
     expect(o.install).toBe(true);
     expect(o.git).toBe(true);
+  });
+
+  it('resolveOptions: --locale en → locale', () => {
+    expect(resolveOptions(['my-shop', '--locale', 'en'], {}, true).locale).toBe(
+      'en',
+    );
+  });
+
+  it('resolveOptions: --locale без значення або з прапорцем замість значення — помилка', () => {
+    expect(() => resolveOptions(['--locale'], {}, true)).toThrow(
+      /--locale потребує значення/,
+    );
+    expect(() => resolveOptions(['--locale', '--yes'], {}, true)).toThrow(
+      /--locale потребує значення/,
+    );
+  });
+
+  it('resolveOptions: невідома мова — помилка з переліком', () => {
+    expect(() => resolveOptions(['--locale', 'xx'], {}, true)).toThrow(
+      /«xx».*uk, en/,
+    );
+  });
+
+  it('resolveOptions: --yes без --locale — помилка (мовчазного дефолту немає)', () => {
+    expect(() => resolveOptions(['my-shop', '--yes'], {}, true)).toThrow(
+      /--locale/,
+    );
   });
 
   it('resolveOptions: невідомий прапорець — помилка', () => {
@@ -89,6 +120,34 @@ describe('create-store CLI', () => {
     expect(out.devDependencies['@simplycms/cli']).toBe('0.1.0');
   });
 
+  it('scaffold: locale en → primaryLocale у simplycms.config.ts, решта конфігу цілa', async () => {
+    const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'demo-en');
+    await scaffold({
+      templateDir: 'packages/create-simplycms-store/template',
+      targetDir: target,
+      storeName: 'demo-en',
+      version: '9.9.9-sentinel',
+      locale: 'en',
+    });
+    const config = readFileSync(join(target, 'simplycms.config.ts'), 'utf8');
+    expect(config).toContain("primaryLocale: 'en'");
+    expect(config).not.toContain("primaryLocale: 'uk'");
+    expect(config).toContain("currency: 'UAH'");
+  });
+
+  it('scaffold: невідома мова — помилка до запису конфігу', async () => {
+    const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'demo-xx');
+    await expect(
+      scaffold({
+        templateDir: 'packages/create-simplycms-store/template',
+        targetDir: target,
+        storeName: 'demo-xx',
+        version: '9.9.9-sentinel',
+        locale: 'xx',
+      }),
+    ).rejects.toThrow(/«xx»/);
+  });
+
   it('scaffold: перейменовує tpl/gitignore/env.example і пише .env.local', async () => {
     const target = join(mkdtempSync(join(tmpdir(), 'css-')), 'demo');
     await scaffold({
@@ -99,6 +158,7 @@ describe('create-store CLI', () => {
       // літерал `"0.1.0"`, дописаний рукою в `package.json.tpl`, рендерився б
       // у те саме значення — і асерт нижче його не відрізнив би.
       version: '9.9.9-sentinel',
+      locale: 'uk',
       databaseUrl: DSN,
     });
     expect(existsSync(join(target, 'package.json'))).toBe(true);
@@ -124,6 +184,7 @@ describe('create-store CLI', () => {
         targetDir: second,
         storeName: 'demo2',
         version: '9.9.9-sentinel',
+        locale: 'uk',
         databaseUrl: DSN,
       });
       const secondSecret =
@@ -170,6 +231,7 @@ describe('create-store CLI', () => {
       targetDir: target,
       storeName: 'pm',
       version: '9.9.9-sentinel',
+      locale: 'uk',
     });
 
     const workspace = readFileSync(join(target, 'pnpm-workspace.yaml'), 'utf8');
@@ -189,6 +251,7 @@ describe('create-store CLI', () => {
       targetDir: target,
       storeName: 'demo',
       version: '0.1.0',
+      locale: 'uk',
     });
     // Теки міграцій магазину — db/migrations; supabase/ у магазині не буває.
     expect(existsSync(join(target, 'db/migrations/0000_prelude.sql'))).toBe(
@@ -205,6 +268,7 @@ describe('create-store CLI', () => {
       targetDir: target,
       storeName: 'demo',
       version: '0.1.0',
+      locale: 'uk',
     });
     expect(existsSync(join(target, '.env.local'))).toBe(false);
     expect(existsSync(join(target, '.env.example'))).toBe(true);

@@ -20,6 +20,10 @@ const { getOrderViewMock } = vi.hoisted(() => ({
   getOrderViewMock: vi.fn(),
 }));
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ orderId: 'order-1' }),
   useSearch: () => ({ token: 'abc' }),
@@ -110,7 +114,7 @@ describe('OrderSuccess — прибирання guest-token з URL', () => {
 
     await waitFor(() => expect(getOrderViewMock).toHaveBeenCalled());
     expect(getOrderViewMock).toHaveBeenCalledWith({
-      data: { orderId: 'order-1', token: 'abc' },
+      data: { orderId: 'order-1', token: 'abc', locale: 'uk' },
     });
   });
 

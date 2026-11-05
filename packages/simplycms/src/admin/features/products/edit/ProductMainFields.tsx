@@ -1,4 +1,5 @@
 import { useFormContext } from 'react-hook-form';
+import { setProductPath } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Input } from 'simplycms/ui/input';
@@ -102,7 +103,8 @@ export function ProductMainFields({ mode }: Props) {
             ) : (
               <PathField
                 key={`${l}:${card.paths[l] ?? ''}`}
-                productId={card.productId!}
+                entityId={card.productId!}
+                command={setProductPath}
                 locale={l}
                 languageName={language?.name ?? l}
                 path={card.paths[l]}

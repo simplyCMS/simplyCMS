@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { toast } from 'sonner';
-import { setProductPath } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import { Input } from 'simplycms/ui/input';
@@ -9,8 +8,15 @@ import { adminErrorKey } from '../../lib/admin-error';
 import { applyServerValidation } from '../../lib/apply-server-validation';
 import { useAggregateCommand } from './useAggregateCommand';
 
+/** Команда адреси агрегата (`products.setPath` тощо): її викликає поле, не знаючи сутності. */
+export type PathCommand = (a: {
+  data: { id: string; locale: string; path: string; expectedVersion: number };
+}) => Promise<{ version: number }>;
+
 interface Props {
-  readonly productId: string;
+  /** Ідентифікатор агрегата, чию адресу править поле. */
+  readonly entityId: string;
+  readonly command: PathCommand;
   readonly locale: string;
   /** Назва мови для підпису. */
   readonly languageName: string;
@@ -22,12 +28,13 @@ interface Props {
 }
 
 /**
- * Адреса товару однієї мови. Редагується ОКРЕМО від тексту (І17: адреса не
- * виводиться з назви після створення) власною командою `products.setPath`,
+ * Адреса агрегата однієї мови. Редагується ОКРЕМО від тексту (І17: адреса не
+ * виводиться з назви після створення) власною командою (`command`; для товару `products.setPath`),
  * тож не тягне за собою решту незбережених полів картки.
  */
 export function PathField({
-  productId,
+  entityId,
+  command,
   locale,
   languageName,
   path,
@@ -38,15 +45,19 @@ export function PathField({
   const [value, setValue] = useState(path ?? '');
   const [saved, setSaved] = useState(path ?? '');
   const [error, setError] = useState<string | null>(null);
-  const { run, isPending } = useAggregateCommand(setProductPath, {
+  const { run, isPending } = useAggregateCommand<
+    { id: string; locale: string; path: string },
+    { version: number }
+  >(command, {
     onConflict,
   });
-  const id = `product-path-${locale}`;
+  // useId: сторінка й діалог можуть мати поле тієї самої мови одночасно.
+  const id = `${useId()}-path-${locale}`;
 
   const save = async () => {
     setError(null);
     try {
-      const out = await run({ id: productId, locale, path: value.trim() });
+      const out = await run({ id: entityId, locale, path: value.trim() });
       if (!out) return;
       setSaved(value.trim());
       onSaved?.(value.trim());

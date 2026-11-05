@@ -875,10 +875,11 @@ REVOKE ALL ON PROCEDURE public.attach_current_token_triggers(regclass, regclass,
 CALL public.attach_current_address_triggers('public.products'::regclass, 'public.url_paths'::regclass, 'product_id');
 CALL public.attach_current_token_triggers('public.product_modifications'::regclass, 'public.slug_tokens'::regclass, 'modification_id');
 
--- Обовʼязковий рядок основної мови (І4) товару й модифікації та тексту значення
+-- Обовʼязковий рядок основної мови (І4) товару, модифікації й статусу замовлення та тексту значення
 -- властивості (І5): для значень — лише `value_kind = text`, бо в числа, опції, булевого
 -- й кольору тексту немає (CHECK форми значення, І6), а переклад їм не потрібен.
 CALL public.attach_source_translation_triggers('public.products'::regclass, 'public.product_translations'::regclass, 'product_id', ARRAY['name']);
+CALL public.attach_source_translation_triggers('public.order_statuses'::regclass, 'public.order_status_translations'::regclass, 'status_id', ARRAY['name']);
 CALL public.attach_source_translation_triggers('public.product_modifications'::regclass, 'public.product_modification_translations'::regclass, 'modification_id', ARRAY['name']);
 CALL public.attach_source_translation_triggers('public.product_property_values'::regclass, 'public.product_property_value_translations'::regclass, 'value_id', ARRAY['value'], 'value_kind=text');
 CALL public.attach_source_translation_triggers('public.modification_property_values'::regclass, 'public.modification_property_value_translations'::regclass, 'value_id', ARRAY['value'], 'value_kind=text');

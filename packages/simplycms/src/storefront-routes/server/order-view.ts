@@ -1,10 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { localeOnlyInput } from 'simplycms/core/lib/locale-input';
 import {
   loadOrderDetail,
   withOrderTokenDb,
   type OrderDetailRow,
   optionalSessionUserId,
+  resolveTextLocale,
   withSessionDb,
 } from 'simplycms/storefront/loaders';
 
@@ -22,20 +24,23 @@ import {
  */
 export const getOrderView = createServerFn({ method: 'GET' })
   .validator(
-    z.object({
+    localeOnlyInput.extend({
       orderId: z.string().uuid(),
       token: z.string().min(1).nullable(),
     }),
   )
   .handler(async ({ data: input }): Promise<OrderDetailRow | null> => {
-    const { orderId, token } = input as {
+    const { orderId, token, locale } = input as {
       orderId: string;
       token: string | null;
+      locale: string;
     };
+    const text = await resolveTextLocale(locale);
 
     const userId = await optionalSessionUserId();
-    if (userId) return withSessionDb((db) => loadOrderDetail(db, orderId));
+    if (userId)
+      return withSessionDb((db) => loadOrderDetail(db, orderId, text));
     if (!token) return null;
 
-    return withOrderTokenDb(token, (db) => loadOrderDetail(db, orderId));
+    return withOrderTokenDb(token, (db) => loadOrderDetail(db, orderId, text));
   });

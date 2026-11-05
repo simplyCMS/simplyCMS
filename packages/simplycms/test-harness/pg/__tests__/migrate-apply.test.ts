@@ -69,6 +69,7 @@ describe('applyMigrations: журнал і накат', () => {
         applied: [],
         pending: canonNames(),
         runtimePasswordSynced: false,
+        bootstrapped: false,
       });
       expect(await exists(db.url, 'public.simplycms_migrations')).toBe(false);
       expect(

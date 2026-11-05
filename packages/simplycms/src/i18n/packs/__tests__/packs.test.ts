@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { findLanguagePack } from 'simplycms/i18n/packs';
+import { SEED_ORDER_STATUS_CODES } from 'simplycms/schema';
 import {
   getContentTools,
   getUiPack,
@@ -28,6 +30,23 @@ describe('мовні пакети', () => {
     ]);
     expect(getUiPack(ui('uk')).name).toBe('Українська');
     expect(getUiPack(ui('en')).code).toBe('en');
+  });
+
+  it('кожен пакет має тексти довідників: усі шість статусів і непорожні рядки', () => {
+    for (const { code } of listLanguagePacks()) {
+      const seed = findLanguagePack(code)!.content.seed;
+      const texts = [
+        ...SEED_ORDER_STATUS_CODES.map((status) => seed.orderStatuses[status]),
+        seed.priceTypeRetail,
+        seed.customerCategoryRetail,
+        seed.mainShippingZone,
+        seed.storeName,
+      ];
+      expect(Object.keys(seed.orderStatuses), code).toEqual([
+        ...SEED_ORDER_STATUS_CODES,
+      ]);
+      for (const text of texts) expect(text.trim(), code).not.toBe('');
+    }
   });
 
   it('hasLanguagePack: точний код або базова мова (pt-BR → pt), чужа — ні', () => {

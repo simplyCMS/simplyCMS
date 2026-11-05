@@ -33,12 +33,11 @@ import { useFormatDate, useT, type MessageKey } from 'simplycms/i18n';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
 import { QueryFailure } from '../components/QueryFailure';
 import { cancelMyOrder, getMyOrder } from '../server/profile-orders';
-
-const orders = entityKey(ENTITY.orders);
 
 // Мапа ключів, а не текстів: код оплати приходить із БД (див. OrderSuccess).
 const paymentLabels: Record<string, MessageKey> = {
@@ -61,6 +60,8 @@ export default function ProfileOrderDetailPage() {
   const orderId = params?.orderId as string | undefined;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const locale = useContentLocale();
+  const orders = entityKey(ENTITY.orders, locale);
   const [isCancelling, setIsCancelling] = useState(false);
 
   /**
@@ -75,7 +76,7 @@ export default function ProfileOrderDetailPage() {
     refetch,
   } = useQuery({
     queryKey: [...orders.detail(orderId ?? ''), user?.id],
-    queryFn: () => getMyOrder({ data: { orderId: orderId as string } }),
+    queryFn: () => getMyOrder({ data: { orderId: orderId as string, locale } }),
     enabled: !!user && !!orderId,
   });
 

@@ -33,9 +33,12 @@ export function createAdminServerMock(
 ): AdminServerMock {
   const defaults = {
     listOrderStatuses: list(),
-    insertOrderStatuses: vi.fn(),
-    updateOrderStatuses: vi.fn(),
-    removeOrderStatuses: vi.fn(),
+    getOrderStatus: vi.fn(),
+    createOrderStatus: vi.fn(),
+    saveOrderStatus: vi.fn(),
+    saveOrderStatusTranslation: vi.fn(),
+    deleteOrderStatusTranslation: vi.fn(),
+    removeOrderStatus: vi.fn(),
     setDefaultOrderStatus: vi.fn(),
     reorderOrderStatus: vi.fn(),
     uploadMedia: vi.fn(),

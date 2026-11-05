@@ -13,9 +13,10 @@ import * as F from './fixtures/commerce';
 import { line, useCommerceDb } from './fixtures/commerce-db';
 import { UK } from './fixtures/text-locale';
 import { ui } from '../../locale';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const WHOLESALE_TYPE = 'c0000002-0000-4000-8000-000000000001';
-const DEFAULT_CATEGORY = '00000004-0000-4000-8000-000000000001';
+const DEFAULT_CATEGORY = SYSTEM_SEED_IDS.customerCategoryRetail;
 const PROFILE: StorefrontProfile = {
   name: 'Крамниця',
   homeTitle: null,

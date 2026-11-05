@@ -1,8 +1,11 @@
+import { assertSupportedLocale, SUPPORTED_LOCALES } from './locales.mjs';
+
 /**
  * Опції запуску скаффолдера.
  * @typedef {object} CliOptions
  * @property {string} [storeName] Тека призначення (позиційний аргумент).
  * @property {string} [databaseUrl] DSN Postgres → у `.env.local`.
+ * @property {string} [locale] Основна мова магазину (код мовного пакета) → `primaryLocale`.
  * @property {boolean} install
  * @property {boolean} git
  * @property {boolean} yes Неінтерактивний режим.
@@ -49,11 +52,21 @@ export function resolveOptions(
     else if (arg === '--database-url') {
       options.databaseUrl = requireValue(argv, i, arg);
       i += 1;
+    } else if (arg === '--locale') {
+      options.locale = assertSupportedLocale(requireValue(argv, i, arg));
+      i += 1;
     } else if (arg.startsWith('-'))
       throw new Error(`Невідомий прапорець: ${arg}`);
     else rest.push(arg);
   }
   if (rest[0]) options.storeName = rest[0];
   if (env.CI === 'true' || !isTTY) options.yes = true;
+  // Основну мову далі не змінити без перестворення БД, тож мовчазного дефолту немає:
+  // без діалогу її мусить назвати прапорець.
+  if (options.yes && !options.locale) {
+    throw new Error(
+      `Не задано основну мову магазину: додайте --locale <код> (${SUPPORTED_LOCALES.join(', ')}).`,
+    );
+  }
   return options;
 }

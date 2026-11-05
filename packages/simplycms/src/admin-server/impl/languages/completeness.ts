@@ -2,12 +2,25 @@ import { sql } from 'drizzle-orm';
 import { localeProjectionMismatches } from 'simplycms/catalog-projection';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
+import {
+  pathSegmentOf,
+  type AddressTarget,
+  type TokenTarget,
+} from 'simplycms/addressing';
+import { ADDRESS_KIND } from 'simplycms/domain';
 
 /** Етап, якого бракує товару: адреса, токен модифікації чи рядок проєкції тексту. */
 export type IncompleteStage = 'path' | 'token' | 'projection';
 
+/** Чого бракує: вид цілі з реєстру `addressing` (невідомий вид — помилка типу), id і етап. */
 export interface IncompleteItem {
-  readonly productId: string;
+  readonly kind: AddressTarget['kind'] | TokenTarget['kind'];
+  /**
+   * `id` належить простору `pathSegment` виду: це id сутності, чия картка усуває прогалину, а не
+   * обов'язково id відсутнього рядка (Д13). Напр. modification → `pathSegment` 'products', id —
+   * id товару. Правило не товарне: майбутній вид (опція) матиме свій `pathSegment` і свій id.
+   */
+  readonly id: string;
   readonly stage: IncompleteStage;
 }
 
@@ -43,10 +56,10 @@ function sample(rows: readonly IncompleteItem[]): IncompleteItem[] {
     .sort(
       (a, b) =>
         STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage) ||
-        a.productId.localeCompare(b.productId),
+        a.id.localeCompare(b.id),
     )
     .filter((r) => {
-      const key = `${r.stage}:${r.productId}`;
+      const key = `${r.stage}:${r.kind}:${r.id}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -95,9 +108,15 @@ export async function completeness(
     missingTokens,
     missingProjection: projection.count,
     incomplete: sample([
-      ...examples.rows.map((r) => ({ productId: r.id, stage: r.stage })),
+      ...examples.rows.map((r) => ({
+        kind:
+          r.stage === 'path' ? ADDRESS_KIND.product : ADDRESS_KIND.modification,
+        id: r.id,
+        stage: r.stage,
+      })),
       ...projection.sample.map((k) => ({
-        productId: k.productId,
+        kind: ADDRESS_KIND.product,
+        id: k.productId,
         stage: 'projection' as const,
       })),
     ]),
@@ -117,7 +136,7 @@ export function languagePackMissingError(): ValidationError {
 
 /**
  * Відмова публікації неповної мови. Перша проблема — на поле `status` (форма), далі по одній
- * на кожен приклад: `['products', id, етап]`. Деталі — саме в `path`, бо це єдине, що
+ * на кожен приклад: `[сегмент виду з реєстру, id, етап]` (для товару й модифікації — `['products', id, етап]`). Деталі — саме в `path`, бо це єдине, що
  * несуть обидва транспорти (problem+json `/api/v1` віддає лише path і code, serverFn —
  * білий список `sanitizeValidationIssues`). Без них власник бачив би «мова неповна» і не
  * знав, який товар перезберегти чи дозаповнити.
@@ -128,7 +147,7 @@ export function languageIncompleteError(
   return new ValidationError([
     { path: ['status'], code: 'language_incomplete' },
     ...items.map((i) => ({
-      path: ['products', i.productId, i.stage],
+      path: [pathSegmentOf(i.kind), i.id, i.stage],
       code: 'language_incomplete' as const,
     })),
   ]);

@@ -1,4 +1,4 @@
-// Шапка — той самий патерн, що в admin-order-statuses.test.ts: resolveHarness
+// Шапка — той самий патерн, що в order-statuses-aggregate.test.ts: resolveHarness
 // → createTempDatabase → канон → app_runtime у DATABASE_URL; afterAll із
 // closeDbPool() ПЕРШИМ.
 import { mkdtemp, readdir, rm } from 'node:fs/promises';

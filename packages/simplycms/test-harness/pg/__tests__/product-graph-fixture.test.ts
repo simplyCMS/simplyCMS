@@ -286,8 +286,11 @@ describe('єдиний записувач графа товару', () => {
     /insert\s+into\s+(public\.)?(url_paths|slug_tokens)\b|insert\(\s*[\w.]*(urlPaths|slugTokens)\b|insertInto\(\s*['"](url_paths|slug_tokens)['"]/i;
   // Дозволені білдери графа — єдиний записувач: лише вони пишуть у таблиці товару й лише
   // вони мають право називати таблицю змінною (`insertInto(table, …)` у `product-graph-values`).
+  // `translatable-rows.ts` — загальний рівень тих самих білдерів (М2): `insertInto(table, …)` там
+  // з іменем таблиці змінною за побудовою, а граф товару збирає з нього свої рядки.
   const BUILDERS = (f: string) =>
-    f.startsWith('pg/__tests__/fixtures/product-graph');
+    f.startsWith('pg/__tests__/fixtures/product-graph') ||
+    f === 'pg/__tests__/fixtures/translatable-rows.ts';
   // Цей файл і модуль гарда містять зразки заборонених форм як дані.
   const SELF = 'pg/__tests__/product-graph-fixture.test.ts';
   const GUARD = 'pg/__tests__/fixtures/writer-guard.ts';

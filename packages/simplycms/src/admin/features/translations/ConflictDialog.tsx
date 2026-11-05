@@ -14,6 +14,9 @@ interface Props {
   readonly open: boolean;
   readonly onReload: () => void;
   readonly onKeep: () => void;
+  /** Тексти сутності, яка не товар (за замовчуванням — картка товару). */
+  readonly title?: string;
+  readonly description?: string;
 }
 
 /**
@@ -21,17 +24,23 @@ interface Props {
  * «Перезавантажити» — свідомий вибір користувача, «Лишити мої зміни» закриває
  * діалог (наступний «Зберегти» знову дасть 412, доки не перезавантажити).
  */
-export function ConflictDialog({ open, onReload, onKeep }: Props) {
+export function ConflictDialog({
+  open,
+  onReload,
+  onKeep,
+  title,
+  description,
+}: Props) {
   const t = useT();
   return (
     <AlertDialog open={open} onOpenChange={(o) => !o && onKeep()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {t('admin.translations.conflict.title')}
+            {title ?? t('admin.translations.conflict.title')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {t('admin.translations.conflict.description')}
+            {description ?? t('admin.translations.conflict.description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

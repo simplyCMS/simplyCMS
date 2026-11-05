@@ -18,6 +18,7 @@ import {
   withDbName,
 } from '../apply.mjs';
 import { modificationGraphSql } from './fixtures/product-graph';
+import { PRIMARY, translatableStatements } from './fixtures/translatable-rows';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 // 🔴 Локальна константа — `aggregate-deps.test.ts` (Task 1) ще не існує на
@@ -48,8 +49,19 @@ const P2 = '10000002-0000-4000-8000-000000000004'; // інвертор (має �
 const GLOBAL: Array<[table: string, first: string, second: string]> = [
   [
     'order_statuses',
-    `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 1', 'dflt-1', true)`,
-    `insert into public.order_statuses (id, name, code, is_default) values (gen_random_uuid(), 'Дефолт 2', 'dflt-2', true)`,
+    // Рядок статусу без перекладу основної мови на коміті відмовляє (І4): перший дефолт
+    // пишеться разом із перекладом (простий протокол — один неявний COMMIT).
+    translatableStatements({
+      table: 'order_statuses',
+      base: { code: "'dflt-1'", is_default: 'true' },
+      translationTable: 'order_status_translations',
+      ownerColumn: 'status_id',
+      id: '00000000-0000-4000-8000-0000000000d1',
+      texts: { [PRIMARY]: { name: 'Дефолт 1' } },
+      textColumns: { name: 'name' },
+    }).join(';\n'),
+    // Другий падає на унікальному індексі ще до коміту — переклад не потрібен.
+    `insert into public.order_statuses (id, code, is_default) values (gen_random_uuid(), 'dflt-2', true)`,
   ],
   [
     'user_categories',

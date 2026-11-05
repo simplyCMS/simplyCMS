@@ -67,7 +67,7 @@
   (самі беруть СПІЛЬНИЙ `languages-set` і читають мови `draft`/`published` після нього, Review
   Focus 1), `setExplicitPath`/`setExplicitToken` (явна зміна; власна історична адреса знову
   поточна, чужа → 409, І18), `copyPathsForLocale`/`copyTokensForLocale` (пакетне заповнення нової
-  мови), `resolvePath`/`resolveToken`/`currentPaths`, `publicNames` (верхньорівневі імена
+  мови), реєстр видів цілей `PATH_KINDS`/`TOKEN_KINDS` (`targets.ts`; вид і колонку читають шляхи, токени, копіювання, власники)/`currentPaths`, `publicNames` (верхньорівневі імена
   `public/` збірки, яким адреса дорівнювати не може).
 - Один генератор slug для обох реєстрів (І22) — `simplycms/domain/slugs`: `slugify` (таблиця
   мовного пакета; `null` для письма без таблиці), `allocateSlug` (`base`, `base-2`…),
@@ -123,6 +123,11 @@
 - Сутності поза проєкцією (модифікації, текстові значення властивостей) — `withFallback`
   (`simplycms/translations`): пара LEFT JOIN `t_loc`/`t_src`, текст `coalesce`, ознака fallback із
   даних.
+- **Скалярний підзапит замість JOIN-ів:** `translatedFieldSql(spec, field, owner, text)`
+  (`simplycms/translations`) — `coalesce(<мова запиту>, <основна>)` одним виразом, що вкладається в
+  Drizzle-`select`; для читачів, зібраних з `.leftJoin` (замовлення зі статусом: назва статусу
+  в `storefront/loaders/entities/order.ts`). Поле звіряється з `spec.fields`, ідентифікатори — з
+  білого списку. `withFallback` лишається для читачів з власними JOIN-ами й ознакою fallback.
 - **Мова читання** — `resolveTextLocale` (невідома чи не `published` мова з клієнта → основна, не
   помилка) і `requirePublishedTextLocale` (оформлення замовлення: лише `published`, інакше
   відмова). Обидва дають брендований `TextLocale` (`checkedTextLocale`): пару `{ locale, primary }`
@@ -153,6 +158,14 @@
 - Запис — лише командами агрегата (`products.saveDescription`, `products.saveTranslation`,
   `products.setPath`, …), не фабричним CRUD: колекції товару, модифікацій і значень у `admin-data`
   лише читають.
+- **Фабрика команд** `defineTranslatableCommands` (`admin-server/impl/translatable/`) дає кореню без
+  дочірніх колекцій `create`, `get`, `saveDescription`, `saveTranslation`, `deleteTranslation`,
+  `list` за реєстром `TRANSLATABLE` (дзеркало операцій товару без товарних частин; id генерує
+  викликач, команди запису `versioned`, обов'язкові поля основної мови — за `spec.required`).
+  Домени, яких фабрика не покриває (`remove`, `setDefault`, `reorder`), — іменовані операції сутності
+  з `lockRoots` по відсортованих id. Перша сутність — статуси замовлень (`order-statuses.*`); клієнт —
+  діалог на спільному наборі `admin/features/translations/` (`useTranslatableTexts` з обов'язковим
+  `aggregate`, `AggregateVersionContext`, `ConflictDialog`).
 - Колекції читають назву з перекладу ОСНОВНОЇ мови — `readModel` фабрики `defineAdminResource`
   (INNER JOIN на переклад, обчислені поля `computed`, напр. `mainImage`): товар без перекладу
   основної мови в колекцію не потрапляє.

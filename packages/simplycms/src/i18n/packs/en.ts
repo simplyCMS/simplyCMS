@@ -9,5 +9,20 @@ export const enPack: LanguagePack = {
     admin: () => import('../catalogs/en/admin/index').then((m) => m.messages),
     mail: () => import('../catalogs/en/mail').then((m) => m.messages),
   },
-  content: {},
+  content: {
+    seed: {
+      orderStatuses: {
+        new: 'New',
+        confirmed: 'Confirmed',
+        processing: 'Processing',
+        shipped: 'Shipped',
+        delivered: 'Delivered',
+        cancelled: 'Cancelled',
+      },
+      priceTypeRetail: 'Retail',
+      customerCategoryRetail: 'Retail',
+      mainShippingZone: 'Main zone',
+      storeName: 'My store',
+    },
+  },
 };

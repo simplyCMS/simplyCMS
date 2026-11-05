@@ -7,11 +7,12 @@ import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 import { orderInput, placeOrder } from './orders';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
 
-export const CONFIRMED = '00000001-0000-4000-8000-000000000002';
-export const CANCELLED = '00000001-0000-4000-8000-000000000006';
+export const CONFIRMED = SYSTEM_SEED_IDS.orderStatuses.confirmed;
+export const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
 /** Прибирає з рядків ключі, що законно різняться між двійниками. */
 export const strip = (rows: object[], keys: string[]) =>

@@ -25,6 +25,105 @@
 
 ---
 
+## [0.17.0] — 2026-11-05
+
+Мінорний реліз лінії 0.x (npm-тег `latest`): до 1.0 злам сумісності піднімає мінорну версію, а
+`simplycms update` без `--to` її не перетинає. Схему змінено — **перестворити БД** (baseline ще не
+заморожено, виняток до `1.0.0-rc.1`). Новий обов'язковий ключ конфігу `primaryLocale` (див. BREAKING).
+Хвиля мультимовності триває: решта сутностей М2 (зрізи А і Б), М3–М5 і заморожування baseline — далі.
+
+Хвиля мультимовності, М2б (фундамент): старт БД з основною мовою магазину; статуси замовлень — перша
+сутність на фабриці команд перекладного агрегата. Схему й `0003_seed.sql` правлено (виняток baseline до
+`1.0.0-rc.1`) — **перестворити БД**.
+
+### Змінено
+
+- Адмінка «Статуси замовлень»: діалог має вкладки мов (тексти статусу по мовах зі статусами перекладу),
+  збереження — командами агрегата з `expectedVersion`; 412 показує діалог конфлікту, 412/409 від
+  `reorder`/`setDefault`/`remove` перечитують список. Колекція статусів лише для читання.
+- `0003_seed.sql` лишає лише рядки без тексту (`stock_management`, `cache_generations`, тема). Мову,
+  статуси замовлень, тип ціни, категорію покупця, профіль магазину й основну зону доставки вставляє
+  новий `bootstrapStore` (`simplycms/migrate`) на порожній `languages` — з текстами з мовного пакета
+  основної мови. `applyMigrations` кличе його після накату, коли задано `ApplyOptions.primaryLocale`
+  (`ApplyReport.bootstrapped`). Без `primaryLocale` накат лишає `languages` і довідники порожніми.
+
+- `0003_seed.sql`: службовий `description` рядка `stock_management` — `NULL` (магазин, що стартує
+  англійською, не отримує українських текстів).
+- `db:apply` і прод-старт (за наявності `MIGRATION_DATABASE_URL`) читають основну мову з
+  `primaryLocale` у `simplycms.config.ts` і передають її накату: чиста БД стартує з мовою й системними
+  довідниками. Мітки немає — відмова до накату. `readStoreFacts` повертає `primaryLocale` (мова з БД),
+  `doctor --online` і `status` мають перевірку `primary-locale` (конфіг ≠ БД — `warn`); офлайн-перевірка
+  №10 вимагає мітку `primaryLocale:`.
+
+### Додано
+
+- Фабрика `defineTranslatableCommands` (`admin-server/impl/translatable/`): `create`, `get`, `saveDescription`,
+  `saveTranslation`, `deleteTranslation` і `list` перекладного агрегата без дочірніх колекцій; ресурс адмінки
+  отримав `listIn` (читання в транзакції викликача).
+- Операції статусів замовлень `order-statuses.{list,get,create,saveDescription,saveTranslation,deleteTranslation,
+  remove,setDefault,reorder}` (реєстр операцій, HTTP `/api/v1`, OpenAPI). `setDefault` і `reorder` піднімають
+  `version` обох записаних рядків (замки коренів — `lockRoots` за відсортованими id, без 40P01); `remove`
+  дефолтного й системного статусу — 409 `state` (`order_status_default`, `order_status_system`), статусу з
+  замовленнями — 409 `reference`.
+- Таблиця `order_status_translations` (назва статусу по мовах) з обов'язковим рядком основної мови на коміті.
+- `create-simplycms-store --locale <код>` (`uk`, `en`): основна мова магазину при створенні, у діалозі —
+  select. `--yes`/CI без `--locale` — помилка.
+- `readPrimaryLocale(source)` у `simplycms/migrate` — читання мітки `primaryLocale` з тексту конфігу.
+- `translationTable` (схема, `src/schema/translation-table.ts`): спільна форма таблиці перекладу; п'ять таблиць
+  товару описані через нього без зміни SQL baseline.
+- Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
+  `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
+- `translatedFieldSql(spec, field, owner, text)` (`simplycms/translations`): скалярний підзапит «мова запиту,
+  інакше основна» для читачів з `.leftJoin`; ним читається назва статусу замовлення на вітрині.
+- `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).
+
+### Виправлено
+
+- Обрив простого з'єднання Postgres (перезапуск БД, пулер) більше не валить процес магазину.
+
+### BREAKING
+
+- **`simplycms/addressing`: реєстр видів цілей (Р22):** `resolvePath` і `resolveToken` знесено (споживачів
+  поза тестами не було; читайте `currentPaths` чи реєстри SQL-ом); `PATH_TARGET_COLUMNS` замінено реєстром
+  `PATH_KINDS`/`TOKEN_KINDS` (`targets.ts`); `AddressTarget`/`TokenTarget` виводяться з нього. Форма
+  `IncompleteItem` (мови, `simplycms/admin-server`) — `{ kind, id, stage }` замість `{ productId, stage }`;
+  дротовий шлях відмови `language_incomplete` не змінився.
+- **Назва статусу замовлення на вітрині — мовою запиту (Р19):** серверні функції `getOrderStatuses`,
+  `getMyOrders`, `getMyOrder`, `getOrderView`, `getProfileOverview` приймають обов'язкове `{ locale }`
+  (`ContentLocale`; невідома чи неопублікована мова читається основною); ключі кешу сторінок профілю й
+  «замовлення прийнято» містять мову контенту. Лоадери: `loadOrderStatuses(db, text)`,
+  `loadUserOrders(db, userId, text, statusId?)`, `loadOrderDetail(db, orderId, text)` беруть `TextLocale`;
+  `loadStatusByCode` замінено на `loadStatusIdByCode(db, code)` (повертає лише id).
+- **Статуси замовлень (Р19):** шість легасі-serverFn знесено: `insertOrderStatuses`, `updateOrderStatuses`,
+  `removeOrderStatuses` (пакетні, через узагальнений запис ресурсу), а також `listOrderStatuses`,
+  `setDefaultOrderStatus` і `reorderOrderStatus` переписано на операції `order-statuses.*` з новими формами:
+  - нові `getOrderStatus`, `createOrderStatus`, `saveOrderStatus`, `saveOrderStatusTranslation`,
+    `deleteOrderStatusTranslation`, `removeOrderStatus` (по одному статусу, `expectedVersion`);
+  - `setDefaultOrderStatus` вимагає `expectedVersion` і повертає `{ version }` (було: рядок статусу);
+  - `reorderOrderStatus` вимагає `expectedVersion` і повертає `{ version, swapped: boolean }` (було:
+    `{ swapped: Row[] }`); паралельна зміна сусіда — 412;
+  - `listOrderStatuses` віддає рядок read-model (`name` основної мови, `version`, без `createdAt`).
+  Ресурс `orderStatusesOps` із запису знято й із барелю `impl` не експортується; разом із ним зі
+  публічного `simplycms/admin-server/impl` зникли `setDefaultInput`, `setDefaultOrderStatusOp`, `reorderInput`,
+  `reorderOrderStatusOp`, `removeStatusInput`, `removeManyInput`, `removeManyOrderStatusesOp`.
+- **`order_statuses.name` → `order_status_translations`:** колонки `name` у `order_statuses` немає, додано
+  `version`. Тип `OrderStatus` (`simplycms/schema/types`) — рядок списку (`name` основної мови, без `createdAt`).
+  **Перестворити БД.**
+- `fieldToWire` переїхав із `simplycms/translations` у клієнтобезпечний
+  `simplycms/domain/translations` (разом з `TRANSLATABLE_FIELDS` — перелік полів, обов'язкових і
+  rich-полів перекладних сутностей); `TranslatableEntity` має нове обов'язкове поле `base` (таблиця
+  сутності). Імпорти `fieldToWire` з `simplycms/translations` замініть на домен.
+- `SimplyCmsConfig.primaryLocale` (`simplycms/runtime`) — обов'язкове поле: додайте
+  `primaryLocale: '<код>'` (однорядкова мітка в одинарних лапках) у `simplycms.config.ts`.
+- `create-simplycms-store --yes` (і CI/не-TTY) вимагає `--locale <код>`.
+- `StartDeps.readPrimaryLocale` обов'язкове для `runStart`, а `StartMigrate` отримує `primaryLocale`
+  (`simplycms/prod-start`); `StoreFacts` має нове поле `primaryLocale`.
+- `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema`) знесено: замість нього `SYSTEM_SEED_IDS.mainShippingZone`.
+- `LanguagePack.content.seed` (`SeedTexts`: тексти статусів, типу ціни, категорії, зони, назви магазину)
+  обов'язкове для кожного мовного пакета.
+
+---
+
 ## [0.16.0] — 2026-11-05
 
 Мінорний реліз лінії 0.x (npm-тег `latest`): до 1.0 злам сумісності піднімає мінорну версію, а

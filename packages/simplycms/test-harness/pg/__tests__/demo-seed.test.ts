@@ -61,7 +61,7 @@ describe('демо-сід: накат поверх канону', () => {
     // К2-Е0: доставка й залишки — вставки секції 10 з нетривіальними
     // формами `on conflict` (частковий індекс залишків) доводять тут
     // ідемпотентність (кейс нижче). Зону доставки демо-сід не вставляє:
-    // основну дає `0003_seed`, тож `shippingZones` лишається сталим.
+    // основну дає `bootstrapStore` (`applyCanon`), тож `shippingZones` лишається сталим.
     shippingMethods: (
       await queryRows(dbUrl, 'select id from public.shipping_methods')
     ).length,

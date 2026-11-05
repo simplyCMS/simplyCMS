@@ -1,7 +1,9 @@
-// М1 Task 14, фікс-раунд 5: рядкові замки `products` сильніші за KEY SHARE (`NO KEY
-// UPDATE`, `UPDATE`) бере лише `lockAggregateRoots` — він сам бере спільний
-// `languages-set` ПЕРЕД коренем (`products/aggregate/lock-order.ts`, пункт (1)). Замок
-// кореня повз хелпер повернув би порядок «корінь -> set» і цикл 40P01 з `languages.remove`.
+// М1 Task 14, фікс-раунд 5; М2б Д8/Р19: рядкові замки КОЖНОГО кореня агрегата (`products`,
+// `order_statuses`, …) сильніші за KEY SHARE (`NO KEY UPDATE`, `UPDATE`) бере лише спільний
+// `lockRoots` (`translatable/roots.ts`) — він сам бере спільний `languages-set` ПЕРЕД коренем,
+// а товарний `lockAggregateRoots` лише делегує йому (`products/aggregate/lock-order.ts`,
+// пункт (1)). Замок кореня повз хелпер повернув би порядок «корінь -> set» і цикл 40P01 з
+// `languages.remove`. Перелік коренів звіряється з оголошеними `AggregateRoot` нижче.
 import { describe, expect, it } from 'vitest';
 import { tableNames } from './support/table-names';
 
@@ -16,17 +18,30 @@ const rel = (key: string) =>
     '',
   );
 
-const HELPER = 'admin-server/impl/products/aggregate/lock-order.ts';
+const HELPER = 'admin-server/impl/translatable/roots.ts';
+const PRODUCT_LOCKS = 'admin-server/impl/products/aggregate/lock-order.ts';
+
+/** Корені агрегатів: ім'я таблиці БД й ідентифікатор Drizzle (кожен `AggregateRoot` — тут). */
+const ROOTS = [
+  { sql: 'products', ident: 'products' },
+  { sql: 'order_statuses', ident: 'orderStatuses' },
+] as const;
 
 /** Замок кореня в сирому SQL за іменем таблиці БД; DELETE — неявний FOR UPDATE. */
-const RAW_LOCKS = [
-  /from\s+(?:only\s+)?(?:"?public"?\s*\.\s*)?"?products"?(?![\w])[^;`]*?\bfor\s+(?:no\s+key\s+)?update\b/i,
-  /delete\s+from\s+(?:only\s+)?(?:"?public"?\s*\.\s*)?"?products"?(?![\w])/i,
-];
+const RAW_LOCKS = ROOTS.flatMap(({ sql }) => [
+  new RegExp(
+    `from\\s+(?:only\\s+)?(?:"?public"?\\s*\\.\\s*)?"?${sql}"?(?![\\w])[^;\`]*?\\bfor\\s+(?:no\\s+key\\s+)?update\\b`,
+    'i',
+  ),
+  new RegExp(
+    `delete\\s+from\\s+(?:only\\s+)?(?:"?public"?\\s*\\.\\s*)?"?${sql}"?(?![\\w])`,
+    'i',
+  ),
+]);
 
 /** Замок через об'єкт таблиці під будь-яким іменем модуля (`tableNames`). */
 const locksVia = (src: string) =>
-  tableNames(src, 'products').some((name) =>
+  ROOTS.flatMap(({ ident }) => tableNames(src, ident)).some((name) =>
     [
       `\\.from\\(\\s*${name}\\s*\\)[^;]*?\\.for\\(\\s*['"](?:no key update|update)['"]`,
       `from\\s+(?:only\\s+)?\\$\\{\\s*${name}\\s*\\}[^;\`]*?\\bfor\\s+(?:no\\s+key\\s+)?update\\b`,
@@ -43,17 +58,24 @@ const offenders = (files: Record<string, string>) =>
     )
     .map(([path]) => path);
 
-describe('замок кореня агрегата — лише lockAggregateRoots (М1, Task 14)', () => {
+describe('замок кореня агрегата — лише lockRoots (М1 Task 14, М2б Д8)', () => {
   const files = Object.fromEntries(
     Object.entries(sources).map(([k, v]) => [rel(k), v]),
   );
 
   it('хелпер бере set перед рядком кореня (позитивний контроль сканера)', () => {
     const src = files[HELPER] ?? '';
-    expect(src).toMatch(/\.from\(products\)[^;]*\.for\(strength\)/);
+    expect(src).toMatch(/\.orderBy\(root\.id\)[^;]*\.for\(strength\)/);
+    expect(src.indexOf('advisoryXactLockShared(db')).toBeGreaterThan(-1);
     expect(src.indexOf('advisoryXactLockShared(db')).toBeLessThan(
-      src.indexOf('.from(products)'),
+      src.indexOf('.for(strength)'),
     );
+  });
+
+  it('товарний lockAggregateRoots делегує lockRoots і не має власного .for(', () => {
+    const src = files[PRODUCT_LOCKS] ?? '';
+    expect(src).toMatch(/lockRoots\(\s*db,\s*PRODUCT_ROOT/);
+    expect(src).not.toMatch(/\.for\(/);
   });
 
   it('негативний контроль: кожна форма замка ловиться', () => {
@@ -85,5 +107,25 @@ describe('замок кореня агрегата — лише lockAggregateRoo
 
   it('у src рядкові замки коренів — лише в lockAggregateRoots', () => {
     expect(offenders(files)).toEqual([]);
+  });
+
+  it('кожен оголошений AggregateRoot є в переліку сканера (нова сутність не прослизне)', () => {
+    const declared = Object.values(files).flatMap((src) =>
+      [...src.matchAll(/:\s*AggregateRoot\s*=\s*\{\s*table:\s*(\w+)/g)].map(
+        (m) => m[1],
+      ),
+    );
+    expect(declared.sort()).toEqual(ROOTS.map((r) => r.ident).sort());
+  });
+
+  it('негативний контроль статусів: сирий .for( на order_statuses у файлі команди — червоний', () => {
+    expect(
+      offenders({
+        'order-statuses/bad.ts':
+          "await db.select().from(orderStatuses).where(x).for('update');",
+        'order-statuses/bad-sql.ts':
+          'sql`select 1 from public.order_statuses where id = ${id} for no key update`',
+      }),
+    ).toEqual(['order-statuses/bad.ts', 'order-statuses/bad-sql.ts']);
   });
 });

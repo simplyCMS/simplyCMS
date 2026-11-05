@@ -12,6 +12,11 @@ import {
 } from './shared';
 import { keyShare, pathCandidates, tokenCandidates } from './copy-candidates';
 import { publicNames } from './public-names';
+import { pathKindOf, raw, tokenKindOf } from './targets';
+
+// Лише товар і модифікація (не ітерація реєстру): зріз Б проведе copy* реєстром.
+const P = pathKindOf('product');
+const T = tokenKindOf('modification');
 
 // Пакетне заповнення нової мови копіями поточних адрес/токенів основної (М1,
 // Review Focus 2). Ідемпотентне: вибираються лише сутності БЕЗ поточного
@@ -37,7 +42,7 @@ export async function copyPathsForLocale(
      order by c.path, c.product_id limit ${limit}`);
   const roots = await keyShare(
     db,
-    'products',
+    P.rootTable,
     candidates.rows.map((r) => r.product_id),
   );
   const batch = {
@@ -66,7 +71,7 @@ export async function copyPathsForLocale(
     .values(values.map((v) => ({ id: randomUUID(), ...v })))
     .onConflictDoNothing({
       target: [urlPaths.locale, urlPaths.productId],
-      where: sql.raw('is_current and product_id is not null'),
+      where: sql.raw(`is_current and ${P.column} is not null`),
     })
     .returning({ id: urlPaths.id });
   return inserted.length;
@@ -95,12 +100,12 @@ export async function copyTokensForLocale(
   // порядку й щоб пропускати вже видалені товари.
   const roots = await keyShare(
     db,
-    'products',
+    T.lockChain[0],
     candidates.rows.map((r) => r.scope_id),
   );
   const mods = await keyShare(
     db,
-    'product_modifications',
+    T.lockChain[1],
     candidates.rows
       .filter((r) => roots.has(r.scope_id))
       .map((r) => r.modification_id),
@@ -115,7 +120,7 @@ export async function copyTokensForLocale(
   const scopes = [...new Set(batch.rows.map((r) => r.scope_id))];
   const rows = await db.execute<{ scope_id: string; slug: string }>(sql`
     select scope_id, slug from public.slug_tokens
-     where locale = ${locale} and token_kind = 'modification'
+     where locale = ${locale} and token_kind = ${raw(`'${T.tokenKind}'`)}
        and scope_id = any(${textArray(scopes)}::uuid[])
        and ${candidateAny(sql`slug`, bases)}`);
   const takenByScope = new Map<string, Set<string>>();
@@ -141,7 +146,7 @@ export async function copyTokensForLocale(
     .values(values.map((v) => ({ id: randomUUID(), ...v })))
     .onConflictDoNothing({
       target: [slugTokens.locale, slugTokens.modificationId],
-      where: sql.raw('is_current and modification_id is not null'),
+      where: sql.raw(`is_current and ${T.column} is not null`),
     })
     .returning({ id: slugTokens.id });
   return inserted.length;

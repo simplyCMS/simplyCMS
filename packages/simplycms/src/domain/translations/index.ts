@@ -16,6 +16,7 @@ export {
   type TranslatableSpec,
   type TranslationRow,
 } from './status';
+export { TRANSLATABLE_FIELDS, fieldToWire } from './entities';
 export { hasRichText, hasText, normalizeTextInput } from './text';
 export {
   LANGUAGE_CODE_FORMAT,

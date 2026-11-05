@@ -17,7 +17,6 @@ import {
   copyPathsForLocale,
   createPathsForEntity,
   currentPaths,
-  resolvePath,
   setExplicitPath,
 } from 'simplycms/addressing';
 import { overridePublicNamesRootForTests } from '../../../src/addressing/public-names';
@@ -161,21 +160,21 @@ describe('реєстр адрес url_paths (І15, І16, І18, І19)', () => {
       ]);
     });
 
-    it('нова вільна адреса: стара йде в історію, resolve дає currentPath', async () => {
+    it('нова вільна адреса: стара йде в історію, історія в реєстрі', async () => {
       const p = await db.product('free-old');
       await admin((d) =>
         setExplicitPath(d, { kind: 'product', id: p }, 'uk', 'free-new'),
       );
-      const target = { kind: 'product', id: p };
-      expect(await admin((d) => resolvePath(d, 'uk', 'free-old'))).toEqual({
-        target,
-        currentPath: 'free-new',
-        isCurrent: false,
-      });
+      // Стара адреса лишилась в реєстрі як історична, нова — поточна.
       expect(
-        (await admin((d) => resolvePath(d, 'uk', 'free-new')))?.isCurrent,
-      ).toBe(true);
-      expect(await admin((d) => resolvePath(d, 'uk', 'nope-x'))).toBeNull();
+        await q(
+          `select path, is_current from url_paths where product_id = $1 and locale = 'uk' order by path`,
+          [p],
+        ),
+      ).toEqual([
+        { path: 'free-new', is_current: true },
+        { path: 'free-old', is_current: false },
+      ]);
       expect(
         await admin((d) => currentPaths(d, { kind: 'product', id: p })),
       ).toEqual(

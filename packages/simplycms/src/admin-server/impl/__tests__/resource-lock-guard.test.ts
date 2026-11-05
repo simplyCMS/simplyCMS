@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { orderStatuses } from 'simplycms/schema';
+import { priceTypes } from 'simplycms/schema';
 
 // Е6а-16: guard-хук фабрики. Порядок у транзакції — lock ПЕРШИМ запитом →
 // guard над УСІМ пакетом → запис; без lock/guard — колишній шлях. БД —
@@ -48,13 +48,13 @@ function fakeDb(log: string[], sqls: SQL[]) {
 }
 
 const base = {
-  entity: 'order_statuses',
-  table: orderStatuses,
+  entity: 'price_types',
+  table: priceTypes,
   operation: 'catalog.write',
   mode: 'eager',
   filterable: [],
   sortable: [],
-  writable: ['name', 'code', 'color', 'sortOrder'],
+  writable: ['name', 'code', 'sortOrder'],
   readonly: ['id', 'isDefault', 'createdAt'],
 } as const;
 

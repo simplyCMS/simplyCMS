@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import type { ChildCtx } from './children-common';
-import { fail, uuidArray } from './children-common';
+import { fail, uuidArray } from '../../translatable/steps';
 import type { PropertyKind, PropertyValuesInput } from './children-schemas';
 
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];

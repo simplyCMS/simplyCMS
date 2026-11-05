@@ -1,4 +1,4 @@
-// Е0: сіди (`0003_seed.sql`, `demo/demo-seed.sql`) генерують id на клієнті,
+// Е0: сіди (`0003_seed.sql`, `demo/demo-seed.sql`; мова й довідники — `bootstrapStore`, id з `SYSTEM_SEED_IDS`) генерують id на клієнті,
 // а не покладаються на `DEFAULT gen_random_uuid()` (Task 2, план
 // В2-К3-Е0). Task 4 знімає сам DEFAULT — після цього сід без явних `id` не
 // накотиться взагалі, тож перевірка мусить бути статичною й випереджати.
@@ -12,7 +12,7 @@ import * as schema from 'simplycms/schema';
 const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
-// вручну (8 у `0003_seed.sql`, 24 у `demo/demo-seed.sql`: 19 + переклади товару й
+// вручну (3 у `0003_seed.sql`, 24 у `demo/demo-seed.sql`: 19 + переклади товару й
 // модифікацій, `url_paths`, `slug_tokens` — М1 Task 10, проєкція — Task 14). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
@@ -21,7 +21,7 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 // Точне число компенсує цю сліпу зону: розбіжність кількості валить тест
 // незалежно від того, чи всі ЗНАЙДЕНІ вставки формально мають `id`.
 const SEEDS = [
-  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 8],
+  ['0003_seed.sql', resolve(MIGRATIONS, '0003_seed.sql'), 3],
   ['demo/demo-seed.sql', resolve(MIGRATIONS, 'demo/demo-seed.sql'), 24],
 ] as const;
 

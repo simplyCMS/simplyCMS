@@ -63,6 +63,7 @@ async function main() {
     targetDir,
     storeName,
     version: readVersion(),
+    locale: options.locale,
     databaseUrl: options.databaseUrl,
   });
   log.success(`Магазин «${storeName}» розгорнуто: ${targetDir}`);

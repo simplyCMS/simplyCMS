@@ -59,6 +59,10 @@ export const messages = {
   // Статуси замовлень
   'admin.orders.statuses.subtitle':
     'Управління статусами для відстеження замовлень',
+  'admin.orders.statuses.conflict.title': 'Статус змінив хтось інший',
+  'admin.orders.statuses.conflict.description':
+    'Хтось інший змінив довідник статусів, поки ви редагували. Перезавантажте актуальні дані або лишіть свої зміни (збереження знову дасть конфлікт, доки не перезавантажите).',
+  'admin.orders.statuses.loadFailed': 'Не вдалося завантажити статус',
   'admin.orders.statuses.add': 'Додати статус',
   'admin.orders.statuses.empty': 'Статуси ще не додані',
   'admin.orders.statuses.edit': 'Редагувати статус',

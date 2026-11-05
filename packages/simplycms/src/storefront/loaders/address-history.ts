@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { languages, products, slugTokens, urlPaths } from 'simplycms/schema';
+import { ADDRESS_KIND } from 'simplycms/domain';
 import { withStorefrontDb, type ActorDb } from './db';
 import { pageVisible } from './product-visibility';
 
@@ -15,6 +16,12 @@ export type AddressResolution = {
   mod: string | null;
 };
 
+/** Резолв + власник адреси: вид з реєстру видів `addressing` і id сутності. */
+export type OwnedAddressResolution = AddressResolution & {
+  kind: string;
+  id: string;
+};
+
 /**
  * Резолв адреси товару в реєстрі `url_paths` + токена `?mod=` у `slug_tokens`.
  * Єдине джерело правди адреси — реєстр (П8): поточна адреса дає сторінку,
@@ -26,7 +33,7 @@ export async function resolveProductAddress(
   locale: string,
   path: string,
   mod: string | null,
-): Promise<AddressResolution | null> {
+): Promise<OwnedAddressResolution | null> {
   const current = alias(urlPaths, 'current_path');
   const [hit] = await db
     .select({ productId: urlPaths.productId, path: current.path })
@@ -54,6 +61,8 @@ export async function resolveProductAddress(
     .limit(1);
   if (!hit || hit.productId === null) return null;
   return {
+    kind: ADDRESS_KIND.product,
+    id: hit.productId,
     path: hit.path,
     mod:
       mod === null ? null : await currentToken(db, locale, hit.productId, mod),

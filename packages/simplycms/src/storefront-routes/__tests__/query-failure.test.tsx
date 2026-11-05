@@ -22,6 +22,10 @@ const server = vi.hoisted(() => ({
   getOrderView: vi.fn(),
 }));
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ orderId: 'order-1' }),
   useSearch: () => ({}),

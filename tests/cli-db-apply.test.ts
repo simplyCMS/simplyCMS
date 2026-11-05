@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
+import { readPrimaryLocale } from '../packages/simplycms/src/migrate/primary-locale';
 import {
   describeError,
   EXIT_PENDING,
@@ -18,9 +19,16 @@ import {
 const OWNER = 'postgres://owner:s3cr3t@h:5432/db';
 const RUNTIME = 'postgres://app_runtime:rt-pass@h:5432/db';
 
-type Report = { applied: string[]; pending: string[] };
+type Report = {
+  applied: string[];
+  pending: string[];
+  bootstrapped?: boolean;
+};
 
-function harness(env: Record<string, string>) {
+function harness(
+  env: Record<string, string>,
+  config: string | (() => string) = "primaryLocale: 'uk'",
+) {
   const applyMigrations = vi.fn(
     async (_options: Record<string, unknown>): Promise<Report> => ({
       applied: [],
@@ -42,7 +50,8 @@ function harness(env: Record<string, string>) {
     run(argv, {
       storeRoot: '/store',
       env,
-      core: { applyMigrations },
+      core: { applyMigrations, readPrimaryLocale },
+      readConfig: typeof config === 'function' ? config : () => config,
       ui,
     });
   return { applyMigrations, call, text: () => lines.join('\n') };
@@ -55,6 +64,32 @@ describe('simplycms db:apply', () => {
     expect(h.text()).toContain('MIGRATION_DATABASE_URL');
     expect(h.text()).not.toContain('rt-pass');
     expect(h.applyMigrations).not.toHaveBeenCalled();
+  });
+
+  it('у конфігу немає primaryLocale → 1 з підказкою, ядро не кликано', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER }, "currency: 'UAH'");
+    expect(await h.call([])).toBe(1);
+    expect(h.text()).toContain("primaryLocale: '<код>'");
+    expect(h.applyMigrations).not.toHaveBeenCalled();
+  });
+
+  it('конфіг не прочитано → 1 з файлом і причиною, ядро не кликано', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER }, () => {
+      throw new Error('ENOENT: no such file');
+    });
+    expect(await h.call([])).toBe(1);
+    expect(h.text()).toContain('simplycms.config.ts');
+    expect(h.text()).toContain('ENOENT');
+    expect(h.text()).not.toContain('Додайте основну мову');
+    expect(h.applyMigrations).not.toHaveBeenCalled();
+  });
+
+  it('основна мова з конфігу передається ядру', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER }, "primaryLocale: 'en'");
+    expect(await h.call([])).toBe(0);
+    expect(h.applyMigrations).toHaveBeenCalledWith(
+      expect.objectContaining({ primaryLocale: 'en' }),
+    );
   });
 
   it('накат: connectionString — власник, runtimeUrl — DATABASE_URL, dir — db/migrations магазину', async () => {
@@ -77,6 +112,18 @@ describe('simplycms db:apply', () => {
     const dir = String(h.applyMigrations.mock.calls[0]![0].dir);
     expect(dir.replaceAll('\\', '/')).toBe('/store/db/migrations');
     expect(h.text()).toContain('0005_x.sql');
+  });
+
+  it('накат лише засіяв мову → без «Нічого накочувати» і без дубля рядка засіву', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER });
+    h.applyMigrations.mockResolvedValue({
+      applied: [],
+      pending: [],
+      bootstrapped: true,
+    });
+    expect(await h.call([])).toBe(0);
+    expect(h.text()).not.toContain('Засіяно основну мову');
+    expect(h.text()).not.toContain('Нічого накочувати');
   });
 
   it('--check з pending → 3 з іменем файлу; без pending → 0', async () => {

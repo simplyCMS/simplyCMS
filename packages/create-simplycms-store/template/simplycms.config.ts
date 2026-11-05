@@ -12,6 +12,7 @@ import { defineConfig } from 'simplycms/runtime';
  * у `vite.config.ts`), ядро приходить із `node_modules`.
  */
 export default defineConfig({
+  primaryLocale: 'uk',
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },

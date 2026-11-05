@@ -17,6 +17,10 @@ export const messages = {
   'admin.errors.shippingPricingUnsupported':
     'This provider cannot quote shipping itself — choose another pricing mode',
   'admin.errors.shippingProviderUnknown': 'Unknown shipping provider',
+  'admin.errors.orderStatusDefault':
+    'The default status cannot be deleted — make another status the default first',
+  'admin.errors.orderStatusSystem':
+    'A system status (new, cancelled) cannot be deleted',
   'admin.errors.shippingZoneDefault':
     'The default zone cannot be disabled or deleted — make another zone the default first',
   'admin.errors.shippingZoneInactive': 'Only an active zone can be the default',

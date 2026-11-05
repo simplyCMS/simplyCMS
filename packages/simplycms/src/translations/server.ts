@@ -3,13 +3,13 @@ export { sourceFieldHash } from './hash';
 export {
   TRANSLATABLE,
   fieldFromWire,
-  fieldToWire,
   type TranslatableEntity,
   type TranslatableKey,
 } from './specs';
 export {
   loadTranslations,
   primaryLocaleCode,
+  translatedFieldSql,
   withFallback,
   type StoredTranslation,
 } from './read';

@@ -1911,6 +1911,107 @@
       },
       "isRLSEnabled": false
     },
+    "public.order_status_translations": {
+      "name": "order_status_translations",
+      "schema": "",
+      "columns": {
+        "status_id": {
+          "name": "status_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_hashes": {
+          "name": "source_hashes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_order_status_translations_locale": {
+          "name": "idx_order_status_translations_locale",
+          "columns": [
+            {
+              "expression": "locale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "order_status_translations_status_id_fkey": {
+          "name": "order_status_translations_status_id_fkey",
+          "tableFrom": "order_status_translations",
+          "tableTo": "order_statuses",
+          "columnsFrom": [
+            "status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "order_status_translations_locale_fkey": {
+          "name": "order_status_translations_locale_fkey",
+          "tableFrom": "order_status_translations",
+          "tableTo": "languages",
+          "columnsFrom": [
+            "locale"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "order_status_translations_pkey": {
+          "name": "order_status_translations_pkey",
+          "columns": [
+            "status_id",
+            "locale"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "order_status_translations_source_hashes_object": {
+          "name": "order_status_translations_source_hashes_object",
+          "value": "jsonb_typeof(\"order_status_translations\".\"source_hashes\") = 'object'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.order_statuses": {
       "name": "order_statuses",
       "schema": "",
@@ -1919,12 +2020,6 @@
           "name": "id",
           "type": "uuid",
           "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "code": {
@@ -1960,6 +2055,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
         }
       },
       "indexes": {

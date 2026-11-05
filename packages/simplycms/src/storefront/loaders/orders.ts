@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
+import type { TextLocale } from 'simplycms/domain/translations';
 import { orderItems, orderStatuses, orders } from 'simplycms/schema';
 import type { ActorDb } from './db';
 import {
@@ -22,6 +23,7 @@ import {
 export async function loadUserOrders(
   db: ActorDb,
   userId: string,
+  text: TextLocale,
   statusId?: string,
 ): Promise<OrderListRow[]> {
   const scope = statusId
@@ -29,7 +31,7 @@ export async function loadUserOrders(
     : eq(orders.userId, userId);
 
   const rows = await db
-    .select({ order: orderColumns, status: orderStatusColumns })
+    .select({ order: orderColumns, status: orderStatusColumns(text) })
     .from(orders)
     .leftJoin(orderStatuses, eq(orders.statusId, orderStatuses.id))
     .where(scope)
@@ -70,9 +72,10 @@ export async function loadUserOrders(
 export async function loadOrderDetail(
   db: ActorDb,
   orderId: string,
+  text: TextLocale,
 ): Promise<OrderDetailRow | null> {
   const [row] = await db
-    .select({ order: orderColumns, status: orderStatusColumns })
+    .select({ order: orderColumns, status: orderStatusColumns(text) })
     .from(orders)
     .leftJoin(orderStatuses, eq(orders.statusId, orderStatuses.id))
     .where(eq(orders.id, orderId))
@@ -136,5 +139,22 @@ export async function lockOrderStatus(
     .limit(1)
     .for('update');
 
+  return row ?? null;
+}
+
+/**
+ * Статус замовлення без назви: код і id для рішення «чи можна скасувати». Читається під
+ * актором покупця (RLS віддає лише його рядок), мова тексту скасуванню не потрібна.
+ */
+export async function loadOrderStatusRef(
+  db: ActorDb,
+  orderId: string,
+): Promise<{ statusId: string | null; code: string | null } | null> {
+  const [row] = await db
+    .select({ statusId: orders.statusId, code: orderStatuses.code })
+    .from(orders)
+    .leftJoin(orderStatuses, eq(orders.statusId, orderStatuses.id))
+    .where(eq(orders.id, orderId))
+    .limit(1);
   return row ?? null;
 }

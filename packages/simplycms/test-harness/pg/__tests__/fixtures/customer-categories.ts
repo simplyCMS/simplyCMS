@@ -8,6 +8,7 @@ import { closeDbPool } from 'simplycms/db';
 import { resolveHarness } from '../../up.mjs';
 import * as H from '../../apply.mjs';
 import { rows } from './admin-shipping';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 export { conflict, rows } from './admin-shipping';
 export { invalid } from './admin-discount-input';
@@ -15,7 +16,7 @@ export { invalid } from './admin-discount-input';
 const MIGRATIONS = join(import.meta.dirname, '../../../../migrations');
 
 /** Дефолтна категорія «Роздріб» з `0003_seed.sql`. */
-export const DEFAULT_CATEGORY = '00000004-0000-4000-8000-000000000001';
+export const DEFAULT_CATEGORY = SYSTEM_SEED_IDS.customerCategoryRetail;
 /** Субʼєкт гранта в моку `requireGrant` — автор ручних призначень. */
 export const ADMIN_ID = 'a0000000-0000-4000-8000-00000000e6a1';
 

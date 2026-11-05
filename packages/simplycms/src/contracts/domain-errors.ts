@@ -189,8 +189,13 @@ export const ADMIN_STATE_CONSTRAINT = {
   // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
   reviewChanged: 'review_changed',
   // М1 Task 14: поточну адресу/токен мови паралельно вставив інший запис (`languages.fill`
-  // чи команда) — дані вільні, а не зайняті; дію варто просто повторити.
+  // чи команда) — дані вільні, а не зайняті; дію варто просто повторити. Так само
+  // `order-statuses.setDefault`: колишній дефолт змінився між читанням і замком — клієнт
+  // перечитує список, а не повторює наосліп.
   concurrentChange: 'concurrent_change',
+  // М2б Р19: інваріанти довідника статусів замовлень під `catalog.write`.
+  orderStatusDefault: 'order_status_default',
+  orderStatusSystem: 'order_status_system',
   // Фінальне рев'ю М1 (I-2, І19): код нової мови = поточна адреса основної мови — префікс мови
   // перекрив би сторінку сутності. Хто займає — `AdminConflictError.owners`.
   languageCodeTaken: 'language_code_taken',

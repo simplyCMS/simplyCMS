@@ -80,6 +80,8 @@ async function applyCanon(dbUrl) {
   await applyMigrations({
     connectionString: dbUrl,
     dir: MIGRATIONS_DIR,
+    // Мова й довідники демо-магазину — українські, як у демо-сіді.
+    primaryLocale: 'uk',
     log: (line) => console.log(`[demo-db] ${line}`),
   });
 }

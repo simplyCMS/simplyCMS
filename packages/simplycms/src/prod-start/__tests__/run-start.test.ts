@@ -33,6 +33,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     cwd: '/srv/shop',
     migrate,
     resolveDriverEnv,
+    readPrimaryLocale: () => 'uk' as string | null,
     execve,
     log: (message: string) => logs.push(message),
     execPath: '/usr/bin/node',
@@ -62,6 +63,7 @@ describe('runStart', () => {
       connectionString: OWNER_URL,
       dir: '/srv/shop/db/migrations',
       runtimeUrl: baseEnv.DATABASE_URL,
+      primaryLocale: 'uk',
     });
     expect(execve).toHaveBeenCalledOnce();
     const [file, args, env] = execve.mock.calls[0];
@@ -71,8 +73,38 @@ describe('runStart', () => {
     expect(env).not.toHaveProperty('MIGRATION_DATABASE_URL');
   });
 
-  it('змінної немає → накату немає, execve є', async () => {
-    const { deps, migrate, execve } = setup({ env: { ...baseEnv } });
+  it('є MIGRATION_DATABASE_URL, але в конфігу немає primaryLocale → код 1 до накату, execve немає', async () => {
+    const { deps, logs, migrate, execve } = setup({
+      readPrimaryLocale: () => null,
+    });
+    expect(await runStart(deps)).toBe(1);
+    expect(migrate).not.toHaveBeenCalled();
+    expect(execve).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain("primaryLocale: '<код>'");
+  });
+
+  it('конфіг не прочитано (ENOENT) → код 1 з назвою файлу й причиною, не «немає мітки»', async () => {
+    const { deps, logs, migrate, execve } = setup({
+      readPrimaryLocale: () => {
+        throw new Error(
+          "ENOENT: no such file, open '/srv/shop/simplycms.config.ts'",
+        );
+      },
+    });
+    expect(await runStart(deps)).toBe(1);
+    expect(migrate).not.toHaveBeenCalled();
+    expect(execve).not.toHaveBeenCalled();
+    const out = logs.join('\n');
+    expect(out).toContain('simplycms.config.ts');
+    expect(out).toContain('ENOENT');
+    expect(out).not.toContain('Додайте основну мову');
+  });
+
+  it('змінної немає → накату немає, execve є, мова не потрібна', async () => {
+    const { deps, migrate, execve } = setup({
+      env: { ...baseEnv },
+      readPrimaryLocale: () => null,
+    });
     await runStart(deps);
     expect(migrate).not.toHaveBeenCalled();
     expect(execve).toHaveBeenCalledOnce();
@@ -128,6 +160,16 @@ describe('runStart', () => {
     });
     await runStart(deps);
     expect(logs.join('\n')).toContain('нічого накочувати');
+  });
+
+  it('БД засіяно основною мовою → без «нічого накочувати» і без дубля рядка засіву', async () => {
+    const { deps, logs } = setup({
+      migrate: vi.fn(async () => ({ applied: [], bootstrapped: true })),
+    });
+    await runStart(deps);
+    // Рядок засіву — справа applyMigrations (тут він змоканий), не підсумку старту.
+    expect(logs.join('\n')).not.toContain('засіяно основну мову');
+    expect(logs.join('\n')).not.toContain('нічого накочувати');
   });
 
   it('без process.execve → код 1 і пояснення про Node ≥ 24', async () => {

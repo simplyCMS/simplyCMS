@@ -12,14 +12,14 @@ import {
   requireDistinct,
   requireLocales,
   uuidArray,
-  type ChildCtx,
   type Step,
-} from './children-common';
+} from '../../translatable/steps';
+import type { ChildCtx } from './children-common';
 import type { PropertyValuesInput } from './children-schemas';
 import { checkShape, loadKnownProperties } from './property-value-checks';
 import { writeValueRow, type ValueTable } from './property-value-write';
 import { assertRowsOwned } from './property-value-owned';
-import { remapPlanIssues } from './schemas';
+import { remapPlanIssues } from '../../translatable/wire';
 
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
 

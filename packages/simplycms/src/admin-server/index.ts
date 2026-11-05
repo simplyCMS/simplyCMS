@@ -11,13 +11,15 @@ import {
   listMailOutboxOp,
   retryMailOutboxOp,
   sweepUnreferencedMediaOp,
-  orderStatusesOps,
-  setDefaultInput,
-  setDefaultOrderStatusOp,
-  reorderInput,
-  reorderOrderStatusOp,
-  removeManyInput,
-  removeManyOrderStatusesOp,
+  orderStatusesCreate,
+  orderStatusesDeleteTranslation,
+  orderStatusesGet,
+  orderStatusesList,
+  orderStatusesRemove,
+  orderStatusesReorder,
+  orderStatusesSaveDescription,
+  orderStatusesSaveTranslation,
+  orderStatusesSetDefault,
   productsOps,
   productModificationsOps,
   productPricesOps,
@@ -159,31 +161,49 @@ export type {
  * але лише доки їх не тримає інший живий експорт. Схеми/операції назовні
  * НЕ реекспортуються.
  */
+// М2б Р19: довідник статусів — команди реєстру (версія, переклади), а не фабричний запис:
+// «не видалити дефолтний», порядок і дефолт — доменні інваріанти під замками коренів.
 export const listOrderStatuses = createServerFn({ method: 'GET' })
-  .validator(adminInput(orderStatusesOps.subsetSchema))
-  .handler(orderStatusesOps.list);
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesList, data));
 
-export const insertOrderStatuses = createServerFn({ method: 'POST' })
-  .validator(adminInput(orderStatusesOps.insertSchema))
-  .handler(orderStatusesOps.insert);
+export const getOrderStatus = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesGet, data));
 
-export const updateOrderStatuses = createServerFn({ method: 'POST' })
-  .validator(adminInput(orderStatusesOps.updateSchema))
-  .handler(orderStatusesOps.update);
+export const createOrderStatus = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesCreate, data));
 
-// 🔴 remove ЦІЄЇ сутності — guarded-операція, не фабричний ops.remove:
-// «не видалити дефолтний» — доменний інваріант (критерій К3-4′).
-export const removeOrderStatuses = createServerFn({ method: 'POST' })
-  .validator(adminInput(removeManyInput))
-  .handler(removeManyOrderStatusesOp);
+export const saveOrderStatus = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) =>
+    invokeFromServerFn(orderStatusesSaveDescription, data),
+  );
+
+export const saveOrderStatusTranslation = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) =>
+    invokeFromServerFn(orderStatusesSaveTranslation, data),
+  );
+
+export const deleteOrderStatusTranslation = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) =>
+    invokeFromServerFn(orderStatusesDeleteTranslation, data),
+  );
+
+export const removeOrderStatus = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesRemove, data));
 
 export const setDefaultOrderStatus = createServerFn({ method: 'POST' })
-  .validator(adminInput(setDefaultInput))
-  .handler(setDefaultOrderStatusOp);
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesSetDefault, data));
 
 export const reorderOrderStatus = createServerFn({ method: 'POST' })
-  .validator(adminInput(reorderInput))
-  .handler(reorderOrderStatusOp);
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(orderStatusesReorder, data));
 
 // 🔴 Валідатор — функція, а не Zod-схема: `validator` зі схемою не
 // приймає FormData (Start типізує цю гілку окремо). Вміст форми перевіряє

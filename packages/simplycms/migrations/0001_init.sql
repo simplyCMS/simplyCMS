@@ -208,14 +208,24 @@ CREATE TABLE "order_items" (
 );
 --> statement-breakpoint
 ALTER TABLE "order_items" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "order_status_translations" (
+	"status_id" uuid NOT NULL,
+	"locale" text NOT NULL,
+	"name" text,
+	"source_hashes" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "order_status_translations_pkey" PRIMARY KEY("status_id","locale"),
+	CONSTRAINT "order_status_translations_source_hashes_object" CHECK (jsonb_typeof("order_status_translations"."source_hashes") = 'object')
+);
+--> statement-breakpoint
 CREATE TABLE "order_statuses" (
 	"id" uuid PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
 	"code" varchar(50) NOT NULL,
 	"color" varchar(7) DEFAULT '#6B7280',
 	"sort_order" integer DEFAULT 0 NOT NULL,
 	"is_default" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"version" integer DEFAULT 1 NOT NULL,
 	CONSTRAINT "order_statuses_code_key" UNIQUE("code")
 );
 --> statement-breakpoint
@@ -804,6 +814,8 @@ ALTER TABLE "order_items" ADD CONSTRAINT "order_items_modification_id_fkey" FORE
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_stock_point_id_fkey" FOREIGN KEY ("stock_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "order_status_translations" ADD CONSTRAINT "order_status_translations_status_id_fkey" FOREIGN KEY ("status_id") REFERENCES "public"."order_statuses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "order_status_translations" ADD CONSTRAINT "order_status_translations_locale_fkey" FOREIGN KEY ("locale") REFERENCES "public"."languages"("code") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_pickup_point_id_fkey" FOREIGN KEY ("pickup_point_id") REFERENCES "public"."pickup_points"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_saved_address_id_fkey" FOREIGN KEY ("saved_address_id") REFERENCES "public"."user_addresses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "orders" ADD CONSTRAINT "orders_saved_recipient_id_fkey" FOREIGN KEY ("saved_recipient_id") REFERENCES "public"."user_recipients"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -892,6 +904,7 @@ CREATE INDEX "idx_order_items_order_id" ON "order_items" USING btree ("order_id"
 CREATE INDEX "idx_order_items_product_id" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_modification_id" ON "order_items" USING btree ("modification_id");--> statement-breakpoint
 CREATE INDEX "idx_order_items_stock_point_id" ON "order_items" USING btree ("stock_point_id");--> statement-breakpoint
+CREATE INDEX "idx_order_status_translations_locale" ON "order_status_translations" USING btree ("locale");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_order_statuses_single_default" ON "order_statuses" USING btree ("is_default" bool_ops) WHERE (is_default = true);--> statement-breakpoint
 CREATE INDEX "orders_created_at_idx" ON "orders" USING btree ("created_at" timestamptz_ops);--> statement-breakpoint
 CREATE INDEX "idx_orders_pickup_point_id" ON "orders" USING btree ("pickup_point_id" uuid_ops);--> statement-breakpoint

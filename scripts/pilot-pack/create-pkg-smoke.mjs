@@ -104,6 +104,8 @@ export function createPkgSmoke() {
         join(pkgDir, 'src/index.mjs'),
         target,
         '--yes',
+        '--locale',
+        'uk',
         '--no-install',
         '--no-git',
       ],

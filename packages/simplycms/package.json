@@ -1,6 +1,6 @@
 {
   "name": "simplycms",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": false,
   "description": "SimplyCMS framework: contracts, domain, data access, UI, themes, plugins and routes of the store engine in one package",
   "type": "module",
@@ -37,6 +37,7 @@
     "./domain/slugs": "./src/domain/slugs/index.ts",
     "./schema": "./src/schema/schema.ts",
     "./schema/types": "./src/schema/types.ts",
+    "./schema/seed-ids": "./src/schema/seed-ids.ts",
     "./admin-server": "./src/admin-server/index.ts",
     "./admin-server/impl": "./src/admin-server/impl/index.ts",
     "./admin-data": "./src/admin-data/index.ts",
@@ -72,6 +73,7 @@
     "./runtime/stale-chunk-react": "./src/runtime/stale-chunk-react.ts",
     "./runtime/content-locale": "./src/runtime/content-locale.ts",
     "./i18n": "./src/i18n/index.ts",
+    "./i18n/packs": "./src/i18n/packs/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
     "./storefront/seo": "./src/storefront/seo/index.ts",
@@ -258,6 +260,10 @@
         "types": "./dist/schema/types.d.ts",
         "import": "./dist/schema/types.js"
       },
+      "./schema/seed-ids": {
+        "types": "./dist/schema/seed-ids.d.ts",
+        "import": "./dist/schema/seed-ids.js"
+      },
       "./admin-server": {
         "types": "./dist/admin-server/index.d.ts",
         "import": "./dist/admin-server/index.js"
@@ -397,6 +403,10 @@
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
+      },
+      "./i18n/packs": {
+        "types": "./dist/i18n/packs/index.d.ts",
+        "import": "./dist/i18n/packs/index.js"
       },
       "./storefront/loaders": {
         "types": "./dist/storefront/loaders/index.d.ts",

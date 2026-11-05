@@ -1,6 +1,7 @@
 /** Повідомлення валідації форм — дзеркало `uk/validation.ts`. */
 export const messages = {
   'validation.nameRequired': 'Name is required',
+  'validation.fieldRequired': 'Field is required',
   'validation.codeRequired': 'Code is required',
   'validation.cityRequired': 'City is required',
   'validation.addressRequired': 'Address is required',

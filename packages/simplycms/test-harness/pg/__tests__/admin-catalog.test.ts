@@ -1,5 +1,5 @@
 // Е3, Task 3: ресурси каталогу on-demand проти живої БД. Шапка — ДОСЛІВНО
-// патерн admin-order-statuses.test.ts (createTempDatabase → канон →
+// патерн order-statuses-aggregate.test.ts (createTempDatabase → канон →
 // app_runtime → afterAll із closeDbPool() ПЕРШИМ).
 //
 // 🔴 serverFn тут НЕ викликаються (getRequest() без ALS-контексту падає) —

@@ -9,6 +9,7 @@ import { defineConfig } from 'simplycms/runtime';
  * профіль магазину в адмінці (БД); URL сайту — env `VITE_SITE_URL`.
  */
 export default defineConfig({
+  primaryLocale: 'uk',
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },

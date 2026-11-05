@@ -11,6 +11,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { useDeleteDb } from './fixtures/customer-delete';
 import { conflict as itemConflict } from './fixtures/order-items-edit';
+import { UK } from './fixtures/text-locale';
 
 vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 vi.mock('simplycms/auth', async (orig) => ({
@@ -40,7 +41,7 @@ describe('admin: стерте замовлення (Е6г-16/17)', () => {
       id,
       t,
     ]);
-    const read = () => withOrderTokenDb(t, (tx) => loadOrderDetail(tx, id));
+    const read = () => withOrderTokenDb(t, (tx) => loadOrderDetail(tx, id, UK));
     expect(await read()).not.toBeNull();
     await call(b.userId, b.email);
     expect(await read()).toBeNull();

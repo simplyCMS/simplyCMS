@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { orderStatuses, products, sectionProperties } from 'simplycms/schema';
+import { priceTypes, products, sectionProperties } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 
 // Операції торкаються auth/db лише в рантаймі хендлера — мокаємо обидва
@@ -22,14 +22,14 @@ import { defineAdminResource } from '../resource';
 import { bannersOps } from '../banners/resource';
 
 const ops = defineAdminResource({
-  entity: 'order_statuses',
-  table: orderStatuses,
+  entity: 'price_types',
+  table: priceTypes,
   operation: 'catalog.write',
   mode: 'eager',
   filterable: ['code', 'isDefault'],
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
-  writable: ['name', 'code', 'color', 'sortOrder'],
+  writable: ['name', 'code', 'sortOrder'],
   readonly: ['id', 'isDefault', 'createdAt'],
 });
 
@@ -100,16 +100,16 @@ describe('defineAdminResource (К3-4′)', () => {
   });
 
   it('exhaustiveness: пропуск І перетин — помилки ТИПУ', () => {
-    // Пропущений 'color' → __missingColumns: "color".
-    // @ts-expect-error — color не покритий
+    // Пропущений 'sortOrder' → __missingColumns: "sortOrder".
+    // @ts-expect-error — sortOrder не покритий
     defineAdminResource({
-      entity: 'order_statuses',
-      table: orderStatuses,
+      entity: 'price_types',
+      table: priceTypes,
       operation: 'catalog.write',
       mode: 'eager',
       filterable: [],
       sortable: [],
-      writable: ['name', 'code', 'sortOrder'],
+      writable: ['name', 'code'],
       readonly: ['id', 'isDefault', 'createdAt'],
     });
     // 'createdAt' в ОБОХ списках → __overlappingColumns: "createdAt"
@@ -117,13 +117,13 @@ describe('defineAdminResource (К3-4′)', () => {
     // мітку створення, а тип мовчав).
     // @ts-expect-error — createdAt і writable, і readonly
     defineAdminResource({
-      entity: 'order_statuses',
-      table: orderStatuses,
+      entity: 'price_types',
+      table: priceTypes,
       operation: 'catalog.write',
       mode: 'eager',
       filterable: [],
       sortable: [],
-      writable: ['name', 'code', 'color', 'sortOrder', 'createdAt'],
+      writable: ['name', 'code', 'sortOrder', 'createdAt'],
       readonly: ['id', 'isDefault', 'createdAt'],
     });
     expectTypeOf(ops.list).toBeFunction();
@@ -147,14 +147,13 @@ describe('defineAdminResource (К3-4′)', () => {
     expectTypeOf<PatchItem>().not.toHaveProperty('createdAt');
     expectTypeOf<PatchItem>().toHaveProperty('name');
 
-    // Необовʼязкові ключі зберігаються (InsertPick): `color`/`sortOrder` мають
-    // default, тож insert-рядок без них — валідний тип; patch — усе optional.
+    // Необовʼязкові ключі зберігаються (InsertPick): `sortOrder` має
+    // default, тож insert-рядок без нього — валідний тип; patch — усе optional.
     expectTypeOf<{
       id: string;
       name: string;
       code: string;
     }>().toExtend<InsertItem>();
-    expectTypeOf<InsertItem>().toHaveProperty('color');
     expectTypeOf<InsertItem>().toHaveProperty('sortOrder');
     expectTypeOf<PatchItem>().toHaveProperty('sortOrder');
     expectTypeOf<{ name: string }>().toExtend<PatchItem>();

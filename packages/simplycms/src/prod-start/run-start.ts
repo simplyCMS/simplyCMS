@@ -8,8 +8,13 @@ export type StartMigrate = (options: {
   connectionString: string;
   dir: string;
   runtimeUrl?: string;
+  /** Основна мова з конфігу: старт чистої БД створює з неї мову й довідники. */
+  primaryLocale: string;
   log: (message: string) => void;
-}) => Promise<{ readonly applied?: readonly string[] } | void>;
+}) => Promise<{
+  readonly applied?: readonly string[];
+  readonly bootstrapped?: boolean;
+} | void>;
 
 /**
  * Усе, що чіпає світ (накат, execve, env, вивід), приходить аргументами: тест
@@ -21,6 +26,8 @@ export type StartDeps = {
   cwd: string;
   migrate: StartMigrate;
   resolveDriverEnv: (env: Env) => unknown;
+  /** Основна мова з `simplycms.config.ts` (`readPrimaryLocale`); `null` — мітки немає, виняток — файл не прочитано. */
+  readPrimaryLocale: () => string | null;
   execve:
     | ((file: string, args: string[], env: Record<string, string>) => unknown)
     | undefined;
@@ -40,6 +47,7 @@ export async function runStart({
   cwd,
   migrate,
   resolveDriverEnv,
+  readPrimaryLocale,
   execve,
   log,
   execPath = process.execPath,
@@ -63,14 +71,33 @@ export async function runStart({
 
   const migrationUrl = env.MIGRATION_DATABASE_URL;
   if (migrationUrl) {
+    // Лише перед накатом: без MIGRATION_DATABASE_URL мова не потрібна (накату немає), а
+    // відмова тут закрила б старт магазину, який лише перезапускають.
+    let primaryLocale: string | null;
+    try {
+      primaryLocale = readPrimaryLocale();
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      log(`[start] не вдалося прочитати simplycms.config.ts: ${reason}`);
+      return 1;
+    }
+    if (primaryLocale === null) {
+      log(
+        "[simplycms] У simplycms.config.ts немає primaryLocale: '<код>'. Додайте основну мову магазину.",
+      );
+      return 1;
+    }
     try {
       const report = await migrate({
         connectionString: migrationUrl,
         dir: join(cwd, 'db/migrations'),
         runtimeUrl: env.DATABASE_URL,
+        primaryLocale,
         log: (message) => log(scrubOwnerUrl(message, migrationUrl)),
       });
-      if ((report?.applied ?? []).length === 0)
+      // Рядок про засів друкує сам applyMigrations (один раз); тут лише не брешемо
+      // «нічого накочувати» поруч із засівом.
+      if (!report?.bootstrapped && (report?.applied ?? []).length === 0)
         log('[start] міграції: нічого накочувати.');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

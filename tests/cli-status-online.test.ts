@@ -8,6 +8,7 @@ import {
   onlineTasks,
 } from '../packages/cli/src/status-online.mjs';
 import { statusExitCode } from '../packages/cli/src/status-stage.mjs';
+import { readPrimaryLocale } from '../packages/simplycms/src/migrate/primary-locale';
 import { scaffoldFakeStore } from './lib/fake-core-store';
 
 // Онлайн-частина `status` й наповнення магазину в `doctor --online` (К3-Е8, Task 21).
@@ -19,12 +20,14 @@ const GOOD = {
   profile: { name: 'Shop', email: 'shop@example.com' },
   failedMail: 0,
   publishedLanguages: ['uk'],
+  primaryLocale: 'uk',
 };
 type Row = { id: string; status: string; details?: string };
 const byId = (checks: Row[]) =>
   Object.fromEntries(checks.map((c) => [c.id, c])) as Record<string, Row>;
 
 const core = (facts: unknown | Error) => ({
+  readPrimaryLocale,
   listMigrationFiles: () => [],
   readJournal: async () => [],
   pendingMigrations: () => ({ pending: [], changed: [] }),
@@ -36,12 +39,13 @@ const core = (facts: unknown | Error) => ({
 });
 // Пакети ядра магазину — ін'єкція: CLI перелік не тримає, а питає `hasLanguagePack` ядра.
 const i18n = { hasLanguagePack: (code: string) => ['uk', 'en'].includes(code) };
-const facts = async (value: unknown | Error) =>
+const facts = async (value: unknown | Error, config = "primaryLocale: 'uk'") =>
   byId(
     await runOnlineChecks(ctx, {
       probe: async () => {},
       core: core(value),
       i18n,
+      readConfig: () => config,
     }),
   );
 
@@ -51,6 +55,28 @@ describe('наповнення магазину (спільне для status і
     expect(c['store-owner']!.status).toBe('ok');
     expect(c['store-profile']!.status).toBe('ok');
     expect(c['mail-outbox']!.status).toBe('ok');
+  });
+
+  it('конфіг en, БД uk → warn primary-locale з обома значеннями', async () => {
+    const c = await facts(GOOD, "primaryLocale: 'en'");
+    expect(c['primary-locale']!.status).toBe('warn');
+    expect(c['primary-locale']!.details).toContain('en');
+    expect(c['primary-locale']!.details).toContain('uk');
+  });
+
+  it('у конфігу немає мітки, БД стартована → skip з підказкою', async () => {
+    const c = await facts(GOOD, "currency: 'UAH'");
+    expect(c['primary-locale']!.status).toBe('skip');
+    expect(c['primary-locale']!.details).toContain('primaryLocale');
+  });
+
+  it('конфіг і БД збігаються → ok; БД порожня → ok', async () => {
+    expect((await facts(GOOD))['primary-locale']!.status).toBe('ok');
+    const empty = await facts(
+      { ...GOOD, primaryLocale: null },
+      "primaryLocale: 'en'",
+    );
+    expect(empty['primary-locale']!.status).toBe('ok');
   });
 
   it('опублікована мова без пакета → error language-packs з кодом мови (§19.15)', async () => {

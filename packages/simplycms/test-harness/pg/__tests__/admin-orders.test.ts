@@ -40,12 +40,13 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { requireGrant, resolveGrant, AuthzError } from 'simplycms/auth';
 import { changeOrderStatusOp, ordersOps } from 'simplycms/admin-server/impl';
+import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
 const PANEL = 'sonyachna-panel-450w-mono';
 const UNTRACKED = 'invertor-gibrydnyi-8kw';
-const CONFIRMED = '00000001-0000-4000-8000-000000000002';
-const CANCELLED = '00000001-0000-4000-8000-000000000006';
+const CONFIRMED = SYSTEM_SEED_IDS.orderStatuses.confirmed;
+const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 const CONFLICT = {
   name: 'AdminConflictError',
   kind: 'state',

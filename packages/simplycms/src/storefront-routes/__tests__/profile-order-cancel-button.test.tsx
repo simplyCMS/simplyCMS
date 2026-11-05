@@ -13,6 +13,10 @@ import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
  */
 const { getMyOrderMock } = vi.hoisted(() => ({ getMyOrderMock: vi.fn() }));
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 vi.mock('@tanstack/react-router', () => ({
   useParams: () => ({ orderId: 'order-1' }),
   useNavigate: () => vi.fn(),

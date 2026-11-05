@@ -297,6 +297,14 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
+- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (М2б, Р23).** Міграція `0003` тримає лише рядки без
+  тексту мовою магазину (`stock_management`, `cache_generations`, тема). Мову й довідники з текстом —
+  статуси замовлень, тип ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
+  `bootstrapStore` (`simplycms/migrate`) на порожній `languages` в основній мові магазину; тексти
+  беруться з `content.seed` мовного пакета (`simplycms/i18n/packs`), id — `SYSTEM_SEED_IDS`
+  (`simplycms/schema`). Одна транзакція під замком `languages-set`; непорожня `languages` → нічого не
+  пишемо (`{ seeded: false }`); мова без пакета → відмова з переліком наявних. `applyMigrations` кличе
+  його після файлів (і за порожнього `pending`), крім `dryRun`, коли задано `primaryLocale`.
 - 🔴 До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено: його правлять як **виняток
   baseline** (синхронно `schema.ts`, `migrations/{0001_init,0002_grants,0003_seed,0004_functions}.sql`,
   `drizzle/` — перегенерує `pnpm db:rebaseline`, решту руками), і кожна така правка в релізі дає в
@@ -559,8 +567,8 @@ email в іншому регістрі — не конфлікт, записує
   зносено, місто з адреси покупця на вибір зони не впливає. Єдина функція `resolveShippingZone`
   (`simplycms/domain/shipping`): кур'єр (`core:address`) → основна зона; самовивіз → `pickup_points.zone_id`
   точки, `NULL` → основна, неактивна зона точки → відмова. Рівно одна основна зона — інваріант БД, а не
-  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), сід
-  `0003_seed.sql` («Основна зона», `00000007-0000-4000-8000-000000000001`) і відкладений constraint-тригер
+  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), рядок
+  зони вставляє `bootstrapStore` (назва з мовного пакета, id — `SYSTEM_SEED_IDS.mainShippingZone`) і відкладений constraint-тригер
   `shipping_zones_require_default` (не менше однієї, перевірка на COMMIT — заміну основної двома UPDATE в
   одній транзакції він пропускає), `CHECK (NOT is_default OR is_active)` (основна завжди активна). Для
   режиму `rates` немає активного тарифу в визначеній зоні → `shipping_unavailable`; тариф іншої зони не
@@ -619,7 +627,7 @@ email в іншому регістрі — не конфлікт, записує
   `readGenerations()` мемоізує проміс у контексті запиту, тож три кеші дають один
   `select` із `cache_generations`. Поза запитом (CLI, фонові задачі) — запит на
   кожен `get`. Рядки `cache_generations` (`store-profile`, `active-theme`,
-  `languages`) засіяні `0003_seed.sql`; `bumpCacheGeneration` незасіяного ключа
+  `languages`) засіяні `0003_seed.sql` (рядки без тексту); `bumpCacheGeneration` незасіяного ключа
   кидає `Error`. LISTEN/NOTIFY не береться: прив'язаний до зʼєднання й ненадійний
   за пулерами.
 - 🔴 **SQL оминає кеш лише якщо не піднімає покоління.** Прямий
@@ -873,10 +881,14 @@ email в іншому регістрі — не конфлікт, записує
 реєстр операцій, виконавець і HTTP API — [`operations-api.md`](./operations-api.md). Тут — те, що
 стосується транзакцій і замків.
 
-- 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockAggregateRoots`** — першим кроком
-  кожної команди товару (`lockProduct`); `products.remove` — `FOR UPDATE` (`lockProductForRemove`).
-  Рядкові замки `products`, сильніші за `KEY SHARE`, бере ЛИШЕ цей хелпер (сканер
-  `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
+- 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockRoots`**
+  (`admin-server/impl/translatable/roots.ts`, єдиний носій) — першим кроком кожної команди
+  агрегата; товарний `lockAggregateRoots` (`lockProduct`) лише делегує йому, а статуси
+  замовлень беруть `lockRoots` напряму; видалення — винятки з `FOR UPDATE`: `products.remove`
+  (`lockProductForRemove`) і `order-statuses.remove` (корінь береться `FOR UPDATE` одразу,
+  `admin-server/impl/order-statuses/remove.ts`).
+  Рядкові замки `products` і `order_statuses`, сильніші за `KEY SHARE`, бере ЛИШЕ `lockRoots`
+  (сканер `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
   Саме NO KEY UPDATE, а не UPDATE: `FOR UPDATE` кореня блокував би FK-вставки інших транзакцій
   (KEY SHARE: fill, дочірні рядки інших записувачів) на весь час адмінської команди. Цикл 40P01
   «команда <-> `languages.setStatus`» не причина: він неможливий за побудовою, бо команда бере
@@ -884,7 +896,7 @@ email в іншому регістрі — не конфлікт, записує
 - **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів з
   УСІМА носіями кожного; де носіїв кілька, вони надлишкові (послаблення одного гарантію не знімає), тож
   мутація-доказ послаблює всі разом:
-  (1) `languages-set` → корені за id → дочірні; носій порядку — лише `lockAggregateRoots`; спільний set на
+  (1) `languages-set` → корені за id → дочірні; носій порядку — лише `lockRoots` (товар — через `lockAggregateRoots`); спільний set на
   шляху створення надлишково беруть ще генератори адрес і токенів (`createPathsForEntity`/
   `createTokensForEntity`), але викликачі (`products.create`, фікстура `inLockedBlock`) беруть його раніше —
   мутація лише цього носія зелена.

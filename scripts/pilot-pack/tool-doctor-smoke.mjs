@@ -59,6 +59,7 @@ export async function doctorSmoke(pkgDir, work, version) {
     targetDir: storeDir,
     storeName: 'doctor-smoke-store',
     version,
+    locale: 'uk',
   });
   const env = Object.fromEntries(
     Object.entries(process.env).filter(

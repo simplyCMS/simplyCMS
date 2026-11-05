@@ -24,11 +24,10 @@ import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { ShippingSnapshotLines } from 'simplycms/checkout-ui';
 import { QueryFailure } from '../components/QueryFailure';
 import { getOrderView } from '../server/order-view';
-
-const orders = entityKey(ENTITY.orders);
 
 // Мапа ключів, а не текстів: код оплати приходить із БД, текст резолвиться
 // під час рендера. Спосіб доставки сюди не входить — його назва в знімку.
@@ -52,6 +51,8 @@ export default function OrderSuccess() {
   // правила К2-Е0 «не тримати в URL/історії».
   const [token] = useState(() => search.token ?? null);
   const { user } = useAuth();
+  const locale = useContentLocale();
+  const orders = entityKey(ENTITY.orders, locale);
   const navigate = useNavigate({ from: '/order-success/$orderId' });
   const [copied, setCopied] = useState(false);
 
@@ -69,7 +70,7 @@ export default function OrderSuccess() {
     refetch,
   } = useQuery({
     queryKey: [...orders.detail(orderId), token, user?.id],
-    queryFn: () => getOrderView({ data: { orderId, token } }),
+    queryFn: () => getOrderView({ data: { orderId, token, locale } }),
     enabled: !!orderId,
   });
 

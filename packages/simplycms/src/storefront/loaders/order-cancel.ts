@@ -1,8 +1,8 @@
 import { releaseOrderStock } from 'simplycms/inventory';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import type { ActorDb, OperatorEscalation } from './db';
-import { loadStatusByCode } from './order-statuses';
-import { loadOrderDetail, lockOrderStatus, setOrderStatus } from './orders';
+import { loadStatusIdByCode } from './order-statuses';
+import { loadOrderStatusRef, lockOrderStatus, setOrderStatus } from './orders';
 
 /**
  * Результат скасування. Причина повертається КОДОМ, а не текстом: текст
@@ -30,7 +30,7 @@ export type OrderCancelResult =
  * повернення залишку → статус. Повернення ПІСЛЯ статусу лишало б стан, у
  * якому замовлення вже скасоване, а склад ще ні.
  *
- * 🔴 `loadStatusByCode` читається під актором покупця: `order_statuses` —
+ * 🔴 `loadStatusIdByCode` читається під актором покупця: `order_statuses` —
  * публічний довідник із грантом SELECT для `app_user`.
  */
 export async function cancelOwnOrder(
@@ -38,20 +38,20 @@ export async function cancelOwnOrder(
   operator: OperatorEscalation,
   orderId: string,
 ): Promise<OrderCancelResult> {
-  const own = await loadOrderDetail(db, orderId);
+  const own = await loadOrderStatusRef(db, orderId);
   if (!own) return { ok: false, reason: 'not_found' };
-  if (own.status?.code !== ORDER_STATUS_CODE.new) {
+  if (own.code !== ORDER_STATUS_CODE.new) {
     return { ok: false, reason: 'not_cancellable' };
   }
-  const cancelled = await loadStatusByCode(db, ORDER_STATUS_CODE.cancelled);
+  const cancelled = await loadStatusIdByCode(db, ORDER_STATUS_CODE.cancelled);
   if (!cancelled) return { ok: false, reason: 'status_missing' };
 
   const done = await operator(async (odb) => {
     const locked = await lockOrderStatus(odb, orderId);
     // Хтось випередив (подвійний клік, адмінка) — повернення НЕ повторюємо.
-    if (!locked || locked.statusId !== own.status_id) return false;
+    if (!locked || locked.statusId !== own.statusId) return false;
     await releaseOrderStock(odb, orderId);
-    await setOrderStatus(odb, orderId, cancelled.id);
+    await setOrderStatus(odb, orderId, cancelled);
     return true;
   });
 
