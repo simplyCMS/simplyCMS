@@ -73,7 +73,7 @@ describe('scripts/start.mjs (шим)', () => {
     writeFileSync(
       join(pkg, 'migrate.mjs'),
       'export const applyMigrations = async () => ({ applied: [] });\n' +
-        "export const readPrimaryLocale = (s) => /primaryLocale:\\s*'([^']+)'/.exec(s)?.[1] ?? null;\n",
+        "export const readPrimaryLocale = (s) => /^[ \\t]*primaryLocale:\\s*'([^']+)'/m.exec(s)?.[1] ?? null;\n",
     );
 
     const elsewhere = mkdtempSync(join(tmpdir(), 'start-elsewhere-'));

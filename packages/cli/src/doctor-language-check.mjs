@@ -72,7 +72,11 @@ export function primaryLocaleCheck(configLocale, dbLocale) {
   );
 }
 
-/** `primaryLocale` з конфігу магазину; нечитабельний конфіг — як «мітки немає» (`null`). */
+/**
+ * `primaryLocale` з конфігу магазину; нечитабельний конфіг — як «мітки немає» (`null`).
+ * Мовчимо свідомо: відсутній файл вже звітує офлайн-перевірка №10, друга помилка лише шумить
+ * (на відміну від `db:apply`/прод-старту, де без мови накат неможливий).
+ */
 export function readConfigLocale(storeRoot, core, readConfig) {
   let source;
   try {
