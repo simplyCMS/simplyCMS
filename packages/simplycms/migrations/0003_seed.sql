@@ -41,15 +41,16 @@ on conflict (key) do nothing;
 -- Рядок у БД потрібен адмінці: вона читає список тем ЛИШЕ звідси, а модуль
 -- теми приходить із конфігу магазину. `bootstrapThemes` дописав би його й
 -- сам, але тоді чистий магазин до першого відкриття адмінки не мав би
--- активної теми взагалі.
+-- активної теми взагалі. `description`/`author` порожні (як у `bootstrapThemes`):
+-- тексту мовою магазину сід не несе.
 insert into public.themes (id, name, display_name, version, description, author, is_active)
 values (
   '00000006-0000-4000-8000-000000000001',
   'default',
   'Default',
   '1.0.0',
-  'Базова тема SimplyCMS',
-  'SimplyCMS',
+  null,
+  null,
   true
 )
 on conflict (name) do nothing;
