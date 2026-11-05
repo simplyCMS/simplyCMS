@@ -23,8 +23,9 @@
 
 ## [Unreleased]
 
-Хвиля мультимовності, М2б (фундамент): старт БД з основною мовою магазину. Схему не змінено, але
-`0003_seed.sql` правлено (виняток baseline до `1.0.0-rc.1`) — **перестворити БД**.
+Хвиля мультимовності, М2б (фундамент): старт БД з основною мовою магазину; статуси замовлень — перша
+сутність на фабриці команд перекладного агрегата. Схему й `0003_seed.sql` правлено (виняток baseline до
+`1.0.0-rc.1`) — **перестворити БД**.
 
 ### Змінено
 
@@ -44,6 +45,15 @@
 
 ### Додано
 
+- Фабрика `defineTranslatableCommands` (`admin-server/impl/translatable/`): `create`, `get`, `saveDescription`,
+  `saveTranslation`, `deleteTranslation` і `list` перекладного агрегата без дочірніх колекцій; ресурс адмінки
+  отримав `listIn` (читання в транзакції викликача).
+- Операції статусів замовлень `order-statuses.{list,get,create,saveDescription,saveTranslation,deleteTranslation,
+  remove,setDefault,reorder}` (реєстр операцій, HTTP `/api/v1`, OpenAPI). `setDefault` і `reorder` піднімають
+  `version` обох записаних рядків (замки коренів — `lockRoots` за відсортованими id, без 40P01); `remove`
+  дефолтного й системного статусу — 409 `state` (`order_status_default`, `order_status_system`), статусу з
+  замовленнями — 409 `reference`.
+- Таблиця `order_status_translations` (назва статусу по мовах) з обов'язковим рядком основної мови на коміті.
 - `create-simplycms-store --locale <код>` (`uk`, `en`): основна мова магазину при створенні, у діалозі —
   select. `--yes`/CI без `--locale` — помилка.
 - `readPrimaryLocale(source)` у `simplycms/migrate` — читання мітки `primaryLocale` з тексту конфігу.
@@ -55,6 +65,15 @@
 
 ### BREAKING
 
+- **Статуси замовлень (Р19):** шість легасі-serverFn `insertOrderStatuses`, `updateOrderStatuses`,
+  `removeOrderStatuses` (і узагальнений запис ресурсу) замінено операціями `order-statuses.*`:
+  `createOrderStatus`, `saveOrderStatus`, `saveOrderStatusTranslation`, `deleteOrderStatusTranslation`,
+  `removeOrderStatus` (по одному статусу з `expectedVersion`, а не пакетом), `setDefaultOrderStatus` і
+  `reorderOrderStatus` тепер вимагають `expectedVersion`; нові `getOrderStatus`. `listOrderStatuses`
+  віддає рядок read-model (`name` основної мови, `version`, без `createdAt`).
+- **`order_statuses.name` → `order_status_translations`:** колонки `name` у `order_statuses` немає, додано
+  `version`. Тип `OrderStatus` (`simplycms/schema/types`) — рядок списку (`name` основної мови, без `createdAt`).
+  **Перестворити БД.**
 - `fieldToWire` переїхав із `simplycms/translations` у клієнтобезпечний
   `simplycms/domain/translations` (разом з `TRANSLATABLE_FIELDS` — перелік полів, обов'язкових і
   rich-полів перекладних сутностей); `TranslatableEntity` має нове обов'язкове поле `base` (таблиця

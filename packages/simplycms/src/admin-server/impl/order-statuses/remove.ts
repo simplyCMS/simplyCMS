@@ -1,57 +1,41 @@
-import { inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { orderStatuses } from 'simplycms/schema';
+import {
+  ADMIN_STATE_CONSTRAINT,
+  stateConflict,
+} from 'simplycms/contracts/domain-errors';
 import { SYSTEM_ORDER_STATUS_CODES } from 'simplycms/contracts/order-status-codes';
-import { runAdmin } from '../run';
-
-export const removeStatusInput = z.object({ id: z.uuid() });
-export const removeManyInput = z.array(removeStatusInput).min(1).max(100);
+import { assertVersionThenHash, defineOperation } from 'simplycms/operations';
+import { orderStatuses } from 'simplycms/schema';
+import { lockRoot } from '../translatable/roots';
+import { expectedVersion } from '../translatable/wire';
+import { ORDER_STATUS_ROOT } from './root';
 
 /**
- * 🔴 remove для ЦІЄЇ сутності — іменований: «не видалити дефолтний» —
- * доменний інваріант, який частковий індекс не покриває (він забороняє
- * ДВА дефолти, не НУЛЬ), а сьогодні його тримає лише disabled-кнопка UI.
- *
- * 🔴 АТОМАРНО і без TOCTOU (рев'ю р2): один requireGrant, ОДНА
- * транзакція на весь batch; рядки беруться `FOR UPDATE` — конкурентний
- * setDefault чекає на лок і не зробить рядок дефолтним між перевіркою і
- * delete; будь-яка відмова відкочує ВЕСЬ batch — БД і оптимістичний стан
- * колекції не розходяться (TanStack DB теж відкочує транзакцію цілком).
+ * 🔴 remove для ЦІЄЇ сутності — іменований: «не видалити дефолтний» — доменний інваріант,
+ * який частковий індекс не покриває (він забороняє ДВА дефолти, не НУЛЬ). Корінь одразу
+ * `FOR UPDATE` (DELETE однаково бере його): конкурентний `setDefault` чекає й не зробить
+ * рядок дефолтним між перевіркою і видаленням. Системні коди (Е5-6) тримають скасування
+ * замовлення. Посилання з `orders` дає FK 23503 → 409 `reference` на межі операції.
+ * Переклади статусу зникають каскадом.
  */
-export const removeManyOrderStatusesOp = async ({
-  data,
-}: {
-  data: z.infer<typeof removeManyInput>;
-}) => {
-  return runAdmin('catalog.write', async (db) => {
-    const ids = data.map((d) => d.id);
-    const rows = await db
-      .select()
+export const orderStatusesRemove = defineOperation({
+  id: 'order-statuses.remove',
+  permission: 'catalog.write',
+  input: z.object({ id: z.uuid(), expectedVersion }),
+  output: z.object({ id: z.uuid() }),
+  async run({ db }, input) {
+    const version = await lockRoot(db, ORDER_STATUS_ROOT, input.id, 'update');
+    assertVersionThenHash(version, input.expectedVersion, () => undefined);
+    const [row] = await db
+      .select({ code: orderStatuses.code, isDefault: orderStatuses.isDefault })
       .from(orderStatuses)
-      .where(inArray(orderStatuses.id, ids))
-      .for('update');
-    if (rows.length !== ids.length) {
-      const found = new Set(rows.map((r) => r.id));
-      const missing = ids.filter((id) => !found.has(id));
-      throw new Error(
-        `[admin-server] статусів не існує: ${missing.join(', ')}`,
-      );
-    }
-    const def = rows.find((r) => r.isDefault);
-    if (def)
-      throw new Error(
-        '[admin-server] дефолтний статус видалити не можна — призначте інший дефолт',
-      );
-    // Системні статуси (Е5-6) тримають скасування замовлення — не видаляються.
-    const system = rows.find((r) => SYSTEM_ORDER_STATUS_CODES.includes(r.code));
-    if (system)
-      throw new Error(
-        `[admin-server] системний статус ${system.code} видалити не можна`,
-      );
-    const deleted = await db
-      .delete(orderStatuses)
-      .where(inArray(orderStatuses.id, ids))
-      .returning();
-    return { count: deleted.length };
-  });
-};
+      .where(eq(orderStatuses.id, input.id));
+    if (row!.isDefault)
+      stateConflict(ADMIN_STATE_CONSTRAINT.orderStatusDefault);
+    if (SYSTEM_ORDER_STATUS_CODES.includes(row!.code))
+      stateConflict(ADMIN_STATE_CONSTRAINT.orderStatusSystem);
+    await db.delete(orderStatuses).where(eq(orderStatuses.id, input.id));
+    return { id: input.id };
+  },
+});

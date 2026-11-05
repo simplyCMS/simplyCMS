@@ -38,6 +38,8 @@ const ALLOWLIST = [
   'languages_require_lock',
   'modification_property_value_translations_src_tr',
   'modification_property_values_src_base',
+  'order_status_translations_src_tr',
+  'order_statuses_src_base',
   'product_modification_translations_src_tr',
   'product_modifications_cur_tok_b',
   'product_modifications_src_base',

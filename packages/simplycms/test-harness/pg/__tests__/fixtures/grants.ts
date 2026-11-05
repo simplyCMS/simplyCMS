@@ -28,6 +28,7 @@ const CATALOG = [
   'languages',
   'modification_property_value_translations',
   'modification_property_values',
+  'order_status_translations',
   'order_statuses',
   'pickup_points',
   'plugins',

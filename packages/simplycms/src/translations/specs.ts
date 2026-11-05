@@ -50,6 +50,12 @@ export const TRANSLATABLE = {
     fk: 'value_id',
     base: 'modification_property_values',
   },
+  orderStatus: {
+    ...TRANSLATABLE_FIELDS.orderStatus,
+    table: 'order_status_translations',
+    fk: 'status_id',
+    base: 'order_statuses',
+  },
 } as const satisfies Record<string, TranslatableEntity>;
 
 export type TranslatableKey = keyof typeof TRANSLATABLE;

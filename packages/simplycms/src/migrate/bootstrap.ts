@@ -81,17 +81,23 @@ export async function bootstrapStore(
       [ids.language, primaryLocale, pack.name],
     );
     for (const [index, code] of SEED_ORDER_STATUS_CODES.entries()) {
+      // Назва — у перекладі основної мови (М2б, Р19); тригер джерела (І4) перевіряє
+      // пару на COMMIT, тож рядок бази й переклад вставляються в одній транзакції.
       await client.query(
-        `insert into public.order_statuses (id, name, code, color, sort_order, is_default)
-         values ($1, $2, $3, $4, $5, $6)`,
+        `insert into public.order_statuses (id, code, color, sort_order, is_default)
+         values ($1, $2, $3, $4, $5)`,
         [
           ids.orderStatuses[code],
-          seed.orderStatuses[code],
           code,
           STATUS_COLORS[code],
           index,
           code === 'new',
         ],
+      );
+      await client.query(
+        `insert into public.order_status_translations (status_id, locale, name)
+         values ($1, $2, $3)`,
+        [ids.orderStatuses[code], primaryLocale, seed.orderStatuses[code]],
       );
     }
     await client.query(

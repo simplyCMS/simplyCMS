@@ -10,15 +10,16 @@
  */
 export { orderStatusesOps } from './order-statuses/resource';
 export {
-  setDefaultInput,
-  setDefaultOrderStatusOp,
-} from './order-statuses/set-default';
-export { reorderInput, reorderOrderStatusOp } from './order-statuses/reorder';
-export {
-  removeStatusInput,
-  removeManyInput,
-  removeManyOrderStatusesOp,
-} from './order-statuses/remove';
+  orderStatusesCreate,
+  orderStatusesDeleteTranslation,
+  orderStatusesGet,
+  orderStatusesList,
+  orderStatusesSaveDescription,
+  orderStatusesSaveTranslation,
+} from './order-statuses/commands';
+export { orderStatusesSetDefault } from './order-statuses/set-default';
+export { orderStatusesReorder } from './order-statuses/reorder';
+export { orderStatusesRemove } from './order-statuses/remove';
 export {
   parseUploadForm,
   uploadMediaOp,

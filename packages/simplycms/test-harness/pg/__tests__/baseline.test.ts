@@ -175,10 +175,12 @@ describe('канон міграцій: накат на чисту БД', () => {
     // `modification_property_value_translations`) та зображення (`product_images`,
     // `product_image_translations`).
     // 57 → 58: М1 Task 14 — проєкція тексту товару `catalog_product_texts`.
-    expect(tables.length).toBe(58);
+    // 58 → 59: М2б Task 7 — переклади статусів замовлень `order_status_translations`.
+    expect(tables.length).toBe(59);
     for (const expected of [
       'product_translations',
       'product_modification_translations',
+      'order_status_translations',
       'product_images',
       'product_image_translations',
       'product_property_value_translations',

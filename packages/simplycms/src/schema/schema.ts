@@ -72,14 +72,17 @@ export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 
 export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', 'on_order'])
 
 
+// Назва статусу — лише в `order_status_translations` (М2б, Р19: перша сутність на
+// фабриці команд). `version` — ETag агрегата: піднімають усі команди запису (Д7), зокрема
+// `setDefault` і `reorder`, що пишуть кілька кореневих рядків.
 export const orderStatuses = pgTable("order_statuses", {
 	id: uuid().primaryKey().notNull(),
-	name: text().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	color: varchar({ length: 7 }).default('#6B7280'),
 	sortOrder: integer("sort_order").default(0).notNull(),
 	isDefault: boolean("is_default").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+	version: integer().default(1).notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
 	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
@@ -87,6 +90,13 @@ export const orderStatuses = pgTable("order_statuses", {
 	// перемикає is_default по всій таблиці, без scope на батька).
 	uniqueIndex("idx_order_statuses_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
+
+export const orderStatusTranslations = translationTable("order_status_translations", {
+	owner: { statusId: uuid("status_id").notNull() },
+	pk: ["statusId"],
+	ownerFks: [{ columns: ["statusId"], foreignColumns: () => [orderStatuses.id], name: "order_status_translations_status_id_fkey" }],
+	text: { name: text() },
+});
 
 export const sections = pgTable("sections", {
 	id: uuid().primaryKey().notNull(),

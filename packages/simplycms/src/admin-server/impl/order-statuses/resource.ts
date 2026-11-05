@@ -1,16 +1,16 @@
-import { orderStatuses } from 'simplycms/schema';
+import { orderStatusTranslations, orderStatuses } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * 🔴 isDefault — у readonly: інваріант «дефолт рівно один» не проходить
- * через generic-write (форма сторінки має чекбокс — він кличе setDefault
- * ОКРЕМИМ викликом після insert/update). sortOrder — writable: клієнт
- * (eager-колекція = повна копія) рахує max+1 сам.
+ * ЛИШЕ ЧИТАННЯ колекції (М2б, Р19): статус створюють і правлять команди агрегата
+ * `order-statuses.*` (`commands.ts`, `set-default.ts`, `reorder.ts`, `remove.ts`) — вони
+ * піднімають `version`, а узагальнений запис фабрики його не знає. Назва статусу — з
+ * перекладу основної мови (INNER JOIN, `resource-read-model.ts`); дзеркальної колонки немає.
  *
- * 🔴 `code` — insertOnly (Е5-6): на ньому тримаються скасування покупцем
- * і адмінкою (`simplycms/contracts/order-status-codes`); перейменований
- * код `cancelled` мовчки зламав би їх обидва.
+ * `createdAt` прихований: рядок списку без часових відбитків (Д10); `isDefault` лише
+ * читається — інваріант «дефолт рівно один» тримає `setDefault`, `code` незмінний (на ньому
+ * тримаються скасування покупцем і адмінкою, `simplycms/contracts/order-status-codes`).
  */
 export const orderStatusesOps = defineAdminResource({
   entity: ENTITY.orderStatuses,
@@ -20,7 +20,13 @@ export const orderStatusesOps = defineAdminResource({
   filterable: ['code', 'isDefault'],
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
-  writable: ['name', 'color', 'sortOrder'],
-  insertOnly: ['code'],
-  readonly: ['id', 'isDefault', 'createdAt'],
+  readModel: {
+    translations: orderStatusTranslations,
+    owner: orderStatusTranslations.statusId,
+    fields: { name: orderStatusTranslations.name },
+    required: ['name'],
+  },
+  writable: [],
+  readonly: ['id', 'code', 'color', 'sortOrder', 'isDefault', 'version'],
+  omit: ['createdAt'],
 });

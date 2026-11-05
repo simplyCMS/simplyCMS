@@ -14,6 +14,7 @@ const CYRILLIC = /[А-Яа-яІіЇїЄєҐґ]/;
 const COUNT_SQL = `select
   (select count(*) from public.languages)::int as languages,
   (select count(*) from public.order_statuses)::int as statuses,
+  (select count(*) from public.order_status_translations)::int as status_texts,
   (select count(*) from public.price_types)::int as price_types,
   (select count(*) from public.user_categories)::int as categories,
   (select count(*) from public.shipping_zones)::int as zones,
@@ -64,7 +65,10 @@ describe('bootstrapStore', () => {
       ]);
       const statuses = await queryRows(
         url,
-        'select id, code, name, is_default from public.order_statuses order by sort_order',
+        `select s.id, s.code, t.name, s.is_default from public.order_statuses s
+           join public.order_status_translations t
+             on t.status_id = s.id and t.locale = 'uk'
+          order by s.sort_order`,
       );
       expect(statuses.map((s) => [s.id, s.code, s.is_default])).toEqual(
         Object.entries(SYSTEM_SEED_IDS.orderStatuses).map(([code, id]) => [
@@ -74,6 +78,21 @@ describe('bootstrapStore', () => {
         ]),
       );
       expect(statuses[0]!.name).toBe('Новий');
+      // Назва живе лише в перекладі основної мови: колонки `name` у базі статусу немає,
+      // і кожен статус має рівно один рядок перекладу.
+      expect(
+        await queryRows(
+          url,
+          `select 1 from information_schema.columns
+            where table_name = 'order_statuses' and column_name = 'name'`,
+        ),
+      ).toEqual([]);
+      expect(
+        await queryRows(
+          url,
+          'select count(*)::int as n from public.order_status_translations',
+        ),
+      ).toEqual([{ n: statuses.length }]);
       expect(
         await queryRows(
           url,
@@ -112,7 +131,7 @@ describe('bootstrapStore', () => {
       await bootstrapStore(client, 'en');
       const texts = (await queryRows(
         url,
-        `select name from public.order_statuses
+        `select name from public.order_status_translations
          union all select name from public.price_types
          union all select name from public.user_categories
          union all select name from public.shipping_zones
@@ -145,7 +164,9 @@ describe('bootstrapStore', () => {
       expect(
         await queryRows(
           url,
-          "select name from public.order_statuses where code = 'new'",
+          `select t.name from public.order_status_translations t
+             join public.order_statuses s on s.id = t.status_id
+            where s.code = 'new'`,
         ),
       ).toEqual([{ name: 'New' }]);
     });

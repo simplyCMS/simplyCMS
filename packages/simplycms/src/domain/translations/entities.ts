@@ -33,6 +33,10 @@ export const TRANSLATABLE_FIELDS = {
     fields: ['value'],
     required: [],
   },
+  orderStatus: {
+    fields: ['name'],
+    required: ['name'],
+  },
 } as const satisfies Record<string, TranslatableSpec>;
 
 /** `short_description` → `shortDescription`. */

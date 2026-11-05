@@ -27,6 +27,7 @@ import {
   missingPathsSql,
   missingTokensSql,
 } from './fixtures/product-graph-projection';
+import { PRIMARY, translatableStatements } from './fixtures/translatable-rows';
 import {
   deleteBase,
   deleteTranslation,
@@ -309,6 +310,8 @@ describe('товар', () => {
       'product_property_value_translations',
       'modification_property_values',
       'modification_property_value_translations',
+      'order_statuses',
+      'order_status_translations',
       'languages',
     ];
     const rows = await db.q(
@@ -322,5 +325,44 @@ describe('товар', () => {
     expect(rows).toEqual(
       [...tables].sort().map((t) => ({ t, rls: false, can: true })),
     );
+  });
+});
+
+// М2б Р19: статус замовлення — перша сутність М2 на тій самій процедурі. Рядок бази пише
+// фабрика рядків харнеса (`translatableStatements`), не граф товару.
+describe('статус замовлення', () => {
+  const db = useAddressingDb('simplycms_source_translation_status');
+  const statements = (id: string, texts: Record<string, { name: string }>) =>
+    translatableStatements({
+      table: 'order_statuses',
+      base: { code: `'s-${id}'` },
+      translationTable: 'order_status_translations',
+      ownerColumn: 'status_id',
+      id,
+      texts,
+      textColumns: { name: 'name' },
+    });
+  const statusIs = async (id: string) =>
+    (await db.q(`select 1 from public.order_statuses where id = $1`, [id]))
+      .length;
+
+  it('статус без перекладу основної мови — відмова на коміті під app_admin', async () => {
+    const id = randomUUID();
+    await expect(db.tx(...statements(id, {}))).rejects.toMatchObject({
+      ...REFUSED,
+      message: 'order_statuses: потрібен переклад основною мовою (name)',
+    });
+    expect(await statusIs(id)).toBe(0);
+  });
+
+  it('статус з перекладом основної мови — коміт; видалення цього перекладу — відмова', async () => {
+    const id = randomUUID();
+    await db.tx(...statements(id, { [PRIMARY]: { name: 'Тест' } }));
+    expect(await statusIs(id)).toBe(1);
+    await expect(
+      db.tx(
+        `delete from public.order_status_translations where status_id = '${id}' and locale = ${PRIMARY}`,
+      ),
+    ).rejects.toMatchObject(REFUSED);
   });
 });
