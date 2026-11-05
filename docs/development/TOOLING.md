@@ -328,7 +328,7 @@ Error-зони й кастомні правила (селектори й опц�
 | `workflow.yml` | `test` | `install` → `test` | push/PR/manual |
 | `workflow.yml` | `packaging` | `install` → `build:packages` → `typecheck:template` → `test:packaging` → `pilot:pack --skip-build` | push/PR/manual |
 | `workflow.yml` | `schema` | `install` → `test:schema` (service-контейнер `postgres:17`) | push/PR/manual |
-| `publish-packages.yml` | `publish` | гейт `NPM_TOKEN` → `install` → `build:packages` → `test:packaging` → `pnpm publish -r` | push у `main`, manual |
+| `publish-packages.yml` | `publish` | `install` → `build:packages` → `test:packaging` → `pnpm publish -r` (Trusted Publishing, OIDC, без токена) → тег | push у `main`, manual |
 
 - `packaging` — окремий job, а не крок у `test`: parity-suite працює по tarball-ах і потребує
   зібраних `dist/` кожного пакета.

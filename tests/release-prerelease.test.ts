@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,6 +23,18 @@ import { readCliVersion } from '../packages/cli/src/context.mjs';
 
 // Пререлізний цикл 1.0.0-rc.N (T16): форма версії, порядок, бамп, npm-тег.
 const REPO = resolve('.');
+
+/** Маніфести пакетів, що їдуть у реєстр (`private: true` — ні). */
+const PUBLISHED_MANIFESTS = readdirSync('packages')
+  .map((dir) => `packages/${dir}/package.json`)
+  .filter((path) => {
+    try {
+      return !(JSON.parse(readFileSync(path, 'utf8')) as { private?: boolean })
+        .private;
+    } catch {
+      return false;
+    }
+  });
 
 describe('VERSION_RE', () => {
   it.each(['1.0.0-rc.1', '1.0.0', '1.0.0-rc.0', '0.14.0'])(
@@ -216,6 +229,41 @@ describe('workflow publish-packages: тег публікації', () => {
     expect(guard).toBeGreaterThan(assign);
     expect(publish).toBeGreaterThan(guard);
     expect(lines[guard]).toContain('exit 1');
+  });
+});
+
+describe('workflow publish-packages: Trusted Publishing', () => {
+  type Job = {
+    if?: string;
+    permissions?: Record<string, string>;
+    steps: { name?: string; run?: string; env?: Record<string, string> }[];
+  };
+  const source = readFileSync('.github/workflows/publish-packages.yml', 'utf8');
+  const jobs = Object.values(
+    (parseYaml(source) as { jobs: Record<string, Job> }).jobs,
+  );
+
+  it('job публікації має id-token: write і запускається лише з main', () => {
+    const publish = jobs.find((j) =>
+      j.steps.some((s) => /pnpm\s+publish\b/.test(s.run ?? '')),
+    );
+    expect(publish?.permissions?.['id-token']).toBe('write');
+    expect(publish?.if).toBe("github.ref == 'refs/heads/main'");
+  });
+
+  it('жодного токена-секрету: авторизація лише через OIDC', () => {
+    expect(source).not.toMatch(/secrets\.NPM_TOKEN|NODE_AUTH_TOKEN/);
+  });
+
+  // Provenance звіряє repository.url маніфесту з репо воркфлоу: пакет без поля
+  // або з чужим репо npm відхилить на публікації.
+  it.each(PUBLISHED_MANIFESTS)('%s має repository.url цього репо', (path) => {
+    const manifest = JSON.parse(readFileSync(path, 'utf8')) as {
+      repository?: { url?: string };
+    };
+    expect(manifest.repository?.url).toBe(
+      'https://github.com/simplyCMS/simplyCMS.git',
+    );
   });
 });
 

@@ -71,7 +71,9 @@ npm для `create-*` CLI). Наслідки для реліз-потяга:
 - **публікується тим самим `pnpm publish -r`** — жодного окремого workflow
   чи кроку не потрібно, `publishConfig.access: "public"` у manifest-і той
   самий, що й у scoped-пакетах;
-- ✅ **токен розширено 2026-08-04 — блокер знято.** Історія й причина, чому це
+- *(історія до 2026-11-05: публікація йшла токеном; з 0.16.0 — Trusted Publishing, розділ «Передумови»;
+  trusted publisher налаштовується на кожен пакет окремо, тож питання «обсягу токена» більше немає)*
+  ✅ **токен розширено 2026-08-04 — блокер знято.** Історія й причина, чому це
   взагалі стало питанням: scope у npm — це префікс в **імені** пакета, а не
   тека. Токен, виданий на scope `@simplycms`, покриває будь-який
   `@simplycms/*`, зокрема ще не створений (доведено першим релізом: усі 21
@@ -296,12 +298,12 @@ Mailpit — проєкти `storage` і `mail` без них не стартую
 
 Workflow `.github/workflows/publish-packages.yml`, тригер — **push у `main`**:
 
-1. перевіряє наявність secret `NPM_TOKEN` (падає з підказкою, якщо немає);
+1. job запускається лише з `main` (trusted publisher прив'язаний до файлу воркфлоу, а не до гілки);
 2. `install --frozen-lockfile` → `build:packages`;
 3. **tarball-parity** — гейт по розпакованих tarball-ах: перевіряє рівно те,
    що поїде в реєстр (усі `exports` вказують на наявні файли, нуль
    `workspace:` у dependencies);
-4. `pnpm publish -r --access public --no-git-checks`;
+4. `pnpm publish -r --access public --no-git-checks --tag <latest|next>` — авторизація через Trusted Publishing (OIDC), provenance pnpm додає сам;
 5. **тег** — тільки якщо крок 4 не впав: анотований `vX.Y.Z` на поточний SHA,
    пушиться в origin (розділ «Теги релізів» вище).
 
@@ -329,8 +331,8 @@ version`), тож правило знову зводиться до «no-op бе
 
 🔴 **Порядок обовʼязковий:** спершу мерж і успішна публікація (в реєстрі має
 зʼявитись `simplycms`), і тільки потім deprecate — інакше повідомлення
-відправляє в пакет, якого ще немає. Токен — той самий Granular із
-`All Packages`; `npm deprecate` вимагає прав на запис.
+відправляє в пакет, якого ще немає. `npm deprecate` робить власник локально після
+`npm login` (з 2FA): CI-токена з 2026-11-05 немає (Trusted Publishing).
 
 ```bash
 for p in objects domain schema supabase data-supabase react-query runtime \
@@ -357,31 +359,39 @@ done
 | Що | Де | Навіщо |
 |----|----|--------|
 | npm-організація `simplycms` | npmjs.com | scope пакетів мусить збігатися з іменем org **точно** |
-| Secret `NPM_TOKEN` | GitHub → Settings → Secrets and variables → Actions | авторизація публікації |
+| Trusted publisher для кожного з 5 пакетів | npmjs.com → пакет → Settings → Trusted Publisher | авторизація публікації без токена (OIDC) |
+| `permissions: id-token: write` | job `publish` у `publish-packages.yml` | GitHub видає OIDC-токен, який pnpm обмінює на право публікації |
+| `repository.url` = `https://github.com/simplyCMS/simplyCMS.git` | у кожному публікованому manifest-і | provenance звіряє його з репо воркфлоу |
 | `publishConfig.access: "public"` | у кожному manifest-і | scoped-пакети npm за замовчуванням робить **приватними** (платний план) |
 
-🔴 **Токен має бути Granular Access Token із увімкненим «Bypass 2FA»**
-(Packages and scopes → **`All Packages`**, permission **Read and write**).
-Саме `All Packages`, а не `Only select packages and scopes` зі scope
-`@simplycms`: у монорепо **два** unscoped-пакети — `create-simplycms-store` і
-(з треку К0) сам фреймворк-пакет `simplycms`, — а scope-правило їх не
-покриває; деталі вище, в розділі про unscoped-пакет. З листопада 2025
-classic/automation-токени npm прибрав, granular — єдиний доступний тип.
+### Авторизація: npm Trusted Publishing (з 2026-11-05)
 
-Це не формальність, а перевірено падінням першого релізу (2026-08-03):
-```
-npm error code E403
-403 Forbidden - PUT https://registry.npmjs.org/@simplycms%2fi18n
-Two-factor authentication or granular access token with bypass 2fa enabled
-is required to publish packages.
-```
-Токен без цієї опції автентифікується успішно (org і scope доступні), але
-`PUT` пакета npm відхиляє. Помилка виглядає як проблема з правами на scope —
-насправді це політика 2FA.
+CI публікує **без токена**. pnpm (`packageManager`, 11.x) обмінює OIDC-токен GitHub Actions на
+короткоживуче право публікації саме цього пакета й сам додає **provenance** (публічний пакет із
+публічного репо). Секрету `NPM_TOKEN` у репо немає: довгоживучий токен з «Bypass 2FA», яким CI
+публікував до 0.15.0, — найслабше місце ланцюга постачання (крадіжка = публікація від нашого імені),
+і npm цю модель згортає. Релізу 0.16.0 токен перестав підходити — PUT давав `404 Not Found`.
 
-🔴 `registry-url` у `actions/setup-node` **обов'язковий**: без нього не
-створюється `.npmrc`, і `NODE_AUTH_TOKEN` мовчки ігнорується. Класична причина
-«токен є, а публікація каже 401».
+**Налаштування trusted publisher** (власник, один раз на пакет; пакет мусить уже бути в реєстрі):
+
+1. npmjs.com → пакет → **Settings** → **Trusted Publisher** → **GitHub Actions**.
+2. Organization or user: `simplyCMS`; Repository: `simplyCMS`; Workflow filename:
+   `publish-packages.yml`; Environment — порожньо.
+3. Там само **Publishing access** → «Require two-factor authentication and disallow tokens»: після
+   цього пакет не опублікувати жодним токеном — лише цим воркфлоу або власником з 2FA.
+4. Повторити для `simplycms`, `@simplycms/cli`, `@simplycms/theme-solarstore`,
+   `@simplycms/plugin-faq`, `create-simplycms-store`.
+5. Старі access-токени на npmjs відкликати, secret `NPM_TOKEN` у GitHub видалити.
+
+**Перша публікація нового пакета.** Trusted publisher налаштовується лише для пакета, який уже є в
+реєстрі, тож першу версію нового пакета публікує власник локально:
+`npm login` (2FA) → на релізному коміті `pnpm install --frozen-lockfile && pnpm build:packages &&
+pnpm test:packaging` → `pnpm publish --filter <пакет> --access public` → налаштувати trusted
+publisher за кроками вище. Наступні версії публікує CI.
+
+Страховка від регресу — `tests/release-prerelease.test.ts`, блок «Trusted Publishing»: `id-token:
+write` і умова `main` у job публікації, жодного `secrets.NPM_TOKEN`/`NODE_AUTH_TOKEN`, `repository.url`
+кожного публікованого маніфесту.
 
 ## Історія: чому не GitHub Packages
 
@@ -397,8 +407,9 @@ is required to publish packages.
 | Симптом | Причина | Що робити |
 |---------|---------|-----------|
 | `402 Payment Required` при публікації | немає `access: "public"` — npm намагається зробити пакет приватним | додати `publishConfig.access` у manifest |
-| `401` / `ENEEDAUTH` | немає `registry-url` у `actions/setup-node` — `.npmrc` не створився, і `NODE_AUTH_TOKEN` ігнорується | додати `registry-url` |
-| `403 … bypass 2fa enabled is required` | токен без «Bypass 2FA» **(спіймано на першому релізі)** | пересоздати як Granular Access Token із увімкненим Bypass 2FA, оновити secret `NPM_TOKEN` |
+| `404 Not Found - PUT …` у кроці Publish | trusted publisher для пакета не налаштовано, налаштовано на інший репо чи файл воркфлоу, або в job немає `id-token: write` (тоді pnpm пише «Skipped OIDC: ERR_PNPM_ID_TOKEN_GITHUB_WORKFLOW_INCORRECT_PERMISSIONS») | перевірити налаштування пакета на npmjs і `permissions` job; новий пакет — перша публікація вручну |
+| `401` / `ENEEDAUTH` | немає `registry-url` у `actions/setup-node` — `.npmrc` з реєстром не створився | додати `registry-url` |
+| provenance відхилено | `repository.url` маніфесту не збігається з репо воркфлоу | виправити `repository.url` |
 | `403 Forbidden` без згадки 2FA | scope не збігається з іменем org, або акаунт не має права публікації в ній | `npm login && npm org ls simplycms` |
 | `ERR_PNPM_OUTDATED_LOCKFILE` | `package.json` змінили, lockfile — ні | `pnpm install`, закомітити lockfile |
 | Реліз-скрипт: «версії пакетів розійшлися» | хтось бампнув частину пакетів | `pnpm version:packages X.Y.Z`, тоді реліз |

@@ -41,7 +41,6 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   ERR_CONNECTION_REFUSED: 'код помилки браузера, цитата симптому',
   // --- npm / pnpm / CI ---
   NPM_TOKEN: 'secret GitHub Actions, не код репо',
-  NODE_AUTH_TOKEN: 'змінна оточення npm/setup-node',
   ERR_PNPM_OUTDATED_LOCKFILE: 'код помилки pnpm, цитата',
   ERR_PNPM_NO_MATURE_MATCHING_VERSION: 'код помилки pnpm, цитата',
   onlyBuiltDependencies: 'ключ pnpm, згаданий як попередник `allowBuilds`',
