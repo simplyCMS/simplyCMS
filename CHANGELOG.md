@@ -42,11 +42,6 @@
   `doctor --online` і `status` мають перевірку `primary-locale` (конфіг ≠ БД — `warn`); офлайн-перевірка
   №10 вимагає мітку `primaryLocale:`.
 
-- **BREAKING:** `fieldToWire` переїхав із `simplycms/translations` у клієнтобезпечний
-  `simplycms/domain/translations` (разом з `TRANSLATABLE_FIELDS` — перелік полів, обов'язкових і
-  rich-полів перекладних сутностей); `TranslatableEntity` має нове обов'язкове поле `base` (таблиця
-  сутності). Імпорти `fieldToWire` з `simplycms/translations` замініть на домен.
-
 ### Додано
 
 - `create-simplycms-store --locale <код>` (`uk`, `en`): основна мова магазину при створенні, у діалозі —
@@ -60,6 +55,10 @@
 
 ### BREAKING
 
+- `fieldToWire` переїхав із `simplycms/translations` у клієнтобезпечний
+  `simplycms/domain/translations` (разом з `TRANSLATABLE_FIELDS` — перелік полів, обов'язкових і
+  rich-полів перекладних сутностей); `TranslatableEntity` має нове обов'язкове поле `base` (таблиця
+  сутності). Імпорти `fieldToWire` з `simplycms/translations` замініть на домен.
 - `SimplyCmsConfig.primaryLocale` (`simplycms/runtime`) — обов'язкове поле: додайте
   `primaryLocale: '<код>'` (однорядкова мітка в одинарних лапках) у `simplycms.config.ts`.
 - `create-simplycms-store --yes` (і CI/не-TTY) вимагає `--locale <код>`.
