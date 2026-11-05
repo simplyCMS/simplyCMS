@@ -7,13 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'simplycms/ui/dialog';
-import { useProductLanguages } from '../products/edit/useProductAggregate';
+import { listOrderStatuses } from 'simplycms/admin-server';
+import { freshAggregate } from '../translations/fresh-aggregate';
+import { useCardLanguages } from '../translations/useCardLanguages';
 import { StatusEditor } from './StatusEditor';
+import type { StatusEditing } from './useStatusForm';
 import { useStatusAggregate } from './useStatusAggregate';
 
 interface Props {
   /** Редагований статус (рядок списку); `null` — створення. */
-  editing: { id: string; isDefault: boolean; code: string } | null;
+  editing: StatusEditing | null;
   nextSortOrder: number;
   onChanged: () => void;
   onClose: () => void;
@@ -27,8 +30,9 @@ interface Props {
 export function StatusFormDialog(p: Props) {
   const t = useT();
   const agg = useStatusAggregate(p.editing?.id);
-  const langs = useProductLanguages();
-  const failed = agg.isError || langs.isError;
+  const langs = useCardLanguages();
+  // Збій ПЕРЕчитування (старі data лишаються) форму не знімає: його показує `kit.reload`.
+  const failed = (agg.isError && !agg.data) || langs.isError;
   const ready = !!langs.data && (!p.editing || !!agg.data);
 
   return (
@@ -63,7 +67,20 @@ export function StatusFormDialog(p: Props) {
             editing={p.editing}
             aggregate={p.editing ? agg.data! : { version: 1, texts: {} }}
             languages={langs.data!}
-            refetch={async () => (await agg.refetch()).data}
+            refetch={async () => {
+              const fresh = freshAggregate(await agg.refetch());
+              if (!fresh) return undefined;
+              // Ознаки дефолту в агрегаті немає (її міняє `setDefault`) — вона з рядка списку.
+              try {
+                const rows = await listOrderStatuses({ data: {} });
+                return {
+                  ...fresh,
+                  isDefault: rows.find((r) => r.id === fresh.id)?.isDefault,
+                };
+              } catch {
+                return undefined;
+              }
+            }}
             nextSortOrder={p.nextSortOrder}
             onChanged={p.onChanged}
             onDone={p.onClose}

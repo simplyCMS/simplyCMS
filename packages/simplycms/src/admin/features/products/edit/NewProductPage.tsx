@@ -10,7 +10,7 @@ import {
   productFormSchemaFor,
   type ProductFormValues,
 } from './product-form-schema';
-import { useProductLanguages } from './useProductAggregate';
+import { useCardLanguages } from '../../translations/useCardLanguages';
 import { useProductCreate } from './useProductSave';
 import { useRowErrors } from './useRowErrors';
 import type { LanguageInfo } from '../../translations/translation-context';
@@ -89,7 +89,7 @@ function Body({ languages }: BodyProps) {
  */
 export function NewProductPage() {
   const t = useT();
-  const langs = useProductLanguages();
+  const langs = useCardLanguages();
   return (
     <div className="space-y-6">
       <div>

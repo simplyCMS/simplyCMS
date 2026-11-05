@@ -6,10 +6,9 @@ import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import { adminPath } from '../../../lib/adminLinks';
 import { ProductCard } from './ProductCard';
-import {
-  useProductAggregate,
-  useProductLanguages,
-} from './useProductAggregate';
+import { freshAggregate } from '../../translations/fresh-aggregate';
+import { useCardLanguages } from '../../translations/useCardLanguages';
+import { useProductAggregate } from './useProductAggregate';
 
 interface Props {
   readonly productId: string;
@@ -25,7 +24,7 @@ export function ProductEditPage({ productId }: Props) {
   const navigate = useNavigate();
   const isValidId = z.uuid().safeParse(productId).success;
   const agg = useProductAggregate(productId, isValidId);
-  const langs = useProductLanguages();
+  const langs = useCardLanguages();
   const goBack = () => navigate({ to: adminPath('products') });
   const back = (
     <Button variant="ghost" size="icon" onClick={goBack}>
@@ -89,7 +88,7 @@ export function ProductEditPage({ productId }: Props) {
         productId={productId}
         aggregate={agg.data}
         languages={langs.data}
-        refetch={async () => (await agg.refetch()).data}
+        refetch={async () => freshAggregate(await agg.refetch())}
       />
     </div>
   );

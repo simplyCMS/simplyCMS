@@ -10,8 +10,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../useProductSave', () => ({
   useProductCreate: mocks.useProductCreate,
 }));
-vi.mock('../useProductAggregate', () => ({
-  useProductLanguages: () => ({
+vi.mock('../../../translations/useCardLanguages', () => ({
+  useCardLanguages: () => ({
     data: [{ code: 'uk', name: 'Українська', isDefault: true }],
   }),
 }));
