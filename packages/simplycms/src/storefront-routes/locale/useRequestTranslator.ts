@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { useRouteContext, useRouterState } from '@tanstack/react-router';
 import {
+  PLATFORM_FALLBACK_UI,
   createTranslator,
   resolveUiLocalePair,
   useUiCatalogs,
 } from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 import type { RouterContext } from 'simplycms/runtime';
-import { localeOfHref } from 'simplycms/domain';
+import { NO_LOCALES, localeOfHref } from 'simplycms/domain';
 
 const BASE = ['base'] as const;
 
@@ -27,9 +28,16 @@ export function useRequestTranslator(): Translator {
   const { locales }: RouterContext = useRouteContext({ strict: false });
   // Екран помилки говорить мовою ІНТЕРФЕЙСУ: нормально це мова сторінки, а `/pl/x` опублікованої мови, пакет якої зник
   // (деградований режим, §19.15), — основною.
+  // Без мовного контексту (`beforeLoad` кореня впав, `NO_LOCALES`) пара не будується:
+  // `resolveUiLocalePair('und', …)` кинула б усередині самого екрана помилки.
   const ui = useMemo(
     () =>
-      resolveUiLocalePair(localeOfHref(publicHref, locales), locales.primary),
+      locales === NO_LOCALES
+        ? { locale: PLATFORM_FALLBACK_UI }
+        : resolveUiLocalePair(
+            localeOfHref(publicHref, locales),
+            locales.primary,
+          ),
     [publicHref, locales],
   );
   // Корінь міг упасти ДО завантаження каталогу, тож хук має право призупинитись (а не

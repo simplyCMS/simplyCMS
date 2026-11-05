@@ -22,6 +22,7 @@ export {
   resolveUiLocalePair,
   resolveAdminUiLocale,
   toUiLocale,
+  PLATFORM_FALLBACK_UI,
 } from './ui-locale';
 export type { UiLocalePair } from './ui-locale';
 export {

@@ -83,7 +83,18 @@ export function resolveAdminUiLocale(
   if (chosen) return chosen;
   const store = toUiLocale(resolveUiLocale(primary, primary), ['admin']);
   if (store) return store;
-  const en = toUiLocale('en', ['admin']);
-  if (!en) throw new Error('simplycms/i18n: пакет `en` без частини `admin`');
-  return en;
+  return PLATFORM_FALLBACK_UI;
 }
+
+/**
+ * Остання запасна ланка платформи: пакет `en`, повний за тестом парності. Єдине місце, де `en`
+ * названо літералом: її беруть адмінка (основна мова без частини `admin`, §19.15) і екран
+ * помилки без мовного контексту (`beforeLoad` кореня впав, `primary = 'und'`). Не тиха
+ * підміна: первинна помилка `beforeLoad` іде в лог і маску з ref.
+ */
+export const PLATFORM_FALLBACK_UI: UiLocale = (() => {
+  const en = toUiLocale('en', ['base', 'admin']);
+  if (!en)
+    throw new Error('simplycms/i18n: пакет `en` без частин base і admin');
+  return en;
+})();
