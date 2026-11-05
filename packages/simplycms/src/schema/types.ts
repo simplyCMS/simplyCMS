@@ -114,7 +114,14 @@ export type Order = InferSelectModel<typeof orders>;
 export type NewOrder = InferInsertModel<typeof orders>;
 export type OrderItem = InferSelectModel<typeof orderItems>;
 export type NewOrderItem = InferInsertModel<typeof orderItems>;
-export type OrderStatus = InferSelectModel<typeof orderStatuses>;
+/**
+ * Рядок списку статусів (read-model `order-statuses.list`, Д10): назва — з перекладу основної
+ * мови, без `createdAt`. Рядка таблиці `order_statuses` з назвою більше немає (М2б, Р19).
+ */
+export type OrderStatus = Omit<
+  InferSelectModel<typeof orderStatuses>,
+  'createdAt'
+> & { name: string };
 export type Wishlist = InferSelectModel<typeof wishlists>;
 export type NewWishlist = InferInsertModel<typeof wishlists>;
 export type Comparison = InferSelectModel<typeof comparisons>;

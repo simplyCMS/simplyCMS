@@ -72,7 +72,7 @@ export function useOrderStatusesPage() {
       color: form.color,
       sortOrder,
       isDefault: false,
-      createdAt: new Date(),
+      version: 1,
     } as OrderStatus);
     persist(
       tx,

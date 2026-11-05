@@ -18,6 +18,10 @@ export const messages = {
   'admin.errors.shippingPricingUnsupported':
     'Цей провайдер не рахує вартість доставки сам — оберіть інший режим ціни',
   'admin.errors.shippingProviderUnknown': 'Невідомий провайдер доставки',
+  'admin.errors.orderStatusDefault':
+    'Статус за замовчуванням видалити не можна — спершу призначте інший',
+  'admin.errors.orderStatusSystem':
+    'Системний статус (новий, скасоване) видалити не можна',
   'admin.errors.shippingZoneDefault':
     'Зону за замовчуванням не можна вимкнути чи видалити — спершу призначте іншу',
   'admin.errors.shippingZoneInactive':

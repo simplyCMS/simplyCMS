@@ -59,6 +59,10 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.pickupPointSystem]: 'admin.errors.pickupPointSystem',
   [ADMIN_STATE_CONSTRAINT.pickupPointHasStock]:
     'admin.errors.pickupPointHasStock',
+  // М2б Р19: довідник статусів замовлень.
+  [ADMIN_STATE_CONSTRAINT.orderStatusDefault]:
+    'admin.errors.orderStatusDefault',
+  [ADMIN_STATE_CONSTRAINT.orderStatusSystem]: 'admin.errors.orderStatusSystem',
   // Е6б-14/15/17: системні налаштування.
   [ADMIN_STATE_CONSTRAINT.storeLogoInvalid]: 'admin.errors.storeLogoInvalid',
   [ADMIN_STATE_CONSTRAINT.themeNotBuilt]: 'admin.errors.themeNotBuilt',

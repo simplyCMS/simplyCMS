@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { orderItems, orderStatuses, orders } from 'simplycms/schema';
 import type { JsonValue } from './property';
 
@@ -51,9 +52,16 @@ export interface OrderDetailRow extends OrderListRow {
   recipient_email: string | null;
 }
 
+// М2б Р19: назви в колонці `order_statuses` більше немає. Мінімальна заміна для вітрини —
+// назва основної мови з перекладу; вибір мови запиту й відкат (`translatedFieldSql`) — наступний
+// крок (вітрина статусів).
 export const orderStatusColumns = {
   id: orderStatuses.id,
-  name: orderStatuses.name,
+  name: sql<string>`(select t.name from public.order_status_translations t
+    where t.status_id = ${orderStatuses.id}
+      and t.locale = (select code from public.languages where is_default))`.as(
+    'name',
+  ),
   code: orderStatuses.code,
   color: orderStatuses.color,
 };
