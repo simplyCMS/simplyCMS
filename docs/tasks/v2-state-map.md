@@ -55,6 +55,12 @@
 Решта сутностей — М2; передача в М2/М3/М5 — [роадмап](./platform-roadmap.md) «Поточний стан».
 Канон — [`translations.md`](../architecture/translations.md), [`operations-api.md`](../architecture/operations-api.md).
 
+🔴 **Мультимовність М2, блок 1 (2026-11-05) — реалізовано, чекає приймання архітектора:** дві осі мови
+(`ContentLocale` / `UiLocale`, міст `resolveUiLocale`), каталоги ядра ліниві частини з реєстром, мова адмінки з
+`profiles.ui_locale`, мова магазину лише з пакета (деградований режим гучний: лог, `doctor --online`), листи
+мовою одержувача, `config.locale` і `VITE_LOCALE` знесено, множина на `Intl.PluralRules`. База: baseline
+змінено — перестворити. Канон — [`i18n.md`](../architecture/i18n.md), гейти — `test-contours.md` § 15.
+
 🔴 **К3-Е8 (2026-10-13):** магазин, створений з npm, має шлях до Dokploy без ручного `psql`: власна БД
 накочується командою `simplycms db:apply` або на старті контейнера (`node scripts/start.mjs` →
 `simplycms/migrate`, журнал `simplycms_migrations`, правило: baseline `0000…0004` до 1.0 ще може змінюватися, заморожується кроком `1.0.0-rc.1`); файли — драйвер
