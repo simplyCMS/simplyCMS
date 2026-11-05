@@ -1,6 +1,14 @@
 import { sql, type SQL } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { textArray } from './shared';
+import { PATH_KINDS, TOKEN_KINDS, raw } from './targets';
+
+// Колонки видів і `token_kind` — з реєстру видів цілей; текст запитів не змінюється.
+const [P] = PATH_KINDS;
+const [T] = TOKEN_KINDS;
+const pCol = raw(P.column);
+const tCol = raw(T.column);
+const tKind = raw(`'${T.tokenKind}'`);
 
 // Кандидати й замки пакетного копіювання адрес/токенів у нову мову (`copy.ts`).
 // 🔴 Вибір кандидатів — ОДИН фрагмент на етап: з нього беруть і копіювання, і
@@ -12,28 +20,28 @@ export const pathCandidates = (
   primary: SQL | string,
   locale: string,
 ): SQL => sql`
-  select p.product_id, p.path from public.url_paths p
-   where p.locale = ${primary} and p.is_current and p.product_id is not null
+  select p.${pCol}, p.path from public.url_paths p
+   where p.locale = ${primary} and p.is_current and p.${pCol} is not null
      and not exists (
        select 1 from public.url_paths t
-        where t.locale = ${locale} and t.product_id = p.product_id and t.is_current)`;
+        where t.locale = ${locale} and t.${pCol} = p.${pCol} and t.is_current)`;
 
 /** Поточні токени модифікацій основної мови без поточного токена в `locale`. */
 export const tokenCandidates = (
   primary: SQL | string,
   locale: string,
 ): SQL => sql`
-  select p.modification_id, p.scope_id, p.slug from public.slug_tokens p
-   where p.locale = ${primary} and p.is_current and p.token_kind = 'modification'
+  select p.${tCol}, p.scope_id, p.slug from public.slug_tokens p
+   where p.locale = ${primary} and p.is_current and p.token_kind = ${tKind}
      and not exists (
        select 1 from public.slug_tokens t
-        where t.locale = ${locale} and t.modification_id = p.modification_id
+        where t.locale = ${locale} and t.${tCol} = p.${tCol}
           and t.is_current)`;
 
 /** `FOR KEY SHARE` рядків `table` за id (у порядку id); повертає наявні. */
 export async function keyShare(
   db: ActorDb,
-  table: 'products' | 'product_modifications',
+  table: string,
   ids: readonly string[],
 ): Promise<Set<string>> {
   if (ids.length === 0) return new Set();

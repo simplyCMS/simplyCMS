@@ -5,7 +5,6 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   copyTokensForLocale,
   createTokensForEntity,
-  resolveToken,
   setExplicitToken,
 } from 'simplycms/addressing';
 import { tokenHelpers, useAddressingDb } from './fixtures/addressing-db';
@@ -164,7 +163,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
         });
     });
 
-    it('на власний історичний → він поточний, колишній — історія; resolveToken', async () => {
+    it('на власний історичний → він поточний, колишній — історія', async () => {
       const t = await mod('back-new');
       await tok('uk', 'back-old', t, false);
       await admin((d) => setExplicitToken(d, t, 'uk', 'back-old'));
@@ -172,16 +171,6 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
         { locale: 'uk', slug: 'back-old', is_current: true },
         { locale: 'uk', slug: 'back-new', is_current: false },
       ]);
-      expect(
-        await admin((d) => resolveToken(d, 'uk', t.scopeId, 'back-new')),
-      ).toEqual({
-        target: t,
-        currentSlug: 'back-old',
-        isCurrent: false,
-      });
-      expect(
-        await admin((d) => resolveToken(d, 'uk', t.scopeId, 'zzz')),
-      ).toBeNull();
     });
   });
 

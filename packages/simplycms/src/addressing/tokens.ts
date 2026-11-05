@@ -14,9 +14,12 @@ import {
   assertSlugFormat,
   textArray,
 } from './shared';
+import { raw, tokenKindOf, type TokenTarget } from './targets';
 
-/** Сутність, якій належить токен; `scopeId` — область (для модифікації товар). */
-export type TokenTarget = { kind: 'modification'; id: string; scopeId: string };
+/** Значення `token_kind` літералом SQL і колонка-ціль виду (з реєстру; текст запиту не змінюється). */
+const kindLiteral = (target: TokenTarget) =>
+  raw(`'${tokenKindOf(target.kind).tokenKind}'`);
+const column = (target: TokenTarget) => raw(tokenKindOf(target.kind).column);
 
 /**
  * Поточні токени нової модифікації в усіх мовах `draft`/`published` — дзеркало
@@ -32,6 +35,7 @@ export async function createTokensForEntity(
   baseSlug: string,
 ): Promise<Map<string, string>> {
   assertSlugFormat(baseSlug, 'slug');
+  const kindLit = kindLiteral(target);
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
   const locales = await activeLocales(db);
   const result = new Map<string, string>();
@@ -39,7 +43,7 @@ export async function createTokensForEntity(
   const rows = await db.execute<{ locale: string; slug: string }>(sql`
     select locale, slug from public.slug_tokens
      where locale = any(${textArray(locales)})
-       and token_kind = 'modification' and scope_id = ${target.scopeId}
+       and token_kind = ${kindLit} and scope_id = ${target.scopeId}
        and (slug = ${baseSlug} or slug like ${`${baseSlug}-%`})`);
   const values = locales.map((locale) => {
     const taken = new Set(
@@ -51,7 +55,7 @@ export async function createTokensForEntity(
       locale,
       slug,
       scopeId: target.scopeId,
-      modificationId: target.id,
+      [tokenKindOf(target.kind).field]: target.id,
       isCurrent: true,
     };
   });
@@ -72,11 +76,13 @@ export async function setExplicitToken(
   slug: string,
 ): Promise<void> {
   assertSlugFormat(slug, 'slug');
+  const kindLit = kindLiteral(target);
+  const col = column(target);
   // Спільний замок ПЕРШИМ кроком, як у `createTokensForEntity` (майстер §3.5).
   await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
   const found = await db.execute<{ owner: string; is_current: boolean }>(
-    sql`select modification_id as owner, is_current from public.slug_tokens
-         where locale = ${locale} and token_kind = 'modification'
+    sql`select ${col} as owner, is_current from public.slug_tokens
+         where locale = ${locale} and token_kind = ${kindLit}
            and scope_id = ${target.scopeId} and slug = ${slug}`,
   );
   const row = found.rows[0];
@@ -84,10 +90,10 @@ export async function setExplicitToken(
     throw new AdminConflictError('unique', 'slug_taken');
   if (row?.is_current) return;
   await db.execute(sql`update public.slug_tokens set is_current = false
-      where locale = ${locale} and modification_id = ${target.id} and is_current`);
+      where locale = ${locale} and ${col} = ${target.id} and is_current`);
   if (row) {
     await db.execute(sql`update public.slug_tokens set is_current = true
-        where locale = ${locale} and token_kind = 'modification'
+        where locale = ${locale} and token_kind = ${kindLit}
           and scope_id = ${target.scopeId} and slug = ${slug}`);
     return;
   }
@@ -97,7 +103,7 @@ export async function setExplicitToken(
       locale,
       slug,
       scopeId: target.scopeId,
-      modificationId: target.id,
+      [tokenKindOf(target.kind).field]: target.id,
       isCurrent: true,
     });
   } catch (error) {
@@ -106,35 +112,4 @@ export async function setExplicitToken(
       throw new AdminConflictError('unique', 'slug_taken');
     throw error;
   }
-}
-
-/** Токен у межах області: сутність, поточний slug і чи сам він поточний. */
-export async function resolveToken(
-  db: ActorDb,
-  locale: string,
-  scopeId: string,
-  slug: string,
-): Promise<{
-  target: TokenTarget;
-  currentSlug: string;
-  isCurrent: boolean;
-} | null> {
-  const res = await db.execute<{
-    modification_id: string;
-    is_current: boolean;
-    current_slug: string | null;
-  }>(sql`select t.modification_id, t.is_current, c.slug as current_slug
-           from public.slug_tokens t
-           left join public.slug_tokens c
-             on c.modification_id = t.modification_id
-            and c.locale = t.locale and c.is_current
-          where t.locale = ${locale} and t.token_kind = 'modification'
-            and t.scope_id = ${scopeId} and t.slug = ${slug}`);
-  const row = res.rows[0];
-  if (!row) return null;
-  return {
-    target: { kind: 'modification', id: row.modification_id, scopeId },
-    currentSlug: row.current_slug ?? slug,
-    isCurrent: row.is_current,
-  };
 }

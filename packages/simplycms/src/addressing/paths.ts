@@ -18,23 +18,10 @@ import {
   textArray,
 } from './shared';
 import { publicNames } from './public-names';
+import { pathKindOf, raw, type AddressTarget } from './targets';
 
-/** Сутність, якій належить адреса (М2 розширює union). */
-export type AddressTarget = { kind: 'product'; id: string };
-
-/**
- * Колонка-ціль реєстру `url_paths` для кожного виду сутності — носій для `column()` (оновлення й
- * вибірки за ціллю) і `currentPathOwners`: новий вид у `AddressTarget` без рядка тут не
- * скомпілюється. 🔴 Вставки (`createPathsForEntity`, `setExplicitPath`, `copyPathsForLocale` у
- * `copy.ts`) пишуть `productId` напряму — новий вид М2 мусить перевести й їх, тип цього не змусить.
- */
-export const PATH_TARGET_COLUMNS = {
-  product: 'product_id',
-} as const satisfies Record<AddressTarget['kind'], string>;
-
-/** Колонка реєстру для виду сутності. */
-const column = (target: AddressTarget) =>
-  sql.raw(PATH_TARGET_COLUMNS[target.kind]);
+/** Колонка реєстру `url_paths` для виду сутності (з реєстру видів). */
+const column = (target: AddressTarget) => raw(pathKindOf(target.kind).column);
 
 const reservedFor = (langs: readonly string[]) => (candidate: string) =>
   isReservedPath(candidate, langs, publicNames());
@@ -74,7 +61,7 @@ export async function createPathsForEntity(
     return {
       locale,
       path,
-      productId: target.id,
+      [pathKindOf(target.kind).field]: target.id,
       isCurrent: true,
     };
   });
@@ -124,7 +111,7 @@ export async function setExplicitPath(
       id: randomUUID(),
       locale,
       path,
-      productId: target.id,
+      [pathKindOf(target.kind).field]: target.id,
       isCurrent: true,
     });
   } catch (error) {
@@ -134,34 +121,6 @@ export async function setExplicitPath(
       throw new AdminConflictError('unique', 'path_taken');
     throw error;
   }
-}
-
-/** Куди веде адреса: сутність, її поточна адреса в цій мові, чи сама вона поточна. */
-export async function resolvePath(
-  db: ActorDb,
-  locale: string,
-  path: string,
-): Promise<{
-  target: AddressTarget;
-  currentPath: string;
-  isCurrent: boolean;
-} | null> {
-  const res = await db.execute<{
-    product_id: string;
-    is_current: boolean;
-    current_path: string | null;
-  }>(sql`select u.product_id, u.is_current, c.path as current_path
-           from public.url_paths u
-           left join public.url_paths c
-             on c.product_id = u.product_id and c.locale = u.locale and c.is_current
-          where u.locale = ${locale} and u.path = ${path}`);
-  const row = res.rows[0];
-  if (!row) return null;
-  return {
-    target: { kind: 'product', id: row.product_id },
-    currentPath: row.current_path ?? path,
-    isCurrent: row.is_current,
-  };
 }
 
 /** Поточні адреси сутності: мова → шлях. */
