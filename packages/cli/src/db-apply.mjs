@@ -131,12 +131,16 @@ function printReport(ui, report, { dryRun, check }) {
     );
     return check ? EXIT_PENDING : 0;
   }
-  if (report.applied.length === 0)
+  // Засіяна мова й довідники — теж зміна БД: без цього рядка накат на базі, де канон
+  // уже був, а мови ще не було, звітував би «нічого накочувати» всупереч фактові.
+  if (report.applied.length === 0 && !report.bootstrapped)
     ui.success('Нічого накочувати: усі міграції в журналі.');
-  else
+  else if (report.applied.length > 0)
     ui.success(
       `Накочено ${report.applied.length}: ${report.applied.join(', ')}`,
     );
+  if (report.bootstrapped)
+    ui.success('Засіяно основну мову, довідники й профіль магазину.');
   ui.finish('Готово.');
   return 0;
 }

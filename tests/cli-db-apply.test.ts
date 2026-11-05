@@ -19,7 +19,11 @@ import {
 const OWNER = 'postgres://owner:s3cr3t@h:5432/db';
 const RUNTIME = 'postgres://app_runtime:rt-pass@h:5432/db';
 
-type Report = { applied: string[]; pending: string[] };
+type Report = {
+  applied: string[];
+  pending: string[];
+  bootstrapped?: boolean;
+};
 
 function harness(
   env: Record<string, string>,
@@ -108,6 +112,18 @@ describe('simplycms db:apply', () => {
     const dir = String(h.applyMigrations.mock.calls[0]![0].dir);
     expect(dir.replaceAll('\\', '/')).toBe('/store/db/migrations');
     expect(h.text()).toContain('0005_x.sql');
+  });
+
+  it('накат лише засіяв мову → рядок про засів, без «Нічого накочувати»', async () => {
+    const h = harness({ MIGRATION_DATABASE_URL: OWNER });
+    h.applyMigrations.mockResolvedValue({
+      applied: [],
+      pending: [],
+      bootstrapped: true,
+    });
+    expect(await h.call([])).toBe(0);
+    expect(h.text()).toContain('Засіяно основну мову');
+    expect(h.text()).not.toContain('Нічого накочувати');
   });
 
   it('--check з pending → 3 з іменем файлу; без pending → 0', async () => {

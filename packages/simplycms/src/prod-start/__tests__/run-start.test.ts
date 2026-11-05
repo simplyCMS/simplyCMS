@@ -162,6 +162,15 @@ describe('runStart', () => {
     expect(logs.join('\n')).toContain('нічого накочувати');
   });
 
+  it('БД засіяно основною мовою → рядок про засів, без «нічого накочувати»', async () => {
+    const { deps, logs } = setup({
+      migrate: vi.fn(async () => ({ applied: [], bootstrapped: true })),
+    });
+    await runStart(deps);
+    expect(logs.join('\n')).toContain('засіяно основну мову');
+    expect(logs.join('\n')).not.toContain('нічого накочувати');
+  });
+
   it('без process.execve → код 1 і пояснення про Node ≥ 24', async () => {
     const { deps, logs, migrate } = setup({ execve: undefined });
     expect(await runStart(deps)).toBe(1);

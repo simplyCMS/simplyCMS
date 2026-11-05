@@ -11,7 +11,10 @@ export type StartMigrate = (options: {
   /** Основна мова з конфігу: старт чистої БД створює з неї мову й довідники. */
   primaryLocale: string;
   log: (message: string) => void;
-}) => Promise<{ readonly applied?: readonly string[] } | void>;
+}) => Promise<{
+  readonly applied?: readonly string[];
+  readonly bootstrapped?: boolean;
+} | void>;
 
 /**
  * Усе, що чіпає світ (накат, execve, env, вивід), приходить аргументами: тест
@@ -92,7 +95,10 @@ export async function runStart({
         primaryLocale,
         log: (message) => log(scrubOwnerUrl(message, migrationUrl)),
       });
-      if ((report?.applied ?? []).length === 0)
+      // Засіяна мова — теж зміна БД: «нічого накочувати» поруч із нею вводило б в оману.
+      if (report?.bootstrapped)
+        log('[start] засіяно основну мову, довідники й профіль магазину.');
+      else if ((report?.applied ?? []).length === 0)
         log('[start] міграції: нічого накочувати.');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
