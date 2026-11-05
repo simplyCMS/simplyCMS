@@ -1,5 +1,5 @@
 import type { UseFormReturn } from 'react-hook-form';
-import { emptyTexts } from './product-aggregate';
+import { rebaseTexts } from '../../translations/texts-rebase';
 import { same } from './product-diff';
 import { TEXT_FIELDS, type ProductFormValues } from './product-form-schema';
 
@@ -60,13 +60,7 @@ export function rebase(
   now: ProductFormValues,
 ): ProductFormValues {
   const out: ProductFormValues = structuredClone(fresh);
-  for (const [locale, row] of Object.entries(now.texts)) {
-    for (const f of TEXT_FIELDS)
-      if (row[f] !== (sent.texts[locale]?.[f] ?? '')) {
-        out.texts[locale] ??= emptyTexts();
-        out.texts[locale][f] = row[f];
-      }
-  }
+  out.texts = rebaseTexts(TEXT_FIELDS, fresh.texts, sent.texts, now.texts);
   for (const k of SCALARS)
     if (now[k] !== sent[k]) Object.assign(out, { [k]: now[k] });
   out.modifications = mergeById(

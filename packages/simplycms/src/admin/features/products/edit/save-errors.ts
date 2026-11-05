@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import type { Translator } from 'simplycms/i18n';
 import { adminErrorKey } from '../../../lib/admin-error';
 import { applyServerValidation } from '../../../lib/apply-server-validation';
+import { textsErrorField } from '../../translations/texts-errors';
 import type { SaveIndex } from './product-save-input';
 
 /** Куди класти помилки, що стосуються не поля форми, а рядка картки. */
@@ -17,8 +18,8 @@ export interface ErrorSink {
  * самим порядком, у якому `buildSaveInput` склав запит (`index`).
  */
 function target(path: readonly (string | number)[], index: SaveIndex) {
-  if (path[0] === 'texts' && path.length === 3)
-    return `texts.${path[1]}.${path[2]}`;
+  const text = textsErrorField(path);
+  if (text) return text;
   if (path[0] === 'path' && path.length === 1) return 'path';
   const i = path[2];
   if (path[1] === 'upsert' && typeof i === 'number') {

@@ -1,7 +1,8 @@
 import type { ProductFormValues, DraftValue } from './product-form-schema';
 import { TEXT_FIELDS } from './product-form-schema';
 
-import { baseDiff, orNull, same, textsDiff, type Obj } from './product-diff';
+import { textsDiff } from '../../translations/texts-diff';
+import { baseDiff, orNull, same, type Obj } from './product-diff';
 
 export { same };
 
@@ -69,7 +70,7 @@ export function buildSaveInput(
   const input: SaveInput = {};
   const base = baseDiff(was, now);
   if (Object.keys(base).length > 0) input.base = base;
-  const texts = textsDiff(was, now);
+  const texts = textsDiff(TEXT_FIELDS, was.texts, now.texts);
   if (Object.keys(texts).length > 0) input.texts = texts;
 
   const mods = modificationsDiff(was, now, index);

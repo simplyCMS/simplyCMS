@@ -12,7 +12,7 @@ import { PropertyValuesPanel } from '../properties/PropertyValuesPanel';
 import { SimpleProductPanel } from '../simple/SimpleProductPanel';
 import { ProductForm } from './ProductForm';
 import { editCardContext } from './edit-card-context';
-import { localeStatuses } from './product-aggregate';
+import { localeStatusesOf } from '../../translations/texts-form';
 import {
   useProductCardState,
   type ProductCardInput,
@@ -35,7 +35,7 @@ function Body(props: ProductCardInput): ReactNode {
         translation={{
           languages,
           primary,
-          statuses: localeStatuses(state.agg),
+          statuses: localeStatusesOf(state.agg.texts),
           active,
           setActive,
         }}
