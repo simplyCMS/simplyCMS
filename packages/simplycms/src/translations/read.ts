@@ -101,8 +101,8 @@ export function withFallback(
  * Скалярний підзапит «текст поля сутності мовою запиту, а де його немає — основною»
  * (`coalesce(<мова>, <основна>)`). Вкладається в `select` Drizzle як звичайний вираз —
  * на відміну від `withFallback` не вимагає власних JOIN-ів, тож годиться для читачів, що вже
- * зібрані з `.leftJoin` (замовлення зі статусом). `owner` — вираз id власника у запиті
- * викликача. Недобре, коли поле читається в багатьох рядках: два підзапити на рядок (для
+ * зібрані з `.leftJoin` (замовлення зі статусом). `owner` — ПОВНІСТЮ кваліфікована колонка id власника у запиті
+ * викликача (`${table.id}`), не голе імʼя. Недобре, коли поле читається в багатьох рядках: два підзапити на рядок (для
  * статусів — довідник з кількох рядків, індекс `(status_id, locale)`).
  */
 export function translatedFieldSql(
@@ -118,7 +118,10 @@ export function translatedFieldSql(
   const table = sql.raw(assertIdent(spec.table));
   const fk = sql.raw(assertIdent(spec.fk));
   const col = sql.raw(assertIdent(field));
+  // Псевдонім не збігається з іменами таблиць викликача (`t`, `o`…): `owner` — довільний вираз
+  // із зовнішнього запиту, і збіг імен звузив би його до таблиці підзапиту.
+  const tr = sql.raw(`__tr_${assertIdent(field)}`);
   const pick = (locale: string) =>
-    sql`(select t.${col} from ${table} t where t.${fk} = ${owner} and t.locale = ${locale})`;
+    sql`(select ${tr}.${col} from ${table} ${tr} where ${tr}.${fk} = ${owner} and ${tr}.locale = ${locale})`;
   return sql`coalesce(${pick(text.locale)}, ${pick(text.primary)})`;
 }
