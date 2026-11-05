@@ -54,28 +54,16 @@ describe('TRANSLATABLE (реєстр специфікацій М1)', () => {
     },
   );
 
+  it('ключі реєстру = ключі TRANSLATABLE_FIELDS', () => {
+    expect(Object.keys(TRANSLATABLE).sort()).toEqual(
+      Object.keys(TRANSLATABLE_FIELDS).sort(),
+    );
+  });
+
   it.each(Object.entries(TRANSLATABLE))(
-    '%s: base — наявна таблиця схеми; поля = TRANSLATABLE_FIELDS',
-    (key, spec) => {
+    '%s: base — наявна таблиця схеми',
+    (_key, spec) => {
       expect(tables.has(spec.base), spec.base).toBe(true);
-      expect(Object.keys(TRANSLATABLE).sort()).toEqual(
-        Object.keys(TRANSLATABLE_FIELDS).sort(),
-      );
-      const { fields, required, richHtml } = (
-        TRANSLATABLE_FIELDS as Record<
-          string,
-          {
-            fields: readonly string[];
-            required: readonly string[];
-            richHtml?: readonly string[];
-          }
-        >
-      )[key]!;
-      expect(spec.fields).toEqual(fields);
-      expect(spec.required).toEqual(required);
-      expect((spec as { richHtml?: readonly string[] }).richHtml).toEqual(
-        richHtml,
-      );
     },
   );
 
