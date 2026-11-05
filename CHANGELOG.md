@@ -90,7 +90,9 @@
   - `reorderOrderStatus` вимагає `expectedVersion` і повертає `{ version, swapped: boolean }` (було:
     `{ swapped: Row[] }`); паралельна зміна сусіда — 412;
   - `listOrderStatuses` віддає рядок read-model (`name` основної мови, `version`, без `createdAt`).
-  Ресурс `orderStatusesOps` із запису знято й із барелю `impl` не експортується.
+  Ресурс `orderStatusesOps` із запису знято й із барелю `impl` не експортується; разом із ним зі
+  публічного `simplycms/admin-server/impl` зникли `setDefaultInput`, `setDefaultOrderStatusOp`, `reorderInput`,
+  `reorderOrderStatusOp`, `removeStatusInput`, `removeManyInput`, `removeManyOrderStatusesOp`.
 - **`order_statuses.name` → `order_status_translations`:** колонки `name` у `order_statuses` немає, додано
   `version`. Тип `OrderStatus` (`simplycms/schema/types`) — рядок списку (`name` основної мови, без `createdAt`).
   **Перестворити БД.**
