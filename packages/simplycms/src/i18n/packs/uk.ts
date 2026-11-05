@@ -13,5 +13,21 @@ export const ukPack: LanguagePack = {
     admin: () => import('../catalogs/uk/admin/index').then((m) => m.messages),
     mail: () => import('../catalogs/uk/mail').then((m) => m.messages),
   },
-  content: { slugify: (text) => transliterateUk(text) },
+  content: {
+    seed: {
+      orderStatuses: {
+        new: 'Новий',
+        confirmed: 'Підтверджено',
+        processing: 'В обробці',
+        shipped: 'Відправлено',
+        delivered: 'Доставлено',
+        cancelled: 'Скасовано',
+      },
+      priceTypeRetail: 'Роздрібна',
+      customerCategoryRetail: 'Роздріб',
+      mainShippingZone: 'Основна зона',
+      storeName: 'Мій магазин',
+    },
+    slugify: (text) => transliterateUk(text),
+  },
 };

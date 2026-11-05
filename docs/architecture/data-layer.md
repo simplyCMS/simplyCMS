@@ -297,6 +297,14 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
+- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (М2б, Р23).** Міграція `0003` тримає лише рядки без
+  тексту мовою магазину (`stock_management`, `cache_generations`, тема). Мову й довідники з текстом —
+  статуси замовлень, тип ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
+  `bootstrapStore` (`simplycms/migrate`) на порожній `languages` в основній мові магазину; тексти
+  беруться з `content.seed` мовного пакета (`simplycms/i18n/packs`), id — `SYSTEM_SEED_IDS`
+  (`simplycms/schema`). Одна транзакція під замком `languages-set`; непорожня `languages` → нічого не
+  пишемо (`{ seeded: false }`); мова без пакета → відмова з переліком наявних. `applyMigrations` кличе
+  його після файлів (і за порожнього `pending`), крім `dryRun`, коли задано `primaryLocale`.
 - 🔴 До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено: його правлять як **виняток
   baseline** (синхронно `schema.ts`, `migrations/{0001_init,0002_grants,0003_seed,0004_functions}.sql`,
   `drizzle/` — перегенерує `pnpm db:rebaseline`, решту руками), і кожна така правка в релізі дає в
@@ -559,8 +567,8 @@ email в іншому регістрі — не конфлікт, записує
   зносено, місто з адреси покупця на вибір зони не впливає. Єдина функція `resolveShippingZone`
   (`simplycms/domain/shipping`): кур'єр (`core:address`) → основна зона; самовивіз → `pickup_points.zone_id`
   точки, `NULL` → основна, неактивна зона точки → відмова. Рівно одна основна зона — інваріант БД, а не
-  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), сід
-  `0003_seed.sql` («Основна зона», `00000007-0000-4000-8000-000000000001`) і відкладений constraint-тригер
+  угода коду: частковий унікальний індекс `idx_shipping_zones_single_default` (не більше однієї), рядок
+  зони вставляє `bootstrapStore` (назва з мовного пакета, id — `SYSTEM_SEED_IDS.mainShippingZone`) і відкладений constraint-тригер
   `shipping_zones_require_default` (не менше однієї, перевірка на COMMIT — заміну основної двома UPDATE в
   одній транзакції він пропускає), `CHECK (NOT is_default OR is_active)` (основна завжди активна). Для
   режиму `rates` немає активного тарифу в визначеній зоні → `shipping_unavailable`; тариф іншої зони не
@@ -619,7 +627,7 @@ email в іншому регістрі — не конфлікт, записує
   `readGenerations()` мемоізує проміс у контексті запиту, тож три кеші дають один
   `select` із `cache_generations`. Поза запитом (CLI, фонові задачі) — запит на
   кожен `get`. Рядки `cache_generations` (`store-profile`, `active-theme`,
-  `languages`) засіяні `0003_seed.sql`; `bumpCacheGeneration` незасіяного ключа
+  `languages`) засіяні `0003_seed.sql` (рядки без тексту); `bumpCacheGeneration` незасіяного ключа
   кидає `Error`. LISTEN/NOTIFY не береться: прив'язаний до зʼєднання й ненадійний
   за пулерами.
 - 🔴 **SQL оминає кеш лише якщо не піднімає покоління.** Прямий

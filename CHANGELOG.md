@@ -23,6 +23,29 @@
 
 ## [Unreleased]
 
+Хвиля мультимовності, М2б (фундамент): старт БД з основною мовою магазину. Схему не змінено, але
+`0003_seed.sql` правлено (виняток baseline до `1.0.0-rc.1`) — **перестворити БД**.
+
+### Змінено
+
+- `0003_seed.sql` лишає лише рядки без тексту (`stock_management`, `cache_generations`, тема). Мову,
+  статуси замовлень, тип ціни, категорію покупця, профіль магазину й основну зону доставки вставляє
+  новий `bootstrapStore` (`simplycms/migrate`) на порожній `languages` — з текстами з мовного пакета
+  основної мови. `applyMigrations` кличе його після накату, коли задано `ApplyOptions.primaryLocale`
+  (`ApplyReport.bootstrapped`). Без `primaryLocale` накат лишає `languages` і довідники порожніми.
+
+### Додано
+
+- Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
+  `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
+- `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema`.
+
+### BREAKING
+
+- `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema`) знесено: замість нього `SYSTEM_SEED_IDS.mainShippingZone`.
+- `LanguagePack.content.seed` (`SeedTexts`: тексти статусів, типу ціни, категорії, зони, назви магазину)
+  обов'язкове для кожного мовного пакета.
+
 ---
 
 ## [0.16.0] — 2026-11-05

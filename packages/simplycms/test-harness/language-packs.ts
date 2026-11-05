@@ -15,7 +15,8 @@ export function packWithoutAdmin(
     code,
     name,
     ui: { base: source.ui.base, mail: source.ui.mail },
-    content: {},
+    // Тексти довідників потрібні типу; вигадана мова позичає їх у джерела.
+    content: { seed: source.content.seed },
   };
 }
 

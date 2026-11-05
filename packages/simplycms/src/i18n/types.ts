@@ -2,6 +2,7 @@ import type { messages as ukBase } from './catalogs/uk/base';
 import type { messages as ukAdmin } from './catalogs/uk/admin/index';
 import type { messages as ukMail } from './catalogs/uk/mail';
 import type { UiLocale } from 'simplycms/contracts';
+import type { SeedOrderStatusCode } from 'simplycms/schema';
 
 /** Частина каталогу ядра: вантажиться окремо, лише де потрібна (вітрина — `base`). */
 export type UiCatalogPart = 'base' | 'admin' | 'mail';
@@ -58,6 +59,20 @@ export type PluralKey =
 export type PartCatalog = Readonly<Record<string, CatalogValue>>;
 
 /**
+ * Тексти довідників чистого магазину мовою пакета: їх вставляє `bootstrapStore`
+ * (`simplycms/migrate`) на старті БД, коли мова є основною. Коди й id — у
+ * `simplycms/schema` (`SYSTEM_SEED_IDS`), тут лише рядки.
+ */
+export type SeedTexts = {
+  readonly orderStatuses: Readonly<Record<SeedOrderStatusCode, string>>;
+  readonly priceTypeRetail: string;
+  readonly customerCategoryRetail: string;
+  readonly mainShippingZone: string;
+  /** Назва магазину в `store_profile` до першого збереження профілю власником. */
+  readonly storeName: string;
+};
+
+/**
  * Мовний пакет ядра. Вісь інтерфейсу (`ui`) і вісь контенту (`content`) — окремі частини
  * (спека §19): мова може мати лише одну з них. `ui` — ЛІНИВІ лоадери частин каталогу, щоб
  * початковий граф вітрини не тягнув текст адмінки й листів (І43); розбір лоадерів — лише
@@ -73,6 +88,8 @@ export interface LanguagePack {
     readonly admin?: () => Promise<PartCatalog>;
   };
   readonly content: {
+    /** Тексти довідників для старту БД з цією мовою основною; обов'язкові. */
+    readonly seed: SeedTexts;
     /** Транслітерація для slug; без неї нелатинський текст `slugify` не передасть. */
     readonly slugify?: (text: string) => string;
     /** Місце під токенізацію пошуку наступної хвилі — поки порожнє за типом. */

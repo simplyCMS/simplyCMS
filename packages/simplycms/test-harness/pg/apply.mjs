@@ -14,6 +14,10 @@ export const CANON_DIR = fileURLToPath(
  * Накат КАНОНУ — лише через `applyMigrations` (Е8-Р2): харнес міряє ту саму
  * реалізацію накату, що й прод, разом із журналом. Повертає звіт накату.
  *
+ * 🔴 Накат йде з основною мовою `uk` (М2б, Р23): мова й довідники з'являються
+ * лише в `bootstrapStore`, а тести лишаються на сіді чистого магазину. Тести,
+ * що доводять саме порожню `languages`, беруть `applyCleanCanon`.
+ *
  * 🔴 Імпорт динамічний, а не статичний: модуль ядра — TypeScript, а
  * `scripts/live-smoke.mjs` імпортує цей файл чистим `node` (лише
  * `withDbName`). Статичний імпорт `.ts` поклав би live-smoke ще до старту.
@@ -21,6 +25,21 @@ export const CANON_DIR = fileURLToPath(
  * @returns {Promise<import('../../src/migrate/index.ts').ApplyReport>}
  */
 export async function applyCanon(connectionString) {
+  const { applyMigrations } = await import('../../src/migrate/index.ts');
+  return applyMigrations({
+    connectionString,
+    dir: CANON_DIR,
+    primaryLocale: 'uk',
+  });
+}
+
+/**
+ * Накат канону БЕЗ старту БД: `languages` і довідники порожні. Для `baseline`
+ * і тестів `bootstrapStore`, що стартують базу самі.
+ *
+ * @returns {Promise<import('../../src/migrate/index.ts').ApplyReport>}
+ */
+export async function applyCleanCanon(connectionString) {
   const { applyMigrations } = await import('../../src/migrate/index.ts');
   return applyMigrations({ connectionString, dir: CANON_DIR });
 }

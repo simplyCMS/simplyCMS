@@ -72,8 +72,8 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   // Build-time плагіни Vite (Е8) — T2 без upward-винятків: Node-код збірки,
   // `db` йому ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/vite', 'simplycms/db', 'simplycms/contracts'],
-  // Накат міграцій (Е8-Р2) — T2 без upward-винятків: `db` (withActor) йому
-  // не потрібен, тож ловиться навіть він.
+  // Накат міграцій (Е8-Р2) — T2, upward-винятки лише файли `db/lock-keys` і `i18n/packs`
+  // (`exempt-files.test.ts`): `db` (withActor) йому не потрібен, тож ловиться.
   ['packages/simplycms/src/migrate', 'simplycms/db', 'simplycms/contracts'],
   // Прод-старт (К3-Е8, F5) — T2, upward лише `env` і `migrate`: `db` (withActor)
   // старту не потрібен, тож ловиться.

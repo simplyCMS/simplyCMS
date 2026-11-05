@@ -43,3 +43,28 @@ describe('тір-зона migrate: виняток-файл db/lock-keys', () => 
     expect(errors).toHaveLength(1);
   });
 });
+
+// М2б, Р23: `bootstrapStore` читає тексти довідників з вузького входу пакетів;
+// барель `simplycms/i18n` тягне React і лишається закритим.
+describe('тір-зона migrate: виняток-файл i18n/packs', () => {
+  const MIGRATE = 'packages/simplycms/src/migrate/__tier-fixture.ts';
+
+  it.each(['simplycms/i18n/packs', '../i18n/packs'])(
+    '%s — легальний',
+    async (specifier) => {
+      expect(await restrictedImports(specifier, MIGRATE)).toEqual([]);
+    },
+  );
+
+  it.each([
+    'simplycms/i18n',
+    'simplycms/i18n/packs/uk',
+    'simplycms/i18n/packs-extra',
+    '../i18n',
+    '../i18n/packs/registry',
+  ])('%s — досі заборонений', async (specifier) => {
+    const errors = await restrictedImports(specifier, MIGRATE);
+    expect(errors, specifier).toHaveLength(1);
+    expect(errors[0]).toContain('Тір-зона ПК3');
+  });
+});

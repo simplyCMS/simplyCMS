@@ -71,6 +71,8 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'mail→i18n': 'тексти листів',
   'migrate→db/lock-keys':
     'чисті константи реєстру ключів замків без імпортів: ключ накату живе в одному реєстрі, withActor лишається забороненим (М1, Task 2)',
+  'migrate→i18n/packs':
+    'вузький вхід до мовних пакетів без React: bootstrapStore бере тексти довідників основної мови (М2б, Р23)',
   'prod-start→env': 'перевірка груп env до накату (К3-Е8, F5)',
   'prod-start→migrate': 'сам накат міграцій на старті (К3-Е8)',
   'addressing→db': 'транзакція викликача і замок набору мов (М1, Task 5)',

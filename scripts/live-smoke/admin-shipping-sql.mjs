@@ -10,7 +10,7 @@ import { sql } from './sql.mjs';
 import { productIdByPath } from './product-address.mjs';
 
 // Скрипт — чистий node без збірки, TS-модуль він не імпортує. Рівність із
-// `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema/seed-ids`) стереже тест
+// `SYSTEM_SEED_IDS.mainShippingZone` (`simplycms/schema`) стереже тест
 // `seed-ids.test.ts`.
 const MAIN_SHIPPING_ZONE_ID = '00000007-0000-4000-8000-000000000001';
 

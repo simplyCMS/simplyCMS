@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
+import { bootstrapStore } from './bootstrap';
 import {
   MigrationChecksumError,
   SUPERUSER_HINT,
@@ -34,6 +35,11 @@ export type ApplyOptions = {
   dir: string;
   runtimeUrl?: string;
   dryRun?: boolean;
+  /**
+   * Основна мова магазину: на порожній `languages` після накату `bootstrapStore`
+   * засіває мову й довідники її мовою (М2б, Р23). Не задана — старту БД немає.
+   */
+  primaryLocale?: string;
   log?: (line: string) => void;
 };
 
@@ -41,6 +47,8 @@ export type ApplyReport = {
   applied: string[];
   pending: string[];
   runtimePasswordSynced: boolean;
+  /** Чи цей виклик засіяв мову й довідники (`bootstrapStore`); повторний старт — `false`. */
+  bootstrapped: boolean;
 };
 
 /**
@@ -48,7 +56,8 @@ export type ApplyReport = {
  * `test:schema` і `db:demo`. Порядок кроків — контракт, а не стиль:
  * лок → перевірка бази без журналу → звірка сум (усе ДО першого DDL) →
  * `dryRun` повертається, нічого не створивши → журнал → файли, кожен в
- * одній транзакції зі своїм записом → грант журналу (роль `app_admin`
+ * одній транзакції зі своїм записом → старт БД з основною мовою (`bootstrapStore`,
+ * і тоді, коли файлів до накату немає) → грант журналу (роль `app_admin`
  * з'являється лише з `0000_prelude.sql`; і після падіння файлу теж) →
  * пароль `app_runtime`. `runtimeUrl` розбирається ще ДО з'єднання: поганий
  * пароль зупиняє старт, не зачепивши базу.
@@ -74,16 +83,29 @@ export async function applyMigrations(o: ApplyOptions): Promise<ApplyReport> {
       log(`[migrate] файл ${name} є в журналі, але відсутній у теці`);
     if (o.dryRun) {
       log(`[migrate] dry-run: до накату ${pending.length}`);
-      return { applied: [], pending, runtimePasswordSynced: false };
+      return {
+        applied: [],
+        pending,
+        runtimePasswordSynced: false,
+        bootstrapped: false,
+      };
     }
     await client.query(CREATE_JOURNAL_SQL);
     const byName = new Map(files.map((file) => [file.name, file]));
     const applied: string[] = [];
+    let bootstrapped = false;
     try {
       for (const name of pending) {
         await applyOne(client, byName.get(name)!);
         applied.push(name);
         log(`[migrate] накочено ${name}`);
+      }
+      if (o.primaryLocale !== undefined) {
+        ({ seeded: bootstrapped } = await bootstrapStore(
+          client,
+          o.primaryLocale,
+        ));
+        if (bootstrapped) log(`[migrate] старт БД: мова ${o.primaryLocale}`);
       }
     } catch (err) {
       // Уже накочені рядки мусять лишитись читабельними для `app_admin`;
@@ -96,7 +118,7 @@ export async function applyMigrations(o: ApplyOptions): Promise<ApplyReport> {
       ? await syncRuntimePassword(client, credentials, log)
       : false;
     log(`[migrate] готово: накочено ${applied.length}, усього ${files.length}`);
-    return { applied, pending: [], runtimePasswordSynced };
+    return { applied, pending: [], runtimePasswordSynced, bootstrapped };
   } finally {
     if (locked) {
       // Зламане з'єднання лок і так відпускає; помилка unlock не має

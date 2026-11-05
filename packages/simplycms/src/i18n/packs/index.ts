@@ -5,8 +5,12 @@
 // (`loadLocaleSet`), а інструменти контенту чесно віддають `null`.
 import type { ContentLocale } from 'simplycms/contracts';
 import type { UiLocale } from 'simplycms/contracts';
-import type { LanguagePack, UiCatalogPart } from '../types';
+import type { LanguagePack, SeedTexts, UiCatalogPart } from '../types';
 import { PACKS } from './registry';
+
+// Вузький вхід `simplycms/i18n/packs` (М2б, Р23): серверний накат читає тексти довідників
+// пакета, не тягнучи React-барель `simplycms/i18n`.
+export type { LanguagePack, SeedTexts };
 
 /** Частина каталогу пакета; збігається з `UiCatalogPart`. */
 export type UiPart = UiCatalogPart;

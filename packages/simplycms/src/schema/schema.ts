@@ -1488,5 +1488,9 @@ export const banners = pgTable("banners", {
 		}).onDelete("set null"),
 ]);
 
-// Id рядка сіду (0003_seed.sql) — для коду й тестів, що посилаються на основну зону.
-export { MAIN_SHIPPING_ZONE_ID } from './seed-ids';
+// Id рядків сіду (bootstrapStore, 0003_seed.sql) — для коду й тестів, що посилаються на системні рядки.
+export {
+  SYSTEM_SEED_IDS,
+  SEED_ORDER_STATUS_CODES,
+  type SeedOrderStatusCode,
+} from './seed-ids';
