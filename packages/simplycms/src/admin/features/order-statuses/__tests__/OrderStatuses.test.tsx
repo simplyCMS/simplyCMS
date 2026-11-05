@@ -217,3 +217,78 @@ describe('сторінка статусів: дії зі version рядка', ()
     });
   });
 });
+
+describe('діалог статусу: перезавантаження конфлікту й збій другої команди', () => {
+  const conflict = () =>
+    failure({ name: DOMAIN_ERROR_NAME.versionMismatch, currentVersion: 9 });
+
+  it('збій перечитування (старі data лишаються) → форма не підміняється, діалог конфлікту не закривається мовчки', async () => {
+    m.saveOrderStatus.mockRejectedValue(conflict());
+    await openEditor();
+    rename('Перейменований');
+    await screen.findByText(t('admin.orders.statuses.conflict.title'));
+    m.getOrderStatus.mockRejectedValue(new Error('network'));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: t('admin.translations.conflict.reload'),
+      }),
+    );
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        t('admin.translations.loadFailed'),
+      ),
+    );
+    expect(
+      (screen.getByLabelText(t('common.nameRequiredLabel')) as HTMLInputElement)
+        .value,
+    ).toBe('Перейменований');
+  });
+
+  it('після перезавантаження дефолт береться зі свіжого рядка списку', async () => {
+    m.saveOrderStatus.mockRejectedValue(conflict());
+    await openEditor();
+    expect(
+      (screen.getByRole('switch') as HTMLButtonElement).dataset.state,
+    ).toBe('unchecked');
+    rename('Перейменований');
+    await screen.findByText(t('admin.orders.statuses.conflict.title'));
+    m.listOrderStatuses.mockResolvedValue([
+      { ...NEW, isDefault: false },
+      { ...CUSTOM, isDefault: true, version: 9 },
+    ]);
+    m.getOrderStatus.mockResolvedValue(aggregateOf({ ...CUSTOM, version: 9 }));
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: t('admin.translations.conflict.reload'),
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('switch') as HTMLButtonElement).dataset.state,
+      ).toBe('checked'),
+    );
+  });
+
+  it('save ОК → setDefault 409 → повторне «Зберегти» не шле той самий патч удруге', async () => {
+    m.setDefaultOrderStatus.mockRejectedValue(
+      failure({
+        name: DOMAIN_ERROR_NAME.adminConflict,
+        kind: 'state',
+        constraint: ADMIN_STATE_CONSTRAINT.concurrentChange,
+      }),
+    );
+    await openEditor();
+    fireEvent.click(screen.getByRole('switch'));
+    rename('Перейменований');
+    await waitFor(() =>
+      expect(m.setDefaultOrderStatus).toHaveBeenCalledTimes(1),
+    );
+    fireEvent.submit(
+      screen.getByRole('button', { name: t('common.save') }).closest('form')!,
+    );
+    await waitFor(() =>
+      expect(m.setDefaultOrderStatus).toHaveBeenCalledTimes(2),
+    );
+    expect(m.saveOrderStatus).toHaveBeenCalledTimes(1);
+  });
+});

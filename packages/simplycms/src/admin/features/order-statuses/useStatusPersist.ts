@@ -21,6 +21,8 @@ interface Options {
   readonly editing: { id: string; isDefault: boolean } | null;
   /** Стан, з яким порівнюється форма (останній `order-statuses.get`). */
   readonly baseline: { base: StatusBaseForm; texts: Texts };
+  /** Після успішного `saveOrderStatus` baseline зсувається на надіслане (до `setDefault`). */
+  readonly commit: (base: StatusBaseForm, texts: Texts) => void;
   /** Ключ нового статусу генерує форма наперед: повтор «Створити» не дублює рядок. */
   readonly newId: string;
   readonly nextSortOrder: number;
@@ -67,7 +69,7 @@ export function useStatusPersist(o: Options) {
   const edit = async (base: StatusBaseForm, texts: Texts, id: string) => {
     const patch = textsDiff(STATUS_FIELDS, o.baseline.texts, texts);
     const colorChanged = base.color !== o.baseline.base.color;
-    const wantDefault = base.isDefault && !o.editing!.isDefault;
+    const wantDefault = base.isDefault && !o.baseline.base.isDefault;
     if (!colorChanged && Object.keys(patch).length === 0 && !wantDefault) {
       toast.info(t('admin.translations.nothingToSave'));
       return;
@@ -80,6 +82,7 @@ export function useStatusPersist(o: Options) {
           ...(Object.keys(patch).length > 0 && { texts: patch }),
         });
         if (!out) return o.onChanged();
+        o.commit(base, texts);
       }
       if (wantDefault) {
         const out = await setDefault.run({ id });

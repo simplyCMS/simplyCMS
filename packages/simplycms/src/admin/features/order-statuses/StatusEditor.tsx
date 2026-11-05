@@ -8,90 +8,42 @@ import { DialogFooter } from 'simplycms/ui/dialog';
 import { ConflictDialog } from '../translations/ConflictDialog';
 import { LanguageTabs } from '../translations/LanguageTabs';
 import type { LanguageInfo } from '../translations/translation-context';
-import { textsToForm } from '../translations/texts-form';
 import {
   AggregateVersionContext,
   useAggregateVersionStore,
 } from '../translations/useAggregateCommand';
-import {
-  useTranslatableTexts,
-  type TextsAggregate,
-} from '../translations/useTranslatableTexts';
-import {
-  EMPTY_STATUS_BASE,
-  generateStatusCode,
-  STATUS_FIELDS,
-  STATUS_REQUIRED,
-  type StatusBaseForm,
-} from './form-data';
+import { generateStatusCode } from './form-data';
 import { StatusBaseFields } from './StatusBaseFields';
 import { useStatusPersist } from './useStatusPersist';
+import {
+  useStatusForm,
+  type StatusAggregate,
+  type StatusEditing,
+} from './useStatusForm';
 
 export interface StatusEditorProps {
-  readonly editing: { id: string; isDefault: boolean; code: string } | null;
+  readonly editing: StatusEditing | null;
   /** Завантажений агрегат (редагування) або порожній (створення). */
-  readonly aggregate: TextsAggregate<'name'> & {
-    readonly base?: { color: string | null };
-  };
+  readonly aggregate: StatusAggregate;
   readonly languages: readonly LanguageInfo[];
-  readonly refetch: () => Promise<
-    (TextsAggregate<'name'> & { base?: { color: string | null } }) | undefined
-  >;
+  readonly refetch: () => Promise<StatusAggregate | undefined>;
   readonly nextSortOrder: number;
   readonly onChanged: () => void;
   readonly onDone: () => void;
   readonly onCancel: () => void;
 }
 
-const baseOf = (
-  editing: StatusEditorProps['editing'],
-  color: string | null | undefined,
-): StatusBaseForm => ({
-  code: editing?.code ?? '',
-  color: color || EMPTY_STATUS_BASE.color,
-  isDefault: editing?.isDefault ?? false,
-});
-
 /** Форма статусу: вкладки мов (тексти), код, колір, дефолт. Версія агрегата — у контексті. */
 function Body(p: StatusEditorProps) {
   const t = useT();
   const idBase = useId();
-  const primary =
-    p.languages.find((l) => l.isDefault)?.code ?? p.languages[0]!.code;
-  const codes = p.languages.map((l) => l.code);
   const [newId] = useState(() => crypto.randomUUID());
-  const [base, setBase] = useState(() =>
-    baseOf(p.editing, p.aggregate.base?.color),
-  );
-  const [baseline, setBaseline] = useState(() => ({
-    base: baseOf(p.editing, p.aggregate.base?.color),
-    texts: textsToForm(STATUS_FIELDS, p.aggregate.texts, codes),
-  }));
-  const kit = useTranslatableTexts({
-    fields: STATUS_FIELDS,
-    primary,
-    languages: p.languages,
-    aggregate: p.aggregate,
-    required: STATUS_REQUIRED,
-    refetch: async () => {
-      const fresh = await p.refetch();
-      if (fresh) {
-        const b = baseOf(p.editing, fresh.base?.color);
-        setBase((prev) => ({ ...prev, color: b.color }));
-        setBaseline({
-          base: b,
-          texts: textsToForm(STATUS_FIELDS, fresh.texts, codes),
-        });
-      }
-      return fresh;
-    },
-  });
+  const { kit, primary, base, baseline, set, commit } = useStatusForm(p);
   const { form } = kit;
-  const set = (patch: Partial<StatusBaseForm>) =>
-    setBase((prev) => ({ ...prev, ...patch }));
   const persist = useStatusPersist({
     editing: p.editing,
     baseline,
+    commit,
     newId,
     nextSortOrder: p.nextSortOrder,
     onConflict: () => kit.setConflict(true),
@@ -157,7 +109,7 @@ function Body(p: StatusEditorProps) {
           idBase={idBase}
           base={base}
           set={set}
-          editing={p.editing}
+          editing={p.editing && { isDefault: baseline.base.isDefault }}
         />
         <DialogFooter>
           <Button type="button" variant="outline" onClick={p.onCancel}>
