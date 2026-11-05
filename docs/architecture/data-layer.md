@@ -884,7 +884,9 @@ email в іншому регістрі — не конфлікт, записує
 - 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockRoots`**
   (`admin-server/impl/translatable/roots.ts`, єдиний носій) — першим кроком кожної команди
   агрегата; товарний `lockAggregateRoots` (`lockProduct`) лише делегує йому, а статуси
-  замовлень беруть `lockRoots` напряму; `products.remove` — `FOR UPDATE` (`lockProductForRemove`).
+  замовлень беруть `lockRoots` напряму; видалення — винятки з `FOR UPDATE`: `products.remove`
+  (`lockProductForRemove`) і `order-statuses.remove` (корінь береться `FOR UPDATE` одразу,
+  `admin-server/impl/order-statuses/remove.ts`).
   Рядкові замки `products` і `order_statuses`, сильніші за `KEY SHARE`, бере ЛИШЕ `lockRoots`
   (сканер `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
   Саме NO KEY UPDATE, а не UPDATE: `FOR UPDATE` кореня блокував би FK-вставки інших транзакцій
