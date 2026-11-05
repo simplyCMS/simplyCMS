@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { orderStatuses } from 'simplycms/schema';
+import { priceTypes } from 'simplycms/schema';
 import { toDrizzleSubset, type SubsetInput } from '../subset';
 
 const ALLOW = {
@@ -13,9 +13,9 @@ const bad = (x: object) => x as unknown as SubsetInput;
 describe('toDrizzleSubset: allowlist і оператори', () => {
   it('isNull: колонка з allowlist → IS NULL без параметра', () => {
     const s = toDrizzleSubset(
-      orderStatuses,
-      { filterable: ['color'], sortable: [] },
-      { filters: [{ field: ['color'], operator: 'isNull', value: null }] },
+      priceTypes,
+      { filterable: ['code'], sortable: [] },
+      { filters: [{ field: ['code'], operator: 'isNull', value: null }] },
     );
     // 🔴 САМ SQL: мутація isNull → eq дала б `= $1`, → isNotNull `is not null`.
     const compiled = dialect.sqlToQuery(s.where!);
@@ -25,12 +25,12 @@ describe('toDrizzleSubset: allowlist і оператори', () => {
 
   it('колонка / сортування поза allowlist — кидає', () => {
     expect(() =>
-      toDrizzleSubset(orderStatuses, ALLOW, {
+      toDrizzleSubset(priceTypes, ALLOW, {
         filters: [{ field: ['name'], operator: 'eq', value: 'x' }],
       }),
     ).toThrow(/name/);
     expect(() =>
-      toDrizzleSubset(orderStatuses, ALLOW, {
+      toDrizzleSubset(priceTypes, ALLOW, {
         sorts: [{ field: ['createdAt'], direction: 'asc' }],
       }),
     ).toThrow(/createdAt/);
@@ -39,14 +39,14 @@ describe('toDrizzleSubset: allowlist і оператори', () => {
   it('невідомий оператор і напрям — кидає, не ігнорується', () => {
     expect(() =>
       toDrizzleSubset(
-        orderStatuses,
+        priceTypes,
         ALLOW,
         bad({ filters: [{ field: ['code'], operator: 'like', value: 'x' }] }),
       ),
     ).toThrow(/like/);
     expect(() =>
       toDrizzleSubset(
-        orderStatuses,
+        priceTypes,
         ALLOW,
         bad({ sorts: [{ field: ['sortOrder'], direction: 'sideways' }] }),
       ),
@@ -54,23 +54,23 @@ describe('toDrizzleSubset: allowlist і оператори', () => {
   });
 
   it('дозволене — проходить; порожнє — порожній subset', () => {
-    const s = toDrizzleSubset(orderStatuses, ALLOW, {
+    const s = toDrizzleSubset(priceTypes, ALLOW, {
       filters: [{ field: ['code'], operator: 'eq', value: 'new' }],
       sorts: [{ field: ['sortOrder'], direction: 'asc' }],
       limit: 10,
     });
     expect(s.where).toBeDefined();
     expect(s.limit).toBe(10);
-    expect(toDrizzleSubset(orderStatuses, ALLOW, {}).where).toBeUndefined();
+    expect(toDrizzleSubset(priceTypes, ALLOW, {}).where).toBeUndefined();
   });
 
   it('allowlist з неіснуючою колонкою — чітка помилка з іменем таблиці', () => {
     expect(() =>
       toDrizzleSubset(
-        orderStatuses,
+        priceTypes,
         { filterable: ['colour'], sortable: [] },
         { filters: [{ field: ['colour'], operator: 'eq', value: 'x' }] },
       ),
-    ).toThrow(/colour.*order_statuses/);
+    ).toThrow(/colour.*price_types/);
   });
 });
