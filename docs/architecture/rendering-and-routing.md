@@ -174,7 +174,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   лоадер, ні екрани не звертаються: ALS читається один раз, у `getRouter()`.
 - **Корінь:** лоадер `loadStorefrontRoot(location.publicHref, context.locales)` повертає
   `locale` і `languages: { primary, published }`; `<html {...htmlLangAttrs(locale)}>`
-  (`lang` + `dir` з `Intl.Locale.getTextInfo()`), `<I18nProvider locale={ui.locale} fallback={ui.fallback}> (вісь інтерфейсу з моста `resolveUiLocale`, не мова контенту)`.
+  (`lang` + `dir` з `Intl.Locale.getTextInfo()`), `<I18nProvider locale={ui.locale} fallback={ui.fallback} catalogs={useUiCatalogs(ui.locale, ['base'])}> (вісь інтерфейсу з моста `resolveUiLocale`, не мова контенту)`.
 - **Сторінка сутності** — роут `routes/storefront/_storefront/$path.tsx`: іменований параметр на ОДИН
   сегмент (адреса сутності — один сегмент, майстер §3.2), тож `/admin/…`, `/api/…`, `/auth/…` він не
   перехоплює, а статичні роути (`/cart`, `/catalog`) специфічніші. Тип сутності визначає реєстр

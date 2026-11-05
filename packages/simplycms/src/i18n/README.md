@@ -36,7 +36,7 @@ pnpm add simplycms
 | `I18nProvider` | React-провайдер `{ locale, fallback, catalogs }` (мови — `UiLocale`): мемоїзує транслятор по парі мов |
 | `useT()`, `useUiLocale()`, `useUiLocalePair()` | Транслятор поточного рендера; мова інтерфейсу для форматування; пара мов для каталогів теми й плагіна. Кидають поза провайдером |
 | `useFormatDate(style?)` | Форматувач дати за мовою інтерфейсу (`medium` / `short` / `datetime`); єдине місце, де вітрина й адмінка форматують дати |
-| `UiLocalePair`, `MessageKey`, `MessageParams`, `Catalog`, `LanguagePack`, `Translator` | Типи. Тип `UiLocale` (код наявного пакета; бренд, не мова контенту) живе в `simplycms/contracts` — звідси його немає, конструктори `resolveUiLocale`/`toUiLocale` — тут; `MessageKey` виводиться з uk-каталогу — union замкнений |
+| `UiLocalePair`, `MessageKey`, `MessageParams`, `PartCatalog`, `CatalogValue`, `LanguagePack`, `Translator` | Типи. Тип `UiLocale` (код наявного пакета; бренд, не мова контенту) живе в `simplycms/contracts` — звідси його немає, конструктори `resolveUiLocale`/`toUiLocale` — тут; `MessageKey` виводиться з uk-каталогу — union замкнений |
 
 ## Приклад
 
@@ -44,9 +44,11 @@ pnpm add simplycms
 // host: src/routes/__root.tsx — провайдер над усіма групами роутів
 // `locale` — мова контенту (для <html lang>), `ui` — мова інтерфейсу з моста resolveUiLocale
 const { locale, ui } = Route.useLoaderData();
+// лоадер кореня вже дочекався `base`, тож `use` розгортає її синхронно
+const catalogs = useUiCatalogs(ui.locale, ['base']);
 <html lang={locale}>
   <body>
-    <I18nProvider locale={ui.locale} fallback={ui.fallback}>
+    <I18nProvider locale={ui.locale} fallback={ui.fallback} catalogs={catalogs}>
       {children}
     </I18nProvider>
   </body>
