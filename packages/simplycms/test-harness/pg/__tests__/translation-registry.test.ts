@@ -3,7 +3,7 @@
 // без запису в реєстрі, обов'язкове поле без тригера джерела чи переклад із
 // правами, що відрізняються від бази, — тихі дефекти. Тут вони червоні.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { TRANSLATABLE } from 'simplycms/translations';
+import { TRANSLATABLE, type TranslatableEntity } from 'simplycms/translations';
 import { resolveHarness } from '../up.mjs';
 import {
   applyCleanCanon,
@@ -14,7 +14,7 @@ import {
   withDbName,
 } from '../apply.mjs';
 
-const ENTRIES = Object.entries(TRANSLATABLE);
+const ENTRIES: [string, TranslatableEntity][] = Object.entries(TRANSLATABLE);
 
 describe('реєстр перекладів ↔ канонічна БД', () => {
   let harness: { url: string; teardown: () => Promise<void> };
