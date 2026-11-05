@@ -29,6 +29,9 @@
 
 ### Змінено
 
+- Адмінка «Статуси замовлень»: діалог має вкладки мов (тексти статусу по мовах зі статусами перекладу),
+  збереження — командами агрегата з `expectedVersion`; 412 показує діалог конфлікту, 412/409 від
+  `reorder`/`setDefault`/`remove` перечитують список. Колекція статусів лише для читання.
 - `0003_seed.sql` лишає лише рядки без тексту (`stock_management`, `cache_generations`, тема). Мову,
   статуси замовлень, тип ціни, категорію покупця, профіль магазину й основну зону доставки вставляє
   новий `bootstrapStore` (`simplycms/migrate`) на порожній `languages` — з текстами з мовного пакета
@@ -61,10 +64,18 @@
   товару описані через нього без зміни SQL baseline.
 - Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
   `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
+- `translatedFieldSql(spec, field, owner, text)` (`simplycms/translations`): скалярний підзапит «мова запиту,
+  інакше основна» для читачів з `.leftJoin`; ним читається назва статусу замовлення на вітрині.
 - `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).
 
 ### BREAKING
 
+- **Назва статусу замовлення на вітрині — мовою запиту (Р19):** серверні функції `getOrderStatuses`,
+  `getMyOrders`, `getMyOrder`, `getOrderView`, `getProfileOverview` приймають обов'язкове `{ locale }`
+  (`ContentLocale`; невідома чи неопублікована мова читається основною); ключі кешу сторінок профілю й
+  «замовлення прийнято» містять мову контенту. Лоадери: `loadOrderStatuses(db, text)`,
+  `loadUserOrders(db, userId, text, statusId?)`, `loadOrderDetail(db, orderId, text)` беруть `TextLocale`;
+  `loadStatusByCode` замінено на `loadStatusIdByCode(db, code)` (повертає лише id).
 - **Статуси замовлень (Р19):** шість легасі-serverFn знесено: `insertOrderStatuses`, `updateOrderStatuses`,
   `removeOrderStatuses` (пакетні, через узагальнений запис ресурсу), а також `listOrderStatuses`,
   `setDefaultOrderStatus` і `reorderOrderStatus` переписано на операції `order-statuses.*` з новими формами:
