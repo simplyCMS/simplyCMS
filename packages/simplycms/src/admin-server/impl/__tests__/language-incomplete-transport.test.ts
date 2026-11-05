@@ -38,7 +38,7 @@ describe('language_incomplete: товар і етап у відмові (I-1)', 
 
   it('межа прикладів вміщається в білий список (до 50 проблем)', () => {
     const items = Array.from({ length: INCOMPLETE_SAMPLE }, () => ({
-      kind: 'modification',
+      kind: 'modification' as const,
       id: randomUUID(),
       stage: 'token' as const,
     }));
