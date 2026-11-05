@@ -36,6 +36,7 @@ async function scaffoldStore(name: string) {
     targetDir: target,
     storeName: name,
     version: '9.9.9-sentinel',
+    locale: 'uk',
   });
   return target;
 }

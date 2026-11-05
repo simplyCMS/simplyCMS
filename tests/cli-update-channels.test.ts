@@ -25,6 +25,7 @@ async function storeOn(version: string) {
     targetDir: target,
     storeName: name,
     version,
+    locale: 'uk',
   });
   // Поточну версію ядра читаємо зі встановленого пакета, як у справжньому магазині.
   const installed = join(target, 'node_modules', 'simplycms');

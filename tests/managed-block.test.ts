@@ -81,6 +81,7 @@ describe('managed-block', () => {
       targetDir: store,
       storeName: 'shop',
       version: '9.9.9-sentinel',
+      locale: 'uk',
     });
     // Встановлене ядро магазину — сирці пакета: те саме джерело вступу, що в tarball.
     mkdirSync(join(store, 'node_modules', 'simplycms'), { recursive: true });

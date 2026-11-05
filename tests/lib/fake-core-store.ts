@@ -65,6 +65,7 @@ export async function scaffoldFakeStore(name: string, roots: string[]) {
     targetDir: target,
     storeName: name,
     version: CORE,
+    locale: 'uk',
   });
   installFakeCore(target);
   return target;
