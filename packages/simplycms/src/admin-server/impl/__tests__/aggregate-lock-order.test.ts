@@ -1,7 +1,8 @@
-// М1 Task 14, фікс-раунд 5: рядкові замки `products` сильніші за KEY SHARE (`NO KEY
-// UPDATE`, `UPDATE`) бере лише `lockAggregateRoots` — він сам бере спільний
-// `languages-set` ПЕРЕД коренем (`products/aggregate/lock-order.ts`, пункт (1)). Замок
-// кореня повз хелпер повернув би порядок «корінь -> set» і цикл 40P01 з `languages.remove`.
+// М1 Task 14, фікс-раунд 5; М2б Д8: рядкові замки `products` сильніші за KEY SHARE (`NO KEY
+// UPDATE`, `UPDATE`) бере лише спільний `lockRoots` (`translatable/roots.ts`) — він сам бере
+// спільний `languages-set` ПЕРЕД коренем, а товарний `lockAggregateRoots` лише делегує йому
+// (`products/aggregate/lock-order.ts`, пункт (1)). Замок кореня повз хелпер повернув би
+// порядок «корінь -> set» і цикл 40P01 з `languages.remove`.
 import { describe, expect, it } from 'vitest';
 import { tableNames } from './support/table-names';
 
@@ -16,7 +17,8 @@ const rel = (key: string) =>
     '',
   );
 
-const HELPER = 'admin-server/impl/products/aggregate/lock-order.ts';
+const HELPER = 'admin-server/impl/translatable/roots.ts';
+const PRODUCT_LOCKS = 'admin-server/impl/products/aggregate/lock-order.ts';
 
 /** Замок кореня в сирому SQL за іменем таблиці БД; DELETE — неявний FOR UPDATE. */
 const RAW_LOCKS = [
@@ -43,17 +45,24 @@ const offenders = (files: Record<string, string>) =>
     )
     .map(([path]) => path);
 
-describe('замок кореня агрегата — лише lockAggregateRoots (М1, Task 14)', () => {
+describe('замок кореня агрегата — лише lockRoots (М1 Task 14, М2б Д8)', () => {
   const files = Object.fromEntries(
     Object.entries(sources).map(([k, v]) => [rel(k), v]),
   );
 
   it('хелпер бере set перед рядком кореня (позитивний контроль сканера)', () => {
     const src = files[HELPER] ?? '';
-    expect(src).toMatch(/\.from\(products\)[^;]*\.for\(strength\)/);
+    expect(src).toMatch(/\.orderBy\([^;]*\.for\(strength\)/);
+    expect(src.indexOf('advisoryXactLockShared(db')).toBeGreaterThan(-1);
     expect(src.indexOf('advisoryXactLockShared(db')).toBeLessThan(
-      src.indexOf('.from(products)'),
+      src.indexOf('.for(strength)'),
     );
+  });
+
+  it('товарний lockAggregateRoots делегує lockRoots і не має власного .for(', () => {
+    const src = files[PRODUCT_LOCKS] ?? '';
+    expect(src).toMatch(/lockRoots\(\s*db,\s*PRODUCT_ROOT/);
+    expect(src).not.toMatch(/\.for\(/);
   });
 
   it('негативний контроль: кожна форма замка ловиться', () => {
