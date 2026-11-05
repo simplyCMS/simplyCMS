@@ -33,6 +33,7 @@ describe('readStoreFacts', () => {
         failedMail: 0,
         // Старт БД (`bootstrapStore`): основна мова — єдина опублікована.
         publishedLanguages: ['uk'],
+        primaryLocale: 'uk',
       });
     } finally {
       await db.drop();
@@ -83,7 +84,19 @@ describe('readStoreFacts', () => {
         profile: { name: 'Мій магазин', email: 'shop@example.com' },
         failedMail: 1,
         publishedLanguages: ['uk'],
+        primaryLocale: 'uk',
       });
+    } finally {
+      await db.drop();
+    }
+  }, 120_000);
+
+  it('накат без старту (primaryLocale не задано) → primaryLocale: null', async () => {
+    const db = await freshDb(harness.url);
+    try {
+      await applyMigrations({ connectionString: db.url, dir: CANON_DIR });
+      const facts = await readStoreFacts(withUser(db.url, 'app_runtime'));
+      expect(facts.primaryLocale).toBeNull();
     } finally {
       await db.drop();
     }

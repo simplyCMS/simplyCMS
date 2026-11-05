@@ -182,8 +182,8 @@ export const OFFLINE_CHECKS = [
       checkFileContains(
         storeRoot,
         'simplycms.config.ts',
-        ['plugins: [', 'themes: {'],
-        'simplycms.config.ts має якорі plugins/themes',
+        ['plugins: [', 'themes: {', 'primaryLocale:'],
+        'simplycms.config.ts має якорі plugins/themes/primaryLocale',
       ),
   },
   // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.

@@ -8,6 +8,7 @@ import {
   CONNECT_TIMEOUT_MS,
   runOnlineChecks,
 } from '../packages/cli/src/doctor-db-checks.mjs';
+import { readPrimaryLocale } from '../packages/simplycms/src/migrate/primary-locale';
 import { isCoreMigrationName } from '../packages/simplycms/src/migrate/files';
 
 // `doctor --online` без живої БД: ядро й зонд підміняються ін'єкцією.
@@ -40,6 +41,7 @@ describe('cli doctor --online', () => {
     };
   };
   const core = (journal: unknown, foreign: string[] = []) => ({
+    readPrimaryLocale,
     listMigrationFiles: () => files,
     readJournal: async () => journal,
     readStoreFacts: async () => ({
@@ -47,6 +49,7 @@ describe('cli doctor --online', () => {
       profile: { name: 'Shop', email: 'shop@example.com' },
       failedMail: 0,
       publishedLanguages: ['uk'],
+      primaryLocale: 'uk',
     }),
     pendingMigrations,
     isCoreMigrationName,

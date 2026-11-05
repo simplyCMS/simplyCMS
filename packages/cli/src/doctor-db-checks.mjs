@@ -4,9 +4,14 @@
 // doctor read-only, а ключ власника схеми не мусить бути на кожній машині.
 // Журнал читає ядро (`simplycms/migrate`, Е8-Р13): app_runtime має право на
 // нього лише через `SET ROLE app_admin` у read-only транзакції.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { storeMigrationsDir } from './db-diff.mjs';
 import { clusterCheck, clusterSkip } from './doctor-cluster-check.mjs';
-import { languagePackCheck } from './doctor-language-check.mjs';
+import {
+  languagePackCheck,
+  primaryLocaleCheck,
+} from './doctor-language-check.mjs';
 import {
   check,
   JOURNAL,
@@ -50,12 +55,26 @@ async function probeConnection(storeRoot, connectionString) {
   }
 }
 
+/** `primaryLocale` з конфігу магазину; нечитабельний конфіг — як «мітки немає» (`null`). */
+function readConfigLocale(storeRoot, core, readConfig) {
+  let source;
+  try {
+    source = readConfig
+      ? readConfig(storeRoot)
+      : readFileSync(join(storeRoot, 'simplycms.config.ts'), 'utf8');
+  } catch {
+    return null;
+  }
+  return core.readPrimaryLocale(source);
+}
+
 /**
  * @param {{ storeRoot: string; env: Record<string, string> }} ctx
  * @param {{
- *   core?: { readJournal: Function; readStoreFacts: Function; listMigrationFiles: Function; pendingMigrations: Function; findForeignDatabases: Function };
+ *   core?: { readJournal: Function; readPrimaryLocale: (source: string) => string | null; readStoreFacts: Function; listMigrationFiles: Function; pendingMigrations: Function; findForeignDatabases: Function };
  *   i18n?: { hasLanguagePack: (code: string) => boolean };
  *   probe?: (url: string) => Promise<void>;
+ *   readConfig?: (storeRoot: string) => string;
  * }} [deps] ін'єкція для тестів
  * @returns {Promise<import('./ui.mjs').Check[]>}
  */
@@ -119,6 +138,10 @@ export async function runOnlineChecks({ storeRoot, env }, deps = {}) {
       async (facts) => [
         ...storeFactChecks(facts),
         await languagePackCheck(storeRoot, facts.publishedLanguages, deps.i18n),
+        primaryLocaleCheck(
+          readConfigLocale(storeRoot, core, deps.readConfig),
+          facts.primaryLocale,
+        ),
       ],
       (error) => [check('store-state', FACTS, 'error', reason(error))],
     ),

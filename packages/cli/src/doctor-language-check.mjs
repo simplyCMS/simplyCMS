@@ -40,3 +40,32 @@ export async function languagePackCheck(storeRoot, publishedLanguages, i18n) {
       `(CHANGELOG, BREAKING) або вимкни мову в адмінці`,
   );
 }
+
+/**
+ * Основна мова: конфіг проти БД. Істина — `languages.is_default` (мову після старту БД не
+ * змінюють, `languages_guard`), конфіг лише для нового накату; розбіжність означає, що
+ * власник змінив конфіг, а БД лишилась іншою — наступне перестворення БД дасть іншу мову.
+ * Це попередження, не помилка: магазин працює за БД.
+ * @param {string | null} configLocale `primaryLocale` з `simplycms.config.ts`; `null` — мітки немає
+ * @param {string | null} dbLocale код основної мови з БД; `null` — БД ще не стартована
+ * @returns {import('./ui.mjs').Check}
+ */
+export function primaryLocaleCheck(configLocale, dbLocale) {
+  const title = 'Основна мова (конфіг ↔ БД)';
+  if (dbLocale === null) return check('primary-locale', title, 'ok');
+  if (configLocale === null)
+    return check(
+      'primary-locale',
+      title,
+      'skip',
+      "у simplycms.config.ts немає primaryLocale: '<код>'",
+    );
+  if (configLocale === dbLocale) return check('primary-locale', title, 'ok');
+  return check(
+    'primary-locale',
+    title,
+    'warn',
+    `конфіг: ${configLocale}, БД: ${dbLocale} — мова магазину діє з БД; ` +
+      `щоб мова конфігу стала основною, перестворіть БД (основну мову після старту не змінити)`,
+  );
+}

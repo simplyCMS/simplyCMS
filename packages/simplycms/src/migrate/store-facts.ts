@@ -10,6 +10,8 @@ export type StoreFacts = {
   failedMail: number;
   /** Коди опублікованих мов (`languages.status = 'published'`): `doctor` звіряє їх із пакетами ядра. */
   publishedLanguages: string[];
+  /** Код основної мови з БД (`languages.is_default`); `null` — БД ще порожня (не стартована). */
+  primaryLocale: string | null;
 };
 
 // Профіль читається сирим jsonb-ом, а не через `simplycms/domain/store-profile`:
@@ -19,13 +21,15 @@ const FACTS_SQL = `select
   (select value from public.system_settings where key = 'store_profile') as profile,
   (select count(*)::int from public.mail_outbox where attempts > 0) as failed_mail,
   (select coalesce(array_agg(code order by sort_order, code), '{}')
-     from public.languages where status = 'published') as published_languages`;
+     from public.languages where status = 'published') as published_languages,
+  (select code from public.languages where is_default) as primary_locale`;
 
 type Row = {
   owners: number;
   profile: unknown;
   failed_mail: number;
   published_languages: string[];
+  primary_locale: string | null;
 };
 
 const text = (value: unknown): string | null =>
@@ -61,5 +65,6 @@ export async function readStoreFacts(
     profile: toProfile(row.profile),
     failedMail: row.failed_mail,
     publishedLanguages: row.published_languages,
+    primaryLocale: row.primary_locale,
   };
 }
