@@ -56,6 +56,10 @@ export async function lockRoot(
   return version;
 }
 
+/** Ключ колонки в рядку Drizzle (`sort_order` → `sortOrder`): ключі `set`/`values` — не імена БД. */
+export const columnKey = (table: PgTable, col: PgColumn): string =>
+  Object.entries(getTableColumns(table)).find(([, c]) => c === col)![0];
+
 /**
  * Збільшення версії кореня + запис бази в тій самій транзакції (майстер §3.4): тексти,
  * адреса й дочірні рядки — частина агрегата, а ETag мусить змінитися й від них.
@@ -66,14 +70,14 @@ export async function bumpVersion(
   id: string,
   base?: Readonly<Record<string, unknown>>,
 ): Promise<number> {
-  const keyOf = (col: PgColumn) =>
-    Object.entries(getTableColumns(root.table)).find(([, c]) => c === col)![0];
   const [row] = await db
     .update(root.table)
     .set({
       ...base,
-      [keyOf(root.version)]: sql`${root.version} + 1`,
-      ...(root.touch ? { [keyOf(root.touch)]: new Date() } : {}),
+      [columnKey(root.table, root.version)]: sql`${root.version} + 1`,
+      ...(root.touch
+        ? { [columnKey(root.table, root.touch)]: new Date() }
+        : {}),
     })
     .where(eq(root.id, id))
     .returning({ version: root.version });

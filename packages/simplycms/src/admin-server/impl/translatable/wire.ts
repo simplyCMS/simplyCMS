@@ -39,6 +39,9 @@ export type TextsRowOf<S extends z.ZodRawShape> = z.infer<
 
 type Patch = Record<string, string | null | undefined>;
 
+/** Тексти мови на дроті: поле → значення (`null` очищує, `undefined` — не надіслано). */
+export type TextsWire = Patch;
+
 /**
  * Wire → поля реєстру (`short_description`…), rich-поля санітизуються ДО плану:
  * хеш береться від очищеної розмітки (майстер §3.4), а `<script>` чи порожній

@@ -2,7 +2,11 @@ import type { Table } from 'drizzle-orm';
 import type { z } from 'zod';
 import type { RequestGrant } from 'simplycms/auth';
 import type { ActorDb } from 'simplycms/db';
-import { subsetInputSchema, type SubsetPayload } from './subset';
+import {
+  subsetInputSchema,
+  type SubsetInput,
+  type SubsetPayload,
+} from './subset';
 import { buildResourceSchemas, type ColumnName } from './resource-schemas';
 import type {
   AdminResourceColumnGuards,
@@ -105,6 +109,13 @@ export function defineAdminResource<
     deleteRows: config.deleteRows,
   });
 
+  // 🔴 Каст — назва типу для того самого масиву з SELECT: генерична таблиця в білдері
+  // (`resource-list.ts`) зводить тип рядка до `never`. Ціль — `$inferSelect` без omit (не
+  // `z.infer` від rowSchema): jsonb-колонки, потрібні адмінці, типізовані в джерелі
+  // (`schema/json.ts`), тож рядок серіалізовний для createServerFn (`ValidateSerializable`).
+  const listIn = async (db: ActorDb, subset: SubsetInput) =>
+    (await listResourceRows(db, ctx, subset)) as ReadRow<Row, RM>[];
+
   return {
     entity: config.entity,
     mode: config.mode,
@@ -121,16 +132,10 @@ export function defineAdminResource<
     },
 
     list: async ({ data }: { data: SubsetPayload }) =>
-      run(async (db) => {
-        // 🔴 Каст — назва типу для того самого масиву з SELECT: генерична
-        // таблиця в білдері (`resource-list.ts`) зводить тип рядка до
-        // `never`. Ціль — `$inferSelect` без omit (не `z.infer` від
-        // rowSchema): jsonb-колонки, потрібні адмінці, типізовані в
-        // джерелі (`schema/json.ts`), тож рядок серіалізовний для
-        // createServerFn (`ValidateSerializable`).
-        const rows = await listResourceRows(db, ctx, data.subset ?? {});
-        return rows as ReadRow<Row, RM>[];
-      }),
+      run((db) => listIn(db, data.subset ?? {})),
+    // Ядро читання в транзакції викликача: його кличе операція-список фабрики команд
+    // перекладного агрегата (`translatable/list.ts`, М2б Р19) без другого `runAdmin`.
+    listIn,
 
     // Е6а-16: lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а
     // не spread: spread знімає readonly з getter-а `maxLimit` у типі.
