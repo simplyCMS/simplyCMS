@@ -77,6 +77,10 @@
   інакше основна» для читачів з `.leftJoin`; ним читається назва статусу замовлення на вітрині.
 - `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).
 
+### Виправлено
+
+- Обрив простого з'єднання Postgres (перезапуск БД, пулер) більше не валить процес магазину.
+
 ### BREAKING
 
 - **`simplycms/addressing`: реєстр видів цілей (Р22):** `resolvePath` і `resolveToken` знесено (споживачів

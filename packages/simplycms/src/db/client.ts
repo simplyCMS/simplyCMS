@@ -56,6 +56,26 @@ let pool: pg.Pool | undefined;
 const CONNECTION_TIMEOUT_MS = 5_000;
 
 /**
+ * Слухач помилок ПРОСТИХ зʼєднань пулу.
+ *
+ * 🔴 pg-pool переемітить помилку idle-клієнта як `pool.emit('error')`
+ * (`makeIdleListener`), а EventEmitter без слухача `error` кидає її як
+ * необроблений виняток — тож будь-який обрив простого зʼєднання (рестарт
+ * Postgres, пулер, що закриває idle, failover; `57P01`/`ECONNRESET`) убив би
+ * увесь процес магазину. Пул уже викинув зламаний клієнт, наступний
+ * `connect()` відкриє новий, тому слухач лише лишає слід у лозі.
+ * Гейт — test-harness/pg/__tests__/db-pool-idle-error.test.ts.
+ */
+function attachIdleErrorListener(target: pg.Pool): void {
+  target.on('error', (error) => {
+    console.error(
+      '[simplycms/db] idle Postgres connection dropped; the pool opens a new one on demand:',
+      error,
+    );
+  });
+}
+
+/**
  * Пул процесу (лінива синглтон-фабрика).
  *
  * Контракт серверного env (спека CLI v1, §7): `DATABASE_URL` читається ЛИШЕ з
@@ -78,6 +98,7 @@ export function getDbPool(): pg.Pool {
     );
   }
 
+  const hadPool = pool !== undefined;
   pool ??= new pg.Pool({
     connectionString: resolveDatabaseUrl(process.env),
     connectionTimeoutMillis: CONNECTION_TIMEOUT_MS,
@@ -102,6 +123,7 @@ export function getDbPool(): pg.Pool {
     // а не на старті, тож працюють у всіх режимах пулера.
     options: '-c DateStyle=ISO,YMD -c TimeZone=UTC',
   });
+  if (!hadPool) attachIdleErrorListener(pool);
   return pool;
 }
 
