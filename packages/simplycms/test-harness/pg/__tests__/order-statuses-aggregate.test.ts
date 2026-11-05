@@ -231,26 +231,27 @@ describe('агрегат «статус замовлення» (М2б, Р19)', (
     const C = `cccccccc-${randomUUID().slice(9)}`;
     await create({ uk: { name: 'Гонка A' } }, { id: A });
     await create({ uk: { name: 'Гонка C' } }, { id: C });
-    for (let i = 0; i < 20; i++) {
-      const vA = (await row(A)).version as number;
-      const results = await Promise.allSettled([
+    // 20 пар одночасно (а не послідовно): вікно між двома замками вузьке, а так учасники
+    // гарантовано перетинаються. Програш гонки версії (412) допустимий — він настає ПІСЛЯ
+    // замків; цикл замків (40P01) — ні.
+    const vA = (await row(A)).version as number;
+    const results = await Promise.allSettled(
+      Array.from({ length: 20 }, (_, i) => [
         exec(orderStatusesSetDefault, { id: A, expectedVersion: vA }),
         exec(orderStatusesReorder, {
           id: A,
           direction: i % 2 === 0 ? 'down' : 'up',
           expectedVersion: vA,
         }),
-      ]);
-      for (const r of results)
-        if (r.status === 'rejected') {
-          // Єдина допустима відмова — програш гонки версії (412); цикл замків — ні.
-          expect(r.reason).toBeInstanceOf(VersionMismatchError);
-        }
-      const defaults = await db.q(
-        `select id from public.order_statuses where is_default`,
-      );
-      expect(defaults, `ітерація ${i}`).toHaveLength(1);
-    }
+      ]).flat(),
+    );
+    for (const r of results)
+      if (r.status === 'rejected')
+        expect(r.reason).toBeInstanceOf(VersionMismatchError);
+    expect(results.some((r) => r.status === 'fulfilled')).toBe(true);
+    expect(
+      await db.q(`select id from public.order_statuses where is_default`),
+    ).toHaveLength(1);
   });
 
   it('remove статусу з посиланням із orders → 409 reference', async () => {
