@@ -15,6 +15,12 @@ export type AddressResolution = {
   mod: string | null;
 };
 
+/** Резолв + власник адреси: вид з реєстру видів `addressing` і id сутності. */
+export type OwnedAddressResolution = AddressResolution & {
+  kind: string;
+  id: string;
+};
+
 /**
  * Резолв адреси товару в реєстрі `url_paths` + токена `?mod=` у `slug_tokens`.
  * Єдине джерело правди адреси — реєстр (П8): поточна адреса дає сторінку,
@@ -26,7 +32,7 @@ export async function resolveProductAddress(
   locale: string,
   path: string,
   mod: string | null,
-): Promise<AddressResolution | null> {
+): Promise<OwnedAddressResolution | null> {
   const current = alias(urlPaths, 'current_path');
   const [hit] = await db
     .select({ productId: urlPaths.productId, path: current.path })
@@ -54,6 +60,10 @@ export async function resolveProductAddress(
     .limit(1);
   if (!hit || hit.productId === null) return null;
   return {
+    // Тір-зона: storefront не імпортує `addressing` (T2 → T2 угору заборонено), тож вид — літерал,
+    // що збігається з записом реєстру видів; збіг доводить `storefront-path-normalize.test.ts`.
+    kind: 'product',
+    id: hit.productId,
     path: hit.path,
     mod:
       mod === null ? null : await currentToken(db, locale, hit.productId, mod),

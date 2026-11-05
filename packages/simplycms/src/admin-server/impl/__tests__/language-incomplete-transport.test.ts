@@ -16,8 +16,8 @@ const product = randomUUID();
 const other = randomUUID();
 const error = () =>
   languageIncompleteError([
-    { productId: product, stage: 'projection' },
-    { productId: other, stage: 'path' },
+    { kind: 'product', id: product, stage: 'projection' },
+    { kind: 'product', id: other, stage: 'path' },
   ]);
 const expected = [
   { path: ['status'], code: 'language_incomplete' },
@@ -38,7 +38,8 @@ describe('language_incomplete: товар і етап у відмові (I-1)', 
 
   it('межа прикладів вміщається в білий список (до 50 проблем)', () => {
     const items = Array.from({ length: INCOMPLETE_SAMPLE }, () => ({
-      productId: randomUUID(),
+      kind: 'modification',
+      id: randomUUID(),
       stage: 'token' as const,
     }));
     const issues = languageIncompleteError(items).issues;
