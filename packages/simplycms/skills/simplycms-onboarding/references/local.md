@@ -7,7 +7,8 @@
    `docker run -d --name <slug>-pg --env-file pg.env -p 54329:5432 -v <slug>-pg:/var/lib/postgresql/data postgres:17`.
 2. `cp .env.example .env.local`; `DATABASE_URL` — роль `app_runtime`, `MIGRATION_DATABASE_URL` —
    суперкористувач `postgres` з `pg.env` (накат вимагає SUPERUSER), `BETTER_AUTH_SECRET` — `secrets-file.mjs gen`, `VITE_SITE_URL=http://localhost:3000`.
-3. `pnpm install`, потім `pnpm simplycms db:apply`.
+3. `pnpm install`, потім `pnpm simplycms db:apply` — чиста БД стартує з основною мовою з
+   `primaryLocale` у `simplycms.config.ts` (мову далі не змінити без перестворення БД).
 4. `pnpm simplycms doctor --online` — має бути без помилок.
 5. `pnpm owner:invite` (адресу власника задай `OWNER_EMAIL`); без пошти лист не піде — для локального
    запуску посилання бере власник із вікна, а не з виводу агента.

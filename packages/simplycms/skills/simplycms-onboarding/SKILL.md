@@ -23,9 +23,10 @@ pnpm simplycms status --json
 
 ## Ланцюжок етапів
 
-1. **Прийом вимог** — `references/requirements.md`: назва, домен, сервер Dokploy і ключ API,
+1. **Прийом вимог** — `references/requirements.md`: назва, основна мова, домен, сервер Dokploy і ключ API,
    DNS, SMTP, бакет S3; усе одним списком на згоду власника.
-2. **Створення** — `pnpm create simplycms-store <тека>`, `git init`, перший коміт.
+2. **Створення** — `pnpm create simplycms-store <тека> --locale <код>` (основна мова з прийому вимог;
+   після створення БД її не змінити без перестворення), `git init`, перший коміт.
 3. **Локальний запуск** — `references/local.md`: Postgres 17, `db:apply`, `pnpm owner:invite`,
    перевірка вітрини й адмінки.
 4. **Dokploy** — `references/dokploy.md`: власний Postgres, застосунок, змінні, домен і TLS;

@@ -34,14 +34,30 @@
   основної мови. `applyMigrations` кличе його після накату, коли задано `ApplyOptions.primaryLocale`
   (`ApplyReport.bootstrapped`). Без `primaryLocale` накат лишає `languages` і довідники порожніми.
 
+- `0003_seed.sql`: службовий `description` рядка `stock_management` — `NULL` (магазин, що стартує
+  англійською, не отримує українських текстів).
+- `db:apply` і прод-старт (за наявності `MIGRATION_DATABASE_URL`) читають основну мову з
+  `primaryLocale` у `simplycms.config.ts` і передають її накату: чиста БД стартує з мовою й системними
+  довідниками. Мітки немає — відмова до накату. `readStoreFacts` повертає `primaryLocale` (мова з БД),
+  `doctor --online` і `status` мають перевірку `primary-locale` (конфіг ≠ БД — `warn`); офлайн-перевірка
+  №10 вимагає мітку `primaryLocale:`.
+
 ### Додано
 
+- `create-simplycms-store --locale <код>` (`uk`, `en`): основна мова магазину при створенні, у діалозі —
+  select. `--yes`/CI без `--locale` — помилка.
+- `readPrimaryLocale(source)` у `simplycms/migrate` — читання мітки `primaryLocale` з тексту конфігу.
 - Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
   `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
 - `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).
 
 ### BREAKING
 
+- `SimplyCmsConfig.primaryLocale` (`simplycms/runtime`) — обов'язкове поле: додайте
+  `primaryLocale: '<код>'` (однорядкова мітка в одинарних лапках) у `simplycms.config.ts`.
+- `create-simplycms-store --yes` (і CI/не-TTY) вимагає `--locale <код>`.
+- `StartDeps.readPrimaryLocale` обов'язкове для `runStart`, а `StartMigrate` отримує `primaryLocale`
+  (`simplycms/prod-start`); `StoreFacts` має нове поле `primaryLocale`.
 - `MAIN_SHIPPING_ZONE_ID` (`simplycms/schema`) знесено: замість нього `SYSTEM_SEED_IDS.mainShippingZone`.
 - `LanguagePack.content.seed` (`SeedTexts`: тексти статусів, типу ціни, категорії, зони, назви магазину)
   обов'язкове для кожного мовного пакета.
