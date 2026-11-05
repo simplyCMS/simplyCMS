@@ -4,13 +4,12 @@
 // doctor read-only, а ключ власника схеми не мусить бути на кожній машині.
 // Журнал читає ядро (`simplycms/migrate`, Е8-Р13): app_runtime має право на
 // нього лише через `SET ROLE app_admin` у read-only транзакції.
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { storeMigrationsDir } from './db-diff.mjs';
 import { clusterCheck, clusterSkip } from './doctor-cluster-check.mjs';
 import {
   languagePackCheck,
   primaryLocaleCheck,
+  readConfigLocale,
 } from './doctor-language-check.mjs';
 import {
   check,
@@ -53,19 +52,6 @@ async function probeConnection(storeRoot, connectionString) {
   } finally {
     await client.end();
   }
-}
-
-/** `primaryLocale` з конфігу магазину; нечитабельний конфіг — як «мітки немає» (`null`). */
-function readConfigLocale(storeRoot, core, readConfig) {
-  let source;
-  try {
-    source = readConfig
-      ? readConfig(storeRoot)
-      : readFileSync(join(storeRoot, 'simplycms.config.ts'), 'utf8');
-  } catch {
-    return null;
-  }
-  return core.readPrimaryLocale(source);
 }
 
 /**

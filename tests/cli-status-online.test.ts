@@ -64,6 +64,12 @@ describe('наповнення магазину (спільне для status і
     expect(c['primary-locale']!.details).toContain('uk');
   });
 
+  it('у конфігу немає мітки, БД стартована → skip з підказкою', async () => {
+    const c = await facts(GOOD, "currency: 'UAH'");
+    expect(c['primary-locale']!.status).toBe('skip');
+    expect(c['primary-locale']!.details).toContain('primaryLocale');
+  });
+
   it('конфіг і БД збігаються → ok; БД порожня → ok', async () => {
     expect((await facts(GOOD))['primary-locale']!.status).toBe('ok');
     const empty = await facts(
