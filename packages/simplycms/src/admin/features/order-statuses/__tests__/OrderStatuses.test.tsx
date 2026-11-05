@@ -40,12 +40,11 @@ vi.mock('simplycms/admin-server', async () =>
 
 import OrderStatuses from '../../../pages/OrderStatuses';
 import { TestI18nProvider, ukT } from '../../../../../test-harness/i18n';
-import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const t = ukT;
 
 const row = (p: Partial<OrderStatus>): OrderStatus => ({
-  id: SYSTEM_SEED_IDS.orderStatuses.new,
+  id: '00000001-0000-4000-8000-000000000001',
   name: 'Новий',
   code: 'new',
   color: '#3B82F6',
