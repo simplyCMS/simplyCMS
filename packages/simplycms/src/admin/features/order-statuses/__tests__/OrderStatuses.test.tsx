@@ -9,6 +9,8 @@ import {
   within,
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ADMIN_STATE_CONSTRAINT } from 'simplycms/contracts/domain-errors';
+import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 import type { OrderStatus } from 'simplycms/schema/types';
 
 // jsdom без ResizeObserver (Radix Switch у діалозі).
@@ -20,22 +22,24 @@ vi.stubGlobal(
     disconnect() {}
   },
 );
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+vi.mock('sonner', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn() },
+}));
 
-const { listOrderStatuses, updateOrderStatuses, removeOrderStatuses } =
-  vi.hoisted(() => ({
-    listOrderStatuses: vi.fn(),
-    updateOrderStatuses: vi.fn(),
-    removeOrderStatuses: vi.fn(),
-  }));
+const m = vi.hoisted(() => ({
+  listOrderStatuses: vi.fn(),
+  getOrderStatus: vi.fn(),
+  saveOrderStatus: vi.fn(),
+  setDefaultOrderStatus: vi.fn(),
+  removeOrderStatus: vi.fn(),
+  reorderOrderStatus: vi.fn(),
+  listLanguages: vi.fn(),
+}));
 vi.mock('simplycms/admin-server', async () =>
   (
     await import('../../../../admin-server/__tests__/support/admin-server-mock')
-  ).createAdminServerMock({
-    listOrderStatuses,
-    updateOrderStatuses,
-    removeOrderStatuses,
-  }),
+  ).createAdminServerMock(m),
 );
 
 import OrderStatuses from '../../../pages/OrderStatuses';
@@ -50,7 +54,7 @@ const row = (p: Partial<OrderStatus>): OrderStatus => ({
   color: '#3B82F6',
   sortOrder: 0,
   isDefault: true,
-  createdAt: new Date('2026-10-04'),
+  version: 2,
   ...p,
 });
 const NEW = row({});
@@ -60,7 +64,17 @@ const CUSTOM = row({
   code: 'custom',
   sortOrder: 1,
   isDefault: false,
+  version: 3,
 });
+const aggregateOf = (s: OrderStatus) => ({
+  id: s.id,
+  version: s.version,
+  base: { color: s.color, code: s.code, sortOrder: s.sortOrder },
+  texts: {
+    uk: { name: s.name, status: 'current', fieldStatus: { name: 'current' } },
+  },
+});
+const failure = (e: object) => Object.assign(new Error('x'), e);
 
 function renderPage() {
   return render(
@@ -72,59 +86,134 @@ function renderPage() {
   );
 }
 
-const editButtonOf = (name: string) => {
-  const rowEl = screen.getByText(name).closest('tr')!;
-  return within(rowEl).getAllByRole('button').at(-2)!;
+const buttonsOf = (name: string) =>
+  within(screen.getByText(name).closest('tr')!).getAllByRole('button');
+
+async function openEditor() {
+  renderPage();
+  await screen.findByText('Власний');
+  fireEvent.click(buttonsOf('Власний').at(-2)!);
+  return (await screen.findByLabelText(
+    t('admin.orders.statuses.codeRequired'),
+  )) as HTMLInputElement;
+}
+
+const rename = (value: string) => {
+  fireEvent.change(screen.getByLabelText(t('common.nameRequiredLabel')), {
+    target: { value },
+  });
+  fireEvent.submit(
+    screen.getByRole('button', { name: t('common.save') }).closest('form')!,
+  );
 };
 
 beforeEach(() => {
-  listOrderStatuses.mockResolvedValue([NEW, CUSTOM]);
-  updateOrderStatuses.mockImplementation(
-    async ({ data }: { data: { id: string; patch: object }[] }) =>
-      data.map(({ id, patch }) => ({ ...NEW, ...CUSTOM, id, ...patch })),
-  );
+  m.listOrderStatuses.mockResolvedValue([NEW, CUSTOM]);
+  m.getOrderStatus.mockResolvedValue(aggregateOf(CUSTOM));
+  m.listLanguages.mockResolvedValue([
+    { code: 'uk', name: 'Українська', isDefault: true, status: 'published' },
+    { code: 'en', name: 'English', isDefault: false, status: 'published' },
+  ]);
+  m.saveOrderStatus.mockResolvedValue({ version: 4 });
+  m.setDefaultOrderStatus.mockResolvedValue({ version: 5 });
+  m.removeOrderStatus.mockResolvedValue({ id: CUSTOM.id });
+  m.reorderOrderStatus.mockResolvedValue({ version: 4, swapped: true });
 });
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
-describe('OrderStatuses: code незмінний (Е5-6)', () => {
-  it('редагування: поле коду disabled, patch не несе code', async () => {
-    renderPage();
-    await screen.findByText('Власний');
-    fireEvent.click(editButtonOf('Власний'));
-    const code = (await screen.findByLabelText(
-      t('admin.orders.statuses.codeRequired'),
-    )) as HTMLInputElement;
+describe('діалог статусу: мови, код, версія', () => {
+  it('показує вкладки мов; code disabled; збереження шле лише змінену мову з expectedVersion', async () => {
+    const code = await openEditor();
     expect(code.disabled).toBe(true);
     expect(code.value).toBe('custom');
-    expect(
-      screen.getByText(t('admin.orders.statuses.codeImmutable')),
-    ).toBeTruthy();
-    fireEvent.change(screen.getByLabelText(t('common.nameRequiredLabel')), {
-      target: { value: 'Перейменований' },
+    expect(screen.getByText('English')).toBeTruthy();
+    rename('Перейменований');
+    await waitFor(() => expect(m.saveOrderStatus).toHaveBeenCalledTimes(1));
+    expect(m.saveOrderStatus.mock.calls[0]![0]).toEqual({
+      data: {
+        id: CUSTOM.id,
+        expectedVersion: 3,
+        texts: { uk: { name: 'Перейменований' } },
+      },
     });
+  });
+
+  it('412 при збереженні → ConflictDialog, введене не губиться', async () => {
+    m.saveOrderStatus.mockRejectedValue(
+      failure({ name: DOMAIN_ERROR_NAME.versionMismatch, currentVersion: 9 }),
+    );
+    await openEditor();
+    rename('Перейменований');
+    expect(
+      await screen.findByText(t('admin.orders.statuses.conflict.title')),
+    ).toBeTruthy();
+    expect(
+      (screen.getByLabelText(t('common.nameRequiredLabel')) as HTMLInputElement)
+        .value,
+    ).toBe('Перейменований');
+  });
+
+  it('setDefault: 409 concurrent_change → повідомлення й перечитування списку', async () => {
+    m.setDefaultOrderStatus.mockRejectedValue(
+      failure({
+        name: DOMAIN_ERROR_NAME.adminConflict,
+        kind: 'state',
+        constraint: ADMIN_STATE_CONSTRAINT.concurrentChange,
+      }),
+    );
+    await openEditor();
+    fireEvent.click(screen.getByRole('switch'));
     fireEvent.submit(
       screen.getByRole('button', { name: t('common.save') }).closest('form')!,
     );
-    await waitFor(() => expect(updateOrderStatuses).toHaveBeenCalled());
-    const [{ data }] = updateOrderStatuses.mock.calls[0] as [
-      { data: { patch: Record<string, unknown> }[] },
-    ];
-    expect(data[0].patch.name).toBe('Перейменований');
-    expect('code' in data[0].patch).toBe(false);
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith(
+        t('admin.errors.concurrentChange'),
+      ),
+    );
+    await waitFor(() => expect(m.listOrderStatuses).toHaveBeenCalledTimes(2));
+    expect(m.setDefaultOrderStatus).toHaveBeenCalledTimes(1);
   });
+});
 
+describe('сторінка статусів: дії зі version рядка', () => {
   it('системний статус: видалення вимкнене з поясненням', async () => {
     renderPage();
     await screen.findByText('Власний');
     const trash = (name: string) =>
-      within(screen.getByText(name).closest('tr')!)
-        .getAllByRole('button')
-        .at(-1)! as HTMLButtonElement;
+      buttonsOf(name).at(-1)! as HTMLButtonElement;
     expect(trash('Новий').disabled).toBe(true);
     expect(trash('Власний').disabled).toBe(false);
     expect(trash('Новий').title).toBe(t('admin.orders.statuses.systemLocked'));
+  });
+
+  it('видалення шле expectedVersion рядка', async () => {
+    renderPage();
+    await screen.findByText('Власний');
+    fireEvent.click(buttonsOf('Власний').at(-1)!);
+    fireEvent.click(
+      await screen.findByRole('button', { name: t('common.delete') }),
+    );
+    await waitFor(() => expect(m.removeOrderStatus).toHaveBeenCalledTimes(1));
+    expect(m.removeOrderStatus.mock.calls[0]![0]).toEqual({
+      data: { id: CUSTOM.id, expectedVersion: 3 },
+    });
+  });
+
+  it('412 від reorder → колекція перечитана, повтору запиту немає', async () => {
+    m.reorderOrderStatus.mockRejectedValue(
+      failure({ name: DOMAIN_ERROR_NAME.versionMismatch, currentVersion: 3 }),
+    );
+    renderPage();
+    await screen.findByText('Власний');
+    fireEvent.click(buttonsOf('Власний')[0]!);
+    await waitFor(() => expect(m.listOrderStatuses).toHaveBeenCalledTimes(2));
+    expect(m.reorderOrderStatus).toHaveBeenCalledTimes(1);
+    expect(m.reorderOrderStatus.mock.calls[0]![0]).toEqual({
+      data: { id: CUSTOM.id, direction: 'up', expectedVersion: 3 },
+    });
   });
 });

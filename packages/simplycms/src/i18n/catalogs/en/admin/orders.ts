@@ -56,6 +56,10 @@ export const messages = {
   'admin.orders.addNamed': 'Add: {name}',
 
   'admin.orders.statuses.subtitle': 'Manage statuses used to track orders',
+  'admin.orders.statuses.conflict.title': 'Someone else changed the status',
+  'admin.orders.statuses.conflict.description':
+    'The statuses were changed by someone else while you were editing. Reload the current data or keep your changes (saving will conflict again until you reload).',
+  'admin.orders.statuses.loadFailed': 'Failed to load the status',
   'admin.orders.statuses.add': 'Add a status',
   'admin.orders.statuses.empty': 'No statuses added yet',
   'admin.orders.statuses.edit': 'Edit status',

@@ -58,16 +58,14 @@ export default function OrderStatuses() {
         onDelete={s.setDeleting}
       />
 
-      <StatusFormDialog
-        open={s.isDialogOpen}
-        editing={s.editing}
-        form={s.form}
-        setForm={s.setForm}
-        isSubmitting={s.isSubmitting}
-        onOpenChange={s.setIsDialogOpen}
-        onSubmit={s.submit}
-        onClose={s.close}
-      />
+      {s.dialog && (
+        <StatusFormDialog
+          editing={s.dialog.editing}
+          nextSortOrder={s.nextSortOrder}
+          onChanged={() => void s.refresh()}
+          onClose={s.closeDialog}
+        />
+      )}
 
       <AlertDialog open={!!s.deleting} onOpenChange={() => s.setDeleting(null)}>
         <AlertDialogContent>
@@ -84,7 +82,7 @@ export default function OrderStatuses() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => s.deleting && s.remove(s.deleting.id)}
+              onClick={() => s.deleting && s.remove(s.deleting)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {t('common.delete')}

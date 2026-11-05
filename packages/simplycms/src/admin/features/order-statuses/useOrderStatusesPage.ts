@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from '@tanstack/react-db';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -8,16 +8,17 @@ import {
   useCollection,
   orderStatusesCollection,
 } from 'simplycms/admin-data';
-import { reorderOrderStatus } from 'simplycms/admin-server';
+import { removeOrderStatus, reorderOrderStatus } from 'simplycms/admin-server';
 import type { OrderStatus } from 'simplycms/schema/types';
 import { useT } from 'simplycms/i18n';
-import { useStatusPersist } from './useStatusPersist';
-import { EMPTY_STATUS_FORM, type StatusFormData } from './form-data';
 
 /**
- * Стан і мутації сторінки статусів замовлень. Читання — жива eager-колекція;
- * мутації — оптимістичні з write-back, крім `setDefault`/`reorder` (міняють
- * N рядків — межа канону write-back, завершуються `invalidateCollection`).
+ * Стан і дії сторінки статусів замовлень. Читання — жива eager-колекція (лише читання);
+ * запис — команди агрегата `order-statuses.*` зі `version` рядка. 🔴 Після будь-якої дії
+ * (успіх чи збій, зокрема 412/409) сторінка САМА інвалідує колекцію, а не повторює запит із
+ * версією з помилки: `reorder` дає 412 і коли змінився сусід (версія цілі та сама), а
+ * `setDefault` — 409 `concurrent_change`. Інвалідація, не `utils.refetch()`: список під
+ * відкритим діалогом без спостерігача refetch не бачить (див. `useProductCardState`).
  */
 export function useOrderStatusesPage() {
   const t = useT();
@@ -28,114 +29,59 @@ export function useOrderStatusesPage() {
     query: (q) =>
       q.from({ s: collection }).orderBy(({ s }) => s.sortOrder, 'asc'),
   });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<OrderStatus | null>(null);
+  const [dialog, setDialog] = useState<
+    { editing: OrderStatus | null } | undefined
+  >();
   const [deleting, setDeleting] = useState<OrderStatus | null>(null);
-  const [form, setForm] = useState<StatusFormData>(EMPTY_STATUS_FORM);
 
-  const close = () => {
-    setIsDialogOpen(false);
-    setEditing(null);
-    setForm(EMPTY_STATUS_FORM);
-  };
+  const refresh = () =>
+    invalidateCollection(queryClient, orderStatusesCollection);
 
-  const { isSubmitting, persist } = useStatusPersist(close);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.code.trim()) {
-      toast.error(t('admin.orders.statuses.requiredFields'));
-      return;
-    }
-    if (editing) {
-      // 🔴 `code` у patch не входить: він незмінний (Е5-6, insertOnly).
-      const tx = collection.update(editing.id, (draft) => {
-        draft.name = form.name;
-        draft.color = form.color;
-      });
-      persist(
-        tx,
-        editing.id,
-        form.is_default,
-        'common.statusUpdated',
-        'admin.orders.statuses.updateFailed',
-      );
-      return;
-    }
-    const id = crypto.randomUUID(); // Е0: ключ генерує клієнт
-    const sortOrder =
-      statuses.reduce((max, s) => Math.max(max, s.sortOrder), -1) + 1;
-    const tx = collection.insert({
-      id,
-      name: form.name,
-      code: form.code,
-      color: form.color,
-      sortOrder,
-      isDefault: false,
-      version: 1,
-    } as OrderStatus);
-    persist(
-      tx,
-      id,
-      form.is_default,
-      'admin.orders.statuses.created',
-      'admin.orders.statuses.createFailed',
-    );
-  };
-
-  const remove = (id: string) => {
-    collection
-      .delete(id)
-      .when('settled')
-      .then(() => toast.success(t('admin.orders.statuses.deleted')))
-      .catch((e: unknown) =>
-        toast.error(failureText(t, t('admin.orders.statuses.deleteFailed'), e)),
-      );
-    setDeleting(null);
-  };
-
-  const reorder = async (id: string, direction: 'up' | 'down') => {
+  /** Дія над рядком: після неї — завжди перечитування; помилка — локалізований тост. */
+  const act = async (
+    run: () => Promise<unknown>,
+    failKey: Parameters<typeof t>[0],
+  ) => {
     try {
-      await reorderOrderStatus({ data: { id, direction } });
-      await invalidateCollection(queryClient, orderStatusesCollection);
+      await run();
     } catch (e) {
-      toast.error(failureText(t, t('admin.orders.statuses.reorderFailed'), e));
+      toast.error(failureText(t, t(failKey), e));
     }
+    await refresh().catch(() => undefined);
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm(EMPTY_STATUS_FORM);
-    setIsDialogOpen(true);
+  const remove = async (s: OrderStatus) => {
+    setDeleting(null);
+    await act(async () => {
+      // cache-sync-ok: колекцію інвалідує `act` після будь-якого виходу
+      await removeOrderStatus({
+        data: { id: s.id, expectedVersion: s.version },
+      });
+      toast.success(t('admin.orders.statuses.deleted'));
+    }, 'admin.orders.statuses.deleteFailed');
   };
 
-  const openEdit = (s: OrderStatus) => {
-    setEditing(s);
-    setForm({
-      name: s.name,
-      code: s.code,
-      color: s.color || EMPTY_STATUS_FORM.color,
-      is_default: s.isDefault,
-    });
-    setIsDialogOpen(true);
-  };
+  const reorder = (s: OrderStatus, direction: 'up' | 'down') =>
+    act(async () => {
+      // cache-sync-ok: колекцію інвалідує `act` після будь-якого виходу
+      await reorderOrderStatus({
+        data: { id: s.id, direction, expectedVersion: s.version },
+      });
+    }, 'admin.orders.statuses.reorderFailed');
 
   return {
     statuses,
     isLoading,
-    isDialogOpen,
-    setIsDialogOpen,
-    editing,
+    dialog,
     deleting,
     setDeleting,
-    isSubmitting,
-    form,
-    setForm,
-    close,
-    submit,
+    openCreate: () => setDialog({ editing: null }),
+    openEdit: (s: OrderStatus) => setDialog({ editing: s }),
+    closeDialog: () => setDialog(undefined),
+    refresh,
+    nextSortOrder:
+      statuses.reduce((max, s) => Math.max(max, s.sortOrder), -1) + 1,
     remove,
     reorder,
-    openCreate,
-    openEdit,
   };
 }

@@ -1,16 +1,22 @@
-/** Дані форми статусу замовлення. */
-export interface StatusFormData {
-  name: string;
+import { TRANSLATABLE_FIELDS } from 'simplycms/domain/translations';
+
+/** Перекладні поля статусу й обовʼязкові в основній мові — з реєстру, не літералами. */
+export const STATUS_FIELDS = TRANSLATABLE_FIELDS.orderStatus
+  .fields as readonly ['name'];
+export const STATUS_REQUIRED = TRANSLATABLE_FIELDS.orderStatus
+  .required as readonly 'name'[];
+
+/** Неперекладна частина форми статусу (тексти живуть у формі набору `useTranslatableTexts`). */
+export interface StatusBaseForm {
   code: string;
   color: string;
-  is_default: boolean;
+  isDefault: boolean;
 }
 
-export const EMPTY_STATUS_FORM: StatusFormData = {
-  name: '',
+export const EMPTY_STATUS_BASE: StatusBaseForm = {
   code: '',
   color: '#6B7280',
-  is_default: false,
+  isDefault: false,
 };
 
 /** Код зі зрозумілої назви: нижній регістр, підкреслення, до 20 символів. */
