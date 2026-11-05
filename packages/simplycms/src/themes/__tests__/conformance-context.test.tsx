@@ -7,6 +7,11 @@ import { useStoreProfile } from '../store-profile';
 import { useThemeSettings } from '../theme-context';
 import { useThemeT } from '../useThemeT';
 import { makeTheme } from './conformance-themes';
+import { ui } from '../../../test-harness/locale';
+
+// Мова рендеру — параметр kit-а без дефолту: тут явно `uk`.
+const assertUk = (theme: Parameters<typeof assertThemeViewsConformance>[0]) =>
+  assertThemeViewsConformance(theme, { locale: ui('uk') });
 
 /**
  * Render-контекст, який kit гарантує view теми (спека §7 п.3, §8 п.3):
@@ -85,7 +90,7 @@ describe('assertThemeViewsConformance — render-контекст', () => {
   it('view бачить профіль магазину з фікстури (Е6б-20)', async () => {
     const theme = makeTheme({ Cart: ProfileAwareCart });
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+    await expect(assertUk(theme)).resolves.toEqual(['Cart']);
   });
 
   it('view бачить default-и зі схеми settings — без БД', async () => {
@@ -94,13 +99,13 @@ describe('assertThemeViewsConformance — render-контекст', () => {
       { settings: { ...settingsSchema } },
     );
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+    await expect(assertUk(theme)).resolves.toEqual(['Cart']);
   });
 
   it('без схеми settings той самий view червоніє — доказ, що читання справжнє', async () => {
     const theme = makeTheme({ Cart: MissingSettingCart });
 
-    await expect(assertThemeViewsConformance(theme)).rejects.toThrow(
+    await expect(assertUk(theme)).rejects.toThrow(
       /settings default not applied/,
     );
   });
@@ -111,6 +116,6 @@ describe('assertThemeViewsConformance — render-контекст', () => {
       { messages: { uk: { 'cart.headline': 'Ваш кошик' } } },
     );
 
-    await expect(assertThemeViewsConformance(theme)).resolves.toEqual(['Cart']);
+    await expect(assertUk(theme)).resolves.toEqual(['Cart']);
   });
 });

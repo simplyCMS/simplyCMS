@@ -50,7 +50,7 @@ vi.mock('simplycms/storefront/loaders', () => ({
   // Реєстр адрес без історії: ця сюїта про контекст запиту.
   lookupProductAddress: async () => null,
 }));
-vi.mock('../simplycms.config', () => ({ default: { locale: 'uk-UA' } }));
+vi.mock('../simplycms.config', () => ({ default: { currency: 'UAH' } }));
 vi.mock('simplycms/db', () => ({
   withActor: async (_actor: unknown, fn: (d: unknown) => Promise<unknown>) =>
     fn({

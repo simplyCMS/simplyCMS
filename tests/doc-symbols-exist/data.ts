@@ -19,8 +19,20 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
     'внутрішня функція обробника server functions (start-server-core), запис START-SFN-404-1',
   getServerFnById:
     'генерований резолвер server functions Start, запис START-SFN-404-1',
+  createServerFnErrorResponse:
+    'внутрішня функція start-server-core (відповідь на помилку server function), запис START-SFN-404-1',
+  executeMiddleware:
+    'внутрішня функція start-server-core (виконання request middleware), запис START-SFN-404-1',
   toResponse:
-    'внутрішня функція h3 (відповідь на помилку), запис START-SFN-404-1',
+    'внутрішня функція h3 (до start-server-core 1.169.45), історія запису START-SFN-404-1',
+  handleStartError:
+    'внутрішня функція start-server-core (обробка винятку entry), запис START-ENTRY-1',
+  createErrorResponse:
+    'внутрішня функція start-server-core (обробка винятку entry), запис START-ENTRY-1',
+  getErrorStatus:
+    'внутрішня функція start-server-core (обробка винятку entry), запис START-ENTRY-1',
+  getHttpErrorStatus:
+    'внутрішня функція start-server-core (обробка винятку entry), запис START-ENTRY-1',
   // --- Supabase (історичні розділи контурів) ---
   generateLink: 'Supabase Auth admin API у розділі про обхід листа',
   API_URL: 'ключ виводу `supabase status -o json` у історичному розділі',
@@ -40,10 +52,8 @@ export const DOC_SYMBOL_ALLOWLIST: Readonly<Record<string, string>> = {
   entityKind: 'символ Drizzle, на якому ламаються подвійні копії',
   xIn: 'узагальнена позначка пари `insertIn`/`updateIn`/`removeIn` у поясненні',
   // --- @tanstack/db, query-db-collection (внутрішні імена бібліотеки в записах реєстру) ---
-  removeQueries: 'метод TanStack Query, у записі TSDB-1',
   loadOrderedPrefixRepair: 'внутрішнє імʼя @tanstack/db, у записі TSDB-1',
-  handleDeprecatedAutoRefetch:
-    'внутрішнє імʼя query-db-collection, у записі TSDB-1',
+  writeDirectCache: 'внутрішнє імʼя query-db-collection, у записі TSDB-1',
   loadPage: 'внутрішнє імʼя @tanstack/db, у записі TSDB-2',
   startSyncIfIdle:
     'внутрішнє імʼя query-db-collection, у закритому записі TSDB-B1',

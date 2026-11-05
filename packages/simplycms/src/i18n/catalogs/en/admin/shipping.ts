@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Доставка — дзеркало `uk/admin/shipping.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.shipping.methods.subtitle': 'Manage order shipping methods',
   'admin.shipping.methods.add': 'Add a carrier',
   'admin.shipping.methods.empty': 'No shipping carriers found',
@@ -94,4 +92,4 @@ export const messages: Catalog = {
   'admin.shipping.points.deleteWarning':
     'A point with stock or reserved items cannot be deleted — deactivate it instead. The system point (warehouse) cannot be deleted.',
   'admin.shipping.points.notFound': 'Pickup point not found',
-};
+} satisfies Record<string, string>;

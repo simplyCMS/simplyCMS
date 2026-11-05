@@ -9,7 +9,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import type { PluginRow } from 'simplycms/admin-server';
 import type { PluginModule } from 'simplycms/plugins';
@@ -56,8 +55,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PluginSettingsPage from '../PluginSettingsPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const KEY = entityKey(ENTITY.plugins).all();
 let client: QueryClient;
 

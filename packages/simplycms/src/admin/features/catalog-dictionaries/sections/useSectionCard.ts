@@ -78,7 +78,7 @@ export function useSectionCard(sectionId: string | undefined) {
         })
       : collection.insert(toSectionDraft(v, entityId, new Date()));
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -94,7 +94,8 @@ export function useSectionCard(sectionId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.sections.deleted'));
         goList();
       })

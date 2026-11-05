@@ -7,7 +7,7 @@
  * кожного чанка). Тільки за ним видно, ЩО саме приїхало в initial-чанк.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 // 🔴 Розширення `.ts`: скрипт виконує Node без транспіляції.
 import {
@@ -76,11 +76,75 @@ const SERVER_FN_STUB = /simplycms\/dist\/[^/]+\/server\//;
  */
 const ADMIN_SERVER_STUB = /simplycms\/dist\/admin-server\/index/;
 
+/** Модуль каталогу ядра за ІМЕНЕМ у id клієнтського бандла (форми `dist` — у коментарі правила нижче). */
+const CATALOG_MODULE =
+  /simplycms\/dist\/(?:i18n\/catalogs\/|(?:base|admin|mail)-[A-Za-z0-9_-]{8}\.js$)/;
+
+/**
+ * Той самий модуль за ВМІСТОМ: статичний імпорт каталогу з пакета мови Rolldown вбудовує в
+ * чанк імпортера (`dist/i18n/index.js`), і за іменем файла його не видно. Надійне джерело —
+ * `sources` зі сорсмапи чанка (`sourcemap: true` у `tsdown.config.ts`, мапи їдуть у пакеті):
+ * вона перелічує всі вбудовані вихідні модулі й переживає мініфікацію, яка прибрала б
+ * коментарі `//#region`. Коментар лишається запасним шляхом для чанка без мапи.
+ * Файл читається лише з `simplycms/dist` і лише якщо id — реальний шлях (синтетичні id
+ * тестів — ні).
+ */
+const CATALOG_SOURCE = /(?:^|\/)src\/i18n\/catalogs\//;
+const CATALOG_REGION = /^\/\/#region .*\bi18n\/catalogs\//m;
+/** id -> { mapped: чанк має читабельні вихідні шляхи, catalog: серед них є каталог ядра } */
+const inspectCache = new Map();
+function inspectDist(id) {
+  if (!/simplycms\/dist\//.test(id)) return { mapped: false, catalog: false };
+  if (inspectCache.has(id)) return inspectCache.get(id);
+  let result = { mapped: false, catalog: false };
+  try {
+    if (statSync(id).isFile()) {
+      let sources = null;
+      try {
+        sources = JSON.parse(readFileSync(`${id}.map`, 'utf8')).sources;
+      } catch {
+        // Мапи немає — лишається коментар `//#region`.
+      }
+      if (Array.isArray(sources)) {
+        result = {
+          mapped: sources.some((src) => /(?:^|\/)src\//.test(src)),
+          catalog: sources.some((src) => CATALOG_SOURCE.test(src)),
+        };
+      } else {
+        const code = readFileSync(id, 'utf8');
+        result = {
+          mapped: /^\/\/#region src\//m.test(code),
+          catalog: CATALOG_REGION.test(code),
+        };
+      }
+    }
+  } catch {
+    // id без файла на диску — нема що читати.
+  }
+  inspectCache.set(id, result);
+  return result;
+}
+const isCatalogModule = (id) =>
+  CATALOG_MODULE.test(id) || inspectDist(id).catalog;
+
 /** Важкі підсистеми, яких не має бути в initial-чанку головної. */
 const NOT_IN_INITIAL = [
   // 🔴 Саме `dist/admin/`, а не `dist/admin`: `dist/admin-routes/` — тонкі
   // обгортки роутів, вони в initial-чанку бути МАЮТЬ.
   { label: 'simplycms/admin', rx: /simplycms\/dist\/admin\// },
+  // 🔴 Каталоги ядра — лише через `import()` (І43, спека §19.4): клієнт тягне ОДНУ частину
+  // ОДНІЄЇ мови, а статичний імпорт з пакета мови повернув би в початковий чанк усі мови
+  // й частини `admin`/`mail`. У `dist` пакета каталоги — не теки, а чанки `base|admin|mail`
+  // з 8-символьним хешем (`dist/base-C2UX6O0_.js`; `admin-error-<хеш>` під шаблон не
+  // потрапляє), тож id модуля в bundle-stats несе саме таку форму; гілка `i18n/catalogs/`
+  // тримає розкладку теками; каталог, вбудований статичним імпортом у чанк імпортера, ловить
+  // перевірка вмісту (`hasCatalogRegion`). `mustExist`: правило, що нічого не знайшло в бандлі, — не
+  // доказ, а зламана назва чанка, тому це FAIL.
+  {
+    label: 'каталоги ядра (i18n/catalogs)',
+    test: isCatalogModule,
+    mustExist: true,
+  },
   { label: '@tiptap/*', rx: /@tiptap\// },
   { label: 'recharts', rx: /\/recharts\// },
 ];
@@ -193,12 +257,27 @@ export function gateBundle(storeDir) {
   details.push(
     `initial-чанків: ${initial.length}, модулів у них: ${initialModules.length}`,
   );
-  for (const { label, rx } of NOT_IN_INITIAL) {
-    const inBundle = allModules.filter((id) => rx.test(id)).length;
-    const inInitial = initialModules.filter((id) => rx.test(id)).length;
-    if (inInitial > 0) ok = false;
+  // Канарка: перевірка вмісту має що читати. Якщо жоден чанк `simplycms/dist` не віддає
+  // вихідних шляхів (мініфікація без сорсмап, інший формат), правило каталогів сліпе за
+  // побудовою — тож це FAIL, а не тихий OK.
+  if (!allModules.some((id) => inspectDist(id).mapped)) {
+    ok = false;
     details.push(
-      `${inInitial === 0 ? 'OK  ' : 'FAIL'} ${label}: у бандлі ${inBundle}, в initial ${inInitial}`,
+      'FAIL канарка вмісту: жоден чанк simplycms/dist не віддає вихідних шляхів (сорсмапа чи //#region src/) — ' +
+        'перевірка вбудованих каталогів сліпа, бандл зібрано без мап або з мініфікацією',
+    );
+  }
+  for (const {
+    label,
+    rx,
+    test = (id) => rx.test(id),
+    mustExist,
+  } of NOT_IN_INITIAL) {
+    const inBundle = allModules.filter(test).length;
+    const inInitial = initialModules.filter(test).length;
+    if (inInitial > 0 || (mustExist && inBundle === 0)) ok = false;
+    details.push(
+      `${inInitial === 0 && !(mustExist && inBundle === 0) ? 'OK  ' : 'FAIL'} ${label}: у бандлі ${inBundle}, в initial ${inInitial}`,
     );
   }
 

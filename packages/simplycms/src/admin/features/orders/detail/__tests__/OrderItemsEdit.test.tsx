@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Редагування позицій у картці (Task 5, Е5б-11): справжні колекції + стаб
- * межі serverFn. Асерти — точні тексти `createTranslator('uk', 'uk')`.
+ * межі serverFn. Асерти — точні тексти `ukT`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -13,10 +13,12 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   listOrderItems,
   listOrders,
@@ -24,7 +26,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -57,17 +59,18 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import OrderDetailPage from '../OrderDetailPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );
-const money = (n: number) => formatPrice(n, ENGINE.config).replace(/\s/g, ' ');
+const money = (n: number) => formatPrice(n, PRICE_FORMAT).replace(/\s/g, ' ');
 const at = new Date(Date.UTC(2026, 9, 1, 10));
 const qty = (n: number) =>
   screen.findByLabelText(`${t('common.quantity')}: Товар ${n}`);
@@ -80,7 +83,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('OrderDetailPage: редагування позицій', () => {
-  it('кількість: один виклик; рядок і підсумки оновлено і після ревалідації', async () => {
+  it('кількість: один виклик; рядок і підсумки з відповіді сервера, без перезапиту', async () => {
     const order = makeOrder(1, at);
     reset([order], [makeItem(1), makeItem(2)]);
     mocks.updateOrderItemQuantity.mockImplementation(async () =>
@@ -106,14 +109,10 @@ describe('OrderDetailPage: редагування позицій', () => {
     });
     // рядок позиції + «Товари» + «Разом» = 3 входження суми
     expect((await screen.findAllByText(money(300))).length).toBe(3);
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    await awaitRevalidation(listOrderItems, beforeItems);
-    await awaitRevalidation(listOrders, beforeOrders);
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(
-      beforeItems + 1,
-    );
-    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(beforeOrders + 1);
-    // Ревалідація віддала стан сервера — результат запису не відкотився.
+    // Write-back без перезапиту (M1 TSDB-1 закрито).
+    await expectNoRefetch(listOrderItems, beforeItems);
+    await expectNoRefetch(listOrders, beforeOrders);
+    // Результат запису тримається (його доніс write-back).
     expect((input as HTMLInputElement).value).toBe('3');
     expect((await screen.findAllByText(money(300))).length).toBe(3);
   });

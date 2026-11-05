@@ -29,7 +29,7 @@ describe('mutation-cache-sync (function-scope)', () => {
     expect(
       ids(`export function Page() {
       const collection = useCollection(orderStatusesCollection);
-      const handleCreate = (form) => { const tx = collection.insert({ id: 'x', ...form }); tx.isPersisted.promise.then(() => {}); };
+      const handleCreate = (form) => { const tx = collection.insert({ id: 'x', ...form }); tx.when('settled').then(() => {}); };
       const handleUpdate = (id, form) => { collection.update(id, (d) => { d.name = form.name; }); };
       const handleDelete = (id) => { collection.delete(id); };
       const applyDefault = async (id) => { await setDefaultOrderStatus({ data: { id } }); await collection.utils.refetch(); };
@@ -37,6 +37,17 @@ describe('mutation-cache-sync (function-scope)', () => {
       return <button onClick={() => handleReorder('a', 'up')} />;
     }`),
     ).toEqual([]);
+  });
+
+  it('invalidateCollection у функції — синк; без нього той самий код — noSync', () => {
+    const body = (sync: string) => `export function Page() {
+      const handleReorder = async (id) => { await reorderOrderStatus({ data: { id } }); ${sync} };
+      return null;
+    }`;
+    expect(
+      ids(body('await invalidateCollection(qc, orderStatusesCollection);')),
+    ).toEqual([]);
+    expect(ids(body(''))).toEqual(['noSync']);
   });
 
   it('прибраний refetch у handleReorder — noSync САМЕ там (сусідній синк не покриває)', () => {

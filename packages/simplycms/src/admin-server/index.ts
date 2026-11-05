@@ -137,6 +137,7 @@ import {
   productsSaveTranslation,
   productsSetModificationToken,
   productsSetPath,
+  profilesSetUiLocale,
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
@@ -744,3 +745,9 @@ export const saveProductPricesCommand = createServerFn({ method: 'POST' })
 export const saveStockCommand = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsSaveStock, data));
+
+// М2а, Task 5: вибір мови інтерфейсу адмінки (І45). Читання мови — разом із сесією
+// (`getAdminSession`, §19.6), окремої операції читання немає.
+export const setAdminUiLocale = createServerFn({ method: 'POST' })
+  .validator(passThrough)
+  .handler(({ data }) => invokeFromServerFn(profilesSetUiLocale, data));

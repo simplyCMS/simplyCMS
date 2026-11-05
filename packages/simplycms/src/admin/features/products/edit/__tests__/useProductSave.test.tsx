@@ -7,7 +7,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 
 const mocks = vi.hoisted(() => ({
@@ -40,11 +39,12 @@ vi.mock('sonner', () => ({
 
 import { blankForm } from '../product-aggregate';
 import { useProductCreate } from '../useProductSave';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 const ID = '11111111-1111-4111-8111-111111111111';
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>
-    <I18nProvider locale="uk">{children}</I18nProvider>
+    <TestI18nProvider>{children}</TestI18nProvider>
   </QueryClientProvider>
 );
 const sink = () => ({

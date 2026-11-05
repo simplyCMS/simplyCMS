@@ -1,17 +1,16 @@
-import { useCallback } from 'react';
+import { useMemo } from 'react';
 import {
-  interpolate,
-  useFallbackLocale,
-  useLocale,
-  type MessageParams,
+  createLookupTranslator,
+  useUiLocalePair,
+  type PluralTranslator,
 } from 'simplycms/i18n';
 import type { PluginMessages } from './types';
 
 /**
  * Транслятор каталогу ПЛАГІНА (не ядра) — двійник `useThemeT`.
  *
- * Ланцюжок fallback — `messages[locale][key] → messages[основна][key] → сам key`;
- * підстановка `{param}` — та сама `interpolate` з `simplycms/i18n`.
+ * Ланцюжок — той самий `lookupMessage` з `simplycms/i18n`:
+ * `messages[locale][key] → messages[основна][key] → сам key`.
  *
  * Каталог передається АРГУМЕНТОМ (компонент плагіна імпортує власний
  * `messages.ts`), а не читається з реєстру плагінів: реєстр наповнюється в
@@ -23,18 +22,22 @@ import type { PluginMessages } from './types';
  * (`export type FaqKey = keyof typeof messages.uk` у `messages.ts` плагіна),
  * НЕ `MessageKey` ядра: SDK про ключі конкретного плагіна нічого не знає.
  */
-export function usePluginT<K extends string = string>(
-  messages: PluginMessages | undefined,
-): (key: K, params?: MessageParams) => string {
-  const locale = useLocale();
-  const fallback = useFallbackLocale();
+export function usePluginT<
+  K extends string = string,
+  P extends string = string,
+>(messages: PluginMessages | undefined): PluralTranslator<K, P> {
+  const { locale, fallback } = useUiLocalePair();
 
-  return useCallback(
-    (key: K, params?: MessageParams): string => {
-      const template =
-        messages?.[locale]?.[key] ?? messages?.[fallback]?.[key] ?? key;
-      return interpolate(template, params);
-    },
+  return useMemo(
+    () =>
+      createLookupTranslator<K, P>(
+        // Кожна ланка несе свою мову: форми з каталогу fallback множаться за його правилами.
+        [
+          { locale, catalog: messages?.[locale] },
+          { locale: fallback, catalog: messages?.[fallback] },
+        ],
+        locale,
+      ),
     [messages, locale, fallback],
   );
 }

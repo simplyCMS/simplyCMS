@@ -1,74 +1,101 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
-  LANGUAGE_PACKS,
-  createTranslator,
-  getLanguagePack,
-  languageOfConfigLocale,
+  getContentTools,
+  getUiPack,
+  hasLanguagePack,
+  listLanguagePacks,
+  loadTranslator,
+  resolveUiLocale,
 } from 'simplycms/i18n';
+import { cl, ui } from '../../../../test-harness/locale';
+
+// Тестовий реєстр: платформні `uk`/`en` + `de` і `pt` без частини `admin` (§19.15).
+vi.mock('../registry', async (importOriginal) => {
+  const { testPackRegistry } =
+    await import('../../../../test-harness/language-packs');
+  const real = await importOriginal<typeof import('../registry')>();
+  return { PACKS: testPackRegistry(real.PACKS) };
+});
 
 describe('мовні пакети', () => {
-  it('поставляються uk і en', () => {
-    expect([...LANGUAGE_PACKS.keys()].sort()).toEqual(['en', 'uk']);
-    expect(getLanguagePack('uk')?.name).toBe('Українська');
-    expect(getLanguagePack('en')?.code).toBe('en');
+  it('платформа постачає uk і en з усіма частинами', () => {
+    const platform = listLanguagePacks().filter((p) =>
+      ['uk', 'en'].includes(p.code),
+    );
+    expect(platform.map((p) => [p.code, p.parts])).toEqual([
+      ['uk', ['base', 'admin', 'mail']],
+      ['en', ['base', 'admin', 'mail']],
+    ]);
+    expect(getUiPack(ui('uk')).name).toBe('Українська');
+    expect(getUiPack(ui('en')).code).toBe('en');
   });
 
-  it('невідомого пакета немає → null (мова без пакета — легальний випадок)', () => {
-    expect(getLanguagePack('pt')).toBeNull();
-    expect(getLanguagePack('')).toBeNull();
+  it('hasLanguagePack: точний код або базова мова (pt-BR → pt), чужа — ні', () => {
+    expect(hasLanguagePack('pt-BR')).toBe(true);
+    expect(hasLanguagePack('en')).toBe(true);
+    expect(hasLanguagePack('pl')).toBe(false);
+    expect(hasLanguagePack('не код')).toBe(false);
+  });
+
+  it("частина admin необов'язкова: пакет без неї — пакет вітрини, але не адмінки", () => {
+    expect(hasLanguagePack('de')).toBe(true);
+    expect(hasLanguagePack('de', ['admin'])).toBe(false);
+    expect(hasLanguagePack('uk', ['admin'])).toBe(true);
+    expect(listLanguagePacks().find((p) => p.code === 'de')?.parts).toEqual([
+      'base',
+      'mail',
+    ]);
+  });
+
+  it('інструментів контенту для мови без пакета немає → null (легальний випадок)', () => {
+    expect(getContentTools(cl('fr'))).toBeNull();
+  });
+
+  it('інструменти контенту — за ТОЧНИМ кодом, без пошуку за базовою мовою', () => {
+    expect(getContentTools(cl('en-GB'))).toBeNull();
   });
 
   it('uk несе таблицю адрес КМУ-2010, en — ні', () => {
-    expect(getLanguagePack('uk')?.slugify?.('Згорани')).toBe('zghorany');
-    expect(getLanguagePack('en')?.slugify).toBeUndefined();
+    expect(getContentTools(cl('uk'))?.slugify?.('Згорани')).toBe('zghorany');
+    expect(getContentTools(cl('en'))?.slugify).toBeUndefined();
   });
 
   it('місце під пошук порожнє: tokenize не оголошено', () => {
-    expect(getLanguagePack('uk')).not.toHaveProperty('tokenize');
-    expect(getLanguagePack('en')).not.toHaveProperty('tokenize');
+    expect(getContentTools(cl('uk'))).not.toHaveProperty('tokenize');
+    expect(getContentTools(cl('en'))).not.toHaveProperty('tokenize');
   });
 
-  it('каталог пакета — той самий, що віддає транслятор', () => {
-    expect(getLanguagePack('uk')?.catalog['common.save']).toBe('Зберегти');
-    expect(getLanguagePack('en')?.catalog['common.save']).toBe('Save');
+  it('частина base пакета — той самий каталог, що віддає транслятор', async () => {
+    expect((await getUiPack(ui('uk')).ui.base())['common.save']).toBe(
+      'Зберегти',
+    );
+    expect((await getUiPack(ui('en')).ui.base())['common.save']).toBe('Save');
   });
 });
 
-describe('createTranslator(locale, fallback)', () => {
-  it('мова з пакетом — її рядок', () => {
-    expect(createTranslator('en', 'uk')('common.save')).toBe('Save');
-    expect(createTranslator('uk', 'en')('common.save')).toBe('Зберегти');
-  });
-
-  it('мова без пакета, фолбек uk → український рядок', () => {
-    expect(createTranslator('pt', 'uk')('common.save')).toBe('Зберегти');
-  });
-
-  it('мова без пакета, фолбек en → англійський рядок (фолбек — основна мова магазину, не uk)', () => {
-    expect(createTranslator('pt', 'en')('common.save')).toBe('Save');
-  });
-
-  it('ключ, відсутній і в мові, і у фолбеку, повертається як є', () => {
-    const t = createTranslator('pt', 'xx');
-    expect(t('common.save')).toBe('common.save');
-    expect(t('missing.key' as Parameters<typeof t>[0])).toBe('missing.key');
-  });
-
-  it('підставляє параметри і для фолбека', () => {
-    expect(createTranslator('pt', 'uk')('cart.items', { count: 3 })).toBe(
-      'Товари (3)',
+describe('транслятор мови інтерфейсу', () => {
+  it('мова з пакета — її рядок', async () => {
+    expect((await loadTranslator(ui('en'), ['base']))('common.save')).toBe(
+      'Save',
+    );
+    expect((await loadTranslator(ui('uk'), ['base']))('common.save')).toBe(
+      'Зберегти',
     );
   });
-});
 
-describe('languageOfConfigLocale (тимчасовий міст до config.locale з регіоном, М2)', () => {
-  it('зрізає регіон і регістр: uk-UA → uk, EN → en', () => {
-    expect(languageOfConfigLocale('uk-UA')).toBe('uk');
-    expect(languageOfConfigLocale('en-US')).toBe('en');
-    expect(languageOfConfigLocale('EN')).toBe('en');
+  it('деградований режим: мова без пакета потрапляє на пакет основної мови через міст, а не через тихий uk', async () => {
+    const pl = cl('pl');
+    const viaUk = await loadTranslator(resolveUiLocale(pl, cl('uk')), ['base']);
+    const viaEn = await loadTranslator(resolveUiLocale(pl, cl('en')), ['base']);
+    expect(viaUk('common.save')).toBe('Зберегти');
+    expect(viaEn('common.save')).toBe('Save');
   });
 
-  it('не прив’язується до наявності пакета: fr-FR → fr', () => {
-    expect(languageOfConfigLocale('fr-FR')).toBe('fr');
+  it('підставляє параметри', async () => {
+    expect(
+      (await loadTranslator(ui('uk'), ['base']))('cart.itemsTitle', {
+        count: 3,
+      }),
+    ).toBe('Товари (3)');
   });
 });

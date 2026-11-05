@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 
 /**
  * Р30: з підтвердженням пошти `signUp` повертає `token: null` — сторінка
@@ -45,16 +44,17 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import Auth from '../Auth';
+import { TestI18nProvider, ukT } from '../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const type = (id: string, value: string) =>
   fireEvent.change(document.getElementById(id)!, { target: { value } });
 
 const renderAuth = () =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <Auth />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 describe('Auth: підтвердження пошти (Р30)', () => {
@@ -114,16 +114,16 @@ describe('Auth: підтвердження пошти (Р30)', () => {
     // Better Auth перезапитує сесію: `Auth` на мить віддає спінер замість дерева.
     h.loading = true;
     view.rerender(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <Auth />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(screen.queryByText(t('auth.register.checkEmail'))).toBeNull();
     h.loading = false;
     view.rerender(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <Auth />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(screen.getByText(t('auth.register.checkEmail'))).toBeTruthy();
   });

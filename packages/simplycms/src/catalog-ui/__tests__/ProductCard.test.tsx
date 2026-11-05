@@ -3,8 +3,8 @@
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ProductCard } from '../ProductCard';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock('@tanstack/react-router', () => ({
   // Підставляє params у патерн так, як це робить роутер.
@@ -30,9 +30,9 @@ afterEach(cleanup);
 
 const renderCard = () =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <ProductCard product={{ id: 'p1', name: 'Товар', slug: 'orphan' }} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 describe('ProductCard: шлях товару', () => {

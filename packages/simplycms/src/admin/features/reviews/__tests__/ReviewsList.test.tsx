@@ -3,9 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createTranslator } from 'simplycms/i18n';
 import ReviewsPage from '../list/ReviewsPage';
 import { mocks, page, renderWithClient, row, stubDom } from './render-support';
+import { ukT } from '../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -30,7 +30,7 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const CURSOR = { createdAt: new Date('2026-10-01T00:00:00Z'), id: 'x' };
 const lastArg = () => mocks.listReviews.mock.lastCall![0].data;
 

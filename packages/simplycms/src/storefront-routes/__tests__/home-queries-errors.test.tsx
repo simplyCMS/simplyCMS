@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 import {
   useFeaturedProducts,
@@ -10,6 +9,12 @@ import {
   useRootSections,
   useSectionProducts,
 } from '../pages/home/queries';
+import { TestI18nProvider } from '../../../test-harness/i18n';
+
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -28,9 +33,9 @@ function wrapper({ children }: { children: ReactNode }) {
     defaultOptions: { queries: { retry: false } },
   });
   return (
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-    </I18nProvider>
+    </TestI18nProvider>
   );
 }
 

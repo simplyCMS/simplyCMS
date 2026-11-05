@@ -2,12 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 import Profile from '../pages/Profile';
 import ProfileOrders from '../pages/ProfileOrders';
 import ProfileOrderDetail from '../pages/ProfileOrderDetail';
 import OrderSuccess from '../pages/OrderSuccess';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 /**
  * Р26: збій запиту ≠ «порожньо» / «не знайдено». Найгірший випадок —
@@ -44,7 +44,7 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'u-1', email: 'a@b.c' } }),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const cases = [
   {
@@ -87,11 +87,11 @@ function renderPage(Page: () => React.ReactNode) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <Page />
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

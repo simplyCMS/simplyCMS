@@ -6,13 +6,9 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import { createLocaleRewrite, type LocaleRewriteState } from '../rewrite';
-import type { LocaleSet } from '../resolve';
+import { localeSet, cl } from '../../../../test-harness/locale';
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const SET = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 function input(rewrite: ReturnType<typeof createLocaleRewrite>, path: string) {
   const url = new URL(path, 'http://localhost');
@@ -28,7 +24,7 @@ function output(rewrite: ReturnType<typeof createLocaleRewrite>, path: string) {
 }
 
 function setup(current = 'uk') {
-  const state: LocaleRewriteState = { current };
+  const state: LocaleRewriteState = { current: cl(current) };
   return { state, rewrite: createLocaleRewrite(SET, state) };
 }
 

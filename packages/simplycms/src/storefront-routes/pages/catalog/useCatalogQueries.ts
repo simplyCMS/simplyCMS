@@ -7,7 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import {
   getCatalogSection,
   getCatalogSections,
@@ -23,7 +23,7 @@ export type CatalogSectionRow = SectionRow;
 
 /** Усі активні розділи — чипси над списком товарів. */
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
-  const sections = entityKey(ENTITY.sections, useLocale());
+  const sections = entityKey(ENTITY.sections, useContentLocale());
   return useQuery({
     // 🔴 variant('storefront'), не list() (Е3-15): admin-data заводить
     // eager-колекцію sections під голим list() — там усі розділи в
@@ -39,7 +39,7 @@ export function useSectionQuery(
   sectionSlug: string | undefined,
   initialSection?: CatalogSectionRow,
 ) {
-  const sections = entityKey(ENTITY.sections, useLocale());
+  const sections = entityKey(ENTITY.sections, useContentLocale());
   return useQuery({
     queryKey: sections.detail(sectionSlug ?? ''),
     queryFn: (): Promise<CatalogSectionRow | null> =>
@@ -59,7 +59,10 @@ export function useFilterPropertiesQuery(
   sectionId: string | null,
   enabled = true,
 ) {
-  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
+  const sectionProperties = entityKey(
+    ENTITY.sectionProperties,
+    useContentLocale(),
+  );
   return useQuery({
     // 🔴 variant('filterable', …), не scoped() (борг Е1а №6, Е3-12): це форма
     // (лише властивості-фільтри), а не FK-зріз за розділом. Корінь — власний
@@ -83,7 +86,7 @@ export function useFilterPropertiesQuery(
  * перемикання чипсів (так було до спліту, окремими ключами на двох сторінках).
  */
 export function usePropertyOptionsQuery() {
-  const propertyOptions = entityKey(ENTITY.propertyOptions, useLocale());
+  const propertyOptions = entityKey(ENTITY.propertyOptions, useContentLocale());
   return useQuery({
     // 🔴 variant('storefront'), не list() (Е3-15) — той самий префікс, що
     // й on-demand колекція propertyOptions в admin-data.

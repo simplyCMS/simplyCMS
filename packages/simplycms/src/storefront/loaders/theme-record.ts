@@ -50,7 +50,7 @@ async function readActiveTheme(): Promise<ThemeRecord | null> {
  *
  * Доступна server-route handler-ам і тестам, де контексту `createServerFn`
  * немає. Живе окремо від `./themes` навмисно — з тієї самої причини, що й
- * `checkIsAdmin` (див. докблок у `./is-admin`): живий не-serverFn експорт
+ * колишня `checkIsAdmin` (знесена): живий не-serverFn експорт
  * тримає серверний імпорт живим і затягнув би пул Postgres у клієнтський
  * бандл через сусідні serverFn (`getActiveTheme` у каркасних роутах,
  * `getStorefrontRoot` у корені host-а).

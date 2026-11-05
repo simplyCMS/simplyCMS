@@ -6,6 +6,9 @@
  * а не побічний ефект правки. Причина обов'язкова й непорожня. Модель — `doc-symbols-exist/data.ts`.
  */
 export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
+  // --- react-query (T2) ---
+  'react-query→i18n':
+    'useFormatPrice форматує за мовою інтерфейсу (useUiLocale), валюта — з useEngine; i18n про react-query не знає (М2а Task 6, §19.8)',
   // --- auth (T2) ---
   'auth→db':
     'єдиний канал до Postgres — withActor; без нього auth пішов би на голий пул',
@@ -15,7 +18,6 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'auth→i18n': 'тексти листів auth (Е8-Т11)',
   'auth→env': 'база посилань siteUrl у листах (Е8-Т11)',
   // --- runtime / storefront / admin-server ---
-  'runtime→i18n': 'RouterContext.locales типізується LocaleSet (type-only)',
   'storefront→db': 'єдиний канал до Postgres — withActor (лоадери вітрини)',
   'storefront→auth':
     'читання сесії для лоадерів, userId лише з серверної сесії',
@@ -62,7 +64,6 @@ export const UPWARD_EXCEPTIONS: Readonly<Record<string, string>> = {
   'commerce→db': 'рушій читає прайси/знижки/тарифи через ActorDb (Е5б-5)',
   'site→db':
     'тип ActorDb; власного каналу до Postgres модуль не відкриває (Е6б-7)',
-  'site→i18n': 'тип Locale для декларації локалі магазину',
   'server-guard→env': 'прод-предикат і redactUrls беруться з env (Е8, Р23/Р27)',
   'mail→env': 'вибір драйвера за групою SMTP_* і прод-предикат (Е8, Task 9)',
   'mail→db': 'запис outbox mail_outbox лише через withActor (Task 10)',

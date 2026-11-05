@@ -19,7 +19,7 @@ import { Button } from 'simplycms/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Separator } from 'simplycms/ui/separator';
 import { Skeleton } from 'simplycms/ui/skeleton';
-import { useT, type MessageKey } from 'simplycms/i18n';
+import { useFormatDate, useT, type MessageKey } from 'simplycms/i18n';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
 import { toast } from 'simplycms/core/hooks/use-toast';
 import { useFormatPrice } from 'simplycms/react-query';
@@ -88,20 +88,11 @@ export default function OrderSuccess() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate стабільний з @tanstack/react-router
   }, [order, token]);
 
-  // Форматування ціни — через конфіг магазину (locale/currency), а не
-  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. simplycms/domain/money).
+  // Ціна й дата — за мовою інтерфейсу, валюта — з конфігу магазину; символ валюти не
+  // залежить від CLDR рушія (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('uk-UA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
+  const formatDate = useFormatDate('datetime');
 
   const copyOrderNumber = () => {
     if (order?.order_number) {

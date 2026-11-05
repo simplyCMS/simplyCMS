@@ -21,12 +21,18 @@
 // той гейт як «хардкоджені рядки інтерфейсу». Для магазину розкладка
 // байдужа, для цього репозиторію — ні.
 import { describe, it, expect } from 'vitest';
+import { checkedContentLocale } from 'simplycms/domain/translations';
+import { resolveUiLocale } from 'simplycms/i18n';
 import { assertThemeViewsConformance } from 'simplycms/themes/conformance';
 import theme from '../index';
 
+const uk = checkedContentLocale('uk');
+
 describe('тема default: контракт v3', () => {
   it('заявлені views проходять conformance', async () => {
-    const checked = await assertThemeViewsConformance(theme);
+    const checked = await assertThemeViewsConformance(theme, {
+      locale: resolveUiLocale(uk, uk),
+    });
 
     // Порядок — як у `buildConformanceCases`: перевіряємо саме ФАКТИЧНО
     // прогнані сторінки, а не `Object.keys(theme.views)`.

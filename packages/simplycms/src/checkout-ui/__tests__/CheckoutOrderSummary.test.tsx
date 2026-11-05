@@ -8,13 +8,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // резолву модуля) — простіше й чесніше замінити форматер напряму.
 vi.mock('simplycms/react-query', async (orig) => ({
   ...(await orig()),
-  useEngine: () => ({ config: { locale: 'uk-UA', currency: 'UAH' } }),
+  useEngine: () => ({ config: { currency: 'UAH' } }),
   useFormatPrice: () => (value: number) => `${value}₴`,
 }));
 
 import type { QuoteCheckoutResult } from 'simplycms/contracts';
-import { I18nProvider } from 'simplycms/i18n';
 import { CheckoutOrderSummary } from '../CheckoutOrderSummary';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const QUOTE: QuoteCheckoutResult = {
   ok: true,
@@ -41,7 +41,7 @@ const renderSummary = (
   extra: Record<string, unknown> = {},
 ) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <CheckoutOrderSummary
         quote={quote}
         quoting={false}
@@ -54,7 +54,7 @@ const renderSummary = (
         canSubmit={quote?.ok === true}
         {...extra}
       />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 // `getByRole` — jest-dom не підключений у проєкті (див. avatar-upload-disabled

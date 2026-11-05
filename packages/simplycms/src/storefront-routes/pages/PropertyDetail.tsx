@@ -1,6 +1,7 @@
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { Card, CardContent } from 'simplycms/ui/card';
 import { Button } from 'simplycms/ui/button';
 import { Loader2, ChevronRight } from 'lucide-react';
@@ -21,7 +22,10 @@ export default function PropertyDetailPage({
   options: initialOptions,
 }: PropertyDetailPageProps = {}) {
   const t = useT();
-  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
+  const sectionProperties = entityKey(
+    ENTITY.sectionProperties,
+    useContentLocale(),
+  );
   const params = useParams({ strict: false }) as Record<
     string,
     string | undefined

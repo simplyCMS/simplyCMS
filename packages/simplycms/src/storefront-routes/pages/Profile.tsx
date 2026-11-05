@@ -13,7 +13,7 @@ import { Button } from 'simplycms/ui/button';
 import { Skeleton } from 'simplycms/ui/skeleton';
 import { Badge } from 'simplycms/ui/badge';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import { useFormatPrice } from 'simplycms/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { QueryFailure } from '../components/QueryFailure';
@@ -47,18 +47,11 @@ export default function ProfilePage() {
   const profile = data?.profile ?? null;
   const recentOrders = data?.recentOrders ?? [];
 
-  // Форматування ціни — через конфіг магазину (locale/currency), а не
-  // хардкод 'uk-UA'/'UAH': символ валюти більше не залежить від CLDR рушія
-  // (див. simplycms/domain/money).
+  // Ціна й дата — за мовою інтерфейсу, валюта — з конфігу магазину; символ валюти не
+  // залежить від CLDR рушія (див. simplycms/domain/money).
   const formatPrice = useFormatPrice();
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('uk-UA', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(date);
-  };
+  const formatDate = useFormatDate('medium');
 
   if (isLoading) {
     return (

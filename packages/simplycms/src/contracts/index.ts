@@ -11,3 +11,5 @@
 export * from './objects/index';
 export * from './ports/index';
 export type { SanitizedHtml } from './sanitized-html';
+export type { ContentLocale, LocaleSet } from './content-locale';
+export type { UiLocale } from './ui-locale';

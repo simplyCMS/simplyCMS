@@ -41,7 +41,8 @@ export default function PriceTypesPage() {
     setDeleteId(null);
     collection
       .delete(id)
-      .isPersisted.promise.then(() => toast.success(t('admin.prices.deleted')))
+      .when('settled')
+      .then(() => toast.success(t('admin.prices.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
   };
 

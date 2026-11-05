@@ -11,7 +11,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { I18nProvider } from 'simplycms/i18n';
+import { I18nProvider, useUiCatalogs } from 'simplycms/i18n';
 import { CartProvider } from 'simplycms/react-query';
 import type { RouterContext } from 'simplycms/runtime';
 import type { ProductDetailProduct } from '../pages/product-detail/types';
@@ -57,7 +57,8 @@ vi.mock('../server/products', () => ({
 import { htmlLangAttrs } from '../locale/lang-attrs';
 import { createLocaleRewrite } from '../locale/rewrite';
 import { loadStorefrontRoot } from '../locale/root-data';
-import type { LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { localeSet } from '../../../test-harness/locale';
 import ProductDetailPage from '../pages/ProductDetail';
 import {
   entityHead,
@@ -65,11 +66,7 @@ import {
   loadEntityPage,
 } from '../pages/entity-route';
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 /** Рядок товару так, як його віддає `loadProduct`: текст і SEO вже з проєкції. */
 function row(over: {
@@ -274,6 +271,8 @@ async function ssr(url: string): Promise<string> {
     head: () => ({ meta: [{ charSet: 'utf-8' }] }),
     component: function Root() {
       const data = root.useLoaderData();
+      // Як у host-корені: лоадер уже дочекався `base`, `use` розгортає її синхронно.
+      const catalogs = useUiCatalogs(data.ui.locale, ['base']);
       const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
@@ -284,8 +283,9 @@ async function ssr(url: string): Promise<string> {
           </head>
           <body>
             <I18nProvider
-              locale={data.locale}
-              fallback={data.languages.primary}
+              locale={data.ui.locale}
+              fallback={data.ui.fallback}
+              catalogs={catalogs}
             >
               <QueryClientProvider client={client}>
                 <TestEngineProvider>

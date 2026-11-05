@@ -8,7 +8,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import {
   ADMIN_STATE_CONSTRAINT,
@@ -41,8 +40,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import SettingsPage from '../SettingsPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const KEY = entityKey(ENTITY.systemSettings).all();
 let client: QueryClient;
 

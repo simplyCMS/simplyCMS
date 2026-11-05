@@ -1,7 +1,7 @@
-import type { Catalog } from '../../types';
+import type { MailKey } from '../../types';
 
 /** Листи ядра — дзеркало `uk/mail.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'mail.reset.subject': 'Password reset — {storeName}',
   'mail.reset.intro':
     'You (or someone else) asked to reset the password for the store "{storeName}".',
@@ -39,4 +39,4 @@ export const messages: Catalog = {
   'mail.order.owner.openLink':
     'To open the order in the admin panel, follow the link:',
   'mail.order.owner.action': 'Open the order',
-};
+} satisfies Record<MailKey, string>;

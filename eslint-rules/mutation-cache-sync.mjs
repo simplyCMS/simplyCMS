@@ -1,6 +1,7 @@
 /**
  * Клієнтська мутація мусить лишати слід у кеші (урок №6 роадмапу:
- * колекція НЕ рефетчиться від invalidateQueries React Query).
+ * колекція admin-data синкається через її write-back або `invalidateCollection`,
+ * а не довільним ключем `invalidateQueries`).
  *
  * 🔴 Межа аналізу — ФУНКЦІЯ, не файл (рев'ю р3: файлова евристика
  * сліпа на змішаних сторінках — інший хендлер із синком «покривав» би
@@ -11,9 +12,13 @@
  * (стрілка/function/метод), і В НІЙ мусить бути синк:
  *   collection.utils.{refetch,writeUpsert,writeUpdate,writeDelete,writeBatch}
  *   АБО collection.insert/update/delete (оптимістичний шлях сам синкає)
+ *   АБО голий виклик invalidateCollection(queryClient, def) з
+ *   simplycms/admin-data (перечитує зрізи колекції, і неспостережувані теж)
  *   АБО invalidateQueries/setQueryData/refetchQueries (легасі React Query;
- *   але якщо файл імпортує simplycms/admin-data — цього НЕ досить,
- *   інвалідація колекцію не будить → invalidateOnly).
+ *   але якщо файл імпортує simplycms/admin-data — цього НЕ досить:
+ *   довільний ключ `invalidateQueries` поза admin-data не проходить через
+ *   `collectionKey` (лінт забороняє його поза admin-data), тож канон для
+ *   колекцій — `invalidateCollection` → invalidateOnly).
  * Виклики всередині persistence-хендлерів (onInsert/onUpdate/onDelete) —
  * поза правилом: їх стереже handler-canon. Виклик у loader (preload) —
  * теж поза правилом (читання). Opt-out — `// cache-sync-ok: <причина>`
@@ -48,7 +53,7 @@ export default {
       noSync:
         'Мутація без сліду в кеші у ЦІЙ функції: додай collection-синк або поясни // cache-sync-ok (див. eslint-rules/mutation-cache-sync.mjs).',
       invalidateOnly:
-        'invalidateQueries не будить TanStack DB-колекцію — потрібен collection.utils.* синк у цій функції.',
+        'Для колекцій admin-data канон — invalidateCollection(queryClient, <колекція>) або collection.utils.* синк у цій функції; сирий invalidateQueries із довільним ключем не гарантує, що зачеплено ключ колекції.',
       unresolvedConfig:
         'useMutation з конфігом, який правило не може резолвити (не інлайн-обʼєкт і не const у цій області) — винеси в const або поясни // cache-sync-ok.',
     },
@@ -176,6 +181,14 @@ export default {
           )
         )
           return;
+        // invalidateCollection — хелпер admin-data, що інвалідує ключі колекції
+        // (на відміну від сирого invalidateQueries) — повноцінний синк.
+        if (
+          n.type === 'CallExpression' &&
+          n.callee.type === 'Identifier' &&
+          n.callee.name === 'invalidateCollection'
+        )
+          collectionSync = true;
         if (
           n.type === 'CallExpression' &&
           n.callee.type === 'MemberExpression'

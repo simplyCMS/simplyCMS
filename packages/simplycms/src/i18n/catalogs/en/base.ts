@@ -1,14 +1,9 @@
 /**
- * Англійський каталог — частковий за контрактом (`Catalog = Partial<…>`):
- * відсутній ключ віддає українське повідомлення, а не порожній рядок.
- *
- * 🔴 Тобто «переклад є» і «переклад повний» — різні твердження, і типом друге
- * не доводиться. Повноту стереже `tests/i18n-catalog-parity.test.ts`.
- *
- * Структура модулів — дзеркало `uk/`, файл у файл: розбіжність розкладки
- * побачить той самий parity-тест.
+ * Англійська частина `base` — повна (`satisfies ShapeOf<uk base>`: рядок — рядком, множина — формами): пропущений
+ * ключ не компілюється. Структура модулів — дзеркало `uk/`, файл у файл.
  */
-import type { Catalog } from '../../types';
+import type { ShapeOf } from '../../types';
+import type { messages as ukBase } from '../uk/base';
 import { messages as app } from './app';
 import { messages as common } from './common';
 import { messages as validation } from './validation';
@@ -25,10 +20,8 @@ import { messages as orders } from './orders';
 import { messages as auth } from './auth';
 import { messages as reviews } from './reviews';
 import { messages as errors } from './errors';
-import { messages as mail } from './mail';
-import { messages as admin } from './admin/index';
 
-export const messages: Catalog = {
+export const messages = {
   ...app,
   ...common,
   ...validation,
@@ -45,6 +38,4 @@ export const messages: Catalog = {
   ...auth,
   ...reviews,
   ...errors,
-  ...mail,
-  ...admin,
-};
+} satisfies ShapeOf<typeof ukBase>;

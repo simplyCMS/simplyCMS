@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { Loader2, ChevronRight, Tag } from 'lucide-react';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -15,7 +16,10 @@ export default function PropertiesPage({
   properties: initialProperties,
 }: PropertiesPageProps = {}) {
   const t = useT();
-  const sectionProperties = entityKey(ENTITY.sectionProperties, useLocale());
+  const sectionProperties = entityKey(
+    ENTITY.sectionProperties,
+    useContentLocale(),
+  );
 
   /**
    * 🔴 Один запит замість двох. Кількість значень більше не окремий похід у

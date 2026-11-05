@@ -2,11 +2,10 @@ import { Link } from '@tanstack/react-router';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import { ordersCollection, useCollection } from 'simplycms/admin-data';
 import { useFormatPrice } from 'simplycms/react-query';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { adminPath } from '../../../lib/adminLinks';
 import { toAmount } from '../../orders/to-amount';
-import { useFormatDate } from '../../../lib/useFormatDate';
 
 const RECENT_LIMIT = 10;
 

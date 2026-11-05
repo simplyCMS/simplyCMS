@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 import { priceViewKey, VIEWER_PRICED_META } from 'simplycms/react-query';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { getProduct } from '../../server/products';
@@ -27,7 +27,7 @@ export function useProductQuery(
   initialProduct?: ProductDetailProduct,
 ) {
   const view = useViewerPriceKey();
-  const locale = useLocale();
+  const locale = useContentLocale();
   const products = entityKey(ENTITY.products, locale);
   return useQuery({
     // Ключ несе шлях з реєстру, а мова вже в сегменті 1 ключа сутності: адреса

@@ -1013,6 +1013,9 @@ export const profiles = pgTable("profiles", {
 	defaultShippingMethodId: uuid("default_shipping_method_id"),
 	defaultPickupPointId: uuid("default_pickup_point_id"),
 	registrationUtm: jsonb("registration_utm").default({}),
+	// Мова ІНТЕРФЕЙСУ адмінки (спека §19.6): код мовного пакета платформи, а не рядок
+	// `languages`, тому без FK; невідоме значення читач зводить до основної мови.
+	uiLocale: text("ui_locale"),
 }, (table) => [
 	foreignKey({
 			columns: [table.categoryId],

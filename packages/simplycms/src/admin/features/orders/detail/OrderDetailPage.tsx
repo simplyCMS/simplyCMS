@@ -1,5 +1,5 @@
 import { useParams } from '@tanstack/react-router';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useUiLocale, useT } from 'simplycms/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from 'simplycms/ui/card';
 import { adminPath } from '../../../lib/adminLinks';
 import { CardPageHeader } from '../../catalog-dictionaries/CardPageHeader';
@@ -19,7 +19,7 @@ export const ORDER_ITEMS_MAX = 500;
 /** Картка замовлення (Е5, Task 7): дані — колекції, зміна статусу — `OrderStatusControl`. */
 export default function OrderDetailPage() {
   const t = useT();
-  const locale = useLocale();
+  const locale = useUiLocale();
   const { orderId } = useParams({ strict: false }) as { orderId: string };
   const { order, items, isLoading } = useOrderDetail(orderId);
   const locked = useOrderLocked(

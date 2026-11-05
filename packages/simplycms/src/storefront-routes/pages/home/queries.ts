@@ -4,7 +4,7 @@ import {
   priceViewKey,
   VIEWER_PRICED_META,
 } from 'simplycms/react-query';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useViewerPriceKey } from 'simplycms/core/hooks/useViewerPriceKey';
 import { useSeedableInitialData } from 'simplycms/core/hooks/useViewerPriceSync';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
@@ -34,7 +34,7 @@ import type { HomeProduct, HomeSection } from './types';
 /** Популярні товари (`is_featured`) — канонічна добірка головної */
 export function useFeaturedProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
-  const locale = useLocale();
+  const locale = useContentLocale();
   const products = entityKey(ENTITY.products, locale);
   return useQuery({
     queryKey: priceViewKey(products.variant('featured'), view),
@@ -49,7 +49,7 @@ export function useFeaturedProducts(initialData?: HomeProduct[]) {
 /** Новинки — канонічна добірка головної */
 export function useNewProducts(initialData?: HomeProduct[]) {
   const view = useViewerPriceKey();
-  const locale = useLocale();
+  const locale = useContentLocale();
   const products = entityKey(ENTITY.products, locale);
   return useQuery({
     queryKey: priceViewKey(products.variant('new'), view),
@@ -62,7 +62,7 @@ export function useNewProducts(initialData?: HomeProduct[]) {
 
 /** Кореневі категорії каталогу */
 export function useRootSections(initialData?: HomeSection[]) {
-  const sections = entityKey(ENTITY.sections, useLocale());
+  const sections = entityKey(ENTITY.sections, useContentLocale());
   return useQuery({
     queryKey: sections.variant('root'),
     queryFn: (): Promise<HomeSection[]> => getRootSections(),
@@ -86,7 +86,7 @@ export function useSectionProducts(
   options?: SectionProductsOptions,
 ) {
   const view = useViewerPriceKey();
-  const locale = useLocale();
+  const locale = useContentLocale();
   return useQuery({
     // Іменований namespace `catalogKeys` — щоб добірка головної не ділила
     // ключ кешу з `useCatalogProductsQuery` (сторінка розділу): той самий

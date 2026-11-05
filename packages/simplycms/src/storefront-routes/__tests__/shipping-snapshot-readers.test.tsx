@@ -2,10 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 import ProfileOrderDetail from '../pages/ProfileOrderDetail';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /**
  * Е6а-8, Review Focus 4: замовлення показує назву й адресу точки НА МОМЕНТ
@@ -87,9 +87,9 @@ function renderPage(page: React.ReactNode) {
   });
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>{page}</TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

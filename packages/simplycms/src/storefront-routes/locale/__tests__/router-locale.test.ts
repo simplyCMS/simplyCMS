@@ -5,7 +5,9 @@ import {
 } from 'simplycms/site/request-context';
 import { createRouterLocale } from '../router';
 import { loadStorefrontRoot } from '../root-data';
-import { NO_LOCALES, type LocaleSet } from '../resolve';
+import { NO_LOCALES } from 'simplycms/domain';
+import type { LocaleSet } from 'simplycms/contracts';
+import { localeSet } from '../../../../test-harness/locale';
 
 vi.mock('../../server/root', () => ({
   getStorefrontRoot: async () => ({
@@ -15,11 +17,7 @@ vi.mock('../../server/root', () => ({
   }),
 }));
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en']);
 
 /** Виконати `fn` у контексті запиту; `locales` — те, що виставила нормалізація. */
 async function inRequest<T>(locales: LocaleSet | undefined, fn: () => T) {

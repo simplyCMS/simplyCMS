@@ -25,11 +25,18 @@
 // 🔴 Мок навмисно БЕЗ JSX: цей файл — `.ts`, і `<a>{children}</a>` у ньому не
 // зібрався б. Потрібна саме розмітка — перейменуй файл на `.tsx`.
 import { describe, it } from 'vitest';
+import { checkedContentLocale } from 'simplycms/domain/translations';
+import { resolveUiLocale } from 'simplycms/i18n';
 import { assertThemeViewsConformance } from 'simplycms/themes/conformance';
 import theme from './index';
 
+// Мова інтерфейсу рендеру — обов'язковий параметр kit-а (дефолту немає): став мову свого магазину.
+const uk = checkedContentLocale('uk');
+
 describe('тема __THEME_NAME__: контракт v3', () => {
   it('заявлені views проходять conformance', async () => {
-    await assertThemeViewsConformance(theme);
+    await assertThemeViewsConformance(theme, {
+      locale: resolveUiLocale(uk, uk),
+    });
   });
 });

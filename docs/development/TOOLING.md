@@ -114,6 +114,17 @@ pnpm db:showcase      # ВІТРИННИЙ стенд для ручного те
 pnpm live:smoke       # живий прогін: db:demo → build → server → curl+SQL (gate-b) + Playwright
                       # (воронка, сховище, кроки адмінки в сесії власника). Потребує Postgres
                       # (PG_HARNESS_URL) і Chromium; не CI — гейти релізу окремим рішенням
+                      # БД прогону унікальна (simplycms_live_smoke_<pid>_<суфікс>, дропається у finally і на SIGINT/SIGTERM):
+                      # паралельні прогони на одному кластері не заважають один одному.
+                      # 🔴 Модель паралельності (live:smoke, pilot, gates): (а) ресурс, спільний на МАШИНУ
+                      # (кластер БД, Mailpit, /tmp) — ідентичність на кожен прогін (унікальна БД, скретч
+                      # pilot на дерево, листи за унікальним одержувачем/темою), жодної глобальної
+                      # руйнівної дії (ні фіксованих імен, ні «очистити скриньку»); (б) ресурс, спільний
+                      # на ДЕРЕВО (dist/, packages/<пакет>/dist, routeTree.gen, скретч pilot) — в одному
+                      # дереві одночасно один прогін-доказ: замок `.proof-run.lock` (scripts/tree-lock.mjs)
+                      # беруть лише `pnpm gates`, `pnpm release`, `pnpm live:smoke`; другий відмовляє
+                      # одразу з pid власника. Самостійні `pnpm pilot` і `pnpm build` замка НЕ беруть —
+                      # свідома межа.
                       # Журнал: .live-smoke/last.log (+ <timestamp>.log, 10 останніх); при FAIL — шлях і рядки FAIL наприкінці.
 pnpm db:pull / db:diff
                       # Схема БД — див. docs/architecture/data-layer.md § «Міграції»
@@ -209,7 +220,7 @@ Error-зони й кастомні правила (селектори й опц�
   Зона — host `src/`, обидві роут-теки ядра (`routes/storefront`, `routes/admin`),
   `src/storefront-routes`, `src/admin`, п'ять `src/*-ui` пакета ядра, компоненти тем. У
   `routes/admin` живий React-компонент `AdminPending` використовує `useT()` (ключ
-  `admin.common.loading`).
+  `app.admin.loading`).
 - **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): п'ять модулів
   env-контракту (`SERVER_ENV_FILES`) — `seo/robots`, `seo/sitemap`, `server/root`, `api/health.tsx`,
   `src/start.ts`. Негативний контроль — `tests/eslint-server-env.test.ts`.

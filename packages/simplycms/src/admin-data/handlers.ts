@@ -1,15 +1,19 @@
 /**
  * Спільні persistence-хендлери колекцій адмінки (дедуплікація Е3): канон
  * write-back замість self-invalidation (К3-7) один раз, а не в кожній
- * колекції. Для eager це справді запис у кеш без мережі; на on-demand
- * (query-db-collection 1.3.x) write-back САМ ревалідує активних власників
- * ключів (M1) — це поведінка бібліотеки, ціна описана в TSDB-1.
+ * колекції. З query-db-collection 1.5 це запис у кеш без мережі і для
+ * eager, і для on-demand (ревалідацію M1 знято — TSDB-1), тож поля, які
+ * рахує сервер, потрапляють у кеш ЛИШЕ звідси: хендлер `await`-ить
+ * write-back рядків, повернених сервером. Гейт `tests/handler-canon.test.ts`
+ * сканує УСЮ теку `admin-data` — кожен onInsert/onUpdate/onDelete мусить
+ * мати такий write-back на кожному шляху.
  *
- * `{ refetch: false }` — опт-аут із задепрекованого авто-рефетчу хендлера
- * (зникне разом із return-значеннями в TanStack DB 1.0 — тоді прибрати);
- * від ревалідації M1 він не рятує. Гейт `tests/handler-canon.test.ts` сканує УСЮ теку
- * `admin-data` — onInsert/onUpdate/onDelete тут, і кожен
- * `return { refetch: false }` має write-back перед собою.
+ * 🔴 Межа write-back — ВЛАСНА таблиця колекції. Наслідки операції в ІНШИХ
+ * таблицях (каскади FK, резерв складу, `SET NULL`) сусідні колекції самі не
+ * побачать — і ніколи не бачили: навіть ревалідація qdc 1.3 перезапитувала
+ * лише колекцію, в яку писали. Зміни в інших таблицях — обовʼязок викликача:
+ * `invalidateCollection` зачеплених колекцій (не `utils.refetch()`: той не бачить
+ * зрізів без спостерігача — список під відкритою карткою, закритий діалог).
  *
  * 🔴 `target` — геттер, не значення: колекція ще не існує в момент, коли
  * її опції збираються, а `() => collection` напряму в об'єктному літералі
@@ -39,9 +43,9 @@
 export interface WriteBack<Row> {
   has(key: string): boolean;
   utils: {
-    writeBatch(cb: () => void): void;
-    writeUpsert(row: Row): void;
-    writeDelete(key: string): void;
+    writeBatch(cb: () => void): Promise<void>;
+    writeUpsert(row: Row): Promise<void>;
+    writeDelete(key: string): Promise<void>;
   };
 }
 
@@ -93,11 +97,10 @@ export function persistenceHandlers<Row extends { id: string }>(
             throw new Error(
               `[admin-data] ${ops.entity}: сервер повернув id "${row.id}" замість "${drafts[i]?.id}" — write-back писав би не в той ключ`,
             );
-        target().utils.writeBatch(() => {
+        await target().utils.writeBatch(() => {
           for (const row of rows) target().utils.writeUpsert(row);
         });
         await ops.afterWrite?.();
-        return { refetch: false };
       },
     }),
     ...(ops.update && {
@@ -107,11 +110,10 @@ export function persistenceHandlers<Row extends { id: string }>(
           patch: m.changes,
         }));
         const rows = await ops.update!({ data: patches as never });
-        target().utils.writeBatch(() => {
+        await target().utils.writeBatch(() => {
           for (const row of rows) target().utils.writeUpsert(row);
         });
         await ops.afterWrite?.();
-        return { refetch: false };
       },
     }),
     ...(ops.remove && {
@@ -120,11 +122,10 @@ export function persistenceHandlers<Row extends { id: string }>(
           id: m.key as string,
         }));
         await ops.remove!({ data: ids as never });
-        target().utils.writeBatch(() => {
+        await target().utils.writeBatch(() => {
           for (const { id } of ids) target().utils.writeDelete(id);
         });
         await ops.afterWrite?.();
-        return { refetch: false };
       },
     }),
   };

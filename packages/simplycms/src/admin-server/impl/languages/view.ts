@@ -9,7 +9,7 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 import { languages } from 'simplycms/schema';
 import { LANGUAGE_CODE_FORMAT } from 'simplycms/domain/translations';
 import type { Language } from 'simplycms/schema/types';
-import { hasLanguagePack } from 'simplycms/site';
+import { hasLanguagePack } from 'simplycms/i18n';
 
 // Спільні схеми й хелпери операцій мов (М1, Task 6).
 
@@ -31,6 +31,7 @@ export const toView = (r: Language): View => ({
   status: r.status,
   isDefault: r.isDefault,
   sortOrder: r.sortOrder,
+  // Пакет шукається й за базовою мовою (`en-GB` → `en`) і має містити `base` та `mail`.
   hasPack: hasLanguagePack(r.code),
 });
 

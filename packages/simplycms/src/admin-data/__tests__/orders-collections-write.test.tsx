@@ -3,20 +3,16 @@
 /**
  * Колекція замовлень лише на ЧИТАННЯ (Е5-10): `insert` кидає, а повернений
  * `changeOrderStatus` рядок, записаний write-back-ом (К3-7), доходить і до
- * зрізу картки, і до сторінки списку. Ревалідація (TSDB-1) віддає стан
- * сервера, який уже несе новий статус.
+ * зрізу картки, і до сторінки списку — БЕЗ перезапиту: сервер-стаб
+ * навмисно лишається зі старим статусом, тож новий статус у зрізах може
+ * прийти лише з write-back.
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { eq, useLiveQuery } from '@tanstack/react-db';
-import {
-  listOrders,
-  makeOrder,
-  reset,
-  server,
-} from './support/orders-server-stub';
+import { listOrders, makeOrder, reset } from './support/orders-server-stub';
 import { SAME, setup } from './support/orders-setup';
-import { awaitRevalidation } from './support/revalidation';
+import { expectNoRefetch } from './support/revalidation';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -61,13 +57,6 @@ describe('колекції замовлень (Е5-10): лише читання 
     // Явно: рядок списку — НЕ рядок картки (o0001), тож write-back доводиться
     // для двох різних зрізів, а не для одного рядка двічі.
     expect(shown.id).toBe('o0000');
-    // Сервер мав би вже зберегти новий статус (його і віддає changeOrderStatus):
-    // після write-back ревалідація (TSDB-1) читає саме цей стан.
-    server.orders = server.orders.map((o) =>
-      o.id === shown.id || o.id === 'o0001'
-        ? { ...o, statusId: 's-cancelled' }
-        : o,
-    );
     act(() => {
       orders.utils.writeBatch(() => {
         orders.utils.writeUpsert({ ...shown, statusId: 's-cancelled' });
@@ -82,10 +71,8 @@ describe('колекції замовлень (Е5-10): лише читання 
       const row = result.current.list.data.find((r) => r.id === shown.id);
       expect(row?.statusId).toBe('s-cancelled');
     });
-    // ціна TSDB-1: +N запитів після запису (сторінка, tie-запит межі, картка).
-    await awaitRevalidation(listOrders, listCalls);
-    expect(listOrders.mock.calls.length).toBeLessThanOrEqual(listCalls + 3);
-    // Результат: після ревалідації зрізи лишаються з новим статусом.
+    await expectNoRefetch(listOrders, listCalls);
+    // Зрізи тримають новий статус (стаб сервера його не знає — лише write-back).
     expect(result.current.card.data?.statusId).toBe('s-cancelled');
     expect(
       result.current.list.data.find((r) => r.id === shown.id)?.statusId,

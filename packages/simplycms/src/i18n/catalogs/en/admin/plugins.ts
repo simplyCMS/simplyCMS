@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Розширення (плагіни) — дзеркало `uk/admin/plugins.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.plugins.registerFailed':
     'Plugin "{name}" failed to register its hooks and was disabled.',
   'admin.plugins.registerFailedStuck':
@@ -53,4 +51,4 @@ export const messages: Catalog = {
   'admin.plugins.installFailed': 'Installation failed',
   'admin.plugins.requiredFields': 'Fill in the required fields',
   'admin.plugins.requiredFieldsHint': 'Name and display name are required',
-};
+} satisfies Record<string, string>;

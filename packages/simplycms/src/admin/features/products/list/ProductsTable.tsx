@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { productsCollection, useCollection } from 'simplycms/admin-data';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  invalidateCollection,
+  productsCollection,
+  useCollection,
+} from 'simplycms/admin-data';
 import { removeProduct } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
@@ -46,6 +51,7 @@ export default function ProductsTable({
   const t = useT();
   const navigate = useNavigate();
   const products = useCollection(productsCollection);
+  const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<ProductListRow | null>(null);
 
   const openEdit = (productId: string) =>
@@ -60,14 +66,14 @@ export default function ProductsTable({
       await removeProduct({
         data: { id: row.id, expectedVersion: row.version },
       });
-      products.utils.writeDelete(row.id);
+      await products.utils.writeDelete(row.id);
       toast.success(t('admin.products.deleted'));
     } catch (e: unknown) {
       const key = adminErrorKey(e);
       toast.error(
         key ? t(key) : `${t('common.error')} ${(e as Error).message}`,
       );
-      await products.utils.refetch();
+      await invalidateCollection(queryClient, productsCollection);
     }
   };
 

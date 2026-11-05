@@ -13,14 +13,13 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import type { DiscountRejectionReason } from 'simplycms/contracts';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import { stubDom } from '../../__tests__/render-support';
 import { REJECTION_REASON_KEY } from '../rejection-reasons';
 
 stubDom();
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const m = vi.hoisted(() => ({
   diagnosePrice: vi.fn(),
   searchProductsForOrder: vi.fn(),
@@ -33,6 +32,7 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PriceValidatorPage from '../PriceValidatorPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 const REASONS = Object.keys(REJECTION_REASON_KEY) as DiscountRejectionReason[];
 const diagnosis = (reasons: DiscountRejectionReason[]) => ({
@@ -62,7 +62,7 @@ async function runWith(reasons: DiscountRejectionReason[]) {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
       <EngineProvider value={ENGINE}>
-        <I18nProvider locale="uk">{children}</I18nProvider>
+        <TestI18nProvider>{children}</TestI18nProvider>
       </EngineProvider>
     </QueryClientProvider>
   );

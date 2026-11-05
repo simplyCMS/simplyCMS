@@ -3,6 +3,11 @@ import { resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { SCANNED_ROOTS, scanAll, sourceFiles } from './i18n-coverage/scan';
 import {
+  partKeyFiles,
+  partKeyViolations,
+  partKeyViolationsIn,
+} from './i18n-coverage/part-keys';
+import {
   ALLOWLIST,
   PENDING_FILES,
   type DevKind,
@@ -198,5 +203,79 @@ describe('i18n: хардкоджені рядки інтерфейсу', () => {
       files.filter((f) => f.startsWith('packages/simplycms/src/checkout-ui/'))
         .length,
     ).toBeGreaterThan(10);
+  });
+});
+
+/**
+ * Частини каталогу (І43): `admin`-ключі — лише в адмінці, `mail`-ключі — лише в модулі
+ * листів. Інакше вітрина, що вантажить тільки `base`, показала б голий ключ.
+ */
+describe('i18n: ключі частин каталогу — лише у своїх коренях', () => {
+  it('жоден ключ admin/mail не лежить поза своїм коренем', () => {
+    const bad = partKeyViolations(REPO).map(
+      (v) => `${v.file}:${v.line} [${v.part}] ${v.key}`,
+    );
+
+    expect(bad).toEqual([]);
+  });
+
+  it('скан бачить і адмінку, і вітрину (не порожній набір)', () => {
+    const files = partKeyFiles(REPO);
+
+    expect(
+      files.some((f) => f.startsWith('packages/simplycms/src/admin/')),
+    ).toBe(true);
+    expect(
+      files.some((f) =>
+        f.startsWith('packages/simplycms/src/storefront-routes/'),
+      ),
+    ).toBe(true);
+    expect(files.some((f) => f.includes('/i18n/catalogs/'))).toBe(false);
+  });
+
+  it('негативний контроль: ключ admin у вітрині — порушення', () => {
+    const found = partKeyViolationsIn(
+      'packages/simplycms/src/storefront-routes/pages/X.tsx',
+      "export const k = 'admin.common.title';",
+    );
+
+    expect(found.map((v) => [v.part, v.key])).toEqual([
+      ['admin', 'admin.common.title'],
+    ]);
+  });
+
+  it('негативний контроль: ключ admin в admin-server (не адмінка) — порушення', () => {
+    expect(
+      partKeyViolationsIn(
+        'packages/simplycms/src/admin-server/x.ts',
+        "export const k = 'admin.common.title';",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('негативний контроль: ключ mail у вітрині — порушення', () => {
+    const found = partKeyViolationsIn(
+      'packages/simplycms/src/storefront-routes/pages/X.tsx',
+      "export const k = 'mail.reset.subject';",
+    );
+
+    expect(found.map((v) => [v.part, v.key])).toEqual([
+      ['mail', 'mail.reset.subject'],
+    ]);
+  });
+
+  it('свої корені — без порушень', () => {
+    expect(
+      partKeyViolationsIn(
+        'packages/simplycms/src/admin/layouts/X.tsx',
+        "export const k = 'admin.common.title';",
+      ),
+    ).toEqual([]);
+    expect(
+      partKeyViolationsIn(
+        'packages/simplycms/src/mail/render/x.ts',
+        "export const k = 'mail.reset.subject';",
+      ),
+    ).toEqual([]);
   });
 });

@@ -33,11 +33,32 @@ beforeEach(() => {
   }
 });
 
+/** Справжній чанк пакета з сорсмапою: джерело канарки вмісту (gate читає лише реальні файли). */
+function writeChunk(name: string, sources: string[], withMap = true): string {
+  const file = join(store, 'node_modules/simplycms/dist', name);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, '//#region src/stub.ts\n');
+  if (withMap) writeFileSync(`${file}.map`, JSON.stringify({ sources }));
+  return file;
+}
+
 afterEach(() => {
   rmSync(store, { recursive: true, force: true });
 });
 
+/** Ліниві каталоги ядра: чанки `base-<хеш>`, досяжні лише через `import()`. */
+const CATALOG_BASE = `${NM}/simplycms/dist/base-C2UX6O0_.js`;
+const LAZY_CATALOGS: Record<string, Chunk> = {
+  'base.js': { modules: [CATALOG_BASE], isEntry: false, imports: [] },
+};
+
 const run = (stats: Record<string, Chunk>) => {
+  const canary = writeChunk('canary.js', ['../src/stub.ts']);
+  stats = {
+    ...LAZY_CATALOGS,
+    'canary.js': { modules: [canary], isEntry: false, imports: [] },
+    ...stats,
+  };
   writeFileSync(join(store, 'bundle-stats.client.json'), JSON.stringify(stats));
   return gateBundle(store);
 };
@@ -93,5 +114,83 @@ describe('Gate C: важкі підсистеми поза initial-чанком'
       'admin.js': { modules: [ADMIN_MODULE], isEntry: false, imports: [] },
     });
     expect(result.ok).toBe(true);
+  });
+});
+
+describe('Gate C: каталоги ядра лише через import() (І43)', () => {
+  const ADMIN_CATALOG = `${NM}/simplycms/dist/admin-BcKAsf47.js`;
+
+  it('чанк каталогу, статично імпортований з entry, — FAIL', () => {
+    const result = run({
+      'entry.js': { ...entry(), imports: ['base.js'] },
+    });
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL каталоги ядра/);
+  });
+
+  it('каталог частини admin у статичному графі entry — FAIL', () => {
+    const result = run({
+      'entry.js': { ...entry(), imports: ['admin.js'] },
+      'admin.js': { modules: [ADMIN_CATALOG], isEntry: false, imports: [] },
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('форма теками (i18n/catalogs) ловиться так само', () => {
+    const result = run({
+      'entry.js': entry([`${NM}/simplycms/dist/i18n/catalogs/en/base.js`]),
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('чанк `admin-error-<хеш>` — не каталог', () => {
+    const result = run({
+      'entry.js': entry([`${NM}/simplycms/dist/admin-error-DI5_n184.js`]),
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it('жодного каталогу в бандлі (зламана назва чанка) — FAIL, а не вакуумний OK', () => {
+    writeFileSync(
+      join(store, 'bundle-stats.client.json'),
+      JSON.stringify({ 'entry.js': entry() }),
+    );
+    const result = gateBundle(store);
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(
+      /FAIL каталоги ядра .*: у бандлі 0/,
+    );
+  });
+
+  it('каталог, ВБУДОВАНИЙ у чанк імпортера, ловиться за сорсмапою — навіть мініфікований без //#region', () => {
+    const chunk = writeChunk('i18n/index.js', [
+      '../../src/i18n/registry.ts',
+      '../../src/i18n/catalogs/uk/admin/banners.ts',
+    ]);
+    writeFileSync(chunk, 'const a=1;'); // мініфікація: коментарів `//#region` немає
+    const result = run({ 'entry.js': entry([chunk]) });
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL каталоги ядра/);
+  });
+
+  it('чанк, у мапі якого немає каталогів, — OK', () => {
+    const chunk = writeChunk('i18n/index.js', ['../../src/i18n/registry.ts']);
+    expect(run({ 'entry.js': entry([chunk]) }).ok).toBe(true);
+  });
+
+  it('чанк без мапи: запасний шлях — маркер //#region', () => {
+    const chunk = writeChunk('i18n/index.js', [], false);
+    writeFileSync(chunk, '//#region src/i18n/catalogs/uk/admin/banners.ts\n');
+    expect(run({ 'entry.js': entry([chunk]) }).ok).toBe(false);
+  });
+
+  it('канарка: жоден чанк пакета не віддає вихідних шляхів — FAIL, а не сліпий OK', () => {
+    writeFileSync(
+      join(store, 'bundle-stats.client.json'),
+      JSON.stringify({ ...LAZY_CATALOGS, 'entry.js': entry() }),
+    );
+    const result = gateBundle(store);
+    expect(result.ok).toBe(false);
+    expect(result.details.join('\n')).toMatch(/FAIL канарка вмісту/);
   });
 });

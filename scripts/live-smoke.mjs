@@ -47,6 +47,12 @@ import { startStore, freePort } from './pilot-pack/build.mjs';
 import { gateHttp } from './pilot-pack/gate-b.mjs';
 import { applyProbe } from './pilot-pack/apply-probe.mjs';
 import { runFunnel } from './live-smoke/funnel.mjs';
+import {
+  collectConsoleErrors,
+  runHeadTitleChecks,
+} from './live-smoke/head-console.mjs';
+import { runHydrationIdentityChecks } from './live-smoke/hydration-identity.mjs';
+import { PRODUCT_SLUG } from './live-smoke/selectors.mjs';
 import { runOwnerSteps } from './live-smoke/owner-steps.mjs';
 import { runCsrfChecks } from './live-smoke/csrf.mjs';
 import { runErrorMaskChecks } from './live-smoke/error-mask.mjs';
@@ -57,13 +63,14 @@ import { runLocaleChecks } from './live-smoke/locale-context.mjs';
 import { withDbName } from '../packages/simplycms/test-harness/pg/apply.mjs';
 import { runLogged } from './live-smoke/log.mjs';
 import { harnessMailEnv, loadHarnessEnv } from './harness-env.mjs';
-import { clearMailpit } from './live-smoke/mail.mjs';
 import {
   runMailChecks,
   runSignupConfirmation,
 } from './live-smoke/mail-steps.mjs';
 import { signUp } from './live-smoke/register.mjs';
 import { withClientIps } from './live-smoke/client-ip.mjs';
+import { acquireTreeLock } from './tree-lock.mjs';
+import { dropDatabaseQuietly, uniqueDbName } from './unique-db-name.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -72,7 +79,16 @@ const ROOT = join(import.meta.dirname, '..');
 if (!process.env.LIVE_SMOKE_LOGGED) {
   process.exit(await runLogged(ROOT, import.meta.filename));
 }
-const DB_NAME = 'simplycms_live_smoke';
+// 🔴 Унікальна БД на прогін: demo-db дропає БД з тим самим імʼям, тож два паралельні
+// прогони на одному кластері з фіксованим імʼям скидали БД один одному.
+// Замок дерева (`dist/` спільний): другий прогін у цьому ж дереві відмовляє одразу.
+try {
+  acquireTreeLock(ROOT, 'pnpm live:smoke');
+} catch (e) {
+  console.error(`[live-smoke] ${e.message}`);
+  process.exit(1);
+}
+const DB_NAME = uniqueDbName('simplycms_live_smoke');
 
 // `.env.harness` від `pnpm harness:up`; явно задана змінна має пріоритет.
 loadHarnessEnv(ROOT);
@@ -112,35 +128,15 @@ const printRows = () => {
 };
 
 async function main() {
-  stage('чиста демо-БД');
-  // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
-  execFileSync(
-    'node',
-    ['scripts/demo-db.mjs', '--url', adminUrl, '--name', DB_NAME],
-    { cwd: ROOT, stdio: 'inherit' },
-  );
-  const dbUrl = withDbName(adminUrl, DB_NAME);
-  // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
-  // про серверний sanitize-html червоніє (демо-сід чистий).
-  await applyProbe(dbUrl);
-  const port = await freePort();
-  // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
-  // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
-  // лише для відсутніх ключів (M9 аудиту r1) — process.env виграє.
-  const env = {
-    DATABASE_URL: dbUrl,
-    BETTER_AUTH_SECRET: randomBytes(32).toString('hex'),
-    BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
-    VITE_SITE_URL: `http://127.0.0.1:${port}`,
-  };
-
   let server;
   let browser;
   const shutdown = async () => {
     // 🔴 Один шлях прибирання для finally і для сигналів: падіння чи Ctrl+C
-    // не лишають ні Chromium, ні server.mjs.
+    // не лишають ні Chromium, ні server.mjs, ні БД прогону (дроп — після зупинки
+    // сервера, інакше його зʼєднання б'ються об щойно скинуту БД).
     await browser?.close().catch(() => {});
     server?.stop();
+    await dropDatabaseQuietly(adminUrl, DB_NAME);
   };
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.once(signal, () => {
@@ -149,14 +145,36 @@ async function main() {
   }
 
   try {
+    stage('чиста демо-БД');
+    // 1. Чиста демо-БД (той самий скрипт, що й у доках; існуючу дропає сам).
+    execFileSync(
+      'node',
+      ['scripts/demo-db.mjs', '--url', adminUrl, '--name', DB_NAME],
+      { cwd: ROOT, stdio: 'inherit' },
+    );
+    const dbUrl = withDbName(adminUrl, DB_NAME);
+    // Той самий оверлей-проба санітайзера, що й у пілоті: без неї крок `gateHttp`
+    // про серверний sanitize-html червоніє (демо-сід чистий).
+    await applyProbe(dbUrl);
+    const port = await freePort();
+    // 🔴 Явний env для збірки й сервера: shell/CI можуть нести власні
+    // DATABASE_URL/BETTER_AUTH_URL, а server.mjs і loadEnv беруть .env.local
+    // лише для відсутніх ключів (M9 аудиту r1) — process.env виграє.
+    const env = {
+      DATABASE_URL: dbUrl,
+      BETTER_AUTH_SECRET: randomBytes(32).toString('hex'),
+      BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
+      VITE_SITE_URL: `http://127.0.0.1:${port}`,
+    };
+
     stage('збірка й старт сервера');
     execFileSync('pnpm', ['build'], {
       cwd: ROOT,
       stdio: 'inherit',
       env: { ...process.env, ...env },
     });
-    // Чиста скринька ДО старту: листи цього прогону — єдині в ній.
-    await clearMailpit();
+    // Скриньку НЕ чистимо: Mailpit спільний на машину, а листи шукаються за
+    // унікальним одержувачем/темою; DELETE усіх листів ламав паралельні прогони.
     server = await startStore(ROOT, port, {
       ...env,
       SMTP_URL: mailEnv.SMTP_URL,
@@ -197,7 +215,23 @@ async function main() {
       if (r.method() === 'POST' && pathname.startsWith('/_serverFn/'))
         serverFnPaths.add(pathname);
     });
+    // `console.error` — лише на сторінках воронки: далі той самий `page` ходить сторінками
+    // з навмисними помилками (CSRF, маскування), їхній шум — не дефект гідрації.
+    const consoleErrors = collectConsoleErrors(page);
     const { email } = await runFunnel({ page, base, dbUrl, check });
+    await runHeadTitleChecks({ page, base, productSlug: PRODUCT_SLUG, check });
+    await runHydrationIdentityChecks({
+      browser,
+      base,
+      productSlug: PRODUCT_SLUG,
+      check,
+    });
+    const unexpected = consoleErrors.stop();
+    check(
+      'console.error на сторінках воронки (гідрація без suspense/mismatch)',
+      unexpected.length === 0,
+      unexpected.length === 0 ? '0' : unexpected.join(' | '),
+    );
 
     stage('пошта');
     // 3.1. Пошта (К3-Е8): лист замовлення, скидання пароля, підтвердження

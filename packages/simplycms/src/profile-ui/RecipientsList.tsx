@@ -16,7 +16,7 @@ import {
   useRecipientBook,
   type RecipientRow,
 } from 'simplycms/core/hooks/useRecipientBook';
-import { useT } from 'simplycms/i18n';
+import { plural, useT } from 'simplycms/i18n';
 import { Checkbox } from 'simplycms/ui/checkbox';
 
 /**
@@ -215,12 +215,7 @@ export function RecipientsList() {
                     )}
                     {r.usage_count !== undefined && r.usage_count > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {t(
-                          r.usage_count === 1
-                            ? 'profile.usedInOrders.one'
-                            : 'profile.usedInOrders.many',
-                          { count: r.usage_count },
-                        )}
+                        {plural(t, 'profile.usedInOrders', r.usage_count)}
                       </p>
                     )}
                   </div>

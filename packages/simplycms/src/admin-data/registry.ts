@@ -1,4 +1,5 @@
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import type { EntityName } from 'simplycms/contracts/entities';
 
 /**
  * Реєстр колекцій, ключований QueryClient (патерн business-scope з
@@ -11,7 +12,8 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query';
  * ReturnType<typeof createCollection> — дефект старої редакції).
  */
 export interface CollectionDef<C> {
-  readonly id: string;
+  /** Сутність реєстру: її `collectionKey` — ключ колекції (`invalidateCollection`). */
+  readonly id: EntityName;
   readonly create: (queryClient: QueryClient) => C;
 }
 

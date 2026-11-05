@@ -1,13 +1,11 @@
-import type { Catalog } from '../../types';
+import type { CatalogValue } from '../../types';
 
 /** Кошик — дзеркало `uk/cart.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'cart.title': 'Cart',
-  'cart.items': 'Items ({count})',
-  // English has only 2 plural forms; "few"/"many" collapse onto the same word.
-  'cart.itemsOne': 'item',
-  'cart.itemsFew': 'items',
-  'cart.itemsMany': 'items',
+  'cart.itemsTitle': 'Items ({count})',
+  // English has only 2 plural forms (one/other), as `Intl.PluralRules` says.
+  'cart.items': { one: '{count} item', other: '{count} items' },
   'cart.clear': 'Clear cart',
   'cart.empty.title': 'Your cart is empty',
   'cart.empty.description':
@@ -29,4 +27,4 @@ export const messages: Catalog = {
   'cart.summary.shippingHint': 'Calculated at checkout',
   'cart.summary.total': 'Total',
   'cart.summary.checkout': 'Place order',
-};
+} satisfies Record<string, CatalogValue>;

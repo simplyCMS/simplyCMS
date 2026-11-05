@@ -94,7 +94,7 @@ export function usePropertyOptionCard(
         })
       : optionsCol.insert(toOptionDraft(v, entityId, propertyId, new Date()));
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;

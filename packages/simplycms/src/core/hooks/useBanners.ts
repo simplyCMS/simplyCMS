@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { getBanners } from '../lib/banners';
 
 export type { Banner, BannerButton } from 'simplycms/contracts';
@@ -15,7 +15,7 @@ export type { Banner, BannerButton } from 'simplycms/contracts';
  * відвідувачів, а не по локальному часу кожного.
  */
 export function useBanners(placement: string, sectionId?: string) {
-  const banners = entityKey(ENTITY.banners, useLocale());
+  const banners = entityKey(ENTITY.banners, useContentLocale());
   const query = useQuery({
     queryKey: banners.variant(placement, sectionId ?? undefined),
     queryFn: () =>

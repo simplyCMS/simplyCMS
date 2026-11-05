@@ -16,7 +16,7 @@ import { CMSProvider } from 'simplycms/core/providers/CMSProvider';
 import { bootstrapPlugins } from 'simplycms/plugins/bootstrap';
 import { bootstrapThemes } from 'simplycms/themes/bootstrapThemes';
 import { useAuth } from 'simplycms/core/hooks/useAuth';
-import { I18nProvider } from 'simplycms/i18n';
+import { I18nProvider, useUiCatalogs } from 'simplycms/i18n';
 import { ClientEngineProvider } from '../engine-provider';
 import { RouteError } from '../route-error';
 import config from '../../simplycms.config';
@@ -77,10 +77,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootComponent,
 });
 
+const ROOT_PARTS = ['base'] as const;
+
 function RootComponent() {
-  const { activeThemeName, storeProfile, locale, languages } =
+  const { activeThemeName, storeProfile, locale, ui, languages } =
     Route.useLoaderData();
   const { queryClient } = Route.useRouteContext();
+  // Лоадер уже дочекався `base` (`loadStorefrontRoot`), тож `use` розгортає її синхронно.
+  const catalogs = useUiCatalogs(ui.locale, ROOT_PARTS);
 
   return (
     <html {...htmlLangAttrs(locale)} suppressHydrationWarning>
@@ -101,7 +105,11 @@ function RootComponent() {
       </head>
       <body className="font-sans antialiased">
         {/* I18nProvider — над усіма групами роутів (storefront, auth, protected) */}
-        <I18nProvider locale={locale} fallback={languages.primary}>
+        <I18nProvider
+          locale={ui.locale}
+          fallback={ui.fallback}
+          catalogs={catalogs}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

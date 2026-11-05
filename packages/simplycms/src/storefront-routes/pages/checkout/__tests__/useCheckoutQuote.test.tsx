@@ -5,6 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CartProvider } from 'simplycms/react-query';
 import { useCheckoutQuote } from '../useCheckoutQuote';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../../test-harness/content-locale'),
+);
+
 /**
  * Рев'ю I2/I3: коли метод/точку/місто ще не обрано, `prepareCheckout`
  * відмовляє ДЕТЕРМІНОВАНО (порожній `shippingMethodId` навіть не пройде
@@ -17,9 +22,6 @@ const quoteCheckoutMock = vi.fn();
 vi.mock('../../../server/checkout-quote', () => ({
   quoteCheckout: (...args: unknown[]) => quoteCheckoutMock(...args),
 }));
-
-// Мова сторінки йде в запит квоти (назви позицій); провайдера i18n тест не піднімає.
-vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <CartProvider>{children}</CartProvider>

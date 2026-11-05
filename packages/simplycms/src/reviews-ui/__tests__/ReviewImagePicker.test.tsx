@@ -2,9 +2,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode, useState } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ACCEPT_ATTRIBUTE } from 'simplycms/domain/media';
 import { ReviewImagePicker } from '../ReviewImagePicker';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 afterEach(cleanup);
 
@@ -49,9 +49,9 @@ function Harness({
 
 const mount = (maxBytes?: number, initial?: File[]) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <Harness maxBytes={maxBytes} initial={initial} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 const input = () => screen.getByTestId('review-images-input');
@@ -119,7 +119,7 @@ describe('ReviewImagePicker', () => {
     const a = img('a.png');
     const b = img('b.png');
     const view = (files: File[]) => (
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <ReviewImagePicker
           files={files}
           onFilesChange={() => {}}
@@ -127,7 +127,7 @@ describe('ReviewImagePicker', () => {
           accept={ACCEPT_ATTRIBUTE}
           maxBytes={1024}
         />
-      </I18nProvider>
+      </TestI18nProvider>
     );
     const { container, rerender } = render(view([a]));
     expect(created).toEqual(['blob:mock-0']);
@@ -145,9 +145,9 @@ describe('ReviewImagePicker', () => {
   it('StrictMode: кожен створений URL ревокнуто, крім живого; після розмонтування — усі', () => {
     const { unmount } = render(
       <StrictMode>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <Harness initial={[img('a.png')]} />
-        </I18nProvider>
+        </TestI18nProvider>
       </StrictMode>,
     );
     // Подвійний ефект StrictMode: створено 2, перший відкликано, живий лишається.

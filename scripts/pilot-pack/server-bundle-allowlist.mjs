@@ -20,8 +20,6 @@ export const SERVER_BUNDLE_ALLOWLIST = {
   '@better-fetch/fetch': 'dual, лише ESM-імпорти (better-auth)',
   '@noble/ciphers': 'ESM-only',
   '@noble/hashes': 'ESM-only',
-  '@opentelemetry/semantic-conventions':
-    'CJS без ESM-входу в exports; ESM-імпорти беруть його як є',
   '@simplycms/plugin-faq':
     'ESM-only; плагін — частина збірки магазину, noExternal Start (peer на react-start)',
   '@tanstack/history': 'dual, лише ESM-імпорти (router-core)',
@@ -45,7 +43,6 @@ export const SERVER_BUNDLE_ALLOWLIST = {
   domutils: 'ESM-only',
   entities: 'ESM-only',
   'escape-string-regexp': 'CJS без exports: єдиний вхід',
-  h3: 'ESM-only',
   htmlparser2:
     'ESM-only; require() з sanitize-html виходить на єдиний (ESM) вхід',
   'is-plain-object':
@@ -67,5 +64,4 @@ export const SERVER_BUNDLE_ALLOWLIST = {
   'seroval-plugins': 'dual, лише ESM-імпорти TanStack',
   simplycms: 'ESM-only (dist); ядро — noExternal Start (peer на react-start)',
   'source-map-js': 'CJS без exports: єдиний вхід',
-  srvx: 'ESM-only',
 };

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { QuoteCheckoutResult } from 'simplycms/contracts';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useCart } from 'simplycms/react-query';
 import { quoteCheckout } from '../../server/checkout-quote';
 import { buildQuoteInput } from './build-quote-input';
@@ -29,7 +29,7 @@ export function useCheckoutQuote({
   userKey,
 }: CheckoutQuoteParams): CheckoutQuoteState {
   // Назви позицій у квоті — мовою сторінки: ті самі, що запише оформлення (М1).
-  const locale = useLocale();
+  const locale = useContentLocale();
   // Ознака гідратації — ОДНА на застосунок (Task 12, рішення А): та сама, за
   // якою гейтяться редирект і рендер-гілка порожнього кошика в Checkout.tsx.
   // Локальний `useSyncExternalStore` тут БУВ тимчасовим містком (Task 11) —

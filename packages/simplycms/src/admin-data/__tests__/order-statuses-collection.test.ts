@@ -64,7 +64,7 @@ describe('колекція order_statuses', () => {
       },
     ];
     const tx = c.insert(rows as never);
-    await tx.isPersisted.promise;
+    await tx.when('settled');
     expect(insertMock).toHaveBeenCalledTimes(1);
     expect(insertMock.mock.calls[0][0].data).toHaveLength(2);
   });
@@ -85,7 +85,7 @@ describe('колекція order_statuses', () => {
     expect(c.has(id), 'оптимістичний рядок не зʼявився в тому ж тіку').toBe(
       true,
     );
-    await tx.isPersisted.promise;
+    await tx.when('settled');
     expect(c.has(id), 'після персисту рядок зник').toBe(true);
     expect(c.get(id)?.createdAt, 'write-back не доніс серверних полів').toEqual(
       new Date('2026-01-01'),
@@ -113,7 +113,7 @@ describe('колекція order_statuses', () => {
         sortOrder: 10 + i,
       })) as never,
     );
-    await tx.isPersisted.promise;
+    await tx.when('settled');
     for (const id of ids) {
       expect(c.has(id), `рядок ${id} відсутній у кеші після write-back`).toBe(
         true,
@@ -146,7 +146,7 @@ describe('колекція order_statuses', () => {
       color: null,
       sortOrder: 0,
     } as never);
-    await expect(tx.isPersisted.promise).rejects.toThrow(/id/);
+    await expect(tx.when('settled')).rejects.toThrow(/id/);
     expect(c.has(optimisticId), 'оптимістичний рядок лишився').toBe(false);
     expect(c.has('server-generated'), 'серверний двійник потрапив').toBe(false);
   });

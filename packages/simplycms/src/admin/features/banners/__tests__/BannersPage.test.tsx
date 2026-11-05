@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { BANNERS, stubDom, wrapper } from './render-support';
 
 stubDom();
@@ -28,8 +27,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import BannersPage from '../BannersPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const rowOf = (name: string) => screen.getByText(name).closest('tr')!;
 
 beforeEach(() => {

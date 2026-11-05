@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { productPath } from 'simplycms/domain';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY } from 'simplycms/contracts/entities';
 import ReviewCardPage from '../card/ReviewCardPage';
 import {
@@ -15,6 +14,7 @@ import {
   stubDom,
   ui,
 } from './render-support';
+import { ukT } from '../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -34,7 +34,7 @@ vi.mock('@tanstack/react-router', async () => {
   };
 });
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 beforeEach(() => {
   stubDom();

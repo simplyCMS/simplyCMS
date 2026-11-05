@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Дзеркало `uk/admin/customerCategories.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.customerCategories.categories.makeDefault': 'Make default',
   'admin.customerCategories.categories.defaultSet': 'Default category changed',
   'admin.customerCategories.categories.defaultLocked':
@@ -24,4 +22,4 @@ export const messages: Catalog = {
     'Fill in every condition: numeric fields accept numbers only',
   'admin.customerCategories.rules.field.utmSource': 'UTM Source',
   'admin.customerCategories.rules.field.utmCampaign': 'UTM Campaign',
-};
+} satisfies Record<string, string>;

@@ -4,7 +4,8 @@ import {
   MAX_CART_LINES,
   MAX_LINE_QUANTITY,
 } from 'simplycms/contracts/cart-limits';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useT } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { useCart, type CartItem } from 'simplycms/react-query';
 import { useToast } from 'simplycms/core/hooks/use-toast';
 import { Button } from 'simplycms/ui/button';
@@ -38,7 +39,7 @@ export function ProductAddToCart({
   inStock,
 }: ProductAddToCartProps) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useContentLocale();
   const { addItem } = useCart();
   const { toast } = useToast();
 

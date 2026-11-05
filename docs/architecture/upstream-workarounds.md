@@ -46,71 +46,45 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 
 ## Активні
 
-### TSDB-1 · write-back колекції чіпає ВСІ ключі під префіксом, а на on-demand ще й коштує мережею
+### TSDB-1 · write-back eager-колекції пише в УСІ ключі під префіксом колекції
 
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/query-db-collection` (+ `@tanstack/db`) |
 | Знайдено на | 1.2.11 (2026-09-23) |
-| Перевірено на версії | `query-db-collection` 1.3.4 / `@tanstack/db` 0.11.3 — 2026-10-05 |
+| Перевірено на версії | `query-db-collection` 1.5.1 / `@tanstack/db` 1.0.0-rc.1.2 — 2026-11-04 |
 | Статус апстріму | не повідомлено (рішення власника) |
-| Розтяжка: немає | поведінка write-back — рантаймова (ревалідація ключів), статично з коду бібліотеки не читається; сторожі — `collection-key-storefront-isolation.test.ts` і контрольний кейс I1 |
+| Розтяжка: немає | поведінка write-back — рантаймова (розкладка по ключах кешу), статично з коду бібліотеки не читається; сторожі — `collection-key-storefront-isolation.test.ts` (контрольні кейси) і `on-demand-inactive-key.test.tsx` |
 
-**Поточна поведінка (1.3.4 / db 0.11.3).** `writeUpsert`/`writeDelete` →
-`updateCacheData` (`src/query.ts:~3168-3300`) шукає ключі ПРЕФІКСНО
-(`findAll({ queryKey: baseKey })`), але робить різне залежно від режиму:
-- **eager — без змін:** одна повна заплатка `setQueryData` у кожен ключ під
-  префіксом, ключ вітрини під префіксом ПЕРЕЗАПИСУЄТЬСЯ адмінським набором.
-- **on-demand:** снапшот колекції не зберігає форму зрізу (предикат, порядок,
-  вікно), тож бібліотека не патчить, а **ревалідує** кожен активно володіний
-  ключ (`observer.refetch()`); решту ключів під префіксом **видаляє**
-  (`queryCache.remove`), якщо на них немає чужого спостерігача, а якщо є
-  (напр. вітринний `useQuery` на ключі-порушнику) — інвалідує й
-  **перезапитує** (`src/query.ts:~3301-3335`, пінено контрольним кейсом
-  I1). Чужий ключ вітрини під префіксом тепер ВИДАЛЯЄТЬСЯ або
-  перезапитується (раніше перезаписувався) — висновок про розділення ключів
-  незмінний.
+**Поточна поведінка (1.5.1 / db 1.0.0-rc.1.2).** `writeUpsert`/`writeDelete` →
+`updateCacheData` → `writeDirectCache` (`dist/esm/query.js:~2338-2430`,
+з 1.4.4) ПАТЧИТЬ кеш без мережі, але по-різному залежно від режиму:
+- **eager:** у КОЖЕН відстежуваний ключ під префіксом `[entity, 'list']`
+  бібліотека патчить присутні рядки й ДОПИСУЄ прийняті, яких там немає.
+  Ключ вітрини під префіксом отримує адмінський рядок поруч зі своїми.
+  Це той самий клас, що й на 1.2.11 (тоді ключ перезаписувався цілком).
+- **on-demand:** патчить рядок лише в тих ключах, де він присутній (активних
+  і неактивних), і нічого не перезапитує. Ключ під префіксом без
+  спостерігача — видаляється. Ключ із ЧУЖИМ спостерігачем — лишається цілим
+  і без перезапиту.
 
-**Симптом 1.2.11 (знято бібліотекою).** (а) Перейменований у картці товар →
-повернення до списку → у списку лише він: неактивний demand-ключ (список,
-розмонтований на час картки) отримував обрізаний набір як свіжий. Обхід
-`gcTime: 0` у фабриці `onDemandCollectionOptions` ПРИБРАНО 2026-10-05.
-(б) Ключ вітрини під `[entity, 'list', …]` містив адмінські рядки — лікується
-Е3-15′ (нижче), актуально й тепер.
+**Закрито на 1.5.1 — M1 (ревалідація після запису).** На 1.3.4 кожен write-back
+on-demand-колекції перезапитував кожну завантажену сторінку й картку. Тепер
+запитів нуль, а неактивний зріз не стейл: рядок патчиться в його ключі, і
+ремаунт у межах `staleTime` іде з кешу. Доказ: `on-demand-inactive-key.test.tsx`
+(0 запитів після запису й на ремаунті; жоден ключ не стейл і не відкинутий),
+`on-demand-full-slice.test.tsx` (серверне поле `sortOrder` в обох живих зрізах
+без перезапиту), хелпер `expectNoRefetch` у 13 тестах колекцій і сторінок.
+Наслідок для коду: «правду сервера» в кеші тримає ЛИШЕ write-back серверного
+рядка в хендлері. Це канон `tests/handler-canon.test.ts`: `await`-нутий
+write-back на кожному шляху хендлера. `{ refetch: false }` прибрано разом із
+return-значеннями хендлерів (TanStack DB 1.0).
 
-**Ціна.** Дві механіки, обидві лише для on-demand:
-- **M1 — ревалідація після запису** (`src/query.ts:~3168-3300`): **ціна —
-  після збереження перезапитується кожна завантажена сторінка активного списку
-  + кожна закешована картка (eq id); повернення до списку — по запиту на
-  сторінку лише після спливу `staleTime` (5 хв, `src/router.tsx`) або після
-  інвалідації (запису); без запису в межах `staleTime` список іде з кешу БЕЗ
-  запиту — зміни інших користувачів (нові замовлення) зʼявляються із
-  запізненням до `staleTime`.** Ключі розмонтованих зрізів теж, поки жива сама колекція (її
-  `gcTime`, не query; висновок із вимірів). ПРИКЛАД, не константа
-  (2026-10-05, продакшен-`defaultOptions`, `useLiveInfiniteQuery` pageSize 2
-  переглянуто на K сторінок і розмонтовано, потім картка, один `update`):
-  K=1 → 3 запити, K=5 → 8; другий запис підряд — 1 запит; повернення до
-  списку ПІСЛЯ запису — 2 (K=1) / 10 (K=5). Числа ІДЕНТИЧНІ з `gcTime: 0` і без нього, тож
-  `gcTime: 0` НЕ є політикою вартості й у фабрику не повертається (ключі
-  ревалідуються, перш ніж `gcTime: 0` їх прибере). Розмонтовані картки
-  `eq(id)` без списку прибираються без ревалідації (+1 запит). Обґрунтування:
-  перезапит усіх завантажених сторінок після запису — стандартна поведінка
-  нескінченних списків (як `useInfiniteQuery`), тож власного механізму
-  поверх бібліотеки не додаємо. **Умова перегляду:** якщо типові списки
-  адмінки ходять глибше за ~10 сторінок або збереження відчутно гальмує —
-  повернутися до політики обмеження (`removeQueries` неактивних зрізів /
-  менший `pageSize`). Контракт пінено `on-demand-inactive-key.test.tsx`
-  (кожен кешований ключ ревалідовано рівно раз, жоден не стейл, ключі
-  неактивного списку не відкинуто — нижня межа).
-- **M2 — ordered-source repair (з коду бібліотеки, НЕ виміряно)** (`@tanstack/db` 0.11.3
-  `src/query/live/ordered-source-loader.ts:~296-312, ~432-446`): після
-  оптимістичного видалення/відкату впорядкований живий запит робить
-  `loadOrderedPrefixRepair` з `refetch: true` — ще один запит префікса.
-- Eager-колекції (`sections`, довідники) цієї ціни не мають: заплатка без
-  мережі. Хендлери колекцій повертають `{ refetch: false }` — це окремий
-  опт-аут із задепрекованого авто-рефетчу хендлера (`handleDeprecatedAutoRefetch`,
-  `src/query.ts:~3430-3455`), M1 він не вимикає (без нього запити подвоюються — виміряно 16 замість 8 — і
-  warn `DEPRECATED`).
+**Ціна, що лишилась — M2 (ordered-source repair, з коду бібліотеки, НЕ
+виміряно).** `@tanstack/db` 1.0.0-rc.1.2 `src/query/live/ordered-source-loader.ts`
+(`loadOrderedPrefixRepair` ~471, запит із `refetch: true` ~1100): після
+порушення впорядкованості (оптимістичне видалення чи відкат) упорядкований
+живий запит перечитує префікс. Eager-колекції цієї ціни не мають.
 
 **Наш обхід.**
 - Е3-15′ (К3-Е3): сегмент `'list'` — виключно колекціям `admin-data`
@@ -118,27 +92,25 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
   `eslint-rules/no-collection-key-outside-admin-data.mjs` і кейс
   `bareListSegment` у `eslint-rules/query-key-from-entity.mjs`.
 - Фабрика `onDemandCollectionOptions` — `syncMode: 'on-demand'` + індекс
-  сортування (TSDB-2); `gcTime` більше НЕ ставить.
+  сортування (TSDB-2); `gcTime` не ставить (обхід `gcTime: 0` знято 2026-10-05).
 
-**Перевірка виправлення.** Тести, що фіксують виміряне (червоніють при зміні
-поведінки бібліотеки — це сигнал переглянути запис):
-- `admin-data/__tests__/on-demand-inactive-key.test.tsx` — кожен кешований
-  ключ ревалідовано рівно раз, жоден не містить стейл-рядка, ремаунт списку
-  бачить повний набір з оновленим рядком;
-- `admin-data/__tests__/collection-key-storefront-isolation.test.ts` — eager:
-  чужий ключ під префіксом ПЕРЕЗАПИСАНО; on-demand: ВИДАЛЕНО (без
-  спостерігача) або ПЕРЕЗАПИТАНО (з чужим спостерігачем); `variant`-ключ
-  вітрини — лише sanity (він поза префіксом).
-На старому стеку (query-db-collection 1.2.11 / db 0.8.6) контрактна частина
-червоніє (запитів на ключ 0), але ремаунт-твердження зелене і з `gcTime: 0`,
-і без: з авторитетним сервером і продакшен-`defaultOptions` симптом власника
-там НЕ відтворюється — тест доводить механіку, не симптом.
+**Перевірка виправлення.** Тести фіксують виміряне й червоніють, коли
+поведінка бібліотеки змінюється. Це сигнал переглянути запис:
+- `collection-key-storefront-isolation.test.ts`:
+  - eager — чужий ключ під префіксом ЗАБРУДНЕНО адмінським рядком;
+  - on-demand без спостерігача — ключ ВИДАЛЕНО;
+  - on-demand із чужим спостерігачем — ключ ЦІЛИЙ і не перезапитаний;
+  - `variant`-ключ вітрини — лише sanity, він поза префіксом.
+- `on-demand-inactive-key.test.tsx` — нуль запитів, жоден ключ не стейл.
+- `invalidate-collection.test.tsx` — після збирання живого запиту списку `utils.refetch()` його зріз не
+  перечитує, `invalidateCollection` — перечитує. 🔴 `useLiveInfiniteQuery` (react-db 1.0.0-rc.1.2) не приймає
+  `gcTime` (лише `queryKey`/`client`/`pageSize`/`initialPageParam`), тож спливання дефолтних 5 с тест
+  проходить фейковими таймерами. При бампі: якщо опція зʼявилась — задати малий `gcTime` і прибрати таймери.
 
-**Коли виправлять.** Якщо бібліотека перестане видаляти/ревалідовувати чужі
-ключі під префіксом — Е3-15′ усе одно НЕ прибирати: розділення ключів
-колекцій і вітрини — правильна гігієна (форма рядка адмінки й вітрини
-різна). Якщо M1/M2 стануть точковими (без повного перезапиту) — оновити ціну
-й числа в тестах.
+**Коли виправлять.** Навіть якщо бібліотека перестане писати в чужі ключі під
+префіксом, Е3-15′ НЕ прибирати: розділення ключів колекцій і вітрини —
+правильна гігієна, бо форма рядка адмінки й вітрини різна. Якщо повернеться
+перезапит після запису, `expectNoRefetch` почервоніє — тоді оновити запис.
 
 ---
 
@@ -148,7 +120,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 |---|---|
 | Бібліотека | `@tanstack/start-server-core` (обробник server functions) |
 | Знайдено на | 1.169.39 (2026-10-11, К3-Е6д-2) |
-| Перевірено на версії | 1.169.39 — 2026-10-12 (А4-R): `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника і отримує `handlerType` (`'serverFn'` за НОРМАЛІЗОВАНИМ `url.pathname`, `createStartHandler.js:286,328,404-409`), тип контексту — `RequestServerOptions.handlerType` (`start-client-core` 1.170.34) |
+| Перевірено на версії | 1.169.45 — 2026-11-04: предикат форми `includes(…)` + `await request.formData()` без лімітів (`server-functions-handler.js:118-123`), `handlerType` за нормалізованим `url.pathname` (`createStartHandler.js:326-333,382`), тип — `start-client-core` 1.170.39 (`createMiddleware.d.ts:177`); 1.169.39 — 2026-10-12 (А4-R): `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника і отримує `handlerType` (`'serverFn'` за НОРМАЛІЗОВАНИМ `url.pathname`, `createStartHandler.js:286,328,404-409`), тип контексту — `RequestServerOptions.handlerType` (`start-client-core` 1.170.34) |
 | Статус апстріму | не повідомлено; ліміти тіла — відповідальність хоста/проксі, Start їх не надає |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (предикат форми `includes(…)` + `formData()`, `TSS_SERVER_FN_BASE`) |
 
@@ -170,7 +142,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
 `/%5FserverFn/x` — теж server function) POST із `Content-Length` понад
 `MAX_REQUEST_BODY_BYTES` → 413; POST без `Content-Length` → 411 для всього, що не
 чистий JSON, і для всього, що Start прочитав би як форму. Предикат форми
-ДЗЕРКАЛИТЬ апстрім: `server-functions-handler.js` (1.169.39, рядки ~40-43:
+ДЗЕРКАЛИТЬ апстрім: `server-functions-handler.js` (1.169.39, рядки ~40-43; 1.169.45 — рядок 118:
 `contentType.includes('multipart/form-data') || …includes('application/x-www-form-urlencoded')`,
 далі `request.formData()`). Це `includes`, а не порівняння медіатипу, тож
 `application/json; x=multipart/form-data` Start читає як форму без стелі —
@@ -214,7 +186,7 @@ chunked-тіло там без стелі — привід переглянут�
 |---|---|
 | Бібліотека | `@tanstack/router-core` (серіалізатор SSR/RPC TanStack Start) |
 | Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, live:smoke К3-Е3) |
-| Перевірено на версії | `@tanstack/router-core` 1.171.34 / `@tanstack/start-client-core` 1.170.34 / `@tanstack/start-server-core` 1.169.39 — 2026-10-04 (бамп XSS GHSA-qx66-fv34-fjm8): `ShallowErrorPlugin` без змін (parse — лише `message`), контрольний кейс тесту «без адаптера» зелений; адаптери Start і далі йдуть ПЕРЕД дефолтними плагінами (`getSerovalPlugins` у `start-client-core` і `server-functions-handler`) |
+| Перевірено на версії | `router-core` 1.171.39 / `start-client-core` 1.170.39 / `start-server-core` 1.169.45 — 2026-11-04: `ShallowErrorPlugin` у `seroval-plugins.ssr.js` досі в дефолтному списку, `createServerFnErrorResponse` бере плагіни з `getSerovalPlugins(...)` (наші адаптери першими), розтяжка зелена; `@tanstack/router-core` 1.171.34 / `@tanstack/start-client-core` 1.170.34 / `@tanstack/start-server-core` 1.169.39 — 2026-10-04 (бамп XSS GHSA-qx66-fv34-fjm8): `ShallowErrorPlugin` без змін (parse — лише `message`), контрольний кейс тесту «без адаптера» зелений; адаптери Start і далі йдуть ПЕРЕД дефолтними плагінами (`getSerovalPlugins` у `start-client-core` і `server-functions-handler`) |
 | Статус апстріму | не повідомлено; ймовірно, свідомий дизайн (не протікати серверні поля), а не дефект |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`ShallowErrorPlugin` досі серіалізує лише `message`) |
 
@@ -254,31 +226,85 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 |---|---|
 | Бібліотека | `@tanstack/react-start` (`@tanstack/start-server-core` обробник, `@tanstack/start-plugin-core` генерований резолвер) |
 | Знайдено на | `@tanstack/react-start` 1.168.60 (start-server-core 1.169.39, start-plugin-core 1.171.49), М1 Task 9 |
-| Перевірено на версії | ті самі — 2026-10-18: `start-compiler/server-fn-resolver-module.js` кидає `Error('Server function info not found for ' + id)`, `handleServerAction` (`server-functions-handler.js`) кличе резолвер до свого `try`, h3 `toResponse` віддає 500 `unhandled` |
+| Перевірено на версії | `react-start` 1.168.60 (ті самі) — 2026-10-18; `react-start` 1.169.4 / `start-server-core` 1.169.45 / `start-plugin-core` 1.171.55 — 2026-11-04: `start-compiler/server-fn-resolver-module.js` кидає `Error('Server function info not found for ' + id)`, `handleServerAction` (`server-functions-handler.js`, `getServerFnById` на рядку ~104) кличе резолвер до свого `try` (~116); статус лишився 500, але механізм відповіді інший (див. «Механізм») |
 | Статус апстріму | не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (текст помилки резолвера; `getServerFnById` раніше за `try` у `handleServerAction`) |
+
+**Механізм (змінився з 1.169.45).** До 1.169.39 помилка з `handleServerAction` проходила крізь
+`executeMiddleware` до h3 `toResponse`, і тіло формував h3 (`{"status":500,"unhandled":true,
+"message":"HTTPError"}`). У 1.169.45 h3 серед залежностей немає: `createStartHandler.js`
+(`catch` навколо `executeMiddleware`, ~467-476) для запиту server function кличе
+`createServerFnErrorResponse(error)`, що серіалізує `{ error }` seroval-плагінами
+`getSerovalPlugins(...)` — тобто НАШИМИ `serializationAdapters` (`src/start.ts`:
+`domainErrorAdapter`, `maskedErrorAdapter`) + `ShallowErrorPlugin`. Текст «Server function info
+not found for <id>» у проді ховає НАША маска (`maskUnexpectedError`, предикат
+`isProductionRuntime`, `packages/simplycms/src/server-guard/mask-errors.ts`), а не Start: без неї
+серіалізатор Start віддав би текст помилки як є. Статус лишається 500.
 
 **Симптом.** `GET|POST /_serverFn/<невідомий id>` → 500, а не 404. Сканер `/_serverFn/*` дає 5xx і
 шум у лозі/алертах; у лозі — повний текст помилки (id з URL, секретів немає).
 
-**Рішення: прийнято, обходу немає.** Тексту помилки клієнт не бачить — дві живі проби (маркер
-`UPSTREAM:START-SFN-404-1`), тіло 500 без стеку, id функції, шляхів ФС і тексту апстріму:
+**Рішення: прийнято, обходу немає.** Тексту помилки клієнт не бачить завдяки нашій масці, тож
+бар'єр від витоку стережуть живі проби в прод-режимі (обидві через `server.mjs`, що ставить
+`NODE_ENV=production`; маркер `UPSTREAM:START-SFN-404-1`) — тіло 500 без стеку, id функції,
+шляхів ФС і тексту апстріму:
 - справжній магазин пілота з базою за замовчуванням `/_serverFn/` — Gate B
   (`scripts/pilot-pack/server-fn-404-probe.mjs`), GET і POST;
 - збірка з нестандартною базою `serverFns.base: '/_custom/fn/'` — `tests/server-fn-base-build.test.ts`
   (база там конфігурована, бо цей тест і є доказом інлайну бази; шлях обробника той самий).
-Знято 2026-10-18: магазин пілота (`/_serverFn/`) — GET і POST → `{"status":500,"unhandled":true,
-"message":"HTTPError"}` (h3); збірка з `/_custom/fn/` — GET → `Internal server error [ref …]`
-(маскування `server-guard`), POST → те саме тіло h3.
+Знято 2026-10-18 (start-server-core 1.169.39): магазин пілота (`/_serverFn/`) — GET і POST →
+`{"status":500,"unhandled":true,"message":"HTTPError"}` (h3); збірка з `/_custom/fn/` — GET →
+`Internal server error [ref …]` (маскування `server-guard`), POST → те саме тіло h3.
+Знято 2026-11-04 (1.169.45, `live:smoke`): 500, тіло — seroval-JSON `{ error }` від
+`createServerFnErrorResponse`, де `error.message` = `Internal server error [ref …]` (маска);
+точні байти залежать від версії seroval і не зафіксовані — стережемо відсутність id та тексту
+«Server function info not found», а не форму тіла.
 404 дав би лише правильнішу семантику, а обхід (middleware ловить `Error` з цим текстом для
 `handlerType === 'serverFn'` → 404) прив'язав би нас до тексту апстріму — не варте.
 
 **Перевірка виправлення.** Розтяжка червоніє, якщо резолвер перестане кидати цей текст або обробник
-загорне виклик у `try`; тоді `GET /_serverFn/nope` на зібраному сервері має дати 404.
+загорне виклик у `try` (вона стереже лише причину 500, не маскування — його стережуть дві живі проби); тоді `GET /_serverFn/nope` на зібраному сервері має дати 404.
 
 **Коли виправлять.** Перенести запис у «Закриті», прибрати маркер і кейс 500 у
 `server-fn-base-build.test.ts` замінити на 404. Переглянути й тоді, коли моніторинг 5xx почне
 шуміти від сканерів.
+
+---
+
+### START-ENTRY-1 · `createServerEntry` сам ловить виняток entry: помилка поза роутером без ref (Start лише console.error без id)
+
+| Поле | Значення |
+|---|---|
+| Бібліотека | `@tanstack/react-start` (`@tanstack/start-server-core`, `internal-request-response.js`) |
+| Знайдено на | `react-start` 1.169.4 / `start-server-core` 1.169.45 (2026-11-04, `live:smoke` крок «Р23 SSR, БД недоступна» червоний) |
+| Перевірено на версії | `react-start` 1.169.4 / `start-server-core` 1.169.45 — 2026-11-04 |
+| Статус апстріму | не повідомлено (поведінка задокументована в коментарі апстріму: «call handleStartError in a custom catch»; це задумана, а не помилкова поведінка) |
+| Розтяжка | `tests/upstream-tripwires.test.ts` (поведінкова: виконує справжній `createServerEntry` — виняток entry → резолвиться 500; уся спільна таблиця кейсів предиката статусу `tests/upstream-tripwires/httpErrorStatusCases.ts` проти статусу відповіді Start) |
+
+**Корінь.** `node_modules/.pnpm/@tanstack+start-server-core@1.169.45/node_modules/@tanstack/start-server-core/dist/esm/internal-request-response.js`:
+`createServerEntry` (:460-468) загортає `entry.fetch` у `try { … } catch (error) { return handleStartError(error) }`;
+`handleStartError` (:343) → `createErrorResponse` (:321) віддає JSON
+`{status, statusText, unhandled:true, message:"HTTPError"}`, а статус бере з `getErrorStatus`/`getHttpErrorStatus`
+(:50, :286: `status`/`statusCode` на помилці чи `cause`, ціле 200..599, HTTP-помилка — від 400); `console.error(error)`
+лише для помилок без такого статусу (:299). До 1.169.x `createServerEntry` був чистою обгорткою, і виняток доходив до
+`catch` у `server.mjs` (`logRequestError`: ref + лог).
+
+**Симптом.** Помилка поза роутером (`loadLocaleSet` у `withStorefrontNormalize` при мертвій БД) віддається німим JSON
+без `Internal server error [ref …]`; Start лише `console.error(error)` без id, тож рядок у лозі не зіставити з відповіддю
+(Р23 порушено).
+
+**Наш обхід.** `withEntryErrorMask` (`packages/simplycms/src/server-guard/entry-mask.ts`, підключено в `src/server.ts`
+всередині `withSecurityHeaders`): HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect) — далі в Start (його предикат
+дзеркалить `httpErrorStatus`); решта в проді — через `maskUnexpectedError` (один формат логу й ref з масками server
+functions), статус ≥ 500 зберігається. Маркери `UPSTREAM:START-ENTRY-1` — там же.
+
+**Перевірка виправлення.** Розтяжка червоніє, якщо Start перестане повертати 500 на виняток entry (віддасть назовні)
+або його статус відповіді розійдеться з будь-яким кейсом спільної таблиці предиката (status/statusCode, `cause`,
+числовий рядок, межі 200/399/400/499/500/599/600) — ту саму таблицю звіряє тест нашого `httpErrorStatus`. Тоді: чи `server.mjs` знову бачить виняток і наш шар зайвий / чи предикат ще збігається.
+Живий доказ — `pnpm live:smoke`, Р23 «БД недоступна».
+
+**Коли виправлять.** Якщо виняток знову доходить до `server.mjs` — прибрати `withEntryErrorMask`, маркери й запис
+перенести в «Закриті».
 
 ---
 
@@ -288,7 +314,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 |---|---|
 | Бібліотека | `@tanstack/start-plugin-core` (import-protection плагін; `@tanstack/react-start`) |
 | Знайдено на | `start-plugin-core` 1.171.49 / `react-start` 1.168.60 (2026-10-11, К3-Е7 Task 11: `pnpm pilot` Gate B). Проміжні версії між 1.167.35 (без дефекту) і 1.171.49 не бісектовано; у реліз потрапило з XSS-бампом 24e2836a (0.7.0) |
-| Перевірено на версії | `start-plugin-core` 1.171.49 — 2026-10-11 |
+| Перевірено на версії | `start-plugin-core` 1.171.49 — 2026-10-11; 1.171.55 — 2026-11-04 (розтяжка зелена: `resolveAgainstImporter` без `kind`, передумова тримається) |
 | Статус апстріму | не повідомлено (рішення власника) |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`resolveAgainstImporter` без `kind` і `return passThroughResult`) |
 
@@ -333,7 +359,7 @@ Gate SB і доктор-перевірка залишаються.
 |---|---|
 | Бібліотека | `@tanstack/db` (через `@tanstack/react-db` `useLiveInfiniteQuery`) |
 | Знайдено на | `@tanstack/db` 0.8.6 / `@tanstack/react-db` 0.3.6 (2026-09-23): друга сторінка не довантажувалась |
-| Перевірено на версії | `@tanstack/db` 0.11.3 / `@tanstack/react-db` 0.5.3 — 2026-10-05: довантажує префіксом (див. нижче) |
+| Перевірено на версії | `@tanstack/db` 0.11.3 / `@tanstack/react-db` 0.5.3 — 2026-10-05: довантажує префіксом (див. нижче); `@tanstack/db` 1.0.0-rc.1.2 / `@tanstack/react-db` 1.0.0-rc.1.2 — 2026-11-04: без змін (кейс (2б) зелений, `loadPrefix(offset + limit)` у `ordered-source-loader.ts:~296`) |
 | Статус апстріму | не повідомлено; поведінка задокументована попередженням бібліотеки |
 | Розтяжка: немає | довантаження сторінок видно лише в рантаймі живого запиту; сторож — кейс (2б) `on-demand-contract.test.tsx` |
 
@@ -373,7 +399,7 @@ Gate SB і доктор-перевірка залишаються.
 |---|---|
 | Бібліотека | `@tanstack/db` (реекспорт у `@tanstack/query-db-collection`) |
 | Знайдено на | 0.8.6 (2026-09-23) |
-| Перевірено на версії | 0.8.6 — 2026-09-23; `@tanstack/db` 0.11.3 — 2026-10-05 (не виправлено: `parseLoadSubsetOptions` повертає `{ filters, sorts, limit }`, `expression-helpers.ts:504-526`) |
+| Перевірено на версії | 0.8.6 — 2026-09-23; `@tanstack/db` 0.11.3 — 2026-10-05; `@tanstack/db` 1.0.0-rc.1.2 — 2026-11-04 (не виправлено: `parseLoadSubsetOptions` повертає `{ filters, sorts, limit }`, `expression-helpers.ts:~538-548`; розтяжка зелена) |
 | Статус апстріму | не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`parseLoadSubsetOptions` не повертає `offset`) |
 
@@ -406,7 +432,7 @@ Gate SB і доктор-перевірка залишаються.
 |---|---|
 | Бібліотека | `@tanstack/query-db-collection` |
 | Знайдено на | 1.2.11 (2026-09-23) |
-| Перевірено на версії | 1.2.11 — 2026-09-23; `@tanstack/query-db-collection` 1.3.4 — 2026-10-05 (не виправлено: `dist/esm/index.d.ts` не реекспортує `LoadSubsetOptions`) |
+| Перевірено на версії | 1.2.11 — 2026-09-23; `@tanstack/query-db-collection` 1.3.4 — 2026-10-05; 1.5.1 — 2026-11-04 (не виправлено: `dist/esm/index.d.ts` реекспортує з `@tanstack/db` лише парсери, не `LoadSubsetOptions`; розтяжка зелена) |
 | Статус апстріму | не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`index.d.ts` не реекспортує `LoadSubsetOptions`) |
 
@@ -428,7 +454,7 @@ Gate SB і доктор-перевірка залишаються.
 |---|---|
 | Бібліотека | `drizzle-orm` |
 | Знайдено на | 0.45.2, Етап B 2026-10-05 (раніше ховалось під DZOD-1) |
-| Перевірено на версії | 0.45.3 — 2026-10-05: відтворено (прибрати `as never` → TS2345 «not assignable to `SelectedFields`»), не виправлено |
+| Перевірено на версії | 0.45.4 — 2026-11-04 (розтяжка `tests/upstream-tripwires.test.ts` зелена, `as never` лишається потрібним); 0.45.3 — 2026-10-05: відтворено (прибрати `as never` → TS2345 «not assignable to `SelectedFields`»), не виправлено |
 | Статус апстріму | не повідомлено |
 | Розтяжка: немає | це типова помилка TS2345, яку дає лише компіляція без `as never`; сторож — `pnpm typecheck` після зняття кастів |
 
@@ -469,7 +495,7 @@ typecheck` і `build:packages` зелені.
 |---|---|
 | Бібліотека | `drizzle-orm` |
 | Знайдено на | 0.45.3 (К3-Е6д, 2026-10-11): колонковий грант INSERT на `product_reviews` дав `42501` |
-| Перевірено на версії | 0.45.3 — 2026-10-11 |
+| Перевірено на версії | 0.45.3 — 2026-10-11; 0.45.4 — 2026-11-04 (розтяжка зелена) |
 | Статус апстріму | не дефект, а дизайн білдера; не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (SQL `insert().values()` для таблиці з DEFAULT-колонкою) |
 
@@ -495,7 +521,7 @@ values ($1, default, …)` для всіх колонок таблиці. Том
 |---|---|
 | Бібліотека | `typescript-eslint` (обмежує `typescript`) |
 | Знайдено на | `typescript-eslint` 8.x (peer `typescript <6.1.0`), 2026-08-04 |
-| Перевірено на версії | 8.71.0 з `typescript` 6.0.3 — 2026-10-05 (peer `typescript >=4.8.4 <6.1.0`, без змін) |
+| Перевірено на версії | 8.72.1 з `typescript` 6.0.3 — 2026-11-04 (peer `typescript >=4.8.4 <6.1.0`, без змін); 8.71.0 з `typescript` 6.0.3 — 2026-10-05 (peer `typescript >=4.8.4 <6.1.0`, без змін) |
 | Статус апстріму | **у роботі**: трекер [#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) відкритий (`accepting prs`, `team assigned`), draft PR [#12803](https://github.com/typescript-eslint/typescript-eslint/pull/12803) — чекає програмного API TS 7.1 (стан на 2026-10-05) |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (peer `typescript` досі `<6.1.0`) |
 | Маркери: немає | обмеження лишає версію `typescript` у `package.json`, а не обхід у коді |
@@ -572,7 +598,7 @@ typescript-eslint peerDependencies` і реліз-ноти — чи є підт�
 |---|---|
 | Бібліотека | `tsdown` (раніше — `tsup`/`rollup-plugin-dts`) |
 | Знайдено на | `tsup` 2026-08-24; `tsdown` 0.22.x 2026-09-02 |
-| Перевірено на версії | `tsdown` 0.23.0 — 2026-10-05 (`dts` у нас `false`, зміна API `dts` не зачіпає; зміна дефолта `resolveDepSubpath` — `build:packages`, `test:packaging`, `pilot:pack`, `dist-server-boundary` зелені, JS у `dist` побайтово той самий). Спайк tsgo — 2026-10-04, див. нижче |
+| Перевірено на версії | `tsdown` 0.23.5 — 2026-11-04 (`dts` лишається `false`, `build:packages` зелений); `tsdown` 0.23.0 — 2026-10-05 (`dts` у нас `false`, зміна API `dts` не зачіпає; зміна дефолта `resolveDepSubpath` — `build:packages`, `test:packaging`, `pilot:pack`, `dist-server-boundary` зелені, JS у `dist` побайтово той самий). Спайк tsgo — 2026-10-04, див. нижче |
 | Статус апстріму | не повідомлено |
 | Розтяжка: немає | вичерпання heap видно лише на справжній збірці; сторож — `pnpm build:packages` |
 
@@ -650,7 +676,7 @@ worktree, код не збережено):
 |---|---|
 | Бібліотека | `drizzle-orm` / `drizzle-kit` |
 | Знайдено на | спайк `1.0.0-rc.4` (тег `rc`) проти 0.45.2 / 0.31.10, 2026-10-04 |
-| Перевірено на версії | 0.45.3 / 0.31.11 — 2026-10-05; `1.0.0` stable ще не вийшла (з 2026-04-30 — RC) |
+| Перевірено на версії | 0.45.4 / 0.31.11 — 2026-11-04 (розтяжка зелена, 0.x); 0.45.3 / 0.31.11 — 2026-10-05; `1.0.0` stable ще не вийшла (з 2026-04-30 — RC) |
 | Статус апстріму | 1.0 у RC; лінія 0.45 майже не оновлюється; `drizzle-zod` 0.8.3 — з 2025-08 |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (встановлений `drizzle-orm` досі 0.x) |
 | Маркери: немає | рішення про вибір ORM, а не обхід у коді |
@@ -753,8 +779,8 @@ Schema у CI, інструкція деплою пілота).
 
 | ID | Бібліотека · версія | На що спираємося | Де в коді | Що зламається, якщо зміниться | Тест-сторож |
 |---|---|---|---|---|---|
-| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `db/pg-errors.ts` — ЄДИНЕ місце розбору `.cause` (`pgErrorInfo`; на ньому `toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation`); споживачі (`admin-server` run.ts, `addressing`, `operations`, `storefront/loaders/reviews-write.ts`) кличуть `simplycms/db` | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `db/__tests__/pg-errors.test.ts` + `impl/__tests__/run.test.ts` + `operations/__tests__/execute.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
-| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
+| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-11-04 на 0.45.4 — розтяжка зелена; 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `db/pg-errors.ts` — ЄДИНЕ місце розбору `.cause` (`pgErrorInfo`; на ньому `toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation`); споживачі (`admin-server` run.ts, `addressing`, `operations`, `storefront/loaders/reviews-write.ts`) кличуть `simplycms/db` | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `db/__tests__/pg-errors.test.ts` + `impl/__tests__/run.test.ts` + `operations/__tests__/execute.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
+| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) і 1.169.45 (2026-11-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`; 1.169.45: `dist/esm/server-functions-handler.js:123`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
 
 ---
 

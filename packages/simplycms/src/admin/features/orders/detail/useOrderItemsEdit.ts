@@ -1,7 +1,12 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  invalidateCollection,
   orderItemsCollection,
   ordersCollection,
+  productModificationsCollection,
+  productsCollection,
+  stockCollection,
   useCollection,
 } from 'simplycms/admin-data';
 import {
@@ -25,7 +30,9 @@ type Action =
 /**
  * Редагування позицій замовлення (Е5б-11): serverFn рахує ціну, доставку й
  * залишок, відповідь — write-back у обидві колекції однією `writeBatch` на
- * колекцію. Оптимістичного стану немає; помилка → тост, колекції незмінні.
+ * колекцію. Резерв складу (`stock_by_pickup_point`, `stock_status`) відповідь
+ * не несе — залишки, товари й модифікації інвалідуємо (`invalidateCollection`).
+ * Оптимістичного стану немає; помилка → тост, колекції незмінні.
  * Один `run` на всі три дії: правило `mutation-cache-sync` вимагає синк у
  * ТІЙ САМІЙ функції, що кличе serverFn. Повертає `true`, якщо зміну збережено.
  */
@@ -33,6 +40,7 @@ export function useOrderItemsEdit(orderId: string) {
   const t = useT();
   const orders = useCollection(ordersCollection);
   const items = useCollection(orderItemsCollection);
+  const queryClient = useQueryClient();
 
   const run = async (a: Action): Promise<boolean> => {
     try {
@@ -57,13 +65,18 @@ export function useOrderItemsEdit(orderId: string) {
             : await removeOrderItem({
                 data: { orderId, orderItemId: a.orderItemId },
               });
-      orders.utils.writeBatch(() => {
+      await orders.utils.writeBatch(() => {
         orders.utils.writeUpsert(res.order);
       });
-      items.utils.writeBatch(() => {
+      await items.utils.writeBatch(() => {
         for (const row of res.upserted) items.utils.writeUpsert(row);
         for (const id of res.removedIds) items.utils.writeDelete(id);
       });
+      await Promise.all([
+        invalidateCollection(queryClient, stockCollection),
+        invalidateCollection(queryClient, productsCollection),
+        invalidateCollection(queryClient, productModificationsCollection),
+      ]);
       toast.success(
         t(
           a.kind === 'add'

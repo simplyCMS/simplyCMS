@@ -37,7 +37,8 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { resolvePilotEnv } from './pilot-pack/env.mjs';
@@ -45,7 +46,14 @@ import { freePort } from './pilot-pack/build.mjs';
 import { runGates } from './pilot-pack/run.mjs';
 import { report, step } from './pilot-pack/report.mjs';
 
-const ROOT = join(tmpdir(), 'simplycms-pilot');
+// 🔴 Скретч на ДЕРЕВО, а не спільний на машину: pilot із іншого worktree інакше
+// стирав би чужий скретч. Не на прогін — щоб `--reuse`/`--keep` працювали як раніше.
+const REPO_ROOT = realpathSync(join(import.meta.dirname, '..'));
+const TREE_ID = createHash('sha256')
+  .update(REPO_ROOT)
+  .digest('hex')
+  .slice(0, 10);
+const ROOT = join(tmpdir(), `simplycms-pilot-${TREE_ID}`);
 const STORE_DIR = join(ROOT, 'store');
 const TARBALL_DIR = join(ROOT, 'tarballs');
 

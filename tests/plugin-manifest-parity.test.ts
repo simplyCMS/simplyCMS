@@ -27,22 +27,32 @@ describe('референс-пакети плагінів: manifest ↔ package.j
   });
 
   describe.each(dirs)('пакет "%s"', (dir) => {
-    it('version у definePlugin дорівнює version пакета; name збігається з текою', async () => {
-      const manifestJson = JSON.parse(
-        readFileSync(join(REPO, 'packages', dir, 'package.json'), 'utf8'),
-      ) as { name: string; version: string };
-      const module = (await import(
-        /* @vite-ignore */ pathToFileURL(
-          join(REPO, 'packages', dir, 'src', 'index.ts'),
-        ).href
-      )) as { default: { manifest: { name: string; version: string } } };
+    // Повільний за природою середовища, не прод-коду: холодна трансформація
+    // серверного графа `plugin-sdk/server` без компілятора Start (~1,9 с
+    // окремо; `usePluginTable` статично імпортує serverFn, а у vitest їх тіла
+    // не замінюються RPC-заглушками). У проді клієнтські тіла вирізає
+    // компілятор (Gate C), SSR вантажить те саме. Імпорт модуля — свідомо:
+    // тест доводить, що маніфест збирає саме `definePlugin`.
+    it(
+      'version у definePlugin дорівнює version пакета; name збігається з текою',
+      { timeout: 15_000 },
+      async () => {
+        const manifestJson = JSON.parse(
+          readFileSync(join(REPO, 'packages', dir, 'package.json'), 'utf8'),
+        ) as { name: string; version: string };
+        const module = (await import(
+          /* @vite-ignore */ pathToFileURL(
+            join(REPO, 'packages', dir, 'src', 'index.ts'),
+          ).href
+        )) as { default: { manifest: { name: string; version: string } } };
 
-      expect(module.default.manifest.version).toBe(manifestJson.version);
-      // Канонічне імʼя = тека без префікса = хвіст імені пакета: на цьому
-      // тримаються конфіг-ключ (deriveKey), префікс plg_* і usePluginConfig.
-      const canonical = dir.slice('simplycms-plugin-'.length);
-      expect(module.default.manifest.name).toBe(canonical);
-      expect(manifestJson.name).toBe(`@simplycms/plugin-${canonical}`);
-    });
+        expect(module.default.manifest.version).toBe(manifestJson.version);
+        // Канонічне імʼя = тека без префікса = хвіст імені пакета: на цьому
+        // тримаються конфіг-ключ (deriveKey), префікс plg_* і usePluginConfig.
+        const canonical = dir.slice('simplycms-plugin-'.length);
+        expect(module.default.manifest.name).toBe(canonical);
+        expect(manifestJson.name).toBe(`@simplycms/plugin-${canonical}`);
+      },
+    );
   });
 });

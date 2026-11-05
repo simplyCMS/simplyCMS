@@ -59,9 +59,10 @@ export const TIER_ZONES = [
   // Postgres — `withActor`, тож заборонити auth-у власний тір означало б
   // виштовхнути його на голий пул, тобто рівно туди, куди не можна.
   ['src/auth', 2, 'auth', ['db', 'mail', 'site', 'i18n', 'env']],
-  ['src/react-query', 2, 'react-query', []],
-  // `i18n` у винятку: `RouterContext.locales` типізується `LocaleSet` (type-only).
-  ['src/runtime', 2, 'runtime', ['i18n']],
+  // `i18n` (М2а Task 6, §19.8): `useFormatPrice` форматує за мовою ІНТЕРФЕЙСУ (`useUiLocale`),
+  // а валюту бере з `useEngine`. Ребро односпрямоване: `i18n` про `react-query` не знає.
+  ['src/react-query', 2, 'react-query', ['i18n']],
+  ['src/runtime', 2, 'runtime', []],
   ['src/i18n', 2, 'i18n', []],
   // SSR-лоадери вітрини (В2-К1а) — T2, і `db` у винятку `upward` з тієї
   // самої причини, що в `auth`: єдиний канал до Postgres — `withActor`, тож
@@ -152,7 +153,7 @@ export const TIER_ZONES = [
   ['src/commerce', 2, 'commerce', ['db']],
   // Кеш профілю магазину й теми, вшиті теми (Е6б-7) — T2. Upward лише `db`
   // (тип `ActorDb`): власного каналу до Postgres модуль не відкриває.
-  ['src/site', 2, 'site', ['db', 'i18n']],
+  ['src/site', 2, 'site', ['db']],
   // Резолвер груп env драйверів (Е8-Р7) — T2. Чиста функція над переданим
   // оточенням: upward-винятків немає, імпортів поза `contracts` теж.
   ['src/env', 2, 'env', []],

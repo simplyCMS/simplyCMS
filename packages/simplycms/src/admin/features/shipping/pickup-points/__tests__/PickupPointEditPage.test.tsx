@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { METHODS, POINTS, ZONES, stubDom, wrapper } from './render-support';
 
 stubDom();
@@ -42,8 +41,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import PickupPointEditPage from '../PickupPointEditPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const PICKUP_2 = {
   ...METHODS[1]!,
   id: 'b0000000-0000-4000-8000-000000000003',

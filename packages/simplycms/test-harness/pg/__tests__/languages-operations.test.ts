@@ -80,11 +80,12 @@ describe('операції мов (M1, Task 6)', () => {
     });
   });
 
+  // Мова з пакетом (`en`) і неповна: далі вже перевіряється повнота (§19.15: пакет — першим).
   it('published без повноти → language_incomplete', async () => {
     await seedProduct('b-1');
-    await add('cs');
+    await add('en');
     const err = await exec(languagesSetStatus, {
-      code: 'cs',
+      code: 'en',
       status: 'published',
     }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ValidationError);
@@ -93,37 +94,66 @@ describe('операції мов (M1, Task 6)', () => {
       path: ['status'],
       code: 'language_incomplete',
     });
-    expect(await stat('cs')).toBe('draft');
+    expect(await stat('en')).toBe('draft');
   });
 
-  it('після fill до done → published', async () => {
+  it('після fill до done → published (мова з пакетом)', async () => {
     await seedProduct('c-1');
-    await add('de');
-    await fillAll('de');
+    await fillAll('en');
     expect(
-      await exec(languagesSetStatus, { code: 'de', status: 'published' }),
-    ).toMatchObject({ status: 'published' });
+      await exec(languagesSetStatus, { code: 'en', status: 'published' }),
+    ).toMatchObject({ status: 'published', hasPack: true });
+  });
+
+  // І46: `pl` повна за даними (fill виконано в першому кейсі), але пакета немає — саме він
+  // блокує публікацію; чернетка й переклади лишаються.
+  it('published без пакета → language_pack_missing на status, мова лишається draft', async () => {
+    expect(await stat('pl')).toBe('draft');
+    const err = await exec(languagesSetStatus, {
+      code: 'pl',
+      status: 'published',
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ValidationError);
+    expect((err as ValidationError).issues).toEqual([
+      { path: ['status'], code: 'language_pack_missing' },
+    ]);
+    expect(await stat('pl')).toBe('draft');
+    expect(await pathCount('pl')).toBeGreaterThan(0);
+  });
+
+  it('порядок перевірок: неповна мова без пакета → language_pack_missing, а не language_incomplete', async () => {
+    await seedProduct('c-2');
+    await add('cs');
+    const err = await exec(languagesSetStatus, {
+      code: 'cs',
+      status: 'published',
+    }).catch((e: unknown) => e);
+    expect((err as ValidationError).issues).toEqual([
+      { path: ['status'], code: 'language_pack_missing' },
+    ]);
+    // draft і disabled пакета не вимагають.
+    expect(
+      await exec(languagesSetStatus, { code: 'cs', status: 'disabled' }),
+    ).toMatchObject({ status: 'disabled' });
   });
 
   it('disabled → published дозаповнює адреси товарів, створених поки мова disabled', async () => {
-    await add('sk');
-    await fillAll('sk');
-    await exec(languagesSetStatus, { code: 'sk', status: 'disabled' });
+    await exec(languagesSetStatus, { code: 'en', status: 'disabled' });
     const late = await seedProduct('d-late');
     // Мова disabled: генератор адрес її не бачить, тож адреси немає.
     expect(
-      await exec(languagesSetStatus, { code: 'sk', status: 'published' }).catch(
+      await exec(languagesSetStatus, { code: 'en', status: 'published' }).catch(
         (e: unknown) => e,
       ),
     ).toBeInstanceOf(ValidationError);
-    await fillAll('sk');
+    await fillAll('en');
     const rows = await db.q(
-      `select 1 from public.url_paths where product_id = $1 and locale = 'sk' and is_current`,
+      `select 1 from public.url_paths where product_id = $1 and locale = 'en' and is_current`,
       [late],
     );
     expect(rows).toHaveLength(1);
     expect(
-      await exec(languagesSetStatus, { code: 'sk', status: 'published' }),
+      await exec(languagesSetStatus, { code: 'en', status: 'published' }),
     ).toMatchObject({ status: 'published' });
   });
 
@@ -132,7 +162,7 @@ describe('операції мов (M1, Task 6)', () => {
       exec(languagesSetStatus, { code: 'uk', status: 'disabled' }),
     ).rejects.toBeInstanceOf(ValidationError);
     await expect(
-      exec(languagesSetStatus, { code: 'de', status: 'draft' }),
+      exec(languagesSetStatus, { code: 'en', status: 'draft' }),
     ).rejects.toBeInstanceOf(ValidationError);
     await expect(
       exec(languagesSetStatus, { code: 'zz', status: 'disabled' }),

@@ -7,10 +7,6 @@
  * їхати в серверний бандл. У магазині — шим `scripts/owner-invite.mjs`.
  */
 export { runOwnerInvite, type RunOwnerInviteOptions } from './run';
-export {
-  resolveInviteLocale,
-  runOwnerInviteCli,
-  type OwnerInviteCliOptions,
-} from './cli';
+export { runOwnerInviteCli, type OwnerInviteCliOptions } from './cli';
 export { loadEnvFiles } from './env-files';
 export { ownerInviteMain } from './main';

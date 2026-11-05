@@ -26,6 +26,7 @@ function setup() {
     baseURL: BASE,
     provisionUser: async () => {},
     isUserBanned: async () => state.banned,
+    ensureProvisioned: async () => undefined,
   });
   const signIn = () =>
     auth.handler(

@@ -1,4 +1,5 @@
 import type { ThemeModule } from './types';
+import { trackThenable } from 'simplycms/contracts/thenable';
 import { validateThemeModule } from './validateThemeModule';
 
 /**
@@ -9,17 +10,6 @@ export type ThemeLoader = () => Promise<{ default: unknown }>;
 
 /** Тема, на яку падаємо, якщо запитану не зареєстровано */
 const FALLBACK_THEME = 'default';
-
-/**
- * Проміс із полями thenable-протоколу React (`status`/`value`/`reason`).
- * Коли проміс уже `fulfilled`, React `use()` розгортає значення СИНХРОННО,
- * без suspend — це усуває «висіння» компонента під час гідрації.
- */
-type ReactThenable<T> = Promise<T> & {
-  status?: 'pending' | 'fulfilled' | 'rejected';
-  value?: T;
-  reason?: unknown;
-};
 
 class ThemeRegistryClass {
   private themes: Map<string, ThemeLoader> = new Map();
@@ -78,32 +68,22 @@ class ThemeRegistryClass {
       return Promise.reject(new Error(`Theme "${name}" is not registered`));
     }
 
-    const promise: ReactThenable<ThemeModule> = loader()
-      .then((themeModule) => {
-        const theme = themeModule.default;
-        validateThemeModule(theme);
-        this.loadedThemes.set(name, theme);
-        return theme;
-      })
-      .catch((error) => {
-        console.error(`[ThemeRegistry] Failed to load theme: ${name}`, error);
-        // Прибираємо невдалий проміс із кешу, щоб дозволити повторну спробу
-        this.loadingPromises.delete(name);
-        throw error;
-      });
-
-    // Анотуємо проміс полями thenable-протоколу React: щойно тема завантажена,
+    // `trackThenable` анотує проміс полями протоколу React: щойно тема завантажена,
     // `use(load(name))` повертає її синхронно (без suspend під час гідрації).
-    promise.status = 'pending';
-    promise.then(
-      (theme) => {
-        promise.status = 'fulfilled';
-        promise.value = theme;
-      },
-      (reason) => {
-        promise.status = 'rejected';
-        promise.reason = reason;
-      },
+    const promise = trackThenable(
+      loader()
+        .then((themeModule) => {
+          const theme = themeModule.default;
+          validateThemeModule(theme);
+          this.loadedThemes.set(name, theme);
+          return theme;
+        })
+        .catch((error) => {
+          console.error(`[ThemeRegistry] Failed to load theme: ${name}`, error);
+          // Прибираємо невдалий проміс із кешу, щоб дозволити повторну спробу
+          this.loadingPromises.delete(name);
+          throw error;
+        }),
     );
 
     this.loadingPromises.set(name, promise);

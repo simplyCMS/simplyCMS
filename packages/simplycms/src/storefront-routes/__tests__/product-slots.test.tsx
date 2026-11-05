@@ -30,6 +30,11 @@ import {
   ProductPluginBefore,
 } from '../views/slots/ProductPluginSlots';
 
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
+
 /**
  * Юніти реквізитів картки товару (Фаза 2, Step 3): маркер на кореневому
  * елементі + стани, які тема НЕ повинна вміти зламати — доступність

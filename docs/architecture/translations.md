@@ -125,8 +125,11 @@
   даних.
 - **Мова читання** — `resolveTextLocale` (невідома чи не `published` мова з клієнта → основна, не
   помилка) і `requirePublishedTextLocale` (оформлення замовлення: лише `published`, інакше
-  відмова). Обидва дають брендований `TextLocale` (`checkedTextLocale`), тож лоадер не приймає
-  неперевірений рядок.
+  відмова). Обидва дають брендований `TextLocale` (`checkedTextLocale`): пару `{ locale, primary }`
+  типу `ContentLocale` (`simplycms/contracts`, спека §19.3), тож лоадер не приймає ні неперевірений рядок, ні мову
+  інтерфейсу (`UiLocale`) — осі різні типи, а ключі кешу (`entityKey`, `keyFor`) беруть лише
+  `ContentLocale`; `createReadCache.get(load, { variant })` бере `variant` рядком, мову дає викликач. Конструктор мови контенту — `checkedContentLocale` (`simplycms/domain/translations`); міст до
+  мови інтерфейсу — лише `resolveUiLocale` ([`i18n.md`](./i18n.md)).
 - **Видимість** — один предикат `pageVisible()` (мова `published` ∧ товар `is_active`): лоадер
   сторінки, sitemap і резолв історичної адреси. Інакше 301 з історії неактивного товару розкрив би
   його поточну адресу.

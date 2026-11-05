@@ -18,10 +18,8 @@ export async function resolveTextLocale(
   requested: string | undefined,
 ): Promise<TextLocale> {
   const set = await loadLocaleSet();
-  const locale =
-    requested !== undefined && set.published.includes(requested)
-      ? requested
-      : set.primary;
+  // `find` отримує мову з набору (вже `ContentLocale`), а не приводить рядок із входу.
+  const locale = set.published.find((c) => c === requested) ?? set.primary;
   return checkedTextLocale(locale, set.primary);
 }
 
@@ -36,7 +34,8 @@ export async function requirePublishedTextLocale(
   requested: string,
 ): Promise<TextLocale> {
   const set = await loadLocaleSet();
-  if (!set.published.includes(requested))
+  const locale = set.published.find((c) => c === requested);
+  if (locale === undefined)
     throw new ValidationError([{ path: ['locale'], code: 'invalid_value' }]);
-  return checkedTextLocale(requested, set.primary);
+  return checkedTextLocale(locale, set.primary);
 }

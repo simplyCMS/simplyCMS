@@ -1,12 +1,11 @@
 // К3-Е8, Task 11: лист скидання пароля йде через outbox і порт пошти, назва
-// магазину — з профілю, локаль — від хоста, база посилання — з env (Р18а).
+// магазину — з профілю, мова листа — з профілю одержувача (ui_locale), база посилання — з env (Р18а).
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { createAuth } from 'simplycms/auth';
+import { createAuth, issueOwnerInvite, ownerInviteStore } from 'simplycms/auth';
 import { closeDbPool } from 'simplycms/db';
 import type { MailMessage, MailTransport } from 'simplycms/mail';
-import { declareStoreLocale } from 'simplycms/site';
 import * as F from './fixtures/customer-categories';
 import {
   rejectBadRequest,
@@ -72,7 +71,6 @@ describe('скидання пароля через порт пошти (Е8-Т11
   });
 
   it('рядок password_reset з’являється в mail_outbox і зникає після доставки; лист несе назву магазину', async () => {
-    declareStoreLocale('uk');
     await F.seedCustomer(url(), { email: 'reset-ok@x.test' });
     let release!: () => void;
     gate = new Promise((r) => (release = r));
@@ -88,16 +86,65 @@ describe('скидання пароля через порт пошти (Е8-Т11
     expect(sent[0]!.text).toContain(`${SITE}/api/auth/reset-password/`);
   }, 15_000);
 
-  it('локаль хоста en → англійський лист', async () => {
-    declareStoreLocale('en');
-    await F.seedCustomer(url(), { email: 'reset-en@x.test' });
+  it('профіль одержувача з ui_locale = en → англійський лист', async () => {
+    const userId = await F.seedCustomer(url(), { email: 'reset-en@x.test' });
+    await F.rows(
+      url(),
+      `update public.profiles set ui_locale = 'en' where user_id = $1`,
+      [userId],
+    );
     await auth.api.requestPasswordReset({ body: { email: 'reset-en@x.test' } });
     await waitFor(() => sent.length === 1);
     expect(sent[0]!.subject).toBe(`Password reset — ${STORE}`);
   });
 
+  it('профіль без ui_locale → мова основного мови магазину (uk)', async () => {
+    await F.seedCustomer(url(), { email: 'reset-uk@x.test' });
+    await auth.api.requestPasswordReset({ body: { email: 'reset-uk@x.test' } });
+    await waitFor(() => sent.length === 1);
+    expect(sent[0]!.subject).not.toContain('Password reset');
+  });
+
+  /**
+   * Підміна коду основної мови в обхід тригера «код незмінний» (`replica` вимикає користувацькі
+   * тригери на цьому зʼєднанні): тест доводить ЧИТАННЯ основної мови з БД, а не її зміну.
+   */
+  const setPrimaryCode = (code: string) =>
+    F.rows(
+      url(),
+      `set session_replication_role = replica;
+       update public.languages set code = '${code}' where is_default;
+       reset session_replication_role;`,
+    );
+
+  it('I3 (§19.9): основна мова магазину en → скидання без ui_locale і запрошення приходять англійською з БД', async () => {
+    // Основна мова — рядок `languages.is_default`: читання з БД, а не зашите `uk`.
+    await setPrimaryCode('en');
+    try {
+      await F.seedCustomer(url(), { email: 'reset-primary@x.test' });
+      await auth.api.requestPasswordReset({
+        body: { email: 'reset-primary@x.test' },
+      });
+      await waitFor(() => sent.length === 1);
+      expect(sent[0]!.subject).toBe(`Password reset — ${STORE}`);
+
+      const invited: MailMessage[] = [];
+      await issueOwnerInvite({
+        store: ownerInviteStore,
+        schedule: async (items) => {
+          invited.push(...items.map((i) => i.message));
+          return [];
+        },
+        email: 'invitee-primary@x.test',
+        env: { VITE_SITE_URL: SITE },
+      });
+      expect(invited[0]!.subject).toMatch(/^Owner invitation/);
+    } finally {
+      await setPrimaryCode('uk');
+    }
+  });
+
   it('таймінг (Е8-О1): відповідь не чекає транспорт, рядок в outbox уже є', async () => {
-    declareStoreLocale('uk');
     await F.seedCustomer(url(), { email: 'reset-slow@x.test' });
     let release!: () => void;
     gate = new Promise((r) => (release = r));
@@ -124,7 +171,6 @@ describe('скидання пароля через порт пошти (Е8-Т11
   }, 15_000);
 
   it('Р18а: підроблені Host / X-Forwarded-Host / URL запиту не змінюють базу посилання', async () => {
-    declareStoreLocale('uk');
     await F.seedCustomer(url(), { email: 'reset-evil@x.test' });
     const response = await auth.handler(
       new Request('http://evil.example/api/auth/request-password-reset', {
@@ -146,7 +192,6 @@ describe('скидання пароля через порт пошти (Е8-Т11
   });
 
   it('Р18(в): через справжній раннер — X-Forwarded-Host і request-target //evil не змінюють базу посилання', async () => {
-    declareStoreLocale('uk');
     await F.seedCustomer(url(), { email: 'reset-runner@x.test' });
     const urls: string[] = [];
     const server = createServer((req, res) => {

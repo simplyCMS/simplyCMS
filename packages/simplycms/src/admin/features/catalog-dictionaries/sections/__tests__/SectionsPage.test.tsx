@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { ROWS, wrapper } from './render-support';
 
 const { toastError, toastSuccess } = vi.hoisted(() => ({
@@ -31,8 +30,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import SectionsPage from '../SectionsPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 beforeEach(() => {
   vi.clearAllMocks();

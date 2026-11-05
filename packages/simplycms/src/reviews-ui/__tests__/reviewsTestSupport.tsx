@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 import { Toaster } from 'simplycms/ui/toaster';
 import type { ProductReviews } from '../ProductReviews';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /** Спільні моки тестів вітринного відгуку (`vi.mock` у файлах тестів). */
 export const auth: { user: { id: string } | null } = { user: null };
@@ -39,10 +39,10 @@ export const mountWith = (
   // однаковий елемент React пропустив би.
   const ui = () => (
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <Component productId="p1" {...props} />
         <Toaster />
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>
   );
   const r = render(ui());

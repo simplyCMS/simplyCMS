@@ -30,7 +30,6 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
 import { createMutableServer } from '../../../../../admin-data/__tests__/support/mutable-server';
 
@@ -65,6 +64,7 @@ vi.mock('sonner', () => ({
 
 import ProductsPage from '../ProductsPage';
 import { useProductsList } from '../useProductsList';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 const SECTION = { id: 's1', name: 'Ноутбуки' };
 
@@ -89,9 +89,9 @@ function renderPage() {
   const queryClient = new QueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <ProductsPage />
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

@@ -14,7 +14,9 @@ import { dirOf, htmlLangAttrs } from '../locale/lang-attrs';
 import { loadStorefrontRoot, resolveRouterLocales } from '../locale/root-data';
 import { RootNotFound } from '../locale/RootNotFound';
 import { createLocaleRewrite } from '../locale/rewrite';
-import { NO_LOCALES, type LocaleSet } from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { NO_LOCALES } from 'simplycms/domain';
+import { localeSet } from '../../../test-harness/locale';
 
 // `getStorefrontRoot` — serverFn з БД; тут важлива лише мова, тож його дані
 // підмінено порожнім коренем.
@@ -27,18 +29,11 @@ vi.mock('../server/root', () => ({
 }));
 
 vi.mock('simplycms/storefront/loaders', () => ({
-  loadLocaleSet: async () => ({
-    primary: 'uk',
-    published: ['uk', 'en', 'ar'],
-    known: ['uk', 'en', 'ar'],
-  }),
+  loadLocaleSet: async () =>
+    localeSet('uk', ['uk', 'en', 'ar'], ['uk', 'en', 'ar']),
 }));
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en', 'ar'],
-  known: ['uk', 'en', 'ar'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en', 'ar'], ['uk', 'en', 'ar']);
 
 /** `<html>` так, як його розгортає кореневий роут host-а. */
 const htmlOf = (locale: string) =>

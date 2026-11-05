@@ -60,7 +60,7 @@ export function useShippingRates(methodId: string) {
           ...patch,
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return false;
@@ -74,9 +74,8 @@ export function useShippingRates(methodId: string) {
   const remove = (id: string) =>
     rates
       .delete(id)
-      .isPersisted.promise.then(() =>
-        toast.success(t('admin.shipping.rates.deleted')),
-      )
+      .when('settled')
+      .then(() => toast.success(t('admin.shipping.rates.deleted')))
       .catch((e: unknown) => reportTxError(t, e));
 
   return { rows, zones, save, remove };

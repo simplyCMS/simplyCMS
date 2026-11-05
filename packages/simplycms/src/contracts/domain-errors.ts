@@ -344,6 +344,8 @@ export const VALIDATION_ISSUE_CODES = [
   'path_required',
   // М1 Task 6: публікація мови, поки не всі сутності мають адресу й токени.
   'language_incomplete',
+  // М2а Task 5б (§19.15, І46): публікація мови, для якої в ядра немає мовного пакета.
+  'language_pack_missing',
 ] as const;
 
 export type ValidationIssueCode = (typeof VALIDATION_ISSUE_CODES)[number];

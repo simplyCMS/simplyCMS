@@ -21,12 +21,9 @@ import { entitySearch } from '../../../src/storefront-routes/pages/entity-route'
 import { useAddressingDb } from './fixtures/addressing-db';
 import { create, exec, saveDescription } from './fixtures/product-aggregate';
 import { insertValueAt } from './fixtures/product-graph';
+import { localeSet } from '../../locale';
 
-const SET = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en', 'de'],
-};
+const SET = localeSet('uk', ['uk', 'en'], ['uk', 'en', 'de']);
 
 describe('адреса товару: реєстр, нормалізація і сторінка (Task 15)', () => {
   const db = useAddressingDb('simplycms_storefront_path');

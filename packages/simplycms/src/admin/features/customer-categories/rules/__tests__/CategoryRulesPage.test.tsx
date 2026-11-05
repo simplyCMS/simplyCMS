@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { QueryClient } from '@tanstack/react-query';
 import {
   CATEGORIES,
@@ -43,8 +42,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import CategoryRulesPage from '../CategoryRulesPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const run = () =>
   fireEvent.click(
     screen.getByRole('button', {

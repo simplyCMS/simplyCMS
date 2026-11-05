@@ -9,7 +9,6 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import { stubDom } from '../../../shipping/methods/__tests__/render-support';
@@ -38,8 +37,9 @@ vi.mock('@tanstack/react-router', () => ({
 
 import OrdersPage from '../OrdersPage';
 import { validateOrdersSearch } from '../orders-search';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const NEW = { id: 's-new', name: 'Нове', color: '#112233', sortOrder: 0 };
 const DONE = { id: 's-done', name: 'Виконано', color: '#445566', sortOrder: 1 };
 const at = (i: number) => new Date(Date.UTC(2026, 9, 1, 10, 0, 0) - i * 1000);
@@ -48,9 +48,9 @@ const renderPage = () =>
   render(
     <QueryClientProvider client={new QueryClient()}>
       <EngineProvider value={ENGINE}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <OrdersPage />
-        </I18nProvider>
+        </TestI18nProvider>
       </EngineProvider>
     </QueryClientProvider>,
   );

@@ -1,7 +1,7 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestContext } from 'simplycms/site/request-context';
 import { loadLocaleSet } from 'simplycms/storefront/loaders';
-import type { LocaleSet } from './resolve';
+import type { LocaleSet } from 'simplycms/contracts';
 import { readClientLocaleSet } from './script';
 
 /**

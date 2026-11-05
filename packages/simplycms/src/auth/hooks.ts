@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { redactUrls } from 'simplycms/env';
 import type { AppRole } from './authz';
 
 /**
@@ -77,6 +79,33 @@ export function buildUserProvision(user: NewAuthUser): UserProvisionPlan {
   };
 }
 
+/** Порт самовідновлення профілю за `userId` (хук створення сесії). */
+export type EnsureProvisioned = (userId: string) => Promise<void>;
+
+/**
+ * `databaseHooks.session.create.after`: ідемпотентна провізія при вході. Закриває наслідок
+ * `user.create.after` нижче — користувача, чия провізія впала: профіль і роль з'являються
+ * при першому ж вході. Збій тут НЕ ламає вхід (сесія вже створена, а користувач, що не може
+ * увійти через допоміжний запис, гірший за користувача без профілю): він іде в лог з ref,
+ * як непередбачена помилка сервера (`server-guard`), і наступний вхід повторить спробу.
+ */
+export const createSessionProvisionHook =
+  (
+    ensureProvisioned: EnsureProvisioned,
+    log: (line: string) => void = (line) => console.error(line),
+  ) =>
+  async (session: { userId: string }): Promise<void> => {
+    try {
+      await ensureProvisioned(session.userId);
+    } catch (error) {
+      const ref = randomUUID().slice(0, 8);
+      const text = error instanceof Error ? error.message : String(error);
+      log(
+        `[simplycms/auth] Self-healing provisioning failed [ref ${ref}] user ${session.userId}: ${redactUrls(text)}`,
+      );
+    }
+  };
+
 /**
  * `databaseHooks.user.create.after` для інстансу Better Auth.
  *
@@ -85,7 +114,8 @@ export function buildUserProvision(user: NewAuthUser): UserProvisionPlan {
  * `databaseHooks`, а не недогляд: єдиний спосіб дістати атомарність — вести
  * весь signUp однією транзакцією, чого адаптер BA не дає. Наслідок треба
  * знати: користувач без профілю можливий, якщо провізія впала, — і саме тому
- * помилка звідси НЕ ковтається, а летить наверх, роблячи signUp невдалим.
+ * помилка звідси НЕ ковтається, а летить наверх, роблячи signUp невдалим. Наслідок закриває
+ * провізія при вході (`createSessionProvisionHook`): профіль і роль з'являються при першому вході.
  */
 export const createUserCreateHook =
   (provisionUser: ProvisionUser) =>

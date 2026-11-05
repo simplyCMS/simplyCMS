@@ -1,3 +1,5 @@
+import type { ContentLocale } from 'simplycms/contracts';
+
 /**
  * Форма коду мови (BCP 47) — та сама, що CHECK `languages_code_format` у схемі. Недовірений
  * вхід (`locale` серверної функції) звіряється з нею й обмежений довжиною ДО походу в набір мов.
@@ -13,9 +15,9 @@ export const LANGUAGE_CODE_FORMAT = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-[A-Z]{2})?$/;
  */
 export interface TextLocale {
   /** Мова запиту (опублікована; невідому викликач уже звів до основної). */
-  readonly locale: string;
+  readonly locale: ContentLocale;
   /** Основна мова магазину: джерело fallback і мова адмінських читань. */
-  readonly primary: string;
+  readonly primary: ContentLocale;
   /**
    * Бренд «мову перевірено»: літерал `{ locale, primary }` не компілюється, а `loadCatalog`,
    * `priceCart`, `priceItems` і читальні лоадери беруть лише значення, яке виробила межа
@@ -29,6 +31,9 @@ export interface TextLocale {
  * `resolveTextLocale` (опублікована або основна), `requirePublishedTextLocale` (оформлення) і
  * адмін-читачі, для яких мова — основна за визначенням. Решта коду значення лише передає.
  */
-export function checkedTextLocale(locale: string, primary: string): TextLocale {
+export function checkedTextLocale(
+  locale: ContentLocale,
+  primary: ContentLocale,
+): TextLocale {
   return { locale, primary } as TextLocale;
 }

@@ -32,7 +32,11 @@ import { join } from 'node:path';
 const MARKERS = [
   { cls: 'underline-offset-4', from: 'simplycms · ui/button' },
   { cls: '[&_svg]:size-4', from: 'simplycms · ui/button' },
-  { cls: 'aria-selected:opacity-100', from: 'simplycms · ui/calendar' },
+  // Довільне значення `[--cell-size:--spacing(8)]` живе лише в calendar з реєстру
+  // shadcn (react-day-picker 10); старий маркер `aria-selected:opacity-100` зник
+  // разом зі старою calendar. Клас-утиліта задає змінну, тож гарантовано
+  // потрапляє в CSS, якщо глоба `node_modules/simplycms/dist/**` працює.
+  { cls: '[--cell-size:--spacing(8)]', from: 'simplycms · ui/calendar' },
   { cls: 'hover:-translate-y-1', from: 'simplycms · catalog-ui/ProductCard' },
   { cls: 'md:text-6xl', from: '@simplycms/theme-solarstore · HeroBanner' },
 ];

@@ -27,7 +27,7 @@ import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
-import { awaitRevalidation } from './support/revalidation';
+import { expectNoRefetch } from './support/revalidation';
 
 type Prop = {
   id: string;
@@ -107,12 +107,18 @@ const { server, listSectionProperties, insertSectionProperties } = vi.hoisted(
     };
   },
 );
+const SERVER_SORT_ORDER = 42;
 const { updateSectionProperties } = vi.hoisted(() => ({
   updateSectionProperties: vi.fn(
     async ({ data }: { data: { id: string; patch: Partial<Prop> }[] }) =>
       data.map(({ id, patch }) => {
         const i = server.rows.findIndex((r) => r.id === id);
-        server.rows[i] = { ...server.rows[i]!, ...patch };
+        // Поле, яке рахує сервер (як sort_order/version у проді).
+        server.rows[i] = {
+          ...server.rows[i]!,
+          ...patch,
+          sortOrder: SERVER_SORT_ORDER,
+        };
         return server.rows[i]!;
       }),
   ),
@@ -194,7 +200,7 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       tx = props.insert({ id, name: 'Габарити', slug: 'size' } as never);
     });
     await act(async () => {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     });
     await waitFor(() => expect(result.current.data).toHaveLength(4));
     expect(names(result.current.data)).toEqual([
@@ -204,12 +210,8 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       'Потужність',
     ]);
     expect(insertSectionProperties).toHaveBeenCalledTimes(1);
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    await awaitRevalidation(listSectionProperties, listCalls);
-    expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
-      listCalls + 1,
-    );
-    // Серверні поля доїхали write-back-ом.
+    await expectNoRefetch(listSectionProperties, listCalls);
+    // Серверні поля доїхали write-back-ом — перезапиту не було.
     expect(result.current.data.find((r) => r.id === id)?.createdAt).toEqual(
       new Date('2026-10-03'),
     );
@@ -225,7 +227,7 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       tx = props.insert({ id, name: 'Габарити', slug: 'size' } as never);
     });
     await act(async () => {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     });
     const listCalls = listSectionProperties.mock.calls.length;
     first.unmount();
@@ -276,16 +278,17 @@ describe('повний зріз on-demand колекції (Е4-9)', () => {
       });
     });
     await act(async () => {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     });
     expect(updateSectionProperties).toHaveBeenCalledTimes(1);
-    // ціна TSDB-1: +N запитів після запису (2 живі зрізи -> не більше +2).
-    await awaitRevalidation(listSectionProperties, listCalls);
-    expect(listSectionProperties.mock.calls.length).toBeLessThanOrEqual(
-      listCalls + 2,
-    );
-    // Після ревалідації обидва зрізи узгоджені зі станом сервера.
+    await expectNoRefetch(listSectionProperties, listCalls);
+    // Обидва живі зрізи узгоджені з РЯДКОМ СЕРВЕРА без перезапиту:
+    // `sortOrder` рахує сервер (стаб), оптимістичний патч його не знає.
     expect(result.current.card.data?.name).toBe('Маса');
+    expect(result.current.card.data?.sortOrder).toBe(SERVER_SORT_ORDER);
+    expect(
+      result.current.list.data.find((r) => r.id === target.id)?.sortOrder,
+    ).toBe(SERVER_SORT_ORDER);
     expect(names(result.current.list.data)).toEqual([
       'Колір',
       'Маса',

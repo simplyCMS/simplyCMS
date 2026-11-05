@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { CatalogValue } from 'simplycms/i18n';
 import type { ZodObject, ZodRawShape } from 'zod';
 import type {
   HookHandler,
@@ -18,7 +19,9 @@ export type SlotComponent = ComponentType<{ context?: unknown }>;
  * тем v2.1). Ключі зобовʼязані мати префікс `plugin.<name>.` — колізії з
  * замкненим `MessageKey` ядра і між плагінами виключаються неймспейсом.
  */
-export type PluginMessages = Partial<Record<string, Record<string, string>>>;
+export type PluginMessages = Partial<
+  Record<string, Record<string, CatalogValue>>
+>;
 
 /**
  * Декларативний контракт плагіна (спека §7, обсяг v1 — план Фази 3).

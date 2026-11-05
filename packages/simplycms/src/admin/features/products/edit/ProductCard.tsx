@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useT } from 'simplycms/i18n';
 import { PluginSlot } from 'simplycms/plugins/PluginSlot';
 import { ConflictDialog } from '../../translations/ConflictDialog';
@@ -22,6 +23,7 @@ function Body(props: ProductCardInput): ReactNode {
   const t = useT();
   const { productId, languages } = props;
   const s = useProductCardState(props);
+  const queryClient = useQueryClient();
   const { form, state, rows, primary, active, setActive } = s;
   const saved = state.agg.base;
 
@@ -43,7 +45,7 @@ function Body(props: ProductCardInput): ReactNode {
           for (const l of locales)
             rows.noteTextError(`texts.${l}.x`, setActive);
         }}
-        card={editCardContext(productId, s)}
+        card={editCardContext(productId, s, queryClient)}
         onSubmit={(values) => {
           rows.reset();
           return s.save(values);

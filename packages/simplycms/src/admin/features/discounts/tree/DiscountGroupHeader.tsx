@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useLocale, useT } from 'simplycms/i18n';
+import { useUiLocale, useT } from 'simplycms/i18n';
 import type { DiscountGroup } from 'simplycms/schema/types';
 import { Badge } from 'simplycms/ui/badge';
 import { Button } from 'simplycms/ui/button';
@@ -26,7 +26,7 @@ export function DiscountGroupHeader({
   onDelete,
 }: Props) {
   const t = useT();
-  const locale = useLocale();
+  const locale = useUiLocale();
   const day = (d: Date | null) => (d ? d.toLocaleDateString(locale) : '∞');
   const label = { name: group.name };
   return (

@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { LocaleSet } from 'simplycms/i18n';
+import type { LocaleSet } from 'simplycms/contracts';
 
 /**
  * Контекст роутера магазину. Живе в ПАКЕТІ: loader роут-файлів ядра

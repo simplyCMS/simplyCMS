@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 
 /**
  * Задача 14в: `form.watch()` замінено на `useWatch`. Тест доводить, що
@@ -110,15 +109,21 @@ vi.mock('simplycms/checkout-ui', () => ({
 }));
 
 import Checkout from '../Checkout';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
+
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
 
 afterEach(cleanup);
 
 describe('Checkout: залежні секції після useWatch', () => {
   it('setValue з однієї секції перемальовує інші (контакти, доставка, нотатки, оплата)', () => {
     render(
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <Checkout />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(screen.getByTestId('payment').textContent).toBe('cash');
     expect(screen.getByTestId('contact-first').textContent).toBe('');

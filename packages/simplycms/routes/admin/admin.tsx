@@ -1,9 +1,14 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
-import type { ErrorComponentProps } from '@tanstack/react-router';
 import { AdminLayout } from 'simplycms/admin/layouts/AdminLayout';
-import { useT } from 'simplycms/i18n';
-import { useStaleChunkRecovery } from 'simplycms/runtime/stale-chunk-react';
-import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
+import {
+  I18nProvider,
+  loadUiCatalog,
+  resolveAdminUiLocale,
+  resolveUiLocale,
+  useUiCatalogs,
+} from 'simplycms/i18n';
+import { getAdminSession } from 'simplycms/storefront-routes/server/auth';
+import { AdminError, AdminPending } from './AdminBoundaries';
 
 /**
  * Layout-роут адмінки.
@@ -23,7 +28,7 @@ import { getUser, isAdmin } from 'simplycms/storefront-routes/server/auth';
  * `core/lib/user-addresses.ts:88`: «серверна діагностика, а не рядок
  * інтерфейсу»): `beforeLoad` — поза React-контекстом, локаль там
  * недосяжна, тож рядок ІНТЕРФЕЙСУ дає `errorComponent` цього ж роуту
- * (`AdminError` нижче) за `error.name` — контракт як у К3-13
+ * (`AdminError` з `AdminBoundaries`) за `error.name` — контракт як у К3-13
  * (`authz-request.ts`: серіалізація не зберігає прототипи, тож
  * `instanceof` на клієнті ненадійний).
  */
@@ -33,7 +38,7 @@ class InsecureContextError extends Error {
 
 export const Route = createFileRoute('/admin')({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ context }) => {
     // ПЕРШИЙ рядок beforeLoad: роут client-only (`ssr:false`), тож це
     // виконується рівно один раз на старті адмінки, до будь-якого запиту.
     if (
@@ -46,14 +51,32 @@ export const Route = createFileRoute('/admin')({
     }
     // Розрізняємо кейси так само, як серверний guard у start.ts:
     // немає сесії → /auth; є сесія, але не admin → / (без bounce на /auth).
-    const user = await getUser();
-    if (!user) {
+    const session = await getAdminSession();
+    if (!session) {
       throw redirect({ to: '/auth' });
     }
-    const ok = await isAdmin();
-    if (!ok) {
+    if (!session.isAdmin) {
       throw redirect({ to: '/' });
     }
+    // Мова адмінки — з власного профілю, прочитаного РАЗОМ із сесією (§19.6): збережена з
+    // частиною `admin` → основна з `admin` → `en`. Частини `base` і `admin` вантажимо тут,
+    // до рендера: layout розгортає їх через `use` синхронно. Повторний виклик після
+    // `router.invalidate()` перечитує вибір.
+    const adminUi = resolveAdminUiLocale(
+      session.uiLocale,
+      context.locales.primary,
+    );
+    await Promise.all([
+      loadUiCatalog(adminUi, 'base'),
+      loadUiCatalog(adminUi, 'admin'),
+    ]);
+    // Кінцева ланка fallback плагіна/теми — пакет ОСНОВНОЇ мови магазину, а не мова адмінки:
+    // інакше `en`-адмін бачить сирі ключі плагіна, що має лише `uk` (§19.4, §19.15).
+    const adminFallback = resolveUiLocale(
+      context.locales.primary,
+      context.locales.primary,
+    );
+    return { adminUi, adminFallback };
   },
   // `ssr: false` маршруту потрібен pendingComponent: сервер рендерить його як
   // fallback, він гідрується змонтованим, і перехід pending→loaded на клієнті
@@ -63,69 +86,23 @@ export const Route = createFileRoute('/admin')({
   component: AdminRoot,
 });
 
+const ADMIN_PARTS = ['base', 'admin'] as const;
+
+/**
+ * Вкладений провайдер: кореневий несе лише `base` вітрини, а каталог адмінки потрібен
+ * тільки тут (І43 — вітрина його не тягне). Мова адмінки — з профілю, а не з мови сторінки.
+ */
 function AdminRoot() {
+  const { adminUi, adminFallback } = Route.useRouteContext();
+  const catalogs = useUiCatalogs(adminUi, ADMIN_PARTS);
   return (
-    <AdminLayout>
-      <Outlet />
-    </AdminLayout>
-  );
-}
-
-/**
- * Fallback під час client-side guard/завантаження адмінки.
- *
- * `useT()` тут безпечний: `pendingComponent` рендериться на тому самому місці
- * дерева, що й `component` цього ж роуту, тобто всередині `I18nProvider` з
- * host-`__root.tsx` (той самий контекст, який уже споживає `AdminLayout`).
- */
-function AdminPending() {
-  const t = useT();
-
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-muted-foreground">
-        {t('admin.common.loading')}
-      </p>
-    </div>
-  );
-}
-
-/**
- * Помилки `beforeLoad`/`loader` адмінки. `useT()` тут так само безпечний,
- * як у `AdminPending` — той самий рівень дерева, всередині `I18nProvider`.
- *
- * Відомий код (`InsecureContextError`) отримує перекладений рядок; решта —
- * як кореневий `ErrorBoundary` (`src/routes/__root.tsx`): `error.message`
- * дослівно, з тим самим fallback-ключем на випадок порожнього повідомлення.
- * Розрізнення за `error.name`, не `instanceof` — той самий контракт К3-13.
- */
-function AdminError({ error }: ErrorComponentProps) {
-  const t = useT();
-  // Застарілий чанк після деплою: лікує перезавантаження, а не екран помилки.
-  const recovering = useStaleChunkRecovery(error);
-  if (recovering) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          {t('app.error.reloading')}
-        </p>
+    <I18nProvider locale={adminUi} fallback={adminFallback} catalogs={catalogs}>
+      {/* `contents`: обгортка лише несе `lang` і не втручається в розкладку. */}
+      <div lang={adminUi} className="contents">
+        <AdminLayout>
+          <Outlet />
+        </AdminLayout>
       </div>
-    );
-  }
-  // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що. Поля
-  // читаємо структурно, без `instanceof` — той самий контракт К3-13.
-  const fields: { name?: unknown; message?: unknown } =
-    typeof error === 'object' && error !== null ? error : {};
-  const message =
-    fields.name === 'InsecureContextError'
-      ? t('admin.common.insecureContext')
-      : typeof fields.message === 'string'
-        ? fields.message
-        : t('app.error.fallback');
-
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-destructive">{message}</p>
-    </div>
+    </I18nProvider>
   );
 }

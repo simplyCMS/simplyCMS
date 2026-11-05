@@ -1,5 +1,5 @@
 /** Каталог адмінки — дзеркало `uk/admin/index.ts`. */
-import type { Catalog } from '../../../types';
+import type { AdminKey } from '../../../types';
 import { messages as banners } from './banners';
 import { messages as common } from './common';
 import { messages as customerCategories } from './customerCategories';
@@ -22,7 +22,7 @@ import { messages as users } from './users';
 import { messages as validation } from './validation';
 import { messages as validator } from './validator';
 
-export const messages: Catalog = {
+export const messages = {
   ...banners,
   ...common,
   ...customerCategories,
@@ -44,4 +44,4 @@ export const messages: Catalog = {
   ...users,
   ...validation,
   ...validator,
-};
+} satisfies Record<AdminKey, string>;

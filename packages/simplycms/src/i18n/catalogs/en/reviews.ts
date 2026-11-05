@@ -1,10 +1,8 @@
-import type { Catalog } from '../../types';
+import type { CatalogValue } from '../../types';
 
 /** Product reviews — дзеркало `uk/reviews.ts`. */
-export const messages: Catalog = {
-  'reviews.countOne': 'review',
-  'reviews.countFew': 'reviews',
-  'reviews.countMany': 'reviews',
+export const messages = {
+  'reviews.count': { one: '{count} review', other: '{count} reviews' },
 
   'reviews.alreadySubmitted': "You've already reviewed this product.",
   'reviews.edit': 'Edit',
@@ -45,4 +43,4 @@ export const messages: Catalog = {
   'reviews.errors.tooManyImages': 'No more than 5 photos',
 
   'reviews.editor.linkUrl': 'Link URL',
-};
+} satisfies Record<string, CatalogValue>;

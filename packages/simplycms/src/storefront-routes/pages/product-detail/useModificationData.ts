@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ModificationStockInfo } from 'simplycms/core/components/catalog/ModificationSelector';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import { AGGREGATE } from 'simplycms/contracts/entities';
-import { useLocale } from 'simplycms/i18n';
+import { useContentLocale } from 'simplycms/runtime/content-locale';
 import { getModificationData } from '../../server/products';
 import type { ProductDetailProduct, ProductModificationRow } from './types';
 
@@ -29,7 +29,7 @@ export function useModificationData(
   product: ProductDetailProduct | null | undefined,
 ): ModificationData {
   const productId = product?.id;
-  const locale = useLocale();
+  const locale = useContentLocale();
   const key = AGGREGATE.modificationData.keyFor(locale);
 
   const { data } = useQuery({

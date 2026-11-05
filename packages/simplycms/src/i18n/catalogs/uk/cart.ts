@@ -1,12 +1,14 @@
 /** Кошик. */
 export const messages = {
   'cart.title': 'Кошик',
-  'cart.items': 'Товари ({count})',
-  // Форми множини лічильника товарів у шапці CartDrawer (напр. "(3 товари)").
-  // Українська має 3 форми — вибір форми лишається в коді (pluralItemsKey).
-  'cart.itemsOne': 'товар',
-  'cart.itemsFew': 'товари',
-  'cart.itemsMany': 'товарів',
+  'cart.itemsTitle': 'Товари ({count})',
+  // Лічильник товарів у шапці CartDrawer (напр. "3 товари"): форми множини, вибір — `plural`.
+  'cart.items': {
+    one: '{count} товар',
+    few: '{count} товари',
+    many: '{count} товарів',
+    other: '{count} товару',
+  },
   'cart.clear': 'Очистити кошик',
   'cart.empty.title': 'Кошик порожній',
   'cart.empty.description':

@@ -13,7 +13,6 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
@@ -22,7 +21,7 @@ import {
   makeOrder,
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -48,12 +47,13 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import OrderDetailPage from '../OrderDetailPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );
@@ -125,8 +125,8 @@ describe('позиції замовлення: запит у польоті', ()
       h.release(applyOutcome({ order, upserted: [], removedIds: ['i0002'] }));
     });
     expect(screen.queryByText('Товар 2')).toBeNull();
-    // Ревалідація (TSDB-1) віддає стан сервера — позиція не повертається.
-    await awaitRevalidation(listOrderItems, before);
+    // Без перезапиту — позиція не повертається.
+    await expectNoRefetch(listOrderItems, before);
     expect(screen.queryByText('Товар 2')).toBeNull();
   });
 });

@@ -81,9 +81,9 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
   // Пошта (Е8, Task 10/12) — T2, upward `env`, `db`, `schema`, `i18n`; `auth`
   // кличе її, а не навпаки, тож зворотний імпорт ловиться (цикл auth ↔ mail).
   ['packages/simplycms/src/mail', 'simplycms/auth', 'simplycms/db'],
-  // Кеш профілю й вшиті теми (Е6б-7; Е8 додав upward `i18n`) — T2, upward
-  // `db`, `i18n`; `auth` того ж тіру — поза винятком.
-  ['packages/simplycms/src/site', 'simplycms/auth', 'simplycms/i18n'],
+  // Кеш профілю й вшиті теми (Е6б-7) — T2, upward лише `db`; `auth` і `i18n` того ж
+  // тіру — поза винятком (М2а Task 6: `store-locale` знесено, `i18n` тут більше не потрібен).
+  ['packages/simplycms/src/site', 'simplycms/i18n', 'simplycms/db'],
   // Серверні переклади (М1, Tasks 3 і 11) — T2, upward лише `db` (транзакція викликача);
   // `auth` того ж тіру — поза винятком: переклади про права нічого не знають.
   ['packages/simplycms/src/translations', 'simplycms/auth', 'simplycms/db'],

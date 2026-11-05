@@ -52,9 +52,7 @@
 негативний контроль — `tests/eslint-server-env.test.ts`) і Gate C пілота (`SERVER_PAYLOAD` будується з `SERVER_ONLY` —
 `simplycms/contracts/server-only` — плюс серверні залежності; контроль — `tests/pilot-gate-c.test.ts`).
 
-🔴 `VITE_LOCALE` — опційний клієнтський перемикач локалі збірки (`simplycms.config.ts`:
-`locale: import.meta.env.VITE_LOCALE ?? 'uk-UA'`; е2е-обгортка приймає `uk-UA` або `en-US`).
-Запікається при `vite build`, не є частиною контракту з трьох ключів. Те саме значення задає мову листів: `pnpm owner:invite` читає `VITE_LOCALE` (невалідне — попередження й `uk`), а сервер отримує локаль від host-а (`declareStoreLocale` у `src/server.ts`).
+🔴 Ключа мови збірки немає: змінну мови збірки й поле `locale` конфігу знесено (М2). Мова вітрини — з URL (перший сегмент шляху), мова інтерфейсу — з пакетів ядра й профілю (`profiles.ui_locale`), основна мова — рядок `languages` у БД; мова листа — за одержувачем (`resolveMailUiLocale`), а `pnpm owner:invite` бере основну мову з БД. Валюта лишається в `simplycms.config.ts`.
 
 🔴 `VITE_SITE_URL` — ORIGIN сайту: шлях і кінцевий слеш ігноруються. Від нього будуються і посилання в листах (`siteUrl` з `simplycms/env`), і база Better Auth (`BETTER_AUTH_URL` — лише явний override; без обох ключів `createAuth` падає, бо інакше BA брав би базу із запиту).
 

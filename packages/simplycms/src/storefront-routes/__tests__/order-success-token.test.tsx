@@ -2,9 +2,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /**
  * Guest-token не має лишатись у URL після завантаження замовлення (Task 15).
@@ -69,11 +69,11 @@ function renderPage() {
 
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <OrderSuccess />
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

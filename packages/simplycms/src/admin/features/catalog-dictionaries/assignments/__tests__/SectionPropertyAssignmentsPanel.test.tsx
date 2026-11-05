@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import {
   ASSIGNMENTS,
   ID,
@@ -69,8 +68,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { SectionPropertyAssignmentsPanel } from '../SectionPropertyAssignmentsPanel';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const region = (key: 'productProps' | 'modificationProps') =>
   screen.getByRole('region', { name: t(`admin.properties.section.${key}`) });

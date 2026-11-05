@@ -541,8 +541,8 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 Той самий смок **спростував** усі шість ризиків переповнення верстки, названі
 у звіті PR #27, — виміром, а не оглядом.
 
-**Як повторити.** Стек і власник — §8.2. Далі: `locale` в `simplycms.config.ts`
-на потрібну мову → `pnpm dev` → обхід роутів у Chromium із виміром
+**Як повторити.** Стек і власник — §8.2. Далі: основна мова магазину (рядок `languages`)
+або префікс мови в URL → `pnpm dev` → обхід роутів у Chromium із виміром
 `scrollWidth > clientWidth`, виходу дитини за праву межу контейнера з
 `overflow-x: hidden|auto`, і `documentElement.scrollWidth > clientWidth`.
 🔴 `span.sr-only` із виміру виключати: він обрізається навмисно
@@ -589,8 +589,7 @@ scripts/e2e.mjs
   2. startLocalStack()           — supabase start + db reset (той самий механізм, що й `pnpm pilot:e2e`)
   3. readLocalStack(port)        — VITE_SUPABASE_* + service_role з `supabase status -o json`
   4. bootstrapOwner()            — scripts/e2e/bootstrap-owner.mjs  (знесено)
-  5. playwright test  (VITE_LOCALE=uk-UA)   ─┐ послідовно: один vite dev
-     playwright test  (VITE_LOCALE=en-US)   ─┘ на теку одночасно (routeTree.gen.ts, node_modules/.vite)
+  5. playwright test                        — один vite dev на теку (routeTree.gen.ts, node_modules/.vite)
   6. stopLocalStack()            — завжди, у finally
 ```
 
@@ -755,7 +754,8 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `eslint-rules/server-fn-top-level.mjs` + `tests/eslint-rules/server-fn-top-level.test.ts` | `createServerFn` не топ-рівневим `const` (компілятор Start або падає, або МОВЧКИ не трансформує — fast-path) | `pnpm lint` / `pnpm test` | лише форма оголошення |
 | `eslint-rules/mutation-cache-sync.mjs` + `tests/eslint-rules/mutation-cache-sync.test.ts` | мутація (`useMutation` або виклик serverFn з `simplycms/admin-server`) без синку кешу в ТІЙ САМІЙ функції | `pnpm lint` (зона `admin-data/**` + `admin/features/**` за побудовою + точковий ратчет `MUTATION_CACHE_SYNC_RATCHET` для решти сторінок) | бачить лише файли У зоні |
 | `tests/mutation-cache-sync-coverage.test.ts` (Task 12, К3-Е3) | повноту самої зони: кожен файл `src/admin/**`, що імпортує `simplycms/admin-(data\|server)`, — під `admin/features/**`, у `MUTATION_CACHE_SYNC_RATCHET` або в іменованому `EXEMPT` — інакше сторінка, переписана хвилею Е4–Е6 поза `features/`, лишилась би без гейта вище мовчки | `pnpm test` | бачить лише СТАТИЧНИЙ `from 'simplycms/admin-(data\|server)'` — динамічний імпорт чи реекспорт крізь проміжний модуль йому невидимі |
-| `tests/handler-canon.test.ts` | `return { refetch: false }` без БЕЗУМОВНОГО write-back у persistence-хендлері; порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота по рядках батчу (борг Е3 — поведінковий кейс у тесті колекції) |
+| `tests/handler-canon.test.ts` | persistence-хендлер `admin-data` без `await`-нутого БЕЗУМОВНОГО write-back у тілі; ранній `return` до нього; write-back без `await`, лише в гілці, порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота набору рядків сервера (її доводять поведінкові кейси колекцій: серверне поле в кеші без перезапиту) |
+| `eslint-rules/awaited-write-back.mjs` + `tests/eslint-rules/awaited-write-back.test.ts` | `*.utils.write*(…)`/`writeBatch(…)` поза `await`/`return`/`void` з причиною (загублений Promise write-back-у, TanStack DB 1.0) | `pnpm lint` (зона `packages/simplycms/src/**` без тестів) | синтаксично: бачить лише форму `<x>.utils.<op>`; Promise, переданий у змінну й потім await-нутий, — офендер (свідомо) |
 | `tests/tanstack-db-single-instance.test.ts` | два фізичні інстанси `@tanstack/db` у дереві (peer-контекст) — за `path` з `pnpm ls --json`, не за семвером | `pnpm test` | не сканує `.pnpm` напряму (сироти) |
 | тір-зони `admin-server` (T2) / `admin-data` (T4) — `tests/tier-boundary.test.ts`, виняток-файл `migrate` → `db/lock-keys` — `tests/tier-boundary/exempt-files.test.ts` | імпорт угору по шарах, обидві форми специфікатора; виняток відкриває рівно один модуль, решта `db` закрита | `pnpm lint` / `pnpm test` | — |
 | `tests/domain-translations-client-safe.test.ts` | `domain/translations` і `domain/slugs` (T1, їх імпортує й клієнтський бандл адмінки) не тягнуть `node:`, голий вбудований модуль чи його підшлях (`fs`, `path/posix` — за `builtinModules`), server-only субшлях чи серверну залежність — ні прямо, ні в транзитивному замиканні локальних імпортів (специфікатор із розширенням `.js` резолвиться в `.ts`, тож замикання не обривається); sha256 живе лише в `simplycms/translations`. Перелік server-only — з `contracts/server-only`. Шість негативних контролів — по одному на кожну гілку детектора (`node:`, голий вбудований, вбудований підшлях, server-only, серверна залежність) у ТРАНЗИТИВНОМУ імпорті тимчасового дерева і `.js`-специфікатор; плюс позитивний контроль чистого дерева і сентинели «скан бачить обидва дерева», «декларація server-only непорожня» | `pnpm test` | статичний розбір import-специфікаторів; динамічний `import()` з обчисленим аргументом не бачить |
@@ -1229,3 +1229,22 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 | `test-harness/pg/__tests__/harness.test.ts` (стеля одноразових з'єднань) | рахує лише `backend_type = 'client backend'`: `autovacuum worker`, що заходить у свіжу БД під навантаженням, давав хибне «5 > 4» (доведено логом у момент падіння); мутація «без стелі» → 24 | `pnpm test:schema` |
 | `tests/source-text.test.ts` | помічник текстових гейтів вимагає ім'я файла: без нього `.tsx` з `//` у JSX-тексті лексер TS різав би код після «коментаря» (хибно-зелений гейт); невідоме розширення — помилка; SQL і CSS — власна лексика | `pnpm test` |
 
+
+## 15. Контури блоку «осі мови» (М2, блок 1, 2026-11)
+
+Канон — [`i18n.md`](./i18n.md); інваріанти І41–І46 і їхні тести — майстер-план §4. Тут — що доводить кожен
+гейт блоку й чого він не бачить.
+
+| Гейт | Що доводить | Крок | Чого не бачить |
+|---|---|---|---|
+| Gate C, правило каталогів (`scripts/pilot-pack/gate-c.mjs`, юніт `tests/pilot-gate-c.test.ts`) — І43 | каталоги ядра (`base`/`admin`/`mail` кожної мови) доступні лише через `import()`: жоден не входить у вхідний граф клієнтського бандла. Склад чанка читається з `sources` його sourcemap (переживає minify; `//#region` — запасний шлях) | `pnpm pilot:pack` / `pnpm pilot` | канарка: жоден чанк `dist` не віддає шляхів `src/` — інакше гейт сліпий і падає; каталог теми й плагіна — свідомо поза правилом (вже ліниві зі своїм чанком) |
+| `tests/i18n-coverage/part-keys.ts` (правило сканера `i18n-coverage`) | ключ частини `admin` — лише в коренях адмінки, ключ `mail` — лише в server-only модулях | `pnpm test` | ключі, зібрані динамічно |
+| `packages/simplycms/src/storefront-routes/__tests__/no-raw-keys-html.test.tsx` — І44 | HTML вітрини (головна, товар, кошик; мова з пакетом, регіональна, клієнтський перехід) не містить жодного сирого ключа `MessageKey`; реєстр свіжий на кожен кейс (`vi.resetModules`) | `pnpm test` | реальний браузер: гідрацію доводить маркер нижче |
+| маркер ідентичності SSR-вузлів, title SSR = після гідрації, перекладений title, `console.error` воронки (`scripts/live-smoke/hydration-identity.mjs`, `head-console.mjs`) | гідрація НЕ замінила SSR-DOM (`hydrateRoot`, не `createRoot`); `head()` не читає каталог синхронно; консоль порожня поза allow-list (CORS шрифтів харнеса; бюджет `Failed to fetch` = перервані fetch) | `pnpm live:smoke` | dev-попередження React (прод-збірка їх не друкує) |
+| `tests/i18n-catalog-parity.test.ts`, `tests/theme-messages-parity.test.ts`, `tests/plugin-messages-parity.test.ts` (спільний `tests/helpers/catalog-values.ts`) | множина: набір форм ключа РІВНО категорії `Intl.PluralRules(код)`; однаковий вид значення (рядок чи множина) у всіх мовах; плейсхолдери по всіх формах | `pnpm test` | змістовну правильність перекладу |
+| `tests/i18n-key-types.test.ts` | `@ts-expect-error`: `t()` не приймає ключ множини, `plural` — рядковий ключ | `pnpm typecheck` | — |
+| унікальна БД на прогін (`uniqueDbName` у `scripts/unique-db-name.mjs`) і замок `.proof-run.lock` (`scripts/tree-lock.mjs`) | `live:smoke` і `pilot` не ділять ні БД, ні дерево з паралельним прогоном | `pnpm live:smoke`, `pnpm gates`, `pnpm release` | самостійні `pnpm pilot` і `pnpm build` замка не беруть — свідома межа |
+
+Мова магазину лише з пакетом (І46): відмова публікації — `test-harness/pg/__tests__/languages-operations.test.ts`
+(`pnpm test:schema`), гучний сигнал деградованого режиму —
+`storefront/loaders/__tests__/language-degraded.test.ts`, `doctor --online` — `tests/cli-language-check.test.ts`.

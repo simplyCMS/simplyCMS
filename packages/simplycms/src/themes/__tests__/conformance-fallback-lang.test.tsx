@@ -4,6 +4,11 @@ import type { ProductDetailViewModel } from 'simplycms/contracts/views';
 import { FallbackText } from 'simplycms/ui/fallback-text';
 import { assertThemeViewsConformance } from '../conformance';
 import { GoodProductDetail, makeTheme } from './conformance-themes';
+import { ui } from '../../../test-harness/locale';
+
+// Мова рендеру — параметр kit-а без дефолту: тут явно `uk`.
+const assertUk = (theme: Parameters<typeof assertThemeViewsConformance>[0]) =>
+  assertThemeViewsConformance(theme, { locale: ui('uk') });
 
 /**
  * І37 у conformance (фінальне рев'ю М1, B-I1): власний view картки товару мусить дати
@@ -81,45 +86,37 @@ function AltWithoutLang(vm: ProductDetailViewModel) {
 describe('assertThemeViewsConformance — lang fallback-фрагментів (І37)', () => {
   it('назва з lang — зелено', async () => {
     await expect(
-      assertThemeViewsConformance(makeTheme({ ProductDetail: NameWithLang })),
+      assertUk(makeTheme({ ProductDetail: NameWithLang })),
     ).resolves.toEqual(['ProductDetail']);
   });
 
   it('назва без lang — червоно, з назвою поля', async () => {
     await expect(
-      assertThemeViewsConformance(
-        makeTheme({ ProductDetail: NameWithoutLang }),
-      ),
+      assertUk(makeTheme({ ProductDetail: NameWithoutLang })),
     ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
   });
 
   it('alt фото без lang — червоно', async () => {
     await expect(
-      assertThemeViewsConformance(makeTheme({ ProductDetail: AltWithoutLang })),
+      assertUk(makeTheme({ ProductDetail: AltWithoutLang })),
     ).rejects.toThrow(/без lang \(І37\): gallery\.alt$/);
   });
 
   it('трансформований текст без lang — червоно (N3: пошук підрядка цього не бачив)', async () => {
     await expect(
-      assertThemeViewsConformance(
-        makeTheme({ ProductDetail: UpperNameWithoutLang }),
-      ),
+      assertUk(makeTheme({ ProductDetail: UpperNameWithoutLang })),
     ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
   });
 
   it('трансформований текст із lang — зелено', async () => {
     await expect(
-      assertThemeViewsConformance(
-        makeTheme({ ProductDetail: UpperNameWithLang }),
-      ),
+      assertUk(makeTheme({ ProductDetail: UpperNameWithLang })),
     ).resolves.toEqual(['ProductDetail']);
   });
 
   it('обрізаний текст без lang — червоно (R2-5: маркери різняться з першого символу)', async () => {
     await expect(
-      assertThemeViewsConformance(
-        makeTheme({ ProductDetail: TruncatedNameWithoutLang }),
-      ),
+      assertUk(makeTheme({ ProductDetail: TruncatedNameWithoutLang })),
     ).rejects.toThrow(/без lang \(І37\): summary\.name$/);
   });
 });

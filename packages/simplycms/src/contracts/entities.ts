@@ -1,3 +1,5 @@
+import type { ContentLocale } from './content-locale';
+
 /**
  * Реєстр імен сутностей і фабрика ключів кешу (рішення К3-3).
  *
@@ -64,7 +66,7 @@ export type EntityName = (typeof ENTITY)[keyof typeof ENTITY];
  * `admin-data` — див. `collectionKey` нижче. Поза `admin-data` — `variant()`
  * (скоуп/форма тієї самої сутності) або `scoped()` (FK-зріз).
  */
-export function entityKey(entity: EntityName, locale?: string) {
+export function entityKey(entity: EntityName, locale?: ContentLocale) {
   // Мова (І36) — ПЕРШИЙ сегмент після сутності: `[entity, locale, …]`. Сегмент 0
   // лишається сутністю, тож інвалідація по `all()` зачіпає всі мови, а дві мови
   // одного id не ділять запис кешу (текст сутності залежить від мови запиту).
@@ -131,7 +133,7 @@ export function aggregateKey(
 ): {
   key: readonly [string];
   /** Ключ агрегата з мовою (І36): `[name, locale]` — префікс `key` зберігається. */
-  keyFor: (locale: string) => readonly [string, string];
+  keyFor: (locale: ContentLocale) => readonly [string, string];
   deps: readonly EntityName[];
 } {
   return {

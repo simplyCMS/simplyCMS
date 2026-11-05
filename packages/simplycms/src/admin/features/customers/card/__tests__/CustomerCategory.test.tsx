@@ -8,7 +8,6 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import {
   CAT,
   VIP,
@@ -19,6 +18,7 @@ import {
   renderCard,
   stubDom,
 } from './render-support';
+import { ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -54,7 +54,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 beforeEach(() => {
   stubDom();

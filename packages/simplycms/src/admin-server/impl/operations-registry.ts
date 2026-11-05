@@ -23,6 +23,7 @@ import {
   productsSetModificationToken,
   productsSetPath,
 } from './products/aggregate/operations';
+import { profilesSetUiLocale } from './profiles/ui-locale';
 import { productsSavePrices } from './product-prices/operations';
 import { productsSaveStock } from './stock/operations';
 
@@ -54,6 +55,7 @@ export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [
   productsSetModificationToken,
   productsSavePrices,
   productsSaveStock,
+  profilesSetUiLocale,
 ] as readonly OperationDef<unknown, unknown>[];
 
 const BY_ID: ReadonlyMap<string, OperationDef<unknown, unknown>> = new Map(

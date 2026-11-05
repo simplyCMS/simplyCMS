@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { stubDom, wrapper } from '../../__tests__/render-support';
 import {
   ALL_TARGET,
@@ -54,8 +53,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import DiscountEditPage from '../DiscountEditPage';
+import { ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const saved = () => savedData(m);
 
 beforeEach(() => {

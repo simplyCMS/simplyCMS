@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Модерація відгуків — дзеркало `uk/admin/reviews.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.reviews.subtitle': 'Moderate product reviews',
   'admin.reviews.statusFilter': 'Filter by status',
   'admin.reviews.all': 'All',
@@ -43,4 +41,4 @@ export const messages: Catalog = {
   'admin.reviews.status.pending': 'Pending',
   'admin.reviews.status.approved': 'Approved',
   'admin.reviews.status.rejected': 'Rejected',
-};
+} satisfies Record<string, string>;

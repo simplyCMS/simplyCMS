@@ -9,14 +9,6 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 const trimApi = (api) => api.replace(/\/+$/, '');
 
-/** Чистка скриньки (лише через API Mailpit). */
-export async function clearMailbox(api) {
-  const res = await fetch(`${trimApi(api)}/api/v1/messages`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) throw new Error(`Mailpit DELETE: ${res.status}`);
-}
-
 /**
  * Чекає лист, що задовольняє `match(summary)`.
  *

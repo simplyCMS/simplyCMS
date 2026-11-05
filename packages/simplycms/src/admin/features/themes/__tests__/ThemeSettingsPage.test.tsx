@@ -9,7 +9,6 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import type { ThemeSettingDefinition } from 'simplycms/themes/types';
 import { makeWrapper } from '../../settings/__tests__/render-support';
 import { themeRow } from './theme-rows';
@@ -63,8 +62,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import ThemeSettingsPage from '../ThemeSettingsPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client: QueryClient;
 
 const open = async () => {

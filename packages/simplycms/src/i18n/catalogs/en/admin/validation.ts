@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Server validation errors (`ValidationError`, Тема 12) — mirror of `uk/admin/validation.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.validation.failed':
     'The data did not pass validation — fix the fields and try again',
   'admin.validation.invalid_type': 'Invalid value type',
@@ -30,4 +28,6 @@ export const messages: Catalog = {
     'Enter the address manually: it cannot be derived from the name',
   'admin.validation.language_incomplete':
     'The language is incomplete: finish filling addresses before publishing',
-};
+  'admin.validation.language_pack_missing':
+    'There is no language pack for this language: it cannot be published, the draft stays',
+} satisfies Record<string, string>;

@@ -100,11 +100,12 @@ read-only, ключ ролі накату (суперкористувача) н�
 | `store-owner` | `ok` / `warn` | `user_roles` має ≥1 запис `admin`; немає — `warn` «створи власника: `pnpm owner:invite`» (у щойно створеному магазині це крок онбордингу, а не поломка) |
 | `store-profile` | `ok` / `warn` | профіль (`system_settings['store_profile']`): порожня назва — `warn`; порожній `contacts.email` — `warn` «листи власнику про замовлення не надходитимуть»; рядка профілю немає — обидва |
 | `mail-outbox` | `ok` / `warn` | у `mail_outbox` є листи з `attempts > 0` (пробували слати, не доставили) — `warn` із кількістю, без тіл листів. 🔴 Відомий пробіл: рядок із `attempts = 0`, що застряг (процес помер між COMMIT і першою спробою), перевірка не бачить — відрізнити «ще не пробували» від «застряг» без віку рядка неможливо, а поведінку свідомо не змінено |
+| `language-packs` | `ok` / `warn` / `error` | кожна опублікована мова (`languages.status = 'published'`, з `readStoreFacts.publishedLanguages`) має пакет за `hasLanguagePack` ядра (`simplycms/i18n`, §19.15, І46); немає — `error` з кодами мов (деградований режим: інтерфейс основною); `simplycms/i18n` з магазину не імпортується — `warn` «перевірку пакетів мов не виконано» з причиною |
 | `store-state` | `error` / `skip` | замінює три рядки вище, коли факти прочитати не вдалося (`error`, без пароля) або БД/ядро недоступні чи бази без журналу немає (`skip`, друга помилка поруч з `migrations-journal` не потрібна) |
 
-Факти (`store-owner`, `store-profile`, `mail-outbox`) читає ядро: `readStoreFacts` у
+Факти (`store-owner`, `store-profile`, `mail-outbox`, перелік опублікованих мов) читає ядро: `readStoreFacts` у
 `simplycms/migrate` — той самий канал, що й журнал (`withRuntimeAdminRead`: read-only
-транзакція під `SET LOCAL ROLE app_admin`). `simplycms/mail` CLI не імпортує: він тягне пул
+транзакція під `SET LOCAL ROLE app_admin`). Пакети мов CLI не перелічує: `language-packs` бере `hasLanguagePack` з `simplycms/i18n` магазину (`importFromStore`). `simplycms/mail` CLI не імпортує: він тягне пул
 `simplycms/db` з `process.env`, а CLI env процесу не мутує. Три читання (журнал, факти,
 кластер) ідуть паралельно. Усі перевірки спільні з `status`: один модуль
 (`doctor-db-checks.mjs` + чисті будівники `online-state-checks.mjs`).
@@ -129,7 +130,7 @@ Exit-коди: `1` — є хоч один error; самі warn → `0`; `--stric
   загубило б `engines`, і №17 мовчки став би `skip`.
 - **Онлайн-частина** (`src/status-online.mjs`): ті самі перевірки БД, що в `doctor --online`
   (`db-reachable`, `migrations-journal`, `store-owner`, `store-profile`, `mail-outbox`,
-  `shared-cluster`), а в етапі `deployed` ще й `domain-health` — `GET https://<domain>/api/health`
+  `language-packs`, `shared-cluster`), а в етапі `deployed` ще й `domain-health` — `GET https://<domain>/api/health`
   (таймаут 3 с; `healthy` → `ok` зі збіркою, інакше `error`). Кожне завдання (БД, домен) ганяється
   з дедлайном команди окремо: що не вклалось у ~5 с — у `unknown`. Без `DATABASE_URL` чи драйвера `pg`
   рядки БД — `skip`. Шим хука має таймаут 8 с, запис хука — 10 с, тому бюджет не збільшується.

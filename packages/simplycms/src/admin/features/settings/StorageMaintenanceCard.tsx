@@ -1,6 +1,6 @@
 import { HardDrive } from 'lucide-react';
 import { toast } from 'sonner';
-import { useT } from 'simplycms/i18n';
+import { useFormatDate, useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import {
   Card,
@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from 'simplycms/ui/card';
 import { reportTxError } from '../../lib/report-tx-error';
-import { useFormatDate } from '../../lib/useFormatDate';
 import { SweepMediaButton } from './SweepMediaButton';
 import { useMediaErasures } from './useMediaErasures';
 

@@ -18,6 +18,7 @@
     "./contracts/shipping-providers": "./src/contracts/shipping-providers.ts",
     "./contracts/store-profile": "./src/contracts/store-profile.ts",
     "./contracts/server-only": "./src/contracts/server-only.ts",
+    "./contracts/thenable": "./src/contracts/thenable.ts",
     "./contracts/objects": "./src/contracts/objects/index.ts",
     "./contracts/ports": "./src/contracts/ports/index.ts",
     "./contracts/semver": "./src/contracts/semver/index.ts",
@@ -69,6 +70,7 @@
     "./runtime/build-id": "./src/runtime/build-id.ts",
     "./runtime/stale-chunk": "./src/runtime/stale-chunk.ts",
     "./runtime/stale-chunk-react": "./src/runtime/stale-chunk-react.ts",
+    "./runtime/content-locale": "./src/runtime/content-locale.ts",
     "./i18n": "./src/i18n/index.ts",
     "./storefront/loaders": "./src/storefront/loaders/index.ts",
     "./storefront/media-visibility": "./src/storefront/media-visibility.ts",
@@ -120,6 +122,7 @@
     "./core/components/*": "./src/core/components/*",
     "./storefront-routes": "./src/storefront-routes/index.ts",
     "./storefront-routes/active-theme": "./src/storefront-routes/active-theme.ts",
+    "./storefront-routes/hydration": "./src/storefront-routes/hydration/index.ts",
     "./storefront-routes/server/*": "./src/storefront-routes/server/*.ts",
     "./storefront-routes/seo/*": "./src/storefront-routes/seo/*.ts",
     "./storefront-routes/head/*": "./src/storefront-routes/head/*.ts",
@@ -178,6 +181,10 @@
       "./contracts/server-only": {
         "types": "./dist/contracts/server-only.d.ts",
         "import": "./dist/contracts/server-only.js"
+      },
+      "./contracts/thenable": {
+        "types": "./dist/contracts/thenable.d.ts",
+        "import": "./dist/contracts/thenable.js"
       },
       "./contracts/objects": {
         "types": "./dist/contracts/objects/index.d.ts",
@@ -383,6 +390,10 @@
         "types": "./dist/runtime/stale-chunk-react.d.ts",
         "import": "./dist/runtime/stale-chunk-react.js"
       },
+      "./runtime/content-locale": {
+        "types": "./dist/runtime/content-locale.d.ts",
+        "import": "./dist/runtime/content-locale.js"
+      },
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
@@ -587,6 +598,10 @@
         "types": "./dist/storefront-routes/active-theme.d.ts",
         "import": "./dist/storefront-routes/active-theme.js"
       },
+      "./storefront-routes/hydration": {
+        "types": "./dist/storefront-routes/hydration/index.d.ts",
+        "import": "./dist/storefront-routes/hydration/index.js"
+      },
       "./storefront-routes/server/*": {
         "types": "./dist/storefront-routes/server/*.d.ts",
         "import": "./dist/storefront-routes/server/*.js"
@@ -658,7 +673,7 @@
     "db:generate": "drizzle-kit generate --config ./drizzle.config.ts"
   },
   "peerDependencies": {
-    "@hookform/resolvers": "^5.0.0",
+    "@hookform/resolvers": "^7.0.0",
     "@radix-ui/react-accordion": "^1.0.0",
     "@radix-ui/react-alert-dialog": "^1.0.0",
     "@radix-ui/react-aspect-ratio": "^1.0.0",
@@ -686,8 +701,8 @@
     "@radix-ui/react-toggle": "^1.0.0",
     "@radix-ui/react-toggle-group": "^1.0.0",
     "@radix-ui/react-tooltip": "^1.0.0",
-    "@tanstack/query-db-collection": "~1.3.4",
-    "@tanstack/react-db": "~0.5.3",
+    "@tanstack/query-db-collection": "~1.5.1",
+    "@tanstack/react-db": "1.0.0-rc.1.2",
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-router": "^1.0.0",
     "@tanstack/react-start": "^1.0.0",
@@ -703,10 +718,10 @@
     "input-otp": "^1.0.0",
     "lucide-react": ">=0.400.0",
     "next-themes": "^0.3.0 || ^0.4.0",
-    "nodemailer": "10.1.0",
+    "nodemailer": "10.3.1",
     "pg": "8.23.1",
     "react": "^18.0.0 || ^19.0.0",
-    "react-day-picker": "^9.0.0",
+    "react-day-picker": "^10.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "react-hook-form": "^7.0.0",
     "react-resizable-panels": "^3.0.0 || ^4.0.0",
@@ -716,22 +731,22 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@tanstack/router-core": "1.171.34",
-    "@types/pg": "^8.15.6",
+    "@tanstack/router-core": "1.171.39",
+    "@types/pg": "^8.23.1",
     "@types/sanitize-html": "^2.16.2",
-    "dotenv": "^18.0.5",
+    "dotenv": "^18.0.9",
     "drizzle-zod": "0.8.3",
-    "nodemailer": "10.1.0",
+    "nodemailer": "10.3.1",
     "pg": "8.23.1",
-    "seroval": "^1.6.8"
+    "seroval": "^1.7.7"
   },
   "dependencies": {
-    "@tiptap/extension-image": "^3.31.4",
-    "@tiptap/extension-text-align": "^3.31.4",
+    "@tiptap/extension-image": "^3.32.2",
+    "@tiptap/extension-text-align": "^3.32.2",
     "aws4fetch": "1.0.20",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.16",
     "clsx": "^2.1.1",
-    "sanitize-html": "^2.18.0",
+    "sanitize-html": "^2.18.1",
     "tailwind-merge": "^3.7.0"
   },
   "peerDependenciesMeta": {

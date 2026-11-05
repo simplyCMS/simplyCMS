@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Розділи каталогу — дзеркало `uk/admin/sections.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.sections.subtitle': 'Manage the catalog sections',
   'admin.sections.add': 'Add a section',
   'admin.sections.all': 'All sections',
@@ -23,4 +21,4 @@ export const messages: Catalog = {
   'admin.sections.notFound': 'Section not found',
   'admin.sections.slugHint':
     'Latin letters, digits and hyphens — for example, laptops-gaming. The word "all" is reserved',
-};
+} satisfies Record<string, string>;

@@ -1,8 +1,13 @@
 import { useContext, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { productsCollection, useCollection } from 'simplycms/admin-data';
+import {
+  invalidateCollection,
+  productModificationsCollection,
+  productsCollection,
+} from 'simplycms/admin-data';
 import { useT } from 'simplycms/i18n';
 import type { LanguageInfo } from '../../translations/translation-context';
 import { AggregateVersionContext } from '../../translations/useAggregateCommand';
@@ -43,7 +48,7 @@ export function useProductCardState({
   }));
   const store = useContext(AggregateVersionContext)!;
   const rows = useRowErrors();
-  const products = useCollection(productsCollection);
+  const queryClient = useQueryClient();
   const [conflict, setConflict] = useState(false);
   const [active, setActive] = useState(primary);
   const form = useForm<ProductFormValues>({
@@ -74,8 +79,14 @@ export function useProductCardState({
     if (!sent) store.set(fresh.version);
     rows.reset();
     setConflict(false);
-    // Список товарів читає ту саму назву з перекладу основної мови (read-model колекції): перечитуємо його.
-    await products.utils.refetch();
+    // Список товарів читає ту саму назву з перекладу основної мови (read-model колекції), а
+    // збереження піднімає `products.version` і змінює назву/sku модифікацій. Інвалідація, не
+    // `utils.refetch()`: список під відкритою карткою без спостерігача refetch не бачить, і
+    // видалення зі списку дало б хибний 412.
+    await Promise.all([
+      invalidateCollection(queryClient, productsCollection),
+      invalidateCollection(queryClient, productModificationsCollection),
+    ]);
   };
 
   const save = useProductUpdate({

@@ -19,6 +19,7 @@ import { productsSetPath } from 'simplycms/admin-server/impl';
 import { create, exec } from './fixtures/product-aggregate';
 import { valueGraphSql } from './fixtures/product-graph';
 import { EN, UK } from './fixtures/text-locale';
+import { cl } from '../../locale';
 
 describe('читачі товару: лістинг, головна, значення характеристики на /en (Task 16)', () => {
   const db = useAddressingDb('simplycms_lists_locale');
@@ -180,7 +181,7 @@ describe('читачі товару: лістинг, головна, значе�
       [cable.id],
     );
     expect(rows).toHaveLength(1);
-    const draft = checkedTextLocale('de', 'uk');
+    const draft = checkedTextLocale(cl('de'), cl('uk'));
     expect(
       await view((tx, v) => loadProductList(tx, v, draft, sectionId)),
     ).toEqual([]);

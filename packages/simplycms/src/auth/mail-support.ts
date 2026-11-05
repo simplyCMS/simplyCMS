@@ -1,6 +1,14 @@
-import { withActor } from 'simplycms/db';
-import type { MailTransport, scheduleMail } from 'simplycms/mail';
-import { readStoreProfile } from 'simplycms/site';
+import { eq } from 'drizzle-orm';
+import type { ContentLocale } from 'simplycms/contracts';
+import { withActor, type ActorDb } from 'simplycms/db';
+import type { Translator } from 'simplycms/i18n';
+import {
+  loadMailTranslator,
+  type MailTransport,
+  type scheduleMail,
+} from 'simplycms/mail';
+import { profiles } from 'simplycms/schema';
+import { readLanguages, readStoreProfile, toLocaleSet } from 'simplycms/site';
 
 /** Спільні залежності відправників листів auth (перевизначення для тестів). */
 export type MailDeps = {
@@ -14,6 +22,37 @@ export const readStoreName = (): Promise<string> =>
   withActor({ role: 'app_admin' }, readStoreProfile).then(
     (profile) => profile.name || 'SimplyCMS',
   );
+
+/** Основна мова магазину (`languages.is_default`) у вже відкритій транзакції: єдине читання. */
+const primaryOf = async (db: ActorDb): Promise<ContentLocale> =>
+  toLocaleSet(await readLanguages(db)).primary;
+
+/** Основна мова магазину з БД: кінцева ланка вибору мови листа. */
+export const readPrimaryLocale = (): Promise<ContentLocale> =>
+  withActor({ role: 'app_admin' }, primaryOf);
+
+/**
+ * Транслятор листа користувачу: мова інтерфейсу з його профілю (`profiles.ui_locale`),
+ * інакше основна мова магазину (§19.9). Профіль ще може не існувати (лист підтвердження
+ * йде при реєстрації) — це не помилка, а `null`. Читання під `app_admin`: відправник листа
+ * — серверний код без сесії одержувача (скидання пароля).
+ */
+export async function loadUserMailTranslator(
+  userId: string,
+): Promise<Translator> {
+  const [primary, uiLocale] = await withActor(
+    { role: 'app_admin' },
+    async (db) => {
+      const [row] = await db
+        .select({ uiLocale: profiles.uiLocale })
+        .from(profiles)
+        .where(eq(profiles.userId, userId))
+        .limit(1);
+      return [await primaryOf(db), row?.uiLocale ?? null] as const;
+    },
+  );
+  return loadMailTranslator({ kind: 'user', uiLocale, locale: null }, primary);
+}
 
 /**
  * Помилка фонової доставки без секретів: лише мітка листа і клас помилки —

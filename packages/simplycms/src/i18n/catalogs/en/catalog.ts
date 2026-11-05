@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Каталог — дзеркало `uk/catalog.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'catalog.title': 'Catalog',
   'catalog.viewAll': 'View all →',
   'catalog.back': 'Back to catalog',
@@ -33,4 +31,4 @@ export const messages: Catalog = {
   'catalog.filters.priceMaxAria': 'Price to',
   'catalog.filters.propertyMinAria': '{property}: value from',
   'catalog.filters.propertyMaxAria': '{property}: value to',
-};
+} satisfies Record<string, string>;

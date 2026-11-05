@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { VALIDATION_ISSUE_CODES } from 'simplycms/contracts/domain-errors';
-import { createTranslator } from 'simplycms/i18n';
 import {
   applyServerValidation,
   formErrorBinding,
@@ -12,9 +11,10 @@ import {
   serverValidationError,
   throughServerFnBoundary,
 } from './support/serverfn-boundary';
+import { enT, ukT } from '../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
-const tEn = createTranslator('en', 'uk');
+const t = ukT;
+const tEn = enT;
 
 describe('applyServerValidation', () => {
   it('не ValidationError → null (викликач веде звичайним шляхом)', () => {

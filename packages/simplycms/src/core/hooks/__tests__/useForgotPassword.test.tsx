@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 
 const h = vi.hoisted(() => ({
@@ -17,10 +16,11 @@ vi.mock('simplycms/ui/use-toast', () => ({
 }));
 
 import { useForgotPassword } from '../useForgotPassword';
+import { TestI18nProvider, ukT } from '../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <I18nProvider locale="uk">{children}</I18nProvider>
+  <TestI18nProvider>{children}</TestI18nProvider>
 );
 
 describe('useForgotPassword', () => {

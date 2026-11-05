@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import { ID, PROPS } from '../../properties/__tests__/render-support';
 
 // Е5б Task 8 (E): юніт діалогу призначення. Radix Select у jsdom 30 не
@@ -32,15 +31,16 @@ vi.mock('simplycms/ui/select', () => ({
 }));
 
 import { AddAssignmentDialog } from '../AddAssignmentDialog';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 afterEach(cleanup);
 
 function setup(properties = PROPS) {
   const onAdd = vi.fn();
   const onOpenChange = vi.fn();
   const ui = (open: boolean) => (
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <AddAssignmentDialog
         open={open}
         onOpenChange={onOpenChange}
@@ -48,7 +48,7 @@ function setup(properties = PROPS) {
         properties={properties}
         onAdd={onAdd}
       />
-    </I18nProvider>
+    </TestI18nProvider>
   );
   const view = render(ui(true));
   return { onAdd, onOpenChange, reopen: () => view.rerender(ui(true)), ui };

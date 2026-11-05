@@ -55,7 +55,12 @@ export type {
 
 export { ownerInviteStore } from './invite-store';
 
-export { isAdminRequest, readSessionSubject, readUserRoles } from './session';
+export {
+  isAdminRequest,
+  readProfileUiLocale,
+  readSessionSubject,
+  readUserRoles,
+} from './session';
 export type { SessionSubject } from './session';
 
 export {

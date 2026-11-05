@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { catalogKeys } from '../queries';
+import { cl } from '../../../test-harness/locale';
 
 // 🔴 Що саме тут доводиться. Після знесення шару репозиторіїв від модуля
 // лишився ОДИН контракт — форма ключів кешу. Вона не косметика: серверний
@@ -13,19 +14,21 @@ import { catalogKeys } from '../queries';
 // оновлення кешу в одному місці проминає записи в іншому.
 describe('catalogKeys', () => {
   it('починається з імені сутності', () => {
-    expect(catalogKeys.sectionProducts('s1', 'uk')[0]).toBe(ENTITY.products);
+    expect(catalogKeys.sectionProducts('s1', cl('uk'))[0]).toBe(
+      ENTITY.products,
+    );
   });
 
   it('розділяє добірку секції за id і за запитом', () => {
-    expect(catalogKeys.sectionProducts('s1', 'uk')).toEqual([
+    expect(catalogKeys.sectionProducts('s1', cl('uk'))).toEqual([
       ENTITY.products,
       'uk',
       'section',
       's1',
       null,
     ]);
-    expect(catalogKeys.sectionProducts('s1', 'uk', { page: 2 })).not.toEqual(
-      catalogKeys.sectionProducts('s1', 'uk'),
-    );
+    expect(
+      catalogKeys.sectionProducts('s1', cl('uk'), { page: 2 }),
+    ).not.toEqual(catalogKeys.sectionProducts('s1', cl('uk')));
   });
 });

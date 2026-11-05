@@ -93,7 +93,7 @@ export function useBannerCard(bannerId: string | undefined) {
       });
     }
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       const b = formErrorBinding(form, SERVER_FIELDS);
       const rest = applyServerValidation(e, b.setError, {
@@ -112,7 +112,8 @@ export function useBannerCard(bannerId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.banners.deleted'));
         goList();
       })

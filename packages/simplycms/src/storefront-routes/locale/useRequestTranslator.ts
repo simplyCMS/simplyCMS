@@ -1,9 +1,16 @@
 import { useMemo } from 'react';
 import { useRouteContext, useRouterState } from '@tanstack/react-router';
-import { createTranslator } from 'simplycms/i18n';
+import {
+  PLATFORM_FALLBACK_UI,
+  createTranslator,
+  resolveUiLocalePair,
+  useUiCatalogs,
+} from 'simplycms/i18n';
 import type { Translator } from 'simplycms/i18n';
 import type { RouterContext } from 'simplycms/runtime';
-import { localeOfHref } from './root-data';
+import { NO_LOCALES, localeOfHref } from 'simplycms/domain';
+
+const BASE = ['base'] as const;
 
 /**
  * Транслятор для екранів, що рендеряться ПОЗА `I18nProvider`: `NotFound` і
@@ -19,8 +26,25 @@ export function useRequestTranslator(): Translator {
   // Контекст матчу, а не `router.options`: `beforeLoad` кореня міг дочитати
   // набір мов, а опції роутера бачать лише початковий.
   const { locales }: RouterContext = useRouteContext({ strict: false });
-  return useMemo(
-    () => createTranslator(localeOfHref(publicHref, locales), locales.primary),
+  // Екран помилки говорить мовою ІНТЕРФЕЙСУ: нормально це мова сторінки, а `/pl/x` опублікованої мови, пакет якої зник
+  // (деградований режим, §19.15), — основною.
+  // Без мовного контексту (`beforeLoad` кореня впав, `NO_LOCALES`) пара не будується:
+  // `resolveUiLocalePair('und', …)` кинула б усередині самого екрана помилки.
+  const ui = useMemo(
+    () =>
+      locales === NO_LOCALES
+        ? { locale: PLATFORM_FALLBACK_UI }
+        : resolveUiLocalePair(
+            localeOfHref(publicHref, locales),
+            locales.primary,
+          ),
     [publicHref, locales],
+  );
+  // Корінь міг упасти ДО завантаження каталогу, тож хук має право призупинитись (а не
+  // кинути), поки `base` дозавантажується.
+  const catalogs = useUiCatalogs(ui.locale, BASE);
+  return useMemo(
+    () => createTranslator(catalogs, ui.locale),
+    [catalogs, ui.locale],
   );
 }

@@ -77,7 +77,7 @@ export function useShippingZoneCard(zoneId: string | undefined) {
           createdAt: new Date(),
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -93,7 +93,8 @@ export function useShippingZoneCard(zoneId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.shipping.zones.deleted'));
         goList();
       })

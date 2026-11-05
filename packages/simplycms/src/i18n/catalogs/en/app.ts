@@ -12,5 +12,10 @@ export const messages = {
   'app.error.fallback': 'An unexpected error occurred.',
   'app.error.reference': 'Error reference: {id}',
   'app.error.reloading': 'Updating the page…',
+  // Екрани `/admin` до завантаження частини `admin`: pending і errorComponent рендеряться
+  // у кореневому провайдері, де є лише `base`, тож їхні рядки живуть тут.
+  'app.admin.loading': 'Loading the admin panel…',
+  'app.error.insecureContext':
+    'The admin panel requires a secure context (https:// or localhost).',
   'app.backHome': 'Back to home',
 } as const;

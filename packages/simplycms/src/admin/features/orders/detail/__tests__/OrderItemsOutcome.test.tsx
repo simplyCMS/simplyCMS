@@ -17,10 +17,12 @@ import {
   orderItemsCollection,
   ordersCollection,
 } from 'simplycms/admin-data';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   applyOutcome,
   listOrderItems,
@@ -28,7 +30,7 @@ import {
   reset,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
 import { AdminConflictError } from 'simplycms/contracts/domain-errors';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { CANCELLED, makeItem, NEW } from './support';
 
 const { server, toastError } = vi.hoisted(() => ({
@@ -57,17 +59,18 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import OrderDetailPage from '../OrderDetailPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );
-const money = (n: number) => formatPrice(n, ENGINE.config).replace(/\s/g, ' ');
+const money = (n: number) => formatPrice(n, PRICE_FORMAT).replace(/\s/g, ' ');
 const order = {
   ...makeOrder(1, new Date(Date.UTC(2026, 9, 1, 10))),
   ...{ subtotal: '200.00', shippingCost: '50.00', total: '250.00' },
@@ -143,8 +146,8 @@ describe('позиції замовлення: наслідки операцій
     await screen.findByText(money(150));
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(50))).toBeTruthy();
-    // Ревалідація (TSDB-1) віддає стан сервера — підсумки не відкотились.
-    await awaitRevalidation(listOrderItems, before);
+    // Без перезапиту — підсумки не відкотились.
+    await expectNoRefetch(listOrderItems, before);
     expect(screen.queryByText(money(250))).toBeNull();
     expect(screen.getByText(money(150))).toBeTruthy();
   });

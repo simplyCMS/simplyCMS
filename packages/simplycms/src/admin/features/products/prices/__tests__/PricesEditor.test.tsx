@@ -12,7 +12,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
@@ -46,12 +45,13 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { PricesEditor } from '../PricesEditor';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient();
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </QueryClientProvider>
   );
 }

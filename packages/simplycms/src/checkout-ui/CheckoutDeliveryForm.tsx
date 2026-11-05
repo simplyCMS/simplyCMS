@@ -9,7 +9,7 @@ import {
 } from 'simplycms/core/hooks/useAddressBook';
 import { useShippingDirectory } from 'simplycms/core/hooks/useShippingDirectory';
 import { useToast } from 'simplycms/ui/use-toast';
-import { useT } from 'simplycms/i18n';
+import { useT, useUiLocale } from 'simplycms/i18n';
 import { useEngine } from 'simplycms/react-query';
 import { AddressCard } from './AddressCard';
 import { AddressSelectorPopup } from './AddressSelectorPopup';
@@ -67,6 +67,7 @@ export function CheckoutDeliveryForm({
   // Локаль і валюта для `formatShippingCost` — чистої T1-функції без доступу
   // ні до конфігу магазину, ні до перекладів (див. коментар у shipping.ts).
   const { config } = useEngine();
+  const locale = useUiLocale();
   const selectedMethodId = values.shippingMethodId as string | undefined;
   const selectedAddressId = values.savedAddressId as string | undefined;
 
@@ -350,10 +351,14 @@ export function CheckoutDeliveryForm({
                     ) : rateInfo.pricing === 'carrier' ? (
                       t('checkout.shipping.carrier')
                     ) : (
-                      formatShippingCost(rateInfo.cost, config, {
-                        byTariff: t('common.shipping.byTariff'),
-                        free: t('common.shipping.free'),
-                      })
+                      formatShippingCost(
+                        rateInfo.cost,
+                        { locale, currency: config.currency },
+                        {
+                          byTariff: t('common.shipping.byTariff'),
+                          free: t('common.shipping.free'),
+                        },
+                      )
                     )}
                   </div>
                 </label>

@@ -105,7 +105,7 @@ export function useDiscountGroupCard(
           updatedAt: new Date(),
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;

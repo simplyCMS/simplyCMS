@@ -18,7 +18,7 @@ export function useUserCategoryDefault(): (id: string) => Promise<void> {
   const queryClient = useQueryClient();
   return async (id) => {
     const { rows } = await setDefaultUserCategory({ data: { id } });
-    categories.utils.writeBatch(() => {
+    await categories.utils.writeBatch(() => {
       for (const row of rows) categories.utils.writeUpsert(row);
     });
     await Promise.all([

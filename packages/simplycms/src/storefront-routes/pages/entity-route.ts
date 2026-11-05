@@ -5,8 +5,8 @@ import {
 } from '@tanstack/react-router';
 import { productPath } from 'simplycms/domain';
 import { RESERVED_SEGMENTS, SLUG_FORMAT } from 'simplycms/domain/slugs';
-import { localeOfHref } from '../locale/root-data';
-import type { LocaleSet } from '../locale/resolve';
+import { localeOfHref } from 'simplycms/domain';
+import type { LocaleSet } from 'simplycms/contracts';
 import { productHead } from '../head/product';
 import type { HeadMatch } from '../head/head';
 import { getMovedProductPath, getProduct } from '../server/products';
@@ -93,5 +93,5 @@ export function entityHead(
   matches: ReadonlyArray<HeadMatch>,
   data: Awaited<ReturnType<typeof loadEntityPage>> | undefined,
 ) {
-  return data ? productHead(matches, data.product) : {};
+  return data ? productHead(matches, data.product) : Promise.resolve({});
 }

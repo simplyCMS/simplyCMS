@@ -7,22 +7,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { I18nProvider } from 'simplycms/i18n';
 import { NumberPropertyInput } from '../NumberPropertyInput';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 afterEach(() => cleanup());
 
 function setup(props: { value?: string | null; error?: string } = {}) {
   const onChange = vi.fn();
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <NumberPropertyInput
         id="n"
         value={props.value ?? null}
         error={props.error}
         onChange={onChange}
       />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   return {
     onChange,

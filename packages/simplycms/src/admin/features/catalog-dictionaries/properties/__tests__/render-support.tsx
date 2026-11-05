@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import type {
   PropertyOption,
   SectionProperty,
   SectionPropertyAssignment,
 } from 'simplycms/schema/types';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 /** Ідентифікатори фікстур — валідні uuid, як у реальних рядках. */
 export const ID = {
@@ -123,7 +123,7 @@ export const echoInsert = async ({ data }: { data: unknown[] }) => data;
 export function wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </QueryClientProvider>
   );
 }

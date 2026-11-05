@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import { OrderTotals } from '../OrderTotals';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 afterEach(cleanup);
 
@@ -18,14 +18,14 @@ const snapshot = (pricing: string) => ({
 const renderTotals = (shippingData: unknown, shippingCost = '0.00') =>
   render(
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <OrderTotals
           subtotal="100.00"
           shippingCost={shippingCost}
           total="100.00"
           shippingData={shippingData as never}
         />
-      </I18nProvider>
+      </TestI18nProvider>
     </EngineProvider>,
   );
 

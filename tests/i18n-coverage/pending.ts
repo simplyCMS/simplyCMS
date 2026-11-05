@@ -37,7 +37,7 @@ export type AllowEntry = {
  */
 // Кількість кириличних рядків CLI `owner:invite` (див. `AllowEntry.strings`).
 const RUN_STRINGS = 11;
-const CLI_STRINGS = 3;
+const CLI_STRINGS = 2;
 
 export const ALLOWLIST: Record<string, AllowEntry> = {
   // Логи сервера: дивиться розробник у терміналі.
@@ -70,6 +70,12 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
   // теми — про відсутнє DOM-середовище, падіння view чи загублений реквізит.
   // Це вивід гейта в терміналі, а не текст інтерфейсу; JSX у файлі немає.
   'packages/simplycms/src/themes/conformance/assertThemeViewsConformance.ts': {
+    kind: 'throw',
+    reason: 'throw new Error — діагностика для автора теми',
+  },
+  // Той самий клас: фікстура fallback-перевірки conformance-kit без мови джерела —
+  // помилка АВТОРУ kit-а в терміналі, не текст інтерфейсу.
+  'packages/simplycms/src/themes/conformance/fallback-lang.ts': {
     kind: 'throw',
     reason: 'throw new Error — діагностика для автора теми',
   },
@@ -152,8 +158,8 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     strings: RUN_STRINGS,
   },
   'packages/simplycms/src/auth/owner-invite-cli/cli.ts': {
-    kind: ['throw', 'log-sink'],
-    reason: 'вивід CLI owner:invite оператору (log і throw), не інтерфейс',
+    kind: 'throw',
+    reason: 'вивід CLI owner:invite оператору (throw), не інтерфейс',
     strings: CLI_STRINGS,
   },
   'packages/simplycms/src/mail/log.ts': {

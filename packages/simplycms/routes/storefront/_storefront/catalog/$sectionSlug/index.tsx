@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import CatalogSectionPage from 'simplycms/storefront-routes/pages/CatalogSection';
 import { getSectionPageData } from 'simplycms/storefront-routes/server/catalog';
-import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
+import { localeOfHref } from 'simplycms/domain';
 import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute('/_storefront/catalog/$sectionSlug/')({

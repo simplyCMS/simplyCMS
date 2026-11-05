@@ -18,7 +18,7 @@ import { discountEnvironmentFor } from 'simplycms/storefront/loaders';
  * 🔴 Модуль містить РІВНО один експорт-serverFn і жодної звичайної функції:
  * трансформація Start вирізає тіло хендлера разом із серверними імпортами, а
  * живий не-serverFn експорт тримав би їх — і затягнув би пул Postgres у
- * клієнтський бандл (той самий урок, що в `storefront/loaders/is-admin`).
+ * клієнтський бандл (той самий урок, що дала колишня `checkIsAdmin`).
  */
 export const getDiscountEnvironment = createServerFn({ method: 'GET' }).handler(
   async (): Promise<DiscountEnvironment> => {

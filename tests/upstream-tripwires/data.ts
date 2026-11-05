@@ -1,3 +1,4 @@
+import { createServerEntry } from '@tanstack/react-start/server-entry';
 import { readInstalledFile, installedVersion } from '../lib/installed-package';
 import {
   buildInsertSql,
@@ -8,6 +9,8 @@ import {
   parseSubsetNoOffset,
   shallowError,
   startBody,
+  startEntryHttpErrorStatus,
+  startEntrySwallowsThrow,
   startFnBase,
   startFormBeforeHandler,
   startHandlerType,
@@ -16,6 +19,7 @@ import {
   startUnknownFnResolverThrows,
   subsetOptionsNotReexported,
   tsEslintPeer,
+  type BehaviorPremise,
   type Premise,
 } from './premises';
 
@@ -125,5 +129,16 @@ export const TRIPWIRES: Record<string, Tripwire> = {
       read: () => installedVersion(['drizzle-orm']),
       premise: drizzleStillZeroX,
     },
+  ],
+};
+
+/**
+ * Поведінкові розтяжки: виконують бібліотеку (текстом `dist` це не прочитати —
+ * обгортка винятку живе в runtime). ID — ті самі активні записи реєстру.
+ */
+export const BEHAVIORAL_TRIPWIRES: Record<string, BehaviorPremise[]> = {
+  'START-ENTRY-1': [
+    startEntrySwallowsThrow(createServerEntry),
+    startEntryHttpErrorStatus(createServerEntry),
   ],
 };

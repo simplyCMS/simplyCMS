@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { and, eq, isNull, useLiveQuery } from '@tanstack/react-db';
 import {
+  invalidateCollection,
   priceTypesCollection,
   productPricesCollection,
   useCollection,
@@ -49,6 +51,7 @@ export function buildPricesInput(
  */
 export function usePrices(productId: string, modificationId: string | null) {
   const prices = useCollection(productPricesCollection);
+  const queryClient = useQueryClient();
   const types = useCollection(priceTypesCollection);
   const { data: priceTypes } = useLiveQuery({
     query: (q) => q.from({ t: types }).orderBy(({ t }) => t.sortOrder, 'asc'),
@@ -75,8 +78,8 @@ export function usePrices(productId: string, modificationId: string | null) {
     await saveProductPricesCommand({
       data: { productId, modificationId, prices: input },
     });
-    // Команда не повертає рядків: колекція лише для читання перечитується.
-    await prices.utils.refetch();
+    // Команда не повертає рядків: колекція лише для читання інвалідується.
+    await invalidateCollection(queryClient, productPricesCollection);
     return null;
   };
 

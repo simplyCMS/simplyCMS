@@ -1,6 +1,7 @@
 import { Suspense, act, type ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { I18nProvider, type Locale } from 'simplycms/i18n';
+import type { UiLocale } from 'simplycms/contracts';
+import { I18nProvider, loadUiCatalog } from 'simplycms/i18n';
 import { REQUISITE_ATTRIBUTE } from 'simplycms/contracts/views';
 import { STORE_PROFILE_FIXTURE } from 'simplycms/contracts/views/fixtures';
 import { ThemeContext } from '../theme-context';
@@ -46,10 +47,12 @@ function contextValue(theme: ThemeModule): ThemeContextType {
 export async function renderThemeView(
   element: ReactElement,
   theme: ThemeModule,
-  locale: Locale,
+  locale: UiLocale,
   probe?: (container: HTMLElement) => unknown[],
 ): Promise<ThemeViewRenderResult> {
   let error: unknown = null;
+  // Каталог ядра ледачий: чекаємо `base` ДО рендера, щоб `use` у темі не залежав від мережі.
+  const catalogs = [await loadUiCatalog(locale, 'base')];
   const container = document.createElement('div');
   document.body.appendChild(container);
 
@@ -69,7 +72,7 @@ export async function renderThemeView(
   try {
     await act(async () => {
       root.render(
-        <I18nProvider locale={locale}>
+        <I18nProvider locale={locale} fallback={locale} catalogs={catalogs}>
           <ThemeContext.Provider value={contextValue(theme)}>
             {/* Профіль — дані ядра, які host монтує над `Outlet`; тема читає
                 з нього бренд і контакти (`useStoreProfile` без провайдера

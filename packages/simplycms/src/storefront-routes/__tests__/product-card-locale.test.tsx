@@ -10,12 +10,13 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { I18nProvider } from 'simplycms/i18n';
 import {
   createLocaleRewrite,
   type LocaleRewriteState,
 } from '../locale/rewrite';
 import { ProductCard } from 'simplycms/catalog-ui/ProductCard';
+import { TestI18nProvider } from '../../../test-harness/i18n';
+import { localeSet } from '../../../test-harness/locale';
 
 vi.mock('simplycms/react-query', () => ({
   useFormatPrice: () => (n: number) => String(n),
@@ -23,7 +24,7 @@ vi.mock('simplycms/react-query', () => ({
 
 afterEach(cleanup);
 
-const SET = { primary: 'uk', published: ['uk', 'en'], known: ['uk', 'en'] };
+const SET = localeSet('uk', ['uk', 'en'], ['uk', 'en']);
 
 async function renderAt(
   url: string,
@@ -42,9 +43,9 @@ async function renderAt(
   });
   await router.load();
   render(
-    <I18nProvider locale={url.startsWith('/en') ? 'en' : 'uk'}>
+    <TestI18nProvider locale={url.startsWith('/en') ? 'en' : 'uk'}>
       <RouterProvider router={router} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   return screen.findByRole('link');
 }

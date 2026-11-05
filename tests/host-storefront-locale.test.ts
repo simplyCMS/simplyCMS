@@ -37,7 +37,7 @@ vi.mock('simplycms/storefront-routes/seo/sitemap', () => ({
   buildSitemapXml: vi.fn(),
 }));
 vi.mock('simplycms/env', () => ({ checkDriverEnvOnStart: vi.fn() }));
-vi.mock('../simplycms.config', () => ({ default: { locale: 'uk-UA' } }));
+vi.mock('../simplycms.config', () => ({ default: { currency: 'UAH' } }));
 vi.mock('simplycms/storefront/loaders', () => ({
   loadLocaleSet: async () => {
     seen.loadSet += 1;

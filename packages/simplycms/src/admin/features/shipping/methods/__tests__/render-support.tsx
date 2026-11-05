@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { vi } from 'vitest';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 /** Заглушки DOM, яких Radix Select/Dialog потребує в jsdom. */
 export function stubDom() {
@@ -86,9 +86,9 @@ export const RATES = [
 export function wrapper({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <EngineProvider value={ENGINE}>{children}</EngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>
   );
 }

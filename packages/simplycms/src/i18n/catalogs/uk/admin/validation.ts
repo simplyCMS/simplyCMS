@@ -34,4 +34,6 @@ export const messages = {
     'Вкажіть адресу вручну: з назви її не вдалося утворити',
   'admin.validation.language_incomplete':
     'Мова неповна: завершіть заповнення адрес перед публікацією',
+  'admin.validation.language_pack_missing':
+    'Для цієї мови немає мовного пакета: опублікувати її не можна, чернетка лишається',
 } as const;

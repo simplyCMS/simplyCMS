@@ -447,6 +447,7 @@ CREATE TABLE "profiles" (
 	"default_shipping_method_id" uuid,
 	"default_pickup_point_id" uuid,
 	"registration_utm" jsonb DEFAULT '{}'::jsonb,
+	"ui_locale" text,
 	CONSTRAINT "profiles_user_id_key" UNIQUE("user_id"),
 	CONSTRAINT "profiles_name_length" CHECK (((char_length(first_name) <= 100) OR (first_name IS NULL)) AND ((char_length(last_name) <= 100) OR (last_name IS NULL)))
 );

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { ui } from '../../../test-harness/locale';
 import {
   calculateShippingCost,
   calculateShipping,
@@ -156,7 +157,7 @@ describe('calculateShipping', () => {
 });
 
 describe('formatShippingCost', () => {
-  const UA = { locale: 'uk-UA', currency: 'UAH' };
+  const UA = { locale: ui('uk'), currency: 'UAH' };
   // Підписи передає кол-сайт: домен володіє логікою вибору стану, але не
   // текстом. Тут беремо маркери, а не реальні переклади, — так тест падає
   // саме на переплутаній ГІЛЦІ, а не на зміні формулювання в каталозі.

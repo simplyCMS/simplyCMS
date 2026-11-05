@@ -1,7 +1,7 @@
-import type { Catalog } from '../../types';
+import type { CatalogValue } from '../../types';
 
 /** Особистий кабінет — дзеркало `uk/profile.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'profile.title': 'My profile',
   'profile.personalData': 'Personal details',
   'profile.recentOrders': 'Recent orders',
@@ -96,8 +96,10 @@ export const messages: Catalog = {
     'Are you sure you want to delete this recipient?',
 
   // "Used in N orders" badge — shared by addresses and recipients.
-  'profile.usedInOrders.one': 'Used in {count} order',
-  'profile.usedInOrders.many': 'Used in {count} orders',
+  'profile.usedInOrders': {
+    one: 'Used in {count} order',
+    other: 'Used in {count} orders',
+  },
 
   // Profile photo (simplycms/profile-ui, AvatarUpload) — live since К3-Е2:
   // the storage port accepts the file, so the keys describe the action and
@@ -110,4 +112,4 @@ export const messages: Catalog = {
   'profile.avatar.tooLarge': 'File too large',
   'profile.avatar.maxSize': 'Maximum size: 5 MB',
   'profile.avatar.failed': 'Could not save the photo',
-};
+} satisfies Record<string, CatalogValue>;

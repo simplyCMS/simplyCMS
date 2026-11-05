@@ -104,8 +104,9 @@ describe('база serverFn зі справжньої збірки (Р20′)', (
     expect(server).not.toMatch(/=\s*process\.env\.TSS_SERVER_FN_BASE/);
   });
 
-  // UPSTREAM:START-SFN-404-1 — невідомий id server function: Start кидає до свого `try`, h3
-  // віддає 500. Тіло не несе стеку, id функції, шляхів ФС і тексту апстріму. Тут база
+  // UPSTREAM:START-SFN-404-1 — невідомий id server function: Start кидає до свого `try`,
+  // `createServerFnErrorResponse` віддає 500 з нашими seroval-адаптерами, а текст помилки ховає
+  // наша маска `maskUnexpectedError` (сервер тут у `NODE_ENV=production`). Тіло не несе стеку, id функції, шляхів ФС і тексту апстріму. Тут база
   // НЕСТАНДАРТНА (`/_custom/fn/`, бо цей тест доводить її інлайн); базу магазину за
   // замовчуванням (`/_serverFn/`) пробує Gate B пілота (`scripts/pilot-pack/server-fn-404-probe.mjs`).
   it('невідомий id server function → 500 без стеку, id, шляхів і тексту помилки', async () => {

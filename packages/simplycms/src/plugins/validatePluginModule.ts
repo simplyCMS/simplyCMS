@@ -1,4 +1,5 @@
 import { CORE_VERSION, satisfies } from 'simplycms/contracts/semver';
+import { isCatalogValue } from 'simplycms/i18n';
 import type { PluginModule } from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -77,20 +78,20 @@ export function validatePluginModule(
   if (messages !== undefined) {
     if (!isRecord(messages)) {
       throw new Error(
-        `[plugin] "${name}": messages має бути Partial<Record<string, Record<string, string>>>`,
+        `[plugin] "${name}": messages має бути Partial<Record<string, Record<string, CatalogValue>>>`,
       );
     }
     const prefix = `plugin.${name}.`;
     for (const [locale, catalog] of Object.entries(messages)) {
       if (!isRecord(catalog)) {
         throw new Error(
-          `[plugin] "${name}": messages.${locale} має бути Record<string, string>`,
+          `[plugin] "${name}": messages.${locale} має бути Record<string, CatalogValue>`,
         );
       }
       for (const [key, text] of Object.entries(catalog)) {
-        if (typeof text !== 'string') {
+        if (!isCatalogValue(text)) {
           throw new Error(
-            `[plugin] "${name}": messages.${locale}.${key} має бути рядком`,
+            `[plugin] "${name}": messages.${locale}.${key} має бути рядком або формами множини (обовʼязкова рядкова other)`,
           );
         }
         if (!key.startsWith(prefix)) {

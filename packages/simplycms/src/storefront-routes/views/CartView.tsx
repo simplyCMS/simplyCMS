@@ -53,7 +53,7 @@ export function CartView({ breadcrumbs, itemCount, slots }: CartViewModel) {
             <Card>
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle className="text-lg">
-                  {t('cart.items', { count: itemCount })}
+                  {t('cart.itemsTitle', { count: itemCount })}
                 </CardTitle>
                 <slots.ClearCart />
               </CardHeader>

@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { productsCollection, useCollection } from 'simplycms/admin-data';
+import { invalidateCollection, productsCollection } from 'simplycms/admin-data';
 import { createProduct, saveProductDescription } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { adminPath } from '../../../lib/adminLinks';
@@ -65,7 +66,7 @@ export function useProductCreate(
 ) {
   const t = useT();
   const navigate = useNavigate();
-  const products = useCollection(productsCollection);
+  const queryClient = useQueryClient();
   return async (values: ProductFormValues) => {
     // Помилка `images.upsert.<i>` лягає на рядок фото картки.
     const index: SaveIndex = {
@@ -89,7 +90,9 @@ export function useProductCreate(
     // Товар уже створено: збій перечитування списку (колекція лише для читання) не має
     // лишати форму «Новий товар» з тим самим id — повтор дав би дубль ключа. Список
     // дотягнеться при наступному відкритті.
-    await products.utils.refetch().catch(() => undefined);
+    await invalidateCollection(queryClient, productsCollection).catch(
+      () => undefined,
+    );
     toast.success(t('admin.products.created'));
     await navigate({
       to: adminPath('products/$productId'),

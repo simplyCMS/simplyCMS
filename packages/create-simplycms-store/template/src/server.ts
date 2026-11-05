@@ -11,14 +11,12 @@ import { withStorefrontNormalize } from 'simplycms/storefront-routes/seo/normali
 import { buildRobotsTxt } from 'simplycms/storefront-routes/seo/robots';
 import { buildSitemapXml } from 'simplycms/storefront-routes/seo/sitemap';
 import { checkDriverEnvOnStart } from 'simplycms/env';
-import { withSecurityHeaders } from 'simplycms/server-guard';
-import { withRequestContext } from 'simplycms/site/request-context';
-import { languageOfConfigLocale } from 'simplycms/i18n';
 import {
-  declareBuiltThemes,
-  declareStoreCurrency,
-  declareStoreLocale,
-} from 'simplycms/site';
+  withEntryErrorMask,
+  withSecurityHeaders,
+} from 'simplycms/server-guard';
+import { withRequestContext } from 'simplycms/site/request-context';
+import { declareBuiltThemes, declareStoreCurrency } from 'simplycms/site';
 import config from '../simplycms.config';
 
 // Вшиті теми — ті, що зібрані з `config.themes` (Е6б-8). Сервер інакше про них
@@ -27,14 +25,8 @@ import config from '../simplycms.config';
 // відмовляє (fail-closed). Модульний рівень: вхід один для dev, preview і prod.
 declareBuiltThemes(Object.keys(config.themes ?? {}));
 
-// Локаль листів (скидання пароля, запрошення): серверний код `simplycms.config`
-// не бачить, тож host повідомляє її тим самим каналом (Е8-Р8). Без декларації
-// ядро шле українською з одним попередженням.
-declareStoreLocale(languageOfConfigLocale(config.locale));
-
-// Валюта сум у листах замовлення — з того самого `simplycms.config`, що й
-// вітрина: чек без валюти двозначний. Без декларації — дефолт ядра з
-// одним попередженням.
+// Валюта сум у листах замовлення — з `simplycms.config`, що й вітрина: чек без
+// валюти двозначний. Без декларації — дефолт ядра з одним попередженням.
 declareStoreCurrency(config.currency);
 
 // Група драйвера env (S3, SMTP) — «все або нічого» (Е8-Р7′). Перевірка на
@@ -88,7 +80,14 @@ const seoInterceptor = createSeoInterceptor({
 export default createServerEntry({
   fetch: withRequestContext(
     withSecurityHeaders(
-      withStorefrontNormalize(withSeoInterceptor(seoInterceptor, startHandler)),
+      // UPSTREAM:START-ENTRY-1 — без маски Start сам перетворює виняток entry на
+      // німий JSON 500 (без ref; Start лише console.error без id). Всередині заголовків безпеки: маскована
+      // 500 теж їх отримує.
+      withEntryErrorMask(
+        withStorefrontNormalize(
+          withSeoInterceptor(seoInterceptor, startHandler),
+        ),
+      ),
       process.env.VITE_SITE_URL,
     ),
   ),

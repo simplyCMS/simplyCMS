@@ -95,7 +95,19 @@ export async function run(argv) {
     const { assertThemeViewsConformance } = await environment.runner.import(
       'simplycms/themes/conformance',
     );
-    const ran = await assertThemeViewsConformance(theme);
+    // Мова інтерфейсу рендеру — параметр kit-а без дефолту. Перевірка відповідності тем
+    // не залежить від мови магазину (вона лише рендерить в'ю в jsdom без БД), тож
+    // беремо `uk` — мову-джерело ключів (`MessageKey` виводиться з `catalogs/uk`):
+    // її каталог повний за побудовою.
+    const { resolveUiLocale } =
+      await environment.runner.import('simplycms/i18n');
+    const { checkedContentLocale } = await environment.runner.import(
+      'simplycms/domain/translations',
+    );
+    const uk = checkedContentLocale('uk');
+    const ran = await assertThemeViewsConformance(theme, {
+      locale: resolveUiLocale(uk, uk),
+    });
     say.success(conformanceSummary(ran));
   } finally {
     await environment.close();

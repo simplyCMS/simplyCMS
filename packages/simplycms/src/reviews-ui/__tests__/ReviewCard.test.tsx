@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import type { ProductReview } from 'simplycms/core/hooks/useProductReviews';
 
 vi.mock('simplycms/core/hooks/useAuth', () => ({
@@ -9,9 +8,10 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
 }));
 
 import { ReviewCard } from '../ReviewCard';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 afterEach(cleanup);
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const review = (over: Partial<ProductReview>): ProductReview => ({
   id: 'r1',
@@ -31,9 +31,9 @@ const review = (over: Partial<ProductReview>): ProductReview => ({
 
 const renderCard = (r: ProductReview) =>
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <ReviewCard review={r} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
 
 describe('ReviewCard — автор видалений (Е6г)', () => {

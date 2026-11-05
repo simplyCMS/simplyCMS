@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { FormProvider, useForm, type FieldValues } from 'react-hook-form';
-import { I18nProvider } from 'simplycms/i18n';
 
 const mocks = vi.hoisted(() => ({
   uploadMedia: vi.fn(),
@@ -26,6 +25,7 @@ vi.mock('../../components/RichTextEditor', () => ({
 
 import { SectionSideCards } from '../catalog-dictionaries/sections/SectionSideCards';
 import { OptionPageCards } from '../catalog-dictionaries/properties/OptionPageCards';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 afterEach(() => cleanup());
 
@@ -48,9 +48,9 @@ function removeImage(body: Render) {
     });
     seen.images = form.watch('images');
     return (
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <FormProvider {...form}>{body(form as never)}</FormProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     );
   }
   const { container } = render(<Harness />);

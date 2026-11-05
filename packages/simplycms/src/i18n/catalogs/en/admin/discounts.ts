@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Скидки — дзеркало `uk/admin/discounts.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.discounts.subtitle':
     'Manage discount groups and the conditions they apply under',
   'admin.discounts.tree': 'Discount tree',
@@ -97,4 +95,4 @@ export const messages: Catalog = {
   'admin.discounts.conditionOperator': 'Condition operator',
   'admin.discounts.condOp.in': 'is one of',
   'admin.discounts.condOp.notIn': 'is none of',
-};
+} satisfies Record<string, string>;

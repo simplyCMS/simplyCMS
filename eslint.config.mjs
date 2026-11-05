@@ -8,6 +8,7 @@ import { tierZoneConfigs } from './eslint.tier-zones.mjs';
 import queryKeyFromEntity from './eslint-rules/query-key-from-entity.mjs';
 import serverFnTopLevel from './eslint-rules/server-fn-top-level.mjs';
 import mutationCacheSync from './eslint-rules/mutation-cache-sync.mjs';
+import awaitedWriteBack from './eslint-rules/awaited-write-back.mjs';
 import serverOnlyRelative from './eslint-rules/server-only-relative.mjs';
 import noSideEffectImport from './eslint-rules/no-side-effect-import.mjs';
 import noDirectStorage from './eslint-rules/no-direct-storage.mjs';
@@ -108,6 +109,8 @@ const I18N_MIGRATED_FILES = [
   // Серверні лоадери вітрини, її роут-файли й серверний вхід host-а: саме там
   // заголовки запиту доступні, тож заборона І30 має стояти й тут.
   'packages/simplycms/src/storefront/**/*.{ts,tsx}',
+  // Розбір мови з URL (`resolveRequestLocale`) переїхав у `domain` (T1): І30 тримає й там.
+  'packages/simplycms/src/domain/request-locale.ts',
   'packages/simplycms/routes/storefront/**/*.ts',
   'src/server.ts',
   'packages/simplycms/src/admin/**/*.tsx',
@@ -422,6 +425,19 @@ const eslintConfig = [
       },
     },
     rules: { 'simplycms-cache-sync/mutation-cache-sync': 'error' },
+  },
+  // Write-back колекції повертає Promise (TanStack DB 1.0): лише під
+  // `await`/`return`/`void` з причиною — eslint-rules/awaited-write-back.mjs.
+  // Зона — увесь пакет ядра без тестів (тести свідомо пишуть у кеш у `act`).
+  {
+    files: ['packages/simplycms/src/**/*.{ts,tsx}'],
+    ignores: ['**/__tests__/**'],
+    plugins: {
+      'simplycms-write-back': {
+        rules: { 'awaited-write-back': awaitedWriteBack },
+      },
+    },
+    rules: { 'simplycms-write-back/awaited-write-back': 'error' },
   },
   // К3-4′: createServerFn лише топ-рівневим `const` — компілятор Start
   // на повільному шляху падає, а на fast-path (файли, де детектовано лише

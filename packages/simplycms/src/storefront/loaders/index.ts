@@ -77,6 +77,5 @@ export type { SectionRow, SectionRef } from './entities/section';
 // Серверні хелпери, що переїхали зі `storefront-routes/server` (трек T,
 // Крок 1б): вони не serverFn, а звичайні серверні функції — під префіксом
 // декларації межі їх збирає серверна група, а не спільний клієнтський чанк.
-export * from './is-admin';
 export * from './theme-record';
 export * from './store-profile';

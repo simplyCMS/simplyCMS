@@ -46,6 +46,7 @@ describe('cli doctor --online', () => {
       owners: 1,
       profile: { name: 'Shop', email: 'shop@example.com' },
       failedMail: 0,
+      publishedLanguages: ['uk'],
     }),
     pendingMigrations,
     isCoreMigrationName,

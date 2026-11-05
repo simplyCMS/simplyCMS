@@ -24,7 +24,6 @@ const cart = vi.hoisted(() => ({
 
 vi.mock('../../lib/cart-quote', () => server);
 vi.mock('../useAuth', () => ({ useAuth: () => ({ user: auth.user }) }));
-vi.mock('simplycms/i18n', () => ({ useLocale: () => 'uk' }));
 vi.mock('simplycms/react-query', () => ({
   useCart: () => ({
     items: cart.items,
@@ -34,6 +33,12 @@ vi.mock('simplycms/react-query', () => ({
 }));
 
 import { useCartQuote } from '../useCartQuote';
+import { cl } from '../../../../test-harness/locale';
+
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../../test-harness/content-locale'),
+);
 
 const P = '10000002-0000-4000-8000-000000000001';
 const QUOTE: CartQuote = { lines: [], subtotal: 1234 };
@@ -63,7 +68,7 @@ describe('useCartQuote', () => {
     const { result } = renderHook(() => useCartQuote(), { wrapper });
     await waitFor(() => expect(result.current.quote).toEqual(QUOTE));
     expect(keys()).toEqual([
-      [...AGGREGATE.cartQuote.keyFor('uk'), null, [[P, null, 1]]],
+      [...AGGREGATE.cartQuote.keyFor(cl('uk')), null, [[P, null, 1]]],
     ]);
     expect(server.quoteCart).toHaveBeenCalledWith({
       data: {
@@ -80,7 +85,7 @@ describe('useCartQuote', () => {
     rerender();
     await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
     expect(keys()).toContainEqual([
-      ...AGGREGATE.cartQuote.keyFor('uk'),
+      ...AGGREGATE.cartQuote.keyFor(cl('uk')),
       null,
       [[P, null, 3]],
     ]);
@@ -93,7 +98,7 @@ describe('useCartQuote', () => {
     rerender();
     await waitFor(() => expect(server.quoteCart).toHaveBeenCalledTimes(2));
     expect(keys()).toContainEqual([
-      ...AGGREGATE.cartQuote.keyFor('uk'),
+      ...AGGREGATE.cartQuote.keyFor(cl('uk')),
       'u1',
       [[P, null, 1]],
     ]);

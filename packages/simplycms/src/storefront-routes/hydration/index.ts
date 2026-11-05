@@ -1,0 +1,1 @@
+export { prepareStorefrontHydration } from './prepare';

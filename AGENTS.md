@@ -201,6 +201,9 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   доводять тести парності.
 - 🔴 Мова вітрини — лише з URL (перший сегмент шляху, `resolveRequestLocale`): без cookie, сесії й
   `Accept-Language`.
+- 🔴 Мова контенту (`ContentLocale`) і мова інтерфейсу (`UiLocale`) — різні типи; міст — лише
+  `resolveUiLocale`; ключі кешу й читачі даних беруть лише `ContentLocale`. i18n = вісь інтерфейсу (власний
+  механізм, не i18next). Мову магазину не опублікувати без пакета (`hasLanguagePack`, І46).
 
 **Файли й сховище** (`docs/architecture/storage.md`)
 

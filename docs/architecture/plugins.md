@@ -65,7 +65,7 @@ export default definePlugin({
   settings: z.object({ maxVisible: z.number().int().default(5).describe('…') }),
   slots: { 'product.detail.after': FaqSlot },   // компонент ← props.context
   hooks: { /* обробники; v1 — див. межі вище */ },
-  messages: { uk: {...}, en: {...} },           // ключі plugin.<name>.*
+  messages: { uk: {...}, en: {...} },           // ключі plugin.<name>.*; значення — рядок або PluralForms
   adminRoutes: './routes',          // декларація для людини/CLI, не рантайм
   migrations: ['20260814120000_plg_faq_items.sql'],
   edgeFunctions: [], buckets: [],   // декларації без автоматизації (§9 v1)
@@ -279,6 +279,17 @@ switch, `number/integer` → числовий input. Непредставна д
 нього на SSR дало б гідраційний мисматч (граблі, задокументовані в
 `useThemeT`). Typo-safety — локальний union:
 `export type FaqKey = keyof typeof messages.uk`.
+
+Рядки плагіна — той самий власний механізм ядра, що й у теми (не i18next): пошук рядка — спільний
+`lookupMessage` (мова → основна → ключ), пару мов бере `usePluginT` з провайдера (`useUiLocalePair()`).
+
+**Множина.** Значення ключа каталогу — рядок або `PluralForms`
+(`{ one?, few?, many?, zero?, two?, other }`, категорії CLDR; `other`
+обов'язкова). `usePluginT` віддає `PluralTranslator` — той самий контракт, що
+в ядра й теми, — тож `plural(t, 'plugin.<name>.items', n)` з `simplycms/i18n`
+вибирає форму за `Intl.PluralRules(мова інтерфейсу)`, а `{count}` підставляє
+сам. Парність: набір форм ключа в кожній мові — РІВНО категорії `Intl.PluralRules` цієї
+мови (`uk` — one/few/many/other, `en` — one/other).
 
 Метадані реєстру (`description`, `displayName` як бренд) — **англійською**:
 показуються з БД-рядка, не з каталогу; кирилиця в них валила б AST-скан.

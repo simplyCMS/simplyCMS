@@ -2,10 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import { ORDER_STATUS_CODE } from 'simplycms/contracts/order-status-codes';
 import { TestEngineProvider } from './engine-stub';
 import ProfileOrderDetail from '../pages/ProfileOrderDetail';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 /**
  * Кнопка «Скасувати» в кабінеті покупця є лише для статусу `new`
@@ -28,7 +28,7 @@ vi.mock('simplycms/core/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'u-1' } }),
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 const order = (code: string) => ({
   id: 'order-1',
@@ -61,11 +61,11 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <ProfileOrderDetail />
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 }

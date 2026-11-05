@@ -3,7 +3,7 @@ import {
   redactUrls,
   resolveDriverEnv,
 } from 'simplycms/env';
-import { createTranslator } from 'simplycms/i18n';
+import type { ContentLocale } from 'simplycms/contracts';
 import {
   deliverMail,
   scheduleMail,
@@ -33,7 +33,8 @@ export type RunOwnerInviteOptions = {
   email: string;
   siteUrl: string;
   storeName?: string;
-  locale?: string;
+  /** Основна мова магазину для листа; без неї — з БД (`readLanguages`). Шов для юніт-тестів. */
+  primary?: ContentLocale;
   printLink?: boolean;
   env?: Readonly<Record<string, string | undefined>>;
   log: (message: string) => void;
@@ -61,7 +62,7 @@ export async function runOwnerInvite({
   email,
   siteUrl,
   storeName = 'SimplyCMS',
-  locale = 'uk',
+  primary,
   printLink = false,
   env = process.env,
   log,
@@ -86,9 +87,9 @@ export async function runOwnerInvite({
       email,
       env: { VITE_SITE_URL: siteUrl },
       storeName,
-      // CLI не бачить `simplycms.config` магазину — локаль листа з env.
-      // М2: листи підуть мовою одержувача, фолбек — основна мова магазину.
-      t: createTranslator(locale, 'uk'),
+      // Адресат ще без профілю: лист мовою основної мови магазину (§19.9), яку
+      // `issueOwnerInvite` читає з БД, коли `primary` не задано.
+      primary,
     });
   } catch (error) {
     // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду;

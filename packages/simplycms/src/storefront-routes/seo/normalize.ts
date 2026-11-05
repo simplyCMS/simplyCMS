@@ -6,11 +6,8 @@ import {
   lookupProductAddress,
 } from 'simplycms/storefront/loaders';
 import { getRequestContext } from 'simplycms/site/request-context';
-import {
-  isStorefrontPath,
-  resolveRequestLocale,
-  type LocaleSet,
-} from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { isStorefrontPath, resolveRequestLocale } from 'simplycms/domain';
 import { applyHistory, type AddressLookup } from './history';
 import { parseQueryKeepingToken, sameOriginPath } from './query';
 

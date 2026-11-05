@@ -2,18 +2,20 @@
 /**
  * Список замовлень (Task 6, Е5): справжні колекції + стаб межі serverFn
  * (`orders-server-stub` фільтрує/сортує/ліміт як сервер). Асерти — точні
- * тексти `createTranslator('uk', 'uk')`, не `/./`.
+ * тексти `ukT`, не `/./`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   listOrders,
   makeOrder,
@@ -49,8 +51,9 @@ vi.mock('@tanstack/react-router', () => ({
 
 import OrdersPage from '../OrdersPage';
 import { ORDERS_PAGE_SIZE, useOrdersList } from '../useOrdersList';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const NEW = { id: 's-new', name: 'Нове', color: '#112233', sortOrder: 0 };
 const DONE = { id: 's-done', name: 'Виконано', color: '#445566', sortOrder: 1 };
 
@@ -59,7 +62,7 @@ const wrap = (qc: QueryClient) =>
     return (
       <QueryClientProvider client={qc}>
         <EngineProvider value={ENGINE}>
-          <I18nProvider locale="uk">{children}</I18nProvider>
+          <TestI18nProvider>{children}</TestI18nProvider>
         </EngineProvider>
       </QueryClientProvider>
     );
@@ -82,7 +85,7 @@ describe('OrdersPage', () => {
     const link = await screen.findByRole('link', { name: 'N-2' });
     expect(link.getAttribute('href')).toBe('/admin/orders/o0002');
     expect(
-      screen.getByText(formatPrice(1234.5, ENGINE.config).replace(/\s/g, ' ')),
+      screen.getByText(formatPrice(1234.5, PRICE_FORMAT).replace(/\s/g, ' ')),
     ).toBeTruthy();
     expect(screen.getAllByText('Нове')).toHaveLength(2);
     expect(screen.getByText(t('admin.orders.subtitle'))).toBeTruthy();

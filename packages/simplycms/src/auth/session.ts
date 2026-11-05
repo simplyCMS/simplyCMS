@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { withActor } from 'simplycms/db';
-import { userRoles } from 'simplycms/schema';
+import { profiles, userRoles } from 'simplycms/schema';
 import type { AppRole, AuthzSubject } from './authz';
 import { getAuth } from './instance';
 
@@ -36,6 +36,24 @@ export async function readUserRoles(userId: string): Promise<AppRole[]> {
       .where(eq(userRoles.userId, userId));
 
     return rows.map((row) => row.role);
+  });
+}
+
+/**
+ * Мова інтерфейсу адмінки з власного профілю (`profiles.ui_locale`, §19.6) або `null`.
+ * Актор той самий, що в `readUserRoles`: політика `profiles_select_own` віддає лише рядок
+ * цього користувача. Профілю чи значення немає — `null`: адмінка піде на основну мову.
+ */
+export async function readProfileUiLocale(
+  userId: string,
+): Promise<string | null> {
+  return withActor({ role: 'app_user', userId }, async (db) => {
+    const [row] = await db
+      .select({ uiLocale: profiles.uiLocale })
+      .from(profiles)
+      .where(eq(profiles.userId, userId))
+      .limit(1);
+    return row?.uiLocale ?? null;
   });
 }
 

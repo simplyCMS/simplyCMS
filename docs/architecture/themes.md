@@ -78,11 +78,16 @@ ThemeModule = {
   tokens: DesignTokens;        // значення НАЯВНИХ semantic-змінних shadcn
   components: ThemeComponents; // Header, Footer (обовʼязкові) + HeroBanner?, HomeSections?
   settings?: Record<string, ThemeSettingDefinition>;
-  messages?: { uk: {...}, en: {...} };   // опційний каталог, контракт v2.1
+  messages?: { uk: {...}, en: {...} };   // опційний каталог, контракт v2.1; значення — рядок або PluralForms
   fonts?: ReadonlyArray<{ stylesheet: string }>;  // https:-URL, контракт v2.2
 }
 ```
 
+- **Рядки теми — власний механізм ядра, не i18next** (`simplycms/i18n`, [`i18n.md`](./i18n.md)): каталог читає
+  `useThemeT()` (`PluralTranslator`; множина — `plural(t, key, count)`), мову інтерфейсу для форматування дає
+  `useUiLocale()` (тип `UiLocale`, не мова контенту), пару мов для fallback — `useUiLocalePair()`. Хуки `useLocale` (знесено)
+  і `useFallbackLocale` (знесено) не казали, яка це вісь. Мову даних тема не отримує з хука: вона
+  приходить у view-моделях.
 - **Типографіка (v2.2)** — два не-кольорові токени в `tokens`: `'font-sans'`
   і `'font-heading'`. Значення — повний CSS `font-family` stack рядком
   (`"'Manrope', system-ui, sans-serif"`), не назва шрифту; `font-heading`
@@ -519,7 +524,7 @@ activate.
 
 ### 7.1 Гейт заявлених `views` (контракт v3)
 
-`assertThemeViewsConformance(theme)` — публічний kit,
+`assertThemeViewsConformance(theme, { locale })` — публічний kit (мова інтерфейсу рендеру — обов'язковий `UiLocale`, без дефолту),
 `packages/simplycms/src/themes/conformance/`, експорт **субшляхом**
 `simplycms/themes/conformance` (барель тягне серверний шар
 `themes/server` — та сама ідіома, що `safeFontStylesheets`).
@@ -601,7 +606,10 @@ Playwright): гейт мусить бути доступним і магазин
      пакета, `manifest.name` = хвіст теки, `displayName` непорожній.
      Дискаверить ЛИШЕ `packages/simplycms-theme-*` — `themes/default` під
      parity НЕ підпадає свідомо (private, власна версія, еталон fallback).
-   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en,
+   - `tests/theme-messages-parity.test.ts` — парність каталогів uk/en
+     (ключі, плейсхолдери); ключ множини в КОЖНІЙ мові каталогу (мови беруться з
+     ключів `messages`, не фіксовані uk/en) (`PluralForms`, `other` обов'язкова) має рівно категорії
+     `Intl.PluralRules` своєї мови, вид значення в мовах збігається,
      дискаверить ОБИДВА корені (`themes/<name>/messages.ts` і
      `packages/simplycms-theme-*/src/messages.ts`).
    - `tests/i18n-coverage` `SCANNED_ROOTS` — теми дискаверяться з диска

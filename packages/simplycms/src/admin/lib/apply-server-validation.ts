@@ -61,6 +61,7 @@ const KEYS = {
   reserved: 'admin.validation.reserved',
   path_required: 'admin.validation.path_required',
   language_incomplete: 'admin.validation.language_incomplete',
+  language_pack_missing: 'admin.validation.language_pack_missing',
 } as const satisfies Record<ValidationIssueCode, MessageKey>;
 
 /** Ключ повідомлення для проблеми; повнота за кодами — типом `KEYS`. */

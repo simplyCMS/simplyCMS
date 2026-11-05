@@ -11,6 +11,7 @@ import {
 } from 'simplycms/admin-server';
 import { getCollection, type CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
+import { invalidateCollection } from '../invalidate-collection';
 import { invalidateDiscountConsumers } from '../discount-cache';
 import { discountsCollection } from './discounts';
 
@@ -38,19 +39,24 @@ function create(queryClient: QueryClient) {
         afterWrite: () => invalidateDiscountConsumers(queryClient),
       }),
       onDelete: async ({ transaction }) => {
+        const own = transaction.mutations.map((m) => m.key as string);
         const { removed } = await removeDiscountGroups({
-          data: transaction.mutations.map((m) => ({ id: m.key as string })),
+          data: own.map((id) => ({ id })),
         });
-        ref.current!.utils.writeBatch(() => {
+        // 🔴 Власні id транзакції відомі локально за визначенням: `has()` для
+        // них false (оптимістичне видалення), тож лише `has()` губив би
+        // write-back і рядок «воскресав» після успіху (TanStack DB 1.0).
+        const mine = new Set(own);
+        await ref.current!.utils.writeBatch(() => {
           // Лише відомі локально: нащадок, створений іншою сесією після
           // останнього завантаження, дав би throw при вже закомічному
           // серверному видаленні.
           for (const id of removed)
-            if (ref.current!.has(id)) ref.current!.utils.writeDelete(id);
+            if (mine.has(id) || ref.current!.has(id))
+              ref.current!.utils.writeDelete(id);
         });
-        dropCascadedDiscounts(queryClient, new Set(removed));
+        await dropCascadedDiscounts(queryClient, new Set(removed));
         await invalidateDiscountConsumers(queryClient);
-        return { refetch: false };
       },
     }),
   );
@@ -62,23 +68,24 @@ function create(queryClient: QueryClient) {
  * Каскад БД видалив знижки піддерева — прибираємо їх із колекції знижок
  * write-back-ом (без мережі, К3-7), рядки беремо з неї ж за `groupId`.
  * Колекція ще не завантажена — write-back неможливий, але й осиротілих
- * рядків у ній немає; точковий refetch лише скасовує запит, що летить.
+ * рядків у ній немає; інвалідація скасовує запит, що летить, і позначає зріз застарілим.
  */
-function dropCascadedDiscounts(queryClient: QueryClient, groups: Set<string>) {
+async function dropCascadedDiscounts(
+  queryClient: QueryClient,
+  groups: Set<string>,
+) {
   // getCollection створює eager-колекцію, якщо її ще немає: це дешево (sync
   // стартує лише з підпискою) і дає одну точку правди про стан завантаження.
   const discounts = getCollection(queryClient, discountsCollection);
   if (discounts.status !== 'ready') {
-    void queryClient.invalidateQueries({
-      queryKey: collectionKey(ENTITY.discounts),
-    });
+    await invalidateCollection(queryClient, discountsCollection);
     return;
   }
   const ids = [...discounts.values()]
     .filter((d) => groups.has(d.groupId))
     .map((d) => d.id);
   if (ids.length === 0) return;
-  discounts.utils.writeBatch(() => {
+  await discounts.utils.writeBatch(() => {
     for (const id of ids) discounts.utils.writeDelete(id);
   });
 }

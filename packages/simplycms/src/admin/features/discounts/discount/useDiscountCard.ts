@@ -86,7 +86,7 @@ export function useDiscountCard(
       const res = await saveDiscount({
         data: toSaveInput(v, id, original.current),
       });
-      discounts.utils.writeBatch(() => {
+      await discounts.utils.writeBatch(() => {
         discounts.utils.writeUpsert(res.discount);
       });
       queryClient.setQueryData(detailKey, res);

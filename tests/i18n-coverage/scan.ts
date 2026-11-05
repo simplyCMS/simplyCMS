@@ -121,8 +121,12 @@ function walk(dir: string, out: string[]): string[] {
   return out;
 }
 
-export function sourceFiles(repoRoot: string): string[] {
-  return SCANNED_ROOTS.flatMap((root) => walk(join(repoRoot, root), []))
+export function sourceFiles(
+  repoRoot: string,
+  roots: readonly string[] = SCANNED_ROOTS,
+): string[] {
+  return roots
+    .flatMap((root) => walk(join(repoRoot, root), []))
     .map((f) => relative(repoRoot, f))
     .filter((f) => !CATALOG_FILES.test(f))
     .sort();

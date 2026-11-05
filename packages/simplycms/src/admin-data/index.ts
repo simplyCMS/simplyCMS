@@ -1,5 +1,6 @@
 export { getCollection, useCollection } from './registry';
 export type { CollectionDef } from './registry';
+export { invalidateCollection } from './invalidate-collection';
 export { persistenceHandlers } from './handlers';
 export type { WriteBack } from './handlers';
 

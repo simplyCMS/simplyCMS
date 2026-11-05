@@ -1,53 +1,51 @@
-import { getLanguagePack } from './packs';
-import type { Locale, MessageKey, MessageParams, Translator } from './types';
-
-// М2: зноситься разом із `config.locale` (мова магазину — з БД).
-/**
- * Тимчасовий міст до М2 (знос `config.locale`): мовна частина тегу з конфіга
- * магазину в нижньому регістрі, `uk-UA` → `uk`, `EN` → `en`.
- *
- * НЕ загальна утиліта мов: для кодів мов магазину (`pt-BR` — окрема мова з
- * власним сегментом URL) регіон зрізати не можна. Мову не перевіряє й не
- * підміняє: невідома лишається собою (`fr-FR` → `fr`), а відсутність пакета
- * закриває фолбек транслятора.
- */
-export function languageOfConfigLocale(tag: string): Locale {
-  return tag.split('-')[0]?.toLowerCase() ?? '';
-}
+import { lookupForms, lookupMessage, type CatalogLink } from './lookup';
+import type { UiLocale } from 'simplycms/contracts';
+import type {
+  MessageParams,
+  PartCatalog,
+  PluralTranslator,
+  Translator,
+} from './types';
 
 /**
- * Підстановка `{name}` значеннями з `params`; невідомий плейсхолдер лишається як є.
- *
- * 🔴 Експортована навмисно: `useThemeT` (`simplycms/themes`) підставляє
- * параметри в каталог ТЕМИ за тією самою семантикою, і дублювати цю функцію
- * там означало б два джерела правди для одного форматування.
+ * Збирає транслятор над ланцюгом каталогів у порядку пріоритету (кожна ланка — каталог і
+ * його мова). Єдина фабрика для ядра, теми й
+ * плагіна (`useThemeT`, `usePluginT`): транслятор будь-якого рівня має ту саму форму
+ * (функція + `locale` + `forms`), тож `plural` працює з усіма однаково.
  */
-export function interpolate(template: string, params?: MessageParams): string {
-  if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
-    const value = params[name];
-    return value === undefined ? match : String(value);
+export function createLookupTranslator<S extends string, P extends string>(
+  chain: readonly CatalogLink[],
+  locale: UiLocale,
+): PluralTranslator<S, P> {
+  const catalogs = chain.map((link) => link.catalog);
+  const t = (key: S, params?: MessageParams): string =>
+    lookupMessage(catalogs, key, params);
+  return Object.assign(t, {
+    locale,
+    forms: (key: P) => lookupForms(chain, key),
   });
 }
 
 /**
- * Створює транслятор під конкретну локаль.
+ * Створює транслятор над УЖЕ завантаженими частинами каталогу (завантаження — реєстр
+ * `loadUiCatalog`, тут чиста синхронна функція). `locale` — мова інтерфейсу цих частин:
+ * за нею `plural` вибирає категорію множини.
  *
- * Ланцюг: каталог мови → каталог `fallback` → сам ключ (видимий сигнал про
- * пропущений переклад). `fallback` обов'язковий і НЕ має дефолту: це основна
- * мова магазину, яка не обов'язково українська, а тихий `uk` віддав б
- * англомовному магазину українські рядки.
+ * Ланцюг (`lookupMessage`): перший каталог, що має ключ → сам ключ (видимий сигнал про
+ * пропущений переклад). Каталоги ядра повні для кожної мови (англійські частини
+ * `satisfies ShapeOf<uk>`), тож fallback-мови тут немає: вона потрібна лише каталогам
+ * теми й плагіна, які можуть бути неповними (`useThemeT`).
  *
- * Транслятор — замикання без модульного mutable-стану: жодного `setLocale`.
- * Тому SSR може тримати кілька трансляторів різних локалей одночасно
- * (per-request), і вони не впливають один на одного.
+ * Транслятор — замикання без модульного mutable-стану: жодного `setLocale`. Тому SSR може
+ * тримати кілька трансляторів різних мов одночасно (per-request).
  */
-export function createTranslator(locale: Locale, fallback: Locale): Translator {
-  const own = getLanguagePack(locale)?.catalog;
-  const base = getLanguagePack(fallback)?.catalog;
-
-  return (key: MessageKey, params?: MessageParams): string => {
-    const template = own?.[key] ?? base?.[key] ?? key;
-    return interpolate(template, params);
-  };
+export function createTranslator(
+  catalogs: readonly PartCatalog[],
+  locale: UiLocale,
+): Translator {
+  // Каталоги ядра повні й однієї мови — кожна ланка несе мову інтерфейсу.
+  return createLookupTranslator(
+    catalogs.map((catalog) => ({ locale, catalog })),
+    locale,
+  );
 }

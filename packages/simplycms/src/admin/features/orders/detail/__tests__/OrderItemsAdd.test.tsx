@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
 import {
@@ -13,7 +12,7 @@ import {
   reset,
   applyOutcome,
 } from '../../../../../admin-data/__tests__/support/orders-server-stub';
-import { awaitRevalidation } from '../../../../../admin-data/__tests__/support/revalidation';
+import { expectNoRefetch } from '../../../../../admin-data/__tests__/support/revalidation';
 import { makeItem, NEW } from './support';
 
 const mocks = vi.hoisted(() => ({
@@ -41,12 +40,13 @@ vi.mock('@tanstack/react-router', () => ({
 import OrderDetailPage from '../OrderDetailPage';
 import { useOrderItemsEdit } from '../useOrderItemsEdit';
 import { renderHook, act } from '@testing-library/react';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 let client = new QueryClient();
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={client}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );
@@ -59,7 +59,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('useOrderItemsEdit.add', () => {
-  it('add: write-back додає позицію й оновлює замовлення, ревалідація її зберігає', async () => {
+  it('add: write-back додає позицію й оновлює замовлення без перезапиту', async () => {
     const at = new Date(Date.UTC(2026, 9, 1, 10));
     const order = makeOrder(1, at);
     reset([order], [makeItem(1)]);
@@ -93,8 +93,7 @@ describe('useOrderItemsEdit.add', () => {
       },
     });
     expect(await screen.findByText('Товар 2')).toBeTruthy();
-    // ціна TSDB-1: +N запитів після запису (1 живий зріз -> не більше +1).
-    await awaitRevalidation(listOrderItems, before);
-    expect(listOrderItems.mock.calls.length).toBeLessThanOrEqual(before + 1);
+    // Write-back без перезапиту (M1 TSDB-1 закрито).
+    await expectNoRefetch(listOrderItems, before);
   });
 });

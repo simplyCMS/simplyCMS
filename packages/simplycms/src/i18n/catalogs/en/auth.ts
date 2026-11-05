@@ -1,7 +1,5 @@
-import type { Catalog } from '../../types';
-
 /** Автентифікація — дзеркало `uk/auth.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'auth.setPassword.title': 'Set your password',
   'auth.setPassword.description':
     'You have accepted the invitation. Choose a password to sign in to the store.',
@@ -71,4 +69,4 @@ export const messages: Catalog = {
   'auth.forgot.sent': 'If that email is in our system, we have sent a link.',
   'auth.backHome': 'Back to home page',
   'auth.genericError': 'Something went wrong. Please try again.',
-};
+} satisfies Record<string, string>;

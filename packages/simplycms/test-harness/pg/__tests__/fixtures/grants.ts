@@ -121,7 +121,7 @@ export const GRANTED_ROLES = ['app_admin', 'app_user'] as const;
  * Колонкові гранти (Е6в-24): `{ table: { role: { CMD: [колонки] } } }`.
  * Покупець оновлює в `profiles` ЛИШЕ те, що вітрина справді пише під
  * `app_user` (виміряно): `updateProfile` — `first_name`, `last_name`, `phone`,
- * `updated_at`; аватар — `avatar_url`. `category_id`/`category_locked` —
+ * `updated_at`; аватар — `avatar_url`; мова інтерфейсу — `ui_locale`. `category_id`/`category_locked` —
  * лише `app_admin` (категорія визначає ціну, прапорець — автоправила).
  */
 export const COLUMN_GRANTS: Record<
@@ -132,7 +132,14 @@ export const COLUMN_GRANTS: Record<
 > = {
   profiles: {
     app_user: {
-      UPDATE: ['avatar_url', 'first_name', 'last_name', 'phone', 'updated_at'],
+      UPDATE: [
+        'avatar_url',
+        'first_name',
+        'last_name',
+        'phone',
+        'ui_locale',
+        'updated_at',
+      ],
     },
   },
   // Е6д-23: UPDATE без `admin_comment`/`user_id`, а `status` лише заради повернення в pending.

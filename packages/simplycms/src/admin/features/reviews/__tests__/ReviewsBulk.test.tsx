@@ -3,7 +3,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createTranslator } from 'simplycms/i18n';
 import { ENTITY } from 'simplycms/contracts/entities';
 import ReviewsPage from '../list/ReviewsPage';
 import {
@@ -14,6 +13,7 @@ import {
   stubDom,
   ui,
 } from './render-support';
+import { ukT } from '../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a>{children}</a>,
 }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const rows = [row(1), row(2), row(3)];
 
 beforeEach(() => {

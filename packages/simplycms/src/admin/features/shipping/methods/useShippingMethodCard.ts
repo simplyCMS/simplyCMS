@@ -93,7 +93,7 @@ export function useShippingMethodCard(methodId: string | undefined) {
           ...patch,
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -116,7 +116,8 @@ export function useShippingMethodCard(methodId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.shipping.methods.deleted'));
         goList();
       })

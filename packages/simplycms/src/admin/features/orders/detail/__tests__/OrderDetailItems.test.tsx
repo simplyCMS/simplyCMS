@@ -4,10 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { createTranslator, I18nProvider } from 'simplycms/i18n';
 import { formatPrice } from 'simplycms/domain/money';
 import { EngineProvider } from 'simplycms/react-query';
-import { ENGINE } from '../../../products/edit/__tests__/test-engine-stub';
+import {
+  ENGINE,
+  PRICE_FORMAT,
+} from '../../../products/edit/__tests__/test-engine-stub';
 import {
   makeOrder,
   reset,
@@ -34,16 +36,17 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 import OrderDetailPage from '../OrderDetailPage';
+import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const wrap = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>
     <EngineProvider value={ENGINE}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </EngineProvider>
   </QueryClientProvider>
 );
-const money = (n: number) => formatPrice(n, ENGINE.config).replace(/\s/g, ' ');
+const money = (n: number) => formatPrice(n, PRICE_FORMAT).replace(/\s/g, ' ');
 const at = new Date(Date.UTC(2026, 9, 1, 10));
 const items = (n: number) =>
   Array.from({ length: n }, (_, i) => makeItem(i + 1));
@@ -85,20 +88,29 @@ describe('OrderDetailPage: позиції й підсумки', () => {
     expect(screen.getByText(`Акція: -${money(265.5)}`)).toBeTruthy();
   });
 
-  it('рівно 500 позицій → попередження; 499 — без нього', async () => {
-    reset([makeOrder(1, at)], items(500));
-    render(<OrderDetailPage />, { wrapper: wrap });
-    expect(
-      await screen.findByText(
-        t('admin.orders.itemsMayBeTruncated', { count: 500 }),
-      ),
-    ).toBeTruthy();
-    cleanup();
-    reset([makeOrder(1, at)], items(499));
-    render(<OrderDetailPage />, { wrapper: wrap });
-    await screen.findByText('Товар 499');
-    expect(
-      screen.queryByText(t('admin.orders.itemsMayBeTruncated', { count: 500 })),
-    ).toBeNull();
-  });
+  // Повільний за природою: межа попередження — рівно 500 позицій, тож тест
+  // двічі рендерить ~500 рядків таблиці в jsdom (~2,3 с окремо). Під
+  // паралельним навантаженням повного `pnpm test` дефолтних 5 с замало.
+  it(
+    'рівно 500 позицій → попередження; 499 — без нього',
+    { timeout: 15_000 },
+    async () => {
+      reset([makeOrder(1, at)], items(500));
+      render(<OrderDetailPage />, { wrapper: wrap });
+      expect(
+        await screen.findByText(
+          t('admin.orders.itemsMayBeTruncated', { count: 500 }),
+        ),
+      ).toBeTruthy();
+      cleanup();
+      reset([makeOrder(1, at)], items(499));
+      render(<OrderDetailPage />, { wrapper: wrap });
+      await screen.findByText('Товар 499');
+      expect(
+        screen.queryByText(
+          t('admin.orders.itemsMayBeTruncated', { count: 500 }),
+        ),
+      ).toBeNull();
+    },
+  );
 });

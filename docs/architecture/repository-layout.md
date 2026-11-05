@@ -102,8 +102,8 @@ simplyCMS/
 │   │   │                         #    src/start.ts serializationAdapters)
 │   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
 │   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
-│   │   ├── src/i18n/             # T2 createTranslator(locale, fallback), I18nProvider, каталоги uk/en,
-│   │   │                         #    packs/ — мовні пакети (LANGUAGE_PACKS, getLanguagePack); Locale — відкритий рядок
+│   │   ├── src/i18n/             # T2 createTranslator(catalogs, locale), I18nProvider, каталоги uk/en (частини base/admin/mail),
+│   │   │                         #    packs/ — мовні пакети (реєстр закритий; listLanguagePacks, hasLanguagePack, getUiPack, getContentTools); registry.ts — ліниві частини каталогу; UiLocale + resolveUiLocale — вісь інтерфейсу
 │   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto), реєстр TRANSLATABLE,
 │   │   │                         #    читання (loadTranslations, withFallback) і запис (applyTranslationPlan,
 │   │   │                         #    deleteTranslation), галерея мовою сторінки (gallery.ts, GALLERY_ORDER).
@@ -210,7 +210,7 @@ simplyCMS/
 ├── tsconfig.showcase.json            # tsconfig гейта `pnpm typecheck:showcase` (`scripts/showcase/*.mts`
 │                                     # кореневий tsconfig не бачить, а tsx типів не перевіряє)
 ├── vitest.schema.config.ts           # Схемний контур (`pnpm test:schema`)
-├── simplycms.config.ts               # defineConfig: locale, currency, themes, plugins
+├── simplycms.config.ts               # defineConfig: currency, themes, plugins
 ├── eslint.db-client-zone.mjs         # Зона: гола фабрика пулу `db/client` закрита, лише `withActor`
 ├── eslint.tier-zones.mjs             # Тір-зони T0→T5 усередині пакета ядра;
 │                                     # eslint.tier-relative.mjs — відносні форми специфікатора
@@ -218,6 +218,7 @@ simplyCMS/
 │                                     # з ВЛАСНИМ імʼям плагіна: query-key-from-entity.mjs,
 │                                     # server-fn-top-level.mjs (createServerFn лише топ-рівнем),
 │                                     # mutation-cache-sync.mjs (мутація синхронізує кеш),
+│                                     # awaited-write-back.mjs (write-back колекції під await),
 │                                     # server-only-relative.mjs (відносний імпорт у server-only
 │                                     # дерево ззовні нього), no-side-effect-import.mjs
 │                                     # (side-effect-імпорт у пакетах із sideEffects:false),

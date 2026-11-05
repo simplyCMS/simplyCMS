@@ -55,14 +55,14 @@ const ogLocale = (locale: string): string => locale.replace('-', '_');
  * не виводяться: відносний чи вигаданий хост гірший за жоден. `siteUrl` уже
  * нормалізований кореневим лоадером (без кінцевого `/`).
  */
-export function productHead(
+export async function productHead(
   matches: ReadonlyArray<HeadMatch>,
   product: ProductHeadInput,
-): {
+): Promise<{
   meta: Array<HeadMeta | OgMeta>;
   links: HeadLink[];
   scripts: JsonLdScript[];
-} {
+}> {
   const { siteUrl } = readStorefrontRoot(matches);
   const { page } = product;
   const images = product.images.map((image) => image.url);
@@ -73,7 +73,7 @@ export function productHead(
     ? richTextToPlain(product.description)
     : '';
   let description = '';
-  const { meta } = storefrontHead(matches, (t) => {
+  const { meta } = await storefrontHead(matches, (t) => {
     description =
       product.meta_description ||
       product.short_description ||

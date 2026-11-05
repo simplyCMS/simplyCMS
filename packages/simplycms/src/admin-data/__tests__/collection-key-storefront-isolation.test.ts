@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import {
   createCollection,
@@ -14,10 +14,10 @@ import { persistenceHandlers, type WriteBack } from '../handlers';
  * — той статично сканував КОД; цей запускає РАНТАЙМ-механізм бібліотеки,
  * через який літеральний другий сегмент `'list'` поза `admin-data` шкодить).
  *
- * Write-back перезаписує ПРЕФІКСНО всі ключі, що розширюють
+ * Write-back eager-колекції пише в УСІ ключі, що розширюють
  * `collectionKey(entity)` — вітрина й `admin-data` ділять ОДИН
  * `QueryClient` (`src/router.tsx`), тож вітринний ключ дістав би чужі
- * (адмінські) рядки.
+ * (адмінські) рядки (qdc 1.5: дописує їх до вітринних).
  * UPSTREAM:TSDB-1 — docs/architecture/upstream-workarounds.md
  */
 
@@ -60,12 +60,12 @@ describe('Е3-15′: ізоляція вітрини від write-back коле�
     const collection = makeCollection(qc, collectionKey(ENTITY.products));
     await collection.preload();
     const tx = collection.insert(adminRow as never);
-    await tx.isPersisted.promise;
+    await tx.when('settled');
 
     expect(qc.getQueryData(storefrontKey)).toEqual([storefrontRow]);
   });
 
-  it('КОНТРОЛЬ: ключ під префіксом [products,"list",суфікс] ДІЙСНО перезаписується — доводить механіку бібліотеки', async () => {
+  it('КОНТРОЛЬ: ключ під префіксом [products,"list",суфікс] ДІЙСНО забруднюється адмінським рядком — доводить механіку бібліотеки', async () => {
     const qc = new QueryClient();
     // Форма, якої гейт забороняє: буквальний другий сегмент 'list' поза
     // admin-data (те, чим `[...products.list(), 'featured']` був ДО фіксу).
@@ -75,17 +75,18 @@ describe('Е3-15′: ізоляція вітрини від write-back коле�
     const collection = makeCollection(qc, collectionKey(ENTITY.products));
     await collection.preload();
     const tx = collection.insert(adminRow as never);
-    await tx.isPersisted.promise;
+    await tx.when('settled');
 
-    expect(qc.getQueryData(colliding)).not.toEqual([storefrontRow]);
-    expect(qc.getQueryData(colliding)).toEqual([adminRow]);
+    // qdc 1.3 перезаписував ключ цілком; 1.5 патчить і ДОПИСУЄ прийняті
+    // рядки — вітринний ключ однаково отримує чужий (адмінський) рядок.
+    expect(qc.getQueryData(colliding)).toContainEqual(adminRow);
   });
 });
 
 /**
  * Eager-кейс вище на on-demand нічого не доводив (механіка там інша), тож
  * тут прямий: on-demand колекція з АКТИВНОЮ підпискою (живий запит), write-back
- * через `insert`. Виміряно на query-db-collection 1.3.4 / db 0.11.3.
+ * через `insert`. Виміряно на query-db-collection 1.5.1 / db 1.0.0-rc.1.2.
  */
 describe('Е3-15′: ізоляція ключів на on-demand колекції', () => {
   async function writeBackOnDemand(qc: QueryClient) {
@@ -106,7 +107,7 @@ describe('Е3-15′: ізоляція ключів на on-demand колекці
     ref.current = collection;
     const live = createLiveQueryCollection((q) => q.from({ p: collection }));
     await live.preload();
-    await collection.insert(adminRow as never).isPersisted.promise;
+    await collection.insert(adminRow as never).when('settled');
   }
 
   // Sanity-перевірка, а не доказ ізоляції: variant-ключ узагалі не під
@@ -127,7 +128,7 @@ describe('Е3-15′: ізоляція ключів на on-demand колекці
     expect(qc.getQueryData(colliding)).toBeUndefined();
   });
 
-  it('КОНТРОЛЬ I1: ключ під префіксом із ЧУЖИМ спостерігачем не видаляється, а перезапитується', async () => {
+  it('КОНТРОЛЬ I1: ключ під префіксом із ЧУЖИМ спостерігачем не видаляється і не перезапитується', async () => {
     const qc = new QueryClient();
     const colliding = [...collectionKey(ENTITY.products), 'featured'];
     qc.setQueryData(colliding, [storefrontRow]);
@@ -142,7 +143,11 @@ describe('Е3-15′: ізоляція ключів на on-demand колекці
     });
     const unsubscribe = observer.subscribe(() => {});
     await writeBackOnDemand(qc);
-    await vi.waitFor(() => expect(fetched).toBeGreaterThan(0));
+    // Перевірка ВІДСУТНОСТІ події: відкладений перезапит вклався б у паузу.
+    await new Promise((r) => setTimeout(r, 30));
+    // qdc 1.3 перезапитував такий ключ (M1); 1.5 його не чіпає — чужий
+    // ключ лишається цілим без мережі.
+    expect(fetched).toBe(0);
     expect(qc.getQueryData(colliding)).toEqual([storefrontRow]);
     unsubscribe();
   });

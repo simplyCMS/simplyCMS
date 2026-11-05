@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Переклади сутностей у картках адмінки — дзеркало `uk/admin/translations.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.translations.source': 'source',
   'admin.translations.languages': 'Languages',
   'admin.translations.status.current': 'Up to date',
@@ -24,4 +22,4 @@ export const messages: Catalog = {
   'admin.translations.retry': 'Try again',
   'admin.translations.unsavedChildren':
     'Changes to modifications, values and photos are saved with the card Save button',
-};
+} satisfies Record<string, string>;

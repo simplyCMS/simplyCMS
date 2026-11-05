@@ -1,13 +1,14 @@
 import { formatPrice } from 'simplycms/domain/money';
+import type { UiLocale } from 'simplycms/contracts';
 import type { Translator } from 'simplycms/i18n';
 import type { MailMessage } from '../types';
 import { escapeHtml, layout, linkParagraph, paragraph } from './layout';
 
 /**
  * Чисті рендери листів про нове замовлення. Тексти — лише з каталогу `mail.*`.
- * Суми з валютою: `locale` і `currency` приходять ззовні (host декларує їх у
- * `src/server.ts`), форматує детермінований `formatPrice` — `Intl` у стилі
- * `currency` дає різні символи на різних версіях ICU.
+ * Суми з валютою: `locale` (мова інтерфейсу цього листа) і `currency` приходять ззовні,
+ * форматує детермінований `formatPrice` — `Intl` у стилі `currency` дає різні символи на
+ * різних версіях ICU.
  */
 
 export type OrderMailItem = {
@@ -34,7 +35,7 @@ export type OrderMailData = {
 };
 
 /** Локаль і валюта магазину для форматування сум. */
-export type OrderMailMoney = { locale: string; currency: string };
+export type OrderMailMoney = { locale: UiLocale; currency: string };
 
 export type OrderCustomerMailInput = OrderMailMoney & {
   /** Адреса покупця; викликач гарантує непорожню (Д2 — гілка без email не рендериться). */

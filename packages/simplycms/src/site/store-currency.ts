@@ -1,7 +1,7 @@
 /**
  * Валюта магазину для листів: серверний код не бачить `simplycms.config`, тож
- * host повідомляє її тим самим каналом, що й локаль (`declareStoreLocale`,
- * `src/server.ts`). Чек без валюти двозначний.
+ * host повідомляє її в `src/server.ts` (`declareStoreCurrency`, як `declareBuiltThemes`).
+ * Чек без валюти двозначний.
  */
 const DEFAULT_CURRENCY = 'UAH';
 let storeCurrency: string | null = null;
@@ -14,7 +14,7 @@ export function declareStoreCurrency(currency: string): void {
 
 /**
  * Незадекларована валюта — не падіння, а дефолт ядра з ОДНИМ попередженням на
- * процес (як `getStoreLocale`): інакше магазин не в гривні мовчки отримував би
+ * процес: інакше магазин не в гривні мовчки отримував би
  * суми з «₴».
  */
 export function getStoreCurrency(): string {

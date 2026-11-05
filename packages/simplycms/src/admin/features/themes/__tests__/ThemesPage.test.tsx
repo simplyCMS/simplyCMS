@@ -10,7 +10,6 @@ import {
   within,
 } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { createTranslator } from 'simplycms/i18n';
 import {
   ADMIN_STATE_CONSTRAINT,
   DOMAIN_ERROR_NAME,
@@ -46,8 +45,9 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import ThemesPage from '../ThemesPage';
+import { ukT } from '../../../../../test-harness/i18n';
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 let client: QueryClient;
 
 const card = (displayName: string) =>

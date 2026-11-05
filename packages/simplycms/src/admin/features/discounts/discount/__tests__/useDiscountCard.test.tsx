@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import { DISCOUNTS, GROUPS, stubDom } from '../../__tests__/render-support';
 
 stubDom();
@@ -24,6 +23,7 @@ vi.mock('simplycms/admin-server', async () =>
 );
 
 import { useDiscountCard } from '../useDiscountCard';
+import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 const ID = DISCOUNTS[0]!.id;
 
@@ -34,7 +34,7 @@ function makeWrapper() {
   });
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
-      <I18nProvider locale="uk">{children}</I18nProvider>
+      <TestI18nProvider>{children}</TestI18nProvider>
     </QueryClientProvider>
   );
 }

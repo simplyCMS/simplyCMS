@@ -9,7 +9,6 @@ import {
 } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { CartQuote, QuoteCheckoutResult } from 'simplycms/contracts';
-import { I18nProvider } from 'simplycms/i18n';
 
 /**
  * Сума, від якої список способів доставки рахує тарифи ДО вибору способу
@@ -87,6 +86,7 @@ import { QuoteFailure } from 'simplycms/cart-ui';
 import { CheckoutDeliveryForm } from 'simplycms/checkout-ui';
 import { TestEngineProvider } from '../../../__tests__/engine-stub';
 import { useIndicativeSubtotal } from '../useIndicativeSubtotal';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 function Probe({ checkout }: { checkout: QuoteCheckoutResult | null }) {
   // Та сама зборка, що в `Checkout.tsx`.
@@ -103,11 +103,11 @@ function Probe({ checkout }: { checkout: QuoteCheckoutResult | null }) {
 const renderProbe = (checkout: QuoteCheckoutResult | null = null) =>
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <I18nProvider locale="uk">
+      <TestI18nProvider>
         <TestEngineProvider>
           <Probe checkout={checkout} />
         </TestEngineProvider>
-      </I18nProvider>
+      </TestI18nProvider>
     </QueryClientProvider>,
   );
 

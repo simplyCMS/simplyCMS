@@ -80,8 +80,19 @@ export const FALLBACK_FIELDS: readonly FallbackField[] = [
   },
 ];
 
-/** Мова джерела у фікстурі (усі fallback-поля фікстури — з основної мови). */
-const SOURCE_LANG = productDetailFallbackFixture.summary.name_lang ?? 'uk';
+/**
+ * Мова джерела у фікстурі (усі fallback-поля фікстури — з основної мови). Береться з даних
+ * фікстури без дефолту: тихий `'uk'` приховав би фікстуру без мови джерела.
+ */
+function fixtureSourceLang(): string {
+  const lang = productDetailFallbackFixture.summary.name_lang;
+  if (!lang) {
+    throw new Error(
+      '[theme:conformance] фікстура картки товару без summary.name_lang — немає мови джерела fallback',
+    );
+  }
+  return lang;
+}
 
 /**
  * Тексти-маркери: два різні значення кожного поля для перевірки «показує чи ні». Різняться З
@@ -120,10 +131,11 @@ export async function missingFallbackLang(
   const base = fallbackBase();
   const before = await render(base);
   const missing: string[] = [];
+  const sourceLang = fixtureSourceLang();
   for (const f of FALLBACK_FIELDS) {
     const changed = await render(f.set(base, TEXT_B, null));
     if (changed.html === before.html) continue; // поле view не показує
-    const withLang = await render(f.set(base, TEXT_A, SOURCE_LANG));
+    const withLang = await render(f.set(base, TEXT_A, sourceLang));
     if (withLang.langs <= before.langs) missing.push(f.field);
   }
   return missing;

@@ -11,6 +11,7 @@ export {
   toMaskedPayload,
   type MaskOptions,
 } from './mask-errors';
+export { httpErrorStatus, withEntryErrorMask } from './entry-mask';
 export {
   HSTS_HEADER,
   SECURITY_HEADERS,

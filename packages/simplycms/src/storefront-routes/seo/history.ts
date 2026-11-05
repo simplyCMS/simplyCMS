@@ -1,11 +1,8 @@
 import { SLUG_FORMAT, RESERVED_SEGMENTS } from 'simplycms/domain/slugs';
 import type { AddressResolution } from 'simplycms/storefront/loaders';
 import { queryAfterHistory, tokenOf } from '../pages/entity-history';
-import {
-  localePrefix,
-  resolveRequestLocale,
-  type LocaleSet,
-} from '../locale/resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { localePrefix, resolveRequestLocale } from 'simplycms/domain';
 
 /** Резолвер реєстру адрес: ін'єкція, щоб крок історії тестувався без БД. */
 export type AddressLookup = (

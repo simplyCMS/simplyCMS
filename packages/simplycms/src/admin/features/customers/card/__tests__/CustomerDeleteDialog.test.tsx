@@ -2,9 +2,9 @@
 /** Картка покупця (Task 11, Е6г): роль, бан, видалення. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-import { createTranslator } from 'simplycms/i18n';
 import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 import { card, mocks, renderCard, stubDom, ui } from './render-support';
+import { ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -28,7 +28,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const heading = () => screen.findByRole('heading', { name: /Іван Петренко/ });
 
 beforeEach(() => {

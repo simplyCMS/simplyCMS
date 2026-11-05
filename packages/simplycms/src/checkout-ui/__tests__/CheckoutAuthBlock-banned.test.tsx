@@ -7,7 +7,6 @@ import {
   cleanup,
   fireEvent,
 } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 
 // Е6г-13: чекаут має власну форму входу — гілка BANNED обовʼязкова, інакше
 // там показався б сирий `error.message`.
@@ -22,6 +21,7 @@ vi.mock('simplycms/ui/use-toast', () => ({
 }));
 
 import { CheckoutAuthBlock } from '../CheckoutAuthBlock';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 const CONTACTS = { phone: '+380671234567', email: null };
 
@@ -34,9 +34,9 @@ async function attemptBannedLogin(contacts: {
     error: { code: 'BANNED', message: 'Account is banned' },
   });
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <CheckoutAuthBlock defaultTab="login" storeContacts={contacts} />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   fireEvent.change(screen.getByLabelText('Email'), {
     target: { value: 'a@b.test' },

@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** DB conflicts (Е3-7) — mirror of `uk/admin/errors.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.errors.slugTaken': 'This URL (slug) is already taken — change it',
   'admin.errors.conflictUnique': 'This value already exists',
   'admin.errors.conflictReference':
@@ -70,4 +68,4 @@ export const messages: Catalog = {
     'The language code matches a product address in the primary language — change the product address or pick another code',
   'admin.errors.network':
     'No connection to the server — changes were not saved',
-};
+} satisfies Record<string, string>;

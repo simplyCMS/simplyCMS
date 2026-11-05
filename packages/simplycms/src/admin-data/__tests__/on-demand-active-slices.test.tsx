@@ -1,13 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Е3-17 (б): два АКТИВНІ зрізи однієї on-demand колекції + writeUpsert —
- * замір фактичної поведінки. `updateCacheData` (query.ts:2211) перезаписує
- * КОЖЕН кеш-ключ з тим самим префіксом ПОВНИМ поточним syncedData (не лише
- * рядками свого предиката) — але це впливає на ownership-бухгалтерію
- * бібліотеки, а не на видимість: `useLiveQuery` фільтрує матеріалізовані
- * рядки ЧЕРЕЗ where-предикат самого запиту, тож кожен живий запит і далі
- * показує ЛИШЕ свої рядки. Зафіксовано ЯК Є — не Е3-17 (стейл-кеш
- * НЕактивного зрізу), а суміжна поведінка тієї самої механіки.
+ * Е3-17 (б): два АКТИВНІ зрізи однієї on-demand колекції + writeUpsert.
+ * Контракт видимості: `useLiveQuery` фільтрує матеріалізовані рядки ЧЕРЕЗ
+ * where-предикат самого запиту, тож кожен живий запит показує ЛИШЕ свої
+ * рядки, хоч би як бібліотека розкладала write-back по кеш-ключах
+ * (qdc 1.5: патч рядків, присутніх у ключі, без перезапиту — `writeDirectCache`).
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
@@ -16,7 +13,7 @@ import { createCollection, eq, useLiveQuery } from '@tanstack/react-db';
 import type { ReactNode } from 'react';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { createMutableServer } from './support/mutable-server';
-import { awaitRevalidation } from './support/revalidation';
+import { expectNoRefetch } from './support/revalidation';
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -29,8 +26,8 @@ const SEED: Row[] = [
 
 describe('Е3-17 (б): два активні зрізи, writeUpsert', () => {
   it('кожен живий запит бачить ЛИШЕ свої рядки після writeUpsert', async () => {
-    // Сервер зі станом: writeUpsert ревалідує зріз (TSDB-1), відповідь
-    // авторитетна — статичний SEED затер би запис.
+    // Сервер зі станом: перезапит (якщо він повернеться) не маскував би
+    // відсутність write-back статичним SEED.
     const server = createMutableServer(SEED);
     const listFn = vi.fn(async () => (await server.list()).slice());
     const queryClient = new QueryClient();
@@ -77,8 +74,8 @@ describe('Е3-17 (б): два активні зрізи, writeUpsert', () => {
         'B-renamed',
       ),
     );
-    // Після ревалідації (стан сервера) — те саме.
-    await awaitRevalidation(listFn, before);
+    // Без перезапиту (write-back — патч кешу, M1 TSDB-1 закрито).
+    await expectNoRefetch(listFn, before);
     expect(mod.result.current.data[0]?.name).toBe('B-renamed');
     // Обидва живі запити — досі ЛИШЕ свій предикат, надмножина в кеші невидна.
     expect(zero.result.current.data).toHaveLength(1);

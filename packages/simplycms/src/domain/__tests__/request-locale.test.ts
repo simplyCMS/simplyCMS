@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ENTITY, entityKey } from 'simplycms/contracts/entities';
-import { resolveRequestLocale, type LocaleSet } from '../resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { resolveRequestLocale } from '../request-locale';
+import { localeSet } from '../../../test-harness/locale';
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en', 'pt-BR'],
-  known: ['uk', 'en', 'pt-BR', 'pl'],
-};
+const SET: LocaleSet = localeSet(
+  'uk',
+  ['uk', 'en', 'pt-BR'],
+  ['uk', 'en', 'pt-BR', 'pl'],
+);
 
 describe('resolveRequestLocale: мова лише з першого сегмента (І30)', () => {
   it('/en/x → en, префікс зняти', () => {

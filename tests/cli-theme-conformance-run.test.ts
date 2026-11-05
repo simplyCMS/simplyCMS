@@ -105,7 +105,19 @@ describe('cli theme:conformance: живий прогін ланцюга', () => 
     const module = await environment.runner.import(
       'simplycms/themes/conformance',
     );
-    return module.assertThemeViewsConformance as AssertConformance;
+    // Мова інтерфейсу — обов'язковий параметр kit-а; тут її будує той самий міст, що й CLI.
+    const { resolveUiLocale } =
+      await environment.runner.import('simplycms/i18n');
+    const { checkedContentLocale } = await environment.runner.import(
+      'simplycms/domain/translations',
+    );
+    const uk = (checkedContentLocale as (code: string) => unknown)('uk');
+    const assert = module.assertThemeViewsConformance as (
+      theme: ThemeModule,
+      options: { locale: unknown },
+    ) => Promise<string[]>;
+    const resolve = resolveUiLocale as (a: unknown, b: unknown) => unknown;
+    return (theme) => assert(theme, { locale: resolve(uk, uk) });
   }
 
   it('тема з views проходить гейт і повертає прогнані сторінки', async () => {

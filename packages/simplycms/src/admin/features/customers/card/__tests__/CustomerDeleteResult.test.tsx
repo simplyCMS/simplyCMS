@@ -2,8 +2,7 @@
 /** Картка покупця (Task 11, Е6г): роль, бан, видалення. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-import { getCollection, ordersCollection } from 'simplycms/admin-data';
-import { createTranslator } from 'simplycms/i18n';
+import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
 import {
   ADMIN_STATE_CONSTRAINT,
   DOMAIN_ERROR_NAME,
@@ -17,6 +16,7 @@ import {
   stubDom,
   ui,
 } from './render-support';
+import { ukT } from '../../../../../../test-harness/i18n';
 
 vi.mock('simplycms/admin-server', async () =>
   (
@@ -40,7 +40,7 @@ vi.mock('simplycms/core/hooks/useAuth', async () => {
   return { useAuth: () => ({ user: { id: ui.currentUserId } }) };
 });
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 const conflict = (constraint: string) =>
   Object.assign(new Error('conflict'), {
     name: DOMAIN_ERROR_NAME.adminConflict,
@@ -70,15 +70,11 @@ describe('видалення', () => {
   const confirmBtn = () =>
     screen.getByRole('button', { name: t('admin.users.card.deleteConfirm') });
 
-  it('успіх → [profiles], [orders] для дашборду, refetch колекції замовлень, перехід, тост', async () => {
+  it('успіх → [profiles], префікс [orders] (дашборд і колекція замовлень), перехід, тост', async () => {
     mocks.deleteCustomer.mockResolvedValue({});
     renderCard();
     const input = await open();
     await waitFor(() => expect(mocks.listOrders).toHaveBeenCalled());
-    const refetch = vi.spyOn(
-      getCollection(clientRef.current, ordersCollection).utils,
-      'refetch',
-    );
     const spy = vi.spyOn(clientRef.current, 'invalidateQueries');
     fireEvent.change(input, { target: { value: 'buyer@shop.test' } });
     fireEvent.click(confirmBtn());
@@ -94,12 +90,12 @@ describe('видалення', () => {
     await waitFor(() =>
       expect(spy).toHaveBeenCalledWith({ queryKey: ['profiles'] }),
     );
-    // Дашборд тримає імʼя клієнта в `[orders, 'admin-dashboard']`.
+    // Префікс `[orders]` покриває і дашборд (`[orders,'admin-dashboard']`), і
+    // зрізи колекції замовлень (`collectionKey` = `[orders,'list']`).
     await waitFor(() =>
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['orders'] }),
+      expect(spy).toHaveBeenCalledWith({ queryKey: [ENTITY.orders] }),
     );
-    // Саме refetch колекції: інвалідація її не будить (урок №6).
-    await waitFor(() => expect(refetch).toHaveBeenCalled());
+    expect(collectionKey(ENTITY.orders).slice(0, 1)).toEqual([ENTITY.orders]);
   });
 
   it('409 customer_is_admin → тост, діалог лишається, переходу немає', async () => {

@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { RichTextEditor } from '../RichTextEditor';
+import { TestI18nProvider } from '../../../../test-harness/i18n';
 
 afterEach(cleanup);
 
@@ -24,10 +24,10 @@ describe('RichTextEditor: ре-рендер батька', () => {
       const [n, setN] = useState(0);
       bump = () => setN((x) => x + 1);
       return (
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <span data-testid="n">{n}</span>
           <RichTextEditor content="<p>start</p>" onChange={() => {}} />
-        </I18nProvider>
+        </TestI18nProvider>
       );
     }
     const { container } = render(<Parent />);

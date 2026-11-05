@@ -36,6 +36,16 @@
 токенами, `Idempotency-Key` і OpenAPI; проєкція тексту товару; сторінка товару `/<path>` з hreflang,
 `noindex` і canonical; картка товару в адмінці з вкладками мов.
 
+🔴 **2026-11-05 — М2, блок 1 «осі мови» реалізовано** на `claude/multilingual-wave`, чекає приймання архітектора
+(план [`2026-11-04-multilingual-m2a-language-axes.md`](../superpowers/plans/2026-11-04-multilingual-m2a-language-axes.md),
+спека §19). Що приїхало: мова контенту (`ContentLocale`) і мова інтерфейсу (`UiLocale`) — різні типи з мостом
+`resolveUiLocale`; каталоги ядра — ліниві частини `base`/`admin`/`mail` з реєстром і гейтом Gate C; асинхронний
+`head()`; мова адмінки з `profiles.ui_locale` (baseline змінено — перестворити БД); мова магазину лише з пакета
+(`language_pack_missing`, деградований режим, `doctor`); листи мовою одержувача, форматування за мовою інтерфейсу,
+знос `config.locale`/`VITE_LOCALE`; множина на `Intl.PluralRules`. Канон — [`i18n.md`](../architecture/i18n.md).
+Далі — наступний план М2 (решта сутностей, `orders.locale`, `profiles.locale`, плагіни); хвіст блоку з адресатами —
+[`multilingual-wave-backlog.md`](./multilingual-wave-backlog.md).
+
 **Передача в наступні віхи (рішення хвилі, з адресатом):**
 
 - **М2** — поведінковий тест «токен модифікації й опції з однаковим slug і `scope_id`» (разом із

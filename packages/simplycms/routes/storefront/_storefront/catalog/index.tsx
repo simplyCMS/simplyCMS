@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import CatalogPage from 'simplycms/storefront-routes/pages/Catalog';
 import { getCatalogPageData } from 'simplycms/storefront-routes/server/catalog';
-import { localeOfHref } from 'simplycms/storefront-routes/locale/root-data';
+import { localeOfHref } from 'simplycms/domain';
 import { storefrontHead } from 'simplycms/storefront-routes/head/head';
 
 export const Route = createFileRoute('/_storefront/catalog/')({

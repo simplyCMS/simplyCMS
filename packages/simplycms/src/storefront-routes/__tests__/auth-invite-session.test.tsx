@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { I18nProvider, createTranslator } from 'simplycms/i18n';
 import AuthInvite from '../pages/AuthInvite';
+import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 /**
  * Прийняття запрошення поверх активної сесії покупця: вихід із неї — ДО входу
@@ -43,13 +43,13 @@ vi.mock('simplycms/core/lib/auth-client', () => ({
 }));
 vi.mock('../server/invite', () => ({ acceptOwnerInvite: calls.accept }));
 
-const t = createTranslator('uk', 'uk');
+const t = ukT;
 
 async function submitInvite() {
   render(
-    <I18nProvider locale="uk">
+    <TestI18nProvider>
       <AuthInvite />
-    </I18nProvider>,
+    </TestI18nProvider>,
   );
   for (const input of document.querySelectorAll('input'))
     fireEvent.change(input, { target: { value: 'N3w-passw0rd!x' } });

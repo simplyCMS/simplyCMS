@@ -3,7 +3,7 @@ import { defineConfig } from 'simplycms/runtime';
 /**
  * Конфіг магазину — єдине джерело істини для збірки.
  *
- * Звідси беруться локаль/валюта (`src/engine.shared.ts`), набір тем
+ * Звідси беруться валюта (`src/engine.shared.ts`), набір тем
  * (`src/theme-registry.ts`, `src/server.ts`) і набір плагінів
  * (`bootstrapPlugins` у `__root`). Назва магазину, заголовок головної й опис —
  * профіль магазину в адмінці (БД); URL сайту — env `VITE_SITE_URL`.
@@ -12,9 +12,6 @@ import { defineConfig } from 'simplycms/runtime';
  * у `vite.config.ts`), ядро приходить із `node_modules`.
  */
 export default defineConfig({
-  // 🔴 Єдине джерело локалі — env: той самий `VITE_LOCALE` читає `owner:invite`
-  // для мови листа. ЛИШЕ `import.meta.env` — файл імпортується тільки через Vite.
-  locale: import.meta.env.VITE_LOCALE ?? 'uk-UA',
   currency: 'UAH',
   plugins: [
     { name: 'hello-world', module: () => import('@plugins/hello-world') },

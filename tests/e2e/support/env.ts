@@ -1,14 +1,12 @@
 /**
  * Оточення, яке оркестратор e2e виставляє ПЕРЕД запуском `playwright test`
- * (порт dev-сервера, локаль, креденшели власника-адміна).
+ * (порт dev-сервера, креденшели власника-адміна).
  *
  * 🔴 Оркестратора зараз НЕМАЄ: `scripts/e2e.mjs` знесено разом із локальним
  * стеком БД, новий (Postgres + Better Auth) повертає контур К6. Тому
  * прямий `npx playwright test` падає зрозумілою помилкою тут, а не
  * заплутаним `undefined` десь усередині селектора чи `baseURL`.
  */
-
-export type Locale = 'uk-UA' | 'en-US';
 
 function required(name: string): string {
   const value = process.env[name];
@@ -20,15 +18,6 @@ function required(name: string): string {
     );
   }
   return value;
-}
-
-/** Активна локаль прогону — та сама змінна, яку читає `simplycms.config.ts`. */
-export function e2eLocale(): Locale {
-  const raw = process.env.VITE_LOCALE ?? 'uk-UA';
-  if (raw !== 'uk-UA' && raw !== 'en-US') {
-    throw new Error(`Невідома VITE_LOCALE=${raw} (очікую uk-UA або en-US).`);
-  }
-  return raw;
 }
 
 /** Порт dev-сервера, піднятого `webServer` із `playwright.config.ts`. */

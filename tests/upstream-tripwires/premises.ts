@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { HTTP_ERROR_STATUS_CASES } from './httpErrorStatusCases';
 
 /**
  * Передумови обходів для `upstream-tripwires.test.ts` (що стереже і чому — у
@@ -19,13 +20,12 @@ const need =
       .map(([what]) => what);
 
 export const startBody: Premise = need({
+  // 1.169.x: предикат inline (`contentType.includes("…")`), без константи
+  // FORM_DATA_CONTENT_TYPES — семантика та сама: форма читається повністю.
   "предикат форми через includes('multipart/form-data')": (s) =>
-    /FORM_DATA_CONTENT_TYPES\s*=\s*\[[^\]]*"multipart\/form-data"/.test(s) &&
-    /contentType\.includes\(type\)/.test(s),
+    /contentType\.includes\("multipart\/form-data"\)/.test(s),
   "предикат форми через includes('application/x-www-form-urlencoded')": (s) =>
-    /FORM_DATA_CONTENT_TYPES\s*=\s*\[[^\]]*"application\/x-www-form-urlencoded"/.test(
-      s,
-    ),
+    /contentType\.includes\("application\/x-www-form-urlencoded"\)/.test(s),
   'тіло форми читається await request.formData()': (s) =>
     /await request\.formData\(\)/.test(s),
 });
@@ -74,9 +74,10 @@ export const startHandlerType: Premise = need({
 /**
  * START-SFN-404-1: невідомий id server function — генерований резолвер кидає
  * `Error('Server function info not found for ' + id)`, а `handleServerAction` кличе його ДО
- * свого `try`: помилка виходить у h3 як 500. Рішення «прийнято» тримається на тому, що тіло
- * 500 нічого не розкриває (жива проба — `tests/server-fn-base-build.test.ts`); якщо Start почне
- * віддавати 404 сам, передумова червоніє — запис закривають.
+ * свого `try`: помилка йде в `createServerFnErrorResponse` як 500. Рішення «прийнято» тримається
+ * на нашій масці (`maskUnexpectedError`): тіло 500 нічого не розкриває (жива проба —
+ * `tests/server-fn-base-build.test.ts`); якщо Start почне віддавати 404 сам, передумова
+ * червоніє — запис закривають.
  */
 export const startUnknownFnResolverThrows: Premise = need({
   'резолвер кидає «Server function info not found» на невідомий id': (s) =>
@@ -171,3 +172,77 @@ export function buildInsertSql(): string {
     .values({ id: '00000000-0000-4000-8000-000000000000' })
     .toSQL().sql;
 }
+
+// ---------- поведінкові передумови: виконують бібліотеку, а не читають її текст ----------
+
+/** Поведінкова передумова: порожній масив = тримається. */
+export type BehaviorPremise = () => Promise<string[]>;
+
+/** Мінімальна форма `createServerEntry`, щоб негативний контроль підставив фальшивку. */
+type EntryFactory = (entry: { fetch: (request: Request) => Response }) => {
+  fetch: (request: Request) => Promise<Response> | Response;
+};
+
+const probe = async (
+  create: EntryFactory,
+  thrower: () => never,
+): Promise<{ status: number } | { rejected: unknown }> => {
+  try {
+    const res = await create({ fetch: thrower }).fetch(
+      new Request('http://store.test/'),
+    );
+    return { status: res.status };
+  } catch (rejected) {
+    return { rejected };
+  }
+};
+
+/**
+ * START-ENTRY-1: `createServerEntry` САМ перетворює виняток entry на відповідь
+ * 500 (резолвиться `Response`, а не rejection) — через це `catch` у `server.mjs`
+ * його не бачить і потрібен наш шар `withEntryErrorMask`. Перевіряє лише статус
+ * відповіді (виняток не доходить назовні, статус 500); ref Start не віддає — це
+ * і є причина шару. Якщо апстрім почне віддавати виняток назовні, шар треба
+ * переглянути.
+ */
+export const startEntrySwallowsThrow =
+  (create: EntryFactory): BehaviorPremise =>
+  async () => {
+    const r = await probe(create, () => {
+      throw new Error('x');
+    });
+    if ('rejected' in r)
+      return ['виняток entry тепер доходить назовні (rejection), а не 500'];
+    return r.status === 500
+      ? []
+      : [`виняток entry дає статус ${r.status}, очікувалось 500`];
+  };
+
+/**
+ * START-ENTRY-1: предикат HTTP-помилки upstream. Кожен кейс спільної таблиці
+ * (`HTTP_ERROR_STATUS_CASES`, ту саму читає тест нашого `httpErrorStatus`)
+ * проганяється крізь справжній `createServerEntry`: статус відповіді Start мусить
+ * збігтись з очікуваним (HTTP-помилка → її статус, решта → 500). Якщо upstream
+ * змінить читання `status`/`statusCode`/`cause`, рядків чи межі, наш предикат
+ * розійдеться з ним, і помилка піде в Start без ref.
+ */
+export const startEntryHttpErrorStatus =
+  (create: EntryFactory): BehaviorPremise =>
+  async () => {
+    const broken: string[] = [];
+    for (const c of HTTP_ERROR_STATUS_CASES) {
+      const r = await probe(create, () => {
+        throw c.make();
+      });
+      if ('rejected' in r) {
+        broken.push(`${c.name}: виняток доходить назовні`);
+        continue;
+      }
+      const expected = c.status ?? 500;
+      if (r.status !== expected)
+        broken.push(
+          `${c.name}: Start віддав ${r.status}, очікувалось ${expected}`,
+        );
+    }
+    return broken;
+  };

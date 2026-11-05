@@ -104,7 +104,7 @@ export function useCategoryRuleCard(ruleId: string | undefined) {
           createdAt: new Date(),
         });
     try {
-      await tx.isPersisted.promise;
+      await tx.when('settled');
     } catch (e) {
       reportTxError(t, e);
       return;
@@ -120,7 +120,8 @@ export function useCategoryRuleCard(ruleId: string | undefined) {
     setDeleting(true);
     collection
       .delete(row.id)
-      .isPersisted.promise.then(() => {
+      .when('settled')
+      .then(() => {
         toast.success(t('admin.users.rules.deleted'));
         goList();
       })

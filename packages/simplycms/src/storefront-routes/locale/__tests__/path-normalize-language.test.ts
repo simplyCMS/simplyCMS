@@ -1,12 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeStorefrontRequest } from '../../seo/normalize';
-import type { LocaleSet } from '../resolve';
+import type { LocaleSet } from 'simplycms/contracts';
+import { localeSet } from '../../../../test-harness/locale';
 
-const SET: LocaleSet = {
-  primary: 'uk',
-  published: ['uk', 'en'],
-  known: ['uk', 'en', 'pl'],
-};
+const SET: LocaleSet = localeSet('uk', ['uk', 'en'], ['uk', 'en', 'pl']);
 
 // Без реєстру адрес: ця сюїта про мову й слеші; історія — `path-normalize.test.ts`.
 const NO_REGISTRY = async () => null;

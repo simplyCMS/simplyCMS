@@ -1,7 +1,7 @@
 // М1 Task 14, І23: проєкція тексту товару = функція джерела після КОЖНОЇ команди.
 // Звірка `reconcileProductTexts` після команди мусить давати `mismatched: 0`.
 import { randomUUID } from 'node:crypto';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { copyPathsForLocale } from 'simplycms/addressing';
 import { reconcileProductTexts } from 'simplycms/catalog-projection';
 import {
@@ -24,6 +24,17 @@ import {
   saveTranslation,
 } from './fixtures/product-aggregate';
 import { insertProductGraphAt } from './fixtures/product-graph';
+
+// Вигадані мови цього файлу отримують тестовий пакет (§19.15): тут перевіряються замки й
+// проєкція, а не наявність пакета.
+vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
+  const { testPackRegistry } = await import('../../language-packs');
+  const real =
+    await importOriginal<typeof import('../../../src/i18n/packs/registry')>();
+  return {
+    PACKS: testPackRegistry(real.PACKS, ['cs', 'de', 'hu', 'lt', 'ro', 'sk']),
+  };
+});
 
 describe('проєкція тексту товару (М1, Task 14)', () => {
   const db = useAddressingDb('simplycms_catalog_projection');

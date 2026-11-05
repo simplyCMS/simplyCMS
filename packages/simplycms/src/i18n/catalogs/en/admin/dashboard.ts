@@ -1,7 +1,5 @@
-import type { Catalog } from '../../../types';
-
 /** Дашборд адмінки — дзеркало `uk/admin/dashboard.ts`. */
-export const messages: Catalog = {
+export const messages = {
   'admin.dashboard.title': 'Dashboard',
   'admin.dashboard.subtitle': 'Overview of the key store metrics',
 
@@ -25,4 +23,4 @@ export const messages: Catalog = {
   'admin.dashboard.aboutText':
     'Welcome to the SimplyCMS admin panel. Here you can manage the product catalog, process orders and configure the system.',
   'admin.dashboard.version': 'CMS version:',
-};
+} satisfies Record<string, string>;

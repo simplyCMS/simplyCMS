@@ -40,6 +40,11 @@ import { CatalogSectionView } from '../views/CatalogSectionView';
 import { CatalogView } from '../views/CatalogView';
 import { HomeView } from '../views/HomeView';
 import { ProductDetailView } from '../views/ProductDetailView';
+import { ui } from '../../../test-harness/locale';
+
+// Мова рендеру — параметр kit-а без дефолту: тут явно `uk`.
+const assertUk = (theme: Parameters<typeof assertThemeViewsConformance>[0]) =>
+  assertThemeViewsConformance(theme, { locale: ui('uk') });
 
 function Stub() {
   return <div />;
@@ -68,7 +73,7 @@ describe('канонічні view ядра — conformance-kit', () => {
   // порожньому списку кейсів чесно проходить, тож без цієї звірки випалий
   // блок у `conformance/cases.tsx` лишив би тест зеленим.
   it('усі пʼять сторінок проходять гейт на фікстурах обох станів', async () => {
-    await expect(assertThemeViewsConformance(canonicalTheme)).resolves.toEqual([
+    await expect(assertUk(canonicalTheme)).resolves.toEqual([
       'Home',
       'Catalog',
       'CatalogSection',

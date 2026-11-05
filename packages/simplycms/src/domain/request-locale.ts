@@ -1,7 +1,6 @@
-import { localePrefixSegment } from 'simplycms/domain';
-import type { Locale, LocaleSet } from 'simplycms/i18n';
-
-export type { LocaleSet };
+import type { ContentLocale, LocaleSet } from 'simplycms/contracts';
+import { checkedContentLocale } from './translations/content-locale';
+import { localePrefixSegment } from './product-path';
 
 /**
  * Порожній набір мов для запитів, які Start не віддає на рендер сторінки
@@ -10,16 +9,19 @@ export type { LocaleSet };
  * запитом до БД. Лоадер кореня відмовляє на такому наборі (див. `root-data`),
  * тож документ без мовного контексту не вдає, що мова є.
  */
-export const NO_LOCALES: LocaleSet = {
-  primary: '',
+export const NO_LOCALES: LocaleSet = Object.freeze({
+  // `und` (BCP 47: «не визначено») — маркер «мов немає». Розпізнається за ІДЕНТИЧНІСТЮ
+  // об'єкта (`=== NO_LOCALES`), а не за значенням: порожній рядок не код мови, конструктор
+  // його не приймає, а приведення `as ContentLocale` поза конструктором заборонене.
+  primary: checkedContentLocale('und'),
   published: [],
   known: [],
-};
+});
 
 /** Результат розбору шляху запиту. */
 export type ResolvedLocale = {
   /** Мова сторінки: код із набору (регістр як у БД), для чужого сегмента — основна. */
-  locale: Locale;
+  locale: ContentLocale;
   /** Шлях мав префікс мови (зокрема основної — це привід для 301 на нормалізації). */
   prefixed: boolean;
   /** Шлях без префікса мови: те, що бачить роутер. */
@@ -53,7 +55,7 @@ export function isStorefrontPath(pathname: string): boolean {
  * Префікс URL мови: `lower(code)` (майстер §3.2). Регістр коду в БД не впливає
  * на адресу, а `/EN/x` мовою не є — порівняння йде з уже нижнім регістром.
  */
-export function localePrefix(code: Locale): string {
+export function localePrefix(code: ContentLocale): string {
   return localePrefixSegment(code);
 }
 
@@ -90,4 +92,17 @@ export function resolveRequestLocale(
 
   const rest = originalPathname.slice(segment.length + 1) || '/';
   return { locale: code, prefixed: true, rest };
+}
+
+/**
+ * Мова сторінки з публічного href роутера (`location.publicHref`: шлях + query +
+ * hash з префіксом мови, ДО `rewrite`). Це та сама `resolveRequestLocale`, що в
+ * інтерсепторі й `rewrite`, — лише з витягнутим шляхом.
+ */
+export function localeOfHref(
+  publicHref: string,
+  locales: LocaleSet,
+): ContentLocale {
+  const { pathname } = new URL(publicHref, 'http://localhost');
+  return resolveRequestLocale(pathname, locales).locale;
 }

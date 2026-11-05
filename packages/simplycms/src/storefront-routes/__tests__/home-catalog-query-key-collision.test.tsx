@@ -2,11 +2,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { I18nProvider } from 'simplycms/i18n';
 import type { ReactNode } from 'react';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 import { catalogKeys, priceViewKey } from 'simplycms/react-query';
 import { useSectionProducts } from '../pages/home/queries';
+import { cl } from '../../../test-harness/locale';
+import { TestI18nProvider } from '../../../test-harness/i18n';
+
+vi.mock(
+  'simplycms/runtime/content-locale',
+  () => import('../../../test-harness/content-locale'),
+);
 
 // Авто-cleanup RTL у репо вимкнено (globals: false) — знімаємо дерево самі.
 afterEach(cleanup);
@@ -79,9 +85,9 @@ describe('useSectionProducts — не ділить ключ кешу з ката
 
     function wrapper({ children }: { children: ReactNode }) {
       return (
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-        </I18nProvider>
+        </TestI18nProvider>
       );
     }
 
@@ -104,7 +110,10 @@ describe('useSectionProducts — не ділить ключ кешу з ката
     // Іменований ключ хука — фабрика react-query, не сирий рядок каталогу.
     expect(
       qc.getQueryData(
-        priceViewKey(catalogKeys.sectionProducts(SECTION_ID, 'uk'), 'guest'),
+        priceViewKey(
+          catalogKeys.sectionProducts(SECTION_ID, cl('uk')),
+          'guest',
+        ),
       ),
     ).toEqual(result.current.data);
   });

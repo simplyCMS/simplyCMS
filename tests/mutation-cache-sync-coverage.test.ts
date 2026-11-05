@@ -24,11 +24,14 @@ const ROOT = resolve(import.meta.dirname, '../packages/simplycms/src/admin');
 const ROOT_REL = 'packages/simplycms/src/admin';
 const IMPORT_RE = /from ['"]simplycms\/admin-(?:data|server)/;
 
-// Єдина виїмка: сховище файлів, не сутність кешу з write-back-хендлером —
-// результат (референс медіа) іде у стан ФОРМИ власника, не в колекцію.
+// Виїмки: не сутності кешу з write-back-хендлером. Файли — результат (референс медіа)
+// іде у стан ФОРМИ власника; мова інтерфейсу — налаштування профілю, колекції немає,
+// а узгодження дає `router.invalidate()`.
 const EXEMPT: Readonly<Record<string, string>> = {
   'packages/simplycms/src/admin/components/ImageUpload.tsx':
     'сховище файлів, не сутність кешу: результат — референс у стан форми власника',
+  'packages/simplycms/src/admin/layouts/UiLocaleSelect.tsx':
+    'налаштування власного профілю: колекції немає, мову перечитує beforeLoad через router.invalidate()',
 };
 
 function isUnderRatchetOrFeatures(fileRel: string): boolean {

@@ -5,11 +5,11 @@
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { I18nProvider } from 'simplycms/i18n';
 import { ProductCard } from 'simplycms/catalog-ui/ProductCard';
 import { SsrProductGrid } from '../components/SsrProductGrid';
 import { toCardViewModel } from '../pages/home/toCardViewModel';
 import type { HomeProduct } from '../pages/home/types';
+import { TestI18nProvider } from '../../../test-harness/i18n';
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a href="/x">{children}</a>,
@@ -26,7 +26,7 @@ const langOf = (text: string) =>
 describe('fallback-назва картки', () => {
   it('SsrProductGrid: nameLang елемента списку → lang назви картки', () => {
     render(
-      <I18nProvider locale="en">
+      <TestI18nProvider locale="en">
         <SsrProductGrid
           viewMode="grid"
           items={[
@@ -48,7 +48,7 @@ describe('fallback-назва картки', () => {
             },
           ]}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
 
     expect(langOf('Розетка')).toBe('uk');
@@ -78,9 +78,9 @@ describe('fallback-назва картки', () => {
       short_description_lang: 'uk',
     });
     render(
-      <I18nProvider locale="en">
+      <TestI18nProvider locale="en">
         <ProductCard product={card!} />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(langOf('Розетка')).toBe('uk');
     expect(langOf('Подвійна розетка')).toBe('uk');
@@ -93,7 +93,7 @@ describe('мініатюра картки: alt і його мова з дани�
 
   it('SsrProductGrid: fallback alt основної мови → lang на самому <img>', () => {
     render(
-      <I18nProvider locale="en">
+      <TestI18nProvider locale="en">
         <SsrProductGrid
           viewMode="grid"
           items={[
@@ -107,7 +107,7 @@ describe('мініатюра картки: alt і його мова з дани�
             },
           ]}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(img().getAttribute('src')).toBe('/media/c.png');
     expect(img().getAttribute('alt')).toBe('Кабель');
@@ -116,7 +116,7 @@ describe('мініатюра картки: alt і його мова з дани�
 
   it('alt мовою сторінки — без lang; фото без alt — alt="", а не назва товару', () => {
     const { unmount } = render(
-      <I18nProvider locale="en">
+      <TestI18nProvider locale="en">
         <ProductCard
           product={{
             id: 'p1',
@@ -125,14 +125,14 @@ describe('мініатюра картки: alt і його мова з дани�
             images: [{ url: '/media/c.png', alt: 'Cable front' }],
           }}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(img().getAttribute('alt')).toBe('Cable front');
     expect(img().hasAttribute('lang')).toBe(false);
     unmount();
 
     const { container } = render(
-      <I18nProvider locale="en">
+      <TestI18nProvider locale="en">
         <ProductCard
           product={{
             id: 'p1',
@@ -141,7 +141,7 @@ describe('мініатюра картки: alt і його мова з дани�
             images: [{ url: '/media/c.png', alt: '' }],
           }}
         />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
   });

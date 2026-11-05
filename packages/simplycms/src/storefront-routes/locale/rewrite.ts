@@ -1,13 +1,14 @@
 import type { LocationRewrite } from '@tanstack/react-router';
+import type { ContentLocale } from 'simplycms/contracts';
+import type { LocaleSet } from 'simplycms/contracts';
 import {
   isStorefrontPath,
   localePrefix,
   resolveRequestLocale,
-  type LocaleSet,
-} from './resolve';
+} from 'simplycms/domain';
 
 /** Мова поточного роутера: `input` пише, `output` читає (Д3). */
-export type LocaleRewriteState = { current: string };
+export type LocaleRewriteState = { current: ContentLocale };
 
 /**
  * `rewrite` роутера: URL із префіксом мови ↔ внутрішній шлях без нього, тож

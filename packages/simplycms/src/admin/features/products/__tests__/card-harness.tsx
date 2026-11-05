@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FormProvider, useForm, type UseFormReturn } from 'react-hook-form';
-import { I18nProvider } from 'simplycms/i18n';
 import { EngineProvider } from 'simplycms/react-query';
 import {
   TranslationContext,
@@ -19,6 +18,7 @@ import {
 import { blankForm } from '../edit/product-aggregate';
 import type { ProductFormValues } from '../edit/product-form-schema';
 import { ENGINE } from '../edit/__tests__/test-engine-stub';
+import { TestI18nProvider } from '../../../../../test-harness/i18n';
 
 export const LANGS: readonly LanguageInfo[] = [
   { code: 'uk', name: 'Українська', isDefault: true },
@@ -92,9 +92,9 @@ export function CardHarness({
   return (
     <QueryClientProvider client={client}>
       <EngineProvider value={ENGINE}>
-        <I18nProvider locale="uk">
+        <TestI18nProvider>
           <Inner o={o}>{children}</Inner>
-        </I18nProvider>
+        </TestI18nProvider>
       </EngineProvider>
     </QueryClientProvider>
   );
