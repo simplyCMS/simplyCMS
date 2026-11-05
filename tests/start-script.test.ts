@@ -43,7 +43,7 @@ describe('scripts/start.mjs (шим)', () => {
     writeFileSync(join(store, 'package.json'), '{ "type": "module" }\n');
     writeFileSync(
       join(store, 'simplycms.config.ts'),
-      "export default { primaryLocale: 'uk' };\n",
+      "export default {\n  primaryLocale: 'uk',\n};\n",
     );
     writeFileSync(
       join(store, 'server.mjs'),

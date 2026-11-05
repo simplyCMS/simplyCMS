@@ -23,7 +23,7 @@ export type StartDeps = {
   cwd: string;
   migrate: StartMigrate;
   resolveDriverEnv: (env: Env) => unknown;
-  /** Основна мова з `simplycms.config.ts` (`readPrimaryLocale`); `null` — мітки немає. */
+  /** Основна мова з `simplycms.config.ts` (`readPrimaryLocale`); `null` — мітки немає, виняток — файл не прочитано. */
   readPrimaryLocale: () => string | null;
   execve:
     | ((file: string, args: string[], env: Record<string, string>) => unknown)
@@ -70,7 +70,14 @@ export async function runStart({
   if (migrationUrl) {
     // Лише перед накатом: без MIGRATION_DATABASE_URL мова не потрібна (накату немає), а
     // відмова тут закрила б старт магазину, який лише перезапускають.
-    const primaryLocale = readPrimaryLocale();
+    let primaryLocale: string | null;
+    try {
+      primaryLocale = readPrimaryLocale();
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      log(`[start] не вдалося прочитати simplycms.config.ts: ${reason}`);
+      return 1;
+    }
     if (primaryLocale === null) {
       log(
         "[simplycms] У simplycms.config.ts немає primaryLocale: '<код>'. Додайте основну мову магазину.",

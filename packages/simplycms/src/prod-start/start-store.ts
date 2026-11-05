@@ -29,16 +29,10 @@ export async function startStore(
     cwd,
     migrate: applyMigrations,
     resolveDriverEnv,
-    // Конфіг лежить у корені образу поруч зі скриптом; нечитабельний — як «мітки немає».
-    readPrimaryLocale: () => {
-      try {
-        return readPrimaryLocale(
-          readFileSync(join(cwd, 'simplycms.config.ts'), 'utf8'),
-        );
-      } catch {
-        return null;
-      }
-    },
+    // Конфіг лежить у корені образу поруч зі скриптом. Помилку читання не глушимо:
+    // `runStart` назве файл і справжню причину (ENOENT ≠ «немає мітки»).
+    readPrimaryLocale: () =>
+      readPrimaryLocale(readFileSync(join(cwd, 'simplycms.config.ts'), 'utf8')),
     execve: process.execve?.bind(process),
     log: (message) => console.error(message),
   });

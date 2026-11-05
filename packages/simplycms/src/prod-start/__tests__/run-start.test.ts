@@ -83,6 +83,23 @@ describe('runStart', () => {
     expect(logs.join('\n')).toContain("primaryLocale: '<код>'");
   });
 
+  it('конфіг не прочитано (ENOENT) → код 1 з назвою файлу й причиною, не «немає мітки»', async () => {
+    const { deps, logs, migrate, execve } = setup({
+      readPrimaryLocale: () => {
+        throw new Error(
+          "ENOENT: no such file, open '/srv/shop/simplycms.config.ts'",
+        );
+      },
+    });
+    expect(await runStart(deps)).toBe(1);
+    expect(migrate).not.toHaveBeenCalled();
+    expect(execve).not.toHaveBeenCalled();
+    const out = logs.join('\n');
+    expect(out).toContain('simplycms.config.ts');
+    expect(out).toContain('ENOENT');
+    expect(out).not.toContain('Додайте основну мову');
+  });
+
   it('змінної немає → накату немає, execve є, мова не потрібна', async () => {
     const { deps, migrate, execve } = setup({
       env: { ...baseEnv },
