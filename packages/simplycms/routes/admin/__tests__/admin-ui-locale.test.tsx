@@ -11,14 +11,17 @@ import userEvent from '@testing-library/user-event';
  * `AdminLayout`, а не лише чисту функцію вибору мови. Мокнуто лише межі: serverFn мови,
  * роутер, сайдбар, auth і toast (їх граф до поведінки цього тесту не стосується).
  */
-const ctx = vi.hoisted(() => ({ routeContext: {} as Record<string, unknown> }));
+const ctx = vi.hoisted(() => ({
+  routeContext: {} as Record<string, unknown>,
+  outlet: null as null | (() => ReactNode),
+}));
 
 vi.mock('@tanstack/react-router', () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({
     options,
     useRouteContext: () => ctx.routeContext,
   }),
-  Outlet: () => null,
+  Outlet: () => ctx.outlet?.() ?? null,
   redirect: (opts: unknown) => {
     throw opts;
   },
@@ -59,12 +62,13 @@ vi.mock('simplycms/ui/sidebar', () => ({
 }));
 
 import { getAdminSession } from 'simplycms/storefront-routes/server/auth';
+import { usePluginT } from 'simplycms/plugin-sdk';
 import { Route } from '../admin';
 
 type Opts = {
   beforeLoad: (a: {
     context: { locales: { primary: string } };
-  }) => Promise<{ adminUi: string }>;
+  }) => Promise<{ adminUi: string; adminFallback: string }>;
   component: ComponentType;
 };
 const opts = Route.options as unknown as Opts;
@@ -89,7 +93,10 @@ async function renderAdmin(stored: string | null, primary = 'uk') {
 }
 
 describe('мова адмінки з профілю (І45)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ctx.outlet = null;
+  });
   afterEach(cleanup);
 
   it("'en' у профілі → англійська шапка і lang=en", async () => {
@@ -125,6 +132,18 @@ describe('мова адмінки з профілю (І45)', () => {
 
     expect(screen.getByText('Admin panel')).toBeTruthy();
     expect(container.querySelector('[lang="en"]')).not.toBeNull();
+  });
+
+  it("адмін 'en' у магазині 'uk': плагін лише з uk показує uk, а не сирий ключ (§19.4)", async () => {
+    const messages = { uk: { 'plugin.x.k': 'ключ-uk' } };
+    function Probe() {
+      return <span>{usePluginT(messages)('plugin.x.k')}</span>;
+    }
+    ctx.outlet = () => <Probe />;
+
+    await renderAdmin('en');
+
+    expect(screen.getByText('ключ-uk')).toBeTruthy();
   });
 
   it('селектор мови показує лише пакети з admin: Deutsch (без admin) немає', async () => {

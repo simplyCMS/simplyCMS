@@ -4,6 +4,7 @@ import {
   I18nProvider,
   loadUiCatalog,
   resolveAdminUiLocale,
+  resolveUiLocale,
   useUiCatalogs,
 } from 'simplycms/i18n';
 import { getAdminSession } from 'simplycms/storefront-routes/server/auth';
@@ -69,7 +70,13 @@ export const Route = createFileRoute('/admin')({
       loadUiCatalog(adminUi, 'base'),
       loadUiCatalog(adminUi, 'admin'),
     ]);
-    return { adminUi };
+    // Кінцева ланка fallback плагіна/теми — пакет ОСНОВНОЇ мови магазину, а не мова адмінки:
+    // інакше `en`-адмін бачить сирі ключі плагіна, що має лише `uk` (§19.4, §19.15).
+    const adminFallback = resolveUiLocale(
+      context.locales.primary,
+      context.locales.primary,
+    );
+    return { adminUi, adminFallback };
   },
   // `ssr: false` маршруту потрібен pendingComponent: сервер рендерить його як
   // fallback, він гідрується змонтованим, і перехід pending→loaded на клієнті
@@ -86,10 +93,10 @@ const ADMIN_PARTS = ['base', 'admin'] as const;
  * тільки тут (І43 — вітрина його не тягне). Мова адмінки — з профілю, а не з мови сторінки.
  */
 function AdminRoot() {
-  const { adminUi } = Route.useRouteContext();
+  const { adminUi, adminFallback } = Route.useRouteContext();
   const catalogs = useUiCatalogs(adminUi, ADMIN_PARTS);
   return (
-    <I18nProvider locale={adminUi} fallback={adminUi} catalogs={catalogs}>
+    <I18nProvider locale={adminUi} fallback={adminFallback} catalogs={catalogs}>
       {/* `contents`: обгортка лише несе `lang` і не втручається в розкладку. */}
       <div lang={adminUi} className="contents">
         <AdminLayout>
