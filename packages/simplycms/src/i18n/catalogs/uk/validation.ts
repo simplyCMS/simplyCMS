@@ -7,6 +7,7 @@
  */
 export const messages = {
   'validation.nameRequired': "Назва обов'язкова",
+  'validation.fieldRequired': "Поле обов'язкове",
   'validation.codeRequired': "Код обов'язковий",
   'validation.cityRequired': "Місто обов'язкове",
   'validation.addressRequired': "Адреса обов'язкова",

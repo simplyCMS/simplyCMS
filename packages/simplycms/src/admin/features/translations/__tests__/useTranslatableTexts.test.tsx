@@ -11,7 +11,10 @@ import { useTranslatableTexts } from '../useTranslatableTexts';
 
 afterEach(cleanup);
 
-vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
+vi.mock('sonner', () => ({
+  toast: { error: toastError, success: vi.fn() },
+}));
 
 const FIELDS = ['name'] as const;
 const LANGS = [
@@ -26,7 +29,10 @@ const agg = (version: number, uk: string) => ({
 });
 
 /** Діалог/сторінка однаково: хук живе під провайдером версії агрегата. */
-function setup(refetch: () => Promise<unknown>) {
+function setup(
+  refetch: () => Promise<ReturnType<typeof agg> | undefined>,
+  required: readonly (typeof FIELDS)[number][] = ['name'],
+) {
   let store!: ReturnType<typeof useAggregateVersionStore>;
   function Wrapper({ children }: { children: ReactNode }) {
     store = useAggregateVersionStore(1);
@@ -39,14 +45,19 @@ function setup(refetch: () => Promise<unknown>) {
     );
   }
   const hook = renderHook(
-    () =>
-      useTranslatableTexts({
+    () => {
+      const r = useTranslatableTexts({
         fields: FIELDS,
         primary: 'uk',
         languages: LANGS,
         aggregate: agg(1, 'A'),
+        required,
         refetch,
-      }),
+      });
+      // formState — проксі з підпискою: читаємо помилки в рендері, як компонент форми.
+      void r.form.formState.errors;
+      return r;
+    },
     { wrapper: Wrapper },
   );
   return { ...hook, store: () => store };
@@ -87,5 +98,42 @@ describe('useTranslatableTexts', () => {
     act(() => result.current.noteTextError('texts.en.name'));
     expect(result.current.errorLocales.has('en')).toBe(true);
     expect(result.current.active).toBe('en');
+  });
+
+  it('перечитування, що не вдалось (undefined): тост, форма й статуси без змін', async () => {
+    toastError.mockClear();
+    const { result } = setup(async () => undefined);
+    act(() => result.current.form.setValue('texts.uk.name', 'Мій'));
+    await act(() => result.current.reload());
+    expect(toastError).toHaveBeenCalledWith('Не вдалося завантажити товар');
+    expect(result.current.form.getValues('texts.uk.name')).toBe('Мій');
+  });
+
+  it('статуси беруться з останнього застосованого агрегата', async () => {
+    const fresh = agg(2, 'A');
+    fresh.texts.uk.fieldStatus = { name: 'outdated' };
+    const { result } = setup(async () => fresh);
+    await act(() => result.current.reload());
+    expect(result.current.statuses.uk!.fieldStatus.name).toBe('outdated');
+  });
+
+  it('required: [] — порожня назва основної мови проходить', async () => {
+    const { result } = setup(async () => agg(1, 'A'), []);
+    act(() => result.current.form.setValue('texts.uk.name', ''));
+    expect(await result.current.form.trigger()).toBe(true);
+  });
+
+  it("required: ['name'] — порожня назва основної мови падає на texts.uk.name", async () => {
+    const { result } = setup(async () => agg(1, 'A'), ['name']);
+    act(() => result.current.form.setValue('texts.uk.name', ''));
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.form.trigger();
+    });
+    expect(ok).toBe(false);
+    const { form } = result.current;
+    expect(form.formState.errors.texts?.uk?.name?.message).toBe(
+      'validation.fieldRequired',
+    );
   });
 });

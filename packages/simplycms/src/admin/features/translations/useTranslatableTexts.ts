@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { useT } from 'simplycms/i18n';
 import { useTextErrors } from './texts-errors';
 import { localeStatusesOf, textsToForm, type TextsForm } from './texts-form';
-import { rebaseTexts } from './texts-rebase';
+import { textsEdits } from './texts-rebase';
 import type { LanguageInfo, LocaleStatuses } from './translation-context';
 import { AggregateVersionContext } from './useAggregateCommand';
 
@@ -28,15 +28,16 @@ export interface TranslatableTextsOptions<F extends string> {
   readonly fields: readonly F[];
   readonly primary: string;
   readonly languages: readonly LanguageInfo[];
-  readonly aggregate: TextsAggregate<F> | undefined;
-  readonly refetch: () => Promise<unknown>;
+  /**
+   * Агрегат, ВЖЕ завантажений: форма наповнюється ним лише при монтуванні, тож
+   * споживач рендерить картку/діалог після появи даних запиту (як картка товару).
+   */
+  readonly aggregate: TextsAggregate<F>;
+  /** Поля, обовʼязкові в основній мові (реєстр сутності); порожній — без вимог. */
+  readonly required: readonly F[];
+  /** Перечитати агрегат; `undefined` — не вдалося (хук покаже тост і лишить форму). */
+  readonly refetch: () => Promise<TextsAggregate<F> | undefined>;
 }
-
-const isAggregate = (x: unknown): x is TextsAggregate<string> =>
-  typeof x === 'object' &&
-  x !== null &&
-  typeof (x as { version?: unknown }).version === 'number' &&
-  typeof (x as { texts?: unknown }).texts === 'object';
 
 export interface TranslatableTexts<F extends string> {
   readonly form: UseFormReturn<{ texts: TextsForm<F> }>;
@@ -67,6 +68,7 @@ export function useTranslatableTexts<F extends string>({
   primary,
   languages,
   aggregate,
+  required,
   refetch,
 }: TranslatableTextsOptions<F>): TranslatableTexts<F> {
   const t = useT();
@@ -76,42 +78,36 @@ export function useTranslatableTexts<F extends string>({
       '[translations] no AggregateVersionContext in the card tree',
     );
   const codes = languages.map((l) => l.code);
-  const latest = useRef(aggregate);
-  // Ref оновлюється в ефекті, не в рендері: `reload` читає його лише як запасний варіант.
-  useEffect(() => {
-    latest.current = aggregate;
-  });
+  const [agg, setAgg] = useState(aggregate);
   const [active, setActive] = useState(primary);
   const [conflict, setConflict] = useState(false);
   const errors = useTextErrors();
-  const toForm = (a: TextsAggregate<F> | undefined) =>
-    textsToForm(fields, a?.texts ?? {}, codes);
+  const toForm = (a: TextsAggregate<F>) => textsToForm(fields, a.texts, codes);
   const form = useForm<{ texts: TextsForm<F> }>({
-    resolver: zodResolver(textsSchema(fields, primary)) as never,
+    resolver: zodResolver(textsSchema(fields, required, primary)) as never,
     defaultValues: { texts: toForm(aggregate) },
   });
 
   const reload = async (sent?: TextsForm<F>) => {
-    const out = await refetch();
-    const fresh = isAggregate(out)
-      ? (out as unknown as TextsAggregate<F>)
-      : latest.current;
+    const fresh = await refetch();
     if (!fresh) {
       toast.error(t('admin.translations.loadFailed'));
       return;
     }
     const baseline = toForm(fresh);
     const now = form.getValues('texts');
+    setAgg(fresh);
     form.reset({ texts: baseline });
-    if (sent) {
-      const next = rebaseTexts(fields, baseline, sent, now);
-      for (const [l, row] of Object.entries(next))
-        for (const f of fields)
-          if (row[f] !== baseline[l]?.[f])
-            form.setValue(`texts.${l}.${f}` as never, row[f] as never, {
-              shouldDirty: true,
-            });
-    } else store.set(fresh.version);
+    if (sent)
+      for (const e of textsEdits(fields, baseline, sent, now))
+        form.setValue(
+          `texts.${e.locale}.${e.field}` as never,
+          e.value as never,
+          {
+            shouldDirty: true,
+          },
+        );
+    else store.set(fresh.version);
     errors.reset();
     setConflict(false);
   };
@@ -120,7 +116,7 @@ export function useTranslatableTexts<F extends string>({
     form,
     active,
     setActive,
-    statuses: localeStatusesOf(aggregate?.texts ?? {}),
+    statuses: localeStatusesOf(agg.texts),
     conflict,
     setConflict,
     reload,
@@ -129,18 +125,22 @@ export function useTranslatableTexts<F extends string>({
   };
 }
 
-/** Назва (перше поле) основної мови обовʼязкова, як і на картці товару (І4). */
-function textsSchema(fields: readonly string[], primary: string) {
+/** Обовʼязкові поля основної мови (реєстр сутності); повідомлення — ключ i18n. */
+function textsSchema(
+  fields: readonly string[],
+  required: readonly string[],
+  primary: string,
+) {
   const row = z.object(Object.fromEntries(fields.map((f) => [f, z.string()])));
   return z
     .object({ texts: z.record(z.string(), row) })
     .superRefine((v, ctx) => {
-      const key = fields[0]!;
-      if (!(v.texts[primary]?.[key] ?? '').trim())
-        ctx.addIssue({
-          code: 'custom',
-          path: ['texts', primary, key],
-          message: key,
-        });
+      for (const key of required)
+        if (!(v.texts[primary]?.[key] ?? '').trim())
+          ctx.addIssue({
+            code: 'custom',
+            path: ['texts', primary, key],
+            message: 'validation.fieldRequired',
+          });
     });
 }
