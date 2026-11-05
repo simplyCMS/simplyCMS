@@ -5,9 +5,9 @@ import {
   toSourceRow,
   type FieldStatus,
   type TranslatableSpec,
+  fieldToWire,
 } from 'simplycms/domain/translations';
 import {
-  fieldToWire,
   sourceFieldHash,
   type StoredTranslation,
 } from 'simplycms/translations';

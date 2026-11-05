@@ -3,11 +3,10 @@ import { PgDialect, PgTable } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import * as schema from 'simplycms/schema';
 import {
-  TRANSLATABLE,
-  fieldFromWire,
+  TRANSLATABLE_FIELDS,
   fieldToWire,
-  withFallback,
-} from '../index';
+} from 'simplycms/domain/translations';
+import { TRANSLATABLE, fieldFromWire, withFallback } from '../index';
 
 // Реєстр специфікацій — єдина адреса таблиць перекладів; цей тест звіряє його
 // з реальною схемою, щоб розсинхрон був червоним тут, а не в SQL на проді.
@@ -22,6 +21,7 @@ describe('TRANSLATABLE (реєстр специфікацій М1)', () => {
     expect(TRANSLATABLE.product).toEqual({
       table: 'product_translations',
       fk: 'product_id',
+      base: 'products',
       fields: [
         'name',
         'short_description',
@@ -51,6 +51,31 @@ describe('TRANSLATABLE (реєстр специфікацій М1)', () => {
       for (const r of spec.required) expect(spec.fields).toContain(r);
       for (const r of (spec as { richHtml?: readonly string[] }).richHtml ?? [])
         expect(spec.fields).toContain(r);
+    },
+  );
+
+  it.each(Object.entries(TRANSLATABLE))(
+    '%s: base — наявна таблиця схеми; поля = TRANSLATABLE_FIELDS',
+    (key, spec) => {
+      expect(tables.has(spec.base), spec.base).toBe(true);
+      expect(Object.keys(TRANSLATABLE).sort()).toEqual(
+        Object.keys(TRANSLATABLE_FIELDS).sort(),
+      );
+      const { fields, required, richHtml } = (
+        TRANSLATABLE_FIELDS as Record<
+          string,
+          {
+            fields: readonly string[];
+            required: readonly string[];
+            richHtml?: readonly string[];
+          }
+        >
+      )[key]!;
+      expect(spec.fields).toEqual(fields);
+      expect(spec.required).toEqual(required);
+      expect((spec as { richHtml?: readonly string[] }).richHtml).toEqual(
+        richHtml,
+      );
     },
   );
 

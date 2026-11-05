@@ -10,6 +10,7 @@ import {
   isRichField,
   rowStatus,
   toSourceRow,
+  fieldToWire,
 } from 'simplycms/domain/translations';
 import { products } from 'simplycms/schema';
 import { knownLocales } from './children-common';
@@ -17,7 +18,6 @@ import { loadChildren } from './children-read';
 import type { TextsRow } from './schemas';
 import {
   TRANSLATABLE,
-  fieldToWire,
   loadTranslations,
   primaryLocaleCode,
   sourceFieldHash,

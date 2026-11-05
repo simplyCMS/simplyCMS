@@ -7,11 +7,11 @@ import { defineOperation, assertVersionThenHash } from 'simplycms/operations';
 import {
   planTranslationWrite,
   toSourceRow,
+  fieldToWire,
 } from 'simplycms/domain/translations';
 import {
   TRANSLATABLE,
   applyTranslationPlan,
-  fieldToWire,
   sourceFieldHash,
 } from 'simplycms/translations';
 import { refreshProductTexts } from 'simplycms/catalog-projection';

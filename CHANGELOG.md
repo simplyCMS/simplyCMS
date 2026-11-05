@@ -42,11 +42,18 @@
   `doctor --online` і `status` мають перевірку `primary-locale` (конфіг ≠ БД — `warn`); офлайн-перевірка
   №10 вимагає мітку `primaryLocale:`.
 
+- **BREAKING:** `fieldToWire` переїхав із `simplycms/translations` у клієнтобезпечний
+  `simplycms/domain/translations` (разом з `TRANSLATABLE_FIELDS` — перелік полів, обов'язкових і
+  rich-полів перекладних сутностей); `TranslatableEntity` має нове обов'язкове поле `base` (таблиця
+  сутності). Імпорти `fieldToWire` з `simplycms/translations` замініть на домен.
+
 ### Додано
 
 - `create-simplycms-store --locale <код>` (`uk`, `en`): основна мова магазину при створенні, у діалозі —
   select. `--yes`/CI без `--locale` — помилка.
 - `readPrimaryLocale(source)` у `simplycms/migrate` — читання мітки `primaryLocale` з тексту конфігу.
+- `translationTable` (схема, `src/schema/translation-table.ts`): спільна форма таблиці перекладу; п'ять таблиць
+  товару описані через нього без зміни SQL baseline.
 - Субшлях `simplycms/i18n/packs`: вузький вхід (без React) до мовних пакетів — `findLanguagePack`,
   `listLanguagePacks`, типи `LanguagePack`, `SeedTexts`.
 - `SYSTEM_SEED_IDS`, `SEED_ORDER_STATUS_CODES`, `SeedOrderStatusCode` у `simplycms/schema` і в новому вузькому субшляху `simplycms/schema/seed-ids` (без Drizzle-схеми).

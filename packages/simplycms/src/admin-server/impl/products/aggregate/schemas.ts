@@ -1,12 +1,8 @@
 import { z } from 'zod';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
-import { isRichField } from 'simplycms/domain/translations';
+import { isRichField, fieldToWire } from 'simplycms/domain/translations';
 import { sanitizeNullableRichHtml } from 'simplycms/sanitize';
-import {
-  TRANSLATABLE,
-  fieldFromWire,
-  fieldToWire,
-} from 'simplycms/translations';
+import { TRANSLATABLE, fieldFromWire } from 'simplycms/translations';
 import { code } from '../../languages/view';
 
 // Схеми й перетворення вводу/виводу агрегата товару (М1, Task 11). На дроті
