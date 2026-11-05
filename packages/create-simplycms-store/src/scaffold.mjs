@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { assertSupportedLocale } from './locales.mjs';
 
 /**
  * Службові імена шаблону: `.gitignore` npm при паці обробляє спеціально,
@@ -47,6 +48,7 @@ export function renderTemplate(tpl, { storeName, version }) {
  * @property {string} targetDir
  * @property {string} storeName Імʼя npm-пакета магазину.
  * @property {string} version Версія пакетів ядра (`simplycms`, `@simplycms/*`).
+ * @property {string} locale Основна мова магазину → `primaryLocale` у `simplycms.config.ts`.
  * @property {string} [databaseUrl] DSN Postgres для `.env.local`.
  */
 
@@ -73,6 +75,24 @@ export async function scaffold(input) {
       renderTemplate(readFileSync(path, 'utf8'), { storeName, version }),
     );
   }
+  // Мова — єдине, що шаблонний конфіг не знає наперед; підставляємо в готову однорядкову
+  // мітку (її ж читає накат: `readPrimaryLocale`), а не вводимо плейсхолдер, щоб шаблон
+  // лишався валідним TS і для пілота, що копіює його як є.
+  const configPath = join(targetDir, 'simplycms.config.ts');
+  const mark = /primaryLocale:\s*'[^']*'/;
+  const config = readFileSync(configPath, 'utf8');
+  if (!mark.test(config)) {
+    throw new Error(
+      'У шаблонному simplycms.config.ts немає мітки primaryLocale',
+    );
+  }
+  writeFileSync(
+    configPath,
+    config.replace(
+      mark,
+      `primaryLocale: '${assertSupportedLocale(input.locale)}'`,
+    ),
+  );
   // .env.local пишемо лише коли відоме підключення до БД: без нього файл був
   // би половинчастим і маскував «не налаштовано» під «налаштовано».
   //

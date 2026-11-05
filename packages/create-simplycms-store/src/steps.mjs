@@ -1,6 +1,15 @@
 // Кроки CLI, винесені з index.mjs: промпти, git, встановлення, фінальний вивід.
 import { execSync } from 'node:child_process';
-import { cancel, confirm, isCancel, log, note, text } from '@clack/prompts';
+import {
+  cancel,
+  confirm,
+  isCancel,
+  log,
+  note,
+  select,
+  text,
+} from '@clack/prompts';
+import { SUPPORTED_LOCALES } from './locales.mjs';
 
 /** Обгортка промпту: Ctrl+C має завершувати CLI, а не давати symbol далі. */
 async function ask(run) {
@@ -21,6 +30,18 @@ export async function promptMissing(options) {
         message: 'Тека нового магазину',
         placeholder: 'my-shop',
         defaultValue: 'my-shop',
+      }),
+    );
+  }
+  if (!result.locale) {
+    // Назва мови її ж мовою (Intl), щоб не вести другу таблицю назв поруч із кодами.
+    result.locale = await ask(() =>
+      select({
+        message: 'Основна мова магазину (після створення БД не змінюється)',
+        options: SUPPORTED_LOCALES.map((code) => ({
+          value: code,
+          label: `${new Intl.DisplayNames([code], { type: 'language' }).of(code)} (${code})`,
+        })),
       }),
     );
   }

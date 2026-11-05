@@ -265,6 +265,8 @@ describe('скаффолдер: версія RC', () => {
         '--no-install',
         '--no-git',
         '--yes',
+        '--locale',
+        'uk',
         '--database-url',
         'postgresql://app_runtime:pw@localhost:5432/postgres',
       ],
