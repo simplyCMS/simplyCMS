@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ValidationError } from 'simplycms/contracts/domain-errors';
 import { OPERATION_ID_FORMAT } from 'simplycms/operations';
-import type { ActorDb } from 'simplycms/db';
 import {
   orderStatusesCreate,
   orderStatusesDeleteTranslation,
@@ -11,8 +9,9 @@ import {
   orderStatusesSaveTranslation,
 } from '../../order-statuses/commands';
 
-// Юніт форми операцій фабрики (М2б, Р19): id, прапорці й рання відмова create.
-// Поведінку проти БД доводить pg-тест `order-statuses-aggregate.test.ts`.
+// Юніт форми операцій фабрики (М2б, Р19): id та прапорці.
+// Поведінку проти БД (зокрема відмову create без основної мови) доводить pg-тест
+// `order-statuses-aggregate.test.ts`.
 const WRITES = [
   orderStatusesCreate,
   orderStatusesSaveDescription,
@@ -55,30 +54,5 @@ describe('команди перекладного агрегата: форма �
       'expectedVersion' in
         (orderStatusesCreate.input as never as { shape: object }).shape,
     ).toBe(false);
-  });
-
-  it('create без рядка основної мови → ValidationError зі шляхом texts.<основна>.name', async () => {
-    // Усі запити до БД (замок, основна мова, відомі мови) — `execute`; підставний db
-    // віддає єдину мову `uk`. Рядок основної мови порожній: до запису не доходить.
-    const db = {
-      execute: async () => ({ rows: [{ code: 'uk' }] }),
-    } as unknown as ActorDb;
-    const err = await orderStatusesCreate
-      .run(
-        {
-          db,
-          afterCommit: () => undefined,
-          subject: { userId: null, roles: ['admin'] },
-          actor: { kind: 'system' },
-        },
-        { id: crypto.randomUUID(), code: 'x', texts: { uk: {} } } as never,
-      )
-      .catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(ValidationError);
-    expect((err as ValidationError).issues[0]?.path).toEqual([
-      'texts',
-      'uk',
-      'name',
-    ]);
   });
 });
