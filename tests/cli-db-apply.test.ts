@@ -114,7 +114,7 @@ describe('simplycms db:apply', () => {
     expect(h.text()).toContain('0005_x.sql');
   });
 
-  it('накат лише засіяв мову → рядок про засів, без «Нічого накочувати»', async () => {
+  it('накат лише засіяв мову → без «Нічого накочувати» і без дубля рядка засіву', async () => {
     const h = harness({ MIGRATION_DATABASE_URL: OWNER });
     h.applyMigrations.mockResolvedValue({
       applied: [],
@@ -122,7 +122,7 @@ describe('simplycms db:apply', () => {
       bootstrapped: true,
     });
     expect(await h.call([])).toBe(0);
-    expect(h.text()).toContain('Засіяно основну мову');
+    expect(h.text()).not.toContain('Засіяно основну мову');
     expect(h.text()).not.toContain('Нічого накочувати');
   });
 

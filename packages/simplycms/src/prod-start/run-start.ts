@@ -95,10 +95,9 @@ export async function runStart({
         primaryLocale,
         log: (message) => log(scrubOwnerUrl(message, migrationUrl)),
       });
-      // Засіяна мова — теж зміна БД: «нічого накочувати» поруч із нею вводило б в оману.
-      if (report?.bootstrapped)
-        log('[start] засіяно основну мову, довідники й профіль магазину.');
-      else if ((report?.applied ?? []).length === 0)
+      // Рядок про засів друкує сам applyMigrations (один раз); тут лише не брешемо
+      // «нічого накочувати» поруч із засівом.
+      if (!report?.bootstrapped && (report?.applied ?? []).length === 0)
         log('[start] міграції: нічого накочувати.');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

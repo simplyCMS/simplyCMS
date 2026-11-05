@@ -53,7 +53,8 @@ function setup(
         aggregate: agg(1, 'A'),
         required,
         refetch,
-        loadFailedKey: 'admin.translations.loadFailed',
+        // Навмисно НЕ товарний ключ: регрес до хардкоду ключа в хуку мусить впасти в його власному тесті.
+        loadFailedKey: 'admin.orders.statuses.loadFailed',
       });
       // formState — проксі з підпискою: читаємо помилки в рендері, як компонент форми.
       void r.form.formState.errors;
@@ -106,7 +107,7 @@ describe('useTranslatableTexts', () => {
     const { result } = setup(async () => undefined);
     act(() => result.current.form.setValue('texts.uk.name', 'Мій'));
     await act(() => result.current.reload());
-    expect(toastError).toHaveBeenCalledWith('Не вдалося завантажити товар');
+    expect(toastError).toHaveBeenCalledWith('Не вдалося завантажити статус');
     expect(result.current.form.getValues('texts.uk.name')).toBe('Мій');
   });
 

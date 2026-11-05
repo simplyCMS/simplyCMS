@@ -162,12 +162,13 @@ describe('runStart', () => {
     expect(logs.join('\n')).toContain('нічого накочувати');
   });
 
-  it('БД засіяно основною мовою → рядок про засів, без «нічого накочувати»', async () => {
+  it('БД засіяно основною мовою → без «нічого накочувати» і без дубля рядка засіву', async () => {
     const { deps, logs } = setup({
       migrate: vi.fn(async () => ({ applied: [], bootstrapped: true })),
     });
     await runStart(deps);
-    expect(logs.join('\n')).toContain('засіяно основну мову');
+    // Рядок засіву — справа applyMigrations (тут він змоканий), не підсумку старту.
+    expect(logs.join('\n')).not.toContain('засіяно основну мову');
     expect(logs.join('\n')).not.toContain('нічого накочувати');
   });
 
