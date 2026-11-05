@@ -1,6 +1,7 @@
 /**
  * Основна мова магазину з тексту `simplycms.config.ts` — однорядкова мітка
- * `primaryLocale: '<код>'` (лише одинарні лапки, як у шаблоні й `config-edit.mjs` CLI).
+ * `primaryLocale: '<код>'` (лише одинарні лапки, як у шаблоні й `config-edit.mjs` CLI) на
+ * початку рядка коду: закоментований `// primaryLocale: 'en'` не рахується.
  *
  * Конфіг не виконується, а читається як текст: накат працює до збірки й до ролей, тож
  * імпортувати `defineConfig` з його лоадерами тем/плагінів (`@themes/*`, vite-аліаси)
@@ -11,5 +12,5 @@
  * і `doctor`.
  */
 export function readPrimaryLocale(source: string): string | null {
-  return /primaryLocale:\s*'([^']+)'/.exec(source)?.[1] ?? null;
+  return /^[ \t]*primaryLocale:\s*'([^']+)'/m.exec(source)?.[1] ?? null;
 }

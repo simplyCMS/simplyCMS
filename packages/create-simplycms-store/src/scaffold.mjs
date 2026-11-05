@@ -79,7 +79,7 @@ export async function scaffold(input) {
   // мітку (її ж читає накат: `readPrimaryLocale`), а не вводимо плейсхолдер, щоб шаблон
   // лишався валідним TS і для пілота, що копіює його як є.
   const configPath = join(targetDir, 'simplycms.config.ts');
-  const mark = /primaryLocale:\s*'[^']*'/;
+  const mark = /^([ \t]*)primaryLocale:\s*'[^']*'/m;
   const config = readFileSync(configPath, 'utf8');
   if (!mark.test(config)) {
     throw new Error(
@@ -90,7 +90,7 @@ export async function scaffold(input) {
     configPath,
     config.replace(
       mark,
-      `primaryLocale: '${assertSupportedLocale(input.locale)}'`,
+      `$1primaryLocale: '${assertSupportedLocale(input.locale)}'`,
     ),
   );
   // .env.local пишемо лише коли відоме підключення до БД: без нього файл був

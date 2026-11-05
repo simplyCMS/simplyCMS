@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
+  checkConfigAnchors,
   checkCoreVersions,
   checkEnv,
   runOfflineChecks,
@@ -289,6 +290,21 @@ describe('cli doctor (оффлайн)', () => {
     expect(res.status).toBe('error');
     expect(res.details).toContain('db/migrations');
     expect(res.details).toContain('не тека');
+  });
+
+  it('№10: без мітки primaryLocale (і з закоментованою) → error', async () => {
+    const store = await scaffoldStore('doc-no-locale');
+    const configPath = join(store, 'simplycms.config.ts');
+    const original = readFileSync(configPath, 'utf8');
+    writeFileSync(
+      configPath,
+      original.replace("primaryLocale: 'uk',", "// primaryLocale: 'uk',"),
+    );
+    const res = checkConfigAnchors(store);
+    expect(res.status).toBe('error');
+    expect(res.details).toContain('primaryLocale');
+    writeFileSync(configPath, original);
+    expect(checkConfigAnchors(store).status).toBe('ok');
   });
 
   it('checkThemes: нерезолвний запис — warn; warn не валить прогін без --strict', async () => {

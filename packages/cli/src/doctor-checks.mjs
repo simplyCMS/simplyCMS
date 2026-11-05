@@ -65,6 +65,30 @@ function checkFileContains(storeRoot, file, fragments, title) {
   return check(file, title, 'ok');
 }
 
+/**
+ * №10: якорі конфігу. Мітка `primaryLocale` — лише в рядку коду (закоментована не рахується,
+ * як і в `readPrimaryLocale` ядра), тому перевіряється окремо від простих фрагментів.
+ */
+export function checkConfigAnchors(storeRoot) {
+  const title = 'simplycms.config.ts має якорі plugins/themes/primaryLocale';
+  const base = checkFileContains(
+    storeRoot,
+    'simplycms.config.ts',
+    ['plugins: [', 'themes: {'],
+    title,
+  );
+  if (base.status !== 'ok') return base;
+  const source = readFileSync(join(storeRoot, 'simplycms.config.ts'), 'utf8');
+  if (!/^[ \t]*primaryLocale:\s*'[^']+'/m.test(source))
+    return check(
+      'simplycms.config.ts',
+      title,
+      'error',
+      "У simplycms.config.ts не знайдено: «primaryLocale: '<код>'»",
+    );
+  return base;
+}
+
 /** №2: усі пакети ядра — одна версія (error); версія CLI збігається (warn). */
 export function checkCoreVersions({ manifest, cliVersion }) {
   const title = 'Версії пакетів ядра синхронні';
@@ -178,13 +202,7 @@ export const OFFLINE_CHECKS = [
   },
   {
     label: 'simplycms.config.ts',
-    run: ({ storeRoot }) =>
-      checkFileContains(
-        storeRoot,
-        'simplycms.config.ts',
-        ['plugins: [', 'themes: {', 'primaryLocale:'],
-        'simplycms.config.ts має якорі plugins/themes/primaryLocale',
-      ),
+    run: ({ storeRoot }) => checkConfigAnchors(storeRoot),
   },
   // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
   { label: 'themes', run: checkThemes },
