@@ -8,7 +8,6 @@
  * має (DCE). Однаковий префікс id стаба й нутрощів такої здатності не дає —
  * це знахідка рев'ю ред.2.
  */
-export { orderStatusesOps } from './order-statuses/resource';
 export {
   orderStatusesCreate,
   orderStatusesDeleteTranslation,

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { defineTranslatableCommands } from '../translatable/commands';
-import { orderStatusesOps } from './resource';
+import { orderStatusesRead } from './resource';
 import { ORDER_STATUS_ROOT } from './root';
 
 const texts = z.strictObject({
@@ -23,7 +23,7 @@ const commands = defineTranslatableCommands({
   texts,
   base,
   createOnly,
-  resource: orderStatusesOps,
+  resource: orderStatusesRead,
 });
 
 export const orderStatusesList = commands.list;

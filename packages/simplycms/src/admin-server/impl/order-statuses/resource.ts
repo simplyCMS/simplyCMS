@@ -12,7 +12,7 @@ import { defineAdminResource } from '../resource';
  * читається — інваріант «дефолт рівно один» тримає `setDefault`, `code` незмінний (на ньому
  * тримаються скасування покупцем і адмінкою, `simplycms/contracts/order-status-codes`).
  */
-export const orderStatusesOps = defineAdminResource({
+const resource = defineAdminResource({
   entity: ENTITY.orderStatuses,
   table: orderStatuses,
   operation: 'catalog.write',
@@ -30,3 +30,13 @@ export const orderStatusesOps = defineAdminResource({
   readonly: ['id', 'code', 'color', 'sortOrder', 'isDefault', 'version'],
   omit: ['createdAt'],
 });
+
+/**
+ * Лише читання назовні модуля: `insert/update/remove/removeIn` ресурсу обминули б охорону
+ * дефолтного й системних кодів, `expectedVersion` і замки коренів, тож єдиний шлях запису —
+ * операції реєстру. Барель `impl/index.ts` ресурс не експортує.
+ */
+export const orderStatusesRead = {
+  listIn: resource.listIn,
+  rowSchema: resource.rowSchema,
+} as const;
