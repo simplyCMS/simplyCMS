@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { TestI18nProvider } from '../../../../../test-harness/i18n';
 import {
@@ -8,6 +8,8 @@ import {
   useAggregateVersionStore,
 } from '../useAggregateCommand';
 import { useTranslatableTexts } from '../useTranslatableTexts';
+
+afterEach(cleanup);
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
@@ -26,7 +28,7 @@ const agg = (version: number, uk: string) => ({
 /** Діалог/сторінка однаково: хук живе під провайдером версії агрегата. */
 function setup(refetch: () => Promise<unknown>) {
   let store!: ReturnType<typeof useAggregateVersionStore>;
-  const wrapper = ({ children }: { children: ReactNode }) => {
+  function Wrapper({ children }: { children: ReactNode }) {
     store = useAggregateVersionStore(1);
     return (
       <TestI18nProvider>
@@ -35,7 +37,7 @@ function setup(refetch: () => Promise<unknown>) {
         </AggregateVersionContext.Provider>
       </TestI18nProvider>
     );
-  };
+  }
   const hook = renderHook(
     () =>
       useTranslatableTexts({
@@ -45,7 +47,7 @@ function setup(refetch: () => Promise<unknown>) {
         aggregate: agg(1, 'A'),
         refetch,
       }),
-    { wrapper },
+    { wrapper: Wrapper },
   );
   return { ...hook, store: () => store };
 }

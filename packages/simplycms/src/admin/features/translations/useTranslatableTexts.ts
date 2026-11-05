@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -77,7 +77,10 @@ export function useTranslatableTexts<F extends string>({
     );
   const codes = languages.map((l) => l.code);
   const latest = useRef(aggregate);
-  latest.current = aggregate;
+  // Ref оновлюється в ефекті, не в рендері: `reload` читає його лише як запасний варіант.
+  useEffect(() => {
+    latest.current = aggregate;
+  });
   const [active, setActive] = useState(primary);
   const [conflict, setConflict] = useState(false);
   const errors = useTextErrors();
