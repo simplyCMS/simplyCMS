@@ -30,7 +30,10 @@ export async function runAdminOrderSaveReturnStep({
     );
     const [next] = await sql(
       dbUrl,
-      `select id, name from public.order_statuses where code not in ('new', 'cancelled') order by sort_order limit 1`,
+      `select s.id, tr.name from public.order_statuses s
+         join public.order_status_translations tr
+           on tr.status_id = s.id and tr.locale = (select code from public.languages where is_default)
+        where s.code not in ('new', 'cancelled') order by s.sort_order limit 1`,
     );
     await sql(
       dbUrl,

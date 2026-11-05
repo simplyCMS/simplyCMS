@@ -13,7 +13,7 @@ import {
   createOrder,
   loadOrderDetail,
   loadProfile,
-  loadStatusByCode,
+  loadStatusIdByCode,
   loadUserOrders,
   setOrderStatus,
   updateProfile,
@@ -32,6 +32,7 @@ import {
   withDbName,
   withUser,
 } from '../apply.mjs';
+import { UK } from './fixtures/text-locale';
 
 const PASSWORD = 'super-secret-password';
 
@@ -187,12 +188,14 @@ describe('персональні дані вітрини під актором',
       createOrder(db, userA, null, orderInput('alice'), operator),
     );
 
-    const mine = await withCustomerDb(userA, (db) => loadUserOrders(db, userA));
+    const mine = await withCustomerDb(userA, (db) =>
+      loadUserOrders(db, userA, UK),
+    );
     const theirs = await withCustomerDb(userB, (db) =>
-      loadUserOrders(db, userA),
+      loadUserOrders(db, userA, UK),
     );
     const bOpensA = await withCustomerDb(userB, (db) =>
-      loadOrderDetail(db, created.id),
+      loadOrderDetail(db, created.id, UK),
     );
 
     expect(mine.map((row) => row.id)).toEqual([created.id]);
@@ -209,14 +212,14 @@ describe('персональні дані вітрини під актором',
     );
 
     const byToken = await withOrderTokenDb(token, (db) =>
-      loadOrderDetail(db, created.id),
+      loadOrderDetail(db, created.id, UK),
     );
     const byWrongToken = await withOrderTokenDb(
       '00000000-0000-4000-8000-000000000000',
-      (db) => loadOrderDetail(db, created.id),
+      (db) => loadOrderDetail(db, created.id, UK),
     );
     const byAnonymous = await withStorefrontDb((db) =>
-      loadOrderDetail(db, created.id),
+      loadOrderDetail(db, created.id, UK),
     );
 
     expect(byToken?.order_number).toBe(created.orderNumber);
@@ -230,7 +233,7 @@ describe('персональні дані вітрини під актором',
       createOrder(db, userA, null, orderInput('cancel'), operator),
     );
     const cancelled = await withStorefrontDb((db) =>
-      loadStatusByCode(db, 'cancelled'),
+      loadStatusIdByCode(db, 'cancelled'),
     );
 
     // Пряма спроба покупця — саме той fail-closed, на який спирається
@@ -240,7 +243,7 @@ describe('персональні дані вітрини під актором',
     // у власний текст «Failed query: …», і збіг по ньому нічого не сказав би
     // про ПРИЧИНУ відмови — саме її тут і треба довести.
     const failure = await withCustomerDb(userA, (db) =>
-      setOrderStatus(db, created.id, cancelled!.id),
+      setOrderStatus(db, created.id, cancelled!),
     ).then(
       () => null,
       (error: unknown) => error,
@@ -251,10 +254,10 @@ describe('персональні дані вітрини під актором',
     ).toMatch(/permission denied/i);
 
     await withCustomerDb(userA, (db, operator) =>
-      operator((odb) => setOrderStatus(odb, created.id, cancelled!.id)),
+      operator((odb) => setOrderStatus(odb, created.id, cancelled!)),
     );
     const after = await withCustomerDb(userA, (db) =>
-      loadOrderDetail(db, created.id),
+      loadOrderDetail(db, created.id, UK),
     );
     expect(after?.status?.code).toBe('cancelled');
   });

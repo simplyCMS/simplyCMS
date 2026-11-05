@@ -40,6 +40,7 @@ import {
   withUser,
 } from '../apply.mjs';
 import { insertProductGraphAt } from './fixtures/product-graph';
+import { UK } from './fixtures/text-locale';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 /** Панель із сідовим залишком 5 на системній точці. */
@@ -328,7 +329,7 @@ describe('замовлення списує залишок і повертає �
     await withOrderTokenDb(
       order.accessToken as string,
       async (db, operator) => {
-        expect(await loadOrderDetail(db, order.id)).not.toBeNull();
+        expect(await loadOrderDetail(db, order.id, UK)).not.toBeNull();
         await operator((odb) => releaseOrderStock(odb, order.id));
       },
     );

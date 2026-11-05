@@ -128,8 +128,11 @@ export async function orderIdByNumber(url, orderNumber) {
 export async function orderState(url, orderId) {
   const [row] = await sql(
     url,
-    `select st.code, st.name, o.total from public.orders o
+    // Назва статусу — з перекладу основної мови (колонки `name` у `order_statuses` немає, М2б).
+    `select st.code, tr.name, o.total from public.orders o
        left join public.order_statuses st on st.id = o.status_id
+       left join public.order_status_translations tr
+         on tr.status_id = st.id and tr.locale = (select code from public.languages where is_default)
       where o.id = $1`,
     [orderId],
   );
