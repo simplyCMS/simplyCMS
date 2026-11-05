@@ -15,7 +15,8 @@ import {
   type StoredTranslation,
   type TranslatableEntity,
 } from 'simplycms/translations';
-import { toWireKeys } from './wire';
+import type { z } from 'zod';
+import { toWireKeys, type TextsRowOf } from './wire';
 
 /** Рядки перекладів сутності: основна мова окремо від решти (вхід плану запису). */
 export async function loadTextState(
@@ -83,20 +84,21 @@ export function textStatuses(
  * Адаптер під форму `get` агрегата: рядок мови = дротові поля + `status` + `fieldStatus`.
  * Порядок мов: решта за стабільним порядком `byLocale`, основна — останньою.
  */
-export function textRows(
+export function textRows<S extends z.ZodRawShape>(
   spec: TranslatableSpec,
   state: {
     primary: string;
     source: StoredTranslation | null;
     byLocale: ReadonlyMap<string, StoredTranslation>;
   },
-) {
+): Record<string, TextsRowOf<S>> {
   const rows = new Map(state.byLocale);
   if (state.source) rows.set(state.primary, state.source);
+  // Ключі `S` збігаються з полями `spec` (схема вводу `texts` будується з нього).
   return Object.fromEntries(
     Object.entries(textStatuses(spec, rows, state.primary)).map(([l, r]) => [
       l,
       { ...toWireKeys(r.values), status: r.status, fieldStatus: r.fields },
     ]),
-  );
+  ) as Record<string, TextsRowOf<S>>;
 }

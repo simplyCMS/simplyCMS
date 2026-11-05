@@ -12,11 +12,13 @@ import { PRODUCT_ROOT } from './root';
  * (1) Завжди `languages-set` (спільний чи ексклюзивний) -> корені товарів (за id) ->
  *     дочірні рядки. Носій порядку «set -> корінь» — ЄДИНИЙ: `lockAggregateRoots` (рядкові
  *     замки `products`, сильніші за KEY SHARE, бере лише він — сканер), що делегує спільному
- *     `lockRoots` (`translatable/roots.ts`): той сам бере спільний `languages-set` перед коренем. Надлишковий носій спільного set на шляху СТВОРЕННЯ —
+ *     `lockRoots` (`translatable/roots.ts`): той сам бере спільний `languages-set` перед коренем.
+ *     Надлишковий носій спільного set на шляху СТВОРЕННЯ —
  *     генератори адрес і токенів (`createPathsForEntity`/`createTokensForEntity`) беруть його
  *     самі, але викликачі (`products.create`, фікстура `inLockedBlock`) беруть його раніше, тож
- *     мутація лише цього носія («генератор читає мови до свого замка») зелена. Тому команда не пише дочірніх рядків з FK на `languages` раніше, ніж
- *     дочекається ексклюзивного власника (`languages.remove`). Мутації: set ПІСЛЯ кореня ->
+ *     мутація лише цього носія («генератор читає мови до свого замка») зелена. Тому команда
+ *     не пише дочірніх рядків з FK на `languages` раніше, ніж дочекається ексклюзивного
+ *     власника (`languages.remove`). Мутації: set ПІСЛЯ кореня ->
  *     «products.remove <-> setStatus» 40P01; set прибрано -> ще «saveTranslation <->
  *     languages.remove» і «products.remove <-> languages.remove» 40P01.
  * (2) Власник ЕКСКЛЮЗИВНОГО `languages-set` (`setStatus`, add/remove/reorder мов,

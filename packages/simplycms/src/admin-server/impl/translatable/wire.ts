@@ -32,6 +32,11 @@ export function textsRowSchema<S extends z.ZodRawShape>(texts: z.ZodObject<S>) {
   });
 }
 
+/** Тип рядка `texts` у `get` для схеми вводу `texts` зі формою `S`. */
+export type TextsRowOf<S extends z.ZodRawShape> = z.infer<
+  ReturnType<typeof textsRowSchema<S>>
+>;
+
 type Patch = Record<string, string | null | undefined>;
 
 /**

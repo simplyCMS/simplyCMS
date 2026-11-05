@@ -3,7 +3,7 @@ import { AdminNotFoundError } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
 import { currentPaths } from 'simplycms/addressing';
 import { products } from 'simplycms/schema';
-import type { TextsRow } from './schemas';
+import type { productTexts } from './schemas';
 import { loadTextState, textRows } from '../../translatable/state';
 import { loadChildren } from './children-read';
 import { TRANSLATABLE } from 'simplycms/translations';
@@ -30,7 +30,7 @@ export async function getProductAggregate(db: ActorDb, id: string) {
       hasModifications: row.hasModifications,
       stockStatus: row.stockStatus,
     },
-    texts: textRows(SPEC, state) as Record<string, TextsRow>,
+    texts: textRows<typeof productTexts.shape>(SPEC, state),
     paths: Object.fromEntries(await currentPaths(db, { kind: 'product', id })),
     ...(await loadChildren(db, id, primary)),
   };
