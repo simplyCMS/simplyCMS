@@ -42,6 +42,10 @@ describe('scripts/start.mjs (шим)', () => {
     );
     writeFileSync(join(store, 'package.json'), '{ "type": "module" }\n');
     writeFileSync(
+      join(store, 'simplycms.config.ts'),
+      "export default { primaryLocale: 'uk' };\n",
+    );
+    writeFileSync(
       join(store, 'server.mjs'),
       'console.log(JSON.stringify({ cwd: process.cwd(), owner: process.env.MIGRATION_DATABASE_URL ?? null }));\n',
     );
@@ -68,7 +72,8 @@ describe('scripts/start.mjs (шим)', () => {
     );
     writeFileSync(
       join(pkg, 'migrate.mjs'),
-      'export const applyMigrations = async () => ({ applied: [] });\n',
+      'export const applyMigrations = async () => ({ applied: [] });\n' +
+        "export const readPrimaryLocale = (s) => /primaryLocale:\\s*'([^']+)'/.exec(s)?.[1] ?? null;\n",
     );
 
     const elsewhere = mkdtempSync(join(tmpdir(), 'start-elsewhere-'));

@@ -197,6 +197,7 @@ describe('оновлюваність 1.0: магазин із даними і н
           cwd: storeDir,
           migrate: applyMigrations,
           resolveDriverEnv,
+          readPrimaryLocale: () => 'uk',
           execve,
           log: (m: string) => logs.push(m),
         });

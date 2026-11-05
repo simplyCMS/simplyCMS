@@ -72,6 +72,7 @@ describe('runStart: накат і execve на справжній БД', () => {
         cwd: STORE_DIR,
         migrate: applyMigrations,
         resolveDriverEnv,
+        readPrimaryLocale: () => 'uk',
         execve,
         log: (message: string) => logs.push(message),
       });

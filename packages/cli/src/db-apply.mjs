@@ -3,6 +3,8 @@
 // транзакція на файл. Тут — лише розбір аргументів, env і друк.
 //
 // Коди виходу (Е8-О8): 0 — гаразд; 3 — `--check` і є ненакочені; 1 — помилка.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { findStoreRoot, readStoreEnv } from './context.mjs';
 import { storeMigrationsDir } from './db-diff.mjs';
 import { redactUrls } from './redact-urls.mjs';
@@ -46,9 +48,10 @@ const DEFAULT_UI = { begin, finish, ...say };
  * @param {{
  *   storeRoot?: string;
  *   env?: Record<string, string>;
- *   core?: { applyMigrations: (options: Record<string, unknown>) => Promise<{ applied: string[]; pending: string[] }> };
+ *   core?: { applyMigrations: (options: Record<string, unknown>) => Promise<{ applied: string[]; pending: string[] }>; readPrimaryLocale: (source: string) => string | null };
+ *   readConfig?: (storeRoot: string) => string;
  *   ui?: typeof DEFAULT_UI;
- * }} [deps] ін'єкція для тестів: фейкове ядро, env і вивід
+ * }} [deps] ін'єкція для тестів: фейкове ядро, env, конфіг і вивід
  * @returns {Promise<number>} код виходу; виставляє його `index.mjs`
  */
 export async function run(argv, deps = {}) {
@@ -72,10 +75,23 @@ export async function run(argv, deps = {}) {
     }
     const core =
       deps.core ?? (await importFromStore(storeRoot, 'simplycms/migrate'));
+    // Основна мова — з конфігу магазину (той самий текст, що читає прод-старт): без неї
+    // накат на чисту БД не мав би з чого створити мову й довідники. Відмова ДО накату.
+    const primaryLocale = core.readPrimaryLocale(
+      (deps.readConfig ?? readConfig)(storeRoot),
+    );
+    if (primaryLocale === null) {
+      ui.error(
+        "У simplycms.config.ts немає primaryLocale: '<код>'. Додайте основну мову магазину.",
+      );
+      ui.finish('Накат не виконано.');
+      return 1;
+    }
     const report = await core.applyMigrations({
       connectionString,
       dir: storeMigrationsDir(storeRoot),
       runtimeUrl: env.DATABASE_URL || undefined,
+      primaryLocale,
       dryRun: dryRun || check,
       log: (line) => ui.info(redactUrls(line)),
     });
@@ -85,6 +101,11 @@ export async function run(argv, deps = {}) {
     ui.finish('Накат не виконано.');
     return 1;
   }
+}
+
+/** Текст `simplycms.config.ts`; нечитабельний конфіг — помилка прогону (друкує `describeError`). */
+function readConfig(storeRoot) {
+  return readFileSync(join(storeRoot, 'simplycms.config.ts'), 'utf8');
 }
 
 /** Підсумок успішного прогону й код виходу. */

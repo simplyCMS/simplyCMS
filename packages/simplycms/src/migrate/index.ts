@@ -14,6 +14,7 @@ export {
 } from './files';
 export { applyMigrations, type ApplyOptions, type ApplyReport } from './apply';
 export { bootstrapStore } from './bootstrap';
+export { readPrimaryLocale } from './primary-locale';
 // Ім'я лишається публічним, джерело — реєстр ключів замків.
 export { MIGRATION_LOCK_KEY } from 'simplycms/db/lock-keys';
 export { scramSha256Verifier } from './scram';

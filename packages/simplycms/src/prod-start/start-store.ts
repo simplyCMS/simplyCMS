@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveDriverEnv } from 'simplycms/env';
-import { applyMigrations } from 'simplycms/migrate';
+import { applyMigrations, readPrimaryLocale } from 'simplycms/migrate';
 import { runStart } from './run-start';
 
 /**
@@ -27,6 +29,16 @@ export async function startStore(
     cwd,
     migrate: applyMigrations,
     resolveDriverEnv,
+    // Конфіг лежить у корені образу поруч зі скриптом; нечитабельний — як «мітки немає».
+    readPrimaryLocale: () => {
+      try {
+        return readPrimaryLocale(
+          readFileSync(join(cwd, 'simplycms.config.ts'), 'utf8'),
+        );
+      } catch {
+        return null;
+      }
+    },
     execve: process.execve?.bind(process),
     log: (message) => console.error(message),
   });

@@ -33,6 +33,7 @@ function setup(overrides: Record<string, unknown> = {}) {
     cwd: '/srv/shop',
     migrate,
     resolveDriverEnv,
+    readPrimaryLocale: () => 'uk' as string | null,
     execve,
     log: (message: string) => logs.push(message),
     execPath: '/usr/bin/node',
@@ -62,6 +63,7 @@ describe('runStart', () => {
       connectionString: OWNER_URL,
       dir: '/srv/shop/db/migrations',
       runtimeUrl: baseEnv.DATABASE_URL,
+      primaryLocale: 'uk',
     });
     expect(execve).toHaveBeenCalledOnce();
     const [file, args, env] = execve.mock.calls[0];
@@ -71,8 +73,21 @@ describe('runStart', () => {
     expect(env).not.toHaveProperty('MIGRATION_DATABASE_URL');
   });
 
-  it('змінної немає → накату немає, execve є', async () => {
-    const { deps, migrate, execve } = setup({ env: { ...baseEnv } });
+  it('є MIGRATION_DATABASE_URL, але в конфігу немає primaryLocale → код 1 до накату, execve немає', async () => {
+    const { deps, logs, migrate, execve } = setup({
+      readPrimaryLocale: () => null,
+    });
+    expect(await runStart(deps)).toBe(1);
+    expect(migrate).not.toHaveBeenCalled();
+    expect(execve).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain("primaryLocale: '<код>'");
+  });
+
+  it('змінної немає → накату немає, execve є, мова не потрібна', async () => {
+    const { deps, migrate, execve } = setup({
+      env: { ...baseEnv },
+      readPrimaryLocale: () => null,
+    });
     await runStart(deps);
     expect(migrate).not.toHaveBeenCalled();
     expect(execve).toHaveBeenCalledOnce();
