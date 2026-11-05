@@ -5,7 +5,7 @@
 **Goal:** Мова контенту й мова інтерфейсу стають двома типами з одним мостом між ними. На клієнт вітрини потрапляє лише каталог ядра своєї мови й своєї частини. Адмінка показується мовою з профілю. Листи, ціни, дати й множина йдуть за мовою інтерфейсу.
 
 **Architecture:**
-- Брендовані `ContentLocale` (вісь даних: тип — `simplycms/contracts` (файл `contracts/content-locale.ts`), конструктор — `simplycms/domain/translations`) і `UiLocale` (вісь інтерфейсу, `simplycms/i18n`). Змішування ловить `tsc`.
+- Брендовані `ContentLocale` (вісь даних: тип — `simplycms/contracts` (файл `contracts/content-locale.ts`), конструктор — `simplycms/domain/translations`) і `UiLocale` (вісь інтерфейсу: тип — `simplycms/contracts`, конструктори — `simplycms/i18n`). Змішування ловить `tsc`.
 - Міст `resolveUiLocale` — єдине місце, де мова контенту перетворюється на мову інтерфейсу.
 - Мова магазину — лише мова з пакетом (спека §19.15, ред. 2): публікація без пакета неможлива, тож на вітрині міст — тотожність; крок «основна мова» лишається лише для деградованого режиму й листів старих даних, з гучним сигналом.
 - Каталоги ядра — ліниві частини `base`/`admin`/`mail` у реєстрі з протоколом thenable. Протокол спільний із `ThemeRegistry`. Прогрів — у кореневому лоадері, у `beforeLoad` адмінки й перед гідрацією.
@@ -59,7 +59,7 @@
 | Д4 | Транслятор поза React | `createTranslator(catalogs: readonly PartCatalog[]): Translator` — синхронний над завантаженим. `loadTranslator(ui: UiLocale, parts): Promise<Translator>` — єдиний шлях поза React (head, листи, CLI). Синхронного peek немає: `head` у router-core асинхронний (`Awaitable`, `route.ts:1372+`), а помилки в ньому роутер ковтає (`load-client.ts:1283`, `load-server.ts:671`), тож «кидати з інваріантом» там — мовчазний дефект |
 | Д5 | Спільний протокол thenable | `packages/simplycms/src/contracts/thenable.ts` (T0, клієнтобезпечний): `type ReactThenable<T>` і `trackThenable<T>(p: Promise<T>): ReactThenable<T>`. Ним користуються `ThemeRegistry` і реєстр каталогів |
 | Д6 | Прогрів перед гідрацією | `prepareStorefrontHydration(): Promise<void>` у `simplycms/storefront-routes/hydration` (новий модуль поруч із `locale`). Вантажить активну тему (як зараз `client.tsx:22-26`); `base` під час гідрації не прогрівається: `head` маршрутів чекає `loadTranslator` у `router.hydrate()`, а корінь без Suspense-межі, призупинившись, лишає SSR-DOM (виміряно Task 4, маркер ідентичності вузла). `client.tsx` лише чекає цю функцію |
-| Д7 | Мова адмінки: читання й запис | Дві операції реєстру: `profiles.getUiLocale` (permission `profile.read`, output `{ uiLocale: string \| null }`) і `profiles.setUiLocale` (permission `profile.update`, input `{ uiLocale: string \| null }`, значення — код наявного пакета або `null`, інакше 400). Обидві — для власного рядка `actor.userId`; актор `system` → відмова. Обидві стають «доступними ролі user» — рядок у знімку `user-accessible-operations` з причиною «власний профіль» |
+| Д7 | Мова адмінки: запис і читання | Одна операція реєстру `profiles.setUiLocale` (permission `profile.update`, input `{ uiLocale: string \| null }`, значення — код наявного пакета з частиною `admin` або `null`, інакше 400; лише оновлює наявний профіль). Читання окремої операції не має: `beforeLoad` `/admin` бере `uiLocale` разом із сесією serverFn `getAdminSession` (§19.6). Операція — для власного рядка `actor.userId`; актор `system` → відмова; стає «доступною ролі user» — рядок у знімку `user-accessible-operations` з причиною «власний профіль» |
 | Д8 | Де вибір мови в адмінці | Селектор у шапці `AdminLayout` поруч із `ThemeToggle`. Окремої сторінки профілю адміністратора немає, і цей блок її не створює |
 | Д9 | Мова листа | `resolveMailUiLocale(recipient: MailRecipient, primary: ContentLocale): UiLocale` (§19.9). Колонок `orders.locale`/`profiles.locale` ще немає (наступний план), тож зараз: лист покупцю бере опубліковану мову чекауту (`requirePublishedTextLocale`); користувачу — `profiles.ui_locale`, інакше основна; магазину — основна; запрошенню — основна. Наступний план лише подасть нові поля в ту саму функцію |
 | Д10 | Гейт складу клієнтського графа (І43) | Правило в наявному Gate C пілота (`scripts/pilot-pack/gate-c.mjs`, `NOT_IN_INITIAL`): у початковому графі вхідного чанка вітрини немає ЖОДНОГО модуля з `packages/simplycms/src/i18n/catalogs/` (усі частини — лише `import()`). Юніт-контроль — `tests/pilot-gate-c.test.ts` |
@@ -120,7 +120,7 @@
 
 **Files:**
 - Create:
-  - `packages/simplycms/src/i18n/ui-locale.ts` (`UiLocale`, `resolveUiLocale`, `toUiLocale`, `hasUiPack`);
+  - `packages/simplycms/src/i18n/ui-locale.ts` (конструктори `resolveUiLocale`, `toUiLocale`; тип `UiLocale` — у `simplycms/contracts`);
   - `packages/simplycms/src/i18n/lookup.ts` (`lookupMessage`);
   - `i18n/__tests__/{resolve-ui-locale.test.ts,lookup.test.ts}`;
   - `storefront-routes/__tests__/content-vs-ui-locale.test.tsx`.
