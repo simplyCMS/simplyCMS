@@ -13,8 +13,8 @@ import type { ThemeManifest } from 'simplycms/themes/types';
 const manifest: ThemeManifest = {
   name: 'solarstore',
   displayName: 'SolarStore Default',
-  version: '0.15.0',
-  engines: { simplycms: '^0.15.0' },
+  version: '0.16.0',
+  engines: { simplycms: '^0.16.0' },
 };
 
 export default manifest;

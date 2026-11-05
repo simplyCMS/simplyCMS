@@ -36,15 +36,17 @@
 токенами, `Idempotency-Key` і OpenAPI; проєкція тексту товару; сторінка товару `/<path>` з hreflang,
 `noindex` і canonical; картка товару в адмінці з вкладками мов.
 
-🔴 **2026-11-05 — М2, блок 1 «осі мови» реалізовано** на `claude/multilingual-wave`, чекає приймання архітектора
+🔴 **2026-11-05 — М2, блок 1 «осі мови» прийнято й влито в `main`** (PR #64, `071d2a03`, без публікації)
 (план [`2026-11-04-multilingual-m2a-language-axes.md`](../superpowers/plans/2026-11-04-multilingual-m2a-language-axes.md),
 спека §19). Що приїхало: мова контенту (`ContentLocale`) і мова інтерфейсу (`UiLocale`) — різні типи з мостом
 `resolveUiLocale`; каталоги ядра — ліниві частини `base`/`admin`/`mail` з реєстром і гейтом Gate C; асинхронний
 `head()`; мова адмінки з `profiles.ui_locale` (baseline змінено — перестворити БД); мова магазину лише з пакета
 (`language_pack_missing`, деградований режим, `doctor`); листи мовою одержувача, форматування за мовою інтерфейсу,
 знос `config.locale`/`VITE_LOCALE`; множина на `Intl.PluralRules`. Канон — [`i18n.md`](../architecture/i18n.md).
-Далі — наступний план М2 (решта сутностей, `orders.locale`, `profiles.locale`, плагіни); хвіст блоку з адресатами —
-[`multilingual-wave-backlog.md`](./multilingual-wave-backlog.md).
+Далі — решта М2 за рішенням власника 2026-11-05 (майстер Р19–Р28, доказова база — research
+[`95`](../superpowers/research/2026-10-13-multilingual/95-m2-rest-execution-options.md)): фундамент зі спільним механізмом
+перекладних сутностей → два паралельні зрізи (довідники й комерція; каталог) → завершення (замовлення, профілі,
+відгуки, плагіни). Хвіст блоку 1 з адресатами — [`multilingual-wave-backlog.md`](./multilingual-wave-backlog.md).
 
 **Передача в наступні віхи (рішення хвилі, з адресатом):**
 
@@ -53,7 +55,8 @@
 - **М2** — переклади системних довідників при `languages.add` з мовного пакета (майстер §3.6).
 - **М2** — двомовний знімок `order_items.name` (`name_default`) і `orders.locale`.
 - **М3** — коди відгуків `notFound`/`alreadySubmitted` → 404/409 при переносі на реєстр операцій.
-- **М3** — решта serverFn адмін-зони на реєстр (легасі-перелік `legacy-admin-server-fns.json`, 120 імен).
+- **М3** — решта serverFn адмін-зони на реєстр (легасі-перелік `legacy-admin-server-fns.json`, 120 імен; ≈57 перекладних
+  сутностей переносить М2 — майстер Р27).
 - **М5** — заміри `completeness`/`reconcile` на стенді 50k × 5 і операція/CLI звірки проєкції.
 - **М5** — `publicNames()` без маніфесту `public/` у збірці → сигнал `doctor` (план doctor, №131).
 - **М5** — `doctor --online` про ролі: членство `app_*` з INHERIT від іншого грантора і роль накату не SUPERUSER (новий пункт, рішення архітектора 2026-10-18).
