@@ -183,6 +183,8 @@ await waitReady('Mailpit', async () => {
 
 const PG_URL = `postgres://postgres@localhost:${PG.port}/postgres`;
 const lines = [
+  // Ім'я контейнера — для `harness-env.mjs`: файл дерева з префіксом звіряється з ним.
+  `HARNESS_PG_CONTAINER=${PG.name}`,
   `PG_HARNESS_URL=${PG_URL}`,
   `S3_ENDPOINT=http://localhost:${GARAGE.port}`,
   `S3_REGION=${GARAGE.region}`,

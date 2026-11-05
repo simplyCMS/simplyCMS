@@ -13,15 +13,30 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseEnv } from 'node:util';
 
-export const HARNESS_CONTAINER = 'simplycms-harness-pg';
+/** Префікс стенду за замовчуванням (дзеркало дефолту `harness-up.mjs`). */
+const DEFAULT_PREFIX = 'simplycms-harness';
 
-function containerRunning() {
+/**
+ * Ім'я PG-контейнера стенду цього дерева. Друге дерево піднімає власний стенд із
+ * `HARNESS_PREFIX`, і його `.env.harness` має перевірятись проти СВОГО контейнера:
+ * літерал дефолтного імені змушував дерево з префіксом ігнорувати власний файл
+ * (дефолтний стенд не запущено) або, гірше, підхоплювати чужий. Тож пріоритет —
+ * ім'я, яке записав `harness:up` у файл, далі префікс з оточення.
+ */
+export function harnessContainerName(env, envFile) {
+  return (
+    envFile?.HARNESS_PG_CONTAINER ??
+    `${env.HARNESS_PREFIX ?? DEFAULT_PREFIX}-pg`
+  );
+}
+
+function containerRunning(name) {
   const r = spawnSync(
     'docker',
-    ['ps', '--filter', `name=^${HARNESS_CONTAINER}$`, '--format', '{{.Names}}'],
+    ['ps', '--filter', `name=^${name}$`, '--format', '{{.Names}}'],
     { encoding: 'utf8' },
   );
-  return !r.error && r.status === 0 && r.stdout.trim() === HARNESS_CONTAINER;
+  return !r.error && r.status === 0 && r.stdout.trim() === name;
 }
 
 /** Ключі S3 стенду: читає лише контрактний набір драйвера s3 (див. `harnessServicesEnv`). */
@@ -36,17 +51,22 @@ export const SERVICE_KEYS = [
 /** Ключі пошти стенду (Mailpit): їх бере лише контрактний набір SMTP (див. `harnessMailEnv`). */
 export const MAIL_KEYS = ['SMTP_URL', 'MAIL_FROM'];
 
-/** Живий файл `.env.harness` або `null` (немає файла чи контейнер не запущено). */
-function liveHarnessFile(root) {
+/**
+ * Живий файл `.env.harness` або `null` (немає файла чи його контейнер не запущено).
+ * `isRunning` — точка підміни для тесту (без Docker).
+ */
+export function liveHarnessFile(root, isRunning = containerRunning) {
   const file = join(root, '.env.harness');
   if (!existsSync(file)) return null;
-  if (!containerRunning()) {
+  const vars = parseEnv(readFileSync(file, 'utf8'));
+  const name = harnessContainerName(process.env, vars);
+  if (!isRunning(name)) {
     console.warn(
-      `[harness] .env.harness ігноровано: контейнер ${HARNESS_CONTAINER} не запущено (pnpm harness:up).`,
+      `[harness] .env.harness ігноровано: контейнер ${name} не запущено (pnpm harness:up).`,
     );
     return null;
   }
-  return parseEnv(readFileSync(file, 'utf8'));
+  return vars;
 }
 
 /**

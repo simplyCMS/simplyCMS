@@ -1,8 +1,12 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { harnessMailEnv } from '../scripts/harness-env.mjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  harnessContainerName,
+  harnessMailEnv,
+  liveHarnessFile,
+} from '../scripts/harness-env.mjs';
 
 // Порожня тека без `.env.harness`: CI-job schema файлу не має, ключі йдуть лише з env.
 const KEYS = [
@@ -48,5 +52,51 @@ describe('harnessMailEnv: ключі CI-job-а доходять без .env.harn
 
   it('без жодного джерела SMTP_URL не з’являється', () => {
     expect(harnessMailEnv(root)).not.toHaveProperty('SMTP_URL');
+  });
+});
+
+describe('harnessContainerName: стенд другого дерева', () => {
+  it('без префікса й файла → дефолтний контейнер', () => {
+    expect(harnessContainerName({}, null)).toBe('simplycms-harness-pg');
+  });
+  it('HARNESS_PREFIX з оточення → контейнер дерева', () => {
+    expect(harnessContainerName({ HARNESS_PREFIX: 'm2b-a' }, null)).toBe(
+      'm2b-a-pg',
+    );
+  });
+  it('імʼя з .env.harness має пріоритет над префіксом', () => {
+    expect(
+      harnessContainerName(
+        { HARNESS_PREFIX: 'інший' },
+        { HARNESS_PG_CONTAINER: 'm2b-a-pg' },
+      ),
+    ).toBe('m2b-a-pg');
+  });
+});
+
+describe('liveHarnessFile: файл дерева звіряється з його контейнером', () => {
+  let root: string;
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'harness-file-'));
+    writeFileSync(
+      join(root, '.env.harness'),
+      'HARNESS_PG_CONTAINER=m2b-a-pg\nPG_HARNESS_URL=postgres://x@localhost:54431/postgres\n',
+    );
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  it('запущено лише m2b-a-pg → файл підхоплено, дефолтний контейнер не питали', () => {
+    const running = vi.fn((name: string) => name === 'm2b-a-pg');
+    expect(liveHarnessFile(root, running)?.PG_HARNESS_URL).toBe(
+      'postgres://x@localhost:54431/postgres',
+    );
+    expect(running.mock.calls).toEqual([['m2b-a-pg']]);
+  });
+
+  it('контейнер дерева не запущено → файл ігноровано', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(liveHarnessFile(root, () => false)).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('m2b-a-pg'));
+    warn.mockRestore();
   });
 });

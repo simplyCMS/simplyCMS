@@ -130,6 +130,23 @@ pnpm db:pull / db:diff
                       # Схема БД — див. docs/architecture/data-layer.md § «Міграції»
 ```
 
+**Друге дерево (паралельна робота двох клонів чи worktree).** Стенд одного дерева з дефолтними
+іменами й портами — `simplycms-harness-{pg,garage,mailpit}`. Друге дерево піднімає ВЛАСНИЙ стенд:
+
+```bash
+HARNESS_PREFIX=m2b-a HARNESS_PG_PORT=54431 HARNESS_GARAGE_PORT=4292 \
+  HARNESS_SMTP_PORT=54425 HARNESS_MAILPIT_PORT=54426 pnpm harness:up
+```
+
+- `harness:up` пише в `.env.harness` дерева і адреси, і `HARNESS_PG_CONTAINER=<prefix>-pg`;
+  `scripts/harness-env.mjs` (`harnessContainerName`) звіряє файл саме з цим контейнером, тож дерево
+  з префіксом бере свій файл, навіть коли дефолтний стенд не запущено, і не бере чужий.
+- Mailpit — власний на дерево: тести пошти читають скриньку за `HARNESS_MAILPIT_URL` свого файла,
+  а спільна скринька змішала б листи двох прогонів.
+- Прибрати стенд: `HARNESS_PREFIX=m2b-a pnpm harness:down` (або `docker rm -fv m2b-a-pg m2b-a-garage m2b-a-mailpit`).
+- Індекс `codebase-memory` прив'язаний до абсолютного шляху: друге дерево індексують окремо
+  (`orient --doctor` друкує команду).
+
 Команд `pnpm test:e2e` і `pnpm pilot:e2e` немає: прапорець `--e2e` падає з поясненням, а не
 мовчки ігнорується. Генератора типів БД (`db:generate-types`, `types:baseline`) теж немає.
 
