@@ -1,11 +1,11 @@
 import { sql, type SQL } from 'drizzle-orm';
 import type { ActorDb } from 'simplycms/db';
 import { textArray } from './shared';
-import { PATH_KINDS, TOKEN_KINDS, raw } from './targets';
+import { pathKindOf, raw, tokenKindOf } from './targets';
 
 // Колонки видів і `token_kind` — з реєстру видів цілей; текст запитів не змінюється.
-const [P] = PATH_KINDS;
-const [T] = TOKEN_KINDS;
+const P = pathKindOf('product');
+const T = tokenKindOf('modification');
 const pCol = raw(P.column);
 const tCol = raw(T.column);
 const tKind = raw(`'${T.tokenKind}'`);

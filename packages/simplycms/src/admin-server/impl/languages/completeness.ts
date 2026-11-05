@@ -2,17 +2,24 @@ import { sql } from 'drizzle-orm';
 import { localeProjectionMismatches } from 'simplycms/catalog-projection';
 import { ValidationError } from 'simplycms/contracts/domain-errors';
 import type { ActorDb } from 'simplycms/db';
-import { pathSegmentOf } from 'simplycms/addressing';
+import {
+  pathSegmentOf,
+  type AddressTarget,
+  type TokenTarget,
+} from 'simplycms/addressing';
+import { ADDRESS_KIND } from 'simplycms/domain';
 
 /** Етап, якого бракує товару: адреса, токен модифікації чи рядок проєкції тексту. */
 export type IncompleteStage = 'path' | 'token' | 'projection';
 
-/**
- * Чого бракує: вид цілі з реєстру `addressing` (`kind`), id сутності в просторі сегмента шляху
- * відмови (для токена модифікації — id товару-області) і етап.
- */
+/** Чого бракує: вид цілі з реєстру `addressing` (невідомий вид — помилка типу), id і етап. */
 export interface IncompleteItem {
-  readonly kind: string;
+  readonly kind: AddressTarget['kind'] | TokenTarget['kind'];
+  /**
+   * `id` належить простору `pathSegment` виду: це id сутності, чия картка усуває прогалину, а не
+   * обов'язково id відсутнього рядка (Д13). Напр. modification → `pathSegment` 'products', id —
+   * id товару. Правило не товарне: майбутній вид (опція) матиме свій `pathSegment` і свій id.
+   */
   readonly id: string;
   readonly stage: IncompleteStage;
 }
@@ -102,12 +109,13 @@ export async function completeness(
     missingProjection: projection.count,
     incomplete: sample([
       ...examples.rows.map((r) => ({
-        kind: r.stage === 'path' ? 'product' : 'modification',
+        kind:
+          r.stage === 'path' ? ADDRESS_KIND.product : ADDRESS_KIND.modification,
         id: r.id,
         stage: r.stage,
       })),
       ...projection.sample.map((k) => ({
-        kind: 'product',
+        kind: ADDRESS_KIND.product,
         id: k.productId,
         stage: 'projection' as const,
       })),

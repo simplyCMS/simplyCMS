@@ -1,9 +1,16 @@
 import { sql, type SQL } from 'drizzle-orm';
+import { ADDRESS_KIND } from 'simplycms/domain';
 
 /**
  * Реєстр видів цілей адрес (Р22): єдине місце, де вид сутності зв'язано з колонкою реєстру,
  * полем Drizzle, ланцюгом замків і сегментом шляху відмови. Новий вид — рядок тут; SQL і
  * типи адрес читають його, а не повторюють літерали (`product_id` більше не розсіяний по модулях).
+ *
+ * 🔴 `kind` унікальний ПО ОБОХ реєстрах разом: сегмент шляху відмови `language_incomplete`
+ * (`pathSegmentOf`) шукається за `kind` у `PATH_KINDS` і `TOKEN_KINDS` разом.
+ * 🔴 Поки реєстр ітерують лише `owners.ts` (`currentPathOwners`) і `pathSegmentOf`; НЕ ітерують
+ * `copy.ts`, `copy-candidates.ts` (явно `pathKindOf('product')`/`tokenKindOf('modification')`), `fill.ts` і `completeness.ts` (жорсткі
+ * колонки товару/модифікації) — зріз Б мусить провести їх реєстром (охоронець у `targets.test.ts`).
  */
 export interface PathKindSpec {
   readonly kind: string;
@@ -32,7 +39,7 @@ export interface TokenKindSpec {
 
 export const PATH_KINDS = [
   {
-    kind: 'product',
+    kind: ADDRESS_KIND.product,
     column: 'product_id',
     field: 'productId',
     rootTable: 'products',
@@ -43,8 +50,8 @@ export const PATH_KINDS = [
 
 export const TOKEN_KINDS = [
   {
-    kind: 'modification',
-    tokenKind: 'modification',
+    kind: ADDRESS_KIND.modification,
+    tokenKind: ADDRESS_KIND.modification,
     column: 'modification_id',
     field: 'modificationId',
     scopeColumn: 'scope_id',

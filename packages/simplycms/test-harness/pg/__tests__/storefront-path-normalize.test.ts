@@ -7,6 +7,7 @@ import {
   productsSetModificationToken,
   productsSetPath,
 } from 'simplycms/admin-server/impl';
+import { PATH_KINDS } from 'simplycms/addressing';
 import {
   loadProduct,
   loadSitemapData,
@@ -160,6 +161,13 @@ describe('адреса товару: реєстр, нормалізація і �
     expect(entitySearch(defaultParseSearch('?mod=%221e5%22'))).toEqual({
       mod: '1e5',
     });
+  });
+
+  it('резолвер віддає вид і id власника адреси: вид збігається з реєстром видів addressing', async () => {
+    const { id, paths } = await translated();
+    await setPath(id, 'uk', 'owner-now');
+    const hit = await lookupProductAddress('uk', paths.uk!, null);
+    expect(hit).toMatchObject({ kind: PATH_KINDS[0].kind, id });
   });
 
   it('видалений товар: історії немає → нормалізація мовчить, сторінка null (404)', async () => {

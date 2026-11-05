@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { languages, products, slugTokens, urlPaths } from 'simplycms/schema';
+import { ADDRESS_KIND } from 'simplycms/domain';
 import { withStorefrontDb, type ActorDb } from './db';
 import { pageVisible } from './product-visibility';
 
@@ -60,9 +61,7 @@ export async function resolveProductAddress(
     .limit(1);
   if (!hit || hit.productId === null) return null;
   return {
-    // Тір-зона: storefront не імпортує `addressing` (T2 → T2 угору заборонено), тож вид — літерал,
-    // що збігається з записом реєстру видів; збіг доводить `storefront-path-normalize.test.ts`.
-    kind: 'product',
+    kind: ADDRESS_KIND.product,
     id: hit.productId,
     path: hit.path,
     mod:

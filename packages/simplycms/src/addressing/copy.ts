@@ -12,10 +12,11 @@ import {
 } from './shared';
 import { keyShare, pathCandidates, tokenCandidates } from './copy-candidates';
 import { publicNames } from './public-names';
-import { PATH_KINDS, TOKEN_KINDS, raw } from './targets';
+import { pathKindOf, raw, tokenKindOf } from './targets';
 
-const [P] = PATH_KINDS;
-const [T] = TOKEN_KINDS;
+// Лише товар і модифікація (не ітерація реєстру): зріз Б проведе copy* реєстром.
+const P = pathKindOf('product');
+const T = tokenKindOf('modification');
 
 // Пакетне заповнення нової мови копіями поточних адрес/токенів основної (М1,
 // Review Focus 2). Ідемпотентне: вибираються лише сутності БЕЗ поточного
