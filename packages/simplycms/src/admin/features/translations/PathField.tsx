@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
@@ -51,7 +51,8 @@ export function PathField({
   >(command, {
     onConflict,
   });
-  const id = `product-path-${locale}`;
+  // useId: сторінка й діалог можуть мати поле тієї самої мови одночасно.
+  const id = `${useId()}-path-${locale}`;
 
   const save = async () => {
     setError(null);
