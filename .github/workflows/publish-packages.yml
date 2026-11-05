@@ -7,27 +7,22 @@ name: Publish Packages
 #     немає в реєстрі. `pnpm publish -r` робить цю перевірку сам
 #     (`isAlreadyPublished`), тож merge без бампа версії — no-op для тих, хто
 #     ВЖЕ в реєстрі; пакет, якого там немає, мерж публікує;
-#     🔴 саме тому `NPM_TOKEN` мусить бути `All Packages`, а не scope
-#     `@simplycms`: unscoped-імена (`create-simplycms-store`, надалі
-#     `simplycms` CLI) під scope не підпадають — docs/architecture/release-process.md;
-#   • версія у всіх пакетів СИНХРОННА, бампається вручну: `pnpm version:packages 0.2.0`
-#     (див. `scripts/version-packages.mjs`), далі звичайний PR у main;
+#   • версія у всіх пакетів СИНХРОННА, бампається `pnpm release X.Y.Z`,
+#     далі звичайний PR у main;
 #   • `workflow_dispatch` — ручний ретрай, якщо прогін упав на середині
 #     (частково опубліковані пакети другий раз не публікуються);
 #   • після УСПІШНОЇ публікації CI ставить анотований тег `vX.Y.Z` на
 #     поточний SHA і пушить його в origin — тег означає «опубліковано», а не
-#     «підготовлено» (версію бере з манифеста, не з імені гілки). Крок
-#     ідемпотентний: якщо тег уже є в remote (ретрай `workflow_dispatch` на
-#     вже опубліковану версію), він лише логує це й виходить — див.
-#     docs/architecture/release-process.md, розділ «Теги релізів».
+#     «підготовлено». Крок ідемпотентний — docs/architecture/release-process.md,
+#     розділ «Теги релізів».
 #
-# Потрібен secret `NPM_TOKEN` — **Granular Access Token із увімкненим
-# «Bypass 2FA»**, scope @simplycms, permission read+write.
-# 🔴 Токен без bypass автентифікується успішно, але `PUT` пакета npm відхиляє:
-#   403 … Two-factor authentication or granular access token with bypass 2fa
-#   enabled is required to publish packages.
-# Перевірено падінням першого релізу (2026-08-03) — деталі й решта типових
-# помилок у docs/architecture/release-process.md.
+# Авторизація — npm Trusted Publishing (OIDC, з 2026-11-05): секрету-токена
+# немає. pnpm обмінює OIDC-токен GitHub Actions (`id-token: write`) на право
+# публікації й сам додає provenance. Trusted publisher налаштований на npmjs
+# для КОЖНОГО з 5 пакетів окремо й прив'язаний до цього файлу воркфлоу;
+# provenance звіряє `repository.url` маніфесту з цим репо. Нового пакета
+# (ще не в реєстрі) так не опублікувати — його першу версію публікує власник
+# руками (release-process.md, «Перша публікація нового пакета»).
 
 on:
   push:
@@ -39,12 +34,17 @@ jobs:
     name: Publish to npmjs
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # 🔴 Мінімально необхідний обсяг: лише `contents: write`, і лише заради
-    # push тега після публікації (крок «Tag release» нижче). Дефолт репо —
-    # read-only (permissions блоку раніше не було), тож без цього push тега
-    # падав би з 403 ще до першого релізу з тегом.
+    # Trusted publisher прив'язаний до файлу воркфлоу, а не до гілки: ручний
+    # запуск (`workflow_dispatch`) з іншої гілки опублікував би неперевірений код.
+    if: github.ref == 'refs/heads/main'
+    # 🔴 Мінімально необхідний обсяг: `contents: write` — лише заради push тега
+    # після публікації (крок «Tag release»); `id-token: write` — OIDC-токен для
+    # Trusted Publishing. Без нього pnpm пише «Skipped OIDC:
+    # ERR_PNPM_ID_TOKEN_GITHUB_WORKFLOW_INCORRECT_PERMISSIONS» і npm відповідає
+    # 404 на PUT (спіймано на релізі 0.16.0, 2026-11-05).
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -55,20 +55,9 @@ jobs:
         with:
           node-version: 24
           cache: 'pnpm'
-          # 🔴 Без `registry-url` setup-node не створює `.npmrc`, і
-          # `NODE_AUTH_TOKEN` мовчки ігнорується → 401 при публікації.
+          # 🔴 Без `registry-url` setup-node не створює `.npmrc` з реєстром
+          # публікації → 401/ENEEDAUTH.
           registry-url: 'https://registry.npmjs.org'
-
-      # Явна перевірка перед довгою збіркою: інакше прогін падає аж на кроці
-      # публікації з невиразним 401/ENEEDAUTH.
-      - name: Перевірити наявність NPM_TOKEN
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::Немає secret NPM_TOKEN. Створи на npmjs Granular Access Token: Packages and scopes → All Packages, Read and write, Bypass 2FA. Саме All Packages — scope @simplycms не покриває unscoped-пакети (create-simplycms-store). Поклади в Settings → Secrets and variables → Actions як NPM_TOKEN."
-            exit 1
-          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -82,6 +71,8 @@ jobs:
       - name: Tarball parity gate
         run: pnpm run test:packaging
 
+      # Provenance під Trusted Publishing pnpm додає сам (публічний пакет із
+      # публічного репо), окремий `--provenance` не потрібен.
       # `-r` публікує рекурсивно й пропускає версії, які вже в реєстрі, тож
       # merge без бампа — no-op. `--access public`: scoped-пакети npm за
       # замовчуванням робить приватними, а це платний план.
@@ -93,8 +84,6 @@ jobs:
           tag="$(node scripts/release/dist-tag.mjs --print)"
           case "$tag" in latest|next) ;; *) echo "::error::dist-tag: '$tag'"; exit 1;; esac
           pnpm publish -r --access public --no-git-checks --tag "$tag"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Тег ставимо ЛИШЕ після успішної публікації (цей крок не запуститься,
       # якщо впав крок Publish — дефолтна поведінка GitHub Actions), тож
