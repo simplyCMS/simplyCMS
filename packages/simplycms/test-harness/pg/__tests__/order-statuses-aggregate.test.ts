@@ -20,7 +20,9 @@ import {
   orderStatusesSetDefault,
 } from 'simplycms/admin-server/impl';
 import { sourceFieldHash } from 'simplycms/translations';
+import { sql } from 'drizzle-orm';
 import { useAddressingDb } from './fixtures/addressing-db';
+import { hold, until, waitForBlockedTree } from './fixtures/lock-holders';
 import { exec } from './fixtures/product-aggregate';
 
 type Texts = Record<string, Record<string, string | null>>;
@@ -252,6 +254,87 @@ describe('агрегат «статус замовлення» (М2б, Р19)', (
     expect(
       await db.q(`select id from public.order_statuses where is_default`),
     ).toHaveLength(1);
+  });
+
+  it('reorder: сусід змінився між пошуком і замком → VersionMismatchError (412), без свопу', async () => {
+    const x1 = await create({ uk: { name: 'Сусід 1' } });
+    const x2 = await create({ uk: { name: 'Сусід 2' } });
+    await create({ uk: { name: 'Сусід 3' } });
+    // T0 тримає X2 і після відпускання пересуває його за X3: сусід X1 стає X3, версія X1 та
+    // сама, тож зловити це може лише перевірка суміжності під замком.
+    const t0 = hold(
+      db,
+      (d) =>
+        d.execute(
+          sql`select 1 from public.order_statuses where id = ${x2.id} for update`,
+        ),
+      (d) =>
+        d.execute(
+          sql`update public.order_statuses set sort_order = sort_order + 10 where id = ${x2.id}`,
+        ),
+    );
+    await until('T0 тримає X2', t0.acquired);
+    const run = rejects(
+      exec(orderStatusesReorder, {
+        id: x1.id,
+        direction: 'down',
+        expectedVersion: x1.version,
+      }),
+    );
+    await waitForBlockedTree(db, t0, 1, { releaseOnFail: true });
+    t0.release();
+    await t0.done;
+    expect(await run).toBeInstanceOf(VersionMismatchError);
+    expect(await row(x1.id)).toMatchObject({ version: x1.version });
+  });
+
+  it('setDefault: дефолт змінився між читанням набору й замком → 409 concurrent_change, рядок поза замком не пишеться', async () => {
+    const low = `00000000-${randomUUID().slice(9)}`;
+    const old = `ffffffff-${randomUUID().slice(9)}`;
+    const fresh = randomUUID();
+    await create({ uk: { name: 'Нижній' } }, { id: low });
+    const d = await create({ uk: { name: 'Старий дефолт' } }, { id: old });
+    await exec(orderStatusesSetDefault, {
+      id: old,
+      expectedVersion: d.version,
+    });
+    const target = await create({ uk: { name: 'Ціль' } });
+    // T0 тримає найнижчий id: setDefault прочитав набір, але стоїть на першому замку.
+    const t0 = hold(db, (x) =>
+      x.execute(
+        sql`select 1 from public.order_statuses where id = ${low} for update`,
+      ),
+    );
+    await until('T0 тримає нижній рядок', t0.acquired);
+    const run = rejects(
+      exec(orderStatusesSetDefault, {
+        id: target.id,
+        expectedVersion: target.version,
+      }),
+    );
+    await waitForBlockedTree(db, t0, 1, { releaseOnFail: true });
+    // Тим часом новий статус стає дефолтним: його немає в наборі, що читав setDefault.
+    // Власником БД, БЕЗ замка `languages-set` (`db.tx` брав би його ексклюзивно й став би за
+    // спільним замком setDefault): один `do` = одна транзакція, тригер джерела бачить пару.
+    await db.q(`do $$ begin
+      insert into public.order_statuses (id, code) values ('${fresh}', 'n-${fresh}');
+      insert into public.order_status_translations (status_id, locale, name)
+        values ('${fresh}', (select code from public.languages where is_default), 'Новий дефолт');
+    end $$`);
+    await db.q(`do $$ begin
+      update public.order_statuses set is_default = false where id = '${old}';
+      update public.order_statuses set is_default = true where id = '${fresh}';
+    end $$`);
+    t0.release();
+    await t0.done;
+    expect(await run).toMatchObject({
+      kind: 'state',
+      constraint: 'concurrent_change',
+    });
+    expect(
+      await db.q(`select id from public.order_statuses where is_default`),
+    ).toEqual([{ id: fresh }]);
+    expect((await row(target.id)).version).toBe(target.version);
   });
 
   it('remove статусу з посиланням із orders → 409 reference', async () => {
