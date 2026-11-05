@@ -65,12 +65,16 @@
 
 ### BREAKING
 
-- **Статуси замовлень (Р19):** шість легасі-serverFn `insertOrderStatuses`, `updateOrderStatuses`,
-  `removeOrderStatuses` (і узагальнений запис ресурсу) замінено операціями `order-statuses.*`:
-  `createOrderStatus`, `saveOrderStatus`, `saveOrderStatusTranslation`, `deleteOrderStatusTranslation`,
-  `removeOrderStatus` (по одному статусу з `expectedVersion`, а не пакетом), `setDefaultOrderStatus` і
-  `reorderOrderStatus` тепер вимагають `expectedVersion`; нові `getOrderStatus`. `listOrderStatuses`
-  віддає рядок read-model (`name` основної мови, `version`, без `createdAt`).
+- **Статуси замовлень (Р19):** шість легасі-serverFn знесено: `insertOrderStatuses`, `updateOrderStatuses`,
+  `removeOrderStatuses` (пакетні, через узагальнений запис ресурсу), а також `listOrderStatuses`,
+  `setDefaultOrderStatus` і `reorderOrderStatus` переписано на операції `order-statuses.*` з новими формами:
+  - нові `getOrderStatus`, `createOrderStatus`, `saveOrderStatus`, `saveOrderStatusTranslation`,
+    `deleteOrderStatusTranslation`, `removeOrderStatus` (по одному статусу, `expectedVersion`);
+  - `setDefaultOrderStatus` вимагає `expectedVersion` і повертає `{ version }` (було: рядок статусу);
+  - `reorderOrderStatus` вимагає `expectedVersion` і повертає `{ version, swapped: boolean }` (було:
+    `{ swapped: Row[] }`); паралельна зміна сусіда — 412;
+  - `listOrderStatuses` віддає рядок read-model (`name` основної мови, `version`, без `createdAt`).
+  Ресурс `orderStatusesOps` із запису знято й із барелю `impl` не експортується.
 - **`order_statuses.name` → `order_status_translations`:** колонки `name` у `order_statuses` немає, додано
   `version`. Тип `OrderStatus` (`simplycms/schema/types`) — рядок списку (`name` основної мови, без `createdAt`).
   **Перестворити БД.**
