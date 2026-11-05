@@ -67,7 +67,7 @@
   (самі беруть СПІЛЬНИЙ `languages-set` і читають мови `draft`/`published` після нього, Review
   Focus 1), `setExplicitPath`/`setExplicitToken` (явна зміна; власна історична адреса знову
   поточна, чужа → 409, І18), `copyPathsForLocale`/`copyTokensForLocale` (пакетне заповнення нової
-  мови), `resolvePath`/`resolveToken`/`currentPaths`, `publicNames` (верхньорівневі імена
+  мови), реєстр видів цілей `PATH_KINDS`/`TOKEN_KINDS` (`targets.ts`; вид і колонку читають шляхи, токени, копіювання, власники)/`currentPaths`, `publicNames` (верхньорівневі імена
   `public/` збірки, яким адреса дорівнювати не може).
 - Один генератор slug для обох реєстрів (І22) — `simplycms/domain/slugs`: `slugify` (таблиця
   мовного пакета; `null` для письма без таблиці), `allocateSlug` (`base`, `base-2`…),
