@@ -881,10 +881,12 @@ email в іншому регістрі — не конфлікт, записує
 реєстр операцій, виконавець і HTTP API — [`operations-api.md`](./operations-api.md). Тут — те, що
 стосується транзакцій і замків.
 
-- 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockAggregateRoots`** — першим кроком
-  кожної команди товару (`lockProduct`); `products.remove` — `FOR UPDATE` (`lockProductForRemove`).
-  Рядкові замки `products`, сильніші за `KEY SHARE`, бере ЛИШЕ цей хелпер (сканер
-  `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
+- 🔴 **Корінь агрегата береться `FOR NO KEY UPDATE` через `lockRoots`**
+  (`admin-server/impl/translatable/roots.ts`, єдиний носій) — першим кроком кожної команди
+  агрегата; товарний `lockAggregateRoots` (`lockProduct`) лише делегує йому, а статуси
+  замовлень беруть `lockRoots` напряму; `products.remove` — `FOR UPDATE` (`lockProductForRemove`).
+  Рядкові замки `products` і `order_statuses`, сильніші за `KEY SHARE`, бере ЛИШЕ `lockRoots`
+  (сканер `aggregate-lock-order.test.ts`), і він сам бере спільний `languages-set` ПЕРЕД рядком кореня.
   Саме NO KEY UPDATE, а не UPDATE: `FOR UPDATE` кореня блокував би FK-вставки інших транзакцій
   (KEY SHARE: fill, дочірні рядки інших записувачів) на весь час адмінської команди. Цикл 40P01
   «команда <-> `languages.setStatus`» не причина: він неможливий за побудовою, бо команда бере
@@ -892,7 +894,7 @@ email в іншому регістрі — не конфлікт, записує
 - **Ієрархія замків** — JSDoc `lock-order.ts` (`admin-server/impl/products/aggregate`), п'ять пунктів з
   УСІМА носіями кожного; де носіїв кілька, вони надлишкові (послаблення одного гарантію не знімає), тож
   мутація-доказ послаблює всі разом:
-  (1) `languages-set` → корені за id → дочірні; носій порядку — лише `lockAggregateRoots`; спільний set на
+  (1) `languages-set` → корені за id → дочірні; носій порядку — лише `lockRoots` (товар — через `lockAggregateRoots`); спільний set на
   шляху створення надлишково беруть ще генератори адрес і токенів (`createPathsForEntity`/
   `createTokensForEntity`), але викликачі (`products.create`, фікстура `inLockedBlock`) беруть його раніше —
   мутація лише цього носія зелена.
