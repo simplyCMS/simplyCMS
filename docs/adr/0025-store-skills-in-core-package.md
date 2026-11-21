@@ -11,8 +11,8 @@ Spec: `docs/architecture/cli.md` §3.3
 Скіли живуть у пакеті `simplycms`: `packages/simplycms/skills/<name>/`. Магазин отримує їх прямими симлінками `.agents/skills/<name>` і `.claude/skills/<name>` на `node_modules/simplycms/skills/<name>`. Копій і ланцюжка симлінків немає. Окремий репо `simplyCMS/agent-skills` не створюється. Канал skills.sh не використовується. Монорепо дотримується того самого правила.
 
 ## Why
-- Рішення ПК8–ПК10: спека «package-consolidation-design», розділ «2. Рішення (ПК1–ПК12» (знесено 2026-11-21, текст — `git show 6daa49bc`).
-- Причина відхилення каналу: друге джерело правди, розсинхрон версії скіла з ядром, третій канал доставки поза П1–П5: спека «package-consolidation-design», розділ «Додаток A. Довідка: жива проба skills.sh (2026-08-19» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Рішення ПК8–ПК10: спека «package-consolidation-design», розділ «2. Рішення (ПК1–ПК12» (знесено 2026-11-21, текст — `git show a967ab1e`).
+- Причина відхилення каналу: друге джерело правди, розсинхрон версії скіла з ядром, третій канал доставки поза П1–П5: спека «package-consolidation-design», розділ «Додаток A. Довідка: жива проба skills.sh (2026-08-19» (знесено 2026-11-21, текст — `git show a967ab1e`).
 - Монорепо: `.agents/skills/*` і `.claude/skills/*` — симлінки на `../../packages/simplycms/skills/<name>`.
 - Тест стереже форму: `tests/monorepo-skill-links.test.ts` (коміт f293b292).
 - Канон: `docs/architecture/repository-layout.md` § «Структура репозиторію».

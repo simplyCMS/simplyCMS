@@ -528,7 +528,7 @@
 
 **Код і документи SimplyCMS (знімок `cd2d18d5`):** `packages/simplycms/src/admin-server/{index.ts,impl/run.ts,impl/resource.ts,impl/resource-schemas.ts,impl/resource-write.ts,impl/resource-write-ops.ts,impl/subset-schema.ts,impl/validation.ts,impl/errors.ts,impl/core-actor.ts}`,
 `src/auth/{authz.ts,authz-request.ts,session.ts,instance.ts}`, `csrf.ts` у теці runtime, `src/contracts/{entities.ts,ports/index.ts}`, `index.ts` у `plugin-sdk/server`, `src/schema/{schema.ts,README.md}`, `product-path.ts` у теці domain,
-`docs/architecture/data-layer.md` §5, §6, `docs/architecture/rendering-and-routing.md`, `docs/architecture/plugins.md`, `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md`, `docs/superpowers/specs/2026-08-25-storefront-search-design.md`, спеки «shop-agent-toolkit-design» і «commerce-providers-design» (ADR-0040, `docs/architecture/cli.md` §3; знесено 2026-11-21, текст — `git show 6daa49bc`),
+`docs/architecture/data-layer.md` §5, §6, `docs/architecture/rendering-and-routing.md`, `docs/architecture/plugins.md`, `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md`, `docs/superpowers/specs/2026-08-25-storefront-search-design.md`, спеки «shop-agent-toolkit-design» і «commerce-providers-design» (ADR-0040, `docs/architecture/cli.md` §3; знесено 2026-11-21, текст — `git show a967ab1e`),
 `docs/superpowers/research/2026-10-13-multilingual/{00-draft-pattern-A.md,01-owner-requirements.md,10-name-matching-sweep.md}`.
 
 **commercetools:** https://docs.commercetools.com/api/types (LocalizedString) · https://docs.commercetools.com/api/general-concepts (key, version, limit/offset, Import API) ·

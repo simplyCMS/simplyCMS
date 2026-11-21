@@ -322,7 +322,7 @@ URL/SEO:
 - Дві копії запису в адмінці: `admin-data` (оптимістичні колекції з write-back) і `admin-server` (операції). Додавання мови в `products` означає зміну колекції,
   handlers, `toProductPatch`, форми, loader-ів, sitemap, head, mail, дашборду (пошуку немає).
 - Поряд лежать чернетки: чернетки content-multilingual-draft і content-multilingual-base (локальні файли власника) (патерн A) — не читав, не входить у скоуп.
-- Існуюча спека «Онбординг і супровід магазину агентом» (спека «shop-agent-toolkit-design»: `docs/architecture/cli.md` §3, скіли `packages/simplycms/skills/simplycms-*`; знесено 2026-11-21, текст — `git show 6daa49bc`) — про CLI/скіли, не про API даних.
+- Існуюча спека «Онбординг і супровід магазину агентом» (спека «shop-agent-toolkit-design»: `docs/architecture/cli.md` §3, скіли `packages/simplycms/skills/simplycms-*`; знесено 2026-11-21, текст — `git show a967ab1e`) — про CLI/скіли, не про API даних.
 
 ## 10. Покриття доказів
 Код-шар (cbm) для цього знімка не використовувався як доказ «хто кличе»: покриття барелів `simplycms/*` недостатнє, висновки з імпортів/викликів — `grep`/`Read`.

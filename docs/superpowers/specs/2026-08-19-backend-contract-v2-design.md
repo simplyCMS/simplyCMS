@@ -201,7 +201,7 @@ Drizzle як джерело правди схеми, `db:diff`-конвеєр м
    `@simplycms/supabase` → напр. `@simplycms/db` + `@simplycms/auth`;
    `data-supabase` → `data-pg`) — рішення плану, спека фіксує контракти.
    (Амендмент 2026-08-20: розкладку зафіксовано спекою
-   «package-consolidation-design» (ADR-0023…0025; знесено 2026-11-21, текст — `git show 6daa49bc`),
+   «package-consolidation-design» (ADR-0023…0025; знесено 2026-11-21, текст — `git show a967ab1e`),
    ПК4: після треку К0 це СУБШЛЯХИ пакета simplycms — simplycms/db,
    simplycms/auth, simplycms/data-pg; нові пакети не створюються.)
    **Додано 2026-08-20 (§8):** (а) 🔴 **спайк RLS-шима — перший крок

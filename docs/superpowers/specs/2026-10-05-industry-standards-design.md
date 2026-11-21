@@ -7,7 +7,7 @@
 > Рішення дописуються в цей файл у міру закриття. Імплементаційного плану ще немає.
 >
 > **Попередній трек** (оновлення, безпека, тулінг, фундамент даних адмінки) —
-> спека «deps-security-tooling-design» (ADR-0033…0036, `docs/architecture/upstream-workarounds.md`; знесено 2026-11-21, текст — `git show 6daa49bc`);
+> спека «deps-security-tooling-design» (ADR-0033…0036, `docs/architecture/upstream-workarounds.md`; знесено 2026-11-21, текст — `git show a967ab1e`);
 > його незакриті пункти до К3-Е6а (санітизація HTML — тема 9 того треку) не дублюються тут.
 >
 > **Мірило — індустрія React/TypeScript/Vite (жовтень 2026), а не окремий референсний

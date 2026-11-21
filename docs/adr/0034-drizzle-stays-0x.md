@@ -15,9 +15,9 @@ Drizzle 1.0 перебуває в RC з 2026-04-30. Лінія 0.45 майже �
 - Баг drizzle-kit (прибраний `using` при наявному `withCheck`) записано в реєстр обхідних шляхів.
 
 ## Why
-- Вигоди RC для нас близькі до нуля: DZOD-1 і DRZ-1 не лікуються (спека «deps-security-tooling-design», розділ «7в · Drizzle 1.0 — чекати stable ✅»; знесено 2026-11-21, текст — `git show 6daa49bc`).
-- `scripts/db-diff.mjs` на 1.0 мовчки бреше: друкує «змін немає», хоча міграцію створено (спека «deps-security-tooling-design», розділ «Спайк Drizzle 1.0 RC (2026-10-04, тимчасовий worktree, код не збережено»; знесено 2026-11-21, текст — `git show 6daa49bc`).
-- Прибрати `using`, лишивши `withCheck`, некоректно на обох версіях. Захист — `rls-parity.test.ts` (спека «deps-security-tooling-design», розділ «Спайк Drizzle 1.0 RC (2026-10-04, тимчасовий worktree, код не збережено»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Вигоди RC для нас близькі до нуля: DZOD-1 і DRZ-1 не лікуються (спека «deps-security-tooling-design», розділ «7в · Drizzle 1.0 — чекати stable ✅»; знесено 2026-11-21, текст — `git show a967ab1e`).
+- `scripts/db-diff.mjs` на 1.0 мовчки бреше: друкує «змін немає», хоча міграцію створено (спека «deps-security-tooling-design», розділ «Спайк Drizzle 1.0 RC (2026-10-04, тимчасовий worktree, код не збережено»; знесено 2026-11-21, текст — `git show a967ab1e`).
+- Прибрати `using`, лишивши `withCheck`, некоректно на обох версіях. Захист — `rls-parity.test.ts` (спека «deps-security-tooling-design», розділ «Спайк Drizzle 1.0 RC (2026-10-04, тимчасовий worktree, код не збережено»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Стан у коді: `package.json` (`"drizzle-orm": "0.45.4"`), `packages/simplycms/package.json` (`^0.45.0`).
 
 ## Rejected

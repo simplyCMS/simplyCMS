@@ -45,7 +45,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 > сторінок вітрини (Home, Catalog, CatalogSection, ProductDetail, Cart)
 > через типізовані view-model-и під жорстким conformance-гейтом. D2 чинне
 > без змін. Повна спека ревізії —
-> «theme-contract-v3-views-design» (ADR-0013, ADR-0014, `docs/architecture/themes.md`; знесено 2026-11-21, текст — `git show 6daa49bc`);
+> «theme-contract-v3-views-design» (ADR-0013, ADR-0014, `docs/architecture/themes.md`; знесено 2026-11-21, текст — `git show a967ab1e`);
 > згадки D3/D4 нижче по тексту читати з урахуванням цієї ревізії.
 
 > 🔴 **Ревізія 2026-08-19 (рішення власника): D7 еволюціонував у D7′ —
@@ -64,7 +64,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 
 > 🔴 **Ревізія 2026-08-20 (рішення власника): пакетна топологія
 > ревізується.** Спека
-> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show 6daa49bc`)
+> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show a967ab1e`)
 > запускає окремий механічний трек К0 (виконується ПЕРЕД треком V2) —
 > консолідація пакетів **26 → 5**: unscoped `simplycms` (флагман) +
 > сателіти `@simplycms/cli`, `create-simplycms-store`,
@@ -97,7 +97,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 ## 4. Цільова пакетна архітектура
 
 > 🔴 **Ревізія 2026-08-20:** розкладка нижче ревізована спекою
-> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show 6daa49bc`)
+> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show a967ab1e`)
 > — консолідація 26 → 5 (трек К0 перед V2). Таблицю НЕ переписано (лишається
 > історичним фактом); чинний напрям пакетної топології — у спеці К0.
 
