@@ -1,4 +1,4 @@
-// Е3-13: злиття рядків-на-опцію (multiselect) в один запис view-моделі.
+// Злиття рядків-на-опцію (multiselect) в один запис view-моделі.
 import { describe, expect, it } from 'vitest';
 import type { ProductPropertyValueViewModel } from 'simplycms/contracts/views';
 import { mergePropertyValues } from '../merge-property-values';

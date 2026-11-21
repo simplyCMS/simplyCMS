@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createAuth } from '../instance';
 import type { UserProvisionPlan } from '../hooks';
 
-// Інстанс Better Auth на memory-адаптері (Task 7, В2-К1а).
+// Інстанс Better Auth на memory-адаптері.
 //
 // 🔴 Це і є DoD спеки «BA тестується без Docker» — фактом, а не обіцянкою:
 // увесь життєвий цикл сесії (реєстрація → cookie → читання → вихід) тут
@@ -33,7 +33,7 @@ function setup() {
     provisionUser: async (plan) => {
       provisioned.push(plan);
     },
-    // Без підміни хук бану пішов би в реальну БД (Е6г-13).
+    // Без підміни хук бану пішов би в реальну БД.
     isUserBanned: async () => false,
     ensureProvisioned: async () => undefined,
   });

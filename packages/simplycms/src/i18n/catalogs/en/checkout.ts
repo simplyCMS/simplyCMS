@@ -9,7 +9,7 @@ export const messages = {
   'checkout.failed': 'Could not place the order',
   'checkout.retry': 'Please try again',
 
-  // Domain rejections on checkout — code from the server, text here (К2-Е0)
+  // Domain rejections on checkout — code from the server, text here
   'checkout.rejected.shipping_unavailable':
     'Selected shipping method is unavailable — pick another',
   'checkout.rejected.pickup_point_invalid':

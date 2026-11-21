@@ -1,5 +1,5 @@
 /**
- * Гард demo-датасету діагностичного стенда (задача §2 блок C, план Р8).
+ * Гард demo-датасету діагностичного стенда.
  *
  * 🔴 Що саме доводиться: (а) колонка поза allowlist-ом у вивід НЕ потрапляє;
  * (б) заборонених таблиць (профілі/замовлення/персональні дані) у виводі
@@ -223,7 +223,7 @@ describe('dev-stand: дедуп — за id, а не за природним к�
   const sql = generateSeedSql(SAMPLE_DATASET);
 
   it('дві глобальні властивості (section_id null) — обидві у виводі', () => {
-    // Е4-6: slug глобально унікальний, тож близнюки різняться slug; NULL у
+    // Slug глобально унікальний, тож близнюки різняться slug; NULL у
     // section_id і далі не арбітр on conflict — дедуп за id.
     const parents = blockOf(sql, 'section_properties');
     expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_ID);

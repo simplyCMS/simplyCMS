@@ -8,7 +8,7 @@ import { adminErrorKey } from '../admin-error';
 /**
  * Відтворює реальний шлях `products.update()` (TanStack DB, `handlers.ts`
  * onUpdate) — не `admin-error.test.ts`'s ручний `Object.assign(new
- * Error(...))`. Е3-20 (закрито): serverFn кидає САМЕ таку форму, яку
+ * Error(...))`. ServerFn кидає САМЕ таку форму, яку
  * `domainErrorAdapter` (`runtime/domain-error-adapter.test.ts` доводить це
  * реальним seroval-раунд-тріпом) віддає клієнту — `Error` з `name`/полями
  * НА ВЕРХНЬОМУ рівні (не плоский обʼєкт, не обгорнутий у `.cause`).

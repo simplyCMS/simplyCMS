@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
-// Окремий конфіг для packaging-suite (Task 1.4).
+// Окремий конфіг для packaging-suite.
 //
 // Suite пакує кожен пакет ядра через `pnpm pack`, тому потребує попереднього
 // `pnpm build:packages` — і саме тому `vitest.config.ts` (звичайний
@@ -12,7 +12,7 @@ import { defineConfig } from 'vitest/config';
 // React-плагін не потрібен: тести читають tarball-и, manifest-и й файли
 // `dist` напряму, без JSX. Alias нижче — виняток лише для гейту партиції.
 export default defineConfig({
-  // Гейт не читає `.env*` розробника (Р31): див. пояснення у vitest.config.ts.
+  // Гейт не читає `.env*` розробника: див. пояснення у vitest.config.ts.
   envDir: false,
   // Один base-prefix ключ, як у vitest.config.ts: гейт партиції треку T
   // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
@@ -42,14 +42,14 @@ export default defineConfig({
       // Структурний гард тулчейна декларацій (dts поза бандлером + кеп памʼяті):
       // ламається першим, коли хтось повертає `dts: true` чи знімає кеп.
       'tests/dts-toolchain.test.ts',
-      // Партиція dist ядра на серверну й клієнтську групи + .d.ts сателітів
-      // (трек T): ламається першою, коли серверний код потрапляє в чанк,
+      // Партиція dist ядра на серверну й клієнтську групи + .d.ts сателітів:
+      // ламається першою, коли серверний код потрапляє в чанк,
       // досяжний із клієнтського entry.
       'tests/dist-server-boundary.test.ts',
       // Ядро зовнішнє в dist референс-теми й плагіна (№156): власна копія
       // ALS контексту запиту в dist теми розірвала б контекст лоадерів.
       'tests/dist-theme-plugin-external.test.ts',
-      // Справжня збірка з нестандартним `serverFns.base` (Р20′).
+      // Справжня збірка з нестандартним `serverFns.base`.
       'tests/server-fn-base-build.test.ts',
     ],
     // Пакування — послідовне: `pnpm pack` на 20 пакетів паралельно тільки

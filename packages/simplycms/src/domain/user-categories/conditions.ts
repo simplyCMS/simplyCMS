@@ -1,4 +1,4 @@
-// Оцінка умов автоправила (Е6в-19) — окремо від `engine.ts`, щоб рушій
+// Оцінка умов автоправила — окремо від `engine.ts`, щоб рушій
 // читався як послідовність кроків, а не потопав у деталях операторів.
 // Чиста функція винятків не кидає: непарсибельне значення чи невідомий
 // оператор — хибна умова (fail-closed).
@@ -89,7 +89,7 @@ function evaluateCondition(
     case 'utm_campaign':
       return compareText(stats.utmCampaign, item.operator, item.value);
     case 'auth_provider':
-      // Будь-який рядок `accounts` покупця має `provider_id = X` (Е6в-19).
+      // Будь-який рядок `accounts` покупця має `provider_id = X`.
       return (
         item.operator === '=' &&
         stats.authProviders.some(
@@ -102,9 +102,9 @@ function evaluateCondition(
 }
 
 /**
- * Умови правила → true/false. `any` — АБО, `all` — І (Е6в-19).
+ * Умови правила → true/false. `any` — АБО, `all` — І.
  *
- * 🔴 Порожній список умов — `false` (ред.2): «вакуумна істина» колишнього
+ * 🔴 Порожній список умов — `false`: «вакуумна істина» колишнього
  * порту при «Запустити всі правила» перевела б увесь магазин.
  */
 export function conditionsMatch(

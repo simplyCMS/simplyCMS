@@ -4,13 +4,13 @@ import { parseDiscountCondition } from 'simplycms/domain/discounts';
 import { datesOrdered, INT4 } from '../date-range';
 import { DISCOUNT_TYPES } from '../discount-labels';
 
-/** Ціль у формі; `all` — лише єдиним елементом (Е6в-7). */
+/** Ціль у формі; `all` — лише єдиним елементом. */
 export interface FormTarget {
   readonly targetType: 'all' | 'product' | 'modification' | 'section';
   readonly targetId: string | null;
 }
 
-/** Умова у формі. `value` — JSON як є: тип і межі перевіряє реєстр (Е6в-4). */
+/** Умова у формі. `value` — JSON як є: тип і межі перевіряє реєстр. */
 export interface FormCondition {
   readonly conditionType: string;
   readonly operator: string;

@@ -16,7 +16,7 @@ const renderCard = (over: Partial<AdminOrder>) =>
     </TestI18nProvider>,
   );
 
-describe('OrderCustomerCard — знеособлене замовлення (Е6г)', () => {
+describe('OrderCustomerCard — знеособлене замовлення', () => {
   it('стерте: «Видалений покупець», без null і без контактів та блока одержувача', () => {
     const { container } = renderCard({
       firstName: null,

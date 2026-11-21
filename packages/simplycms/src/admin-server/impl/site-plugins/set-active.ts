@@ -15,7 +15,7 @@ export const setPluginActiveInput = z.object({
 });
 
 /**
- * Увімкнути/вимкнути плагін (Е6б-17) — лише рядок `plugins.is_active`.
+ * Увімкнути/вимкнути плагін — лише рядок `plugins.is_active`.
  * 🔴 Хуки браузера (`HookRegistry`) серверна операція змінити не може:
  * їх синхронізує клієнт (`syncPluginHooks`) після відповіді, а при збої
  * реєстрації повертає `isActive: false` цією ж операцією.

@@ -2,14 +2,14 @@ import type { QueryClient } from '@tanstack/react-query';
 import { AGGREGATE, ENTITY, entityKey } from 'simplycms/contracts/entities';
 
 /**
- * Кеш доставки/самовивозу ПОЗА колекціями адмінки (Е6а-14): вітринні запити
+ * Кеш доставки/самовивозу ПОЗА колекціями адмінки: вітринні запити
  * читають ті самі таблиці, але живуть під власними ключами, тож write-back
  * колекції їх не торкається.
  *
  * 🔴 Ключі точок — ТОЧНІ варіанти (`active`/`count`, ті, що ставить
  * `usePickupPoints`/`usePickupPointsCount` у core/hooks), а НЕ префікс
  * `[pickup_points]`: префікс зачепив би й `[pickup_points,'list']` — саму
- * колекцію, і її refetch скасував би write-back (К3-7).
+ * колекцію, і її refetch скасував би write-back.
  * `AGGREGATE.stockInfo.key` — префікс навмисно: запити складів мають вигляд
  * `[...key, modificationId, productId]`.
  * Кличеться з `persistenceHandlers` усіх чотирьох колекцій і з хуків

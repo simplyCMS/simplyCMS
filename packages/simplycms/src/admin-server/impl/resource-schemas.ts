@@ -82,10 +82,10 @@ export function buildResourceSchemas<
   table: T,
   writable: readonly W[],
   refine?: ResourceRefine,
-  // 🔴 Е4-5: колонки, які пишуться ЛИШЕ при створенні рядка — входять у
+  // 🔴 Колонки, які пишуться ЛИШЕ при створенні рядка — входять у
   //   insert-схему, але НЕ в update-patch.
   insertOnly: readonly I[] = [],
-  // 🔴 Е5-7: приховані колонки — їх немає в rowSchema (у insert/update їх і
+  // 🔴 Приховані колонки — їх немає в rowSchema (у insert/update їх і
   //   так немає: вони не writable/insertOnly).
   omit: readonly O[] = [],
 ) {

@@ -37,8 +37,8 @@ export type DiscountForm = UseFormReturn<
 
 /**
  * Стан картки знижки. Читання — `getDiscount` (знижка з цілями й умовами
- * одним узгодженим знімком), запис — ОДИН атомарний `saveDiscount`
- * (Е6в-16), далі write-back рядка в колекцію `discounts` і скидання
+ * одним узгодженим знімком), запис — ОДИН атомарний `saveDiscount`,
+ * далі write-back рядка в колекцію `discounts` і скидання
  * середовища цін адміна.
  */
 export function useDiscountCard(
@@ -73,7 +73,7 @@ export function useDiscountCard(
   });
   const { reset } = form;
   // Рядок, яким засіяно форму: його дати пишуться, доки поле не змінене
-  // (Е6в-22 ред.2) — навіть якщо фоновий refetch приніс новішу версію.
+  // — навіть якщо фоновий refetch приніс новішу версію.
   const original = useRef<Discount | undefined>(undefined);
   useSeedOnce(detail.data?.discount.id, () => {
     if (!detail.data) return;

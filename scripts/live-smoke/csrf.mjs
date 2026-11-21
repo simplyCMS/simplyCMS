@@ -8,7 +8,7 @@
  * `curl`) на справжню server function і на server route `/api/health` мусить
  * дістати 403 ВІД МІДДЛВАРИ, тобто текст `Forbidden`.
  *
- * 🔴 Межа доказу для server route (Е6б-18, ред.3; Е6б-28): перевірка доводить,
+ * 🔴 Межа доказу для server route (ред.3;): перевірка доводить,
  * що міддлвара CSRF стоїть перед УСІМА шляхами поза serverFn, а свій Origin
  * доходить до роуту (його `ANY` відмовляє 405). Що виконується POST-хендлер,
  * що змінює стан, вона не доводить: інших не-serverFn POST-роутів поза
@@ -87,7 +87,7 @@ export async function runCsrfChecks({ base, serverFnPaths, check }) {
 
   // Контроль: свій Origin міддлвару ПРОХОДИТЬ і доходить до роуту — доводить,
   // що відмова вище саме CSRF, а не загальна заборона шляху. Роут відповідає
-  // на не-GET/HEAD рівно 405 з `Allow: GET, HEAD` (`ANY` у `health.tsx`, Е6б-28): статус
+  // на не-GET/HEAD рівно 405 з `Allow: GET, HEAD` (`ANY` у `health.tsx`): статус
   // не залежить від БД і SSR. Асерт — точне число, а не «будь-що, крім
   // Forbidden».
   const routeSame = await post('/api/health', { origin: base });

@@ -1,4 +1,4 @@
-// Ручний guard умов автоправила (Е6в-19, ред.2/ред.5). Один розбір для двох
+// Ручний guard умов автоправила. Один розбір для двох
 // входів: Zod адмінки (`refine` колонки `conditions`) і читання правила з БД
 // рушієм (`commerce/customer-categories.ts`) — рядок, вписаний SQL-ем в
 // обхід Zod, не спрацьовує, а не валить оформлення замовлення.
@@ -14,8 +14,8 @@ const NUMERIC_OPERATORS = ['>=', '>', '<=', '<', '='] as const;
 const TEXT_OPERATORS = ['=', 'contains'] as const;
 
 /**
- * Допустимі оператори за полем (ред.5). Перелік — і для guard-а, і для
- * вибору оператора у формі правила (Task 9).
+ * Допустимі оператори за полем. Перелік — і для guard-а, і для
+ * вибору оператора у формі правила.
  */
 export const CATEGORY_RULE_FIELD_OPERATORS: Readonly<
   Record<CategoryRuleField, readonly CategoryRuleOperator[]>
@@ -40,8 +40,8 @@ const NUMERIC_FIELDS: readonly CategoryRuleField[] = [
 ];
 
 /**
- * Текстове значення умови чи статистики в канонічній формі (F7 фінального
- * рев'ю): `trim` + нижній регістр. Домен, UTM-мітка й провайдер входу
+ * Текстове значення умови чи статистики в канонічній формі:
+ * `trim` + нижній регістр. Домен, UTM-мітка й провайдер входу
  * регістр-незалежні для власника: `'Gmail.com '` у формі і `gmail.com` у
  * статистиці — одна умова, а не тихий промах правила.
  */
@@ -71,7 +71,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * 🔴 `Object.hasOwn`, не `in`: `in` бачить і `Object.prototype`, тож поле
  * `toString`/`constructor`/`__proto__` пройшло б як «відоме», а `.includes`
  * на функції кинув би TypeError — один такий рядок, вписаний SQL-ем, валив би
- * правила ВСІХ покупців замість fail-closed (Е6в-19 ред.2).
+ * правила ВСІХ покупців замість fail-closed.
  */
 function isField(value: unknown): value is CategoryRuleField {
   return (

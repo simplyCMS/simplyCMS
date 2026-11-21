@@ -81,7 +81,7 @@ const GALLERY_READERS = [
   'modificationGallerySql',
   'lineImageSql',
   'mainImageSql',
-  // Мініатюра SSR-списку (фінальне рев'ю М1, B M7): перше фото без агрегату галереї.
+  // Мініатюра SSR-списку перше фото без агрегату галереї.
   'productFirstImageSql',
 ];
 
@@ -95,7 +95,7 @@ const RESOLVED_BY: Record<string, string> = {
   // SSR-список: лише мініатюра — тим самим декодером одного фото.
   'products.ts#image': 'toGalleryImage',
   'entities/home-product.ts#images': 'toGallery',
-  // Мініатюра позиції кошика (Task 17б fix-1): одне фото тим самим декодером.
+  // Мініатюра позиції кошика: одне фото тим самим декодером.
   'line-images.ts#image': 'toGalleryImage',
   'entities/banner.ts#image_url': 'resolveMediaUrl',
   'entities/banner.ts#desktop_image_url': 'resolveMediaUrl',
@@ -158,7 +158,7 @@ const RAW_READS: Record<string, string> = {
 /**
  * Текст, по якому матчить гейт: лише КОД. Коментар із формою виклику (`alias: resolver(`)
  * інакше задовольняв гейт без виклику, а коментар із формою проєкції створював фантомний
- * сайт (Task 17б fix-2, N1). Рядкові й шаблонні літерали лишаються: SQL галереї живе в них.
+ * сайт. Рядкові й шаблонні літерали лишаються: SQL галереї живе в них.
  */
 const code = codeOnly;
 

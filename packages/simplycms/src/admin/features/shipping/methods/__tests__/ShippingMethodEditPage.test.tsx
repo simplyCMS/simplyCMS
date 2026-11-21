@@ -120,7 +120,7 @@ describe('ShippingMethodEditPage', () => {
     expect(screen.queryByText(t('admin.shipping.rates.title'))).toBeNull();
   });
 
-  it('режим provider недоступний, коли провайдер не вміє рахувати ціну; carrier має підпис Е6а-4', async () => {
+  it('режим provider недоступний, коли провайдер не вміє рахувати ціну; carrier має підпис', async () => {
     render(<ShippingMethodEditPage />, { wrapper });
     fireEvent.keyDown(
       screen.getByLabelText(t('admin.shipping.methods.pricing')),

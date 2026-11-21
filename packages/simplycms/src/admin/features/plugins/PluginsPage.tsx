@@ -45,7 +45,7 @@ function RegisteredModules({ names }: { names: string[] }) {
   );
 }
 
-/** Сторінка «Плагіни» (Е6б-17): список, перемикач, перехід до налаштувань. */
+/** Сторінка «Плагіни»: список, перемикач, перехід до налаштувань. */
 export default function PluginsPage() {
   const t = useT();
   const { query } = usePlugins();

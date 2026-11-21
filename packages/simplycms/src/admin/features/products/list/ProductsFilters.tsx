@@ -20,7 +20,7 @@ interface Props {
   readonly onChange: (filters: ProductFiltersState) => void;
 }
 
-/** Три фільтри списку товарів (Е3-2): розділ / активність / наявність. */
+/** Три фільтри списку товарів: розділ / активність / наявність. */
 export default function ProductsFilters({ filters, onChange }: Props) {
   const t = useT();
   const sections = useCollection(sectionsCollection);

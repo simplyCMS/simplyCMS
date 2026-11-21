@@ -1,4 +1,4 @@
-// Фінальне рев'ю К3-Е6в, F7: текстові умови автоправил (`email_domain`,
+// Текстові умови автоправил (`email_domain`,
 // `utm_source`, `utm_campaign`, `auth_provider`) — `trim` і нижній регістр
 // на ЗАПИСІ (розбір) і при ПОРІВНЯННІ (рушій нормалізує й статистику).
 import { describe, expect, it } from 'vitest';
@@ -21,7 +21,7 @@ const one = (field: string, operator: string, value: string) => ({
   rules: [{ field, operator, value }],
 });
 
-describe('розбір умов: текстові значення нормалізуються (F7)', () => {
+describe('розбір умов: текстові значення нормалізуються', () => {
   it.each([
     ['email_domain', '=', ' Gmail.COM '],
     ['utm_source', 'contains', 'GOOGLE '],
@@ -40,7 +40,7 @@ describe('розбір умов: текстові значення нормал�
   });
 });
 
-describe('рушій: порівняння нормалізує обидві сторони (F7)', () => {
+describe('рушій: порівняння нормалізує обидві сторони', () => {
   const matches = (
     field: CategoryRuleField,
     operator: '=' | 'contains',

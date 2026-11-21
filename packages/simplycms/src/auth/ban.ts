@@ -7,7 +7,7 @@ import { users } from 'simplycms/schema';
 export type IsUserBanned = (userId: string) => Promise<boolean>;
 
 /**
- * `databaseHooks.session.create.before` (Е6г-13): забанений не отримує сесії.
+ * `databaseHooks.session.create.before`: забанений не отримує сесії.
  *
  * 🔴 Саме `throw`, а не `return false`: `with-hooks` перетворює `false` на
  * загальну `FAILED_TO_CREATE_SESSION`, і вітрина не відрізнила б бан від
@@ -15,7 +15,7 @@ export type IsUserBanned = (userId: string) => Promise<boolean>;
  * кодом `BANNED` (доводить тест через реальний `auth.handler`).
  * Хук покриває й скидання пароля: воно не створює сесії, а наступний вхід
  * впирається сюди ж. Гонку «бан між хуком і вставкою» закриває тригер БД
- * `sessions_refuse_banned` (Е6г-14).
+ * `sessions_refuse_banned`.
  */
 export const createSessionBanHook =
   (isBanned: IsUserBanned) =>

@@ -28,7 +28,7 @@ const valid = {
   items: [{ productId: UUID, modificationId: null, quantity: 1 }],
 };
 
-describe('checkoutInputSchema.paymentMethod (Е6а-3)', () => {
+describe('checkoutInputSchema.paymentMethod', () => {
   it('приймає cash', () => {
     expect(checkoutInputSchema.safeParse(valid).success).toBe(true);
   });
@@ -42,9 +42,9 @@ describe('checkoutInputSchema.paymentMethod (Е6а-3)', () => {
   });
 });
 
-// Межі кошика спільні для кошика, квоти й чекауту (Е6в-13, ред.2/ред.3):
+// Межі кошика спільні для кошика, квоти й чекауту:
 // чекаут, що приймає більше за кошик, рахує те, чого покупець не бачив.
-describe('checkoutInputSchema.items — межі кошика (Е6в-13)', () => {
+describe('checkoutInputSchema.items — межі кошика', () => {
   const item = (quantity: number, productId = UUID) => ({
     productId,
     modificationId: null,

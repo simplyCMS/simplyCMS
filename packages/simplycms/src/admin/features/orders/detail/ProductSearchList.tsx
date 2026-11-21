@@ -3,7 +3,7 @@ import { searchProductsForOrder } from 'simplycms/admin-server';
 import { useT } from 'simplycms/i18n';
 import { Input } from 'simplycms/ui/input';
 
-/** Пауза після останнього символу, мс (Е5б-4): не питаємо сервер на кожну літеру. */
+/** Пауза після останнього символу, мс: не питаємо сервер на кожну літеру. */
 export const SEARCH_DEBOUNCE_MS = 300;
 /** Той самий мінімум, що й на сервері: коротший запит БД не чіпає. */
 const MIN_QUERY = 2;

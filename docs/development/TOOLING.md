@@ -209,7 +209,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   Gate C — межа клієнт/сервер у реальному клієнтському бандлі, Gate SB — драйвер БД не вклеєний у
   серверний бандл, Gate IP — витік ВАЛИТЬ збірку, Gate B — серверний бандл стартує. `pilot:pack`
   (без БД) ганяється в CI (job `packaging`).
-- Гейти-звірки з уроків Е6д (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
+- Гейти-звірки (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
   `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `docs/architecture/upstream-workarounds.md`
   (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
   `UPSTREAM:<ID>` ↔ записів реєстру; `tests/doc-symbols-exist.test.ts` — кожен символ у
@@ -252,11 +252,11 @@ Error-зони й кастомні правила (селектори й опц�
   перший сегмент `queryKey` (прямий, через константу-масив і в умовному виборі) заборонений;
   сегмент 0 іде з реєстру `simplycms/contracts/entities` (`ENTITY`/`AGGREGATE`/`SESSION_KEY`).
   Зона — `core/`, `*-ui/`, `react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета
-  ядра (адмінку додано в К3-Е7). Деталі —
+  ядра. Деталі —
   `docs/architecture/data-layer.md` § «Контракт ключів кешу».
 - **Доступні імена контролів:** `jsx-a11y/label-has-associated-control` (error,
   `assert: 'htmlFor', depth: 3`) на п'яти теках воронки (`cart-ui`, `catalog-ui`, `checkout-ui`,
-  `profile-ui`, `reviews-ui`) і в адмінці `src/admin/**` (з К3-Е7). Охоплення адмінки обома
+  `profile-ui`, `reviews-ui`) і в адмінці `src/admin/**`. Охоплення адмінки обома
   правилами доводить `tests/eslint-admin-zones.test.ts`. 🔴 Правило бачить лише `<label>` — контрол без лейбла йому
   невидимий: зелений лінт доступності воронки не доводить її повноти.
 - **Ратчет проти `@supabase/*` — `simplycms-supabase/no-supabase-import`:** зона — ВСЕ репо
@@ -265,7 +265,7 @@ Error-зони й кастомні правила (селектори й опц�
   його, маніфести й `pnpm-lock.yaml` стереже `tests/no-supabase-manifests.test.ts`. Негативний
   контроль — `tests/eslint-rules/no-supabase-import.test.ts`.
 - **Порт сховища — `simplycms-storage/no-direct-storage`:** зона — увесь `packages/simplycms/src/**`
-  без виїмок (ратчет порожній: легасі `ReviewDetail.tsx` знесено в Е6д); забороняє `supabase.storage`,
+  без виїмок (ратчет порожній: легасі `ReviewDetail.tsx` знесено); забороняє `supabase.storage`,
   `x.storage.from(…)`, `x['storage']` та імпорт `@supabase/storage-js`. Файловий двійник —
   ратчет `tests/storage-direct-calls.test.ts`; негативний контроль —
   `tests/eslint-rules/no-direct-storage.test.ts`.

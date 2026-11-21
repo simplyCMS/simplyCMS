@@ -1,4 +1,4 @@
-// Реєстр умов знижок (Е6в-4): розбір, оцінка, fail-closed.
+// Реєстр умов знижок: розбір, оцінка, fail-closed.
 import { describe, expect, it } from 'vitest';
 import type { Json } from 'simplycms/contracts';
 import {

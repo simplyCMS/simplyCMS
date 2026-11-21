@@ -33,7 +33,7 @@ const renderTotals = (shippingData: unknown, shippingCost = '0.00') =>
 const shippingValue = () =>
   screen.getByText('Доставка').nextElementSibling?.textContent;
 
-describe('OrderTotals — рядок доставки (Е6а-4)', () => {
+describe('OrderTotals — рядок доставки', () => {
   it('carrier: підпис режиму замість суми', () => {
     renderTotals(snapshot('carrier'));
     expect(shippingValue()).toBe('За тарифами перевізника');

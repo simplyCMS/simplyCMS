@@ -16,7 +16,7 @@ import { reportTxError } from '../../lib/report-tx-error';
 import type { useMediaErasures } from './useMediaErasures';
 
 /**
- * Кнопка sweep (Е6д-22) з підтвердженням діалогом: стирання незворотне, а
+ * Кнопка sweep з підтвердженням діалогом: стирання незворотне, а
  * `window.confirm` у адмінці не вживається.
  */
 export function SweepMediaButton({

@@ -143,7 +143,7 @@ export function ThemeProvider({
   );
 
   // Нові `initialThemeName`/налаштування (власник зберіг у адмінці, лоадер
-  // інвалідовано) застосовуються без перезавантаження сторінки (Е6б-16).
+  // інвалідовано) застосовуються без перезавантаження сторінки.
   useEffect(() => {
     void resolveTheme(initialThemeName, stableSettings).then((outcome) => {
       if (applyOutcome(outcome)) setIsLoading(false);

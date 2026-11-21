@@ -17,7 +17,7 @@ type ConditionValue = SaveDiscountData['conditions'][number]['value'];
 
 /**
  * Порожня форма нової знижки. Цілей немає навмисно: «на все» — явний вибір
- * власника (Е6в-7), а не тиха підстановка.
+ * власника, а не тиха підстановка.
  */
 export function emptyDiscountForm(
   groupId: string | undefined,
@@ -74,7 +74,7 @@ const toTarget = (t: FormTarget): SaveDiscountData['targets'][number] =>
 
 /**
  * Значення форми → вхід `saveDiscount`. Дати, яких власник не чіпав, —
- * вихідні `Date` рядка (Е6в-22 ред.2), а не кругообіг через рядок поля.
+ * вихідні `Date` рядка, а не кругообіг через рядок поля.
  */
 export function toSaveInput(
   v: DiscountFormValues,

@@ -1,5 +1,5 @@
-// Е3-13: значення властивостей — рядок на опцію. Правка baseline (рамка
-// B13, як К3-14): унікальність стає (власник, property_id, option_id)
+// Значення властивостей — рядок на опцію. Правка baseline (рамка
+// B13): унікальність стає (власник, property_id, option_id)
 // NULLS NOT DISTINCT — скалярна властивість лишається ОДНИМ рядком
 // (option_id NULL не дублюється), multiselect дає рядок на КОЖНУ опцію.
 //
@@ -31,7 +31,7 @@ const OPT_B = 'e3130000-0000-4000-8000-000000000005';
 const PRODUCT = 'e3130000-0000-4000-8000-000000000006';
 const MODIFICATION = 'e3130000-0000-4000-8000-000000000007';
 
-describe('Е3-13: multiselect — рядок на опцію (NULLS NOT DISTINCT)', () => {
+describe('multiselect — рядок на опцію (NULLS NOT DISTINCT)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_property_values_multiselect');
   let dbUrl = '';

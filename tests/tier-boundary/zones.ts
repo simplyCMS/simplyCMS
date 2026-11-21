@@ -36,46 +36,46 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Порт сховища (Е2) — T2 з upward-винятком лише на `db`; `react-query`
+  // Порт сховища — T2 з upward-винятком лише на `db`; `react-query`
   // того самого тіру у виняток НЕ входить, тож ловиться.
   [
     'packages/simplycms/src/storage',
     'simplycms/react-query',
     'simplycms/domain/media',
   ],
-  // Облік залишків (Е3-5) — T2 з upward-винятком лише на `db`; імпорт назад
-  // у вітрину (звідки модуль перенесено) — рівно та заборона, яку рішення
-  // Е3-5 мало закрити.
+  // Облік залишків — T2 з upward-винятком лише на `db`; імпорт назад
+  // у вітрину (звідки модуль перенесено) — рівно та заборона, яку
+  // мало закрити.
   [
     'packages/simplycms/src/inventory',
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Ціноутворення й доставка (Е5б-5) — T2 з upward-винятком лише на `db`;
+  // Ціноутворення й доставка — T2 з upward-винятком лише на `db`;
   // імпорт назад у вітрину (звідки рушій перенесено) — рівно та заборона,
-  // яку рішення Е5б-5 мало закрити.
+  // яку мало закрити.
   [
     'packages/simplycms/src/commerce',
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Резолвер груп env (Е8-Р7) — T2 без жодних upward-винятків: чиста функція
+  // Резолвер груп env — T2 без жодних upward-винятків: чиста функція
   // над переданим оточенням, `db` їй ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/env', 'simplycms/db', 'simplycms/contracts'],
-  // Охорона серверного входу (Е8, Р23/Р27) — T2, upward лише `env`: до БД їй
+  // Охорона серверного входу — T2, upward лише `env`: до БД їй
   // діла нема, тож ловиться `db`.
   [
     'packages/simplycms/src/server-guard',
     'simplycms/db',
     'simplycms/contracts',
   ],
-  // Build-time плагіни Vite (Е8) — T2 без upward-винятків: Node-код збірки,
+  // Build-time плагіни Vite — T2 без upward-винятків: Node-код збірки,
   // `db` йому ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/vite', 'simplycms/db', 'simplycms/contracts'],
-  // Накат міграцій (Е8-Р2) — T2, upward-винятки лише файли `db/lock-keys` і `i18n/packs`
+  // Накат міграцій — T2, upward-винятки лише файли `db/lock-keys` і `i18n/packs`
   // (`exempt-files.test.ts`): `db` (withActor) йому не потрібен, тож ловиться.
   ['packages/simplycms/src/migrate', 'simplycms/db', 'simplycms/contracts'],
-  // Прод-старт (К3-Е8, F5) — T2, upward лише `env` і `migrate`: `db` (withActor)
+  // Прод-старт — T2, upward лише `env` і `migrate`: `db` (withActor)
   // старту не потрібен, тож ловиться.
   ['packages/simplycms/src/prod-start', 'simplycms/db', 'simplycms/migrate'],
   // Пошта — T2, upward `env`, `db`, `schema`, `i18n`; `auth`

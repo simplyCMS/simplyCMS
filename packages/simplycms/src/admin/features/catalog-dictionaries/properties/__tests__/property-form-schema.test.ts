@@ -42,7 +42,7 @@ describe('propertyFormSchema', () => {
     );
   });
 
-  it('patch НЕ несе propertyType (Е4-5), draft — несе й sectionId null', () => {
+  it('patch НЕ несе propertyType, draft — несе й sectionId null', () => {
     const v = propertyFormSchema.parse(valid);
     expect(v.sortOrder).toBe(3);
     expect('propertyType' in toPropertyPatch(v)).toBe(false);

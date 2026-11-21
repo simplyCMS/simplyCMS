@@ -93,7 +93,7 @@ describe('ShippingZonesPage', () => {
     expect(m.listShippingZones).toHaveBeenCalledTimes(1);
   });
 
-  it('вимкнену зону не можна зробити дефолтною (кнопка disabled, Е6а-20)', async () => {
+  it('вимкнену зону не можна зробити дефолтною (кнопка disabled)', async () => {
     render(<ShippingZonesPage />, { wrapper });
     await screen.findByText('Одеса');
     const btn = within(rowOf('Одеса')).getByRole('button', {

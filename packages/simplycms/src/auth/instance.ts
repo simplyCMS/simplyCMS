@@ -26,9 +26,9 @@ import { isResetStillValid, type ResetGuard } from './reset-guard';
 import { createEmailVerification } from './verification-mail';
 
 /**
- * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
+ * Інстанс Better Auth серверного контуру v2 (B3′).
  *
- * 🔴 Контур підключений до `start.ts`/роутів (К1′б) — GoTrue знесено
+ * 🔴 Контур підключений до `start.ts`/роутів — GoTrue знесено
  * повністю, це ЄДИНИЙ auth-флоу магазину.
  *
  * 🔴 Плагінів — нуль (B3: CVE-поверхня). Кожен плагін BA додає роути й
@@ -51,9 +51,9 @@ export interface AuthDeps {
   readonly provisionUser?: ProvisionUser;
   /** Провізія при вході (самовідновлення профілю). За замовчуванням — запис у Postgres. */
   readonly ensureProvisioned?: EnsureProvisioned;
-  /** Чи забанений користувач (Е6г-13). За замовчуванням — читання `users.banned_at`. */
+  /** Чи забанений користувач. За замовчуванням — читання `users.banned_at`. */
   readonly isUserBanned?: IsUserBanned;
-  /** Guard скидання пароля (Е6г-18). За замовчуванням — `FOR SHARE` по `users`. */
+  /** Guard скидання пароля. За замовчуванням — `FOR SHARE` по `users`. */
   readonly resetGuard?: ResetGuard;
   readonly secret?: string;
   readonly baseURL?: string;
@@ -156,7 +156,7 @@ export function createAuth(deps: AuthDeps = {}) {
   return auth;
 }
 
-/** Тип готового інстансу — для сигнатур споживачів К1′б. */
+/** Тип готового інстансу — для сигнатур споживачів. */
 export type SimplyAuth = ReturnType<typeof createAuth>;
 
 let instance: SimplyAuth | undefined;

@@ -8,7 +8,7 @@ import { productGallerySql } from 'simplycms/translations';
 /**
  * Нетекстові колонки товару для сторінки картки: текст (назва, описи, `meta_*`)
  * і адреса приходять з проєкції `catalog_product_texts` у мові запиту (М1, П7/П8).
- * Фото — галерея мови сторінки (`productGallerySql`, Task 17б), тож мапа — функція мови,
+ * Фото — галерея мови сторінки (`productGallerySql`), тож мапа — функція мови,
  * як `homeProductColumns`: один спосіб зібрати галерею для сторінки й каталогу.
  */
 export const productBaseColumns = (locale: string, primary: string) => ({
@@ -55,7 +55,7 @@ export type ProductRow = {
  * Нормалізує jsonb-масив референсів фото ВІДГУКУ (`product_reviews.images`) у масив
  * ГОТОВИХ URL. Фото товару й модифікації декодує `toGallery` (вони несуть alt мови).
  *
- * 🔴 Резолв саме тут, а не на сторінці. У колонці лежить РЕФЕРЕНС (рішення Е2-1), і саме
+ * 🔴 Резолв саме тут, а не на сторінці. У колонці лежить РЕФЕРЕНС, і саме
  * `resolveMediaUrls` лишає зовнішні URL та `data:`-плейсхолдери як є.
  */
 export function toImageList(value: unknown): string[] {

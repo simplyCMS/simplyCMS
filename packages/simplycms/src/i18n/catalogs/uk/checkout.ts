@@ -10,7 +10,7 @@ export const messages = {
   'checkout.failed': 'Помилка оформлення',
   'checkout.retry': 'Спробуйте ще раз',
 
-  // Доменні відмови оформлення — код із сервера, текст тут (К2-Е0)
+  // Доменні відмови оформлення — код із сервера, текст тут
   'checkout.rejected.shipping_unavailable':
     'Обраний спосіб доставки недоступний — оберіть інший',
   'checkout.rejected.pickup_point_invalid':
@@ -71,7 +71,7 @@ export const messages = {
   'checkout.saveDialog.cancelChanges': 'Скасувати зміни',
 
   // Спосіб доставки — CheckoutDeliveryForm
-  // Порожній довідник способів доставки — блокуючий empty-state (К2-Е0, Е0-4)
+  // Порожній довідник способів доставки — блокуючий empty-state
   'checkout.noShippingMethods.title': 'Доставка не налаштована',
   'checkout.noShippingMethods.description':
     'Магазин ще не додав жодного способу доставки. Оформлення стане доступним, щойно він зʼявиться.',

@@ -10,7 +10,7 @@ export type ResetGuard = (
 ) => Promise<boolean>;
 
 /**
- * Guard `sendResetPassword` (Е6г-18). BA вставляє `reset-password:<token>`
+ * Guard `sendResetPassword`. BA вставляє `reset-password:<token>`
  * окремим запитом ПЕРЕД колбеком, тож між `findUserByEmail` і колбеком
  * email міг змінитись, а акаунт — зникнути. Тут, у транзакції `app_admin`,
  * користувача читають БЕЗУМОВНИМ `FOR SHARE` (умова у `WHERE` ламає

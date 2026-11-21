@@ -1,4 +1,4 @@
-// Е5б-13: грошова арифметика редагування позицій — цілі центи. Рядки
+// Грошова арифметика редагування позицій — цілі центи. Рядки
 // `numeric` з БД розбираються без `parseFloat`, ціна рушія (`number`, уже
 // округлена `roundMoney`) — `Math.round(n * 100)`, межі колонок — окремо.
 import { describe, expect, it, vi } from 'vitest';
@@ -15,7 +15,7 @@ import {
   toCents,
 } from '../totals';
 
-describe('гроші в центах (Е5б-13)', () => {
+describe('гроші в центах', () => {
   it('toCents розбирає десяткові рядки numeric', () => {
     expect(toCents('0')).toBe(0);
     expect(toCents('1234.5')).toBe(123450);

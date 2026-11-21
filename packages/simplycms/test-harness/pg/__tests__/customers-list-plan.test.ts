@@ -1,4 +1,4 @@
-// Е8-Р3 (Е6г-5), рев'ю F1: keyset-індекс `users_created_ms_id_idx` корисний,
+// Keyset-індекс `users_created_ms_id_idx` корисний,
 // лише коли вираз порядку в запиті списку покупців збігається з виразом
 // індексу. Тест робить EXPLAIN САМОГО запиту `listCustomersOp`
 // (`buildCustomersListSql`), а не його копії: зміна виразу в `list-sql.ts` без

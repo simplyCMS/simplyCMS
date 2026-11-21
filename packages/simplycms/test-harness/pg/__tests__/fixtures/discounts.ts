@@ -1,6 +1,6 @@
-// Один ланцюг знижки для харнесу (К2-Е0): group → discount → умова → ціль.
+// Один ланцюг знижки для харнесу: group → discount → умова → ціль.
 // До цього файлу showcase тримав його інлайном, а тест воронки скопіював би
-// вдруге. К3-Е6в: тип ціни `null` («для всіх»), оператор і вкладеність груп,
+// вдруге. Тип ціни `null` («для всіх»), оператор і вкладеність груп,
 // порогова умова — для лісу знижок і ядра `priceCart`.
 import { productIdBySlug } from './product-sql';
 
@@ -29,7 +29,7 @@ export interface PercentDiscountSpec {
   discountType?: 'percent' | 'fixed_amount';
   priority?: number;
   isActive?: boolean;
-  /** Код типу ціни знижки; `null` — для всіх типів (Е6в-2). */
+  /** Код типу ціни знижки; `null` — для всіх типів. */
   priceTypeCode?: string | null;
   /** Код категорії покупця для умови `user_category in […]`; без нього — для всіх. */
   categoryCode?: string;

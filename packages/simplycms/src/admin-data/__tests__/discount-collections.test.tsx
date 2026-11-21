@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { AGGREGATE, collectionKey, ENTITY } from 'simplycms/contracts/entities';
 
-// Колекції знижок і категорій (Е6в-10): write-back без refetch колекції +
+// Колекції знижок і категорій: write-back без refetch колекції +
 // скидання середовища цін і квоти в кеші адміна.
 const m = vi.hoisted(() => ({
   listGroups: vi.fn(),

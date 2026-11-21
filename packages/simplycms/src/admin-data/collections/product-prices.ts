@@ -1,14 +1,14 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { ProductPrice } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { ProductPrice } from 'simplycms/schema/types'; // 🔴 type-only
 import { listProductPrices } from 'simplycms/admin-server';
 import type { CollectionDef } from '../registry';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * On-demand за товаром/модифікацією — БЕЗ `persistenceHandlers` (Е3-10):
+ * On-demand за товаром/модифікацією — БЕЗ `persistenceHandlers`:
  * набір цін пишеться атомарно `saveProductPrices` (Task 4/8), не
  * фабричним insert/update/remove. `collection.insert()` тут кидає за
  * побудовою бібліотеки — це й потрібно, запис лише іменованою операцією;

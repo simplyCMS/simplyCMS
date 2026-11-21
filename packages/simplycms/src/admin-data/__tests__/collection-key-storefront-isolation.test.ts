@@ -10,7 +10,7 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 
 /**
- * Поведінковий доказ Е3-15′ (замінює видалений `tests/bare-list-key.test.ts`
+ * Поведінковий доказ (замінює видалений `tests/bare-list-key.test.ts`
  * — той статично сканував КОД; цей запускає РАНТАЙМ-механізм бібліотеки,
  * через який літеральний другий сегмент `'list'` поза `admin-data` шкодить).
  *
@@ -51,7 +51,7 @@ function makeCollection(queryClient: QueryClient, queryKey: readonly string[]) {
 const storefrontRow: FakeRow = { id: 'sf-1', name: 'вітринний рядок' };
 const adminRow = { id: 'admin-1', name: 'адмінський рядок' };
 
-describe('Е3-15′: ізоляція вітрини від write-back колекції', () => {
+describe('ізоляція вітрини від write-back колекції', () => {
   it('variant-ключ вітрини НЕ пише під write-back по collectionKey (фікс)', async () => {
     const qc = new QueryClient();
     const storefrontKey = entityKey(ENTITY.products).variant('featured');
@@ -88,7 +88,7 @@ describe('Е3-15′: ізоляція вітрини від write-back коле�
  * тут прямий: on-demand колекція з АКТИВНОЮ підпискою (живий запит), write-back
  * через `insert`. Виміряно на query-db-collection 1.5.1 / db 1.0.0-rc.1.2.
  */
-describe('Е3-15′: ізоляція ключів на on-demand колекції', () => {
+describe('ізоляція ключів на on-demand колекції', () => {
   async function writeBackOnDemand(qc: QueryClient) {
     const ref: { current?: WriteBack<FakeRow> } = {};
     const collection = createCollection(

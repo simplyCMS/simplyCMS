@@ -92,7 +92,7 @@ export async function runOwnerInvite({
       primary,
     });
   } catch (error) {
-    // Забанений не може стати адміном (Е6г-19): підказка замість сирого коду;
+    // Забанений не може стати адміном: підказка замість сирого коду;
     // первинна помилка не губиться для діагностики.
     if (error instanceof OwnerInviteError && error.code === 'banned')
       throw new OwnerInviteCliError(

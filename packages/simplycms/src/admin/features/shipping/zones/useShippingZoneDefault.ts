@@ -11,7 +11,7 @@ import { setDefaultShippingZone } from 'simplycms/admin-server';
  * дефолт + новий) і повертає їх усі — write-back без refetch. Хук працює
  * ПОЗА колекцією (як `usePriceTypeDefault`), тож persistence-хендлер не
  * інвалідує вітринні кеші за нього: довідник доставки, склади й точки
- * (Е6а-14) інвалідуються тут, одразу після write-back.
+ * інвалідуються тут, одразу після write-back.
  */
 export function useShippingZoneDefault(): (id: string) => Promise<void> {
   const zones = useCollection(shippingZonesCollection);

@@ -1,7 +1,7 @@
-// Фінальне рев'ю К3-Е6в, F7: текстові умови автоправил нормалізуються на
+// Текстові умови автоправил нормалізуються на
 // записі сервером (`trim` + нижній регістр — у БД лежить канонічна форма,
 // хоч би що надіслав клієнт) і при порівнянні рушієм. Email покупця в БД —
-// завжди нижній регістр (CHECK `users_email_lowercase`, Е8-Р3), тож
+// завжди нижній регістр (CHECK `users_email_lowercase`), тож
 // нормалізація умови — єдина сторона, де регістр ще може розійтись.
 import { describe, expect, it, vi } from 'vitest';
 import { withActor } from 'simplycms/db';
@@ -24,7 +24,7 @@ const conditions = (value: string) => ({
   rules: [{ field: 'email_domain', operator: '=', value }],
 });
 
-describe('admin: текстові умови автоправил нормалізуються (F7)', () => {
+describe('admin: текстові умови автоправил нормалізуються', () => {
   const db = F.useCustomersDb('simplycms_admin_category_rules_text');
   const url = () => db.url();
   const stored = async (id: string) =>

@@ -9,7 +9,7 @@ interface Props {
   readonly form: Form;
   readonly name: 'imageUrl' | 'desktopImageUrl' | 'mobileImageUrl';
   readonly label: string;
-  /** id рядка або згенерований НАПЕРЕД id нового банера (Е6д-1). */
+  /** id рядка або згенерований НАПЕРЕД id нового банера. */
   readonly entityId: string;
   readonly error?: string;
 }

@@ -1,5 +1,5 @@
 /**
- * Кроки пошти живого прогону (К3-Е8): лист замовлення, скидання пароля, Р30.
+ * Кроки пошти живого прогону: лист замовлення, скидання пароля, реєстрація зі SMTP.
  * Помічники Mailpit і вхід — `./mail.mjs`.
  */
 import { confirmEmail, firstLink, signIn, waitForMail } from './mail.mjs';
@@ -59,7 +59,7 @@ export async function runMailChecks({ browser, base, email, from, check }) {
 }
 
 /**
- * Р30: реєстрація нового покупця зі SMTP. Вхід до підтвердження відмовлено,
+ * Реєстрація нового покупця зі SMTP. Вхід до підтвердження відмовлено,
  * Mailpit має лист підтвердження, посилання підтверджує пошту, вхід проходить.
  */
 export async function runSignupConfirmation({ browser, base, signUp, check }) {

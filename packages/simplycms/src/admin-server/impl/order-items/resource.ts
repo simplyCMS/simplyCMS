@@ -3,8 +3,8 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Позиції замовлення — лише читання (Е5-1: редагування позицій — етап Е5б).
- * `stockPointId`/`stockReserved` — облік фактично списаного (Е5-4′): картка
+ * Позиції замовлення — лише читання (редагування позицій — окремі операції).
+ * `stockPointId`/`stockReserved` — облік фактично списаного: картка
  * показує їх як є, пише їх лише `simplycms/inventory`.
  */
 export const orderItemsOps = defineAdminResource({

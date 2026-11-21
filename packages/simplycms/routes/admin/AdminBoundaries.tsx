@@ -30,7 +30,7 @@ export function AdminPending() {
  * Відомий код (`InsecureContextError`) отримує перекладений рядок; решта —
  * як кореневий `ErrorBoundary` (`src/routes/__root.tsx`): `error.message`
  * дослівно, з тим самим fallback-ключем на випадок порожнього повідомлення.
- * Розрізнення за `error.name`, не `instanceof` — той самий контракт К3-13.
+ * Розрізнення за `error.name`, не `instanceof` — той самий контракт.
  */
 export function AdminError({ error }: ErrorComponentProps) {
   const t = useT();
@@ -46,7 +46,7 @@ export function AdminError({ error }: ErrorComponentProps) {
     );
   }
   // `error` — `unknown` (router-core ≥ 1.171): кинути можна будь-що. Поля
-  // читаємо структурно, без `instanceof` — той самий контракт К3-13.
+  // читаємо структурно, без `instanceof` — той самий контракт.
   const fields: { name?: unknown; message?: unknown } =
     typeof error === 'object' && error !== null ? error : {};
   const message =

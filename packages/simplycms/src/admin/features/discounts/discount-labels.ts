@@ -40,5 +40,5 @@ export const DISCOUNT_TYPE_LABEL: Record<DiscountType, MessageKey> = {
   fixed_price: 'admin.discounts.type.fixedPrice',
 };
 
-/** Службове значення select-а «тип ціни» для `NULL` («усі типи», Е6в-2). */
+/** Службове значення select-а «тип ціни» для `NULL` («усі типи»). */
 export const ALL_PRICE_TYPES = '__all__';

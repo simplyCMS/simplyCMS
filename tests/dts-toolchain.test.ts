@@ -25,7 +25,7 @@ describe('тулчейн декларацій: dts поза бандлером',
     const mod = (await import(
       resolve(root, 'packages/simplycms/tsdown.config.ts')
     )) as { default: Array<{ dts?: unknown; entry: Record<string, string> }> };
-    // Рівно дві збірки — клієнтська й серверна (трек T): третя означала б,
+    // Рівно дві збірки — клієнтська й серверна: третя означала б,
     // що межу знову тримає розкладка профілів, а не декларація.
     expect(mod.default).toHaveLength(2);
     const offenders = mod.default

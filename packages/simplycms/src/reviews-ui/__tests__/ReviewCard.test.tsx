@@ -36,7 +36,7 @@ const renderCard = (r: ProductReview) =>
     </TestI18nProvider>,
   );
 
-describe('ReviewCard — автор видалений (Е6г)', () => {
+describe('ReviewCard — автор видалений', () => {
   it('user_id null → «Колишній покупець», а не «Користувач»', () => {
     renderCard(review({ user_id: null }));
     expect(screen.getByText(t('reviews.formerCustomer'))).toBeTruthy();

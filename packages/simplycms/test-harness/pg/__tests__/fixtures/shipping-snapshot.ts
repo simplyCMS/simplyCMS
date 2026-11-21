@@ -1,4 +1,4 @@
-// Сід харнес-тестів знімка доставки (К3-Е6а): адресний спосіб «за тарифами
+// Сід харнес-тестів знімка доставки: адресний спосіб «за тарифами
 // перевізника» і вхід курʼєрського оформлення — спільні для shipping-snapshot*.
 import type { PlaceOrderInput } from 'simplycms/contracts';
 import { orderInput } from './orders';

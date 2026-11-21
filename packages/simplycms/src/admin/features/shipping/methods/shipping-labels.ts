@@ -10,7 +10,7 @@ export const PROVIDER_LABEL: Record<ShippingProviderId, MessageKey> = {
   [SHIPPING_PROVIDER.pickup]: 'admin.shipping.providers.pickup',
 };
 
-// Е6а-4: підпис `carrier` — спільний ключ із чекаутом.
+// Підпис `carrier` — спільний ключ із чекаутом.
 export const PRICING_LABEL: Record<ShippingPricing, MessageKey> = {
   rates: 'admin.shipping.pricing.rates',
   provider: 'admin.shipping.pricing.provider',

@@ -9,7 +9,7 @@ type OnDemandConfig<T extends object> = Omit<
   QueryCollectionConfig<T>,
   'syncMode' | 'gcTime' | 'autoIndex' | 'defaultIndexType' | 'schema'
 > & {
-  /** Індекс сортування для useLiveInfiniteQuery (Е3-16). Дефолт — увімкнено. */
+  /** Індекс сортування для useLiveInfiniteQuery. Дефолт — увімкнено. */
   readonly sortIndex?: boolean;
 };
 

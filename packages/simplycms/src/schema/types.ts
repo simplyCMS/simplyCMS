@@ -1,6 +1,6 @@
 // Типи рядків БД, виведені з Drizzle-схеми, — єдине джерело типів для коду,
 // що ходить у БД через `simplycms/db` (`withActor`): serverFn-шар К2/К3,
-// репозиторії `data-pg`. Генерату типів клієнта БД немає (К3-Е7).
+// репозиторії `data-pg`. Генерату типів клієнта БД немає.
 
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
@@ -116,7 +116,7 @@ export type OrderItem = InferSelectModel<typeof orderItems>;
 export type NewOrderItem = InferInsertModel<typeof orderItems>;
 /**
  * Рядок списку статусів (read-model `order-statuses.list`, Д10): назва — з перекладу основної
- * мови, без `createdAt`. Рядка таблиці `order_statuses` з назвою більше немає (М2б, Р19).
+ * мови, без `createdAt`. Рядка таблиці `order_statuses` з назвою більше немає.
  */
 export type OrderStatus = Omit<
   InferSelectModel<typeof orderStatuses>,

@@ -45,8 +45,8 @@ const categoryIcons = [
 
 /**
  * 🔴 Той самий ключ, яким ядро кешує `getRootSections()`
- * (`storefront-routes/pages/home/queries.ts`), а не окремий літерал (борг
- * Е1а №8, Е3-12): вітрина й тема ділять ОДИН QueryClient, і два ключі на
+ * (`storefront-routes/pages/home/queries.ts`), а не окремий літерал:
+ * вітрина й тема ділять ОДИН QueryClient, і два ключі на
  * один запит дублювали фетч і розходились у кеші при інвалідації.
  */
 const sections = entityKey(ENTITY.sections);

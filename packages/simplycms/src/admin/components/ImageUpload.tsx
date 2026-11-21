@@ -12,7 +12,7 @@ import { ImageDropzone } from './ImageDropzone';
 import { ImageGrid } from './ImageGrid';
 
 interface ImageUploadBase {
-  /** 🔴 РЕФЕРЕНСИ сховища, не URL (рішення Е2-1). */
+  /** 🔴 РЕФЕРЕНСИ сховища, не URL. */
   images: string[];
   onImagesChange: (images: string[]) => void;
   maxImages?: number;
@@ -20,7 +20,7 @@ interface ImageUploadBase {
 }
 
 /**
- * Власник файлу обовʼязковий (К3-Е6д-3): `entityId` потрібен усім типам,
+ * Власник файлу обовʼязковий: `entityId` потрібен усім типам,
  * крім `store_logo` — його власника сервер підставляє сам.
  * Прибраний з форми файл стирає збереження форми (опція `media` фабрики), а не
  * цей компонент.
@@ -60,8 +60,8 @@ export function ImageUpload({
       body.set('entityType', entityType);
       if (entityId !== undefined) body.set('entityId', entityId);
       try {
-        // 🔴 Повертається РЕФЕРЕНС, а не URL: у колонку сутності лягає він
-        // (рішення Е2-1), а `url` — лише для прев'ю в цій формі.
+        // 🔴 Повертається РЕФЕРЕНС, а не URL: у колонку сутності лягає він,
+        // а `url` — лише для прев'ю в цій формі.
         const { ref } = await uploadMedia({ data: body });
         return ref;
       } catch (error) {

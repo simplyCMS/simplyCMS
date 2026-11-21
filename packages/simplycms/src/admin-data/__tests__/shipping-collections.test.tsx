@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { AGGREGATE, ENTITY, entityKey } from 'simplycms/contracts/entities';
 
-// Persistence-хендлери чотирьох колекцій доставки (Е6а-14). Named-операції
-// (setDefault, remove) інвалідують у хуках UI (Е6а-22) — тут лише колекції.
+// Persistence-хендлери чотирьох колекцій доставки. Named-операції
+// (setDefault, remove) інвалідують у хуках UI — тут лише колекції.
 const m = vi.hoisted(() => ({
   list: vi.fn(),
   insert: vi.fn(),

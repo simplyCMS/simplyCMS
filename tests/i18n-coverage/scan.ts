@@ -78,7 +78,7 @@ export const SCANNED_ROOTS = [
   'packages/simplycms/src/themes',
   'packages/simplycms/src/plugins',
   'packages/simplycms/src/plugin-sdk',
-  // Е8-Т11: листи ядра — тексти лише з каталогу `mail.*`, не з літералів.
+  // Листи ядра — тексти лише з каталогу `mail.*`, не з літералів.
   'packages/simplycms/src/mail',
   'packages/simplycms/src/auth',
   // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
@@ -86,7 +86,7 @@ export const SCANNED_ROOTS = [
   // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
   // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
   // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
-  // Відтоді (Е6б-10) рядки `head()` перекладаються через `storefrontHead`/
+  // Відтоді рядки `head()` перекладаються через `storefrontHead`/
   // `homeHead` (`simplycms/storefront-routes/head/head`): локаль магазину
   // приходить кореневим лоадером host-а в `matches`.
   'packages/simplycms/routes',

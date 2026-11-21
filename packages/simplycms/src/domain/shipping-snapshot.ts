@@ -1,4 +1,4 @@
-// Розбір знімка доставки з `orders.shipping_data` (Е6а-8/19). Ручний type-guard
+// Розбір знімка доставки з `orders.shipping_data` (19). Ручний type-guard
 // без Zod: T1 не тягне Zod, а запис знімка будує серверний код, тож валідація
 // потрібна лише читачам, які мусять пережити сміття в jsonb (старі рядки, `{}`).
 
@@ -24,7 +24,7 @@ function isPricing(x: unknown): x is ShippingPricing {
 function parseDestination(d: unknown): ShippingDestination | null {
   if (!isRecord(d)) return null;
   if (d.kind === 'address') {
-    // `null` — знеособлена адреса (Е6г-10); інший не-рядок — сміття.
+    // `null` — знеособлена адреса; інший не-рядок — сміття.
     if (d.city !== null && typeof d.city !== 'string') return null;
     if (d.address !== null && typeof d.address !== 'string') return null;
     return { kind: 'address', city: d.city, address: d.address };

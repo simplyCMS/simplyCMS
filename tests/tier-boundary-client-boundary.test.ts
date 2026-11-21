@@ -43,7 +43,7 @@ describe('сьомий читач межі клієнт/сервер (no-server-
     expect(errors).toEqual([]);
   });
 
-  it('живий канон Е1а (import type) лишається чистим у зоні admin', async () => {
+  it('живий канон (import type) лишається чистим у зоні admin', async () => {
     const errors = await ruleErrors(
       "import type { OrderStatus } from 'simplycms/schema/types';\n",
       'packages/simplycms/src/admin/pages/__boundary-fixture.tsx',
@@ -59,7 +59,7 @@ describe('сьомий читач межі клієнт/сервер (no-server-
     expect(errors).toHaveLength(1);
   });
 
-  it('admin-data СМІЄ import type із server-only impl (К3-9′ п.3)', async () => {
+  it('admin-data СМІЄ import type із server-only impl', async () => {
     const errors = await ruleErrors(
       "import type { SubsetInput } from 'simplycms/admin-server/impl';\n",
       'packages/simplycms/src/admin-data/__boundary-fixture.ts',

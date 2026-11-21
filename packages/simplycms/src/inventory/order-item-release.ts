@@ -3,12 +3,12 @@ import type { ActorDb } from 'simplycms/db';
 import { releaseStock } from './stock-release';
 
 /**
- * Повернення залишку позиції при її ВИДАЛЕННІ (Е5б-7′ п.4). Окремо від
+ * Повернення залишку позиції при її ВИДАЛЕННІ. Окремо від
  * `./order-item-stock` заради канону 150 рядків; порядок локів — той самий
  * («orders» викликача → `order_items` → залишок), докблок там.
  */
 
-/** Точку видалено (FK SET NULL) — повернути нікуди, факт логується (Е5-11). */
+/** Точку видалено (FK SET NULL) — повернути нікуди, факт логується. */
 export const warnLost = (orderItemId: string, units: number) =>
   console.warn(
     `[simplycms/inventory] order item ${orderItemId}: stock point deleted, ${units} unit(s) not returned`,
@@ -22,10 +22,10 @@ interface TakenItem {
 }
 
 /**
- * Видалення позиції (Е5б-7′ п.4): повертає рівно `stock_reserved` у точку
+ * Видалення позиції: повертає рівно `stock_reserved` у точку
  * позиції й обнуляє лічильник ОДНИМ запитом — CTE `FOR UPDATE` бере старе
  * значення, data-modifying CTE обнуляє (прийом `releaseOrderStock`), тож
- * повторний виклик бачить 0. Точку видалено — Е5-11: `console.warn`,
+ * повторний виклик бачить 0. Точку видалено — `console.warn`,
  * повернення немає, лічильник обнуляється. `DELETE` робить викликач.
  *
  * @returns скільки одиниць фактично повернуто на залишок (0, якщо рядка

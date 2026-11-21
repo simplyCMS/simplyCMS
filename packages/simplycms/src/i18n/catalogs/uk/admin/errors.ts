@@ -1,4 +1,4 @@
-/** Конфлікти БД (Е3-7) — мапляться з `AdminConflictError` через `adminErrorKey`. */
+/** Конфлікти БД — мапляться з `AdminConflictError` через `adminErrorKey`. */
 export const messages = {
   'admin.errors.slugTaken': 'Такий URL (slug) уже зайнятий — змініть його',
   'admin.errors.conflictUnique': 'Таке значення вже існує',

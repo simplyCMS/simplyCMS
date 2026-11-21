@@ -8,7 +8,7 @@ import {
   SERVICE_KEYS,
 } from './scripts/harness-env.mjs';
 
-// Окремий конфіг для schema-гейта `test:schema` (Task 1, план В2-К1а).
+// Окремий конфіг для schema-гейта `test:schema`.
 //
 // Suite потребує живого Postgres (`PG_HARNESS_URL` — CI service-контейнер
 // чи локальний кластер розробника; фолбек — ефемерний `initdb`+`pg_ctl` у
@@ -18,7 +18,7 @@ import {
 // `--exclude` ДОПОВНЮЄ `test.exclude`, а не заміщає його.
 //
 // React-плагін тут не потрібен: сюїта не рендерить нічого. А от аліас ядра —
-// потрібен (з Task 6): гейт `with-actor` міряє САМ рантайм `simplycms/db`
+// потрібен: гейт `with-actor` міряє САМ рантайм `simplycms/db`
 // проти харнеса, а не тестову копію контракту. 🔴 Один base-prefix ключ,
 // як у `vitest.config.ts`: `@rollup/plugin-alias` матчить і `simplycms`, і
 // `simplycms/<sub>`, але не сторонні `simplycms-*`.
@@ -30,11 +30,11 @@ loadHarnessEnv(import.meta.dirname);
 // група повна. Усе pg-крило (`diskKeys()`, стирання файлів на диску) побудоване на
 // `local-fs`, тож воно бачить `S3_*` порожніми (порожнє = «не задано» для
 // `resolveDriverEnv`), а ключі Garage отримує лише контрактний набір драйверів.
-// Так само `SMTP_URL`/`MAIL_FROM` (Task 9): pg-крило лишається на драйвері пошти `log`.
+// Так само `SMTP_URL`/`MAIL_FROM`: pg-крило лишається на драйвері пошти `log`.
 const blankS3 = Object.fromEntries(
   [...SERVICE_KEYS, ...MAIL_KEYS].map((k) => [k, '']),
 );
-// Фіксована база посилань для листів: place-order fail-loud без VITE_SITE_URL (Р18),
+// Фіксована база посилань для листів: place-order fail-loud без VITE_SITE_URL,
 // а CI його не задає — значення не береться ні з оточення, ні з `.env.local`.
 const SITE_URL = 'http://store.test';
 const common = {
@@ -47,7 +47,7 @@ const common = {
 } as const;
 
 export default defineConfig({
-  // 🔴 Гейт не читає `.env*` розробника (Р31): інакше `VITE_SITE_URL` з `.env.local`
+  // 🔴 Гейт не читає `.env*` розробника: інакше `VITE_SITE_URL` з `.env.local`
   // робив би його зеленим лише локально. Env проєктів — лише явний `test.env`.
   envDir: false,
   resolve: {

@@ -15,7 +15,7 @@ const pkg = (p: string) => resolve(import.meta.dirname, 'packages', p);
 export default defineConfig({
   // 🔴 Гейт не читає `.env*` розробника: Vite/Vitest інакше підтягують `VITE_*`
   // з `.env.local` у `process.env`/`import.meta.env`, і тест зелений лише на
-  // машині власника та червоний у CI чи чистому дереві (Р31). `false` — штатний
+  // машині власника та червоний у CI чи чистому дереві. `false` — штатний
   // вимикач завантаження env-файлів (Vite `envDir`, shared-options).
   envDir: false,
   plugins: [react()],
@@ -84,7 +84,7 @@ export default defineConfig({
       // Контур `pnpm test:race`: вкладені прогони vitest у середовищі-форсері
       // гонки teardown (секунди на прогін) — окремий конфіг, не `pnpm test`.
       'tests/race-teardown/**/*.test.ts',
-      // PG-харнес (Task 1, план В2-К1а): потребує живого Postgres
+      // PG-харнес: потребує живого Postgres
       // (`PG_HARNESS_URL` або ефемерний `initdb`+`pg_ctl` фолбек), тому в
       // `pnpm test` не входить — окремий гейт `pnpm test:schema`
       // (`vitest.schema.config.ts`), та сама логіка, що з packaging-suite.

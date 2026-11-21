@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Е6г-16: картка стертого замовлення (покупця видалено) не показує контролів
+ * Картка стертого замовлення (покупця видалено) не показує контролів
  * редагування позицій, хоча статус не «Скасоване»; живе замовлення — показує.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -51,7 +51,7 @@ const at = new Date(Date.UTC(2026, 9, 1, 10));
 beforeEach(() => listOrderStatuses.mockResolvedValue([NEW, DONE, CANCELLED]));
 afterEach(cleanup);
 
-describe('OrderDetailPage — стерте замовлення (Е6г-16)', () => {
+describe('OrderDetailPage — стерте замовлення', () => {
   it('живе: «Додати товар» є; стерте: немає, позиції лишились видимими', async () => {
     reset([makeOrder(1, at)], [makeItem(1)]);
     render(<OrderDetailPage />, { wrapper: wrap });

@@ -161,7 +161,7 @@ export type {
  * але лише доки їх не тримає інший живий експорт. Схеми/операції назовні
  * НЕ реекспортуються.
  */
-// Р19: довідник статусів — команди реєстру (версія, переклади), а не фабричний запис:
+// Довідник статусів — команди реєстру (версія, переклади), а не фабричний запис:
 // «не видалити дефолтний», порядок і дефолт — доменні інваріанти під замками коренів.
 export const listOrderStatuses = createServerFn({ method: 'GET' })
   .validator(passThrough)
@@ -748,7 +748,7 @@ export const removeProduct = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsRemove, data));
 
-// Токен модифікації, ціни й залишки — команди реєстру (Р14: ціни й
+// Токен модифікації, ціни й залишки — команди реєстру (ціни й
 // залишки версію агрегата не збільшують). Старі `saveProductPrices`/`saveStock`
 // прибрано: адмінка ходить лише цими командами.
 export const setProductModificationToken = createServerFn({ method: 'POST' })

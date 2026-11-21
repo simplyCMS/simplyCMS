@@ -29,7 +29,7 @@ function absoluteUrl(path: string, siteUrl: string): string | null {
 }
 
 /**
- * schema.org `Organization` головної з профілю магазину (Е6б-10).
+ * schema.org `Organization` головної з профілю магазину.
  *
  * `null`/порожні поля не серіалізуються: порожній рядок у JSON-LD — шум для
  * пошуковика. Без `siteUrl` (порожній `VITE_SITE_URL`) немає ні `url`, ні

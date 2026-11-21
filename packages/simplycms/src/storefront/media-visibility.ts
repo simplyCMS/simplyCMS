@@ -6,7 +6,7 @@ import type { MediaServeVerdict } from 'simplycms/storage';
 import { withCustomerDb, withStorefrontDb, type ActorDb } from './loaders/db';
 
 /**
- * Чи бачить глядач сутність-власника файлу (Е6д-21). `subject` — `null` для
+ * Чи бачить глядач сутність-власника файлу. `subject` — `null` для
  * гостя без сесії.
  */
 export type MediaVisibilityResolver = (

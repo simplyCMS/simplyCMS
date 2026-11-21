@@ -25,7 +25,7 @@ const EMPTY_ENTRY = { price: '', oldPrice: '' };
 /**
  * Редактор цін за видами (Task 8, Step 1) — розмітка легасі
  * `ProductPricesEditor.tsx`, шар даних — `usePrices`. Кнопка «Зберегти
- * ціни» — атомарний `saveProductPrices` (Е3-10), а не автозбереження.
+ * ціни» — атомарний `saveProductPrices`, а не автозбереження.
  */
 export function PricesEditor({ productId, modificationId }: Props) {
   const t = useT();

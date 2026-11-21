@@ -13,7 +13,7 @@ interface Props {
 
 /**
  * Пара `datetime-local` для групи й знижки. Рядок поля — локальний час
- * браузера (Е6в-22); у `Date` його переводить хук картки, а не поле.
+ * браузера; у `Date` його переводить хук картки, а не поле.
  */
 export function DateRangeFields({ idPrefix, from, to, invalid }: Props) {
   const t = useT();

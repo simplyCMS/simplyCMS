@@ -1,4 +1,4 @@
-// К3-Е6д-22: sweep неприв’язаних медіа. Стирає лише рядки старші за
+// Sweep неприв’язаних медіа. Стирає лише рядки старші за
 // `MEDIA_SWEEP_MIN_AGE_HOURS` без жодного референсу; логотип, аватар і фото
 // відгуку лишаються, бо їхні посилання бачить `findMediaReferences`.
 import { describe, expect, it, vi } from 'vitest';
@@ -30,7 +30,7 @@ import {
   sweepUnreferencedMediaOp,
 } from 'simplycms/admin-server/impl';
 
-describe('sweepUnreferencedMediaOp (Е6д-22)', () => {
+describe('sweepUnreferencedMediaOp', () => {
   const d = useCatalogMediaDb('simplycms_e6d_media_sweep');
   const { f } = d;
   const age = (ref: string, hours: number) =>

@@ -52,7 +52,7 @@ function collectFetchedApiPaths(pathspecs: string[]): string[] {
     raw = execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
   } catch (error) {
     // `git grep` без збігів виходить з кодом 1 — це порожній результат, а не
-    // збій. З К3-Е6б (знесено `/api/revalidate-theme`) код ядра не робить
+    // збій. Відколи знесено `/api/revalidate-theme`, код ядра не робить
     // жодного `fetch('/api/…')`: адмінка ходить serverFn-ами. Будь-який інший
     // код виходу — справжня поломка, її не ковтаємо.
     if ((error as { status?: number }).status !== 1) throw error;
@@ -93,7 +93,7 @@ describe('паритет URL: fetch(/api/…) ↔ файли роутів', () =
 
   it('гард не порожній — той самий grep знаходить зразок і резолвить його', () => {
     // Інакше зламаний grep мовчки перетворив би цей файл на no-op. Раніше це
-    // доводив живий `fetch` адмінки; з К3-Е6б його немає, тож механіку
+    // доводив живий `fetch` адмінки; тепер його немає, тож механіку
     // перевіряє зразок у цьому файлі (SELF_CHECK_PATHSPECS).
     const sample = collectFetchedApiPaths(SELF_CHECK_PATHSPECS);
     expect(sample).toEqual(['/api/health']);

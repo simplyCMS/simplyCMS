@@ -1,4 +1,4 @@
-// Ціни картки товару: середовище цін вітрини (Е6в-10) + `priceForCard`.
+// Ціни картки товару: середовище цін вітрини + `priceForCard`.
 
 import { useMemo } from 'react';
 import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';

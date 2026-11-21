@@ -29,7 +29,7 @@ export const messages = {
   'catalog.filters.booleanYes': 'Так',
   'catalog.filters.noOptions': 'Немає опцій',
 
-  // Числові діапазони без видимого лейбла (К2-Е0, Е0-4) — доступні імена
+  // Числові діапазони без видимого лейбла — доступні імена
   'catalog.filters.priceMinAria': 'Ціна від',
   'catalog.filters.priceMaxAria': 'Ціна до',
   'catalog.filters.propertyMinAria': '{property}: значення від',

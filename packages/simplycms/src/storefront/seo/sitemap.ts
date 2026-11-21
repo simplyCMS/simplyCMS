@@ -2,7 +2,7 @@ import type { SitemapData } from '../loaders/sitemap';
 import { indexPolicy } from './index-policy';
 
 /**
- * Рендер `/sitemap.xml` — ЧИСТА функція від даних (В2-К1а).
+ * Рендер `/sitemap.xml` — ЧИСТА функція від даних.
  *
  * 🔴 Раніше тут же жив і похід у базу (клієнт БД параметром), і саме це
  * робило юніт-тест тестом мока PostgREST, а не тестом sitemap. Після переходу

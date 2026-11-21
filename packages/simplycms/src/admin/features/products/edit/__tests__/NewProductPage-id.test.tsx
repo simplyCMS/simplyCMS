@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// К3-Е6д-1: id нового товару генерується наперед і ОДИН І ТОЙ САМИЙ іде і як
+// Id нового товару генерується наперед і ОДИН І ТОЙ САМИЙ іде і як
 // власник фото (`entityId` картки), і в `products.create` (`useProductCreate`).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';

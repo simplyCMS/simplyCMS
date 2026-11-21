@@ -5,7 +5,7 @@ import { loadTranslator } from 'simplycms/i18n';
 import type { Translator, UiLocalePair } from 'simplycms/i18n';
 
 /**
- * Хелпери `head()` роутів вітрини (Е6б-10).
+ * Хелпери `head()` роутів вітрини.
  *
  * 🔴 Окрема тека, а не `storefront-routes/seo`: `seo` — server-only
  * (`contracts/server-only.ts`), а `head()` виконується і в клієнтському

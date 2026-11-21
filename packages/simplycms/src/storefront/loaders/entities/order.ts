@@ -40,7 +40,7 @@ export interface OrderDetailRow extends OrderListRow {
   last_name: string;
   email: string;
   phone: string;
-  /** Знімок доставки (Е6а-8); розбирає `parseShippingSnapshot`. */
+  /** Знімок доставки; розбирає `parseShippingSnapshot`. */
   shipping_data: JsonValue | null;
   delivery_city: string | null;
   delivery_address: string | null;
@@ -139,8 +139,8 @@ export function groupItemsByOrder(
 }
 
 /**
- * Звужує ПД замовлення до рядків (колонки nullable лише заради знеособлення,
- * Е6г-7). Кидає, а не підставляє `''`: інваріант «або стерто, або заповнено»
+ * Звужує ПД замовлення до рядків (колонки nullable лише заради знеособлення).
+ * Кидає, а не підставляє `''`: інваріант «або стерто, або заповнено»
  * тримає CHECK, а стерте замовлення вітрині недосяжне (`user_id` і
  * `access_token` — `NULL`), тож `null` тут — порушення інваріанта, і тихий
  * порожній рядок його б сховав.

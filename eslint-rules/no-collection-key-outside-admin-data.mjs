@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'node:path';
 
 /**
- * `collectionKey` — лише для колекцій `admin-data` (Е3-15′, рішення
+ * `collectionKey` — лише для колекцій `admin-data` (рішення
  * архітектора: власне правило, не тір-зона й не `query-key-from-entity` —
  * та ловить ЛІТЕРАЛИ в `queryKey`, а не сам факт імпорту функції).
  *
@@ -40,7 +40,7 @@ function targetsEntitiesModule(source, filename) {
 }
 
 const MESSAGE =
-  'collectionKey належить ВИКЛЮЧНО колекціям admin-data (Е3-15′): write-back ' +
+  'collectionKey належить ВИКЛЮЧНО колекціям admin-data (docs/architecture/data-layer.md §4): write-back ' +
   'по ньому перезаписує ПРЕФІКСНО всі ключі, що його розширюють ' +
   '(query-db-collection findAll). Поза admin-data — entityKey(x).variant()/.scoped().';
 

@@ -5,7 +5,7 @@ import type { Json } from 'simplycms/contracts';
 
 /**
  * Межі дати знижки чи групи. 🔴 Не косметика: `parseDiscountRules` (межа
- * «БД → рушій», Е6в-8) читає `timestamptz` із JSON-рядка Postgres, а рік
+ * «БД → рушій») читає `timestamptz` із JSON-рядка Postgres, а рік
  * ≥ 10000 чи дата до нашої ери там — не ISO, `new Date` дає `NaN`, і ОДИН
  * такий рядок валить ціноутворення ВСЬОГО магазину. Верхня межа — з
  * добовим запасом: JSON пише дату в часовому поясі сесії, і 9999-12-31 UTC
@@ -28,7 +28,7 @@ const target = z.discriminatedUnion('targetType', [
   }),
 ]);
 
-// Кожна умова — через реєстр рушія (Е6в-4): невідомий тип чи значення поза
+// Кожна умова — через реєстр рушія: невідомий тип чи значення поза
 // контрактом — 400 тут, а не `condition_invalid` у кожному розрахунку ціни.
 const condition = z
   .object({
@@ -42,7 +42,7 @@ const condition = z
   );
 
 /**
- * КАНОН вводу `saveDiscount` (Е6в-16). `discountValue` — скінченне число
+ * КАНОН вводу `saveDiscount`. `discountValue` — скінченне число
  * (Zod 4 `number` не пропускає `NaN`/`Infinity`): `numeric` прийняв би
  * рядок `'NaN'`, і `parseDiscountRules` упав би на всьому магазині.
  */

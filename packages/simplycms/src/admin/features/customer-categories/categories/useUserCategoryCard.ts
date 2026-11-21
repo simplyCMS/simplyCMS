@@ -26,7 +26,7 @@ const EMPTY: UserCategoryFormInput = {
 /**
  * Стан картки категорії. `isDefault` у формі немає (readonly для фабрики):
  * дефолт ставить кнопка списку. Видалення — `collection.delete`, відмови
- * Е6в-18 показує `reportTxError`.
+ * Показує `reportTxError`.
  */
 export function useUserCategoryCard(categoryId: string | undefined) {
   const t = useT();

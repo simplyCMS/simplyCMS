@@ -5,7 +5,7 @@ import { useT, type MessageKey } from 'simplycms/i18n';
 
 // Мапа ключів: сегмент URL → підпис розділу. Лишився єдиний розділ без
 // власної сторінки; решта записів зносились разом зі сторінками, що їх
-// замінили (Е6г-12).
+// замінили.
 const pageNameKeys: Record<string, MessageKey> = {
   languages: 'admin.nav.languages',
 };

@@ -1,8 +1,8 @@
-// Замикання ланцюга «сесія Better Auth → claims → RLS» (Task 7, план В2-К1а).
+// Замикання ланцюга «сесія Better Auth → claims → RLS».
 //
-// 🔴 Заради ЦЬОГО файлу будувався весь контур К1а. Кожна попередня задача
-// доводила свою половину окремо: Task 5 — що RLS звужує рядки під claims,
-// Task 6 — що `withActor` ці claims виставляє, юніти Task 7 — що Better Auth
+// 🔴 Заради ЦЬОГО файлу будувався весь контур. Кожна попередня задача
+// доводила свою половину окремо: матриця RLS — що RLS звужує рядки під claims,
+// гейт `withActor` — що він ці claims виставляє, юніти Better Auth — що вона
 // живе без Docker. Жодна з них не доводила головного: що id, здобутий із
 // РЕАЛЬНОЇ сесії, дійсно замикає ланцюг на реальній БД. Тут signUp іде проти
 // накатаного baseline, id береться саме із сесії (не з insert-у), і саме він
@@ -162,7 +162,7 @@ describe('Better Auth над реальним Postgres', () => {
     ).toEqual([first.id]);
   });
 
-  it('invite власника: токен випускається й гаситься; роль admin від випуску/перевірки не видається (Р19)', async () => {
+  it('invite власника: токен випускається й гаситься; роль admin від випуску/перевірки не видається', async () => {
     const email = 'owner@example.test';
     const invite = await issueOwnerInvite({
       store: ownerInviteStore,
@@ -197,7 +197,7 @@ describe('Better Auth над реальним Postgres', () => {
       `select role::text from public.user_roles where user_id = $1`,
       [invite.userId],
     );
-    // Р19: роль видає лише прийняття запрошення (`acceptOwnerInvite`).
+    // Роль видає лише прийняття запрошення (`acceptOwnerInvite`).
     expect(roles).toEqual([]);
   });
 

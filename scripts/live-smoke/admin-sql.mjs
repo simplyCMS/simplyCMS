@@ -1,6 +1,6 @@
 /**
- * Прямий SQL кроку каталогу адмінки (К3-Е3) — окремим модулем, а не
- * дописане в `./sql.mjs`: спільний файл живе воронкою покупця (Е0) і без
+ * Прямий SQL кроку каталогу адмінки — окремим модулем, а не
+ * дописане в `./sql.mjs`: спільний файл живе воронкою покупця і без
  * розділення переріс би канон 150 рядків. `sql()` — звідти, повторно.
  */
 import { sql } from './sql.mjs';
@@ -38,7 +38,7 @@ export async function productCountBySlug(url, slug) {
   return n;
 }
 
-/** Тип ціни за кодом ('retail' — демо-каталог К2-Е0). */
+/** Тип ціни за кодом ('retail' — демо-каталог). */
 export async function priceTypeByCode(url, code) {
   const [row] = await sql(
     url,
@@ -50,7 +50,7 @@ export async function priceTypeByCode(url, code) {
 }
 
 /**
- * Ціна РІВНЯ ТОВАРУ (`modification_id IS NULL` — контракт Е3-14) для пари
+ * Ціна РІВНЯ ТОВАРУ (`modification_id IS NULL` — контракт) для пари
  * товар/тип ціни. `null` — рядка немає (поле лишили порожнім).
  */
 export async function productPrice(url, productId, priceTypeId) {

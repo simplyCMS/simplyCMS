@@ -48,7 +48,7 @@ export default function OrderSuccess() {
   >;
   // Токен захоплюється один раз, бо ефект нижче знімає його з URL; сервер
   // токен не гасить, тож повторні запити з токеном із памʼяті не послаблюють
-  // правила К2-Е0 «не тримати в URL/історії».
+  // правила «не тримати в URL/історії».
   const [token] = useState(() => search.token ?? null);
   const { user } = useAuth();
   const locale = useContentLocale();

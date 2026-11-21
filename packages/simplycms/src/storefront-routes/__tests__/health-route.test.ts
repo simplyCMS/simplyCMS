@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Роут `/api/health` (Е6б-28): `GET` — JSON health, `HEAD` — те саме без
+ * Роут `/api/health`: `GET` — JSON health, `HEAD` — те саме без
  * тіла, будь-який інший метод — 405 з `Allow: GET, HEAD` через `ANY`, без БД
  * і без SSR.
  *

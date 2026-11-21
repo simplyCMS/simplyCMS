@@ -44,7 +44,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('ShippingMethodsPage', () => {
-  it('рядок: назва, провайдер, режим ціни (carrier — підпис Е6а-4), порядок', async () => {
+  it('рядок: назва, провайдер, режим ціни (carrier — підпис), порядок', async () => {
     render(<ShippingMethodsPage />, { wrapper });
     await screen.findByText('Нова пошта');
     expect(

@@ -6,7 +6,7 @@ export {
   registerPluginModule,
   getRegisteredPluginModules,
 } from './PluginLoader';
-// Синхронізація хуків вкладки після serverFn `setPluginActive` (Е6б-17):
+// Синхронізація хуків вкладки після serverFn `setPluginActive`:
 // запис у БД — справа сервера, реєстр браузера — клієнта.
 export { syncPluginHooks } from './sync-hooks';
 

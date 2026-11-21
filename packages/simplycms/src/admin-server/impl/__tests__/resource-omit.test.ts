@@ -3,7 +3,7 @@ import { getTableColumns } from 'drizzle-orm';
 import type { Column } from 'drizzle-orm';
 import { orders } from 'simplycms/schema';
 
-// Е5-7 / Е5-12: `omit` і `maxLimit` фабрики ресурсу. Окремий файл, бо
+// `omit` і `maxLimit` фабрики ресурсу. Окремий файл, бо
 // `resource.test.ts` уже понад ліміт розміру; моки — ті самі канали.
 vi.mock('simplycms/auth', async (orig) => ({
   ...(await orig()),
@@ -66,7 +66,7 @@ async function captureList(
   return { limit, select };
 }
 
-describe('omit (Е5-7)', () => {
+describe('omit', () => {
   it('pickColumns(orders, [accessToken]) не містить accessToken, містить решту', () => {
     const picked = pickColumns(orders, ['accessToken']);
     expect('accessToken' in picked).toBe(false);
@@ -140,7 +140,7 @@ describe('omit (Е5-7)', () => {
   });
 });
 
-describe('maxLimit (Е5-12)', () => {
+describe('maxLimit', () => {
   const capped = defineAdminResource({
     ...ordersConfig,
     omit: ['accessToken'],

@@ -113,7 +113,7 @@ describe('defineAdminResource', () => {
       readonly: ['id', 'isDefault', 'createdAt'],
     });
     // 'createdAt' в ОБОХ списках → __overlappingColumns: "createdAt"
-    // (знахідка рев'ю ред.2: перетин давав клієнту право перезаписати
+    // (знахідка рев'ю: перетин давав клієнту право перезаписати
     // мітку створення, а тип мовчав).
     // @ts-expect-error — createdAt і writable, і readonly
     defineAdminResource({

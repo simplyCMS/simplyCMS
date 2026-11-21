@@ -1,5 +1,5 @@
 /**
- * Частини «видалення» і «дашборд» кроку К3-Е6г (`./admin-customers.mjs`).
+ * Частини «видалення» і «дашборд» кроку (`./admin-customers.mjs`).
  *
  * Видалення A (має замовлення й відгук): кнопка неактивна, доки не введено
  * email; після — замовлення є, ПД і `access_token` `NULL`, адреса знімка
@@ -55,7 +55,7 @@ export async function deletePart({ page, pages, base, dbUrl, check, fx, st }) {
         'delivery_city',
       ].every((k) => order[k] === null) &&
       // Демо має лише точку видачі: її знімок знеособлення не чіпає. Стирання
-      // адреси `kind: address` доводить харнес Task 7, не цей прогін.
+      // адреси `kind: address` доводить харнес, не цей прогін.
       order.dest_kind === 'pickup-point' &&
       order.dest_address !== null &&
       gone.every((n) => n === 0),

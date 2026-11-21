@@ -1,4 +1,4 @@
-// К3-Е6д-4/5, Е6д-21: реальний `lookupMediaForRequest` проти живої БД.
+// Реальний `lookupMediaForRequest` проти живої БД.
 // Сесії фейкові (`x-test-user` → субʼєкт), усе решта — справжнє: гість іде
 // через `withStorefrontDb` (app_user), покупець — через `withCustomerDb`.
 import { describe, expect, it, vi } from 'vitest';
@@ -20,7 +20,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   }),
 }));
 
-describe('роздача медіа: рядок і видимість (Е6д-21)', () => {
+describe('роздача медіа: рядок і видимість', () => {
   const d = useReviewsDb('simplycms_e6d_media_visibility');
   const { f } = d;
 

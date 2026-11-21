@@ -42,7 +42,7 @@ export const messages = {
   'admin.settings.network.youtube': 'YouTube',
   'admin.settings.network.x': 'X',
   'admin.settings.network.viber': 'Viber',
-  // Файлове сховище: хвости стирання (Е6д-20).
+  // Файлове сховище: хвости стирання.
   'admin.settings.storage.title': 'File storage',
   'admin.settings.storage.hint':
     'Files that could not be erased after their record was deleted. They are no longer shown on the site',
@@ -56,7 +56,7 @@ export const messages = {
   'admin.settings.storage.sweepText':
     'Files older than a day that are not used anywhere will be erased. This cannot be undone',
   'admin.settings.storage.swept': 'Files removed: {count}',
-  // Пошта: хвости outbox (Е8-Р10).
+  // Пошта: хвости outbox.
   'admin.settings.mail.title': 'Mail',
   'admin.settings.mail.hint':
     'Emails that could not be sent. The body is not shown here — it may contain a sign-in link',

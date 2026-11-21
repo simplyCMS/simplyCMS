@@ -1,4 +1,4 @@
-// Фінальне рев'ю К3-Е6в (F2): `LOCK_KEYS.customerConfig` у
+// `LOCK_KEYS.customerConfig` у
 // `removeUserCategoriesOp` — єдина серіалізація з `saveDiscount` з умовою
 // `user_category` (id категорій у jsonb без FK). Детерміновано: зовнішній
 // тримач advisory-ключа (`holdAdvisoryLock`/`stillPending`) і керована гонка
@@ -27,13 +27,13 @@ import {
   saveDiscountOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: видалення категорій покупців — лок (F2)', () => {
+describe('admin: видалення категорій покупців — лок', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_categories_locks');
   const url = () => db.url();
   const categoryRows = (id: string) =>
     F.rows(url(), `select id from public.user_categories where id = $1`, [id]);
 
-  it('F2: remove стоїть, поки зовнішній тримає LOCK_KEYS.customerConfig; після release — видалено', async () => {
+  it('remove стоїть, поки зовнішній тримає LOCK_KEYS.customerConfig; після release — видалено', async () => {
     const category = await F.seedCategory(url());
     const lock = await holdAdvisoryLock(url(), 'customer-config');
     try {
@@ -48,7 +48,7 @@ describe('admin: видалення категорій покупців — ло
     }
   });
 
-  it('F2: гонка saveDiscount(user_category in [X]) ↔ remove(X) — висячого id в умовах немає', async () => {
+  it('гонка saveDiscount(user_category in [X]) ↔ remove(X) — висячого id в умовах немає', async () => {
     const category = await F.seedCategory(url());
     const group = crypto.randomUUID();
     await F.rows(

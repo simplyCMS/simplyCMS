@@ -23,7 +23,7 @@ function Body({ languages }: BodyProps) {
   const t = useT();
   const primary =
     languages.find((l) => l.isDefault)?.code ?? languages[0]!.code;
-  // К3-Е6д-1: id нового товару наперед — фото привʼязуються до нього ще до
+  // Id нового товару наперед — фото привʼязуються до нього ще до
   // збереження, і той самий id йде в `products.create`.
   const [newId] = useState(() => crypto.randomUUID());
   const [active, setActive] = useState(primary);

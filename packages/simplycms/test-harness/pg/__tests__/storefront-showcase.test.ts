@@ -68,7 +68,7 @@ const MIGRATIONS_DIR = join(import.meta.dirname, '../../../migrations');
 /** Базова ціна, на якій міряється відсоток знижки. */
 const BASE_PRICE = 1000;
 
-/** Ліс знижок вітрини: правила зі сховища → дерево без неактивних (Е6в-8). */
+/** Ліс знижок вітрини: правила зі сховища → дерево без неактивних. */
 const loadForest = async (db: ActorDb, priceTypeId: string) =>
   buildDiscountForest(await loadDiscountRules(db), priceTypeId, {
     includeInactive: false,
@@ -226,7 +226,7 @@ describe('вітрина: знижки, банери, залишки, відгу
     expect(titles).not.toContain(EXPIRED_BANNER_TITLE);
   });
 
-  it('банери звужуються розділом; банер section без розділу не віддається ніколи (Е6д-12)', async () => {
+  it('банери звужуються розділом; банер section без розділу не віддається ніколи', async () => {
     const sectionId = await firstId(
       `select id from public.sections where slug = 'sonyachni-paneli'`,
     );

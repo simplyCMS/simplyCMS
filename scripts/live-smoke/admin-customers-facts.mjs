@@ -1,11 +1,11 @@
 /**
- * Агрегати для кроку покупців К3-Е6г: цифри дашборду «з нуля» і сироти.
+ * Агрегати для кроку покупців: цифри дашборду «з нуля» і сироти.
  */
 import { sql } from './sql.mjs';
 
 const one = async (...args) => (await sql(...args))[0] ?? null;
 
-/** Цифри дашборду «з нуля» тим самим SQL, що й `dashboardSummary` (Е6г-12). */
+/** Цифри дашборду «з нуля» тим самим SQL, що й `dashboardSummary`. */
 export const dashboardFacts = async (url) => ({
   ...(await one(
     url,

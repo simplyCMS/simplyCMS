@@ -12,7 +12,7 @@ import { lineKey, loadLineImages } from './line-images';
 const EMPTY_QUOTE: CartQuote = { lines: [], subtotal: 0 };
 
 /**
- * Квота кошика (Е6в-13) — ціни, знижки й підказки рядків тим самим ядром
+ * Квота кошика — ціни, знижки й підказки рядків тим самим ядром
  * (`loadPricingContext` + `priceCart`), що рахує чек: картка, кошик і чек
  * розійтися не можуть за побудовою.
  *
@@ -35,7 +35,7 @@ export async function quoteCartFor(
 ): Promise<CartQuote> {
   if (items.length === 0) return EMPTY_QUOTE;
 
-  // Мініатюри — у тій самій транзакції, мовою назв (Task 17б): кошик на `/en` показує фото en.
+  // Мініатюри — у тій самій транзакції, мовою назв: кошик на `/en` показує фото en.
   const load = async (db: ActorDb) => {
     const priced = await priceCart(
       db,

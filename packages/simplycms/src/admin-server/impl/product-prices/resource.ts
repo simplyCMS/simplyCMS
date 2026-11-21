@@ -4,7 +4,7 @@ import { defineAdminResource } from '../resource';
 
 /**
  * Ціни — ЛИШЕ читання фабрикою; запис — атомарним набором
- * saveProductPrices (Е3-10). writable порожній: insert/update/remove цього
+ * saveProductPrices. writable порожній: insert/update/remove цього
  * ресурсу serverFn-ами НЕ виставляються (index.ts).
  */
 export const productPricesOps = defineAdminResource({

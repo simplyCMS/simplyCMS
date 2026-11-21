@@ -36,7 +36,7 @@ afterEach(cleanup);
  * каруселі (`catalogKeys.sectionProducts`, префікс `ENTITY.products`) він
  * тепер відрізняється ще на кроці 0 (`'catalog-products'` проти
  * `'products'`) — сильніша ізоляція, ніж хвостовий `null`, яким
- * розрізнялись форми до фіксу агрегату (фінальне рев'ю Е1а).
+ * розрізнялись форми до фіксу агрегату.
  */
 
 const SECTION_ID = 'sec-1';

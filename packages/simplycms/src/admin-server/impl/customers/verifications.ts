@@ -4,7 +4,7 @@ import type { ActorDb } from 'simplycms/db';
 import { verifications } from 'simplycms/schema';
 
 /**
- * Відкликає токени, прив'язані до користувача або його email (Е6г-2).
+ * Відкликає токени, прив'язані до користувача або його email.
  * Кличуть зміна email (зі СТАРИМ email) і видалення покупця.
  *
  * У BA 1.7.7 скидання пароля пише `reset-password:<token>` зі

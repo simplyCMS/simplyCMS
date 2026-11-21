@@ -6,7 +6,7 @@ import type { CartQuote } from 'simplycms/contracts';
 import { useCart } from 'simplycms/react-query';
 
 /**
- * Drawer кошика (Е6в-13): ціни, знижки й підказки — лише з серверної квоти.
+ * Drawer кошика: ціни, знижки й підказки — лише з серверної квоти.
  * Квоту дає T5-контейнер (`core/components/cart/CartDrawer`) через справжній
  * `useCartQuote`; замокано лише serverFn. `cart-ui` квоту лише показує;
  * підказки рендерить контейнер (`DiscountHints` з catalog-ui).

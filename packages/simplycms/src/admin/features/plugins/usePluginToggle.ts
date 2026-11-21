@@ -34,7 +34,7 @@ interface ToggleVars {
 }
 
 /**
- * Перемикання плагіна (Е6б-17): serverFn `setPluginActive` → `syncPluginHooks`.
+ * Перемикання плагіна: serverFn `setPluginActive` → `syncPluginHooks`.
  *
  * 🔴 Порядок — спершу БД, потім реєстр вкладки: відмова сервера лишає
  * `HookRegistry` незмінним. Якщо ж упала реєстрація хуків, серверний рядок

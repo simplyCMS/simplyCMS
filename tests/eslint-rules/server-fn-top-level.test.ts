@@ -19,7 +19,7 @@ const lint = (code: string) =>
     { filename: 'f.ts' },
   );
 
-describe('server-fn-top-level (К3-4′)', () => {
+describe('server-fn-top-level', () => {
   it.each([
     [
       'export const chain',
@@ -88,7 +88,7 @@ describe('server-fn-top-level (К3-4′)', () => {
     expect(re).toHaveLength(1);
   });
 
-  // Пункт 10.1 Task 18: природні рефакторинги не виводять виклик з-під правила.
+  // Природні рефакторинги не виводять виклик з-під правила.
   const raw = (code: string) =>
     linter.verify(code, config, { filename: 'f.ts' });
 
@@ -142,7 +142,7 @@ describe('server-fn-top-level (К3-4′)', () => {
     expect(msgs[0]!.messageId).toBe('notTopLevel');
   });
 
-  // Фікс-раунд 1 Task 18 (I1): реекспорт ОГОЛОШЕННЯМ — модуль-хелпер, споживач якого
+  // Реекспорт ОГОЛОШЕННЯМ — модуль-хелпер, споживач якого
   // імпортує `csf` і виводить виклик з-під трекера й трансформації Start.
   it.each([
     [

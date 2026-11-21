@@ -24,7 +24,7 @@ pnpm add simplycms
 | `simplycms/storefront/loaders`  | `withStorefrontDb`, `withViewerDb` (ціни лише видів глядача сесії, Р29), `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 
-## Як лоадери ходять у БД (В2-К1а)
+## Як лоадери ходять у БД
 
 Лоадери — **server-only** і працюють на Drizzle поверх чистого Postgres.
 Перший аргумент кожного — `ActorDb`, тобто drizzle-інстанс, прибіндований до

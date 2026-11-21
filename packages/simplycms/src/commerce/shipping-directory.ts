@@ -41,7 +41,7 @@ export async function loadShippingDirectory(
 export async function loadShippingMethods(
   db: ActorDb,
 ): Promise<ShippingMethodRow[]> {
-  // 🔴 Колонки перелічено явно: `config` у публічний довідник не потрапляє (Е6а-13).
+  // 🔴 Колонки перелічено явно: `config` у публічний довідник не потрапляє.
   const rows = await db
     .select({
       id: shippingMethods.id,

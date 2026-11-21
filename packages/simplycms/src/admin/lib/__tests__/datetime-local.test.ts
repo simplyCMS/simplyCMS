@@ -18,7 +18,7 @@ afterAll(() => {
 
 const toMinute = (d: Date) => new Date(Math.floor(d.getTime() / 60000) * 60000);
 
-describe('datetime-local (Е6в-22)', () => {
+describe('datetime-local', () => {
   it.each([
     ['2026-03-29T00:30:00.000Z', '2026-03-29T02:30'], // день переходу на літній
     ['2026-10-25T00:30:00.000Z', '2026-10-25T03:30'], // перша «03:30» зимового

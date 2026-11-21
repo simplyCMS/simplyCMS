@@ -35,7 +35,7 @@ export const messages = {
   'admin.products.metaTitle': 'Meta Title',
   'admin.products.metaDescription': 'Meta Description',
 
-  // Список товарів (Е3-2): фільтри + «Показати ще», без текстового пошуку.
+  // Список товарів: фільтри + «Показати ще», без текстового пошуку.
   'admin.products.loadMore': 'Показати ще',
   'admin.products.filters.section': 'Розділ',
   'admin.products.filters.active': 'Активність',

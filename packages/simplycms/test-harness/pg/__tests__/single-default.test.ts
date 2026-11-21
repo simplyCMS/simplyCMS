@@ -1,4 +1,4 @@
-// К3-14: часткові unique-індекси `is_default` — поведінковий доказ, що
+// Часткові unique-індекси `is_default` — поведінковий доказ, що
 // інваріант «не більше одного дефолту» тримає БД, а не два нетранзакційні
 // запити з браузера (unset-усіх → insert нового), які й досі лишаються
 // єдиним записувачем на v2-стеку (легасі-клієнт БД без HTTP-посередника).
@@ -21,12 +21,12 @@ import { modificationGraphSql } from './fixtures/product-graph';
 import { PRIMARY, translatableStatements } from './fixtures/translatable-rows';
 
 const MIGRATIONS = join(import.meta.dirname, '../../../migrations');
-// 🔴 Локальна константа — `aggregate-deps.test.ts` (Task 1) ще не існує на
+// 🔴 Локальна константа — `aggregate-deps.test.ts` ще не існує на
 // момент цього завдання; шлях той самий, що використає той файл пізніше.
 const DEMO_SEED = join(MIGRATIONS, 'demo/demo-seed.sql');
 
 /**
- * 🔴 Параметризовано на ВСІ 7 індексів (рев'ю р3: два кейси доводили 2 з
+ * 🔴 Параметризовано на ВСІ 7 індексів (два кейси доводили 2 з
  * 7, а `drizzle-kit generate` пропущений синхронно в усіх джерелах індекс
  * не помітить). NOT NULL-колонки — з 0001_init.sql кожної таблиці.
  *
@@ -109,7 +109,7 @@ const SCOPED: Array<[table: string, a: string, b: string, aAgain: string]> = [
   ],
 ];
 
-describe('К3-14: інваріант is_default тримає БД (усі 7 індексів)', () => {
+describe('інваріант is_default тримає БД (усі 7 індексів)', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_single_default');
   let dbUrl: string;

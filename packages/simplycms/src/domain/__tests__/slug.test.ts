@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { PRICE_TYPE_CODE_RE } from '../slug';
 import { SLUG_FORMAT } from '../slugs';
 
-describe('формати ідентифікаторів каталогу (Е4-7)', () => {
+describe('формати ідентифікаторів каталогу', () => {
   it.each(['mono', 'tip-paneli', 'a1-b2'])('SLUG_FORMAT приймає %s', (s) =>
     expect(SLUG_FORMAT.test(s)).toBe(true),
   );

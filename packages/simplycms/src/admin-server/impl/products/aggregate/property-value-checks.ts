@@ -28,7 +28,7 @@ export async function loadKnownProperties(
   return new Set(props.rows.map((r) => r.id));
 }
 
-/** Яку колонку значення дозволяє тип (Р18: рівно одна, `text` — жодної). */
+/** Яку колонку значення дозволяє тип (рівно одна, `text` — жодної). */
 const COLUMN_OF: Readonly<Record<PropertyKind, string | null>> = {
   select: 'optionId',
   multiselect: 'optionId',

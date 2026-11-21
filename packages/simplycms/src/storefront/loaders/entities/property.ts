@@ -15,7 +15,7 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 // у m3) — реекспорт (не власне визначення). Звідси імпортують
 // `entities/order.ts`, `theme-record.ts` і `plugin-sdk` (через барель
 // `simplycms/storefront/loaders`); ціноутворення й доставка переїхали в
-// `simplycms/commerce` (К3-Е5б) і беруть `JsonValue` з `simplycms/schema/types`.
+// `simplycms/commerce` і беруть `JsonValue` з `simplycms/schema/types`.
 export type { JsonValue };
 
 /** Мапа select-а характеристики. */

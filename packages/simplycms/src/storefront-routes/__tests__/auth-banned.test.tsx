@@ -10,7 +10,7 @@ import {
 import { StoreProfileProvider } from 'simplycms/themes/store-profile';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 
-// Е6г-13: код BANNED з auth-клієнта → переклад із контактами магазину, а не
+// Код BANNED з auth-клієнта → переклад із контактами магазину, а не
 // сирий `error.message` Better Auth.
 
 const signInEmail = vi.fn();

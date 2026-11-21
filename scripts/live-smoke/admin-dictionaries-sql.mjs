@@ -1,6 +1,6 @@
 /**
- * Прямий SQL кроку довідників адмінки (К3-Е4). Окремим модулем поруч із
- * `./admin-sql.mjs` (каталог Е3): разом вони переросли б канон 150 рядків.
+ * Прямий SQL кроку довідників адмінки. Окремим модулем поруч із
+ * `./admin-sql.mjs` (каталог): разом вони переросли б канон 150 рядків.
  * `sql()` — з `./sql.mjs`, повторно.
  */
 import { sql } from './sql.mjs';
@@ -15,7 +15,7 @@ export async function sectionsBySlug(url, slug) {
   );
 }
 
-/** Властивість за slug (slug глобальний — Е4-6). */
+/** Властивість за slug (slug глобальний —). */
 export async function propertyBySlug(url, slug) {
   const [row] = await sql(
     url,
@@ -69,8 +69,8 @@ export async function priceTypeCount(url, code) {
  * Фікстура кроку: НЕдефолтний тип ціни, яким уже ціновано демо-товар (ціна
  * рівня товару, `modification_id NULL`). Через UI її не поставити без
  * окремого проходу картки товару, а предмет перевірки — саме відмова
- * видалення (Е4-1: RESTRICT → `AdminConflictError('reference')`). id — явні
- * (контракт id Е0: DEFAULT у цих таблицях знято).
+ * видалення (RESTRICT → `AdminConflictError('reference')`). id — явні
+ * (контракт id: DEFAULT у цих таблицях знято).
  */
 export async function seedPricedType(url, { code, name, productSlug }) {
   const [row] = await sql(

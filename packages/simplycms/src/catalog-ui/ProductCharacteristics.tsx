@@ -52,7 +52,7 @@ export function ProductCharacteristics({
   // `'true'`/`'false'` і `#rrggbb`, які лоадер кладе у `value` за `value_kind`.
   // 🔴 Назва опції — з `option.name` (join `property_options`, завжди
   // свіжий), НЕ з `pv.value`: для рядків з опцією `value` — застарілий
-  // кеш, що розходиться при перейменуванні опції (Е3-13, ревізія).
+  // кеш, що розходиться при перейменуванні опції (ревізія).
   const formatValue = (pv: PropertyValue): string => {
     if (pv.property?.property_type === 'boolean') {
       return pv.value === 'true' ? t('common.yes') : t('common.no');

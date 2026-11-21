@@ -1,4 +1,4 @@
-// Е3-7/К3-13: одна склейка grant → роль → транзакція для admin-server, і
+// Одна склейка grant → роль → транзакція для admin-server, і
 // мапінг конфліктів БД (23505/23503) у AdminConflictError + 409 ДО throw.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

@@ -1,5 +1,5 @@
 /**
- * Підкроки 1–2 кроку «система» К3-Е6б (`./admin-system.mjs`): профіль
+ * Підкроки 1–2 кроку «система» (`./admin-system.mjs`): профіль
  * магазину й заміна логотипа. Окремим модулем за каноном 150 рядків.
  *
  * 🔴 Перед мутацією покупець ПРОГРІВАЄ кеш профілю (`storeProfileCache`)
@@ -51,7 +51,7 @@ export async function profilePart({ page, buyerPage, base, dbUrl, check, fx }) {
 
   await page.goto(`${base}/admin/settings`, { waitUntil: 'networkidle' });
   await page.locator('#sp-name').fill(fx.name);
-  // Демо має `homeTitle`; без нього заголовок головної — назва (Е6б-10).
+  // Демо має `homeTitle`; без нього заголовок головної — назва.
   await page.locator('#sp-home-title').fill('');
   await page.locator('#sp-phone').fill(fx.phone);
   await uploadLogo(page, 'logo-1.png');

@@ -11,13 +11,13 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 export const removeDiscountsInput = discountsOps.removeSchema;
 
 /**
- * Видалення знижок (F6 фінального рев'ю К3-Е6в) під `LOCK_KEYS.discountConfig` —
- * ПЕРШИМ запитом, як `saveDiscount` (Е6в-16) і видалення груп.
+ * Видалення знижок під `LOCK_KEYS.discountConfig` —
+ * ПЕРШИМ запитом, як `saveDiscount` і видалення груп.
  *
  * 🔴 Без локу паралельний `saveDiscount` з тим самим `id` чекав би лише на
  * рядок: після COMMIT видалення його upsert вставив би знижку наново —
  * видалену власником знижку «воскрешав» би чужий запис. Фабричний `remove`
- * лок-хука Е6а-16 не бере (той покриває лише insert/update), тому —
+ * лок-хука фабрики не бере (той покриває лише insert/update), тому —
  * іменована операція. Цілі й умови йдуть FK-каскадом; відповідь — та сама
  * `{ count }`, що чекає колекція.
  */

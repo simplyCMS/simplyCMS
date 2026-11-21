@@ -3,7 +3,7 @@ import { getRegisteredPluginModules, removePluginHooks } from './PluginLoader';
 
 /**
  * Привести `HookRegistry` вкладки у відповідність до `is_active` плагіна
- * (Е6б-17). Без БД: рядок `plugins` уже записав serverFn `setPluginActive`,
+ *. Без БД: рядок `plugins` уже записав serverFn `setPluginActive`,
  * а серверна операція реєстр браузера змінити не може — тому синхронізацію
  * робить клієнт ПІСЛЯ відповіді сервера.
  *

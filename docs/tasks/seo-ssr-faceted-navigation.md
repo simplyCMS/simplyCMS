@@ -37,7 +37,7 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 - `packages/simplycms/src/storefront-routes/seo/sitemap.ts` (`buildSitemapXml`): `/`, `/catalog`, `/properties`, `/catalog/$sectionSlug`, товари `/<path>` (рядок на опубліковану мову з `xhtml:link`, М1). **Не включає** жодних property/option лендингів і жодних filter-URL.
 - `packages/simplycms/src/storefront-routes/seo/robots.ts` (`buildRobotsTxt`): Allow `/`, Disallow `/admin/`, `/api/`, `/auth/callback`. **Не керує** параметрами фільтрів/сортування/пагінації.
 - `simplycms.config.ts` `seo`: лише `siteName`, `defaultTitle`, `titleTemplate`. **Немає** `defaultDescription`, `baseUrl`, `ogImage` — потрібно для fallback-ланцюжка resolver-а.
-  > **Примітка (з К3-Е6б):** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
+  > **Примітка:** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
 
 ### 1.4 Модель даних (з `simplycms/schema/types`)
 - `sections`: `id, slug, name, description, parent_id, image_url, meta_title, meta_description, ...` — є `meta_*`; **немає** `is_filterable/has_page/property_type`.

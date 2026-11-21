@@ -19,7 +19,7 @@ function emailDomain(email: string): string | null {
 }
 
 /**
- * Статистика покупця для автоправил (Е6в-19) або `null`, якщо профілю немає.
+ * Статистика покупця для автоправил або `null`, якщо профілю немає.
  *
  * - Сума й кількість — замовлення покупця, крім `cancelled`. `LEFT JOIN`
  *   статусів: замовлення з `status_id NULL` РАХУЄТЬСЯ (внутрішній join тихо
@@ -27,7 +27,7 @@ function emailDomain(email: string): string | null {
  * - Email — `users.email` (джерело Better Auth), не копія в `profiles`; домен
  *   рахується лише для підтвердженої пошти (`users.email_verified`, Р30).
  * - Провайдери входу — усі `accounts.provider_id` (умова «будь-який рядок має X»).
- * - UTM — `registration_utm->>'utm_source'`/`'utm_campaign'` (ред.3): порожній
+ * - UTM — `registration_utm->>'utm_source'`/`'utm_campaign'`: порожній
  *   рядок, відсутній ключ чи не-обʼєкт → `null`.
  * - Днів від реєстрації — від `profiles.created_at` до переданого `now`.
  *

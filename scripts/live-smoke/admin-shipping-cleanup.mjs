@@ -1,5 +1,5 @@
 /**
- * Прибирання кроку доставки К3-Е6а (`finally` у `./admin-shipping.mjs`) —
+ * Прибирання кроку доставки (`finally` у `./admin-shipping.mjs`) —
  * САМЕ в цьому порядку, бо кожен крок знімає перешкоду наступному:
  * (1) скасувати тестові замовлення — резерв повертається, `stock_reserved = 0`
  * (інакше точку не видалити: `pickup_point_has_stock`); (2) видалити SQL-ом
@@ -26,7 +26,7 @@ import { leftovers } from './admin-shipping-final.mjs';
 
 const STATUS_SELECT = 'select[aria-label="Статус замовлення"]';
 
-/** Скасування власником у картці замовлення (як у кроці Е5); вже скасоване — no-op. */
+/** Скасування власником у картці замовлення (як у кроці); вже скасоване — no-op. */
 async function cancelOrder(page, base, dbUrl, orderId) {
   const now = await orderState(dbUrl, orderId);
   if (now?.code === 'cancelled') return now;

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { REPO, restrictedImports } from './lint';
 
 /**
- * Е6б-26: підтеки нутрощів T2 не називаються як теки тірів `src/`.
+ * Підтеки нутрощів T2 не називаються як теки тірів `src/`.
  *
  * 🔴 `eslint.tier-relative.mjs` матчить РЯДОК специфікатора, а не
  * резолвлений модуль: `../themes/x` усередині `admin-server/impl` правило
@@ -21,7 +21,7 @@ const subdirs = (dir: string): string[] =>
     .filter((e) => e.isDirectory() && e.name !== '__tests__')
     .map((e) => e.name);
 
-describe('тір-зони: імена підтек нутрощів T2 (Е6б-26)', () => {
+describe('тір-зони: імена підтек нутрощів T2', () => {
   const tiers = new Set(subdirs(SRC));
 
   it('множина тек src/ непорожня (гейт не порожній за побудовою)', () => {

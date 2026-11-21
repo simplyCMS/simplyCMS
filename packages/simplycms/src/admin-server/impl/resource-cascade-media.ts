@@ -3,7 +3,7 @@ import type { Table } from 'drizzle-orm';
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
 
 /**
- * Опція `cascadeMedia` фабрики (Е6д-19): дочірня таблиця, рядки якої FK
+ * Опція `cascadeMedia` фабрики: дочірня таблиця, рядки якої FK
  * `ON DELETE CASCADE` видаляє разом із батьком, а вони несуть медіа. Каскад
  * БД рядків `media` не бачить: без опції видалення батька лишало б їх (і
  * файли) живими — публічно доступними за URL і недосяжними для подальших
@@ -11,11 +11,11 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core';
  *
  * `fk` — колонка дочірньої таблиці, що посилається на `id` батька; `column` —
  * медіа-колонка тієї ж таблиці (`text` або `jsonb`-масив референсів);
- * власник рядка `media` — `{ entityType, <id дочірнього рядка> }` (Е6д-16).
+ * власник рядка `media` — `{ entityType, <id дочірнього рядка> }`.
  */
 export type ResourceCascadeMedia = {
   readonly fk: PgColumn;
-  /** Дворівневий каскад (К3-Е6д-1, `sections → section_properties →
+  /** Дворівневий каскад (`sections → section_properties →
    *  property_options`): колонка проміжної таблиці, що посилається на `id`
    *  батька. Тоді `fk` дочірньої таблиці посилається на `id` ПРОМІЖНОЇ. */
   readonly via?: PgColumn;
@@ -25,7 +25,7 @@ export type ResourceCascadeMedia = {
    * Колонка з id ВЛАСНИКА файлів, коли власник — не сам дочірній рядок
    * (М1: файли фото й перевизначень належать товару, `media.entity_id` =
    * `product_id`). Колонка з дочірньої таблиці або — за `via` — з проміжної.
-   * Без неї власник — `id` дочірнього рядка (Е6д-16).
+   * Без неї власник — `id` дочірнього рядка.
    */
   readonly owner?: PgColumn;
 };

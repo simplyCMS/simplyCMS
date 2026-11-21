@@ -6,7 +6,7 @@ import {
 } from 'simplycms/admin-data';
 
 /**
- * Розмір сторінки списку (Е5-14). 🔴 `useLiveInfiniteQuery` просить
+ * Розмір сторінки списку. 🔴 `useLiveInfiniteQuery` просить
  * `pageSize + 1` рядків (peek-ahead), а серверний `maxLimit` замовлень — 100:
  * інваріант `ORDERS_PAGE_SIZE + 1 <= maxLimit` стереже `tests/orders-page-size.test.ts`.
  */
@@ -20,7 +20,7 @@ export interface OrdersFilters {
  * Сторінка списку замовлень — on-demand зріз: фільтр статусу йде push-down
  * (eq), статус підтягується join-ом з eager-довідника. «Показати ще» —
  * offset + peek-ahead бібліотеки; текстового пошуку немає (П6).
- * Порядок `createdAt desc` + тай-брейкер `id` забезпечує сервер (Е3-8).
+ * Порядок `createdAt desc` + тай-брейкер `id` забезпечує сервер.
  */
 export function useOrdersList(filters: OrdersFilters) {
   const orders = useCollection(ordersCollection);

@@ -17,7 +17,7 @@ import { CartItemThumb } from './CartItemThumb';
 export interface CartItemViewProps {
   item: CartItemType;
   /**
-   * Рядок серверної квоти (Е6в-13): ціна, база, знижки. `null` — квоти ще
+   * Рядок серверної квоти: ціна, база, знижки. `null` — квоти ще
    * немає. Квоту дає T5-контейнер: `cart-ui` serverFn не імпортує.
    */
   line: CartQuoteLine | null;

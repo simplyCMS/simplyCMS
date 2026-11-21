@@ -69,7 +69,7 @@ describe('parseShippingSnapshot', () => {
     expect(parseShippingSnapshot({ ...pickup, destination })).toBeNull();
   });
 
-  // Знеособлення (Е6г-10): `kind` лишається, `city`/`address` обнулені.
+  // Знеособлення: `kind` лишається, `city`/`address` обнулені.
   it('приймає знеособлену адресу: city null, address null', () => {
     const snap = {
       methodName: 'Кур’єр',

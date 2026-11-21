@@ -40,8 +40,8 @@ const touches = (patch: Rec | null, keys: readonly Key[]) =>
   patch === null || keys.some((k) => patch[k] !== undefined);
 
 /**
- * Правила на ЗЛИТОМУ рядку (Е6д-2). `patch === null` — insert: перевіряється
- * все. На update правило живе, лише коли патч торкається його полів (Е6д-12):
+ * Правила на ЗЛИТОМУ рядку. `patch === null` — insert: перевіряється
+ * все. На update правило живе, лише коли патч торкається його полів:
  * банер, розділ якого видалено (FK `SET NULL`), інакше не вимкнути навіть
  * перемикачем.
  */
@@ -62,7 +62,7 @@ function check(row: Rec, patch: Rec | null): void {
   }
 }
 
-/** Guard банерів (Е6д-2): перехресні правила полів на злитому рядку. */
+/** Guard банерів: перехресні правила полів на злитому рядку. */
 export async function guardBanners(
   _db: ActorDb,
   write: ResourceGuardWrite<Rec, Rec>,

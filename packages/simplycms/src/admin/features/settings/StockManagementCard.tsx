@@ -14,7 +14,7 @@ import { Switch } from 'simplycms/ui/switch';
 type Props = {
   readonly decreaseOnOrder: boolean;
   readonly pending: boolean;
-  /** Перемикач зберігається одразу (Е6б-21), не кнопкою форми профілю. */
+  /** Перемикач зберігається одразу, не кнопкою форми профілю. */
   readonly onToggle: (next: boolean) => void;
 };
 

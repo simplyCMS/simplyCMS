@@ -5,7 +5,7 @@ import {
   targetExists,
 } from '../scripts/pack-inspect.mjs';
 
-// Packaging-suite (Task 1.4). Перевіряє НЕ репозиторний `package.json`, а
+// Packaging-suite. Перевіряє НЕ репозиторний `package.json`, а
 // артефакт публікації: `pnpm pack` кожного пакета ядра → розбір `.tgz` →
 // інваріанти опублікованого manifest-а:
 //   (а) top-level `exports` — це publish-варіант (pnpm застосував publishConfig);
@@ -102,7 +102,7 @@ describe('published packages: tarball parity', () => {
     // (`import './register-x';`) чи top-level мутація глобала, додані колись
     // усередині пакета, зникнуть у проді БЕЗ жодного червоного гейта — ані
     // збірка, ані типи, ані тести цього не бачать. Трек T увімкнув поле, тож
-    // трек T зобовʼязаний лишити по собі пару гардів:
+    // Зобовʼязаний лишити по собі пару гардів:
     //   • цей — що поле не зникло мовчки з опублікованого manifest-а;
     //   • ESLint-зона `simplycms-sideeffects/no-side-effect-import` в
     //     `eslint.config.mjs` — що в джерелах цих пакетів не зʼявився

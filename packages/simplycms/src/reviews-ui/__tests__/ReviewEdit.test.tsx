@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Редагування власного відгуку (Е6д-23): кнопка лише в автора, наявні фото,
+// Редагування власного відгуку: кнопка лише в автора, наявні фото,
 // збереження → `pending`-бейдж, чужий відгук без правки.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -58,7 +58,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('ProductReviews — правка власного відгуку (Е6д-23)', () => {
+describe('ProductReviews — правка власного відгуку', () => {
   it('«Редагувати» є у власного відгуку, у чужого — немає', async () => {
     getProductReviews.mockResolvedValue([
       review('ra', 'u-a'),

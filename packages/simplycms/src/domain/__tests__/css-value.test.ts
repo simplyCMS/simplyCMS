@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isSafeCssColor, isSafeCssValue } from '../css-value';
 
-describe('isSafeCssValue (Е6д-4)', () => {
+describe('isSafeCssValue', () => {
   it.each(['rgba(0,0,0,0.4)', '#112233', 'var(--x)'])('приймає %s', (v) => {
     expect(isSafeCssValue(v)).toBe(true);
   });

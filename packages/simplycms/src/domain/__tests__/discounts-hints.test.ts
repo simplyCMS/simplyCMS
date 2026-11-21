@@ -1,4 +1,4 @@
-// Порогові підказки (Е6в-12): той самий рушій на гіпотетичному порозі.
+// Порогові підказки: той самий рушій на гіпотетичному порозі.
 import { describe, expect, it } from 'vitest';
 import type { Discount, DiscountGroup } from 'simplycms/contracts';
 import { discountThresholdHints, resolveDiscount } from '../discounts';

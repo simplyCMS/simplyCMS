@@ -14,7 +14,7 @@ import { ProductSearchList, type ProductHit } from './ProductSearchList';
 import { useOrderItemsEdit } from './useOrderItemsEdit';
 
 /**
- * Діалог додавання товару в оформлене замовлення (Е5б-11): пошук → (вибір
+ * Діалог додавання товару в оформлене замовлення: пошук → (вибір
  * модифікації) → кількість → «Додати». Успіх закриває діалог; відмова (409)
  * лишає його відкритим — тост уже показав `useOrderItemsEdit`. In-flight
  * `ref` (а не лише `busy`-стан) відсікає другий клік до перемальовки.

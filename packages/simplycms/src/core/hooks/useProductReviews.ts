@@ -29,7 +29,7 @@ const SUBMIT_ERROR_KEY: Record<
   [REVIEW_SUBMIT_ERROR.alreadySubmitted]: 'reviews.alreadySubmitted',
   [REVIEW_SUBMIT_ERROR.notFound]: 'reviews.errors.notFound',
   [REVIEW_SUBMIT_ERROR.imagesChanged]: 'reviews.errors.changed',
-  // Стеля тіла запиту (К3-Е6д-2): відмова приходить від міддлвари, не від хендлера.
+  // Стеля тіла запиту: відмова приходить від міддлвари, не від хендлера.
   [PAYLOAD_TOO_LARGE_CODE]: 'errors.payloadTooLarge',
 };
 
@@ -56,7 +56,7 @@ export function useProductReviews(productId: string | undefined) {
   const t = useT();
 
   const reviewsQuery = useQuery({
-    // Актор у ключі (Е6д-17): відповідь залежить від того, хто питає (автор
+    // Актор у ключі: відповідь залежить від того, хто питає (автор
     // бачить свій `pending`). Без нього кеш гостя пережив би вхід, а кеш
     // покупця A показався б покупцю B.
     queryKey: [
@@ -103,7 +103,7 @@ export function useProductReviews(productId: string | undefined) {
       // приїхала б англійською серверною діагностикою просто в тост покупця.
       if (!user || !productId)
         throw new Error(t('product.review.notAuthorized'));
-      // serverFn приймає `FormData` (Е6д-6): фото й текст їдуть одним
+      // serverFn приймає `FormData`: фото й текст їдуть одним
       // запитом. Порожні рядки сервер зводить до `null`.
       const form = new FormData();
       form.set('productId', productId);
@@ -123,7 +123,7 @@ export function useProductReviews(productId: string | undefined) {
     onError: onFailure,
   });
 
-  // Правка (Е6д-23): `keep` — референси лишених фото, `images` — нові файли.
+  // Правка: `keep` — референси лишених фото, `images` — нові файли.
   // Той самий кеш і той самий ключ актора, що й подача: після успіху список
   // перечитується, і відгук приходить уже зі статусом `pending`.
   const updateReview = useMutation({

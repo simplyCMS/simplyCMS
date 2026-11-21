@@ -1,7 +1,7 @@
-// Е6а (фінальне рев'ю, F1): локи guarded remove доставки — детерміновано.
-// Advisory `shipping-config` доводять хелпери Е4-12 (`holdAdvisoryLock`/
+// Локи guarded remove доставки — детерміновано.
+// Advisory `shipping-config` доводять хелпери (`holdAdvisoryLock`/
 // `stillPending`), рядковий `FOR UPDATE` залишку — `pg_blocking_pids` проти
-// окремого зʼєднання (патерн `holdOrderRowLock` Е5): тест доводить САМЕ лок,
+// окремого зʼєднання (патерн `holdOrderRowLock`): тест доводить САМЕ лок,
 // а не FK RESTRICT, який стереже інший кейс (admin-shipping.test.ts).
 import { describe, expect, it, vi } from 'vitest';
 import { SYSTEM_SEED_IDS } from 'simplycms/schema';
@@ -32,7 +32,7 @@ import {
 const LOCK = 'shipping-config';
 const PICKUP = SHIPPING_PROVIDER.pickup;
 
-describe('admin: доставка — локи guarded remove (Е6а, F1)', () => {
+describe('admin: доставка — локи guarded remove', () => {
   const db = F.useShippingAdminDb('simplycms_admin_shipping_locks');
   const url = () => db.url();
   const exists = async (table: string, id: string) =>

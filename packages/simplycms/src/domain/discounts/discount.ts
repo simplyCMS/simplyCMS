@@ -1,4 +1,4 @@
-// Оцінка однієї знижки (Е6в-5…Е6в-7): активність, дати, цілі, умови.
+// Оцінка однієї знижки: активність, дати, цілі, умови.
 
 import type {
   AppliedDiscount,
@@ -25,7 +25,7 @@ export function isWithinDates(
   return !(startsAt && startsAt > now) && !(endsAt && endsAt < now);
 }
 
-/** Порожній список цілей — fail-closed (Е6в-7): «на все» лише явним `all`. */
+/** Порожній список цілей — fail-closed: «на все» лише явним `all`. */
 export function matchesTarget(
   targets: readonly DiscountTarget[],
   item: DiscountContext['item'],

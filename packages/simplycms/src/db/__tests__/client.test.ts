@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { closeDbPool, getDbPool, resolveDatabaseUrl } from '../client';
 
-// Юніт контракту env db-рантайму (Task 6, план В2-К1а). Живого Postgres не
+// Юніт контракту env db-рантайму. Живого Postgres не
 // потребує: `new pg.Pool()` конекту не відкриває — перше зʼєднання беруть
 // лише `connect()`/`query()`, яких тут немає.
 

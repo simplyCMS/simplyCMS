@@ -128,10 +128,10 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms-theme-*/**/*.tsx',
 ];
 
-// Доступні імена контролів воронки (К2-Е0, Е0-4, рішення Р5): у пʼяти теках
+// Доступні імена контролів воронки: у пʼяти теках
 // воронки 41 `<label>` не звʼязаний ні з чим — скрінрідер і `getByLabelText`
 // поля не знаходять. `cart-ui` у зоні наперед: форм там сьогодні нуль, і гейт
-// має стояти ДО появи першої. Адмінка — у зоні з К3-Е7 (виїмку зняли разом
+// має стояти ДО появи першої. Адмінка — у зоні (виїмку зняли разом
 // із легасі-шаром; негативний контроль — tests/eslint-admin-zones.test.ts).
 const A11Y_LABEL_ZONE = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
@@ -164,11 +164,11 @@ const serverEnvRestrictedSyntax = [
 const SERVER_ENV_FILES = [
   'packages/simplycms/src/storefront-routes/seo/robots.ts',
   'packages/simplycms/src/storefront-routes/seo/sitemap.ts',
-  // `siteUrl` кореня вітрини (Е6б-10/11): єдине джерело URL сайту для head().
+  // `siteUrl` кореня вітрини: єдине джерело URL сайту для head().
   'packages/simplycms/src/storefront-routes/server/root.ts',
   'packages/simplycms/routes/storefront/api/health.tsx',
   'src/start.ts',
-  // Прод-старт і CLI `owner:invite` (F5 рев'ю Е8): усі модулі теки читають
+  // Прод-старт і CLI `owner:invite`: усі модулі теки читають
   // `process.env` процесу, а не збірки, тож зона — тека (глоб), а не вибір
   // файлів: новий файл поруч не випаде з межі.
   'packages/simplycms/src/prod-start/*.ts',
@@ -190,7 +190,7 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
 
 // Точковий ратчет `mutation-cache-sync`: сторінки
 // `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
-// зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
+// зобовʼязані тримати гейт. Список РОСТЕ з міграцією сторінок (обернений
 // PENDING_FILES) — стартово одна сторінка.
 //
 // 🔴 `packages/simplycms/src/admin/features/**` у цей список НЕ входить — вона в зоні правила за побудовою
@@ -207,7 +207,7 @@ export const MUTATION_CACHE_SYNC_RATCHET = [];
 // 🔴 Похідне від ЄДИНОЇ декларації межі (`contracts/server-only.ts`): усі
 // server-only субшляхи ядра й серверні залежності — bare і з підшляхами.
 // Літерали нижче — те, що плагіну заборонено ПОНАД server-only: `@supabase/*`
-// (шар знесено в К3-Е7 — бан лишено як ратчет проти повернення) і serverFn-модулі
+// (шар знесено — бан лишено як ратчет проти повернення) і serverFn-модулі
 // ядра (`admin-server`, `plugin-sdk/server`): плагін кличе хуки SDK, а не
 // хендлери під ними.
 const PLUGIN_BOUNDARY_MESSAGE =
@@ -364,18 +364,18 @@ const eslintConfig = [
   // `packages/simplycms-plugin-*/**`) поза `packages/simplycms/`.
   // Негативний контроль кожної зони — `tests/tier-boundary.test.ts`.
   ...tierZoneConfigs,
-  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY (V2-К3,
-  // рішення К3-3), не літералом. Кастомне AST-правило, а не селектор у
+  // Ключі кешу вітрини — з реєстру ENTITY/AGGREGATE/SESSION_KEY,
+  // не літералом. Кастомне AST-правило, а не селектор у
   // `no-restricted-syntax`: ця зона накриває `storefront-routes/**` і
   // `*-ui/**`, які вже під i18n-зоною (`I18N_MIGRATED_FILES` вище), а flat
   // config ЗАМІНЮЄ опції правила цілком — спільний `no-restricted-syntax`
   // тут мовчки вимкнув би один із двох детекторів залежно від порядку
   // конфігів. Окреме імʼя правила прибирає перетин повністю.
   //
-  // `src/admin/**` — у зоні з К3-Е7 (DoD К3-3: адмінку переписано, виїмку
+  // `src/admin/**` — у зоні (адмінку переписано, виїмку
   // знято; негативний контроль — tests/eslint-admin-zones.test.ts).
   //
-  // 🔴 Референс-тема й референс-плагін — теж у зоні (борг Е1а №8, Е3-12):
+  // 🔴 Референс-тема й референс-плагін — теж у зоні:
   // `simplycms/contracts/entities` — публічний T0-субшлях, межа довіри тем
   // (`docs/architecture/themes.md`) її не забороняє; рішення архітектора
   // зняло точку зупинки плану. Плагін лишається в зоні на випадок власних
@@ -402,8 +402,8 @@ const eslintConfig = [
   // «мутація ⇒ кеш бачить наслідок»; серверну половину (persistence-хендлери
   // onInsert/onUpdate/onDelete) стереже окремий AST-гейт tests/handler-canon.test.ts.
   // Зона — фабрики колекцій (`admin-data`) + точковий ратчет переписаних
-  // сторінок адмінки (`MUTATION_CACHE_SYNC_RATCHET`): список РОСТЕ з хвилями
-  // Е3–Е6 у міру того, як `src/admin/pages/*` переходять на TanStack DB —
+  // сторінок адмінки (`MUTATION_CACHE_SYNC_RATCHET`): список РОСТЕ в міру
+  // того, як `src/admin/pages/*` переходять на TanStack DB —
   // патерн, обернений до `PENDING_FILES` i18n-гейта (там список звужується
   // до порожнього, тут — росте від порожнього). Окреме імʼя плагіна
   // (`simplycms-cache-sync`, не `simplycms`) — з тієї самої причини, що в
@@ -438,7 +438,7 @@ const eslintConfig = [
     },
     rules: { 'simplycms-write-back/awaited-write-back': 'error' },
   },
-  // К3-4′: createServerFn лише топ-рівневим `const` — компілятор Start
+  // createServerFn лише топ-рівневим `const` — компілятор Start
   // на повільному шляху падає, а на fast-path (файли, де детектовано лише
   // serverFn) МОВЧКИ пропускає нетоплевел-виклик, і серверний граф їде в
   // клієнтський бандл (див. eslint-rules/server-fn-top-level.mjs). Окреме
@@ -510,7 +510,7 @@ const eslintConfig = [
     },
     rules: { 'simplycms-start/no-input-validator': 'error' },
   },
-  // Файли — лише через порт (рішення Е2-9). Окреме імʼя плагіна
+  // Файли — лише через порт. Окреме імʼя плагіна
   // (`simplycms-storage`) — щоб опції не зливались із сусідніми правилами.
   {
     files: ['packages/simplycms/src/**/*.{ts,tsx}'],
@@ -519,7 +519,7 @@ const eslintConfig = [
     },
     rules: { 'simplycms-storage/no-direct-storage': 'error' },
   },
-  // Ратчет проти повернення `@supabase/*` (К3-Е7, Р2) — на ВСЕ репо, не лише
+  // Ратчет проти повернення `@supabase/*` — на ВСЕ репо, не лише
   // `packages/simplycms/src`. Власне імʼя плагіна — щоб не зливатись із
   // сусідніми зонами. Код шаблону магазину сюди не потрапляє (ігнор вище) —
   // його лінтує `tests/no-supabase-manifests.test.ts`.
@@ -532,8 +532,8 @@ const eslintConfig = [
     },
     rules: { 'simplycms-supabase/no-supabase-import': 'error' },
   },
-  // Ключ колекції admin-data — лише для колекцій admin-data (Е3-15′,
-  // рішення архітектора). Власне правило (не тір-зона, не
+  // Ключ колекції admin-data — лише для колекцій admin-data (рішення
+  // архітектора). Власне правило (не тір-зона, не
   // query-key-from-entity — та ловить літерали в queryKey, а не сам факт
   // імпорту функції); власне імʼя плагіна — з тієї ж причини, що в сусідніх
   // `simplycms-storage`/`simplycms-client-boundary`: flat config замінює
@@ -566,11 +566,11 @@ const eslintConfig = [
   // тека не імпортує server-only субшлях чи серверну залежність. Власне
   // правило, бо базовий `no-restricted-imports` не розрізняє `import` і
   // `import type` — `import type` стирається компілятором і в бандл не
-  // потрапляє, тож заборона на нього зламала б канон `OrderStatuses.tsx`
-  // (Е1а). `core` тут навмисно немає: `core/lib/**` — serverFn-модулі, які
+  // потрапляє, тож заборона на нього зламала б канон `OrderStatuses.tsx`.
+  // `core` тут навмисно немає: `core/lib/**` — serverFn-модулі, які
   // легально імпортують `simplycms/storefront/loaders`.
   // 🔴 `admin-data` — у зоні поруч з `admin`: колекції TanStack DB
-  // виконуються в браузері за побудовою (К3-9′ п.3), тож типи рядків беруть
+  // виконуються в браузері за побудовою, тож типи рядків беруть
   // лише `import type` з `simplycms/schema/types`/`simplycms/admin-server/impl`
   // — саме це стереже `tests/tier-boundary-client-boundary.test.ts`.
   // 🔴 Плагін НЕ `simplycms-boundary` (як у сусіднього `server-only-relative`,
@@ -716,7 +716,7 @@ const eslintConfig = [
       // Лендінг apps/www: власний згенерований роут-трі (той самий автор —
       // генератор TanStack Router, що й у host)
       'apps/www/src/routeTree.gen.ts',
-      // Fixture скретч-магазину (Task 3.1): це не код монорепо, а шаблон
+      // Fixture скретч-магазину: це не код монорепо, а шаблон
       // ЧУЖОГО проєкту — його імпорти резолвляться лише після `npm install`
       // із tarball-ів у /tmp, а не workspace-аліасами.
       'tests/pilot/store-template/**',

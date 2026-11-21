@@ -2,7 +2,7 @@ import type { ActorRole } from 'simplycms/db';
 import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';
 
 /**
- * Перший рубіж моделі безпеки B5″ — типізований authz у TS (Task 7, В2-К1а).
+ * Перший рубіж моделі безпеки B5″ — типізований authz у TS.
  *
  * 🔴 Рубежів два, і плутати їх не можна. ТУТ вирішується, чи операція взагалі
  * дозволена цьому субʼєкту; РОЛЬ БД (`app_user`/`app_admin`, вмикається
@@ -86,26 +86,26 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   'catalog.write': { admin: 'any' },
   'order.read': { user: 'own', admin: 'any' },
   'order.create': { user: 'own', admin: 'any' },
-  // Е5-8: зміна замовлення адмінкою (статус). Не `catalog.write` —
+  // Зміна замовлення адмінкою (статус). Не `catalog.write` —
   // замовлення не каталог; окрема операція — точка для майбутньої ролі
   // «менеджер замовлень» без переписування операцій.
   'order.manage': { admin: 'any' },
-  // Е6а-11: записи й читання доставки адмінкою (способи, зони, тарифи,
+  // Записи й читання доставки адмінкою (способи, зони, тарифи,
   // точки). Не `catalog.write` — доставка не каталог; прецедент `order.manage`.
   'shipping.manage': { admin: 'any' },
   // Е6д: банери — окрема ділянка контенту. Не `catalog.write` (банер не
   // каталог) і не спільне `content.manage` (спека §1): відгуки модеруються
   // іншою операцією `review.moderate`, тож «контент» не одна роль.
   'banner.manage': { admin: 'any' },
-  // Е6б-13: системні налаштування — профіль магазину, облік залишків, теми,
+  // Системні налаштування — профіль магазину, облік залишків, теми,
   // плагіни і запис конфігу плагіна (`pluginConfigWrite`). Одна операція: це
   // одна ділянка адмінки, а не окремі ролі; прецедент `shipping.manage`.
   // Завантаження логотипа лишається під `media.write`.
   'settings.manage': { admin: 'any' },
-  // Е6в-14: знижки, групи знижок і діагностика ціни — окрема ділянка адмінки
+  // Знижки, групи знижок і діагностика ціни — окрема ділянка адмінки
   // (не `catalog.write`: знижка не каталог); прецедент `shipping.manage`.
   'discount.manage': { admin: 'any' },
-  // Е6в-14: категорії покупців, автоправила, ручне призначення категорії й
+  // Категорії покупців, автоправила, ручне призначення категорії й
   // пошук покупця. Окремо від `discount.manage`: категорія визначає тип
   // ціни, тобто це керування покупцями, а не акціями.
   'customer.manage': { admin: 'any' },
@@ -116,7 +116,7 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
   'review.create': { user: 'own', admin: 'any' },
   'review.moderate': { admin: 'any' },
   'user.role.assign': { admin: 'any' },
-  // Завантаження й прибирання файлів адмінкою (рішення Е2-5). Не
+  // Завантаження й прибирання файлів адмінкою. Не
   // `catalog.write`: банери, розділи й відгуки каталогом не є, і менеджер
   // контенту без права на каталог мусить мати змогу завантажити банер.
   // Одна операція на upload і delete: прибрати власне завантаження — той
@@ -130,10 +130,10 @@ export const AUTHZ_MATRIX: Readonly<Record<Operation, Grants>> = {
 
 /**
  * Відмова authz. Окремий клас — щоб хендлер мапив її в 403, а не в 500.
- * `name` — за T0-переліком `contracts/domain-errors` (Е3-20): його читає й
+ * `name` — за T0-переліком `contracts/domain-errors`: його читає й
  * клієнтський `domainErrorAdapter`, що зберігає instanceof і поле
  * `operation` через межу serverFn (раніше seroval губив усе, крім
- * `.message` — К3-13).
+ * `.message`).
  */
 export class AuthzError extends Error {
   constructor(readonly operation: Operation | AppRole | string) {

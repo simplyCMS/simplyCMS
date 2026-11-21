@@ -13,7 +13,7 @@ import type {
 
 interface Props {
   readonly form: UseFormReturn<SectionFormInput, unknown, SectionFormValues>;
-  /** id рядка або згенерований НАПЕРЕД id нового розділу (Е4-10). */
+  /** id рядка або згенерований НАПЕРЕД id нового розділу. */
   readonly entityId: string;
 }
 

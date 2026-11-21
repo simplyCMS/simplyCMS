@@ -3,7 +3,7 @@ import { loadPricingContext } from 'simplycms/commerce';
 import { withCustomerDb, withStorefrontDb, type ActorDb } from './db';
 
 /**
- * Середовище цін вітрини — ОДНА транзакція (Е6в-10).
+ * Середовище цін вітрини — ОДНА транзакція.
  *
  * 🔴 `userId` приходить лише з серверної сесії (`core/lib/discounts.ts`):
  * залогінений покупець читає профіль під власним актором, гість — під

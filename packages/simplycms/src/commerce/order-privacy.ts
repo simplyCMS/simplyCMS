@@ -7,7 +7,7 @@ import type { Order } from 'simplycms/schema/types';
 export type OrderColumnPrivacy = 'personal' | 'operational';
 
 /**
- * Реєстр ПД колонок `orders` (Е6г-7). Тип `{ [K in keyof Order] }` —
+ * Реєстр ПД колонок `orders`. Тип `{ [K in keyof Order] }` —
  * найсильніший гейт: нова drizzle-колонка без запису тут не компілюється, тож
  * «право на забуття» не мине її мовчки. Парність із реальною БД доводить
  * харнес (`order-privacy-registry.test.ts`) через `information_schema`.

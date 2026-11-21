@@ -1,4 +1,4 @@
-// К3-Е6б, Е6б-24: старий логотип стирається, ЛИШЕ якщо його рядок `media` —
+// Старий логотип стирається, ЛИШЕ якщо його рядок `media` —
 // `store_logo`. Профіль, зіпсований повз операцію (ручний SQL, імпорт), може
 // посилатись на фото товару; заміна чи прибирання такого «логотипа» не має
 // права необоротно стерти чужий файл. Окремий файл — ліміт 150 рядків.
@@ -16,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { saveStoreProfileOp } from 'simplycms/admin-server/impl';
 
-describe('admin: чужий референс у збереженому профілі (Е6б-24)', () => {
+describe('admin: чужий референс у збереженому профілі', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system_logo_guard');
   const url = () => db.url();
   const state = (ref: string) => F.mediaState(url(), db.root(), ref);

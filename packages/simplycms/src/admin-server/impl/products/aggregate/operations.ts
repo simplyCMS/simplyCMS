@@ -111,7 +111,7 @@ export const productsRemove = defineOperation({
     const version = await lockProductForRemove(db, input.id);
     assertVersionThenHash(version, input.expectedVersion, () => undefined);
     // Рядки `media` (товару й каскадних дочірніх) стираються в транзакції разом
-    // із рядком outbox; самі файли — після коміту (Е6д-14, друга фаза).
+    // із рядком outbox; самі файли — після коміту (друга фаза).
     const discard: string[] = [];
     // Фото й мовні перевизначення (`product_images*`) каскадом зникають разом із
     // товаром: їхні `cascadeMedia` в `productsOps.removeIn` стирають рядки `media`.

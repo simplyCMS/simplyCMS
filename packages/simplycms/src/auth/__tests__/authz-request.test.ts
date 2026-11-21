@@ -15,7 +15,7 @@ vi.mock('../session', () => ({
 import { AuthzError } from '../authz';
 import { requireGrant, resolveRequestGrant } from '../authz-request';
 
-describe('authz-request (К3-13)', () => {
+describe('authz-request', () => {
   beforeEach(() => {
     subject = null;
     setResponseStatus.mockClear();

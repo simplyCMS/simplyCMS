@@ -9,7 +9,7 @@ import {
 import { CartProvider, useCart } from '../useCart';
 
 /**
- * Кошик зі сховища (Е6в-13, Review Focus 3): localStorage — це ввід, а не
+ * Кошик зі сховища: localStorage — це ввід, а не
  * довірені дані. Старий формат (`price`, `basePrice`, `discountData`) і сміття
  * не валять кошик; межі однакові з квотою й чекаутом.
  */

@@ -11,7 +11,7 @@ import type { OwnerInviteStore } from './invite';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Сховище invite власника на Postgres (Task 7, В2-К1а).
+ * Сховище invite власника на Postgres.
  *
  * Роль — `app_admin`: гранти на таблиці Better Auth і на `user_roles` видані
  * саме їй (0002_grants.sql, §5-§6). Той самий вузький auth-шлях, що й у
@@ -46,7 +46,7 @@ export const ownerInviteStore: OwnerInviteStore = {
   async issueAdminInvite({ userId, identifier, valueHash, expiresAt }) {
     return withActor({ role: 'app_admin' }, async (db) => {
       // Лок ПЕРШИМ запитом: серіалізує invite з видачею/зняттям ролі, баном
-      // і видаленням покупця (Е6г-4/Е6г-19). Роль тут НЕ видається (Р19) —
+      // і видаленням покупця. Роль тут НЕ видається —
       // лок і перевірка бану лишаються, щоб забанений не отримав токена.
       await advisoryXactLock(db, LOCK_KEYS.adminRoles);
       // Безумовний `FOR SHARE` за id (умова в WHERE ламає блокування), а
@@ -81,7 +81,7 @@ export const ownerInviteStore: OwnerInviteStore = {
       // Той самий інваріант, що раніше жив у `issueAdminInvite`: лок першим
       // запитом (`FOR SHARE` не бачить незакоміченої ролі конкурента), далі
       // `FOR SHARE` на користувача й перевірка бану — забанений адміном не
-      // стає (Е6г-4/Е6г-19).
+      // стає.
       await advisoryXactLock(db, LOCK_KEYS.adminRoles);
       const [user] = await db
         .select({ bannedAt: users.bannedAt })

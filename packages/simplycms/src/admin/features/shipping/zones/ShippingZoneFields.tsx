@@ -18,7 +18,7 @@ interface Props {
     unknown,
     ShippingZoneFormValues
   >;
-  /** Дефолтна зона завжди активна (Е6а-20): перемикач заблоковано. */
+  /** Дефолтна зона завжди активна: перемикач заблоковано. */
   readonly lockedActive: boolean;
 }
 
@@ -80,7 +80,7 @@ export function ShippingZoneFields({ form, lockedActive }: Props) {
               id="sz-active"
               checked={field.value}
               onCheckedChange={field.onChange}
-              // Е6а-20: сервер відмовить деактивувати дефолтну — не даємо й спробувати.
+              // Сервер відмовить деактивувати дефолтну — не даємо й спробувати.
               disabled={lockedActive}
               aria-describedby={
                 lockedActive ? ZONE_DEFAULT_LOCKED_HINT_ID : undefined

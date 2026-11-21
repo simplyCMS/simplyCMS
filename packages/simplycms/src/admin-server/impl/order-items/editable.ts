@@ -11,12 +11,12 @@ import { pickColumns } from '../resource';
 import { ORDERS_OMIT, type OrderRow } from '../orders/resource';
 import { statusCode } from '../orders/change-status';
 
-/** Рядок позиції замовлення, який бачить адмінка (усі колонки, Е5-1). */
+/** Рядок позиції замовлення, який бачить адмінка (усі колонки). */
 export type OrderItemRow = typeof orderItems.$inferSelect;
 
 /**
- * Відповідь операцій редагування позицій (Е5б-8): клієнт пише її у колекції
- * як є (Е5б-11) — оптимістичного стану немає, бо ціну, доставку й залишок
+ * Відповідь операцій редагування позицій: клієнт пише її у колекції
+ * як є — оптимістичного стану немає, бо ціну, доставку й залишок
  * рахує сервер.
  */
 export interface OrderItemsEditResult {
@@ -29,7 +29,7 @@ export interface OrderItemsEditResult {
 export const orderProjection = pickColumns(orders, ORDERS_OMIT);
 
 /**
- * Кроки (1)–(2) КАНОНУ Е5б-8: `select … from orders where id = $1 for update`
+ * Кроки (1)–(2) КАНОНУ: `select … from orders where id = $1 for update`
  * — той самий лок рядка, що в `cancelOwnOrder` і `changeOrderStatusOp`
  * (порядок «orders → order_items → stock», циклу локів немає), і гвард
  * «скасоване — кінцеве» ДО будь-якої роботи.
@@ -48,7 +48,7 @@ export async function lockEditableOrder(
   if (!order) throw new Error(`[admin-server] замовлення ${orderId} не існує`);
   if ((await statusCode(db, order.statusId)) === ORDER_STATUS_CODE.cancelled)
     stateConflict(ADMIN_STATE_CONSTRAINT.orderCancelledFinal);
-  // Е6г-16: у стертого замовлення немає міста/адреси — перерахунок доставки
+  // У стертого замовлення немає міста/адреси — перерахунок доставки
   // (`validateShippingChoice`) дав би хибний `shipping_unavailable`. Статус і
   // скасування лишаються дозволеними (гвард стоїть лише тут).
   if (order.personalDataErasedAt !== null)
@@ -79,7 +79,7 @@ export async function lockOrderItem(
 }
 
 /**
- * Нестача залишку (Е5б-7′) → 409 `order_insufficient_stock`. `runAdmin`
+ * Нестача залишку → 409 `order_insufficient_stock`. `runAdmin`
  * мапить лише коди Postgres (`run.ts`), а `InsufficientStockError` — доменна
  * помилка обліку, тож перекладається тут; транзакція відкочується.
  */

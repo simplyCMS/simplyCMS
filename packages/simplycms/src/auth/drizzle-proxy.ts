@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/pg-proxy';
 import { withActor } from 'simplycms/db';
 
 /**
- * Міст «Better Auth → Postgres» через `withActor` (Task 7, В2-К1а).
+ * Міст «Better Auth → Postgres» через `withActor`.
  *
  * 🔴 Чому proxy-драйвер, а не звичайний `drizzle(pool)`. Контракт B5″ каже:
  * зʼєднання беруться ЛИШЕ через `withActor` (голий пул повертає обидва тихі

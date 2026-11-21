@@ -34,7 +34,7 @@ export const saveProductPricesInput = z.object({
 export type SaveProductPricesInput = z.output<typeof saveProductPricesInput>;
 
 /**
- * Атомарна заміна набору цін пари товар/модифікація (Е3-10): типи з входу —
+ * Атомарна заміна набору цін пари товар/модифікація: типи з входу —
  * upsert, решта наявних — delete. Композитний ключ (price_type, product,
  * COALESCE(modification)) фабричним upsert-ом не виражається, тому рядки
  * пари блокуються FOR UPDATE і розбираються явно. id нових — сервер

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Е3-17: ghost-кеш неактивного зрізу on-demand колекції. 🔴 РЕГРЕС, не
+ * Ghost-кеш неактивного зрізу on-demand колекції. 🔴 РЕГРЕС, не
  * доказ: на query-db-collection 1.3.4 обхід `gcTime: 0` знято, а цей тест
  * зеленіє і без нього (сервер тут зі станом) — вміст ключів неактивного
  * зрізу доводить `on-demand-inactive-key.test.tsx`. (а) — ремаунт
@@ -97,7 +97,7 @@ async function remountAfterWriteBack(mode: 'on-demand' | 'eager') {
   return again.result.current.data;
 }
 
-describe('Е3-17: on-demand без стейл-кешу підзапитів', () => {
+describe('on-demand без стейл-кешу підзапитів', () => {
   it('(а) через onDemandCollectionOptions — ремаунт бачить усі рядки, включно з перейменованим', async () => {
     const data = await remountAfterWriteBack('on-demand');
     expect(data).toHaveLength(3);
@@ -159,7 +159,7 @@ async function pagedQueryFn(
  * лише в ТОМУ, ЩО САМЕ застигає: кількість рядків (сценарій (а) вище,
  * голий `useLiveQuery`) чи значення поля (тут, `useLiveInfiniteQuery`).
  */
-describe('Е3-17 (симптом власника): список useLiveInfiniteQuery + findOne-картка', () => {
+describe('симптом власника: список useLiveInfiniteQuery + findOne-картка', () => {
   it('ремаунт списку після write-back у findOne-зрізі бачить УСІ 6 рядків, не лише перейменований', async () => {
     const queryClient = new QueryClient();
     const calls: unknown[] = [];

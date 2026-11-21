@@ -23,7 +23,7 @@ const written: Record<string, unknown>[] = [];
 /**
  * Форма відмови ПІСЛЯ адаптера START-2 (`runtime/domain-error-adapter`): на
  * клієнті це звичайний `Error` з `name`, а НЕ екземпляр `AuthzError` — тож
- * `instanceof` у хуку був би хибним (Е6б-13, ред.3).
+ * `instanceof` у хуку був би хибним.
  */
 const authzDenied = () => Object.assign(new Error('x'), { name: 'AuthzError' });
 

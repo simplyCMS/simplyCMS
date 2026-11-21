@@ -1,4 +1,4 @@
-// Контракт профілю магазину (Е6б-6): рядок `system_settings['store_profile']`.
+// Контракт профілю магазину: рядок `system_settings['store_profile']`.
 // T0 — лише типи й константи, без Zod: схему запису будує сервер
 // (`admin-server/impl`), читачі розбирають jsonb поблажливим type-guard-ом
 // з `simplycms/domain/store-profile`.

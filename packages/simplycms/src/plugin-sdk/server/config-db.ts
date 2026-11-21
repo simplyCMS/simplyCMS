@@ -37,11 +37,11 @@ export async function selectPluginConfig(
     : { found: false, config: {} };
 }
 
-/** Стеля серіалізованого конфігу (Е6б-13): jsonb рядка не росте без меж. */
+/** Стеля серіалізованого конфігу: jsonb рядка не росте без меж. */
 export const PLUGIN_CONFIG_MAX_BYTES = 64 * 1024;
 
 /**
- * Записати конфіг плагіна (Е6б-13).
+ * Записати конфіг плагіна.
  *
  * 🔴 Право дає матриця (`settings.manage`), а не ad-hoc `isAdminRequest`:
  * не-адмін отримує `AuthzError` (403) — клієнт (`usePluginConfig.save`)

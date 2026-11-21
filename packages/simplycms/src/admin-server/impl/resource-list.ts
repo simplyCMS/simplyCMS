@@ -11,7 +11,7 @@ import {
 
 /**
  * Те, що `list` фабрики (`resource.ts`) бере з конфігу ресурсу. Винесено
- * з `resource.ts` без зміни поведінки (К3-Е5-3, розпил до ≤150 рядків).
+ * з `resource.ts` без зміни поведінки (розпил до ≤150 рядків).
  */
 export interface ResourceListContext {
   entity: string;
@@ -19,7 +19,7 @@ export interface ResourceListContext {
   allow: SubsetAllow;
   defaultOrder?: { column: string; direction: 'asc' | 'desc' };
   maxLimit?: number;
-  /** Е5-7: явна проєкція (усі колонки, крім `omit`). */
+  /** Явна проєкція (усі колонки, крім `omit`). */
   picked: Record<string, Column>;
   /** Тема 9: колонки з розміткою → профіль санітизатора (віддача клієнту). */
   richHtml?: RichHtmlColumns;
@@ -60,7 +60,7 @@ export async function listResourceRows(
       await readJoinOn(db, rm, columns['id'] as Column),
     );
   if (s.where) q = q.where(s.where);
-  // 🔴 Е3-8: стабільний порядок для offset-пагінації. `created_at` не
+  // 🔴 Стабільний порядок для offset-пагінації. `created_at` не
   // унікальний (сід/масовий імпорт дають однакові мітки) — без
   // тай-брейкера `id` сторінки дублюють або гублять рядки. Один
   // виклик `.orderBy()` на масив: повторний виклик у Drizzle ЗАМІНЯЄ
@@ -79,7 +79,7 @@ export async function listResourceRows(
   const idCol = columns['id'];
   if (idCol !== undefined) order.push(asc(idCol));
   if (order.length > 0) q = q.orderBy(...order);
-  // Е5-12: серверна межа сторінки, якщо ресурс її задав.
+  // Серверна межа сторінки, якщо ресурс її задав.
   const limit = effectiveLimit(s.limit, ctx.maxLimit);
   if (limit !== undefined) q = q.limit(limit);
   if (s.offset !== undefined) q = q.offset(s.offset);

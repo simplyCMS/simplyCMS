@@ -1,7 +1,7 @@
 /**
- * `simplycms/auth` — серверний auth-контур v2 (B3′, Task 7, В2-К1а).
+ * `simplycms/auth` — серверний auth-контур v2 (B3′).
  *
- * 🔴 К1′б: контур ПІДКЛЮЧЕНО. GoTrue знесено — `src/start.ts` питає ролі
+ * 🔴 Контур ПІДКЛЮЧЕНО. GoTrue знесено — `src/start.ts` питає ролі
  * звідси, роут `/api/auth/$` віддає запити хендлеру Better Auth, а клієнт
  * вітрини живе на `better-auth/react`. Модулів `/auth/confirm` і
  * `/auth/callback` більше немає.

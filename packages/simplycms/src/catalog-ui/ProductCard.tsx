@@ -28,7 +28,7 @@ interface ProductCardProps {
     price?: number | null;
     old_price?: number | null;
     stock_status?: string;
-    /** Порогові підказки знижок (Е6в-12); до середовища цін — немає. */
+    /** Порогові підказки знижок; до середовища цін — немає. */
     discount_hints?: readonly ThresholdHint[];
   };
   rating?: { avgRating: number; reviewCount: number } | null;

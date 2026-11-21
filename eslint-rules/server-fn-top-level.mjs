@@ -1,5 +1,5 @@
 /**
- * К3-4′: виклик createServerFn мусить бути ініціалізатором топ-рівневого
+ * Виклик createServerFn мусить бути ініціалізатором топ-рівневого
  * `const` з простим ідентифікатором — цього вимагає компілятор Start
  * (handleCreateServerFn.js:104-106). Гірше за помилку компілятора —
  * fast-path: для файлів, де детектовано лише serverFn, сканується ТІЛЬКИ
@@ -30,10 +30,10 @@ export default {
     messages: {
       notTopLevel:
         'createServerFn мусить бути топ-рівневим `const ім’я = createServerFn(...)` — ' +
-        'інакше компілятор Start або впаде, або МОВЧКИ пропустить трансформацію (К3-4′).',
+        'інакше компілятор Start або впаде, або МОВЧКИ пропустить трансформацію (ADR-0031).',
       reexport:
         'Реекспорт createServerFn заборонено: компілятор Start не трансформує виклик через ' +
-        'локальний реекспорт — імпортуй його прямо з @tanstack/react-start (К3-4′).',
+        'локальний реекспорт — імпортуй його прямо з @tanstack/react-start (ADR-0031).',
     },
   },
   create(context) {
@@ -79,10 +79,10 @@ export default {
         // компілятора Start (`isMethodChainCandidate`: callee чергової
         // ланки завжди сам MemberExpression). Це закриває ОБИДВА випадки:
         //   - wrap(createServerFn(...))       — виклик в arguments, не в
-        //     callee (рев'ю р3);
+        //     callee;
         //   - createServerFn(...).handler(h)() — trailing re-invocation:
         //     CallExpression-крок ІДЕ ОДРАЗУ ЗА іншим CallExpression-кроком
-        //     без MemberExpression між ними (рев'ю р4, Task 4 round 1).
+        //     без MemberExpression між ними.
         // В обох компілятор Start на fast-path НЕ бачить цей statement як
         // chain candidate і мовчки лишає його нетрансформованим.
         let cur = node;

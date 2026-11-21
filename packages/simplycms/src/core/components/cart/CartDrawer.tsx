@@ -4,7 +4,7 @@ import { useCart } from 'simplycms/react-query';
 import { useCartQuote } from '../../hooks/useCartQuote';
 
 /**
- * Drawer кошика — T5-контейнер (Е6в-13): бере серверну квоту й віддає її
+ * Drawer кошика — T5-контейнер: бере серверну квоту й віддає її
  * presentational-drawer'у з `cart-ui` разом із підказками порогів.
  *
  * 🔴 `cart-ui` (T4) не імпортує ні serverFn, ні `catalog-ui` (той самий тір):

@@ -80,7 +80,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     reason: 'throw new Error — діагностика для автора теми',
   },
   // console.warn на невалідному записі fonts — читає автор теми в консолі
-  // складання, не покупець (контракт v2.2, Р4).
+  // складання, не покупець (контракт v2.2).
   'packages/simplycms/src/themes/safeFontStylesheets.ts': {
     kind: 'console',
     reason: 'console.warn — діагностика для автора теми',
@@ -120,7 +120,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'console',
     reason: 'console.warn — діагностика непредставної settings-схеми плагіна',
   },
-  // Кореневі дані вітрини (Е6б-10/12): обидва кидають, коли host не віддає
+  // Кореневі дані вітрини: обидва кидають, коли host не віддає
   // профіль магазину. Читає розробник магазину, що зібрав `__root.tsx`, — не
   // покупець: на зібраному магазині ці гілки недосяжні.
   'packages/simplycms/src/storefront-routes/head/head.ts': {
@@ -131,7 +131,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'throw',
     reason: 'throw new Error — діагностика host-а (провайдер профілю)',
   },
-  // Е8-Т11: auth і пошта у SCANNED_ROOTS. Усе нижче — діагностика оператора
+  // Auth і пошта у SCANNED_ROOTS. Усе нижче — діагностика оператора
   // (помилки env, лог-рядки), не текст для покупця; листи — лише з `mail.*`.
   'packages/simplycms/src/auth/auth-env.ts': {
     kind: 'throw',
@@ -149,7 +149,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'super',
     reason: 'super(...) помилки — діагностика',
   },
-  // `owner:invite` (F5 рев'ю Е8: логіка переїхала з файлів магазину в ядро):
+  // `owner:invite` (логіка переїхала з файлів магазину в ядро):
   // вивід CLI власнику магазину в терміналі — лог-синк і відмови помилкою, не
   // текст для покупця; сам лист запрошення — лише з каталогу `mail.*`.
   'packages/simplycms/src/auth/owner-invite-cli/run.ts': {
@@ -185,7 +185,7 @@ export const PENDING_FILES: readonly string[] = [
   //
   // Останній борг — `<title>`/`<meta description>` роутів вітрини (`head()`,
   // внесені сюди 2026-08-21 разом із `packages/simplycms/routes` у
-  // `SCANNED_ROOTS`) — закрито рішенням Е6б-10 (К3-Е6б): локаль і назва
+  // `SCANNED_ROOTS`) — закрито: локаль і назва
   // магазину приходять у `head()` з кореневого лоадера host-а через
   // `matches`, а заголовки будує `storefrontHead`
   // (`simplycms/storefront-routes/head/head`) транслятором тієї локалі.

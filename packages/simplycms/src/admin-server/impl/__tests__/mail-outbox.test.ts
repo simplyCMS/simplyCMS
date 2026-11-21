@@ -1,4 +1,4 @@
-// Е8-Р9: картка хвостів пошти — лише `settings.manage`. Реальний `requireGrant`
+// Картка хвостів пошти — лише `settings.manage`. Реальний `requireGrant`
 // (авторизація не мокається): підмінено лише сесію й зʼєднання з БД.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

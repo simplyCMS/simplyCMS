@@ -1,4 +1,4 @@
-// К3-Е6д, фінальне рев'ю (М2): порядок «файл після COMMIT» у ПУБЛІЧНИХ
+// (М2): порядок «файл після COMMIT» у ПУБЛІЧНИХ
 // операціях фабрики. Кейс 9 (`resource-media-erase`) кличе `updateIn` у своїй
 // транзакції — повз обгортку `runThenDiscard`, тож перенесення `discardAll`
 // усередину `run` він не бачить. Тут COMMIT падає вже ПІСЛЯ тіла операції.
@@ -19,7 +19,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('фабрика ресурсів: COMMIT впав → файли цілі (Е6д-14)', () => {
+describe('фабрика ресурсів: COMMIT впав → файли цілі', () => {
   const d = useBannerMediaDb('simplycms_e6d_resource_media_commit');
   const create = async () => {
     const id = crypto.randomUUID();

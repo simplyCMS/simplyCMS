@@ -6,7 +6,7 @@ import { discountEnvironmentFor } from 'simplycms/storefront/loaders';
 
 /**
  * Середовище цін вітрини — ліс знижок, актор, тип ціни й серверний `now`
- * ОДНІЄЮ транзакцією (Е6в-10, `storefront/loaders/discount-environment.ts`).
+ * ОДНІЄЮ транзакцією (`storefront, loaders, discount-environment.ts`).
  *
  * 🔴 Актор НЕ приймається параметром і ніколи ним не стане: клієнт, який
  * називає свою категорію, називає й свою знижку. `userId` у клієнтському

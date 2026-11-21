@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { ShippingRate } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { ShippingRate } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertShippingRates,
   listShippingRates,
@@ -14,7 +14,7 @@ import { invalidateShippingConsumers } from '../shipping-cache';
 import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
-/** Тарифи — on-demand зріз по methodId/zoneId (їх багато). Remove — generic фабричний (Е6а-22). */
+/** Тарифи — on-demand зріз по methodId/zoneId (їх багато). Remove — generic фабричний. */
 function create(queryClient: QueryClient) {
   // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.
   const ref: { current?: WriteBack<ShippingRate> } = {};

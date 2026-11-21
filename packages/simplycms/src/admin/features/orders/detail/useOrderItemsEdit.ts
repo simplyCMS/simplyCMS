@@ -28,7 +28,7 @@ type Action =
   | { kind: 'remove'; orderItemId: string };
 
 /**
- * Редагування позицій замовлення (Е5б-11): serverFn рахує ціну, доставку й
+ * Редагування позицій замовлення: serverFn рахує ціну, доставку й
  * залишок, відповідь — write-back у обидві колекції однією `writeBatch` на
  * колекцію. Резерв складу (`stock_by_pickup_point`, `stock_status`) відповідь
  * не несе — залишки, товари й модифікації інвалідуємо (`invalidateCollection`).

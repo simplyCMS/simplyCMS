@@ -2,7 +2,7 @@ import type { DiscountRejectionReason } from 'simplycms/contracts';
 import type { MessageKey } from 'simplycms/i18n';
 
 /**
- * Текст причини відхилення (Е6в-6). 🔴 `Record` по всьому юніону: новий код
+ * Текст причини відхилення. 🔴 `Record` по всьому юніону: новий код
  * причини в T0 не зберається, доки для нього немає рядка в діагностиці —
  * власник бачить пояснення, а не сирий код.
  */

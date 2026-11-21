@@ -2,7 +2,7 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 import { useT } from 'simplycms/i18n';
 
 /**
- * Фото відгуку. Сервер віддає РЕФЕРЕНСИ (Е6д-11) — URL збирає клієнт;
+ * Фото відгуку. Сервер віддає РЕФЕРЕНСИ — URL збирає клієнт;
  * клік відкриває оригінал в новій вкладці.
  */
 export default function ReviewPhotos({

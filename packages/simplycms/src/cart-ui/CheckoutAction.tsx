@@ -11,7 +11,7 @@ const BUTTON =
   'flex-1 text-center px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm';
 
 /**
- * Перехід до оформлення з drawer'а. Недоступна позиція (Е6в-13) — кнопка
+ * Перехід до оформлення з drawer'а. Недоступна позиція — кнопка
  * вимкнена: сервер однаково відмовив би `not_purchasable`, а пояснення під
  * кнопкою каже, що прибрати.
  */

@@ -22,7 +22,7 @@ const schema = z.object({
 export type ContactsValues = z.infer<typeof schema>;
 const FIELDS = ['firstName', 'lastName', 'phone', 'email'];
 
-/** Форма контактів і email: помилка `taken` лягає під поле email (Е6г-1). */
+/** Форма контактів і email: помилка `taken` лягає під поле email. */
 export function useUpdateContacts(card: AdminCustomerCard) {
   const t = useT();
   const qc = useQueryClient();

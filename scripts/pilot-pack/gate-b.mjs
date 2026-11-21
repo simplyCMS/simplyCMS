@@ -184,7 +184,7 @@ export async function gateHttp(port, env) {
     `${health.status}, status=${healthJson.status}, database.ok=${healthJson.checks?.database?.ok}, build=${healthJson.build} (очікую ${expectedBuild ?? 'не dev'})`,
   );
 
-  // Стиснення статики (Task 7): `server.mjs` лише ВІДДАЄ `.br`/`.gz` через
+  // Стиснення статики: `server.mjs` лише ВІДДАЄ `.br`/`.gz` через
   // sirv, а кладе їх плагін `precompressAssets` у збірці. Без нього вимір
   // показував нуль. Заголовок `Accept-Encoding` ставимо сирим `http.get`:
   // `fetch` додає свій і не дає перевірити «без заголовка».
@@ -224,14 +224,14 @@ function headOf(port, path, acceptEncoding) {
 }
 
 /**
- * Доказ, що `scripts/start.mjs` справді замінив процес (Е8-Р6): PID той самий
+ * Доказ, що `scripts/start.mjs` справді замінив процес: PID той самий
  * (`execve` міняє образ, не процес), `cmdline` — вже `server.mjs`, а в
  * `environ` немає пароля власника схеми. Лише Linux (`/proc`); на інших ОС —
  * явний skip із причиною, а не мовчазний «зелений».
  *
  * @param {number} pid PID дитини, якого запустив гейт
  * @param {string} startLogs лог старту (накат мусить сказати, що нічого не робить)
- * @param {{ smtp?: boolean }} [opts] `smtp` — прогін задав SMTP (К3-Е8): попередження про лог не очікується
+ * @param {{ smtp?: boolean }} [opts] `smtp` — прогін задав SMTP: попередження про лог не очікується
  * @returns {{ ok: boolean; skipped?: boolean; details: string[] }}
  */
 export function checkExecve(pid, startLogs, { smtp = false } = {}) {
@@ -247,7 +247,7 @@ export function checkExecve(pid, startLogs, { smtp = false } = {}) {
     startLogs.includes('нічого накочувати'),
     'очікую «нічого накочувати» (БД уже накочена db:demo)',
   );
-  // Р7′ п.3: log-драйвер у проді — попередження рівно ОДИН раз (друкує лише бандл).
+  // Log-драйвер у проді — попередження рівно ОДИН раз (друкує лише бандл).
   // З SMTP (повний прогін `pilot-full`) драйвер smtp, і попередження не має бути.
   const warnings = startLogs.split('пошта не налаштована').length - 1;
   const expected = smtp ? 0 : 1;
@@ -280,7 +280,7 @@ export function checkExecve(pid, startLogs, { smtp = false } = {}) {
 }
 
 /**
- * Перевірка env у ЗІБРАНОМУ бандлі (Е8-Р7′): виклик у `src/server.ts` мусить
+ * Перевірка env у ЗІБРАНОМУ бандлі: виклик у `src/server.ts` мусить
  * пережити збірку, і часткова група S3 валить `server.mjs` ДО listen. Окремий
  * процес зі штучним порожнім портом: слухання довело б, що перевірка не спрацювала.
  *
@@ -289,7 +289,7 @@ export function checkExecve(pid, startLogs, { smtp = false } = {}) {
  */
 export function checkPartialEnv(storeDir, env) {
   const secret = 'pilot-partial-bucket-value';
-  // Повний прогін несе всю групу S3 (К3-Е8) у `.env` скретча, а `server.mjs`
+  // Повний прогін несе всю групу S3 у `.env` скретча, а `server.mjs`
   // наповнює з нього ВІДСУТНІ ключі. Порожній рядок — «присутній, але порожній»:
   // і блокує наповнення, і читається групою як відсутній, тож лишається
   // тільки `S3_BUCKET` — інакше група була б повною, і перевірка нічого б не довела.

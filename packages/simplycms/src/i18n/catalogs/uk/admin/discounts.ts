@@ -63,7 +63,7 @@ export const messages = {
   'admin.discounts.rootLevel': 'Кореневий рівень',
   'admin.discounts.priorityLabel': 'Пріоритет (менше = вище)',
 
-  // К3-Е6в: дерево, картки групи й знижки на серверному шарі
+  // Дерево, картки групи й знижки на серверному шарі
   'admin.discounts.allPriceTypes': 'Усі типи цін',
   'admin.discounts.priceType': 'Тип ціни',
   'admin.discounts.deleteGroupLabel': 'Видалити групу «{name}»',

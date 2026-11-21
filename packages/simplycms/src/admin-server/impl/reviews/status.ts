@@ -12,7 +12,7 @@ import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 
 export const setReviewsStatusInput = z.object({
-  // Е6д-23: модератор схвалює ПОБАЧЕНУ версію — `updatedAt` з картки/списку
+  // Модератор схвалює ПОБАЧЕНУ версію — `updatedAt` з картки/списку
   // (ISO з мілісекундами), а не «що там зараз у БД».
   items: z
     .array(z.object({ id: z.uuid(), updatedAt: z.iso.datetime() }))
@@ -26,7 +26,7 @@ export const setReviewsStatusInput = z.object({
 export type SetReviewsStatusInput = z.output<typeof setReviewsStatusInput>;
 
 /**
- * Зміна статусу одного чи багатьох відгуків (Е6д-7, `review.moderate`).
+ * Зміна статусу одного чи багатьох відгуків (`review.moderate`).
  *
  * Ядро без актора (як `setCustomerBan`): транзакція ВИКЛИКАЧА, вхід уже
  * розібраний; сід кличе його напряму під `withActor(app_admin)`.
@@ -34,7 +34,7 @@ export type SetReviewsStatusInput = z.output<typeof setReviewsStatusInput>;
  * 🔴 Атомарність: спершу `FOR UPDATE` усіх id у порядку `id` (один порядок
  * локів), далі перевірка кількості — відгук, який видалив інший адмін, дає 409
  * `review_not_found` БЕЗ часткового запису. Далі під тим самим локом версія
- * кожного рядка звіряється з `updatedAt`, яку бачив модератор (Е6д-23): хоч
+ * кожного рядка звіряється з `updatedAt`, яку бачив модератор: хоч
  * одна розбіжність (покупець відредагував) — 409 `review_changed` на весь
  * пакет. Будь-який перехід дозволено
  * (`rejected → pending` теж). `admin_comment` пишеться лише коли ключ

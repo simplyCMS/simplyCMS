@@ -48,7 +48,7 @@ export async function resolveRecipient(
  * полів не несе взагалі, тож підмінити їх нізвідки. `total` — з
  * `PreparedCheckout.total` (рев'ю I1): рахує його ОДНЕ місце
  * (`prepareCheckout`), а не друга копія `subtotal + shippingCost` тут.
- * `shippingSnapshot` — з `PreparedCheckout` (Е6а-8): знімок будує той самий
+ * `shippingSnapshot` — з `PreparedCheckout`: знімок будує той самий
  * `validateShippingChoice`, що перевірив спосіб і пункт, тож `createOrder`
  * нічого не перечитує.
  */

@@ -19,7 +19,7 @@ import { withRequestContext } from 'simplycms/site/request-context';
 import { declareBuiltThemes, declareStoreCurrency } from 'simplycms/site';
 import config from '../simplycms.config';
 
-// Вшиті теми — ті, що зібрані з `config.themes` (Е6б-8). Сервер інакше про них
+// Вшиті теми — ті, що зібрані з `config.themes`. Сервер інакше про них
 // не знає: `ThemeRegistry` живе в браузерному контурі, а рядок `themes` у БД
 // лишається й після видалення пакета. Без декларації активація теми
 // відмовляє (fail-closed). Модульний рівень: вхід один для dev, preview і prod.
@@ -29,7 +29,7 @@ declareBuiltThemes(Object.keys(config.themes ?? {}));
 // валюти двозначний. Без декларації — дефолт ядра з одним попередженням.
 declareStoreCurrency(config.currency);
 
-// Група драйвера env (S3, SMTP) — «все або нічого» (Е8-Р7′). Перевірка на
+// Група драйвера env (S3, SMTP) — «все або нічого». Перевірка на
 // верхньому рівні, щоб помилка кинулась під час імпорту бандла в `server.mjs`
 // ДО listen: часткова група не має мовчки скотитися на local-fs. Не ховати
 // за `import.meta.env`/`typeof window` — бандлер міг би вирізати виклик.
@@ -37,7 +37,7 @@ declareStoreCurrency(config.currency);
 checkDriverEnvOnStart(process.env, (line) => console.warn(`[server] ${line}`));
 
 /**
- * База шляху server functions для Node-раннера (`server.mjs`, Р20′).
+ * База шляху server functions для Node-раннера (`server.mjs`).
  *
  * 🔴 Start інлайнить `process.env.TSS_SERVER_FN_BASE` у збірку Vite define-ом
  * (літерал із `basepath` + `serverFns.base`, із завершальним `/`); у
@@ -64,7 +64,7 @@ const seoInterceptor = createSeoInterceptor({
   robots: buildRobotsTxt,
 });
 
-// Р27: заголовки безпеки на ВСІХ динамічних відповідях (SSR, server functions,
+// Заголовки безпеки на ВСІХ динамічних відповідях (SSR, server functions,
 // `/media`, sitemap/robots) — обгортка зовнішня, тож не залежить від того, хто
 // саме віддав відповідь. Статику `sirv` і власні відповіді раннера доповнює
 // `server.mjs`. HSTS лише для https-сайту: origin — з `VITE_SITE_URL` у рантаймі.

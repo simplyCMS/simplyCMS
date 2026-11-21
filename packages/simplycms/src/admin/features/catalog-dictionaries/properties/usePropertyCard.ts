@@ -22,7 +22,7 @@ import {
 
 /**
  * Стан картки властивості: зріз on-demand колекції `where id`, форма,
- * збереження (тип незмінний, Е4-5 — update його не несе) і видалення.
+ * збереження (тип незмінний — update його не несе) і видалення.
  */
 export function usePropertyCard(propertyId: string) {
   const t = useT();

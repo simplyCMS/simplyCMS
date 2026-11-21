@@ -1,4 +1,4 @@
-// К3-Е6д-3: аватар (заміна й очищення) і логотип на двофазному
+// Аватар (заміна й очищення) і логотип на двофазному
 // стиранні. Обрив саме на COMMIT (відкладений тригер) доводить, що файл
 // стирається ПІСЛЯ нього: старий файл і рядок `media` лишаються цілі.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -35,7 +35,7 @@ import { removeMyAvatar } from 'simplycms/core/lib/profile-avatar';
 import { replaceAvatar } from 'simplycms/storefront/loaders';
 import { profile } from './fixtures/admin-system';
 
-describe('двофазне стирання: аватар, логотип (К3-Е6д-3)', () => {
+describe('двофазне стирання: аватар, логотип', () => {
   const d = useReviewsDb('simplycms_e6d_two_phase_singletons');
   const { f } = d;
   let unblock: (() => Promise<unknown>) | null = null;

@@ -54,7 +54,7 @@ const openForm = async () => {
 const png = () =>
   new File([new Uint8Array([1])], 'a.png', { type: 'image/png' });
 
-describe('ProductReviews — форма з фото (Е6д-6)', () => {
+describe('ProductReviews — форма з фото', () => {
   it('без renderImageUpload показує штатний пікер', async () => {
     mount();
     fireEvent.click(await screen.findByText('Написати відгук'));

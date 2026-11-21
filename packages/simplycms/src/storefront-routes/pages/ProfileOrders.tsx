@@ -35,8 +35,8 @@ export default function ProfileOrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>(ALL_STATUSES);
 
   const { data: statuses = [] } = useQuery({
-    // 🔴 variant('storefront'), не list() (Е3-15) — живий дефект: admin-data
-    // (Е1б) заводить eager-колекцію orderStatuses під голим list(), і після
+    // 🔴 variant('storefront'), не list() — живий дефект: admin-data
+    // заводить eager-колекцію orderStatuses під голим list(), і після
     // відкриття адмінки покупець бачив би її форму рядка до спливання
     // staleTime.
     queryKey: orderStatuses.variant('storefront'),

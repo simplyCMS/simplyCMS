@@ -81,7 +81,7 @@ describe('createReadCache (поколіннєвий)', () => {
     expect(load).toHaveBeenCalledTimes(1);
   });
 
-  // Review Focus 3 (Е6б-9): читання стартувало до мутації, завершилось після.
+  // Читання стартувало до мутації, завершилось після.
   it('читання, що було в польоті під час зміни покоління, не лишає старе значення', async () => {
     const cache = createReadCache<string>(KEY, { ttlMs: 60_000 });
     let resolveOld!: (v: string) => void;

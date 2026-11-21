@@ -1,4 +1,4 @@
-// Е6д-17: відповідь `getProductReviews` залежить від сесії (автор бачить свій
+// Відповідь `getProductReviews` залежить від сесії (автор бачить свій
 // `pending`), тож вона не має осідати в спільному кеші.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

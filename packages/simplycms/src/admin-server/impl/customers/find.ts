@@ -12,7 +12,7 @@ export type CustomerHit = {
   userId: string;
   email: string;
   name: string | null;
-  /** Категорія профілю; профіль без категорії — дефолтна (Е6в-19). */
+  /** Категорія профілю; профіль без категорії — дефолтна. */
   categoryName: string | null;
 };
 

@@ -1,7 +1,7 @@
 /**
- * Частина «бан» кроку К3-Е6г (`./admin-customers.mjs`): власник банить B →
+ * Частина «бан» кроку (`./admin-customers.mjs`): власник банить B →
  * сесій немає, відкрита вкладка B після перезавантаження гостьова (без
- * `pageerror`), `GET /admin` → `/auth`, вхід B → текст бану (Е6г-13, код
+ * `pageerror`), `GET /admin` → `/auth`, вхід B → текст бану (код
  * `BANNED`, а не загальна помилка).
  */
 import * as q from './admin-customers-sql.mjs';

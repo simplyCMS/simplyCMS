@@ -29,7 +29,7 @@ export const saveStockInput = z
 export type SaveStockInput = z.output<typeof saveStockInput>;
 
 /**
- * Ручний облік (Е3-3) — операція: парс ДО гранта (400 до `requireGrant`) →
+ * Ручний облік — операція: парс ДО гранта (400 до `requireGrant`) →
  * ядро `saveStock` (`./save-core`, там канон локів М2) у транзакції гранта.
  */
 export const saveStockOp = async ({ data }: { data: SaveStockInput }) => {

@@ -72,7 +72,7 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
   const entityType = MEDIA_ENTITY_TYPES.find((t) => t === entityTypeRaw);
   if (!entityType) throw new CodedError(MEDIA_ERROR.badEntityType);
 
-  // 🔴 Власник обовʼязковий (К3-Е6д-3): рядок `media` без `entity_id` не можна
+  // 🔴 Власник обовʼязковий: рядок `media` без `entity_id` не можна
   // стерти двофазно (умова власника одна для всіх), тож його не створюємо.
   // Логотип — виняток: його власник фіксований і ставиться ТУТ, клієнтський
   // `entityId` ігнорується, інакше `saveStoreProfile` не впізнав би файл.

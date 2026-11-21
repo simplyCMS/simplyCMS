@@ -6,7 +6,7 @@ import { parseDiscountRules } from './discount-rules-parse';
 export { parseDiscountRules } from './discount-rules-parse';
 
 /**
- * ВСІ групи й ВСІ знижки магазину з цілями й умовами (Е6в-8) — плоскими
+ * ВСІ групи й ВСІ знижки магазину з цілями й умовами — плоскими
  * правилами, з яких `buildDiscountForest` будує ліс під тип ціни.
  *
  * 🔴 ОДИН SQL-вираз (CTE + `json_agg`), а не кілька SELECT-ів: один вираз

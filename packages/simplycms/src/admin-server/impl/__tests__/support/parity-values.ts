@@ -34,7 +34,7 @@ export const BASE_VALUES: readonly unknown[] = [
   {},
   [],
   ['a'],
-  // Е6а (F2): елементи не того типу — без них `z.array(z.any())` для PgArray
+  // Елементи не того типу — без них `z.array(z.any())` для PgArray
   // проходив гейт (['a'] і [] валідні для будь-якої схеми елемента).
   [1],
   ['a', 1],
@@ -55,7 +55,7 @@ export function valuesFor(column: Column): unknown[] {
     extra.push('a'.repeat(column.length), 'a'.repeat(column.length + 1));
   }
   if (column.columnType === 'PgTime') {
-    // Е6д: рефайн ресурсу банерів накладається поверх базової схеми й маскує її;
+    // Рефайн ресурсу банерів накладається поверх базової схеми й маскує її;
     // валідні формати `HH:MM` і `HH:MM:SS` (як віддає Postgres) дають мутації
     // базового формату (m7) що порушити.
     extra.push('09:00', '09:00:00', '25:00');

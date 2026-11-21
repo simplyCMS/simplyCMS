@@ -13,7 +13,7 @@ import {
 /** Основна мова магазину для листа запрошення: без БД, але через конструктор осі. */
 const PRIMARY = cl('uk');
 
-// Invite власника (Task 7, В2-К1а) — заміна механіки `inviteUserByEmail`.
+// Invite власника — заміна механіки `inviteUserByEmail`.
 //
 // 🔴 Доводиться все, крім SMTP: транспорт у цьому оточенні недосяжний і
 // лишається боргом. Саме тому лист — чиста функція, а доставка — колбек.
@@ -164,7 +164,7 @@ describe('issueOwnerInvite', () => {
   });
 });
 
-describe('issueOwnerInvite: забанений (Е6г-19)', () => {
+describe('issueOwnerInvite: забанений', () => {
   it('відмова OwnerInviteError(banned): URL немає, листа немає, ролі й токена немає', async () => {
     const fake = createFakeStore();
     const sent: MailMessage[] = [];

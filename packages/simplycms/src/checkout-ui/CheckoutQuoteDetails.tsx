@@ -57,7 +57,7 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
             {t('cart.summary.shipping')}
           </span>
           <span>
-            {/* Е6а-18: нуль у режимі carrier — не «Безкоштовно». */}
+            {/* Нуль у режимі carrier — не «Безкоштовно». */}
             {quote.shippingPricing === 'carrier'
               ? t('checkout.shipping.carrier')
               : formatShippingCost(

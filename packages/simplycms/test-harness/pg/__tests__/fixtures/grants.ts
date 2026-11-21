@@ -1,4 +1,4 @@
-// Очікувана привілейна поверхня baseline v2 (Task 4, план В2-К1а).
+// Очікувана привілейна поверхня baseline v2.
 //
 // 🔴 Це ДЕКЛАРАЦІЯ, а не знятий дамп. Дамп зафіксував би те, що вийшло, і
 // мовчки прийняв би будь-яку майбутню зміну після перезняття; декларація
@@ -68,7 +68,7 @@ const ADMIN_ONLY = [
 ];
 
 /**
- * Таблиці Better Auth: лише серверний auth-контур (Task 7). Покупець не сміє
+ * Таблиці Better Auth: лише серверний auth-контур. Покупець не сміє
  * бачити ні чужі сесії, ні хеші паролів — публічна частина живе в `profiles`.
  */
 const AUTH_ONLY = ['users', 'sessions', 'accounts', 'verifications'];
@@ -81,7 +81,7 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // Повне володіння своїми рядками.
   comparisons: { app_user: CRUD },
   wishlists: { app_user: CRUD },
-  // UPDATE покупця — лише колонковий (`COLUMN_GRANTS`, Е6д-16 б, Е6д-23);
+  // UPDATE покупця — лише колонковий (`COLUMN_GRANTS`);
   // INSERT табличний, звужений політикою.
   product_reviews: {
     app_user: ['SELECT', 'INSERT', 'DELETE'],
@@ -94,7 +94,7 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   orders: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
   order_items: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
   // Профіль створює хук Better Auth під `app_admin`. UPDATE покупця —
-  // лише колонковий (`COLUMN_GRANTS`, Е6в-24).
+  // лише колонковий (`COLUMN_GRANTS`).
   profiles: { app_user: ['SELECT'], app_admin: CRUD },
   // Роль і історію категорії призначає система, не покупець.
   user_roles: { app_user: ['SELECT'], app_admin: CRUD },
@@ -102,15 +102,15 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
   // 🔴 Без UPDATE/DELETE у `app_user`: незмінність колонок власності медіа
   // тримається відсутністю права, а не тригером (`schema/media.ts`).
   media: { app_user: ['SELECT', 'INSERT'], app_admin: CRUD },
-  // Outbox стирання файлів (Е6д-20): лише `app_admin`; ескалація `operator` —
+  // Outbox стирання файлів: лише `app_admin`; ескалація `operator` —
   // теж `app_admin`, покупцеві ключі чужих файлів не потрібні.
   media_erasures: { app_admin: CRUD },
-  // Outbox пошти (Е8-Р10): тіло листа скидання — секрет, лише `app_admin`.
+  // Outbox пошти: тіло листа скидання — секрет, лише `app_admin`.
   mail_outbox: { app_admin: CRUD },
   // Покоління кешів (М1, Д6): вітрина читає, адмінка збільшує; INSERT/DELETE
   // не видаються — ключі засіває `0003_seed.sql`.
   cache_generations: { app_user: ['SELECT'], app_admin: ['SELECT', 'UPDATE'] },
-  // Журнал накату (Е8-Р2): пише лише власник схеми під час накату; `app_admin`
+  // Журнал накату: пише лише власник схеми під час накату; `app_admin`
   // читає (`doctor --online`, `status` через `SET ROLE app_admin`).
   simplycms_migrations: { app_admin: ['SELECT'] },
 };
@@ -119,7 +119,7 @@ const INDIVIDUAL: Record<string, { app_user?: Cmd[]; app_admin?: Cmd[] }> = {
 export const GRANTED_ROLES = ['app_admin', 'app_user'] as const;
 
 /**
- * Колонкові гранти (Е6в-24): `{ table: { role: { CMD: [колонки] } } }`.
+ * Колонкові гранти: `{ table: { role: { CMD: [колонки] } } }`.
  * Покупець оновлює в `profiles` ЛИШЕ те, що вітрина справді пише під
  * `app_user` (виміряно): `updateProfile` — `first_name`, `last_name`, `phone`,
  * `updated_at`; аватар — `avatar_url`; мова інтерфейсу — `ui_locale`. `category_id`/`category_locked` —
@@ -143,7 +143,7 @@ export const COLUMN_GRANTS: Record<
       ],
     },
   },
-  // Е6д-23: UPDATE без `admin_comment`/`user_id`, а `status` лише заради повернення в pending.
+  // UPDATE без `admin_comment`/`user_id`, а `status` лише заради повернення в pending.
   product_reviews: {
     app_user: {
       UPDATE: ['content', 'images', 'rating', 'status', 'title', 'updated_at'],

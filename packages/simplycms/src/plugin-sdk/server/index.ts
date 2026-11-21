@@ -90,7 +90,7 @@ export const pluginConfigRead = createServerFn({ method: 'GET' })
   );
 
 /**
- * Запис конфіга плагіна — право `settings.manage` (Е6б-13). Відмова — кидок
+ * Запис конфіга плагіна — право `settings.manage`. Відмова — кидок
  * `AuthzError` (403), а не `false`: `usePluginConfig.save` сам зводить її до
  * `false` для плагіна; конфіг понад 64 КБ — 400.
  */

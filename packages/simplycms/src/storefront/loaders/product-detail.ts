@@ -39,9 +39,9 @@ export type ProductDetailRow = ProductRow & {
   product_prices: PriceEntry[];
   product_property_values: ProductPropertyValueRow[];
   /**
-   * Типи ціни ГОСТЯ (F9): JSON-LD `offers` рахує ними ту саму базу, що SSR-
+   * Типи ціни ГОСТЯ: JSON-LD `offers` рахує ними ту саму базу, що SSR-
    * списки й картка гостя після гідрації. Персональний тип сюди не йде:
-   * розмітка для пошуковика одна для всіх (К3-Е6в-1), а гостьові види є в
+   * розмітка для пошуковика одна для всіх, а гостьові види є в
    * `product_prices` і в покупця — як фолбек (Р29).
    */
   guest_price_types: PriceTypes;

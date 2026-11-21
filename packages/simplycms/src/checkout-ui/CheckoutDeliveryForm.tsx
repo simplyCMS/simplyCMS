@@ -20,13 +20,13 @@ interface CheckoutDeliveryFormProps {
   onChange: (field: string, value: string | boolean) => void;
   /**
    * Сума позицій для тарифів до вибору способу — лише серверна (квота
-   * оформлення або кошика, Е6в-13). `null` — квоти ще немає: вартість
+   * оформлення або кошика). `null` — квоти ще немає: вартість
    * способів показується станом завантаження, а не тарифом від 0.
    */
   subtotal: number | null;
   /**
    * Квоту отримати не вдалося (`subtotal === null`): вузол помилки з повтором
-   * від контейнера замість вічного скелета тарифів (Е6в-13).
+   * від контейнера замість вічного скелета тарифів.
    */
   subtotalFailure?: ReactNode;
   /** Чи є хоч один спосіб доставки — батько блокує submit, поки `false`. */
@@ -101,7 +101,7 @@ export function CheckoutDeliveryForm({
   const showMoreButton =
     savedAddresses && savedAddresses.length > MAX_VISIBLE_CARDS;
   const selectedMethod = methods.find((m) => m.id === selectedMethodId);
-  // Е6а-9: самовивіз визначає провайдер способу, а не його `code`.
+  // Самовивіз визначає провайдер способу, а не його `code`.
   const isPickup =
     !!selectedMethod &&
     SHIPPING_PROVIDERS[selectedMethod.provider].destination === 'pickup-point';
@@ -269,7 +269,7 @@ export function CheckoutDeliveryForm({
   }
 
   // 🔴 Порожній довідник — стан, у якому оформити замовлення НЕМОЖЛИВО, і
-  // покупець мусить це бачити: до К2-Е0 сітка `methods.map` рендерилась
+  // покупець мусить це бачити: раніше сітка `methods.map` рендерилась
   // порожньою, поле для помилки валідації не існувало, а submit лишався
   // активним і мовчав. Той самий блокуючий патерн, що в CartView для
   // порожнього кошика.

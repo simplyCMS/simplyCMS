@@ -1,5 +1,5 @@
 /**
- * Gate IP — Import Protection ВАЛИТЬ збірку магазину на витоку (К2-Е0, T-2).
+ * Gate IP — Import Protection ВАЛИТЬ збірку магазину на витоку.
  *
  * 🔴 Це поведінковий доказ межі клієнт/сервер у РЕАЛЬНОМУ магазині з
  * tarball-ів: юніт `tests/import-protection-wiring.test.ts` перевіряє дані

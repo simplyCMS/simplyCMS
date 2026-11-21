@@ -5,7 +5,7 @@ import { defineConfig, type UserConfig } from 'tsdown';
 // власний `exports` (dev-мапа → src), tsc — через paths кореневого tsconfig.
 import { isServerOnlySubpath } from 'simplycms/contracts/server-only';
 
-// Збірка ядра — ДВІ групи замість профілів (трек T, ред. 3).
+// Збірка ядра — ДВІ групи замість профілів.
 //
 // 🔴 Список entry НЕ пишеться руками: він виводиться з dev-`exports`
 // package.json (ключ → джерело; у dist файл лягає за шляхом ДЖЕРЕЛА), тож

@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { useT, type MessageKey } from 'simplycms/i18n';
 
 /**
- * Контракт `renderImageUpload` (Е6д-6): тема отримує `File[]`, а не URL-и —
+ * Контракт `renderImageUpload`: тема отримує `File[]`, а не URL-и —
  * файли їдуть на сервер разом з відгуком одним запитом, тож орфанів немає.
  */
 export interface ReviewImageUploadProps {

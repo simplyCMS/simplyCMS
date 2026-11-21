@@ -5,7 +5,7 @@ import { S3_KEYS, SMTP_KEYS } from 'simplycms/env';
 import { codeOnly } from './support/source-text';
 
 /**
- * Пін контракту env магазину (К2-Е0, Е0-7): три документи (.env.example,
+ * Пін контракту env магазину: три документи (.env.example,
  * doctor, CLAUDE.md) уже розходились — карта стану показувала чотири ключі.
  * Машинно перевіряються два з них; CLAUDE.md — прозою, з посиланням сюди.
  */
@@ -26,7 +26,7 @@ const SERVER_ONLY = ['DATABASE_URL', 'BETTER_AUTH_SECRET'] as const;
 const OPTIONAL = [
   'BETTER_AUTH_URL',
   'MEDIA_ROOT',
-  // Групи драйверів (Е8): ключі беремо з модуля резолвера, не з копії.
+  // Групи драйверів: ключі беремо з модуля резолвера, не з копії.
   ...S3_KEYS,
   ...SMTP_KEYS,
   'MIGRATION_DATABASE_URL',

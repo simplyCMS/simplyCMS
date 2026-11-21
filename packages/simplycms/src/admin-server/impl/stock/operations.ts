@@ -4,7 +4,7 @@ import { saveStockInput } from './save';
 import { saveStock } from './save-core';
 
 /**
- * `products.saveStock` (Р14): тонка команда над ядром `saveStock` (ручний облік
+ * `products.saveStock`: тонка команда над ядром `saveStock` (ручний облік
  * + гвардований перехід `stock_status`). `version` не збільшує: залишки не
  * належать агрегату опису. Рядок товару не блокує — порядок локів задає ядро.
  */

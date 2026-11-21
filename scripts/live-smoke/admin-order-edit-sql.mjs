@@ -1,7 +1,7 @@
 /**
- * SQL кроку редагування позицій К3-Е5б
+ * SQL кроку редагування позицій
  * (`./admin-order-edit.mjs`) — окремим модулем за каноном 150 рядків.
- * Гроші порівнюються в цілих центах (Е5б-13): `numeric` приходить рядком,
+ * Гроші порівнюються в цілих центах: `numeric` приходить рядком,
  * і `parseFloat`-сума дала б float-дрейф там, де БД рахує точно.
  */
 import { sql } from './sql.mjs';
@@ -13,7 +13,7 @@ export function cents(s) {
   return Number(int) * 100 + Number((frac + '00').slice(0, 2));
 }
 
-/** Позиції замовлення з цінами й обліком (Е5-4′), у порядку створення. */
+/** Позиції замовлення з цінами й обліком, у порядку створення. */
 export async function orderItems(url, orderId) {
   return sql(
     url,
@@ -38,7 +38,7 @@ export async function orderSums(url, orderId) {
 }
 
 /**
- * «Суми = формула» (Е5б-8, Е5б-13): `total` позиції = ціна × кількість,
+ * «Суми = формула»: `total` позиції = ціна × кількість,
  * `subtotal = Σ total`, `total = subtotal + shipping_cost`. Повертає
  * `{ ok, fact }` — рядок факту для таблиці прогону.
  */
@@ -60,7 +60,7 @@ export async function orderFormula(url, orderId, items) {
   return sumsFormula(items, await orderSums(url, orderId));
 }
 
-/** Ціна товару за ДЕФОЛТНИМ типом — покупець без категорії (Е5б-1). */
+/** Ціна товару за ДЕФОЛТНИМ типом — покупець без категорії. */
 export async function defaultPrice(url, slug) {
   const [row] = await sql(
     url,

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { GATES } from '../scripts/release/gates.mjs';
 
 // Точний склад і порядок гейтів релізу — контракт, не деталь: CLAUDE.md і
-// release-process.md його цитують, а pilot (трек T, з К3-Е7 — повний, із Gate B) мусить іти ПІСЛЯ
+// release-process.md його цитують, а pilot (повний, із Gate B) мусить іти ПІСЛЯ
 // test:packaging — він пакує ті самі tarball-и.
 describe('гейти релізу', () => {
   it('склад і порядок рівно такі, як задокументовано', () => {

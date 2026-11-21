@@ -26,7 +26,7 @@ export default function CustomerCardPage() {
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
-  // Збій запиту — не «не знайдено» і не порожні нулі (Е6в F1).
+  // Збій запиту — не «не знайдено» і не порожні нулі.
   if (isError)
     return (
       <div role="alert" className="space-y-4 py-12 text-center">

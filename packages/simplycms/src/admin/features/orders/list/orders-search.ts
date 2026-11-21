@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Search-параметри `/admin/orders`: фільтр статусу живе в URL (Е6г-5). */
+/** Search-параметри `/admin/orders`: фільтр статусу живе в URL. */
 export interface OrdersSearch {
   readonly status?: string;
 }

@@ -85,7 +85,7 @@ describe('cli create: скаффолд', () => {
   });
 
   it('скаффолджений плагін несе міграцію власної таблиці БЕЗ DEFAULT на id', () => {
-    // Контракт К3-Е0: id генерує клієнт, тому scaffold-DDL не сміє мати
+    // Контракт: id генерує клієнт, тому scaffold-DDL не сміє мати
     // DEFAULT gen_random_uuid() — інакше перший сторонній плагін одразу
     // ловить розбіжність ключів між оптимістичним і серверним рядком.
     const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
@@ -107,7 +107,7 @@ describe('cli create: скаффолд', () => {
     // Модель безпеки B5″: `app_runtime` прямих грантів не має — права
     // дістає через SET LOCAL ROLE app_user|app_admin. Таблиця плагіна без
     // grant валить перший виклик usePluginTable permission denied, хоча
-    // скаффолджений файл виглядає завершеним (хвіст Е0).
+    // скаффолджений файл виглядає завершеним.
     const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
     scaffoldPlugin({
       templateDir: templatePluginDir(),
@@ -145,7 +145,7 @@ describe('cli create: скаффолд', () => {
     expect(sql).not.toMatch(/to\s+app_runtime/i);
   });
 
-  it('Е8-Р4: імʼя міграції зі скаффолду — таймстамп UTC, `plg_<name>_init`', () => {
+  it('імʼя міграції зі скаффолду — таймстамп UTC, `plg_<name>_init`', () => {
     const target = join(mkdtempSync(join(tmpdir(), 'cli-create-')), 'my-faq');
     const created = scaffoldPlugin({
       templateDir: templatePluginDir(),

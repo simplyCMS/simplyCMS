@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { adminErrorKey } from '../../lib/admin-error';
 import { reportTxError } from '../../lib/report-tx-error';
 
-/** Версія відгуку, яку побачив модератор (Е6д-23). */
+/** Версія відгуку, яку побачив модератор. */
 export interface ReviewVersion {
   readonly id: string;
   readonly updatedAt: Date;
@@ -22,7 +22,7 @@ export type StatusOutcome = 'ok' | 'gone' | 'changed' | 'failed';
 
 /**
  * Зміна статусу одного чи багатьох відгуків (список і картка). Кеш
- * синхронізується в ЦІЙ функції (К3-7) і після відмови теж: 409 означає, що
+ * синхронізується в ЦІЙ функції і після відмови теж: 409 означає, що
  * список застарів — його й лічильник «очікують» треба перечитати (Review
  * Focus 3).
  */

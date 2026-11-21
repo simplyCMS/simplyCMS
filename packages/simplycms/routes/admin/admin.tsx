@@ -21,14 +21,14 @@ import { AdminError, AdminPending } from './AdminBoundaries';
  */
 
 /**
- * К3-6: `crypto.randomUUID` існує лише в secure context — адмінка на
+ * `crypto.randomUUID` існує лише в secure context — адмінка на
  * `http://` не-localhost мовчки отримала б `undefined` на кожному create.
  *
  * 🔴 Помилка ТИПІЗОВАНА і АНГЛІЙСЬКА (прецедент
  * `core/lib/user-addresses.ts:88`: «серверна діагностика, а не рядок
  * інтерфейсу»): `beforeLoad` — поза React-контекстом, локаль там
  * недосяжна, тож рядок ІНТЕРФЕЙСУ дає `errorComponent` цього ж роуту
- * (`AdminError` з `AdminBoundaries`) за `error.name` — контракт як у К3-13
+ * (`AdminError` з `AdminBoundaries`) за `error.name` — контракт як у
  * (`authz-request.ts`: серіалізація не зберігає прототипи, тож
  * `instanceof` на клієнті ненадійний).
  */

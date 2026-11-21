@@ -1,5 +1,5 @@
-// К3-Е6а: перерахунок сум після редагування позицій (`recomputeOrderTotals`)
-// для знімка доставки. Рішення Е6а-23: разом із сумами оновлюється ЛИШЕ
+// Перерахунок сум після редагування позицій (`recomputeOrderTotals`)
+// для знімка доставки. Разом із сумами оновлюється ЛИШЕ
 // `shipping_data.pricing` — інакше примітка `carrier` зі знімка суперечила б
 // `shipping_cost > 0`; назва, адреса й точка лишаються на момент оформлення.
 import { describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('доставка: recomputeOrderTotals і знімок (К3-Е6а, Е6а-23)', () => {
+describe('доставка: recomputeOrderTotals і знімок', () => {
   const f = useOrderItemsEditDb('simplycms_e6a_recompute');
   const { ids } = f;
 

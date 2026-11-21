@@ -3,16 +3,16 @@ import { parseLoadSubsetOptions } from '@tanstack/query-db-collection';
 // реекспортується з `@tanstack/query-db-collection` — тип бере той самий
 // пакет, що й `useLiveInfiniteQuery`/`useLiveQuery`, `@tanstack/react-db`
 // (`export * from '@tanstack/db'`), нової peer-залежності це не додає
-// (К3-10′: дві peer-залежності лишаються двома).
+// (дві peer-залежності лишаються двома).
 // UPSTREAM:TSDB-4 — docs/architecture/upstream-workarounds.md
 import type { LoadSubsetOptions } from '@tanstack/react-db';
-// 🔴 type-only: імпорт стирається, серверне дерево в бандл не їде (К3-9′ п.3;
-// правило no-server-only-in-client пропускає саме `import type`).
+// 🔴 type-only: імпорт стирається, серверне дерево в бандл не їде
+// (правило no-server-only-in-client пропускає саме `import type`).
 import type { SubsetInput, SubsetPayload } from 'simplycms/admin-server/impl';
 
-// 🔴 isNull — у контракті з Е3: ціни й залишки РІВНЯ ТОВАРУ — це рядки з
+// 🔴 isNull — у контракті on-demand: ціни й залишки РІВНЯ ТОВАРУ — це рядки з
 // modification_id IS NULL; без оператора їх довелося б довибирати фільтром
-// у JS поверх ширшого зрізу. Серверний бік — Task 1 Step 6а.
+// у JS поверх ширшого зрізу.
 const SERVER_OPERATORS = new Set([
   'eq',
   'gt',
@@ -38,7 +38,7 @@ type ServerFilter = NonNullable<SubsetInput['filters']>[number];
  * вантажить першу сторінку; `or`/`like`/`ilike` бібліотека не парсить
  * (throw) — їх тут і немає. `not_*`/`isUndefined` вона парсить, а сервер
  * їх не має — відмова тут, до мережі, з назвою оператора; `isNull` — у
- * контракті з Е3-14 (ціни й залишки РІВНЯ ТОВАРУ, `modification_id IS
+ * контракті (ціни й залишки РІВНЯ ТОВАРУ, `modification_id IS
  * NULL`).
  */
 export function toSubsetPayload(

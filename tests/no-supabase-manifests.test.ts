@@ -12,7 +12,7 @@ import {
   templateCodeFiles,
 } from './no-supabase-manifests/files';
 
-// Ратчет К3-Е7 (Р2): `@supabase/*` не повертається ні в маніфести, ні в lock,
+// Ратчет: `@supabase/*` не повертається ні в маніфести, ні в lock,
 // ні в код шаблону магазину (він поза основним лінтом).
 describe('маніфести без @supabase/*', () => {
   const files = manifestFiles();

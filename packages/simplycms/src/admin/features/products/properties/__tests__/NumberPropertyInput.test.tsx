@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * `NumberPropertyInput` (Е3-19а) — збереження на blur/Enter, НЕ на кожну
+ * `NumberPropertyInput` — збереження на blur/Enter, НЕ на кожну
  * клавішу: набір "15" з write-back "1.0000" ПОСЕРЕД набору (поле у
  * фокусі) не повинен переписати чернетку; розмонтування з незбереженою
  * чернеткою — flush у cleanup; blur без змін — жодної мутації.
@@ -12,7 +12,7 @@ import { TestI18nProvider } from '../../../../../../test-harness/i18n';
 
 afterEach(() => cleanup());
 
-describe('NumberPropertyInput: чернетка + blur/Enter (Е3-19а)', () => {
+describe('NumberPropertyInput: чернетка + blur/Enter', () => {
   it('write-back посеред набору (поле у фокусі) не переписує чернетку; save на blur — раз', () => {
     const onChange = vi.fn();
     const { rerender } = render(

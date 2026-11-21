@@ -1,5 +1,5 @@
-// Реєстр умов знижок (Е6в-4): розбір значень і досяжність порогів
-// `min_quantity` у межах кошика (ред.3, ред.4).
+// Реєстр умов знижок: розбір значень і досяжність порогів
+// `min_quantity` у межах кошика.
 import { describe, expect, it } from 'vitest';
 import type { Json } from 'simplycms/contracts';
 import {
@@ -29,7 +29,7 @@ describe('розбір умов', () => {
     expect(priceWith('min_quantity', '>=', 'abc', 5).finalPrice).toBe(1000);
   });
 
-  // Е6в-23: зареєстрований тип зі зламаним значенням — `condition_invalid`,
+  // Зареєстрований тип зі зламаним значенням — `condition_invalid`,
   // а не `condition_unknown` (той лише для незареєстрованого типу).
   it.each(['abc', 2.5, 1000] as const)(
     'min_quantity >= %s → condition_invalid',

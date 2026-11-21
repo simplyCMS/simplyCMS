@@ -9,8 +9,8 @@ import { t } from '../support/i18n';
  * це один раз уже ламалося мовчки: клієнтський кеш (`staleTime: 5 * 60_000`)
  * лишав стару тему до пʼяти хвилин, а тост стверджував протилежне
  * (`docs/architecture/test-contours.md` §8.5). Фікс: серверний кеш
- * скидає сама операція `activateTheme` (Е6б-15), кеш роутера —
- * `router.invalidate()` у `admin/features/themes/useThemes.ts` (Е6б-22).
+ * скидає сама операція `activateTheme`, кеш роутера —
+ * `router.invalidate()` у `admin/features/themes/useThemes.ts`.
  */
 
 async function readPrimaryToken(page: Page): Promise<string> {

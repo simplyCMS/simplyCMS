@@ -132,7 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  // Суми тут немає (Е6в-13): її рахує лише серверна квота (`useCartQuote`).
+  // Суми тут немає: її рахує лише серверна квота (`useCartQuote`).
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (

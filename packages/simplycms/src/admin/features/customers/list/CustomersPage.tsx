@@ -54,7 +54,7 @@ export default function CustomersPage() {
       <Card>
         <CardContent className="pt-6">
           {isError && !data ? (
-            // Збій — не «не знайдено» (Е6в F1): помилка з повтором.
+            // Збій — не «не знайдено»: помилка з повтором.
             <div role="alert" className="space-y-4 py-8 text-center">
               <p className="text-destructive">{t('admin.users.loadError')}</p>
               <Button variant="outline" onClick={() => refetch()}>

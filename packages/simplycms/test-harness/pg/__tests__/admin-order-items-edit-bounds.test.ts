@@ -1,8 +1,8 @@
-// К3-Е5б, фінальне рев'ю п.2(а,б): межі `numeric(12,2)` при ДОДАВАННІ позиції
-// і в перерахунку сум (Е5б-13) — 409 `order_amount_out_of_range` ДО запису,
+// Межі `numeric(12,2)` при ДОДАВАННІ позиції
+// і в перерахунку сум — 409 `order_amount_out_of_range` ДО запису,
 // а не помилка БД. Кожна позиція тут — у межах колонки; за межу виходить
 // або total нової позиції, або сума замовлення (кілька позицій), або total
-// через доставку. Знімки цін — SQL-ом, як у `-money` (Е5б-1).
+// через доставку. Знімки цін — SQL-ом, як у `-money`.
 import { describe, expect, it, vi } from 'vitest';
 import { conflict, useOrderItemsEditDb } from './fixtures/order-items-edit';
 import { INVERTER_PRICE } from './fixtures/order-items-edit-data';
@@ -18,7 +18,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 const OUT_OF_RANGE = conflict('order_amount_out_of_range');
 
-describe('admin: межі сум при додаванні й перерахунку (К3-Е5б, рев’ю п.2)', () => {
+describe('admin: межі сум при додаванні й перерахунку', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_bounds');
   const { ids } = f;
 

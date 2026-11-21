@@ -12,7 +12,7 @@ export type { ProductListRow };
  * рахуються за типом ціни ГОСТЯ — тим самим правилом, що `loadPricingContext`
  * (`loadGuestPriceTypes`: тип дефолтної категорії, інакше глобальний
  * дефолтний, F5b); персональний тип покупця й знижки доклеює клієнт
- * середовищем цін (`useDiscountEnvironment`) — SSR їх не рахує (К3-Е6в-1).
+ * середовищем цін (`useDiscountEnvironment`) — SSR їх не рахує.
  */
 export interface PriceContext {
   /** Тип ціни гостя. */

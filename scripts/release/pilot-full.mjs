@@ -40,7 +40,7 @@ try {
 const harness = parseEnv(readFileSync(join(ROOT, '.env.harness'), 'utf8'));
 const harnessUrl = harness.PG_HARNESS_URL;
 if (!harnessUrl) throw new Error('У .env.harness немає PG_HARNESS_URL');
-// Garage і Mailpit харнесу (К3-Е8): повна група обов'язкова, неповна — помилка тут,
+// Garage і Mailpit харнесу: повна група обов'язкова, неповна — помилка тут,
 // а не тихе «без сховища й пошти» у релізному гейті. Імена `PILOT_*` — див. `env.mjs`.
 const S3 = ['ENDPOINT', 'REGION', 'BUCKET', 'ACCESS_KEY', 'SECRET_KEY'];
 const needed = [

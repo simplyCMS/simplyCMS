@@ -1,4 +1,4 @@
-/** DB conflicts (Е3-7) — mirror of `uk/admin/errors.ts`. */
+/** DB conflicts — mirror of `uk/admin/errors.ts`. */
 export const messages = {
   'admin.errors.slugTaken': 'This URL (slug) is already taken — change it',
   'admin.errors.conflictUnique': 'This value already exists',

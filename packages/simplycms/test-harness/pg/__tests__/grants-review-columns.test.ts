@@ -1,4 +1,4 @@
-// К3-Е6д-7 (Е6д-16 б, Е6д-23): `app_user` пише `product_reviews` лише
+// `app_user` пише `product_reviews` лише
 // колонковим UPDATE-грантом, а політика `product_reviews_update_own` дозволяє
 // правити й approved-відгук, але лише з поверненням у `pending`.
 //
@@ -39,7 +39,7 @@ const VALUES: Record<string, string> = {
   updated_at: 'now()',
 };
 
-describe('Е6д-16 б: колонкові гранти INSERT/UPDATE product_reviews для app_user', () => {
+describe('колонкові гранти INSERT/UPDATE product_reviews для app_user', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_review_columns');
   let dbUrl = '';

@@ -11,7 +11,7 @@ import { scalarTaken } from './property-value-owned';
 type Upsert = NonNullable<PropertyValuesInput['upsert']>[number];
 export type ValueTable = 'product' | 'modification';
 
-/** Обмеження значень (Р18), чию відмову команда перекладає в доменну помилку. */
+/** Обмеження значень, чию відмову команда перекладає в доменну помилку. */
 const CONSTRAINTS: Readonly<
   Record<ValueTable, { kind: string; option: string; scalar: string }>
 > = {

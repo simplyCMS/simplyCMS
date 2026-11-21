@@ -11,7 +11,7 @@ export interface ProductPriceBlockProps {
   price?: number;
   /** Ціна до знижки; показується лише коли більша за поточну. */
   oldPrice?: number | null;
-  /** Порогові підказки знижок (Е6в-12): «від 3 шт — 900 ₴/шт». */
+  /** Порогові підказки знижок: «від 3 шт — 900 ₴/шт». */
   hints?: readonly ThresholdHint[];
   /** Середовище цін не завантажилось (F1): замість ціни — помилка з повтором. */
   pricesFailed?: boolean;

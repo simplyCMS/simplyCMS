@@ -1,4 +1,4 @@
-// Рушій знижок: активність і дати груп/знижок, цілі (Е6в-5, Е6в-7).
+// Рушій знижок: активність і дати груп/знижок, цілі.
 import { describe, expect, it } from 'vitest';
 import type { DiscountTarget } from 'simplycms/contracts';
 import { resolveDiscount } from '../discounts';
@@ -56,7 +56,7 @@ describe('resolveDiscount — активність і дати', () => {
   });
 });
 
-describe('resolveDiscount — цілі (Е6в-7)', () => {
+describe('resolveDiscount — цілі', () => {
   const priceWith = (targets: DiscountTarget[]) =>
     resolveDiscount(
       1000,

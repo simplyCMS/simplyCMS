@@ -24,7 +24,7 @@ export function ModificationsPanel({ productId, sectionId }: Props) {
   const data = useModifications();
   const [editing, setEditing] = useState<DraftModification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  // К3-Е6д-1: id нової модифікації наперед — власник її запису в чернетці.
+  // Id нової модифікації наперед — власник її запису в чернетці.
   const [newId, setNewId] = useState(() => crypto.randomUUID());
 
   const openCreate = () => {

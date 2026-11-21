@@ -1,4 +1,4 @@
-// К3-Е6д-3, Е6д-22: `findMediaReferences` проти живої БД. Тест-парність:
+// `findMediaReferences` проти живої БД. Тест-парність:
 // кожен запис `MEDIA_COLUMNS` мусить мати сіятель у цьому файлі й знаходитись;
 // нова медіа-колонка реєстру без сіятеля чи без гілки у функції червонить тест.
 import { describe, expect, it } from 'vitest';
@@ -9,7 +9,7 @@ import * as H from '../apply.mjs';
 import { useReviewsDb } from './fixtures/reviews';
 import { insertProductGraph, viaRows } from './fixtures/product-graph';
 
-describe('findMediaReferences (Е6д-22)', () => {
+describe('findMediaReferences', () => {
   const d = useReviewsDb('simplycms_e6d_media_refs');
   const { f } = d;
   const find = (key: string) =>

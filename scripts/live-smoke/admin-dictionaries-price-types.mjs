@@ -1,5 +1,5 @@
 /**
- * Типи цін і прибирання кроку довідників (К3-Е4). Виніс із
+ * Типи цін і прибирання кроку довідників. Виніс із
  * `./admin-dictionaries.mjs` — канон 150 рядків.
  */
 import {
@@ -35,7 +35,7 @@ async function confirmDelete(page, rowName) {
 /**
  * Створити тип → видалити → рядка немає; дефолт `retail` не видаляється
  * (кнопка disabled); тип із цінами → тост `admin.errors.conflictReference`,
- * ціни на місці (Е4-1: RESTRICT, а не мовчазний CASCADE).
+ * ціни на місці (RESTRICT, а не мовчазний CASCADE).
  */
 export async function runPriceTypesPart({ page, base, dbUrl, check }) {
   // Фікстура ДО відкриття списку: eager-колекція підтягне її першим fetch.

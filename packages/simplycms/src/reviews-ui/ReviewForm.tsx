@@ -21,7 +21,7 @@ interface ReviewFormProps {
     keep?: string[];
   }) => void;
   isSubmitting?: boolean;
-  /** Режим правки (Е6д-23): початкові значення й наявні фото відгуку. */
+  /** Режим правки: початкові значення й наявні фото відгуку. */
   initial?: {
     rating: number;
     title: string | null;

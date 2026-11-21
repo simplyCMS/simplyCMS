@@ -13,7 +13,7 @@ type Recent = Omit<
 > & { createdAt: string };
 
 /**
- * Зведення дашборду (`order.manage`, Е6г-12): нові замовлення, виручка за
+ * Зведення дашборду (`order.manage`): нові замовлення, виручка за
  * 7/30 днів і 10 останніх. Вікна — від серверного `now()`; виручка не
  * рахує скасовані, але рахує `status_id NULL` (умова `loadCustomerStats`).
  * Стерте замовлення (`personal_data_erased_at`) → `customerName: null`.

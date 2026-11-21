@@ -27,7 +27,7 @@ type Raw = Omit<AdminCustomerRow, 'bannedAt' | 'createdAt'> & {
 
 /**
  * Список покупців для адмінки (`customer.manage`), keyset за
- * `(created_at desc, id desc)` (Е6г-6). База — `users LEFT JOIN profiles`:
+ * `(created_at desc, id desc)`. База — `users LEFT JOIN profiles`:
  * власник, створений CLI, профілю не має, але в списку є (Review Focus 5).
  *
  * - Категорія ефективна (`coalesce(p.category_id, дефолтна)`), фільтр — за нею.

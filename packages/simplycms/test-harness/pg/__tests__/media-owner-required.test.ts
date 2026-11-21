@@ -1,11 +1,11 @@
-// К3-Е6д-4: `media.entity_id` NOT NULL — рядок без власника невидимий і для
+// `media.entity_id` NOT NULL — рядок без власника невидимий і для
 // двофазного стирання, і для перевірки видимості при роздачі.
 import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { useReviewsDb } from './fixtures/reviews';
 
-describe('media.entity_id обовʼязковий (К3-Е6д-4)', () => {
+describe('media.entity_id обовʼязковий', () => {
   useReviewsDb('simplycms_e6d_media_owner');
 
   const insert = (owner: string | null) =>

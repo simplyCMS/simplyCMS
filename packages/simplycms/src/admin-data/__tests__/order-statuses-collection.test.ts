@@ -23,7 +23,7 @@ vi.mock('simplycms/admin-server', async () =>
 import { getCollection } from '../registry';
 import { orderStatusesCollection } from '../collections/order-statuses';
 
-describe('колекція order_statuses (лише читання, М2б Р19)', () => {
+describe('колекція order_statuses (лише читання)', () => {
   it('id колекції — з ENTITY (значення "order_statuses" з реєстру, не довільне)', () => {
     expect(orderStatusesCollection.id).toBe('order_statuses');
   });

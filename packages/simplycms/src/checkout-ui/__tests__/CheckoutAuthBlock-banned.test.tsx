@@ -8,7 +8,7 @@ import {
   fireEvent,
 } from '@testing-library/react';
 
-// Е6г-13: чекаут має власну форму входу — гілка BANNED обовʼязкова, інакше
+// Чекаут має власну форму входу — гілка BANNED обовʼязкова, інакше
 // там показався б сирий `error.message`.
 
 const signInEmail = vi.fn();

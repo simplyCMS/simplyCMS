@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 import { reportTxError } from '../../../lib/report-tx-error';
 
 /**
- * Роль і бан з картки (Е6г-4, Е6г-11). Відмови сервера (409 `admin_role_*`,
+ * Роль і бан з картки. Відмови сервера (409 `admin_role_*`,
  * `customer_is_admin`) — локалізований тост через `adminErrorKey`; успіх
- * інвалідує префікс `[profiles]` (картка, список, агрегати цін, Е6г-6).
+ * інвалідує префікс `[profiles]` (картка, список, агрегати цін).
  */
 export function useCustomerAccess(userId: string) {
   const t = useT();

@@ -10,7 +10,7 @@ import { adminPath } from '../../../lib/adminLinks';
 
 interface Props {
   readonly discount: Discount;
-  /** Назва типу ціни; `null` у рядку — знижка для всіх типів (Е6в-2). */
+  /** Назва типу ціни; `null` у рядку — знижка для всіх типів. */
   readonly priceTypeName: string | null;
   readonly onDelete: () => void;
 }

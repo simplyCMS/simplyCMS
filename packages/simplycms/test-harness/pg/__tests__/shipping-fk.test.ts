@@ -1,4 +1,4 @@
-// Е6а-17: залишки не губляться видаленням — гарантує БД, а не перевірка в коді.
+// Залишки не губляться видаленням — гарантує БД, а не перевірка в коді.
 // FK `pickup_points.method_id` і `stock_by_pickup_point.pickup_point_id` — RESTRICT:
 // спосіб із точками й точку з будь-яким рядком залишку (і з нульовим) база не
 // видаляє (23503). Каскад раніше знищував склад мовчки.
@@ -23,11 +23,11 @@ const POINT_ZERO = 'e6a10000-0000-4000-8000-000000000003';
 const POINT_FREE = 'e6a10000-0000-4000-8000-000000000004';
 const SECTION = 'e6a10000-0000-4000-8000-000000000005';
 const PRODUCT = 'e6a10000-0000-4000-8000-000000000006';
-// Точки БЕЗ залишку: інакше RESTRICT залишку маскує cascade FK способу (мутація Task 4).
+// Точки БЕЗ залишку: інакше RESTRICT залишку маскує cascade FK способу.
 const METHOD_BARE = 'e6a10000-0000-4000-8000-000000000007';
 const POINT_BARE = 'e6a10000-0000-4000-8000-000000000008';
 
-describe('доставка: FK RESTRICT (Е6а-17)', () => {
+describe('доставка: FK RESTRICT', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_shipping_fk');
   let dbUrl = '';

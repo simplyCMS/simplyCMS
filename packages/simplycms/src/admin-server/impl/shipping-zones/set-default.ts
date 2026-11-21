@@ -12,8 +12,8 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 export const setDefaultShippingZoneInput = z.object({ id: z.uuid() });
 
 /**
- * Дефолтна (основна) зона доставки рівно одна й завжди активна (Е6а-12, Е6а-20;
- * інваріант тримає й БД — тригер `shipping_zones_require_default`): її бере
+ * Дефолтна (основна) зона доставки рівно одна й завжди активна (інваріант тримає й БД — тригер
+ * `shipping_zones_require_default`): її бере
  * доставка за адресою і точка самовивозу без зони (`resolveShippingZone`).
  *
  * Порядок — патерн `price-types/set-default.ts`:

@@ -1,7 +1,7 @@
 import { normalizeCart, type CartItem } from './cart-normalize';
 
 /**
- * Зовнішній стор кошика (К2-Е0, Е0-5) — модуль-синглтон за патерном
+ * Зовнішній стор кошика — модуль-синглтон за патерном
  * `plugins/HookRegistry`; підключення до React (`useSyncExternalStore`) —
  * у `useCart.tsx`. Винесено в окремий файл, щоб `useCart.tsx` вкладався в
  * канон 150 рядків.
@@ -29,7 +29,7 @@ let snapshot: readonly CartItem[] = EMPTY_CART;
 const listeners = new Set<() => void>();
 
 /**
- * 🔴 Сховище — ввід, а не довірені дані (Е6в-13, Review Focus 3): кошик
+ * 🔴 Сховище — ввід, а не довірені дані: кошик
  * старого формату (з `price`/`basePrice`/`discountData`) і сміття не валять
  * сторінку — невалідні рядки відкидаються, межі кошика тримаються вже тут.
  */
@@ -68,7 +68,7 @@ export const getSnapshot = (): readonly CartItem[] => snapshot;
 export const getServerSnapshot = (): readonly CartItem[] => EMPTY_CART;
 
 /**
- * Ознака гідратації (рішення А архітектора, К2-Е0) — той самий `subscribe`,
+ * Ознака гідратації (рішення А архітектора) — той самий `subscribe`,
  * що й позиції кошика: другий незалежний стор заради булевого прапорця не
  * потрібен, підписка йде на той самий Set слухачів. Значення не залежить
  * від ВМІСТУ localStorage — лише від того, чи відбувся клієнтський рендер

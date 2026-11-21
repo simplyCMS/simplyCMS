@@ -1,6 +1,6 @@
-// К3-Е6д, фінальне рев'ю (М1, Е6д-19): видалення товару стирає фото відгуків,
+// Видалення товару стирає фото відгуків,
 // яких FK `product_reviews.product_id` (CASCADE) знищує разом із ним.
-// Двофазно (Е6д-14): рядки `media` — у транзакції, файли — після COMMIT.
+// Двофазно: рядки `media` — у транзакції, файли — після COMMIT.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { withActor } from 'simplycms/db';
 import { productsOps } from 'simplycms/admin-server/impl';
@@ -18,7 +18,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: видалення товару стирає фото його відгуків (Е6д-19)', () => {
+describe('admin: видалення товару стирає фото його відгуків', () => {
   const d = useReviewsDb('simplycms_e6d_product_rm');
   const { f } = d;
   afterEach(() => vi.restoreAllMocks());

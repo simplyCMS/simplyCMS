@@ -92,7 +92,7 @@ export interface Coordinates {
 
 /** Контекст для розрахунку доставки. */
 export interface ShippingCalculationContext {
-  /** Без `config`: рушій його не читає, а вітрина його не бачить (Е6а-13). */
+  /** Без `config`: рушій його не читає, а вітрина його не бачить. */
   method: Omit<ShippingMethod, 'config'>;
   zone: ShippingZone | null;
   cart: {

@@ -10,7 +10,7 @@ import {
 import { readPrimaryLocale } from './mail-support';
 
 /**
- * Invite власника — заміна механіки `inviteUserByEmail` (Task 7, В2-К1а).
+ * Invite власника — заміна механіки `inviteUserByEmail`.
  *
  * 🔴 Що змінилось по суті. Раніше лист будував зовнішній сервіс автентифікації за власним
  * шаблоном, і перевірити рендер було нічим. Тепер
@@ -28,7 +28,7 @@ export interface OwnerInviteStore {
   findUserIdByEmail(email: string): Promise<string | null>;
   createUser(input: { email: string; name: string }): Promise<string>;
   /**
-   * Лише токен під `admin-roles` (Е6г-19). `'banned'` — користувач забанений:
+   * Лише токен під `admin-roles`. `'banned'` — користувач забанений:
    * нічого не записано.
    *
    * 🔴 Р19: роль `admin` тут НЕ видається. Better Auth не вимагає підтвердження
@@ -46,8 +46,8 @@ export interface OwnerInviteStore {
   }): Promise<'issued' | 'banned' | 'service'>;
   /**
    * Видача ролі `admin` ПІСЛЯ прийняття запрошення: лок `admin-roles` першим
-   * запитом, `FOR SHARE` на користувача, перевірка бану (той самий інваріант
-   * Е6г-4/Е6г-19, що раніше стояв у `issueAdminInvite`). `'banned'` — роль не
+   * запитом, `FOR SHARE` на користувача, перевірка бану (той самий інваріант,
+   * що раніше стояв у `issueAdminInvite`). `'banned'` — роль не
    * видано (користувача забанили між випуском і прийняттям).
    */
   grantAdminRole(input: { userId: string }): Promise<'granted' | 'banned'>;
@@ -59,7 +59,7 @@ export interface OwnerInviteStore {
 }
 
 /**
- * Відмова випуску invite: `banned` (Е6г-19) або `email_taken` — пошта належить
+ * Відмова випуску invite: `banned` або `email_taken` — пошта належить
  * сервісному обліковому запису (М1, І27), людині там входити нема чим.
  */
 export class OwnerInviteError extends Error {
@@ -188,7 +188,7 @@ export type VerifyOwnerInviteResult =
  * довжини й повністю контрольовані зловмисником, тобто це класичний випадок,
  * де побайтове раннє повернення тече в тайминг.
  *
- * Прив'язку пароля робить К1′б: тут доводиться лише «токен дійсний і це той
+ * Прив'язку пароля робить інший шар: тут доводиться лише «токен дійсний і це той
  * самий користувач».
  */
 export async function verifyOwnerInvite(input: {

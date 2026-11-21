@@ -1,4 +1,4 @@
-// К3-Е6д-1: фото каталогу — розділ, опція властивості — стирається
+// Фото каталогу — розділ, опція властивості — стирається
 // заміною, прибиранням і каскадом видалення предка (розділ, властивість).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -17,7 +17,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('фото каталогу стираються двофазно (К3-Е6д-1)', () => {
+describe('фото каталогу стираються двофазно', () => {
   const d = useCatalogMediaDb('simplycms_e6d_media_catalog');
   afterEach(() => vi.restoreAllMocks());
   const gone = async (ref: string) => {

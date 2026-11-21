@@ -17,7 +17,7 @@ interface DraftField {
 
 /**
  * Чернетка текстового/числового поля зі збереженням на blur/Enter
- * (Е3-19а) — спільна для `TextPropertyInput` і `NumberPropertyInput`: поле
+ * — спільна для `TextPropertyInput` і `NumberPropertyInput`: поле
  * тримає ЛОКАЛЬНУ чернетку, поки має фокус; write-back із колекції
  * записується в поле лише коли фокусу НЕМАЄ (`focused` — стан, не ref:
  * `react-hooks/refs` забороняє читати ref ПІД ЧАС рендеру, а це саме
@@ -35,7 +35,7 @@ export function useDraftField({
   const [prevValue, setPrevValue] = useState(value);
 
   // Оновлення СТАНУ ПІД ЧАС рендеру (не `useEffect`) — той самий патерн,
-  // що був у `NumberPropertyInput` до Е3-19.
+  // що був у `NumberPropertyInput`.
   if (!focused && value !== prevValue) {
     setPrevValue(value);
     setDraft(value ?? '');

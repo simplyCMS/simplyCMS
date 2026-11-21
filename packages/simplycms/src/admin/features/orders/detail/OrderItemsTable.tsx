@@ -27,11 +27,11 @@ function appliedDiscounts(data: unknown): { name: string; amount: number }[] {
 interface Props {
   readonly orderId: string;
   readonly items: OrderItem[];
-  /** `false` для скасованого замовлення (Е5б-3): жодних контролів. */
+  /** `false` для скасованого замовлення: жодних контролів. */
   readonly editable: boolean;
 }
 
-/** Позиції замовлення; кількість і видалення — лише якщо `editable` (Е5б-11). */
+/** Позиції замовлення; кількість і видалення — лише якщо `editable`. */
 export function OrderItemsTable({ orderId, items, editable }: Props) {
   const t = useT();
   const edit = useOrderItemsEdit(orderId);

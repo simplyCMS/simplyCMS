@@ -45,8 +45,8 @@ export function buildPricesInput(
 
 /**
  * Ціни пари товар/модифікація (Task 8, Step 1). Читання — on-demand зріз
- * (`productId eq` + `modificationId eq`/`isNull`, обидва push-down — Е3-14);
- * запис — ОДНА атомарна команда `products.savePrices` (Е3-10), після якої
+ * (`productId eq` + `modificationId eq`/`isNull`, обидва push-down);
+ * запис — ОДНА атомарна команда `products.savePrices`, після якої
  * колекція (лише читання) перечитується. Версію агрегата команда не чіпає.
  */
 export function usePrices(productId: string, modificationId: string | null) {

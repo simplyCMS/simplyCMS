@@ -49,7 +49,7 @@ export interface CreateOrderInput {
   userId?: string | null;
 }
 
-/** Позиція запиту оформлення — ЛИШЕ ідентичність і кількість (К2-Е0, Е0-4). */
+/** Позиція запиту оформлення — ЛИШЕ ідентичність і кількість. */
 export interface CheckoutItemInput {
   productId: string;
   modificationId: string | null;
@@ -126,7 +126,7 @@ export interface CheckoutQuote {
   items: QuotedItem[];
   subtotal: number;
   shippingCost: number;
-  /** Режим ціни способу (Е6а-18): `carrier` показується не як «Безкоштовно». */
+  /** Режим ціни способу: `carrier` показується не як «Безкоштовно». */
   shippingPricing: ShippingPricing;
   total: number;
 }

@@ -24,7 +24,7 @@ const TYPE_LABEL: Record<
 const ALL: FormTarget[] = [{ targetType: 'all', targetId: null }];
 
 /**
- * Цілі знижки (Е6в-7): щонайменше одна; «Всі товари» — лише єдиною, тож
+ * Цілі знижки: щонайменше одна; «Всі товари» — лише єдиною, тож
  * перемикач замінює список цілком і вимикає вибір окремих цілей.
  */
 export function DiscountTargetsCard({ form }: { readonly form: DiscountForm }) {

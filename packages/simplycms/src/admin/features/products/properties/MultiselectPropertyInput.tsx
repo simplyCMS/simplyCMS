@@ -12,7 +12,7 @@ interface Props {
 
 /**
  * Multiselect — винесений з `PropertyInput` (канон 150 рядків). Рядок на
- * опцію (Е3-13): вихід — ПОВНИЙ бажаний набір `optionIds`,
+ * опцію: вихід — ПОВНИЙ бажаний набір `optionIds`,
  * `usePropertyValues.saveMulti` сам рахує вставки/видалення.
  */
 export function MultiselectPropertyInput({

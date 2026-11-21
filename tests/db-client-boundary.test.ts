@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { REPO, eslint, restrictedImports } from './tier-boundary/lint';
 
 /**
- * Негативний контроль зони «зʼєднання лише через withActor» (Task 6, В2-К1а).
+ * Негативний контроль зони «зʼєднання лише через withActor».
  *
  * 🔴 Зелений `pnpm lint` доводить лише «сьогодні ніхто так не пише» — він НЕ
  * доводить, що зона налаштована. Правило, яке мовчки відвалилось (одруківка в
