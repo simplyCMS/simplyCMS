@@ -666,10 +666,10 @@ Playwright): гейт мусить бути доступним і магазин
   імпортують публічні субшляхи ядра (`simplycms/ui`, `simplycms/i18n`,
   `simplycms/core/hooks/…`) — тема, на відміну від плагіна, споживає їх
   напряму за контрактом v2; клієнта БД вона не має. Плагінна eslint-зона
-  (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Якщо колись
-  зʼявиться theme-sdk із портами (аналог `simplycms/plugin-sdk`, субшлях
-  того самого пакета) — це
-  окреме рішення, не недогляд.
+  (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Симетричний фасад
+  `simplycms/theme-sdk` (порти для тем, view-model-типи, `validateThemeModule`,
+  `useThemeT`/`useThemeSettings`, conformance-kit і лінт-зона тем з негативним
+  контролем) — рішення ухвалене, ще не реалізоване: issue #95.
 - **`@font-face` / self-hosted шрифти теми та preconnect-оптимізації**
   (контракт v2.2) — тема віддає лише `https:`-URL зовнішніх stylesheet-ів;
   канал статики в npm-теми зʼявиться окремим рішенням, не недоглядом.
