@@ -28,7 +28,7 @@
 презентацію теж).
 
 **Профіль магазину — дані ядра, а не тема.** Назву, логотип (`logoUrl`),
-контакти й соцмережі власник правит в адмінці; ядро монтує їх над `Outlet`
+контакти й соцмережі власник магазину правит в адмінці; ядро монтує їх над `Outlet`
 (`StoreProfileProvider`, `src/routes/__root.tsx`), а тема читає
 `useStoreProfile()` із `simplycms/themes/store-profile`. Бренду літералом у
 каталозі теми немає: ключа `theme.brand` не існує ні в `themes/default`, ні в
@@ -410,7 +410,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 ```
 
 Референс-теми ядра (`@simplycms/theme-*`) уже покриті чинним
-`./node_modules/@simplycms/*/dist/**/*.js` (сам фреймворк-пакет — окремою
+`./node_modules/@simplycms/*/dist/**/*.js` (саме ядро — окремою
 парою глобів `./node_modules/simplycms/{dist,routes}/**`, К0). **Вимога «класи мають бути в
 зібраному dist-JS» — частина конвенції форми пакета** (бандлер лишає
 className-літерали в JS; перевірено на dist `plugin-faq`). Copy-in-теми
@@ -446,7 +446,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
 `bootstrapThemes` (`simplycms/themes`, дзеркало `syncPluginRows` плагінів)
 синхронізує зареєстровані теми в таблицю при завантаженні застосунку —
 клієнтський `useEffect` поруч із `PluginBootstrap` у `__root.tsx` (три
-синхронні копії: host, `packages/cli/host/`, template — `pnpm template:sync`).
+синхронні копії: демо-магазин монорепо, `packages/cli/host/`, шаблон — `pnpm template:sync`).
 `ThemeContext` на клієнті приймає `initialThemeName` з лоадера каркасного роуту
 (`themeName`) — зайвого клієнтського фетчу активної теми немає.
 
@@ -475,7 +475,7 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
    браузера. Приймається свідомо — той самий компроміс, що в плагінів.
 2. **Insert-only: версія рядка НЕ оновлюється.** Сід-міграція
    (`…20260215122821_theme_system_refactor.sql`) вставляє рядок
-   `solarstore` з `version '1.0.0'`, тоді як пакет тепер `0.3.0` —
+   `solarstore` з `version '1.0.0'`, тоді як версія пакета вже інша —
    `bootstrapThemes` бачить рядок як «вже є» і не чіпає його метадані. Та
    сама межа, що була у Фазі 3 для плагінів (колонку `migrations_applied`
    прибрано в Е6б) — UPDATE існуючих рядків відкладено. Історію міграцій свідомо не переписуємо: шар
@@ -593,7 +593,7 @@ Playwright): гейт мусить бути доступним і магазин
    реєструється в `runOfflineChecks`. НЕ у fs-checks і НЕ розширенням №9
    (той — error-рівень і лагодиться `update --write`; ця перевірка лагодиться
    руками, бо тека теми може бути свідомо ще не створена, а
-   `tailwind.config.ts` узагалі поза каноном `host/`). Що перевіряє:
+   `tailwind.config.ts` узагалі поза файлами каркаса `host/`). Що перевіряє:
    - кожен запис `themes`-конфігу резолвиться — тека `themes/<key>/` або
      пакет у `node_modules` (перевірка йде по **специфікатору** `import()`,
      а не по ключу — `configThemeEntries` у `config-edit.mjs`, дзеркало
@@ -669,11 +669,11 @@ Playwright): гейт мусить бути доступним і магазин
   (`PLUGIN_TRUST_BOUNDARY_FILES`) на теми не поширюється. Якщо колись
   зʼявиться theme-sdk із портами (аналог `simplycms/plugin-sdk`, субшлях
   того самого пакета) — це
-  окрема фаза, не недогляд.
+  окреме рішення, не недогляд.
 - **`@font-face` / self-hosted шрифти теми та preconnect-оптимізації**
   (контракт v2.2) — тема віддає лише `https:`-URL зовнішніх stylesheet-ів;
   канал статики в npm-теми зʼявиться окремим рішенням, не недоглядом.
-- **Видимість fonts-контуру в пілоті.** `pnpm pilot:pack` його НЕ доводить, і
+- **Видимість fonts-контуру в прогоні пакування.** `pnpm pilot:pack` його НЕ доводить, і
   це властивість гейтів, а не пропуск: Gate D читає лише зібраний
   `dist/client/assets/*.css` і HTML не бачить, а сід активує `default`, яка
   `fonts` не має. DB-free доказ — компонентні тести
@@ -709,7 +709,7 @@ Playwright): гейт мусить бути доступним і магазин
 | Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/simplycms/src/admin/__tests__/ThemeSettings.test.tsx` |
 | CLI-канал гейта: чисті функції команди (парсер, резолв теми з конфігу, підсумок звіту, аліаси з tsconfig) | `tests/cli-theme-conformance.test.ts` |
 | CLI-канал гейта: ЖИВИЙ ланцюг `installStoreDom → createStoreRunner → runner.import → kit` на синтетичній темі з `views` (зелений прогін + червоний на загубленому реквізиті) | `tests/cli-theme-conformance-run.test.ts` |
-| CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL пілота (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
+| CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL прогону пакування (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
 | `bootstrapThemes` | `packages/simplycms/src/themes/__tests__/bootstrapThemes.test.ts` (мок серверної поверхні `simplycms/themes/server`: усі теми вже в БД — ні list, ні register; без права запису модулі не вантажаться; missing → insert; помилка однієї теми не валить решту; mismatch імен — warn) |
 | Registry-awareness адмінки | компонентний тест `packages/simplycms/src/admin/__tests__/` (Testing Library/jsdom) |
 | Manifest ↔ пакет (референс-теми) | `tests/theme-manifest-parity.test.ts` |
