@@ -787,7 +787,7 @@ Schema у CI, інструкція деплою пілота).
 
 ### DZOD-1 · (ЗАКРИТО 2026-10-05) `.pick()` і refinements drizzle-zod не типізуються для генеричної таблиці
 
-**Висновок.** Замінено власним генератором `columnsToZod` (ADR-0033…0036): `buildResourceSchemas` більше
+**Висновок.** Замінено власним генератором `columnsToZod` (спека «deps-security-tooling-design», розділ 7б; знесено 2026-11-21, текст — `git show a967ab1e`): `buildResourceSchemas` більше
 не імпортує `drizzle-zod`, `SafePick` (знесено) і касти `.pick(... as never)`/refine-функції
 прибрано. `drizzle-orm/zod` 1.0.0-rc.4 DZOD-1 не лікував (13
 помилок без кастів), тож чекати апстрім не довелось. Рантайм-еквівалентність
