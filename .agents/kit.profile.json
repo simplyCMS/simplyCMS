@@ -61,7 +61,8 @@
       "docs/guides/**/*.md",
       "docs/tasks/**/*.md",
       "packages/simplycms/skills/*/SKILL.md"
-    ]
+    ],
+    "minTokenLen": 2
   },
   "review": {
     "criteria": ".agents/review-criteria.md",

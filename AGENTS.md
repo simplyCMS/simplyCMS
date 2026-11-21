@@ -120,17 +120,18 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 
 ## Дослідження коду
 
-Дві поверхні, плутати не можна: код (де символ лежить, хто його справді кличе) —
-`codebase-memory-mcp` (MCP-інструменти або `orient <Символ>`); доки й звірка плану з кодом —
-`orient --map "<тема>"` / `--plan <файл>`. Без код-шару `orient <Символ>` чесно відмовляє, а не
-грепає: греп через барелі бреше на «хто кличе». Процедура й формат звіту — скіл
-`codebase-research`; канон тулінгу — `docs/development/CODEBASE_MEMORY.md`.
+Дві поверхні, плутати не можна: код (де символ лежить, хто його справді кличе) — `orient <Символ>`
+(agent-kit поверх `codebase-memory-mcp`; MCP-інструменти напряму не клич — вони минають перевірку
+свіжості індексу); доки й звірка плану з кодом — `orient --map "<тема>"` / `--plan <файл>`. Без
+код-шару `orient` відповідає через `git grep` і позначає джерело кожного блоку: греп через барелі
+бреше на «хто кличе». Процедура — скіл `research` agent-kit; установка й межі код-шару —
+`docs/development/CODEBASE_MEMORY.md`. Тести — `run-tests`, PR — `pr-gate`, пункт спеки — `doc <файл> §N`.
 
 ```bash
-.agents/skills/codebase-research/scripts/orient --map "<тема>"   # тема людською мовою → канон
-.agents/skills/codebase-research/scripts/orient --plan <файл>    # якорі плану ↔ код
-.agents/skills/codebase-research/scripts/orient <Символ>         # де лежить + хто кличе
-.agents/skills/codebase-research/scripts/orient --doctor         # стан індексу й шару доків
+orient --map "<тема>"   # тема людською мовою → канон (корпус — research.corpus профілю)
+orient --plan <файл>    # якорі плану ↔ код
+orient <Символ>         # де лежить + хто кличе
+orient --doctor         # стан індексу й шару доків
 ```
 
 | Роль | Код | Доки й план |
@@ -249,7 +250,9 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `Generated with …`. Субагенти й воркфлоу можуть додати їх попри інструкції, тож після
   будь-якого воркфлоу чи субагента, що комітить, перевір:
   `git log --format=%B <база>..HEAD | grep -ciE "co-authored|generated with"` — має бути `0`.
-- Комітити й пушити — лише коли власник явно про це попросив.
+- Агенти комітять у гілках блоків, як кажуть задачі плану, і пушать їх лише через
+  `pr-gate open --draft`, коли це каже бриф архітектора; ніколи force, ніколи `main`. 🔴 Мерж у
+  `main` — лише власник: мерж публікує пакети на npmjs.
 
 ---
 
@@ -272,4 +275,4 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   `CODEBASE_MEMORY.md` (код-шар пошуку).
 - **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/simplycms-redesign.md`** — редизайн за референсом.
 - **`docs/tasks/`** — роадмап (`platform-roadmap.md`), карта чинного стану (`v2-state-map.md`).
-- **`.agents/skills/`** — процедури: `codebase-research`, `code-review`, `simplycms-redesign`.
+- **`packages/simplycms/skills/`** — скіли магазину (`simplycms-*`); процедури розробки — скіли agent-kit.
