@@ -1,6 +1,6 @@
 # ADR-0047: Мерж у `main` публікує пакети, тому мерж і реліз — лише слово власника
 
-Status: accepted 2026-10-12
+Status: superseded by ADR-0063
 Decided by: owner
 Spec: `AGENTS.md` § «Дисципліна git»
 
