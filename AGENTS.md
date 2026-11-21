@@ -107,7 +107,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
 - 🔴 Зелений `pnpm test` нічого не каже про опублікований пакет: що доводить кожен гейт
   (прогін пакування `pnpm pilot`: Gate A/B/C/D/CLI/TOOL, tarball-parity) і які зони не покриті —
   `docs/architecture/test-contours.md`.
-- 🔴 **Нові тести — за `test-contours.md` § 0:** одна поведінка — один рівень (де вона справжня);
+- 🔴 **Нові тести — за `docs/architecture/test-contours.md` § 0:** одна поведінка — один рівень (де вона справжня);
   перевіряти поведінку, а не реалізацію; доказ мутацією — для інваріантів, гейтів і гонок, а не для
   кожної знахідки рев'ю; новий сканер — лише після повтору класу. Змінюєш файл тестів — прибери дубль
   у зоні зміни.
@@ -179,7 +179,7 @@ orient --doctor         # стан індексу й шару доків
 - Request-guard для `/admin` — у `src/start.ts`; guard-логіку за межі `src/start.ts` і auth-роутів
   не виносити.
 
-**Теми, плагіни, UI** (`docs/architecture/themes.md`, `plugins.md`, `ui.md`)
+**Теми, плагіни, UI** (`docs/architecture/themes.md`, `docs/architecture/plugins.md`, `docs/architecture/ui.md`)
 
 - Тема постачає токени, `components` і опційно `views` пʼяти сторінок; **не** дані, роути, SEO,
   сторінки чи лейаути (`theme.pages`/`MainLayout` видалені свідомо). Логіки в темі немає.
@@ -210,18 +210,18 @@ orient --doctor         # стан індексу й шару доків
 - Файли — лише через порт `simplycms/storage`; у БД лежить референс, не URL; прямі виклики
   `supabase.storage` заборонені.
 
-**Пакети й реліз** (`docs/architecture/release-process.md`, `cli.md`)
+**Пакети й реліз** (`docs/architecture/release-process.md`, `docs/architecture/cli.md`)
 
 - Semver з 1.0 (рішення власника): діапазон `engines.simplycms` референс-пакетів і `simplycms create`
   — `^<мажорна>.0.0` (для 0.x — `^0.<мінорна>.0`; для RC `X.Y.Z-rc.N` — `^X.Y.Z-0`; `coreRangeFor`),
   а не відкрите `>=`; його переписує крок бампу `pnpm release`. Пререліз `X.Y.Z-rc.N` публікується
-  під npm-тегом `next`; деталі — `release-process.md`.
+  під npm-тегом `next`; деталі — `docs/architecture/release-process.md`.
 - Усі 5 пакетів завжди мають ОДНУ версію; реліз — рішення людини (`pnpm release`, далі PR у
   `main`; мерж публікує на npmjs). Копії `template/`, `packages/cli/host/`,
   `packages/simplycms/migrations/` синхронізує `pnpm template:sync` під тестом парності — руками
   не правляться.
 - 🔴 До `1.0.0-rc.1` baseline `0000…0004` ще не заморожено: його правлять як виняток baseline
-  (`data-layer.md`), і кожна така правка в релізі дає в `CHANGELOG` попередження «перестворити БД».
+  (`docs/architecture/data-layer.md`), і кожна така правка в релізі дає в `CHANGELOG` попередження «перестворити БД».
   Заморожування — крок релізу 1.0.0-rc.1.
 - Агентні скіли, що їдуть у магазини, живуть у `packages/simplycms/skills/<name>`; `.agents/skills/`
   і `.claude/skills/` — прямі симлінки на нього (оригінал — у пакеті).
@@ -272,8 +272,8 @@ orient --doctor         # стан індексу й шару доків
 - **`docs/architecture/`** — канон підсистем: `data-layer`, `rendering-and-routing`, `ui`,
   `themes`, `plugins`, `storage`, `i18n`, `translations`, `operations-api`, `cli`, `release-process`,
   `test-contours`, `upstream-workarounds`, `repository-layout`.
-- **`docs/development/`** — `TOOLING.md` (команди, гейти, лінт, CI), `ENVIRONMENT.md` (env, запуск),
-  `CODEBASE_MEMORY.md` (код-шар пошуку).
+- **`docs/development/`** — `docs/development/TOOLING.md` (команди, гейти, лінт, CI),
+  `docs/development/ENVIRONMENT.md` (env, запуск), `docs/development/CODEBASE_MEMORY.md` (код-шар пошуку).
 - **`docs/guides/themes.md`** — посібник по темах; **`docs/guides/simplycms-redesign.md`** — редизайн за референсом.
 - **`docs/tasks/platform-roadmap.md`** — напрям платформи; стан — віхи й issues GitHub (`track status`).
 - **`docs/GLOSSARY.md`** — слова проєкту; **`docs/adr/`** — вагомі рішення з причиною;
