@@ -59,7 +59,7 @@ export const productsCreate = defineOperation({
   }),
   async run({ db }, data) {
     // Спільний замок набору мов ПЕРШИМ: далі й валідація мов, і генератор адрес
-    // бачать один незмінний набір (Review Focus 1).
+    // бачать один незмінний набір.
     await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
     const primary = await primaryLocaleCode(db);
     const locales = await assertKnownLocales(

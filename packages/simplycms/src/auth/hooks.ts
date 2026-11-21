@@ -3,7 +3,7 @@ import { redactUrls } from 'simplycms/env';
 import type { AppRole } from './authz';
 
 /**
- * Порт `handle_new_user` у TS (B3′, Task 7) — те, що робив SQL-тригер
+ * Порт `handle_new_user` у TS (B3′) — те, що робив SQL-тригер
  * `on_auth_user_created` на схемі GoTrue.
  *
  * 🔴 Інваріант `first_user_no_auto_admin` (аудит 2026-08-04) переїхав сюди

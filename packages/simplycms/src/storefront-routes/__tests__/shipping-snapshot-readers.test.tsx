@@ -8,7 +8,7 @@ import ProfileOrderDetail from '../pages/ProfileOrderDetail';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /**
- * Review Focus 4: замовлення показує назву й адресу точки НА МОМЕНТ
+ * Замовлення показує назву й адресу точки НА МОМЕНТ
  * оформлення. Точку потім перейменували («Інша») — читач бере знімок, а не
  * живу таблицю, тож у фікстурі немає нічого, крім `shipping_data`.
  */

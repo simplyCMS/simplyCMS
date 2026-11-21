@@ -171,7 +171,7 @@ export default function Checkout() {
     });
   }, [user, form]);
 
-  // 🔴 Гвард гонки (знайдено live-smoke, Task 14): `onSubmit` спорожняє кошик
+  // 🔴 Гвард гонки (знайдено live-smoke): `onSubmit` спорожняє кошик
   // (`clearCart()`) ще на цій сторінці — Checkout не встигає розмонтуватись
   // до того, як ефект нижче побачить `items.length === 0` і перехопить
   // навігацію на `/order-success` редиректом на `/cart`. Прапорець виставляє

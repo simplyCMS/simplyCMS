@@ -18,7 +18,7 @@ type RawModification = Parameters<typeof toModificationRow>[0] & {
  * Модифікації товару для картки у мові запиту: назва — `withFallback` (мова,
  * інакше основна), токен `?mod=` — поточний токен мови з `slug_tokens`, а за його
  * відсутності токен основної (мова `draft` без звірки). Порядок — `sort_order`.
- * Фото — та сама галерея мови, що й у товару (`modificationGallerySql`, Task 17б).
+ * Фото — та сама галерея мови, що й у товару (`modificationGallerySql`).
  */
 export async function loadProductModifications(
   db: ActorDb,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * `usePropertySchema` (Task 10, Step 1) — 4 мутанти рев'ю: (1) призначень
+ * `usePropertySchema` — 4 мутанти рев'ю: (1) призначень
  * немає → жодного другого/третього запиту, rows=[]; (2) лише
  * text-властивості → опції не запитуються; (3) фільтр розділу й
  * `appliesTo` у subset-аргументі (`'all'` — без предиката appliesTo);

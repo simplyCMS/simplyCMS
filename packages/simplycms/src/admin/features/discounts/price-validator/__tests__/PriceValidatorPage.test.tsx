@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Валідатор цін (Task 10): кожна причина відхилення — перекладеним текстом,
+// Валідатор цін: кожна причина відхилення — перекладеним текстом,
 // а не кодом; condition_unknown / condition_invalid / discount_invalid — три
 // різні рядки. Форма шле на сервер вхід діагностики.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

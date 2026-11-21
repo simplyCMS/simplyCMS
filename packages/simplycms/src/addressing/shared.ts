@@ -48,8 +48,8 @@ export const textArray = (values: readonly string[]): SQL =>
 /**
  * Умова «колонка — одна з баз або `база-…`» для пакета баз. Ланцюг `OR`, а не
  * `LIKE ANY (array)`: лише ланцюг планувальник розкладає на BitmapOr по індексу
- * унікальності (`COLLATE "C"` дає префіксний діапазон), а `LIKE ANY` — seq scan
- * (EXPLAIN у звіті Task 5). Slug складається з `[a-z0-9-]`, метасимволів LIKE
+ * унікальності (`COLLATE "C"` дає префіксний діапазон), а `LIKE ANY` — seq scan.
+ * Slug складається з `[a-z0-9-]`, метасимволів LIKE
  * немає.
  */
 export function candidateAny(column: SQL, bases: readonly string[]): SQL {

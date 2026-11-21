@@ -9,7 +9,7 @@
  * subset-payload з полями БЕЗ аліасу; (2) друга сторінка
  * useLiveInfiniteQuery з індексом несе offset (без індексу — префікс, кейс 2б); (3) findOne по id штовхає eq(id);
  * (4) leftJoin on-demand × eager резолвиться. Join on-demand × on-demand
- * свідомо НЕ вживається (схема властивостей — двома запитами, Task 10).
+ * свідомо НЕ вживається (схема властивостей — двома запитами).
  * Червоне тут = бібліотека поводиться не так, як припускає план.
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';

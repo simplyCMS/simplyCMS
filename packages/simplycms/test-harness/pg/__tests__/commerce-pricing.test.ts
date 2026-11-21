@@ -31,7 +31,7 @@ const CART_APPLIED = {
 describe('рушій цін commerce: priceItems', () => {
   const ids = useCommerceDb('simplycms_commerce_pricing');
 
-  it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані в Step 1', async () => {
+  it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані до переїзду', async () => {
     const out = await guest((db) =>
       priceItems(
         db,

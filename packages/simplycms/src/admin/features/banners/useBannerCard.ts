@@ -26,7 +26,7 @@ import {
   type BannerFormValues,
 } from './banner-form-schema';
 
-/** Поля, під якими UI показує серверну помилку (КАНОН Task 3). */
+/** Поля, під якими UI показує серверну помилку. */
 const SERVER_FIELDS = ['sectionId', 'dateTo', 'scheduleTimeTo', 'buttons'];
 
 /**

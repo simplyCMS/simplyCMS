@@ -95,7 +95,7 @@ beforeEach(() => {
   for (const fn of Object.values(loaders)) fn.mockReset();
   payload.loadProductListPayload.mockReset();
   loaders.resolveTextLocale.mockResolvedValue(TEXT);
-  // Сторінка товару бере основну мову з кешу мов до транзакції (Task 17б fix-1, I1).
+  // Сторінка товару бере основну мову з кешу мов до транзакції.
   loaders.loadLocaleSet.mockResolvedValue({
     primary: 'uk',
     published: ['uk', 'en'],

@@ -2,7 +2,7 @@
  * Крок — ЄДИНИЙ живий доказ редагування позицій замовлення через
  * справжню межу serverFn і write-back колекцій: кількість +1, додавання
  * іншого товару пошуком, видалення; склад, суми й кабінет узгоджені, а
- * скасування покупцем повертає рівно актуально списане (Review Focus 2).
+ * скасування покупцем повертає рівно актуально списане.
  * Дії — `./admin-order-edit-ui.mjs`, SQL — `./admin-order-edit-sql.mjs`.
  */
 import { stockSnapshot } from './sql.mjs';
@@ -118,7 +118,7 @@ export async function runAdminOrderEditStep({
       `кабінет ${shown}, orders.total ${sums.total}`,
     );
 
-    // 6. Покупець скасовує: залишки = стан ДО замовлення (Review Focus 2).
+    // 6. Покупець скасовує: залишки = стан ДО замовлення.
     await buyerCancel({ page: buyerPage, base, orderId });
     const st = await pollOrder(dbUrl, orderId, 'cancelled');
     const after = await stockSnapshot(dbUrl, PRODUCT_SLUG);

@@ -42,7 +42,7 @@ import { productsSaveStock } from './stock/operations';
  * Реєстр операцій ядра (І24): перелік тут, бо саме `admin-server` визначає
  * операції; `simplycms/operations` про нього не знає (інакше цикл модулів).
  * Нова операція = рядок тут + serverFn-обгортка в `admin-server/index.ts`;
- * паритет доводить `registry-parity.test.ts` (Task 7). Плагінні операції
+ * паритет доводить `registry-parity.test.ts`. Плагінні операції
  * додасть пізніший крок — реєстр лишається статичним масивом ядра.
  */
 export const CORE_OPERATIONS: readonly OperationDef<unknown, unknown>[] = [

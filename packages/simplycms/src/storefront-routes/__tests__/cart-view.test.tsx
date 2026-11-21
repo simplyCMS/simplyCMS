@@ -10,8 +10,7 @@ import {
 import { cartViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
 /**
- * Conformance-прогін канонічного `CartView` на фікстурах (контракт тем v3,
- * Фаза 5, Step 3) — до появи kit-а Фази 6.
+ * Conformance-прогін канонічного `CartView` на фікстурах (контракт тем v3) — до появи kit-а.
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдер тут рівно один — i18n. Ні
  * клієнта БД, ні QueryClient, ні `CartProvider` немає, тож будь-який
@@ -33,7 +32,7 @@ vi.mock('@tanstack/react-router', () => ({
 import { CartView } from '../views/CartView';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
-/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
+/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit. */
 function requisiteStub(name: string) {
   return function RequisiteStub() {
     return <div data-simplycms-requisite={name} />;

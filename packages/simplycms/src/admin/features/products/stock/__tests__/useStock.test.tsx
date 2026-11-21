@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * `useStock` (Task 8, Step 2): (а) `saveStock` отримує `quantities` по всіх
+ * `useStock`: (а) `saveStock` отримує `quantities` по всіх
  * точках з інпутів, порожнє = 0; (б) відповідь `{ count, stockStatus }` рядків не
  * несе — колекції лише для читання перечитуються; (в) відʼємне/дробове число → serverFn не
  * викликано.

@@ -6,8 +6,7 @@ import { HOME_REQUISITES, type HomeSlots } from 'simplycms/contracts/views';
 import { homeViewModelFixtures } from 'simplycms/contracts/views/fixtures';
 
 /**
- * Conformance-прогін канонічного `HomeView` на фікстурах (контракт тем v3,
- * Фаза 5, Step 3) — до появи kit-а Фази 6.
+ * Conformance-прогін канонічного `HomeView` на фікстурах (контракт тем v3) — до появи kit-а.
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдери тут i18n і замоканий
  * `useActiveThemeModule` (контракт v2.2, старший за `theme.views` — сам
@@ -46,7 +45,7 @@ vi.mock('../components/BannerSlider', () => ({
 import { HomeView } from '../views/HomeView';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
-/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
+/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit. */
 function requisiteStub(name: string) {
   return function RequisiteStub({ sectionId }: { sectionId: string }) {
     return <div data-simplycms-requisite={name} data-section-id={sectionId} />;

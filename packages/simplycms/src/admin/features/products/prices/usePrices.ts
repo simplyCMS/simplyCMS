@@ -29,7 +29,7 @@ export function buildPricesInput(
   for (const [priceTypeId, v] of Object.entries(draft)) {
     const price = normalizeMoneyInput(v.price);
     // Порожнє поле = «ціни цього типу немає» — рядок у вхід не йде,
-    // сервер видалить наявний (Review Focus 4).
+    // сервер видалить наявний.
     if (price === '') continue;
     const oldPrice = normalizeMoneyInput(v.oldPrice);
     if (!isMoney(price) || (oldPrice !== '' && !isMoney(oldPrice)))
@@ -44,7 +44,7 @@ export function buildPricesInput(
 }
 
 /**
- * Ціни пари товар/модифікація (Task 8, Step 1). Читання — on-demand зріз
+ * Ціни пари товар/модифікація. Читання — on-demand зріз
  * (`productId eq` + `modificationId eq`/`isNull`, обидва push-down);
  * запис — ОДНА атомарна команда `products.savePrices`, після якої
  * колекція (лише читання) перечитується. Версію агрегата команда не чіпає.

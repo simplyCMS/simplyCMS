@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Deps-graph аудит manifest-ів (Task 1.3).
+ * Deps-graph аудит manifest-ів.
  *
  * У монорепо будь-який bare-імпорт резолвиться через workspace-аліаси
  * (`tsconfig.json` paths, `vite.config.ts` `resolve.alias`) і через

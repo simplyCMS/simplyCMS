@@ -85,7 +85,7 @@
   очікування → 409 `idempotency_in_flight`. Відповідь 2xx дописує `storeIdempotentResponse` перед
   комітом; не-2xx не зберігається (ключ не «витрачено»). Область — `subjectKeyOf` (`token:<id>` для
   Bearer, `user:<uuid>` для cookie). Протухлі (`IDEMPOTENCY_TTL_HOURS`) прибираються порцією
-  `IDEMPOTENCY_PRUNE_BATCH` зі `SKIP LOCKED`. Тест — `idempotency.test.ts` (І28, Review Focus 3).
+  `IDEMPOTENCY_PRUNE_BATCH` зі `SKIP LOCKED`. Тест — `idempotency.test.ts` (І28).
 - **problem+json** (RFC 9457): ЄДИНА карта «помилка → (status, kind)» — `toProblem`; таблиця
   статусів — `PROBLEM_STATUS`, заголовки — стабільні англійські. Невідома помилка — 500 `internal`
   без `message` і стека (текст драйвера містить імена таблиць і роль; І29,

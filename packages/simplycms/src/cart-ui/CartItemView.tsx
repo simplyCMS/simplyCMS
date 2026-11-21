@@ -41,7 +41,7 @@ export function CartItemView({
   const locale = useContentLocale();
   // Назви: з квоти, з кешу тієї ж мови або скелетон (`resolveCartItemNames`).
   const names = resolveCartItemNames(item, line, locale, failed ?? false);
-  // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`, Task 17б).
+  // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`).
   const image = resolveCartItemImage(item, line, locale, failed ?? false);
 
   return (

@@ -3,7 +3,7 @@ import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { buildOrganizationJsonLd } from '../head/organization';
 
 /**
- * Organization JSON-LD головної («Додатково» Review Focus): назва
+ * Organization JSON-LD головної : назва
  * власника потрапляє в `<script>` сирим текстом, тож `</script>` у ній не
  * сміє закрити тег; порожній `VITE_SITE_URL` не дає відносних `url`/`logo`.
  */

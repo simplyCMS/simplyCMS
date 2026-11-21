@@ -7,7 +7,7 @@ import OrderSuccess from '../pages/OrderSuccess';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
 /**
- * Guest-token не має лишатись у URL після завантаження замовлення (Task 15).
+ * Guest-token не має лишатись у URL після завантаження замовлення.
  *
  * 🔴 Мокається САМА серверна функція, а не клієнт БД: після переходу
  * вітрини на `createServerFn` браузер у базу не ходить взагалі, тож мок

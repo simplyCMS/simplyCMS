@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { runAudit } from '../scripts/audit-exports.mjs';
 import { extractSpecifiers } from '../scripts/audit-exports/collect.mjs';
 
-// Крос-пакетний гейт (Task 1.2): усі реально вжиті специфікатори
+// Крос-пакетний гейт: усі реально вжиті специфікатори
 // `@simplycms/<pkg>/<subpath>` мають відповідний ключ у `exports`
 // (і в `publishConfig.exports`, якщо він є). Workspace-аліаси в
 // tsconfig/vite резолвлять будь-який subpath незалежно від manifest-а —
@@ -141,7 +141,7 @@ describe('audit-exports: специфікатори лише з імпорт-ф�
   });
 });
 
-// 🔴 Сліпа зона, яку ловив лише pilot (Task 15): ключ-патерн `./storefront-routes/pages/*`
+// 🔴 Сліпа зона, яку ловив лише pilot: ключ-патерн `./storefront-routes/pages/*`
 // «покриває» будь-яке ім'я, але його ціль `*.tsx` для `.ts`-модуля файлу не має — у
 // монорепо аліас резолвить усе, а в tarball-і це `ERR_MODULE_NOT_FOUND`. Імпорт іде з
 // `routes/**` (файл-роут), тож гейт мусить і читати цей корінь, і звіряти ціль з файлом.

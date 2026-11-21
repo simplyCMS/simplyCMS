@@ -92,7 +92,7 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
 /**
  * Завантажити файл від імені адміна.
  *
- * 🔴 Склейка ІНША за прості order-statuses-операції (Task 1 Step 6): парсинг
+ * 🔴 Склейка ІНША за прості order-statuses-операції: парсинг
  * форми (`parseUploadForm`) навмисно всередині колбека `runAdmin`, а не до
  * нього — грант перевіряється ПЕРШИМ (`requireGrant` усередині `runAdmin`),
  * анонім до розбору взагалі не доходить. Розбір усередині транзакції не
@@ -108,7 +108,7 @@ export async function parseUploadForm(data: FormData): Promise<ParsedUpload> {
  * `uploadMyAvatar`: якщо COMMIT упаде вже після публікації файлу, rollback
  * прибере рядок, а диск про транзакції не знає, і обʼєкт лишився б орфаном.
  * Тому зовнішній try/catch навколо `runAdmin` лишається — цього не дає
- * склейка `run()` фабрики (Task 1 Step 5), бо там нема потреби в
+ * склейка `run()` фабрики, бо там нема потреби в
  * best-effort прибиранні файлу з диска.
  */
 export async function uploadMediaOp({

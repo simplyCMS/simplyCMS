@@ -8,7 +8,7 @@ import ProductEdit from 'simplycms/admin/pages/ProductEdit';
 
 export const Route = createFileRoute('/admin/products/$productId')({
   // 🔴 Прогріваємо лише eager-довідники (розділи, типи цін): картка товару
-  // потребує обидва — розділ у сайдбарі (Task 7), типи цін у Task 8.
+  // потребує обидва — розділ у сайдбарі і типи цін.
   // preload() on-demand колекції товару — no-op (Б-1), сам рядок тягне
   // `findOne` у `ProductEditPage`.
   loader: async ({ context }) => {

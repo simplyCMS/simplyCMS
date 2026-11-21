@@ -44,7 +44,7 @@ export const languagesAdd = defineOperation({
   output: view,
   async run({ db }, input) {
     // Ексклюзивно ПЕРШИМ запитом: чекаємо транзакції, що створюють адреси під
-    // спільним замком, і бачимо всі їхні закомічені сутності (Review Focus 1).
+    // спільним замком, і бачимо всі їхні закомічені сутності.
     await lockLanguageSet(db);
     await assertCodeNotAnAddress(db, input.code);
     const next = await db.execute<{ n: number }>(

@@ -1,4 +1,4 @@
-// БД харнес-тесту ядер адмінки (showcase Task 3): канон + демо-сід (облік
+// БД харнес-тесту ядер адмінки: канон + демо-сід (облік
 // залишку зі списанням, `decrease_on_order = true`) → app_runtime → afterAll
 // із closeDbPool() ПЕРШИМ. Шапка — патерн admin-orders.test.ts.
 import { join } from 'node:path';

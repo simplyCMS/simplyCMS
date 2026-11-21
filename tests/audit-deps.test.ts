@@ -5,7 +5,7 @@ import {
   collectPackages,
 } from '../scripts/audit-deps/collect.mjs';
 
-// Крос-пакетний гейт (Task 1.3): кожен bare-імпорт з publish-root-ів пакета
+// Крос-пакетний гейт: кожен bare-імпорт з publish-root-ів пакета
 // (`src/` і `routes/`) має бути оголошений у `dependencies` або
 // `peerDependencies` цього ж пакета. У монорепо розрив невидимий —
 // workspace-аліаси й hoisted-корінь `node_modules` резолвлять що завгодно;

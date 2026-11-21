@@ -23,7 +23,7 @@ import {
 } from '../packages/cli/src/status-stage.mjs';
 import { CLI_INDEX, STORE_ENV, scaffoldFakeStore } from './lib/fake-core-store';
 
-// `simplycms status` (Б §3.1, Task 19): етап, наступний скіл, коди 0/3/невідомо.
+// `simplycms status` (Б §3.1): етап, наступний скіл, коди 0/3/невідомо.
 const INTRO = readFileSync('packages/simplycms/agent/intro.md', 'utf8');
 const roots: string[] = [];
 afterAll(() => {

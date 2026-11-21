@@ -25,7 +25,7 @@ const ids = (code: string, head?: string) =>
   lint(code, head).map((m) => m.messageId);
 
 describe('mutation-cache-sync (function-scope)', () => {
-  it('сторінка Task 10 — чиста', () => {
+  it('сторінка — чиста', () => {
     expect(
       ids(`export function Page() {
       const collection = useCollection(orderStatusesCollection);
@@ -152,7 +152,7 @@ describe('mutation-cache-sync (function-scope)', () => {
     ).toEqual(['noSync']);
   });
 
-  it('колекція Task 9 (serverFn у persistence-хендлерах) — чиста', () => {
+  it('колекція (serverFn у persistence-хендлерах) — чиста', () => {
     expect(
       ids(
         `function create(queryClient) {

@@ -35,7 +35,7 @@ const full: ViewModelData<ProductDetailViewModel> = {
   gallery: {
     images: [
       { url: '/img/panel-550.jpg', alt: 'Панель 550 Вт, фронт' },
-      // Фото без опису: alt порожній, а не назва товару (Task 17б).
+      // Фото без опису: alt порожній, а не назва товару.
       { url: '/img/panel-550-back.jpg', alt: '' },
     ],
   },

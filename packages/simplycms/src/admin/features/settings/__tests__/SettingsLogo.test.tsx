@@ -59,7 +59,7 @@ beforeEach(() => {
   mocks.saveStockManagement.mockImplementation(async ({ data }) => data);
 });
 afterEach(() => cleanup());
-describe('Логотип у формі налаштувань (Review Focus 2, клієнт)', () => {
+describe('Логотип у формі налаштувань (клієнт)', () => {
   it('прибрати логотип у формі й не зберегти → deleteMedia НЕ викликано', async () => {
     await open();
     fireEvent.click(removeLogoButton());

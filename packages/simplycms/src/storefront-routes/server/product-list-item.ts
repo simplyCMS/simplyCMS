@@ -29,7 +29,7 @@ export interface ProductListItem {
   name: string;
   /** Мова назви, коли її узято з основної мови (fallback): картка обгортає її `lang`. */
   nameLang: string | null;
-  /** Мініатюра — головне фото мовою списку (файл і alt мови, Task 17б); `null` — без фото. */
+  /** Мініатюра — головне фото мовою списку (файл і alt мови); `null` — без фото. */
   image: ProductImageViewModel | null;
   price: number | null;
 }

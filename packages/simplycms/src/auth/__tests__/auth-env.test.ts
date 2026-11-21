@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveAuthBaseUrl, resolveAuthSecret } from '../auth-env';
 
-// Контракт серверного env auth-контуру (спека CLI v1 §7, Task 7).
+// Контракт серверного env auth-контуру (спека CLI v1 §7).
 //
 // 🔴 Що саме доводиться тут — ФОРМА резолву, а не джерело: у vitest
 // `import.meta.env` — Proxy над `process.env`, тож тест джерело довести не

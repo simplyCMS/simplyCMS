@@ -17,7 +17,7 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
  * 🔴 Живий лише `sectionProducts` (карусель головної,
  * `storefront-routes/pages/home/queries.ts`). Решта колишніх членів
  * (`all`/`product`/`products`/`sections`/`properties`/`stock`) не мали
- * жодного споживача поза власним тестом і прибрані фінальним рев'ю Е1а;
+ * жодного споживача поза власним тестом і прибрані;
  * `stock` до того ж колізував із `core/hooks/useStock.ts`
  * (`[...AGGREGATE.stockInfo.key, modificationId, productId]`) — той самий
  * ключ під різні типи payload при двох заданих id.

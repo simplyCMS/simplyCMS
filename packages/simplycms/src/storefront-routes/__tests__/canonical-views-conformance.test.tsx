@@ -5,7 +5,7 @@ import { assertThemeViewsConformance } from 'simplycms/themes/conformance';
 import type { ThemeModule } from 'simplycms/themes/types';
 
 /**
- * Канонічні view ядра прогнані ЧЕРЕЗ conformance-kit (Фаза 6, Step 3).
+ * Канонічні view ядра прогнані ЧЕРЕЗ conformance-kit.
  *
  * 🔴 Тест живе на боці route-пакета, а не в `simplycms/themes`: kit (T4) не
  * має права залежати від `storefront-routes` (T5) — тіри залежностей

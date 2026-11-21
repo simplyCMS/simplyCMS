@@ -58,7 +58,7 @@ export function ProductGalleryCard({
         )}
 
         {current ? (
-          // alt і його `lang` (fallback основної мови) — з даних мови сторінки (Task 17б),
+          // alt і його `lang` (fallback основної мови) — з даних мови сторінки,
           // а не назва товару: фото без опису лишається з порожнім alt.
           <img
             src={current.url}

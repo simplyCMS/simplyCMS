@@ -52,7 +52,7 @@ afterAll(async () => {
   await browser?.close();
 });
 
-describe('lib/map.mjs — контракт mapTokens незалежно від наявності браузера (Step 3)', () => {
+describe('lib/map.mjs — контракт mapTokens незалежно від наявності браузера', () => {
   it('mapTokens(sampleInspection) — валідна пропозиція без chromium', () => {
     const proposal = mapTokens(sampleInspection);
     // 2 — після Р7 інкремента Б.3 (структурований `unmapped`).

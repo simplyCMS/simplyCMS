@@ -16,7 +16,7 @@ import { ensureSessionStartHook } from '../packages/cli/src/hook-entry.mjs';
 import { envWithoutNodePath } from '../scripts/pilot-pack/env-without-node-path.mjs';
 import { CLI_INDEX, STORE_ENV, scaffoldFakeStore } from './lib/fake-core-store';
 
-// Шим хука старту сесії (Б §3.2, Task 20): без логіки, завжди код 0, друкує JSON
+// Шим хука старту сесії (Б §3.2): без логіки, завжди код 0, друкує JSON
 // для Claude Code. Дочірній процес і tmp-теки — тест перевіряє справжній контракт.
 const TEMPLATE_CLAUDE = 'packages/create-simplycms-store/template/.claude';
 const SHIM = join(TEMPLATE_CLAUDE, 'hooks/session-start.mjs');

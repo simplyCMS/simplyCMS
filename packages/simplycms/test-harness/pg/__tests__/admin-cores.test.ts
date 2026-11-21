@@ -1,4 +1,4 @@
-// Showcase Task 3 (С-2, С-15): ядра цін, складу, знижок і статусу замовлення
+// Showcase (С-2, С-15): ядра цін, складу, знижок і статусу замовлення
 // поза HTTP-запитом — у транзакції викликача під `withActor({ role: 'app_admin' })`,
 // без `requireGrant`, — дають той самий результат, що й операція. Операцію
 // кличемо через мок гранта (патерн admin-orders.test.ts) на ДВІЙНИКУ цілі
@@ -30,7 +30,7 @@ const asAdmin = <T>(fn: (db: ActorDb) => Promise<T>) =>
   withActor({ role: 'app_admin' }, fn);
 const VOLATILE = ['id', 'createdAt', 'updatedAt'];
 
-describe('ядра адмін-операцій поза запитом (showcase Task 3)', () => {
+describe('ядра адмін-операцій поза запитом', () => {
   const db = useCoresDb('simplycms_admin_cores');
 
   it('saveProductPrices = saveProductPricesOp', async () => {

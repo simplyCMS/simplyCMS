@@ -31,7 +31,7 @@ export interface ProductCardInput {
 /**
  * Стан картки існуючого товару: знімок БД (`agg` + `baseline` форми), форма,
  * помилки рядків, конфлікт версії й перечитування. Окремо від розмітки картки,
- * щоб `ProductCard` лишився композицією панелей (рев'ю Task 13).
+ * щоб `ProductCard` лишився композицією панелей.
  */
 export function useProductCardState({
   productId,

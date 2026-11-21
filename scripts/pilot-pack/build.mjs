@@ -69,7 +69,7 @@ export function freePort() {
 /**
  * Підняти production-runner скретча (`node server.mjs`) і дочекатися готовності.
  *
- * 🔴 `extraEnv` (Task 14, live-smoke): `server.mjs` наповнює `process.env` із
+ * 🔴 `extraEnv` (live-smoke): `server.mjs` наповнює `process.env` із
  * `.env.local`/`.env` лише для ВІДСУТНІХ ключів, тож `DATABASE_URL` із
  * shell/CI перекрив би тестову БД скрипта. Явний третій аргумент іде ПІСЛЯ
  * `process.env` у мерджі — виграє завжди; пілот кличе без нього.

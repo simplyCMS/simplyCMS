@@ -9,7 +9,7 @@ import { toSubsetPayload } from '../subset-payload';
 
 /**
  * On-demand за товаром/модифікацією — БЕЗ `persistenceHandlers`:
- * ручний облік пишеться атомарно `saveStock` (Task 4/8) разом з гвардованим
+ * ручний облік пишеться атомарно `saveStock` разом з гвардованим
  * переходом `stock_status`, не фабричним update. `collection.insert()`
  * тут кидає за побудовою бібліотеки — запис лише іменованою операцією.
  */

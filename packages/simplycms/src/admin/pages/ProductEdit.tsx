@@ -1,4 +1,4 @@
-// Диспетчер+реекспорт (Task 7, рішення Task 6 Step 5): exports-мапа пакета
+// Диспетчер+реекспорт (рішення архітектора): exports-мапа пакета
 // несе `./admin/pages/*`, але не `./admin/features/*` — роут
 // (`routes/admin/admin/products/$productId.tsx`) не може імпортувати
 // `admin/features/*` напряму, тож новий/існуючий товар розводить ЦЕЙ файл.

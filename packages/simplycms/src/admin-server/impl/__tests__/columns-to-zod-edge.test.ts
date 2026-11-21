@@ -14,7 +14,7 @@ import {
 import type { z } from 'zod';
 import { columnsToZod } from '../columns-to-zod';
 
-// Доповнення до columns-to-zod.test.ts: межі, яких ще не торкались (рев'ю Task 10).
+// Доповнення до columns-to-zod.test.ts: межі, яких ще не торкались.
 const ok = (s: z.ZodType | undefined, v: unknown) => s!.safeParse(v).success;
 
 describe('columnsToZod: межі генератора', () => {

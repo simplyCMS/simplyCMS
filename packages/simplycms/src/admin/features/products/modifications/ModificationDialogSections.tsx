@@ -15,13 +15,13 @@ import { StockEditor } from '../stock/StockEditor';
 interface Props {
   readonly productId: string;
   readonly modificationId: string;
-  /** Розділ товару — секція властивостей значень модифікації (Task 10). */
+  /** Розділ товару — секція властивостей значень модифікації. */
   readonly sectionId: string | null;
 }
 
 /**
  * Ціни, залишки й значення властивостей ІСНУЮЧОЇ модифікації — виніс із
- * `ModificationDialog.tsx` (канон 150 рядків). Властивості (Task 10) —
+ * `ModificationDialog.tsx` (канон 150 рядків). Властивості —
  * `target='modification', appliesTo='modification'`: рядки пишуться в
  * `modification_property_values` з `modificationId`, не `productId`.
  */

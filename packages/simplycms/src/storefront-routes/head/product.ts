@@ -19,7 +19,7 @@ export type ProductHeadInput = ProductOffersInput & {
   description: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
-  /** Фото мовою сторінки: `og:image` і JSON-LD беруть їхні URL (файл мови, Task 17б). */
+  /** Фото мовою сторінки: `og:image` і JSON-LD беруть їхні URL (файл мови). */
   images: readonly ProductImageViewModel[];
   /** Мовний контекст сторінки: мова й рішення політики індексації (М1, І33). */
   page: {

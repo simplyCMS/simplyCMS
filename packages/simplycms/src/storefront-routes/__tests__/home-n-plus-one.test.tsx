@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { HomeProduct, HomeSection } from '../pages/home/types';
 
 /**
- * Task 0.2: секційні каруселі головної не роблять власних клієнтських
+ * Секційні каруселі головної не роблять власних клієнтських
  * запитів — товари приходять із SSR-лоадера.
  *
  * 🔴 Гард стоїть на МІСЦІ ІНТЕГРАЦІЇ: рендериться компонент роуту

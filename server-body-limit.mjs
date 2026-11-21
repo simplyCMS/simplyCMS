@@ -61,7 +61,7 @@ export function limitStream(source, limit, onExceed) {
 
 /**
  * Відмова за `Content-Length` понад стелю класу — ДО виклику хендлера й без
- * читання тіла. Зʼєднання не закриваємо (поведінка Task 7): клієнт, що ще
+ * читання тіла. Зʼєднання не закриваємо (навмисна поведінка): клієнт, що ще
  * шле тіло, читає 413, а не обрив. Повертає `true`, якщо відповідь віддано.
  */
 export function rejectOversizedBody(req, res, serverFnBase, extraHeaders = {}) {

@@ -1,6 +1,6 @@
 // Перенесено в simplycms/catalog-ui. Re-export для зворотної сумісності.
 // 🔴 Тільки ІМЕНОВАНІ re-export-и: `export * from '<external>'` esbuild при
 // splitting лишає у спільному чанку й НЕ піднімає в entry — опублікований
-// пакет виходив без експортів (знахідка пілота Task 3.1).
+// пакет виходив без експортів (знахідка пілота).
 export { ActiveFilters } from 'simplycms/catalog-ui/ActiveFilters';
 export type { ActiveFilter } from 'simplycms/catalog-ui/ActiveFilters';

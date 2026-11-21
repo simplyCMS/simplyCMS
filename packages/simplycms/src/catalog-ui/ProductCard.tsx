@@ -22,7 +22,7 @@ interface ProductCardProps {
      */
     name_lang?: string | null;
     short_description_lang?: string | null;
-    /** Фото мовою сторінки; мініатюра — перше (alt і його `lang` — з даних, Task 17б). */
+    /** Фото мовою сторінки; мініатюра — перше (alt і його `lang` — з даних). */
     images?: ProductImageViewModel[];
     has_modifications?: boolean;
     price?: number | null;

@@ -9,10 +9,10 @@ import { toSubsetPayload } from '../subset-payload';
 
 /**
  * On-demand за товаром/модифікацією — БЕЗ `persistenceHandlers`:
- * набір цін пишеться атомарно `saveProductPrices` (Task 4/8), не
+ * набір цін пишеться атомарно `saveProductPrices`, не
  * фабричним insert/update/remove. `collection.insert()` тут кидає за
  * побудовою бібліотеки — це й потрібно, запис лише іменованою операцією;
- * write-back після `saveProductPrices` робить сторінка (Task 8).
+ * write-back після `saveProductPrices` робить сторінка.
  */
 function create(queryClient: QueryClient) {
   return createCollection(

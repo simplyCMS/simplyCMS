@@ -1,5 +1,5 @@
 import { parseLoadSubsetOptions } from '@tanstack/query-db-collection';
-// 🔴 Відхилення від плану (Task 0, Step 3): `LoadSubsetOptions` НЕ
+// 🔴 Відхилення від плану: `LoadSubsetOptions` НЕ
 // реекспортується з `@tanstack/query-db-collection` — тип бере той самий
 // пакет, що й `useLiveInfiniteQuery`/`useLiveQuery`, `@tanstack/react-db`
 // (`export * from '@tanstack/db'`), нової peer-залежності це не додає

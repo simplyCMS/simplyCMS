@@ -5,7 +5,7 @@ import {
   stripCommentsAndStrings,
 } from './support/source-text';
 
-// Спільний помічник текстових гейтів (Task 17б fix-3): токени — від лексера TypeScript,
+// Спільний помічник текстових гейтів: токени — від лексера TypeScript,
 // тож `//` і `/*` поза коментарем (у вкладеному шаблоні, регекс-літералі, JSX-тексті) код не ріжуть.
 const TAIL = 'const b = { images: toGallery(v) };';
 

@@ -57,7 +57,7 @@ describe('admin: редагування позицій, покупець і ло
     ['update', -2],
     ['remove', 1],
   ] as const)(
-    '(лок) %s: поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point (Review Focus 4)',
+    '(лок) %s: поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point',
     async (kind, stockDelta) => {
       const o = await f.place([
         { productId: ids.panel, quantity: 1 },

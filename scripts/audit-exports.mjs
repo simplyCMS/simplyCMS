@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Consumed-subpath аудит exports (Task 1.2).
+ * Consumed-subpath аудит exports.
  *
  * У монорепо workspace-аліаси (`tsconfig.json` paths, `vite.config.ts`
  * `resolve.alias`) резолвлять БУДЬ-ЯКИЙ subpath пакета напряму на файл у

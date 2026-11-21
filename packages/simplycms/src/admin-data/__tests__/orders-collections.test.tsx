@@ -34,7 +34,7 @@ vi.mock('simplycms/admin-server', async () => {
 });
 
 describe('колекції замовлень', () => {
-  it('useLiveInfiniteQuery по createdAt desc з індексом: 3 сторінки по 2 без дублів і пропусків при однакових createdAt (Review Focus 5)', async () => {
+  it('useLiveInfiniteQuery по createdAt desc з індексом: 3 сторінки по 2 без дублів і пропусків при однакових createdAt', async () => {
     reset(Array.from({ length: 6 }, (_, i) => makeOrder(i, SAME)));
     const { wrapper, usePages } = setup();
     const { result } = renderHook(() => usePages(2), { wrapper });

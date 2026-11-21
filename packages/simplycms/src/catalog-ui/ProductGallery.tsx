@@ -5,7 +5,7 @@ import { useT } from 'simplycms/i18n';
 import { cn } from 'simplycms/ui/utils';
 
 interface ProductGalleryProps {
-  /** Фото мовою сторінки: `alt` і його `lang` (fallback основної) — з даних (Task 17б). */
+  /** Фото мовою сторінки: `alt` і його `lang` (fallback основної) — з даних. */
   images: ProductImageViewModel[];
 }
 

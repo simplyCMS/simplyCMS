@@ -10,7 +10,7 @@ import ProductsTable from './ProductsTable';
 import { useProductsList, type ProductFilters } from './useProductsList';
 
 /**
- * Список товарів (Task 6) — перша сторінка каталогу на on-demand колекції.
+ * Список товарів — перша сторінка каталогу на on-demand колекції.
  * Дані/пагінація — `useProductsList`; фільтри й таблиця — окремі компоненти
  * (`ProductsFilters`/`ProductsTable`); синк з URL search — поза етапом.
  */
