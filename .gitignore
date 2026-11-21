@@ -51,7 +51,7 @@ temp/.env.local
 *.tgz
 packages/*/package/
 
-# Python-кеш скриптів скіла codebase-research (orient --map)
+# Python-кеш скриптів
 __pycache__/
 
 # Playwright (pnpm test:e2e) — звіти й трейси прогону

@@ -49,3 +49,8 @@ packages/simplycms/seed-migrations/
 .claude/skills/
 # agent-kit: task and scratch worktrees inside the repo
 .worktrees/
+# agent-kit: решта рядків шаблону (schema/cbmignore.template)
+**/.next/
+**/.turbo/
+.agents/
+.superpowers/
