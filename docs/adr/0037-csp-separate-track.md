@@ -16,7 +16,7 @@ Spec: `docs/superpowers/specs/2026-10-05-industry-standards-design.md` § «Те
 ## Why
 - Без каналу для сторонніх скриптів суворий CSP зламає піксели й аналітику магазину (`docs/superpowers/specs/2026-10-05-industry-standards-design.md` § «Заголовки безпеки»).
 - У dev CSP вимкнено через HMR; кеш HTML на CDN знецінює nonce (`docs/superpowers/specs/2026-10-05-industry-standards-design.md` § «Заголовки безпеки»).
-- Запис боргу — issue #144 (раніше роадмап, розділ «Відкриті борги»; знесено 2026-11-21, текст — `git show 3feeb440`).
+- Запис боргу — issue #144 (раніше роадмап, розділ «Відкриті борги»; знесено 2026-11-21, текст — `git show d68fbf8b`).
 
 ## Rejected
 - У джерелі не записано
