@@ -1,6 +1,6 @@
 {
   "kit": {
-    "version": "0.10.0"
+    "version": "0.11.1"
   },
   "pr": {
     "base": "main",
@@ -41,6 +41,20 @@
         "command": ["pnpm", "live:smoke"],
         "reporter": "exit-code",
         "timeout": 1200
+      },
+      "docs": {
+        "command": [
+          "pnpm",
+          "exec",
+          "vitest",
+          "run",
+          "tests/doc-symbols-exist.test.ts",
+          "tests/gates-chain.test.ts",
+          "tests/upstream-tripwires.test.ts",
+          "tests/marketplace-index.test.ts"
+        ],
+        "reporter": "vitest-json",
+        "timeout": 300
       }
     }
   },
@@ -76,5 +90,12 @@
       "packages/create-simplycms-store/template/**",
       "packages/cli/host/**"
     ]
+  },
+  "ci": {
+    "workflow": ".github/workflows/workflow.yml",
+    "docsOnly": {
+      "skipJobs": ["typecheck", "test", "www", "packaging", "schema"],
+      "testsLevel": "docs"
+    }
   }
 }
