@@ -336,7 +336,7 @@ describe('admin: доставка (Е6а, Task 4)', () => {
 
 **Files:**
 - Create: `scripts/live-smoke/admin-shipping.mjs` (`runAdminShippingStep({ context, buyerPage, base, dbUrl, check })`), `scripts/live-smoke/admin-shipping-sql.mjs`
-- Modify: `scripts/live-smoke/owner-steps.mjs`; доки: `docs/tasks/v2-state-map.md` (§1, нове §2.8, §3.1, §3.7 — К3-Е5-2 закрито, §6), `docs/tasks/platform-roadmap.md`, `docs/architecture/{plugins,data-layer}.md` (слот видалено; знімок доставки), `CHANGELOG.md`
+- Modify: `scripts/live-smoke/owner-steps.mjs`; доки: «v2-state-map» (знесено 2026-11-21, текст — в історії git) (§1, нове §2.8, §3.1, §3.7 — К3-Е5-2 закрито, §6), `docs/tasks/platform-roadmap.md`, `docs/architecture/{plugins,data-layer}.md` (слот видалено; знімок доставки), `CHANGELOG.md`
 
 **Interfaces:**
 - Крок іде ПІСЛЯ наявних кроків власника і прибирає за собою створене. Воронка покупця й `resolveStockPoint` покладаються на рівно одну активну точку демо-сіду.

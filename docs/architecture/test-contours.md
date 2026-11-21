@@ -171,7 +171,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 🔴 Історично Gate E був **єдиним** місцем, де виконувався invite-флоу. Після
 його зняття (0.4.1) invite-флоу на Better Auth не покритий жодним
 автоматичним контуром — тільки ручним прогоном (`issueOwnerInvite`,
-[`ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3). Це найдорожча відкрита
+[`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3). Це найдорожча відкрита
 сліпа зона релізу.
 
 ✅ **Перший успішний прогін — 2026-08-04** (Docker встановлено того ж дня):
@@ -354,7 +354,7 @@ linked-проєкт (2026-08-04: `gotrue v2.186.0` проти `v2.195.0`,
 > 🔴 **DECOMMISSIONED (0.4.1) — історичний розділ.** Чинний спосіб підняти
 > магазин локально: `pnpm db:demo` → `.env.local` із трьох ключів →
 > `pnpm build && pnpm start`, покроково —
-> [`ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3. Нижче — знятий
+> [`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3. Нижче — знятий
 > Supabase-шлях.
 
 `pilot:e2e` гасив стек за собою (`supabase stop --no-backup` — томи
@@ -424,7 +424,7 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 > (кроки §8.2 спираються на `supabase start`, service_role і Mailpit).
 > Сама ІДЕЯ розділу чинна: браузерну частину не бачить жоден гейт. Переписати
 > під Postgres-стек — К6; актуальний ручний прогін —
-> [`ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3.
+> [`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3.
 
 Гейти A–E доводили механіку, але **не бачать нічого, що існує лише в
 браузері**: гідратацію, застосування CSS-змінних теми, кліки без

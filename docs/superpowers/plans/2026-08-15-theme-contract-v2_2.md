@@ -1,6 +1,6 @@
 # План: контракт теми v2.2 — типографіка, fonts, розчинення brand-*
 
-> Задача: [`docs/tasks/theme-contract-v2_2.md`](../../tasks/theme-contract-v2_2.md).
+> Задача: файл задачі «theme-contract-v2_2» (знесено 2026-11-21; текст — в історії git).
 > Ресерч-обґрунтування: [`2026-08-15-theme-contract-expansion.md`](../research/2026-08-15-theme-contract-expansion.md).
 > Гілка `claude/website-cloner-analysis-p7wf4z`, PR #32. Стан коду на момент
 > плану — main `73ad460`.
@@ -79,7 +79,7 @@
 - [x] **Step 3:** `CLAUDE.md` (Theme System) і `.github/instructions/ui-architecture.instructions.md` — синхронізувати формулювання контракту v2.2.
 - [x] **Step 4:** Роадмап — зафіксувати трек (виконано v2.2; посилання на ресерч/задачу/план; 🔴 борг Р9: живий SSR-доказ fonts-контуру потребує Gate B + SEED_THEME='solarstore' + перегенерації сіду + розрізнюваного маркера — свідомо відкладено; горизонти 2–3 — рішення-кандидати).
 - [x] **Step 5:** Повний прогін гейтів у канонічному порядку + `pnpm pilot:pack` (закон репо: зелений `pnpm test` пакування не доводить).
-- [x] **Step 6:** Оновити чекбокси в `docs/tasks/theme-contract-v2_2.md` (DoD §3) і PR #32.
+- [x] **Step 6:** Оновити чекбокси в файл задачі «theme-contract-v2_2» (знесено 2026-11-21) (DoD §3) і PR #32.
 
 ## Поза скоупом плану (звірено із задачею §4)
 

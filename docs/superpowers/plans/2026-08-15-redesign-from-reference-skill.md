@@ -1,6 +1,6 @@
 # План: скіл redesign-from-reference (етап Б треку редизайну)
 
-> Задача: [`docs/tasks/redesign-from-reference-skill.md`](../../tasks/redesign-from-reference-skill.md).
+> Задача: файл задачі «redesign-from-reference-skill» (знесено 2026-11-21; текст — в історії git).
 > Ресерч: [`2026-08-15-website-cloner-tools.md`](../research/2026-08-15-website-cloner-tools.md).
 > Гілка `claude/website-cloner-analysis-p7wf4z`, PR #32. Стан коду — `ad01740`.
 >

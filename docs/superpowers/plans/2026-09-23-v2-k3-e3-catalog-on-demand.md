@@ -179,7 +179,7 @@ Task 13 (live:smoke крок адміна + DoD + доки) ← Task 12
 | `scripts/live-smoke.mjs`, `scripts/live-smoke/{sql,avatar}.mjs` | виклик кроку адміна; `PNG` експортується з `avatar.mjs` |
 | `packages/simplycms-theme-solarstore/src/components/Header.tsx` | ключ з `entityKey` замість `['sections-nav']` (борг №8) |
 | `scripts/live-smoke/funnel.mjs` | виклик кроку адміна |
-| `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `docs/architecture/test-contours.md`, `CLAUDE.md` | DoD-доки |
+| `docs/tasks/platform-roadmap.md`, «v2-state-map» (знесено 2026-11-21, текст — в історії git), `docs/architecture/test-contours.md`, `CLAUDE.md` | DoD-доки |
 
 **Свідомо НЕ чіпаються:** `ImageUpload`/`ImageGrid`/`ImageDropzone` (уже на порті з Е2 — лише монтуються), `StockStatusSelect` (без БД, лише переноситься імпорт), решта `src/admin/**` поза скоупом Е3-1, контракт view-моделей вітрини.
 
@@ -3933,7 +3933,7 @@ git commit -m "test(k3-e3): повнота зони mutation-cache-sync, фіч�
 - Create: `scripts/live-smoke/admin-catalog.mjs`
 - Modify: `scripts/live-smoke.mjs` (передати `browser` і env магазину в крок)
 - Modify: `scripts/live-smoke/sql.mjs` (запити кроку)
-- Modify: `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `CLAUDE.md`
+- Modify: `docs/tasks/platform-roadmap.md`, «v2-state-map» (знесено 2026-11-21, текст — в історії git), `CLAUDE.md`
 
 **Interfaces:**
 - Consumes: `issueOwnerInvite`, `ownerInviteStore` (`packages/simplycms/src/auth/index.ts`); id контролів з Tasks 7–8; демо-сід (`pnpm db:demo`: розділ `sonyachni-paneli`, СИСТЕМНА точка видачі, тип ціни `retail`)
@@ -4135,7 +4135,7 @@ DoD-звіт списком «пункт — факт».
   №4 — як у Task 11 Step 3 (ще раз звірити, що запис є); «Поточний стан» — дата й версія з
   `packages/simplycms/package.json`; рядок «Адмінка» таблиці «Що працює» —
   живі сторінки.
-- `docs/tasks/v2-state-map.md` — §1 і §3.1 (живі сторінки каталогу), §2.4
+- «v2-state-map» (знесено 2026-11-21, текст — в історії git) — §1 і §3.1 (живі сторінки каталогу), §2.4
   (прогін), §3.2 (зображення товару ЖИВЕ — DoD К3 п.6 закрито), §6 (порядок
   робіт: Е4 наступний; прибрати застаріле «Storage-порт К4 оживляє аватар»).
 - `CLAUDE.md` — дерево `src/` (+ `inventory/`, `admin/features/`), перелік

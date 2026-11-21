@@ -309,7 +309,7 @@ pnpm 11.20, Node ≥ 22.12 (вимога `@tanstack/react-start`).
 | `packages/simplycms/src/i18n/catalogs/{uk,en}/checkout.ts` | ключі `checkout.rejected.*`, `checkout.noShippingMethods.*` (Е0-4) |
 | `packages/simplycms/src/react-query/useCart.tsx`, `checkout-ui/CheckoutOrderSummary.tsx:11` | стор на `useSyncExternalStore`; контекст `readonly CartItem[]` (Е0-5) |
 | `.github/instructions/optimization.instructions.md:54` | рецепт гідратації (Е0-5) |
-| `.env.example`, `docs/tasks/v2-state-map.md` §1, §2, §3.4, §6 | env-тексти; датований прогін; закриті борги (Е0-7, Е0-8) |
+| `.env.example`, «v2-state-map» (знесено 2026-11-21, текст — в історії git) §1, §2, §3.4, §6 | env-тексти; датований прогін; закриті борги (Е0-7, Е0-8) |
 | `docs/tasks/platform-roadmap.md` | К2-Е0 ✅, борги T ✅, борг 0.4.1-4 ✅ (Е0-8) |
 | `package.json` | скрипт `live:smoke` (Е0-8) |
 
@@ -1683,7 +1683,7 @@ data-URI-плейсхолдер у самому сіді. Наслідок: ка
 Побічно цим закривається відомий борг демо-даних: 404 на
 `/demo/banners/solar-home.jpg` записаний у двох місцях
 (`docs/architecture/test-contours.md` §12, таблиця живого прогону 2026-09-03;
-`docs/tasks/v2-state-map.md` §2.1). 🔴 Обидва — ДАТОВАНІ записи прогонів, тож
+«v2-state-map» (знесено 2026-11-21, текст — в історії git) §2.1). 🔴 Обидва — ДАТОВАНІ записи прогонів, тож
 заднім числом їх не правлять: новий стан фіксує датований прогін Task 14.
 
 🔴 Чому сід — власник (ред. 1.2). До цієї задачі активний `pickup` вставляли
@@ -5036,7 +5036,7 @@ origin — дев на іншому порту отримав би 403). Три 
 - Create: `scripts/live-smoke.mjs` (оркестрація), `scripts/live-smoke/sql.mjs` (прямий SQL), `scripts/live-smoke/funnel.mjs` (браузерна воронка)
 - Modify: `scripts/pilot-pack/build.mjs:74-80` (`startStore(storeDir, port, extraEnv = {})`)
 - Modify: `package.json` (скрипт `live:smoke`)
-- Modify: `CLAUDE.md` (Quick Reference: `live:smoke`, `db:demo` — покупний демо; «Database Commands»: те саме про `db:demo`; «Project Structure», тека `scripts/`; «Tech Stack»: поріг Node; лінт-зони: шоста зона a11y), `docs/architecture/test-contours.md` §12 (рядок «живий прогін = `pnpm live:smoke`»), `docs/tasks/v2-state-map.md` §1, §2, §3.4, §5, §6, `docs/tasks/platform-roadmap.md` (лише позначки завершення: К2-Е0 → ✅; борги T; борг 0.4.1-4; рядок таблиці «Магазин на чистому Postgres» — опис ред. 1.3 у роадмапі вже стоїть)
+- Modify: `CLAUDE.md` (Quick Reference: `live:smoke`, `db:demo` — покупний демо; «Database Commands»: те саме про `db:demo`; «Project Structure», тека `scripts/`; «Tech Stack»: поріг Node; лінт-зони: шоста зона a11y), `docs/architecture/test-contours.md` §12 (рядок «живий прогін = `pnpm live:smoke`»), «v2-state-map» (знесено 2026-11-21, текст — в історії git) §1, §2, §3.4, §5, §6, `docs/tasks/platform-roadmap.md` (лише позначки завершення: К2-Е0 → ✅; борги T; борг 0.4.1-4; рядок таблиці «Магазин на чистому Postgres» — опис ред. 1.3 у роадмапі вже стоїть)
 
 **Interfaces:**
 - Consumes: `gateHttp` з `scripts/pilot-pack/gate-b.mjs` (усередині читає товари через `expectedProducts`); `startStore`, `freePort` з `scripts/pilot-pack/build.mjs`; `withDbName` з `packages/simplycms/test-harness/pg/apply.mjs`; `@playwright/test` (devDependency `1.61.1`, вже в дереві); `id`-и контролів чекауту з Task 11; `id`-и форми реєстрації з `Auth.tsx` (`#firstName`, `#lastName`, `#register-email`, `#register-password`, `#confirmPassword` — уже є); поведінка `cancelMyOrder` з Task 9 (скасування і `releaseStock` — в ОДНІЙ транзакції); 🔴 форма демо-сіду з Task 7: **рівно одна** активна точка видачі, і вона ж помічена `is_system = true` — на ній тримаються і автовибір точки з Task 11, і асерт форми демо нижче.
@@ -5483,14 +5483,14 @@ Expected: усі рядки `OK`, `live-smoke: ЗЕЛЕНИЙ`, код вихо�
 - `CLAUDE.md` «Tech Stack» (список `:253-263`, після рядка **Package Manager:**): рядок **Runtime:** Node `>=22.12` — поріг `@tanstack/react-start`; стоїть у ВСІХ пʼяти публікованих пакетах і в `packages/create-simplycms-store/template/package.json.tpl`, під тестом-піном парності (Task 2, рішення Р6). До К2-Е0 порогу не було взагалі в трьох пакетах, а у двох стояв хибний `">=20"`.
 - `CLAUDE.md` блок лінт-зон (після абзацу «Пʼята (2026-08-30, трек V2-К3)…», `:206-215`): **шоста** зона — доступні імена контролів. `eslint-plugin-jsx-a11y` з ОДНИМ правилом `jsx-a11y/label-has-associated-control` (error) на пʼять тек воронки пакета ядра (`cart-ui`, `catalog-ui`, `checkout-ui`, `profile-ui`, `reviews-ui`), тим самим механізмом зон, що й тір-зони та i18n-селектори (Task 11, рішення Р5). 🔴 Це нова devDependency, тож `pnpm-lock.yaml` перегенеровано в тому ж коміті — інакше `pnpm install --frozen-lockfile`, ПЕРШИЙ гейт, валить увесь CI (урок PR #20).
 - `docs/architecture/test-contours.md` §12: у підрозділ «Живий прогін» першим абзацом — «Живий прогін = `pnpm live:smoke` (Е0-8): таблиця нижче — його вивід на дату, не рукопис; рядки додаються лише разом із перевіркою в скрипті» і вклеїти вивід прогону з кроку 2 з датою. У тому ж абзаці — межа: фліп `stock_status` в обидва боки доводить харнес-тест `order-stock.test.ts`, live-smoke доводить арифметику й симетрію в реальному контурі.
-- `docs/tasks/v2-state-map.md`: §2 — новий підрозділ «2.2. К2-Е0 — підтверджено `pnpm live:smoke` <дата>» з тим самим виводом; §1 «Головне за 30 секунд» — речення про покупний демо-магазин (картка → кошик → чекаут → `orders`, скасування повертає залишок); §3.4 «Ціни позицій замовлення не перераховуються» → «✅ Закрито К2-Е0 <дата> (Е0-4): ціни й доставку рахує сервер, `placeOrder` повертає доменну відмову»; §5 «Як підняти це локально» — після кроку з `pnpm db:demo` рядок «перевірити весь контур одразу — `PG_HARNESS_URL=… pnpm live:smoke`»; §6 п.4 і п.6 → ✅.
+- «v2-state-map» (знесено 2026-11-21, текст — в історії git): §2 — новий підрозділ «2.2. К2-Е0 — підтверджено `pnpm live:smoke` <дата>» з тим самим виводом; §1 «Головне за 30 секунд» — речення про покупний демо-магазин (картка → кошик → чекаут → `orders`, скасування повертає залишок); §3.4 «Ціни позицій замовлення не перераховуються» → «✅ Закрито К2-Е0 <дата> (Е0-4): ціни й доставку рахує сервер, `placeOrder` повертає доменну відмову»; §5 «Як підняти це локально» — після кроку з `pnpm db:demo` рядок «перевірити весь контур одразу — `PG_HARNESS_URL=… pnpm live:smoke`»; §6 п.4 і п.6 → ✅.
 - `docs/tasks/platform-roadmap.md` — **лише позначки завершення** (опис ред. 1.3, зняте речення про `nullable` і уточнений T-4 туди вже приземлилися разом зі спекою): етап К2-Е0 (`:229-299`) → `- [x] ✅ … ЗАВЕРШЕНО <дата>`; секція «Борги треку T» — T-1…T-5 (`:798-843`) → `✅ ЗАКРИТО <дата>`; борг 0.4.1-4 (`:731`) → `✅ ЗАКРИТО <дата> (К2-Е0 Е0-4)`; рядок таблиці «Магазин на чистому Postgres» (`:113`) — без «🔴 чекаут … мовчить» (замінити на «покупний демо: картка → кошик → чекаут → `orders` зі списанням, скасування повертає залишок; перевірка одним прогоном — `pnpm live:smoke`»). 🔴 Абзац «🔴 **План ред. 1.2**» (`:246-257`) НЕ чіпати: роадмап веде редакції накопиченням, і це історія аудиту r2 поруч із чинним абзацом ред. 1.3 (`:258-299`). Якорі перевірити перед правкою — вони від правки роадмапу цього ж набору змін.
 
 - [ ] **Step 4: Повний ланцюг гейтів і коміт**
 
 ```bash
 pnpm install --frozen-lockfile && pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:schema && pnpm build:packages && pnpm typecheck:template && pnpm test:packaging && pnpm pilot:pack
-git add scripts/live-smoke.mjs scripts/live-smoke/ scripts/pilot-pack/build.mjs package.json CLAUDE.md docs/architecture/test-contours.md docs/tasks/v2-state-map.md docs/tasks/platform-roadmap.md
+git add scripts/live-smoke.mjs scripts/live-smoke/ scripts/pilot-pack/build.mjs package.json CLAUDE.md docs/architecture/test-contours.md «v2-state-map» (знесено 2026-11-21, текст — в історії git) docs/tasks/platform-roadmap.md
 git commit -m "feat(k2-e0): live-smoke — DoD як скрипт; документи під живий прогін
 
 curl+SQL через gate-b пілота + Playwright: реєстрація покупця, кошик без
