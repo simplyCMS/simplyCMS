@@ -1,7 +1,7 @@
 name: CI
 on:
-  # CI іде на кожному PR, і лише з документами теж: `pr-gate land` вимагає обов'язкові checks,
-  # а тест `doc-symbols-exist` (job Tests) звіряє символи в документах з кодом.
+  # CI іде на кожному PR: `pr-gate land` без прогону не мерджить. PR лише з документами
+  # пропускає важкі jobs фільтром на рівні job (job `changes`), а не `paths:` в `on:`.
   push:
     branches: [main]
   pull_request:
@@ -9,8 +9,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Чи змінює подія код (патерн Simetra). PR лише з документами: TypeScript, Landing,
+  # Packaging і Schema дають `skipped` (pr-gate вважає skipped прохідним), а Tests запускає
+  # лише тести, що читають документи. Push у main ганяє все. Умова — `!= 'false'`: порожній
+  # вихід ганяє все, а не тихо пропускає перевірки.
+  changes:
+    name: Changes
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Три крапки в diff потребують спільного предка бази й голови PR
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Збій diff валить job, і залежні jobs не біжать — червоне, не тихий пропуск
+      - name: Classify changed files
+        id: classify
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/changed.txt"
+          cat "$RUNNER_TEMP/changed.txt"
+          node scripts/ci/docs-only.mjs < "$RUNNER_TEMP/changed.txt" >> "$GITHUB_OUTPUT"
+
   typecheck:
     name: TypeScript
+    needs: changes
+    if: needs.changes.outputs.code != 'false'
     timeout-minutes: 8
     runs-on: ubuntu-latest
 
@@ -48,6 +87,7 @@ jobs:
 
   test:
     name: Tests
+    needs: changes
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
@@ -67,10 +107,19 @@ jobs:
         run: pnpm install
 
       - name: Run tests
+        if: needs.changes.outputs.code != 'false'
         run: pnpm test
+
+      # PR лише з документами: замість повного набору — тести, що читають документи (зміна
+      # спеки чи канону може розійтися з кодом, який вони звіряють); повний `pnpm test` їх містить
+      - name: Docs tests
+        if: needs.changes.outputs.code == 'false'
+        run: pnpm test:docs
 
   www:
     name: Landing (apps/www)
+    needs: changes
+    if: needs.changes.outputs.code != 'false'
     timeout-minutes: 8
     runs-on: ubuntu-latest
 
@@ -99,6 +148,8 @@ jobs:
 
   packaging:
     name: Packaging
+    needs: changes
+    if: needs.changes.outputs.code != 'false'
     timeout-minutes: 20
     runs-on: ubuntu-latest
 
@@ -145,6 +196,8 @@ jobs:
 
   schema:
     name: Schema (PG harness)
+    needs: changes
+    if: needs.changes.outputs.code != 'false'
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
