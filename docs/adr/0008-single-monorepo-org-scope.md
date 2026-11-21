@@ -30,4 +30,4 @@ Spec: `docs/superpowers/specs/2026-07-30-platform-architecture-design.md` §4.1
 Усі пакети й тікети — в одному репозиторії.
 Назви пакетів у реєстрі: `simplycms`, `@simplycms/cli`, `@simplycms/theme-solarstore`, `@simplycms/plugin-faq`, `create-simplycms-store` (ADR-0023).
 Не можна повертати scope `@simplysoftua` чи окремий репозиторій ядра.
-Спека називає apps/dev-store референс-магазином; у репо роль хоста виконує корінь, а `apps/www` — лендінг.
+Спека називає apps/dev-store референс-магазином; у репо роль демо-магазину монорепо виконує корінь, а `apps/www` — лендінг.

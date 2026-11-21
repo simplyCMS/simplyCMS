@@ -10,7 +10,7 @@ Spec: `docs/superpowers/specs/2026-08-25-storefront-search-design.md` §2
 ## Decision
 - Пошук працює всередині Postgres магазину. Зовнішні рушії — лише опційні драйвери плагінів (П1).
 - Нормалізація і лематизація — у Node, симетрично для індексу і запиту. `tsvector` має конфігурацію `simple` (П2).
-- Індекс — таблиця `search_documents` з ключем `(entity_type, entity_id, locale)`; локаль у ключі від початку (П5).
+- Індекс — таблиця `search_documents` з ключем `(entity_type, entity_id, locale)`; мова контенту в ключі від початку (П5).
 - `search` — поле об'єкта запиту `query({ search, filter, sort, facets, page })`, а не окремий метод порту (П7).
 - Порт `SearchProvider` повертає `id + score + фасети`, не картки товарів. Гідрація — окремим читанням (П6, П8).
 

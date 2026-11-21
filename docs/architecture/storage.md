@@ -90,7 +90,7 @@
   - 🔴 **Фото товару (М1, Task 12):** `product_images.storage_key` і
     `product_image_translations.storage_key` (мовний варіант файлу) — медіа-колонки з
     прив'язкою `product` (`media.entity_id` = id ТОВАРУ, навіть для фото модифікації).
-    Опція `cascadeMedia` має поле `owner` — колонку id прив'язки, коли він не сам
+    Опція `cascadeMedia` має поле `owner` — колонку з id прив'язки, коли прив'язка — не сам
     дочірній рядок; у таблиці перекладу без `id` ключ запису в `findMediaReferences`
     будує `idExpression` (`image_id:locale`). Команда `products.saveDescription`
     перевіряє нові ключі (409 `media_ref_invalid`) і стирає зниклі діффом множини

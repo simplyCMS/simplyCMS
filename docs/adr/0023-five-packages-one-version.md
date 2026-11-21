@@ -8,7 +8,7 @@ Spec: `docs/architecture/repository-layout.md`
 V1 мала 26 пакетів. Вони постійно змінювались разом і множили churn у тих самих файлах. Попередній план V2 без консолідації ще збільшив би кількість пакетів (db, auth, data-pg).
 
 ## Decision
-- ПК1: у фреймворк-пакет вливаються 22 пакети. Окремо лишаються `@simplycms/cli`, `create-simplycms-store`, `@simplycms/theme-solarstore`, `@simplycms/plugin-faq`.
+- ПК1: у ядро (`simplycms`) вливаються 22 пакети. Окремо лишаються `@simplycms/cli`, `create-simplycms-store`, `@simplycms/theme-solarstore`, `@simplycms/plugin-faq`.
 - ПК2: флагман — unscoped `simplycms`, сателіти — під scope `@simplycms/*`.
 - ПК3: тір-модель T0–T5 лишається структурою тек `packages/simplycms/src/*`. Напрям імпортів стереже ESLint з негативним контролем.
 - ПК11: усі пакети мають одну версію.
