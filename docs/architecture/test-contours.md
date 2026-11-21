@@ -7,20 +7,20 @@
 
 🔴 **DECOMMISSIONED у `0.4.1`: `pnpm test:e2e`, `pnpm pilot:e2e` і Gate E.**
 Обидві команди піднімали локальний стек Supabase (`supabase start` + `db reset`
-+ bootstrap власника через service_role GoTrue), а магазин контракту v2 ходить
++ bootstrap власника магазину через service_role GoTrue), а магазин контракту v2 ходить
 у чистий Postgres і автентифікує Better Auth-ом: стек не був би ні джерелом
 даних, ні джерелом auth. Знесено `scripts/e2e.mjs`, `scripts/e2e/`,
 `scripts/pilot-pack/e2e.mjs` і `scripts/pilot-pack/gate-e.mjs`; прапорець
 `--e2e` тепер **падає з поясненням**, а не мовчки ігнорується. Специ
 `tests/e2e/**` і `playwright.config.ts` лишились як основа — **входу в них
-немає**. Відновлення (підйом Postgres-стека, сід, bootstrap власника на
+немає**. Відновлення (підйом Postgres-стека, сід, bootstrap власника магазину на
 Better Auth) — трек К6. Усе, що нижче описує стек Supabase, Mailpit, GoTrue
 чи `VITE_SUPABASE_*`, читати як **історію до 0.4.1**; окремою позначкою
 🔴 DECOMMISSIONED помічені §6.1, §6.2, §8 і §9 цілком.
 
 ## 0. Правила для нових тестів (діють з 2026-10-18)
 
-Набір має доводити поведінку, а не множити рядки: після хвилі М1 тестів стало в 1,8 раза більше за
+Набір має доводити поведінку, а не множити рядки: після М1 тестів стало в 1,8 раза більше за
 робочий код, і частина з них дублює одна одну або прив'язана до реалізації. Ці правила діють для
 КОЖНОГО нового чи зміненого тесту; наявний набір до них приводить задача
 [`test-suite-modernization.md`](../tasks/test-suite-modernization.md).
@@ -31,7 +31,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
    виклик — так його й називати, а не «доказ відмови».
 2. **Поведінка, а не реалізація.** Перевіряти наслідок («без 40P01», «текст свіжий», «409 з переліком»),
    а не режим замка рядком, текст SQL чи ім'я внутрішньої функції. Виняток — контракт, який сам є
-   предметом документа (ієрархія замків `lock-order.ts`, паритет TS↔SQL), і там він в ОДНОМУ місці.
+   предметом документа (ієрархія замків `lock-order.ts`, парність TS↔SQL), і там він в ОДНОМУ місці.
 3. **Доказ мутацією — для трьох класів:** рядки матриці інваріантів, гейти й сканери, гонки та порядок
    замків. Для решти тест пишеться, коли є реальний ризик повтору; дрібна знахідка рев'ю (текст,
    коментар, косметика) нового тесту не вимагає. Мутацію ганяти проти тесту, що перевіряє САМУ ціль
@@ -108,16 +108,16 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 
 | Гейт | Доводить | Джерело |
 |---|---|---|
-| **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/simplycms/routes/{storefront,admin}` (з К0 — підтеки одного флагмана) плюс роут-теку плагіна `node_modules/@simplycms/plugin-faq/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
+| **A** | Генератор роутів зібрав те саме дерево, скануючи `node_modules/simplycms/routes/{storefront,admin}` (з К0 — підтеки одного ядра) плюс роут-теку плагіна `node_modules/@simplycms/plugin-faq/routes`, а не `packages/`; import-и генерату ведуть у `node_modules` | `gate-a.mjs` |
 | **B** | `createServerFn` працює в PRODUCTION-манифесті, а не лише в dev-режимі монорепо; SSR-рендер, guard `/admin`, sitemap/robots/health. 🔴 З 0.4.1 очікувані назви товарів беруться **прямим SQL за `DATABASE_URL`** — HTTP-API до БД у контракті v2 немає взагалі | `gate-b.mjs` |
 | **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 З треку T `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі СІМ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`, `storage` — сьоме додав К3-Е2) плюс серверні залежності `pg`, `drizzle-orm` (`drizzle-zod` з Етапу B — лише devDependency, у декларації його немає; `better-auth` — свідомо без id-перевірки, див. §12). Літералами лишились два Supabase-файли адмінки, яких у декларації немає. До 0.4.1 список був ручний і бачив лише Supabase-фабрики й лоадери — серверний граф v2 витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `simplycms/dist/**` (з Фази 4 — і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
-| ~~**E**~~ | 🔴 **ЗНЯТО в 0.4.1** разом зі стеком Supabase: гейт бутстрапив власника service_role-ключем GoTrue, якого в контракті v2 немає. Що він доводив (перший signup НЕ отримує `admin`; `owner:invite` ідемпотентний; перехід за посиланням ставить cookies) — тепер обовʼязок контуру К6 на Better Auth. У звіті пілота лишається **видимий рядок-skip із причиною**, а не тиша | ~~`gate-e.mjs`~~ |
+| ~~**E**~~ | 🔴 **ЗНЯТО в 0.4.1** разом зі стеком Supabase: гейт бутстрапив власника магазину service_role-ключем GoTrue, якого в контракті v2 немає. Що він доводив (перший signup НЕ отримує `admin`; `owner:invite` ідемпотентний; перехід за посиланням ставить cookies) — тепер обовʼязок контуру К6 на Better Auth. У звіті прогону пакування лишається **видимий рядок-skip із причиною**, а не тиша | ~~`gate-e.mjs`~~ |
 | **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; з К0 — ще й інваріанти топології 5 і доставки скілів: у tarball немає копій скілів (`template/.claude/skills`, `template/.agents`; сама `template/.claude/` є — хук і шим), deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/`; К3-Е8 Task 20 — скаффолд несе `AGENTS.md` з керованим блоком, `CLAUDE.md` з `@AGENTS.md`, `.claude/settings.json` і шим, а шим на голому скаффолді (без `node_modules`) віддає код 0 і «pnpm install» | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs`, `session-hook-checks.mjs` |
-| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 10 команд `COMMANDS` (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout, `theme:conformance default` на тому ж голому скаффолді доїжджає до теми з конфігу й чесно падає (exit 1) з точною командою `pnpm add -D jsdom` замість мовчазного обходу; Р21: два tarball-и CLI (0.0.1 і 0.0.2 з різним каноном `host/server.mjs`) з локального реєстру (`local-registry.mjs`: CLI і дерево його залежностей з `node_modules` монорепо — без мережі), один `update --write --to 0.0.2` → host-файли магазину = канон НОВОЇ версії (новий CLI перебрав звірку); К3-Е8 Task 20 — у встановленому скретчі шим хука старту сесії віддає код 0 і доходить до справжнього `status --hook` (в контексті «етап: local»), а кожен симлінк скіла резолвиться (`realpath`) у теку скіла встановленого `node_modules/simplycms/skills`. Не доводить: сам запуск хука Claude Code (формат JSON-виводу перевіряє тест шима за контрактом хуків, не живий агент) | `tool-pkg-smoke.mjs`, `tool-update-reexec.mjs`, `session-hook-checks.mjs` |
+| **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 10 команд `COMMANDS` (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`, Фаза 4) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout, `theme:conformance default` на тому ж голому скаффолді доїжджає до теми з конфігу й чесно падає (exit 1) з точною командою `pnpm add -D jsdom` замість мовчазного обходу; Р21: два tarball-и CLI (0.0.1 і 0.0.2 з різним каноном `host/server.mjs`) з локального реєстру (`local-registry.mjs`: CLI і дерево його залежностей з `node_modules` монорепо — без мережі), один `update --write --to 0.0.2` → файли каркаса магазину = канон НОВОЇ версії (новий CLI перебрав звірку); К3-Е8 Task 20 — у встановленому скретчі шим хука старту сесії віддає код 0 і доходить до справжнього `status --hook` (в контексті «етап: local»), а кожен симлінк скіла резолвиться (`realpath`) у теку скіла встановленого `node_modules/simplycms/skills`. Не доводить: сам запуск хука Claude Code (формат JSON-виводу перевіряє тест шима за контрактом хуків, не живий агент) | `tool-pkg-smoke.mjs`, `tool-update-reexec.mjs`, `session-hook-checks.mjs` |
 
 🔴 **Gate B: збірка, стиснення, 413/411 (К3-Е8, Tasks 6-7).** Крок
-`/api/health` звіряє поле `build` із `BUILD_ID`, який пілот сам задає перед
+`/api/health` звіряє поле `build` із `BUILD_ID`, який прогін пакування сам задає перед
 збіркою (`e8-<random>`): це доказ, що `define` `__SIMPLYCMS_BUILD_ID__` з
 `vite.config.ts` магазину дійшов до коду ЯДРА в `node_modules`, а не лише до
 коду магазину (без плагіна там `'dev'`). Крок стиснення бере з HTML перший
@@ -136,7 +136,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 **CLI** — смоук СКАФФОЛДЕРА `create-simplycms-store`, Gate **TOOL** — смоук
 ІНСТРУМЕНТА `@simplycms/cli` (bin `simplycms`). Обидва перевіряють упакований
 артефакт, але різні пакети — не плутати. Той самий смоук ганяється двічі:
-кроком пілота (`run.mjs` — Gate TOOL, як і Gate CLI, не потребує ні БД, ні
+кроком прогону пакування (`run.mjs` — Gate TOOL, як і Gate CLI, не потребує ні БД, ні
 скретча) і в packaging-сюїті через `tests/cli-pack.test.ts` (виключений із
 дефолтного `pnpm test`, як `create-store-pack.test.ts`).
 
@@ -157,7 +157,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 побудовою: скаффолд іде з `--no-install`).
 
 🔴 **Gate THEME-контур (Фаза 4)** — не окремий гейт-скрипт, а крок конвеєра
-пілота: `scripts/pilot-pack/install-themes.mjs`, викликається в
+прогону пакування: `scripts/pilot-pack/install-themes.mjs`, викликається в
 `prepare-store.mjs` між `pnpm install` скретча і провенансом. Прожовує ОБИДВІ гілки установки
 теми зі спеки §17.4 тим самим `pnpm exec simplycms`, що й користувач —
 `add @simplycms/theme-solarstore --theme --copy --name solarcopy` (copy-in)
@@ -166,7 +166,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 (`file:`, не реєстр), Gate D шукає маркер класу `@simplycms/theme-solarstore
 · HeroBanner`. Чого контур **не** доводить — розрізнення джерела класу між
 глобами (`themes/**` для copy-in vs `@simplycms/*/dist` для npm) — це закриває
-окремий `tests/theme-tailwind-globs.test.ts` (не пілот).
+окремий `tests/theme-tailwind-globs.test.ts` (не прогін пакування).
 
 🔴 Історично Gate E був **єдиним** місцем, де виконувався invite-флоу. Після
 його зняття (0.4.1) invite-флоу на Better Auth не покритий жодним
@@ -200,14 +200,14 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    пропускає: `set_config('DateStyle'|'TimeZone', …, true)` у
    `buildActorPrelude` — воно йде всередині транзакції, а не на старті.
 
-1. **Установка з реального реєстру.** Пілот ставить *локальні* tarball-и;
+1. **Установка з реального реєстру.** Прогін пакування ставить *локальні* tarball-и;
    користувач бере пакети з реєстру. Після міграції на `pnpm` (2026-08-08)
    різниця лишилася **тільки по джерелу**, не по менеджеру — сліпа зона
    звузилась, але не закрилась. Вона дала один із двох дефектів `0.2.0`: 404 на
    tarball (CDN-лаг ~5 хв після публікації). Ручний прогін 2026-08-04 після
    `0.2.1` пройшов наскрізь (install exit 0 + build exit 0, `dist/` 3.1 MB),
    але автоматичного гейта на це досі немає — це Gate F, §7 п.3.
-2. ~~**Пакетний менеджер.**~~ — **закрито 2026-08-08.** Пілот ставить скретч
+2. ~~**Пакетний менеджер.**~~ — **закрито 2026-08-08.** Прогін пакування ставить скретч
    через `pnpm install` (`scripts/pilot-pack/build.mjs`, `pnpmInstall`), тим
    самим, який декларує магазин. Що тепер **покрито**: `allowBuilds` реально
    виконується (це його відсутність дала другий дефект `0.2.0`); ізольована
@@ -222,7 +222,7 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    `overrides` у `pnpm-workspace.yaml` скретча; npm-івську форму того самого
    поля pnpm ігнорує без жодного попередження. Раніше поламка була голосною
    (пакетів у реєстрі не існувало → `ERR_PNPM_FETCH_404`), тепер у реєстрі
-   лежить та сама версія, тож пілот мовчки перевіряв би **вже опубліковані**
+   лежить та сама версія, тож прогін пакування мовчки перевіряв би **вже опубліковані**
    пакети замість тих, що йдуть на публікацію. Закрито гардом провенансу
    (`scripts/pilot-pack/provenance.mjs`): він читає lockfile скретча й падає,
    якщо хоч один пакет ядра приїхав не з `file:`. Негативний контроль
@@ -246,7 +246,7 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
    блокер, але e2e ганяється не на прод-версіях — або підтягувати, або
    свідомо зафіксувати розбіжність.
 7. **Браузерні тести скіла редизайну мовчки скіпаються в CI** (додано
-   2026-08-17, інкремент Б.2; перелік звірено 2026-08-18, Б.3). **Пʼять**
+   2026-08-17, Б.2; перелік звірено 2026-08-18, Б.3). **Пʼять**
    файлів `tests/design-import-*` знімають фікстурні HTML справжнім
    headless-Chromium через `describe.skipIf(!browser)` із launch-probe у
    top-level await: `inspect` (кольори), `fonts` (шрифт-вага), `motion`
@@ -275,8 +275,8 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
 
 ## 5. Роль `src/` і план `apps/dev-store`
 
-`src/` — це **не окремий продукт, а найтонший можливий host**: 13 файлів,
-жодної сторінки. Роути й сторінки в пакетах, host лише монтує їх через
+`src/` — це **не окремий продукт, а найтонший можливий магазин (демо-магазин монорепо)**: 13 файлів,
+жодної сторінки. Роути й сторінки в пакетах, демо-магазин лише монтує їх через
 `routes.ts` і склеює `EngineContext`; `src/routes/my/` — порожня тека під
 кастомні сторінки магазину.
 
@@ -302,7 +302,7 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
   Тому гейт «проти реального реєстру» має ганятись **за розкладом або
   вручну**, а не в PR-конвеєрі.
 
-🔴 З 2026-08-08 обидві політики діють **усередині** пілота — він ставить скретч
+🔴 З 2026-08-08 обидві політики діють **усередині** прогону пакування — він ставить скретч
 через `pnpm`. Виміряні наслідки (прогони на pnpm 11.20.0):
 
 - `allowBuilds` шаблону (`esbuild`, `sharp`, `unrs-resolver`) тепер реально
@@ -311,7 +311,7 @@ OK  GET /auth/confirm — 302 → .../auth/set-password, auth-cookies: true
   навіть якщо в override шлях абсолютний. Нас це не зачіпає лише тому, що жоден
   пакет ядра не має install-скриптів — щойно зʼявиться, зачепить.
 - `minimumReleaseAge` **не чіпає `file:`-tarball-и взагалі** (перевірено
-  значенням у 10 років), тож ядро проходить повз. Часової крихкості пілот не
+  значенням у 10 років), тож ядро проходить повз. Часової крихкості прогін пакування не
   набув: при ДЕФОЛТНОМУ значенні pnpm на свіжу залежність не падає, а сам
   дописує `minimumReleaseAgeExclude` і йде далі. Падіння
   (`ERR_PNPM_NO_MATURE_MATCHING_VERSION`) дає лише **явно заданий** параметр —
@@ -371,7 +371,7 @@ sg docker -c 'supabase db reset --yes'     # міграції + supabase/seed.sq
 `API_URL`/`PUBLISHABLE_KEY` зі `supabase status -o json`, і `pnpm dev`.
 
 🔴 Сід дає товари, секції, тему й плагін, але **жодного користувача**:
-міграція `first_user_no_auto_admin` прибрала авто-адміна, тож власника
+міграція `first_user_no_auto_admin` прибрала авто-адміна, тож власника магазину
 треба створити service_role-ключем — `auth.admin.createUser` +
 upsert у `user_roles`. Це той самий шлях, що й `owner:invite`, лише з
 паролем замість листа.
@@ -392,21 +392,21 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 1. ~~**Docker + Gate E**~~ — **зроблено 2026-08-04**. Побічний урок про
    середовище: стек Supabase важить рівно 10.27 GB образів, тож 38 GB диска
    не вистачало; довелось розширювати LVM до 48 GB.
-2. ~~**Пілот з `npm` на `pnpm`**~~ — **зроблено 2026-08-08.** Підтверджена
+2. ~~**Прогін пакування з `npm` на `pnpm`**~~ — **зроблено 2026-08-08.** Підтверджена
    прогонами форма: overrides для pnpm 11 живуть у top-level ключі `overrides:`
    файлу `pnpm-workspace.yaml`; `pnpm.overrides` у `package.json` ігнорується з
    попередженням, а npm-івський top-level `overrides` — **мовчки**. Блок
    дописується у файл, скопійований із шаблону (оверлей затер би `allowBuilds`).
    Додано гард провенансу — див. сліпу зону №3.
    🔴 **Що прогін спіймав одразу.** Gate C упав: 3 клієнтські чанки замість 207,
-   уся адмінка (98 модулів) і tiptap (22) в initial. Причина не в пілоті — в
+   уся адмінка (98 модулів) і tiptap (22) в initial. Причина не в прогоні пакування — в
    магазині: pnpm розкладає залежності симлінками, Vite їх резолвить, і
    code-splitter TanStack Router не впізнає роут, бо шукає його в
    `TSR_ROUTES_BY_ID_MAP` за realpath, а генератор заповнив мапу шляхами через
    симлінк. Тобто **кожен магазин, поставлений через pnpm, віз увесь застосунок
-   одним чанком** — і жоден контур цього не бачив, поки пілот ганяв npm.
+   одним чанком** — і жоден контур цього не бачив, поки прогін пакування ганяв npm.
    Виправлено `realpathSync` у `template/routes.ts`; після фікса — точний
-   паритет із плоским деревом (207 чанків, initial 19/303, адмінка й tiptap в
+   парність із плоским деревом (207 чанків, initial 19/303, адмінка й tiptap в
    initial 0).
 3. **Gate F: установка з реального реєстру** — рідкісний, за розкладом
    (див. `minimumReleaseAge`).
@@ -448,7 +448,7 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 ### 8.2. Підготовка (обидва сценарії)
 
 1. Стек і БД — §6.2 (`supabase start`, `db reset`).
-2. Власника створити service_role-ключем: сід користувачів **не дає**
+2. Власника магазину створити service_role-ключем: сід користувачів **не дає**
    (міграція `first_user_no_auto_admin` прибрала авто-адміна).
 3. 🔴 Якщо браузер не на машині зі стеком — прокинути **і порт застосунку,
    і `54321`**; інакше сайт відкриється, а логін упаде з
@@ -541,7 +541,7 @@ sg docker -c 'supabase stop --no-backup'   # томи геть, наступни
 Той самий смок **спростував** усі шість ризиків переповнення верстки, названі
 у звіті PR #27, — виміром, а не оглядом.
 
-**Як повторити.** Стек і власник — §8.2. Далі: основна мова магазину (рядок `languages`)
+**Як повторити.** Стек і власник магазину — §8.2. Далі: основна мова магазину (рядок `languages`)
 або префікс мови в URL → `pnpm dev` → обхід роутів у Chromium із виміром
 `scrollWidth > clientWidth`, виходу дитини за праву межу контейнера з
 `overflow-x: hidden|auto`, і `documentElement.scrollWidth > clientWidth`.
@@ -555,7 +555,7 @@ Playwright-раннер `pnpm test:e2e`, — див. §9.
 
 > 🔴 **DECOMMISSIONED (0.4.1).** Команди `pnpm test:e2e` немає: оркестратор
 > `scripts/e2e.mjs` знесений разом із локальним стеком Supabase (він піднімав
-> стек, накатував сід і створював власника через service_role GoTrue — жодного
+> стек, накатував сід і створював власника магазину через service_role GoTrue — жодного
 > з цих механізмів контракт v2 не має). Специ `tests/e2e/**` і
 > `playwright.config.ts` лишились **без входу**, свідомо: вони — основа
 > відновлення контуру в К6. Розділ нижче описує, ЯК це працювало, і саме тому
@@ -570,7 +570,7 @@ Playwright-раннер `pnpm test:e2e`, — див. §9.
 | Спека | Що доводить | Джерело вимоги |
 |---|---|---|
 | `tests/e2e/layout-overflow.e2e.ts` | Жоден роут вітрини/`/auth`/адмінки не обрізає текст і не тягне НЕОЧІКУВАНИЙ горизонтальний скрол — на 1280×900 і 390×844 | §8.6 (мутаційний спростування шести ризиків PR #27) |
-| `tests/e2e/admin-smoke/auth.e2e.ts` | Guard `/admin` для анонімного (→`/auth`), логін власника, `/admin` і `/profile` під сесією | §8.3 |
+| `tests/e2e/admin-smoke/auth.e2e.ts` | Guard `/admin` для анонімного (→`/auth`), логін власника магазину, `/admin` і `/profile` під сесією | §8.3 |
 | `tests/e2e/admin-smoke/theme.e2e.ts` | Активація іншої теми в адмінці + перехід на вітрину В МЕЖАХ застосунку міняє `--primary` | §8.3, регрес §8.5 |
 | `tests/e2e/admin-smoke/plugin.e2e.ts` | Вимикання/вмикання `hello-world` без reload (віджет дашборду зникає/зʼявляється) | §8.3 |
 
@@ -616,7 +616,7 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 
 Потребує Docker (як `pnpm pilot:e2e`, §6.1) — без нього падає зрозумілим
 повідомленням, а не стектрейсом. У блокуючий CI-гейт **не додано** — та сама
-причина, що для пілота (§«CI/CD» у CLAUDE.md): зовнішній стан (Docker,
+причина, що для прогону пакування (§«CI/CD» у CLAUDE.md): зовнішній стан (Docker,
 10+ GB образів) означає, що гейт червонів би від дрейфу середовища, а не від
 регресії коду.
 
@@ -673,7 +673,7 @@ pnpm test:e2e     # усе одразу: тулінг → стек → сід �
 `schema` у CI — з тієї самої причини, що й `packaging`: у нього є передумова
 (запущений Postgres), і в дефолтному `pnpm test` він мовчки скіпався б.
 
-**Проєкт `pg` не потребує Docker** — і це принципово, бо саме Docker тримав пілот
+**Проєкт `pg` не потребує Docker** — і це принципово, бо саме Docker тримав прогін пакування
 поза CI (борг №2 роадмапу). Харнес резолвить підключення двома шляхами:
 `PG_HARNESS_URL` (готовий кластер: CI-service `postgres:17`, локальний інстанс
 розробника) або ефемерний `initdb`+`pg_ctl` у tmp-теці. 🔴 `initdb` не
@@ -739,7 +739,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   недосяжний тут;
 - **нічого про доставку листів**: рендер invite-листа юніт-тестовний, SMTP —
   ні;
-- **нічого про опублікований tarball** — це `test:packaging` і пілот;
+- **нічого про опублікований tarball** — це `test:packaging` і прогін пакування;
 - **мажор Postgres.** Асерт стоїть на списку перевірених `[16, 17]`: локальний
   харнес цього репо — 16, CI — 17. `pg_get_expr` між мажорами не гарантований,
   тож інший мажор падає окремим зрозумілим повідомленням, а не дифом політик.
@@ -748,13 +748,13 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 
 Спека К3-8 обіцяла сім машинних гейтів; Е1б матеріалізував перші вісім рядків
 таблиці, Е2 (порт сховища) — шість останніх. Кожен — з негативним контролем,
-прогнаним при прийомі свого етапу:
+прогнаним при прийомі свого issue:
 
 | Гейт | Що ловить | Крок ланцюга | Межа |
 |---|---|---|---|
 | `eslint-rules/server-fn-top-level.mjs` + `tests/eslint-rules/server-fn-top-level.test.ts` | `createServerFn` не топ-рівневим `const` (компілятор Start або падає, або МОВЧКИ не трансформує — fast-path) | `pnpm lint` / `pnpm test` | лише форма оголошення |
 | `eslint-rules/mutation-cache-sync.mjs` + `tests/eslint-rules/mutation-cache-sync.test.ts` | мутація (`useMutation` або виклик serverFn з `simplycms/admin-server`) без синку кешу в ТІЙ САМІЙ функції | `pnpm lint` (зона `admin-data/**` + `admin/features/**` за побудовою + точковий ратчет `MUTATION_CACHE_SYNC_RATCHET` для решти сторінок) | бачить лише файли У зоні |
-| `tests/mutation-cache-sync-coverage.test.ts` (Task 12, К3-Е3) | повноту самої зони: кожен файл `src/admin/**`, що імпортує `simplycms/admin-(data\|server)`, — під `admin/features/**`, у `MUTATION_CACHE_SYNC_RATCHET` або в іменованому `EXEMPT` — інакше сторінка, переписана хвилею Е4–Е6 поза `features/`, лишилась би без гейта вище мовчки | `pnpm test` | бачить лише СТАТИЧНИЙ `from 'simplycms/admin-(data\|server)'` — динамічний імпорт чи реекспорт крізь проміжний модуль йому невидимі |
+| `tests/mutation-cache-sync-coverage.test.ts` (Task 12, К3-Е3) | повноту самої зони: кожен файл `src/admin/**`, що імпортує `simplycms/admin-(data\|server)`, — під `admin/features/**`, у `MUTATION_CACHE_SYNC_RATCHET` або в іменованому `EXEMPT` — інакше сторінка, переписана Е4–Е6 поза `features/`, лишилась би без гейта вище мовчки | `pnpm test` | бачить лише СТАТИЧНИЙ `from 'simplycms/admin-(data\|server)'` — динамічний імпорт чи реекспорт крізь проміжний модуль йому невидимі |
 | `tests/handler-canon.test.ts` | persistence-хендлер `admin-data` без `await`-нутого БЕЗУМОВНОГО write-back у тілі; ранній `return` до нього; write-back без `await`, лише в гілці, порожній `writeBatch`; concise-arrow | `pnpm test` | лише НАЯВНІСТЬ write-back, не повнота набору рядків сервера (її доводять поведінкові кейси колекцій: серверне поле в кеші без перезапиту) |
 | `eslint-rules/awaited-write-back.mjs` + `tests/eslint-rules/awaited-write-back.test.ts` | `*.utils.write*(…)`/`writeBatch(…)` поза `await`/`return`/`void` з причиною (загублений Promise write-back-у, TanStack DB 1.0) | `pnpm lint` (зона `packages/simplycms/src/**` без тестів) | синтаксично: бачить лише форму `<x>.utils.<op>`; Promise, переданий у змінну й потім await-нутий, — офендер (свідомо) |
 | `tests/tanstack-db-single-instance.test.ts` | два фізичні інстанси `@tanstack/db` у дереві (peer-контекст) — за `path` з `pnpm ls --json`, не за семвером | `pnpm test` | не сканує `.pnpm` напряму (сироти) |
@@ -764,8 +764,8 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `test-harness/pg/__tests__/single-default.test.ts` | часткові unique-індекси `is_default` на 7 таблицях (23505), GLOBAL (шість таблиць) не покладається на сід — перед вставкою reset `is_default`; `shipping_zones` у GLOBAL немає, бо основну зону сіє `bootstrapStore` (id `SYSTEM_SEED_IDS.mainShippingZone`), а reset відкладений тригер відхилив би | `pnpm test:schema` | «не більше одного»; «принаймні один» для зон доставки — `shipping-zone-invariant.test.ts` нижче, для решти таблиць — контракт операцій |
 | `test-harness/pg/__tests__/shipping-zone-invariant.test.ts` (К3-Е8) | «рівно одна основна зона доставки» у БД: основну зону сіє `bootstrapStore` (id `SYSTEM_SEED_IDS.mainShippingZone`), CHECK «основна активна», відкладений constraint-тригер «≥1 основна» (delete / зняття прапорця → 23514 на COMMIT, заміна двома UPDATE в одній транзакції проходить), і що адмін-операції відмовляють `AdminConflictError` РАНІШЕ за БД (тригер і CHECK зняті) | `pnpm test:schema` | `TRUNCATE` рядкові тригери обминає (так тести чистять таблицю); доводить інваріант лише для `shipping_zones` |
 | Gate C (`scripts/pilot-pack/gate-c.mjs`) | `admin-server/impl` у клієнтському бандлі; присутність стаба `admin-server/index` | `pnpm pilot:pack` | — |
-| `tests/stripped-env-parity.test.ts` + Gate C (`scripts/pilot-pack/stripped-env.mjs`) | розбіжність літерала `STRIPPED_ENV` у `server.mjs` (корінь, host, шаблон; у пілоті — скретч) з константою `simplycms/prod-start` (у пілоті — з tarball-а); літерал розбирається з самого файлу | `pnpm test` / `pnpm pilot:pack` | — |
-| `prod-start/__tests__/run-start.test.ts`, `tests/start-script.test.ts`, `test-harness/pg/__tests__/start-migrate.test.ts`, Gate B (`checkExecve`) | порядок старту на фейках (env → накат → execve, вихід 1 без execve, вичищення пароля власника); шим `scripts/start.mjs` на справжньому execve з чужої cwd (сирці ядра через tsx, заглушки `env`/`migrate`); справжній накат; у пілоті — `/proc/<pid>/environ` без `MIGRATION_DATABASE_URL` | `pnpm test` / `pnpm test:schema` / `pnpm pilot` | `/proc` — лише Linux (skip із причиною) |
+| `tests/stripped-env-parity.test.ts` + Gate C (`scripts/pilot-pack/stripped-env.mjs`) | розбіжність літерала `STRIPPED_ENV` у `server.mjs` (корінь, демо-магазин, шаблон; у прогоні пакування — скретч) з константою `simplycms/prod-start` (у прогоні пакування — з tarball-а); літерал розбирається з самого файлу | `pnpm test` / `pnpm pilot:pack` | — |
+| `prod-start/__tests__/run-start.test.ts`, `tests/start-script.test.ts`, `test-harness/pg/__tests__/start-migrate.test.ts`, Gate B (`checkExecve`) | порядок старту на фейках (env → накат → execve, вихід 1 без execve, вичищення пароля власника магазину); шим `scripts/start.mjs` на справжньому execve з чужої cwd (сирці ядра через tsx, заглушки `env`/`migrate`); справжній накат; у прогоні пакування — `/proc/<pid>/environ` без `MIGRATION_DATABASE_URL` | `pnpm test` / `pnpm test:schema` / `pnpm pilot` | `/proc` — лише Linux (skip із причиною) |
 | `tests/cli-doctor-host-shims.test.ts` | дрейф шимів `scripts/{start,owner-invite}.mjs` проти справжнього канону `packages/cli/host/` (doctor №6) | `pnpm test` | осиротілі файли поза каноном `update` не прибирає |
 | `eslint-rules/no-direct-storage.mjs` (зона `simplycms-storage`) + `tests/eslint-rules/no-direct-storage.test.ts` | прямий виклик сховища повз порт: `supabase.storage`, `x.storage.from(…)`, `x['storage']`, імпорт `@supabase/storage-js` | `pnpm lint` / `pnpm test` | бачить лише те, що ESLint парсить у СВОЇЙ зоні — тека поза зоною йому невидима (тому поруч файловий ратчет) |
 | `tests/storage-direct-calls.test.ts` | ті самі три форми, але СКАНОМ ПО ФАЙЛАХ усього `packages/simplycms/src/**`; список виїмок може тільки скорочуватись (сьогодні виїмок немає: легасі `ReviewDetail.tsx` знесено в Е6д) | `pnpm test` | регекс по тексту: виклик, зібраний динамічно, не ловиться |
@@ -779,7 +779,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 
 🔴 Урок Е1б для рев'ю: рев'ю ПО ДИФУ сліпе до парність-тестів за
 побудовою (файла, якого бракує після `template:sync`, у дифі немає) —
-після кожного етапу повний `pnpm test`, не лише лінзи по дифу. Паралельні
+після кожного issue повний `pnpm test`, не лише лінзи по дифу. Паралельні
 прогони харнеса проти одного контейнера конфліктують на `CREATE DATABASE`
 (`fileParallelism: false` у `vitest.schema.config.ts` — навмисно).
 
@@ -797,7 +797,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
   покрито юнітами; на момент Е2 усі пʼять його сторінок адмінки лишались на
   `supabase-js` (шар знесено в К3-Е7) і на чистому Postgres не працювали —
   живого прогону зображення товару в Е2 не було за побудовою (DoD К3 п.6
-  закрила хвиля каталогу, Е3–Е6).
+  закрив трек каталогу, Е3–Е6).
 - **Роль підключення в `live:smoke`.** Скрипт віддає магазину `DATABASE_URL`,
   виведений із `PG_HARNESS_URL` (адмінська роль кластера), а не окремий
   `app_runtime`. RLS і гранти це не послаблює — `withActor` робить
@@ -832,7 +832,7 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 `normalizeThrown` і розгортання `.cause` в клієнтських хендлерах стали
 мертвим кодом і прибрані (`1d3d5a9a`, реєстр обходів **TSDB-5** закрито).
 
-Нові гейти етапу (крім переліку в §11): `admin-data/__tests__/on-demand-factory-only.test.ts`
+Нові гейти К3-Е3 (крім переліку в §11): `admin-data/__tests__/on-demand-factory-only.test.ts`
 (усі on-demand-колекції — лише через `onDemandCollectionOptions`, Е3-17),
 `tests/mutation-cache-sync-coverage.test.ts` (повнота зони — рядок у §11),
 `tests/schema-sources-parity.test.ts` (парність `schema.ts` ↔
@@ -845,18 +845,18 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 `admin/pages/` і `admin/components/` (новий код у `admin/features/**` — під
 основним гейтом `explicit-ids` за побудовою).
 
-### 11.2. К3-Е4 (довідники каталогу): одна сесія власника на два кроки
+### 11.2. К3-Е4 (довідники каталогу): одна сесія власника магазину на два кроки
 
-Вхід власника винесено з кроку каталогу в `scripts/live-smoke/owner-session.mjs`
+Вхід власника магазину винесено з кроку каталогу в `scripts/live-smoke/owner-session.mjs`
 (`openOwnerSession`), оркестрація — `owner-steps.mjs`: ОДИН browser context
-власника на обидва адмінські кроки, `runAdminCatalogStep` (Е3) і
+власника магазину на обидва адмінські кроки, `runAdminCatalogStep` (Е3) і
 `runAdminDictionariesStep` (Е4). Кожен крок відкриває власну сторінку з
 власним лічильником `pageerror` і контекст не закриває; `pageerror` сторінки
 входу зараховано в рядок «запрошення → пароль → `/admin`», тож покриття
 кроку каталогу не звузилось (його рядки до й після рефакторингу ідентичні).
 Крок довідників доводить через СПРАВЖНЮ межу serverFn два тости, яких харнес
 не бачить за побудовою: дубль slug розділу (`admin.errors.slugTaken`) і
-видалення типу ціни, яким ціновано товар (`ON DELETE RESTRICT` → 23503 →
+видалення виду ціни, яким ціновано товар (`ON DELETE RESTRICT` → 23503 →
 `admin.errors.conflictReference`, ціни в БД цілі). Ціна-фікстура для
 другого ставиться прямим SQL (`admin-dictionaries-sql.mjs::seedPricedType`):
 предмет перевірки — відмова видалення, а не форма цін (її доводить Е3).
@@ -872,7 +872,7 @@ serverFn (seroval + плагіни Start), — не доказ. `AdminConflictEr
 лежить поза глобом), далі кожна колонка × insert/update/select × ~35 значень
 порівнюється з `drizzle-zod` 0.8.3 (успіх `safeParse` і результат `data`).
 
-**Що доводить і яка межа.** Гейт паритету доводить рантайм-еквівалентність
+**Що доводить і яка межа.** Гейт парності доводить рантайм-еквівалентність
 `columnsToZod` ≡ drizzle-zod (оракул) для всіх колонок ресурсних таблиць;
 відповідність ОГОЛОШЕНОГО типу (InferInsertModel/InferSelectModel)
 рантайм-формі він доводить лише опосередковано — через те, що оракул і тип
@@ -895,14 +895,14 @@ expectTypeOf і рев'ю.
 Кеш профілю й активної теми (`storeProfileCache`, `activeThemeCache`) і реєстр
 вшитих тем (`declareBuiltThemes`) — модульний стан `simplycms/site`. Покоління
 піднімає адмін-serverFn, читає — вітринний serverFn. 🔴 Що це ОДИН екземпляр модуля, а
-декларація host-а (`src/server.ts`) виконана до першої активації, доводить
+декларація демо-магазину (`src/server.ts`) виконана до першої активації, доводить
 **лише** `pnpm live:smoke` (крок `scripts/live-smoke/admin-system.mjs`): він
 працює на зібраному `server.mjs`. Юніт і харнес імпортують модуль один раз за
 побудовою, тож двох екземплярів не побачать (Е6б-23).
 
 Крок іде ОСТАННІМ у прогоні. Перед кожною мутацією покупець прогріває кеш
 запитом вітрини, тож «новий запит бачить нове» доводить скидання кешу
-операцією, а не холодний кеш. Підкрок 4б — та сама вкладка власника, кнопка
+операцією, а не холодний кеш. Підкрок 4б — та сама вкладка власника магазину, кнопка
 «На сайт» (клієнтська навігація) і маркер `window.__e6bNoReload`: він доводить
 `router.invalidate()` після активації, а не повне перезавантаження. `finally`
 відновлює знімок SQL-ом, а SQL оминає кеш процесу (Е6б-9), тому після кроку в
@@ -921,7 +921,7 @@ expectTypeOf і рев'ю.
 ### 11.5. К3-Е7 (знос Supabase): ратчети проти повернення
 
 Знесено клієнтський шар БД, залежності `@supabase/*` і реєстри легасі-адмінки;
-замість них — гейти, кожен з негативним контролем, прогнаним при прийомі етапу:
+замість них — гейти, кожен з негативним контролем, прогнаним при прийомі цього issue:
 
 | Гейт | Що ловить | Крок ланцюга | Межа |
 |---|---|---|---|
@@ -952,9 +952,9 @@ server-only дерево для `admin-server` і `storefront/loaders` (Е3-5), 
 | **Gate SB** (`scripts/pilot-pack/gate-sb.mjs` + `server-bundle.mjs`; юніт `tests/pilot-server-bundle.test.ts`; `UPSTREAM:START-IP-1`) | серверний бандл скретча за `bundle-stats.ssr.json`: драйвер БД (`pg`, `pg-*`, `postgres-*`) НЕ вклеєний, а кожен вклеєний пакет має причину в `server-bundle-allowlist.mjs` (клас дефекту — вклеєний CJS-пакет із dual-`exports`, до якого йде `require()`); запис, якого в бандлі вже немає, — гниль | мутація 2026-10-11: прибрати `pg` з deps скретча → перезбірка → FAIL (вклеєно `pg`, `pg-pool`, …); повернути → OK. `pnpm pilot:pack`, без БД |
 | Gate B, крок «sanitize-html на сервері» (`scripts/pilot-pack/gate-b.mjs` + оверлей `sanitize-probe.sql`; накочує `apply-probe.mjs`/`pilot-full.mjs`) | серверний `sanitize-html` у бандлі скретча реально працює (dual-пакети `postcss`/`is-plain-object`/`nanoid` вклеєні): SSR картки товару віддає `<strong>`, `<a href>`, `text-align`, без `<script>`/`onerror`/`color`; вимагає демо-БД + оверлей; `tests/demo-seed-clean.test.ts` (демо без `<script`/`onerror`/`javascript:`) і `tests/pilot-probe-not-packed.test.ts` (оверлей не в tarball-ах, packaging) | мутація 2026-10-11: зламаний `postcss.parse` у `dist/server/server.js` скретча → FAIL; відкат → OK. `pnpm pilot` |
 | Gate B, кроки «`/api/v1` на скафолдженому магазині» (`scripts/pilot-pack/gate-b-api.mjs` + оверлей `api-probe.mjs`: сервісний запис без `accounts`, роль admin, токен відомого вигляду зі scopes `languages.list`/`api-tokens.list`; накочує `apply-probe.mjs`) | роут `/api/v1/$op` змонтований шаблоном і доживає до production-манифесту (М1 «читається обома транспортами»): `GET openapi.json` анонімом → 401, з Bearer → 200 зі шляхами реєстру, `POST languages.list` з Bearer → 200 з основною мовою, `POST api-tokens.list` з Bearer → 403 (`sessionOnly`, при тому що scope і роль є); вимагає демо-БД + оверлей; `tests/pilot-probe-not-packed.test.ts` (`api-probe` не в tarball-ах) | мутація 2026-10-15: прибрати `routes/storefront/api/v1/$op.tsx` з дерева → Gate B (і Gate A) червоні, обидва POST дають 404; відкат → OK. `pnpm pilot` |
-| `tests/pg-peer-parity.test.ts` | версія `pg`: peer ядра = шаблон магазину = пілотний оверлей = корінь монорепо; ядро не має `pg` у `dependencies` | розбіжна версія в шаблоні або оверлеї, відсутній `pg` — червоні |
+| `tests/pg-peer-parity.test.ts` | версія `pg`: peer ядра = шаблон магазину = оверлей прогону пакування = корінь монорепо; ядро не має `pg` у `dependencies` | розбіжна версія в шаблоні або оверлеї, відсутній `pg` — червоні |
 | doctor №13 + підказка `update` (`tests/cli-pg-driver.test.ts`) | `pg` — пряма залежність магазину в межах peer-діапазону ядра; `update` версію `pg` НЕ переписує | кейси: немає pg / не в dependencies / невідповідна версія / ок; мутації: перевірка завжди ok, update без підказки, update переписує pg |
-| Import Protection Start (хост, шаблон, пілот) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** пілота (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
+| Import Protection Start (демо-магазин, шаблон, прогін пакування) | те саме в КОЖНОМУ магазині, dev і build, з трасою імпорту — і bare-специфікатор, і ВІДНОСНА втеча в `node_modules/simplycms/src/**` (`excludeFiles` заміщує дефолт Start) | `tests/import-protection-wiring.test.ts` (дані + анкерований рядок; `enabled: false` — червоне) і **Gate IP** прогону пакування (`pnpm pilot:pack`, у CI): bare `simplycms/db` і відносна втеча в `node_modules/simplycms/src/db/client` валять `vite build` скретча з `[import-protection]` |
 | `tests/dist-server-boundary.test.ts`, блок сентинелів | контроль САМОГО списку `SERVER_ONLY`: мапа літералів не похідна від списку, кожен є в джерелі дерева, у серверному `dist` і відсутній у клієнтському | закоментований рядок `'storefront'` у декларації → червоний packaging |
 | `eslint-rules/no-server-only-in-client.mjs` (зона `simplycms-client-boundary`, К3-Е2) | клієнтська тека ядра (`admin/**`, пʼять `*-ui/**`) не імпортує server-only субшлях чи серверну залежність зі СТАТИЧНОГО `import`/`export…from` — окремий детектор, бо базовий `no-restricted-imports` не розрізняє `import` і стираний компілятором `import type` (канон `OrderStatuses.tsx:8`) | `tests/eslint-rules/no-server-only-in-client.test.ts` (фікстури Linter API) + `tests/tier-boundary-client-boundary.test.ts` (реальний конфіг: заборона в `checkout-ui`, виїмка `core/lib`, чистий `import type` в `admin`) |
 
@@ -1070,7 +1070,7 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 | `/profile`, `/admin`, `/admin/order-statuses` анонімом | 307 → `/auth` |
 | Консоль браузера | нуль помилок JS **при порожньому кошику**. 🔴 З товаром у кошику КОЖНА SSR-сторінка кидає React #418 (переміряно 2026-09-03, 5/5 сторінок; ідентично на `main`): бейдж кошика в шапці — `useCart` читає `localStorage` у рендері гідратації. 🔴 **ЗАКРИТО К2-Е0 (Task 12).** Єдиний мережевий 404 — `solar-home.jpg` (`demo-seed.sql:234`; `bifacial-sale.jpg` з `:249` браузер не запитує ніде — `HeroBanner` показує лише перший банер із зображенням; теки `public/demo/` в репо немає). 🔴 **404 банерів ЗАКРИТО К2-Е0 (Task 7)** — inline `data:`-SVG замість файлів |
 | Серверний лог за весь прогін | нуль помилок |
-| Запрошення власника → пароль → вхід → `/admin` | замкнено; `/admin/order-statuses` малює 6 статусів із БД |
+| Запрошення власника магазину → пароль → вхід → `/admin` | замкнено; `/admin/order-statuses` малює 6 статусів із БД |
 | CRUD статусу (створити / перейменувати / порядок / видалити) | усі чотири — `POST /_serverFn/<id>` зі статусом 200; зміни звірені прямим SQL |
 | Залишок товару | 🔴 Бейдж наявності **не порожній** (переміряно 2026-09-03 у браузері; ідентично на `main`): після гідратації картка каже «Немає в наявності» при `stock_status='in_stock'` у всіх 8 товарів — `loadStockInfo` рахує доступність лише із `stock_by_pickup_point`, якої в демо-сіді нуль рядків. У SSR-розмітці тексту немає (доїжджає serverFn-ом), тож curl-прогін бачив порожнечу. 🔴 **ЗАКРИТО К2-Е0 (Task 8 + Task 7):** правило зведено в `isPurchasable`, демо-сід везе залишки |
 
@@ -1179,7 +1179,7 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 ## 14. Контури хвилі мультимовності М1 (2026-10-18)
 
 Канон підсистем — [`translations.md`](./translations.md) і [`operations-api.md`](./operations-api.md);
-рядки матриці інваріантів І1–І37 і їхні тести — майстер-план §4. Тут — механізми, яких до хвилі в
+рядки матриці інваріантів І1–І37 і їхні тести — майстер-план §4. Тут — механізми, яких до М1 в
 контурах не було.
 
 ### Тести гонок без пауз
@@ -1225,7 +1225,7 @@ React #418 із товаром у кошику — Task 12 (`useSyncExternalStor
 
 | Гейт | Що ловить | Крок |
 |---|---|---|
-| `tests/dist-theme-plugin-external.test.ts` | `simplycms/*` вклеєно в dist референс-теми чи плагіна (власна копія `AsyncLocalStorage` контексту запиту, якої `checkRequestContextSingle` пілота не бачить): кожен імпорт значення з джерела лишився bare-імпортом у dist, sourcemap — лише власні джерела пакета, у dist немає `AsyncLocalStorage` | `pnpm test:packaging` |
+| `tests/dist-theme-plugin-external.test.ts` | `simplycms/*` вклеєно в dist референс-теми чи плагіна (власна копія `AsyncLocalStorage` контексту запиту, якої `checkRequestContextSingle` прогону пакування не бачить): кожен імпорт значення з джерела лишився bare-імпортом у dist, sourcemap — лише власні джерела пакета, у dist немає `AsyncLocalStorage` | `pnpm test:packaging` |
 | `tests/live-smoke-no-instant-checks.test.ts` (структурний гард) | читання БД після очікування зникнення рядка без `pollUntil`; очікувачі ТРАНЗИТИВНІ (хелпер, що лише кличе очікувача, теж очікувач) — негативний контроль на другому й третьому рівні | `pnpm test` |
 | `test-harness/pg/__tests__/harness.test.ts` (стеля одноразових з'єднань) | рахує лише `backend_type = 'client backend'`: `autovacuum worker`, що заходить у свіжу БД під навантаженням, давав хибне «5 > 4» (доведено логом у момент падіння); мутація «без стелі» → 24 | `pnpm test:schema` |
 | `tests/source-text.test.ts` | помічник текстових гейтів вимагає ім'я файла: без нього `.tsx` з `//` у JSX-тексті лексер TS різав би код після «коментаря» (хибно-зелений гейт); невідоме розширення — помилка; SQL і CSS — власна лексика | `pnpm test` |
