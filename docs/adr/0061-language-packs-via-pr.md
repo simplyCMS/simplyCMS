@@ -13,7 +13,7 @@ Spec: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` §19.15
 - Реєстр пакетів не публічний. Споживачі ходять лише через `listLanguagePacks`, `hasLanguagePack`, `getUiPack`, `getContentTools`.
 
 ## Why
-- Рішення власника 2026-11-04: `docs/tasks/multilingual-wave-backlog.md` § «рішення без власника коду». Спека: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` § «19.15 Мова магазину — лише мова з пакетом (ред. 2, ревізія власника 2026-11-04».
+- Рішення власника 2026-11-04: `docs/architecture/i18n.md` § «Мови й мовні пакети» (перенесено з беклогу мультимовності; знесено 2026-11-21, текст — `git show 3feeb440`). Спека: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` § «19.15 Мова магазину — лише мова з пакетом (ред. 2, ревізія власника 2026-11-04».
 - Публічне API закрите навмисно: пізніший канал додає лише нове джерело реєстру, це minor: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` § «19.15 Мова магазину — лише мова з пакетом (ред. 2, ревізія власника 2026-11-04».
 - Схема від джерела не залежить: БД знає лише код мови. Заморожування baseline у `1.0.0-rc.1` не заважає: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` § «19.15 Мова магазину — лише мова з пакетом (ред. 2, ревізія власника 2026-11-04».
 - Запис про відкриту платформу: `docs/superpowers/specs/2026-10-14-multilingual-wave-design.md` § «4. Мови».
