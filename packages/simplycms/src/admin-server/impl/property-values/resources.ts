@@ -6,7 +6,7 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Значення властивостей — ЛИШЕ ЧИТАННЯ колекцій (М1, Task 17): пише команда агрегата
+ * Значення властивостей — ЛИШЕ ЧИТАННЯ колекцій: пише команда агрегата
  * `products.saveDescription` разом з перекладом тексту. Форму рядка тримає БД (Р18:
  * складені FK, CHECK колонки, частковий UNIQUE скаляра), а текст `value_kind = text`
  * без рядка основної мови не комітиться (І5) — узагальнений insert його не пише.

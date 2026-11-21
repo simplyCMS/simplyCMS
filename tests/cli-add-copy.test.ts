@@ -16,7 +16,7 @@ import {
   themeSpec,
 } from '../packages/cli/src/add-copy.mjs';
 
-// simplycms add <pkg> --theme --copy (Фаза 4, Р5). Реального pnpm тут немає:
+// simplycms add <pkg> --theme --copy. Реального pnpm тут немає:
 // сценарій приймає виконавця параметром, тож перевіряються і ПОРЯДОК команд
 // (add → … → remove), і відкат при провалі валідації — без мережі й install.
 

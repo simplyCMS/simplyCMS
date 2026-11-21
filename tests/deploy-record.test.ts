@@ -14,7 +14,7 @@ import {
   writeDeployRecord,
 } from '../packages/cli/src/deploy-record.mjs';
 
-// `.simplycms/deploy.json` (К3-Е8, Task 21): закомічений запис без секретів.
+// `.simplycms/deploy.json`: закомічений запис без секретів.
 const record = () => ({
   version: 1,
   dokploy: {

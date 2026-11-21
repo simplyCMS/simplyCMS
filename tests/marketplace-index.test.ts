@@ -8,7 +8,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SAMPLE_PATH = join(REPO, 'docs', 'marketplace', 'index.sample.json');
 
 /**
- * Машинний контракт формату запису маркетплейс-індексу (план Фази 4, Р11).
+ * Машинний контракт формату запису маркетплейс-індексу.
  * Схема тут і Є контрактом v1 — окремого модуля вона свідомо не має, бо
  * репозиторій реального індексу (`simplycms/marketplace`) лежить поза цим
  * монорепо (дія власника); тут перевіряється лише зразок,
@@ -76,7 +76,7 @@ const marketplaceIndexSchema = z.object({
 
 type MarketplaceEntry = z.infer<typeof marketplaceEntrySchema>;
 
-describe('маркетплейс-індекс: контракт формату (Фаза 4, Р11)', () => {
+describe('маркетплейс-індекс: контракт формату', () => {
   const raw = JSON.parse(readFileSync(SAMPLE_PATH, 'utf8')) as unknown;
 
   it('index.sample.json відповідає Zod-схемі', () => {

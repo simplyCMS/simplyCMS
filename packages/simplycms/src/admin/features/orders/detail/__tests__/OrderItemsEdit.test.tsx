@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Редагування позицій у картці (Task 5, Е5б-11): справжні колекції + стаб
+ * Редагування позицій у картці: справжні колекції + стаб
  * межі serverFn. Асерти — точні тексти `ukT`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

@@ -1,6 +1,6 @@
 // simplycms create (plugin | theme) <name> [--dry-run] — авторський скаффолд
-// у самому МАГАЗИНІ: тека `plugins/<name>` (Фаза 3, Р9) або `themes/<name>`
-// (Фаза 4, Р6) + якірний запис у simplycms.config.ts тим самим insertEntry,
+// у самому МАГАЗИНІ: тека `plugins/<name>` або `themes/<name>`
+// + якірний запис у simplycms.config.ts тим самим insertEntry,
 // що й add. Аліаси `@plugins/*` і `@themes/*` уже в шаблоні, тож dev-loop
 // працює без лінків і build-кроку. Шаблони — template-plugin/ і
 // template-theme/ пакета CLI; плейсхолдери рендеряться на копіюванні.
@@ -48,7 +48,7 @@ export function createCoreRange(cliVersion = readCliVersion()) {
 
 /**
  * Розбір аргументів create. Перший позиційний токен — суб-команда
- * (`plugin` — спека §7; `theme` — Фаза 4).
+ * (`plugin` або `theme`).
  * @param {string[]} argv
  * @returns {{ kind: 'plugin' | 'theme'; name: string; dryRun: boolean }}
  */
@@ -111,7 +111,7 @@ export async function run(argv) {
   const spec = toSpec(name);
   const source = readFileSync(configPath, 'utf8');
 
-  // Обидві незворотні дії рахуються ДО першого запису (принцип §3 спеки CLI):
+  // Обидві незворотні дії рахуються ДО першого запису:
   // відсутній якір конфігу валить команду, поки на диску ще нічого немає.
   const next = hasPackage(source, spec)
     ? null

@@ -4,7 +4,7 @@ import { fieldStatus as statusEnum } from '../../translatable/wire';
 import { stockStatus as statusStock } from './schemas';
 
 // Форма дітей агрегата у відповіді `products.get`: дзеркало входу `saveDescription`
-// (ті самі id та мапи за мовою) + статуси, як у `textsRow` (М1, Task 12).
+// (ті самі id та мапи за мовою) + статуси, як у `textsRow`.
 
 const status = statusEnum;
 const perLocale = <T extends z.ZodType>(row: T) => z.record(z.string(), row);

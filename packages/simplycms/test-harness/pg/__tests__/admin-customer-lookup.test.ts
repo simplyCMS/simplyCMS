@@ -1,5 +1,5 @@
-// К3-Е6в, Task 6: лічильник покупців за категоріями (Task 9) і вузький пошук
-// покупця для діагностики ціни (Task 10), `customer.manage`.
+// Лічильник покупців за категоріями і вузький пошук
+// покупця для діагностики ціни, `customer.manage`.
 import { describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/customer-categories';
 
@@ -17,7 +17,7 @@ import {
   findCustomersOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: лічильник і пошук покупців (Е6в, Task 6)', () => {
+describe('admin: лічильник і пошук покупців', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_lookup');
   const url = () => db.url();
 

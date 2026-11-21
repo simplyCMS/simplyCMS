@@ -6,10 +6,10 @@ import { safeFontStylesheets } from 'simplycms/themes/safeFontStylesheets';
 import { ThemeFonts } from '../shells/ThemeFonts';
 
 /**
- * DB-free доказ fonts-контуру (Р9, Фаза 4 Step 4): пілот сідить `default`
+ * DB-free доказ fonts-контуру: пілот сідить `default`
  * (без `fonts`), тому єдиний спосіб довести контур без живої БД —
  * компонентний тест на РЕАЛЬНОМУ модулі `@simplycms/theme-solarstore`
- * (Р8 задекларував там `fonts` з Inter-stylesheet). Живий SSR-доказ через
+ * (там задекларовано `fonts` з Inter-stylesheet). Живий SSR-доказ через
  * Gate B — борг у роадмапі, поза скоупом v2.2.
  */
 describe('ThemeFonts + @simplycms/theme-solarstore (реальний модуль)', () => {

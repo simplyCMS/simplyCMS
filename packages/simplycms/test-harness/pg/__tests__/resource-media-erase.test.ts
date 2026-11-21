@@ -1,4 +1,4 @@
-// К3-Е6д, Task 2 (Е6д-14/16): двофазне стирання у фабриці ресурсів. Транзакція
+// Двофазне стирання у фабриці ресурсів. Транзакція
 // видаляє лише рядки `media`, файли — `completeMediaErasures` ПІСЛЯ COMMIT. Обриви —
 // реальним драйвером зі шпигуном на `delete`, не моком сховища.
 import { eq } from 'drizzle-orm';
@@ -20,7 +20,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('фабрика ресурсів: двофазне стирання media (Е6д-14)', () => {
+describe('фабрика ресурсів: двофазне стирання media', () => {
   const d = useBannerMediaDb('simplycms_e6d_resource_media_erase');
   const create = async (patch: Record<string, unknown> = {}) => {
     const id = crypto.randomUUID();

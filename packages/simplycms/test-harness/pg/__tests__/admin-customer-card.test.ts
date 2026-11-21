@@ -1,4 +1,4 @@
-// К3-Е6г, Task 3: getCustomerCard. Review Focus 5: картка власника без
+// getCustomerCard.: картка власника без
 // `profiles` відкривається, `stats` — null, категорія — ефективна дефолтна.
 import { describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/customer-categories';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { HISTORY_LIMIT, getCustomerCardOp } from 'simplycms/admin-server/impl';
 
-describe('admin: картка покупця (Е6г-6)', () => {
+describe('admin: картка покупця', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_card');
   const url = () => db.url();
 

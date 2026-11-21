@@ -16,8 +16,8 @@ import { ShippingRatesTable } from './ShippingRatesTable';
 import { useShippingMethodCard } from './useShippingMethodCard';
 
 /**
- * Картка способу доставки (Е6а, Task 6): `new` або id з URL. Блок
- * «Тарифи» (Е6а-1) — лише для збереженого способу з `pricing = 'rates'`.
+ * Картка способу доставки: `new` або id з URL. Блок
+ * «Тарифи» — лише для збереженого способу з `pricing = 'rates'`.
  */
 export default function ShippingMethodEditPage() {
   const t = useT();

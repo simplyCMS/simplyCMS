@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { ID, PROPS } from '../../properties/__tests__/render-support';
 
-// Е5б Task 8 (E): юніт діалогу призначення. Radix Select у jsdom 30 не
+// Юніт діалогу призначення. Radix Select у jsdom 30 не
 // працює (немає hasPointerCapture/scrollIntoView, див. ProductsPage.test.tsx)
 // — замокано нативним <select> з тим самим контрактом value/onValueChange.
 vi.mock('simplycms/ui/select', () => ({

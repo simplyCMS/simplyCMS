@@ -1,4 +1,4 @@
-// М1 Task 6, Review Focus 1: магазин додає мову, поки адмін створює товари —
+// Магазин додає мову, поки адмін створює товари —
 // кожен товар, створений до й під час додавання, мусить мати адресу в новій
 // мові. Порядок «замок → набір мов» доводять три сценарії.
 import { randomUUID } from 'node:crypto';
@@ -36,7 +36,7 @@ import {
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
-describe('languages.add проти паралельного створення товарів (Review Focus 1)', () => {
+describe('languages.add проти паралельного створення товарів', () => {
   const db = useAddressingDb('simplycms_languages_add_concurrency');
   const addLanguage = (code: string) =>
     executeOperation(
@@ -118,7 +118,7 @@ describe('languages.add проти паралельного створення �
     await until('A вставила адреси', a.acquired);
 
     // Виклик fill, що будує проєкцію, бере ЕКСКЛЮЗИВНИЙ languages-set і стає в чергу за
-    // спільним замком A (фінальне рев'ю М1, N1): адресу в sv A створила сама.
+    // спільним замком A: адресу в sv A створила сама.
     const fill = fillAll('sv');
     await waitForBlockedTree(db, a, 1, { releaseOnFail: true });
     a.release();

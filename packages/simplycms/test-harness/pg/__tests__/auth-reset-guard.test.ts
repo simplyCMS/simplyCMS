@@ -1,4 +1,4 @@
-// К3-Е6г, Task 6 (Е6г-2, Е6г-18): скидання пароля на реальному `auth.handler`.
+// Скидання пароля на реальному `auth.handler`.
 // Guard доводиться детерміновано: окремий клієнт тримає незакомічену зміну
 // `users`, `pg_blocking_pids` показує, що чекає саме `FOR SHARE` guard-а.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -18,7 +18,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { updateCustomerContactsOp } from 'simplycms/admin-server/impl';
 
-describe('скидання пароля: guard і відкликання токенів (Е6г-2/18)', () => {
+describe('скидання пароля: guard і відкликання токенів', () => {
   const db = F.useCustomersDb('simplycms_reset_guard');
   const url = () => db.url();
   const sendEmail = vi.fn(async () => [] as string[]);

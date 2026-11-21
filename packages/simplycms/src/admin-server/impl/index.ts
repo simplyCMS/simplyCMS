@@ -112,7 +112,7 @@ export {
   saveStockManagementInput,
   saveStockManagementOp,
 } from './settings/save-stock';
-// 🔴 Теки `site-*`, а не `themes`/`plugins` (Е6б-26): відносний `../themes`
+// 🔴 Теки `site-*`, а не `themes`/`plugins`: відносний `../themes`
 // тір-зона читає як теку тем T4 — збіг імен змусив би обходити правило барелем.
 export { listThemesOp } from './site-themes/list';
 export type { ThemeRow } from './site-themes/list';
@@ -127,7 +127,7 @@ export {
   setPluginActiveInput,
   setPluginActiveOp,
 } from './site-plugins/set-active';
-// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14..17).
+// Знижки (`discount.manage`).
 export { discountGroupsOps } from './discount-groups/resource';
 export {
   removeDiscountGroupsInput,
@@ -139,10 +139,9 @@ export { getDiscountInput, getDiscountOp } from './discounts/get';
 export { saveDiscountInput } from './discounts/save-input';
 export type { SaveDiscountInput } from './discounts/save-input';
 export { saveDiscount, saveDiscountOp } from './discounts/save';
-// Харнес доводить, що `lockCatalogTarget` і `advisoryXactLock` — один лок (Е6в-15).
+// Харнес доводить, що `lockCatalogTarget` і `advisoryXactLock` — один лок.
 export { lockCatalogTarget } from './catalog-lock';
-// К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
-// Е6в-15, Е6в-18…Е6в-20).
+// Категорії покупців і автоправила (`customer.manage`).
 export { userCategoriesOps } from './user-categories/resource';
 export {
   setDefaultUserCategoryInput,
@@ -169,7 +168,7 @@ export { findCustomersInput, findCustomersOp } from './customers/find';
 export type { CustomerHit } from './customers/find';
 // С-15: актор ядер, яких кличуть поза операцією (сід, порти).
 export { adminInput } from './validation';
-// К3-Е6д, Task 6: модерація відгуків (`review.moderate`).
+// Модерація відгуків (`review.moderate`).
 export {
   listReviewsInput,
   listReviewsOp,
@@ -193,7 +192,7 @@ export { diagnosePriceInput } from './price-diagnosis/input';
 export { diagnosePriceOp } from './price-diagnosis/diagnose';
 export type { PriceDiagnosis } from './price-diagnosis/diagnose';
 
-// К3-Е6г, Task 3: читання покупців і дашборду.
+// Читання покупців і дашборду.
 export {
   CUSTOMERS_PAGE_SIZE,
   listCustomersInput,
@@ -226,7 +225,7 @@ export {
 export { revokeUserVerifications } from './customers/verifications';
 export { countAdmins, isAdminUser } from './customers/guards';
 
-// Операції мов (М1, Task 6) і реєстр операцій ядра.
+// Операції мов і реєстр операцій ядра.
 export {
   languagesAdd,
   languagesFill,

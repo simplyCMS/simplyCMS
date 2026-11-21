@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6 (Е6в-18, Review Focus 4): guarded видалення категорій
+// guarded видалення категорій
 // покупців. Кожна відмова — свій state-код (409), і після неї SQL показує, що
 // категорія, профілі й правила на місці. Категорія з історією, але без
 // покупців, видаляється — історія лишається з `NULL` і знімком назви.
@@ -19,7 +19,7 @@ import {
   removeUserCategoriesOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: видалення категорій покупців (Е6в-18)', () => {
+describe('admin: видалення категорій покупців', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_categories');
   const url = () => db.url();
 
@@ -112,7 +112,7 @@ describe('admin: видалення категорій покупців (Е6в-1
     expect((await footprint(free)).category).toHaveLength(1);
   });
 
-  it('Review Focus 4: без покупців, але з історією → видалена; історія з NULL і знімком назви', async () => {
+  it('без покупців, але з історією → видалена; історія з NULL і знімком назви', async () => {
     const gone = await F.seedCategory(url());
     const [{ name }] = (await F.rows(
       url(),

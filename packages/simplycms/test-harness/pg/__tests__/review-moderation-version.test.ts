@@ -1,4 +1,4 @@
-// К3-Е6д, Task 9 (Е6д-23): модерація проти ПОБАЧЕНОЇ версії відгуку —
+// Модерація проти ПОБАЧЕНОЇ версії відгуку —
 // `updatedAt` з картки, мілісекунди проти мікросекунд БД, атомарність пакета
 // і гонка з правкою покупця.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 const CHANGED = conflict('state', 'review_changed');
 
-describe('admin: модерація проти версії відгуку (Е6д-23)', () => {
+describe('admin: модерація проти версії відгуку', () => {
   const d = useReviewsDb('simplycms_e6d_rv_ver');
   const { f } = d;
   const set = (

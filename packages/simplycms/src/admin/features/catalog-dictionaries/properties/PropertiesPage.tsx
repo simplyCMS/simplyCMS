@@ -26,8 +26,8 @@ import { PropertyCreateDialog } from './PropertyCreateDialog';
 import { PropertyRow } from './PropertyRow';
 
 /**
- * Список властивостей (Е4, Task 8). On-demand колекція БЕЗ `where` —
- * повний зріз, `orderBy name` (Е4-9; контракт —
+ * Список властивостей. On-demand колекція БЕЗ `where` —
+ * повний зріз, `orderBy name` (контракт —
  * `admin-data/__tests__/on-demand-full-slice.test.tsx`, живий підпис).
  */
 export default function PropertiesPage() {

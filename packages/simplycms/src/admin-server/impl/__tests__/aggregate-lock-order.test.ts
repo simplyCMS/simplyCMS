@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 5; М2б Д8/Р19: рядкові замки КОЖНОГО кореня агрегата (`products`,
+// Рядкові замки КОЖНОГО кореня агрегата (`products`,
 // `order_statuses`, …) сильніші за KEY SHARE (`NO KEY UPDATE`, `UPDATE`) бере лише спільний
 // `lockRoots` (`translatable/roots.ts`) — він сам бере спільний `languages-set` ПЕРЕД коренем,
 // а товарний `lockAggregateRoots` лише делегує йому (`products/aggregate/lock-order.ts`,
@@ -58,7 +58,7 @@ const offenders = (files: Record<string, string>) =>
     )
     .map(([path]) => path);
 
-describe('замок кореня агрегата — лише lockRoots (М1 Task 14, М2б Д8)', () => {
+describe('замок кореня агрегата — лише lockRoots', () => {
   const files = Object.fromEntries(
     Object.entries(sources).map(([k, v]) => [rel(k), v]),
   );

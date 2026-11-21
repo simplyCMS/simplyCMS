@@ -1,4 +1,4 @@
-// К3-Е6г, Task 4 (Е6г-4, Е6г-11): роль адміна з картки покупця. Поведінка під
+// Роль адміна з картки покупця. Поведінка під
 // локом `admin-roles` — у `admin-customer-roles-locks.test.ts`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/customer-categories';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { setAdminRoleOp } from 'simplycms/admin-server/impl';
 
-describe('admin: роль адміна (Е6г-4/11)', () => {
+describe('admin: роль адміна', () => {
   const db = F.useCustomersDb('simplycms_admin_roles');
   const url = () => db.url();
 
@@ -93,7 +93,7 @@ describe('admin: роль адміна (Е6г-4/11)', () => {
     expect(await adminCount()).toBe(1);
   });
 
-  it('видача забаненому → admin_role_banned, ролі немає (Е6г-11)', async () => {
+  it('видача забаненому → admin_role_banned, ролі немає', async () => {
     const actor = await makeAdmin();
     const target = await F.seedCustomer(url());
     await F.rows(

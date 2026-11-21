@@ -6,7 +6,7 @@ import {
 } from 'simplycms/operations/server';
 
 /**
- * HTTP-адаптер операцій `POST /api/v1/<op>` (М1, майстер §3.3).
+ * HTTP-адаптер операцій `POST /api/v1/<op>` (майстер §3.3).
  *
  * 🔴 Реєстр передає РОУТ, а не адаптер: `simplycms/operations` не імпортує
  * `admin-server` (цикл тірів), тож `getOperation` приходить сюди.

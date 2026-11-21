@@ -1,4 +1,4 @@
-// М1 Task 6: операції мов проти живого Postgres (виконавець без HTTP).
+// Операції мов проти живого Postgres (виконавець без HTTP).
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
@@ -21,7 +21,7 @@ import { ADMIN, useAddressingDb } from './fixtures/addressing-db';
 
 const subject = { userId: ADMIN.userId, roles: ['admin' as const] };
 
-describe('операції мов (M1, Task 6)', () => {
+describe('операції мов', () => {
   const db = useAddressingDb('simplycms_languages_operations');
   const exec = async <I, O>(def: OperationDef<I, O>, raw: unknown) => {
     const res = await executeOperation(def, raw, subject);
@@ -39,7 +39,7 @@ describe('операції мов (M1, Task 6)', () => {
     (
       await db.q(`select status from public.languages where code = $1`, [code])
     )[0]?.status;
-  /** Товар графа з поточною адресою основної мови (`insertProductGraph`, Task 10). */
+  /** Товар графа з поточною адресою основної мови (`insertProductGraph`). */
   const seedProduct = (slug: string) => db.product(slug);
   const pathCount = async (locale: string) =>
     Number(

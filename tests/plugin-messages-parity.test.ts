@@ -14,7 +14,7 @@ const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * Каталог перекладів плагіна — `messages` з `definePlugin` (дзеркало
- * `ThemeModule.messages`, план Фази 3 Р6). Форма: `{ uk: {...}, en: {...} }`.
+ * `ThemeModule.messages`). Форма: `{ uk: {...}, en: {...} }`.
  */
 interface PluginMessagesModule {
   messages: Partial<Record<string, Record<string, CatalogValue>>>;

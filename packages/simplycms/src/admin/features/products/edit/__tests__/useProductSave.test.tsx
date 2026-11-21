@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * `useProductCreate` (М1, Task 13; фінальне рев'ю B-I2): `products.create` з id наперед —
+ * `useProductCreate`: `products.create` з id наперед —
  * ОДНА команда разом із фото; помилка сервера лягає на поле, а не губить введене; після
  * успіху — навігація на картку, навіть якщо перечитування списку впало.
  */

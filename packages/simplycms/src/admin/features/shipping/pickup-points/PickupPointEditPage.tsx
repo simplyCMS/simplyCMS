@@ -16,8 +16,8 @@ import { PickupPointFields } from './PickupPointFields';
 import { usePickupPointCard } from './usePickupPointCard';
 
 /**
- * Картка точки видачі (Е6а, Task 7): `new` або id з URL. Системна точка
- * (склад) — бейдж і без видалення (Е6а-12).
+ * Картка точки видачі: `new` або id з URL. Системна точка
+ * (склад) — бейдж і без видалення.
  */
 export default function PickupPointEditPage() {
   const t = useT();

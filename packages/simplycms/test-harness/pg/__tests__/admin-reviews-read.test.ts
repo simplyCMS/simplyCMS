@@ -1,4 +1,4 @@
-// К3-Е6д, Task 6: читання модерації відгуків — keyset-список, лічильник, картка.
+// Читання модерації відгуків — keyset-список, лічильник, картка.
 import { describe, expect, it, vi } from 'vitest';
 import {
   countPendingReviewsOp,
@@ -17,7 +17,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: читання модерації відгуків (Е6д-7, Е6д-11)', () => {
+describe('admin: читання модерації відгуків', () => {
   const d = useReviewsDb('simplycms_e6d_rv_read');
   const { f } = d;
 

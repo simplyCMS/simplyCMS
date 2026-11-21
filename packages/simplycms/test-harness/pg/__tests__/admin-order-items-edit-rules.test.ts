@@ -1,4 +1,4 @@
-// К3-Е5б Task 3: правила редагування позицій (Е5б-2, Е5б-3, Е5б-8, Е5б-9) —
+// Правила редагування позицій:
 // нестача залишку при зміні кількості, остання позиція, перерахунок доставки
 // за тарифом, «скасоване — кінцеве» і чужа позиція. Кожна відмова — нічого
 // не змінено: ні позиції, ні залишок, ні суми.
@@ -18,11 +18,11 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
-describe('admin: правила редагування позицій (К3-Е5б, Task 3)', () => {
+describe('admin: правила редагування позицій', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_rules');
   const { ids } = f;
 
-  it('update понад залишок → 409 order_insufficient_stock; позиція, залишок і суми незмінні (Review Focus 1)', async () => {
+  it('update понад залишок → 409 order_insufficient_stock; позиція, залишок і суми незмінні', async () => {
     const o = await f.place([{ productId: ids.panel, quantity: 2 }]);
     const item = await f.itemOf(o, ids.panel);
     await f.setStock(ids.panel, 3);
@@ -47,7 +47,7 @@ describe('admin: правила редагування позицій (К3-Е5б
     expect(await f.snapshot(o)).toEqual(before);
   });
 
-  it('remove опускає subtotal нижче free_from → shipping_cost зріс; нижче min_order_amount → 409 order_shipping_unavailable, нічого не змінено (Review Focus 3)', async () => {
+  it('remove опускає subtotal нижче free_from → shipping_cost зріс; нижче min_order_amount → 409 order_shipping_unavailable, нічого не змінено', async () => {
     // Курʼєр контуру: базова 150, безкоштовно від 10000, мінімум 1000.
     const a = await f.place(
       [

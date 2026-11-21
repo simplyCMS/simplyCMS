@@ -11,7 +11,7 @@ import { LANGUAGE_CODE_FORMAT } from 'simplycms/domain/translations';
 import type { Language } from 'simplycms/schema/types';
 import { hasLanguagePack } from 'simplycms/i18n';
 
-// Спільні схеми й хелпери операцій мов (М1, Task 6).
+// Спільні схеми й хелпери операцій мов.
 
 export const status = z.enum(['draft', 'published', 'disabled']);
 export const code = z.string().regex(LANGUAGE_CODE_FORMAT);

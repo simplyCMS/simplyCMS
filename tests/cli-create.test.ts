@@ -11,7 +11,7 @@ import {
   templatePluginDir,
 } from '../packages/cli/src/create.mjs';
 
-// simplycms create plugin (Фаза 3, Р9): скаффолд плагіна в plugins/ магазину
+// simplycms create plugin: скаффолд плагіна в plugins/ магазину
 // з template-plugin/ пакета CLI. Чисті функції — напряму, без spawn.
 
 describe('cli create: парсер', () => {
@@ -220,7 +220,7 @@ describe('cli create: скаффолд', () => {
           compilerOptions: { module: ts.ModuleKind.ESNext },
           fileName: file,
           // Без цього прапорця transpileModule НІКОЛИ не збирає діагностик
-          // і асерт нижче тривіально зелений (знахідка рев'ю Фази 3).
+          // і асерт нижче тривіально зелений.
           reportDiagnostics: true,
         },
       );

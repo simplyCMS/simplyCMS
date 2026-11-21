@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Е5б Task 8 (G): після помилки колекції незмінні (Е5б-11), після видалення
+// Після помилки колекції незмінні, після видалення
 // — підсумки з відповіді сервера, неціла кількість не надсилається.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {

@@ -3,7 +3,7 @@
  * для `inspection.json` із пʼяти каналів — transitions, keyframes, reveal,
  * hover, jsLibraries. Функції, що виконуються в браузері, — `browser-motion.mjs`,
  * `browser-keyframes.mjs`, `browser-reveal.mjs`; чиста детекція — `motion-detect.mjs`;
- * ховер-прохід — `hover-sweep.mjs` (Фаза 2).
+ * ховер-прохід — `hover-sweep.mjs`.
  */
 import { browserKeyframes } from './browser-keyframes.mjs';
 import { browserMotionMarkers, browserTransitions } from './browser-motion.mjs';

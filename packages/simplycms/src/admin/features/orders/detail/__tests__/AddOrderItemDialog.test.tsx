@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Діалог додавання товару — додавання (Task 6, Е5б-11): вибір модифікації,
+// Діалог додавання товару — додавання: вибір модифікації,
 // межі кількості, успіх — write-back без `listOrderItems`.
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';

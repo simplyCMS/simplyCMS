@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Картка покупця (Task 11, Е6г): роль, бан, видалення. */
+/** Картка покупця: роль, бан, видалення. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import {

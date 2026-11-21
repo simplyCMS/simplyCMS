@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Список модерації відгуків (Task 9, Е6д): «Показати ще», фільтр, бейдж, автор. */
+/** Список модерації відгуків: «Показати ще», фільтр, бейдж, автор. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

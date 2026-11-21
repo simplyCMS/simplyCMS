@@ -1,6 +1,6 @@
-// К3-Е6а, Task 2: режим ціни, провайдери й знімок доставки в замовленні.
+// Режим ціни, провайдери й знімок доставки в замовленні.
 // Оформлення — воронкою вітрини (`placeOrderFor`/`quoteCheckoutFor`), редагування
-// позицій — у shipping-snapshot-recompute.test.ts; БД контуру Е5б.
+// позицій — у shipping-snapshot-recompute.test.ts; БД контуру.
 import { describe, expect, it, vi } from 'vitest';
 import { placeOrderFor, quoteCheckoutFor } from 'simplycms/storefront/loaders';
 import { orderInput } from './fixtures/orders';
@@ -17,7 +17,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('доставка: режим ціни й знімок у замовленні (К3-Е6а, Task 2)', () => {
+describe('доставка: режим ціни й знімок у замовленні', () => {
   const f = useOrderItemsEditDb('simplycms_e6a_snapshot');
   const { ids } = f;
 

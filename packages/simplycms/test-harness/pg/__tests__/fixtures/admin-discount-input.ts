@@ -1,4 +1,4 @@
-// Вхід `saveDiscount` для харнес-тестів адмінки знижок (К3-Е6в, Task 5).
+// Вхід `saveDiscount` для харнес-тестів адмінки знижок.
 
 type Target = {
   targetType: 'all' | 'product' | 'modification' | 'section';

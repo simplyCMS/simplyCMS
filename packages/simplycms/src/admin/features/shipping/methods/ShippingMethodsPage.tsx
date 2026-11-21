@@ -22,7 +22,7 @@ import { PageSpinner } from '../../catalog-dictionaries/PageStates';
 import { ShippingMethodRow } from './ShippingMethodRow';
 
 /**
- * Список способів доставки (Е6а, Task 6): жива eager-колекція.
+ * Список способів доставки: жива eager-колекція.
  * Видалення — `collection.delete` → guarded `removeShippingMethods`
  * (спосіб із точками самовивозу сервер відхиляє 409, причина — тостом).
  */

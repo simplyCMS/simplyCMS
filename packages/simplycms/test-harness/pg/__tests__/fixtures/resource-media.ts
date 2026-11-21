@@ -1,6 +1,6 @@
-// Фікстури харнесу опції `media` фабрики ресурсів (К3-Е6д, Task 2, Е6д-1/14).
+// Фікстури харнесу опції `media` фабрики ресурсів.
 // Ресурс над `banners` — ВЛАСНИЙ, тестовий: фабрика перевіряється як механізм,
-// незалежно від справжнього ресурсу банерів (Task 3). `MEDIA_ROOT` ставиться ДО
+// незалежно від справжнього ресурсу банерів. `MEDIA_ROOT` ставиться ДО
 // першого `getMediaDriver()`: драйвер мемоізований (`storage/local-fs.ts`).
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -45,7 +45,7 @@ export const bannerMediaOps = defineAdminResource({
   ],
   readonly: ['id', 'createdAt', 'updatedAt'],
   touch: 'updatedAt',
-  // jsonb без `.$type<>()` — мінімальний refine; повний робить ресурс Task 3.
+  // jsonb без `.$type<>()` — мінімальний refine; повний робить ресурс.
   refine: {
     buttons: () => z.array(z.unknown()).refine((a) => a.every(isBannerButton)),
   },

@@ -1,4 +1,4 @@
-// К3-Е6г, Task 6 + хвиля фінального рев'ю (Е6г-1, Е6г-22): контакти покупця —
+// Контакти покупця —
 // гонка 23505, лок customer-category, дедлок-клас, customer_not_found. Гонка `23505` доводиться детерміновано: незакомічений insert з окремого
 // клієнта тримає унікальний індекс, тож перевірка «зайнято» його не бачить.
 import pg from 'pg';
@@ -22,7 +22,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { updateCustomerContactsOp } from 'simplycms/admin-server/impl';
 
-describe('admin: контакти покупця — локи й гонки (Е6г-1/22)', () => {
+describe('admin: контакти покупця — локи й гонки', () => {
   const db = F.useCustomersDb('simplycms_admin_contacts_locks');
   const url = () => db.url();
   const taken = {

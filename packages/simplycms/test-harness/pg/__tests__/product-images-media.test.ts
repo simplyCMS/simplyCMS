@@ -1,5 +1,5 @@
-// М1 Task 12: зображення агрегата товару й медіа-контур «об'єкт → рядок»
-// (Е6д-1/14/20/22) проти живого Postgres і файлової медіатеки.
+// Зображення агрегата товару й медіа-контур «об'єкт → рядок»
+// проти живого Postgres і файлової медіатеки.
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -49,7 +49,7 @@ import {
   subject,
 } from './fixtures/product-aggregate';
 
-describe('зображення товару й медіа-контур (Task 12)', () => {
+describe('зображення товару й медіа-контур', () => {
   const state = { root: '' };
   // Корінь монтується ДО першого `getMediaDriver()`: драйвер мемоізований.
   beforeAll(() => {
@@ -144,7 +144,7 @@ describe('зображення товару й медіа-контур (Task 12)
     });
   });
 
-  // jsonb `images` знесено (М1, Task 17): вітрина й мініатюра адмінки читають ці самі
+  // jsonb `images` знесено: вітрина й мініатюра адмінки читають ці самі
   // рядки виразами галереї (`simplycms/translations`) — один порядок для всіх читачів.
   it('галерея: фото товару й модифікації — з product_images у порядку sort_order', async () => {
     const { id, version, main, en } = await seed();
@@ -168,7 +168,7 @@ describe('зображення товару й медіа-контур (Task 12)
                  ${mainImageSql(sql`${id}::uuid`)} as first`),
       )
     ).rows;
-    // Мовою сторінки (Task 17б): записане адмінкою перевизначення й alt en — на en, спільне
+    // Мовою сторінки: записане адмінкою перевизначення й alt en — на en, спільне
     // фото й alt uk — на основній; мініатюра адмінки — спільне фото.
     expect(row).toEqual({
       p: [{ key: main, alt: 'Кабель', alt_lang: null }],

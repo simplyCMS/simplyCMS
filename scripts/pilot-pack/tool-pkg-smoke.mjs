@@ -106,7 +106,7 @@ export async function toolPkgSmoke() {
     }
     details.push(`✓ host/: ${hostFiles.length} файлів`);
 
-    // template-plugin/ — шаблон `simplycms create plugin` (Фаза 3): та сама
+    // template-plugin/ — шаблон `simplycms create plugin`: та сама
     // логіка, що для host/ — порожня тека формально «доїхала б».
     const templatePluginDir = join(pkgDir, 'template-plugin');
     const templatePluginFiles = existsSync(templatePluginDir)
@@ -126,7 +126,7 @@ export async function toolPkgSmoke() {
     }
     details.push(`✓ template-plugin/: ${templatePluginFiles.length} файлів`);
 
-    // template-theme/ — шаблон `simplycms create theme` (Фаза 4, Р6): та сама
+    // template-theme/ — шаблон `simplycms create theme`: та сама
     // логіка, що для host/ і template-plugin/.
     const templateThemeDir = join(pkgDir, 'template-theme');
     const templateThemeFiles = existsSync(templateThemeDir)

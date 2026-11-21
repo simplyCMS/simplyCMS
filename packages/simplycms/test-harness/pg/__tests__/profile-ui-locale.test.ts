@@ -1,4 +1,4 @@
-// М2а Task 5 (І45): мова інтерфейсу адмінки в `profiles.ui_locale` проти живого Postgres.
+// І45: мова інтерфейсу адмінки в `profiles.ui_locale` проти живого Postgres.
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { AuthzError, readProfileUiLocale } from 'simplycms/auth';
 import {

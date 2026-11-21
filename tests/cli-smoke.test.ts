@@ -12,7 +12,7 @@ import {
 } from '../packages/cli/src/smoke-checks.mjs';
 import { CLI_INDEX } from './lib/fake-core-store';
 
-// `simplycms smoke <url>` (К3-Е8, Task 21): чисті рішення + справжній CLI проти локального сервера.
+// `simplycms smoke <url>`: чисті рішення + справжній CLI проти локального сервера.
 type Behaviour = { bodyLimit: number; br: boolean; health?: object };
 const servers: Server[] = [];
 afterEach(async () => {

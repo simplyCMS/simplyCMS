@@ -37,9 +37,9 @@ type Rec = Record<string, unknown>;
 
 /**
  * Операції запису фабрики `defineAdminResource` (винесено з `resource.ts`,
- * Е6а-16: guard-хук переріс ліміт модуля). Тип рядка `Row` називає фабрика.
+ * Guard-хук переріс ліміт модуля). Тип рядка `Row` називає фабрика.
  *
- * 🔴 Е6а-16, порядок у транзакції `run`: `lockCatalogTarget(lock)` — ПЕРШИЙ
+ * 🔴 Порядок у транзакції `run`: `lockCatalogTarget(lock)` — ПЕРШИЙ
  * запит → `guard` над УСІМ пакетом → запис. Невалідний будь-який елемент
  * відкочує весь пакет. Без `lock`/`guard` — рівно колишній шлях.
  *
@@ -63,14 +63,14 @@ export function defineWriteOps<Row, Insert, Patch>(
     if (d.guard) await d.guard(db, write);
   };
   type Updates = { id: string; patch: Patch }[];
-  // `removeIn` стирає й каскадні медіа (Е6д-19) — колектор потрібен і їм.
+  // `removeIn` стирає й каскадні медіа — колектор потрібен і їм.
   const needs = {
     updateIn: !!media,
     removeIn: !!media || !!d.cascadeMedia?.length,
   };
   const collector = (discard: string[] | undefined, op: keyof typeof needs) =>
     requireDiscard(d.ctx.entity, needs[op], discard, op);
-  // Е6д-14: файли стираються після `run`, тобто після COMMIT.
+  // Файли стираються після `run`, тобто після COMMIT.
   const runThenDiscard = async <Out>(
     fn: (db: ActorDb, discard: string[]) => Promise<Out>,
   ) => {
@@ -80,14 +80,14 @@ export function defineWriteOps<Row, Insert, Patch>(
     return out;
   };
   // Тіла над уже розпарсеним входом — спільні для операції і `*In`.
-  // Е6д-1: insert = lock → guard → перевірка нових референсів → запис.
+  // Insert = lock → guard → перевірка нових референсів → запис.
   const insertRows = async (db: ActorDb, parsed: Insert[]) => {
     await prepare(db, { kind: 'insert', rows: parsed });
     const rows = parsed as Rec[];
     if (media) await assertInsertRefs(db, media, rows);
     return (await insertResourceRows(db, d.ctx, rows)) as Row[];
   };
-  // Е6д-1: з `media` — `resource-write-media.ts`; без — рівно колишній шлях.
+  // З `media` — `resource-write-media.ts`; без — рівно колишній шлях.
   const updateRows = async (
     db: ActorDb,
     parsed: Updates,
@@ -99,7 +99,7 @@ export function defineWriteOps<Row, Insert, Patch>(
     return (await updateResourceRows(db, d.ctx, updates)) as Row[];
   };
   return {
-    // 🔴 А2 (фікс архітектора після Task 4 Е3): фабрика сама парсить вхід
+    // 🔴 Фабрика сама парсить вхід
     // СВОЄЮ ж схемою, ДО `run` (тобто до першого рубежу/транзакції).
     // `validator` serverFn з admin-server/index.ts робить те саме на межі
     // HTTP, але інваріант «readonly-поле не пишеться generic-write» мусить

@@ -25,7 +25,7 @@ import { CategoryRuleRow } from './CategoryRuleRow';
 import { useRunCategoryRules } from './useRunCategoryRules';
 
 /**
- * Список автоправил (Е6в, Task 9): жива eager-колекція, перемикач
+ * Список автоправил: жива eager-колекція, перемикач
  * активності й пріоритет — `collection.update`; «Запустити всі правила» —
  * `runCategoryRules` через `useRunCategoryRules`.
  */

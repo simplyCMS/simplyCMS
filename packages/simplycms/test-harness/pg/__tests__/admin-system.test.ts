@@ -1,4 +1,4 @@
-// К3-Е6б, Task 3: профіль магазину й логотип проти живої БД (Review Focus 1, 2).
+// Профіль магазину й логотип проти живої БД.
 // 🔴 serverFn тут НЕ викликаються (getRequest() без ALS падає) — requireGrant
 // мокається модульно, операції беруться з `simplycms/admin-server/impl`.
 import { describe, expect, it, vi } from 'vitest';
@@ -18,7 +18,7 @@ import {
   saveStoreProfileOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: профіль магазину й логотип (Е6б, Task 3)', () => {
+describe('admin: профіль магазину й логотип', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system');
   const url = () => db.url();
   const root = () => db.root();

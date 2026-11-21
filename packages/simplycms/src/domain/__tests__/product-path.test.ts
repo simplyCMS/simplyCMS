@@ -5,7 +5,7 @@ import {
   productPath,
 } from '../product-path';
 
-describe('productPath (М1, §3.2)', () => {
+describe('productPath (§3.2)', () => {
   it('основна мова: /<path> без префікса, to+params для роуту сутності', () => {
     const p = productPath({ path: 'boot', locale: 'uk', primary: 'uk' });
     expect(p.href).toBe('/boot');

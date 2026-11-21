@@ -1,4 +1,4 @@
-// К3-Е6г, Task 6 (Е6г-1, Е6г-2, Review Focus 1): контакти й email покупця.
+// Контакти й email покупця.
 // Гонка `23505` доводиться детерміновано: незакомічений insert з окремого
 // клієнта тримає унікальний індекс, тож перевірка «зайнято» його не бачить.
 import { describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { updateCustomerContactsOp } from 'simplycms/admin-server/impl';
 
-describe('admin: контакти й email покупця (Е6г-1/2)', () => {
+describe('admin: контакти й email покупця', () => {
   const db = F.useCustomersDb('simplycms_admin_contacts');
   const url = () => db.url();
   const taken = {
@@ -95,7 +95,7 @@ describe('admin: контакти й email покупця (Е6г-1/2)', () => {
   });
 
   it('той самий email в іншому регістрі — БЕЗ скидання підтвердження й токенів', async () => {
-    // Збережений змішаний регістр після Е8-Р3 неможливий (CHECK
+    // Збережений змішаний регістр після неможливий (CHECK
     // `users_email_lowercase`), тож регістр міняється лише на вході.
     const id = await F.seedCustomer(url(), { email: 'mixed@x.test' });
     await token('owner-invite:mixed@x.test', 'hash');

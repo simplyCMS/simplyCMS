@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** `useOrderItemsEdit.add` (Task 5, Е5б-11): write-back відповіді в обидві колекції. */
+/** `useOrderItemsEdit.add`: write-back відповіді в обидві колекції. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

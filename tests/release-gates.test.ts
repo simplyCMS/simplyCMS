@@ -33,7 +33,7 @@ describe('гейти релізу', () => {
     expect(script).toContain("run('pnpm test:schema')");
   });
 
-  // Реліз ганяє ПОВНИЙ пілот із Gate B (К3-Е7, Task 11): `pilot:pack` без БД не піднімає
+  // Реліз ганяє ПОВНИЙ пілот із Gate B: `pilot:pack` без БД не піднімає
   // сервер скретча, і «бандл не стартує» проходило непоміченим 0.7.0–0.13.0.
   it('гейт pilot — повний pnpm pilot проти харнеса, а не pilot:pack', () => {
     const gate = GATES.find((g) => g.name === 'pilot');

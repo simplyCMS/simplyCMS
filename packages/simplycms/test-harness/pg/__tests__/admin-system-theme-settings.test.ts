@@ -1,4 +1,4 @@
-// К3-Е6б, Task 3: налаштування теми проти живої БД (Review Focus 5, Е6б-16):
+// Налаштування теми проти живої БД:
 // форма значення — плоский словник примітивів, `number` лишається числом.
 import { describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/admin-system';
@@ -14,7 +14,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { saveThemeSettingsOp } from 'simplycms/admin-server/impl';
 
-describe('admin: налаштування теми (Е6б, Task 3)', () => {
+describe('admin: налаштування теми', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system_theme_settings');
   const url = () => db.url();
   const settingsOf = async (name: string) =>

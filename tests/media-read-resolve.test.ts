@@ -71,7 +71,7 @@ function loaderFiles(dir: string): string[] {
 }
 
 /**
- * Вирази галереї агрегата товару (`simplycms/translations`, М1 Task 17): читають
+ * Вирази галереї агрегата товару (`simplycms/translations`): читають
  * `product_images.storage_key` (запис реєстру `MEDIA_COLUMNS`) підзапитом, а не
  * проєкцією колонки — тож дискавер шукає і їх: `alias: productGallerySql(` у Drizzle-
  * вибірці та `${modificationGallerySql(…)} as alias` у сирому SQL.
@@ -89,10 +89,10 @@ const GALLERY_READERS = [
 const RESOLVED_BY: Record<string, string> = {
   'profile.ts#avatar_url': 'resolveMediaUrl',
   'reviews.ts#avatar_url': 'resolveMediaUrl',
-  // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
+  // Явний список колонок замість `select()` зробив проєкцію видимою.
   'reviews.ts#images': 'toImageList',
-  // Галерея товару мовою сторінки (М1, Task 17б): декодер з alt, а не список URL.
-  // SSR-список (B M7): лише мініатюра — тим самим декодером одного фото.
+  // Галерея товару мовою сторінки: декодер з alt, а не список URL.
+  // SSR-список: лише мініатюра — тим самим декодером одного фото.
   'products.ts#image': 'toGalleryImage',
   'entities/home-product.ts#images': 'toGallery',
   // Мініатюра позиції кошика (Task 17б fix-1): одне фото тим самим декодером.

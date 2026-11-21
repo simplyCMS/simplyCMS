@@ -1,6 +1,5 @@
 /**
- * Побудова `sitemap-proposal.json` з уже зібраних лінків (задача §2.C.3-4,
- * план Р4/Р5). Чиста оркестрація — `classifyLinks` (Фаза 2, не переписуємо)
+ * Побудова `sitemap-proposal.json` з уже зібраних лінків. Чиста оркестрація — `classifyLinks` (не переписуємо)
  * дає найкращого кандидата на тип; `visit` — інжектована async-функція
  * `(url, type) => Promise<{ok, title?, probe?}>` (у CLI — `page.goto` плюс
  * `browserVisitProbe`, у юніт-тестах — фейк), тож і перепідбір, і
@@ -46,7 +45,7 @@ import { summarizeLinks } from './sitemap-links.mjs';
 // `sitemap-proposal.json` (вихід дискаверера). Рухаються незалежно.
 const SCHEMA_VERSION = 2;
 
-/** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник Фази 2. */
+/** Усі канонічні типи сторінок — `home` (окреме правило в `classifyLinks`) + словник класифікатора. */
 const ALL_TYPES = ['home', ...Object.keys(URL_PATTERNS)];
 
 /**

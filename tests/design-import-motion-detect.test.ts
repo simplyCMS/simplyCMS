@@ -1,5 +1,5 @@
 /**
- * Юніти ЧИСТОЇ частини motion-капчера (інкремент Б.2, Фаза 1, план Р4/Р6):
+ * Юніти ЧИСТОЇ частини motion-капчера:
  * `detectMotionLibraries`, `suspectJsDriven` (`lib/motion-detect.mjs`) і
  * `diffReveal` і `captureReveal` (`lib/motion.mjs`). Браузер тут не потрібен
  * принципово — саме заради цього збір сирих маркерів і зіставлення з

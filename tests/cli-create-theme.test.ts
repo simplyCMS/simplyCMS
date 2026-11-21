@@ -12,7 +12,7 @@ import {
   themeDisplayName,
 } from '../packages/cli/src/create.mjs';
 
-// simplycms create theme (Фаза 4, Р6): скаффолд теми в themes/ магазину з
+// simplycms create theme: скаффолд теми в themes/ магазину з
 // template-theme/ пакета CLI. Методика — та сама, що cli-create.test.ts:
 // чисті функції напряму, без spawn.
 
@@ -126,7 +126,7 @@ describe('cli create theme: скаффолд', () => {
           },
           fileName: file,
           // Без прапорця transpileModule НІКОЛИ не збирає діагностик і асерт
-          // нижче тривіально зелений (знахідка ревʼю Фази 3).
+          // нижче тривіально зелений.
           reportDiagnostics: true,
         },
       );

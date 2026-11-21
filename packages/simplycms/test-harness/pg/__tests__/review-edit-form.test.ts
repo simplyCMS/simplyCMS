@@ -1,4 +1,4 @@
-// К3-Е6д, Task 9 (Е6д-23): межа serverFn правки — справжній `FormData`
+// Межа serverFn правки — справжній `FormData`
 // (`id`, `keep`, `images`), сесія з cookie, відмови ДО першого запису.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
@@ -45,7 +45,7 @@ const submit = submitProductReview as unknown as (a: {
 }) => Promise<{ id: string }>;
 const update = updateProductReview as unknown as typeof submit;
 
-describe('updateProductReview: FormData (Е6д-23)', () => {
+describe('updateProductReview: FormData', () => {
   const d = useReviewPhotosDb('simplycms_e6d_rv_editform');
   const { f } = d;
   const seeded = async () => {

@@ -6,7 +6,7 @@ import { TestContentLocale } from '../../../test-harness/content-locale';
 import { TestEngineProvider } from './engine-stub';
 
 /**
- * Обгортка рендер-тестів slot-компонентів (контракт тем v3, Фаза 2).
+ * Обгортка рендер-тестів slot-компонентів.
  *
  * Провайдери — рівно ті, що тримає прод (`__root.tsx`): i18n (слоти ходять
  * по рядки через `useT`), EngineContext (форматування ціни) і кошик

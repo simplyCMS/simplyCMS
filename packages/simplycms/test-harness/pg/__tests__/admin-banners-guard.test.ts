@@ -1,5 +1,5 @@
-// К3-Е6д, Task 3: перехресні правила банера на злитому рядку `before ⊕ patch`
-// (Е6д-2) і «замурований» банер після видалення розділу (Е6д-12, Review Focus 4).
+// Перехресні правила банера на злитому рядку `before ⊕ patch`
+// і «замурований» банер після видалення розділу.
 import { describe, expect, it, vi } from 'vitest';
 import { bannersOps } from 'simplycms/admin-server/impl';
 import { withStorefrontDb, loadBanners } from 'simplycms/storefront/loaders';
@@ -14,7 +14,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: guard банерів (Е6д-2, Е6д-12)', () => {
+describe('admin: guard банерів', () => {
   const t = useBannersDb('simplycms_e6d_banners_guard');
 
   it('insert: section без sectionId і sectionId при home → 400 [sectionId]', async () => {
@@ -112,7 +112,7 @@ describe('admin: guard банерів (Е6д-2, Е6д-12)', () => {
     await t.update(timed, { scheduleTimeTo: '19:00' });
   });
 
-  it('Е6д-12: розділ видалено → перемикач isActive працює; зміна placement/sectionId без розділу → 400', async () => {
+  it('розділ видалено → перемикач isActive працює; зміна placement/sectionId без розділу → 400', async () => {
     const sectionId = await t.seedSection();
     const id = await t.insert({ placement: 'section', sectionId });
     await t.q('delete from public.sections where id = $1', [sectionId]);

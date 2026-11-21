@@ -1,4 +1,4 @@
-// К3-Е6г, Task 5 (Е6г-13, Review Focus 4): бан на реальній БД через
+// Бан на реальній БД через
 // `createAuth` без підмін: хук читає `users.banned_at`, тригер стоїть позаду.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createAuth } from 'simplycms/auth';
@@ -18,7 +18,7 @@ import { setCustomerBanOp } from 'simplycms/admin-server/impl';
 
 const PASSWORD = 'super-secret-password';
 
-describe('Better Auth: бан на реальній БД (Е6г-13)', () => {
+describe('Better Auth: бан на реальній БД', () => {
   const db = F.useCustomersDb('simplycms_auth_ban');
   const url = () => db.url();
   let auth: ReturnType<typeof createAuth>;
@@ -81,7 +81,7 @@ describe('Better Auth: бан на реальній БД (Е6г-13)', () => {
     expect(await denied.json()).toMatchObject({ code: 'BANNED' });
     expect(await sessionCount(id)).toBe(0);
 
-    // Review Focus 4: скидання пароля за посиланням з листа.
+    // Скидання пароля за посиланням з листа.
     await auth.api.requestPasswordReset({ body: { email } });
     const identifier = String(
       (

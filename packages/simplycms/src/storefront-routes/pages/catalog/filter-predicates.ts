@@ -1,4 +1,4 @@
-// Предикати фільтрів вибірки каталогу (контракт тем v3, Фаза 4).
+// Предикати фільтрів вибірки каталогу.
 // Чисті функції «товар × стан фільтрів → чи лишається товар у вибірці».
 
 import type {
@@ -15,7 +15,7 @@ export interface FilterableProduct {
   section: { id: string } | null;
   propertyValues: Array<{
     property_id: string;
-    /** Булеве значення (Р18); фільтр «Так» читає його, а не текст `value`. */
+    /** Булеве значення; фільтр «Так» читає його, а не текст `value`. */
     bool_value?: boolean | null;
     numeric_value: number | null;
     option_id: string | null;

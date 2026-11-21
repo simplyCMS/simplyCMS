@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Негативний контроль dependency-lint межі довіри плагінів (Фаза 3, Р7).
+ * Негативний контроль dependency-lint межі довіри плагінів.
  *
  * 🔴 Зелений `pnpm lint` доводить лише «у чинному коді порушень немає» — він
  * НЕ доводить, що зона налаштована і ловить порушення (правило, що мовчки

@@ -9,7 +9,7 @@ import {
 import { SERVER_BUNDLE_ALLOWLIST } from '../scripts/pilot-pack/server-bundle-allowlist.mjs';
 
 /**
- * Gate SB (К3-Е7, Task 11): логіка перевірки серверного бандла скретча.
+ * Gate SB: логіка перевірки серверного бандла скретча.
  * Реальні дані дає `pnpm pilot:pack` (`bundle-stats.ssr.json`); тут — поведінка
  * на синтетичних зрізах, щоб кожну гілку червоніння було видно без збірки.
  */

@@ -7,13 +7,13 @@ import { guardShippingMethods } from './guards';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Способи доставки (Е6а, Task 4).
+ * Способи доставки.
  *
- * 🔴 Е6а-7: `provider` — `insertOnly`: зміна провайдера осиротила б точки й
- * тарифи. Е6а-12: провайдер із реєстру і режим `provider` лише з
+ * 🔴 `provider` — `insertOnly`: зміна провайдера осиротила б точки й
+ * тарифи. Провайдер із реєстру і режим `provider` лише з
  * `supportsQuote` перевіряє `guardShippingMethods` під `LOCK_KEYS.shippingConfig`.
  * 🔴 Фабричний `shippingMethodsOps.remove` serverFn-ом НЕ виставляється:
- * видалення — лише `removeShippingMethodsOp` (під локом, Е6а-17).
+ * видалення — лише `removeShippingMethodsOp` (під локом).
  */
 export const shippingMethodsOps = defineAdminResource({
   entity: ENTITY.shippingMethods,

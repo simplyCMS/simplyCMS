@@ -26,7 +26,7 @@ import { PageSpinner } from '../../catalog-dictionaries/PageStates';
 import { PickupPointRow } from './PickupPointRow';
 
 /**
- * Список точок видачі (Е6а, Task 7): жива eager-колекція. Видалення —
+ * Список точок видачі: жива eager-колекція. Видалення —
  * `collection.delete` → guarded `removePickupPoints` (системну точку й точку
  * із залишком сервер відхиляє 409, причина — тостом).
  */

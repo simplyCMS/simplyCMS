@@ -1,5 +1,5 @@
-// К3-Е6д, Task 6: видалення відгуку з двофазним стиранням фото (Е6д-14,
-// Е6д-16). Статус — `-moderate`, негативна авторизація — `-authz`.
+// Видалення відгуку з двофазним стиранням фото.
+// Статус — `-moderate`, негативна авторизація — `-authz`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { deleteReviewOp } from 'simplycms/admin-server/impl';
 import { conflict } from './fixtures/admin-shipping';
@@ -16,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 const NOT_FOUND = conflict('state', 'review_not_found');
 
-describe('admin: видалення відгуку (Е6д-14, Е6д-16)', () => {
+describe('admin: видалення відгуку', () => {
   const d = useReviewsDb('simplycms_e6d_rv_del');
   const { f } = d;
 
@@ -87,7 +87,7 @@ describe('admin: видалення відгуку (Е6д-14, Е6д-16)', () => 
     expect(refs.filter((r) => d.hasFile(r))).toHaveLength(1);
   });
 
-  it('🔴 чужий ключ у images (аватар покупця) → аватар і його media цілі (Е6д-16)', async () => {
+  it('🔴 чужий ключ у images (аватар покупця) → аватар і його media цілі', async () => {
     const b = await d.seedBuyer({ avatar: true });
     const id = await d.seedReview({ userId: b.userId });
     const [own] = await d.seedPhotos(id, 1);

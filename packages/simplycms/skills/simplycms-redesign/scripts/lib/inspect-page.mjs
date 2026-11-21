@@ -16,8 +16,8 @@ import {
   VIEWPORT_HEIGHT,
 } from './sample.mjs';
 
-// 2 (Фаза 1 інкремента Б.2) — додано верхньорівневу секцію `motion`.
-// 3 (інкремент Б.3) — форма `motion` ЗМІНИЛАСЬ: `jsDrivenSuspected` розширив
+// 2 — додано верхньорівневу секцію `motion`.
+// 3 — форма `motion` ЗМІНИЛАСЬ: `jsDrivenSuspected` розширив
 // домен до `boolean | 'unknown'`, додались `revealSampled`/`revealRoot`. Бамп
 // не косметичний: у файлі v2 `jsDrivenSuspected: false` при порожньому
 // `reveal` означав «нема на чому міряти», а скіл велить читати `false` як

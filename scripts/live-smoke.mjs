@@ -265,7 +265,7 @@ async function main() {
     // Р25: канонічний шлях товару (301 + canonical) на справжньому сервері.
     await runProductPathChecks({ base, dbUrl, check });
     stage('мовний контекст запиту');
-    // М1 Task 9: мова з першого сегмента, нормалізація одним 301, кеш мов з
+    // Мова з першого сегмента, нормалізація одним 301, кеш мов з
     // поколіннями без перезапуску, клієнтський rewrite після гідрації.
     await runLocaleChecks({ base, dbUrl, browser, check });
     stage('видимість цін');

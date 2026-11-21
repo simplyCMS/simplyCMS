@@ -28,8 +28,7 @@ interface ThemeMessagesModule {
  *
  * 🔴 Форма шляху до каталогу в них РІЗНА, тож прописується явно:
  *  - `themes/<name>/messages.ts` — локальна/copy-in-тема магазину;
- *  - `packages/simplycms-theme-<name>/src/messages.ts` — референс-пакет
- *    (Фаза 4).
+ *  - `packages/simplycms-theme-<name>/src/messages.ts` — референс-пакет.
  */
 function themeDirs(): { name: string; dir: string }[] {
   const local = readdirSync(join(REPO_ROOT, 'themes'), { withFileTypes: true })

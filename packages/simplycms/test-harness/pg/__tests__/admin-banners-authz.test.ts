@@ -1,4 +1,4 @@
-// К3-Е6д, Task 3: покупець не викликає операції банерів — РЕАЛЬНИЙ
+// Покупець не викликає операції банерів — РЕАЛЬНИЙ
 // `resolveGrant`, пін імені права `banner.manage`, БД незмінна.
 import { describe, expect, it, vi } from 'vitest';
 import { AuthzError, requireGrant } from 'simplycms/auth';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: покупець не керує банерами (Е6д, Task 3)', () => {
+describe('admin: покупець не керує банерами', () => {
   const t = useBannersDb('simplycms_e6d_banners_authz');
 
   it('list/insert/update/remove → AuthzError з banner.manage; БД незмінна', async () => {

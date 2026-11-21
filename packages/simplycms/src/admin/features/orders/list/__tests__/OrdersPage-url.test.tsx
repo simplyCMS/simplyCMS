@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Фільтр замовлень живе в URL (Task 8, Е6г-5): `OrdersPage` читає статус з
+ * Фільтр замовлень живе в URL: `OrdersPage` читає статус з
  * search і пише його через `navigate`; невалідне значення відсікає
  * `validateOrdersSearch` (його і підключає роут).
  */

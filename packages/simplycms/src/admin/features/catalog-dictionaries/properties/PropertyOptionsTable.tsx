@@ -25,8 +25,8 @@ interface Props {
 }
 
 /**
- * Опції властивості (Е4, Task 8): зріз on-demand колекції `where
- * propertyId` (як картка товару Е3), `orderBy sortOrder`. Видалення —
+ * Опції властивості: зріз on-demand колекції `where
+ * propertyId` (як картка товару), `orderBy sortOrder`. Видалення —
  * через підтвердження; значення опції в товарах стають NULL (ON DELETE
  * SET NULL). Відмова сервера → тост, бібліотека відкочує рядок сама.
  */

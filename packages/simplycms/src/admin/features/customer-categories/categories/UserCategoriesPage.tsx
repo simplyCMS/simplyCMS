@@ -28,9 +28,9 @@ import { useCategoryCustomerCounts } from './useCategoryCustomerCounts';
 import { useUserCategoryDefault } from './useUserCategoryDefault';
 
 /**
- * Список категорій покупців (Е6в, Task 9): жива eager-колекція. Видалення —
+ * Список категорій покупців: жива eager-колекція. Видалення —
  * `collection.delete` → guarded `removeUserCategories`; чотири відмови
- * (Е6в-18) показують власні тости через `reportTxError`.
+ * показують власні тости через `reportTxError`.
  */
 export default function UserCategoriesPage() {
   const t = useT();

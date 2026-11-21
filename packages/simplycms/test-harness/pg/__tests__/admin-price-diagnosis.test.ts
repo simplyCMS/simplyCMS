@@ -1,4 +1,4 @@
-// К3-Е6в, Task 10 (З-4, Е6в-6/8/25): діагностика ціни — ТЕ САМЕ ядро, що чекаут.
+// Діагностика ціни — ТЕ САМЕ ядро, що чекаут.
 import { describe, expect, it, vi } from 'vitest';
 import { priceItems } from 'simplycms/commerce';
 import { withActor } from 'simplycms/db';
@@ -18,7 +18,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { diagnosePriceOp } from 'simplycms/admin-server/impl';
 
-describe('admin: діагностика ціни тим самим ядром (Е6в, Task 10)', () => {
+describe('admin: діагностика ціни тим самим ядром', () => {
   const db = F.useDiscountsAdminDb('simplycms_admin_price_diag', {
     commerce: true,
   });

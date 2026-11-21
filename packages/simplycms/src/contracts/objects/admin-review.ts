@@ -1,4 +1,4 @@
-// Контракти модерації відгуків для адмінки (К3-Е6д, Task 6). Лише типи.
+// Контракти модерації відгуків для адмінки. Лише типи.
 import type { SanitizedHtml } from '../sanitized-html';
 import type { ReviewStatus } from './review';
 
@@ -15,7 +15,7 @@ export interface AdminReviewRow {
   status: ReviewStatus;
   imagesCount: number;
   createdAt: Date;
-  /** Версія для модерації (Е6д-23): мілісекунди, як їх повертає `isoTs`. */
+  /** Версія для модерації: мілісекунди, як їх повертає `isoTs`. */
   updatedAt: Date;
 }
 
@@ -31,7 +31,7 @@ export interface AdminReviewPage {
 }
 
 /**
- * Картка відгуку. `images` — РЕФЕРЕНСИ (Е6д-11): адмінка резолвить їх
+ * Картка відгуку. `images` — РЕФЕРЕНСИ: адмінка резолвить їх
  * клієнтським `resolveMediaUrl`; `content` очищено на сервері.
  */
 export interface AdminReviewCard extends AdminReviewRow {

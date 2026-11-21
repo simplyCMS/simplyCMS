@@ -7,10 +7,10 @@ import { guardCategoryRules } from './guards';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Автоправила категорій покупців (Е6в, Task 6). Insert/update — фабрика під
- * `LOCK_KEYS.customerConfig` (Е6в-15) з guard-ом «не в ту саму категорію».
+ * Автоправила категорій покупців. Insert/update — фабрика під
+ * `LOCK_KEYS.customerConfig` з guard-ом «не в ту саму категорію».
  *
- * 🔴 `conditions` — через `parseCategoryRuleConditions` (Е6в-19): порожнє
+ * 🔴 `conditions` — через `parseCategoryRuleConditions`: порожнє
  * правило, оператор поза переліком поля (ред.5) чи нечислове значення
  * числового поля — 400 на межі. Той самий розбір рушій застосовує при
  * читанні, тож рядок, вписаний в обхід Zod, не спрацює. Записується

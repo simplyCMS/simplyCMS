@@ -38,7 +38,7 @@ begin;
 select pg_advisory_xact_lock_shared(hashtextextended('languages-set', 0));`;
 
 /**
- * Проєкція тексту товару (М1, Task 14, І23) будується кроком САМОГО сіду з щойно
+ * Проєкція тексту товару (І23) будується кроком САМОГО сіду з щойно
  * записаних перекладів і адрес: вітрина читає `catalog_product_texts`, а дамп її не
  * містить (похідна таблиця). Стенд пише лише основну мову, тож fallback-а немає, але
  * вираз той самий, що в `catalog-projection/expected.ts` (рядок = мова draft/published

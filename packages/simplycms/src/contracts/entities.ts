@@ -1,7 +1,7 @@
 import type { ContentLocale } from './content-locale';
 
 /**
- * Реєстр імен сутностей і фабрика ключів кешу (рішення К3-3).
+ * Реєстр імен сутностей і фабрика ключів кешу.
  *
  * 🔴 Значення — імʼя таблиці в SQL, і воно тут ЄДИНЕ джерело правди для
  * ключа кешу: доти, доки ключ можна написати рядком у місці вжитку, одна
@@ -62,7 +62,7 @@ export type EntityName = (typeof ENTITY)[keyof typeof ENTITY];
  * похідний ключ розширює базовий як префікс — цього вимагає
  * query-collection, інакше оновлення кешу проминає записи.
  *
- * 🔴 Сегмента `'list'` тут НЕМАЄ (Е3-15′): він належить ВИКЛЮЧНО колекціям
+ * 🔴 Сегмента `'list'` тут НЕМАЄ: він належить ВИКЛЮЧНО колекціям
  * `admin-data` — див. `collectionKey` нижче. Поза `admin-data` — `variant()`
  * (скоуп/форма тієї самої сутності) або `scoped()` (FK-зріз).
  */
@@ -82,7 +82,7 @@ export function entityKey(entity: EntityName, locale?: ContentLocale) {
     ],
     /** Варіант форми/скоупу тієї самої сутності (не FK-зріз): окремий
      *  сегмент 'variant' — не зіткнеться ні з колекцією (`collectionKey`),
-     *  ні з FK-relation тієї самої назви (борг Е1а №6, розвʼязаний Е3-15).
+     *  ні з FK-relation тієї самої назви.
      *  Вітрина й `admin-data` ділять ОДИН QueryClient (`src/router.tsx`),
      *  і eager-колекція без demand-суфікса пише РІВНО в `[entity,'list']`
      *  — вітринний запит під тим самим голим ключем читав би чужу форму
@@ -97,7 +97,7 @@ export function entityKey(entity: EntityName, locale?: ContentLocale) {
 /**
  * Ключ колекції `admin-data` — `[entity, 'list']`.
  *
- * 🔴 ЄДИНИЙ легальний ужиток сегмента `'list'` (Е3-15′): eager/on-demand
+ * 🔴 ЄДИНИЙ легальний ужиток сегмента `'list'`: eager/on-demand
  * колекція TanStack DB (демонд-суфікс дописує бібліотека, префікс лишається
  * спільним для всіх зрізів). Окрема функція, а не метод `entityKey(...)`, —
  * щоб імпорт можна було заборонити зоні поза `admin-data` одним
@@ -124,7 +124,7 @@ export function collectionKey(
  *
  * Тому агрегат лишається одним ключем, але **називає свої залежності
  * явно** — інакше мутація в `shipping_rates` не мала б як його
- * інвалідувати. `deps` тут не декорація: саме звідси Е1б візьме список
+ * інвалідувати. `deps` тут не декорація: саме звідси візьмуть список
  * ключів для інвалідації.
  */
 export function aggregateKey(
@@ -170,7 +170,7 @@ export const AGGREGATE = {
   ]),
   /**
    * Середовище цін вітрини (`core/lib/discounts.ts` →
-   * `storefront/loaders/discount-environment.ts`, Е6в-10): дефолтний і
+   * `storefront/loaders/discount-environment.ts`): дефолтний і
    * персональний тип ціни/категорія (`price_types`, `profiles`,
    * `user_categories`) плюс дерево правил (`discounts`, `discount_targets`,
    * `discount_conditions`, `discount_groups`) — сім таблиць однією
@@ -193,7 +193,7 @@ export const AGGREGATE = {
   ]),
   /**
    * Квота кошика (`core/lib/cart-quote.ts` → `storefront/loaders/quote-cart.ts`
-   * → `loadPricingContext` + `priceCart`, Е6в-13): усе середовище цін (сім
+   * → `loadPricingContext` + `priceCart`): усе середовище цін (сім
    * таблиць `discountEnvironment`) плюс каталожні дані позицій — товари,
    * модифікації й ціни (`commerce/price-cart-catalog.ts`).
    *
@@ -221,7 +221,7 @@ export const AGGREGATE = {
    * `product_modifications`/`property_options`/`section_properties`) +
    * залишки (`stock_by_pickup_point`, `product_modifications.stock_status`).
    * Перекриває дві з трьох таблиць `stockInfo` — окремий агрегат, бо третя
-   * (`products`) тут не читається (Task 6, fix-раунд 1).
+   * (`products`) тут не читається.
    */
   modificationData: aggregateKey('product-modification-data', [
     ENTITY.modificationPropertyValues,
@@ -239,11 +239,10 @@ export const AGGREGATE = {
    * `loadProductsByOption` делегує в спільний `loadCatalogProductsWhere`
    * (`storefront/loaders/catalog-products.ts`), а той доклеює секцію
    * (`sections`, leftJoin), ціни (`product_prices`) — доступність зі
-   * `stock_status` рядка, без окремого читання залишків (К2-Е0, Е0-3).
+   * `stock_status` рядка, без окремого читання залишків.
    * `PropertyOptionPageData.products` документовано як «уже з
    * модифікаціями й цінами» — deps звіряють саме це, а не тільки join
-   * ідентифікації опції (Task 6, fix-раунд 2: перша редакція пропустила
-   * делегування в спільний лоадер). `languages` (М1, Task 16): текст і адреса
+   * ідентифікації опції. `languages`: текст і адреса
    * товарів читаються з проєкції лише для опублікованої мови, тож зміна статусу
    * мови міняє склад сторінки.
    */
@@ -272,10 +271,10 @@ export const AGGREGATE = {
    * товару (`product_property_values`) й модифікацій
    * (`modification_property_values`, через `loadModificationValues`) —
    * шість таблиць одним походом; доступність — зі `stock_status` рядка,
-   * без окремого читання залишків (К2-Е0, Е0-3). Раніше йшла під
+   * без окремого читання залишків. Раніше йшла під
    * `entityKey(ENTITY.products)`, тож мутація ціни не мала шляху до
-   * інвалідації списку (фінальне рев'ю Е1а, фікс-раунд 3). `languages`
-   * (М1, Task 16): назва й адреса — з проєкції для опублікованої мови.
+   * інвалідації списку. `languages`:
+   * назва й адреса — з проєкції для опублікованої мови.
    */
   catalogProducts: aggregateKey('catalog-products', [
     ENTITY.languages,

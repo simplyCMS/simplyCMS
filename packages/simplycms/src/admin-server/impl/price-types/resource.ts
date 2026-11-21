@@ -5,16 +5,16 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Типи цін (Е4, Task 3).
+ * Типи цін.
  *
- * 🔴 Е4-2: `isDefault` — readonly для фабрики. Дефолт ставить іменована
+ * 🔴 `isDefault` — readonly для фабрики. Дефолт ставить іменована
  * `setDefaultPriceTypeOp`, видалення — іменована `removeManyPriceTypesOp`
  * (обидві під одним advisory-локом), тому фабричний `remove` для цієї
  * сутності serverFn-ом НЕ виставляється.
  * 🔴 Фабричний `priceTypesOps.remove` НЕ використовувати: він обходить і
  * advisory-лок, і заборону видалити дефолтний. Видалення типу ціни — лише
- * `removeManyPriceTypesOp` (guarded, Е4-2).
- * 🔴 Е4-7: формат коду перевіряє і сервер (`PRICE_TYPE_CODE_RE`).
+ * `removeManyPriceTypesOp` (guarded).
+ * 🔴 Формат коду перевіряє і сервер (`PRICE_TYPE_CODE_RE`).
  */
 export const priceTypesOps = defineAdminResource({
   entity: ENTITY.priceTypes,

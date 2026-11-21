@@ -143,7 +143,7 @@ import {
 } from 'simplycms/admin-server/impl';
 import { invokeFromServerFn, passThrough } from 'simplycms/operations/server';
 
-// Типи рядків для UI (Е6б-15/17): `export type` стирається компілятором, тож
+// Типи рядків для UI: `export type` стирається компілятором, тож
 // живим не-serverFn експортом не є і клієнтську трансформацію не ламає.
 export type {
   CategoryCustomerCount,
@@ -155,13 +155,13 @@ export type {
 } from 'simplycms/admin-server/impl';
 
 /**
- * 🔴 Публічна поверхня admin-server: ЛИШЕ serverFn (К3-9′ п.1). Жодного
+ * 🔴 Публічна поверхня admin-server: ЛИШЕ serverFn. Жодного
  * живого не-serverFn експорту: клієнтська трансформація Start вирізає
  * validator і handler та чистить осиротілі імпорти DCE-проходом —
  * але лише доки їх не тримає інший живий експорт. Схеми/операції назовні
  * НЕ реекспортуються.
  */
-// М2б Р19: довідник статусів — команди реєстру (версія, переклади), а не фабричний запис:
+// Р19: довідник статусів — команди реєстру (версія, переклади), а не фабричний запис:
 // «не видалити дефолтний», порядок і дефолт — доменні інваріанти під замками коренів.
 export const listOrderStatuses = createServerFn({ method: 'GET' })
   .validator(passThrough)
@@ -212,7 +212,7 @@ export const uploadMedia = createServerFn({ method: 'POST' })
   .validator(uploadFormInput)
   .handler(uploadMediaOp);
 
-// Е6д-20: хвости стирання файлів. Читання й повтор — без вводу, валідувати
+// Хвости стирання файлів. Читання й повтор — без вводу, валідувати
 // нічого.
 export const listMediaErasures = createServerFn({ method: 'GET' }).handler(
   listMediaErasuresOp,
@@ -222,7 +222,7 @@ export const retryMediaErasures = createServerFn({ method: 'POST' }).handler(
   retryMediaErasuresOp,
 );
 
-// Е8, Task 12: хвости пошти (outbox `mail_outbox`). Вводу немає.
+// Хвости пошти (outbox `mail_outbox`). Вводу немає.
 export const listMailOutbox = createServerFn({ method: 'GET' }).handler(
   listMailOutboxOp,
 );
@@ -231,13 +231,13 @@ export const retryMailOutbox = createServerFn({ method: 'POST' }).handler(
   retryMailOutboxOp,
 );
 
-// Е6д-22: sweep неприв’язаних файлів. Вводу немає — валідувати нічого.
+// Sweep неприв’язаних файлів. Вводу немає — валідувати нічого.
 export const sweepUnreferencedMedia = createServerFn({
   method: 'POST',
 }).handler(sweepUnreferencedMediaOp);
 
-// 🔴 Task 3 (Е3): файл переростає канон 150 рядків СВІДОМО — К3-9′ вимагає
-// ЄДИНОГО модуля serverFn, і розбиття його на кілька змінило б межу, яку
+// 🔴 Файл переростає канон 150 рядків СВІДОМО — потрібен
+// ЄДИНИЙ модуль serverFn, і розбиття його на кілька змінило б межу, яку
 // стереже Gate C (стаб-маркер dist/admin-server/index). Кожен serverFn —
 // топ-рівневий const (гейт server-fn-top-level).
 
@@ -265,10 +265,9 @@ export const listModificationPropertyValues = createServerFn({ method: 'GET' })
   .validator(adminInput(modificationPropertyValuesOps.subsetSchema))
   .handler(modificationPropertyValuesOps.list);
 
-// 🔴 Task 3 (Е4): довідники каталогу — записувані ресурси замість читальних
-// Е3 (Е3-1 → Е4). Операція всього CRUD — catalog.write (Е3-6). Незмінні
-// після створення колонки — insertOnly фабрики (Е4-5); slug/code перевіряє
-// сервер (Е4-7). remove і setDefault типу ціни — іменовані (Task 4, Е4-2),
+// 🔴 Довідники каталогу — записувані ресурси. Операція всього CRUD — catalog.write. Незмінні
+// після створення колонки — insertOnly фабрики; slug/code перевіряє
+// сервер. remove і setDefault типу ціни — іменовані,
 // фабричного remove для типів цін немає.
 
 export const listSections = createServerFn({ method: 'GET' })
@@ -315,7 +314,7 @@ export const updatePriceTypes = createServerFn({ method: 'POST' })
   .validator(adminInput(priceTypesOps.updateSchema))
   .handler(priceTypesOps.update);
 
-// 🔴 Task 4 (Е4-2): remove ЦІЄЇ сутності — guarded, не фабричний: «не
+// 🔴 remove ЦІЄЇ сутності — guarded, не фабричний: «не
 // видалити дефолтний» — доменний інваріант. Обидві операції серіалізує
 // той самий advisory-lock `price-type-default`.
 export const removePriceTypes = createServerFn({ method: 'POST' })
@@ -382,7 +381,7 @@ export const removeSectionPropertyAssignments = createServerFn({
   .validator(adminInput(sectionPropertyAssignmentsOps.removeSchema))
   .handler(sectionPropertyAssignmentsOps.remove);
 
-// 🔴 Task 4 (Е5): замовлення — лише читання через фабрику; зміна статусу —
+// 🔴 Замовлення — лише читання через фабрику; зміна статусу —
 // іменована операція (лок рядка → «скасоване — кінцеве» → no-op →
 // повернення залишку → статус), не фабричний update.
 export const listOrders = createServerFn({ method: 'GET' })
@@ -397,7 +396,7 @@ export const changeOrderStatus = createServerFn({ method: 'POST' })
   .validator(adminInput(changeOrderStatusInput))
   .handler(changeOrderStatusOp);
 
-// Е5б-8: редагування позицій оформленого замовлення — іменовані операції
+// Редагування позицій оформленого замовлення — іменовані операції
 // (ціна рушієм чекауту, дельта залишку, перерахунок сум і доставки).
 export const addOrderItem = createServerFn({ method: 'POST' })
   .validator(adminInput(addOrderItemInput))
@@ -411,14 +410,14 @@ export const removeOrderItem = createServerFn({ method: 'POST' })
   .validator(adminInput(removeOrderItemInput))
   .handler(removeOrderItemOp);
 
-// Е5б-4: вузький пошук товару для діалогу додавання позиції (не загальний
+// Вузький пошук товару для діалогу додавання позиції (не загальний
 // пошук адмінки; `like` у subset.ts лишається забороненим).
 export const searchProductsForOrder = createServerFn({ method: 'GET' })
   .validator(adminInput(searchProductsForOrderInput))
   .handler(searchProductsForOrderOp);
 
-// К3-Е6д, Task 6: модерація відгуків (`review.moderate`). Картка поглинає
-// колишній легасі-запит вмісту відгуку (розмітка очищена на сервері, Е6д-11).
+// Модерація відгуків (`review.moderate`). Картка поглинає
+// колишній легасі-запит вмісту відгуку (розмітка очищена на сервері).
 export const listReviews = createServerFn({ method: 'GET' })
   .validator(adminInput(listReviewsInput))
   .handler(listReviewsOp);
@@ -439,10 +438,10 @@ export const deleteReview = createServerFn({ method: 'POST' })
   .validator(adminInput(deleteReviewInput))
   .handler(deleteReviewOp);
 
-// Е6а, Task 4: доставка (`shipping.manage`, Е6а-11). Insert/update способів,
-// зон і точок — фабрика з guard-хуком під `shipping-config` (Е6а-16); remove
-// для них — лише іменовані guarded-операції (Е6а-12, Е6а-17). Тарифи
-// видаляє generic remove фабрики без локу (Е6а-22).
+// Доставка (`shipping.manage`). Insert/update способів,
+// зон і точок — фабрика з guard-хуком під `shipping-config`; remove
+// для них — лише іменовані guarded-операції. Тарифи
+// видаляє generic remove фабрики без локу.
 export const listShippingMethods = createServerFn({ method: 'GET' })
   .validator(adminInput(shippingMethodsOps.subsetSchema))
   .handler(shippingMethodsOps.list);
@@ -511,9 +510,9 @@ export const removePickupPoints = createServerFn({ method: 'POST' })
   .validator(adminInput(removePickupPointsInput))
   .handler(removePickupPointsOp);
 
-// К3-Е6б, Task 3: системні налаштування (`settings.manage`, Е6б-13). Профіль
-// і облік — окремі операції (Е6б-21); активація теми — під локом `site-theme`
-// (Е6б-15); кеш вітрини скидають самі операції після COMMIT (Е6б-9).
+// Системні налаштування (`settings.manage`). Профіль
+// і облік — окремі операції; активація теми — під локом `site-theme`;
+// кеш вітрини скидають самі операції після COMMIT.
 // Читання без вводу — без валідатора: перевіряти нічого.
 export const getSystemSettings = createServerFn({ method: 'GET' }).handler(
   getSystemSettingsOp,
@@ -547,10 +546,10 @@ export const setPluginActive = createServerFn({ method: 'POST' })
   .validator(adminInput(setPluginActiveInput))
   .handler(setPluginActiveOp);
 
-// К3-Е6в, Task 5: знижки (`discount.manage`, Е6в-14). Insert/update груп —
-// фабрика з guard-ом циклу й пари дат під `discount-config` (Е6в-17);
+// Знижки (`discount.manage`). Insert/update груп —
+// фабрика з guard-ом циклу й пари дат під `discount-config`;
 // видалення груп — лише іменована операція з піддеревом. Знижка пишеться
-// ЛИШЕ атомарним `saveDiscount` (Е6в-16); фабрика знижок дає список, а
+// ЛИШЕ атомарним `saveDiscount`; фабрика знижок дає список, а
 // видалення — іменована `removeDiscountsOp` під тим самим `discount-config`
 // (цілі й умови — каскадом).
 export const listDiscountGroups = createServerFn({ method: 'GET' })
@@ -585,9 +584,9 @@ export const removeDiscounts = createServerFn({ method: 'POST' })
   .validator(adminInput(removeDiscountsInput))
   .handler(removeDiscountsOp);
 
-// К3-Е6в, Task 6: категорії покупців і автоправила (`customer.manage`,
-// Е6в-14). Insert/update — фабрика під `customer-config` (Е6в-15);
-// видалення категорій — ЛИШЕ guarded `removeUserCategories` (Е6в-18), дефолт —
+// Категорії покупців і автоправила (`customer.manage`).
+// Insert/update — фабрика під `customer-config`;
+// видалення категорій — ЛИШЕ guarded `removeUserCategories`, дефолт —
 // `setDefaultUserCategory`; видалення правил — фабричне.
 export const listUserCategories = createServerFn({ method: 'GET' })
   .validator(adminInput(userCategoriesOps.subsetSchema))
@@ -662,7 +661,7 @@ export const diagnosePrice = createServerFn({ method: 'POST' })
   .validator(adminInput(diagnosePriceInput))
   .handler(diagnosePriceOp);
 
-// К3-Е6г: читання без колекцій (Е6г-6); розмір сторінки списку задає сервер.
+// Читання без колекцій; розмір сторінки списку задає сервер.
 export const listCustomers = createServerFn({ method: 'GET' })
   .validator(adminInput(listCustomersInput))
   .handler(listCustomersOp);
@@ -676,7 +675,7 @@ export const dashboardSummary = createServerFn({ method: 'GET' }).handler(
   dashboardSummaryOp,
 );
 
-// М1, Task 6: операції мов через реєстр. Форма обгортки фіксована: валідує
+// Операції мов через реєстр. Форма обгортки фіксована: валідує
 // виконавець (схема операції), суб'єкт береться з cookie запиту.
 export const listLanguages = createServerFn({ method: 'POST' })
   .validator(passThrough)
@@ -702,7 +701,7 @@ export const removeLanguage = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(languagesRemove, data));
 
-// М1, Task 8: токени й сервісні записи — та сама форма обгортки. Усі чотири
+// Токени й сервісні записи — та сама форма обгортки. Усі чотири
 // операції `sessionOnly`: Bearer на них дає 403, працює лише cookie адміна.
 export const createApiToken = createServerFn({ method: 'POST' })
   .validator(passThrough)
@@ -720,7 +719,7 @@ export const createServiceAccount = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(serviceAccountsCreate, data));
 
-// М1, Task 11: команди агрегата товару через реєстр (версія, переклади, адреса).
+// Команди агрегата товару через реєстр (версія, переклади, адреса).
 export const createProduct = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsCreate, data));
@@ -749,9 +748,9 @@ export const removeProduct = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsRemove, data));
 
-// М1, Task 12: токен модифікації, ціни й залишки — команди реєстру (Р14: ціни й
+// Токен модифікації, ціни й залишки — команди реєстру (Р14: ціни й
 // залишки версію агрегата не збільшують). Старі `saveProductPrices`/`saveStock`
-// прибрано: адмінка (Task 13) ходить лише цими командами.
+// прибрано: адмінка ходить лише цими командами.
 export const setProductModificationToken = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) =>
@@ -766,7 +765,7 @@ export const saveStockCommand = createServerFn({ method: 'POST' })
   .validator(passThrough)
   .handler(({ data }) => invokeFromServerFn(productsSaveStock, data));
 
-// М2а, Task 5: вибір мови інтерфейсу адмінки (І45). Читання мови — разом із сесією
+// Вибір мови інтерфейсу адмінки (І45). Читання мови — разом із сесією
 // (`getAdminSession`, §19.6), окремої операції читання немає.
 export const setAdminUiLocale = createServerFn({ method: 'POST' })
   .validator(passThrough)

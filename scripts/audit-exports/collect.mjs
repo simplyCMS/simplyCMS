@@ -52,7 +52,7 @@ const EXCLUDE_PATHSPECS = [
   ':!**/routeTree.gen.ts',
   ':!scripts/audit-exports/**',
   ':!scripts/audit-exports.mjs',
-  // Межа довіри плагінів (Фаза 3): негативний контроль годує ESLint кодом
+  // Межа довіри плагінів: негативний контроль годує ESLint кодом
   // `import … from 'simplycms/admin-server'` та ін. — це фікстури-порушення.
   ':!tests/plugin-trust-boundary.test.ts',
   // Тір-зони (ПК3, К0): негативний контроль містить синтетичний

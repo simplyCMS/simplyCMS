@@ -5,13 +5,13 @@ export { AdminSidebar } from './layouts/AdminSidebar';
 // Components
 export { ImageUpload } from './components/ImageUpload';
 export { RichTextEditor } from './components/RichTextEditor';
-// 🔴 Е4 Task 8: легасі-менеджер і таблиця властивостей розділу (components/)
+// 🔴 Легасі-менеджер і таблиця властивостей розділу (components/)
 // видалені — заміщені features/catalog-dictionaries/assignments/SectionPropertyAssignmentsPanel.
-// 🔴 Task 8: ProductModifications/ProductPricesEditor/SimpleProductFields/
+// 🔴 ProductModifications/ProductPricesEditor/SimpleProductFields/
 // StockByPointManager видалені — заміщені features/products/{modifications,
 // prices,stock,simple}/*. StockStatusSelect — той самий компонент, `git mv`
 // у features/products/stock/ (виніс, не заміна).
-// 🔴 Task 10: AllProductProperties/ProductPropertyValues видалені —
+// 🔴 AllProductProperties/ProductPropertyValues видалені —
 // заміщені features/products/properties/PropertyValuesPanel.
 export { StockStatusSelect } from './features/products/stock/StockStatusSelect';
 

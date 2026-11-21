@@ -1,4 +1,4 @@
-// К3-Е6д, Task 2 (Е6д-1): опція `media` фабрики ресурсів — перевірка нових
+// Опція `media` фабрики ресурсів — перевірка нових
 // референсів і стирання замінених/видалених файлів. Реальний `localFsDriver`
 // у тимчасовому `MEDIA_ROOT`; обриви транзакції й драйвера — у
 // `resource-media-erase.test.ts`.
@@ -30,7 +30,7 @@ vi.mock('../../../src/admin-server/impl/resource-media', async (orig) => {
 
 const invalid = conflict('state', 'media_ref_invalid');
 
-describe('фабрика ресурсів: опція media (Е6д-1)', () => {
+describe('фабрика ресурсів: опція media', () => {
   const d = useBannerMediaDb('simplycms_e6d_resource_media');
   const create = async (patch: Record<string, unknown> = {}) => {
     const id = crypto.randomUUID();

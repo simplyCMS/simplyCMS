@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 5: fill у режимі адрес (KEY SHARE, спільний set — не чекає команду) і команда, що пише ту саму
+// fill у режимі адрес (KEY SHARE, спільний set — не чекає команду) і команда, що пише ту саму
 // поточну адресу/токен у тій самій новій мові. Fill пропускає рядок, якщо поточний уже є
 // (`ON CONFLICT` на частковий UNIQUE поточного запису); команда, що програла, — 409
 // «паралельна зміна, повторіть» (`concurrent_change`), а не `path_taken`/`slug_taken`.
@@ -21,7 +21,7 @@ import { fillBatch } from '../../../src/admin-server/impl/languages/fill';
 import { insertModificationAt } from './fixtures/product-graph';
 import { create, exec, get } from './fixtures/product-aggregate';
 
-describe('fill <-> команда в новій мові (Task 14, раунд 5)', () => {
+describe('fill <-> команда в новій мові', () => {
   const db = useAddressingDb('simplycms_languages_fill_collisions');
   const add = (code: string) =>
     exec(languagesAdd, { id: randomUUID(), code, name: code });
@@ -137,7 +137,7 @@ describe('fill <-> команда в новій мові (Task 14, раунд 5)
     await add('bs');
     await db.shared((d) => copyPathsForLocale(d, 'bs', 1000));
     // Виклик fill у режимі адрес (як операція: спільний set) вставив токен pm і тримає
-    // транзакцію: проєкцію він більше не будує, тож «застрягти» на ній нема де (N1).
+    // транзакцію: проєкцію він більше не будує, тож «застрягти» на ній нема де.
     const fill = hold(db, async (d) => {
       await advisoryXactLockShared(d, LOCK_KEYS.languagesSet);
       return fillBatch(d, 'bs', 1000, 'addresses');

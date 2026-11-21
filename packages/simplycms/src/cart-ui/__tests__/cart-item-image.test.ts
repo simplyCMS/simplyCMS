@@ -3,7 +3,7 @@ import type { CartQuoteLine } from 'simplycms/contracts';
 import type { CartItem } from 'simplycms/react-query';
 import { resolveCartItemImage } from '../cart-item-image';
 
-// М1 Task 17б fix-1 (I2): правило вибору мініатюри рядка кошика — те саме, що для назв.
+// Правило вибору мініатюри рядка кошика — те саме, що для назв.
 const ITEM: CartItem = {
   productId: 'p',
   modificationId: null,

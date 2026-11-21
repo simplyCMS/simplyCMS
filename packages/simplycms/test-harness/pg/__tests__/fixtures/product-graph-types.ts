@@ -1,4 +1,4 @@
-// Типи й SQL-літерали фікстурного хелпера графа товару (М1, Task 10). Сам SQL
+// Типи й SQL-літерали фікстурного хелпера графа товару. Сам SQL
 // збирає `product-graph.ts` — це єдиний файл харнесу, що вставляє в таблиці товару.
 import type { propertyType } from 'simplycms/schema';
 import { lit } from './sql-literal';

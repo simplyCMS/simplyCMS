@@ -1,5 +1,5 @@
-// К3-Е6б, Task 3: склад, плагіни й право `settings.manage` проти живої БД
-// (Е6б-13, Е6б-17, Е6б-21; «Додатково» Review Focus: не-адмін → AuthzError, БД незмінна).
+// Склад, плагіни й право `settings.manage` проти живої БД
+// (не-адмін → AuthzError, БД незмінна).
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { setResponseStatus } from '@tanstack/react-start/server';
 import { AuthzError, requireGrant } from 'simplycms/auth';
@@ -28,7 +28,7 @@ import {
   setPluginActiveOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: склад, плагіни, право settings.manage (Е6б, Task 3)', () => {
+describe('admin: склад, плагіни, право settings.manage', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system_access');
   const url = () => db.url();
   /** Знімок трьох таблиць, які пишуть операції системи. */
@@ -88,7 +88,7 @@ describe('admin: склад, плагіни, право settings.manage (Е6б, 
 
   it('pluginConfigWrite: config > 64 КБ → 400, конфіг незмінний; не-адміну — AuthzError ДО розміру', async () => {
     const before = await snapshot();
-    // Е6б-25: право — ПЕРШИМ; чужому запиту розмір конфігу не розкривається.
+    // Право — ПЕРШИМ; чужому запиту розмір конфігу не розкривається.
     vi.mocked(setResponseStatus).mockClear();
     F.asCustomer();
     await expect(

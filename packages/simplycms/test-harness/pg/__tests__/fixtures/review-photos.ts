@@ -1,4 +1,4 @@
-// Фікстури фото відгуків (К3-Е6д, Task 7): БД відгуків (`useReviewsDb`, свій
+// Фікстури фото відгуків: БД відгуків (`useReviewsDb`, свій
 // `MEDIA_ROOT`) + знімок медіатеки й стану для асертів «нічого не лишилось».
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';

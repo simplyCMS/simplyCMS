@@ -1,4 +1,4 @@
-// К3-Е6г, Task 7 (Е6г-16, Е6г-17): стерте замовлення — позиції не
+// Стерте замовлення — позиції не
 // редагуються, старий токен нічого не віддає. Решта — `admin-customer-delete`.
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -25,13 +25,13 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: стерте замовлення (Е6г-16/17)', () => {
+describe('admin: стерте замовлення', () => {
   const d = useDeleteDb('simplycms_e6g_delete_orders');
   const { f } = d;
   const call = (userId: string, confirmEmail: string) =>
     deleteCustomerOp({ data: { userId, confirmEmail } });
 
-  it('Е6г-17: старий токен стертого замовлення нічого не віддає', async () => {
+  it('старий токен стертого замовлення нічого не віддає', async () => {
     const b = await d.seedBuyer();
     const id = await f.place([{ productId: f.ids.battery, quantity: 1 }], {
       userId: b.userId,
@@ -47,7 +47,7 @@ describe('admin: стерте замовлення (Е6г-16/17)', () => {
     expect(await read()).toBeNull();
   });
 
-  it('Е6г-16: позиції стертого замовлення не редагуються, скасування дозволене', async () => {
+  it('позиції стертого замовлення не редагуються, скасування дозволене', async () => {
     const b = await d.seedBuyer();
     const id = await f.place([{ productId: f.ids.panel, quantity: 2 }], {
       userId: b.userId,

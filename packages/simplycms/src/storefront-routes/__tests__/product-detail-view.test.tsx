@@ -11,7 +11,7 @@ import { productDetailViewModelFixtures } from 'simplycms/contracts/views/fixtur
 
 /**
  * Conformance-прогін канонічного `ProductDetailView` на фікстурах
- * (контракт тем v3, Фаза 3, Step 2) — до появи kit-а Фази 6.
+ * — до появи kit-а.
  *
  * 🔴 Це водночас ДОКАЗ чистоти view: провайдер тут рівно один — i18n.
  * Ні клієнта БД, ні QueryClient, ні EngineContext немає, тож будь-який
@@ -26,7 +26,7 @@ vi.mock('@tanstack/react-router', () => ({
 import { ProductDetailView } from '../views/ProductDetailView';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
-/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
+/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit. */
 function requisiteStub(name: string) {
   return function RequisiteStub() {
     return <div data-simplycms-requisite={name} />;

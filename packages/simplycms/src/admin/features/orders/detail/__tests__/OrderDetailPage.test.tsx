@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Картка замовлення (Task 7, Е5): справжні колекції + стаб межі serverFn.
+ * Картка замовлення: справжні колекції + стаб межі serverFn.
  * Асерти — точні тексти `ukT`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

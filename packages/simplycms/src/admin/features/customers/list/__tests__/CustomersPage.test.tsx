@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Список покупців (Task 9, Е6г): рядки, бейджі, «Показати ще», порожній стан. */
+/** Список покупців: рядки, бейджі, «Показати ще», порожній стан. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   act,

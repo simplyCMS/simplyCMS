@@ -1,6 +1,6 @@
-// К3-Е6в, Task 6 (Е6в-15, Е6в-19): UTM у статистиці (ред.3/ред.4), порожнє
-// правило fail-closed при «Запустити всі» (ред.2) і єдиний примітив локу
-// (`lockCatalogTarget` ≡ `advisoryXactLock`, ред.2) — детерміновано.
+// UTM у статистиці, порожнє
+// правило fail-closed при «Запустити всі» і єдиний примітив локу
+// (`lockCatalogTarget` ≡ `advisoryXactLock`) — детерміновано.
 import { describe, expect, it, vi } from 'vitest';
 import { advisoryXactLock, withActor, type ActorDb } from 'simplycms/db';
 import { applyCategoryRules } from 'simplycms/commerce';
@@ -46,13 +46,8 @@ describe('автоправила: UTM, порожнє правило, примі
     withActor({ role: 'app_admin' }, (tx) => applyCategoryRules(tx, userId));
 
   it.each([
-    ['ред.3: utm_campaign = spring', 'utm_campaign', 'spring', {}],
-    [
-      'ред.4: utm_source = google',
-      'utm_source',
-      'google',
-      { utm_campaign: 'x' },
-    ],
+    ['utm_campaign = spring', 'utm_campaign', 'spring', {}],
+    ['utm_source = google', 'utm_source', 'google', { utm_campaign: 'x' }],
   ])(
     '%s → покупець із міткою переведений, без мітки — ні',
     async (_t, field, value, without) => {
@@ -82,7 +77,7 @@ describe('автоправила: UTM, порожнє правило, примі
     },
   );
 
-  it('ред.2: порожнє правило (rules: []) з to = VIP + runCategoryRules → changed: 0', async () => {
+  it('порожнє правило (rules: []) з to = VIP + runCategoryRules → changed: 0', async () => {
     await F.rows(url(), `update public.category_rules set is_active = false`);
     const vip = await F.seedCategory(url());
     const empty = await F.seedRule(url(), {
@@ -95,7 +90,7 @@ describe('автоправила: UTM, порожнє правило, примі
     const result = await runCategoryRulesOp();
     expect(result.checked).toBeGreaterThan(0);
     expect(result).toMatchObject({ changed: 0, failed: 0 });
-    // Е6в-25: пропущене правило видно в лозі (з id), а не мовчки.
+    // Пропущене правило видно в лозі (з id), а не мовчки.
     expect(errors.mock.calls.some((c) => String(c[0]).includes(empty))).toBe(
       true,
     );
@@ -116,23 +111,20 @@ describe('автоправила: UTM, порожнє правило, примі
       advisoryXactLock,
       lockCatalogTarget,
     ],
-  ] as [string, Lock, Lock][])(
-    'ред.2 (Е6в-15): %s',
-    async (_t, holder, waiter) => {
-      const key = `e6v-lock-${crypto.randomUUID()}`;
-      const held = holdInTransaction(holder, key);
-      await held.ready;
-      try {
-        const op = withActor({ role: 'app_admin' }, (tx) => waiter(tx, key));
-        op.catch(() => {});
-        expect(await stillPending(op, 300)).toBe(true);
-        held.release();
-        await held.done;
-        await expect(op).resolves.toBeUndefined();
-      } finally {
-        held.release();
-        await held.done;
-      }
-    },
-  );
+  ] as [string, Lock, Lock][])('%s', async (_t, holder, waiter) => {
+    const key = `e6v-lock-${crypto.randomUUID()}`;
+    const held = holdInTransaction(holder, key);
+    await held.ready;
+    try {
+      const op = withActor({ role: 'app_admin' }, (tx) => waiter(tx, key));
+      op.catch(() => {});
+      expect(await stillPending(op, 300)).toBe(true);
+      held.release();
+      await held.done;
+      await expect(op).resolves.toBeUndefined();
+    } finally {
+      held.release();
+      await held.done;
+    }
+  });
 });

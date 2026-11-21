@@ -4,9 +4,9 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Призначення властивості розділу (Е4, Task 3), on-demand (Е4-9).
+ * Призначення властивості розділу, on-demand.
  *
- * 🔴 Е4-5: `sectionId`/`propertyId`/`appliesTo` — insertOnly. Пара
+ * 🔴 `sectionId`/`propertyId`/`appliesTo` — insertOnly. Пара
  * розділ/властивість унікальна незалежно від `appliesTo` (DDL), тож
  * «перемкнути на модифікації» — це видалення плюс створення.
  * `appliesTo` звужено до переліку CHECK-обмеження — недопустиме значення

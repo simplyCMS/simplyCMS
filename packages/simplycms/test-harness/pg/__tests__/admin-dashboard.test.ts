@@ -1,4 +1,4 @@
-// К3-Е6г, Task 3: dashboardSummary — кожне число звірене з прямим SQL.
+// dashboardSummary — кожне число звірене з прямим SQL.
 import { describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/customer-categories';
 import * as R from './fixtures/admin-customers-read';
@@ -17,7 +17,7 @@ import { dashboardSummaryOp } from 'simplycms/admin-server/impl';
 const ago = (days: number) =>
   new Date(Date.now() - days * 86_400_000).toISOString();
 
-describe('admin: dashboardSummary (Е6г-5, Е6г-12)', () => {
+describe('admin: dashboardSummary', () => {
   const db = F.useCustomersDb('simplycms_admin_dashboard');
   const url = () => db.url();
 

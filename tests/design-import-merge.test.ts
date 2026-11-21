@@ -1,8 +1,7 @@
 /**
- * Юніти `lib/merge.mjs — mergeInspections` (задача §2.D, план Р6, Фаза 4
- * Step 2): злиті частоти/OR-interactive, голосування шрифтів з tie-break,
+ * Юніти `lib/merge.mjs — mergeInspections`: злиті частоти/OR-interactive, голосування шрифтів з tie-break,
  * union `fontStylesheets`, OR `darkDetected`, і — окремим блоком — інваріант
- * «перестановка вхідних файлів дає той самий результат» (Р6).
+ * «перестановка вхідних файлів дає той самий результат».
  */
 import { describe, expect, it } from 'vitest';
 import { mergeInspections } from '../.agents/skills/simplycms-redesign/scripts/lib/merge.mjs';

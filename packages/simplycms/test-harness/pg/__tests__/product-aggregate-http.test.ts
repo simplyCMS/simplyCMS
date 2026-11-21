@@ -1,4 +1,4 @@
-// М1 Task 11, майстер §3.3: `If-Match`/`ETag` (перша версіонована операція) і
+// Майстер §3.3: `If-Match`/`ETag` (перша версіонована операція) і
 // ідемпотентність `products.create` крізь `handleApiRequest`.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it, vi } from 'vitest';

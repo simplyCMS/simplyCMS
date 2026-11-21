@@ -1,4 +1,4 @@
-// К3-Е6д, Task 7 (Е6д-14, Е6д-16; переписує Е6г-15): видалення акаунта
+// Переписує: видалення акаунта
 // стирає аватар і фото відгуків однією двофазною групою — рядки `media` у
 // транзакції, файли ПІСЛЯ COMMIT. Відгук лишається анонімним і без фото.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -20,7 +20,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: видалення акаунта з фото відгуків (Е6д-14)', () => {
+describe('admin: видалення акаунта з фото відгуків', () => {
   const d = useReviewPhotosDb('simplycms_e6d_cust_photos');
   const { f } = d;
   /** Покупець з аватаром і відгуком із двома фото. */
@@ -108,14 +108,14 @@ describe('admin: видалення акаунта з фото відгуків 
     expect(b.keys.filter((k) => d.hasFile(k))).toHaveLength(1);
   });
 
-  it('відгук з images = NULL не ламає видалення (M9)', async () => {
+  it('відгук з images = NULL не ламає видалення', async () => {
     const b = await d.seedBuyer();
     const id = await d.seedReview({ userId: b.userId, images: null });
     await expect(call(b)).resolves.toMatchObject({ anonymizedReviews: 1 });
     expect(await d.reviewRow(id)).toMatchObject({ user_id: null, images: [] });
   });
 
-  it('🔴 чужий ключ (аватар іншого покупця) у відгуку видаленого → аватар і media цілі (Е6д-16)', async () => {
+  it('🔴 чужий ключ (аватар іншого покупця) у відгуку видаленого → аватар і media цілі', async () => {
     const b = await seeded();
     const victim = await d.seedBuyer({ avatar: true });
     await f.rows(

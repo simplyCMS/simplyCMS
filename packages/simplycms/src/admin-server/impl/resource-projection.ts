@@ -1,7 +1,7 @@
 import { getTableColumns, type Column, type Table } from 'drizzle-orm';
 
 /**
- * Е5-7: проєкція SELECT/RETURNING — усі колонки таблиці, крім `omit`.
+ * Проєкція SELECT/RETURNING — усі колонки таблиці, крім `omit`.
  * Чиста функція: ключі — TS-імена колонок (як у `db.select()` без
  * аргументу), тож рядки результату мають ту саму форму, лише без прихованих.
  */
@@ -16,7 +16,7 @@ export function pickColumns(
 }
 
 /**
- * Е5-12: ефективний ліміт сторінки `list` —
+ * Ефективний ліміт сторінки `list` —
  * `min(subset.limit ?? maxLimit, maxLimit)`. Без серверної межі
  * (`maxLimit === undefined`) — ліміт subset як є (може бути `undefined`).
  */
@@ -30,7 +30,7 @@ export function effectiveLimit(
 }
 
 /**
- * Е5б Task 8: `maxLimit` — лише додатне ціле. Перевіряється на старті
+ * `maxLimit` — лише додатне ціле. Перевіряється на старті
  * фабрики (fail-loud при імпорті модуля ресурсу), а не на першому запиті:
  * `LIMIT 0`/дробовий/`NaN` мовчки ламали б сторінку або SQL.
  */

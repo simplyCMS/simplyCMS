@@ -1,4 +1,4 @@
-// `simplycms/commerce` (К3-Е5б, Task 1): перевірка доставки, розщеплена на
+// `simplycms/commerce`: перевірка доставки, розщеплена на
 // `validateShippingChoice` + `quoteShippingCost`, — її кличуть і чекаут, і
 // адмінка. Паритет із чекаутом і НЕЗМІННИЙ пріоритет відмов `prepareCheckout`
 // (доставка → точка → товар) доводяться тут; рушій цін — `commerce-pricing`.
@@ -80,7 +80,7 @@ describe('доставка commerce', () => {
     });
   });
 
-  it('запис знімка (Е6г-10): адресна доставка з city null або порожнім → shipping_unavailable, а не знімок із null', async () => {
+  it('запис знімка: адресна доставка з city null або порожнім → shipping_unavailable, а не знімок із null', async () => {
     expect(await check(ids.courier, null, null)).toBe('shipping_unavailable');
     expect(await check(ids.courier, '', null)).toBe('shipping_unavailable');
   });

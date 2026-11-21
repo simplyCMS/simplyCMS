@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // (vitest.config: environment 'node' — патерн on-demand-contract.test.tsx)
 /**
- * Колекції замовлень і позицій (Task 5 Е5, Е5-10): сторінки й зрізи на
+ * Колекції замовлень і позицій: сторінки й зрізи на
  * СПРАВЖНІЙ `@tanstack/db` з одним QueryClient. Мокнуто лише межу serverFn —
  * стаб (`support/orders-server-stub.ts`) фільтрує фікстуру за subset,
  * дописує тай-брейкер `id` і застосовує `maxLimit` як сервер. Запис —
@@ -33,7 +33,7 @@ vi.mock('simplycms/admin-server', async () => {
   });
 });
 
-describe('колекції замовлень (Е5-10)', () => {
+describe('колекції замовлень', () => {
   it('useLiveInfiniteQuery по createdAt desc з індексом: 3 сторінки по 2 без дублів і пропусків при однакових createdAt (Review Focus 5)', async () => {
     reset(Array.from({ length: 6 }, (_, i) => makeOrder(i, SAME)));
     const { wrapper, usePages } = setup();

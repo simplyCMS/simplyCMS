@@ -1,5 +1,5 @@
-// Чисті обчислення цін картки товару (контракт тем v3, Фаза 3): ціни —
-// тим самим `priceForCard`, що на всіх картках (Е6в-11).
+// Чисті обчислення цін картки товару: ціни —
+// тим самим `priceForCard`, що на всіх картках.
 
 import type { DiscountEnvironment, StockStatus } from 'simplycms/contracts';
 import { isPurchasable } from 'simplycms/domain/inventory';

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Картка відгуку (Task 9, Е6д): фото-референси, примітка, статуси, видалення. */
+/** Картка відгуку: фото-референси, примітка, статуси, видалення. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

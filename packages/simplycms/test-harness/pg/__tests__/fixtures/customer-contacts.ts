@@ -1,4 +1,4 @@
-// Читачі й сід токенів для харнесу контактів покупця (К3-Е6г, Task 6).
+// Читачі й сід токенів для харнесу контактів покупця.
 import * as F from './customer-categories';
 
 export const contactHelpers = (url: () => string) => ({

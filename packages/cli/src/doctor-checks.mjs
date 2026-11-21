@@ -204,7 +204,7 @@ export const OFFLINE_CHECKS = [
     label: 'simplycms.config.ts',
     run: ({ storeRoot }) => checkConfigAnchors(storeRoot),
   },
-  // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
+  // №11: теми з конфігу резолвляться, Tailwind бачить сторонні.
   { label: 'themes', run: checkThemes },
   // №12 (трек К0): скіли ядра підключені лінками.
   { label: 'skill-links', run: checkSkillLinks },

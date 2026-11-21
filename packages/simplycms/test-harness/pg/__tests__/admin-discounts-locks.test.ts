@@ -1,4 +1,4 @@
-// К3-Е6в, Task 5 (Е6в-15, Е6в-16 ред.2): локи `discount-config` і
+// Локи `discount-config` і
 // `customer-config` — детерміновано (`holdAdvisoryLock`/`stillPending`), а не
 // гонкою `Promise.all`. Порядок «customer → discount» доводить третє
 // зʼєднання: поки операція чекає `discount-config`, `customer-config` уже її.
@@ -43,7 +43,7 @@ async function lockIsFree(url: string, key: string): Promise<boolean> {
   }
 }
 
-describe('admin: знижки — локи (Е6в, Task 5)', () => {
+describe('admin: знижки — локи', () => {
   const db = F.useDiscountsAdminDb('simplycms_admin_discounts_locks');
   const url = () => db.url();
   const byCategory = (groupId: string, categoryId: string) =>
@@ -100,7 +100,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
     expect(await F.snapshotGroups(url(), [doomed])).toEqual([]);
   });
 
-  it('ред.2: зовнішнє зʼєднання тримає LOCK_KEYS.customerConfig → saveDiscount з умовою user_category stillPending; без такої умови — проходить', async () => {
+  it('зовнішнє зʼєднання тримає LOCK_KEYS.customerConfig → saveDiscount з умовою user_category stillPending; без такої умови — проходить', async () => {
     const group = await F.seedGroup(url());
     const category = await F.seedCategory(url());
     const plain = F.discountInput(group);
@@ -122,7 +122,7 @@ describe('admin: знижки — локи (Е6в, Task 5)', () => {
     }
   });
 
-  it('ред.2: порядок локів customer-config → discount-config: saveDiscount з user_category, що чекає discount-config, уже тримає customer-config', async () => {
+  it('порядок локів customer-config → discount-config: saveDiscount з user_category, що чекає discount-config, уже тримає customer-config', async () => {
     const group = await F.seedGroup(url());
     const input = byCategory(group, await F.seedCategory(url()));
     const lock = await holdAdvisoryLock(url(), DISCOUNT_LOCK);

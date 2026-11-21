@@ -1,4 +1,4 @@
-// М1 Task 11, І11/І12/І14/І17: команди агрегата товару проти живого Postgres.
+// І11/І12/І14/І17: команди агрегата товару проти живого Postgres.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -23,7 +23,7 @@ import {
   saveTranslation,
 } from './fixtures/product-aggregate';
 
-describe('агрегат товару (М1, Task 11)', () => {
+describe('агрегат товару', () => {
   const db = useAddressingDb('simplycms_product_aggregate');
   const row = async (id: string, locale: string) =>
     (

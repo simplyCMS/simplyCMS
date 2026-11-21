@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { PRICE_TYPE_CODE_RE } from 'simplycms/domain';
 
 /**
- * Значення форми картки типу ціни (Е4, Task 6). Формат коду — спільна
- * константа T1 (`PRICE_TYPE_CODE_RE`), яку перевіряє й сервер (Е4-7).
+ * Значення форми картки типу ціни. Формат коду — спільна
+ * константа (`PRICE_TYPE_CODE_RE`), яку перевіряє й сервер.
  * `isDefault` у patch колекції НЕ йде: колонка readonly, дефолт ставить
  * лише `setDefaultPriceType`.
  */

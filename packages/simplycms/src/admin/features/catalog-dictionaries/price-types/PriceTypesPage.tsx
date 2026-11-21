@@ -21,7 +21,7 @@ import { DeleteConfirmDialog } from '../DeleteConfirmDialog';
 import { PageSpinner } from '../PageStates';
 
 /**
- * Список типів цін (Е4, Task 6): жива eager-колекція, сортування на
+ * Список типів цін: жива eager-колекція, сортування на
  * клієнті. Видалення — `collection.delete` → guarded `removePriceTypes`
  * (дефолтний тип і тип із цінами сервер відхиляє, колекція відкочує рядок,
  * причина — тостом через `reportTxError`).

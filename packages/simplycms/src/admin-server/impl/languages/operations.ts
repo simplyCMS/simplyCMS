@@ -13,7 +13,7 @@ import { CACHE_KEYS, bumpCacheGeneration } from 'simplycms/site';
 import { FILL_BATCH, fillBatch, needsAddresses } from './fill';
 import { code, invalid, load, lockLanguageSet, toView, view } from './view';
 
-// Операції мов (М1, Task 6): перші живі споживачі реєстру операцій. Усі під
+// Операції мов: перші живі споживачі реєстру операцій. Усі під
 // `settings.manage` (Д5). Машина станів — майстер §3.5; інваріанти основної мови
 // тримає БД (`languages_guard`), операції лише дають зрозумілі відмови.
 

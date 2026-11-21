@@ -87,7 +87,7 @@ const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
 
 /**
  * Легальні випадки — лише два імпорти в кореневому `vite.config.ts`: межа
- * клієнт/сервер (мандат Task 1) і плагін збірки (К3-Е8). Будь-який ІНШИЙ value-імпорт з
+ * клієнт/сервер і плагін збірки. Будь-який ІНШИЙ value-імпорт з
  * `.ts`/`.tsx` у програмі кореневого typecheck — витік прапорця.
  */
 const ALLOWLIST: ReadonlyArray<{ file: string; specifier: string }> = [

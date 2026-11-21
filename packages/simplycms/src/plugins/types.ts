@@ -23,7 +23,7 @@ export interface PluginHookDefinition {
   priority?: number;
 }
 
-// PluginSettingDefinition знято (Фаза 3, D5 — без шимів): налаштування
+// PluginSettingDefinition знято (без шимів): налаштування
 // плагіна — Zod-схема в `definePlugin({ settings })`, форму адмінка рендерить
 // із `z.toJSONSchema`. Ad-hoc union до-SDK епохи не мав жодного споживача.
 

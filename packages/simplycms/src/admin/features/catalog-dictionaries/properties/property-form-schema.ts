@@ -32,9 +32,9 @@ export const hasOptions = (type: PropertyType) =>
   type === 'select' || type === 'multiselect';
 
 /**
- * Форма властивості (Е4, Task 8). slug — `SLUG_FORMAT` (T1), його ж перевіряє
- * сервер (Е4-7). `propertyType` є у формі, але в patch не йде (Е4-5:
- * insertOnly) — редагування показує його текстом.
+ * Форма властивості. slug — `SLUG_FORMAT`, його ж перевіряє
+ * сервер. `propertyType` є у формі, але в patch не йде
+ * (insertOnly) — редагування показує його текстом.
  */
 export const propertyFormSchema = z.object({
   name: z.string().trim().min(1),
@@ -59,7 +59,7 @@ export const EMPTY_PROPERTY: PropertyFormInput = {
   sortOrder: 0,
 };
 
-/** Поля update. 🔴 Без `propertyType` — його немає в update-схемі (Е4-5). */
+/** Поля update. 🔴 Без `propertyType` — його немає в update-схемі. */
 export function toPropertyPatch(v: PropertyFormValues) {
   return {
     name: v.name,

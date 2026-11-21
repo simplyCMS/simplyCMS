@@ -143,7 +143,7 @@ export function bumpTo(version) {
   }
 
   bumpCoreVersionConstant(version);
-  // Version-літерали маніфестів референс-пакетів (плагіни/теми) — Р13 Фази 4.
+  // Version-літерали маніфестів референс-пакетів (плагіни/теми).
   bumpManifestVersions(version);
 
   return { updated, skipped };

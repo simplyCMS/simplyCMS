@@ -70,7 +70,7 @@ function draw(node: ReactNode): HTMLElement {
   return render(<SlotHarness>{node}</SlotHarness>).container;
 }
 
-/** Юніти реквізитів каталогу й головної (Фаза 2, Step 3). */
+/** Юніти реквізитів каталогу й головної. */
 describe('slot-компоненти каталогу', () => {
   afterEach(cleanup);
 

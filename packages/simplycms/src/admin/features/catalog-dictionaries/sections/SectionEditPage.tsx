@@ -15,7 +15,7 @@ import { SectionSideCards } from './SectionSideCards';
 import { useSectionCard } from './useSectionCard';
 
 /**
- * Картка розділу (Е4, Task 7): `new` або id з URL. Рядок — жива колекція,
+ * Картка розділу: `new` або id з URL. Рядок — жива колекція,
  * стан і операції — `useSectionCard`.
  */
 export default function SectionEditPage() {

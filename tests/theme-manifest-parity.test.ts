@@ -7,10 +7,10 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * Парність manifest-а референс-ТЕМ із їх package.json — дзеркало
- * `plugin-manifest-parity` (Фаза 4, Р6).
+ * `plugin-manifest-parity`.
  *
  * 🔴 `version` у `ThemeManifest` — рядок-літерал, а модель версій ядра
- * СИНХРОННА: `bump.mjs` оновлює package.json і (з Фази 4) цей літерал, але
+ * СИНХРОННА: `bump.mjs` оновлює package.json і цей літерал, але
  * розсинхрон між ними ніхто інший не побачив би — рядок теми в таблиці
  * `themes` поїхав би з чужою версією.
  *

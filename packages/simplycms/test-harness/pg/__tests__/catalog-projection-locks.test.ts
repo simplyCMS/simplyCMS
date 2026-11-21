@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 1 (I-1): команда бере спільний `languages-set` ДО кореня, тож
+// Команда бере спільний `languages-set` ДО кореня, тож
 // порядок «languages-set -> корінь» проти «languages-set -> FK на рядок товару» у
 // setStatus/fill не дає 40P01 (цикл неможливий за побудовою).
 // Команда тут бере СПРАВЖНІЙ `lockProduct`, а refresh викликає після паузи.
@@ -49,7 +49,7 @@ vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
 // Кейс, що не дочекався черги, відпускає тримача: інакше його замок висів би до кінця файла.
 const RELEASE = { releaseOnFail: true } as const;
 
-describe('замки команди товару проти setStatus і fill (М1, Task 14, I-1)', () => {
+describe('замки команди товару проти setStatus і fill', () => {
   const db = useAddressingDb('simplycms_catalog_projection_locks');
   const add = (code: string) =>
     exec(languagesAdd, { id: randomUUID(), code, name: code });
@@ -117,7 +117,7 @@ describe('замки команди товару проти setStatus і fill (�
     await until('команда тримає рядок товару', cmd.locked);
     const fill = fillAll('bg');
     // Усі адреси вже скопійовано: виклик fill будує проєкцію під ЕКСКЛЮЗИВНИМ languages-set
-    // і мусить стати в чергу за спільним set команди (фінальне рев'ю М1, N1) — інакше
+    // і мусить стати в чергу за спільним set команди — інакше
     // збудував би рядок зі знімка до коміту команди.
     await waitForBlockedTree(db, cmd, 1, RELEASE);
     cmd.proceed();

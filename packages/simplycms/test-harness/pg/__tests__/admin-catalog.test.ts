@@ -1,4 +1,4 @@
-// Е3, Task 3: ресурси каталогу on-demand проти живої БД. Шапка — ДОСЛІВНО
+// Ресурси каталогу on-demand проти живої БД. Шапка — ДОСЛІВНО
 // патерн order-statuses-aggregate.test.ts (createTempDatabase → канон →
 // app_runtime → afterAll із closeDbPool() ПЕРШИМ).
 //
@@ -47,7 +47,7 @@ import {
 } from './fixtures/product-graph';
 // 🔴 requireGrant тут — вже ЗМОКАНА функція (vi.fn з блоку вище); resolveGrant
 // і AuthzError — реальні, бо фабрика мока робить `...(await orig())` і
-// перекриває лише requireGrant. Потрібні для Е3-6 нижче.
+// перекриває лише requireGrant. Потрібні для нижче.
 import { requireGrant, resolveGrant, AuthzError } from 'simplycms/auth';
 
 const SECTION = '0e300000-0000-4000-8000-000000000001';
@@ -60,7 +60,7 @@ const product = (i: number) => ({
   sectionId: SECTION,
 });
 
-describe('products: ресурс on-demand проти живої БД (Е3, Task 3)', () => {
+describe('products: ресурс on-demand проти живої БД', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_admin_catalog');
   let dbUrl = '';
@@ -73,7 +73,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     process.env.DATABASE_URL = withUser(dbUrl, 'app_runtime');
 
     // Фікстура розділу — ПРИВІЛЕЙОВАНИМ підключенням (dbUrl), не операцією:
-    // CRUD розділів — Е4, а тут потрібен лише рядок, на який посилається
+    // CRUD розділів —, а тут потрібен лише рядок, на який посилається
     // товар.
     await queryRows(
       dbUrl,
@@ -89,7 +89,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     await harness?.teardown();
   });
 
-  /** Товар графа (переклад основної мови, адреси) — запис лише так (М1, Task 17). */
+  /** Товар графа (переклад основної мови, адреси) — запис лише так. */
   const seedProduct = async (i: number) => {
     const row = product(i);
     await insertProductGraphAt(dbUrl, row);
@@ -109,10 +109,10 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     expect(listed.every((r) => r.sectionId === SECTION)).toBe(true);
   });
 
-  // Регресійний смок, НЕ доказ інваріанта (доказ — юніт Task 1 Step 5,
+  // Регресійний смок, НЕ доказ інваріанта (доказ — юніт Step 5,
   // resource.test.ts «id asc — ОСТАННІЙ ключ сортування»): без тай-брейкера
   // Postgres на малій таблиці може дати той самий порядок.
-  it('Review Focus 3: однакові created_at — три сторінки по 3 дають 7 різних id', async () => {
+  it('однакові created_at — три сторінки по 3 дають 7 різних id', async () => {
     const batch = [];
     for (let i = 0; i < 7; i += 1) batch.push(await seedProduct(100 + i));
     await queryRows(
@@ -154,7 +154,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     expect(u!.updatedAt.getTime()).toBeGreaterThan(at.getTime());
   });
 
-  it('Review Focus 1: дубль slug → AdminConflictError unique з назвою обмеження (розділ)', async () => {
+  it('дубль slug → AdminConflictError unique з назвою обмеження (розділ)', async () => {
     const err = await sectionsOps
       .insert({
         data: [{ id: crypto.randomUUID(), slug: 'e3-section', name: 'Дубль' }],
@@ -167,7 +167,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     });
   });
 
-  it('Review Focus 2: товар у замовленні → AdminConflictError reference, рядок живий', async () => {
+  it('товар у замовленні → AdminConflictError reference, рядок живий', async () => {
     const p = await seedProduct(5);
     const orderId = crypto.randomUUID();
     // 🔴 Відхилення від брифа (факт коду, не помилка плану): `orders` у
@@ -221,7 +221,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     ).rejects.toThrow(/недозволеній колонці/);
   });
 
-  // 🔴 М1 (Task 17): узагальнений запис товару й модифікації вимкнено (`writable: []`) —
+  // 🔴 Узагальнений запис товару й модифікації вимкнено (`writable: []`) —
   // запис лише командами агрегата. Пряме `update` будь-яким полем: `patchSchema` пікає
   // лише writable-ключі, патч стає ПОРОЖНІМ, і рефайн валить парсинг ДО транзакції
   // (ValidationError), а значення в БД не змінюється.
@@ -262,7 +262,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     expect(rows.some((r) => r.slug === 'e3-hidden')).toBe(true);
   });
 
-  // 🔴 Е3-6 (рішення архітектора): адмін-поверхня каталогу, включно з
+  // 🔴 Рішення архітектора: адмін-поверхня каталогу, включно з
   // ЧИТАННЯМ, мусить іти під `catalog.write` (тільки admin, `AUTHZ_MATRIX`),
   // а НЕ `catalog.read` (`{ user: 'any', admin: 'any' }` — ЛЮБИЙ автентифі-
   // кований покупець отримав би scope 'any' і бачив чернетки/неактивні
@@ -273,7 +273,7 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
   // (у матриці 'catalog.write' немає ключа 'user') → AuthzError; якщо
   // мутація підмінить операцію на catalog.read — 'user' у матриці Є
   // ('any') → виклик пройшов би без кидка, і toThrow нижче почервонів би.
-  it('Е3-6: sectionsOps вимагає catalog.write — покупець без ролі admin отримує відмову', async () => {
+  it('sectionsOps вимагає catalog.write — покупець без ролі admin отримує відмову', async () => {
     vi.mocked(requireGrant).mockImplementationOnce(async (operation) => {
       const subject = { userId: 'u2', roles: ['user'] as const };
       const scope = resolveGrant(subject, operation);
@@ -283,12 +283,12 @@ describe('products: ресурс on-demand проти живої БД (Е3, Task
     await expect(sectionsOps.list({ data: {} })).rejects.toThrow(AuthzError);
   });
 
-  // 🔴 Е3-14 (аудит 2026-09-23): у брифі доказ isNull відсилався «до
-  // харнесу Task 3», але самого кейсу не було — subset.test.ts (Task 1)
+  // 🔴 Аудит 2026-09-23: у брифі доказ isNull відсилався «до
+  // харнесу », але самого кейсу не було — subset.test.ts
   // доводить лише форму SQL (unit, синтетична таблиця), не РЕАЛЬНУ вибірку
   // цін рівня товару проти живої БД. price_types сідиться каноном
   // (0003_seed.sql, код 'retail'), тож окремої фікстури типу ціни не треба.
-  it('Е3-14: isNull на modification_id повертає рівно ціни рівня товару', async () => {
+  it('isNull на modification_id повертає рівно ціни рівня товару', async () => {
     const p = await seedProduct(8);
     const m = { id: crypto.randomUUID() };
     await insertModificationAt(dbUrl, p.id, {

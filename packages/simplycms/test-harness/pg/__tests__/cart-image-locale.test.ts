@@ -1,4 +1,4 @@
-// М1 Task 17б фікс-раунд 1 (I2) проти живого Postgres: рядок квоти кошика несе мініатюру
+// Проти живого Postgres: рядок квоти кошика несе мініатюру
 // мовою запиту тим самим читачем, що сторінка товару (`lineImageSql` ← галерея
 // модифікації, інакше товару): перевизначення файлу мови, alt мови, fallback alt з `lang`.
 import { randomUUID } from 'node:crypto';
@@ -11,7 +11,7 @@ import { EN, UK } from './fixtures/text-locale';
 
 const url = (key: string) => resolveMediaUrl(key)!;
 
-describe('мініатюра позиції кошика мовою сторінки (Task 17б fix-1)', () => {
+describe('мініатюра позиції кошика мовою сторінки', () => {
   const db = useCommerceDb('simplycms_cart_image');
   const product = randomUUID();
   const red = randomUUID();

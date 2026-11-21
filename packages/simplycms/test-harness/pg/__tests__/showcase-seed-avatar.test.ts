@@ -1,4 +1,4 @@
-// К3-Е6д, Task 7 (Е6д-14, аудит Codex р2 B2, р3 M3, р4 M4): аватар
+// Аватар
 // видаленого покупця сіду стирається ПІСЛЯ COMMIT зовнішньої транзакції сіду.
 //
 // 🔴 Аватар створюється окремою закоміченою транзакцією ДО зовнішньої: інакше
@@ -32,7 +32,7 @@ vi.mock('../../../../../scripts/showcase/raw-writes.mts', async (orig) => {
 
 const DELETED = 'buyer-18@showcase.test';
 
-describe('сід вітрини: аватар видаленого покупця (Е6д-14)', () => {
+describe('сід вітрини: аватар видаленого покупця', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   let s: SeededShowcase | undefined;
   const users = async (h: SeededShowcase) =>

@@ -39,7 +39,7 @@ function sortForLock<T extends StockTarget>(lines: T[]): T[] {
 /**
  * Списати залишок усього замовлення — під ескалацією, у його транзакції.
  *
- * 🔴 Е5-4′: облік фактично списаного — ПО ПОЗИЦІЇ. Кожна позиція отримує
+ * 🔴 Облік фактично списаного — ПО ПОЗИЦІЇ. Кожна позиція отримує
  * `stock_point_id` (точку списання) і `stock_reserved` (скільки
  * `reserveStock` реально зняв — 0 для цілі без обліку). Маркер на рівні
  * замовлення (колишній `orders.shipping_data.stock_point_id`) не доводив
@@ -89,14 +89,14 @@ interface TakenRow extends StockTarget {
  * статусу. Тумблер `decrease_on_order` НЕ читається: повертається те, що
  * було списано, а не те, що списувалось би зараз.
  *
- * 🔴 Е5-11: fallback `resolveStockPoint` прибрано. Позиція з
+ * 🔴 Fallback `resolveStockPoint` прибрано. Позиція з
  * `stock_point_id = NULL` (точку ВИДАЛИЛИ — FK `ON DELETE SET NULL`)
  * повернути нікуди: кількість не повертається, факт логується (межа —
  * `docs/architecture/data-layer.md` § 16).
  *
  * @returns кількість позицій, по яких залишок ФАКТИЧНО повернуто: позиція з
  *   видаленою точкою або без рядка залишку на ній (лічильник обнулено,
- *   повертати нікуди) не рахується (Е5б Task 8).
+ *   повертати нікуди) не рахується.
  */
 export async function releaseOrderStock(
   db: ActorDb,

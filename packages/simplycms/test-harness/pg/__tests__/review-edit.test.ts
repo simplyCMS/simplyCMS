@@ -1,4 +1,4 @@
-// К3-Е6д, Task 9 (Е6д-23): покупець редагує власний відгук — повернення на
+// Покупець редагує власний відгук — повернення на
 // модерацію, фото (лишити/прибрати/додати), двофазне стирання, чужий відгук.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
@@ -12,7 +12,7 @@ import {
 } from 'simplycms/storefront/loaders';
 import { png, useReviewPhotosDb } from './fixtures/review-photos';
 
-describe('редагування відгуку покупцем (Е6д-23)', () => {
+describe('редагування відгуку покупцем', () => {
   const d = useReviewPhotosDb('simplycms_e6d_rv_edit');
   const { f } = d;
   const seeded = async (n = 2, status = 'approved') => {

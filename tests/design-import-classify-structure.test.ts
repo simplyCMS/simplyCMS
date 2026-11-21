@@ -1,6 +1,5 @@
 /**
- * Юніти структурного сигналу fan-out (`lib/classify-structure.mjs`,
- * інкремент Б.3, Фаза 2 Step 1). Чиста функція без браузера — вхід той самий,
+ * Юніти структурного сигналу fan-out (`lib/classify-structure.mjs`). Чиста функція без браузера — вхід той самий,
  * що будує `classifyLinks`: мапа кандидатів за нормалізованим pathname.
  */
 import { describe, expect, it } from 'vitest';

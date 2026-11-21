@@ -1,4 +1,4 @@
-// К3-Е5б Task 4: вузький пошук товару для додавання в замовлення (Е5б-4) на
+// Вузький пошук товару для додавання в замовлення на
 // справжньому Postgres — літеральні `%`/`_`/`\`, межа 2 символи БЕЗ звернення
 // до БД, лише активні, збіг за модифікацією без дублів, стеля 20, authz.
 import { describe, expect, it, vi } from 'vitest';
@@ -27,7 +27,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 import { requireGrant, resolveGrant, AuthzError } from 'simplycms/auth';
 import { withActor } from 'simplycms/db';
 
-describe('admin: пошук товару для замовлення (К3-Е5б, Task 4)', () => {
+describe('admin: пошук товару для замовлення', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_search');
   const search = async (query: string) =>
     (await searchProductsForOrderOp({ data: { query } })).items;
@@ -64,7 +64,7 @@ describe('admin: пошук товару для замовлення (К3-Е5б,
       }),
     );
 
-  it('% і _ — літерали: «50%» знаходить «Знижка 50%», «5_» не знаходить «50» (Review Focus 5)', async () => {
+  it('% і _ — літерали: «50%» знаходить «Знижка 50%», «5_» не знаходить «50»', async () => {
     await product('Знижка 50%', null);
     await product('Знижка 50', null);
     await product('Кабель a_b', null);

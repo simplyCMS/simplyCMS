@@ -1,4 +1,4 @@
-// Е4, Task 3: записувані ресурси довідників каталогу проти живої БД. Шапка —
+// Записувані ресурси довідників каталогу проти живої БД. Шапка —
 // патерн admin-catalog.test.ts (createTempDatabase → канон → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ).
 //
@@ -75,7 +75,7 @@ const option = (propertyId: string, over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-describe('довідники каталогу: CRUD ресурсів (Е4, Task 3)', () => {
+describe('довідники каталогу: CRUD ресурсів', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_admin_dictionaries');
   let dbUrl = '';
@@ -165,7 +165,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     ).toEqual([{ section_id: null }]);
   });
 
-  it('розділ: parentId у payload мовчки зрізається (Е4-3)', async () => {
+  it('розділ: parentId у payload мовчки зрізається', async () => {
     const parent = section();
     await sectionsOps.insert({ data: [parent] });
     const child = section({ parentId: parent.id });
@@ -364,8 +364,8 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
     ).toEqual([{ n: 1 }]);
   });
 
-  // ── Task 4 (Е4-1, Е4-2): іменовані операції типу ціни ──────────────────
-  describe('типи цін: іменовані операції (Е4-2)', () => {
+  // ── Іменовані операції типу ціни ──────────────────
+  describe('типи цін: іменовані операції', () => {
     /** Дефолт канону — 0003_seed.sql. */
     const RETAIL = '00000003-0000-4000-8000-000000000001';
 
@@ -459,7 +459,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
       expect(await exists(RETAIL)).toBe(true);
     });
 
-    it('remove типу з цінами → AdminConflictError reference, ціни цілі (Review Focus 1)', async () => {
+    it('remove типу з цінами → AdminConflictError reference, ціни цілі', async () => {
       const WHOLESALE_WITH_PRICES = await freshPriceType();
       const productId = crypto.randomUUID();
       await insertProductGraphAt(dbUrl, {
@@ -501,7 +501,7 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
       expect(await exists(SPARE)).toBe(true);
     });
 
-    // 🔴 ред.2 (аудит Codex, знахідка 2): гонка, яку зразки Е1б/Е3
+    // 🔴 Гонка, яку наявні зразки
     // пропускають — remove(X) між читанням X і UPDATE цілі лишав би нуль
     // дефолтів.
     it('setDefault(X) паралельно з remove(X) → завжди рівно один дефолт', async () => {
@@ -519,9 +519,9 @@ describe('довідники каталогу: CRUD ресурсів (Е4, Task 
       }
     });
 
-    // Е4-12: детермінований доказ advisory-локу `price-type-default` для
+    // Детермінований доказ advisory-локу `price-type-default` для
     // ОБОХ операцій — стрес-тести вище перемогу гонки лише ймовірно
-    // розрізняють (Е4-11: 2 червоні з 55 прогонів без локу в setDefault).
+    // розрізняють (2 червоні з 55 прогонів без локу в setDefault).
     describe('advisory-lock: доказ серіалізації (price-type-default)', () => {
       const holdLock = (key: string) => holdAdvisoryLock(dbUrl, key);
 

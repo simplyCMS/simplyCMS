@@ -1,4 +1,4 @@
-// Бейджі активних фільтрів і їх зняття (контракт тем v3, Фаза 4).
+// Бейджі активних фільтрів і їх зняття.
 
 import { useCallback, useMemo } from 'react';
 import { useT } from 'simplycms/i18n';

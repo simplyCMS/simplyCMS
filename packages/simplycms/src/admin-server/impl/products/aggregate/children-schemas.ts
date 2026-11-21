@@ -3,7 +3,7 @@ import { SLUG_FORMAT } from 'simplycms/domain/slugs';
 import { code } from '../../languages/view';
 import { stockStatus } from './schemas';
 
-// Схеми дочірніх колекцій агрегата товару (М1, Task 12). Усі strict: невідоме
+// Схеми дочірніх колекцій агрегата товару. Усі strict: невідоме
 // поле — відмова, а не мовчазне відкидання. Колекції ніколи не видаляються
 // неявно — лише явним `remove`.
 

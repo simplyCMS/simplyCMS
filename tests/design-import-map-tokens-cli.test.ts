@@ -1,7 +1,6 @@
 /**
- * Тест CLI-обгортки `map-tokens.mjs` (Фаза 3, задача §2.B, план — Фаза 3
- * Step 2): реальний процес через `spawnSync(process.execPath, …)` за зразком
- * `tests/cli-add.test.ts:204` (НЕ `execFile` — план вимагає саме spawnSync).
+ * Тест CLI-обгортки `map-tokens.mjs`: реальний процес через `spawnSync(process.execPath, …)` за зразком
+ * `tests/cli-add.test.ts:204` (НЕ `execFile`, саме spawnSync).
  * tmp-dir — щоб не смітити в репозиторії.
  */
 import { spawnSync } from 'node:child_process';

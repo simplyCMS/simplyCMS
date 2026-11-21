@@ -1,4 +1,4 @@
-// М1 Task 16: назва позиції кошика, квоти й знімка `order_items.name` — мовою запиту
+// Назва позиції кошика, квоти й знімка `order_items.name` — мовою запиту
 // (товар з проєкції, модифікація з fallback на основну мову), на живому Postgres.
 // Двомовний знімок і `orders.locale` — М2: тут знімок одномовний.
 import { randomUUID } from 'node:crypto';
@@ -14,7 +14,7 @@ import { poll } from './fixtures/poll';
 import { productGraphSql } from './fixtures/product-graph';
 import { EN, UK } from './fixtures/text-locale';
 
-describe('назва позиції кошика й знімка мовою запиту (Task 16)', () => {
+describe('назва позиції кошика й знімка мовою запиту', () => {
   const db = useCommerceDb('simplycms_cart_locale');
   const product = randomUUID();
   const red = randomUUID();

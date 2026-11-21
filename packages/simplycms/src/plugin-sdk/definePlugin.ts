@@ -14,7 +14,7 @@ const NAME_RE = /^[a-z][a-z0-9-]*$/;
 export function definePlugin(definition: PluginDefinition): SdkPluginModule {
   const { name } = definition;
   // Явна перевірка типу: RegExp.test коерсить undefined у рядок 'undefined',
-  // який... проходить [a-z][a-z0-9-]* (знахідка рев'ю Фази 3).
+  // який... проходить [a-z][a-z0-9-]*.
   if (typeof name !== 'string' || !NAME_RE.test(name)) {
     throw new Error(
       `[plugin-sdk] Невалідне імʼя плагіна "${name}": очікується [a-z][a-z0-9-]* ` +

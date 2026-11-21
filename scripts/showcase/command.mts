@@ -1,5 +1,5 @@
 /**
- * Команди реєстру операцій у транзакції сіду (М1, Task 12).
+ * Команди реєстру операцій у транзакції сіду.
  *
  * 🔴 Сід пише агрегат товару лише командами (`products.create`,
  * `products.saveDescription`, `products.savePrices`, `products.saveStock`), а не

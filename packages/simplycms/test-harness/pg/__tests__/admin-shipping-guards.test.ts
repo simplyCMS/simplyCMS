@@ -1,4 +1,4 @@
-// Е6а, Task 4 (Е6а-12, Е6а-16): guard-хук фабрики — інваріанти insert/update
+// guard-хук фабрики — інваріанти insert/update
 // способів і точок перевіряє СЕРВЕР під `shipping-config`, а не лише UI.
 // Шапка — патерн admin-catalog-dictionaries.test.ts (операції напряму з
 // `simplycms/admin-server/impl`, requireGrant мокається модульно).
@@ -39,7 +39,7 @@ const method = (provider: string, over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-describe('admin: доставка — guard-и insert/update (Е6а, Task 4)', () => {
+describe('admin: доставка — guard-и insert/update', () => {
   const db = F.useShippingAdminDb('simplycms_admin_shipping_guards');
   const url = () => db.url();
   const count = async (table: string, ids: string[]) =>

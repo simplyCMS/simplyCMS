@@ -1,4 +1,4 @@
-// Сід читань покупців і дашборду (К3-Е6г, Task 3): замовлення й власник без
+// Сід читань покупців і дашборду: замовлення й власник без
 // профілю напряму SQL-ем — повз guard, це сід, а не перевірка.
 import { rows } from './customer-categories';
 import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';

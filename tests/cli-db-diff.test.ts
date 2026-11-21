@@ -145,7 +145,7 @@ describe('cli db:diff', () => {
   });
 });
 
-// N канонів (Фаза 3, Р4): ядро + міграції встановлених плагінів.
+// N канонів: ядро + міграції встановлених плагінів.
 describe('cli db:diff: мульти-канони', () => {
   it('pluginMigrationSources: читає конфіг, бачить node_modules і @plugins/, пропускає плагіни без міграцій', async () => {
     const store = await scaffoldStore('db-plugin-sources');

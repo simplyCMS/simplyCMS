@@ -1,4 +1,4 @@
-// М1 Task 11, І10: ключі `source_hashes` у БД — підмножина перекладних полів
+// І10: ключі `source_hashes` у БД — підмножина перекладних полів
 // типу (`spec.fields`), для КОЖНОЇ таблиці перекладів реєстру, а не лише товару.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';

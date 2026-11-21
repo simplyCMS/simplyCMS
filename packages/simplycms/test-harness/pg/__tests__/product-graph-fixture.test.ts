@@ -1,4 +1,4 @@
-// М1 Task 10: фікстурний хелпер графа товару. Доводить, що ОДИН виклик дає
+// Фікстурний хелпер графа товару. Доводить, що ОДИН виклик дає
 // повний граф за контрактом майстра §3.1 (переклад основної мови, поточна
 // адреса, токени модифікацій, значення з `value_kind`) і що запис іде під
 // спільним замком `languages-set` (тригер SC004).
@@ -16,7 +16,7 @@ import {
   type PgClientLike,
 } from './fixtures/product-graph';
 
-describe('insertProductGraph (М1 Task 10)', () => {
+describe('insertProductGraph', () => {
   const db = useAddressingDb('simplycms_product_graph');
   const { q } = db;
   const client: PgClientLike = { query: (sql) => q(sql) };
@@ -195,7 +195,7 @@ describe('insertProductGraph (М1 Task 10)', () => {
     ]);
   });
 
-  it('у базових таблицях товару немає текстових колонок, фото й тексту значення (М1, Task 17)', async () => {
+  it('у базових таблицях товару немає текстових колонок, фото й тексту значення', async () => {
     const rows = await q(
       `select table_name || '.' || column_name as c from information_schema.columns
         where table_schema = 'public'
@@ -286,7 +286,7 @@ describe('єдиний записувач графа товару', () => {
     /insert\s+into\s+(public\.)?(url_paths|slug_tokens)\b|insert\(\s*[\w.]*(urlPaths|slugTokens)\b|insertInto\(\s*['"](url_paths|slug_tokens)['"]/i;
   // Дозволені білдери графа — єдиний записувач: лише вони пишуть у таблиці товару й лише
   // вони мають право називати таблицю змінною (`insertInto(table, …)` у `product-graph-values`).
-  // `translatable-rows.ts` — загальний рівень тих самих білдерів (М2): `insertInto(table, …)` там
+  // `translatable-rows.ts` — загальний рівень тих самих білдерів: `insertInto(table, …)` там
   // з іменем таблиці змінною за побудовою, а граф товару збирає з нього свої рядки.
   const BUILDERS = (f: string) =>
     f.startsWith('pg/__tests__/fixtures/product-graph') ||
@@ -372,7 +372,7 @@ describe('єдиний записувач графа товару', () => {
     expect(hit).toEqual([fake]);
   });
 
-  // Task 17 fix-1 (A3): шаблонні імена — розкриття за власниками з одного джерела.
+  // Шаблонні імена — розкриття за власниками з одного джерела.
   it.each(VALUE_OWNERS)(
     'шаблон `${owner}_property_values` розкривається і в «%s_property_values»',
     (owner) => {
@@ -399,7 +399,7 @@ describe('єдиний записувач графа товару', () => {
     expect(templatedTargets(sample).unexpandable).toHaveLength(1);
   });
 
-  // Task 17б (хвіст рев'ю 17): та сама дисципліна для білдер-форми `insertInto(`…`)`.
+  // Та сама дисципліна для білдер-форми `insertInto(`…`)`.
   it.each(VALUE_OWNERS)(
     'insertInto(`${owner}_property_values`) розкривається і в «%s_property_values»',
     (owner) => {
@@ -423,7 +423,7 @@ describe('єдиний записувач графа товару', () => {
     expect(templatedTargets(sample).unexpandable).toHaveLength(1);
   });
 
-  // Task 17б fix-1 (M3): ім'я таблиці змінною — порушення поза білдерами.
+  // Ім'я таблиці змінною — порушення поза білдерами.
   it.each([
     'insertInto(table, row)',
     'db.insertInto(tableName)',

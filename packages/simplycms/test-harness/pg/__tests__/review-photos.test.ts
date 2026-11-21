@@ -1,4 +1,4 @@
-// К3-Е6д, Task 7 (§4, Д-3, Е6д-5, Е6д-17, Review Focus 2): подача відгуку з
+// §4, Д-3: подача відгуку з
 // фото одним актом — файли, рядки `media` і відгук або разом, або нічого.
 // Межа serverFn (FormData) — `review-photos-form`, стирання — `-erase`.
 import pg from 'pg';
@@ -13,7 +13,7 @@ import {
 import { stillPending } from './fixtures/advisory-lock';
 import { png, useReviewPhotosDb } from './fixtures/review-photos';
 
-describe('фото у відгуку: подача (Е6д-5, Review Focus 2)', () => {
+describe('фото у відгуку: подача', () => {
   const d = useReviewPhotosDb('simplycms_e6d_rv_photos');
   const { f } = d;
   const input = () => ({
@@ -45,7 +45,7 @@ describe('фото у відгуку: подача (Е6д-5, Review Focus 2)', (
     expect(media.map((m) => m.storage_key)).toEqual([...refs].sort());
     expect(media.every((m) => m.uploaded_by === userId)).toBe(true);
 
-    // Е6д-17: автор бачить свій pending разом із фото; гість та інший — ні.
+    // Автор бачить свій pending разом із фото; гість та інший — ні.
     const urls = refs.map((r) => `/media/${r}`);
     expect((await visibleTo(userId, id))?.images).toEqual(urls);
     expect(await visibleTo(null, id)).toBeUndefined();

@@ -1,6 +1,6 @@
-// Е0: сіди (`0003_seed.sql`, `demo/demo-seed.sql`; мова й довідники — `bootstrapStore`, id з `SYSTEM_SEED_IDS`) генерують id на клієнті,
-// а не покладаються на `DEFAULT gen_random_uuid()` (Task 2, план
-// В2-К3-Е0). Task 4 знімає сам DEFAULT — після цього сід без явних `id` не
+// Сіди (`0003_seed.sql`, `demo/demo-seed.sql`; мова й довідники — `bootstrapStore`, id з `SYSTEM_SEED_IDS`) генерують id на клієнті,
+// а не покладаються на `DEFAULT gen_random_uuid()`.
+// Знімання самого DEFAULT — після цього сід без явних `id` не
 // накотиться взагалі, тож перевірка мусить бути статичною й випереджати.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ const MIGRATIONS = resolve(import.meta.dirname, '../../../migrations');
 
 // 🔴 Третій елемент — ОЧІКУВАНА кількість `insert into` у файлі, звірена
 // вручну (3 у `0003_seed.sql`, 24 у `demo/demo-seed.sql`: 19 + переклади товару й
-// модифікацій, `url_paths`, `slug_tokens` — М1 Task 10, проєкція — Task 14). Це не косметика:
+// модифікацій, `url_paths`, `slug_tokens`, проєкція). Це не косметика:
 // `insertColumnLists` матчить лише форму `insert into T ( cols )` і мовчки
 // пропускає `insert into T select …` без явного списку колонок (доведено
 // негативним контролем нижче) — тобто скан «чи знайдено хоч один INSERT»
@@ -29,14 +29,14 @@ const SEEDS = [
  * Таблиці з ПРИРОДНИМ первинним ключем: колонки `id` у них немає взагалі, тож
  * вимога «сід називає id» до них безпредметна. Список фіксований і короткий:
  * нова таблиця без `id` — свідоме рішення, а не спосіб обійти гейт.
- * `cache_generations` (М1, Д6): PK — `key` (константа `CACHE_KEYS`).
+ * `cache_generations` (Д6): PK — `key` (константа `CACHE_KEYS`).
  */
 const NATURAL_KEY_TABLES = new Set([
   'public.cache_generations',
-  // Переклади (М1, майстер §3.1): PK `(<e>_id, locale)`, власного `id` немає.
+  // Переклади (майстер §3.1): PK `(<e>_id, locale)`, власного `id` немає.
   'public.product_translations',
   'public.product_modification_translations',
-  // Проєкція тексту (М1, Task 14): PK `(product_id, locale)`.
+  // Проєкція тексту: PK `(product_id, locale)`.
   'public.catalog_product_texts',
 ]);
 
@@ -45,7 +45,7 @@ const NATURAL_KEY_TABLES = new Set([
  * саме на нього: скан «чи є десь id» ловив би `select s.id` у підзапиті
  * резолву FK і давав хибне проходження (знахідка аудиту).
  *
- * 🔴 ВІДОМА МЕЖА (знахідка рев'ю, fix round 1): регекс вимагає явний
+ * 🔴 ВІДОМА МЕЖА (знахідка рев'ю): регекс вимагає явний
  * список колонок одразу після імені таблиці. Форма `insert into T select
  * a, b from …` (без дужок — INSERT покладається на порядковий номер
  * колонок таблиці) під нього не підпадає і мовчки випадає з результату.
@@ -63,7 +63,7 @@ function insertColumnLists(sql: string): { table: string; columns: string }[] {
   return out;
 }
 
-describe('Е0: сід детермінований', () => {
+describe('сід детермінований', () => {
   it.each(SEEDS)(
     '%s — кожен INSERT називає колонку id',
     (label, path, expectedInserts) => {
@@ -106,7 +106,7 @@ function columnNames(sqlName: string): string[] | null {
     : null;
 }
 
-describe('Е0: реєстр природних ключів чесний', () => {
+describe('реєстр природних ключів чесний', () => {
   it.each([...NATURAL_KEY_TABLES])(
     '%s справді без колонки id (інакше виняток приховує порушення)',
     (qualified) => {
@@ -121,7 +121,7 @@ describe('Е0: реєстр природних ключів чесний', () =>
   });
 });
 
-describe('Е0: негативний контроль — гейт справді ловить регресію', () => {
+describe('негативний контроль — гейт справді ловить регресію', () => {
   it('insert із явним списком колонок без id — ловиться (columns не матчить /id/)', () => {
     const sql = `insert into public.foo (name, code) values ('a', 'b');`;
     const inserts = insertColumnLists(sql);

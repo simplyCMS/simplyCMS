@@ -1,7 +1,7 @@
-// М1 Task 17б фікс-раунд 1 проти живого Postgres:
-// - I1: галерея сторінки товару — у тому самому запиті, що й мовна версія (основна мова
+// проти живого Postgres:
+// - галерея сторінки товару — у тому самому запиті, що й мовна версія (основна мова
 //   відома ДО запиту з кешу мов), а не окремим походом;
-// - M4: семантика alt — `''` у перекладі мови = явно декоративне (fallback НЕ застосовується),
+// - семантика alt — `''` у перекладі мови = явно декоративне (fallback НЕ застосовується),
 //   `null`/рядка немає = перекладу немає (fallback на основну з `lang`); порожній alt мови
 //   не має ніколи.
 import { randomUUID } from 'node:crypto';
@@ -12,7 +12,7 @@ import { loadProductPageBase } from '../../../src/storefront/loaders/product-pag
 import { useAddressingDb } from './fixtures/addressing-db';
 import { create } from './fixtures/product-aggregate';
 
-describe('сторінка товару: галерея одним запитом і семантика alt (Task 17б fix-1)', () => {
+describe('сторінка товару: галерея одним запитом і семантика alt', () => {
   const db = useAddressingDb('simplycms_image_page');
   let product: { id: string; paths: Record<string, string> };
 

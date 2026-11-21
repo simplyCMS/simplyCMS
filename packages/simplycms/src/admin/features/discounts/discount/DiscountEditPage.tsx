@@ -14,7 +14,7 @@ import { DiscountTargetsCard } from './DiscountTargetsCard';
 import { useDiscountCard } from './useDiscountCard';
 
 /**
- * Картка знижки (К3-Е6в, Task 8): `new` (з `?groupId`) або id з URL.
+ * Картка знижки: `new` (з `?groupId`) або id з URL.
  * Основні поля, цілі й умови — одна форма й один атомарний запис.
  */
 export default function DiscountEditPage() {

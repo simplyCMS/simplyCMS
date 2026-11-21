@@ -7,8 +7,8 @@ import { guardDiscountGroups } from './guards';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Групи знижок (Е6в, Task 5). Insert/update — фабрика під
- * `LOCK_KEYS.discountConfig` із guard-ом циклу й пари дат (Е6в-17, ред.2).
+ * Групи знижок. Insert/update — фабрика під
+ * `LOCK_KEYS.discountConfig` із guard-ом циклу й пари дат.
  * 🔴 Фабричний `discountGroupsOps.remove` serverFn-ом НЕ виставляється:
  * видалення — лише `removeDiscountGroupsOp` (під локом, повертає все
  * видалене піддерево для write-back).

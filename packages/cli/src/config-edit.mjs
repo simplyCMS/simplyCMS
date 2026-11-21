@@ -40,7 +40,6 @@ export function stripPrefixes(pkg) {
   // другого strip-а ключ для '@simplycms/plugin-faq' був би 'plugin-faq',
   // що розсинхронився б із manifest.name ('faq') — а на ключі тримаються і
   // рядок у таблиці plugins, і префікс plg_* для лінта міграцій
-  // (знахідки рев'ю Фази 3 №1-2).
   return base
     .replace(/^simplycms-(?:plugin|theme)-/, '')
     .replace(/^(?:plugin|theme)-/, '');
@@ -138,8 +137,8 @@ function sliceBlock(source, anchor, open, close) {
 }
 
 /**
- * Повні записи тем конфігу: ключ + специфікатор import(). Потрібні doctor-у
- * (Фаза 4, Р6): ключ ≠ імʼя пакета через `--name`, а резолвити треба саме
+ * Повні записи тем конфігу: ключ + специфікатор import(). Потрібні doctor-у:
+ * ключ ≠ імʼя пакета через `--name`, а резолвити треба саме
  * специфікатор — теку `@themes/<key>/index` або пакет у node_modules.
  * Дзеркало `configPluginEntries`; null — якір відсутній.
  * @returns {{ key: string; spec: string }[] | null}
@@ -195,8 +194,8 @@ export function configPluginNames(source) {
 
 /**
  * Повні записи плагінів конфігу: імʼя + специфікатор import(). Потрібні
- * db:diff, щоб знайти теки `migrations/` встановлених плагінів (N канонів,
- * план Фази 3 Р4); null — якір відсутній.
+ * db:diff, щоб знайти теки `migrations/` встановлених плагінів (N канонів);
+ * null — якір відсутній.
  * @returns {{ name: string; spec: string }[] | null}
  */
 export function configPluginEntries(source) {

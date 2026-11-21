@@ -85,7 +85,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
     kind: 'console',
     reason: 'console.warn — діагностика для автора теми',
   },
-  // Той самий клас діагностики для контуру плагінів (Фаза 3): валідатор і
+  // Той самий клас діагностики для контуру плагінів: валідатор і
   // definePlugin кидають на порушенні контракту, порти SDK — на зловживанні
   // межею довіри; usePluginConfig лише попереджає в консоль розробника.
   'packages/simplycms/src/plugins/validatePluginModule.ts': {
@@ -177,7 +177,7 @@ export const ALLOWLIST: Record<string, AllowEntry> = {
  */
 export const PENDING_FILES: readonly string[] = [
   // Решта зон порожня: міграцію завершено — вітрина, адмінка, воронка покупки,
-  // host, обидві теми і (з Фази 3) плагіни: `plugins/` і референс-пакети
+  // host, обидві теми і плагіни: `plugins/` і референс-пакети
   // `packages/simplycms-plugin-*` в `SCANNED_ROOTS`, каталоги — власні
   // `messages` плагіна (дзеркало тем, спека §12), парність стереже
   // `tests/plugin-messages-parity.test.ts`. Будь-який новий кириличний рядок

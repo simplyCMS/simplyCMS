@@ -53,8 +53,8 @@ const NOT_MEDIA: readonly string[] = [
   // в `<img src>` (`admin/features/themes/ThemeCard.tsx`). Це URL із метаданих
   // теми, тож резолверу медіа-референсів тут нема чого резолвити.
   'themes.preview_image',
-  // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`
-  // (М1 Task 10), не файл. Самі файли (`product_images.storage_key`,
+  // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`,
+  // не файл. Самі файли (`product_images.storage_key`,
   // `product_image_translations.storage_key`) зареєстровані в `MEDIA_COLUMNS`.
   'product_image_translations.image_id',
   // Власні таблиці сховища: `storage_key` — їхня ідентичність, а не посилання

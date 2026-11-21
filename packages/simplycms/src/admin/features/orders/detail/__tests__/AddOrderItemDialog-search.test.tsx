@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Діалог додавання товару — пошук (Task 6, Е5б-11): debounce 300 мс,
+// Діалог додавання товару — пошук: debounce 300 мс,
 // відповідь лише на ОСТАННІЙ запит. Тексти — `ukT`.
 import { describe, expect, it, vi } from 'vitest';
 import { act, screen } from '@testing-library/react';

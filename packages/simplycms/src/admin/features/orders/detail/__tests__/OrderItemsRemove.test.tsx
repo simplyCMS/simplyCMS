@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Видалення й додавання позицій, скасоване замовлення (Task 5, Е5б-11): справжні колекції + стаб
+ * Видалення й додавання позицій, скасоване замовлення: справжні колекції + стаб
  * межі serverFn. Асерти — точні тексти `ukT`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

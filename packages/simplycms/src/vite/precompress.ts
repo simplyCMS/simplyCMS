@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 
 /**
- * Прекомпресія статики збірки (К3-Е8, Task 7).
+ * Прекомпресія статики збірки.
  *
  * `server.mjs` віддає `sirv({ gzip: true, brotli: true })`, а той шукає
  * `<файл>.br` / `<файл>.gz` поруч з асетом — стискати на льоту не вміє. Вимір

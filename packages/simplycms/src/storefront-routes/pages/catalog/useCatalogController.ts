@@ -1,5 +1,4 @@
-// Контейнерна логіка каталогу — спільна для каталогу й сторінки розділу
-// (контракт тем v3, Фаза 4).
+// Контейнерна логіка каталогу — спільна для каталогу й сторінки розділу.
 
 import { useCallback, useMemo, useState } from 'react';
 import { useProductRatings } from 'simplycms/core/hooks/useProductReviews';

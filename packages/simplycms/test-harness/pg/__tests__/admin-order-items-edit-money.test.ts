@@ -1,8 +1,8 @@
-// К3-Е5б Task 3: гроші при редагуванні позицій (Е5б-13) — цілі центи замість
+// Гроші при редагуванні позицій — цілі центи замість
 // float і межі колонок (`numeric(12,2)` позиції й сум, `numeric(10,2)`
 // доставки) ДО запису: 409 `order_amount_out_of_range`, а не помилка БД.
 // Знімок ціни позиції в межових кейсах задається SQL-ом — так само, як його
-// заморозило б оформлення за старим прайсом (Е5б-1: кількість множить
+// заморозило б оформлення за старим прайсом (кількість множить
 // ЗБЕРЕЖЕНУ ціну).
 import { describe, expect, it, vi } from 'vitest';
 import { conflict, useOrderItemsEditDb } from './fixtures/order-items-edit';
@@ -16,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: суми замовлення при редагуванні позицій (К3-Е5б, Task 3)', () => {
+describe('admin: суми замовлення при редагуванні позицій', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_money');
   const { ids } = f;
 

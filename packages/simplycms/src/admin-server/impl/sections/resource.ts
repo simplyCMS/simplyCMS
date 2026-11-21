@@ -5,14 +5,14 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Розділи каталогу (Е4, Task 3). Операція — catalog.write (Е3-6): адмінка
+ * Розділи каталогу. Операція — catalog.write: адмінка
  * бачить і неактивні розділи.
  *
- * 🔴 Е4-3: `parentId` — readonly, розділи — плоский список (новий розділ
+ * 🔴 `parentId` — readonly, розділи — плоский список (новий розділ
  * має `parent_id NULL`, поле в payload мовчки зрізається). Дерево — окрема
  * продуктова фіча, не тихий побічний ефект форми.
- * 🔴 Е4-7: slug перевіряє і сервер — форма не єдиний рубіж.
- * `touch`: тригера updated_at у каноні немає (Е3-9).
+ * 🔴 Slug перевіряє і сервер — форма не єдиний рубіж.
+ * `touch`: тригера updated_at у каноні немає.
  */
 export const sectionsOps = defineAdminResource({
   entity: ENTITY.sections,
@@ -37,7 +37,7 @@ export const sectionsOps = defineAdminResource({
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
   readonly: ['id', 'parentId', 'createdAt', 'updatedAt'],
-  // К3-Е6д-1: заміна/прибирання картинки розділу стирає файл після COMMIT.
+  // Заміна/прибирання картинки розділу стирає файл після COMMIT.
   media: { entityType: 'section', columns: ['imageUrl'] },
   // Видалення розділу каскадить `section_properties.section_id`, а далі
   // `property_options` — фото опцій не мусять пережити розділ.

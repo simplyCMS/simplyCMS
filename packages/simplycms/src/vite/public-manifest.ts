@@ -2,7 +2,7 @@ import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 /**
- * Маніфест верхньорівневих імен `public/` (Мультимовність М1, Task 5).
+ * Маніфест верхньорівневих імен `public/`.
  *
  * `server.mjs` віддає статику з `dist/client` раніше за роутер, тож адреса
  * сутності з таким іменем (`/robots.txt`, `/favicon`) була б недосяжна.

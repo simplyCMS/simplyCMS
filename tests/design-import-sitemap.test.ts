@@ -1,6 +1,6 @@
 /**
- * Юніти `lib/sitemap.mjs` (інкремент Б.3, Фаза 2 Step 3). До цієї задачі
- * оркестрація візитів була покрита лише CLI-смоком у браузері — тут вона
+ * Юніти `lib/sitemap.mjs`.
+ * Оркестрація візитів покрита не лише CLI-смоком у браузері — тут вона
  * тестується без браузера через інжектовану `visit` (саме заради цього її й
  * інжектують), а разом із нею — форма `schemaVersion: 2` з масивом `links`.
  */
@@ -26,7 +26,7 @@ function fakeVisit(okUrls: string[]) {
 /**
  * Fake-visit із контент-пробом: усі перелічені URL віддають 2xx, але разом із
  * пробом, який `detectVisitMismatch` може відхилити. Лічить пари (url, type) —
- * саме такою сигнатурою `sitemap.mjs` кличе візит із Фази 3.
+ * саме такою сигнатурою `sitemap.mjs` кличе візит.
  */
 function fakeVisitWithProbe(probes: Record<string, Probe>) {
   const calls: Array<[string, string]> = [];

@@ -5,9 +5,9 @@ import type { PropertyOption } from 'simplycms/schema/types';
 const optionalText = z.string().trim();
 
 /**
- * Форма опції властивості (Е4, Task 8). slug — `SLUG_FORMAT` (Е4-7), без
+ * Форма опції властивості. slug — `SLUG_FORMAT`, без
  * автогенерації з назви (легасі `generateSlug` лишав кирилицю в URL).
- * `images` — 0..1 референс сховища ↔ `imageUrl` (Е4-10).
+ * `images` — 0..1 референс сховища ↔ `imageUrl`.
  */
 export const optionFormSchema = z.object({
   name: z.string().trim().min(1),
@@ -24,7 +24,7 @@ export type OptionFormValues = z.output<typeof optionFormSchema>;
 
 const orNull = (s: string) => (s === '' ? null : s);
 
-/** Поля update. 🔴 Без `propertyId` — insertOnly (Е4-5). */
+/** Поля update. 🔴 Без `propertyId` — insertOnly. */
 export function toOptionPatch(v: OptionFormValues) {
   return {
     name: v.name,

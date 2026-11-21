@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 5: порядок «languages-set -> корінь -> дочірні» (`lock-order.ts`,
+// Порядок «languages-set -> корінь -> дочірні» (`lock-order.ts`,
 // пункт (1)). Команди й видалення товару беруть спільний `languages-set` у замку кореня,
 // ДО рядка кореня і будь-яких дочірніх рядків; власники ексклюзивного (`languages.remove`,
 // `setStatus`) рядкових замків коренів не беруть, але видаляють/блокують ті самі таблиці.
@@ -33,7 +33,7 @@ vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
   return { PACKS: testPackRegistry(real.PACKS, ['hr', 'lt', 'lv']) };
 });
 
-describe('languages-set перед коренем агрегата (Task 14, раунд 5)', () => {
+describe('languages-set перед коренем агрегата', () => {
   const db = useAddressingDb('simplycms_aggregate_language_locks');
   const { addr } = pathHelpers(db);
   const add = (code: string) =>

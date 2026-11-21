@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Список замовлень (Task 6, Е5): справжні колекції + стаб межі serverFn
+ * Список замовлень: справжні колекції + стаб межі serverFn
  * (`orders-server-stub` фільтрує/сортує/ліміт як сервер). Асерти — точні
  * тексти `ukT`, не `/./`.
  */
@@ -100,7 +100,7 @@ describe('OrdersPage', () => {
     expect(screen.queryByText(t('common.new'))).toBeNull();
   });
 
-  it('знеособлене замовлення (Е6г): «Видалений покупець», без null і без email', async () => {
+  it('знеособлене замовлення: «Видалений покупець», без null і без email', async () => {
     reset([
       {
         ...makeOrder(1, at(0)),

@@ -1,4 +1,4 @@
-// М2б Task 7 (Р19): агрегат «статус замовлення» — перша сутність на фабриці команд
+// Агрегат «статус замовлення» — перша сутність на фабриці команд
 // перекладного агрегата — проти живого Postgres під `app_admin`.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -27,7 +27,7 @@ import { exec } from './fixtures/product-aggregate';
 
 type Texts = Record<string, Record<string, string | null>>;
 
-describe('агрегат «статус замовлення» (М2б, Р19)', () => {
+describe('агрегат «статус замовлення»', () => {
   const db = useAddressingDb('simplycms_order_statuses_aggregate');
   let sort = 1000;
   const rejects = (p: Promise<unknown>) =>
@@ -405,7 +405,7 @@ describe('агрегат «статус замовлення» (М2б, Р19)', (
     ).toEqual(before);
   });
 
-  it('code незмінний (Е5-6): saveDescription з code у base → validation, код лишився', async () => {
+  it('code незмінний: saveDescription з code у base → validation, код лишився', async () => {
     const { id, version } = await create({ uk: { name: 'Код' } });
     const err = await rejects(
       exec(orderStatusesSaveDescription, {

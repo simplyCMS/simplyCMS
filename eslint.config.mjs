@@ -119,11 +119,11 @@ const I18N_MIGRATED_FILES = [
   'packages/simplycms/src/checkout-ui/**/*.tsx',
   'packages/simplycms/src/profile-ui/**/*.tsx',
   'packages/simplycms/src/reviews-ui/**/*.tsx',
-  // Реєстр колекцій адмінки (Task 9, Е1б): один .tsx у тесті (renderHook-
+  // Реєстр колекцій адмінки: один .tsx у тесті (renderHook-
   // обгортка), тож зона розширена явно, а не покладена на успадкування.
   'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
   'themes/*/components/**/*.tsx',
-  // Референс-теми як пакети (Фаза 4): та сама зона, що й локальні `themes/*`,
+  // Референс-теми як пакети: та сама зона, що й локальні `themes/*`,
   // — доставка кодом npm-пакета вимог i18n не послаблює.
   'packages/simplycms-theme-*/**/*.tsx',
 ];
@@ -142,7 +142,7 @@ const A11Y_LABEL_ZONE = [
   'packages/simplycms/src/admin/**/*.tsx',
 ];
 
-// Контракт серверного env (спека CLI v1 §7): серверний контур читає env ЛИШЕ
+// Контракт серверного env (`docs/architecture/cli.md` §7, ADR-0011): серверний контур читає env ЛИШЕ
 // з `process.env` і ЛИШЕ в рантаймі — `import.meta.env` там запікся б у білд.
 // Стереже саме цей селектор, а не тест: у vitest `import.meta.env` — Proxy над
 // `process.env` (один обʼєкт), тож рантайм-тест регрес джерела не побачить
@@ -154,7 +154,7 @@ const serverEnvRestrictedSyntax = [
   {
     selector: IMPORT_META_ENV,
     message:
-      'Серверний модуль читає env ЛИШЕ з process.env у рантаймі; import.meta.env запікається в білд. Контракт серверного env — спека CLI v1 §7 (docs/superpowers/specs/2026-08-13-cli-v1-design.md).',
+      'Серверний модуль читає env ЛИШЕ з process.env у рантаймі; import.meta.env запікається в білд. Контракт серверного env — docs/architecture/cli.md §7 (ADR-0011).',
   },
 ];
 
@@ -175,7 +175,7 @@ const SERVER_ENV_FILES = [
   'packages/simplycms/src/auth/owner-invite-cli/*.ts',
 ];
 
-// 🔴 Межа довіри плагінів (спека §7, Фаза 3): плагін працює ЛИШЕ через порти
+// 🔴 Межа довіри плагінів: плагін працює ЛИШЕ через порти
 // `simplycms/plugin-sdk` — прямі імпорти клієнтського шару БД (`@supabase/*`) звідси заборонені.
 // Зона: локальні плагіни магазину (plugins/**) і публіковані референс-пакети
 // (packages/simplycms-plugin-*/**). Глоб навмисно `simplycms-plugin-*`, а не
@@ -188,17 +188,16 @@ const PLUGIN_TRUST_BOUNDARY_FILES = [
   'packages/simplycms-plugin-*/**/*.{ts,tsx}',
 ];
 
-// Точковий ратчет `mutation-cache-sync` (Task 11, Е1б): сторінки
+// Точковий ратчет `mutation-cache-sync`: сторінки
 // `src/admin/pages/*`, вже переписані на TanStack DB-колекції й тому
 // зобовʼязані тримати гейт. Список РОСТЕ з хвилями Е3–Е6 (обернений
-// PENDING_FILES) — стартово одна сторінка з Task 10.
+// PENDING_FILES) — стартово одна сторінка.
 //
-// 🔴 `packages/simplycms/src/admin/features/**` (уся хвиля К3-Е3, Tasks
-// 6–10) у цей список НЕ входить — вона в зоні правила за побудовою
+// 🔴 `packages/simplycms/src/admin/features/**` у цей список НЕ входить — вона в зоні правила за побудовою
 // (глоб нижче), окремий список лише для файлів ПОЗА `features/`. Export
-// — щоб `tests/mutation-cache-sync-coverage.test.ts` (Task 12) звіряв
+// — щоб `tests/mutation-cache-sync-coverage.test.ts` звіряв
 // повноту зони проти того самого джерела, а не другою копією.
-// 🔴 `OrderStatuses.tsx` (К3-Е5 Task 2) зійшов зі списку: мутації переїхали
+// 🔴 `OrderStatuses.tsx` зійшов зі списку: мутації переїхали
 // у `admin/features/order-statuses/**`, який уже в зоні за глобом; сама
 // сторінка лише складає частини й `admin-data/server` не імпортує (повнота
 // ратчета перевіряється саме цим — мертвий запис валить гейт).
@@ -249,7 +248,7 @@ const pluginTrustBoundaryImports = [
 ];
 
 // no-restricted-imports НЕ бачить динамічний import() — його ловить окремий
-// селектор (знахідка рев'ю Фази 3). Regex будується з тих самих списків, що
+// селектор. Regex будується з тих самих списків, що
 // й групи вище; `/` у селекторі ESLint пишеться як \u002F.
 const esq = (items) => items.map((s) => s.replace(/\//g, '\\u002F')).join('|');
 // 🔴 Альтернатива кожної залежності ДЕРИВУЄТЬСЯ з `serverOnlyDepSpecifier`, а
@@ -278,7 +277,7 @@ const pluginTrustBoundarySyntax = [
 
 const eslintConfig = [
   ...tseslint.configs.recommended,
-  // Зона «зʼєднання лише через withActor» (Task 6, В2-К1а) — глобальна, тому
+  // Зона «зʼєднання лише через withActor» — глобальна, тому
   // стоїть тут, ДО зон, що теж ставлять `no-restricted-imports`: ті доливають
   // її групу до своїх патернів (див. `eslint.db-client-zone.mjs`).
   // Негативний контроль — `tests/db-client-boundary.test.ts`.
@@ -399,7 +398,7 @@ const eslintConfig = [
     },
     rules: { 'simplycms/query-key-from-entity': 'error' },
   },
-  // Мутація без сліду в кеші (Task 11, Е1б) — клієнтська половина інваріанту
+  // Мутація без сліду в кеші — клієнтська половина інваріанту
   // «мутація ⇒ кеш бачить наслідок»; серверну половину (persistence-хендлери
   // onInsert/onUpdate/onDelete) стереже окремий AST-гейт tests/handler-canon.test.ts.
   // Зона — фабрики колекцій (`admin-data`) + точковий ратчет переписаних
@@ -413,7 +412,7 @@ const eslintConfig = [
   {
     files: [
       'packages/simplycms/src/admin-data/**/*.{ts,tsx}',
-      // Уся хвиля К3-Е3 (Tasks 6–10) — у зоні за побудовою: кожна фіча,
+      // Усі фічі адмінки — у зоні за побудовою: кожна фіча,
       // що пише через serverFn/колекції, зобовʼязана мати write-back.
       'packages/simplycms/src/admin/features/**/*.{ts,tsx}',
       ...MUTATION_CACHE_SYNC_RATCHET,
@@ -459,7 +458,7 @@ const eslintConfig = [
     },
     rules: { 'simplycms-serverfn/server-fn-top-level': 'error' },
   },
-  // І25 (М1, Task 8): serverFn адмін-зони — тонкі обгортки операцій реєстру.
+  // І25: serverFn адмін-зони — тонкі обгортки операцій реєстру.
   // Окреме імʼя плагіна `simplycms-ops` і ОКРЕМИЙ блок на файл: flat config
   // замінює опції правила цілком, а legacy-перелік у кожного файла свій.
   // Перелік лише скорочується (правило падає на зниклому імені); М3 його знесе.
@@ -744,7 +743,7 @@ const eslintConfig = [
       'packages/create-simplycms-store/template/*/**',
       '!packages/create-simplycms-store/template/scripts',
       '!packages/create-simplycms-store/template/scripts/**',
-      // Канон host-файлів пакета CLI (спека CLI v1 §5): та сама байт-копія
+      // Канон host-файлів пакета CLI (`docs/architecture/cli.md`): та сама байт-копія
       // host-каркаса, що й у шаблоні вище, — знімок для `simplycms update`,
       // чиї імпорти резолвляться лише всередині згенерованого магазину.
       'packages/cli/host/**',

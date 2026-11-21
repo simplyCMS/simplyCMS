@@ -1,4 +1,4 @@
-// Фікстури модерації відгуків (К3-Е6д, Task 6): БД із товарами + тимчасовий
+// Фікстури модерації відгуків: БД із товарами + тимчасовий
 // `MEDIA_ROOT` (`useDeleteDb`) і хелпери рядків відгуку та їхніх фото.
 import { withActor } from 'simplycms/db';
 import { getMediaDriver, writeMedia } from 'simplycms/storage';

@@ -11,7 +11,7 @@ import type { ResourceGuardWrite } from '../resource-config';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Е6а-20: дефолтну зону не можна деактивувати — довідник бере лише активні
+ * Дефолтну зону не можна деактивувати — довідник бере лише активні
  * зони, і вимкнена дефолтна мовчки лишила б без доставки всі міста поза
  * зонами. Insert дефолтних зон не створює (`isDefault` — readonly).
  */
@@ -34,7 +34,7 @@ async function guardShippingZones(
 }
 
 /**
- * Зони доставки (Е6а, Task 4). 🔴 `isDefault` — readonly для фабрики:
+ * Зони доставки. 🔴 `isDefault` — readonly для фабрики:
  * дефолт ставить `setDefaultShippingZoneOp`, видалення — лише
  * `removeShippingZonesOp` (обидві під `LOCK_KEYS.shippingConfig`); фабричний
  * `remove` serverFn-ом НЕ виставляється.
