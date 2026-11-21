@@ -5,6 +5,15 @@
 > [`2026-10-14-content-multilingual-design.md`](2026-10-14-content-multilingual-design.md).
 > Рішення власника 12–19 (2026-10-14) внесено. Імена колонок — робочі. Остаточні фіксує план, але форма (які таблиці, ключі, зв'язки, інваріанти) — це
 > контракт.
+>
+> 🔴 **Амендмент 2026-11-21 (звірка з кодом).** Чинна схема (`packages/simplycms/src/schema/schema.ts`) відходить
+> від діаграм нижче в трьох місцях; діаграми лишаються записом рішення, джерело правди — схема:
+> 1. `url_paths` — не поліморфна пара `entity_type`/`entity_id`, а власний `id` і типізований FK на кожну ціль
+>    (`product_id`; М2 додає section/property/option) з `CHECK url_paths_one_target` (рівно одна ціль).
+> 2. Полів `seo_h1`, `og_title`, `og_description` у таблицях перекладів немає: SEO-поля — `meta_title` і
+>    `meta_description`.
+> 3. Мова людини в `profiles` — колонка `ui_locale` (мова ІНТЕРФЕЙСУ, код мовного пакета, без FK на
+>    `languages`), а не `locale` з FK, як у зв'язку `profiles }o--|| languages` нижче.
 
 ## 1. Одне правило на всю систему
 
