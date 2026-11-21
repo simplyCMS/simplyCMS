@@ -47,3 +47,5 @@ packages/simplycms/seed-migrations/
 
 # Тимчасові кеші агентів
 .claude/skills/
+# agent-kit: task and scratch worktrees inside the repo
+.worktrees/

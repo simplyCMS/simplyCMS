@@ -1,0 +1,77 @@
+{
+  "kit": {
+    "version": "0.10.0"
+  },
+  "pr": {
+    "base": "main",
+    "mergeMethod": "merge",
+    "requiredChecks": [
+      "TypeScript",
+      "Tests",
+      "Landing (apps/www)",
+      "Packaging",
+      "Schema (PG harness)"
+    ]
+  },
+  "tests": {
+    "default": "unit",
+    "levels": {
+      "unit": {
+        "command": ["pnpm", "exec", "vitest", "run"],
+        "reporter": "vitest-json",
+        "timeout": 1200,
+        "ci": true
+      },
+      "schema": {
+        "command": [
+          "pnpm",
+          "exec",
+          "vitest",
+          "run",
+          "--config",
+          "vitest.schema.config.ts"
+        ],
+        "reporter": "vitest-json",
+        "timeout": 1800,
+        "ci": true
+      },
+      "smoke": {
+        "command": ["pnpm", "live:smoke"],
+        "reporter": "exit-code",
+        "timeout": 1200
+      }
+    }
+  },
+  "format": {
+    "check": ["pnpm", "exec", "prettier", "--check"]
+  },
+  "docs": {
+    "specs": "docs/superpowers/specs",
+    "plans": "docs/superpowers/plans",
+    "docs": "docs",
+    "skills": ["packages/simplycms/skills"]
+  },
+  "research": {
+    "corpus": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "packages/README.md",
+      "docs/architecture/**/*.md",
+      "docs/development/**/*.md",
+      "docs/guides/**/*.md",
+      "docs/tasks/**/*.md",
+      "packages/simplycms/skills/*/SKILL.md"
+    ]
+  },
+  "review": {
+    "criteria": ".agents/review-criteria.md",
+    "exclude": [
+      "pnpm-lock.yaml",
+      "src/routeTree.gen.ts",
+      "apps/www/src/routeTree.gen.ts",
+      "packages/simplycms/drizzle/**",
+      "packages/create-simplycms-store/template/**",
+      "packages/cli/host/**"
+    ]
+  }
+}
