@@ -5,7 +5,7 @@
 Мета: ЖИВЦЕМ перевірити, чи бібліотека закриває наші тверді вимоги не гірше за власний механізм `simplycms/i18n`. Це прототип, НЕ міграція: результат — цифри й факти у звіті, код у гілці спайку НІКОЛИ не мержиться.
 
 ## Читати
-- `.superpowers/sdd/2026-11-04-multilingual-m2a-language-axes/research-i18n-libs.md` — повністю; розділ 5 — твій сценарій (свій спайк A або B), розділ 1 — вимоги 1–7.
+- SDD-артефакт «research-i18n-libs» (лишився поза репо) — повністю; розділ 5 — твій сценарій (свій спайк A або B), розділ 1 — вимоги 1–7.
 - Поточний механізм: `packages/simplycms/src/i18n/` (registry, translator, lookup, ui-locale, packs, catalogs), `src/client.tsx`, `packages/simplycms/src/storefront-routes/hydration/`, `packages/simplycms/src/storefront-routes/head/`.
 - `AGENTS.md` (межі), `docs/architecture/i18n.md`.
 

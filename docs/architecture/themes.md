@@ -1,16 +1,10 @@
 # Механізм тем SimplyCMS
 
-> Фактичний стан після Фази 4 (2026-08-14) і треку A — контракт v3
-> «theme views» (2026-08-18; спека
-> [`2026-08-17-theme-contract-v3-views-design.md`](../superpowers/specs/2026-08-17-theme-contract-v3-views-design.md),
-> план [`2026-08-18-theme-views-v3.md`](../superpowers/plans/2026-08-18-theme-views-v3.md),
-> рішення Р1–Р12); специфікатори й конвенція залежностей оновлені після
-> треку К0 (2026-08-20) — ядро постачається одним пакетом `simplycms`, усі
-> входи стали його субшляхами. Вимоги — спека платформи
+> Контракт v3 «theme views» (рішення — ADR-0013 і ADR-0014, `docs/adr/`);
+> ядро постачається одним пакетом `simplycms`, усі входи — його субшляхи.
+> Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
-> §6 (контракт теми), §13 (маркетплейс), §17 сценарій 4; рішення імплементації —
-> [план Фази 4](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
-> (Р0–Р14). Команди CLI — [`cli.md`](cli.md) §3.2, §3.5; межі тестування —
+> §6 (контракт теми), §13 (маркетплейс), §17 сценарій 4. Команди CLI — [`cli.md`](cli.md) §3.2, §3.5; межі тестування —
 > [`test-contours.md`](test-contours.md). Практичний посібник (how-to для
 > розробника магазину й автора теми) — [`../guides/themes.md`](../guides/themes.md).
 
@@ -39,7 +33,7 @@
 
 Тема живе або **локально** в теці `themes/` магазину (аліас `@themes/*`, без
 build-кроку), або **npm-пакетом** (конвенції імен: unscoped
-`simplycms-theme-<name>`, scoped `@vendor/simplycms-theme-<name>`; Р1).
+`simplycms-theme-<name>`, scoped `@vendor/simplycms-theme-<name>`).
 
 Два зразки задають межі форми:
 
@@ -53,8 +47,8 @@ build-кроку), або **npm-пакетом** (конвенції імен: u
 - `bootstrapThemes` — **insert-only**: рядок теми, доданий раніше (наприклад
   сід-міграцією), метадані НЕ оновлює. Деталі — §5.
 - Registry-awareness адмінки (§5) — читає лише `ThemeRegistry.has(name)`;
-  uninstall-рядка з адмінки немає (деактивація достатня для v1, Р0).
-- Межі довіри на теми **немає свідомо** (Р10, §7): тема, на відміну від
+  uninstall-рядка з адмінки немає (деактивація достатня для v1).
+- Межі довіри на теми **немає свідомо** (§7): тема, на відміну від
   плагіна, законно імпортує публічні субшляхи ядра (`simplycms/ui`,
   `simplycms/core`, `simplycms/i18n`) — це контракт v2, а не діра; клієнта БД
   тема не імпортує (`@supabase/*` у репо заборонено ратчетом `no-supabase-import`).
@@ -114,7 +108,7 @@ ThemeModule = {
   поля не вважає помилкою.
 - `manifest.displayName` — те, що бачить адмін у списку тем; поле фактично
   існує в контракті (`packages/simplycms/src/themes/types.ts`), хоча спека §6
-  його не називала — амендмент §6 (Р14, див. спеку).
+  його не називала — амендмент §6.
 - `validateThemeModule` (`simplycms/themes`) — публічний контракт для
   авторів: порушення структури кидає, `ThemeRegistry.load` падає на тему
   `default`, якщо запитаної немає.
@@ -141,7 +135,7 @@ ThemeViews = {
 однієї сторінки немає: або вся сторінка темова й проходить conformance (§7.1),
 або канонічна.
 
-🔴 **Адитивна зміна view-model (К3-Е3, 2026-09-24):** `ProductPropertyValueViewModel.option`
+🔴 **Адитивна зміна view-model:** `ProductPropertyValueViewModel.option`
 отримав обовʼязкове поле `name` (`simplycms/contracts/views/product-detail.ts`). Для рядка
 з опцією назву показувати з `option.name` — це джерело правди (`property_options.name`);
 `value` для таких рядків тепер `null` (адмінка його більше не пише). Multiselect приходить
@@ -160,7 +154,7 @@ ThemeViews = {
 `packages/simplycms/src/storefront-routes/pages/<Name>.tsx` — це **container**: тягне
 дані, тримає стан, збирає view-model і резолвить view хуком
 `useStorefrontViews({ <Name>: Canonical<Name>View })`
-(`src/views/useStorefrontViews.ts`, поверх наявного `useActiveThemeModule`).
+(`packages/simplycms/src/storefront-routes/views/useStorefrontViews.ts`, поверх наявного `useActiveThemeModule`).
 Канонічні view — `packages/simplycms/src/storefront-routes/views/<Name>View.tsx`.
 Каркас (`StorefrontShell`) не чіпається: темовий view живе всередині нього
 так само, як канонічний.
@@ -203,12 +197,12 @@ TS2786), тож `views` тягне type-only імпорт react. Барель `s
 `productDetailFallbackFixture` (`simplycms/contracts/views/fixtures`) і червоніє, якщо
 fallback-поле — назва, короткий опис, опис, остання крихта, текстове значення
 характеристики, `alt` фото — view показує, але не дає йому `lang` мови джерела
-(`themes/conformance/fallback-lang.ts`). Перевірка диференційна за даними, а не пошук тексту:
+(`packages/simplycms/src/themes/conformance/fallback-lang.ts`). Перевірка диференційна за даними, а не пошук тексту:
 поле «показане», якщо розмітка змінюється разом з його текстом, і тоді виставлення лише його
 `*_lang` мусить додати елемент з `lang` — тож трансформований текст (верхній регістр, обрізання)
 вакуумно не проходить. Поле, якого view не показує, порушенням не є.
 
-**Фото мовою сторінки (М1, Task 17б).** `ProductDetailGallery.images`,
+**Фото мовою сторінки.** `ProductDetailGallery.images`,
 `ProductCardViewModel.images` і `images` модифікації — масиви
 `ProductImageViewModel` (`simplycms/contracts/views`), а не рядків URL: `url` — готовий
 URL файлу мови сторінки (перевизначення `product_image_translations.storage_key`,
@@ -235,7 +229,7 @@ URL файлу мови сторінки (перевизначення `product_
 loading/error, toast) належить ядру — зламати воронку покупки темою
 неможливо. Пропси оформлення мінімальні (`SlotAppearanceProps` —
 `className?`); винятком є слоти, яким потрібен ідентифікатор
-(`HomeSectionSlotProps.sectionId`). Реалізації — `src/views/slots/`
+(`HomeSectionSlotProps.sectionId`). Реалізації — `packages/simplycms/src/storefront-routes/views/slots/`
 route-пакета; тема імпортує їх НЕ напряму, а отримує через vm.
 
 Кожен слот рендерить на своєму корені маркер
@@ -287,7 +281,7 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 
 ### 2.2 HeroBanner: що тема показує
 
-Слот `HeroBanner?: ComponentType<{ banners: Banner[] }>` (К3-Е6д-9). Дані
+Слот `HeroBanner?: ComponentType<{ banners: Banner[] }>`. Дані
 банера мають пріоритет над каталогом теми. Контракт живе в коді —
 `pickHeroBanner`/`pickHeroImage` у `simplycms/domain` (`HeroBannerView`); тема
 лише викликає їх і малює результат:
@@ -312,7 +306,7 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 
 ## 3. Пакування: npm vs copy-in
 
-Обидва шляхи зі спеки §17.4 підтримуються (Р0):
+Обидва шляхи зі спеки §17.4 підтримуються:
 
 ### 3.1 npm-пакет
 
@@ -321,7 +315,7 @@ import { RichHtml } from 'simplycms/ui/rich-html';
 `pnpm build`. Semver-фікси йдуть апстрімом; магазин лишається на голій
 залежності.
 
-**Форма пакета** (Р3, зразок — `packages/simplycms-theme-solarstore/tsdown.config.ts`):
+**Форма пакета** (зразок — `packages/simplycms-theme-solarstore/tsdown.config.ts`):
 tsdown, `format: ['esm']`, `platform: 'node'` + `fixedExtension: false`
 (🔴 разом: `platform: 'node'` лишає builtins Node зовнішніми без попереджень,
 але при ньому `fixedExtension` за замовчуванням дав би `.mjs` повз ключі
@@ -335,8 +329,8 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 `target: 'esnext'` (магазин добирає свій таргет сам), `clean: true`,
 `sideEffects: false` у маніфесті. 🔴 Опції `splitting` у tsdown НЕ ІСНУЄ, а
 `external` — deprecated (обидві приїхали з tsup): питання спільних чанків для
-теми не постає взагалі, бо entry один. Єдиний entry `src/index.ts` (default-export
-`ThemeModule`), `exports` лише `"."` (dev → `src/index.ts`, `publishConfig`
+теми не постає взагалі, бо entry один. Єдиний entry `index.ts` у `src/` пакета (default-export
+`ThemeModule`), `exports` лише `"."` (dev → `index.ts` у `src/` пакета, `publishConfig`
 → `dist/index.js`). `files: ["dist", "src", "!src/**/__tests__/**"]` —
 **`src` обовʼязково в tarball-і**: без нього copy-in-варіант (§3.2) не має
 що копіювати.
@@ -369,7 +363,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 `pnpm simplycms add <pkg> --theme --copy [--name <key>]` — shadcn-модель:
 повне володіння кодом, без апстрім-фіксів. Лише для `--theme` (з `--plugin`
 або `--no-install` — гучна помилка: copy без install неможливий за
-природою). Порядок (Р5; незворотні дії лише після усіх можливих валідацій):
+природою). Порядок (незворотні дії лише після усіх можливих валідацій):
 
 1. `deriveKey` — ключ із `--name` або похідний від імені пакета.
 2. **Колізія КЛЮЧА конфігу**: запис із тим самим ключем, але ІНШИМ
@@ -402,7 +396,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 ### 3.3 Tailwind: класи сторонніх тем
 
 Шаблон (`packages/create-simplycms-store/template/tailwind.config.ts`)
-доповнено глобами для npm-тем поза `@simplycms/` (Р7):
+доповнено глобами для npm-тем поза `@simplycms/`:
 
 ```
 ./node_modules/simplycms-theme-*/dist/**/*.js
@@ -477,13 +471,12 @@ build-кроку й workspace-лінків. 🔴 Команда працює і 
    (`…20260215122821_theme_system_refactor.sql`) вставляє рядок
    `solarstore` з `version '1.0.0'`, тоді як версія пакета вже інша —
    `bootstrapThemes` бачить рядок як «вже є» і не чіпає його метадані. Та
-   сама межа, що була у Фазі 3 для плагінів (колонку `migrations_applied`
-   прибрано в Е6б) — UPDATE існуючих рядків відкладено. Історію міграцій свідомо не переписуємо: шар
+   сама межа, що й для плагінів — UPDATE існуючих рядків відкладено. Історію міграцій свідомо не переписуємо: шар
    «що зареєстровано в БД» незалежний від способу доставки коду.
 3. **Свіжий магазин має «осиротілий» рядок `solarstore`.** Шаблон
    скаффолдера накатує ту саму сід-міграцію, але реєструє в
-   `simplycms.config.ts` лише `default` (друга тема — рішення користувача,
-   Р8). Після `bootstrapThemes` адмінка чесно покаже бейдж «модуль
+   `simplycms.config.ts` лише `default` (друга тема — рішення користувача).
+   Після `bootstrapThemes` адмінка чесно покаже бейдж «модуль
    відсутній» + disabled «Активувати» для рядка `solarstore` (§6) — замість
    тихої підміни чи падіння. Прибрати рядок у свіжому магазині, де він не
    потрібен:
@@ -517,8 +510,8 @@ activate.
 ⚠ **Нотатка власнику.** E2e-смок `tests/e2e/admin-smoke/theme.e2e.ts` тисне
 ПЕРШУ кнопку «Активувати» в списку. З появою disabled-рядків (тема в БД без
 модуля) селектор може почати чіпляти не той рядок — уточнити, коли контур
-повернеться треком К6: `pnpm test:e2e`/`pnpm pilot:e2e` decommissioned у
-0.4.1 разом зі стеком Supabase (роадмап, Борги Фази 4).
+повернеться треком К6: `pnpm test:e2e`/`pnpm pilot:e2e` decommissioned разом
+зі стеком Supabase.
 
 ## 7. Conformance-kit і чекліст автора теми
 
@@ -527,7 +520,7 @@ activate.
 `assertThemeViewsConformance(theme, { locale })` — публічний kit (мова інтерфейсу рендеру — обов'язковий `UiLocale`, без дефолту),
 `packages/simplycms/src/themes/conformance/`, експорт **субшляхом**
 `simplycms/themes/conformance` (барель тягне серверний шар
-`themes/server` — та сама ідіома, що `safeFontStylesheets`).
+`packages/simplycms/src/themes/server` — та сама ідіома, що `safeFontStylesheets`).
 
 Що робить: `validateThemeModule` → тимчасова реєстрація теми в
 `ThemeRegistry` (без неї `useThemeT` не знайшов би каталог) → рендер
@@ -569,7 +562,7 @@ conformance-cases.test.tsx`: тема з усіма пʼятьма views має 
   мокає модуль;
 - тема без `views` — чесний pass: перевіряти нічого.
 
-**Два канали запуску, рівноцінні за змістом** (амендмент до Р8, 2026-08-18):
+**Два канали запуску, рівноцінні за змістом** (амендмент):
 
 | Канал | Коли | Що потрібно |
 |---|---|---|
@@ -599,7 +592,7 @@ Playwright): гейт мусить бути доступним і магазин
      а не по ключу — `configThemeEntries` у `config-edit.mjs`, дзеркало
      `configPluginEntries`; ключ ≠ імʼя пакета через `--name`);
    - warn-підказка додати Tailwind-глоби сторонньої теми (§3.3), якщо пакет
-     під конвенцією Р1 встановлено, а глоба в `tailwind.config.ts` немає.
+     під конвенцією іменування встановлено, а глоба в `tailwind.config.ts` немає.
 3. **Монорепо-гарди на референс-теми ядра:**
    - `tests/theme-manifest-parity.test.ts` (взірець
      `tests/plugin-manifest-parity.test.ts`) — `manifest.version` = version
@@ -615,7 +608,7 @@ Playwright): гейт мусить бути доступним і магазин
    - `tests/i18n-coverage` `SCANNED_ROOTS` — теми дискаверяться з диска
      (`themes/*` + `packages/simplycms-theme-*`), не статичним списком.
 4. **Чекліст автора теми** (публікація як npm-пакет):
-   - неймінг за Р1 (§3.1);
+   - неймінг за конвенцією (§3.1);
    - `license` — валідний непорожній рядок (SPDX);
    - `manifest.engines.simplycms` — semver-range сумісності;
    - `description` у `package.json` — англійською (метадані реєстру
@@ -636,7 +629,7 @@ Playwright): гейт мусить бути доступним і магазин
 
 ## 8. Чого свідомо немає (v1)
 
-- **Серверної валідації налаштувань теми за `ThemeSettingDefinition` (Е6б-16).**
+- **Серверної валідації налаштувань теми за `ThemeSettingDefinition`.**
   `saveThemeSettingsOp` перевіряє лише форму й розмір (значення — рядок,
   число або boolean; ≤ 64 ключі; ключ ≤ 64 символи; рядок ≤ 1000; усе ≤ 16 КБ),
   бо модуль теми живе в браузері: схема `settings` недоступна серверу, а
@@ -657,12 +650,12 @@ Playwright): гейт мусить бути доступним і магазин
   грануляція — секційна модель треку B, не v3.
 - **Дані/SEO/роути темою** — не буде ніколи: це несуча теза D3′/D4′, з якої
   живе можливість додавати сторінки ядром, не ламаючи тем.
-- **Тема, яка постачає `views`, у цьому репозиторії** — жодна (Р11): ні
+- **Тема, яка постачає `views`, у цьому репозиторії** — жодна: ні
   `themes/default`, ні `@simplycms/theme-solarstore` контракт v3 не
   використовують. Перший реальний споживач — прогін №4 механізму клонування
   (фаза «Шліфування»), навмисно окремою сесією: так валідація контракту
   відділена від валідації клона.
-- **Межа довіри, як у плагінів (Р10).** Обидві наявні теми легітимно
+- **Межа довіри, як у плагінів.** Обидві наявні теми легітимно
   імпортують публічні субшляхи ядра (`simplycms/ui`, `simplycms/i18n`,
   `simplycms/core/hooks/…`) — тема, на відміну від плагіна, споживає їх
   напряму за контрактом v2; клієнта БД вона не має. Плагінна eslint-зона
@@ -685,9 +678,9 @@ Playwright): гейт мусить бути доступним і магазин
   rebuild), як і плагіни (D1, спека §14).
 - **Uninstall-рядка теми з адмінки** — деактивація (`is_active: false`)
   достатня для v1; видалення рядка — SQL руками (§5).
-- **Semver `engines.simplycms`** — bootstrap лише `console.warn` назавжди (Р32);
+- **Semver `engines.simplycms`** — bootstrap лише `console.warn` назавжди;
   невідповідність теми ядру показує `simplycms doctor` №17 як error (так само, як
-  у плагінів). Строгий фейл — лише в CI-гейті маркетплейсу (Р-М3).
+  у плагінів). Строгий фейл — лише в CI-гейті маркетплейсу.
 - **Позиція щодо ліцензії екосистеми** (спека §13) — рішення власника,
   блокує прийом подач у маркетплейс-індекс (`docs/marketplace/README.md`).
 - **Сам репозиторій `simplycms/marketplace` і вітрина** — окремий репо, дія
@@ -706,7 +699,7 @@ Playwright): гейт мусить бути доступним і магазин
 | Слоти реквізитів: маркер присутній, поведінка перенесена без змін | `packages/simplycms/src/storefront-routes/__tests__/{product,cart,catalog}-slots.test.tsx` |
 | Імена/склад реквізитів ↔ типи слотів | `packages/simplycms/src/contracts/__tests__/views-requisites.test.ts`; фікстури ↔ типи — `views-fixtures.test.ts` |
 | Settings: merge БД-значень із default-ами (обидва шляхи ініціалізації) | `packages/simplycms/src/themes/__tests__/ThemeContext.test.tsx` |
-| Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/simplycms/src/admin/__tests__/ThemeSettings.test.tsx` |
+| Settings: збереження в адмінці інвалідовує SSR-кеш теми | `packages/simplycms/src/admin/features/themes/__tests__/ThemeSettingsPage.test.tsx` |
 | CLI-канал гейта: чисті функції команди (парсер, резолв теми з конфігу, підсумок звіту, аліаси з tsconfig) | `tests/cli-theme-conformance.test.ts` |
 | CLI-канал гейта: ЖИВИЙ ланцюг `installStoreDom → createStoreRunner → runner.import → kit` на синтетичній темі з `views` (зелений прогін + червоний на загубленому реквізиті) | `tests/cli-theme-conformance-run.test.ts` |
 | CLI-канал гейта: команда з ОПУБЛІКОВАНОГО tarball-а доїжджає до теми конфігу й чесно падає без jsdom (exit 1 + `pnpm add -D jsdom`) | Gate TOOL прогону пакування (`scripts/pilot-pack/tool-pkg-smoke.mjs`) |
@@ -720,7 +713,7 @@ Playwright): гейт мусить бути доступним і магазин
 | `add --theme --copy` | `tests/cli-add-copy.test.ts` (чиста функція `runThemeCopy`/`mergeDependencies`/`copyPreflight` над фікстурним node_modules у temp-store: валідації, злиття deps, ідемпотентність, колізія, dry-run) |
 | Doctor: записи конфігу + Tailwind-підказка | `tests/cli-doctor.test.ts` |
 | Tailwind-глоби сторонніх тем | `tests/theme-tailwind-globs.test.ts` (fs.globSync-фікстури, три конвенції + негативний src-only кейс) |
-| `bump.mjs`: version-літерал `manifest.ts` | `tests/release-bump-coverage.test.ts` (Р13) |
+| `bump.mjs`: version-літерал `manifest.ts` | `tests/release-bump-coverage.test.ts` |
 | Маркетплейс-індекс (формат запису) | `tests/marketplace-index.test.ts` (Zod-схема, `docs/marketplace/index.sample.json`) |
 | Пакування (обидві гілки §17.4, provenance, Gate D-маркер) | `pnpm pilot:pack` — Gate THEME-контур: `scripts/pilot-pack/install-themes.mjs` (copy-in + npm тим самим `pnpm exec simplycms`, що й користувач), `gate-d.mjs` (маркер `@simplycms/theme-solarstore · HeroBanner`) |
 | Поведінка наживо (перемикання теми, RLS bootstrap) | 🔴 **decommissioned у 0.4.1** разом зі стеком Supabase — `pnpm test:e2e` немає; `theme.e2e.ts` (нотатка §6) лишився без входу, повертає трек К6 |

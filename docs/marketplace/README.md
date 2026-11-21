@@ -1,8 +1,6 @@
 # Маркетплейс-індекс SimplyCMS
 
-> Контракт формату запису — Фаза 4, план
-> [`2026-08-14-phase4-themes-as-packages.md`](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
-> Р11; вимоги індексу веде спека
+> Контракт формату запису — тема як пакет ([канон тем](../architecture/themes.md)); вимоги індексу веде спека
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §13 (там лише нагадування зафіксувати їх — фіксує цей документ).
 > Машинний контракт стереже `tests/marketplace-index.test.ts` (Zod-схема).

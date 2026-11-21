@@ -2,7 +2,7 @@
 
 # Спайк B — Lingui 6.12.0 (звіт)
 
-Гілка `spike/i18n-lingui` (коміт `0b9adf4a`, база `b9dead52`), worktree `.claude/worktrees/spike-lingui`. Не мержиться.
+Гілка `spike/i18n-lingui` (коміт `0b9adf4a`, база `b9dead52`), worktree worktree spike-lingui. Не мержиться.
 Стенд: `pnpm build` (Vite 8.3.2) → `server.mjs`, демо-БД з мовами uk+en, активна тема `solarstore` (з пакета).
 
 ## Вердикт

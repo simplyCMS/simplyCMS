@@ -45,7 +45,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 > сторінок вітрини (Home, Catalog, CatalogSection, ProductDetail, Cart)
 > через типізовані view-model-и під жорстким conformance-гейтом. D2 чинне
 > без змін. Повна спека ревізії —
-> [`2026-08-17-theme-contract-v3-views-design.md`](2026-08-17-theme-contract-v3-views-design.md);
+> «theme-contract-v3-views-design» (ADR-0013, ADR-0014, `docs/architecture/themes.md`; знесено 2026-11-21, текст — `git show 6daa49bc`);
 > згадки D3/D4 нижче по тексту читати з урахуванням цієї ревізії.
 
 > 🔴 **Ревізія 2026-08-19 (рішення власника): D7 еволюціонував у D7′ —
@@ -64,7 +64,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 
 > 🔴 **Ревізія 2026-08-20 (рішення власника): пакетна топологія
 > ревізується.** Спека
-> [`2026-08-20-package-consolidation-design.md`](2026-08-20-package-consolidation-design.md)
+> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show 6daa49bc`)
 > запускає окремий механічний трек К0 (виконується ПЕРЕД треком V2) —
 > консолідація пакетів **26 → 5**: unscoped `simplycms` (флагман) +
 > сателіти `@simplycms/cli`, `create-simplycms-store`,
@@ -97,7 +97,7 @@ Skeleton-update — задача, яку індустрія не закрила 
 ## 4. Цільова пакетна архітектура
 
 > 🔴 **Ревізія 2026-08-20:** розкладка нижче ревізована спекою
-> [`2026-08-20-package-consolidation-design.md`](2026-08-20-package-consolidation-design.md)
+> «package-consolidation-design» (ADR-0023…0025, `docs/architecture/repository-layout.md`; знесено 2026-11-21, текст — `git show 6daa49bc`)
 > — консолідація 26 → 5 (трек К0 перед V2). Таблицю НЕ переписано (лишається
 > історичним фактом); чинний напрям пакетної топології — у спеці К0.
 
@@ -114,8 +114,8 @@ Skeleton-update — задача, яку індустрія не закрила 
 | `@simplycms/theme-system` | ThemeRegistry (новий контракт §6), токени | перебудова |
 | `@simplycms/plugin-system` | HookRegistry, PluginSlot, loader | як є + wiring |
 | `@simplycms/plugin-sdk` | `definePlugin`, порти, Zod-хелпери настройок | новий |
-| `@simplycms/storefront-routes` | **Канонічні SSR-сторінки** (route-файли + server fns + SEO) | `src/routes/_storefront|_protected|auth|api` + `src/server` + сторінки з core/themes |
-| `@simplycms/admin-routes` | Route-файли адмінки | `src/routes/admin` (тонкі обгортки `@simplycms/admin`) |
+| `@simplycms/storefront-routes` | **Канонічні SSR-сторінки** (route-файли + server fns + SEO) | `src/routes/_storefront|_protected|auth|api` + теку server + сторінки з core/themes |
+| `@simplycms/admin-routes` | Route-файли адмінки | тека routes/admin (тонкі обгортки `@simplycms/admin`) |
 | `@simplycms/admin` | Сторінки/компоненти адмінки | як є |
 | `@simplycms/cli` | `simplycms` CLI | новий |
 | `create-simplycms-store` | Скаффолдер магазину | новий |
@@ -135,15 +135,15 @@ breaking — тільки major** (свідомий контраст із Medusa
 вона лишається ціллю, цей блок — фактом.
 
 **Імена пакетів ≠ імена тек.** Пакети називаються `@simplycms/themes` і
-`@simplycms/plugins`; теки лишились `packages/simplycms/theme-system/` та
-`packages/simplycms/plugin-system/`. У таблиці стоять імена-за-текою
+`@simplycms/plugins`; теки лишились тека theme-system (нині `packages/simplycms/src/themes/`) та
+тека plugin-system (нині `packages/simplycms/src/plugins/`). У таблиці стоять імена-за-текою
 (`@simplycms/theme-system`, `@simplycms/plugin-system`) — це неточність
 таблиці, перейменування пакетів **не планується**.
 
 **`@simplycms/engine` — відкладено на Фазу 1+.** Обʼєднання
 `data-supabase` + `react-query` у Фазі 0 **не робилось**: обидва пакети живі
 окремо, EngineContext складається `defineRuntime` з `@simplycms/runtime`,
-а host-glue лишився в `src/engine-provider.tsx` / `src/server/engine.ts`.
+а host-glue лишився в `src/engine-provider.tsx` / файлі engine у теці server.
 
 **`@simplycms/supabase` — вужчий за опис у таблиці.** Фактично увійшли
 `browser-client`, `server-client`, `anon-client`, `SupabaseProvider`,
@@ -174,7 +174,7 @@ breaking — тільки major** (свідомий контраст із Medusa
   subtree існував, бо репозиторій-застосунок був водночас шаблоном магазину.
   У цільовій моделі магазини не форкають наш репозиторій — отже дві копії ядра
   не потрібні. Монорепо = `packages/*` (ядро, публікується на npmjs) +
-  `apps/dev-store` (референс/тестовий магазин для розробки платформи; сьогоднішній
+  apps/dev-store (референс/тестовий магазин для розробки платформи; сьогоднішній
   `src/`). Колишнє subtree-дзеркало видалено (2026-07-31); уся історія — в монорепо.
 - **GitHub-організація `simplyCMS` + npm-scope `@simplycms`.** Перевірено
   2026-07-31: npm-пакет `simplycms` вільний, у scope `@simplycms` немає жодного
@@ -282,7 +282,7 @@ interface ThemeModule {
 `ThemeManifest` фактично несе четверте поле — `displayName: string` (окремо
 від `name`, який лишається технічним ідентифікатором/ключем реєстрації):
 `{ name, displayName, version, engines: { simplycms } }`
-(`packages/theme-system/src/types.ts`). Причина: `name` — ключ конфігу й
+(файл types.ts пакета theme-system). Причина: `name` — ключ конфігу й
 рядка БД (не може довільно змінюватись без розсинхрону резолву), а
 `displayName` — те, що бачить адмін у списку тем; сплутування цих ролей в
 одному полі зробило б UI або технічним, або нестабільним. Гард —
@@ -306,7 +306,7 @@ interface ThemeModule {
 Нумерація «v2.2» — версія КОНТРАКТУ теми (після v2 «токени замість
 сторінок» і v2.1 «каталог `messages`»), а не фаза роадмапу: жодної фази
 платформи цей трек не відкриває й не закриває. Докази факту — юніти
-`packages/theme-system/src/__tests__/` (`applyTokens` рендерить нові ключі й
+тести пакета theme-system (`applyTokens` рендерить нові ключі й
 відсіює ключ поза `TOKEN_KEYS`, `safeFontStylesheets` відкидає не-`https:` і
 значення з лапками, `validateThemeModule` звіряє форму `fonts`) і
 grep-доказ нуля споживачів `--brand-*`/`colors.brand` поза трьома
@@ -465,7 +465,7 @@ conformance-kit для авторів, JSON-індекс + вітрина. *DoD:
 встановлюється і перемикається з адмінки.*
 
 Паралельний продуктовий трек (незалежно від фаз): SEO/faceted navigation
-([`seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md)) —
+([`docs/tasks/seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md)) —
 підсилює цінність канонічних сторінок.
 
 ## 17. Наскрізні сценарії (перевірка несуперечності)
@@ -478,6 +478,6 @@ conformance-kit для авторів, JSON-індекс + вітрина. *DoD:
    diff міграцій на ревʼю → rebuild → активація і налаштування в адмінці.
 4. **Тема:** `simplycms add @vendor/simplycms-theme-aurora` (npm) або
    `simplycms add --copy @vendor/...` (copy-in) → rebuild → перемикання в адмінці.
-5. **Своя сторінка:** файл у `src/routes/my/landing.tsx` → у роутах і sitemap.
+5. **Своя сторінка:** файл `landing.tsx` у теці `src/routes/my/` → у роутах і sitemap.
 6. **Автор плагіна:** `simplycms create plugin` → dev-loop лінком → publish →
    індекс маркетплейсу.

@@ -15,9 +15,9 @@ Spec: `docs/architecture/data-layer.md` §14
 
 ## Why
 - B3 і B3′: `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md` § «2. Зафіксовані рішення (B1–B12».
-- Admin-плагін додає `users.role`, друге джерело правди поруч із `user_roles`, і ~15 ендпоінтів на кшталт `impersonateUser`: `docs/superpowers/specs/2026-10-07-customers-dashboard-design.md` § «Факти (розвідка 2026-10-07,».
-- Рішення Г-3: `user_roles` — єдине джерело правди: `docs/superpowers/specs/2026-10-07-customers-dashboard-design.md` § «5. Роль адміна (Г-3».
-- Плагінів нуль свідомо, через CVE-поверхню: `docs/superpowers/specs/2026-10-07-customers-dashboard-design.md` § «Факти (розвідка 2026-10-07,» і `packages/simplycms/src/auth/instance.ts`.
+- Admin-плагін додає `users.role`, друге джерело правди поруч із `user_roles`, і ~15 ендпоінтів на кшталт `impersonateUser`: спека «customers-dashboard-design», розділ «Факти (розвідка 2026-10-07,» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Рішення Г-3: `user_roles` — єдине джерело правди: спека «customers-dashboard-design», розділ «5. Роль адміна (Г-3» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Плагінів нуль свідомо, через CVE-поверхню: спека «customers-dashboard-design», розділ «Факти (розвідка 2026-10-07,» і `packages/simplycms/src/auth/instance.ts` (знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Таблиця ролей у схемі: `packages/simplycms/src/schema/schema.ts`.
 
 ## Rejected

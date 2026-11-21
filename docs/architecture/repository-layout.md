@@ -73,51 +73,51 @@ simplyCMS/
 │   │   │                         #    активної теми (createReadCache: покоління в БД, Д6),
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
 │   │   │                         #    з демо-магазину). Без власного каналу до БД (приймає ActorDb);
-│   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)
+│   │   │                         #    upward-виняток лише db. server-only
 │   │   ├── src/env/              # T2 Резолвер груп env драйверів (S3, SMTP) за правилом «все або
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
-│   │   │                         #    server-only (К3-Е8)
-│   │   ├── src/server-guard/     # T2 Охорона серверного входу (Р23/Р27): maskUnexpectedError
+│   │   │                         #    server-only
+│   │   ├── src/server-guard/     # T2 Охорона серверного входу : maskUnexpectedError
 │   │   │                         #    (прод: загальне повідомлення + ідентифікатор клієнту, повна
 │   │   │                         #    помилка в лог), withSecurityHeaders (заголовки безпеки на
-│   │   │                         #    динаміці). Upward-виняток лише env. server-only (К3-Е8)
+│   │   │                         #    динаміці). Upward-виняток лише env. server-only
 │   │   ├── src/mail/             # T2 Порт пошти: getMailTransport() обирає драйвер за групою SMTP_URL+MAIL_FROM
 │   │   │                         #    (resolveDriverEnv): smtpTransport (peer nodemailer) і logTransport (у проді
-│   │   │                         #    без тіла листа). Upward лише env. server-only (К3-Е8)
+│   │   │                         #    без тіла листа). Upward лише env. server-only
 │   │   ├── src/vite/             # T2 Build-time плагіни Vite для збірки магазину: resolveBuildId +
 │   │   │                         #    simplycmsBuildInfo (define __SIMPLYCMS_BUILD_ID__) + precompressAssets (.br/.gz) + simplycmsPublicManifest (перелік public/ → publicNames). Без залежності
-│   │   │                         #    від vite, upward-винятків немає. server-only (К3-Е8)
+│   │   │                         #    від vite, upward-винятків немає. server-only
 │   │   ├── src/migrate/          # T2 Накат міграцій із журналом сум (applyMigrations, listMigrationFiles,
 │   │   │                         #    readJournal, readStoreFacts): одна реалізація для проду, db:apply, test:schema і
 │   │   │                         #    db:demo; власне зʼєднання pg під власником схеми. Upward-винятків
-│   │   │                         #    немає. server-only (К3-Е8)
+│   │   │                         #    немає. server-only
 │   │   ├── src/prod-start/       # T2 Прод-старт магазину (runStart, startStore, STRIPPED_ENV): накат під
 │   │   │                         #    MIGRATION_DATABASE_URL → process.execve на server.mjs без нього; у магазині —
-│   │   │                         #    шим scripts/start.mjs (файл каркаса). Upward `env`, `migrate`. server-only (F5 Е8)
+│   │   │                         #    шим scripts/start.mjs (файл каркаса). Upward `env`, `migrate`. server-only
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
 │   │   ├── src/runtime/          # T2 defineRuntime + defineConfig магазину; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок і їхні класи (contracts/domain-errors) +
 │   │   │                         #    клієнтський seroval-адаптер межі serverFn (реєструється в
 │   │   │                         #    src/start.ts serializationAdapters)
 │   │   │                         #    ./build-id, ./stale-chunk, ./stale-chunk-react — client-safe
-│   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків; К3-Е8)
+│   │   │                         #    (ідентифікатор збірки, сторож застарілих чанків)
 │   │   ├── src/i18n/             # T2 createTranslator(catalogs, locale), I18nProvider, каталоги uk/en (частини base/admin/mail),
 │   │   │                         #    packs/ — мовні пакети (реєстр закритий; listLanguagePacks, hasLanguagePack, getUiPack, getContentTools); registry.ts — ліниві частини каталогу; UiLocale + resolveUiLocale — вісь інтерфейсу
 │   │   ├── src/translations/     # T2 Серверні переклади: sourceFieldHash (sha256, node:crypto), реєстр TRANSLATABLE,
 │   │   │                         #    читання (loadTranslations, withFallback) і запис (applyTranslationPlan,
 │   │   │                         #    deleteTranslation), галерея мовою сторінки (gallery.ts, GALLERY_ORDER).
-│   │   │                         #    Канон — translations.md. server-only (Мультимовність М1, Task 3–17б)
+│   │   │                         #    Канон — translations.md. server-only
 │   │   ├── src/addressing/       # T2 Реєстри адрес і мовних токенів: createPathsForEntity, setExplicitPath,
 │   │   │                         #    copyPathsForLocale, реєстр видів цілей (targets.ts), publicNames. Upward: db. Класи
-│   │   │                         #    помилок — з T0. server-only (Мультимовність М1, Task 5)
+│   │   │                         #    помилок — з T0. server-only
 │   │   ├── src/catalog-projection/ # T2 Проєкція тексту товару catalog_product_texts (текст з fallback,
 │   │   │                         #    is_translated, поточна адреса): refreshProductTexts, buildMissingProjection,
-│   │   │                         #    reconcileProductTexts. Upward: db, translations. server-only (М1, Task 14)
+│   │   │                         #    reconcileProductTexts. Upward: db, translations. server-only
 │   │   ├── src/operations/       # T2 Опис операції (defineOperation), виконавець з явним суб'єктом
 │   │   │                         #    (executeOperation), assertVersionThenHash; /server — invokeFromServerFn.
 │   │   │                         #    Реєстр CORE_OPERATIONS — у admin-server/impl. http/ — адаптер /api/v1
-│   │   │                         #    (handleApiRequest, токени, Idempotency-Key, OpenAPI). server-only (М1, Task 6–7)
+│   │   │                         #    (handleApiRequest, токени, Idempotency-Key, OpenAPI). server-only
 │   │   ├── src/storefront/       # T2 SSR-лоадери + SEO-генератори (DI-клієнт)
 │   │   ├── src/ui/               # T3 shadcn/ui-примітиви
 │   │   ├── src/themes/           # T4 ThemeRegistry, bootstrapThemes, applyTokens,

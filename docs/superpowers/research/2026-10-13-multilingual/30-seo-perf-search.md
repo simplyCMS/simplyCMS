@@ -101,7 +101,7 @@ Bing: джерела розходяться (одні кажуть «слабк�
 
 Спостереження за кодом Saleor storefront `[П: код]`: `buildLocaleHreflangAlternates` ітерує **усі
 сконфігуровані** локалі й будує альтернати для кожної, без перевірки, чи є переклад саме цієї сутності
-(`src/lib/seo/hreflang.ts`); чи робить це виклик вище — не перевіряв `[Н]`.
+(`hreflang.ts` (приклад зі сторонньої документації)); чи робить це виклик вище — не перевіряв `[Н]`.
 
 ### 1.3. Перекладені slug vs спільний
 
@@ -121,7 +121,7 @@ Bing: джерела розходяться (одні кажуть «слабк�
 - **Shopware 6:** слаги винесені з `product_translation` в окрему таблицю `seo_url` з полями
   `sales_channel_id`, `language_id`, `foreign_key`, `route_name`, `path_info`, `seo_path_info`,
   `is_canonical`, `is_modified`, `is_deleted` (видалений URL лишається в таблиці і відновлюваний)
-  `[П: код]` (`src/Core/Content/Seo/SeoUrl/SeoUrlDefinition.php`). Тобто це **матеріалізована
+  `[П: код]` (`SeoUrlDefinition.php` (Shopware)). Тобто це **матеріалізована
   проєкція «розв'язаних» адрес** на (канал, мова, сутність). Унікальні індекси цієї таблиці не
   перевіряв `[Н]`.
 
@@ -144,13 +144,13 @@ Bing: джерела розходяться (одні кажуть «слабк�
 - **Sitemap.** `[П]` ліміт 50 MB / 50 000 URL на файл, індекс sitemap опційний; **Google ігнорує
   `<priority>` і `<changefreq>`**; `<lastmod>` береться лише якщо «consistently and verifiably»
   точний, відбиває «last significant update» (<https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap>).
-  Поточний `renderSitemapXml` (`src/storefront/seo/sitemap.ts`) пише `changefreq`/`priority` — безкоштовний
+  Поточний `renderSitemapXml` (`sitemap.ts` (приклад зі сторонньої документації)) пише `changefreq`/`priority` — безкоштовний
   шум; альтернатив `xhtml:link` немає `[П: код]`. 100k товарів × N мов = N×100k URL → потрібен
   sitemap index із чанками ≤ 50k (кластер hreflang можна дати в кожному `<url>`).
 - **`<html lang>`.** Google його не використовує для мови `[П]`, але WCAG 2.2 SC 3.1.1 (Level A):
   «default human language of each web page can be programmatically determined»
   (<https://www.w3.org/WAI/WCAG22/Understanding/language-of-page.html>). Зараз
-  `src/routes/__root.tsx:95` ставить `lang={locale}` з однієї глобальної локалі `[П: код]` — для
+  `src/routes/__root.tsx` ставить `lang={locale}` з однієї глобальної локалі `[П: код]` — для
   багатомовності потрібна локаль запиту в SSR (Saleor витратив на це окремий розділ ADR: lang має бути
   в початковому HTML, не `useEffect`).
 - **JSON-LD.** `inLanguage` у schema.org має домен CreativeWork, Event тощо; `Product`/`Offer` у
@@ -221,7 +221,7 @@ Google за побудовою). Якщо все ж редирект корен�
   action-параметри» з підсумкового звіту 2025 — лише `[Вт]` (Search Engine Land дав 403); першоджерела
   не бачив.
 
-**Внутрішня неузгодженість у `seo-ssr-faceted-navigation.md`** (знайдено при читанні): §4.2/Блок C
+**Внутрішня неузгодженість у `docs/tasks/seo-ssr-faceted-navigation.md`** (знайдено при читанні): §4.2/Блок C
 дають multi-facet query-URL `noindex,follow` + `canonical → секція`, а Блок E додає robots-disallow
 лише для sort/page/view/price. Комбінації на кшталт `?brand=nike&color=red` лишаються **скановними**
 і ловлять той самий overcrawl, який Google називає головною проблемою; `noindex` crawl budget не
@@ -261,7 +261,7 @@ Shopify (для порівняння): фільтр-параметри `?filter.
 - TTFB — не Core Web Vital; «good» ≤ 0,8 с, «poor» > 1,8 с; для SSR він допустимо вищий, якщо
   FCP/LCP кращі за клієнтський рендер (<https://web.dev/articles/ttfb>).
 - Розкладка LCP: TTFB ≈ 40 %, затримка завантаження ресурсу < 10 %, тривалість ≈ 40 %, затримка
-  рендеру < 10 %; `fetchpriority="high"` на LCP-зображенні, **не** lazy-load, `src/srcset` у початковому
+  рендеру < 10 %; `fetchpriority="high"` на LCP-зображенні, **не** lazy-load, `srcset` у початковому
   HTML (<https://web.dev/articles/optimize-lcp>).
 - Google: «Core Web Vitals are used by our ranking systems», але хороші показники не гарантують топ,
   а релевантність має пріоритет (<https://developers.google.com/search/docs/appearance/page-experience>).
@@ -659,8 +659,8 @@ web.dev: <https://web.dev/articles/vitals>, <https://web.dev/articles/inp>,
 Платформи: Shopify <https://help.shopify.com/en/manual/markets/seo>,
 <https://shopify.dev/changelog/resource-url-handles-are-now-translatable>;
 Saleor `saleor/product/models.py`, `saleor/seo/models.py`, `saleor/graphql/product/resolvers.py`
-(<https://github.com/saleor/saleor>), storefront ADR 0001 / 0004, `docs/international-storefront.md`,
-`src/lib/seo/hreflang.ts` (<https://github.com/saleor/storefront>);
+(<https://github.com/saleor/saleor>), storefront ADR 0001 / 0004, international-storefront.md (сторонній документ),
+`hreflang.ts` (приклад зі сторонньої документації) (<https://github.com/saleor/storefront>);
 Shopware `SeoUrlDefinition.php`, `ProductTranslationDefinition.php`, `LanguageDefinition.php`
 (<https://github.com/shopware/shopware>).
 TanStack: <https://tanstack.com/start/latest/docs/framework/react/guide/isr>,

@@ -408,7 +408,7 @@ Elasticsearch **з ядра** в community-scope.
 
 | Продукт | Що зробили |
 |---|---|
-| **Outline** | Виніс пошук у плагін `plugins/search-postgres` з абстракцією `BaseSearchProvider` і env `SEARCH_PROVIDER` (дефолт `postgres`) |
+| **Outline** | Виніс пошук у плагін плагін search-postgres з абстракцією `BaseSearchProvider` і env `SEARCH_PROVIDER` (дефолт `postgres`) |
 | **Docmost** | v0.24.0 (12.2025) додав `SEARCH_DRIVER=typesense` — як **EE-фічу**, з формулюванням «Support for CJK search» |
 | **AFFiNE** | Три драйвери `embedded \| elasticsearch \| manticoresearch`, дефолт self-host — **embedded** |
 | **Medusa 2.19** (08.2026) | Формальний `ISearchProvider` + драйвери; MIT. *(Фактчек: стабільний провайдер один — `search-local` на Orama з README «not for production traffic»; заявленого `searchProviderConformanceSuite` **не існує**)* |
@@ -465,7 +465,7 @@ MCP і чат отримали пошук безкоштовно.
 | «`w1*cosine + w2*ts_rank` — задокументована зламана практика» | **ПОСЛАБЛЕНО** — це коментар у міграції одного невеликого OSS-проєкту, не галузевий консенсус. Логіка (несумісні шкали) лишається слушною |
 | Ціни Cohere embed-v4 / rerank | 🔴 **ВИПРАВЛЕНО** — embed-v4 $0,12/1M (не $0,01); rerank-v3.5 $1,00/1000 (не $2,00) |
 | Кейс Gem: «керований Aurora», «matview 48 год» | **НЕ ПІДТВЕРДЖЕНО** — зняте |
-| «Тека `apps/server/src/ee` у Docmost відсутня» | **НЕТОЧНО** — присутня як git-сабмодуль на приватне репо |
+| «Тека тека ee сервера у Docmost відсутня» | **НЕТОЧНО** — присутня як git-сабмодуль на приватне репо |
 
 🔴 **Один вимір не завершився:** агент-критик повноти (пошук суперечностей між
 вимірами) упав на ліміті сесії. Дві суперечності, які він мав знайти, виписані

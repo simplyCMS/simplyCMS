@@ -555,4 +555,4 @@ docker rm -f ml-exp-pg
 записи `20`, `21`, `21b`, `31`, `33`; колізії `22`, `23`, `32`, `34`; міграції `24`; розміри `30`, `36`;
 EXPLAIN `40`, `41`; індекси пошуку з локаллю `35`. Результати: `results/50000`, `results/5000`,
 `results/50000_fpw_on`; плани: `logs/40_explain_p{1,2,3}_*.log`, `logs/35_explain_*.log`,
-`logs/41_d_generic_*.log`; повні таблиці: `tables_50000.md`, `tables_5000.md`.
+`logs/41_d_generic_*.log`; повні таблиці: tables_50000.md, tables_5000.md.

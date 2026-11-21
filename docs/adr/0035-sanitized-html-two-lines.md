@@ -16,8 +16,8 @@ Spec: `docs/architecture/data-layer.md` §9; `docs/architecture/ui.md` §3
 - ESLint-правило забороняє `dangerouslySetInnerHTML` поза `RichHtml` і явним списком винятків із причиною.
 
 ## Why
-- Один рубіж не покриває старі дані, сід і легасі-адмінку; другий рубіж чистить їх на віддачі (`docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md` § «Тема 9 · Санітизація HTML ✅ (2026-10-05»).
-- Брендований тип не дає темі відрендерити неочищене (`docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md` § «Тема 9 · Санітизація HTML ✅ (2026-10-05»).
+- Один рубіж не покриває старі дані, сід і легасі-адмінку; другий рубіж чистить їх на віддачі (спека «deps-security-tooling-design», розділ «Тема 9 · Санітизація HTML ✅ (2026-10-05»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Брендований тип не дає темі відрендерити неочищене (спека «deps-security-tooling-design», розділ «Тема 9 · Санітизація HTML ✅ (2026-10-05»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Тест `tests/rich-html-roundtrip.test.ts` вимагає, щоб HTML справжніх редакторів проходив санітизацію без змін (`docs/architecture/ui.md` § «3. Rich text (Tiptap v3»).
 - Стан у коді: `packages/simplycms/src/ui/rich-html.tsx`, `packages/simplycms/src/contracts/sanitized-html.ts`, `eslint-rules/no-dangerously-set-inner-html.mjs`.
 

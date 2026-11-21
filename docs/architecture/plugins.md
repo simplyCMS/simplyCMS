@@ -1,11 +1,9 @@
 # Механізм плагінів SimplyCMS
 
-> Фактичний стан після Фази 3 (2026-08-14); специфікатори й межа довіри
-> оновлені після треку К0 (2026-08-20): SDK — субшлях `simplycms/plugin-sdk`
+> Специфікатори й межа довіри: SDK — субшлях `simplycms/plugin-sdk`
 > одного пакета ядра. Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
-> §7–§9, §12; рішення імплементації —
-> [план Фази 3](../superpowers/plans/2026-08-14-phase3-plugin-sdk.md) (Р0–Р11).
+> §7–§9, §12.
 > Команди CLI — [`cli.md`](cli.md) §3.2, §3.4–3.5; межі тестування —
 > [`test-contours.md`](test-contours.md).
 
@@ -30,17 +28,17 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
   одного місця — `PluginSlot`. Хук `order.created` можна задекларувати, але
   його ніхто не покличе; робочі точки розширення сьогодні — слоти.
 - **Слоту налаштувань способу доставки немає.** `admin.shipping.method.settings`
-  видалено в К3-Е6а (рішення Е6а-15) разом із `shipping_methods.type`: спосіб
+  видалено разом із `shipping_methods.type`: спосіб
   доставки — вбудований провайдер ядра (`core:address`, `core:pickup`) плюс режим
   ціни (`rates | provider | carrier`). Провайдери плагінів і форму їхніх
   налаштувань із `configSchema` будує ядро в К5 —
-  [спека](../superpowers/specs/2026-10-06-commerce-providers-design.md), частина 2.
+  ADR-0040 (`docs/adr/`), нарис плагінних портів — issue #132.
 - **Хуків знижок немає.** `admin.discount.form.fields`,
   `discount.conditions.evaluate`, `discount.before_apply`, `discount.after_apply`,
   `discount.types` і порт `CatalogRepository.getDiscounts` (разом із
-  `DiscountScope` (знесено)) знесено в К3-Е6в (рішення Е6в-21): їх ніхто не кликав.
+  `DiscountScope` (знесено)) знесено: їх ніхто не кликав.
   Умови знижок задає внутрішній реєстр `DiscountConditionDefinition`
-  (`simplycms/domain/discounts`, Е6в-4) — вбудовані умови зареєстровані тим самим
+  (`simplycms/domain/discounts`) — вбудовані умови зареєстровані тим самим
   контрактом. Плагінам реєстр відкривається в К5; до того умова невідомого типу
   fail-closed (`condition_unknown`), а адмінка не дає її записати.
 - **Bootstrap — client-only** (`useEffect` у `__root`): хуки/слоти не
@@ -48,7 +46,7 @@ unscoped `simplycms-plugin-<name>`, scoped `@simplycms/plugin-<name>`).
   `ssr:false`), для слотів вітрини означає «підвантажиться після гідрації».
 - `events`/`storage`-порти SDK, `plugin:dev`, `plugin:purge`, автоматичний
   монтаж adminRoutes через `add` — відкладені борги (колонку
-  `plugins.migrations_applied` прибрано в Е6б) (роадмап, розділ «Борги Фази 3»).
+  `plugins.migrations_applied` прибрано).
 
 ## 2. Контракт: `definePlugin` (`simplycms/plugin-sdk`)
 
@@ -75,7 +73,7 @@ export default definePlugin({
 - Результат **структурно задовольняє** старий `PluginModule`
   (`register`/`unregister` згенеровані з декларацій) — тому
   `bootstrapPlugins`/`PluginLoader` не знають про SDK.
-- **Слот дашборду `admin.dashboard.stats`** (К3-Е6г): `props.context.stats` має
+- **Слот дашборду `admin.dashboard.stats`**: `props.context.stats` має
   рівно форму `AdminDashboardStats` (`simplycms/contracts`) —
   `{ newOrders: number; revenue7dCents: number; revenue30dCents: number }`, гроші в
   центах. Слот рендериться лише коли зведення вже завантажене, тож плагін не обробляє
@@ -86,7 +84,7 @@ export default definePlugin({
   `validateThemeModule`): порушення структури — throw → bootstrap логує і
   **пропускає модуль**; підозри (немає `engines`, несумісний діапазон, ключ
   без префікса) — `console.warn`, реєстрація триває. Несумісний
-  `engines.simplycms` — warn назавжди, не фейл (Р32): магазин не цеглиться
+  `engines.simplycms` — warn назавжди, не фейл: магазин не цеглиться
   оновленням ядра, а невідповідність показує `simplycms doctor` №17 як error
   (`satisfies`/`CORE_VERSION` — `simplycms/contracts/semver`).
 
@@ -106,7 +104,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
   немає в білді) — error-лог + пропуск, без падінь (спека §8).
 - `PluginSlot` реактивний (`useSyncExternalStore` по версії реєстру):
   вмикання/вимикання плагіна з адмінки міняє сторінку **без reload**.
-- Перемикання з адмінки (К3-Е6б, Е6б-17) — два кроки в
+- Перемикання з адмінки — два кроки в
   `admin/features/plugins/usePluginToggle`: serverFn `setPluginActive`
   (`simplycms/admin-server`, право `settings.manage`) пише `plugins.is_active`,
   і ЛИШЕ після відповіді `syncPluginHooks(name, isActive)`
@@ -134,7 +132,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
    `eslint.config.mjs` — ЧИТАЧ декларації, а не її копія: розширення межі
    правиться в одному файлі й доїжджає сюди само. 🔴 Субшляхів
    знесеного клієнтського шару БД у списку БІЛЬШЕ НЕМАЄ:
-   шар знесено (0.4.1, К3-Е7), специфікатори не резолвяться в принципі, тож
+   шар знесено, специфікатори не резолвяться в принципі, тож
    правило стерегло б порожнечу, а негативний контроль — неіснуючий модуль.
    Пакетна заборона `@supabase/*` лишається; поза плагінами її тримає
    ратчет `no-supabase-import` на все репо. 🔴 Глоб навмисно `simplycms-plugin-*`: теки
@@ -168,16 +166,15 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 воно зʼявиться після К5 (ключі в адмінці). До того секрет — це env магазину
 й серверний код плагіна, а не `plugins.config`.
 
-🔴 **Ключ кешу таблиці плагіна — з порту, не літерал** (виправлено К3-Е3,
-`fbd666c9`). `usePluginTable(...)` повертає `readonly queryKey`, стабільний
+🔴 **Ключ кешу таблиці плагіна — з порту, не літерал** (виправлено). `usePluginTable(...)` повертає `readonly queryKey`, стабільний
 між рендерами (`useMemo` з тих самих аргументів, що й самі запити); плагін
 бере його звідти (`faq.queryKey`), а не пише власний масив чи константу.
 Окремого експорту `pluginTableKey` у `plugin-sdk` **немає** — перша версія
 цього рішення дублювала «другу правду» про `(pluginName, table)» поруч із
 `queryKey`, її прибрано. Зона правила `eslint-rules/query-key-from-entity.mjs`
-(літеральний сегмент 0 заборонено) покриває й референс-плагін (Е3-12).
+(літеральний сегмент 0 заборонено) покриває й референс-плагін.
 
-🔴 **BREAKING (0.4.1, трек V2-К3 Е0): `insert` вимагає `id` від викликача.**
+🔴 **BREAKING (0.4.1): `insert` вимагає `id` від викликача.**
 Сигнатура — `insert(row: Partial<Row> & { id: string })`. Таблиці `plg_*`
 створюються **без** `DEFAULT gen_random_uuid()`, ключ генерує клієнт:
 
@@ -186,7 +183,7 @@ const port = usePluginTable<FaqRow>('faq', 'plg_faq_items');
 await port.insert({ id: crypto.randomUUID(), question, answer });
 ```
 
-Причина — контракт id (Е0): оптимістичний рядок у клієнтському кеші має
+Причина — контракт id: оптимістичний рядок у клієнтському кеші має
 той самий ключ, що й серверний, інакше вони розходяться і кеш ловить дубль.
 Порт fail-loud: `insert` без `id` (або з порожнім рядком) кидає з поясненням,
 а не мовчки шле запит. Вікно на цю зміну закривається на К5 — після відкриття
@@ -198,7 +195,7 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 npm-пакет (`simplycms`) і кілька його субшляхів — dependency плагіна тепер
 одна, а межу тримає лише eslint-зона вище.
 
-**HTML, який рендерить плагін (Тема 9).** Серверний санітизатор
+**HTML, який рендерить плагін.** Серверний санітизатор
 `simplycms/sanitize` — у `SERVER_ONLY`, тож плагіну заборонений зоною вище;
 `dangerouslySetInnerHTML` у плагіні забороняє правило
 `simplycms-rich-html/no-dangerously-set-inner-html` (зона — весь репо, винятків
@@ -217,7 +214,7 @@ React або віддає на очищення ядру окремим ріше
   без `references`). RLS-політики — лише на власні таблиці; `is_admin()` і
   `update_updated_at_column()` — публічні хелпери ядра, дозволені до виклику.
 - Плагін везе **готові рецензовані `*.sql`** у теці `migrations/` пакета
-  (поле `files`); drizzle-композиції немає свідомо (Р4). Конвенція імені —
+  (поле `files`); drizzle-композиції немає свідомо. Конвенція імені —
   `<YYYYMMDDHHmmss>_plg_<name>_<slug>.sql` (виключає колізії між канонами).
   🔴 Обовʼязкова частина конвенції — саме `plg_<name>_` в ІМЕНІ ФАЙЛА, а не
   лише в таблиці: канон ядра нумерується `0000_prelude` … `0004_functions`, тож
@@ -259,13 +256,13 @@ switch, `number/integer` → числовий input. Непредставна д
 🔴 Схема живе в `definition.settings` модуля і НЕ їде в БД чи manifest-JSON.
 
 🔴 **Запис — один шлях: serverFn `pluginConfigWrite`** (`simplycms/plugin-sdk/server`)
-під правом `settings.manage` (Е6б-13). Ним пише і сторінка налаштувань адмінки
+під правом `settings.manage`. Ним пише і сторінка налаштувань адмінки
 (`admin/features/plugins/usePlugins`), і `usePluginConfig.save` плагіна —
 другого каналу запису в `plugins.config` немає. Право перевіряється ДО розміру:
 не-адмін → `AuthzError` (`save()` повертає `false`), конфіг понад 64 КБ
 серіалізованого JSON → 400 (летить винятком). Сервер схеми плагіна не знає
 (модуль живе в браузері), тож валідація за Zod-схемою — у браузері перед
-записом; серверна перевірка за схемою — поза Е6б.
+записом; серверної перевірки за схемою немає.
 
 ## 7. i18n плагіна
 

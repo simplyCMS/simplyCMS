@@ -14,9 +14,9 @@ Spec: `docs/architecture/data-layer.md` §6
 - `new Date(рядок)` у коді вітрини — сигнал, що межу перетнули не там.
 
 ## Why
-- Startup-опції пулу робить текст драйвера детермінованим незалежно від кластера (`docs/superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md` § «К2-Е0»).
-- DDL не змінюється: `mode` — властивість TS-типу (`docs/superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md` § «К2-Е0»).
-- `pg.types.setTypeParser` для дат мертвий: Drizzle підкладає identity-парсер (`docs/superpowers/specs/2026-09-03-k2-e0-storefront-live-contour-design.md` § «Додаток Б. Відкинуті альтернативи (з причиною, доведеною кодом»).
+- Startup-опції пулу робить текст драйвера детермінованим незалежно від кластера (спека «k2-e0-storefront-live-contour-design», розділ «К2-Е0»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- DDL не змінюється: `mode` — властивість TS-типу (спека «k2-e0-storefront-live-contour-design», розділ «К2-Е0»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- `pg.types.setTypeParser` для дат мертвий: Drizzle підкладає identity-парсер (спека «k2-e0-storefront-live-contour-design», розділ «Додаток Б. Відкинуті альтернативи (з причиною, доведеною кодом»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Стан у коді: `packages/simplycms/src/db/client.ts`; канон — `docs/architecture/data-layer.md` § «6. Контракт дат».
 
 ## Rejected

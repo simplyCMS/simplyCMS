@@ -16,9 +16,9 @@ Spec: `docs/architecture/data-layer.md` §5
 - `NOT NULL` лишається: забутий `id` падає `23502`.
 
 ## Why
-- Серверна генерація структурно несумісна з оптимізмом (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
-- Better Auth делегує генерацію `id` базі, тож зняття DEFAULT зламало б signUp і OAuth (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
-- `orders` став пасткою fail-silent після того, як адмінка отримала його в керування (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
+- Серверна генерація структурно несумісна з оптимізмом (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Better Auth делегує генерацію `id` базі, тож зняття DEFAULT зламало б signUp і OAuth (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- `orders` став пасткою fail-silent після того, як адмінка отримала його в керування (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Контракт у каноні: `docs/architecture/data-layer.md` § «5. Контракт id: ключ генерує ВИКЛИКАЧ, не БД».
 - Стан у коді: `defaultRandom()` лишився лише в `packages/simplycms/src/schema/auth.ts`; поза auth-схемою його немає.
 

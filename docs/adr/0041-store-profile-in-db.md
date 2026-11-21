@@ -2,7 +2,7 @@
 
 Status: accepted 2026-10-06
 Decided by: owner
-Spec: `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Частина A»
+Spec: «store-profile-system-design», розділ «Частина A» (знесено 2026-11-21, текст — `git show 6daa49bc`)
 
 ## Context
 Назва магазину була зашита літералом у `head` роутів вітрини. Поля `seo.*` з `simplycms.config.ts` потрапляли в `ConfigProvider`, але вітрина їх не читала. Власник пілотного магазину мав редагувати назву, контакти, логотип і соцмережі без перезбірки. Теми й плагіни вже вшиваються в збірку, а адмінка лише вмикає їх.
@@ -14,15 +14,15 @@ Spec: `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Ч
 4. Кнопки «Видалити плагін» немає. Вимкнути — перемикачем. Прибрати зовсім — конфігом магазину й перезбіркою, як теми (С-3).
 
 ## Why
-- Рішення власника С-1 і С-3: `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Рішення власника».
-- Теми й плагіни вшиваються в збірку; `bootstrapThemes`/`bootstrapPlugins` відновлюють видалений рядок плагіна: `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Факти, з яких виходить дизайн (розвідка 2026-10-06,».
-- Ключ `store_profile` і правило видалення полів `seo`: `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Дані».
+- Рішення власника С-1 і С-3: спека «store-profile-system-design», розділ «Рішення власника» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Теми й плагіни вшиваються в збірку; `bootstrapThemes`/`bootstrapPlugins` відновлюють видалений рядок плагіна: спека «store-profile-system-design», розділ «Факти, з яких виходить дизайн (розвідка 2026-10-06,» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Ключ `store_profile` і правило видалення полів `seo`: спека «store-profile-system-design», розділ «Дані» (знесено 2026-11-21, текст — `git show 6daa49bc`).
 - У коді ключ `STORE_PROFILE_KEY = 'store_profile'`: `packages/simplycms/src/contracts/store-profile.ts`. Сід: `packages/simplycms/src/migrate/bootstrap.ts`.
 - Конфіг не має поля `seo`: `packages/simplycms/src/runtime/config.ts`.
 
 ## Rejected
 - Мова й валюта в БД — залишено в коді (С-2).
-- Поділ К3-Е6б на дві частини — власник вирішив виконати К3-Е6б цілим (С-4, `docs/superpowers/specs/2026-10-06-store-profile-system-design.md` § «Рішення власника»).
+- Поділ К3-Е6б на дві частини — власник вирішив виконати К3-Е6б цілим (С-4, спека «store-profile-system-design», розділ «Рішення власника») (знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Інші варіанти — у джерелі не записано.
 
 ## Consequences

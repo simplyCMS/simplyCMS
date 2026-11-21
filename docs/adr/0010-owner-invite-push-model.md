@@ -2,7 +2,7 @@
 
 Status: accepted 2026-08-03
 Decided by: owner
-Spec: `docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` §4
+Spec: «create-store-owner-bootstrap-design», розділ 4 (знесено 2026-11-21, текст — `git show 6daa49bc`)
 
 ## Context
 Магазин потребує першого адміна без вікна «хто перший зайшов, той і адмін».
@@ -17,16 +17,16 @@ Spec: `docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md`
 Прийняття й будь-яке скидання пароля гасять усі сесії користувача.
 
 ## Why
-- Механізм push-моделі: `docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «4. Bootstrap власника: invite при деплої (push-модель».
-- Амендмент Р19: самореєстрація на пошту власника до запрошення давала роль негайно; тепер роль видають після прийняття (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «4.2. Чому це безпечно (модель загроз»).
-- Публічного шляху «стати адміном» немає, скільки б часу не минуло між деплоєм і першим входом (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «4.2. Чому це безпечно (модель загроз»).
+- Механізм push-моделі: спека «create-store-owner-bootstrap-design», розділ «4. Bootstrap власника: invite при деплої (push-модель» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Амендмент Р19: самореєстрація на пошту власника до запрошення давала роль негайно; тепер роль видають після прийняття (спека «create-store-owner-bootstrap-design», розділ «4.2. Чому це безпечно (модель загроз»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Публічного шляху «стати адміном» немає, скільки б часу не минуло між деплоєм і першим входом (спека «create-store-owner-bootstrap-design», розділ «4.2. Чому це безпечно (модель загроз»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Код: `packages/create-simplycms-store/template/scripts/owner-invite.mjs` викликає `ownerInviteMain` з `simplycms/auth/owner-invite-cli`.
 
 ## Rejected
-- Токен у URL — витікає через Referer, потребує стека мітигацій (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «2.2. Безпека першого власника»).
-- Сід-пароль з примусовою зміною — підходить лише системам із власним паролестором (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «2.2. Безпека першого власника»).
-- Перший зареєстрований стає адміном — жива діра в тригері `handle_new_user` (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «2.3. Стан власного коду (аудит цієї сесії»).
-- Pull-модель (`claim_owner()`) — свідомо не в першій версії (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «5. Опційне продовження (свідомо не v1): pull-модель»).
+- Токен у URL — витікає через Referer, потребує стека мітигацій (спека «create-store-owner-bootstrap-design», розділ «2.2. Безпека першого власника»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Сід-пароль з примусовою зміною — підходить лише системам із власним паролестором (спека «create-store-owner-bootstrap-design», розділ «2.2. Безпека першого власника»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Перший зареєстрований стає адміном — жива діра в тригері `handle_new_user` (спека «create-store-owner-bootstrap-design», розділ «2.3. Стан власного коду (аудит цієї сесії»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Pull-модель (`claim_owner()`) — свідомо не в першій версії (спека «create-store-owner-bootstrap-design», розділ «5. Опційне продовження (свідомо не v1): pull-модель»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 
 ## Consequences
 Для запрошення потрібен доступ розробника до консолі й БД магазину.

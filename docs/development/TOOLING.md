@@ -210,7 +210,7 @@ typecheck:showcase → test → test:schema → build:packages → typecheck:tem
   серверний бандл, Gate IP — витік ВАЛИТЬ збірку, Gate B — серверний бандл стартує. `pilot:pack`
   (без БД) ганяється в CI (job `packaging`).
 - Гейти-звірки з уроків Е6д (усі в `pnpm test`, кожен із негативним контролем у самому тесті):
-  `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `upstream-workarounds.md`
+  `tests/upstream-tripwires.test.ts` — передумови обходів реєстру `docs/architecture/upstream-workarounds.md`
   (текст встановлених модулів, версії, SQL білдера Drizzle) і парність маркерів
   `UPSTREAM:<ID>` ↔ записів реєстру; `tests/doc-symbols-exist.test.ts` — кожен символ у
   зворотних лапках у `docs/architecture`, `docs/development`, README пакетів і скілах ВИЗНАЧЕНИЙ
@@ -239,7 +239,7 @@ Error-зони й кастомні правила (селектори й опц�
 
 - **i18n-селектори** (`no-restricted-syntax`, error): новий кириличний рядок інтерфейсу валить лінт.
   Зона — host `src/`, обидві роут-теки ядра (`routes/storefront`, `routes/admin`),
-  `src/storefront-routes`, `src/admin`, п'ять `src/*-ui` пакета ядра, компоненти тем. У
+  `packages/simplycms/src/storefront-routes`, `packages/simplycms/src/admin`, п'ять `*-ui` тек пакета ядра, компоненти тем. У
   `routes/admin` живий React-компонент `AdminPending` використовує `useT()` (ключ
   `app.admin.loading`).
 - **`import.meta.env` у серверних модулях** (`no-restricted-syntax`, error): п'ять модулів

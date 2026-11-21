@@ -14,14 +14,14 @@ Spec: `AGENTS.md` § «Архітектурні інваріанти»
 4. `@supabase/*` у репо заборонено лінтом: правило `no-supabase-import`.
 
 ## Why
-- Рішення власника В1–В3: `docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md` § «Рішення власника».
-- Факти про мертвий шар: `docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md` § «Факти інвентаризації (2026-10-11».
+- Рішення власника В1–В3: спека «v2-k3-e7-supabase-removal-design», розділ «Рішення власника» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Факти про мертвий шар: спека «v2-k3-e7-supabase-removal-design», розділ «Факти інвентаризації (2026-10-11» (знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Ратчет на ВСЕ репо, власне імʼя плагіна: `eslint.config.mjs`.
 - Правило названо в каноні: `AGENTS.md` § «Архітектурні інваріанти».
 - Стан: теки packages/simplycms/src/supabase/ немає; теки `tools/` немає.
 
 ## Rejected
-- Портування src/supabase/ на V2 — знос дешевший, шар мертвий (`docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md` § «Факти інвентаризації (2026-10-11»).
+- Портування src/supabase/ на V2 — знос дешевший, шар мертвий (спека «v2-k3-e7-supabase-removal-design», розділ «Факти інвентаризації (2026-10-11»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Інші варіанти — у джерелі не записано.
 
 ## Consequences

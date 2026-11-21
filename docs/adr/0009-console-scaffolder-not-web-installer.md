@@ -2,7 +2,7 @@
 
 Status: accepted 2026-08-03
 Decided by: owner
-Spec: `docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` §1
+Spec: «create-store-owner-bootstrap-design», розділ 1 (знесено 2026-11-21, текст — `git show 6daa49bc`)
 
 ## Context
 Потрібно було вирішити, як з'являється репозиторій магазину.
@@ -16,13 +16,13 @@ OpenCart і WordPress мають веб-майстер установки для
 Деплой і застосування міграцій — зона розробника, інструмент їх не автоматизує.
 
 ## Why
-- Власник зафіксував модель 2026-08-03: інструмент створює репозиторій, далі розробник сам веде дев- і прод-контури (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «1. Мета і межі»).
-- Місія проєкту — повнофункціональна адмінка для React-проєктів, а не «клікнув і встановив» (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «1. Мета і межі»).
-- PHP-модель технічно недосяжна: `VITE_*` вшиваються під час збірки, тож конфіг існує до збірки (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «1. Мета і межі»).
+- Власник зафіксував модель 2026-08-03: інструмент створює репозиторій, далі розробник сам веде дев- і прод-контури (спека «create-store-owner-bootstrap-design», розділ «1. Мета і межі»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Місія проєкту — повнофункціональна адмінка для React-проєктів, а не «клікнув і встановив» (спека «create-store-owner-bootstrap-design», розділ «1. Мета і межі»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- PHP-модель технічно недосяжна: `VITE_*` вшиваються під час збірки, тож конфіг існує до збірки (спека «create-store-owner-bootstrap-design», розділ «1. Мета і межі»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Пакет існує: `packages/create-simplycms-store/package.json`.
 
 ## Rejected
-- Веб-майстер установки за моделлю OpenCart/WordPress — місія й збірка Vite його не допускають (`docs/superpowers/specs/2026-08-03-create-store-owner-bootstrap-design.md` § «1. Мета і межі»).
+- Веб-майстер установки за моделлю OpenCart/WordPress — місія й збірка Vite його не допускають (спека «create-store-owner-bootstrap-design», розділ «1. Мета і межі»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 
 ## Consequences
 Перший вхід у магазин вимагає безпечного шляху для власника: ADR-0010.

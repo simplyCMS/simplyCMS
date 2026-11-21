@@ -100,8 +100,8 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 Ядро працює поверх чистого PostgreSQL 17 (Drizzle) з автентифікацією на Better
 Auth; файли — через порт `simplycms/storage`. Обов'язкових env-ключів рівно три:
 `DATABASE_URL`, `BETTER_AUTH_SECRET` і `VITE_SITE_URL`; опційні йдуть групами драйверів
-за правилом «все або нічого» (`simplycms/env`). Схема ядра — 40
-таблиць із RLS; канон міграцій лежить у
+за правилом «все або нічого» (`simplycms/env`). Таблиці схеми ядра — під
+RLS; канон міграцій лежить у
 [`packages/simplycms/migrations/`](packages/simplycms/migrations/).
 
 ## Розробка самого ядра

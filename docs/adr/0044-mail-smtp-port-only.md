@@ -2,7 +2,7 @@
 
 Status: accepted 2026-10-12
 Decided by: owner
-Spec: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` §3
+Spec: «pilot-readiness-design», розділ 3 (знесено 2026-11-21, текст — `git show 6daa49bc`)
 
 ## Context
 Пілотний магазин шле листи через Resend по SMTP як тимчасовий канал. Вибір власного поштового сервісу — окреме рішення після пілоту. Код платформи не повинен привʼязуватися до одного провайдера.
@@ -14,9 +14,9 @@ Spec: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` §3
 4. Частково задана група `SMTP_URL`/`MAIL_FROM` дає гучну помилку, а не мовчазний лог.
 
 ## Why
-- Рішення власника: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` § «0. Рамка й рішення власника (2026-10-12».
-- Анти-ціль «код знає імʼя провайдера»: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` § «2. Цілі, не-цілі, анти-цілі».
-- Анти-ціль «частковий SMTP мовчки дає лог»: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` § «2. Цілі, не-цілі, анти-цілі».
+- Рішення власника: спека «pilot-readiness-design», розділ «0. Рамка й рішення власника (2026-10-12» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Анти-ціль «код знає імʼя провайдера»: спека «pilot-readiness-design», розділ «2. Цілі, не-цілі, анти-цілі» (знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Анти-ціль «частковий SMTP мовчки дає лог»: спека «pilot-readiness-design», розділ «2. Цілі, не-цілі, анти-цілі» (знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Драйвер на `nodemailer`, без SDK провайдера: `packages/simplycms/src/mail/smtp.ts`.
 - Часткова група кидає `DriverEnvError`: `packages/simplycms/src/mail/transport.ts`.
 - Група env `SMTP_URL`, `MAIL_FROM`: `docs/development/ENVIRONMENT.md` § «Групи драйверів».

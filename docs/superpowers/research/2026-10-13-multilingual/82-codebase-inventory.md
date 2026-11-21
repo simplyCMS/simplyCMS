@@ -60,7 +60,7 @@
 - Локаль UI/листів — тип `Locale = 'uk' | 'en'` (`S/i18n/types.ts:4`), `SUPPORTED`, `DEFAULT_LOCALE='uk'`
   (`S/i18n/translator.ts:14-15`), `normalizeLocale` (`uk-UA`→`uk`, невідоме→`uk`).
 - Локаль збірки магазину: `locale: import.meta.env.VITE_LOCALE ?? 'uk-UA'` (`simplycms.config.ts:16`) — запікається
-  при `vite build`, ОДНА на весь магазин (`docs/development/ENVIRONMENT.md:55-57`).
+  при `vite build`, ОДНА на весь магазин (`docs/development/ENVIRONMENT.md`).
 - Серверу локаль повідомляє host: `declareStoreLocale(locale)` (`S/site/store-locale.ts:12`), читання
   `getStoreLocale()` (:22) — модульна змінна процесу, не на запит; незадекларована → `uk` з одним warn.
   Користувачі: листи/серверні тексти (`S/site/index.ts:16` експорт). Від запиту (URL/cookie/Accept-Language) мова НЕ залежить ніде.
@@ -286,7 +286,7 @@ URL/SEO:
 
 ## 7. Пошук і проєкції
 
-- Пошуку на вітрині НЕМАЄ: `grep -iE "search|пошук"` по `storefront*`, `catalog-ui`, `contracts/views`, `themes/solarstore` дає лише `useSearch` роутера і плейсхолдери
+- Пошуку на вітрині НЕМАЄ: `grep -iE "search|пошук"` по `storefront*`, `catalog-ui`, `contracts/views`, `packages/simplycms-theme-solarstore` дає лише `useSearch` роутера і плейсхолдери
   вибору адреси/отримувача. Тема solarstore пошукового UI не має.
 - `search_documents`, `tsvector`, `pg_trgm`, `to_tsquery`, черги індексації — НЕ існують (`grep` по `S/` і `P/migrations/` порожній; індексів по текстових колонках
   лише `idx_property_options_slug`, `idx_pickup_points_city`).
@@ -315,14 +315,14 @@ URL/SEO:
 
 ## 9. Додаткові факти, важливі для проєктування
 
-- Усі `id` генерує викликач (немає `DEFAULT gen_random_uuid()`) — категорія A (`AGENTS.md`, `data-layer.md`); таблиці `*_translations` мусять це зберегти.
+- Усі `id` генерує викликач (немає `DEFAULT gen_random_uuid()`) — категорія A (`AGENTS.md`, `docs/architecture/data-layer.md`); таблиці `*_translations` мусять це зберегти.
 - Видимість каталогу фільтрує КОД (`is_active=true`), RLS на каталозі немає (`schema.ts:27-35`); нова `*_translations` теж потребує явних грантів у `0002_grants.sql` (роль `app_user` — select, `app_admin` — повний).
-- Міграції `0000…0005` заморожені (журнал `simplycms_migrations` тримає суми; тест `tests/migrations-frozen.test.ts`): переписати baseline = зміна політики AGENTS.md
+- Міграції `0000…0005` заморожені (журнал `simplycms_migrations` тримає суми; тест тест migrations-frozen): переписати baseline = зміна політики AGENTS.md
   («нова схема — лише новий 0006_*»), потрібне явне рішення власника і синхронізація копій `pnpm template:sync` (`P/migrations`, `packages/cli/host`, шаблон).
 - Дві копії запису в адмінці: `admin-data` (оптимістичні колекції з write-back) і `admin-server` (операції). Додавання мови в `products` означає зміну колекції,
   handlers, `toProductPatch`, форми, loader-ів, sitemap, head, mail, дашборду (пошуку немає).
-- Поряд лежать чернетки: `~/simplycms-drafts/2026-10-13-content-multilingual-draft.md`, `2026-10-14-content-multilingual-base.md` (патерн A) — не читав, не входить у скоуп.
-- Існуюча спека «Онбординг і супровід магазину агентом» (`docs/superpowers/specs/2026-10-12-shop-agent-toolkit-design.md`) — про CLI/скіли, не про API даних.
+- Поряд лежать чернетки: чернетки content-multilingual-draft і content-multilingual-base (локальні файли власника) (патерн A) — не читав, не входить у скоуп.
+- Існуюча спека «Онбординг і супровід магазину агентом» (спека «shop-agent-toolkit-design»: `docs/architecture/cli.md` §3, скіли `packages/simplycms/skills/simplycms-*`; знесено 2026-11-21, текст — `git show 6daa49bc`) — про CLI/скіли, не про API даних.
 
 ## 10. Покриття доказів
 Код-шар (cbm) для цього знімка не використовувався як доказ «хто кличе»: покриття барелів `simplycms/*` недостатнє, висновки з імпортів/викликів — `grep`/`Read`.

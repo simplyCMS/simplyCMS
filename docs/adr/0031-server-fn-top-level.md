@@ -16,8 +16,8 @@ Spec: `docs/architecture/data-layer.md` §2
 
 ## Why
 - Компілятор вимагає присвоєння простим ідентифікатором (`handleCreateServerFn.js:104-106` у `@tanstack/start-plugin-core`).
-- Fast-path компілятора для файлів із serverFn сканує лише топ-рівень. Виклик усередині фабрики не падає, а мовчки лишається нетрансформованим. Серверний граф тоді їде в клієнтський бандл (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
-- Операції тестуються без рантайму Start. `.inputValidator` вирізається на клієнті (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
+- Fast-path компілятора для файлів із serverFn сканує лише топ-рівень. Виклик усередині фабрики не падає, а мовчки лишається нетрансформованим. Серверний граф тоді їде в клієнтський бандл (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show 6daa49bc`).
+- Операції тестуються без рантайму Start. `.inputValidator` вирізається на клієнті (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show 6daa49bc`).
 - Стан у коді: `eslint-rules/server-fn-top-level.mjs`, зона правила в `eslint.config.mjs`; канон — `docs/architecture/data-layer.md` § «2. Вітрина (SSR».
 
 ## Rejected
