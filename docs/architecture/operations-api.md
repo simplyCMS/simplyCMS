@@ -1,7 +1,7 @@
 # Реєстр операцій і HTTP API
 
 Канон запису адмінки й зовнішнього API (Мультимовність М1, рядки І14, І24–І29 матриці майстра).
-Контракт дроту (конверт, статуси, `kind`, токени, ідемпотентність) зафіксовано в майстер-плані
+Контракт дроту (конверт, статуси, `kind`, токени API, ідемпотентність) зафіксовано в майстер-плані
 §3.3 ([`2026-10-15-multilingual-wave-master.md`](../superpowers/plans/2026-10-15-multilingual-wave-master.md));
 тут — як його тримає код і які гейти не дають розійтися.
 
@@ -19,7 +19,7 @@
   zod-схеми, прапорці `idempotent: 'create'`, `versioned`, `sessionOnly`, `transport`, і `run(ctx,
   input)`. `ctx` — суб'єкт ЯВНИЙ (не з запиту), `CoreActor`, транзакція `db`, `afterCommit` (хвіст
   після коміту, лише добирає вже записаний у транзакції намір — напр. стирання файлів).
-- **Реєстр** — `CORE_OPERATIONS` і `getOperation` (`admin-server/impl/operations-registry.ts`).
+- **Реєстр операцій** — `CORE_OPERATIONS` і `getOperation` (`admin-server/impl/operations-registry.ts`).
   Реєстр живе в `admin-server`, бо саме він визначає операції; `simplycms/operations` про нього не
   знає (цикл тірів), тому роут HTTP передає `getOperation` адаптеру.
 - **Операція-список** (`<префікс>.list`, фабрика команд перекладного агрегата): вхід
@@ -31,13 +31,13 @@
   Тому 412 може прийти й коли версія цілі не змінилась (змінився сусід під замком) — клієнт у такому
   разі перечитує список, а не повторює запит із версією з помилки.
 - **Нова операція** = файл операції + рядок у `CORE_OPERATIONS` + тонка serverFn-обгортка в
-  `admin-server/index.ts`. Паритет доводить тест (§5).
+  `admin-server/index.ts`. Парність доводить тест (§5).
 
 ## 2. Виконавець
 
 `executeOperation(def, raw, subject, opts)` — ЄДИНИЙ виконавець для serverFn і HTTP:
 
-1. право й scopes токена — `requireOperation` (403 `forbidden`);
+1. право й scopes токена API — `requireOperation` (403 `forbidden`);
 2. валідація входу — `ValidationError` лише з білого списку (`path` + `code`, без сирого вводу);
 3. транзакція `withActor` під роллю суб'єкта (`dbRoleForSubject`); за `opts.idempotency` ключ
    резервується ПЕРШОЮ дією тієї самої транзакції (§4);
@@ -71,7 +71,7 @@
 
 ## 4. Токени, ідемпотентність, помилки
 
-- **Токени** (`api_tokens`, `service_accounts`): `scms_<prefix>_<secret>`, у БД лише sha256 усього
+- **Токени API** (`api_tokens`, `service_accounts`): `scms_<prefix>_<secret>`, у БД лише sha256 усього
   рядка (`hashToken`, пошук за повним хешем — час відмови не залежить від префікса).
   `authenticateRequest`: якщо `Authorization` є, cookie ігнорується назавжди (битий Bearer не падає
   на сесію). Права = роль ∩ scopes; відкликаний, прострочений токен чи забанений власник → 401;
