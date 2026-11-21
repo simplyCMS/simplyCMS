@@ -2,7 +2,7 @@
 
 Канон мультимовності ДАНИХ (тексти сутностей, адреси, мовні токени, фото по мовах).
 Інтерфейсні рядки — окремо, [`i18n.md`](./i18n.md). Незворотні контракти (таблиці, URL,
-семантика запису, машина станів мов) зафіксовано в майстер-плані хвилі §3
+семантика запису, машина станів мов) зафіксовано в майстер-плані мультимовності §3
 ([`2026-10-15-multilingual-wave-master.md`](../superpowers/plans/2026-10-15-multilingual-wave-master.md));
 цей файл описує, як їх тримає КОД, і посилається на §3 замість переказу. Запис —
 лише операціями реєстру ([`operations-api.md`](./operations-api.md)).
@@ -94,7 +94,7 @@
   `fallbackFieldsOf`.
 - **Один будівник** очікуваного стану — `expectedRows` (`catalog-projection/expected.ts`): з нього
   беруть і `refreshProductTexts` (синхронно в транзакції кожної команди товару), і
-  `buildMissingProjection` (етап виклику проєкції `languages.fill` під ексклюзивним `languages-set`, лише `DO NOTHING`), і звірка
+  `buildMissingProjection` (крок виклику проєкції `languages.fill` під ексклюзивним `languages-set`, лише `DO NOTHING`), і звірка
   `findProjectionMismatches`/`localeProjectionMismatches`/`reconcileProductTexts`. Три читачі однієї
   істини не розходяться між собою.
 - Парність SQL-предиката `is_translated` і `fallback_fields` з доменними
@@ -103,7 +103,7 @@
 - Мова `disabled` — проєкцію знімає `dropLocaleProjection`; повернення в `published` —
   дозаповнення адрес, токенів і проєкції після звірки (машина станів — §3.5 майстра).
   `languages.setStatus` у `published` відмовляє, доки звірка не дасть 0 розбіжностей; відмова
-  `language_incomplete` називає товари й етап (`['products', id, 'path'|'token'|'projection']` у
+  `language_incomplete` називає товари й крок (`['products', id, 'path'|'token'|'projection']` у
   `path` проблеми — єдине, що несуть і problem+json, і serverFn; до 20 прикладів).
 - 🔴 **`languages.fill` будує проєкцію лише під ЕКСКЛЮЗИВНИМ `languages-set`:** виклик, якому ще бракує
   адрес чи токенів, копіює їх під спільним set і проєкції не будує (`done: false`); виклик без них бере
@@ -147,7 +147,7 @@
   `ProductImageViewModel` (`{ url, alt, alt_lang? }`). Семантика: файл — перевизначення мови, інакше
   спільний; alt — мови, інакше основної з `alt_lang`; `''` у рядку мови — ЯВНО декоративне (без
   fallback), `null` — перекладу немає (alt основної).
-- **Ключі кешів містять локаль (І36):** `entityKey(entity, locale)`, `AGGREGATE.<x>.keyFor(locale)`,
+- **Ключі кешів містять мову контенту (І36):** `entityKey(entity, locale)`, `AGGREGATE.<x>.keyFor(locale)`,
   `createReadCache` з `variant: locale` ([`i18n.md`](./i18n.md)).
 
 ## 6. Адмінка

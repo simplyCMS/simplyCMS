@@ -15,7 +15,7 @@ simplyCMS/
 │                                     # tests/www-live-stats.test.ts. Виключений з root tsconfig
 │                                     # (власний), у root eslint/prettier входить (ігнор лише на
 │                                     # routeTree.gen.ts). CI — job `www`.
-├── src/                              # Host — тонка збірка магазину
+├── src/                              # Демо-магазин монорепо — тонка збірка
 │   ├── routes/
 │   │   ├── __root.tsx                # Root route (html, providers, 404/error)
 │   │   └── my/                       # ЄДИНА тека роутів магазину (кастомні сторінки)
@@ -30,11 +30,11 @@ simplyCMS/
 │   └── routeTree.gen.ts              # AUTO-GENERATED — do not edit
 │
 ├── packages/               # ВСІ публіковані пакети — рівно ПʼЯТЬ.
-│   │                       # 🔴 Тека `packages/simplycms/` — САМ фреймворк-пакет (unscoped
+│   │                       # 🔴 Тека `packages/simplycms/` — САМЕ ядро (unscoped
 │   │                       # npm-імʼя `simplycms`), а не проміжний рівень. Тулінг відрізняє ядро
 │   │                       # за ІМЕНЕМ: scope `@simplycms/` АБО точне `simplycms`
 │   │                       # (🔴 ніколи префіксом — зачепив би сторонні simplycms-theme-*).
-│   ├── simplycms/          simplycms                 # ФЛАГМАН: усе ядро одним пакетом
+│   ├── simplycms/          simplycms                 # Ядро: усі тіри одним пакетом
 │   │   ├── src/contracts/        # T0 Контракти + порти (0 runtime deps); субшляхи
 │   │   │                         #    ./views і ./views/fixtures — view-model-и вітрини
 │   │   │                         #    (контракт тем v3; react — type-only peer);
@@ -59,7 +59,7 @@ simplyCMS/
 │   │   │                         #    ./lock-keys — ЄДИНИЙ реєстр ключів advisory-замків (LOCK_KEYS),
 │   │   │                         #    pg-errors — розпізнавання обмежень за іменем (isForeignKeyViolation)
 │   │   ├── src/auth/             # T2 Серверний Better Auth (інстанс, databaseHooks, invite
-│   │   │                         #    власника, authz-матриця); вхід, сесія й guard адмінки
+│   │   │                         #    власника, матриця прав); вхід, сесія й guard адмінки
 │   │   ├── src/admin-server/     # T2 Серверний шар адмінки — defineAdminResource (операції+схеми)
 │   │   │                         #    + іменовані операції; index.ts — ЛИШЕ топ-рівневі
 │   │   │                         #    createServerFn, нутрощі — bare-субшлях ./impl
@@ -72,7 +72,7 @@ simplyCMS/
 │   │   ├── src/site/             # T2 Стан сайту для вітрини й адмінки: кеш профілю й
 │   │   │                         #    активної теми (createReadCache: покоління в БД, Д6),
 │   │   │                         #    readStoreProfile, реєстр вшитих тем (declareBuiltThemes
-│   │   │                         #    з host-а). Без власного каналу до БД (приймає ActorDb);
+│   │   │                         #    з демо-магазину). Без власного каналу до БД (приймає ActorDb);
 │   │   │                         #    upward-виняток лише db. server-only (К3-Е6б)
 │   │   ├── src/env/              # T2 Резолвер груп env драйверів (S3, SMTP) за правилом «все або
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
@@ -94,9 +94,9 @@ simplyCMS/
 │   │   │                         #    немає. server-only (К3-Е8)
 │   │   ├── src/prod-start/       # T2 Прод-старт магазину (runStart, startStore, STRIPPED_ENV): накат під
 │   │   │                         #    MIGRATION_DATABASE_URL → process.execve на server.mjs без нього; у магазині —
-│   │   │                         #    шим scripts/start.mjs (host-файл). Upward `env`, `migrate`. server-only (F5 Е8)
+│   │   │                         #    шим scripts/start.mjs (файл каркаса). Upward `env`, `migrate`. server-only (F5 Е8)
 │   │   ├── src/react-query/      # T2 Query-хуки через EngineContext
-│   │   ├── src/runtime/          # T2 defineRuntime + host-defineConfig; ./domain-error-adapter —
+│   │   ├── src/runtime/          # T2 defineRuntime + defineConfig магазину; ./domain-error-adapter —
 │   │   │                         #    T0-реєстр доменних помилок і їхні класи (contracts/domain-errors) +
 │   │   │                         #    клієнтський seroval-адаптер межі serverFn (реєструється в
 │   │   │                         #    src/start.ts serializationAdapters)
@@ -140,7 +140,7 @@ simplyCMS/
 │   │   │                         #    slots/ реквізитів) + shells/ + server/ + seo/
 │   │   ├── routes/storefront/    # T5 Роут-файли вітрини — монтуються physical()
 │   │   ├── routes/admin/         # T5 Роут-файли адмінки (тонкі обгортки src/admin)
-│   │   ├── migrations/           # КАНОН core-міграцій: 0000_prelude → 0004_functions (baseline до 1.0.0-rc.1 не заморожено:
+│   │   ├── migrations/           # Baseline міграцій ядра: 0000_prelude → 0004_functions (baseline до 1.0.0-rc.1 не заморожено:
 │   │   │                         #    виняток baseline, `data-layer.md`); джерело `simplycms db:diff`
 │   │   ├── skills/               # Агентні скіли, які їдуть у магазини СИМЛІНКАМИ
 │   │   ├── agent/                # Вступ агента (керований блок AGENTS.md), CLAUDE.md, дозволи
@@ -150,12 +150,12 @@ simplyCMS/
 │   │                                                 # deploy:record/db:apply/add/
 │   │                                                 # create (plugin|theme)/update/db:diff (N канонів)/
 │   │                                                 # theme:conformance (гейт views, контракт тем v3);
-│   │                                                 # чистий ESM без build; host/ — канон host-файлів,
+│   │                                                 # чистий ESM без build; host/ — файли каркаса,
 │   │                                                 # template-plugin/ і template-theme/ — шаблони
 │   │                                                 # (`pnpm template:sync`); виконується В МАГАЗИНІ
-│   ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore  # Референс-тема повного контуру: manifest
+│   ├── simplycms-theme-solarstore/ @simplycms/theme-solarstore  # Референс-тема повного циклу: manifest
 │   │                                                 # + tokens + components + messages (npm)
-│   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного контуру: plg_faq_items,
+│   ├── simplycms-plugin-faq/  @simplycms/plugin-faq  # Референс-плагін повного циклу: plg_faq_items,
 │   │                                                 # routes/ (/admin/faq), слот, Zod-settings, i18n.
 │   │                                                 # 🔴 З шаблону знято — ставиться `simplycms add`
 │   ├── create-simplycms-store/  # UNSCOPED npm-пакет: CLI-скаффолдер (`src/`) + вбудований
@@ -164,7 +164,7 @@ simplyCMS/
 │   │                            # не підпадає й у tarball-parity не рахується. Файли шаблону
 │   │                            # (джерело — сам шаблон): `AGENTS.md`, `CLAUDE.md`,
 │   │                            # `.claude/settings.json`; шими `scripts/{start,owner-invite}.mjs`
-│   │                            # і `.claude/hooks/session-start.mjs` — host-файли, їх копію
+│   │                            # і `.claude/hooks/session-start.mjs` — файли каркаса, їх копію
 │   │                            # `template:sync` кладе в `packages/cli/host/` (`TEMPLATE_HOST_FILES`).
 │   └── README.md           # Джерело правди про тіри залежностей T0→T5
 │
@@ -196,15 +196,15 @@ simplyCMS/
 │   │                                 # audit-deps, audit-exports, seo-endpoints,
 │   │                                 # no-supabase-manifests (ратчет), create-store-template-parity (парність шаблону й монорепо),
 │   │                                 # cli-* (юніти @simplycms/cli), tier-boundary (негативний
-│   │                                 # контроль тір-зон), dist-import-meta (гард лоуереного import.meta у dist)
-│   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ пілота (vite.config.ts + package.json) поверх шаблону
-│                                     # create-simplycms-store — не власна копія host-каркаса (виключений
+│   │                                 # контроль тір-зон), dist-import-meta (гейт лоуереного import.meta у dist)
+│   └── pilot/store-template/         # Тонкий ОВЕРЛЕЙ прогону пакування (vite.config.ts + package.json) поверх шаблону
+│                                     # create-simplycms-store — не власна копія файлів каркаса (виключений
 │                                     # із tsconfig.json і eslint.config.mjs)
 │
 ├── server.mjs                        # Node-runner прод-збірки: sirv(dist/client) + fetch-handler;
 │                                     # server-runtime.mjs — його Node-шар (IncomingMessage → Request,
 │                                     # стрімінг відповіді), самодостатній і покритий тестами
-├── public/                           # Статика host-а (favicon, placeholder)
+├── public/                           # Статика демо-магазину (favicon, placeholder)
 ├── playwright.config.ts              # Конфіг браузерних тестів `tests/e2e/` (admin-smoke, layout-overflow)
 ├── tsconfig.template.json            # tsconfig гейта `pnpm typecheck:template`
 ├── tsconfig.showcase.json            # tsconfig гейта `pnpm typecheck:showcase` (`scripts/showcase/*.mts`

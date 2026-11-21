@@ -53,7 +53,7 @@
   ніколи відносним шляхом. Живий не-serverFn експорт, підтягнутий відносно,
   бандлер піднімає в спільний чанк, і весь value-граф лоадерів (drizzle, пул)
   потрапляє в клієнтський бандл. Стережуть правило `server-only-relative`, гейт
-  `tests/dist-server-boundary.test.ts`, Import Protection магазину, Gate C пілота.
+  `tests/dist-server-boundary.test.ts`, Import Protection магазину, Gate C прогону пакування.
 - 🔴 `userId` у `withCustomerDb` приходить **лише** з серверної сесії
   (`readSessionSubject`), ніколи з параметра клієнта: підставлений чужий id RLS
   не зупинить, вона звірятиме рядки з тим, кого їй назвали.
@@ -254,7 +254,7 @@ await port.insert({ id: crypto.randomUUID(), question, answer });
 # 1. правка packages/simplycms/src/schema/schema.ts
 pnpm db:rebaseline        # 2. drizzle/ + migrations/0001_init.sql (детермінованим скриптом)
 #                            3. ручні файли: 0002_grants, 0003_seed, 0004_functions
-pnpm template:sync        # 4. копії в шаблоні й host CLI
+pnpm template:sync        # 4. копії в шаблоні й файлах каркаса CLI
 pnpm test:schema          # 5. накат УСЬОГО канону на чисту БД харнеса + поведінка RLS
 
 # Після 1.0.0-rc.1 (baseline заморожено) і в магазині — новий файл:
@@ -299,7 +299,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   а не тихий провал.
 - 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (М2б, Р23).** Міграція `0003` тримає лише рядки без
   тексту мовою магазину (`stock_management`, `cache_generations`, тема). Мову й довідники з текстом —
-  статуси замовлень, тип ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
+  статуси замовлень, вид ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
   `bootstrapStore` (`simplycms/migrate`) на порожній `languages` в основній мові магазину; тексти
   беруться з `content.seed` мовного пакета (`simplycms/i18n/packs`), id — `SYSTEM_SEED_IDS`
   (`simplycms/schema`). Одна транзакція під замком `languages-set`; непорожня `languages` → нічого не
@@ -312,9 +312,9 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `MigrationChecksumError` чинні: розбіжність суми файлу ядра повідомляє «baseline платформи
   змінився» і називає дію (базу створюють заново), чужого файла — «зміна новою міграцією».
   Заморожування baseline — крок релізу 1.0.0-rc.1.
-- `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. **Не** застосовуй
-  міграції через Supabase MCP (`apply_migration`/`execute_sql`): MCP лише для
-  інспекції (`list_tables`, `SELECT`, `get_advisors`). Не пиши SQL повз `db:diff`.
+- `simplycms db:diff` дописує нові файли в `db/migrations` магазину, далі ревʼю. Міграції накочуй
+  лише через `pnpm db:rebaseline`/`db:diff` і `simplycms db:apply`. Не пиши SQL повз `db:diff`
+  й не застосовуй міграції вручну на БД (Supabase у стеку немає, ADR-0043).
 - `DATABASE_URL` (з `.env.local`) — джерело тулінгу `db:pull`/`db:diff` і рантайм-пул
   `simplycms/db`. Генератора типів БД немає.
 
@@ -441,7 +441,7 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 понад scale без втрат допустимі (`'1.500'` у `numeric(10,2)`). Клієнт числової
 властивості (`numeric(15,4)`) сам шле простий десятковий рядок без експоненти
 і не відправляє більше знаків, ніж колонка (`NumberPropertyInput`). Це НАВМИСНЕ розходження з drizzle-zod:
-гейт паритету не послаблено, виняток задокументований у
+гейт парності не послаблено, виняток задокументований у
 `__tests__/support/parity-diff.ts` (`numericFits` — незалежна реалізація), мутація
 `m5` доводить, що повернення до `z.string()` червоніє.
 
@@ -473,7 +473,7 @@ found». Наслідок для операцій: перетворення од
 через `runAdminTransactions`), інакше лишився б статус першої. Гейт —
 `__tests__/set-response-status-scan.test.ts`: ідентифікатор `setResponseStatus` у коді
 `admin-server/**` — лише в `run.ts` і `validation.ts` (allowlist із причинами);
-поведінку «ядро поза запитом» пінує `__tests__/core-status-boundary.test.ts`.
+поведінку «доменна функція поза запитом» пінує `__tests__/core-status-boundary.test.ts`.
 `auth/authz-request.ts` (403) і `plugin-sdk/server/config-db.ts` — поза зоною гейта.
 
 **Ядра поза операцією (С-15).** Операція = `parseAdminInput` + `runAdmin(op, db => ядро(db,
@@ -493,7 +493,7 @@ parsed))`; ядро приймає вже розібраний вхід і `Acto
 двофазного стирання, Е6д-14). Ядро, якому потрібен актор, отримує `CoreActor`
 (`admin-server/impl/core-actor.ts`) — дискримінант `{ kind: 'admin', userId } | { kind:
 'system' }`, а не `string | null`: для `system` автора дії (`changed_by`) немає і перевірки
-«не я» теж, як в автоправил. Операція передає актора з гранта (`actorOfGrant`).
+«не я» теж, як в автоправил. Операція передає актора з гранта ролі (`actorOfGrant`).
 
 **Опція `media` фабрики (Е6д-1).** `defineAdminResource({ …, media: { entityType,
 columns } })` (`admin-server/impl/resource-media.ts`, `resource-write-media.ts`) робить
@@ -518,7 +518,7 @@ column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
 `resource-write-remove.ts`) — дочірні таблиці, рядки яких FK `ON DELETE CASCADE` знищує
 разом із рядком ресурсу і які несуть медіа. `remove`/`removeIn`: `FOR UPDATE` батьків
 (`ORDER BY id`) → знімок дочірніх рядків `FOR UPDATE` → DELETE → `eraseMediaRows` кожного
-дочірнього рядка з власником `{ entityType, <id дочірнього> }` → після COMMIT
+дочірнього рядка з прив'язкою `{ entityType, <id дочірнього> }` → після COMMIT
 `completeMediaErasures`; `removeIn` без колектора `discard` — помилка програміста. 🔴 Лок батьків
 обовʼязковий: вставка дочірнього рядка, що вже пройшла FK-перевірку (`FOR KEY SHARE`), без
 нього пішла б каскадом повз знімок. Має ресурс товарів (фото відгуків). Покриття стереже
@@ -548,7 +548,7 @@ email в іншому регістрі — не конфлікт, записує
 - Спосіб доставки — **провайдер + режим ціни**. Провайдер (`shipping_methods.provider`,
   `core:address` | `core:pickup`) каже, куди везти, і незмінний після створення
   (`insertOnly`). Режим (`shipping_methods.pricing`: `rates` | `provider` | `carrier`)
-  обирає власник. Опис провайдерів для клієнта — T0 `simplycms/contracts/shipping-providers`
+  обирає власник магазину. Опис провайдерів для клієнта — T0 `simplycms/contracts/shipping-providers`
   (лише типи й константи). Серверна поведінка — `simplycms/commerce`
   (`resolveDestination`). Розгалуження за режимом живе в одному рушії
   `resolveShippingRate`: його ділять показ (`useShippingDirectory.rateFor`) і запис
@@ -622,7 +622,7 @@ email в іншому регістрі — не конфлікт, записує
   поколінням, і наступний `get` його перечитує (Е6б-9); повільне читання
   старішого покоління не перезаписує свіжіше. Клієнт адмінки додатково кличе
   `router.invalidate()`: лоадер `_storefront` має `staleTime` 5 хв (Е6б-22).
-- 🔴 **Покоління читаються ОДНИМ запитом на HTTP-запит.** Host загортає fetch-handler
+- 🔴 **Покоління читаються ОДНИМ запитом на HTTP-запит.** Магазин загортає fetch-handler
   у `withRequestContext` (`simplycms/site/request-context`, `AsyncLocalStorage`);
   `readGenerations()` мемоізує проміс у контексті запиту, тож три кеші дають один
   `select` із `cache_generations`. Поза запитом (CLI, фонові задачі) — запит на
@@ -634,7 +634,7 @@ email в іншому регістрі — не конфлікт, записує
   `update system_settings`/`themes` (ручний фікс, відновлення знімка в `live:smoke`)
   без `update cache_generations set generation = generation + 1 where key = …`
   вітрина побачить після TTL.
-- Вшиті теми знає СЕРВЕР: host `src/server.ts` кличе
+- Вшиті теми знає СЕРВЕР: демо-магазин монорепо `src/server.ts` кличе
   `declareBuiltThemes(Object.keys(config.themes))` на рівні модуля; без декларації
   активація відмовляє `theme_not_built` (fail-closed, Е6б-8).
 - Гейти: юніт `createReadCache` (детермінована гонка «читання в польоті +
@@ -649,7 +649,7 @@ email в іншому регістрі — не конфлікт, записує
 - 🔴 **Одне ядро ціни.** Картки вітрини, кошик, чекаут, редагування позицій
   замовлення й діагностика ціни в адмінці рахують ОДНИМ ядром `simplycms/commerce`:
   `loadPricingContext(db, userId, opts?)` будує контекст (ефективна категорія з
-  відкатом на дефолтну; тип ціни — тип ЦІЄЇ категорії, лише без нього — глобальний
+  відкатом на дефолтну; вид ціни — вид ЦІЄЇ категорії, лише без нього — глобальний
   дефолтний; ліс знижок; ОДИН `now` на весь розрахунок),
   `priceCart(db, ctx, items)` рахує рядки з `available`, `priceItems` — обгортка
   оформлення (`'not_purchasable'`, якщо хоч один рядок недоступний). Суми й пороги
@@ -683,7 +683,7 @@ email в іншому регістрі — не конфлікт, записує
   категорія (ручна й автоправила), контакти, бан, видалення; першим у порядку
   `customer-category` → `admin-roles`; `admin-roles` — будь-яка зміна «хто адмін»
   і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
-  `setCustomerBan`, `deleteCustomer`, випуск invite власника (`issueAdminInvite`, лише токен) і видача
+  `setCustomerBan`, `deleteCustomer`, випуск invite власника магазину (`issueAdminInvite`, лише токен) і видача
   ролі після прийняття (`grantAdminRole`, Р19). Ключ
   `LOCK_KEYS.adminRoles` беруть і `auth` (invite), і адмінка напряму з реєстру. Перевірки «не адмін», «не я», «не
   останній адмін» і «не забанений» виконуються лише під ним.
@@ -758,7 +758,7 @@ email в іншому регістрі — не конфлікт, записує
   розійшовся зі знімком BA, видаляє токен і не шле листа (назовні винятку немає: BA і
   так відповідає однаково). Новий випадок цього класу закривається так само —
   `FOR SHARE` у точці запису, а не ще одна перевірка перед нею.
-- 🔴 **Invite власника і бан: лок закриває одне, `FOR SHARE` — інше.**
+- 🔴 **Invite власника магазину і бан: лок закриває одне, `FOR SHARE` — інше.**
   `grantAdminRole` (видача ролі ПІСЛЯ прийняття запрошення, Р19; одна
   транзакція `app_admin`) бере `admin-roles`, потім
   `select banned_at from users where id = $1 for share` (`issueAdminInvite` теж
@@ -771,7 +771,7 @@ email в іншому регістрі — не конфлікт, записує
 - 🔴 **Межа узгодженості розрахунків поверх кількох агрегатів** (канон для ВСІХ
   таких розрахунків, не лише знижок; рішення Е6в-8 ред.3): Узгодженість
   гарантується в межах агрегата, що пишеться ОДНІЄЮ транзакцією (знижка з цілями й
-  умовами — один SQL-знімок). Між незалежними агрегатами (категорія покупця, тип
+  умовами — один SQL-знімок). Між незалежними агрегатами (категорія покупця, вид
   ціни, ціни товарів, правила знижок), які змінюються окремими операціями,
   розрахунок може поєднати стани з різних моментів, зокрема комбінацію, якої не
   існувало в жоден момент. Жодного інваріанта це не порушує: записане в
@@ -796,7 +796,7 @@ email в іншому регістрі — не конфлікт, записує
 `updateCustomerContacts`, `deleteCustomer` (`admin-server/impl/customers/*`) і зведення
 `dashboardSummary`. Читання покупців — не колекція `admin-data`, а серверні `listCustomers`
 (keyset `(created_at desc, id desc)`, сторінка 50, `useInfiniteQuery`) і `getCustomerCard`:
-база — `users LEFT JOIN profiles`, тож власник, створений CLI `owner:invite` без
+база — `users LEFT JOIN profiles`, тож власник магазину, створений CLI `owner:invite` без
 `profiles`, у списку є, а його статистика — `null` («—»). Спека —
 [`2026-10-07-customers-dashboard-design.md`](../superpowers/specs/2026-10-07-customers-dashboard-design.md).
 
@@ -820,7 +820,7 @@ email в іншому регістрі — не конфлікт, записує
   збігається без регістру) → ref аватара читається ДО знеособлення → знеособлення
   замовлень → відгуки анонімні (`user_id NULL`, рейтинг і текст лишаються) →
   `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMediaRows`
-  аватара (власник `avatar/<userId>`) і фото кожного відгуку покупця (власник
+  аватара (прив'язка `avatar/<userId>`) і фото кожного відгуку покупця (прив'язка
   `review/<id>`) — лише рядки `media`; ядро повертає `discard`, а операція стирає файли
   ПІСЛЯ COMMIT (`completeMediaErasures`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
   `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
@@ -913,7 +913,7 @@ email в іншому регістрі — не конфлікт, записує
   (5) `languages.fill` і звірка беруть на товарах і модифікаціях не сильніше за `FOR KEY SHARE` (носії:
   `keyShare` копіювання адрес і токенів, `buildMissingProjection`, звірка). Корінь раніше за модифікації
   у копіюванні токенів надлишковий щодо дедлоку (проєкція — окрема транзакція під ексклюзивним set, FK
-  токенів веде лише на модифікації); його лишено для однакового порядку в кожному кроці fill. Етап проєкції fill — лише у виклику під ексклюзивним set (пункт (2)):
+  токенів веде лише на модифікації); його лишено для однакового порядку в кожному кроці fill. Крок проєкції fill — лише у виклику під ексклюзивним set (пункт (2)):
   він чекає коміту всіх команд, що тримають спільний set, і будує рядок із закоміченого джерела (І23);
   адреси й токени копіюються під спільним set.
   Тести: `aggregate-language-locks.test.ts` (1), `catalog-projection-locks.test.ts` (2),

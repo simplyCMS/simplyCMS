@@ -81,11 +81,11 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   бо `beforeLoad` client-only адмінки виконується лише після гідрації); для кабінету —
   серверний `beforeLoad` роуту `_protected`. Guard-логіку за межі `src/start.ts` і
   auth-роутів не виносити.
-- Конфігурація CMS — `simplycms.config.ts` (`defineConfig`: локаль, валюта, теми, плагіни) — одне
+- Конфігурація CMS — `simplycms.config.ts` (`defineConfig`: мова, валюта, теми, плагіни) — одне
   джерело істини для `theme-registry.ts`, `bootstrapPlugins` і вшитих тем (`declareBuiltThemes`
   у `src/server.ts`). `seo` і `siteUrl` там немає (Е6б-11). Назва, заголовок головної й опис —
   профіль магазину в БД. URL сайту — серверний env `VITE_SITE_URL`. До `head()` роутів обидва
-  доходять кореневим лоадером host-а (`getStorefrontRoot` → `StorefrontRootData`).
+  доходять кореневим лоадером магазину (`getStorefrontRoot` → `StorefrontRootData`).
 - 🔴 `src/routeTree.gen.ts` автогенерований — не редагувати.
 
 ## 3. Гідрація й клієнтський стан
@@ -164,7 +164,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   інтерсептор віддає рівно той шлях, який роутер вважає канонічним (без слеша), і циклу немає.
   Історична адреса сутності й історичний `?mod=` (`applyHistory`, `seo/history.ts`) — кроки ТІЄЇ Ж
   кінцевої адреси: будь-яка неканонічна адреса дає рівно один 301 (І20, `path-normalize.test.ts`).
-  Токен `?mod=` береться рядком із сирого query (`parseQueryKeepingToken`), бо роутер JSON-розбирає
+  Мовний токен `?mod=` береться рядком із сирого query (`parseQueryKeepingToken`), бо роутер JSON-розбирає
   значення (`1e5` → число); вихід кожного кроку проходить `sameOriginPath` (захист від відкритого
   редиректу `/uk//evil.example`).
 - **Роутер:** `getRouter()` кличе `createRouterLocale()`: набір мов — з контексту запиту (сервер)

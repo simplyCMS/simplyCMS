@@ -46,8 +46,8 @@
   (`storage/rollback.ts`): `run` викликає `track(ref)` одразу після кожного `writeMedia`,
   а помічник на відмові ставить хвіст і стирає. Ним користуються подача й правка відгуку,
   `replaceAvatar` і адмінський `uploadMedia`.
-- 🔴 **Власник обовʼязковий:** `uploadMedia` без `entityId` → 400 (виняток — `store_logo`,
-  власник якого фіксований, `STORE_LOGO_OWNER_ID`).
+- 🔴 **Прив'язка медіа обовʼязкова:** `uploadMedia` без `entityId` → 400 (виняток — `store_logo`,
+  прив'язка якого фіксована, `STORE_LOGO_OWNER_ID`).
 - 🔴 **Видалення — двофазне (Е6д-14, КАНОН):** «транзакція видаляє лише рядки
   `media`; файли стираються ПІСЛЯ COMMIT (`completeMediaErasures`); найгірший наслідок —
   орфан-файл без рядка, битий референс неможливий». Механіка:
@@ -72,8 +72,8 @@
     `completeMediaErasures` кожного ключа ПІСЛЯ `runAdmin`/`runAdminTransactions`; сід — після
     своєї транзакції. Неявного after-commit хука в `withActor` **немає**;
   - 🔴 власність ключа перевіряє сховище, а не викликач (Е6д-16): `owner`
-    обовʼязковий, перевантаження без нього немає, ключі чужого власника тихо
-    ігноруються. Власники: відгук — `{ entityType: 'review', entityId: reviewId }`;
+    обовʼязковий, перевантаження без нього немає, ключі з чужою прив'язкою тихо
+    ігноруються. Прив'язки: відгук — `{ entityType: 'review', entityId: reviewId }`;
     аватар у `deleteCustomer` — `{ entityType: 'avatar', entityId: userId }`;
     фабрика `admin-data` — `{ cfg.entityType, <id рядка> }`, окремий виклик на рядок
     (опція `media`, Е6д-1 — `data-layer.md`);
@@ -89,8 +89,8 @@
     причиною.
   - 🔴 **Фото товару (М1, Task 12):** `product_images.storage_key` і
     `product_image_translations.storage_key` (мовний варіант файлу) — медіа-колонки з
-    власником `product` (`media.entity_id` = id ТОВАРУ, навіть для фото модифікації).
-    Опція `cascadeMedia` має поле `owner` — колонку id власника, коли він не сам
+    прив'язкою `product` (`media.entity_id` = id ТОВАРУ, навіть для фото модифікації).
+    Опція `cascadeMedia` має поле `owner` — колонку з id прив'язки, коли прив'язка — не сам
     дочірній рядок; у таблиці перекладу без `id` ключ запису в `findMediaReferences`
     будує `idExpression` (`image_id:locale`). Команда `products.saveDescription`
     перевіряє нові ключі (409 `media_ref_invalid`) і стирає зниклі діффом множини
@@ -114,12 +114,12 @@
 - Покупець видаляє власний відгук (Е6д-9): `app_user` не має `DELETE` на `media`,
   тож рядки фото стирає ескалація `operator`, і лише ключі з `RETURNING images`
   рядка, який ЦЯ транзакція видалила як власний (`user_id` — із сесії), а не з вводу
-  клієнта; `eraseMediaRows` ще звіряє власника `review/<id>`.
+  клієнта; `eraseMediaRows` ще звіряє прив'язку `review/<id>`.
 - Покупець редагує власний відгук (Е6д-23): `updateProductReviewWithImages`
   (`storefront/loaders/reviews-edit.ts`) — FormData `id, rating, title, content, keep[],
   images[]`; `keep` мусить бути підмножиною наявних `images` (інакше 409
   `review/images-changed`), нові фото пишуться `writeMedia` у `withPublishedRollback`,
-  прибрані стирає `eraseMediaRows` через `operator` (власник `review/<id>`) і
+  прибрані стирає `eraseMediaRows` через `operator` (прив'язка `review/<id>`) і
   `completeMediaErasures` після COMMIT. Правка завжди повертає статус `pending`, а
   `admin_comment` не чіпає. Колонковий `UPDATE (rating, title, content, images, status,
   updated_at)` і політики RLS — `data-layer.md` (розділ про гранти); грант не дає
@@ -142,9 +142,10 @@
 - Нова медіа-колонка в схемі → запис у `MEDIA_COLUMNS` (`simplycms/domain/media`) +
   резолв при читанні. Гейт — `tests/media-columns-coverage.test.ts` (евристика
   бачить і `storage_key`: власні таблиці сховища — у `NOT_MEDIA`).
-- 🔴 Не викликай `supabase.storage` і не імпортуй `@supabase/storage-js`: правило
-  `simplycms-storage/no-direct-storage` (`eslint-rules/no-direct-storage.mjs`) і
-  ратчет `tests/storage-direct-calls.test.ts` це валять. Виїмок немає: список
+- 🔴 Не клич сховище напряму поза портом `simplycms/storage`: жодних `<клієнт>.storage.from(...)`.
+  Правило `simplycms-storage/no-direct-storage` (`eslint-rules/no-direct-storage.mjs`) і
+  ратчет `tests/storage-direct-calls.test.ts` це валять. Вони ще ловлять `supabase.storage` і
+  `@supabase/storage-js` — лишок історичної причини ратчета; Supabase у стеку немає (ADR-0043). Виїмок немає: список
   `STORAGE_DIRECT_CALL_EXEMPTIONS` порожній (новий виняток — рішення, а не звичка).
 - Не клади URL у колонку сутності — лише референс.
 - Не читай `MEDIA_ROOT` і `S3_*` сирим `process.env` — лише `resolveDriverEnv` (порожній `KEY=` від
@@ -167,10 +168,10 @@
 
 `serveMedia(ctx, { lookup })` (`storage/serve.ts`) не знає про вітрину: маршрут
 інʼєктує `lookup`, а той (`storefront/media-visibility.ts`, `lookupMediaForRequest`)
-читає рядок `media` за ключем і вирішує видимість власника. Порядок: форма ключа
+читає рядок `media` за ключем і вирішує видимість сутності-прив'язки. Порядок: форма ключа
 (`MEDIA_KEY_RE`) → `lookup` → 304 (`If-None-Match`, ПІСЛЯ `lookup`) → `driver.open`.
 
-- Вердикт: `missing` (рядка `media` немає) і `hidden` (глядач не бачить власника) дають
+- Вердикт: `missing` (рядка `media` немає) і `hidden` (глядач не бачить сутність-прив'язку) дають
   однаковий 404 `no-store`; 403 підтвердив би існування файлу. Збій `lookup` (БД
   недоступна) — 500 `no-store` з `console.error`, а не «файла немає».
 - Видимість — `MEDIA_VISIBILITY` (явна константа за `entity_type`, не реєстр з побічним
@@ -191,17 +192,17 @@
 `sweepUnreferencedMedia` (адмінка, налаштування, право `media.write`) стирає сиріт: кандидати
 вибираються anti-join у SQL (`created_at` старший за 24 год і `NOT mediaReferenceExists`,
 `FOR UPDATE … SKIP LOCKED`), пакетами по 100, до 10 пакетів за виклик; кожен пакет —
-окрема транзакція (`eraseMediaRows` з власником рядка) і `completeMediaErasures` після
+окрема транзакція (`eraseMediaRows` з прив'язкою рядка) і `completeMediaErasures` після
 COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку посилань для кожного
 `entity_type`, що є у `MEDIA_COLUMNS` (винятки — `NOT_SWEPT`, зараз порожній).
 
 ## Власник рядка `media` обовʼязковий
 
-`media.entity_id` — `NOT NULL`: кожен записувач передає власника, а двофазне
-стирання й перевірка видимості при роздачі спираються на нього. Майбутня
-медіатека (файл до привʼязки) отримує власного власника — окремий
+`media.entity_id` — `NOT NULL`: кожен записувач передає прив'язку, а двофазне
+стирання й перевірка видимості при роздачі спираються на неї. Майбутня
+медіатека (файл до привʼязки) отримує власну прив'язку — окремий
 `entity_type` + фіксований id, як `STORE_LOGO_OWNER_ID`, а не `NULL`. Гейти сідів:
-кожен референс демо-сідів має рядок `media` з власником-посилальником.
+кожен референс демо-сідів має рядок `media` з прив'язкою-посилальником.
 
 ## Межі
 
@@ -238,7 +239,7 @@ COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку 
 - новий `logo` — або `null`, або `media.storage_key` з `entity_type = 'store_logo'` і
   `entity_id = STORE_LOGO_OWNER_ID` (`select … for share`); зовнішній URL чи чужий
   референс → 409 `store_logo_invalid`;
-- старий логотип при заміні чи прибиранні двофазно стирається: `eraseMediaRows` (власник
+- старий логотип при заміні чи прибиранні двофазно стирається: `eraseMediaRows` (прив'язка
   `store_logo/STORE_LOGO_OWNER_ID`) останнім кроком транзакції, файл —
   `completeMediaErasures` після COMMIT; лок `store-profile` першим запитом не дає двом
   паралельним збереженням лишити сироту (Е6б-24);

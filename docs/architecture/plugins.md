@@ -2,7 +2,7 @@
 
 > Фактичний стан після Фази 3 (2026-08-14); специфікатори й межа довіри
 > оновлені після треку К0 (2026-08-20): SDK — субшлях `simplycms/plugin-sdk`
-> одного фреймворк-пакета. Вимоги — спека платформи
+> одного пакета ядра. Вимоги — спека платформи
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §7–§9, §12; рішення імплементації —
 > [план Фази 3](../superpowers/plans/2026-08-14-phase3-plugin-sdk.md) (Р0–Р11).
@@ -157,7 +157,7 @@ simplycms.config.ts (plugins: [{ name, module: () => import(…) }])
 
 | Порт | Що дає |
 |---|---|
-| `usePluginTable<Row>('plg_…')` | CRUD по ВЛАСНІЙ таблиці: `list({eq, orderBy})` / `insert` / `update` / `remove`; типи рядків — generic автора (плагінні таблиці свідомо поза core-baseline типів БД). 🔴 **`insert` вимагає `id`** — див. нижче |
+| `usePluginTable<Row>('plg_…')` | CRUD по ВЛАСНІЙ таблиці: `list({eq, orderBy})` / `insert` / `update` / `remove`; типи рядків — generic автора (плагінні таблиці свідомо поза baseline-типами БД ядра). 🔴 **`insert` вимагає `id`** — див. нижче |
 | `usePluginConfig(name, schema)` | читання `plugins.config` + `safeParse` зі схемою → **дефолти завжди матеріалізовані**; битий config → дефолти + warn. `save()` — запис через `pluginConfigWrite` (§6) |
 | `usePluginT(messages)` | транслятор каталогу плагіна (див. §7) |
 
@@ -186,7 +186,7 @@ const port = usePluginTable<FaqRow>('faq', 'plg_faq_items');
 await port.insert({ id: crypto.randomUUID(), question, answer });
 ```
 
-Причина — контракт id етапу Е0: оптимістичний рядок у клієнтському кеші має
+Причина — контракт id (Е0): оптимістичний рядок у клієнтському кеші має
 той самий ключ, що й серверний, інакше вони розходяться і кеш ловить дубль.
 Порт fail-loud: `insert` без `id` (або з порожнім рядком) кидає з поясненням,
 а не мовчки шле запит. Вікно на цю зміну закривається на К5 — після відкриття
@@ -306,7 +306,7 @@ AST-скану (`tests/i18n-coverage`); парність uk↔en, префікс
 
 Server routes і server functions плагіна, що змінюють стан (POST/PUT/PATCH/
 DELETE), **захищені від CSRF за замовчуванням**: `csrfMiddleware` ядра
-(`simplycms/runtime/csrf`) стоїть у `requestMiddleware` хоста й діє на будь-який
+(`simplycms/runtime/csrf`) стоїть у `requestMiddleware` магазину й діє на будь-який
 шлях, а не лише на маршрути ядра. Браузерні виклики з адмінки/вітрини
 проходять (same-origin), а `curl` чи чужий сайт без свого `Origin` — ні (403).
 Плагін, якому треба приймати зовнішній POST без `Origin` (вебхук платіжної
@@ -328,8 +328,8 @@ tailwind-глоб магазину сканує `node_modules/simplycms/routes/*
 (`plugin admin routes`); автоматичну вставку через `add` відкладено. 🔴 У
 магазині — **завжди через `coreRoutes()`-хелпер із `realpathSync`**: без
 розгортання pnpm-симлінка code-splitter TSR мовчки не сплітить роути
-плагіна (збірка зелена, вся адмінка в initial-чанку — зафіксований дефект
-пілота pnpm-міграції).
+плагіна (збірка зелена, вся адмінка в initial-чанку — зафіксований дефект,
+який знайшов прогін пакування під час pnpm-міграції).
 
 npm-пакет плагіна зі сторінками: exports `./pages/*` → `src/pages/*.tsx`
 (+дзеркало на dist у `publishConfig`), `./routes/*` — сирцями (прецедент
@@ -374,4 +374,4 @@ CLI: definePlugin + messages + README з конвенціями) + якірни�
 
 🔴 Зелений `pnpm test` пакування плагіна **не доводить** — це загальний
 закон репо (`test-contours.md`): після змін exports/routes/міграцій пакета
-плагіна ганяти пілот.
+плагіна ганяти прогін пакування.

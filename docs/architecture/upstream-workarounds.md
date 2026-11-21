@@ -2,7 +2,7 @@
 
 > **ЄДИНИЙ файл на весь проєкт.** Кожен обхід, який ми тримаємо в коді
 > через дефект, обмеження або недокументовану поведінку сторонньої
-> бібліотеки, записується СЮДИ — не в коментар, не в план етапу, не в
+> бібліотеки, записується СЮДИ — не в коментар, не в план issue, не в
 > пам'ять сесії. План/спека можуть посилатися на запис за ID, але не
 > дублюють його.
 >
@@ -164,7 +164,7 @@ return-значеннями хендлерів (TanStack DB 1.0).
   `process.env` раннера змінної немає. Тому `src/server.ts` експортує
   `SERVER_FN_BASE` (той самий define підставляє літерал), `server.mjs` читає
   експорт після `await import(bundle)`, а бандл без експорту → exit 1
-  («онови host-файли»). Фолбеку на дефолт немає. Доводить
+  («онови файли каркаса»). Фолбеку на дефолт немає. Доводить
   `tests/server-fn-base-build.test.ts` (справжня збірка з `serverFns.base`).
 
 **Межа спирання на рантайм.** Стеля повна лише під Node-раннером
@@ -192,7 +192,7 @@ chunked-тіло там без стелі — привід переглянут�
 
 **Симптом.** Помилка serverFn доходить у браузер як `new Error(message)`:
 `name` і власні поля (`kind`, `constraint`, `operation`) зникають. Конфлікт
-«такий slug уже зайнятий» показувався технічним текстом; відмову authz на
+«такий slug уже зайнятий» показувався технічним текстом; відмову за правом на
 клієнті неможливо відрізнити від будь-якої іншої помилки.
 
 **Корінь.** `src/ssr/serializer/ShallowErrorPlugin.ts` (тег `$TSR/Error`):
@@ -206,7 +206,7 @@ chunked-тіло там без стелі — привід переглянут�
 client-safe) — `createSerializationAdapter` для закритого переліку імен
 доменних помилок (`packages/simplycms/src/contracts/domain-errors.ts`) із
 whitelist полів; реєстрація `serializationAdapters: [domainErrorAdapter]` у
-host `src/start.ts` (+ канон `packages/cli/host/`, шаблон магазину).
+демо-магазині монорепо `src/start.ts` (+ файли каркаса `packages/cli/host/`, шаблон магазину).
 Адаптери Start ідуть ПЕРЕД дефолтними плагінами (`getDefaultSerovalPlugins`),
 seroval бере перший плагін, чий `test()` збігся. Маркери — `git grep -n "UPSTREAM:START-2"`.
 
@@ -248,11 +248,11 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 бар'єр від витоку стережуть живі проби в прод-режимі (обидві через `server.mjs`, що ставить
 `NODE_ENV=production`; маркер `UPSTREAM:START-SFN-404-1`) — тіло 500 без стеку, id функції,
 шляхів ФС і тексту апстріму:
-- справжній магазин пілота з базою за замовчуванням `/_serverFn/` — Gate B
+- справжній магазин прогону пакування з базою за замовчуванням `/_serverFn/` — Gate B
   (`scripts/pilot-pack/server-fn-404-probe.mjs`), GET і POST;
 - збірка з нестандартною базою `serverFns.base: '/_custom/fn/'` — `tests/server-fn-base-build.test.ts`
   (база там конфігурована, бо цей тест і є доказом інлайну бази; шлях обробника той самий).
-Знято 2026-10-18 (start-server-core 1.169.39): магазин пілота (`/_serverFn/`) — GET і POST →
+Знято 2026-10-18 (start-server-core 1.169.39): магазин прогону пакування (`/_serverFn/`) — GET і POST →
 `{"status":500,"unhandled":true,"message":"HTTPError"}` (h3); збірка з `/_custom/fn/` — GET →
 `Internal server error [ref …]` (маскування `server-guard`), POST → те саме тіло h3.
 Знято 2026-11-04 (1.169.45, `live:smoke`): 500, тіло — seroval-JSON `{ error }` від
@@ -333,14 +333,14 @@ Vite у build резолвить external від кореня проєкту, а
 
 **Наш обхід.** `pg` — peer ядра і ПРЯМА залежність магазину (`template/package.json.tpl`,
 `tests/pilot/store-template/package.json`): його видно з кореня, тож він external і резолвиться Node
-у рантаймі (CJS-шлях). Стережуть: Gate SB пілота (`scripts/pilot-pack/server-bundle.mjs`: драйвер не
+у рантаймі (CJS-шлях). Стережуть: Gate SB прогону пакування (`scripts/pilot-pack/server-bundle.mjs`: драйвер не
 вклеєний + allowlist усіх вклеєних пакетів із причиною — клас дефекту охоплює будь-який вклеєний CJS-пакет
 із dual-`exports`), `tests/pg-peer-parity.test.ts`, `doctor` №13 (`packages/cli/src/pg-peer.mjs`). Маркери —
 `git grep -n "UPSTREAM:START-IP-1"`.
 
 **Dual-пакети в бандлі безпечні, доки споживач бере іменовані експорти** (зараз `sanitize-html` →
 `is-plain-object`, `postcss`, `nanoid`); рантайм-сторож — крок Gate B «sanitize-html на сервері»
-(`GET /invertor-merezhevyi-5kw`: проба — оверлей пілота `scripts/pilot-pack/sanitize-probe.sql` (демо-сід чистий), зі `style`, `<script>`,
+(`GET /invertor-merezhevyi-5kw`: проба — оверлей прогону пакування `scripts/pilot-pack/sanitize-probe.sql` (демо-сід чистий), зі `style`, `<script>`,
 `onerror` → `<strong>`/`<a>`/`text-align` дожили, небезпечне зникло; мутація — зламаний `postcss.parse` у
 серверному бандлі скретча → FAIL). Статичний Gate SB переходу споживача на default-імпорт не бачить.
 
@@ -716,7 +716,7 @@ RLS менше місяця; Prisma — без RLS.
    `pg_dump --schema-only` двох баз збігся повністю (27 політик, 63 FK, 147
    індексів, 11 check) — повторити цей доказ.
 4. **Діапазони версій:** peer ядра `drizzle-orm` (`^0.45.0`), шаблон магазину
-   (`template/package.json.tpl`) і пілотний оверлей
+   (`template/package.json.tpl`) і оверлей прогону пакування
    (`tests/pilot/store-template/package.json`, `drizzle-orm ^0.45.3`; запис
    `drizzle-orm` у `DIFFERS` тесту `tests/template-version-parity.test.ts`).
 5. `drizzle-orm/zod` DZOD-1 не лікує (13 помилок без кастів: 3 у
@@ -731,7 +731,7 @@ RLS менше місяця; Prisma — без RLS.
 
 | Поле | Значення |
 |---|---|
-| Бібліотека | Garage (`dxflrs/garage`, S3-сумісне сховище стенду й пілота) |
+| Бібліотека | Garage (`dxflrs/garage`, S3-сумісне сховище стенду й прогону пакування) |
 | Знайдено на | `v2.4.1` (2026-10-12, К3-Е8 Task 8: живий зонд — два `PUT` одного ключа з `If-None-Match: *` дали `200` і `200`, друге тіло перезаписало перше) |
 | Перевірено на версії | `v2.4.1` — 2026-10-12 |
 | Статус апстріму | не повідомлено (рішення власника) |
@@ -769,7 +769,7 @@ Schema у CI, інструкція деплою пілота).
 порт `sieve`) `fetch` відкидає ще до мережі, тож стенд Garage на 4190 виглядав би як «S3 недоступне».
 
 **Наш обхід.** Порт Garage стенду й CI — **4192** (`scripts/harness-up.mjs`, job Schema), не 4190. Тип проблеми
-стосується й S3-ендпоінта пілота: порт зі списку заборонених у `S3_ENDPOINT` не працюватиме з жодним `fetch`-драйвером.
+стосується й S3-ендпоінта прогону пакування: порт зі списку заборонених у `S3_ENDPOINT` не працюватиме з жодним `fetch`-драйвером.
 
 **Коли виправлять.** Не виправлять (специфікація). Запис лишається, поки в коді є коментар про вибір порту.
 
@@ -779,7 +779,7 @@ Schema у CI, інструкція деплою пілота).
 
 | ID | Бібліотека · версія | На що спираємося | Де в коді | Що зламається, якщо зміниться | Тест-сторож |
 |---|---|---|---|---|---|
-| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-11-04 на 0.45.4 — розтяжка зелена; 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `db/pg-errors.ts` — ЄДИНЕ місце розбору `.cause` (`pgErrorInfo`; на ньому `toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation`); споживачі (`admin-server` run.ts, `addressing`, `operations`, `storefront/loaders/reviews-write.ts`) кличуть `simplycms/db` | Конфлікти 23505/23503 перестануть мапитись у 409 — власник знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `db/__tests__/pg-errors.test.ts` + `impl/__tests__/run.test.ts` + `operations/__tests__/execute.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
+| DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-11-04 на 0.45.4 — розтяжка зелена; 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `db/pg-errors.ts` — ЄДИНЕ місце розбору `.cause` (`pgErrorInfo`; на ньому `toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation`); споживачі (`admin-server` run.ts, `addressing`, `operations`, `storefront/loaders/reviews-write.ts`) кличуть `simplycms/db` | Конфлікти 23505/23503 перестануть мапитись у 409 — власник магазину знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `db/__tests__/pg-errors.test.ts` + `impl/__tests__/run.test.ts` + `operations/__tests__/execute.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
 | START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) і 1.169.45 (2026-11-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`; 1.169.45: `dist/esm/server-functions-handler.js:123`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
 
 ---
@@ -818,12 +818,12 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/db` (транзакції колекцій) |
-| Знайдено на | 0.8.6 (2026-09-23, К3-Е3 фікс-захід хвилі C) |
+| Знайдено на | 0.8.6 (2026-09-23, К3-Е3, фікс-захід C) |
 | Перевірено на версії | 0.8.6 — 2026-09-23 |
 | Статус апстріму | не повідомлено |
 
 **Симптом.** Конфлікт на сервері (дубль slug, товар у замовленнях) мав
-показати власнику зрозумілий тост; натомість `tx.isPersisted.promise`
+показати власнику магазину зрозумілий тост; натомість `tx.isPersisted.promise`
 відхиляється `Error` з `message: "[object Object]"`, `name: 'Error'`, без
 полів `kind`/`constraint` і без `cause` — `adminErrorKey` нічого не впізнає.
 
@@ -880,7 +880,7 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 write-back persistence-хендлера (`onInsert` → `target().utils.writeUpsert`
 ПІСЛЯ відповіді сервера, `admin-data/handlers.ts`) кидає `Collection must
 be in 'ready' state for manual sync operations. Sync not initialized yet.`
-— insert відкочується, власник бачить тост-помилку замість збереженого
+— insert відкочується, власник магазину бачить тост-помилку замість збереженого
 товару. Той самий клас — `useStock.save`: пише статус ЦІЛІ
 (`productsCollection`/`productModificationsCollection`) у колекцію, яка на
 сторінці картки товару могла не отримати жодної власної підписки
