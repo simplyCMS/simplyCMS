@@ -10,16 +10,16 @@
   `core`). Стилі — **Tailwind v4** + `class-variance-authority`; злиття класів — `cn()`
   із `simplycms/ui/utils`. Конфігурація — `tailwind.config.ts`, entry —
   `src/styles/globals.css` (`@import` + `@config`).
-- Використовуй компоненти `simplycms/ui`, не дублюй їх у host-`src/` чи в темах.
+- Використовуй компоненти `simplycms/ui`, не дублюй їх у `src/` демо-магазину монорепо чи в темах.
 - Бізнес-компоненти вітрини — у feature-UI теках ядра: `simplycms/{catalog,cart,checkout,profile,reviews}-ui`.
   Реекспортів через `simplycms/core` немає (фасадну роль розчинено), імпортуй із
-  джерела. Theme-specific компоненти (Header, Footer, HeroBanner, HomeSections,
+  джерела. Компоненти, специфічні для теми (Header, Footer, HeroBanner, HomeSections,
   `views`) — лише в темі.
 - Новий shadcn-компонент: спершу перевір через shadcn MCP/скіл `shadcn` (реєстр →
   приклади → аудит після додавання), додавай у `packages/simplycms/src/ui/`.
 - Стилізація: Tailwind-класи й CSS-змінні теми; кольори не хардкодяться, inline-стилі —
   лише для значень, які неможливо виразити класом (динамічні розміри/позиції).
-  У core-компонентах вітрини шрифти не хардкодяться: заголовки беруть `font-heading`,
+  У компонентах ядра вітрини шрифти не хардкодяться: заголовки беруть `font-heading`,
   решта — `font-sans` (у темах вибір шрифту утиліт-класами законний).
 - Mobile-first, dark mode через `next-themes` + CSS-змінні.
 - Доступні імена контролів: `jsx-a11y/label-has-associated-control` (error) у п'яти теках
