@@ -92,7 +92,7 @@ interface TakenRow extends StockTarget {
  * 🔴 Е5-11: fallback `resolveStockPoint` прибрано. Позиція з
  * `stock_point_id = NULL` (точку ВИДАЛИЛИ — FK `ON DELETE SET NULL`)
  * повернути нікуди: кількість не повертається, факт логується (межа —
- * `docs/tasks/v2-state-map.md`).
+ * `docs/architecture/data-layer.md` § 16).
  *
  * @returns кількість позицій, по яких залишок ФАКТИЧНО повернуто: позиція з
  *   видаленою точкою або без рядка залишку на ній (лічильник обнулено,

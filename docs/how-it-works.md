@@ -2,7 +2,7 @@
 
 > Доступний виклад затвердженої архітектури. Технічне джерело правди —
 > [специфікація](superpowers/specs/2026-07-30-platform-architecture-design.md);
-> трекінг робіт — [роадмап](tasks/platform-roadmap.md). Створено 2026-07-31.
+> напрям — [роадмап](tasks/platform-roadmap.md), стан робіт — віхи й issues GitHub. Створено 2026-07-31.
 
 ## Карта дійових осіб (аналогія з OpenCart)
 
