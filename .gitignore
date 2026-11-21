@@ -51,7 +51,7 @@ temp/.env.local
 *.tgz
 packages/*/package/
 
-# Python-кеш скриптів скіла codebase-research (orient --map)
+# Python-кеш скриптів
 __pycache__/
 
 # Playwright (pnpm test:e2e) — звіти й трейси прогону
@@ -89,3 +89,10 @@ scripts/dev-stand/seed-demo.sql
 # Штамп повного ланцюга гейтів (pnpm gates)
 .gates-stamp.json
 .proof-run.lock
+# agent-kit
+.agents/out/
+.agents/sdd/
+.agents/kit.profile.local.json
+.worktrees/
+.agents/private/
+.superpowers/

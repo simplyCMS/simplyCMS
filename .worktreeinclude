@@ -1,0 +1,3 @@
+# agent-kit: git-ignored files copied into every new worktree
+.claude/settings.local.json
+.agents/kit.profile.local.json

@@ -45,6 +45,9 @@ export default defineConfig({
       // ~136), а падіння старої версії в копії виглядають як падіння
       // нашого коду. Спіймано 2026-08-24 живим прогоном.
       '**/.claude/worktrees/**',
+      // Worktree задач agent-kit (`pr-gate start`, `.worktrees/<issue>`) — та сама
+      // причина: друга копія кодової бази в дереві репо.
+      '**/.worktrees/**',
       // Packaging-suite: пакує кожен пакет через `pnpm pack`, тому вимагає
       // попереднього `pnpm build:packages`. У `pnpm test` не входить —
       // запускається окремим CI-job-ом `packaging`.

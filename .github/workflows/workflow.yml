@@ -1,9 +1,13 @@
 name: CI
 on:
+  # Зміни лише в документах (docs/, кореневі *.md) CI не запускають: жоден job їх не
+  # перевіряє (*.md поза prettier). Скіли пакетів не виключені — вони їдуть у tarball.
   push:
     branches: [main]
+    paths-ignore: ['docs/**', '*.md']
   pull_request:
     branches: [main]
+    paths-ignore: ['docs/**', '*.md']
   workflow_dispatch:
 
 jobs:

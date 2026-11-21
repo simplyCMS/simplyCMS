@@ -1,1 +1,37 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "Bash(pr-gate open:*)",
+      "Bash(pr-gate ready:*)",
+      "Bash(pr-gate wait:*)",
+      "Bash(pr-gate start:*)",
+      "Bash(pr-gate cleanup:*)",
+      "Bash(pr-gate scratch:*)",
+      "Bash(wait-for file:*)",
+      "Bash(wait-for port:*)",
+      "Bash(wait-for gh-run:*)",
+      "Bash(sdd:*)",
+      "Bash(run-tests:*)",
+      "Bash(review-pack:*)",
+      "Bash(doc:*)",
+      "Bash(orient:*)",
+      "Bash(pkg-src:*)",
+      "Bash(session-cost:*)",
+      "Bash(session-board:*)",
+      "Bash(track status:*)",
+      "Bash(kit-scan:*)",
+      "Bash(kit-check:*)"
+    ]
+  },
+  "skillOverrides": {
+    "copy-editing": "off",
+    "copywriting": "off",
+    "cro": "off",
+    "marketing-psychology": "off",
+    "product-marketing": "off",
+    "signup": "off",
+    "mastra": "off",
+    "upstash-cli": "off",
+    "upstash-redis-js": "off"
+  }
+}

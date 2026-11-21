@@ -5,7 +5,7 @@
 «хто його викликає», «що зачепить зміна».
 
 Документацію цей індекс **не** обслуговує — `*.md` виключені навмисно. Пошук по
-канону робить `orient --map "<тема>"` (скіл `codebase-research`); це другий шар,
+канону робить `orient --map "<тема>"` (agent-kit); це другий шар,
 з власним двигуном і власним корпусом.
 
 **Джерело:** `DeusData/codebase-memory-mcp`, реліз **v0.11.0**.
@@ -82,7 +82,7 @@ chmod g-w ~/.local ~/.local/bin
 
 ## Дві поверхні доступу
 
-**MCP** — для головної сесії й субагента `codebase-research` (`.claude/agents/`).
+**MCP** — лише через `orient` agent-kit: прямий виклик інструментів минає його перевірку свіжості.
 Інструменти видно в переліку на кожному кроці: `search_graph`, `trace_path`,
 `get_code_snippet`, `query_graph`, `get_architecture`, `search_code`,
 `get_graph_schema`, `list_projects`, `index_status`, `detect_changes`,
@@ -159,14 +159,11 @@ score 0.17 на український запит і 0.042 на англійсь
 
 ## Шар доків: опційна лематизація
 
-`orient --map "<тема>"` шукає по канону власним BM25 (`scripts/map-search.py`) і
-**не залежить** від код-шару. Корпус: `docs/architecture`, `docs/development`,
-`docs/guides`, `docs/tasks`, `AGENTS.md`, `packages/README.md` — **без**
-`docs/superpowers/{plans,specs}` (історія засмічує видачу). Скрипт — копія
-MetaHub-ового, адаптована під цей корпус (не спільний пакет: зчеплення двох репо
-гірше за розходження копій); параметри BM25 (`k1=1.5`, `b=0.3`) — заміри MetaHub,
-власного заміру на корпусі SimplyCMS ще немає. Єдине свідоме відхилення від MetaHub —
-мінімальна довжина токена 2, а не 3: інакше доменний термін `id` випадає із запиту
+`orient --map "<тема>"` шукає по канону BM25 agent-kit (корпус — `research.corpus` профілю) і
+**не залежить** від код-шару. Корпус — `docs/architecture`, `docs/development`,
+`docs/guides`, `docs/tasks`, `AGENTS.md`, `CLAUDE.md`, `packages/README.md`, скіли магазину —
+**без** `docs/superpowers/{plans,specs}` (історія засмічує видачу). Єдине свідоме
+налаштування — `research.minTokenLen: 2`, а не 3: інакше доменний термін `id` випадає із запиту
 («контракт id» зводилось до «контракт», і канон про id програвав контракту тем).
 
 Два режими нормалізації, обидва робочі:
@@ -179,14 +176,14 @@ MetaHub-ового, адаптована під цей корпус (не спі
 Фолбек не поломка, але локально леми варті 34 МБ:
 
 ```bash
-uv venv ~/.local/share/simplycms-doc-search/venv
-uv pip install --python ~/.local/share/simplycms-doc-search/venv/bin/python \
+uv venv ~/.local/share/orient-doc-search/venv
+uv pip install --python ~/.local/share/orient-doc-search/venv/bin/python \
   pymorphy3 pymorphy3-dicts-uk
 ```
 
 🔴 Чому venv, а не `pip install`: більшість дистрибутивів позначають системний
 Python як `externally-managed`. `orient` сам знаходить venv за шляхом вище;
-інше місце задається `ORIENT_DOC_VENV`.
+інше місце задається `ORIENT_LEMMA_PYTHON`.
 
 Рівень видно у виводі праворуч від шляху (`леми` / `сирі токени`); якщо venv не
 знайдено, `--map` сам це скаже наприкінці виводу з командами. Мовчазної
@@ -234,19 +231,19 @@ git grep -n  'Символ as '                   # перейменування
 кличуть». `orient` додає попередження для символів, що не є функцією/класом.
 
 🔴 Правило з усього вище: **порожній або круглий результат — привід перевірити, а
-не підстава стверджувати.** Саме тому агент `codebase-research` зобовʼязаний
+не підстава стверджувати.** Саме тому агент `agent-kit:researcher` зобовʼязаний
 кликати `check_index_coverage` перед твердженням «такого немає».
 
 ## Оновлення
 
 ```bash
-codebase-memory-mcp update
+<шлях-до-архіву>/bin/codebase-memory-mcp install -y --skip-config --dir="$HOME/.local/bin"
 ```
 
-🔴 **`update` виконує `install` наново — і повертає все, що той ставить.** Три
-вендорські субагенти (`codebase-memory`, `-scout`, `-auditor`), хуки й активаційні
-вказівники зʼявляться знову, навіть якщо їх прибрали. Після кожного оновлення
-перевіряй `ls ~/.claude/agents | grep codebase-memory`.
+🔴 **Лише `install -y --skip-config`, не `update` і не звичайний `install`.** Вони
+повертають вендорські субагенти (`codebase-memory`, `-scout`, `-auditor`), скіл, хуки й
+активаційні вказівники, а єдиний вхід до графа — `orient` agent-kit. Після оновлення
+перевіряй `ls ~/.claude/agents | grep codebase-memory` — має бути порожньо.
 
 ## Відкат
 
@@ -264,7 +261,7 @@ codebase-memory-mcp uninstall            # додай -n --dry-run, щоб сп�
 ```bash
 codebase-memory-mcp --version                     # має бути 0.11.0
 codebase-memory-mcp cli --quiet list_projects '{}'
-.agents/skills/codebase-research/scripts/orient --doctor
+orient --doctor
 ```
 
 У `get_graph_schema` має бути видно **окремі** типи ребер `CALLS` і `IMPORTS` —
