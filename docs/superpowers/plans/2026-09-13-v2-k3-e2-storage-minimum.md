@@ -223,7 +223,7 @@ Task 5, 6, 7, 8 ─► Task 9 (live:smoke + доки + DoD)
 | `packages/simplycms/src/i18n/catalogs/{uk,en}/profile.ts` | `profile.avatar.*` — вісім ключів замість `unavailable` |
 | `scripts/live-smoke/funnel.mjs`, `scripts/live-smoke.mjs` | Крок аватара |
 | `.github/instructions/storage.instructions.md` | Переписати під порт (зараз описує Supabase Storage) |
-| `CLAUDE.md`, `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `docs/architecture/test-contours.md` | Стан після Е2 |
+| `CLAUDE.md`, `docs/tasks/platform-roadmap.md`, «v2-state-map» (знесено 2026-11-21, текст — в історії git), `docs/architecture/test-contours.md` | Стан після Е2 |
 
 **Видаляються:**
 
@@ -4397,7 +4397,7 @@ git commit -m "feat(k3-e2): лінт-ратчет прямих викликів 
 - Modify: `scripts/live-smoke/funnel.mjs`
 - Modify: `CLAUDE.md`
 - Modify: `docs/tasks/platform-roadmap.md`
-- Modify: `docs/tasks/v2-state-map.md`
+- Modify: «v2-state-map» (знесено 2026-11-21, текст — в історії git)
 - Modify: `docs/architecture/test-contours.md`
 
 **Interfaces:**
@@ -4573,7 +4573,7 @@ Expected: порожньо. 🔴 Якщо зʼявилась `.data/` — або
 
 - [x] **Step 7: Оновити карту стану**
 
-У `docs/tasks/v2-state-map.md` §3.2 «Сховище файлів — порту немає» переписати під факт: порт є, аватар живий, зображення адмінки чекають на свої сторінки; `ReviewDetail` лишається на `supabase.storage` під ратчетом. У §5 «Як підняти локально» додати рядок про `MEDIA_ROOT` і про те, що `.data/media` створюється сама.
+У «v2-state-map» (знесено 2026-11-21, текст — в історії git) §3.2 «Сховище файлів — порту немає» переписати під факт: порт є, аватар живий, зображення адмінки чекають на свої сторінки; `ReviewDetail` лишається на `supabase.storage` під ратчетом. У §5 «Як підняти локально» додати рядок про `MEDIA_ROOT` і про те, що `.data/media` створюється сама.
 
 - [x] **Step 8: Оновити межі тестування**
 
@@ -4603,7 +4603,7 @@ Expected: усі зелені. 🔴 Зафіксувати в DoD-звіті: к
 
 ```bash
 git add scripts/live-smoke CLAUDE.md \
-        docs/tasks/platform-roadmap.md docs/tasks/v2-state-map.md \
+        docs/tasks/platform-roadmap.md «v2-state-map» (знесено 2026-11-21, текст — в історії git) \
         docs/architecture/test-contours.md
 git commit -m "docs(k3-e2): живий крок аватара в live:smoke, стан етапу в доках"
 ```

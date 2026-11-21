@@ -171,7 +171,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 🔴 Історично Gate E був **єдиним** місцем, де виконувався invite-флоу. Після
 його зняття (0.4.1) invite-флоу на Better Auth не покритий жодним
 автоматичним контуром — тільки ручним прогоном (`issueOwnerInvite`,
-[`v2-state-map.md`](../tasks/v2-state-map.md) §5). Це найдорожча відкрита
+[`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3). Це найдорожча відкрита
 сліпа зона релізу.
 
 ✅ **Перший успішний прогін — 2026-08-04** (Docker встановлено того ж дня):
@@ -354,7 +354,7 @@ linked-проєкт (2026-08-04: `gotrue v2.186.0` проти `v2.195.0`,
 > 🔴 **DECOMMISSIONED (0.4.1) — історичний розділ.** Чинний спосіб підняти
 > магазин локально: `pnpm db:demo` → `.env.local` із трьох ключів →
 > `pnpm build && pnpm start`, покроково —
-> [`v2-state-map.md`](../tasks/v2-state-map.md) §5. Нижче — знятий
+> [`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3. Нижче — знятий
 > Supabase-шлях.
 
 `pilot:e2e` гасив стек за собою (`supabase stop --no-backup` — томи
@@ -424,7 +424,7 @@ localhost LAN-IP не варто: збірка прив'яжеться до ко
 > (кроки §8.2 спираються на `supabase start`, service_role і Mailpit).
 > Сама ІДЕЯ розділу чинна: браузерну частину не бачить жоден гейт. Переписати
 > під Postgres-стек — К6; актуальний ручний прогін —
-> [`v2-state-map.md`](../tasks/v2-state-map.md) §5.
+> [`docs/development/ENVIRONMENT.md`](../development/ENVIRONMENT.md) § 3.
 
 Гейти A–E доводили механіку, але **не бачать нічого, що існує лише в
 браузері**: гідратацію, застосування CSS-змінних теми, кліки без
@@ -773,7 +773,7 @@ ROLE`. Канон тепер робить `grant … with inherit false, set tru
 | `test-harness/pg/__tests__/media-cascade-coverage.test.ts` (Е6д-19) | каскадна медіа-колонка без рішення: для кожної таблиці `MEDIA_COLUMNS` — транзитивне замикання FK `ON DELETE CASCADE` з каталогу; пара «предок → колонка» мусить бути в `cascadeMedia` ресурсу предка або в `EXEMPT` з причиною; оголошене покриття — справжній прямий CASCADE-FK (двоярусний каскад товар → модифікація → фото оголошується полем `via`), винятки не застарілі | `pnpm test:schema` | `EXEMPT` лише один — аватар (`users → profiles.avatar_url`, видаляє `deleteCustomer`); поведінку стирання доводить `admin-products-remove-reviews`, шлях `deleteCustomer` гейт не виконує |
 | `tests/media-sweep-coverage.test.ts` (Е6д-22) | `entity_type` у `MEDIA_COLUMNS`/логотипі без гілки посилань у `findMediaReferences` (sweep стер би живий файл) і зайва гілка без реєстру; винятки `NOT_SWEPT` (зараз порожній) не застарілі | `pnpm test` | доводить повноту гілок, а не коректність їхнього SQL — це `media-sweep`/`media-references` проти Postgres |
 | `tests/media-columns-coverage.test.ts` | розбіжність реєстру `MEDIA_COLUMNS` зі схемою Drizzle: медіа-колонка, додана без резолву на вітрині, показала б покупцеві голий storage key | `pnpm test` | доводить ПОВНОТУ реєстру, а не те, що кожен читач справді кличе `resolveMediaUrl` |
-| `test-harness/pg/__tests__/media-record.test.ts` (вісім кейсів) | `writeMedia`/`eraseMediaRows` проти ЖИВОГО Postgres: запис файлу й рядка з правильним `size_bytes`/`mime_type`, відкат рядка при падінні запису файлу, `app_user` без гранта `DELETE` не торкається файлу, збій стирання старого файлу лишає хвіст в outbox, успішна заміна, падіння запису нового не чіпає файл старого, стирання лише ключів власника, відсутність тимчасових файлів | `pnpm test:schema` | драйвер — `local-fs`; поведінка S3 (К4) не покрита, орфан після обриву між `put` і COMMIT — теж |
+| `test-harness/pg/__tests__/media-record.test.ts` (вісім кейсів) | `writeMedia`/`eraseMediaRows` проти ЖИВОГО Postgres: запис файлу й рядка з правильним `size_bytes`/`mime_type`, відкат рядка при падінні запису файлу, `app_user` без гранта `DELETE` не торкається файлу, збій стирання старого файлу лишає хвіст в outbox, успішна заміна, падіння запису нового не чіпає файл старого, стирання лише ключів своєї прив'язки (`entity_type` + `entity_id` рядка `media`; чужа прив'язка й не-media ключі ігноруються), відсутність тимчасових файлів | `pnpm test:schema` | драйвер — `local-fs`; поведінка S3 (К4) не покрита, орфан після обриву між `put` і COMMIT — теж |
 | `packages/simplycms/src/runtime/__tests__/body-limit.test.ts` + `scripts/live-smoke/body-limit.mjs` (К3-Е6д-2) | стеля тіла server functions: 413 `request/payload-too-large` за `Content-Length`, 411 `request/length-required` для всього, що не JSON (і для всього, що Start читає як форму, зокрема `application/json; x=multipart/form-data`), база шляху з експорту `SERVER_FN_BASE` бандла (інлайн Start, Р20′); живий прогін — відгук із 5 файлами проходить, понад стелю відсікається | `pnpm test` / `pnpm live:smoke` | перевіряє заголовок, а не байти потоку; обрив зʼєднання замість 413 при прямому виклику повз UI (`UPSTREAM:START-BODY-1`) не покритий |
 | `packages/simplycms/src/storage/__tests__/*.test.ts` (`serve`, `local-fs`, `inspect`, `mime`, `keys`) | заголовки роздачі (`nosniff`, `immutable`, `content-type` з розширення ключа), 404 на traversal (сирий і процентно-кодований), сніфер MIME за магічними байтами, взаємна оберненість `EXT_BY_MIME`/`MIME_BY_EXT` | `pnpm test` | у юнітах немає ні реального multipart-тіла, ні роздачі роутом Start — це доводить лише `pnpm live:smoke` |
 

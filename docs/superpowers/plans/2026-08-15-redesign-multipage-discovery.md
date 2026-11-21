@@ -1,6 +1,6 @@
 # План: design-import — багатосторінкове охоплення + фікси живої проби
 
-> Задача: [`docs/tasks/redesign-multipage-discovery.md`](../../tasks/redesign-multipage-discovery.md).
+> Задача: файл задачі «redesign-multipage-discovery» (знесено 2026-11-21; текст — в історії git).
 > Інкремент поверх етапу Б; гілка `claude/website-cloner-analysis-p7wf4z`.
 >
 > **v2 (2026-08-15):** влито 21/21 підтверджених знахідок адверсаріального

@@ -33,7 +33,9 @@
         ],
         "reporter": "vitest-json",
         "timeout": 1800,
-        "ci": true
+        "ci": true,
+        "lock": "{tmpdir}/simplycms-harness-pg.lock",
+        "lockWait": 1800
       },
       "smoke": {
         "command": ["pnpm", "live:smoke"],

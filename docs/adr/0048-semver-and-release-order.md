@@ -16,7 +16,7 @@ Spec: `docs/architecture/release-process.md` § «Версії: semver і пре
 ## Why
 - Рішення власника 2026-10-14: `docs/superpowers/specs/2026-10-14-release-0.15.0-design.md` § «0. Рішення власника (2026-10-14».
 - Ціль `0.15.0`, діапазон `^0.15.0`, механізм RC лишається: `docs/superpowers/specs/2026-10-14-release-0.15.0-design.md` § «2. Частина В — версія 0.15.0».
-- Порядок у roadmap: `docs/tasks/platform-roadmap.md` § «📍 Поточний стан (оновлено 2026-10-18».
+- Порядок релізів — віхи `0.18.0` → `1.0.0-rc.1` → `Пілот alterenergy` (раніше роадмап, розділ «Поточний стан»; знесено 2026-11-21, текст — `git show 3feeb440`).
 - Правило semver у каноні: `AGENTS.md` § «Принципи».
 - Лінія 1.0 у спеці готовності пілоту: `docs/superpowers/specs/2026-10-12-pilot-readiness-design.md` § «Рішення власника».
 - Код діапазону: `packages/cli/src/core-range.mjs` (`coreRangeFor`).

@@ -8,7 +8,7 @@
 
 **Tech Stack:** TanStack Start 1.167 / Router 1.168, `@tanstack/react-db` + `@tanstack/query-db-collection` (піни — як у Е3), Drizzle + drizzle-zod, Zod 4, react-hook-form, Vitest 4, PostgreSQL 17 (харнес `pnpm test:schema`), Playwright (`pnpm live:smoke`).
 
-**Spec:** [`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md`](../specs/2026-08-29-v2-k3-admin-server-layer-design.md) (К3-2, К3-4′, К3-5, К3-7, К3-9′, К3-13, К3-14, §7, §8). Попередній етап, з якого беруться канони й зразки, — [`2026-09-23-v2-k3-e3-catalog-on-demand.md`](2026-09-23-v2-k3-e3-catalog-on-demand.md) (рішення Е3-1…Е3-20, «Точка передачі»). Карта стану — [`docs/tasks/v2-state-map.md`](../../tasks/v2-state-map.md) §3.1, §6.
+**Spec:** [`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md`](../specs/2026-08-29-v2-k3-admin-server-layer-design.md) (К3-2, К3-4′, К3-5, К3-7, К3-9′, К3-13, К3-14, §7, §8). Попередній етап, з якого беруться канони й зразки, — [`2026-09-23-v2-k3-e3-catalog-on-demand.md`](2026-09-23-v2-k3-e3-catalog-on-demand.md) (рішення Е3-1…Е3-20, «Точка передачі»). Карта стану — «v2-state-map» (знесено 2026-11-21, текст — в історії git) §3.1, §6.
 
 **Обсяг:** 10 легасі-файлів (`Sections`, `SectionEdit`, `PriceTypes`, `PriceTypeEdit`, `Properties`, `PropertyEdit`, `PropertyOptionEdit`, `SectionPropertiesManager`, мертвий `SectionPropertiesTable`, а `PriceValidator` лише реєструється як виняток). Лічильник `rg -l useSupabaseClient packages/simplycms/src/admin | wc -l` має впасти з 43 до **34** (−7 сторінок, −2 компоненти; `PriceValidator` лишається серед легасі).
 
@@ -145,7 +145,7 @@ Task 1 і Task 2 незалежні між собою. Task 6/7/8 незалеж
 | `packages/simplycms/src/i18n/catalogs/{uk,en}/admin/{sections,prices,properties,common}.ts` | нові ключі |
 | `tests/admin-inserts-need-id.test.ts` | `KNOWN_WITHOUT_ID` ↓ до факту |
 | `scripts/live-smoke.mjs` | виклик кроку довідників |
-| `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `CLAUDE.md` | стан після Е4 |
+| `docs/tasks/platform-roadmap.md`, «v2-state-map» (знесено 2026-11-21, текст — в історії git), `CLAUDE.md` | стан після Е4 |
 
 **Видаляються:** `packages/simplycms/src/admin-server/impl/catalog-read/resources.ts`, `packages/simplycms/src/admin/components/SectionPropertiesManager.tsx`, `packages/simplycms/src/admin/components/SectionPropertiesTable.tsx`.
 
@@ -775,7 +775,7 @@ git commit -m "test(k3-e4): ратчет id, реєстр server-first виня�
 
 **Files:**
 - Create: `scripts/live-smoke/admin-dictionaries.mjs`, `scripts/live-smoke/owner-session.mjs`
-- Modify: `scripts/live-smoke.mjs`, `scripts/live-smoke/admin-catalog.mjs`, `scripts/live-smoke/admin-sql.mjs` (SQL-хелпери за потреби), `docs/tasks/platform-roadmap.md`, `docs/tasks/v2-state-map.md`, `CLAUDE.md`, цей план (розділ «Факти виконання»)
+- Modify: `scripts/live-smoke.mjs`, `scripts/live-smoke/admin-catalog.mjs`, `scripts/live-smoke/admin-sql.mjs` (SQL-хелпери за потреби), `docs/tasks/platform-roadmap.md`, «v2-state-map» (знесено 2026-11-21, текст — в історії git), `CLAUDE.md`, цей план (розділ «Факти виконання»)
 
 **Interfaces** *(ред.2 — аудит Codex, знахідка 3: сьогодні `runAdminCatalogStep` сам створює контекст і закриває його в `finally`, `admin-catalog.mjs:29-52`, `:140-148`, тож наступному кроку залогіненої сесії не дістати)*:
 - Produces:

@@ -604,8 +604,8 @@ typescript-eslint peerDependencies` і реліз-ноти — чи є підт�
 
 **Симптом / корінь.** Dts-плагін тримає повну `ts.Program` і вичерпує
 кеп 3 ГБ за ~25 с; `tsc -p tsconfig.dts.json` робить те саме за 11 с /
-1,1 ГБ. Деталі — `CLAUDE.md` (`pnpm build:packages`) і
-`docs/tasks/v2-state-map.md` §4.3.
+1,1 ГБ. Деталі — `CLAUDE.md` (`pnpm build:packages`); запобіжники — кеп пам'яті в
+`scripts/build-packages.mjs` і структурний тест `tests/dts-toolchain.test.ts`.
 
 **Наш обхід.** `scripts/build-packages.mjs`: JS — `tsdown`, декларації —
 `tsc`; структурний тест `tests/dts-toolchain.test.ts`.

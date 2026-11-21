@@ -2,7 +2,7 @@
  * Випуск запрошення власника для живого прогону (К3-Е3, Task 13 Step 1).
  *
  * `.mts`, бо `tsx` поза пакетом (`scripts/` — не `packages/simplycms/`) бере
- * CJS і падає на top-level await (v2-state-map §5). Лист — заглушка: доставку
+ * CJS і падає на top-level await (`docs/development/ENVIRONMENT.md` § 3). Лист — заглушка: доставку
  * SMTP контур не доводить (борг №1 / К1а-6), URL для браузера беремо з
  * результату `issueOwnerInvite`.
  *

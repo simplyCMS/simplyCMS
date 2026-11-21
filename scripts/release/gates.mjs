@@ -38,7 +38,7 @@ export const GATES = [
   // шаблон, з якого магазин може не зібратись.
   { name: 'typecheck:template', cmd: 'pnpm typecheck:template' },
   { name: 'test:packaging', cmd: 'pnpm test:packaging' },
-  // 🔴 Повний `pnpm pilot` (Gate A–D, SB, IP, CLI, TOOL), а НЕ `pilot:pack`: Gate B —
+  // 🔴 Повний `pnpm pilot` (Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL), а НЕ `pilot:pack`: Gate B —
   // єдиний доказ, що серверний бандл свіжого магазину СТАРТУЄ. `pilot:pack` без БД
   // його не піднімає, і дефект вклеєного `pg` (UPSTREAM:START-IP-1) сидів у
   // 0.7.0–0.13.0 непоміченим (К3-Е7, Task 11). БД і сід — `pilot-full.mjs`

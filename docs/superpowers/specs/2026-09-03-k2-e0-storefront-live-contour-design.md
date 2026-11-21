@@ -309,7 +309,8 @@ RPC serverFn проносять його як `Date`, а `strict`-перевір
   грантів це не потребує: `app_admin` уже має `select, insert, update,
   delete` на `public.stock_by_pickup_point` (`0002_grants.sql:156`, блок
   «app_admin: доменні таблиці адмінки»). Правило — у
-  `data-access.instructions.md`, «Ескалація ролі покупцем».
+  `docs/architecture/data-layer.md`, «Ескалація ролі покупцем» (колишній
+  `data-access.instructions.md` знесено).
 - Тести: `inventory.test.ts` під нову формулу; харнес — фікстура `tryfazny`
   («негативний контроль без залишку», `fixtures/storefront-client.ts:14`)
   **перенацілюється на `out_of_stock`**, а не інвертується (інакше сюїта без
@@ -619,8 +620,8 @@ T-2/T-3 — `pnpm build:packages && pnpm test:packaging && pnpm pilot:pack`.
 `scripts/` — `live-smoke.mjs`), «Tech Stack» (новий рядок Runtime `>=22.12` —
 наслідок ред. 1.3, Р6) і блок лінт-зон (**шоста** зона: a11y-правило воронки
 — наслідок ред. 1.3, Р5); `.env.example`;
-`data-access.instructions.md` — розділи «Контракт дат» поруч із «Контракт
-id» і «Ескалація ролі покупцем» у «Storefront (SSR)»;
+`docs/architecture/data-layer.md` (колишній `data-access.instructions.md`) — розділи
+«Контракт дат» поруч із «Контракт id» і «Ескалація ролі покупцем»;
 `optimization.instructions.md:54`; `test-contours.md` — §12 отримує
 рядок «живий прогін = `pnpm live:smoke`» і посилання на харнес-тести;
 `v2-state-map.md` — §1 (покупний демо), §2 (новий датований прогін), §3.4 і
@@ -868,7 +869,8 @@ bare і відносна); видалення будь-якого рядка `SE
    декремент, тож без симетричного повернення інваріант асиметричний:
    демо-магазин після кількох скасувань показував би нуль залишку при нулі
    продажів. `releaseStock` живе в тому самому модулі
-   `storefront/loaders/stock-reservation.ts`, що й `reserveStock`;
+   `simplycms/inventory`, що й `reserveStock` (чинний код: `stock-release.ts` і
+   `stock-reservation.ts`; на рівні замовлення — `reserveOrderStock`/`releaseOrderStock`);
    `cancelMyOrder` в ОДНІЙ транзакції з ескалацією і скасовує, і повертає.
    Порядок усередині ескалації фіксований — блокування рядка замовлення
    (`lockOrderStatus`, `SELECT … FOR UPDATE` по `orders`) → повернення

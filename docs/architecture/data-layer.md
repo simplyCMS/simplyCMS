@@ -6,7 +6,7 @@
 інваріанти й причини, чому вони такі.
 
 Рішення напряму — [`2026-08-19-backend-contract-v2-design.md`](../superpowers/specs/2026-08-19-backend-contract-v2-design.md)
-(читати з амендментом B3′/B5″/B13). Поточний стан реалізації — `docs/tasks/v2-state-map.md`.
+(читати з амендментом B3′/B5″/B13). Поточний стан реалізації — віхи й issues GitHub (`docs/tasks/platform-roadmap.md`, «Де стан»).
 
 ## 1. Модель
 
@@ -134,7 +134,7 @@
   `index.ts` — лише топ-рівневі `createServerFn`, нутрощі — bare-субшлях `./impl`)
   і колекціях **`simplycms/admin-data`** (TanStack DB; колекції без `schema`).
 - Шару `supabase-js` більше немає (К3-Е7): адмінка пишеться на колекціях
-  `admin-data`/операціях `admin-server`, поточний перелік — `docs/tasks/v2-state-map.md`.
+  `admin-data`/операціях `admin-server`, поточний перелік — `packages/simplycms/src/admin-data/collections/`.
   Ні вітрина, ні адмінка `@supabase/*` не імпортують (ратчет `no-supabase-import`).
 - Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
   `eq/gt/gte/lt/lte` — колонки `filterable` ∪ `sortable` (курсор пагінації
@@ -930,3 +930,25 @@ email в іншому регістрі — не конфлікт, записує
   `TABLE NAME` таблицю, що посилається.
 - **Видалення мови** (`languages.remove`) мапить будь-який 23503 навколо СВОГО DELETE у 409
   `language_in_use` локально — за таблицею помилки цього не розпізнати (І2).
+
+## 16. Облік залишку замовлення — по позиції (К3-Е5)
+
+З К3-Е5 облік замовлення живе в `simplycms/inventory` (`reserveOrderStock`,
+`releaseOrderStock`), а фактично списане пишеться В ПОЗИЦІЮ:
+`order_items.stock_point_id` (точка списання) і `order_items.stock_reserved`
+(скільки реально знято; 0 — цілі без обліку). Скасування повертає рівно
+`stock_reserved` у `stock_point_id` і обнуляє лічильник одним запитом —
+повторне повернення бачить 0. Тумблер `decrease_on_order` на поверненні не
+читається. Дві свідомі межі:
+
+- **Замовлення, оформлені до К3-Е5, нічого не повертають.** Колонки
+  приземлені правкою baseline, тож у таких рядків `stock_reserved = 0`;
+  колишній fallback (точка з `orders.shipping_data.stock_point_id` або
+  повторний резолв) прибрано — він давав фантомний залишок там, де облік був
+  вимкнений, а відрізнити ці випадки даних немає (правило D5: реальних
+  магазинів немає, демо-база перестворюється `pnpm db:demo`).
+- **Точку списання ВИДАЛИЛИ (не деактивували) до скасування** — FK
+  `ON DELETE SET NULL` обнуляє `stock_point_id`, рядки залишку точки зникають
+  каскадом, і повертати кількість нікуди: вона не повертається, факт
+  пишеться в `console.warn` (`[simplycms/inventory] … not returned`).
+  Деактивована точка залишок отримує назад (кейс I1 `order-stock.test.ts`).

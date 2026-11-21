@@ -1,6 +1,6 @@
 # План: трек A — контракт тем v3 «theme views»
 
-> Задача (скоуп, DoD, якорі): [`docs/tasks/theme-views-v3.md`](../../tasks/theme-views-v3.md).
+> Задача (скоуп, DoD, якорі): файл задачі «theme-views-v3» (знесено 2026-11-21; текст — в історії git).
 > Спека (джерело правди рішень V1–V5): [`2026-08-17-theme-contract-v3-views-design.md`](../specs/2026-08-17-theme-contract-v3-views-design.md).
 > Базова гілка треку: `claude/theme-views-v3` (сесійна гілка виконавця
 > мержиться PR-ом у неї — модель інкрементів Б.2/Б.3).
