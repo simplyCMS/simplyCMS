@@ -154,3 +154,84 @@ Start): POST на server function із `Content-Length` понад стелю �
 виграє (`process.env` > `.env.local` > `.env`); у dev те саме робить `loadEnv` у `vite.config.ts`.
 Наслідок: ротація `DATABASE_URL`/`BETTER_AUTH_SECRET` = перезапуск процесу, БЕЗ перезбірки; для
 клієнтського `VITE_SITE_URL` потрібна перезбірка.
+
+## 3. Локальний запуск монорепо
+
+Як підняти платформу з нуля на машині розробника.
+
+```bash
+pnpm install
+
+# 1. База з демо-даними (потрібен локальний Postgres)
+PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm db:demo
+# віддасть готовий рядок DATABASE_URL
+
+# 2. .env.local
+DATABASE_URL=postgresql://<user>@127.0.0.1:5432/simplycms_demo
+BETTER_AUTH_SECRET=<довгий випадковий рядок>
+VITE_SITE_URL=http://localhost:3000
+# BETTER_AUTH_URL=http://localhost:3000  # опційно: без нього база береться з
+#   запиту, а WARN «Base URL is not set» у лозі — очікуваний. 🔴 Задавати лише
+#   origin, з якого реально ходить браузер: з рядковим baseURL Better Auth
+#   довіряє РІВНО цьому origin і відкидає інші з 403 INVALID_ORIGIN
+# MEDIA_ROOT=/var/lib/simplycms/media  # опційно: корінь драйвера
+#   local-fs. Без нього — ./.data/media відносно робочої теки процесу; теку
+#   створює сам драйвер при першому завантаженні, вона в .gitignore. У проді
+#   задавати обовʼязково, і на том, що переживає деплой: дефолт лежить
+#   усередині теки деплою, тож нова викладка почала б із порожнього сховища
+
+# 3. Запуск
+pnpm build && pnpm start        # або pnpm dev; `pnpm start` — лише локально, не для проду
+```
+
+У проді стартова команда платформи — `node scripts/start.mjs`: накат міграцій під
+`MIGRATION_DATABASE_URL` і `process.execve` на `server.mjs` (потрібен Node ≥ 24); пароль власника
+схеми процес сервера вже не бачить. На порожню БД з локалки — `pnpm simplycms db:apply`.
+
+**Стенд із живими даними для ручного тесту** (вітрина й адмінка не порожні):
+
+```bash
+PG_HARNESS_URL=postgresql://<user>@127.0.0.1:5432/postgres pnpm db:showcase
+# ~10 с: перестворює simplycms_showcase (лише свою — з позначкою
+# 'simplycms:showcase'; чужу базу з тим самим іменем не чіпає), засіває її
+# і друкує готову команду запуску з DATABASE_URL (app_runtime),
+# BETTER_AUTH_SECRET, MEDIA_ROOT=.data/showcase-media, VITE_SITE_URL:
+pnpm build && DATABASE_URL=… BETTER_AUTH_SECRET=… MEDIA_ROOT=… \
+  VITE_SITE_URL=http://localhost:3000 pnpm start
+```
+
+Вхід в адмінку — `owner@showcase.test` / `showcase-owner-2026` (лише локалка;
+решта облікових записів — `docs/development/TOOLING.md` § 2). Що всередині:
+8 розділів, 33 товари з PNG-зображеннями, два типи цін, залишки у двох точках,
+адресна доставка й дві точки видачі, 18 покупців (один забанений, один
+видалений), категорія VIP і дві знижки, 40 замовлень за останні 30 днів (12
+гостьових, частина скасована), 15 схвалених відгуків. База одноразова: кожен
+запуск її перестворює, ручні зміни зникають.
+
+**Перевірити весь контур одразу:** `PG_HARNESS_URL=…
+pnpm live:smoke` — сам піднімає чисту демо-БД, збирає прод-білд, стартує
+сервер і жене curl+SQL + Playwright-воронку (реєстрація → картка → кошик →
+чекаут зі списанням → скасування з поверненням залишку) плюс крок аватара
+(завантаження → роздача `/media/<key>` → референс у БД → видалення).
+Не чіпає `.env.local` розробника; потребує Postgres і Chromium (`pnpm exec
+playwright install chromium`).
+
+**Створити першого адміна** (у монорепо, бо скрипт шаблону резолвить
+`simplycms` як залежність магазину):
+
+```ts
+// Зберегти як owner-invite.mts У КОРЕНІ репо (саме .mts: поза репо tsx бере
+// CJS і падає на top-level await) і запустити з тими самими env:
+//   set -a; . ./.env.local; set +a; npx tsx owner-invite.mts
+const m = await import('./packages/simplycms/src/auth/index.ts');
+const r = await m.issueOwnerInvite({
+  email: 'admin@example.com',
+  store: m.ownerInviteStore,
+  env: { VITE_SITE_URL: 'http://localhost:3000' },
+  // Лист не потрібен: посилання повертає сам issueOwnerInvite (r.url).
+  schedule: async () => [],
+});
+console.log(r.url);   // відкрити в браузері → форма пароля
+```
+
+Обовʼязкових ключів магазину — рівно три (§ 1).
