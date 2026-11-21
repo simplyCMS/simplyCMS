@@ -24,6 +24,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:docs": "vitest run tests/doc-symbols-exist.test.ts tests/gates-chain.test.ts tests/upstream-tripwires.test.ts tests/marketplace-index.test.ts tests/ci-docs-only.test.ts",
     "test:schema": "vitest run --config vitest.schema.config.ts",
     "test:race": "vitest run --config vitest.race.config.ts",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
