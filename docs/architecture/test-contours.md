@@ -112,7 +112,7 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 | **C** | Серверний код не тече в клієнтський бандл; code splitting живий. Джерело — модульний граф (`bundle-stats.client.json`), не vite-manifest. 🔴 `SERVER_PAYLOAD` **виводиться з декларації** `simplycms/contracts/server-only`, а не перелічується вручну: під ним усі СІМ дерев (`db`, `auth`, `schema`, `storefront`, `storefront-routes/seo`, `admin-server/impl`, `storage` — сьоме) плюс серверні залежності `pg`, `drizzle-orm` (`drizzle-zod` — лише devDependency, у декларації його немає; `better-auth` — свідомо без id-перевірки, див. §12). Ручного переліку немає свідомо: він не бачив би нового серверного дерева, і граф витікав би в браузер невидимо для гейта (там він падає рантаймом, а не гейтом) | `gate-c.mjs` |
 | **D** | Tailwind v4 бачить компоненти пакетів: у зібраному CSS є утиліти, що зустрічаються **виключно** в `simplycms/dist/**` (і в `@simplycms/theme-solarstore`) | `gate-d.mjs` |
 | ~~**E**~~ | 🔴 **ЗНЯТО в 0.4.1** разом зі стеком Supabase: гейт бутстрапив власника магазину service_role-ключем GoTrue, якого в контракті v2 немає. Що він доводив (перший signup НЕ отримує `admin`; `owner:invite` ідемпотентний; перехід за посиланням ставить cookies) — тепер обовʼязок контуру К6 на Better Auth. У звіті прогону пакування лишається **видимий рядок-skip із причиною**, а не тиша | ~~`gate-e.mjs`~~ |
-| **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; ще й інваріанти топології 5 і доставки скілів: у tarball немає копій скілів (`template/.claude/skills`, `template/.agents`; сама `template/.claude/` є — хук і шим), deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/`; скаффолд несе `AGENTS.md` з керованим блоком, `CLAUDE.md` з `@AGENTS.md`, `.claude/settings.json` і шим, а шим на голому скаффолді (без `node_modules`) віддає код 0 і «pnpm install» | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs`, `session-hook-checks.mjs` |
+| **CLI** | Упакований скаффолдер живий: `template/` у tarball, `bin` запускається, плейсхолдери підставлені, `@clack/prompts` у `dependencies`; ще й інваріанти 5 пакетів і доставки скілів: у tarball немає копій скілів (`template/.claude/skills`, `template/.agents`; сама `template/.claude/` є — хук і шим), deps шаблону — рівно один `simplycms` (без `plugin-faq`), скаффолд створює обидва симлінки скіла з очікуваною ціллю, а tarball `simplycms` несе ТОЧНУ множину файлів `skills/`; скаффолд несе `AGENTS.md` з керованим блоком, `CLAUDE.md` з `@AGENTS.md`, `.claude/settings.json` і шим, а шим на голому скаффолді (без `node_modules`) віддає код 0 і «pnpm install» | `create-pkg-smoke.mjs`, `create-pkg-checks.mjs`, `core-skills-parity.mjs`, `session-hook-checks.mjs` |
 | **TOOL** | Упакований `@simplycms/cli` живий: bin-мапінг `simplycms` → `packages/cli/src/index.mjs`, `--help`/`--version` запускаються з розпакованого tarball і `--help` згадує всі 10 команд `COMMANDS` (зникла команда = модуль випав із COMMANDS або files), канони `host/`, `template-plugin/` (шаблон `create plugin`) і `template-theme/` (шаблон `create theme`) непорожні, рантайм-deps оголошені в манифесті, `doctor` з розпакованого tarball відпрацьовує на свіжому скаффолді шаблону — exit 0/1 (не краш) + маркери звіту в stdout, `theme:conformance default` на тому ж голому скаффолді доїжджає до теми з конфігу й чесно падає (exit 1) з точною командою `pnpm add -D jsdom` замість мовчазного обходу; передача керування новому CLI: два tarball-и CLI (0.0.1 і 0.0.2 з різним каноном `host/server.mjs`) з локального реєстру (`local-registry.mjs`: CLI і дерево його залежностей з `node_modules` монорепо — без мережі), один `update --write --to 0.0.2` → файли каркаса магазину = канон НОВОЇ версії (новий CLI перебрав звірку); у встановленому скретчі шим хука старту сесії віддає код 0 і доходить до справжнього `status --hook` (в контексті «етап: local»), а кожен симлінк скіла резолвиться (`realpath`) у теку скіла встановленого `node_modules/simplycms/skills`. Не доводить: сам запуск хука Claude Code (формат JSON-виводу перевіряє тест шима за контрактом хуків, не живий агент) | `tool-pkg-smoke.mjs`, `tool-update-reexec.mjs`, `session-hook-checks.mjs` |
 
 🔴 **Gate B: збірка, стиснення, 413/411.** Крок
@@ -145,8 +145,8 @@ Better Auth) — трек К6. Усе, що нижче описує стек Sup
 у `dist`, доводять packaging/Gate TOOL (парність `published-exports`), а не він.
 
 🔴 **FAQ-контур і скіл-лінки** — так само кроки конвеєра, а не
-гейти. З шаблону магазину знято референс-плагін FAQ (ПК7) і копію скілів
-(ПК9), тож скретч добирає їх сам: `install-faq.mjs` ставить
+гейти. З шаблону магазину знято референс-плагін FAQ і копію скілів,
+тож скретч добирає їх сам: `install-faq.mjs` ставить
 `@simplycms/plugin-faq` тим самим `simplycms add --plugin`, що й користувач, і
 дописує `physical()`-монтаж у `routes.ts` (автовставку спека CLI v1 §9
 відклала); `link-skills.mjs` створює симлінки функцією СКАФФОЛДЕРА
@@ -961,7 +961,7 @@ server-only дерево для `admin-server` і `storefront/loaders`, а не
 задокументовані в докблоці `importProtection()` у `contracts/server-only.ts`
 разом із моделлю загрози; тут не дублюються.
 
-🔴 **Відкрите питання ПОЗА треком T** (рішення власника, не борг треку):
+🔴 **Відкрите питання ПОЗА збіркою через tsdown** (рішення власника, не борг):
 `files` маніфеста ядра везе в tarball і `dist`, і `src` — 559 файлів джерел,
 включно з `packages/simplycms/src/db/client.ts`. Саме тому server-only дерево існує в магазині
 двічі й потребує `excludeFiles`. Прибрати `src` з `files` закрило б цей клас

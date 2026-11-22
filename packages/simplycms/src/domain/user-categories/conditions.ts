@@ -55,7 +55,7 @@ function compareText(
     case '=':
       return stat === value;
     case 'contains':
-      // 🔴 Р30: для домену `contains` — точний збіг або піддомен (`.corp.com`).
+      // 🔴 Для домену `contains` — точний збіг або піддомен (`.corp.com`).
       // Підрядок пускав би `evilcorp.com` і `corp.com.attacker.net` у категорію
       // «корпоративні» — а це знижки.
       return containsMode === 'domain'

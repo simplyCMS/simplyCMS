@@ -35,14 +35,14 @@ export type { ProductAddress, ProductPage } from './product-page';
 export type ProductDetailRow = ProductRow & {
   sections: SectionRef | null;
   product_modifications: ModificationRow[];
-  /** Лише види цін глядача (Р29): гість — гостьові, покупець — свій + гостьові. */
+  /** Лише види цін глядача: гість — гостьові, покупець — свій + гостьові. */
   product_prices: PriceEntry[];
   product_property_values: ProductPropertyValueRow[];
   /**
    * Типи ціни ГОСТЯ: JSON-LD `offers` рахує ними ту саму базу, що SSR-
    * списки й картка гостя після гідрації. Персональний тип сюди не йде:
    * розмітка для пошуковика одна для всіх, а гостьові види є в
-   * `product_prices` і в покупця — як фолбек (Р29).
+   * `product_prices` і в покупця — як фолбек.
    */
   guest_price_types: PriceTypes;
   /** Мова сторінки, адреса, SEO-політика і поля з fallback (М1, І33/І37). */
@@ -62,7 +62,7 @@ export type ProductDetailRow = ProductRow & {
  *
  * `primary` — основна мова з кешу мов (`loadLocaleSet().primary` на межі, до транзакції).
  *
- * 🔴 Ціни — лише видів `viewer` (Р29): гість гуртового прайсу не дістає ні в
+ * 🔴 Ціни — лише видів `viewer`: гість гуртового прайсу не дістає ні в
  * payload, ні в SSR-HTML. Набір рахує `withViewerDb` із серверної сесії.
  */
 export async function loadProduct(

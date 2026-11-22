@@ -1,5 +1,4 @@
-// Завантажувач модулів МАГАЗИНУ для `theme:conformance` (амендмент до Р8,
-// 2026-08-18): резолв пакетів від кореня магазину, аліаси з його tsconfig і
+// Завантажувач модулів МАГАЗИНУ для `theme:conformance`: резолв пакетів від кореня магазину, аліаси з його tsconfig і
 // раннер vite, який уміє в TS/TSX. React, react-dom і vite у магазині вже є —
 // донавантажується лише jsdom (див. theme-conformance-dom.mjs).
 import { existsSync, readFileSync } from 'node:fs';

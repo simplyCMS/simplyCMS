@@ -116,7 +116,7 @@ describe('owner-invite (скрипт шаблону)', () => {
 
     expect(result.created).toBe(true);
     expect(users.size).toBe(1);
-    // Р19: роль видає прийняття запрошення, а не випуск.
+    // Роль видає прийняття запрошення, а не випуск.
     expect(roles).toEqual([]);
     expect(output).not.toContain('Увага: акаунт уже існує');
     expect(output).not.toMatch(/закріплена|на місці/);
@@ -153,7 +153,7 @@ describe('owner-invite (скрипт шаблону)', () => {
   const WARNING =
     'Увага: акаунт уже існує й не підтверджений — роль буде видано лише після прийняття запрошення з цієї скриньки.';
 
-  it('Р19: наявний непідтверджений акаунт — попередження дослівно, код виходу 0', async () => {
+  it('Наявний непідтверджений акаунт — попередження дослівно, код виходу 0', async () => {
     const { store, users } = makeStore();
     await store.createUser({ email: EMAIL, name: EMAIL });
     const mail = makeMail();
@@ -182,7 +182,7 @@ describe('owner-invite (скрипт шаблону)', () => {
     expect(lines).toContain(WARNING);
   });
 
-  it('Р19: наявний підтверджений акаунт — без попередження', async () => {
+  it('Наявний підтверджений акаунт — без попередження', async () => {
     const { store, verified } = makeStore();
     verified.add(await store.createUser({ email: EMAIL, name: EMAIL }));
     const { output } = await run(store);

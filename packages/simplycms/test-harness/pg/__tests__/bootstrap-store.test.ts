@@ -1,4 +1,4 @@
-// `bootstrapStore` (І40): старт чистої БД з основною мовою магазину.
+// `bootstrapStore` (Р23 майстер-плану, І40): старт чистої БД з основною мовою магазину.
 // Тексти довідників беруться з мовного пакета, а не з `0003_seed.sql`.
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

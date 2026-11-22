@@ -164,7 +164,7 @@ describe('запрошення власника наскрізь', () => {
       { email: SHOPPER, role: 'user' },
     ]);
   });
-  describe('Р19: роль лише після прийняття, сесії гаснуть', () => {
+  describe('роль лише після прийняття, сесії гаснуть', () => {
     const NEW_PASSWORD = 'owner-new-password-after-accept';
     const schedule = async (items: readonly { message: MailMessage }[]) => {
       letters.push(...items.map((item) => item.message));

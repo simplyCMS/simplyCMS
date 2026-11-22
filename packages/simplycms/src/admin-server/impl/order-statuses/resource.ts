@@ -3,7 +3,7 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * ЛИШЕ ЧИТАННЯ колекції: статус створюють і правлять команди агрегата
+ * ЛИШЕ ЧИТАННЯ колекції (Р19 майстер-плану): статус створюють і правлять команди агрегата
  * `order-statuses.*` (`commands.ts`, `set-default.ts`, `reorder.ts`, `remove.ts`) — вони
  * піднімають `version`, а узагальнений запис фабрики його не знає. Назва статусу — з
  * перекладу основної мови (INNER JOIN, `resource-read-model.ts`); дзеркальної колонки немає.

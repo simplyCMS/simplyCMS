@@ -206,7 +206,7 @@ export const OFFLINE_CHECKS = [
   },
   // №11: теми з конфігу резолвляться, Tailwind бачить сторонні.
   { label: 'themes', run: checkThemes },
-  // №12 (трек К0): скіли ядра підключені лінками.
+  // №12: скіли ядра підключені лінками.
   { label: 'skill-links', run: checkSkillLinks },
   // №13: драйвер БД — залежність магазину в межах peer ядра.
   { label: 'pg-driver', run: checkPgDriver },

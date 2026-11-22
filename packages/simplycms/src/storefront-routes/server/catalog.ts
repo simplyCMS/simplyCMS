@@ -85,7 +85,7 @@ export const getCatalogSection = createServerFn({ method: 'GET' })
  *
  * `sectionId` відсутній — сторінка каталогу (розділ обирається чипсами на
  * клієнті); заданий — сторінка розділу, вибірка звужена запитом. Ціни —
- * лише видів глядача сесії (Р29, `withViewerDb`).
+ * лише видів глядача сесії (`withViewerDb`).
  */
 export const getCatalogProducts = createServerFn({ method: 'GET' })
   .validator(

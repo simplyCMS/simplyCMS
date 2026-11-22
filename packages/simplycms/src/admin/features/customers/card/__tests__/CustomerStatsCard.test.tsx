@@ -17,8 +17,8 @@ const show = (over: Record<string, unknown>) =>
     </TestI18nProvider>,
   );
 
-/** Р30: правило email_domain не бачить домену непідтвердженої пошти — адмін це бачить. */
-describe('CustomerStatsCard: домен пошти (Р30)', () => {
+/** Правило email_domain не бачить домену непідтвердженої пошти — адмін це бачить. */
+describe('CustomerStatsCard: домен пошти', () => {
   afterEach(cleanup);
 
   it('непідтверджена пошта — домен із позначкою «не підтверджено»', () => {

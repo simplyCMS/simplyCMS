@@ -11,7 +11,7 @@
 > (хмара) ·
 > контракт тем v3 (theme views — виконано; ADR-0013, ADR-0014, [канон тем](../architecture/themes.md)) ·
 > консолідація пакетів (ADR-0023…0025, [канон розкладки репо](../architecture/repository-layout.md);
-> 26→5 + доставка скілів — трек К0) ·
+> 26→5 + доставка скілів) ·
 > [`2026-08-25-storefront-search-design.md`](../superpowers/specs/2026-08-25-storefront-search-design.md)
 > (пошук вітрини й адмінки; доказова база —
 > [дослідження](../superpowers/research/2026-08-25-storefront-search-engine.md)).

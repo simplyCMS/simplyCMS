@@ -15,7 +15,7 @@ export async function sectionsBySlug(url, slug) {
   );
 }
 
-/** Властивість за slug (slug глобальний —). */
+/** Властивість за slug (slug глобальний). */
 export async function propertyBySlug(url, slug) {
   const [row] = await sql(
     url,

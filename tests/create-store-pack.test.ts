@@ -15,7 +15,7 @@ import { createPkgSmoke } from '../scripts/pilot-pack/create-pkg-smoke.mjs';
 //
 // Герметичність: `pnpm pack` + `tar` + `node`, без мережі й без Docker
 // (залежності беруться симлінком, а їхня ДЕКЛАРАЦІЯ — асертом по манифесту з
-// tarball). З треком К0 смоук пакує ще й флагман `simplycms` — щоб довести
+// tarball). Смоук пакує ще й флагман `simplycms` — щоб довести
 // точну парність теки `skills/` у його tarball, — тож іде вже кілька секунд,
 // а не «~0.3 s»; на `testTimeout` сюїти (300 s) це не тисне.
 

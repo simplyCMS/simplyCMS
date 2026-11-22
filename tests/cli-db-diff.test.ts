@@ -150,7 +150,7 @@ describe('cli db:diff: мульти-канони', () => {
   it('pluginMigrationSources: читає конфіг, бачить node_modules і @plugins/, пропускає плагіни без міграцій', async () => {
     const store = await scaffoldStore('db-plugin-sources');
     // Шаблон декларує лише hello-world (@plugins/, без migrations/) — FAQ
-    // знято з шаблону (ПК7), тож довстановлюємо його тут, як це робить
+    // знято з шаблону (FAQ не в шаблоні), тож довстановлюємо його тут, як це робить
     // магазин: рядок у конфізі + пакет у node_modules.
     const configPath = join(store, 'simplycms.config.ts');
     writeFileSync(

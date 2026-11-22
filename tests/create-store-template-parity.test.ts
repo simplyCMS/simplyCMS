@@ -173,7 +173,7 @@ describe('create-store template: парність із монорепо', () => 
     );
   });
 
-  // 🔴 Топологія 5 (трек К0): магазин ставить ОДИН пакет ядра — unscoped
+  // 🔴 5 пакетів: магазин ставить ОДИН пакет ядра — unscoped
   // `simplycms`. Будь-який `@simplycms/*` у dependencies шаблону означає,
   // що злитий пакет ожив рукою: install дав би два інстанси ядра.
   it('deps шаблону — рівно один пакет ядра, unscoped simplycms', () => {
@@ -188,7 +188,7 @@ describe('create-store template: парність із монорепо', () => 
         name.startsWith('@simplycms/'),
       ),
     ).toEqual([]);
-    // ПК7: FAQ — референс-плагін, а не частина стартового магазину.
+    // FAQ не в шаблоні: FAQ — референс-плагін, а не частина стартового магазину.
     expect(tpl.dependencies['@simplycms/plugin-faq']).toBeUndefined();
     expect(read(join(TEMPLATE_DIR, 'simplycms.config.ts'))).not.toContain(
       'plugin-faq',

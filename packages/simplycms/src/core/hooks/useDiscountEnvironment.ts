@@ -30,7 +30,7 @@ export function useDiscountEnvironment(): {
   isError: boolean;
   /**
    * Останнє УСПІШНЕ середовище, навіть якщо фоновий перезапит упав. Лише для
-   * ідентичності виду цін у ключі кешу (`useViewerPriceKey`, Р29): збій
+   * ідентичності виду цін у ключі кешу (`useViewerPriceKey`): збій
    * фонового перезапиту не міняє вид цін покупця. Ціни ним не рахуються.
    */
   lastKnown: DiscountEnvironment | undefined;

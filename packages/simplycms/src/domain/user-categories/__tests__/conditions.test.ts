@@ -81,11 +81,11 @@ describe('conditionsMatch — текстові поля (=, contains)', () => {
     expect(match('=', 'corp.example.com')).toBe(true);
     expect(match('=', 'example.com')).toBe(false);
     expect(match('contains', 'example.com')).toBe(true);
-    // Р30: не підрядок — лише домен або піддомен.
+    // Не підрядок — лише домен або піддомен.
     expect(match('contains', 'example')).toBe(false);
   });
 
-  it('email_domain contains: домен і піддомен — так, схожі чужі домени — ні (Р30)', () => {
+  it('email_domain contains: домен і піддомен — так, схожі чужі домени — ні', () => {
     const match = (emailDomain: string | null) =>
       conditionsMatch(
         conditions([

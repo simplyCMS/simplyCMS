@@ -31,7 +31,7 @@ export interface OwnerInviteStore {
    * Лише токен під `admin-roles`. `'banned'` — користувач забанений:
    * нічого не записано.
    *
-   * 🔴 Р19: роль `admin` тут НЕ видається. Better Auth не вимагає підтвердження
+   * 🔴 Роль `admin` тут НЕ видається. Better Auth не вимагає підтвердження
    * пошти, тож будь-хто міг зареєструватися на пошту власника ДО випуску
    * запрошення — видача ролі при випуску віддала б адмінку його живим сесіям.
    * Роль видає `grantAdminRole` після прийняття (доказ володіння скринькою) і
@@ -101,7 +101,7 @@ export interface OwnerInviteResult {
   /** `false` — користувач уже існував: повторний invite його не дублює. */
   readonly created: boolean;
   /**
-   * Р19: акаунт існував і `email_verified = false` — це може бути чужа
+   * Акаунт існував і `email_verified = false` — це може бути чужа
    * самореєстрація на пошту власника. Роль від випуску не видається, але CLI
    * про це попереджає.
    */
@@ -132,7 +132,7 @@ export async function issueOwnerInvite(
 
   const token = input.token ?? randomBytes(32).toString('base64url');
   // Тут випускається лише токен. Роль `admin` видає `acceptOwnerInvite`
-  // після прийняття (Р19): invite власника — єдиний легальний шлях до
+  // після прийняття: invite власника — єдиний легальний шлях до
   // `admin` на чистому магазині (хук signUp дає рівно `user`, інваріант
   // `first_user_no_auto_admin`), але лише для контролера скриньки.
   const outcome = await input.store.issueAdminInvite({

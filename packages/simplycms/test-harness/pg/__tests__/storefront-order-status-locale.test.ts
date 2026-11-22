@@ -1,4 +1,4 @@
-// Проти живого Postgres: назва статусу замовлення на вітрині
+// Р19 майстер-плану, проти живого Postgres: назва статусу замовлення на вітрині
 // читається мовою запиту (`translatedFieldSql`), а де перекладу немає — основною мовою.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';

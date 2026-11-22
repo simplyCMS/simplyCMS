@@ -1,4 +1,4 @@
-// Р26: `getDiscount` для відсутнього id кидає доменне «не знайдено» (член
+// `getDiscount` для відсутнього id кидає доменне «не знайдено» (член
 // родини `DOMAIN_ERROR_NAME`), а не plain `Error` — інакше картка не
 // відрізнить його від збою БД.
 import { describe, expect, it, vi } from 'vitest';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { getDiscountOp } from 'simplycms/admin-server/impl';
 
-describe('admin: getDiscount — відсутня знижка (Р26)', () => {
+describe('admin: getDiscount — відсутня знижка', () => {
   F.useDiscountsAdminDb('simplycms_admin_discount_not_found');
 
   it('невідомий id → доменна помилка AdminNotFoundError', async () => {

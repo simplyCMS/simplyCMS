@@ -217,7 +217,7 @@ export function gateBundle(storeDir) {
         : stubs === 0
           ? 'FAIL заглушок server-fn у бандлі немає — перевіряти нема чого'
           : adminServerStubs === 0
-            ? 'FAIL admin-server stub відсутній у клієнтських чанках — сторінка мала б його імпортувати (Task 10)'
+            ? 'FAIL admin-server stub відсутній у клієнтських чанках — сторінка мала б його імпортувати'
             : 'FAIL dist/admin-server у встановленому пакеті не має пари index.js (стаб) + impl/index.js (нутрощі)',
     );
   } else {

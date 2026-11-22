@@ -146,7 +146,7 @@ describe('checkBodyLimit', () => {
       ),
     ).toBeNull();
   });
-  it("handlerType 'serverFn' з закодованим шляхом /%5FserverFn/ → 413 (Р20)", () => {
+  it("handlerType 'serverFn' з закодованим шляхом /%5FserverFn/ → 413", () => {
     const res = checkBodyLimit(
       req('POST', '/%5FserverFn/x', {
         'content-length': String(MAX_REQUEST_BODY_BYTES + 1),

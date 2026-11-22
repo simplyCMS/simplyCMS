@@ -26,7 +26,7 @@ CLI — інструмент **магазину**: він виконується
 `pnpm template:sync`, і мовчки відкотив би щойно зроблену правку файла каркаса.
 
 - Пакет — **`@simplycms/cli`** (scoped; публікація — Trusted Publishing без токена, `release-process.md` § «Авторизація: npm Trusted Publishing», ADR-0062; у реліз-потязі),
-  бінарник — **`simplycms`**. 🔴 Після треку К0 unscoped npm-ім'я `simplycms`
+  бінарник — **`simplycms`**. 🔴 Unscoped npm-ім'я `simplycms`
   зайняте самим **ядром** (усі тіри в одному пакеті), а CLI лишився
   одним із чотирьох сателітів — тонкого аліаса не буде: імʼя пакета й імʼя
   бінарника збігаються лише текстуально.
@@ -72,7 +72,7 @@ Read-only діагностика. Оффлайн-перевірки (завжд�
 | 9 | `tailwind.config.ts`: `content` покриває `node_modules/simplycms/{dist,routes}` | error |
 | 10 | `simplycms.config.ts` існує і містить якорі `themes:`/`plugins:`/`primaryLocale:` (`themes:`/`plugins:` — підрядок у файлі; мітка `primaryLocale:` мусить починати рядок коду) | error |
 | 11 | теми: кожен запис `themes`-конфігу резолвиться (тека/пакет) + Tailwind-глоб для сторонніх | warn |
-| 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`; трек К0) | warn → `update` |
+| 12 | скіли ядра підключені лінками (`.agents/skills/<name>` і `.claude/skills/<name>` → `node_modules/simplycms/skills/<name>`) | warn → `update` |
 | 13 | `pg` — пряма залежність магазину (`dependencies`), її встановлена версія задовольняє peer-діапазон `pg` ядра (`packages/cli/src/doctor-pg-check.mjs`, `packages/cli/src/pg-peer.mjs`). Без декларації драйвер вклеюється в серверний бандл і магазин не стартує (`UPSTREAM:START-IP-1`). Ядра в `node_modules` ще немає — `skip` | error |
 | 14 | `nodemailer` — пряма залежність магазину (`dependencies`) у межах peer-діапазону ядра (`packages/cli/src/doctor-mail-check.mjs`, спільне читання стану — `packages/cli/src/pg-peer.mjs`). Без декларації SMTP-драйвер порту `simplycms/mail` не працює. Ядра в `node_modules` ще немає — `skip` | error |
 | 15 | пошта (`checkMailConfigured`, `packages/cli/src/doctor-mail-check.mjs`): драйвер `log` губить листи — у режимі production error, у розробці warn; часткова група `SMTP_URL`/`MAIL_FROM` — error; ядра немає — `skip` | error / warn |
@@ -266,7 +266,7 @@ Build-time-встановлення плагіна/теми: `pnpm add <pkg>` �
    режимі він продовжує вивід батька (без другого заголовка), а відсутній
    `node_modules/@simplycms/cli/package.json` чи `bin` дає відмову з порадою
    `pnpm simplycms update --no-install`.
-3. **Лінки скілів** (трек К0). Після кроку версій `update` звіряє
+3. **Лінки скілів**. Після кроку версій `update` звіряє
    `.agents/skills/`+`.claude/skills/` з текою `skills/` встановленого ядра:
    доробляє відсутні й биті, прибирає осиротілі (лінк у пакет, якому вже
    нічого не відповідає). 🔴 Власна тека/файл магазину з тим самим іменем не

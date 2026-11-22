@@ -39,7 +39,7 @@ function createFakeStore() {
       usersByEmail.set(email, id);
       return id;
     },
-    // Р19: випуск лишає лише токен; на бані не лягає нічого.
+    // Випуск лишає лише токен; на бані не лягає нічого.
     issueAdminInvite: async ({ identifier, userId, valueHash, expiresAt }) => {
       if (banned.has(userId)) return 'banned';
       tokens.set(identifier, { valueHash, expiresAt });
@@ -92,7 +92,7 @@ describe('issueOwnerInvite', () => {
     // Пошта нормалізується в нижній регістр — інакше `Owner@` і `owner@`
     // дали б двох різних власників.
     expect(fake.usersByEmail.has('owner@example.test')).toBe(true);
-    // Р19: роль видає лише прийняття запрошення.
+    // Роль видає лише прийняття запрошення.
     expect(fake.adminRoles.size).toBe(0);
     expect(result.existingUnverified).toBe(false);
     expect(result.url).toBe(

@@ -30,7 +30,7 @@ export const templatePluginDir = () => templateDir('template-plugin');
 export const templateThemeDir = () => templateDir('template-theme');
 
 /**
- * `YYYYMMDDHHmmss` (UTC) для імені міграції плагіна (Е8-Р4). Канон ядра
+ * `YYYYMMDDHHmmss` (UTC) для імені міграції плагіна. Канон ядра
  * нумерується `0000…0004` і далі `0005…`; таймстамп сортується ПІСЛЯ будь-якого
  * чотирицифрового префікса, тож плагінна міграція ніколи не стане між
  * `0001_init` і `0002_grants` (той робить `revoke all … from public`).

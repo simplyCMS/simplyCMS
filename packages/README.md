@@ -2,7 +2,7 @@
 
 Open-source headless commerce engine — core packages for TanStack Start (Vite) + PostgreSQL.
 
-## Пакети (топологія К0, 2026-08-20)
+## Пакети (5 пакетів, 2026-08-20)
 
 Публікованих пакетів **пʼять**. Ядро — один unscoped фреймворк-пакет
 `simplycms`; тіри T0→T5 всередині нього — це **теки**, а не окремі npm-пакети.
@@ -18,7 +18,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 ### Тіри всередині `simplycms`
 
 Тір — напрямок дозволених імпортів: тека шару N може імпортувати лише теки
-шарів **нижче** себе. До К0 цю дисципліну тримала межа npm-пакета
+шарів **нижче** себе. Раніше цю дисципліну тримала межа npm-пакета
 (`dependencies` + `audit-deps`); після злиття її тримають **eslint-тір-зони**
 (`eslint.tier-zones.mjs` + `eslint.tier-relative.mjs`, негативний контроль —
 `tests/tier-boundary.test.ts`). Кожна заборона виражена двома формами
@@ -47,7 +47,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `env/` | `simplycms/env` | T2 | — | 🔴 Резолвер груп env драйверів: `resolveDriverEnv(env)` — чиста функція, що з переданого оточення дає драйвер сховища (`local-fs`/`s3`) і пошти (`log`/`smtp`) за правилом «все або нічого» (`S3_KEYS`, `SMTP_KEYS`); часткова група — `DriverEnvError` з іменами відсутніх ключів без значень; `siteUrl(path, env)` — єдиний будівельник абсолютних посилань у листах (origin `VITE_SITE_URL`, не запит). `process.env` читає викликач (старт магазину, фабрики драйверів, doctor, status), модуль нічого не друкує. **server-only** за `contracts/server-only` |
 | `mail/` | `simplycms/mail` | T2 | `env`, `db`, `schema`, `i18n` | 🔴 Порт пошти: `getMailTransport()` обирає драйвер за групою `SMTP_URL`+`MAIL_FROM` (`resolveDriverEnv`), `smtpTransport` (peer `nodemailer`, помилка лише `SMTP: <code>`) і `logTransport` (поза продом друкує лист, у проді — лише «Кому / Тема / тип»; режим — `isProductionRuntime`). **server-only** за `contracts/server-only`; рендер листів auth (`renderPasswordResetMail`, `renderOwnerInviteMail`) і замовлення (`renderOrderCustomerMail`, `renderOrderOwnerMail`), тексти — каталог `mail.*` |
 | `vite/` | `simplycms/vite` | T2 | — | 🔴 Build-time плагіни Vite: `resolveBuildId(env, {command, cwd})` — каскад `BUILD_ID` → `SOURCE_COMMIT` → git → час збірки (у dev `'dev'`), мемоізований і записаний у `process.env.BUILD_ID`; `simplycmsBuildInfo()` вшиває його `define`-глобалом `__SIMPLYCMS_BUILD_ID__` (читає client-safe `simplycms/runtime/build-id`). `precompressAssets()` кладе `.br`/`.gz` поруч з асетами клієнтської збірки (для `sirv` у `server.mjs`). Node-код збірки без залежності від `vite` (структурний тип плагіна). **server-only** за `contracts/server-only` |
-| `migrate/` | `simplycms/migrate` | T2 | `db/lock-keys`, `i18n/packs` | 🔴 Накат міграцій із журналом контрольних сум: `applyMigrations` — одна реалізація для старту контейнера, `db:apply`, харнесу `test:schema` і `db:demo` (advisory-лок → відмова бази без журналу → звірка сум ДО першого DDL → кожен файл в одній транзакції зі своїм записом у `public.simplycms_migrations` → грант `app_admin` → синк пароля `app_runtime` верифікатором SCRAM-SHA-256, порахованим на клієнті, `scramSha256Verifier`, Р15); `listMigrationFiles` (sha256 після CRLF→LF, відмова `concurrently`/`begin`/`commit` до накату), `readJournal` і `readStoreFacts` (власник, профіль, невдалі листи, опубліковані мови; з `DATABASE_URL` через `SET LOCAL ROLE app_admin`, спільний `withRuntimeAdminRead`), `bootstrapStore` (старт чистої БД з основною мовою: мова, статуси замовлень, довідники й профіль з текстами мовного пакета), `pendingMigrations`, помилки `MigrationChecksumError`/`UnjournaledDatabaseError`/`MigrationTransactionControlError`. Власне зʼєднання `pg` під власником схеми — повз `withActor` за побудовою (до ролей і RLS актора не існує). **server-only** за `contracts/server-only`; з `i18n` відкрито лише ФАЙЛ `i18n/packs` (вузький вхід до пакетів без React), з `db` — лише ФАЙЛ `db/lock-keys` (реєстр ключів замків: ключ накату `MIGRATION_LOCK_KEY` живе в одному місці з рядковими ключами; `withActor` і решта `db` закриті) |
+| `migrate/` | `simplycms/migrate` | T2 | `db/lock-keys`, `i18n/packs` | 🔴 Накат міграцій із журналом контрольних сум: `applyMigrations` — одна реалізація для старту контейнера, `db:apply`, харнесу `test:schema` і `db:demo` (advisory-лок → відмова бази без журналу → звірка сум ДО першого DDL → кожен файл в одній транзакції зі своїм записом у `public.simplycms_migrations` → грант `app_admin` → синк пароля `app_runtime` верифікатором SCRAM-SHA-256, порахованим на клієнті, `scramSha256Verifier`, Р15); `listMigrationFiles` (sha256 після CRLF→LF, відмова `concurrently`/`begin`/`commit` до накату), `readJournal` і `readStoreFacts` (власник, профіль, невдалі листи, опубліковані мови; з `DATABASE_URL` через `SET LOCAL ROLE app_admin`, спільний `withRuntimeAdminRead`), `bootstrapStore` (старт чистої БД з основною мовою: мова, статуси замовлень, довідники й профіль з текстами мовного пакета, Р23 майстер-плану), `pendingMigrations`, помилки `MigrationChecksumError`/`UnjournaledDatabaseError`/`MigrationTransactionControlError`. Власне зʼєднання `pg` під власником схеми — повз `withActor` за побудовою (до ролей і RLS актора не існує). **server-only** за `contracts/server-only`; з `i18n` відкрито лише ФАЙЛ `i18n/packs` (вузький вхід до пакетів без React), з `db` — лише ФАЙЛ `db/lock-keys` (реєстр ключів замків: ключ накату `MIGRATION_LOCK_KEY` живе в одному місці з рядковими ключами; `withActor` і решта `db` закриті) |
 | `prod-start/` | `simplycms/prod-start` | T2 | `env`, `migrate` | 🔴 Прод-старт магазину: `runStart` (перевірка груп env → накат `applyMigrations` під `MIGRATION_DATABASE_URL` → `process.execve` на `server.mjs` з оточенням без `STRIPPED_ENV`; Node ≥ 24 без фолбеку; URL і пароль власника вичищаються з виводу), `startStore` — проводка для шима магазину `scripts/start.mjs` (host-файл під `simplycms update`), `STRIPPED_ENV` — джерело правди списку (літерал-дубль у `server.mjs` стереже парність розбором файлу). Назва не `start`: декларація server-only матчить резолвлений шлях `simplycms/src/<тека>`, і `start` зачепив би клієнтський `src/start.ts` хоста. **server-only** за `contracts/server-only` |
 | `server-guard/` | `simplycms/server-guard` | T2 | `env` | 🔴 Охорона серверного входу: `maskUnexpectedError` — у проді непередбачена помилка йде клієнту загальним повідомленням з ідентифікатором, повна (через `redactUrls`) — у лог із тим самим ідентифікатором; доменні помилки з кодом (`DOMAIN_ERROR_NAME`), редіректи, `notFound` і `Response` проходять як є. `withSecurityHeaders`/`securityHeaders` — базові заголовки безпеки на всіх динамічних відповідях (HSTS лише для https-сайту). Host підключає: function-middleware у `src/start.ts`, обгортка fetch у `src/server.ts`. Формат повідомлення з ідентифікатором — T0 `contracts/masked-error` (його читає й клієнтський екран помилки). **server-only** за `contracts/server-only` |
 | `sanitize/` | `simplycms/sanitize` | T2 | — | 🔴 Санітизація rich-HTML (`sanitizeRichHtml`, `sanitizeNullableRichHtml`, профілі `RichHtmlProfile`): запис описів адмінкою й читання вітрини; тип `SanitizedHtml` — у T0 `contracts`, щоб його бачили теми. **server-only** за `contracts/server-only` |
@@ -61,7 +61,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 | `checkout-ui/` | `simplycms/checkout-ui` | T4 | `core` | Оформлення: форми контактів, доставки, оплати, отримувача + підсумок |
 | `profile-ui/` | `simplycms/profile-ui` | T4 | `core` | Профіль: адреси, отримувачі, аватар |
 | `reviews-ui/` | `simplycms/reviews-ui` | T4 | `core` | Відгуки: `ProductReviews`, `StarRating` |
-| `core/` | `simplycms/core` | T5 | — | Власні провайдери/хуки/компоненти (`CMSProvider`, `useAuth`, `useCart`, `useBanners`…). 🔴 Фасадну роль розчинено К0 — реекспорти чужого прибрано, споживачів переведено на джерела; повне розселення власних модулів по тірах свідомо ПОЗА К0 |
+| `core/` | `simplycms/core` | T5 | — | Власні провайдери/хуки/компоненти (`CMSProvider`, `useAuth`, `useCart`, `useBanners`…). 🔴 Фасадну роль розчинено консолідацією — реекспорти чужого прибрано, споживачів переведено на джерела; повне розселення власних модулів по тірах свідомо ПОЗА К0 |
 | `admin/` | `simplycms/admin` | T5 | `core` | Лейаути, сторінки й компоненти адмінки |
 | `storefront-routes/` | `simplycms/storefront-routes` | T5 | `core` | Канонічні сторінки: `pages/` (container-и) і `views/` (канонічні view + `views/slots/` — прибінджені реквізити, контракт тем v3), `shells/`, `server/`, `seo/` (server-only; `seo/normalize` — `withStorefrontNormalize`: 301/404 і набір мов у контекст запиту), `hydration/` (`prepareStorefrontHydration` — прогрів активної теми ДО `hydrateRoot`), `locale/` (клієнтобезпечне: `createLocaleRewrite`, `createRouterLocale`, `loadStorefrontRoot`, `RootNotFound`, `useRequestTranslator`, `serializeLocalesScript`, `htmlLangAttrs`) |
 
@@ -90,7 +90,7 @@ Open-source headless commerce engine — core packages for TanStack Start (Vite)
 версію, актуальний номер — у [`CHANGELOG.md`](../CHANGELOG.md). Розширення
 відбувається через плагіни й теми, а не форк ядра.
 
-Магазин після К0 тримає **одну** залежність ядра — `simplycms` (+ CLI у
+Магазин тримає **одну** залежність ядра — `simplycms` (+ CLI у
 devDependencies), а конкретний шар імпортує субшляхом:
 
 ```ts
@@ -111,8 +111,8 @@ import type { HomeViewModel } from 'simplycms/contracts/views';
 ## Чеклист нового пакета
 
 Зібрано під час додавання `@simplycms/cli` (2026-08-13), оновлено під
-топологію К0 (2026-08-20). 🔴 **Спершу спитай, чи потрібен новий ПАКЕТ.**
-Після К0 дефолт — нова **тека** в `packages/simplycms/src/` плюс вхід
+5 пакетів (2026-08-20). 🔴 **Спершу спитай, чи потрібен новий ПАКЕТ.**
+Дефолт — нова **тека** в `packages/simplycms/src/` плюс вхід
 в `exports`-мапі й зона в `eslint.tier-zones.mjs`; окремий npm-пакет
 виправданий лише коли одиниця має власний цикл релізу (тема, плагін,
 bin-інструмент). Конвеєр підхоплює новий пакет майже весь автоматично, але
@@ -148,7 +148,7 @@ bin-інструмент). Конвеєр підхоплює новий паке
    за жодного `target` (виміряно es2015…esnext), а cjs лоуерить у
    `var import_meta = {}` / `{}.env…` — опублікований `dist` читає
    `({}).env`, і браузерний код, що читає `import.meta.env`, падає на
-   гідрації (спіймано К0 при злитті 21 конфігу). `target: 'esnext'` лишено
+   гідрації (спіймано при злитті 21 конфігу). `target: 'esnext'` лишено
    явним лише для незалежності рівня синтаксису від tsconfig пакета. Гард —
    `tests/dist-import-meta.test.ts` у packaging-suite (скан `dist`), його
    самоперевірка патерна `LOWERED_IMPORT_META` — cjs-кейс

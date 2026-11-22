@@ -9,7 +9,7 @@ import {
   orderStatusesSaveTranslation,
 } from '../../order-statuses/commands';
 
-// Юніт форми операцій фабрики: id та прапорці.
+// Юніт форми операцій фабрики (Р19 майстер-плану): id та прапорці.
 // Поведінку проти БД (зокрема відмову create без основної мови) доводить pg-тест
 // `order-statuses-aggregate.test.ts`.
 const WRITES = [

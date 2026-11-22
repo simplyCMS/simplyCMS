@@ -1,4 +1,4 @@
-// Прив'язки slot-компонента секційної каруселі (контракт тем v3, Фаза 5).
+// Прив'язки slot-компонента секційної каруселі (контракт тем v3).
 
 import { createContext, useContext, type ReactNode } from 'react';
 import type { HomeProduct, HomeSection } from './types';

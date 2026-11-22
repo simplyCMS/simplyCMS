@@ -62,7 +62,7 @@ export default function PropertyPage({
         }
       : undefined;
 
-  // Вид цін глядача — сегмент ключа (Р29): товари сторінки несуть його прайс.
+  // Вид цін глядача — сегмент ключа: товари сторінки несуть його прайс.
   const view = useViewerPriceKey();
   const locale = useContentLocale();
   const { data, isLoading } = useQuery({
@@ -84,7 +84,7 @@ export default function PropertyPage({
         },
       }),
     enabled: !!propertySlug && !!optionSlug && view !== null,
-    // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
+    // Дані лоадера — лише поки він рахував цього глядача.
     initialData: useSeedableInitialData(initialData),
   });
 

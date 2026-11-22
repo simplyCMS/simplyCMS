@@ -14,7 +14,7 @@ export const PACKAGES_DIR = join(ROOT, 'packages');
 /**
  * 🔴 Аудит стосується ЛИШЕ пакетів ядра: у них є subpath-exports, які ці
  * скрипти й звіряють. Це scoped-сателіти `@simplycms/*` і unscoped-флагман
- * `simplycms` (К0). Unscoped `create-simplycms-store` лежить у тій самій
+ * `simplycms`. Unscoped `create-simplycms-store` лежить у тій самій
  * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md); саме тому
  * імʼя флагмана звіряється ТОЧНО, а не префіксом.
  */
@@ -55,11 +55,11 @@ const EXCLUDE_PATHSPECS = [
   // Межа довіри плагінів: негативний контроль годує ESLint кодом
   // `import … from 'simplycms/admin-server'` та ін. — це фікстури-порушення.
   ':!tests/plugin-trust-boundary.test.ts',
-  // Тір-зони (ПК3, К0): негативний контроль містить синтетичний
+  // Тір-зони (ПК3, ADR-0023): негативний контроль містить синтетичний
   // `import type { X } from 'simplycms/admin'`.
   ':!tests/tier-boundary.test.ts',
   // Негативний контроль самого цього аудиту: фікстури з імпорт-формами
-  // (`import 'simplycms/a'`, мертвих К0-імен), якими тест доводить поведінку
+  // (`import 'simplycms/a'`, злитих імен), якими тест доводить поведінку
   // сканера. Без винятку вони валили б гейт самі на собі.
   ':!tests/audit-exports.test.ts',
 ];

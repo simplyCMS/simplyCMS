@@ -78,7 +78,7 @@ simplyCMS/
 │   │   │                         #    нічого»: resolveDriverEnv(env) — чиста функція, часткова
 │   │   │                         #    група = DriverEnvError без значень. Upward-винятків немає.
 │   │   │                         #    server-only
-│   │   ├── src/server-guard/     # T2 Охорона серверного входу : maskUnexpectedError
+│   │   ├── src/server-guard/     # T2 Охорона серверного входу: maskUnexpectedError
 │   │   │                         #    (прод: загальне повідомлення + ідентифікатор клієнту, повна
 │   │   │                         #    помилка в лог), withSecurityHeaders (заголовки безпеки на
 │   │   │                         #    динаміці). Upward-виняток лише env. server-only

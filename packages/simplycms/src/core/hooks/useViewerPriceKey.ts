@@ -3,7 +3,7 @@ import { useAuth } from './useAuth';
 import { useDiscountEnvironment } from './useDiscountEnvironment';
 
 /**
- * Вид цін глядача для ключа публічних запитів з цінами (Р29, `priceViewKey`):
+ * Вид цін глядача для ключа публічних запитів з цінами (`priceViewKey`):
  * `'guest'` — гість, id виду цін — покупець, `'unresolved'` — покупець, чий
  * вид клієнту не відомий, `null` — ще невідомо, запит чекає.
  *

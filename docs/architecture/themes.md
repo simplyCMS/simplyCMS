@@ -321,7 +321,7 @@ tsdown, `format: ['esm']`, `platform: 'node'` + `fixedExtension: false`
 але при ньому `fixedExtension` за замовчуванням дав би `.mjs` повз ключі
 `exports`), `deps: { neverBundle: [/^simplycms(\/|$)/, /^@simplycms\//] }`
 (ядро приходить до магазину окремим пакетом — вбудована копія дублювала б
-React-контексти; 🔴 після К0 ядро має unscoped-імʼя, тож сам `/^@simplycms\//`
+React-контексти; 🔴 ядро має unscoped-імʼя, тож сам `/^@simplycms\//`
 більше не зовнішнить нічого корисного — обидві форми потрібні разом),
 `dts: { sourcemap: true }` (🔴 не декор: топ-рівневий `sourcemap: true` чіпляє
 `//# sourceMappingURL=…d.ts.map` і на .d.ts, а сам файл мапи dts-плагін пише
@@ -335,7 +335,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 **`src` обовʼязково в tarball-і**: без нього copy-in-варіант (§3.2) не має
 що копіювати.
 
-**Конвенція залежностей.** 🔴 Після треку К0 (рішення ПК6) ядро в темі —
+**Конвенція залежностей.** 🔴 Ядро в темі (ПК6, ADR-0024) —
 **завжди `peerDependencies`, і для референс-тем теж**: пакет ядра один
 (`simplycms`), а `dependencies` дублювали б React-контексти на кшталт
 `CMSProvider` (vite-dedupe шаблону покриває лише
@@ -353,7 +353,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 що `@simplycms/plugin-faq`: тека `packages/simplycms-theme-<name>`, npm-імʼя
 під scope `@simplycms/`. Причина: реліз/аудит-механіка (`pack-inspect.mjs`,
 `release/bump.mjs`, audit-deps/audit-exports, `published-exports-parity`)
-авто-підхоплює `packages/*` за ІМЕНЕМ — scope `@simplycms/` плюс (з К0)
+авто-підхоплює `packages/*` за ІМЕНЕМ — scope `@simplycms/` плюс
 точне unscoped `simplycms`; інший неймінг лишив би референс-тему поза всіма
 гейтами. 🔴 Префікс `simplycms` тут ніде не використовується саме тому, що
 зачепив би сторонні `simplycms-theme-*` з власним циклом релізу.
@@ -405,7 +405,7 @@ React-контексти; 🔴 після К0 ядро має unscoped-імʼя,
 
 Референс-теми ядра (`@simplycms/theme-*`) уже покриті чинним
 `./node_modules/@simplycms/*/dist/**/*.js` (саме ядро — окремою
-парою глобів `./node_modules/simplycms/{dist,routes}/**`, К0). **Вимога «класи мають бути в
+парою глобів `./node_modules/simplycms/{dist,routes}/**`). **Вимога «класи мають бути в
 зібраному dist-JS» — частина конвенції форми пакета** (бандлер лишає
 className-літерали в JS; перевірено на dist `plugin-faq`). Copy-in-теми
 (§3.2) під ці глоби НЕ потрапляють — вони йдуть під `./themes/**/*.{ts,tsx}`

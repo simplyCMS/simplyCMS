@@ -44,7 +44,7 @@ describe('тір-зона migrate: виняток-файл db/lock-keys', () => 
   });
 });
 
-// `bootstrapStore` читає тексти довідників з вузького входу пакетів;
+// Р23 майстер-плану: `bootstrapStore` читає тексти довідників з вузького входу пакетів;
 // барель `simplycms/i18n` тягне React і лишається закритим.
 describe('тір-зона migrate: виняток-файл i18n/packs', () => {
   const MIGRATE = 'packages/simplycms/src/migrate/__tier-fixture.ts';

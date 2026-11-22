@@ -41,7 +41,7 @@ export function CheckoutAuthBlock({
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
-  // Р30: після реєстрації зі SMTP сесії немає — підказка про скидання пароля.
+  // Після реєстрації зі SMTP сесії немає — підказка про скидання пароля.
   const [awaitingVerification, setAwaitingVerification] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -131,7 +131,7 @@ export function CheckoutAuthBlock({
           description: errorMessage,
         });
       } else if (signUpData?.token === null) {
-        // Р30: підтвердження пошти ввімкнене — сесії немає, оформлення як
+        // Підтвердження пошти ввімкнене — сесії немає, оформлення як
         // залогований не продовжуємо, доки пошту не підтверджено.
         setAuthSuccess(t('checkout.auth.registerSuccessCheckEmail'));
         setAwaitingVerification(true);

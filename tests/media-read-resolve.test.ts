@@ -149,10 +149,10 @@ const RAW_READS: Record<string, string> = {
     'а сховище адресується ключем, не URL',
   'reviews-write.ts#images':
     'сирий ключ для стирання, не для показу: `DELETE … RETURNING images` ' +
-    'власного відгуку йде в `eraseMediaRows` (Е6д-9, Е6д-14)',
+    'власного відгуку йде в `eraseMediaRows`',
   'reviews-edit.ts#images':
     'сирі ключі для звірки `keep` ⊆ поточних і для стирання прибраних: ' +
-    '`SELECT … FOR UPDATE` власного відгуку під правку (Е6д-23)',
+    '`SELECT … FOR UPDATE` власного відгуку під правку',
 };
 
 /**

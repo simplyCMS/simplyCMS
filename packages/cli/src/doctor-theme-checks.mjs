@@ -12,10 +12,10 @@ import { configThemeEntries } from './config-edit.mjs';
 const ID = 'themes';
 const TITLE = 'Теми: записи конфігу резолвляться, Tailwind їх бачить';
 
-/** Глоби сторонніх тем (Р7) — маркер їхньої наявності в tailwind.config.ts. */
+/** Глоби сторонніх тем — маркер їхньої наявності в tailwind.config.ts. */
 const THEME_GLOB_MARKER = 'simplycms-theme-*';
 
-/** Конвенція неймінгу теми (Р1): базове імʼя починається з simplycms-theme-. */
+/** Конвенція неймінгу теми: базове імʼя починається з simplycms-theme-. */
 const THEME_PACKAGE_RE = /^(?:@[^/]+\/)?simplycms-theme-/;
 
 /** @type {(details: string) => Check} */
@@ -85,7 +85,7 @@ export function checkThemes({ storeRoot }) {
     : { id: ID, title: TITLE, status: 'ok' };
 }
 
-/** Підказка про глоби Р7 — лише коли стороння тема є, а глоба немає. */
+/** Підказка про глоби — лише коли стороння тема є, а глоба немає. */
 function missingGlobHint(storeRoot, entries) {
   const third = entries
     .map(({ spec }) => specPackageName(spec))

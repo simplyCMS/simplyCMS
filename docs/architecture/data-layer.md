@@ -310,7 +310,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
-- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore`).** Міграція `0003` тримає лише рядки без
+- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (Р23 майстер-плану).** Міграція `0003` тримає лише рядки без
   тексту мовою магазину (`stock_management`, `cache_generations`, тема). Мову й довідники з текстом —
   статуси замовлень, вид ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
   `bootstrapStore` (`simplycms/migrate`) на порожній `languages` в основній мові магазину; тексти

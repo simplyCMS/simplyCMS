@@ -24,7 +24,7 @@ export interface ModificationDataPayload {
 /**
  * Отримати товар за адресою з реєстру: мова запиту + шлях без префікса мови
  * (сторінка товару). Ціни — лише видів глядача сесії; залогіненому —
- * `private, no-store` (Р29, `withViewerDb`). Мова мусить бути опублікованою,
+ * `private, no-store` (`withViewerDb`). Мова мусить бути опублікованою,
  * інакше `null`: чернетки мови відкривати не можна навіть прямим викликом.
  */
 export const getProduct = createServerFn({ method: 'GET' })

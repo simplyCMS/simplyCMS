@@ -64,9 +64,9 @@ describe('вибір драйвера сховища за env', () => {
     expect(localFsDriver).toHaveBeenCalledTimes(1);
   });
 
-  // Р22: Dokploy зберігає порожній `KEY=`; сире читання клало б файли в `cwd`.
+  // Dokploy зберігає порожній `KEY=`; сире читання клало б файли в `cwd`.
   it.each(['', '   '])(
-    'MEDIA_ROOT=%j → корінь за замовчуванням, а не cwd (Р22)',
+    'MEDIA_ROOT=%j → корінь за замовчуванням, а не cwd',
     async (value) => {
       for (const k of Object.keys(S3_ENV)) vi.stubEnv(k, '');
       vi.stubEnv('MEDIA_ROOT', value);

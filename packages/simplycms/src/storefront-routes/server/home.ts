@@ -13,7 +13,7 @@ import { localeInput, localeOnlyInput } from 'simplycms/core/lib/locale-input';
 
 /**
  * Дані головної — однією транзакцією. Прайси карток у цьому файлі — лише
- * видів глядача сесії, залогіненому `private, no-store` (Р29, `withViewerDb`).
+ * видів глядача сесії, залогіненому `private, no-store` (`withViewerDb`).
  */
 export const getHomePageData = createServerFn({ method: 'GET' })
   .validator(localeOnlyInput)

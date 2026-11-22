@@ -48,7 +48,7 @@ import {
   withCustomerDb,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем (M1).
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 
 /** Розмітка, у якій і корисний текст, і кілька класичних векторів. */

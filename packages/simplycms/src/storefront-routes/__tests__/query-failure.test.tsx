@@ -10,7 +10,7 @@ import OrderSuccess from '../pages/OrderSuccess';
 import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 /**
- * Р26: збій запиту ≠ «порожньо» / «не знайдено». Найгірший випадок —
+ * Збій запиту ≠ «порожньо» / «не знайдено». Найгірший випадок —
  * `OrderSuccess` одразу після оформлення: «замовлення не знайдено» штовхає
  * покупця оформити його вдруге.
  */
@@ -106,7 +106,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe.each(cases)('Р26: $name', ({ Page, fn, empty, failed, absent }) => {
+describe.each(cases)('$name', ({ Page, fn, empty, failed, absent }) => {
   it('запит відхилено → стан помилки з «Повторити», без «порожньо»/«не знайдено»', async () => {
     fn.mockRejectedValue(new Error('network down'));
     renderPage(Page);

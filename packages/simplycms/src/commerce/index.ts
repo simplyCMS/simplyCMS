@@ -24,7 +24,7 @@ export type {
 export { loadDefaultPriceTypeId, loadPricesByProduct } from './pricing';
 export { loadGuestPriceTypes, resolvePriceTypes } from './price-types';
 export type { PriceTypes } from './price-types';
-// Р29: публічні лоадери вітрини віддають лише види цін глядача.
+// Публічні лоадери вітрини віддають лише види цін глядача.
 export {
   loadViewerPriceTypes,
   loadViewerPricesByProduct,

@@ -37,7 +37,7 @@ export type ApplyOptions = {
   dryRun?: boolean;
   /**
    * Основна мова магазину: на порожній `languages` після накату `bootstrapStore`
-   * засіває мову й довідники її мовою. Не задана — старту БД немає.
+   * засіває мову й довідники її мовою (Р23 майстер-плану). Не задана — старту БД немає.
    */
   primaryLocale?: string;
   log?: (line: string) => void;

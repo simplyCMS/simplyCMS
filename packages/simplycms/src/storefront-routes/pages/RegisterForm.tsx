@@ -9,7 +9,7 @@ import { RegisterPasswordField } from './RegisterPasswordField';
 import { useRegisterSubmit } from './useRegisterSubmit';
 
 /**
- * Форма реєстрації вкладки «Реєстрація». Зі SMTP (Р30) `signUp` повертає
+ * Форма реєстрації вкладки «Реєстрація». Зі SMTP `signUp` повертає
  * `token: null`, і замість форми показується «перевірте пошту».
  *
  * 🔴 Стан «очікуємо лист» (`awaitingEmail`) належить батьківській сторінці, а не

@@ -67,7 +67,7 @@ export interface ProductListRow {
  * 🔴 Назва й адреса — з проєкції `catalog_product_texts` у мові `text` (П7), а не з
  * колонок `products`; товар без рядка проєкції в цій мові у список не потрапляє.
  *
- * 🔴 Ціни — лише видів `viewer` (Р29): лоадер публічний (його радить README
+ * 🔴 Ціни — лише видів `viewer`: лоадер публічний (його радить README
  * магазинам), тож контракт той самий, що в `loadProduct`/`loadCatalogProducts`.
  */
 export async function loadProductList(

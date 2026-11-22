@@ -1,7 +1,7 @@
 // simplycms update [--check | --write] [--to <version>] [--no-install] —
 // сценарій 2 батьківської спеки (§4.3): підняти всі пакети ядра магазину
 // (`simplycms` + сателіти) на цільову версію (deps і devDeps окремо, шаблон
-// пінить точні версії) і передати звірку новому CLI (Р21). Звірка теки магазину
+// пінить точні версії) і передати звірку новому CLI. Звірка теки магазину
 // (host-файли, лінки скілів, файли агента) — update-reconcile.mjs.
 import { execFileSync } from 'node:child_process';
 import { isCorePackage, readStoreManifest, findStoreRoot } from './context.mjs';
@@ -16,7 +16,7 @@ import { reconcileStore } from './update-reconcile.mjs';
 import { begin, finish, say } from './ui.mjs';
 
 /**
- * `check` — чиста перевірка без мережі й install (Е8-Р12); `afterInstall` — запуск
+ * `check` — чиста перевірка без мережі й install; `afterInstall` — запуск
  * новим CLI після `pnpm add` старого.
  * @param {string[]} argv
  */
@@ -119,7 +119,7 @@ function installCore(storeRoot, to, exec) {
 export async function run(argv, deps = {}) {
   const exec = deps.exec ?? defaultExec;
   const options = parseUpdateArgs(argv);
-  // Дочірній процес Р21 продовжує вивід батька: другий заголовок був би дублем.
+  // Дочірній процес передачі керування продовжує вивід батька: другий заголовок був би дублем.
   if (!options.afterInstall) begin('simplycms update');
   const storeRoot = findStoreRoot();
   if (options.install) {

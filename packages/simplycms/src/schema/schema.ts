@@ -72,7 +72,7 @@ export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 
 export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', 'on_order'])
 
 
-// Назва статусу — лише в `order_status_translations` (Р19: перша сутність на
+// Назва статусу — лише в `order_status_translations` (Р19 майстер-плану: перша сутність на
 // фабриці команд). `version` — ETag агрегата: піднімають усі команди запису (Д7), зокрема
 // `setDefault` і `reorder`, що пишуть кілька кореневих рядків.
 export const orderStatuses = pgTable("order_statuses", {

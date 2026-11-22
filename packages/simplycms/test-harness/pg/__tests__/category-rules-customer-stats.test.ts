@@ -113,7 +113,7 @@ describe('автоправила: статистика покупця з БД', 
     });
   });
 
-  it('Р30: непідтверджена пошта не дає домен — правило email_domain не спрацьовує, після підтвердження — спрацьовує', async () => {
+  it('Непідтверджена пошта не дає домен — правило email_domain не спрацьовує, після підтвердження — спрацьовує', async () => {
     const from = await F.seedCategory(url());
     const to = await F.seedCategory(url());
     const customer = await F.seedCustomer(url(), {

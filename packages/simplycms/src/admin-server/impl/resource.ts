@@ -134,7 +134,7 @@ export function defineAdminResource<
     list: async ({ data }: { data: SubsetPayload }) =>
       run((db) => listIn(db, data.subset ?? {})),
     // Ядро читання в транзакції викликача: його кличе операція-список фабрики команд
-    // перекладного агрегата (`translatable/list.ts`) без другого `runAdmin`.
+    // перекладного агрегата (`translatable/list.ts`, Р19 майстер-плану) без другого `runAdmin`.
     listIn,
 
     // Lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а

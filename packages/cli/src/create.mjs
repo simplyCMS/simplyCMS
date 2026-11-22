@@ -87,7 +87,7 @@ function nextSteps(kind, name) {
     'pnpm dev     # тема підхопиться через аліас @themes/* без build-кроку',
     '/admin/themes   # активуй тему в адмінці (рядок заводить bootstrapThemes)',
     // Гейт контракту v3 має бути ВИДИМИЙ з коробки — навіть у магазині без
-    // тестового рушія (амендмент до Р8): CLI-канал працює завжди.
+    // тестового рушія: CLI-канал працює завжди.
     `pnpm simplycms theme:conformance ${name}   # гейт views (потребує jsdom)`,
     `themes/${name}/README.md   # що далі: токени, views, публікація`,
   ];
@@ -97,7 +97,7 @@ function nextSteps(kind, name) {
 export async function run(argv) {
   const { kind, name, dryRun } = parseCreateArgs(argv);
   begin(`simplycms create ${kind}`);
-  // Єдина команда, якій корінь монорепо ядра теж підходить (Р9): див.
+  // Єдина команда, якій корінь монорепо ядра теж підходить: див.
   // findScaffoldRoot у context.mjs.
   const storeRoot = findScaffoldRoot();
   const configPath = join(storeRoot, 'simplycms.config.ts');

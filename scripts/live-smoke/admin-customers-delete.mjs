@@ -39,7 +39,7 @@ export async function deletePart({ page, pages, base, dbUrl, check, fx, st }) {
     ),
   );
   check(
-    'покупці: видалення A — кнопка неактивна до введення email; замовлення є, ПД і access_token NULL, delivery_* NULL, знімок точки видачі лишився (Е6г-10); users/profiles/sessions/accounts немає',
+    'покупці: видалення A — кнопка неактивна до введення email; замовлення є, ПД і access_token NULL, delivery_* NULL, знімок точки видачі лишився; users/profiles/sessions/accounts немає',
     r.disabledBefore &&
       r.toast &&
       st.deleted &&

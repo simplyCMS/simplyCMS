@@ -38,7 +38,7 @@ pnpm build
 ## Залежності
 
 🔴 Ядро (`simplycms`) — **`peerDependencies`, і для референс-теми теж**
-(рішення ПК6 треку К0): `dependencies` дублювали б React-контексти на кшталт
+(ПК6, ADR-0024): `dependencies` дублювали б React-контексти на кшталт
 `CMSProvider`. Референс-тема додає той самий `simplycms` ще й у
 `devDependencies` — peer сам по собі не встановлюється, а зібрати пакет
 у монорепо треба.

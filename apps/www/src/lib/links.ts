@@ -18,7 +18,7 @@ export const LINKS = {
   marketplaceDoc: `${GITHUB_URL}/blob/main/docs/marketplace/README.md`,
   testContours: `${GITHUB_URL}/blob/main/docs/architecture/test-contours.md`,
   npmOrg: 'https://www.npmjs.com/org/simplycms',
-  // 🔴 Після К0 публікованих пакетів рівно пʼять. Колишній
+  // 🔴 Публікованих пакетів рівно пʼять. Колишній
   // `@simplycms/plugin-sdk` злитий у флагман і живе субшляхом
   // `simplycms/plugin-sdk` — окремого npm-пакета під нього більше немає.
   npmCore: 'https://www.npmjs.com/package/simplycms',

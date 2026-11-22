@@ -100,7 +100,7 @@ export default function ProfileOrdersPage() {
       </div>
 
       {isError && !data ? (
-        // Р26: збій запиту ≠ «немає замовлень».
+        // Збій запиту ≠ «немає замовлень».
         <QueryFailure message="profile.loadFailed" onRetry={() => refetch()} />
       ) : isLoading ? (
         <div className="space-y-4">

@@ -51,7 +51,7 @@ vi.mock('simplycms/storefront-routes/server/home', () => ({
   },
 }));
 
-// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+// Вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
 vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
   useViewerPriceKey: () => 'guest',
 }));

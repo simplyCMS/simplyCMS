@@ -116,7 +116,7 @@ export type OrderItem = InferSelectModel<typeof orderItems>;
 export type NewOrderItem = InferInsertModel<typeof orderItems>;
 /**
  * Рядок списку статусів (read-model `order-statuses.list`, Д10): назва — з перекладу основної
- * мови, без `createdAt`. Рядка таблиці `order_statuses` з назвою більше немає.
+ * мови, без `createdAt`. Рядка таблиці `order_statuses` з назвою більше немає (Р19 майстер-плану).
  */
 export type OrderStatus = Omit<
   InferSelectModel<typeof orderStatuses>,

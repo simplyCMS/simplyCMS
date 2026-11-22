@@ -14,7 +14,7 @@ export const PACKAGES_DIR = join(ROOT, 'packages');
 /**
  * 🔴 Аудит стосується ЛИШЕ пакетів ядра: у них є subpath-exports, які ці
  * скрипти й звіряють. Це scoped-сателіти `@simplycms/*` і unscoped-флагман
- * `simplycms` (К0). Unscoped `create-simplycms-store` лежить у тій самій
+ * `simplycms`. Unscoped `create-simplycms-store` лежить у тій самій
  * теці, але exports не має — його свідомо не аудитимо (CLAUDE.md); саме тому
  * імʼя флагмана звіряється ТОЧНО, а не префіксом.
  */

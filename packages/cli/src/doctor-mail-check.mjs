@@ -45,7 +45,7 @@ export function checkMailDriver({ storeRoot, manifest }) {
 }
 
 /**
- * Режим перевірки (Е8-Р17): `--production` АБО `isProductionRuntime(process.env)` ядра.
+ * Режим перевірки: `--production` АБО `isProductionRuntime(process.env)` ядра.
  * 🔴 Власної перевірки `NODE_ENV` у CLI немає — предикат один, у `simplycms/env`; без
  * встановленого ядра лишається тільки прапорець.
  * @param {{ flag: boolean; env: Record<string, string | undefined>;
@@ -96,7 +96,7 @@ export function checkMailConfigured({ production = false, mail }) {
 }
 
 /**
- * Підтвердження пошти при реєстрації (Р30): ядро вмикає його лише з драйвером `smtp`.
+ * Підтвердження пошти при реєстрації: ядро вмикає його лише з драйвером `smtp`.
  * У проді з `log` реєстрація йде без підтвердження — pre-hijack чужих адрес. Поза продом
  * `log` — норма dev, тож рядок лишається `ok`.
  * @param {{ production?: boolean; mail?: { driver?: string; error?: string } | null }} ctx
@@ -113,7 +113,7 @@ export function checkEmailVerification({ production = false, mail }) {
       ...base,
       status: 'warn',
       details:
-        'у проді реєстрація без підтвердження пошти: налаштуй SMTP_URL/MAIL_FROM (Р30)',
+        'у проді реєстрація без підтвердження пошти: налаштуй SMTP_URL/MAIL_FROM',
     };
   return { ...base, status: 'ok' };
 }

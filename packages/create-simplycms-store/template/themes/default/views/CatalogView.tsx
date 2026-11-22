@@ -5,7 +5,7 @@ import { CatalogShell } from './catalog/CatalogShell';
 /**
  * View каталогу default-теми (контракт тем v3).
  *
- * Розкладка знята з референсу (спека — локальний артефакт, поза git). Заголовок і
+ * Розкладка знята з референсу (спека — `views/Catalog.spec.md` у теці референсу `docs/design-references/<slug>` (slug `ref`), локальний артефакт, поза git). Заголовок і
  * підпис беруться з каталогу ЯДРА (`catalog.title`/`catalog.subtitle`):
  * дублювати наявні рядки в каталог теми заборонено.
  *

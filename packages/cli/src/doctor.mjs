@@ -83,7 +83,7 @@ export async function buildOfflineContext(
   storeRoot,
   { production: flag = false } = {},
 ) {
-  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP (Е8-Р17).
+  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP.
   const core = await importFromStore(storeRoot, 'simplycms/env').catch(
     () => null,
   );
@@ -93,7 +93,7 @@ export async function buildOfflineContext(
     production,
     mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
     storeRoot,
-    // №17 (Р32): діапазони engines збирає async-шар, сама перевірка синхронна.
+    // №17: діапазони engines збирає async-шар, сама перевірка синхронна.
     engines: await collectEngines(storeRoot),
     manifest: readStoreManifest(storeRoot),
     env,

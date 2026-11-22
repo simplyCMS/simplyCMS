@@ -104,7 +104,7 @@ export function useDiscountCard(
   return {
     isNew,
     isLoading: !isNew && detail.isPending,
-    // Р26: «не знайдено» — лише доменна відповідь сервера; мережевий збій чи
+    // «не знайдено» — лише доменна відповідь сервера; мережевий збій чи
     // 500 — окремий стан помилки з повтором, а не «такої знижки немає».
     notFound: !isNew && detail.isError && isNotFoundError(detail.error),
     loadFailed: !isNew && detail.isError && !isNotFoundError(detail.error),

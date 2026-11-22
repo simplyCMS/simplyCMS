@@ -11,7 +11,7 @@ import { assertTarballProvenance } from '../scripts/pilot-pack/provenance.mjs';
 
 const CORE = ['@simplycms/objects', '@simplycms/ui'];
 
-/** Реальна топологія після К0: unscoped-флагман + scoped-сателіти. */
+/** Реальна топологія: unscoped-флагман + scoped-сателіти. */
 const TOPOLOGY_5 = [
   'simplycms',
   '@simplycms/cli',
@@ -113,7 +113,7 @@ describe('pilot: провенанс tarball-ів у скретчі', () => {
     expect(fromRegistry).toEqual([]);
   });
 
-  // 🔴 Топологія 5 (трек К0): ядро — unscoped `simplycms` плюс scoped-сателіти.
+  // 🔴 5 пакетів: ядро — unscoped `simplycms` плюс scoped-сателіти.
   // Перелік scope-ів, зібраний із самих імен, unscoped-флагман давав би
   // порожнім — і пакет мовчки випадав би з перевірки провенансу.
   it('unscoped-флагман не ігнорується: file: розпізнано, реєстр спіймано', () => {

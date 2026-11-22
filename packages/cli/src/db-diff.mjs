@@ -52,7 +52,7 @@ export function missingStoreMigrationsDir(storeRoot) {
  *
  * 🔴 Саме `node_modules/simplycms/migrations` — міграції лежать на РІВНІ
  * пакета (`files: [… "migrations"]`), а не в підтеці схеми: після злиття
- * пакетів (трек К0) `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
+ * пакетів `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
  *
  * 🔴 Після B13 канон — це baseline + сід (`0000_prelude` … `0004_functions`), а не
  * історія з 33 файлів. Компаратор від цього не змінився: він порівнює імена

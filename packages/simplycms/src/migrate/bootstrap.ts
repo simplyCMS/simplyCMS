@@ -37,7 +37,7 @@ export function requirePrimaryPack(primaryLocale: string): LanguagePack {
 }
 
 /**
- * Старт чистої БД з основною мовою магазину: мова й довідники, чиї
+ * Старт чистої БД з основною мовою магазину (Р23 майстер-плану): мова й довідники, чиї
  * тексти залежать від мови, — статуси замовлень, тип ціни, категорія покупця,
  * основна зона доставки, профіль магазину. `0003_seed.sql` тримає лише рядки без
  * тексту: тексти беруться з мовного пакета, тож магазин, що стартує англійською,
@@ -81,7 +81,7 @@ export async function bootstrapStore(
       [ids.language, primaryLocale, pack.name],
     );
     for (const [index, code] of SEED_ORDER_STATUS_CODES.entries()) {
-      // Назва — у перекладі основної мови; тригер джерела (І4) перевіряє
+      // Назва — у перекладі основної мови (Р19 майстер-плану); тригер джерела (І4) перевіряє
       // пару на COMMIT, тож рядок бази й переклад вставляються в одній транзакції.
       await client.query(
         `insert into public.order_statuses (id, code, color, sort_order, is_default)

@@ -50,7 +50,7 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-describe('useDiscountCard: не знайдено ≠ збій запиту (Р26)', () => {
+describe('useDiscountCard: не знайдено ≠ збій запиту', () => {
   it('доменне «не знайдено» → notFound: true, loadFailed: false', async () => {
     m.getDiscount.mockRejectedValue(domainNotFound());
     const { result } = renderHook(() => useDiscountCard(ID, undefined), {

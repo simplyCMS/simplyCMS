@@ -15,7 +15,7 @@ const SITE = 'https://shop.example';
 const PASSWORD = 'verify-password-not-a-real-one';
 const SECRET = 'integration-secret-not-a-real-one';
 
-describe('підтвердження пошти при реєстрації (Р30)', () => {
+describe('підтвердження пошти при реєстрації', () => {
   const db = F.useCustomersDb('simplycms_email_verify');
   const url = () => db.url();
   const sent: MailMessage[] = [];

@@ -257,7 +257,7 @@ export const AGGREGATE = {
     ENTITY.sections,
     ENTITY.productPrices,
     ENTITY.stockByPickupPoint,
-    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    // Набір видимих видів цін глядача (`loadViewerPriceTypes`).
     ENTITY.priceTypes,
     ENTITY.userCategories,
     ENTITY.profiles,
@@ -285,7 +285,7 @@ export const AGGREGATE = {
     ENTITY.productPropertyValues,
     ENTITY.modificationPropertyValues,
     ENTITY.stockByPickupPoint,
-    // Р29: набір видимих видів цін глядача (`loadViewerPriceTypes`).
+    // Набір видимих видів цін глядача (`loadViewerPriceTypes`).
     ENTITY.priceTypes,
     ENTITY.userCategories,
     ENTITY.profiles,

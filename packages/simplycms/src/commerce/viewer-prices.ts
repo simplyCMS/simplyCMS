@@ -7,7 +7,7 @@ import { groupPricesByProduct, priceColumns } from './entities/price';
 import { loadGuestPriceTypes, resolvePriceTypes } from './price-types';
 
 /**
- * Види цін, які глядач вітрини має право бачити (Р29).
+ * Види цін, які глядач вітрини має право бачити.
  *
  * 🔴 Набір рахує СЕРВЕР і лише з ідентичності, яку дала серверна сесія:
  * клієнт, який міг би назвати свій вид чи категорію, побачив би гуртовий

@@ -1,4 +1,4 @@
-// Агрегат «статус замовлення» — перша сутність на фабриці команд
+// Агрегат «статус замовлення» (Р19 майстер-плану) — перша сутність на фабриці команд
 // перекладного агрегата — проти живого Postgres під `app_admin`.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -27,7 +27,7 @@ import { exec } from './fixtures/product-aggregate';
 
 type Texts = Record<string, Record<string, string | null>>;
 
-describe('агрегат «статус замовлення»', () => {
+describe('агрегат «статус замовлення» (Р19 майстер-плану)', () => {
   const db = useAddressingDb('simplycms_order_statuses_aggregate');
   let sort = 1000;
   const rejects = (p: Promise<unknown>) =>

@@ -28,7 +28,7 @@ const PACKAGES_ROOT = resolve(import.meta.dirname, '../packages');
  *
  * 🔴 Дві умови, і обидві потрібні. `private === false` — явна позначка
  * публічності. Друга умова — імʼя ядра: префікс `@simplycms/` АБО точне
- * `simplycms` (unscoped-флагман К0). Вона відсікає unscoped
+ * `simplycms` (unscoped-флагман). Вона відсікає unscoped
  * `create-simplycms-store`, що лежить у тій самій теці: у нього немає
  * `publishConfig.exports`, тож parity-suite не має що в ньому звіряти, а
  * пілот не має чого з нього ставити. Покладатись тут на те, що в його

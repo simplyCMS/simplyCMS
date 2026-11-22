@@ -41,7 +41,7 @@ export async function createPropertyWithOption({ page, base, dbUrl, check }) {
   const addOption = page.getByRole('button', { name: 'Додати опцію' });
   await addOption.waitFor({ timeout: 10_000 });
   check(
-    'адмін: картка властивості без контролу типу (Е4-5)',
+    'адмін: картка властивості без контролу типу',
     (await expectCount(page.locator('#property-type'), 0)) &&
       (await expectSome(page.getByText('Тип властивості'))),
     '#property-type відсутній, тип — текстом',

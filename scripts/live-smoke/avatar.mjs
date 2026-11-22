@@ -40,7 +40,7 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
   const served = await page.request.get(`${base}${src}`);
   const headers = served.headers();
   check(
-    'аватар: роздача — 200 image/png із nosniff та private, no-cache (Е6д-21)',
+    'аватар: роздача — 200 image/png із nosniff та private, no-cache',
     served.status() === 200 &&
       headers['content-type'] === 'image/png' &&
       headers['x-content-type-options'] === 'nosniff' &&

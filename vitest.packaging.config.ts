@@ -14,7 +14,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   // Гейт не читає `.env*` розробника: див. пояснення у vitest.config.ts.
   envDir: false,
-  // Один base-prefix ключ, як у vitest.config.ts: гейт партиції треку T
+  // Один base-prefix ключ, як у vitest.config.ts: гейт партиції
   // імпортує декларацію межі bare-субшляхом `simplycms/contracts/server-only`.
   // Тим самим специфікатором декларацію читає `tsdown.config.ts` ядра, а
   // `dts-toolchain` імпортує сам конфіг — тож alias потрібен і йому.

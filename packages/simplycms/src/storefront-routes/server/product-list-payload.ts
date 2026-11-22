@@ -17,7 +17,7 @@ export async function loadProductListPayload(
 ): Promise<ProductListPayload> {
   // Послідовно: транзакція живе на одному зʼєднанні (див. `storefront/loaders`).
   // SSR-список гостьовий за побудовою (DTO несе лише гостьову `price`), тож і
-  // прайс у рядках — гостьовий набір видів (Р29), незалежно від сесії.
+  // прайс у рядках — гостьовий набір видів, незалежно від сесії.
   const rows = await loadProductList(
     db,
     await loadViewerPriceTypes(db, null),

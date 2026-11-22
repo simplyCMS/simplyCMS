@@ -62,7 +62,7 @@ export interface AuthDeps {
   /** Транспорт порту пошти. За замовчуванням — `getMailTransport()` за env. */
   readonly mailTransport?: MailTransport;
   /**
-   * Вимагати підтвердження пошти (Р30). За замовчуванням — `true` лише з SMTP:
+   * Вимагати підтвердження пошти. За замовчуванням — `true` лише з SMTP:
    * з драйвером `log` лист нікуди не дійде, і реєстрація в dev ламалась би.
    */
   readonly requireEmailVerification?: boolean;
@@ -111,10 +111,10 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
-      // 🔴 Р30: без підтвердження пошти signUp одразу дає сесію, і чужу пошту
+      // 🔴 Без підтвердження пошти signUp одразу дає сесію, і чужу пошту
       // можна зайняти до справжнього власника (pre-hijack).
       requireEmailVerification,
-      // 🔴 Р19: скидання пароля (і прийняття запрошення — воно йде тим самим
+      // 🔴 Скидання пароля (і прийняття запрошення — воно йде тим самим
       // `resetPassword`) гасить усі сесії користувача. Без цього сесія, що
       // вже була в зловмисника, переживала б зміну пароля.
       revokeSessionsOnPasswordReset: true,

@@ -141,7 +141,7 @@ export default function ProfileOrderDetailPage() {
     );
   }
 
-  // Р26: «не знайдено» лише для успішної відповіді `null`; збій запиту —
+  // «не знайдено» лише для успішної відповіді `null`; збій запиту —
   // окремий стан з повтором.
   if (isError && !order) {
     return (

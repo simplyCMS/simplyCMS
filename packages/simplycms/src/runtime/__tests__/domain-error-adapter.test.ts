@@ -129,7 +129,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
-  it('NotFoundError (Р26): name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
+  it('NotFoundError: name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
     const src = Object.assign(new Error('знижки не існує'), {
       name: 'AdminNotFoundError',
     });

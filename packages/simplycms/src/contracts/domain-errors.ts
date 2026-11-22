@@ -17,7 +17,7 @@
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
  * Серверним лишається мапінг кодів PG у конфлікт — `toAdminConflict`
  * (`simplycms/db`, файл `pg-errors.ts`). Членство в
- * `DOMAIN_ERROR_NAME` пускає клас крізь маскування Р23.
+ * `DOMAIN_ERROR_NAME` пускає клас крізь маскування непередбачених помилок.
  */
 import { REVIEW_SUBMIT_ERROR } from './objects/review';
 
@@ -25,7 +25,7 @@ export const DOMAIN_ERROR_NAME = {
   adminConflict: 'AdminConflictError',
   authz: 'AuthzError',
   validation: 'ValidationError',
-  /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
+  /** Запитаного рядка немає: відрізняє «не знайдено» від збою запиту. */
   notFound: 'AdminNotFoundError',
   /** Машинний код відмови в `message` (`media/*`, `avatar/*`, `review/*`): клієнт мапить його в i18n. */
   coded: 'CodedError',
@@ -117,7 +117,7 @@ export type CodedErrorCode =
 /**
  * Відмова з машинним кодом (`media/bad-format`, `review/already-submitted`…):
  * `message` — це КОД, а не текст, і клієнт порівнює його з каталогом i18n.
- * Звичайний `Error` у проді маскує Р23 (`Internal server error [ref …]`), і
+ * Звичайний `Error` у проді маскується (`Internal server error [ref …]`), і
  * користувач бачив би загальне «не збережено» замість «невірний формат».
  * Член закритої родини проходить маскування й серіалізацію без зміни коду.
  * Для діагностики сервера (англійський текст, не код) лишається `Error`.
@@ -193,7 +193,7 @@ export const ADMIN_STATE_CONSTRAINT = {
   // `order-statuses.setDefault`: колишній дефолт змінився між читанням і замком — клієнт
   // перечитує список, а не повторює наосліп.
   concurrentChange: 'concurrent_change',
-  // Р19: інваріанти довідника статусів замовлень під `catalog.write`.
+  // Р19 майстер-плану: інваріанти довідника статусів замовлень під `catalog.write`.
   orderStatusDefault: 'order_status_default',
   orderStatusSystem: 'order_status_system',
   // І19: код нової мови = поточна адреса основної мови — префікс мови
@@ -225,7 +225,7 @@ export class ValidationError extends Error {
 }
 
 /**
- * Запитаного рядка немає (Р26). Окремий клас потрібен, щоб клієнт відрізнив
+ * Запитаного рядка немає. Окремий клас потрібен, щоб клієнт відрізнив
  * справжнє «не знайдено» від збою запиту: plain `Error` летів би так само,
  * як відмова БД, і картка показувала б «не знайдено» на будь-який збій.
  * Член закритої родини, тож маскування помилок його не чіпає.
@@ -455,7 +455,7 @@ export function isDomainErrorName(value: unknown): value is DomainErrorName {
 }
 
 /**
- * Чи це доменне «не знайдено» (Р26). Дукове за `name`: клієнт має `Error` з
+ * Чи це доменне «не знайдено». Дукове за `name`: клієнт має `Error` з
  * полями (адаптер serverFn), а не екземпляр серверного класу.
  */
 export function isNotFoundError(error: unknown): boolean {

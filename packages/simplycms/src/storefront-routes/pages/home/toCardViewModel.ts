@@ -1,4 +1,4 @@
-// Мапінг товару головної в картку каталогу (контракт тем v3, Фаза 5).
+// Мапінг товару головної в картку каталогу (контракт тем v3).
 
 import type { DiscountEnvironment } from 'simplycms/contracts';
 import type { ProductCardViewModel } from 'simplycms/contracts/views';

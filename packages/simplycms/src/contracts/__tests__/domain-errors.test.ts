@@ -39,7 +39,7 @@ describe('DOMAIN_ERROR_FIELD_KEYS', () => {
   });
 });
 
-describe('isNotFoundError (Р26)', () => {
+describe('isNotFoundError', () => {
   it('впізнає лише доменне «не знайдено» за name', () => {
     expect(
       isNotFoundError(
