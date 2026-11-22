@@ -34,7 +34,7 @@ const EMPTY: OptionFormInput = {
  * Стан картки опції. Один зріз `where propertyId` дає і сам рядок, і
  * кількість опцій — нова опція отримує `sortOrder` = цій кількості (з
  * колекції, не `count` з БД). id нової опції генерується НАПЕРЕД і йде і в
- * `ImageUpload`, і в insert (Е4-10).
+ * `ImageUpload`, і в insert.
  */
 export function usePropertyOptionCard(
   propertyId: string,

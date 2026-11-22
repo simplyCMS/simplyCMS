@@ -11,7 +11,7 @@ import { ProductSummaryCard } from './product/ProductSummaryCard';
 /**
  * View картки товару default-теми (контракт тем v3).
  *
- * Спека — `docs/design-references/ref/views/ProductDetail.spec.md` (локальний
+ * Спека — `views/ProductDetail.spec.md` у теці референсу `docs/design-references/<slug>` (slug `ref`) (локальний
  * артефакт, поза git). Розкладка знята з референсу: дві білі картки на сірому
  * полотні замість суцільної сторінки, під ними — окремі панелі опису,
  * характеристик, наявності й відгуків замість липких табів канону.

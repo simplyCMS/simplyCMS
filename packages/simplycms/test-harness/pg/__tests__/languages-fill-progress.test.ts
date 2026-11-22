@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 4 (I-2): товар, для якого рядок проєкції побудувати неможливо
+// Товар, для якого рядок проєкції побудувати неможливо
 // (немає рядка джерела), не займає пакет fill вічно — вибір і побудова мають ОДИН
 // предикат, а розбіжність дає голосну відмову з переліком id, а не `done: false` без кінця.
 import { randomUUID } from 'node:crypto';
@@ -11,7 +11,7 @@ import {
 import { useAddressingDb } from './fixtures/addressing-db';
 import { create, exec } from './fixtures/product-aggregate';
 
-describe('languages.fill: прогрес на товарах без джерела (I-2)', () => {
+describe('languages.fill: прогрес на товарах без джерела', () => {
   const db = useAddressingDb('simplycms_languages_fill_progress');
   const add = (code: string) =>
     exec(languagesAdd, { id: randomUUID(), code, name: code });

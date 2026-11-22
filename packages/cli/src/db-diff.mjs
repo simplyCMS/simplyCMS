@@ -1,5 +1,5 @@
-// simplycms db:diff [--write] — порівняння міграцій магазину з N КАНОНАМИ
-// (Фаза 3, Р4): ядро (simplycms/migrations) + кожен встановлений
+// simplycms db:diff [--write] — порівняння міграцій магазину з N КАНОНАМИ:
+// ядро (simplycms/migrations) + кожен встановлений
 // плагін із конфігу, що везе migrations/ у пакеті. Нові міграції — список і
 // копіювання під --write (forward-only); власні (невідомі ЖОДНОМУ канону) —
 // інформаційно; спільне імʼя з різним вмістом — error і жодного запису
@@ -52,7 +52,7 @@ export function missingStoreMigrationsDir(storeRoot) {
  *
  * 🔴 Саме `node_modules/simplycms/migrations` — міграції лежать на РІВНІ
  * пакета (`files: [… "migrations"]`), а не в підтеці схеми: після злиття
- * пакетів (трек К0) `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
+ * пакетів `src/schema/` — це код Drizzle-схеми, а SQL їде окремо.
  *
  * 🔴 Після B13 канон — це baseline + сід (`0000_prelude` … `0004_functions`), а не
  * історія з 33 файлів. Компаратор від цього не змінився: він порівнює імена
@@ -122,7 +122,7 @@ export function pluginMigrationSources(storeRoot) {
       : join(storeRoot, 'node_modules', spec, 'migrations');
     // Імʼя для лінта меж — КАНОНІЧНЕ, зі специфікатора пакета, а не
     // конфіг-ключ: --name-аліас у конфізі не повинен ламати перевірку
-    // «плагін чіпає лише plg_<name>_*» (знахідка рев'ю Фази 3 №1).
+    // «плагін чіпає лише plg_<name>_*».
     const lintName = stripPrefixes(
       spec.startsWith('@plugins/') ? spec.slice('@plugins/'.length) : spec,
     );

@@ -4,7 +4,7 @@ import type { JsonValue, Plugin } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 
 /**
- * Рядок плагіна для адмінки (Е6б-17). Без `hooks`: реєстрацію хуків веде
+ * Рядок плагіна для адмінки. Без `hooks`: реєстрацію хуків веде
  * браузер (`syncPluginHooks`), сервер її не змінює і не показує.
  */
 export type PluginRow = {

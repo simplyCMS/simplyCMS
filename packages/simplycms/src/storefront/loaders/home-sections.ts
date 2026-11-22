@@ -72,7 +72,7 @@ export async function loadSectionProducts(
     .where(lte(ranked.position, PER_SECTION_LIMIT))
     .orderBy(ranked.section_id, ranked.position);
 
-  // Лише види цін глядача (Р29), як і в добірках `./home`.
+  // Лише види цін глядача, як і в добірках `./home`.
   const prices = await loadViewerPricesByProduct(
     db,
     rows.map((row) => row.id),

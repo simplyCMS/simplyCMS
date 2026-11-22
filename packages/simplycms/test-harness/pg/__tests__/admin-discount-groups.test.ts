@@ -1,4 +1,4 @@
-// К3-Е6в, Task 5 (Е6в-17, ред.2): групи знижок проти живої БД — guard циклу,
+// Групи знижок проти живої БД — guard циклу,
 // guard пари дат (злиття рядка з patch) і видалення піддерева під
 // `discount-config`. Шапка — патерн admin-shipping-locks.test.ts.
 import { describe, expect, it, vi } from 'vitest';
@@ -21,7 +21,7 @@ import {
 const CYCLE = F.conflict('state', 'discount_group_cycle');
 const DATES = F.conflict('state', 'discount_group_dates_invalid');
 
-describe('admin: групи знижок (Е6в, Task 5)', () => {
+describe('admin: групи знижок', () => {
   const db = F.useDiscountsAdminDb('simplycms_admin_discount_groups');
   const url = () => db.url();
   const reparent = (id: string, parentGroupId: string | null) =>
@@ -94,7 +94,7 @@ describe('admin: групи знижок (Е6в, Task 5)', () => {
     expect(await F.snapshotGroups(url(), [root])).toHaveLength(1);
   });
 
-  it('ред.2: insert групи з endsAt < startsAt → discount_group_dates_invalid; update лише endsAt раніше наявного startsAt → те саме; рядок незмінний', async () => {
+  it('insert групи з endsAt < startsAt → discount_group_dates_invalid; update лише endsAt раніше наявного startsAt → те саме; рядок незмінний', async () => {
     const id = crypto.randomUUID();
     await expect(
       discountGroupsOps.insert({

@@ -8,7 +8,7 @@ import { runOfflineChecks } from '../packages/cli/src/doctor-checks.mjs';
 import { run } from '../packages/cli/src/update.mjs';
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
-// doctor №13 і підказка `update` про драйвер БД (К3-Е7, Task 11): `pg` — пряма залежність
+// doctor №13 і підказка `update` про драйвер БД: `pg` — пряма залежність
 // магазину в межах peer-діапазону ядра. `update` версію pg НЕ переписує.
 async function scaffoldStore(name: string) {
   const target = join(mkdtempSync(join(tmpdir(), 'cli-pg-')), name);

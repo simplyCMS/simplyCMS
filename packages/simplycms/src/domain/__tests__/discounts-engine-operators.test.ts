@@ -1,4 +1,4 @@
-// Рушій знижок: оператори груп і чесний `applied` (Е6в-5) — переможець
+// Рушій знижок: оператори груп і чесний `applied` — переможець
 // може бути дочірньою групою, програвші йдуть у `rejected`.
 import { describe, expect, it } from 'vitest';
 import { resolveDiscount } from '../discounts';
@@ -6,7 +6,7 @@ import { ctx, disc, group } from './support/discount-fixtures';
 
 const ids = (list: { id: string }[]) => list.map((entry) => entry.id);
 
-describe('resolveDiscount — оператори й чесний applied (Е6в-5)', () => {
+describe('resolveDiscount — оператори й чесний applied', () => {
   it('min → менша з двох, друга в rejected з lost_to_operator', () => {
     const forest = [
       group({

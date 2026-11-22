@@ -6,7 +6,7 @@ import {
 import { MEDIA_REFERENCED_ENTITY_TYPES } from 'simplycms/storage';
 
 /**
- * Гейт `media-sweep-coverage` (Е6д-22): sweep стирає рядок `media` без
+ * Гейт `media-sweep-coverage`: sweep стирає рядок `media` без
  * референсу, тож тип, чиє посилання `findMediaReferences` не бачить, sweep
  * знищив би разом із живим файлом.
  *

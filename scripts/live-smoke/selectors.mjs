@@ -3,13 +3,13 @@
  *
  * 🔴 Живуть окремо від `funnel.mjs` не заради лічильника, а тому що це
  * КОНТРАКТ РОЗМІТКИ, а не крок воронки: `id` контролів чекауту ставить
- * Task 11 (`checkout-ui`, `id`/`htmlFor` доступних імен), і коли розмітка
+ * (`checkout-ui`, `id`/`htmlFor` доступних імен), і коли розмітка
  * зміниться, правити треба саме тут — в одному місці, а не шукати рядки
  * посеред сценарію. `#checkout-total` окремо: на ньому тримається доказ
  * М-12 «підсумок = замовлення».
  */
 
-/** id контролів чекауту — `id`/`htmlFor` з Task 11 (checkout-ui). */
+/** id контролів чекауту — `id`/`htmlFor` з `checkout-ui`. */
 export const FIELD = {
   firstName: '#checkout-first-name',
   phone: '#checkout-phone',
@@ -29,7 +29,7 @@ export function parseMoney(text) {
  * Чекає видимий текст (тост тощо) і повертає `true`/`false`, не кидаючи.
  * 🔴 `.waitFor({ state: 'visible' })`, НЕ `.isVisible({ timeout })`: там
  * `timeout` deprecated і ігнорується — DOM читається одразу, гонка проти
- * асинхронного 409+тосту (спіймано живим прогоном Е3-20).
+ * асинхронного 409+тосту (спіймано живим прогоном).
  */
 export function waitText(page, text, timeout = 10_000) {
   return page

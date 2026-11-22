@@ -1,4 +1,4 @@
-// Е6а, Task 4 (Е6а-12, Е6а-17): видалення способів і точок доставки проти
+// Видалення способів і точок доставки проти
 // живої БД. Шапка — патерн admin-catalog-dictionaries.test.ts (serverFn не
 // викликаються, операції — з `simplycms/admin-server/impl`). Grant рахує
 // СПРАВЖНЯ матриця (`requireOperation`) — кейс не-адміна доводить `shipping.manage`.
@@ -30,7 +30,7 @@ import {
 
 const PICKUP = SHIPPING_PROVIDER.pickup;
 
-describe('admin: доставка — видалення (Е6а, Task 4)', () => {
+describe('admin: доставка — видалення', () => {
   const db = F.useShippingAdminDb('simplycms_admin_shipping');
   const url = () => db.url();
   const exists = async (table: string, id: string) =>

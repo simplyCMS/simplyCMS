@@ -12,7 +12,7 @@ import {
   themeDisplayName,
 } from '../packages/cli/src/create.mjs';
 
-// simplycms create theme (Фаза 4, Р6): скаффолд теми в themes/ магазину з
+// simplycms create theme: скаффолд теми в themes/ магазину з
 // template-theme/ пакета CLI. Методика — та сама, що cli-create.test.ts:
 // чисті функції напряму, без spawn.
 
@@ -85,7 +85,7 @@ describe('cli create theme: скаффолд', () => {
       }
     }
 
-    // Е6б-20: бренд магазину — з профілю, а не з каталогу теми. Інакше кожна
+    // Бренд магазину — з профілю, а не з каталогу теми. Інакше кожна
     // згенерована тема показувала б власну назву як назву магазину.
     const read = (rel: string) => readFileSync(join(target, rel), 'utf8');
     for (const rel of ['components/Header.tsx', 'components/Footer.tsx']) {
@@ -126,7 +126,7 @@ describe('cli create theme: скаффолд', () => {
           },
           fileName: file,
           // Без прапорця transpileModule НІКОЛИ не збирає діагностик і асерт
-          // нижче тривіально зелений (знахідка ревʼю Фази 3).
+          // нижче тривіально зелений.
           reportDiagnostics: true,
         },
       );
@@ -142,7 +142,7 @@ describe('cli create theme: скаффолд', () => {
     expect(themeDisplayName('solar-store')).toBe('Solar Store');
   });
 
-  // Р9: створити тему авторові треба і в самому монорепо ядра, де залежностей
+  // Створити тему авторові треба і в самому монорепо ядра, де залежностей
   // `@simplycms/*` у кореневому манифесті нуль. Гард знято ТІЛЬКИ для create —
   // межу решти команд стереже tests/cli-context.test.ts.
   it('run: корінь монорепо ядра — валідний корінь скаффолду', async () => {

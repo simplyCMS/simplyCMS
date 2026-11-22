@@ -7,19 +7,19 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * Рядок колекції — read-model ресурсу (М1, Task 16): назва з перекладу основної мови,
+ * Рядок колекції — read-model ресурсу: назва з перекладу основної мови,
  * мініатюра — головне фото агрегата (`mainImage`). Тип виведено з `listProducts`, а не з
  * `Product` схеми: форму рядка задає read-model, а не таблиця `products`.
  */
 export type ProductReadRow = Awaited<ReturnType<typeof listProducts>>[number];
 
 /**
- * Каталог росте — on-demand (К3-5): у памʼяті лише зрізи, які реально
+ * Каталог росте — on-demand: у памʼяті лише зрізи, які реально
  * запитав живий запит (сторінка списку, картка за id). `queryKey`
  * статичний `collectionKey(...)` — demand-суфікс дописує бібліотека, префікс
- * лишається спільним для всіх зрізів (Б-2). `preload()` на такій
- * колекції — no-op: прогрів роуту робиться live-query (Task 6).
- * ЛИШЕ ЧИТАННЯ (М1, Task 13): створення, правки й видалення товару — команди
+ * лишається спільним для всіх зрізів. `preload()` на такій
+ * колекції — no-op: прогрів роуту робиться live-query.
+ * ЛИШЕ ЧИТАННЯ: створення, правки й видалення товару — команди
  * агрегата (`products.create/saveDescription/remove`), без persistence-хендлерів.
  */
 function create(queryClient: QueryClient) {
@@ -28,7 +28,7 @@ function create(queryClient: QueryClient) {
       id: ENTITY.products,
       queryClient,
       queryKey: collectionKey(ENTITY.products),
-      // 🔴 Е3-16: список гортає useLiveInfiniteQuery — без індексу
+      // 🔴 Список гортає useLiveInfiniteQuery — без індексу
       // сторінки йдуть префіксом без offset (TSDB-2, кейс 2б контракту).
       getKey: (row) => row.id,
       queryFn: async (ctx) =>

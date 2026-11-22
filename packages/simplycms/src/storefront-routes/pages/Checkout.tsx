@@ -171,7 +171,7 @@ export default function Checkout() {
     });
   }, [user, form]);
 
-  // 🔴 Гвард гонки (знайдено live-smoke, Task 14): `onSubmit` спорожняє кошик
+  // 🔴 Гвард гонки (знайдено live-smoke): `onSubmit` спорожняє кошик
   // (`clearCart()`) ще на цій сторінці — Checkout не встигає розмонтуватись
   // до того, як ефект нижче побачить `items.length === 0` і перехопить
   // навігацію на `/order-success` редиректом на `/cart`. Прапорець виставляє
@@ -181,8 +181,8 @@ export default function Checkout() {
   // не можна (`react-hooks/refs`). Синхронність дає `flushSync` у `onSubmit`.
   const [orderPlaced, setOrderPlaced] = useState(false);
 
-  // Redirect if cart is empty. 🔴 Гейт на `hydrated` (Е0-5, рішення А
-  // архітектора): гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
+  // Redirect if cart is empty. 🔴 Гейт на `hydrated`:
+  // гідраційний рендер завжди бачить ПОРОЖНІЙ кошик
   // (`getServerSnapshot`), а passive-ефекти комітяться дітьми-вперед — без
   // гейту цей ефект відпрацював би РАНІШЕ за перечитування localStorage в
   // `CartProvider` і хибно редиректив би на /cart при прямому вході на
@@ -195,7 +195,7 @@ export default function Checkout() {
 
   // 🔴 Серверна квота (розділ M рішень архітектора): і показ, і запис
   // рахує та сама `prepareCheckout`, тож підсумок ніколи не бреше про суму —
-  // клієнтських цін у кошику немає взагалі (Е6в-13).
+  // клієнтських цін у кошику немає взагалі.
   // 🔴 `useWatch`, а не `form.watch()`: значення тут ідуть далі в
   // залежності ефекту (`useCheckoutQuote`) — `form.watch()` повертає
   // нестабільну функцію, яку React Compiler не вміє безпечно
@@ -234,7 +234,7 @@ export default function Checkout() {
   // 🔴 Рев'ю I4: індикативна ціна в списку методів (CheckoutDeliveryForm)
   // рахує тариф ТИМ САМИМ `resolveShippingRate`, що й сервер. Вхідна сума —
   // лише серверна: квота оформлення, до неї — квота кошика, до першої квоти
-  // кошика — `null` (стан завантаження тарифу, Е6в-13 ред.5). Те саме число
+  // кошика — `null` (стан завантаження тарифу). Те саме число
   // йде слотам плагінів як `cart.subtotal`.
   const indicative = useIndicativeSubtotal(quote);
   const indicativeSubtotal = indicative.subtotal;
@@ -429,7 +429,7 @@ export default function Checkout() {
                 render={() => (
                   <FormItem>
                     {/* Поля-радіо живуть у CheckoutDeliveryForm; повідомлення
-                        validation.shippingRequired до К2-Е0 не мало де
+                        validation.shippingRequired раніше не мало де
                         зʼявитись — тому лише FormMessage. */}
                     <FormMessage />
                   </FormItem>

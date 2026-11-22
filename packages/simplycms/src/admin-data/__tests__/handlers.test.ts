@@ -5,7 +5,7 @@ import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 
 /**
- * Три кейси спільних persistence-хендлерів (Task 5, Step 1) — перенесені з
+ * Три кейси спільних persistence-хендлерів — перенесені з
  * `order-statuses-collection.test.ts`, але проти колекції, зібраної
  * `persistenceHandlers` над фейковими insert/update/remove: batch-insert
  * одним викликом сервера; fail-loud на розходженні id ДО write-back.

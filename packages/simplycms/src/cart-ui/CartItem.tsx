@@ -14,7 +14,7 @@ interface CartItemProps {
 }
 
 // Container: бере дії з useCart() і делегує рендер presentational-в'ю.
-// Ціну не рахує: рядок квоти приходить пропом від T5-контейнера (Е6в-13).
+// Ціну не рахує: рядок квоти приходить пропом від T5-контейнера.
 export function CartItem({ item, line, failed, hints }: CartItemProps) {
   const { updateQuantity, removeItem } = useCart();
 

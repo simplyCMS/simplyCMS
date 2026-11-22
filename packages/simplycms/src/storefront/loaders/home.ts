@@ -51,7 +51,7 @@ export async function loadHomePageData(
   viewer: ViewerPriceTypes,
   text: TextLocale,
 ): Promise<HomePageData> {
-  // Р24: лише розміщення `home` і лише в межах розкладу — тема бере ПЕРШИЙ
+  // Лише розміщення `home` і лише в межах розкладу — тема бере ПЕРШИЙ
   // банер як hero, тож банер іншого місця чи з майбутнім розкладом не годиться.
   const homeBanners = await loadBanners(db, { placement: 'home' });
   const featured = await loadHomeProducts(db, true, viewer, text);
@@ -98,7 +98,7 @@ export async function loadHomeProducts(
     .orderBy(desc(products.createdAt), asc(products.id))
     .limit(FEATURED_LIMIT);
 
-  // Прайс — лише види глядача (Р29); SSR-ціна нижче — за гостьовими.
+  // Прайс — лише види глядача; SSR-ціна нижче — за гостьовими.
   const prices = await loadViewerPricesByProduct(
     db,
     rows.map((row) => row.id),

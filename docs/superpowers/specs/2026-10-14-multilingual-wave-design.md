@@ -294,7 +294,7 @@ SimplyCMS — платформа для магазинів, де мов конт
   - `noindex`, canonical на основну мову;
   - поза hreflang і sitemap.
 - Перекладену сторінку відкриває для пошуку сам переклад, адреса при цьому не змінюється.
-- SEO-поля сутностей зі блоку A задачі `seo-ssr-faceted-navigation.md` (`seo_h1`, `og_*`, `robots`, власний
+- SEO-поля сутностей зі блоку A задачі `docs/tasks/seo-ssr-faceted-navigation.md` (`seo_h1`, `og_*`, `robots`, власний
   canonical тощо) додаються в цій хвилі як перекладні колонки. Так після заморожування не знадобляться
   міграції форми перекладів.
 - Посадкові сторінки «розділ × опція» (блок D) — після хвилі, адитивно.
@@ -329,7 +329,7 @@ SimplyCMS — платформа для магазинів, де мов конт
   - Суб'єкт і HTTP-статус виносяться на межу транспорту.
   - Суб'єкт передається явним параметром.
 - **Адмінка:** serverFn — тонкі топ-рівневі обгортки над операціями. Переносяться ВСІ серверні функції адмін-зони
-  (близько 126 в `admin-server`, а також у `plugin-sdk/server`, `plugins/server`, `themes/server`).
+  (близько 126 в `admin-server`, а також у `plugin-sdk/server`, теках plugins/server і themes/server).
 - Завантаження файлів (`FormData`, медіа) — операції реєстру з окремим multipart-транспортом. HTTP-адаптер
   підтримує multipart лише для них; лінт і тест паритету тримають явний перелік таких операцій.
 - **Записи всіх перекладних сутностей** (розділ, властивість з опціями, доставка, банери тощо) — команди над
@@ -448,7 +448,7 @@ SimplyCMS — платформа для магазинів, де мов конт
 Мова інтерфейсу стає динамічною (з адреси й профілю), тож у хвилі закриваються попередження, що стають реальним
 ризиком або є нашим кодом:
 - `admin/components/RichTextEditor.tsx`: два `react-hooks/exhaustive-deps` (відсутня залежність `t`);
-- `react-hooks/set-state-in-effect` у `useModificationSelection.ts` і `themes/ThemeContext.tsx`.
+- `react-hooks/set-state-in-effect` у `useModificationSelection.ts` і `packages/simplycms/src/themes/ThemeContext.tsx`.
 
 Свідомі винятки, які лишаються, з причиною:
 - `storefront-routes/pages/Checkout.tsx` — React Compiler пропускає компонент через несумісну бібліотеку форм;
@@ -456,7 +456,7 @@ SimplyCMS — платформа для магазинів, де мов конт
 
 Нова норма `pnpm lint` — **0 errors / 3 warnings**. Оновити `AGENTS.md` і `docs/development/TOOLING.md`.
 
-> **Стан 2026-11-04:** норму перевиконано — `pnpm lint` тримає 0 errors / 0 warnings (`--max-warnings 0`, `AGENTS.md`, `TOOLING.md`).
+> **Стан 2026-11-04:** норму перевиконано — `pnpm lint` тримає 0 errors / 0 warnings (`--max-warnings 0`, `AGENTS.md`, `docs/development/TOOLING.md`).
 
 ## 16. Лишено плану (дрібне, план вирішує сам і показує архітектору)
 
@@ -573,7 +573,7 @@ SimplyCMS — платформа для магазинів, де мов конт
 - заборона індексації неперекладеного має пріоритет над ручним `robots`;
 - ручний canonical на інший URL виключає сторінку з hreflang і sitemap;
 - **пагінація** — окремі URL, self-canonical, звичайні посилання між сторінками. Не canonical на першу сторінку
-  і не блокування `page=` (це правка до задачі `seo-ssr-faceted-navigation.md` §4.2);
+  і не блокування `page=` (це правка до задачі `docs/tasks/seo-ssr-faceted-navigation.md` §4.2);
 - **фасети** — `noindex, follow` на комбінаціях. robots.txt НЕ блокує те, що має прочитати `noindex`.
   Індексуються лише посадкові сторінки з реєстру;
 - нормалізація адреси: мова → історія → кінцева адреса, і рівно ОДИН 301 зі збереженням дозволених
@@ -672,9 +672,9 @@ SimplyCMS — платформа для магазинів, де мов конт
 | **Мовний пакет** | одиниця постачання мови платформою (Р-ML-17), дві частини: `ui` і `content`; без нього мову не опублікувати (§19.15) | реєстр пакетів ядра; публічно — лише `listLanguagePacks`, `hasLanguagePack`, `getUiPack`, `getContentTools` (§19.10, §19.15) |
 
 - **«i18n»** у каноні й коді означає ЛИШЕ вісь інтерфейсу: рядки, форматування, множину. Вісь контенту
-  називається «переклади»: `simplycms/translations`, `simplycms/domain/translations`, `translations.md`.
-- `simplycms/i18n` — власний механізм SimplyCMS, а не бібліотека i18next. Канон (`i18n.md`, README субшляху,
-  `themes.md`) каже це першим рядком, щоб автор теми чи плагіна не шукав API i18next.
+  називається «переклади»: `simplycms/translations`, `simplycms/domain/translations`, `docs/architecture/translations.md`.
+- `simplycms/i18n` — власний механізм SimplyCMS, а не бібліотека i18next. Канон (`docs/architecture/i18n.md`, README субшляху,
+  `docs/architecture/themes.md`) каже це першим рядком, щоб автор теми чи плагіна не шукав API i18next.
 - **Чому власний, а не бібліотека (рішення власника 2026-11-04, за спайками).** Перевірено документацією Paraglide
   3.1, Lingui 6.12, i18next 26.7, use-intl 4.14 і живими спайками Lingui 6.12.0 та use-intl 4.14.9 на `b9dead52`
   (докази — `docs/superpowers/research/2026-10-13-multilingual/`: 89 — кабінетне порівняння, 90 — бриф спайків із
@@ -891,8 +891,8 @@ LanguagePack = {
 
 **Носії канону** оновлюються в задачах плану разом із кодом, а не наперед, бо канон описує чинний код:
 - `docs/architecture/i18n.md` — переписати під дві осі й терміни §19.2;
-- `translations.md` — `ContentLocale` у `TextLocale`;
-- `themes.md` — `useUiLocale`, «не i18next»;
+- `docs/architecture/translations.md` — `ContentLocale` у `TextLocale`;
+- `docs/architecture/themes.md` — `useUiLocale`, «не i18next»;
 - README `simplycms/i18n` — `en` повний, нова форма пакета;
 - рядок i18n-інваріанту в `AGENTS.md`.
 

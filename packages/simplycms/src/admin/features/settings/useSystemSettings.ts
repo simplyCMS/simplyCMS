@@ -13,7 +13,7 @@ type SystemSettings = Awaited<ReturnType<typeof getSystemSettings>>;
 const KEY = entityKey(ENTITY.systemSettings).all();
 
 /**
- * Системні налаштування (Е6б-19): одиничний рядок — `useQuery`, не колекція.
+ * Системні налаштування: одиничний рядок — `useQuery`, не колекція.
  * Мутації пишуть ВІДПОВІДЬ сервера в кеш (write-back), а не інвалідують його:
  * форма не мерехтить рефетчем, а кеш не розходиться з тим, що зберіг сервер.
  */
@@ -33,7 +33,7 @@ export function useSystemSettings() {
       return profile;
     },
     onSuccess: () => {
-      // Е6б-22: лоадер `_storefront` має staleTime 5 хв — без скидання
+      // Лоадер `_storefront` має staleTime 5 хв — без скидання
       // вітрина в цій вкладці покаже старий профіль. Fire-and-forget: збій
       // скидання кешу роутера не робить успішне збереження помилкою
       // `mutateAsync` (форма показала б тост помилки після запису).

@@ -33,7 +33,7 @@ export function createResetPasswordSender(deps: ResetMailDeps) {
     token: string;
   }): Promise<void> => {
     // Токен BA уже вставив окремим запитом: якщо email змінився або акаунт
-    // видалено між пошуком і вставкою, guard його прибирає (Е6г-18).
+    // видалено між пошуком і вставкою, guard його прибирає.
     if (!(await deps.resetGuard(user.id, user.email, token))) return;
     const message = renderPasswordResetMail({
       to: user.email,

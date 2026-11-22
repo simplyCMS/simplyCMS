@@ -5,9 +5,9 @@ import type { Section } from 'simplycms/schema/types';
 const optionalText = z.string().trim();
 
 /**
- * Значення форми картки розділу (Е4, Task 7). Формат slug — спільна
- * константа T1 (`SLUG_FORMAT`), яку перевіряє й сервер (Е4-7). `images` —
- * 0..1 РЕФЕРЕНС сховища (↔ `imageUrl`, Е4-10).
+ * Значення форми картки розділу. Формат slug — спільна
+ * константа (`SLUG_FORMAT`), яку перевіряє й сервер. `images` —
+ * 0..1 РЕФЕРЕНС сховища (↔ `imageUrl`).
  */
 export const sectionFormSchema = z.object({
   name: z.string().trim().min(1),
@@ -42,7 +42,7 @@ export function toSectionPatch(v: SectionFormValues) {
 
 /**
  * Повний оптимістичний рядок для `collection.insert`. 🔴 `parentId` завжди
- * `null`: розділи плоскі (Е4-3), колонка readonly для колекції.
+ * `null`: розділи плоскі, колонка readonly для колекції.
  */
 export function toSectionDraft(
   v: SectionFormValues,

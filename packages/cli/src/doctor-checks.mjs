@@ -204,19 +204,19 @@ export const OFFLINE_CHECKS = [
     label: 'simplycms.config.ts',
     run: ({ storeRoot }) => checkConfigAnchors(storeRoot),
   },
-  // №11 (Фаза 4): теми з конфігу резолвляться, Tailwind бачить сторонні.
+  // №11: теми з конфігу резолвляться, Tailwind бачить сторонні.
   { label: 'themes', run: checkThemes },
-  // №12 (трек К0): скіли ядра підключені лінками.
+  // №12: скіли ядра підключені лінками.
   { label: 'skill-links', run: checkSkillLinks },
-  // №13 (К3-Е7): драйвер БД — залежність магазину в межах peer ядра.
+  // №13: драйвер БД — залежність магазину в межах peer ядра.
   { label: 'pg-driver', run: checkPgDriver },
-  // №14 (К3-Е8): пошта — nodemailer у залежностях магазину в межах peer ядра.
+  // №14: пошта — nodemailer у залежностях магазину в межах peer ядра.
   { label: 'mail-driver', run: checkMailDriver },
-  // №15 (Е8-Р17): драйвер пошти; серйозність log залежить від режиму.
+  // №15: драйвер пошти; серйозність log залежить від режиму.
   { label: 'mail-configured', run: checkMailConfigured },
-  // №16 (Р30): без SMTP реєстрація не вимагає підтвердження пошти.
+  // №16: без SMTP реєстрація не вимагає підтвердження пошти.
   { label: 'email-verification', run: checkEmailVerification },
-  // №17 (Р32): engines.simplycms плагінів і тем проти ядра — error, bootstrap лише warn.
+  // №17: engines.simplycms плагінів і тем проти ядра — error, bootstrap лише warn.
   { label: 'engines', run: checkEngines },
   // №18 (Б §3.3): керований блок AGENTS.md і запис хука; дозволи — порадою в details.
   { label: 'agent-files', run: checkAgentFiles },

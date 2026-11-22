@@ -1,4 +1,4 @@
-// Е6в-25, друга лінія: рядок знижки, СИНТАКСИЧНО валідний, але семантично
+// Друга лінія: рядок знижки, СИНТАКСИЧНО валідний, але семантично
 // неможливий для запису через `saveDiscount` (вставлений SQL-ем в обхід
 // Zod), виключається порядково — так само, як рік 10000 чи `'NaN'`.
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -39,7 +39,7 @@ const bad = (patch: Record<string, unknown>) =>
 
 afterEach(() => vi.restoreAllMocks());
 
-describe('parseDiscountRules: семантика рядка (Е6в-25, друга лінія)', () => {
+describe('parseDiscountRules: семантика рядка (друга лінія)', () => {
   const quiet = () => vi.spyOn(console, 'error').mockImplementation(() => {});
 
   it.each([

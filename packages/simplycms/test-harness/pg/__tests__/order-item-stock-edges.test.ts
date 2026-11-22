@@ -1,5 +1,5 @@
-// К3-Е5б Task 8 (D): межові гілки обліку по позиції — точку видалено після
-// оформлення (`stock_point_id IS NULL`, `stock_reserved > 0`, Е5-11),
+// Межові гілки обліку по позиції — точку видалено після
+// оформлення (`stock_point_id IS NULL`, `stock_reserved > 0`),
 // рядок залишку зник (повертати нікуди) і гварди `reserveNewOrderItemStock`.
 // Окремий файл: `order-item-stock.test.ts` уже понад ліміт розміру.
 import { eq } from 'drizzle-orm';
@@ -13,7 +13,7 @@ import {
 import { orderItems } from 'simplycms/schema';
 import { useOrderItemStockDb } from './fixtures/order-item-stock';
 
-describe('облік позиції: межові гілки (Е5-11, Е5б-7′)', () => {
+describe('облік позиції: межові гілки', () => {
   const f = useOrderItemStockDb('simplycms_order_item_stock_edges');
   const { ids } = f;
   let warn: ReturnType<typeof vi.spyOn>;

@@ -1,4 +1,4 @@
-// Фікстури харнесу видалення акаунта (К3-Е6г, Task 7): БД редагування
+// Фікстури харнесу видалення акаунта: БД редагування
 // позицій + тимчасовий `MEDIA_ROOT`, покупець з усім графом залежних рядків
 // і хелпери стану. `MEDIA_ROOT` ставиться ДО першого `getMediaDriver()`:
 // драйвер мемоізований (`storage/local-fs.ts`).
@@ -102,7 +102,7 @@ export function useDeleteDb(prefix: string) {
 
   const orphans = () => findOrphans((sql) => f.rows(sql));
 
-  /** Три замовлення: адреса, точка видачі, зіпсований `{}` (Review Focus 2). */
+  /** Три замовлення: адреса, точка видачі, зіпсований `{}`. */
   const placeThree = async (userId: string) => {
     const address = await f.place([{ productId: f.ids.panel, quantity: 2 }], {
       method: 'courier',

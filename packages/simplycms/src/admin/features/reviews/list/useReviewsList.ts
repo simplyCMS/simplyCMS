@@ -16,7 +16,7 @@ export const REVIEWS_LIST_KEY = entityKey(ENTITY.productReviews).variant(
   'admin-reviews',
 );
 
-/** Список модерації на серверному читанні з keyset-курсором (Task 6). */
+/** Список модерації на серверному читанні з keyset-курсором. */
 export function useReviewsList(filters: ReviewsFilters) {
   return useInfiniteQuery({
     queryKey: [...REVIEWS_LIST_KEY, filters],

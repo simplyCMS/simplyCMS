@@ -18,7 +18,7 @@ const valid = {
   variant: 'primary',
 };
 
-describe('isBannerButton (Е6д-13)', () => {
+describe('isBannerButton', () => {
   it('приймає відносний шлях і http(s)-адресу', () => {
     expect(isBannerButton(valid)).toBe(true);
     expect(isBannerButton({ ...valid, url: 'https://shop.test/x' })).toBe(true);
@@ -86,7 +86,7 @@ describe('предикати enum і межі', () => {
   });
 });
 
-describe('pickHeroBanner / pickHeroImage (К3-Е6д-9)', () => {
+describe('pickHeroBanner / pickHeroImage', () => {
   const base = {
     id: 'b',
     title: '',

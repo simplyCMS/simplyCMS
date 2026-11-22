@@ -1,5 +1,5 @@
 // simplycms/domain/discounts — рушій знижок: ліс із плоских правил,
-// реєстр умов, оцінка з чесним `applied`, порогові підказки (К3-Е6в).
+// реєстр умов, оцінка з чесним `applied`, порогові підказки.
 
 export { resolveDiscount } from './resolve';
 export {

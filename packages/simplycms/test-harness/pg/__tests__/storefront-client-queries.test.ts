@@ -19,7 +19,7 @@ import {
   loadSectionFilterProperties,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем (M1).
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { resolveHarness } from '../up.mjs';
 import {

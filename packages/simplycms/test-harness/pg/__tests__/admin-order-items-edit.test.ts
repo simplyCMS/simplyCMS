@@ -1,8 +1,8 @@
-// К3-Е5б Task 3: додавання позиції до оформленого замовлення (Е5б-1, Е5б-7′,
-// Е5б-8) проти живої БД. Ціна нової позиції — рушієм чекауту для покупця
+// Додавання позиції до оформленого замовлення
+// проти живої БД. Ціна нової позиції — рушієм чекауту для покупця
 // замовлення, контекст знижок «від суми» — склад ПІСЛЯ додавання; залишок —
 // дельтою по позиції; суми — перерахунком із доставкою. 🔴 Увесь файл — під
-// колонковим SELECT `app_admin` на `orders` без `access_token` (Е5-7).
+// колонковим SELECT `app_admin` на `orders` без `access_token`.
 import { describe, expect, it, vi } from 'vitest';
 import { conflict, useOrderItemsEditDb } from './fixtures/order-items-edit';
 
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: додавання позиції замовлення (К3-Е5б, Task 3)', () => {
+describe('admin: додавання позиції замовлення', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_add');
   const { ids } = f;
 
@@ -61,7 +61,7 @@ describe('admin: додавання позиції замовлення (К3-Е5
   });
 
   it('add гостьовому замовленню: дефолтний тип ціни', async () => {
-    // Знижка «від 50000 — 5 %» на акумулятор бачить ВЕСЬ склад (Е5б-1):
+    // Знижка «від 50000 — 5 %» на акумулятор бачить ВЕСЬ склад:
     // 21000 сам по собі під поріг, разом зі станцією 68000 — над ним.
     const o = await f.place([{ productId: ids.station, quantity: 1 }]);
     const { order, upserted } = await f.add(o, ids.battery, 1);

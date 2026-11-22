@@ -1,4 +1,4 @@
-// К3-Е8, Task 5: «рівно одна основна зона доставки» тримає БД, а не лише
+// «рівно одна основна зона доставки» тримає БД, а не лише
 // операції адмінки. Три шари: часткові індекс (≤1), CHECK «основна активна»
 // й відкладений constraint-тригер (≥1) — і окремий доказ, що операції
 // відмовляють РАНІШЕ за БД (`AdminConflictError`, а не помилка Postgres).
@@ -48,7 +48,7 @@ const defaults = async (url: string) =>
     await F.rows(url, `select id from public.shipping_zones where is_default`)
   ).map((r) => r.id);
 
-describe('БД: інваріант основної зони доставки (К3-Е8, Task 5)', () => {
+describe('БД: інваріант основної зони доставки', () => {
   const db = F.useShippingAdminDb('simplycms_shipping_zone_invariant');
   const url = () => db.url();
 
@@ -158,7 +158,7 @@ describe('БД: інваріант основної зони доставки (�
   });
 });
 
-describe('операції: гард раніше за тригер і CHECK (К3-Е8, Task 5)', () => {
+describe('операції: гард раніше за тригер і CHECK', () => {
   const db = F.useShippingAdminDb('simplycms_shipping_zone_guard');
   const url = () => db.url();
 

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MAX_LINE_QUANTITY } from 'simplycms/contracts/cart-limits';
 
 /**
- * Вхід діагностики ціни (Е6в, З-4). `userId: null` — гість (дефолтна
+ * Вхід діагностики ціни. `userId: null` — гість (дефолтна
  * категорія й тип ціни); `otherCartTotal` — сума кошика ПОЗА цією позицією
  * (знижка «від суми» бачить увесь склад).
  */

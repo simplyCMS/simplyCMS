@@ -1,7 +1,7 @@
 // Звірка магазину з каноном ЦІЄЇ версії CLI й ядра — друга половина `simplycms
 // update` після (можливого) install: host-файли, лінки скілів, керований блок
 // `AGENTS.md`, запис хука, тека міграцій. Окремий модуль: install і передача
-// керування новому CLI (Р21) живуть в update.mjs, тут — лише стан теки магазину.
+// керування новому CLI живуть в update.mjs, тут — лише стан теки магазину.
 import { missingStoreMigrationsDir } from './db-diff.mjs';
 import { readStoreManifest } from './context.mjs';
 import {

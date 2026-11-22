@@ -1,5 +1,5 @@
 /**
- * 🔴 Server-only (contracts/server-only): прод-старт магазину (К3-Е8, F5 рев'ю).
+ * 🔴 Server-only (contracts/server-only): прод-старт магазину.
  * Накат міграцій під `MIGRATION_DATABASE_URL`, далі `process.execve` на
  * `server.mjs` без пароля власника схеми. У магазині — лише шим
  * `scripts/start.mjs` (host-файл під `simplycms update`), логіка — тут.

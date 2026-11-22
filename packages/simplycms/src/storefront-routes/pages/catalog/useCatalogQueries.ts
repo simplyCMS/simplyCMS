@@ -1,5 +1,5 @@
 // Довідкові запити каталогу: розділи, числові характеристики, опції
-// характеристик (контракт тем v3, Фаза 4).
+// характеристик.
 //
 // 🔴 Усі — через `createServerFn`. Ті самі вибірки робить SSR-лоадер, тож
 // клієнт і сервер відповідають ОДНИМ запитом, а не двома схожими: розділи
@@ -25,7 +25,7 @@ export type CatalogSectionRow = SectionRow;
 export function useSectionsQuery(initialSections?: CatalogSectionRow[]) {
   const sections = entityKey(ENTITY.sections, useContentLocale());
   return useQuery({
-    // 🔴 variant('storefront'), не list() (Е3-15): admin-data заводить
+    // 🔴 variant('storefront'), не list(): admin-data заводить
     // eager-колекцію sections під голим list() — там усі розділи в
     // camelCase, тут лише активні у формі SectionRow.
     queryKey: sections.variant('storefront'),
@@ -64,7 +64,7 @@ export function useFilterPropertiesQuery(
     useContentLocale(),
   );
   return useQuery({
-    // 🔴 variant('filterable', …), не scoped() (борг Е1а №6, Е3-12): це форма
+    // 🔴 variant('filterable', …), не scoped() (борг): це форма
     // (лише властивості-фільтри), а не FK-зріз за розділом. Корінь — власний
     // qualifier, а не порожній id, що міг би збігтися з іншим ключем.
     queryKey: sectionId
@@ -88,7 +88,7 @@ export function useFilterPropertiesQuery(
 export function usePropertyOptionsQuery() {
   const propertyOptions = entityKey(ENTITY.propertyOptions, useContentLocale());
   return useQuery({
-    // 🔴 variant('storefront'), не list() (Е3-15) — той самий префікс, що
+    // 🔴 variant('storefront'), не list() — той самий префікс, що
     // й on-demand колекція propertyOptions в admin-data.
     queryKey: propertyOptions.variant('storefront'),
     queryFn: () => getFilterOptions(),

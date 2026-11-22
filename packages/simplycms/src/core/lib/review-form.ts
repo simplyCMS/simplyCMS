@@ -57,7 +57,7 @@ async function inspectImages(
 }
 
 /**
- * Лишити відгук із фото від імені власника сесії — ОДИН запит (Е6д-6).
+ * Лишити відгук із фото від імені власника сесії — ОДИН запит.
  *
  * 🔴 `userId` у вході НЕМАЄ: автора задає cookie Better Auth
  * (`requireSessionUserId`). Політика `product_reviews_insert_own` звіряє
@@ -99,7 +99,7 @@ const reviewEditFieldsInput = z.object({
 });
 
 /**
- * Відредагувати власний відгук (Е6д-23) — ОДИН запит, як подача: текст,
+ * Відредагувати власний відгук — ОДИН запит, як подача: текст,
  * `keep` (лишені фото) і нові `images`. Відгук повертається на модерацію.
  *
  * 🔴 Як і в подачі: автора задає cookie, кількість і кожен файл
@@ -129,9 +129,9 @@ export const updateProductReview = createServerFn({ method: 'POST' })
 /**
  * Видалити власний відгук; `false` — рядка немає або він чужий.
  *
- * 🔴 Файли фото стираються ПІСЛЯ COMMIT (Е6д-14): транзакція видаляє лише
+ * 🔴 Файли фото стираються ПІСЛЯ COMMIT: транзакція видаляє лише
  * рядки `media`, тож падіння COMMIT лишає і файли, і референси цілими, а
- * збій диска лишає рядок outbox `media_erasures` (Е6д-20).
+ * збій диска лишає рядок outbox `media_erasures`.
  */
 export const deleteMyProductReview = createServerFn({ method: 'POST' })
   .validator(z.object({ reviewId: z.uuid() }))

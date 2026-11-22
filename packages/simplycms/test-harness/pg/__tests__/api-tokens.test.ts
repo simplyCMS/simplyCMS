@@ -1,4 +1,4 @@
-// М1 Task 7, І27: токени HTTP API проти живого Postgres (адаптер без мережі).
+// І27: токени HTTP API проти живого Postgres (адаптер без мережі).
 import { createHash, randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { beforeAll, describe, expect, it, vi } from 'vitest';

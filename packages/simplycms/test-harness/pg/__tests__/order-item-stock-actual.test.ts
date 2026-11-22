@@ -1,5 +1,5 @@
-// К3-Е5б, фінальне рев'ю п.1: `adjustOrderItemStock` рахує ФАКТИЧНО
-// списане/повернуте, а не дельту кількості (Е5б-7′). Обидва кейси будують
+// `adjustOrderItemStock` рахує ФАКТИЧНО
+// списане/повернуте, а не дельту кількості. Обидва кейси будують
 // розрив «кількість ≠ stock_reserved», у якому Δ і фактичне число різні:
 // (а) зменшення повертає лише списане, (б) збільшення без рядка залишку
 // лічильник не росте. Окремий файл: сусіди вже біля/понад ліміт розміру.
@@ -9,7 +9,7 @@ import { adjustOrderItemStock } from 'simplycms/inventory';
 import { orderItems } from 'simplycms/schema';
 import { useOrderItemStockDb } from './fixtures/order-item-stock';
 
-describe('дельта позиції: фактичне число, а не Δ (Е5б-7′)', () => {
+describe('дельта позиції: фактичне число, а не Δ', () => {
   const f = useOrderItemStockDb('simplycms_order_item_stock_actual');
   const { ids } = f;
   beforeEach(() => f.setToggle(true));

@@ -58,7 +58,7 @@ describe('демо-сід: накат поверх канону', () => {
       await queryRows(dbUrl, 'select id from public.product_modifications')
     ).length,
     banners: (await queryRows(dbUrl, 'select id from public.banners')).length,
-    // К2-Е0: доставка й залишки — вставки секції 10 з нетривіальними
+    // Доставка й залишки — вставки секції 10 з нетривіальними
     // формами `on conflict` (частковий індекс залишків) доводять тут
     // ідемпотентність (кейс нижче). Зону доставки демо-сід не вставляє:
     // основну дає `bootstrapStore` (`applyCanon`), тож `shippingZones` лишається сталим.
@@ -77,7 +77,7 @@ describe('демо-сід: накат поверх канону', () => {
     stockByPickupPoint: (
       await queryRows(dbUrl, 'select id from public.stock_by_pickup_point')
     ).length,
-    // М1 Task 10: переклади, адреси й токени теж не плодяться при докаті.
+    // Переклади, адреси й токени теж не плодяться при докаті.
     productTranslations: (
       await queryRows(dbUrl, 'select 1 from public.product_translations')
     ).length,
@@ -103,7 +103,7 @@ describe('демо-сід: накат поверх канону', () => {
     expect(c.banners).toBeGreaterThan(0);
   });
 
-  // М1 Task 10 (майстер §3.1): без перекладу основної мови товар не має назви на
+  // Майстер §3.1: без перекладу основної мови товар не має назви на
   // вітрині, без поточної адреси — URL. Модифікація дзеркально: переклад і токен.
   it('кожен демо-товар має переклад основною мовою й поточну адресу', async () => {
     const missing = await queryRows(
@@ -138,7 +138,7 @@ describe('демо-сід: накат поверх канону', () => {
     expect(missing).toEqual([]);
   });
 
-  // М1 Task 17: проєкція тексту, яку сід пише сам, — та сама, що дала б команда (І23).
+  // Проєкція тексту, яку сід пише сам, — та сама, що дала б команда (І23).
   it('звірка проєкції після демо-сіду: розбіжностей 0', async () => {
     expect(
       await withActor(ADMIN, (d) => reconcileProductTexts(d, { limit: 1000 })),
@@ -213,7 +213,7 @@ describe('демо-сід: накат поверх канону', () => {
     expect(await read()).toBe('true');
   }, 60_000);
 
-  // Е6б-5: демо переписує профіль UPDATE-ом канонічного рядка (INSERT дав би
+  // Демо переписує профіль UPDATE-ом канонічного рядка (INSERT дав би
   // конфлікт ключа або зайвий INSERT у seed-determinism).
   it('переписує store_profile демо-значеннями, один рядок', async () => {
     const rows = await queryRows(

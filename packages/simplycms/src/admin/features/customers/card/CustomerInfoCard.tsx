@@ -16,7 +16,7 @@ export default function CustomerInfoCard({
 }) {
   const t = useT();
   const formatDate = useFormatDate();
-  // Референс сховища → URL; сам `simplycms/storage` server-only (Е2-1).
+  // Референс сховища → URL; сам `simplycms/storage` server-only.
   const avatar = resolveMediaUrl(card.avatarRef);
   return (
     <Card>

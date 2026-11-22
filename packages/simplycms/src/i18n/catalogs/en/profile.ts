@@ -101,7 +101,7 @@ export const messages = {
     other: 'Used in {count} orders',
   },
 
-  // Profile photo (simplycms/profile-ui, AvatarUpload) — live since К3-Е2:
+  // Profile photo (simplycms/profile-ui, AvatarUpload) — live:
   // the storage port accepts the file, so the keys describe the action and
   // the refusal reasons.
   'profile.avatar.upload': 'Upload photo',

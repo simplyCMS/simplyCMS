@@ -9,7 +9,7 @@ export const saveStockManagementInput = z.object({
 });
 
 /**
- * Перемикач обліку залишків (Е6б-21): пише `value.decrease_on_order`, який
+ * Перемикач обліку залишків: пише `value.decrease_on_order`, який
  * читає `loadStockManagement` на оформленні замовлення. Окрема операція від
  * профілю: перемикач зберігається одразу, профіль — кнопкою форми.
  *

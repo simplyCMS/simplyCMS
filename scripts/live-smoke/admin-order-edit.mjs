@@ -1,8 +1,8 @@
 /**
- * Крок К3-Е5б — ЄДИНИЙ живий доказ редагування позицій замовлення через
+ * Крок — ЄДИНИЙ живий доказ редагування позицій замовлення через
  * справжню межу serverFn і write-back колекцій: кількість +1, додавання
  * іншого товару пошуком, видалення; склад, суми й кабінет узгоджені, а
- * скасування покупцем повертає рівно актуально списане (Review Focus 2).
+ * скасування покупцем повертає рівно актуально списане.
  * Дії — `./admin-order-edit-ui.mjs`, SQL — `./admin-order-edit-sql.mjs`.
  */
 import { stockSnapshot } from './sql.mjs';
@@ -30,7 +30,7 @@ import {
 
 /** Другий товар демо з обліком залишку (демо-сід: 3 шт на складі). */
 const ADDED_SLUG = 'sonyachna-panel-550w-mono';
-/** Запит пошуку — артикул (Е5б-4: `ilike` за name і sku) і назва в результаті. */
+/** Запит пошуку — артикул (`ilike` за name і sku) і назва в результаті. */
 const ADDED_QUERY = 'SP-550';
 const ADDED_HIT = /550 Вт/;
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -118,7 +118,7 @@ export async function runAdminOrderEditStep({
       `кабінет ${shown}, orders.total ${sums.total}`,
     );
 
-    // 6. Покупець скасовує: залишки = стан ДО замовлення (Review Focus 2).
+    // 6. Покупець скасовує: залишки = стан ДО замовлення.
     await buyerCancel({ page: buyerPage, base, orderId });
     const st = await pollOrder(dbUrl, orderId, 'cancelled');
     const after = await stockSnapshot(dbUrl, PRODUCT_SLUG);

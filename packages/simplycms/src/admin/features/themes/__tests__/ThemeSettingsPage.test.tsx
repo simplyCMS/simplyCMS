@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }));
 
-// Усі пʼять типів `ThemeSettingDefinition` (Review Focus 5).
+// Усі пʼять типів `ThemeSettingDefinition`.
 const SCHEMA: Record<string, ThemeSettingDefinition> = {
   accent: { type: 'color', default: '#ff0000', label: 'Accent' },
   sticky: { type: 'boolean', default: false, label: 'Sticky header' },

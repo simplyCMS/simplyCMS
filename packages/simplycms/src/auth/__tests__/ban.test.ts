@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createSessionBanHook } from '../ban';
 import { createAuth } from '../instance';
 
-// Е6г-13: бан у хуку `session.create.before`. Доказ іде через РЕАЛЬНИЙ
+// Бан у хуку `session.create.before`. Доказ іде через РЕАЛЬНИЙ
 // `auth.handler` (HTTP-межа), бо те, що `better-call` донесе код `BANNED` до
 // клієнта, не доводиться читанням коду: `false` із хука дало б загальний
 // `FAILED_TO_CREATE_SESSION`.
@@ -44,7 +44,7 @@ function setup() {
   return { auth, state, signIn, signUp };
 }
 
-describe('бан у session.create.before (Е6г-13)', () => {
+describe('бан у session.create.before', () => {
   it('createSessionBanHook: забанений → FORBIDDEN/BANNED; незабанений → без винятку', async () => {
     await expect(
       createSessionBanHook(async () => true)({ userId: 'u' }),

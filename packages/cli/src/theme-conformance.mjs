@@ -1,5 +1,5 @@
 // simplycms theme:conformance <name> — КАНОНІЧНИЙ канал запуску conformance-
-// гейта контракту тем v3 (амендмент до Р8, 2026-08-18). Рушій тестів у шаблон
+// гейта контракту тем v3. Рушій тестів у шаблон
 // магазину не додається: гейт має бути доступним і магазину без vitest.
 // Прогін — `assertThemeViewsConformance` із `simplycms/themes/conformance`
 // на модулі теми, взятому з simplycms.config.ts магазину.

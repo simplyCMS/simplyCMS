@@ -83,7 +83,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   auth-роутів не виносити.
 - Конфігурація CMS — `simplycms.config.ts` (`defineConfig`: мова, валюта, теми, плагіни) — одне
   джерело істини для `theme-registry.ts`, `bootstrapPlugins` і вшитих тем (`declareBuiltThemes`
-  у `src/server.ts`). `seo` і `siteUrl` там немає (Е6б-11). Назва, заголовок головної й опис —
+  у `src/server.ts`). `seo` і `siteUrl` там немає. Назва, заголовок головної й опис —
   профіль магазину в БД. URL сайту — серверний env `VITE_SITE_URL`. До `head()` роутів обидва
   доходять кореневим лоадером магазину (`getStorefrontRoot` → `StorefrontRootData`).
 - 🔴 `src/routeTree.gen.ts` автогенерований — не редагувати.
@@ -94,7 +94,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   не Next.js: Server Components, `'use client'` і `next/*` тут немає.
 - Стан, якого сервер не знає (localStorage: кошик), читається через
   `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` з порожнім
-  серверним снапшотом (зразки — `react-query/useCart.tsx`, `plugins/HookRegistry.ts`).
+  серверним снапшотом (зразки — `react-query/useCart.tsx`, `packages/simplycms/src/plugins/HookRegistry.ts`).
 - 🔴 `suppressHydrationWarning` лишається для елемента, чиї АТРИБУТИ законно різняться
   між SSR і клієнтом (`<html>` у `__root.tsx`: dark mode), але не рятує умовно
   ПРИСУТНІЙ вузол (бейдж лічильника) — зайвий вузол дає React #418 попри нього.
@@ -114,7 +114,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
 - Списки понад ~50 записів — пагінація; пошук і фільтри — debounce (~300 мс,
   `SEARCH_DEBOUNCE_MS` в `ProductSearchList.tsx`, `QUOTE_DEBOUNCE_MS` у чекауті).
 
-## 5. Помилки й заголовки серверного входу (К3-Е8, Р23/Р27)
+## 5. Помилки й заголовки серверного входу
 
 - **Непередбачені помилки не течуть клієнту.** У проді (`isProductionRuntime`)
   клієнт отримує `Internal server error [ref <id>]`, а повна помилка (через
@@ -151,7 +151,7 @@ Client-only на вітрині також `_storefront/cart` і `_storefront/ch
   (`tests/server-headers-parity.test.ts`). Магазин не можна вбудувати в `iframe`
   чужого origin — скіли й теми цього не роблять.
 
-## 6. Мовний контекст запиту (Мультимовність М1, Task 9)
+## 6. Мовний контекст запиту
 
 - **URL:** основна мова — без префікса, інші — `/<lower(code)>/…` для всіх вітринних роутів;
   `/admin`, `/api`, `/_serverFn`, `/assets`, `/media` мови не мають (`NON_STOREFRONT_SEGMENTS`).

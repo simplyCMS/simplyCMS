@@ -34,7 +34,7 @@ const EMPTY: PickupPointFormInput = {
 
 /**
  * Стан картки точки видачі. Способи в select — лише ті, чий провайдер везе
- * до точки (`destination === 'pickup-point'`, Е6а-12); єдиний — обирається
+ * до точки (`destination === 'pickup-point'`); єдиний — обирається
  * сам. `methodId` пишеться лише в insert (`insertOnly`).
  */
 export function usePickupPointCard(pointId: string | undefined) {

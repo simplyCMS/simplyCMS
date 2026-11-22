@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6 (Е6в-19, Е6в-20): ресурс автоправил і «Запустити всі».
+// Ресурс автоправил і «Запустити всі».
 // Окрема БД: `runCategoryRules` обходить УСІ профілі, тож `checked` точний
 // лише там, де покупців рівно стільки, скільки засіяв тест.
 import { describe, expect, it, vi } from 'vitest';
@@ -24,7 +24,7 @@ const byDomain = (domain: string) => ({
   rules: [{ field: 'email_domain', operator: '=', value: domain }],
 });
 
-describe('admin: автоправила категорій (Е6в-19)', () => {
+describe('admin: автоправила категорій', () => {
   const db = F.useCustomersDb('simplycms_admin_category_rules');
   const url = () => db.url();
   const rule = (o: Record<string, unknown>) => ({
@@ -92,7 +92,7 @@ describe('admin: автоправила категорій (Е6в-19)', () => {
     expect(await F.historyOf(url(), locked)).toEqual([]);
   });
 
-  it('ред.5: insertCategoryRules з auth_provider contains → 400; порожнє правило → 400; нічого не записано', async () => {
+  it('insertCategoryRules з auth_provider contains → 400; порожнє правило → 400; нічого не записано', async () => {
     const before = await rulesCount();
     const providerContains = {
       type: 'all',

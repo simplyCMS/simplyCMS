@@ -25,7 +25,7 @@ const theme: ThemeModule = {
   },
   messages,
   // Контракт v2.2 (Р8): демонстрація fonts-контуру — Google Fonts-джерело
-  // того самого Inter, нуль візуальних змін (доводиться Step 4).
+  // того самого Inter, нуль візуальних змін.
   fonts: [
     {
       stylesheet:

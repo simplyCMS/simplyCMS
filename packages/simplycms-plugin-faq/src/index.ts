@@ -4,7 +4,7 @@ import { messages } from './messages';
 import { settings } from './settings';
 
 /**
- * Референс-плагін ПОВНОГО контуру SDK (план Фази 3, Р11): власна таблиця
+ * Референс-плагін ПОВНОГО контуру SDK: власна таблиця
  * `plg_faq_items` (міграція їде в пакеті, накат — `simplycms db:diff
  * --write` + ревʼю), adminRoutes `/admin/faq`, слот на сторінці товару,
  * Zod-настройки і власний каталог i18n.
@@ -14,7 +14,7 @@ export default definePlugin({
   displayName: 'FAQ',
   version: '0.17.0',
   engines: { simplycms: '^0.17.0' },
-  // Метадані реєстру — англійською (конвенція Р6 плану Фази 3).
+  // Метадані реєстру — англійською.
   description:
     'Reference FAQ plugin: product questions and answers with admin CRUD.',
   author: 'SimplyCMS',

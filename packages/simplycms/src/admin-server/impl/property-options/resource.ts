@@ -5,9 +5,9 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Опції властивостей (Е4, Task 3), on-demand (Е4-9).
+ * Опції властивостей, on-demand.
  *
- * 🔴 Е4-5: `propertyId` — insertOnly. Перенесення опції між властивостями —
+ * 🔴 `propertyId` — insertOnly. Перенесення опції між властивостями —
  * це видалення плюс створення, не patch (значення товарів посилаються на
  * опцію, і тип нової властивості може її не підтримувати).
  * `filterable` несе `id` — для картки опції (findOne).
@@ -34,6 +34,6 @@ export const propertyOptionsOps = defineAdminResource({
   // Тема 9: `description` — розмітка редактора адмінки (санітизується при записі й віддачі).
   richHtml: { description: 'content' },
   readonly: ['id', 'createdAt'],
-  // К3-Е6д-1: заміна/прибирання картинки опції стирає файл після COMMIT.
+  // Заміна/прибирання картинки опції стирає файл після COMMIT.
   media: { entityType: 'property_option', columns: ['imageUrl'] },
 });

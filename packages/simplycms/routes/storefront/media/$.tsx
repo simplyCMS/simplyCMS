@@ -3,7 +3,7 @@ import { lookupMediaForRequest } from 'simplycms/storefront/media-visibility';
 import { serveMedia } from 'simplycms/storage';
 
 /**
- * GET `/media/*` — роздача файлів драйвера сховища (рішення Е2-3).
+ * GET `/media/*` — роздача файлів драйвера сховища.
  *
  * 🔴 Роут Start, а не другий `sirv`-маунт у `server.mjs`: `sirv` не діє в
  * dev (там сервером керує Vite), тож маунт створив би два різні шляхи —

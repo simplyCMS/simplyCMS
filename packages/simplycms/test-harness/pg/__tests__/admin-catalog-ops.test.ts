@@ -1,6 +1,6 @@
-// Е3, Task 4: іменовані операції каталогу проти живої БД (атомарний набір цін, залишки з
-// гвардом статусу; дефолт і порядок модифікацій — команда `products.saveDescription`, М1). Шапка —
-// ДОСЛІВНО патерн admin-catalog.test.ts (Task 3): createTempDatabase →
+// Іменовані операції каталогу проти живої БД (атомарний набір цін, залишки з
+// гвардом статусу; дефолт і порядок модифікацій — команда `products.saveDescription`). Шапка —
+// ДОСЛІВНО патерн admin-catalog.test.ts: createTempDatabase →
 // канон → app_runtime → afterAll із closeDbPool() ПЕРШИМ; setResponseStatus
 // і requireGrant мокаються з тієї самої причини (поза HTTP-запитом
 // Start-контексту немає).
@@ -41,7 +41,7 @@ const PRODUCT = '0e300000-0000-4000-8000-000000000012';
 const POINT = '0e300000-0000-4000-8000-000000000013';
 const METHOD = '0e300000-0000-4000-8000-000000000014';
 
-describe('іменовані операції каталогу (Е3, Task 4)', () => {
+describe('іменовані операції каталогу', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_admin_catalog_ops');
   let dbUrl = '';
@@ -96,7 +96,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
       }[]
     )[0]!.id;
 
-  // М2 (рев'ю хвилі B): точка для фікстур saveStock — `system`/`active`
+  // Точка для фікстур saveStock — `system`/`active`
   // прапорці явні, бо саме вони визначають «обслуговуючу» точку
   // (`simplycms/inventory`'s `lockTargetStock`).
   const point = async (opts: { isActive: boolean; isSystem: boolean }) => {
@@ -134,7 +134,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     expect(third.removedIds).toEqual([first.rows[0]!.id]);
   });
 
-  it('Review Focus 4: відʼємна й нечислова ціна — відмова схеми ДО БД', () => {
+  it('відʼємна й нечислова ціна — відмова схеми ДО БД', () => {
     for (const price of ['-1', 'abc', '1.234', ''])
       expect(
         saveProductPricesInput.safeParse({
@@ -184,7 +184,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     ).toBe(false);
   });
 
-  it("М2 (рев'ю хвилі B): quantities: [] — ZodError, а не мовчазний no-op", () => {
+  it('quantities: [] — ZodError, а не мовчазний no-op', () => {
     expect(
       saveStockInput.safeParse({
         productId: PRODUCT,
@@ -194,13 +194,13 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     ).toBe(false);
   });
 
-  // 🔴 М2: дефект, який лагодить це рев'ю — saveStock рахував статус по
+  // 🔴 Дефект, який лагодить це рев'ю — saveStock рахував статус по
   // СУМІ ВСІХ рядків цілі (і по деактивованих точках теж), а вітрина
   // (`lockTargetStock`/`servingQuantity`) — лише по обслуговуючих
   // (`is_system OR is_active`). Системна точка з нулем і деактивована з
   // залишком інакше підняли б статус у `in_stock`, хоча жодна обслуговуюча
   // точка товар не пропонує.
-  it('М2, Review Focus: системна точка 0 + деактивована з залишком — статус лишається out_of_stock', async () => {
+  it('системна точка 0 + деактивована з залишком — статус лишається out_of_stock', async () => {
     const fresh = crypto.randomUUID();
     await insertProductGraphAt(dbUrl, {
       id: fresh,
@@ -304,7 +304,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
     ).toHaveLength(1);
   });
 
-  // Доказ advisory-lock (m3-m6, рев'ю хвилі B): детермінований, без
+  // Доказ advisory-lock (m3-m6): детермінований, без
   // покладання на випадкову перемогу гонки (Promise.all вище доводить лише
   // «обидва успішні», не сам ФАКТ серіалізації). Окремий pg-клієнт (той
   // самий владний dbUrl, що й фікстури) бере ТОЙ САМИЙ advisory-lock, що й
@@ -312,7 +312,7 @@ describe('іменовані операції каталогу (Е3, Task 4)', (
   // `impl/catalog-lock.ts`), і тримає його у ВІДКРИТІЙ транзакції — виклик
   // операції не сміє резолвитись, доки конкурент не відпустить лок COMMIT-ом.
   describe('advisory-lock: доказ серіалізації (prices/stock)', () => {
-    // Хелпери — спільний модуль fixtures/advisory-lock.ts (Е4-12).
+    // Хелпери — спільний модуль fixtures/advisory-lock.ts.
     const holdLock = (key: string) => holdAdvisoryLock(dbUrl, key);
 
     it('prices: конкурент тримає лок → saveProductPrices чекає ~300мс, резолвиться лише після release', async () => {

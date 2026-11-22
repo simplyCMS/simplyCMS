@@ -2,7 +2,7 @@
 // наповнення (власник, профіль, листи) і спільний кластер.
 // Ходять з DATABASE_URL (роль app_runtime), а не з MIGRATION_DATABASE_URL:
 // doctor read-only, а ключ власника схеми не мусить бути на кожній машині.
-// Журнал читає ядро (`simplycms/migrate`, Е8-Р13): app_runtime має право на
+// Журнал читає ядро (`simplycms/migrate`): app_runtime має право на
 // нього лише через `SET ROLE app_admin` у read-only транзакції.
 import { storeMigrationsDir } from './db-diff.mjs';
 import { clusterCheck, clusterSkip } from './doctor-cluster-check.mjs';

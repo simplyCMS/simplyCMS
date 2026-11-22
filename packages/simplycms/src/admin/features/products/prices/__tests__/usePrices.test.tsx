@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // (vitest.config: environment 'node' — без директиви renderHook упаде на
-// document is not defined; патерн — як у сусідніх hook-тестах Task 6/7.)
+// document is not defined; патерн — як у сусідніх hook-тестах.)
 /**
- * `usePrices` (Task 8, Step 1): (а) Review Focus 4 — вхід `{ price: '1
+ * `usePrices`: (а) вхід `{ price: '1
  * 234,50', oldPrice: '' }` → `saveProductPrices` отримує рядок з
  * `price: '1234.50'`, `oldPrice: null` (порожнє поле в набір не йде);
  * (б) `'-5'` → повертає id типу з невалідним полем, serverFn не викликано;

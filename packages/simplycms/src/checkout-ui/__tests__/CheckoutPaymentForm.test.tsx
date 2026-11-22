@@ -7,7 +7,7 @@ import { TestI18nProvider } from '../../../test-harness/i18n';
 afterEach(cleanup);
 
 describe('CheckoutPaymentForm', () => {
-  // Е6а-3: до К5 онлайн-оплата нічого не робить — опції немає зовсім.
+  // До К5 онлайн-оплата нічого не робить — опції немає зовсім.
   it('показує рівно одну опцію — накладений платіж cash', () => {
     render(
       <TestI18nProvider>

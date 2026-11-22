@@ -422,7 +422,7 @@ Shopify. `place-order.ts` уже бере `getStoreLocale()` для листа [
 ## 8. Що змінити в стартовій схемі ДО пілоту
 
 Форма — **нові міграції `0006_*`+**, не правка baseline: baseline заморожений чексумами
-(`tests/migrations-frozen.test.ts` [код]), `0001_init` має лишатися чистим генератом, і стенд Е8 міг уже
+(тест migrations-frozen [код]), `0001_init` має лишатися чистим генератом, і стенд Е8 міг уже
 накотити `0000…0005`. Косметична ціна — `cities text[] DEFAULT '{""}'` лишається в `0001` і одразу
 знімається в `0006`; це прийнятно (канон = послідовність).
 
@@ -517,8 +517,8 @@ tombstones, `api_tokens`, `idempotency_keys`, `webhook_*`, індекси `(upda
 - `domain/product-path.ts:46-52`: 301 лише для нормалізації сегмента розділу; історії slug немає.
 - `resource-schemas.ts:105-123`: `id: z.uuid()`, пакети 1…100; `resource-write.ts:28-77`: `INSERT` пакетом,
   `UPDATE` у циклі по `id`, неіснуючий рядок — голий `Error`.
-- `tests/migrations-frozen.test.ts`: чексуми `0000…0004`; `0005_mail_outbox.sql` — прецедент адитивної
-  міграції з власними грантами/RLS; `data-layer.md §5/§7` — контракт id, «тригери лише в ручних файлах»,
+- тест migrations-frozen: чексуми `0000…0004`; `0005_mail_outbox.sql` — прецедент адитивної
+  міграції з власними грантами/RLS; `docs/architecture/data-layer.md` §5/§7 — контракт id, «тригери лише в ручних файлах»,
   журнал `simplycms_migrations` з `MigrationChecksumError`.
 - Спека пошуку: `search_documents PK (entity_type, entity_id, locale)`, GIN(tsv), trgm GIN/GiST без локалі;
   `search_index_queue PK (entity_type, entity_id)` без локалі; `search_synonyms.id … default

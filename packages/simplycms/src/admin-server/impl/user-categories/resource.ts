@@ -5,13 +5,13 @@ import { defineAdminResource } from '../resource';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Категорії покупців (Е6в, Task 6). Insert/update — фабрика під
- * `LOCK_KEYS.customerConfig` (Е6в-15).
+ * Категорії покупців. Insert/update — фабрика під
+ * `LOCK_KEYS.customerConfig`.
  *
  * 🔴 `isDefault` — readonly: дефолт ставить іменована
  * `setDefaultUserCategoryOp`. 🔴 Фабричний `userCategoriesOps.remove`
  * serverFn-ом НЕ виставляється: видалення — лише `removeUserCategoriesOp`
- * (guarded, Е6в-18: дефолтна, покупці, правила, умова знижки).
+ * (guarded: дефолтна, покупці, правила, умова знижки).
  */
 export const userCategoriesOps = defineAdminResource({
   entity: ENTITY.userCategories,

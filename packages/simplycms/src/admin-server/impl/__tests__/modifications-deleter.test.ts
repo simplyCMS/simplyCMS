@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунд 4: рядки `product_modifications` видаляє лише
+// Рядки `product_modifications` видаляє лише
 // `deleteModifications` (`FOR UPDATE ... ORDER BY id`, потім DELETE) — ієрархія
 // замків агрегата, пункт (4) у `products/aggregate/lock-order.ts`. Видаляч повз хелпер узяв
 // би рядки в порядку плану й знову зустрівся б із `languages.fill` у протилежному
@@ -45,7 +45,7 @@ const offenders = (files: Record<string, string>) =>
     )
     .map(([path]) => path);
 
-describe('єдиний видаляч модифікацій (М1, Task 14)', () => {
+describe('єдиний видаляч модифікацій', () => {
   const files = Object.fromEntries(
     Object.entries(sources).map(([k, v]) => [rel(k), v]),
   );

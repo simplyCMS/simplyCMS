@@ -17,7 +17,7 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
  * 🔴 Живий лише `sectionProducts` (карусель головної,
  * `storefront-routes/pages/home/queries.ts`). Решта колишніх членів
  * (`all`/`product`/`products`/`sections`/`properties`/`stock`) не мали
- * жодного споживача поза власним тестом і прибрані фінальним рев'ю Е1а;
+ * жодного споживача поза власним тестом і прибрані;
  * `stock` до того ж колізував із `core/hooks/useStock.ts`
  * (`[...AGGREGATE.stockInfo.key, modificationId, productId]`) — той самий
  * ключ під різні типи payload при двох заданих id.
@@ -34,7 +34,7 @@ export const catalogKeys = {
     ] as const,
 };
 
-/** Сегмент ключа для ГОСТЯ — гість бачить лише гостьові види цін (Р29). */
+/** Сегмент ключа для ГОСТЯ — гість бачить лише гостьові види цін. */
 export const PRICE_VIEW_GUEST = 'guest';
 
 /**
@@ -45,7 +45,7 @@ export const PRICE_VIEW_GUEST = 'guest';
 export const PRICE_VIEW_UNRESOLVED = 'unresolved';
 
 /**
- * Ключ публічного запиту з цінами (Р29, рішення архітектора 2026-10-12):
+ * Ключ публічного запиту з цінами (рішення архітектора 2026-10-12):
  * сегмент 0 — з реєстру сутностей, як і раніше (префіксна інвалідація не
  * змінюється), сегмент 1 — вид цін глядача: `'guest'` або id виду цін.
  *

@@ -3,13 +3,13 @@ import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
 /**
- * Тарифи доставки (Е6а-1, Task 4): редагуються в картці способу, тож
+ * Тарифи доставки: редагуються в картці способу, тож
  * читаються on-demand за способом (`methodId`) чи зоною.
  *
  * 🔴 `methodId`/`zoneId` — `insertOnly`: тариф не переїжджає між способами
  * й зонами, перенос — це новий тариф. Інваріантів запису в тарифів немає,
  * тож ні `lock`, ні `guard`; видалення — generic `remove` фабрики БЕЗ локу
- * (Е6а-22, прецедент `sectionsOps.remove`).
+ * (прецедент `sectionsOps.remove`).
  */
 export const shippingRatesOps = defineAdminResource({
   entity: ENTITY.shippingRates,

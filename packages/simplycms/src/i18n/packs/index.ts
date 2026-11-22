@@ -8,7 +8,7 @@ import type { UiLocale } from 'simplycms/contracts';
 import type { LanguagePack, SeedTexts, UiCatalogPart } from '../types';
 import { PACKS } from './registry';
 
-// Вузький вхід `simplycms/i18n/packs` (М2б, Р23): серверний накат читає тексти довідників
+// Вузький вхід `simplycms/i18n/packs` (Р23 майстер-плану): серверний накат читає тексти довідників
 // пакета, не тягнучи React-барель `simplycms/i18n`.
 export type { LanguagePack, SeedTexts };
 

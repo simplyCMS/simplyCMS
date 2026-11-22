@@ -14,7 +14,7 @@ import { SweepMediaButton } from './SweepMediaButton';
 import { useMediaErasures } from './useMediaErasures';
 
 /**
- * Блок «Сховище файлів»: хвости стирання (Е6д-20) — файли, які не вдалося
+ * Блок «Сховище файлів»: хвости стирання — файли, які не вдалося
  * видалити після COMMIT. Фонового шедулера немає, тож кнопка — ручний повтор.
  */
 export function StorageMaintenanceCard() {

@@ -1,4 +1,4 @@
-// Прив'язки slot-компонентів картки товару (контракт тем v3, Фаза 3).
+// Прив'язки slot-компонентів картки товару.
 
 import { createContext, useContext, type ReactNode } from 'react';
 import type { StockStatus, ThresholdHint } from 'simplycms/contracts';
@@ -15,7 +15,7 @@ export interface ProductDetailBindings {
   stockStatus: StockStatus;
   price: number | undefined;
   oldPrice: number | null | undefined;
-  /** Порогові підказки знижок для блоку ціни (Е6в-12). */
+  /** Порогові підказки знижок для блоку ціни. */
   priceHints: ThresholdHint[];
   /** Збій середовища цін (F1): блок ціни — помилка з «Повторити». */
   pricesFailed: boolean;

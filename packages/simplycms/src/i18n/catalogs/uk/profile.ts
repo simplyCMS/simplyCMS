@@ -111,7 +111,7 @@ export const messages = {
     other: 'Використано в {count} замовленнях',
   },
 
-  // Фото профілю (simplycms/profile-ui, AvatarUpload) — з К3-Е2 контур живий:
+  // Фото профілю (simplycms/profile-ui, AvatarUpload) — контур живий:
   // порт сховища приймає файл, тож ключі описують дію й причини відмови.
   'profile.avatar.upload': 'Завантажити фото',
   'profile.avatar.remove': 'Видалити фото',

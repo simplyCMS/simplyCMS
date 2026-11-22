@@ -2,8 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { settingsFields } from '../lib/pluginSettingsFields';
 
-// Деривація форми налаштувань зі Zod-схеми definePlugin (конвенції Р2 плану
-// Фази 3): describe→label, enum→select, default→значення за замовчуванням.
+// Деривація форми налаштувань зі Zod-схеми definePlugin (конвенції describe→label, enum→select, default→значення за замовчуванням).
 
 afterEach(() => {
   vi.restoreAllMocks();

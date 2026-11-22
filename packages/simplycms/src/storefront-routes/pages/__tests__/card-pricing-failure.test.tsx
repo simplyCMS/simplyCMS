@@ -7,7 +7,7 @@ import { TestEngineProvider } from '../../__tests__/engine-stub';
 import * as F from './support/card-fixtures';
 
 /**
- * Фінальне рев'ю К3-Е6в, F1: збій середовища цін (`getDiscountEnvironment`)
+ * Збій середовища цін (`getDiscountEnvironment`)
  * на кожній поверхні-картці — видимий стан помилки з «Повторити», як
  * `QuoteFailure` кошика, а НЕ мовчазна база за дефолтним типом (вона
  * розвела б картку й чек) і не вічна SSR-сітка з мертвими фільтрами.

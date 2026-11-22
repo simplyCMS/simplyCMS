@@ -15,7 +15,7 @@ interface Props {
   readonly onChange: (field: 'price' | 'oldPrice', value: string) => void;
 }
 
-/** Один рядок редактора цін (Task 8, Step 1) — виніс із `PricesEditor.tsx` (канон 150 рядків). */
+/** Один рядок редактора цін — виніс із `PricesEditor.tsx` (канон 150 рядків). */
 export function PriceTypeRow({
   priceTypeId,
   name,

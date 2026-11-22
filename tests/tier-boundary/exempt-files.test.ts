@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { restrictedImports } from './lint';
 
 /**
- * Виняток-ФАЙЛ тір-зони (М1, Task 2): `src/migrate` читає ключ накату з
+ * Виняток-ФАЙЛ тір-зони: `src/migrate` читає ключ накату з
  * реєстру ключів замків `simplycms/db/lock-keys` — чистих констант без
  * імпортів, — але решта `db` (`withActor`, пул) для накату лишається
  * забороненою: накат іде власником схеми ще до ролей і RLS, і `withActor` там
@@ -44,7 +44,7 @@ describe('тір-зона migrate: виняток-файл db/lock-keys', () => 
   });
 });
 
-// М2б, Р23: `bootstrapStore` читає тексти довідників з вузького входу пакетів;
+// Р23 майстер-плану: `bootstrapStore` читає тексти довідників з вузького входу пакетів;
 // барель `simplycms/i18n` тягне React і лишається закритим.
 describe('тір-зона migrate: виняток-файл i18n/packs', () => {
   const MIGRATE = 'packages/simplycms/src/migrate/__tier-fixture.ts';

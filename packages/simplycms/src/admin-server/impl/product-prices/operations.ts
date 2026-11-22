@@ -5,7 +5,7 @@ import { defineOperation } from 'simplycms/operations';
 import { saveProductPrices, saveProductPricesInput } from './save';
 
 /**
- * `products.savePrices` (Р14): тонка команда над ядром `saveProductPrices` —
+ * `products.savePrices`: тонка команда над ядром `saveProductPrices` —
  * ціни не належать агрегату опису, тож `version` не збільшують і `If-Match`
  * не вимагають. Без блокування рядка товару: порядок локів вітрини (залишки
  * раніше за товар) інакше дав би дедлок; серіалізує ціль advisory-замок ядра.

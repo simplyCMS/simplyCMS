@@ -1,7 +1,7 @@
 import { dirname, relative, resolve, sep } from 'node:path';
 import { serverOnlyOwner } from '../packages/simplycms/src/contracts/server-only.ts';
 
-// Заборона ВІДНОСНОГО імпорту в server-only дерево ззовні нього (трек T).
+// Заборона ВІДНОСНОГО імпорту в server-only дерево ззовні нього.
 //
 // 🔴 Чому окреме правило, а не тір-зони: тір-зони стережуть напрямок шарів,
 // а тут межа проходить УСЕРЕДИНІ шару — у теці `admin-server/` клієнтський

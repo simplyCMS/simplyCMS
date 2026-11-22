@@ -27,7 +27,7 @@ function run(error: unknown, env: Record<string, string> = PROD) {
   return { result, log: lines.join('\n') };
 }
 
-describe('maskUnexpectedError (Р23)', () => {
+describe('maskUnexpectedError', () => {
   it('прод: клієнт отримує лише загальний текст і ідентифікатор', () => {
     const { result } = run(drizzleError());
 

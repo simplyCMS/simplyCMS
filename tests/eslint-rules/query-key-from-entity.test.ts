@@ -24,7 +24,7 @@ describe('query-key-from-entity', () => {
     expect(lint(code)).toHaveLength(0);
   });
 
-  describe("другий сегмент буквальний 'list' — форма collectionKey ВРУЧНУ (Е3-15′)", () => {
+  describe("другий сегмент буквальний 'list' — форма collectionKey ВРУЧНУ", () => {
     it('валить: [ENTITY.x, "list", …] поза admin-data', () => {
       const code =
         "const q = { queryKey: [ENTITY.products, 'list', 'featured'] };";

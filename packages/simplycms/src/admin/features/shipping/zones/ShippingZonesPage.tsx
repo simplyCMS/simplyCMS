@@ -23,7 +23,7 @@ import { ShippingZoneRow } from './ShippingZoneRow';
 import { useShippingZoneDefault } from './useShippingZoneDefault';
 
 /**
- * Список зон доставки (Е6а, Task 7): жива eager-колекція. Видалення —
+ * Список зон доставки: жива eager-колекція. Видалення —
  * `collection.delete` → guarded `removeShippingZones` (дефолтну сервер
  * відхиляє 409); дефолт — `setDefaultShippingZone` через
  * `useShippingZoneDefault`. Причина відмови — тостом.

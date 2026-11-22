@@ -1,4 +1,4 @@
-// Мапінг товару головної в картку каталогу (контракт тем v3, Фаза 5).
+// Мапінг товару головної в картку каталогу (контракт тем v3).
 
 import type { DiscountEnvironment } from 'simplycms/contracts';
 import type { ProductCardViewModel } from 'simplycms/contracts/views';
@@ -6,7 +6,7 @@ import { cardPrice } from '../pricing/priceForCard';
 import type { HomeProduct } from './types';
 
 /**
- * Ціна — тим самим `cardPrice`/`priceForCard`, що в каталозі (Е6в-11).
+ * Ціна — тим самим `cardPrice`/`priceForCard`, що в каталозі.
  *
  * До середовища (SSR і перший клієнтський рендер) картка лишається на
  * серверній базі за дефолтним типом ціни і без підказок — як сьогодні.

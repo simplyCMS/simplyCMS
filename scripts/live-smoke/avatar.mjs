@@ -1,11 +1,11 @@
 /**
- * Крок аватара — ЄДИНИЙ живий доказ порту сховища (етап К3-Е2).
+ * Крок аватара — ЄДИНИЙ живий доказ порту сховища.
  *
  * 🔴 Тести цього не доводять і не можуть: у них немає ні реального
  * multipart-тіла, ні реальної файлової системи сервера, ні роздачі роутом.
  * Тут проходить увесь ланцюг: браузер → serverFn → файл на диску →
  * `/media/<key>` → `<img>` — і те, що в колонці профілю лежить РЕФЕРЕНС,
- * а не URL (рішення Е2-1), перевіряється прямим SQL.
+ * а не URL, перевіряється прямим SQL.
  *
  * Виклик — після `register`, поки покупець залогінений.
  */
@@ -13,7 +13,7 @@ import { sql } from './sql.mjs';
 
 /**
  * Найменший валідний PNG: сигнатура + IHDR + мінімальний IDAT. Експортовано
- * (К3-Е3): той самий буфер бере `admin-catalog.mjs` для завантаження
+ *: той самий буфер бере `admin-catalog.mjs` для завантаження
  * зображення товару — окремого маленького PNG для другого споживача не
  * заводимо.
  */
@@ -40,7 +40,7 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
   const served = await page.request.get(`${base}${src}`);
   const headers = served.headers();
   check(
-    'аватар: роздача — 200 image/png із nosniff та private, no-cache (Е6д-21)',
+    'аватар: роздача — 200 image/png із nosniff та private, no-cache',
     served.status() === 200 &&
       headers['content-type'] === 'image/png' &&
       headers['x-content-type-options'] === 'nosniff' &&
@@ -77,7 +77,7 @@ export async function runAvatarStep({ page, base, dbUrl, check }) {
     `${row?.size_bytes} Б / ${row?.mime_type}`,
   );
 
-  // Видалення — друга половина інваріанта Е2-7: спершу рядок, потім обʼєкт.
+  // Видалення — друга половина інваріанта: спершу рядок, потім обʼєкт.
   await page.getByRole('button', { name: 'Видалити фото' }).click();
   await page.waitForFunction(
     () => !document.querySelector('img[src^="/media/"]'),

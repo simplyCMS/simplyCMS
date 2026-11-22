@@ -7,7 +7,7 @@ import { messages as defaultMessages } from '@themes/default/messages';
 import { messages as solarMessages } from '../packages/simplycms-theme-solarstore/src/messages';
 
 /**
- * Парність HeroBanner обох тем за контрактом К3-Е6д-9: дані банера мають
+ * Парність HeroBanner обох тем за контрактом: дані банера мають
  * пріоритет, інакше — тексти каталогу теми. Одні фікстури на обидві теми,
  * щоб розбіжність поведінки не могла зʼявитись у одній з них непоміченою.
  */

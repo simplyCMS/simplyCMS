@@ -1,4 +1,4 @@
-// К3-Е6д, фінальне рев'ю (М1б, Е6д-19): гейт класу «каскад БД знищує рядок
+// Гейт класу «каскад БД знищує рядок
 // із медіа, а рядки `media` і файли лишаються». Для кожної таблиці реєстру
 // `MEDIA_COLUMNS` шукаємо в КАТАЛОЗІ всіх предків, видалення яких доходить до
 // неї ланцюжком FK `ON DELETE CASCADE`. Кожна пара «предок → медіа-колонка»
@@ -14,7 +14,7 @@ vi.mock('@tanstack/react-start/server', () => ({ setResponseStatus: vi.fn() }));
 /** `предок → таблиця.колонка` → чому каскад тут не стирає медіа фабрикою. */
 const EXEMPT: Record<string, string> = {
   'users → profiles.avatar_url':
-    'користувача видаляє лише іменована операція deleteCustomer: аватар стирається двофазно (Е6г-15, Е6д-14), доказ — admin-customer-delete-photos/-locks',
+    'користувача видаляє лише іменована операція deleteCustomer: аватар стирається двофазно, доказ — admin-customer-delete-photos/-locks',
   'product_images → product_image_translations.storage_key':
     'рядок зображення видаляє лише команда агрегата (images.remove / modifications.remove), яка стирає файли діффом множин ключів товару; ресурсу product_images немає — доказ product-images-media',
 };
@@ -35,7 +35,7 @@ const declared = (): string[] =>
     key({ ancestor: c.parent, child: c.child, column: c.column }),
   );
 
-describe('гейт: каскадні видалення не лишають медіа (Е6д-19)', () => {
+describe('гейт: каскадні видалення не лишають медіа', () => {
   const db = useShippingAdminDb('simplycms_e6d_media_cascade');
 
   /** Пари (предок, дочірня таблиця) за транзитивним замиканням CASCADE-FK. */

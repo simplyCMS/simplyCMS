@@ -1,5 +1,5 @@
 /**
- * Гард demo-датасету діагностичного стенда (задача §2 блок C, план Р8).
+ * Гард demo-датасету діагностичного стенда.
  *
  * 🔴 Що саме доводиться: (а) колонка поза allowlist-ом у вивід НЕ потрапляє;
  * (б) заборонених таблиць (профілі/замовлення/персональні дані) у виводі
@@ -61,7 +61,7 @@ describe('dev-stand: allowlist і санітизація', () => {
   const sql = generateSeedSql(SAMPLE_DATASET);
 
   it('колонки поза allowlist-ом у вивід не потрапляють', () => {
-    // Знесені дзеркала товару й значення (М1, Task 17) зі старого дампу.
+    // Знесені дзеркала товару й значення зі старого дампу.
     expect(sql).not.toContain('panel-mono-450-legacy');
     expect(sql).not.toContain('Застаріла назва з бази');
     expect(sql).not.toContain('legacy-ref');
@@ -98,7 +98,7 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   it('кожен insert має on conflict … do update set', () => {
     const inserts = sql.match(/insert into public\./g) ?? [];
     const upserts = sql.match(/on conflict \(.+\) do update set/g) ?? [];
-    // 7 таблиць датасету + крок проєкції (М1, Task 14).
+    // 7 таблиць датасету + крок проєкції.
     expect(inserts.length).toBe(8);
     expect(upserts.length).toBe(inserts.length);
   });
@@ -114,7 +114,7 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
       'product_id, locale',
       'id',
       'id',
-      // крок проєкції (М1, Task 14)
+      // крок проєкції
       'product_id, locale',
     ]);
     expect(sql).not.toContain('coalesce(modification_id');
@@ -197,7 +197,7 @@ describe('dev-stand: ідемпотентна форма SQL', () => {
   it('таблиці — у топологічному порядку (батьки перед дітьми)', () => {
     const emitted = [...sql.matchAll(/insert into public\.([a-z_]+) \(/g)]
       .map((match) => match[1])
-      // Похідна проєкція (М1, Task 14) — не таблиця дампу, а крок після них.
+      // Похідна проєкція — не таблиця дампу, а крок після них.
       .filter((table) => table !== 'catalog_product_texts');
     expect(emitted).toEqual(FK_TABLE_ORDER.filter((t) => emitted.includes(t)));
   });
@@ -223,7 +223,7 @@ describe('dev-stand: дедуп — за id, а не за природним к�
   const sql = generateSeedSql(SAMPLE_DATASET);
 
   it('дві глобальні властивості (section_id null) — обидві у виводі', () => {
-    // Е4-6: slug глобально унікальний, тож близнюки різняться slug; NULL у
+    // Slug глобально унікальний, тож близнюки різняться slug; NULL у
     // section_id і далі не арбітр on conflict — дедуп за id.
     const parents = blockOf(sql, 'section_properties');
     expect(parents).toContain(SAMPLE_IDS.GLOBAL_PROPERTY_ID);

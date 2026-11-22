@@ -59,7 +59,7 @@ const adminRequestGuard = createMiddleware().server(
 );
 
 /**
- * Р23: непередбачена помилка server function не доходить до клієнта з текстом
+ * Непередбачена помилка server function не доходить до клієнта з текстом
  * Postgres (`Failed query … params`) чи `connect ECONNREFUSED host:port`.
  * Глобальна function-middleware стоїть ПЕРШОЮ в ланцюгу, тож `next()` кидає
  * помилку будь-якого рівня (валідатор, обробник, внутрішні міддлвари) — і ту
@@ -72,7 +72,7 @@ const maskUnexpectedErrors = createMiddleware({ type: 'function' }).server(
 );
 
 /**
- * Р23, канал SSR: помилка лоадера чи `beforeLoad`, кинута НЕ через server
+ * Канал SSR: помилка лоадера чи `beforeLoad`, кинута НЕ через server
  * function, потрапляла б у payload дегідратації як є. Адаптери `createStart`
  * йдуть у router-core ПЕРЕД `ShallowErrorPlugin` (а `domainErrorAdapter` — перед
  * цим), тож сюди доходять лише непередбачені помилки. Серверна половина —
@@ -97,7 +97,7 @@ const maskedErrorAdapter = createSerializationAdapter({
 
 // UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
 /**
- * `serializationAdapters` (Е3-20): без нього `@tanstack/router-core`'s
+ * `serializationAdapters`: без нього `@tanstack/router-core`'s
  * `ShallowErrorPlugin` серіалізує доменні помилки (`AdminConflictError`,
  * `AuthzError`) голим `.message` — клієнт не бачить `name`/`kind`/
  * `constraint`/`operation`, і адмінка показує технічний текст замість
@@ -109,7 +109,7 @@ const maskedErrorAdapter = createSerializationAdapter({
  * Start вмикається лише БЕЗ `startInstance`, тож тут він явний: без нього
  * server functions і POST-роути приймали б міжсайтові запити. Виняток —
  * `CSRF_EXEMPT_PREFIXES` у `simplycms/runtime/csrf` (Better Auth).
- * Далі стеля тіла (`bodyLimitMiddleware`, К3-Е6д-2): відмова за `Content-Length`
+ * Далі стеля тіла (`bodyLimitMiddleware`): відмова за `Content-Length`
  * до читання сесії й до `formData()` обробника server function.
  */
 export const startInstance = createStart(() => ({

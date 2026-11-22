@@ -13,7 +13,7 @@ import {
 /** Основна мова магазину для листа запрошення: без БД, але через конструктор осі. */
 const PRIMARY = cl('uk');
 
-// Invite власника (Task 7, В2-К1а) — заміна механіки `inviteUserByEmail`.
+// Invite власника — заміна механіки `inviteUserByEmail`.
 //
 // 🔴 Доводиться все, крім SMTP: транспорт у цьому оточенні недосяжний і
 // лишається боргом. Саме тому лист — чиста функція, а доставка — колбек.
@@ -39,7 +39,7 @@ function createFakeStore() {
       usersByEmail.set(email, id);
       return id;
     },
-    // Р19: випуск лишає лише токен; на бані не лягає нічого.
+    // Випуск лишає лише токен; на бані не лягає нічого.
     issueAdminInvite: async ({ identifier, userId, valueHash, expiresAt }) => {
       if (banned.has(userId)) return 'banned';
       tokens.set(identifier, { valueHash, expiresAt });
@@ -92,7 +92,7 @@ describe('issueOwnerInvite', () => {
     // Пошта нормалізується в нижній регістр — інакше `Owner@` і `owner@`
     // дали б двох різних власників.
     expect(fake.usersByEmail.has('owner@example.test')).toBe(true);
-    // Р19: роль видає лише прийняття запрошення.
+    // Роль видає лише прийняття запрошення.
     expect(fake.adminRoles.size).toBe(0);
     expect(result.existingUnverified).toBe(false);
     expect(result.url).toBe(
@@ -164,7 +164,7 @@ describe('issueOwnerInvite', () => {
   });
 });
 
-describe('issueOwnerInvite: забанений (Е6г-19)', () => {
+describe('issueOwnerInvite: забанений', () => {
   it('відмова OwnerInviteError(banned): URL немає, листа немає, ролі й токена немає', async () => {
     const fake = createFakeStore();
     const sent: MailMessage[] = [];

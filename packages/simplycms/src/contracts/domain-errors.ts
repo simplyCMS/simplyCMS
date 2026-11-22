@@ -1,5 +1,5 @@
 /**
- * Закрита родина доменних помилок, що перетинають межу serverFn (Е3-20).
+ * Закрита родина доменних помилок, що перетинають межу serverFn.
  *
  * 🔴 Без адаптера серіалізації `ShallowErrorPlugin`
  * (`@tanstack/router-core`, tag `$TSR/Error`, test: `value instanceof
@@ -17,7 +17,7 @@
  * дублювати рядкові літерали в трьох місцях і одного дня розійтися.
  * Серверним лишається мапінг кодів PG у конфлікт — `toAdminConflict`
  * (`simplycms/db`, файл `pg-errors.ts`). Членство в
- * `DOMAIN_ERROR_NAME` пускає клас крізь маскування Р23.
+ * `DOMAIN_ERROR_NAME` пускає клас крізь маскування непередбачених помилок.
  */
 import { REVIEW_SUBMIT_ERROR } from './objects/review';
 
@@ -25,11 +25,11 @@ export const DOMAIN_ERROR_NAME = {
   adminConflict: 'AdminConflictError',
   authz: 'AuthzError',
   validation: 'ValidationError',
-  /** Запитаного рядка немає (Р26): відрізняє «не знайдено» від збою запиту. */
+  /** Запитаного рядка немає: відрізняє «не знайдено» від збою запиту. */
   notFound: 'AdminNotFoundError',
   /** Машинний код відмови в `message` (`media/*`, `avatar/*`, `review/*`): клієнт мапить його в i18n. */
   coded: 'CodedError',
-  /** Версія агрегата розійшлась з очікуваною (М1, І14): HTTP 412. */
+  /** Версія агрегата розійшлась з очікуваною (І14): HTTP 412. */
   versionMismatch: 'VersionMismatchError',
   /** Джерело перекладу змінилось між читанням перекладача і записом (І13): 409. */
   sourceChanged: 'SourceChangedError',
@@ -117,7 +117,7 @@ export type CodedErrorCode =
 /**
  * Відмова з машинним кодом (`media/bad-format`, `review/already-submitted`…):
  * `message` — це КОД, а не текст, і клієнт порівнює його з каталогом i18n.
- * Звичайний `Error` у проді маскує Р23 (`Internal server error [ref …]`), і
+ * Звичайний `Error` у проді маскується (`Internal server error [ref …]`), і
  * користувач бачив би загальне «не збережено» замість «невірний формат».
  * Член закритої родини проходить маскування й серіалізацію без зміни коду.
  * Для діагностики сервера (англійський текст, не код) лишається `Error`.
@@ -130,7 +130,7 @@ export class CodedError extends Error {
 }
 
 /**
- * Види `AdminConflictError.kind` (Е3-7, Е5-9). `state` — порушення доменного
+ * Види `AdminConflictError.kind`. `state` — порушення доменного
  * стану, якого БД не виражає обмеженням (напр. «скасоване замовлення —
  * кінцеве»): 409 так само, як `unique`/`reference`, а `constraint` несе
  * код правила з `ADMIN_STATE_CONSTRAINT`. Адаптер серіалізації вид не
@@ -143,13 +143,13 @@ export type AdminConflictKind = (typeof ADMIN_CONFLICT_KINDS)[number];
 /** Коди правил стану (`kind: 'state'`) — один перелік для сервера й `adminErrorKey`. */
 export const ADMIN_STATE_CONSTRAINT = {
   orderCancelledFinal: 'order_cancelled_final',
-  // Е5б-10: редагування позицій оформленого замовлення.
+  // Редагування позицій оформленого замовлення.
   orderShippingUnavailable: 'order_shipping_unavailable',
   orderInsufficientStock: 'order_insufficient_stock',
   orderLastItem: 'order_last_item',
   orderItemNotPurchasable: 'order_item_not_purchasable',
   orderAmountOutOfRange: 'order_amount_out_of_range',
-  // Е6а-12/17/20: інваріанти доставки під `shipping-config`.
+  // Інваріанти доставки під `shipping-config`.
   shippingPricingUnsupported: 'shipping_pricing_unsupported',
   shippingProviderUnknown: 'shipping_provider_unknown',
   shippingZoneDefault: 'shipping_zone_default',
@@ -157,46 +157,46 @@ export const ADMIN_STATE_CONSTRAINT = {
   pickupPointMethodInvalid: 'pickup_point_method_invalid',
   pickupPointSystem: 'pickup_point_system',
   pickupPointHasStock: 'pickup_point_has_stock',
-  // Е6б-14/15/17: системні налаштування (`settings.manage`).
+  // Системні налаштування (`settings.manage`).
   storeLogoInvalid: 'store_logo_invalid',
   themeNotBuilt: 'theme_not_built',
   themeUnknown: 'theme_unknown',
   pluginUnknown: 'plugin_unknown',
-  // Е6в-16/17 (ред.2): інваріанти знижок під `discount-config`.
+  // Інваріанти знижок під `discount-config`.
   discountGroupCycle: 'discount_group_cycle',
   discountGroupDatesInvalid: 'discount_group_dates_invalid',
   discountConditionCategoryMissing: 'discount_condition_category_missing',
-  // Е6в-18/19: категорії покупців і автоправила під `customer-config`.
+  // Категорії покупців і автоправила під `customer-config`.
   userCategoryDefault: 'user_category_default',
   userCategoryHasCustomers: 'user_category_has_customers',
   userCategoryHasRules: 'user_category_has_rules',
   userCategoryInDiscount: 'user_category_in_discount',
   categoryRuleSameCategory: 'category_rule_same_category',
-  // Е6г-4/11: роль адміна під `admin-roles`.
+  // Роль адміна під `admin-roles`.
   adminRoleSelf: 'admin_role_self',
   adminRoleLast: 'admin_role_last',
   adminRoleBanned: 'admin_role_banned',
-  // Е6г-4: бан адміна заборонено — спершу зняти роль.
+  // Бан адміна заборонено — спершу зняти роль.
   customerIsAdmin: 'customer_is_admin',
-  // Е6г-15/16: видалення акаунта; позиції стертого замовлення не редагуються.
+  // Видалення акаунта; позиції стертого замовлення не редагуються.
   customerNotFound: 'customer_not_found',
   customerSelf: 'customer_self',
   orderPersonalDataErased: 'order_personal_data_erased',
-  // Е6д-1: новий референс зображення не є файлом цього запису (опція `media` фабрики).
+  // Новий референс зображення не є файлом цього запису (опція `media` фабрики).
   mediaRefInvalid: 'media_ref_invalid',
-  // Е6д-7: відгук зник між відкриттям списку й дією модератора.
+  // Відгук зник між відкриттям списку й дією модератора.
   reviewNotFound: 'review_not_found',
-  // Е6д-23: покупець відредагував відгук між читанням модератора і дією.
+  // Покупець відредагував відгук між читанням модератора і дією.
   reviewChanged: 'review_changed',
-  // М1 Task 14: поточну адресу/токен мови паралельно вставив інший запис (`languages.fill`
+  // Поточну адресу/токен мови паралельно вставив інший запис (`languages.fill`
   // чи команда) — дані вільні, а не зайняті; дію варто просто повторити. Так само
   // `order-statuses.setDefault`: колишній дефолт змінився між читанням і замком — клієнт
   // перечитує список, а не повторює наосліп.
   concurrentChange: 'concurrent_change',
-  // М2б Р19: інваріанти довідника статусів замовлень під `catalog.write`.
+  // Р19 майстер-плану: інваріанти довідника статусів замовлень під `catalog.write`.
   orderStatusDefault: 'order_status_default',
   orderStatusSystem: 'order_status_system',
-  // Фінальне рев'ю М1 (I-2, І19): код нової мови = поточна адреса основної мови — префікс мови
+  // І19: код нової мови = поточна адреса основної мови — префікс мови
   // перекрив би сторінку сутності. Хто займає — `AdminConflictError.owners`.
   languageCodeTaken: 'language_code_taken',
 } as const;
@@ -225,7 +225,7 @@ export class ValidationError extends Error {
 }
 
 /**
- * Запитаного рядка немає (Р26). Окремий клас потрібен, щоб клієнт відрізнив
+ * Запитаного рядка немає. Окремий клас потрібен, щоб клієнт відрізнив
  * справжнє «не знайдено» від збою запиту: plain `Error` летів би так само,
  * як відмова БД, і картка показувала б «не знайдено» на будь-який збій.
  * Член закритої родини, тож маскування помилок його не чіпає.
@@ -238,15 +238,15 @@ export class AdminNotFoundError extends Error {
 }
 
 /**
- * Конфлікт із даними, який власник може виправити сам (Е3-7): дубль
- * унікального значення, посилання, що тримає рядок, або (Е5-9, `state`)
+ * Конфлікт із даними, який власник може виправити сам: дубль
+ * унікального значення, посилання, що тримає рядок, або (`state`)
  * заборонений перехід доменного стану — його кидає іменована операція
  * сама (409 ставить межа операції, С-10). Окремий клас — щоб
  * клієнт показав зрозумілий тост за `error.name`. `name` і поля
  * (`kind`/`constraint`) — за T0-переліком `contracts/domain-errors`: його
- * читає й клієнтський `domainErrorAdapter` (Е3-20), що зберігає instanceof
+ * читає й клієнтський `domainErrorAdapter`, що зберігає instanceof
  * і поля через межу serverFn (раніше seroval губив усе, крім `.message`,
- * як і в `AuthzError` — К3-13).
+ * як і в `AuthzError`).
  */
 export class AdminConflictError extends Error {
   override readonly name = DOMAIN_ERROR_NAME.adminConflict;
@@ -267,8 +267,8 @@ export class AdminConflictError extends Error {
 }
 
 /**
- * Конфлікт правила стану (Е5б-10, Е6а-12). Спільний для іменованих операцій
- * і guard-хуків фабрики (Е6а-16). 🔴 Лише throw: статус 409 ставить межа
+ * Конфлікт правила стану. Спільний для іменованих операцій
+ * і guard-хуків фабрики. 🔴 Лише throw: статус 409 ставить межа
  * операції (`runAdminTransactions`, С-10), бо ядро кличуть і поза
  * HTTP-запитом (сід, порти), де `setResponseStatus` сам кидає виняток.
  */
@@ -345,11 +345,11 @@ export const VALIDATION_ISSUE_CODES = [
   'custom',
   'taken',
   'reserved',
-  // М1 Task 11: адресу не вивести з назви (нелатинське письмо без мовного пакета) — вказати вручну.
+  // Адресу не вивести з назви (нелатинське письмо без мовного пакета) — вказати вручну.
   'path_required',
-  // М1 Task 6: публікація мови, поки не всі сутності мають адресу й токени.
+  // Публікація мови, поки не всі сутності мають адресу й токени.
   'language_incomplete',
-  // М2а Task 5б (§19.15, І46): публікація мови, для якої в ядра немає мовного пакета.
+  // §19.15, І46: публікація мови, для якої в ядра немає мовного пакета.
   'language_pack_missing',
 ] as const;
 
@@ -455,7 +455,7 @@ export function isDomainErrorName(value: unknown): value is DomainErrorName {
 }
 
 /**
- * Чи це доменне «не знайдено» (Р26). Дукове за `name`: клієнт має `Error` з
+ * Чи це доменне «не знайдено». Дукове за `name`: клієнт має `Error` з
  * полями (адаптер serverFn), а не екземпляр серверного класу.
  */
 export function isNotFoundError(error: unknown): boolean {

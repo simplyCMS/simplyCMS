@@ -1,6 +1,5 @@
 /**
- * Чесність reveal-каналу в headless chromium (інкремент Б.3, Фаза 4, план Р6 /
- * знахідка V-5): корінь вибірки на розмітці БЕЗ `<main>` і три стани
+ * Чесність reveal-каналу в headless chromium: корінь вибірки на розмітці БЕЗ `<main>` і три стани
  * `jsDrivenSuspected`.
  *
  * Окремий файл, а не доважок до `design-import-motion.test.ts` (той уже 330+

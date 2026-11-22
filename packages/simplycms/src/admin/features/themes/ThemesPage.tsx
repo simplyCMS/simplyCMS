@@ -33,7 +33,7 @@ function ThemesSkeleton() {
   );
 }
 
-/** Сторінка «Теми оформлення» (Е6б-15): список і активація через serverFn. */
+/** Сторінка «Теми оформлення»: список і активація через serverFn. */
 export default function ThemesPage() {
   const t = useT();
   const { query, activate } = useThemes();

@@ -20,8 +20,8 @@ export interface PropertySchemaRow {
 }
 
 /**
- * Схема властивостей розділу (Task 10, Step 1) — ДВА-ТРИ запити, БЕЗ join
- * on-demand × on-demand (контракт Task 5): призначення розділу →
+ * Схема властивостей розділу — ДВА-ТРИ запити, БЕЗ join
+ * on-demand × on-demand (контракт on-demand колекцій): призначення розділу →
  * властивості (`inArray`) → опції обраних select/multiselect (`inArray`).
  *
  * 🔴 `inArray` з ПОРОЖНІМ масивом сервер відбиває (`impl/subset.ts`

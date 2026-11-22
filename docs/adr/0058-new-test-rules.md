@@ -17,8 +17,8 @@ Spec: `docs/architecture/test-contours.md` §0
 - Новий повільний тест (> 1 с на справжній БД) — з причиною в описі.
 
 ## Why
-- Правила записано в `docs/architecture/test-contours.md` § «0. Правила для нових тестів (діють з 2026-10-18». Діють з 2026-10-18 (`test-contours.md:23`).
-- Мотив 1,8 раза: `docs/architecture/test-contours.md` § «0. Правила для нових тестів (діють з 2026-10-18».
+- Правила записано в `docs/architecture/test-contours.md` § «0. Правила для нових тестів». Діють з 2026-10-18 (дата рішення — `Status`).
+- Мотив 1,8 раза: `docs/architecture/test-contours.md` § «0. Правила для нових тестів».
 - Правила продубльовано в `AGENTS.md` § «Команди» як обов'язкові.
 
 ## Rejected

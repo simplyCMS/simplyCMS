@@ -66,7 +66,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('DiscountEditPage: дати й цілі', () => {
-  it('збереження без змін: startsAt — той самий момент (друга «03:30», ред.2 Е6в-22)', async () => {
+  it('збереження без змін: startsAt — той самий момент (друга «03:30»)', async () => {
     render(<DiscountEditPage />, { wrapper });
     await screen.findByDisplayValue('2026-10-25T03:30');
     submit(t('common.save'));

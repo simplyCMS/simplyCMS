@@ -20,7 +20,7 @@ function assertDistinct(from?: string | null, to?: string) {
 }
 
 /**
- * Правило не переводить у ту саму категорію (Е6в-19):
+ * Правило не переводить у ту саму категорію:
  * `fromCategoryId === toCategoryId` → `category_rule_same_category`.
  * Insert — з рядка; update — злиття ПОТОЧНОГО рядка з patch (patch лише з
  * `toCategoryId`, рівним наявному `from`, інакше пройшов би). Викликається

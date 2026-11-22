@@ -9,7 +9,7 @@ export interface ModificationsToDelete {
 }
 
 /**
- * ЄДИНИЙ видаляч рядків `product_modifications` (М1, Task 14): опис товару
+ * ЄДИНИЙ видаляч рядків `product_modifications`: опис товару
  * (`saveDescription`), пакетний `remove` ресурсу модифікацій і `products.remove`
  * (до видалення самого товару). Спершу `FOR UPDATE ... ORDER BY id`, потім DELETE
  * рівно заблокованих рядків.

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Е5б Task 8 (G): поки зміна позиції в польоті, друга не шлеться — ні
+// Поки зміна позиції в польоті, друга не шлеться — ні
 // «Enter, потім blur» у полі кількості, ні повторне підтвердження видалення.
 // Справжні колекції + стаб межі serverFn, як у `OrderItemsEdit.test.tsx`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

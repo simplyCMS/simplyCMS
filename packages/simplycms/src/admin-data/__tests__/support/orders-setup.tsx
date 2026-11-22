@@ -1,5 +1,5 @@
 /**
- * Спільне налаштування тестів колекцій замовлень (Task 5 Е5): один
+ * Спільне налаштування тестів колекцій замовлень: один
  * QueryClient, справжні колекції з реєстру, live-сторінки списку.
  * 🔴 `vi.mock('simplycms/admin-server', …)` лишається в КОЖНОМУ тест-файлі.
  */
@@ -10,9 +10,9 @@ import { getCollection } from '../../registry';
 import { ordersCollection } from '../../collections/orders';
 import { orderItemsCollection } from '../../collections/order-items';
 
-// Значення ORDERS_PAGE_SIZE (Е5-14): константу оголошує Task 6 в
+// Значення ORDERS_PAGE_SIZE: константу оголошує
 // `admin/features/orders/list` (T5), а admin-data (T4) імпортувати звідти
-// не може. Інваріант `ORDERS_PAGE_SIZE + 1 <= maxLimit` стереже тест Task 6.
+// не може. Інваріант `ORDERS_PAGE_SIZE + 1 <= maxLimit` стереже тест списку замовлень.
 export const PAGE = 50;
 export const SAME = new Date('2026-10-01T10:00:00Z');
 

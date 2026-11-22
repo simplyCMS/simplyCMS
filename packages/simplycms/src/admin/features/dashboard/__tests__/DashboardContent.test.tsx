@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Дашборд на серверному шарі (Task 8, Е6г): мок межі `dashboardSummary`.
+// Дашборд на серверному шарі: мок межі `dashboardSummary`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';

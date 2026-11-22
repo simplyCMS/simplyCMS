@@ -8,7 +8,7 @@ import { loadBanners, withStorefrontDb } from 'simplycms/storefront/loaders';
  *
  * 🔴 Живе в `core/lib`, а не поруч із рештою serverFn-ів вітрини
  * (`storefront-routes/server`), суто через напрямок шарів: споживач — хук у
- * `core` (T5), а `storefront-routes` — теж T5, і тір-зона ПК3 забороняє
+ * `core` (T5), а `storefront-routes` — теж T5, і тір-зона (ПК3, ADR-0023) забороняє
  * імпорт убік/угору. Правильна відповідь — опустити ФУНКЦІЮ до спільного
  * шару, а не послабити зону.
  *

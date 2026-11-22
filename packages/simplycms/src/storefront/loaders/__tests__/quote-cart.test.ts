@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { checkedTextLocale } from 'simplycms/domain/translations';
 
 /**
- * Порожній кошик (Е6в-13): нульова квота без жодної транзакції. Ціни
+ * Порожній кошик: нульова квота без жодної транзакції. Ціни
  * непорожнього кошика доводить харнес (`price-cart.test.ts`) на живому
  * Postgres — тут лише межа «без звернення до БД».
  */

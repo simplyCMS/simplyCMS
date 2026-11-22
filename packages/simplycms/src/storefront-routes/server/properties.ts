@@ -23,7 +23,7 @@ export const getPropertyBySlug = createServerFn({ method: 'GET' })
     return withStorefrontDb((db) => loadPropertyBySlug(db, slug));
   });
 
-/** Опція характеристики з товарами; ціни — лише видів глядача (Р29). */
+/** Опція характеристики з товарами; ціни — лише видів глядача. */
 export const getPropertyOption = createServerFn({ method: 'GET' })
   .validator(
     z.object({

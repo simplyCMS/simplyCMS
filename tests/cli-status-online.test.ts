@@ -11,7 +11,7 @@ import { statusExitCode } from '../packages/cli/src/status-stage.mjs';
 import { readPrimaryLocale } from '../packages/simplycms/src/migrate/primary-locale';
 import { scaffoldFakeStore } from './lib/fake-core-store';
 
-// Онлайн-частина `status` й наповнення магазину в `doctor --online` (К3-Е8, Task 21).
+// Онлайн-частина `status` й наповнення магазину в `doctor --online`.
 // Ядро й мережа — фейкові; живу БД доводить `test:schema` (migrate-store-facts).
 const URL_WITH_PASSWORD = 'postgresql://app_runtime:hunter2@db:5432/shop';
 const ctx = { storeRoot: '/store', env: { DATABASE_URL: URL_WITH_PASSWORD } };

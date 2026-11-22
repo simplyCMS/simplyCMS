@@ -4,12 +4,12 @@
 // напр. registry.test.tsx. Відхилення від тексту плану — там директиви
 // не було.)
 /**
- * Контракт on-demand, на якому стоїть Е3 (спайк, що лишається тестом).
+ * Контракт on-demand, на якому стоїть шар on-demand колекцій (спайк, що лишається тестом).
  * Доводить без БД: (1) предикат useLiveQuery доходить до queryFn як
  * subset-payload з полями БЕЗ аліасу; (2) друга сторінка
  * useLiveInfiniteQuery з індексом несе offset (без індексу — префікс, кейс 2б); (3) findOne по id штовхає eq(id);
  * (4) leftJoin on-demand × eager резолвиться. Join on-demand × on-demand
- * свідомо НЕ вживається (схема властивостей — двома запитами, Task 10).
+ * свідомо НЕ вживається (схема властивостей — двома запитами).
  * Червоне тут = бібліотека поводиться не так, як припускає план.
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';
@@ -48,7 +48,7 @@ function setup({ indexed = true }: { indexed?: boolean } = {}) {
       queryClient,
       queryKey: ['contract-products', 'list'],
       syncMode: 'on-demand',
-      // Е3-16: індекс сортування — сторінки йдуть {limit, offset}, без попередження.
+      // Індекс сортування — сторінки йдуть {limit, offset}, без попередження.
       ...(indexed && {
         autoIndex: 'eager' as const,
         defaultIndexType: BTreeIndex,
@@ -91,7 +91,7 @@ function setup({ indexed = true }: { indexed?: boolean } = {}) {
   return { products, sections, calls, wrapper };
 }
 
-describe('on-demand контракт Е3', () => {
+describe('on-demand контракт', () => {
   it('(1) where eq доходить як filters з полем без аліасу', async () => {
     const { products, calls, wrapper } = setup();
     const { result } = renderHook(
@@ -111,7 +111,7 @@ describe('on-demand контракт Е3', () => {
     );
   });
 
-  it('(2) друга сторінка useLiveInfiniteQuery несе offset (з індексом сортування — Е3-16)', async () => {
+  it('(2) друга сторінка useLiveInfiniteQuery несе offset (з індексом сортування)', async () => {
     const { products, calls, wrapper } = setup({ indexed: true });
     const { result } = renderHook(
       () =>

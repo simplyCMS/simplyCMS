@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Е5б Task 8 (F): поки зміна статусу в польоті, повторне підтвердження (чи
+// Поки зміна статусу в польоті, повторне підтвердження (чи
 // інший вибір у select) не шле другого запиту. Справжні колекції + стаб
 // межі serverFn, як у `OrderDetailPage.test.tsx`.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

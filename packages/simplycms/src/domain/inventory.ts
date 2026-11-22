@@ -1,5 +1,5 @@
 // Pure-правило наявності — ЄДИНЕ місце, де вирішується «можна купити».
-// Перенесено з core/hooks/useProductsWithStock; переписано К2-Е0 (Е0-3).
+// Перенесено з core/hooks/useProductsWithStock; переписано.
 
 import type {
   ProductAvailabilityInput,
@@ -11,7 +11,7 @@ export type { ProductAvailabilityInput, StockData } from 'simplycms/contracts';
 /**
  * 🔴 Статус — джерело правди на читанні; кількість по точках — його деталь.
  *
- * До К2-Е0 у коді жило СІМ формул: три — перенос plpgsql `get_stock_info`
+ * Раніше в коді жило СІМ формул: три — перенос plpgsql `get_stock_info`
  * («qty > 0 або on_order»), дві — лише статус, JSON-LD — своя, і мертва
  * `isProductAvailable` у `core/hooks/useStock` («in_stock → qty > 0»). Перша
  * дає «Немає в наявності» кожному магазину, що не веде обліку по точках (а
@@ -20,7 +20,7 @@ export type { ProductAvailabilityInput, StockData } from 'simplycms/contracts';
  * залишок під `FOR UPDATE` і переводить статус в `out_of_stock` на нулі
  * (`storefront/loaders/order-create.ts`).
  *
- * Колонка `stock_status` NOT NULL (Е8-Р3): «статус не заданий» більше не
+ * Колонка `stock_status` NOT NULL: «статус не заданий» більше не
  * існує, тож `null`/`undefined` сюди не приймаються.
  */
 export function isPurchasable(status: StockStatus): boolean {

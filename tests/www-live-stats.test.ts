@@ -25,7 +25,7 @@ describe('isPlatformPackage', () => {
   it('впізнає scoped-пакети ядра і обидва unscoped', () => {
     expect(isPlatformPackage('@simplycms/cli')).toBe(true);
     expect(isPlatformPackage('create-simplycms-store')).toBe(true);
-    // Флагман К0 — unscoped: без нього лендінг не рахував би головний пакет.
+    // Флагман — unscoped: без нього лендінг не рахував би головний пакет.
     expect(isPlatformPackage('simplycms')).toBe(true);
   });
 

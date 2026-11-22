@@ -12,7 +12,7 @@ import {
 
 // UPSTREAM:START-2 — docs/architecture/upstream-workarounds.md
 /**
- * Е3-20: реєструється в `createStart(() => ({ serializationAdapters: […] }))`
+ * Реєструється в `createStart(() => ({ serializationAdapters: […] }))`
  * (host `src/start.ts`). Клієнт-безпечний: розпізнає закриту родину
  * (`AdminConflictError`/`AuthzError`/`ValidationError`) ДУКОМ-ТАЙПІНГОМ за `name` з T0-переліку
  * `contracts/domain-errors`: екземпляри не

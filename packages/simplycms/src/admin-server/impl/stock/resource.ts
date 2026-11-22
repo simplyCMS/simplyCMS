@@ -2,7 +2,7 @@ import { stockByPickupPoint } from 'simplycms/schema';
 import { ENTITY } from 'simplycms/contracts/entities';
 import { defineAdminResource } from '../resource';
 
-/** Залишки — читання фабрикою, запис — saveStock (Е3-3). */
+/** Залишки — читання фабрикою, запис — saveStock. */
 export const stockOps = defineAdminResource({
   entity: ENTITY.stockByPickupPoint,
   table: stockByPickupPoint,

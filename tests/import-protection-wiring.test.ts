@@ -7,7 +7,7 @@ import { importProtection } from 'simplycms/contracts/server-only';
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Гейт підключення Import Protection (трек T; переписаний К2-Е0, T-1).
+ * Гейт підключення Import Protection.
  *
  * 🔴 Попередня версія перевіряла ТЕКСТ трьох конфігів неанкерованими
  * регексами — і зеленіла на закоментованому блоці та на `enabled: false`

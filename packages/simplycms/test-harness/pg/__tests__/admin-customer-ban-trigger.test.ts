@@ -1,4 +1,4 @@
-// К3-Е6г, Task 5 (Е6г-14): тригер `sessions_refuse_banned` у ОБОХ порядках
+// Тригер `sessions_refuse_banned` у ОБОХ порядках
 // гонки «вставка сесії ↔ бан». Клієнти — окремі `pg.Client` як `app_runtime`,
 // після `begin` — `set local role app_admin` (роль `nologin`), тобто той самий
 // шлях, що в drizzle-proxy. Детерміновано: `stillPending`, не `Promise.all`.
@@ -19,7 +19,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { setCustomerBanOp } from 'simplycms/admin-server/impl';
 
-describe('тригер sessions_refuse_banned (Е6г-14)', () => {
+describe('тригер sessions_refuse_banned', () => {
   const db = F.useCustomersDb('simplycms_ban_trigger');
   const url = () => db.url();
 

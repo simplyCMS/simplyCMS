@@ -18,7 +18,7 @@ export type { CheckoutQuoteState } from './quote-state';
  * оформлення рахують `prepareCheckout`, тож «показане = записане» тримається
  * ЗА ПОБУДОВОЮ. Дебаунс — щоб набір символів у місті не бив запитами на
  * кожен keystroke; гейт на `hydrated` — щоб перша квота не пішла з
- * порожнім кошиком до того, як кошик прочитав `localStorage` (Task 12).
+ * порожнім кошиком до того, як кошик прочитав `localStorage`.
  */
 export function useCheckoutQuote({
   items,
@@ -30,9 +30,9 @@ export function useCheckoutQuote({
 }: CheckoutQuoteParams): CheckoutQuoteState {
   // Назви позицій у квоті — мовою сторінки: ті самі, що запише оформлення (М1).
   const locale = useContentLocale();
-  // Ознака гідратації — ОДНА на застосунок (Task 12, рішення А): та сама, за
+  // Ознака гідратації — ОДНА на застосунок: та сама, за
   // якою гейтяться редирект і рендер-гілка порожнього кошика в Checkout.tsx.
-  // Локальний `useSyncExternalStore` тут БУВ тимчасовим містком (Task 11) —
+  // Локальний `useSyncExternalStore` тут БУВ тимчасовим містком —
   // друга незалежна ознака гідратації в одному застосунку є саме тим класом
   // дефекту, з яким воює весь етап.
   const { hydrated } = useCart();

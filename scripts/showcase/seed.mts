@@ -4,16 +4,16 @@
  *
  * 🔴 Перший крок — guard С-16б (`assertPristine`), ДО будь-якого запису.
  * Далі (С-2, С-12): люди — штатним Better Auth; каталог, торгівля, статуси й
- * сценарії Е6г — ядрами під `withActor({ role: 'app_admin' })` поверх
+ * сценарії — ядрами під `withActor({ role: 'app_admin' })` поверх
  * `app_runtime`-підключення з `env.databaseUrl`; замовлення й відгуки — як
  * вітрина (`placeOrderFor`, `withCustomerDb`). Наприкінці — схвалення
- * відгуків ядром модерації (Е6д-7) і єдиний позначений сирий запис
+ * відгуків ядром модерації і єдиний позначений сирий запис
  * (`raw-writes.mts`): зсув часу.
  *
  * 🔴 Порядок має значення: зсув часу — останнім (після статусів, бо
  * `changeOrderStatus` ставить `updated_at`), видалення покупця — після його
  * замовлень, відгуку й аватара, файли якого стираються вже після зовнішньої
- * транзакції (Е6д-14); схваленню порядок байдужий (схвалюються `id`
+ * транзакції; схваленню порядок байдужий (схвалюються `id`
  * з `insertProductReview`, зокрема вже анонімний відгук видаленого).
  */
 import { sql } from 'drizzle-orm';
@@ -74,10 +74,10 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
 
   const discard = await withActor(ADMIN, async (db) => {
     const keys = await seedCustomerScenarios(db, people);
-    // Ядро модерації (Е6д-7), а не сирий UPDATE; `id` — від `insertProductReview`.
+    // Ядро модерації, а не сирий UPDATE; `id` — від `insertProductReview`.
     // Перший відгук — видалюваного покупця, тож фото кладемо на другий.
     await seedGuestVisibleMedia(db, ctx, reviewIds[1]!);
-    // Е6д-23: модерація звіряє версію — беремо її з рядків, які щойно вставили
+    // Модерація звіряє версію — беремо її з рядків, які щойно вставили
     // (мілісекунди, як віддає картка адмінки).
     const versions = await db.execute<{ id: string; updatedAt: string }>(sql`
       select id, ${isoVersion(sql`updated_at`)} as "updatedAt"
@@ -94,7 +94,7 @@ export async function seedShowcase(env: ShowcaseEnv): Promise<void> {
     );
     return keys;
   });
-  // Друга фаза стирання (Е6д-14) — лише ПІСЛЯ COMMIT: відкат зовнішньої
+  // Друга фаза стирання — лише ПІСЛЯ COMMIT: відкат зовнішньої
   // транзакції лишає файли аватара цілими разом із рядками.
   await completeMediaErasures(discard, env.media);
 }

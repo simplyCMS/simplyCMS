@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6, fix round 1 (рев'ю): статистика покупця наскрізь.
+// Рев'ю: статистика покупця наскрізь.
 // Домен email — з `users.email` (не з копії в `profiles`), провайдери — з
 // УСІХ рядків `accounts`, сума замовлень — `numeric` → число.
 // Фінальне рев'ю (F3): лок покупця в `applyCategoryRules` прибитий тестом.
@@ -9,7 +9,7 @@ import { applyCategoryRules, loadCustomerStats } from 'simplycms/commerce';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/customer-categories';
 
-describe('автоправила: статистика покупця з БД (Е6в-19)', () => {
+describe('автоправила: статистика покупця з БД', () => {
   const db = F.useCustomersDb('simplycms_rules_customer_stats');
   const url = () => db.url();
   const asAdmin = <T>(fn: Parameters<typeof withActor<T>>[1]) =>
@@ -113,7 +113,7 @@ describe('автоправила: статистика покупця з БД (�
     });
   });
 
-  it('Р30: непідтверджена пошта не дає домен — правило email_domain не спрацьовує, після підтвердження — спрацьовує', async () => {
+  it('Непідтверджена пошта не дає домен — правило email_domain не спрацьовує, після підтвердження — спрацьовує', async () => {
     const from = await F.seedCategory(url());
     const to = await F.seedCategory(url());
     const customer = await F.seedCustomer(url(), {

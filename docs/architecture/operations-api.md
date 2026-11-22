@@ -85,7 +85,7 @@
   очікування → 409 `idempotency_in_flight`. Відповідь 2xx дописує `storeIdempotentResponse` перед
   комітом; не-2xx не зберігається (ключ не «витрачено»). Область — `subjectKeyOf` (`token:<id>` для
   Bearer, `user:<uuid>` для cookie). Протухлі (`IDEMPOTENCY_TTL_HOURS`) прибираються порцією
-  `IDEMPOTENCY_PRUNE_BATCH` зі `SKIP LOCKED`. Тест — `idempotency.test.ts` (І28, Review Focus 3).
+  `IDEMPOTENCY_PRUNE_BATCH` зі `SKIP LOCKED`. Тест — `idempotency.test.ts` (І28).
 - **problem+json** (RFC 9457): ЄДИНА карта «помилка → (status, kind)» — `toProblem`; таблиця
   статусів — `PROBLEM_STATUS`, заголовки — стабільні англійські. Невідома помилка — 500 `internal`
   без `message` і стека (текст драйвера містить імена таблиць і роль; І29,
@@ -97,7 +97,7 @@
 |---|---|
 | `admin-server/impl/__tests__/registry-parity.test.ts` | І24: кожна операція реєстру має serverFn-обгортку й доступна через HTTP; кожна обгортка посилається на операцію; усі операції токенів — `sessionOnly` |
 | `eslint-rules/thin-server-fn.mjs` (`simplycms-ops/thin-server-fn`) | І25: обгортка рівно тонкої форми; `invokeFromServerFn`/`passThrough` — лише з `simplycms/operations/server` |
-| `eslint-rules/no-core-outside-operation.mjs` (`simplycms-ops/no-core-outside-operation`) | І25: `withActor`, `runAdmin`, `runAdminTransactions`, `*In` — лише в `run` операції; зона — роути, `src/admin`, вітринні серверні модулі, файли serverFn |
+| `eslint-rules/no-core-outside-operation.mjs` (`simplycms-ops/no-core-outside-operation`) | І25: `withActor`, `runAdmin`, `runAdminTransactions`, `*In` — лише в `run` операції; зона — роути, `packages/simplycms/src/admin`, вітринні серверні модулі, файли serverFn |
 | `eslint-rules/server-fn-top-level.mjs` | `createServerFn` лише топ-рівневим `const`; реекспорт `createServerFn` заборонено і специфікатором, і оголошенням (`export const csf = createServerFn`, `export default …`); трекер бачить аліаси (імпорт, namespace, оголошення, присвоєння) |
 | `eslint-rules/legacy-admin-server-fns.json` + `tests/eslint-rules/legacy-ratchet.test.ts` | перелік serverFn, ще не перенесених на реєстр (М3 його знесе), лише скорочується |
 | `admin-server/impl/__tests__/user-accessible-operations.test.ts` | які операції доступні покупцю (роль `user`) |

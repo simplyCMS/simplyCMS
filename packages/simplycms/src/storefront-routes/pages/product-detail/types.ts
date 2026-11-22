@@ -1,4 +1,4 @@
-// Спільні типи контейнера картки товару (контракт тем v3, Фаза 3).
+// Спільні типи контейнера картки товару.
 
 import type { StockStatus, ThresholdHint } from 'simplycms/contracts';
 import type { ProductImageViewModel } from 'simplycms/contracts/views';
@@ -47,7 +47,7 @@ export interface CurrentPricing {
   price: number | undefined;
   oldPrice: number | null | undefined;
   sku: string | null | undefined;
-  /** Порогові підказки знижок (Е6в-12) для блоку ціни. */
+  /** Порогові підказки знижок для блоку ціни. */
   hints: ThresholdHint[];
   isInStock: boolean;
   discountPercent: number | null;

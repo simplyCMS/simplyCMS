@@ -11,7 +11,7 @@ import type { OrderRow } from '../orders/resource';
 import { orderProjection } from './editable';
 
 /**
- * Грошова арифметика редагування позицій — у ЦІЛИХ центах (Е5б-13): ні
+ * Грошова арифметика редагування позицій — у ЦІЛИХ центах: ні
  * конкатенації рядків `numeric`, ні float-дрейфу (`3 × 1234.55`), ні
  * переповнення колонки при кількості 9999.
  */
@@ -46,24 +46,24 @@ export function fromCents(cents: number): string {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 }
 
-/** Сума за межею колонки → 409 `order_amount_out_of_range` ДО запису (Е5б-13). */
+/** Сума за межею колонки → 409 `order_amount_out_of_range` ДО запису. */
 export function assertWithin(cents: number, max: number): void {
   if (cents > max) stateConflict(ADMIN_STATE_CONSTRAINT.orderAmountOutOfRange);
 }
 
 /**
- * Кроки (6)–(8) КАНОНУ Е5б-8 — під уже взятим `orders … FOR UPDATE`, після
+ * Кроки (6)–(8) КАНОНУ — під уже взятим `orders … FOR UPDATE`, після
  * запису позиції:
  *
  * 6. `subtotal = Σ order_items.total` SQL-сумою (рядок) → центи.
- * 7. Доставка за правилами чекауту (Е5б-2): `validateShippingChoice` з
+ * 7. Доставка за правилами чекауту: `validateShippingChoice` з
  *    методом, містом, точкою і ЗАПИСАНОЮ зоною замовлення + `quoteShippingCost` від нового
  *    `subtotal`. Будь-яка відмова (метод вимкнено/`NULL`, точка недійсна,
  *    тарифу немає, мінімум/максимум суми) → 409 `order_shipping_unavailable`.
  * 8. Межі всіх трьох колонок — ДО `update orders set subtotal,
  *    shipping_cost, total = subtotal + shipping_cost, updated_at`.
  *
- * Знімок доставки (Е6а-23): разом із сумами оновлюється ЛИШЕ
+ * Знімок доставки: разом із сумами оновлюється ЛИШЕ
  * `shipping_data.pricing` — інакше примітка `carrier` суперечила б новому
  * `shipping_cost`. Назва способу, адреса й точка лишаються на момент
  * оформлення; невалідний знімок (старі рядки, `{}`) не чіпаємо.
@@ -85,7 +85,7 @@ export async function recomputeOrderTotals(
     deliveryAddress: order.deliveryAddress,
     recordedZoneId: order.shippingZoneId,
   });
-  // Той самий рушій, що в чекауті: `carrier` дає 0, `rates` — тариф (Е6а-10).
+  // Той самий рушій, що в чекауті: `carrier` дає 0, `rates` — тариф.
   const quote =
     typeof choice === 'string'
       ? null
@@ -94,7 +94,7 @@ export async function recomputeOrderTotals(
     stateConflict(ADMIN_STATE_CONSTRAINT.orderShippingUnavailable);
   const shipping = toCents(quote.cost.toFixed(2));
   const total = subtotal + shipping;
-  // Захисна: окремо тестом не пінується — її перекриває assertWithin(total) за побудовою (Е5б-17).
+  // Захисна: окремо тестом не пінується — її перекриває assertWithin(total) за побудовою.
   assertWithin(subtotal, MAX_CENTS_NUMERIC_12_2);
   assertWithin(shipping, MAX_CENTS_NUMERIC_10_2);
   assertWithin(total, MAX_CENTS_NUMERIC_12_2);

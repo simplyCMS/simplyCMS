@@ -1,4 +1,4 @@
-// Резолв цін вибірки каталогу середовищем вітрини (Е6в-10, Е6в-11).
+// Резолв цін вибірки каталогу середовищем вітрини.
 
 import { useMemo } from 'react';
 import { useDiscountEnvironment } from 'simplycms/core/hooks/useDiscountEnvironment';

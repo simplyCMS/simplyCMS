@@ -52,7 +52,7 @@ codebase-memory як доказ не використовувався: «хто 
   Хелпера html→text у `S/` немає. Те саме для опису розділу. Prior art: Shopware тримає в `product_translation` похідне
   `description_teaser` — «Read-only, HTML-stripped excerpt of the description, derived on write» (ProductTranslationDefinition.php, trunk).
   Для нас це аргумент мати в проєкції (товар, локаль) готовий plain-text опис.
-- `<html lang>` = `normalizeLocale(config.locale)` (`src/routes/__root.tsx:41,95`); hreflang/og:locale відсутні.
+- `<html lang>` = `normalizeLocale(config.locale)` (`src/routes/__root.tsx`); hreflang/og:locale відсутні.
 
 ### (г) ~190 `createServerFn`, 125 в `admin-server/index.ts`, `defineAdminResource`, `CoreActor` — ПІДТВЕРДЖЕНО
 
@@ -80,7 +80,7 @@ codebase-memory як доказ не використовувався: «хто 
 
 Посилання на `languages`: схема (`S/schema/schema.ts:155-166`), тип, `ENTITY.languages`, пункт сайдбару й заглушка. Локаль:
 модульна змінна `storeLocale` (`S/site/store-locale.ts:8-31`), задається `declareStoreLocale(normalizeLocale(config.locale))`
-(`src/server.ts:31`), `config.locale = import.meta.env.VITE_LOCALE ?? 'uk-UA'` (`simplycms.config.ts`). Читачі: листи (`S/auth/*-mail.ts`,
+(`src/server.ts`), `config.locale = import.meta.env.VITE_LOCALE ?? 'uk-UA'` (`simplycms.config.ts`). Читачі: листи (`S/auth/*-mail.ts`,
 `invite.ts`) і `place-order.ts:50` (контекст листа замовлення).
 **Пропущене 82 і рамкою (важливо):** `Locale = 'uk' | 'en'` — ЗАМКНЕНИЙ union (`S/i18n/types.ts:4`), і на ньому стоять каталоги
 теми (`ThemeModule.messages`, `S/themes/types.ts:167`) і плагіна (`PluginMessages`, `S/plugin-sdk/types.ts:22`). Рамка каже «мультимовність

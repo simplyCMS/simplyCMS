@@ -52,7 +52,7 @@ export function StatusesTable({
             </TableRow>
           ) : (
             statuses.map((status, index) => {
-              // Системні статуси тримають скасування замовлення (Е5-6).
+              // Системні статуси тримають скасування замовлення.
               const locked = SYSTEM_ORDER_STATUS_CODES.includes(status.code);
               return (
                 <TableRow key={status.id}>

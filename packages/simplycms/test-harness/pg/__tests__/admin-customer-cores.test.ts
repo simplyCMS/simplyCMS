@@ -1,4 +1,4 @@
-// Showcase Task 4 (С-2, С-15): ядра операцій покупця Е6г поза HTTP-запитом —
+// Ядра операцій покупця поза HTTP-запитом —
 // у транзакції викликача під `withActor({ role: 'app_admin' })`, без
 // `requireGrant`. Актор — явний `CoreActor`: `system` пише `changed_by = NULL`
 // і не має перевірки «не я», але «не адмін» діє так само, як в операції.
@@ -17,7 +17,7 @@ const asAdmin = <T>(fn: (db: ActorDb) => Promise<T>) =>
 const SYSTEM: CoreActor = { kind: 'system' };
 const ADMIN: CoreActor = { kind: 'admin', userId: F.ADMIN_ID };
 
-describe('ядра операцій покупця поза запитом (showcase Task 4)', () => {
+describe('ядра операцій покупця поза запитом (showcase)', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_cores');
   const url = () => db.url();
   const makeAdmin = (userId: string) =>

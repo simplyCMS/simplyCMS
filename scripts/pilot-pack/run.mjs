@@ -84,7 +84,7 @@ export async function runGates(opts) {
   // Gate B потребує живого сервера і живої БД, тож у `--pack-only` не існує.
   if (!opts.packOnly) results.push(await gateServer(opts));
 
-  // MEDIA і MAIL — запаковане ядро проти Garage і Mailpit (К3-Е8, Task 13). Після
+  // MEDIA і MAIL — запаковане ядро проти Garage і Mailpit. Після
   // B, бо їм потрібен лише скретч, а не живий сервер; у `--pack-only` — skip із
   // причиною, щоб звіт показував, що їх не ганяли.
   step('Gate MEDIA — драйвер s3 запакованого ядра проти Garage');

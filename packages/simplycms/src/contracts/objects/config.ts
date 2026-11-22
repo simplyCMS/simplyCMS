@@ -1,5 +1,5 @@
 // Конфіг-типи рушія (медіа-опції). `SeoConfig` прибрано разом із
-// `ConfigProvider.seo` (Е6б-11): SEO-дані магазину — профіль у БД.
+// `ConfigProvider.seo`: SEO-дані магазину — профіль у БД.
 
 export interface ImageOpts {
   width?: number;

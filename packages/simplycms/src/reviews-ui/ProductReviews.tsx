@@ -44,7 +44,7 @@ export function ProductReviews({
     userReview,
   } = useProductReviews(productId);
   const [showForm, setShowForm] = useState(false);
-  // Відгук у режимі правки (Е6д-23): форма замінює картку «ви вже залишили».
+  // Відгук у режимі правки: форма замінює картку «ви вже залишили».
   const [editing, setEditing] = useState(false);
 
   const visibleReviews = user

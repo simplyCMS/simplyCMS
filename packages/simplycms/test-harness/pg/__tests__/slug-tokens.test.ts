@@ -1,4 +1,4 @@
-// М1 Task 5 (І21; К2; Review Focus 2): реєстр мовних токенів `slug_tokens`.
+// І21: реєстр мовних токенів `slug_tokens`.
 // Дзеркало url-paths.test.ts для простору (locale, token_kind, scope_id).
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -60,7 +60,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     ).rejects.toMatchObject(FK);
   });
 
-  it('токен модифікації з scope_id IS NULL → check_violation (К2)', async () => {
+  it('токен модифікації з scope_id IS NULL → check_violation', async () => {
     const t = await mod();
     await expect(
       tok('uk', 'no-scope', { id: t.id, scopeId: null }, false),
@@ -174,7 +174,7 @@ describe('реєстр мовних токенів slug_tokens (І21)', () => {
     });
   });
 
-  describe('відкладена наявність поточного токена (К4, тригер реєстру)', () => {
+  describe('відкладена наявність поточного токена (тригер реєстру)', () => {
     it('видалення поточного токена без заміни — відмова на коміті; заміна в тій самій транзакції — коміт', async () => {
       const t = await mod('trg-a');
       const ukRows = `modification_id = '${t.id}' and locale = 'uk'`;

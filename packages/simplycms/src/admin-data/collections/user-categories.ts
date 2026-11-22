@@ -2,7 +2,7 @@ import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { UserCategory } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { UserCategory } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertUserCategories,
   listUserCategories,
@@ -13,7 +13,7 @@ import type { CollectionDef } from '../registry';
 import { persistenceHandlers, type WriteBack } from '../handlers';
 import { invalidateDiscountConsumers } from '../discount-cache';
 
-/** Категорії покупців — eager. Remove — guarded removeUserCategories (Е6в-18), дефолт — setDefaultUserCategory, не update колекції. */
+/** Категорії покупців — eager. Remove — guarded removeUserCategories, дефолт — setDefaultUserCategory, не update колекції. */
 function create(queryClient: QueryClient) {
   // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.
   const ref: { current?: WriteBack<UserCategory> } = {};

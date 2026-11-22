@@ -9,7 +9,7 @@ import { reportTxError } from '../../../lib/report-tx-error';
 import { invalidateCustomerCounts } from '../categories/useCategoryCustomerCounts';
 
 /**
- * «Запустити всі правила» (Е6в-19, Е6в-25). Збій окремих покупців не валить
+ * «Запустити всі правила». Збій окремих покупців не валить
  * запуск: сервер повертає `failed`, і він показується ОКРЕМИМ тостом — щоб
  * «змінено: 3» не читалось як «усе гаразд», коли двох не оброблено.
  */
@@ -33,7 +33,7 @@ export function useRunCategoryRules() {
       await Promise.all([
         invalidateCustomerCounts(queryClient),
         invalidateDiscountConsumers(queryClient),
-        // Список і картка покупців показують категорію (Е6г-6).
+        // Список і картка покупців показують категорію.
         queryClient.invalidateQueries({ queryKey: [ENTITY.profiles] }),
       ]);
     } catch (e) {

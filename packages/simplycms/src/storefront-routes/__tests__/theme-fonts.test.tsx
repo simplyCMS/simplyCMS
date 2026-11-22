@@ -4,7 +4,7 @@ import { render, cleanup } from '@testing-library/react';
 import { ThemeFonts } from '../shells/ThemeFonts';
 
 /**
- * Рендер `<link>`-тегів із `ThemeModule.fonts` (контракт v2.2, Р5/Step 6).
+ * Рендер `<link>`-тегів із `ThemeModule.fonts` (контракт v2.2).
  *
  * Фільтрація тут делегована `safeFontStylesheets` (юніти — у
  * `theme-system`), тому перевіряємо саме межу компонента: валідні URL

@@ -5,14 +5,14 @@ import { guardPickupPoints } from './guards';
 import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 
 /**
- * Точки видачі (Е6а, Task 4).
+ * Точки видачі.
  *
  * 🔴 `isSystem` — readonly: системна точка — склад, з якого списують і на
  * який повертають (`inventory/stock-write.ts`). `methodId` — `insertOnly` і
  * перевіряється `guardPickupPoints` під `LOCK_KEYS.shippingConfig`.
- * `workingHours`/`coordinates` — readonly: легасі їх теж не редагував
- * (поза Е6а). Фабричний `remove` serverFn-ом НЕ виставляється: видалення —
- * лише `removePickupPointsOp` (Е6а-17).
+ * `workingHours`/`coordinates` — readonly: легасі їх теж не редагував.
+ * Фабричний `remove` serverFn-ом НЕ виставляється: видалення —
+ * лише `removePickupPointsOp`.
  */
 export const pickupPointsOps = defineAdminResource({
   entity: ENTITY.pickupPoints,

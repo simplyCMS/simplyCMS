@@ -1,6 +1,6 @@
-// Фінальне рев'ю К3-Е6в, F5b: SSR-ціна гостя — за ТИМ САМИМ резолвером типу
+// F5b: SSR-ціна гостя — за ТИМ САМИМ резолвером типу
 // ціни, що `loadPricingContext` (тип дефолтної категорії, інакше глобальний
-// дефолтний). SSR лишається гостьовим (К3-Е6в-1), але база в серверному HTML
+// дефолтний). SSR лишається гостьовим, але база в серверному HTML
 // не має розходитися з ціною, яку гість побачить після гідрації.
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -9,7 +9,7 @@ import {
   quoteCartFor,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем.
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { loadProductListPayload } from 'simplycms/storefront-routes/server/product-list-payload';
 import * as F from './fixtures/commerce';

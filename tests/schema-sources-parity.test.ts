@@ -12,7 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /**
- * Гейт парності джерел схеми (факт F2 виконання Task 9, Task 12 Step 4а):
+ * Гейт парності джерел схеми (факт F2):
  * автоматичної звірки `schema.ts` ↔ `drizzle/meta/0000_snapshot.json` ↔
  * `drizzle/0000_init.sql` ↔ `migrations/0001_init.sql` НЕ БУЛО —
  * `baseline.test.ts` (test:schema) накочує канон і перевіряє інваріанти

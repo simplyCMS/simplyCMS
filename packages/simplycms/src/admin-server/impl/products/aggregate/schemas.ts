@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { code } from '../../languages/view';
 import { textsRowSchema } from '../../translatable/wire';
 
-// Схеми вводу/виводу агрегата товару (М1, Task 11); перетворення й `expectedVersion` —
+// Схеми вводу/виводу агрегата товару; перетворення й `expectedVersion` —
 // спільні, `translatable/wire.ts`.
 
 const optText = (max: number) => z.string().max(max).nullable().optional();

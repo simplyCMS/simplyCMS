@@ -71,7 +71,7 @@ export const removeMyAvatar = createServerFn({ method: 'POST' }).handler(
     const erased = await withSessionDb((db, userId, operator) =>
       clearAvatarFor(db, operator, userId),
     );
-    // Файл — після COMMIT (Е6д-14); не кидає, хвіст лишається в outbox.
+    // Файл — після COMMIT; не кидає, хвіст лишається в outbox.
     await completeMediaErasures(erased);
   },
 );

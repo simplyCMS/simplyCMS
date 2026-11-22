@@ -30,7 +30,7 @@ export default function CustomerStatsCard({
     [t('admin.users.daysSince'), String(days)],
     [
       t('admin.users.emailDomain'),
-      // Правило `email_domain` бачить домен лише підтвердженої пошти (Р30):
+      // Правило `email_domain` бачить домен лише підтвердженої пошти:
       // позначка пояснює адміну, чому правило не спрацювало.
       emailDomain && !card.emailVerified
         ? t('admin.users.emailDomainUnverified', { domain: emailDomain })

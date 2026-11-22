@@ -36,7 +36,7 @@
   (`packages/simplycms/migrations/0001_init.sql`) нічого з цього немає.
 - **Фільтри каталогу — клієнтські**: `CatalogSection.tsx` тримає `useState` +
   `useMemo`, URL не бере участі, SSR не бачить фільтрів
-  ([`seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md) §1.1).
+  ([`docs/tasks/seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md) §1.1).
 - **Контент одномовний.** Таблиця `languages` (`schema.ts:100`) існує, але її
   єдині споживачі — пункт меню в сайдбарі й `PlaceholderPage`. У `products` одна
   колонка `name`; таблиці перекладів немає. Двомовність сьогодні — лише
@@ -50,7 +50,7 @@
 |---|---|
 | Snowball **не має** українського алгоритму (38 тек, 35 мов; російський є) | перелік `algorithms/` апстріму |
 | PostgreSQL **не постачає** української конфігурації (PG 17 — 28 мов + `simple`; PG 18 — 29 + `simple`) | `select cfgname from pg_ts_config` на живому інстансі |
-| Meilisearch **не має стемінгу для жодної мови**; кирилиця = NFKD + lowercase | `charabia` 0.10.0, перелік `src/normalizer/`, `src/segmenter/` |
+| Meilisearch **не має стемінгу для жодної мови**; кирилиця = NFKD + lowercase | `charabia` 0.10.0, перелік тек normalizer і segmenter у charabia |
 | Typesense **відхиляє** `stem: true` для `uk` з HTTP 400 | `field.h:153` → `sb_stemmer_new(locale)` |
 
 Ціна відсутності морфології — не «гірша релевантність», а **нуль**: на каталозі
@@ -372,7 +372,7 @@ suggest словника.
 
 ## 6. Контракт порту
 
-Розміщення: `packages/simplycms/src/contracts/ports/search.ts` (**T0**, нуль
+Розміщення: порт search у `contracts/ports` пакета simplycms (**T0**, нуль
 рантайм-залежностей, поруч із наявними `CatalogRepository` / `MediaProvider`).
 
 ```ts
@@ -465,8 +465,8 @@ export interface SearchUnsupportedError extends Error {
 Хто і коли вирішує переіндексувати — справа ядра і не мусить мінятись при зміні
 рушія.
 
-**Розміщення реалізації:** `packages/simplycms/src/search/` (**T2** — потребує
-`simplycms/db`), мовні пакети — `packages/simplycms/src/lang/` (**T1**).
+**Розміщення реалізації:** packages/simplycms/src/search/ (**T2** — потребує
+`simplycms/db`), мовні пакети — packages/simplycms/src/lang/ (**T1**).
 🔴 Обидві теки додаються в `eslint.tier-zones.mjs` разом із кодом; негативний
 контроль — `tests/tier-boundary.test.ts`.
 
@@ -530,7 +530,7 @@ sequenceDiagram
 фасет — параметр із дефолтом, бо саме він найбільше впливає на латентність при
 високій кардинальності.
 
-**Стик із фасетною навігацією:** [`seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md)
+**Стик із фасетною навігацією:** [`docs/tasks/seo-ssr-faceted-navigation.md`](../../tasks/seo-ssr-faceted-navigation.md)
 описує URL-схему, політику індексованості й single-facet лендинги. Ця спека дає
 під неї **виконавчий шар**: `filter` + `facets` у `CatalogQuery` і серверний
 підрахунок. Клієнтський `useMemo`-фільтр (`CatalogSection.tsx`) зноситься в
@@ -658,10 +658,10 @@ Postgres не зобовʼязаний мати superuser.
 
 | Гейт | Що доводить |
 |---|---|
-| `tests/lang-pack-conformance` | Кожен заявлений мовний пакет проходить фікстуру парадигм своєї мови. 🔴 Пакет без фікстури — не пакет |
-| `tests/search-symmetry` | Індексація і запит проходять **той самий** мовний шар. Класичний спосіб мовчки зламати пошук |
-| `tests/search-driver-conformance` | Для кожної опційної можливості драйвер або відповідає коректно, або кидає `SearchUnsupportedError`. Два канали запуску, як у тем |
-| `tests/search-visibility` | Неактивні сутності не потрапляють у видачу (RLS на індексі немає — це обовʼязок коду) |
+| tests/lang-pack-conformance | Кожен заявлений мовний пакет проходить фікстуру парадигм своєї мови. 🔴 Пакет без фікстури — не пакет |
+| tests/search-symmetry | Індексація і запит проходять **той самий** мовний шар. Класичний спосіб мовчки зламати пошук |
+| tests/search-driver-conformance | Для кожної опційної можливості драйвер або відповідає коректно, або кидає `SearchUnsupportedError`. Два канали запуску, як у тем |
+| tests/search-visibility | Неактивні сутності не потрапляють у видачу (RLS на індексі немає — це обовʼязок коду) |
 | `tests/tier-boundary` | Теки `lang/` і `search/` не порушують напрямок тірів |
 | `test:schema` | Таблиці, індекси, гранти, розширення — у каноні міграцій |
 | Бенчмарк-фікстура | Каталог 10k товарів: латентність запиту, фасетів і переіндексації в межах бюджету |

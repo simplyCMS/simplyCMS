@@ -73,7 +73,7 @@ function resolveMail(core, env) {
 }
 
 /**
- * Контекст офлайн-перевірок: ЄДИНЕ місце його збірки для `doctor` і `status` (Task 19),
+ * Контекст офлайн-перевірок: ЄДИНЕ місце його збірки для `doctor` і `status`,
  * щоб async-дані (`engines`, пошта, режим) не губилися в одному з викликачів — без них
  * №17 мовчки став би `skip`.
  * @param {string} storeRoot
@@ -83,7 +83,7 @@ export async function buildOfflineContext(
   storeRoot,
   { production: flag = false } = {},
 ) {
-  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP (Е8-Р17).
+  // Ядро магазину дає і предикат прод-рантайму, і розбір групи SMTP.
   const core = await importFromStore(storeRoot, 'simplycms/env').catch(
     () => null,
   );
@@ -93,7 +93,7 @@ export async function buildOfflineContext(
     production,
     mail: core ? resolveMail(core, { ...env, ...process.env }) : null,
     storeRoot,
-    // №17 (Р32): діапазони engines збирає async-шар, сама перевірка синхронна.
+    // №17: діапазони engines збирає async-шар, сама перевірка синхронна.
     engines: await collectEngines(storeRoot),
     manifest: readStoreManifest(storeRoot),
     env,

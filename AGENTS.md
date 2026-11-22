@@ -60,9 +60,7 @@ OpenCart-подібна платформа: ядро постачає карка
 (з амендментом B3′/B5″/B13); маркетплейс —
 [`2026-08-18-marketplace-platform-design.md`](docs/superpowers/specs/2026-08-18-marketplace-platform-design.md);
 хмара —
-[`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md);
-консолідація пакетів —
-[`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md).
+[`2026-08-19-cloud-platform-design.md`](docs/superpowers/specs/2026-08-19-cloud-platform-design.md).
 
 ## Стек
 

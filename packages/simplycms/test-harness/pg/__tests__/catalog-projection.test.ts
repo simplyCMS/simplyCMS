@@ -1,4 +1,4 @@
-// М1 Task 14, І23: проєкція тексту товару = функція джерела після КОЖНОЇ команди.
+// І23: проєкція тексту товару = функція джерела після КОЖНОЇ команди.
 // Звірка `reconcileProductTexts` після команди мусить давати `mismatched: 0`.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -36,7 +36,7 @@ vi.mock('../../../src/i18n/packs/registry', async (importOriginal) => {
   };
 });
 
-describe('проєкція тексту товару (М1, Task 14)', () => {
+describe('проєкція тексту товару', () => {
   const db = useAddressingDb('simplycms_catalog_projection');
   const { addr } = pathHelpers(db);
   const reconcile = () =>

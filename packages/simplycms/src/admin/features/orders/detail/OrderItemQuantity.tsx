@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useT } from 'simplycms/i18n';
 import { Input } from 'simplycms/ui/input';
 
-/** Межі кількості позиції (Е5б-9) — ті самі, що на сервері. */
+/** Межі кількості позиції — ті самі, що на сервері. */
 export const QTY_MIN = 1;
 export const QTY_MAX = 9999;
 

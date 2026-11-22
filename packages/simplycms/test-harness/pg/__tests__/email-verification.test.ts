@@ -1,4 +1,4 @@
-// К3-Е8, Task 12b (Р30): підтвердження пошти при реєстрації зі SMTP — наскрізь
+// Підтвердження пошти при реєстрації зі SMTP — наскрізь
 // проти справжньої БД. Закриває pre-hijack (чужу пошту займали до власника).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -15,7 +15,7 @@ const SITE = 'https://shop.example';
 const PASSWORD = 'verify-password-not-a-real-one';
 const SECRET = 'integration-secret-not-a-real-one';
 
-describe('підтвердження пошти при реєстрації (Р30)', () => {
+describe('підтвердження пошти при реєстрації', () => {
   const db = F.useCustomersDb('simplycms_email_verify');
   const url = () => db.url();
   const sent: MailMessage[] = [];

@@ -1,4 +1,4 @@
-// М1 Task 14, І23: паритет SQL-предиката `is_translated` з `isTranslatedForSeo`,
+// І23: паритет SQL-предиката `is_translated` з `isTranslatedForSeo`,
 // замок набору мов у refresh і гонка fill з командою (два з'єднання).
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
@@ -26,7 +26,7 @@ import {
   saveDescription,
 } from './fixtures/product-aggregate';
 
-describe('проєкція тексту: паритет, замок, гонка fill (М1, Task 14)', () => {
+describe('проєкція тексту: паритет, замок, гонка fill', () => {
   const db = useAddressingDb('simplycms_catalog_projection_parity');
   const reconcile = () =>
     db.admin((d) => reconcileProductTexts(d, { limit: 10_000 }));

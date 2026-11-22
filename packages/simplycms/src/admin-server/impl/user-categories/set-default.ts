@@ -9,8 +9,8 @@ import { LOCK_KEYS } from 'simplycms/db/lock-keys';
 export const setDefaultUserCategoryInput = z.object({ id: z.uuid() });
 
 /**
- * Дефолтна категорія покупців рівно одна (Е6в-18). Гість і профіль без
- * категорії оцінюються як дефолтна (Е6в-19) — вікна «нуль дефолтних» бути
+ * Дефолтна категорія покупців рівно одна. Гість і профіль без
+ * категорії оцінюються як дефолтна — вікна «нуль дефолтних» бути
  * не може. Порядок — як у `price-types/set-default.ts`:
  *  1. `LOCK_KEYS.customerConfig` — ПЕРШИЙ запит (той самий бере
  *     `removeUserCategoriesOp`, тож remove(X) не вклиниться між читанням і

@@ -1,4 +1,4 @@
-// М1 Task 6 (І16): запис у `languages` — лише під ексклюзивним замком
+// І16: запис у `languages` — лише під ексклюзивним замком
 // `languages-set`; правило тримає тригер БД `languages_require_lock`.
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';

@@ -6,7 +6,7 @@ import * as authSchema from '../../src/schema/auth';
 import * as mediaSchema from '../../src/schema/media';
 import * as coreSchema from '../../src/schema/schema';
 
-// Витяг політик RLS із декларацій Drizzle (Task 5, план В2-К1а).
+// Витяг політик RLS із декларацій Drizzle.
 //
 // 🔴 Джерело — самі обʼєкти `pgTable`, а не текст файлу: парсер по рядках
 // зламався б на першому ж перенесенні, а `getTableConfig` віддає рівно те,
@@ -45,7 +45,7 @@ function roleNames(to: PgPolicyConfig['to']): string[] {
 function schemaTables(): PgTable[] {
   // Set: `schema.ts` реекспортує `./auth` і `./media`, тож ті самі таблиці
   // приходять з двох модулів. Доки в них не було політик, дубль був невидимий;
-  // `media_erasures` (Е6д-20) подвоїла б свою політику у звіряннi.
+  // `media_erasures` подвоїла б свою політику у звіряннi.
   const tables = new Set<PgTable>();
   for (const module of SCHEMA_MODULES)
     for (const exported of Object.values(module))

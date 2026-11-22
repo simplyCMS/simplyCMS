@@ -1,5 +1,5 @@
-// Рантайм-гейт повноти `deps` (Е1б, Task 1): чи справді агрегат читає ЛИШЕ
-// таблиці, названі у своєму `AGGREGATE[name].deps`. Е1а лише довела, що
+// Рантайм-гейт повноти `deps`: чи справді агрегат читає ЛИШЕ
+// таблиці, названі у своєму `AGGREGATE[name].deps`. лише довела, що
 // deps ІСНУЮТЬ (парність зі схемою) — не те, що вони ПОВНІ. Тут — перехоплення
 // живого SQL, а не читання декларації.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -34,7 +34,7 @@ function tablesInSql(sql: string): string[] {
   return [...sql.matchAll(re)].map((m) => m[1].toLowerCase());
 }
 
-/** UUID демо-сіду (migrations/demo/demo-seed.sql — статичні за Е0). */
+/** UUID демо-сіду (migrations/demo/demo-seed.sql — статичні за). */
 const MOD_ID = '10000003-0000-4000-8000-000000000001'; // модифікація «odnofazny»
 const PRODUCT_NO_MODS = '10000002-0000-4000-8000-000000000001'; // панель 450w-mono
 const PRODUCT_WITH_MODS = '10000002-0000-4000-8000-000000000004'; // інвертор 5kw
@@ -71,7 +71,7 @@ const FIXTURES = [
   `update public.section_properties set has_page = true where slug = 'tip-invertora'`,
 ];
 
-describe('Е1б: deps агрегатів повні відносно фактичного SQL', () => {
+describe('deps агрегатів повні відносно фактичного SQL', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_aggregate_deps');
   let dbUrl = '';
@@ -166,7 +166,7 @@ describe('Е1б: deps агрегатів повні відносно факти�
       const m = await import('simplycms/storefront/loaders');
       const v =
         await import('../../../src/storefront/loaders/viewer-prices-db');
-      // Р29: гість і покупець — набір видів цін покупця читає ще й його
+      // Гість і покупець — набір видів цін покупця читає ще й його
       // профіль і категорію (`profiles`, `user_categories`).
       for (const actor of [null, userId])
         await v.withViewerPricesDb(actor, (db, viewer) =>

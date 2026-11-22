@@ -32,7 +32,7 @@ const buildLoginSchema = (t: Translator) =>
 export default function Auth() {
   const t = useT();
   // Назва магазину — з профілю, а не з каталогу ядра: ключ `auth.brand`
-  // показував би всім магазинам один рядок (Е6б-20).
+  // показував би всім магазинам один рядок.
   const { name: storeName, contacts } = useStoreProfile();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as Record<
@@ -52,7 +52,7 @@ export default function Auth() {
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
-  // Р30: переживає спінер `authLoading` нижче, який розмонтовує форму реєстрації.
+  // Переживає спінер `authLoading` нижче, який розмонтовує форму реєстрації.
   const [awaitingEmail, setAwaitingEmail] = useState<string | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
 

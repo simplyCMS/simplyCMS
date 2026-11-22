@@ -25,7 +25,7 @@ const renderCard = (
     </TestI18nProvider>,
   );
 
-describe('OrderDeliveryCard — знімок доставки (Е6а-8)', () => {
+describe('OrderDeliveryCard — знімок доставки', () => {
   // Точку потім перейменували («Інша»), а `pickupPointId` занулила FK:
   // картка мусить показати те, що бачив покупець, а не uuid.
   it('показує назву й адресу точки зі знімка при pickupPointId = null', () => {

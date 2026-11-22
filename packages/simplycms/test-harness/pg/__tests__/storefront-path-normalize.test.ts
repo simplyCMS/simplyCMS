@@ -1,4 +1,4 @@
-// М1 Task 15 (І20, І33, І37; Review Focus 5) проти живого Postgres: нормалізація
+// І20, І33, І37: проти живого Postgres: нормалізація
 // адреси за РЕАЛЬНИМ реєстром (`url_paths`, `slug_tokens`) і сторінка товару з проєкції.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -26,7 +26,7 @@ import { localeSet } from '../../locale';
 
 const SET = localeSet('uk', ['uk', 'en'], ['uk', 'en', 'de']);
 
-describe('адреса товару: реєстр, нормалізація і сторінка (Task 15)', () => {
+describe('адреса товару: реєстр, нормалізація і сторінка', () => {
   const db = useAddressingDb('simplycms_storefront_path');
   const run = (path: string) =>
     normalizeStorefrontRequest(

@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6 (Е6в-15, Е6в-18, Е6в-20): дефолтна категорія під
+// Дефолтна категорія під
 // `customer-config` (детерміновано — holdAdvisoryLock/stillPending), ручне
 // призначення з `category_locked` (лічильник і пошук — admin-customer-lookup).
 import { describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ import {
   setDefaultUserCategoryOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: дефолт і ручне призначення (Е6в-18/20)', () => {
+describe('admin: дефолт і ручне призначення', () => {
   const db = F.useCustomersDb('simplycms_admin_customer_assign');
   const url = () => db.url();
   const defaults = () =>
@@ -70,7 +70,7 @@ describe('admin: дефолт і ручне призначення (Е6в-18/20)
     const history = await F.historyOf(url(), customer);
     expect(history).toEqual([
       expect.objectContaining({
-        from_category_id: F.DEFAULT_CATEGORY, // NULL = дефолтна (Е6в-19)
+        from_category_id: F.DEFAULT_CATEGORY, // NULL = дефолтна
         to_category_id: vip,
         reason: 'Оптовий клієнт',
         changed_by: F.ADMIN_ID,

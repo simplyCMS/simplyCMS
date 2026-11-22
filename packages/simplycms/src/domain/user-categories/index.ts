@@ -1,5 +1,5 @@
 // simplycms/domain/user-categories — публічна поверхня рушія автоправил
-// категорій покупців (Е6в-19).
+// категорій покупців.
 
 export { evaluateCategoryRules } from './engine';
 export {

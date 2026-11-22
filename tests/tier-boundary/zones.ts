@@ -1,4 +1,4 @@
-// Таблиця очікувань тір-зон (ПК3, трек К0) — окремо від асертів, щоб обидва
+// Таблиця очікувань тір-зон (ПК3, ADR-0023) — окремо від асертів, щоб обидва
 // файли лишались у межах 150 рядків.
 //
 // 🔴 Очікування задані РУКАМИ: тест не має переказувати ту саму структуру, з
@@ -36,55 +36,55 @@ export const ZONES: ReadonlyArray<readonly [string, string, string]> = [
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Порт сховища (Е2) — T2 з upward-винятком лише на `db`; `react-query`
+  // Порт сховища — T2 з upward-винятком лише на `db`; `react-query`
   // того самого тіру у виняток НЕ входить, тож ловиться.
   [
     'packages/simplycms/src/storage',
     'simplycms/react-query',
     'simplycms/domain/media',
   ],
-  // Облік залишків (Е3-5) — T2 з upward-винятком лише на `db`; імпорт назад
-  // у вітрину (звідки модуль перенесено) — рівно та заборона, яку рішення
-  // Е3-5 мало закрити.
+  // Облік залишків — T2 з upward-винятком лише на `db`; імпорт назад
+  // у вітрину (звідки модуль перенесено) — рівно та заборона, яку
+  // мало закрити.
   [
     'packages/simplycms/src/inventory',
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Ціноутворення й доставка (Е5б-5) — T2 з upward-винятком лише на `db`;
+  // Ціноутворення й доставка — T2 з upward-винятком лише на `db`;
   // імпорт назад у вітрину (звідки рушій перенесено) — рівно та заборона,
-  // яку рішення Е5б-5 мало закрити.
+  // яку мало закрити.
   [
     'packages/simplycms/src/commerce',
     'simplycms/storefront/loaders',
     'simplycms/db',
   ],
-  // Резолвер груп env (Е8-Р7) — T2 без жодних upward-винятків: чиста функція
+  // Резолвер груп env — T2 без жодних upward-винятків: чиста функція
   // над переданим оточенням, `db` їй ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/env', 'simplycms/db', 'simplycms/contracts'],
-  // Охорона серверного входу (Е8, Р23/Р27) — T2, upward лише `env`: до БД їй
+  // Охорона серверного входу — T2, upward лише `env`: до БД їй
   // діла нема, тож ловиться `db`.
   [
     'packages/simplycms/src/server-guard',
     'simplycms/db',
     'simplycms/contracts',
   ],
-  // Build-time плагіни Vite (Е8) — T2 без upward-винятків: Node-код збірки,
+  // Build-time плагіни Vite — T2 без upward-винятків: Node-код збірки,
   // `db` йому ні до чого — тож ловиться навіть він.
   ['packages/simplycms/src/vite', 'simplycms/db', 'simplycms/contracts'],
-  // Накат міграцій (Е8-Р2) — T2, upward-винятки лише файли `db/lock-keys` і `i18n/packs`
+  // Накат міграцій — T2, upward-винятки лише файли `db/lock-keys` і `i18n/packs`
   // (`exempt-files.test.ts`): `db` (withActor) йому не потрібен, тож ловиться.
   ['packages/simplycms/src/migrate', 'simplycms/db', 'simplycms/contracts'],
-  // Прод-старт (К3-Е8, F5) — T2, upward лише `env` і `migrate`: `db` (withActor)
+  // Прод-старт — T2, upward лише `env` і `migrate`: `db` (withActor)
   // старту не потрібен, тож ловиться.
   ['packages/simplycms/src/prod-start', 'simplycms/db', 'simplycms/migrate'],
-  // Пошта (Е8, Task 10/12) — T2, upward `env`, `db`, `schema`, `i18n`; `auth`
+  // Пошта — T2, upward `env`, `db`, `schema`, `i18n`; `auth`
   // кличе її, а не навпаки, тож зворотний імпорт ловиться (цикл auth ↔ mail).
   ['packages/simplycms/src/mail', 'simplycms/auth', 'simplycms/db'],
-  // Кеш профілю й вшиті теми (Е6б-7) — T2, upward лише `db`; `auth` і `i18n` того ж
-  // тіру — поза винятком (М2а Task 6: `store-locale` знесено, `i18n` тут більше не потрібен).
+  // Кеш профілю й вшиті теми — T2, upward лише `db`; `auth` і `i18n` того ж
+  // тіру — поза винятком (`store-locale` знесено, `i18n` тут більше не потрібен).
   ['packages/simplycms/src/site', 'simplycms/i18n', 'simplycms/db'],
-  // Серверні переклади (М1, Tasks 3 і 11) — T2, upward лише `db` (транзакція викликача);
+  // Серверні переклади — T2, upward лише `db` (транзакція викликача);
   // `auth` того ж тіру — поза винятком: переклади про права нічого не знають.
   ['packages/simplycms/src/translations', 'simplycms/auth', 'simplycms/db'],
   ['packages/simplycms/src/ui', 'simplycms/react-query', 'simplycms/ui/utils'],
@@ -170,7 +170,7 @@ export function toRelativeForms(dir: string, specifier: string): string[] {
   const tail = specifier.replace(/^simplycms\//, '');
   // 🔴 Форм на ту саму ціль дві, і обидві мусять ловитись: коротка — через
   // теку-контейнер тіру (`src`), довша — через корінь пакета. Друга вилізла
-  // ревʼю К0 (коло 2): гард закривав лише першу. Для зон під `routes/` обидві
+  // ревʼю консолідації (коло 2): гард закривав лише першу. Для зон під `routes/` обидві
   // збігаються в один рядок, тому набір дедуплікується.
   const forms = dir.startsWith('packages/simplycms/routes/')
     ? [`../../src/${tail}`]

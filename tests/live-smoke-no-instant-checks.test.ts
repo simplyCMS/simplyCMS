@@ -210,7 +210,7 @@ export async function f({ page }) {
     });
 
     it('🔴 очікувачі транзитивні: очікування на другому рівні хелперів — червоне', () => {
-      // Негативний контроль Task 18 п. 10.2: `wait` прямо, `step` — лише через `wait`.
+      // Негативний контроль: `wait` прямо, `step` — лише через `wait`.
       const src = `const wait = async (page) => { ${wait} };
 const step = async (page) => { await wait(page); };
 const q = async () => sql(u, 'select 1');

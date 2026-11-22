@@ -23,7 +23,7 @@ import { translationTable } from "./translation-table"
 //     після TS-перевірки), а не SECURITY DEFINER-функція без гарда;
 //   • ~16 політик «публічне читання» існували лише тому, що браузер робив
 //     прямий SELECT через PostgREST. У сервер-first (B1) браузер у БД не
-//     ходить, тож їхню роботу роблять ГРАНТИ (Task 4).
+//     ходить, тож їхню роботу роблять ГРАНТИ.
 //
 // 🔴 НАСЛІДОК, який мусить бути видимим, а не випадковим: разом із
 // «публічним читанням» зникла й фільтрація видимості в БД — предикати
@@ -42,9 +42,9 @@ import { translationTable } from "./translation-table"
 //
 // `app.current_user_id()` (читач GUC `app.user_id`) і ролі `app_user`/
 // `app_admin` створюються ДО цих таблиць — файлом `0000_prelude.sql`
-// канону міграцій (Task 3); гранти — `0002_grants.sql` (Task 4).
+// канону міграцій; гранти — `0002_grants.sql`.
 //
-// 🔴 Контракт дат (К2-Е0, Е0-2): усі timestamp — `mode: 'date'`, як у
+// 🔴 Контракт дат: усі timestamp — `mode: 'date'`, як у
 // `./auth.ts`. `mode: 'string'` віддавав не ISO, а сирий текст Postgres
 // (`drizzle-orm/node-postgres` підкладає identity-парсер для timestamptz), і
 // він доїжджав до `<lastmod>` sitemap і в браузер. У застосунку дата — `Date`;
@@ -72,7 +72,7 @@ export const shippingPricing = pgEnum("shipping_pricing", ['rates', 'provider', 
 export const stockStatus = pgEnum("stock_status", ['in_stock', 'out_of_stock', 'on_order'])
 
 
-// Назва статусу — лише в `order_status_translations` (М2б, Р19: перша сутність на
+// Назва статусу — лише в `order_status_translations` (Р19 майстер-плану: перша сутність на
 // фабриці команд). `version` — ETag агрегата: піднімають усі команди запису (Д7), зокрема
 // `setDefault` і `reorder`, що пишуть кілька кореневих рядків.
 export const orderStatuses = pgTable("order_statuses", {
@@ -85,7 +85,7 @@ export const orderStatuses = pgTable("order_statuses", {
 	version: integer().default(1).notNull(),
 }, (table) => [
 	unique("order_statuses_code_key").on(table.code),
-	// К3-14: інваріант «не більше одного дефолту» тримає БД, не два
+	// Інваріант «не більше одного дефолту» тримає БД, не два
 	// нетранзакційні запити з браузера (перевірено — сторінка адмінки
 	// перемикає is_default по всій таблиці, без scope на батька).
 	uniqueIndex("idx_order_statuses_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
@@ -139,9 +139,9 @@ export const sectionProperties = pgTable("section_properties", {
 			foreignColumns: [sections.id],
 			name: "section_properties_section_id_fkey"
 		}).onDelete("cascade"),
-	// Е4-6: slug властивості унікальний глобально — вітрина шукає лише за slug
+	// Slug властивості унікальний глобально — вітрина шукає лише за slug
 	unique("section_properties_slug_key").on(table.slug),
-	// Ціль складеного FK значень `(property_id, value_kind)` (М1, І6, Р18): колонку значення
+	// Ціль складеного FK значень `(property_id, value_kind)` (І6, Р18): колонку значення
 	// прив'язує до типу властивості БД, а не код.
 	unique("section_properties_id_property_type_key").on(table.id, table.propertyType),
 ]);
@@ -162,7 +162,7 @@ export const userCategories = pgTable("user_categories", {
 		}).onDelete("set null"),
 	unique("user_categories_code_key").on(table.code),
 	index("idx_user_categories_price_type_id").on(table.priceTypeId),
-	// К3-14: та сама глобальна семантика, що в order_statuses (перевірено —
+	// Та сама глобальна семантика, що в order_statuses (перевірено —
 	// адмінка перемикає is_default по всій таблиці через `.neq('id', …)`).
 	uniqueIndex("idx_user_categories_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 ]);
@@ -172,7 +172,7 @@ export const languages = pgTable("languages", {
 	// Канонічний BCP 47 (регістр значущий): сегмент URL — `lower(code)`.
 	code: text().notNull(),
 	name: text().notNull(),
-	// Машина станів мови (М1, І1–І3): draft → published → disabled. Основна мова
+	// Машина станів мови (І1–І3): draft → published → disabled. Основна мова
 	// лише `published` і незмінна — це тримають CHECK нижче й тригер
 	// `languages_guard` (`0004_functions.sql`), а не код операцій.
 	status: languageStatus().default('draft').notNull(),
@@ -292,7 +292,7 @@ export const orderItems = pgTable("order_items", {
 	pgPolicy("order_items_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
-// ── Значення властивостей (М1, Р18, І5–І8) ─────────────────────────────────
+// ── Значення властивостей (Р18, І5–І8) ─────────────────────────────────
 // Колонку значення прив'язує до типу властивості БД, а не код команди:
 //  • складений FK `(property_id, value_kind) → section_properties(id, property_type)`
 //    (І6): тип значення = тип властивості; `ON UPDATE RESTRICT` — зміна типу
@@ -317,7 +317,7 @@ export const modificationPropertyValues = pgTable("modification_property_values"
 	modificationId: uuid("modification_id").notNull(),
 	propertyId: uuid("property_id").notNull(),
 	valueKind: propertyType("value_kind").notNull(),
-	// Як у товару: `numeric(15,4)`, а не голий `numeric` (М1, Р18).
+	// Як у товару: `numeric(15,4)`, а не голий `numeric` (Р18).
 	numericValue: numeric("numeric_value", { precision: 15, scale:  4 }),
 	optionId: uuid("option_id"),
 	boolValue: boolean("bool_value"),
@@ -404,7 +404,7 @@ export const propertyOptions = pgTable("property_options", {
 			name: "property_options_property_id_fkey"
 		}).onDelete("cascade"),
 	unique("property_options_property_id_slug_key").on(table.propertyId, table.slug),
-	// Ціль складених FK `(property_id, option_id)` значень і `(scope_id, option_id)` токенів (М1, І7).
+	// Ціль складених FK `(property_id, option_id)` значень і `(scope_id, option_id)` токенів (І7).
 	unique("property_options_property_id_id_key").on(table.propertyId, table.id),
 ]);
 
@@ -435,7 +435,7 @@ export const sectionPropertyAssignments = pgTable("section_property_assignments"
 export const products = pgTable("products", {
 	id: uuid().primaryKey().notNull(),
 	sectionId: uuid("section_id"),
-	// Тексти й адреса товару — у `product_translations` і `url_paths` (М1, Task 17), фото —
+	// Тексти й адреса товару — у `product_translations` і `url_paths`, фото —
 	// у `product_images`; дзеркальних колонок основної мови в базі немає.
 	isActive: boolean("is_active").default(true).notNull(),
 	isFeatured: boolean("is_featured").default(false).notNull(),
@@ -444,7 +444,7 @@ export const products = pgTable("products", {
 	hasModifications: boolean("has_modifications").default(true),
 	sku: varchar(),
 	stockStatus: stockStatus("stock_status").default('in_stock').notNull(),
-	// Оптимістична версія агрегата опису (М1, І14): будь-яка команда опису збільшує її
+	// Оптимістична версія агрегата опису (І14): будь-яка команда опису збільшує її
 	// на 1 у своїй транзакції; ціни й залишки версію не чіпають.
 	version: integer().default(1).notNull(),
 }, (table) => [
@@ -460,7 +460,7 @@ export const productModifications = pgTable("product_modifications", {
 	id: uuid().primaryKey().notNull(),
 	productId: uuid("product_id").notNull(),
 	// Назва — `product_modification_translations`, токен — `slug_tokens`, фото —
-	// `product_images` (М1, Task 17).
+	// `product_images`.
 	sku: varchar({ length: 100 }),
 	isDefault: boolean("is_default").default(false).notNull(),
 	sortOrder: integer("sort_order").default(0).notNull(),
@@ -474,13 +474,13 @@ export const productModifications = pgTable("product_modifications", {
 			name: "product_modifications_product_id_fkey"
 		}).onDelete("cascade"),
 	// Ціль складеного FK `slug_tokens (scope_id, modification_id)`: токен
-	// модифікації не може вказати на модифікацію чужого товару (М1, К2).
+	// модифікації не може вказати на модифікацію чужого товару (К2).
 	unique("product_modifications_product_id_id_key").on(table.productId, table.id),
-	// К3-14: дефолт scoped на product_id — модифікації належать товару.
+	// Дефолт scoped на product_id — модифікації належать товару.
 	uniqueIndex("idx_product_modifications_single_default").using("btree", table.productId).where(sql`(is_default = true)`),
 ]);
 
-// ── Переклади й зображення товару (М1, expand) ──────────────────────────────
+// ── Переклади й зображення товару (expand) ──────────────────────────────
 // Форма перекладу — майстер §3.1: складений PK `(<e>_id, locale)` без власного
 // `id` (природний ключ), `locale → languages(code) ON DELETE RESTRICT`, `source_hashes`
 // з хешами джерела на момент перекладу. Перекладні колонки NULLABLE навмисно:
@@ -595,10 +595,10 @@ const textC = customType<{ data: string }>({
 	},
 });
 
-// Реєстр адрес сутностей (М1, І15–І16, І18): одна адреса на сегмент URL, поточна
+// Реєстр адрес сутностей (І15–І16, І18): одна адреса на сегмент URL, поточна
 // й історична (стара адреса дає 301 на поточну). `path` — ASCII, тож `COLLATE "C"`:
 // префіксний `LIKE` генератора суфіксів іде індексом `UNIQUE(locale, path)`.
-// У М1 лише `product_id`; М2 додає section/property/option і розширює CHECK.
+// Спершу лише `product_id`; М2 додає section/property/option і розширює CHECK.
 // Наявність поточної адреси для кожної мови `draft`/`published` тримають
 // відкладені тригери `require_current_address` (`0004_functions.sql`).
 export const urlPaths = pgTable("url_paths", {
@@ -626,7 +626,7 @@ export const urlPaths = pgTable("url_paths", {
 	check("url_paths_path_format", sql`${table.path} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
 ]);
 
-// Реєстр мовних токенів (М1, І21): slug модифікації в просторі
+// Реєстр мовних токенів (І21): slug модифікації в просторі
 // `(locale, token_kind, scope_id)`; для модифікації `scope_id` — товар.
 // `MATCH SIMPLE` складеного FK рядок із `scope_id IS NULL` не перевіряє, тому
 // область тримають явні CHECK (К2), а `token_kind` — частина ключа
@@ -659,7 +659,7 @@ export const slugTokens = pgTable("slug_tokens", {
 	check("slug_tokens_slug_format", sql`${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`),
 ]);
 
-// Проєкція тексту товару для вітрини (М1, Task 14, І23): текст УЖЕ з fallback на
+// Проєкція тексту товару для вітрини (І23): текст УЖЕ з fallback на
 // основну мову, `is_translated` = «перекладено для SEO» (§3.4), `path` — поточна адреса
 // мови. ПОХІДНА таблиця: оновлюється синхронно в транзакції команди (`refreshProductTexts`),
 // істина — `product_translations` + `url_paths`; розбіжність ловить `reconcileProductTexts`.
@@ -714,7 +714,7 @@ export const shippingMethods = pgTable("shipping_methods", {
 	code: varchar({ length: 50 }).notNull(),
 	name: text().notNull(),
 	description: text(),
-	// Без default навмисно (Е6а-6): спосіб без провайдера — дефект, і кожна вставка
+	// Без default навмисно: спосіб без провайдера — дефект, і кожна вставка
 	// (фікстура, сід, адмінка) мусить назвати його явно. Значення — `ShippingProviderId`.
 	provider: text().notNull(),
 	pricing: shippingPricing().default('rates').notNull(),
@@ -737,7 +737,7 @@ export const shippingZones = pgTable("shipping_zones", {
 	sortOrder: integer("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
-	// К3-14: таблиця без parent-колонки — дефолт глобальний (перевірено —
+	// Таблиця без parent-колонки — дефолт глобальний (перевірено —
 	// у ShippingZoneEdit.tsx unset-логіки взагалі немає, легасі-шлях мертвий).
 	uniqueIndex("idx_shipping_zones_single_default").using("btree", table.isDefault.asc().nullsLast().op("bool_ops")).where(sql`(is_default = true)`),
 	// Інваріант «основна зона завжди активна» — на рівні БД, а не лише в
@@ -788,7 +788,7 @@ export const systemSettings = pgTable("system_settings", {
 	unique("system_settings_key_key").on(table.key),
 ]);
 
-// Покоління процесних кешів читання (Мультимовність М1, Д6): мутація збільшує
+// Покоління процесних кешів читання (Д6): мутація збільшує
 // лічильник у СВОЇЙ транзакції, інші репліки бачать це одним запитом на
 // HTTP-запит. Ключ — природний PK (`CACHE_KEYS` ядра), а не uuid: рядки
 // фіксовані й засіваються в `0003_seed.sql`, перекладної пари немає.
@@ -804,7 +804,7 @@ const bytea = customType<{ data: Buffer }>({
 	},
 });
 
-// Токени HTTP API (М1, І27). У БД лише sha256 високоентропійного секрету
+// Токени HTTP API (І27). У БД лише sha256 високоентропійного секрету
 // (пошук за повним хешем, UNIQUE); сам токен показується один раз. `user_id` —
 // суб'єкт, від імені якого токен діє (атрибуція дій); сервісний обліковий запис —
 // користувач без рядка `accounts`. Доступ лише в `app_admin`: токен читає
@@ -836,7 +836,7 @@ export const apiTokens = pgTable("api_tokens", {
 		}).onDelete("set null"),
 ]);
 
-// Сервісні облікові записи (М1, І27): власники токенів інтеграцій. Ознака — РЯДОК
+// Сервісні облікові записи (І27): власники токенів інтеграцій. Ознака — РЯДОК
 // тут, а не відсутність `accounts` (запрошена людина теж ще без `accounts`).
 // Окрема таблиця, а не колонка `users.is_service`: `users` належить Better Auth.
 // Взаємовиключність із `accounts` тримають два тригери (`0004_functions.sql`).
@@ -857,7 +857,7 @@ export const serviceAccounts = pgTable("service_accounts", {
 		}).onDelete("set null"),
 ]);
 
-// Ключі ідемпотентності HTTP API (М1, І28). Складений природний PK без `id`:
+// Ключі ідемпотентності HTTP API (І28). Складений природний PK без `id`:
 // сам PK і є область (`subject_key` = `token:<id>` | `user:<uuid>`, операція,
 // ключ клієнта), тож "Категорія A" з її явним `id` тут не застосовна. Рядок
 // пишеться в транзакції команди і зникає разом з нею при відкаті (лише 2xx).
@@ -948,7 +948,7 @@ export const profiles = pgTable("profiles", {
 	lastName: text("last_name"),
 	phone: text(),
 	categoryId: uuid("category_id"),
-	// Ручне призначення категорії блокує автоправила (Е6в-20): інакше
+	// Ручне призначення категорії блокує автоправила: інакше
 	// вручну переведений VIP ставав би знову «Роздрібом» після покупки.
 	categoryLocked: boolean("category_locked").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -991,7 +991,7 @@ export const profiles = pgTable("profiles", {
 	pgPolicy("profiles_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
-// Історія переведень — АУДИТ (Е6в-2): факт «з VIP у Гурт» мусить пережити
+// Історія переведень — АУДИТ: факт «з VIP у Гурт» мусить пережити
 // видалення категорії і не блокувати його назавжди. Тому обидва FK — SET NULL
 // (каскад стирав би факт, RESTRICT — забороняв би видалення категорії, в якій
 // колись хтось побував), а назви лежать знімком у `*_category_name`, який
@@ -1005,7 +1005,7 @@ export const userCategoryHistory = pgTable("user_category_history", {
 	toCategoryName: text("to_category_name").notNull(),
 	reason: text(),
 	ruleId: uuid("rule_id"),
-	// Е8-Р3 (Е6г-6): ХТО зробив перехід, окремо від `rule_id`. FK правила —
+	// ХТО зробив перехід, окремо від `rule_id`. FK правила —
 	// SET NULL, тож після видалення правила `rule_id is not null` брехав би
 	// «вручну» про запис, зроблений автоправилом. Колонка без DEFAULT: кожна
 	// вставка називає джерело явно.
@@ -1047,17 +1047,17 @@ export const userCategoryHistory = pgTable("user_category_history", {
 	pgPolicy("user_category_history_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
 ]);
 
-// FK правил — RESTRICT (Е6в-2): SET NULL мовчки робив правило «з VIP»
+// FK правил — RESTRICT: SET NULL мовчки робив правило «з VIP»
 // правилом «з будь-якої», а каскад стирав правила разом із категорією.
-// Видалення категорії з правилами відмовляє явним кодом (Е6в-18), FK — страховка.
+// Видалення категорії з правилами відмовляє явним кодом, FK — страховка.
 export const categoryRules = pgTable("category_rules", {
 	id: uuid().primaryKey().notNull(),
 	name: text().notNull(),
 	description: text(),
 	fromCategoryId: uuid("from_category_id"),
 	toCategoryId: uuid("to_category_id").notNull(),
-	// Без DEFAULT (Е6в-2 ред.2): `{"type":"all","rules":[]}` — порожнє правило,
-	// яке Е6в-19 робить невалідним (fail-closed); форма завжди пише умови явно.
+	// Без DEFAULT: `{"type":"all","rules":[]}` — порожнє правило,
+	// яке `parseCategoryRuleConditions` робить невалідним (fail-closed); форма завжди пише умови явно.
 	conditions: jsonb().$type<JsonValue>().notNull(),
 	isActive: boolean("is_active").default(true).notNull(),
 	priority: integer().default(0).notNull(),
@@ -1096,7 +1096,7 @@ export const userRecipients = pgTable("user_recipients", {
 			name: "user_recipients_user_id_fkey"
 		}).onDelete("cascade"),
 	index("idx_user_recipients_user_id").on(table.userId),
-	// К3-14: дефолт scoped на user_id — отримувач належить користувачу.
+	// Дефолт scoped на user_id — отримувач належить користувачу.
 	uniqueIndex("idx_user_recipients_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_recipients_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_recipients_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
@@ -1107,7 +1107,7 @@ export const orders = pgTable("orders", {
 	userId: uuid("user_id"),
 	orderNumber: varchar("order_number", { length: 50 }).notNull(),
 	statusId: uuid("status_id"),
-	// ПД nullable лише заради знеособлення (Е6г-7): інваріант «або стерто, або
+	// ПД nullable лише заради знеособлення: інваріант «або стерто, або
 	// заповнено» тримає CHECK `orders_personal_data_present`, а не NOT NULL.
 	firstName: text("first_name"),
 	lastName: text("last_name"),
@@ -1137,7 +1137,7 @@ export const orders = pgTable("orders", {
 	savedAddressId: uuid("saved_address_id"),
 	personalDataErasedAt: timestamp("personal_data_erased_at", { withTimezone: true, mode: 'date' }),
 }, (table) => [
-	// Е8-Р3 (Е6г-13): дашборд і списки замовлень сортують/фільтрують за датою.
+	// Дашборд і списки замовлень сортують/фільтрують за датою.
 	index("orders_created_at_idx").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_orders_pickup_point_id").using("btree", table.pickupPointId.asc().nullsLast().op("uuid_ops")),
 	index("idx_orders_shipping_method_id").using("btree", table.shippingMethodId.asc().nullsLast().op("uuid_ops")),
@@ -1213,7 +1213,7 @@ export const userAddresses = pgTable("user_addresses", {
 			name: "user_addresses_user_id_fkey"
 		}).onDelete("cascade"),
 	index("idx_user_addresses_user_id").on(table.userId),
-	// К3-14: дефолт scoped на user_id — адреса належить користувачу.
+	// Дефолт scoped на user_id — адреса належить користувачу.
 	uniqueIndex("idx_user_addresses_single_default").using("btree", table.userId).where(sql`(is_default = true)`),
 	pgPolicy("user_addresses_own_all", { as: "permissive", for: "all", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("user_addresses_admin_select", { as: "permissive", for: "select", to: ["app_admin"], using: sql`true` }),
@@ -1239,7 +1239,7 @@ export const productPrices = pgTable("product_prices", {
 			columns: [table.priceTypeId],
 			foreignColumns: [priceTypes.id],
 			name: "product_prices_price_type_id_fkey"
-		// Е4-1: тип ціни з цінами не видаляється мовчки разом із цінами
+		// Тип ціни з цінами не видаляється мовчки разом із цінами
 		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.productId],
@@ -1320,7 +1320,7 @@ export const discountConditions = pgTable("discount_conditions", {
 	discountId: uuid("discount_id").notNull(),
 	conditionType: varchar("condition_type").notNull(),
 	operator: varchar().default('=').notNull(),
-	// Форму значення задає тип умови в реєстрі рушія (Е6в-4), не колонка.
+	// Форму значення задає тип умови в реєстрі рушія, не колонка.
 	value: jsonb().$type<JsonValue>().default({}).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => [
@@ -1345,7 +1345,7 @@ export const discounts = pgTable("discounts", {
 	endsAt: timestamp("ends_at", { withTimezone: true, mode: 'date' }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
-	// `NULL` — знижка для ВСІХ типів цін (Е6в-2).
+	// `NULL` — знижка для ВСІХ типів цін.
 	priceTypeId: uuid("price_type_id"),
 }, (table) => [
 	index("idx_discounts_group").using("btree", table.groupId.asc().nullsLast().op("uuid_ops")),
@@ -1393,7 +1393,7 @@ export const productReviews = pgTable("product_reviews", {
 	pgPolicy("product_reviews_update_own", { as: "permissive", for: "update", to: ["app_user"], using: sql`user_id = (select app.current_user_id())`, withCheck: sql`user_id = (select app.current_user_id()) and status = 'pending'` }),
 	pgPolicy("product_reviews_delete_own", { as: "permissive", for: "delete", to: ["app_user"], using: sql`user_id = (select app.current_user_id())` }),
 	pgPolicy("product_reviews_admin_all", { as: "permissive", for: "all", to: ["app_admin"], using: sql`true`, withCheck: sql`true` }),
-	// Е6д-8: домен статусу й рейтингу тримає БД, а не лише zod (масив — REVIEW_STATUSES у T0).
+	// Домен статусу й рейтингу тримає БД, а не лише zod (масив — REVIEW_STATUSES у T0).
 	check("product_reviews_status_check", sql`status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])`),
 	check("product_reviews_rating_check", sql`rating >= 1 AND rating <= 5`),
 ]);

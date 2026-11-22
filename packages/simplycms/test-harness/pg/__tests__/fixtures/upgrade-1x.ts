@@ -1,4 +1,4 @@
-// Фікстури доказу оновлюваності 1.0 (Task 14): тіло замовлення і підготовка
+// Фікстури доказу оновлюваності 1.0: тіло замовлення і підготовка
 // магазину з даними. Окремо від тесту, щоб файл кейсів лишався читабельним.
 import type { PlaceOrderInput } from 'simplycms/contracts';
 import { applyCanon, applySqlFiles, queryRows } from '../../apply.mjs';

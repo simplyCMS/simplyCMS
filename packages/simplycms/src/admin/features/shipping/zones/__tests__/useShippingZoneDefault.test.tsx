@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe('useShippingZoneDefault', () => {
-  it('пише знятий і новий дефолт у колекцію без refetch та інвалідує вітринні кеші (Е6а-14)', async () => {
+  it('пише знятий і новий дефолт у колекцію без refetch та інвалідує вітринні кеші', async () => {
     const qc = new QueryClient();
     for (const k of Object.values(KEYS)) qc.setQueryData([...k], { warm: 1 });
     const wrapper = ({ children }: { children: ReactNode }) => (

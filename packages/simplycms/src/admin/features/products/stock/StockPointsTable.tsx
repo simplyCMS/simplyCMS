@@ -26,7 +26,7 @@ interface Props {
   readonly onChange: (pointId: string, value: string) => void;
 }
 
-/** Таблиця залишків по точках (Task 8, Step 2) — розмітка легасі `StockByPointManager.tsx`. */
+/** Таблиця залишків по точках — розмітка легасі `StockByPointManager.tsx`. */
 export function StockPointsTable({
   points,
   valueFor,

@@ -25,7 +25,7 @@ import * as schema from 'simplycms/schema';
  * 🔴 Форма регексу мусить дослівно відповідати цьому переліку. Попередня
  * редакція (`^(images|avatar_url|.*image_url|image)$`) обіцяла ту саму
  * широту, а насправді вимагала суфікса `_url`: `hero_image`, `avatar` чи
- * `image_key` проходили повз гейт мовчки (знайдено рев'ю Е2). Звужувати
+ * `image_key` проходили повз гейт мовчки (знайдено рев'ю). Звужувати
  * назад — лише разом із цим докблоком.
  *
  * `storage_key` (референс файлу сховища) входить до евристики явно: колонка
@@ -42,7 +42,7 @@ const LOOKS_LIKE_MEDIA =
  * `users.image` — канонічне поле схеми Better Auth (`getAuthTables`),
  * породжене адаптером незалежно від того, чи застосунок ним користується.
  * Ніщо в кодовій базі його не пише й не читає — аватар покупця живе в
- * `profiles.avatar_url` (Task 5), а не тут; звести їх в одне поле означало б
+ * `profiles.avatar_url`, а не тут; звести їх в одне поле означало б
  * дати серверному auth-контуру писати в доменну колонку вітрини.
  */
 const NOT_MEDIA: readonly string[] = [
@@ -53,8 +53,8 @@ const NOT_MEDIA: readonly string[] = [
   // в `<img src>` (`admin/features/themes/ThemeCard.tsx`). Це URL із метаданих
   // теми, тож резолверу медіа-референсів тут нема чого резолвити.
   'themes.preview_image',
-  // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`
-  // (М1 Task 10), не файл. Самі файли (`product_images.storage_key`,
+  // `product_image_translations.image_id` — зовнішній ключ на `product_images.id`,
+  // не файл. Самі файли (`product_images.storage_key`,
   // `product_image_translations.storage_key`) зареєстровані в `MEDIA_COLUMNS`.
   'product_image_translations.image_id',
   // Власні таблиці сховища: `storage_key` — їхня ідентичність, а не посилання

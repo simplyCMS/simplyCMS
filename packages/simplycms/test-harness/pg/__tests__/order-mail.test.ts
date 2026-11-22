@@ -1,4 +1,4 @@
-// К3-Е8, Task 12: листи замовлення покупцю й власнику через outbox пошти.
+// Листи замовлення покупцю й власнику через outbox пошти.
 // Транспорт — фейк (Mailpit тут не потрібен: доводимо чергу в транзакції).
 import { join } from 'node:path';
 import {
@@ -81,7 +81,7 @@ const input = (overrides: Partial<PlaceOrderInput>): PlaceOrderInput => ({
 
 type OutboxRow = { kind: string; attempts: number; last_error: string | null };
 
-describe('листи замовлення через outbox (Е8-Р10, Task 12)', () => {
+describe('листи замовлення через outbox', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_e8_order_mail');
   let dbUrl = '';
@@ -203,7 +203,7 @@ describe('листи замовлення через outbox (Е8-Р10, Task 12)'
       ['order_owner', 'owner@shop.test'],
     ]);
     const owner = sent.find((m) => m.kind === 'order_owner')!;
-    // Р18(в): посилання — origin з VITE_SITE_URL + id замовлення.
+    // Посилання — origin з VITE_SITE_URL + id замовлення.
     expect(owner.text).toContain(
       `https://shop.example.test/admin/orders/${result.order.id}`,
     );

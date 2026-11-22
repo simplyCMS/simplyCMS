@@ -7,7 +7,7 @@ import { runAdmin } from '../run';
 import { parseAdminInput } from '../validation';
 import { diagnosePriceInput } from './input';
 
-/** Пояснення ціни однієї позиції (Е6в-6): що застосоване, що й чому ні. */
+/** Пояснення ціни однієї позиції: що застосоване, що й чому ні. */
 export type PriceDiagnosis = {
   priceTypeId: string | null;
   categoryId: string | null;
@@ -23,9 +23,9 @@ export type PriceDiagnosis = {
  * `loadPricingContext` + `priceCart`. Окремого розрахунку тут немає, тож
  * пояснення не може розійтись із реальною ціною.
  *
- * 🔴 `includeInactive: true` — ЛИШЕ тут (Е6в-8): вимкнені знижки й групи
+ * 🔴 `includeInactive: true` — ЛИШЕ тут: вимкнені знижки й групи
  * лишаються в лісі, рушій відхиляє їх з причиною `inactive`/`group_inactive`,
- * а ціна від цього не змінюється. Пошкоджені рядки (Е6в-25) ядро виключає з
+ * а ціна від цього не змінюється. Пошкоджені рядки ядро виключає з
  * лісу — дописуємо їх у `rejected` як `discount_invalid`.
  */
 export const diagnosePriceOp = async ({

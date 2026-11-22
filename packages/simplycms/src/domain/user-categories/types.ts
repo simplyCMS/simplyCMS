@@ -1,4 +1,4 @@
-// Типи автоправил категорій покупців (Е6в-19). Колишній порт plpgsql
+// Типи автоправил категорій покупців. Колишній порт plpgsql
 // `check_category_rules` приймав довільний текст у `field`/`operator` і
 // мовчки трактував невідоме як хибну умову; з Е6в форму умов звужує
 // `parseCategoryRuleConditions` (`parse.ts`) — і при записі (Zod адмінки), і
@@ -11,7 +11,7 @@ export type NumericRuleField =
 /** Текстові поля (`=`/`contains`). */
 export type TextRuleField = 'email_domain' | 'utm_source' | 'utm_campaign';
 
-/** Поле умови; `auth_provider` — лише `=` (ред.5). */
+/** Поле умови; `auth_provider` — лише `=`. */
 export type CategoryRuleField =
   NumericRuleField | TextRuleField | 'auth_provider';
 
@@ -25,8 +25,8 @@ export interface CategoryRuleCondition {
 }
 
 /**
- * `category_rules.conditions`. `any` = АБО, `all` = І (Е6в-19); порожній
- * `rules` — невалідний (fail-closed на всіх рівнях, ред.2).
+ * `category_rules.conditions`. `any` = АБО, `all` = І; порожній
+ * `rules` — невалідний (fail-closed на всіх рівнях).
  */
 export interface CategoryRuleConditions {
   readonly type: 'all' | 'any';
@@ -45,7 +45,7 @@ export interface CategoryRule {
 }
 
 /**
- * Статистика покупця (Е6в-19). Обчислення — `commerce/customer-stats.ts`;
+ * Статистика покупця. Обчислення — `commerce/customer-stats.ts`;
  * тут лише готові значення.
  */
 export interface UserCategoryStats {

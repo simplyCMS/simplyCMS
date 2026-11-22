@@ -1,6 +1,5 @@
 /**
- * Смок `discover.mjs` у headless chromium (Фаза 3, задача §2.C, план Р4/Р5,
- * Step 2). Детект наявності браузера — та сама top-level await схема, що в
+ * Смок `discover.mjs` у headless chromium. Детект наявності браузера — та сама top-level await схема, що в
  * `design-import-inspect.test.ts` (SKIP чесно, якщо chromium недоступний).
  * Фікстурні «сайти» — `tests/fixtures/design-import/site/` (базовий контур) і
  * `site-singular/` (регрес кейсу deo: однина в сегменті, інкремент Б.3),

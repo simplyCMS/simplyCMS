@@ -1,4 +1,4 @@
-// `readStoreProfile` проти живого Postgres (К3-Е6б, Task 2, Review Focus 1):
+// `readStoreProfile` проти живого Postgres:
 // відсутній чи зіпсований рядок `store_profile` — порожній профіль, не помилка.
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

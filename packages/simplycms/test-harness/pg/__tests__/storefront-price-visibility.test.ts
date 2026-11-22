@@ -13,7 +13,7 @@ import {
   loadProductList,
   loadPropertyOption,
 } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем (M1).
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import type { ViewerPriceTypes } from 'simplycms/commerce';
 import * as F from './fixtures/commerce';
@@ -57,7 +57,7 @@ async function allPublicPrices(
 const typesOf = (prices: PriceEntry[]) =>
   new Set(prices.map((p) => p.price_type_id));
 
-describe('ціни вітрини лише для виду глядача (Р29)', () => {
+describe('ціни вітрини лише для виду глядача', () => {
   const db = useCommerceDb('simplycms_price_visibility');
   let retailId = '';
   let guestTypeId = '';

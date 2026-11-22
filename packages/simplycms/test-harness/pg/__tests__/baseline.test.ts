@@ -1,4 +1,4 @@
-// Накат канону міграцій на чисту БД (Task 3, план В2-К1а).
+// Накат канону міграцій на чисту БД.
 //
 // 🔴 Це доказ рішення B13, а не смоук. Стара історія з 33 файлів котилася на
 // чистий Postgres ЛИШЕ через рукотворний шим `auth.*`/`storage.*`. Тут шима
@@ -9,8 +9,8 @@
 // Другий сенс — довести ідемпотентність рукописних файлів: `0000_prelude`
 // створює КЛАСТЕРНІ ролі, тож друга база того самого кластера котить його
 // поверх наявних; `0003_seed` і `0004_functions` — так само. Мову й довідники
-// накат не створює: їх вставляє `bootstrapStore` (М2б, Р23), тож тест стартує базу сам. Журнал накату
-// (`simplycms/migrate`, Е8) повторний накат файлу в одній базі прибрав, але
+// накат не створює: їх вставляє `bootstrapStore` (Р23 майстер-плану), тож тест стартує базу сам. Журнал накату
+// (`simplycms/migrate`) повторний накат файлу в одній базі прибрав, але
 // від кластерних об'єктів не рятує.
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,7 +59,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     harness = await resolveHarness();
     await createTempDatabase(harness.url, dbName);
     dbUrl = withDbName(harness.url, dbName);
-    // Чистий накат БЕЗ старту: довідники з'являються лише в `bootstrapStore` (М2б, Р23).
+    // Чистий накат БЕЗ старту: довідники з'являються лише в `bootstrapStore` (Р23 майстер-плану).
     await applyCleanCanon(dbUrl);
   }, 120_000);
 
@@ -160,22 +160,22 @@ describe('канон міграцій: накат на чисту БД', () => {
     const tables = rows.map((r: { table_name: string }) => r.table_name);
     // Точне число, а не нижня межа: `>=` пропустив би і зайву таблицю, і
     // забуту в міграції `drop`. Нова таблиця — свідома правка цього числа.
-    // 45 → 44: Е6б прибрала мертву `plugin_events`.
-    // 44 → 42: Е6г прибрала `services` і `service_requests`.
-    // 42 → 43: Е6д додала службовий outbox `media_erasures` (Е6д-20).
-    // 43 → 44: Е8: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
-    // 44 → 45: Е8 Task 10 — outbox пошти `mail_outbox` (у baseline `0001_init`:
-    // окремого файла `0005` немає, його злито ребазлайном М1).
-    // 45 → 47: М1 Task 5 — реєстри адрес `url_paths` і мовних токенів `slug_tokens`.
-    // 47 → 48: М1 Task 5а — покоління кешів `cache_generations` (Д6).
-    // 48 → 51: М1 Task 7 — токени API `api_tokens`, ключі ідемпотентності
+    // 45 → 44: прибрано мертву `plugin_events`.
+    // 44 → 42: прибрано `services` і `service_requests`.
+    // 42 → 43: додано службовий outbox `media_erasures`.
+    // 43 → 44: журнал `simplycms_migrations` (створює `applyMigrations`, не канон).
+    // 44 → 45: outbox пошти `mail_outbox` (у baseline `0001_init`:
+    // окремого файла `0005` немає, його злито ребазлайном).
+    // 45 → 47: реєстри адрес `url_paths` і мовних токенів `slug_tokens`.
+    // 47 → 48: покоління кешів `cache_generations` (Д6).
+    // 48 → 51: токени API `api_tokens`, ключі ідемпотентності
     // `idempotency_keys` і сервісні записи `service_accounts`.
-    // 51 → 57: М1 Task 10 — переклади товару (`product_translations`,
+    // 51 → 57: переклади товару (`product_translations`,
     // `product_modification_translations`, `product_property_value_translations`,
     // `modification_property_value_translations`) та зображення (`product_images`,
     // `product_image_translations`).
-    // 57 → 58: М1 Task 14 — проєкція тексту товару `catalog_product_texts`.
-    // 58 → 59: М2б Task 7 — переклади статусів замовлень `order_status_translations`.
+    // 57 → 58: проєкція тексту товару `catalog_product_texts`.
+    // 58 → 59: переклади статусів замовлень `order_status_translations`.
     expect(tables.length).toBe(59);
     for (const expected of [
       'product_translations',
@@ -212,7 +212,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     ]);
   });
 
-  it('колонки order_items.service_id немає (Е6г зняла «Послуги»)', async () => {
+  it('колонки order_items.service_id немає (знесено «Послуги»)', async () => {
     const rows = await queryRows(
       dbUrl,
       `select column_name from information_schema.columns
@@ -228,8 +228,8 @@ describe('канон міграцій: накат на чисту БД', () => {
       `select tablename, policyname, qual, with_check from pg_policies
         where schemaname = 'public'`,
     );
-    // 24 → 25: службова `media_erasures_admin_all` (лише app_admin, Е6д-20).
-    // 25 → 26: `mail_outbox_admin_all` (лише app_admin, Е8 Task 10).
+    // 24 → 25: службова `media_erasures_admin_all` (лише app_admin).
+    // 25 → 26: `mail_outbox_admin_all` (лише app_admin).
     expect(rows.length).toBe(26);
     const tables = [
       ...new Set(rows.map((r: { tablename: string }) => r.tablename)),
@@ -290,7 +290,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     expect(await counts()).toEqual({ statuses: 6, themes: 1, settings: 2 });
   }, 120_000);
 
-  // Е6г-14: бан тримає БД — тригер на sessions без SECURITY DEFINER.
+  // Бан тримає БД — тригер на sessions без SECURITY DEFINER.
   it('тригер sessions_refuse_banned стоїть на sessions', async () => {
     const rows = await queryRows(
       dbUrl,
@@ -309,7 +309,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     ]);
   });
 
-  // Е6б-5: профіль магазину замість мертвого `active_theme`; `plugin_events`
+  // Профіль магазину замість мертвого `active_theme`; `plugin_events`
   // і `plugins.migrations_applied` ніхто не писав — прибрано з baseline.
   it('сід профілю на місці, мертве зі схеми прибрано', async () => {
     await startStore(dbUrl);
@@ -341,7 +341,7 @@ describe('канон міграцій: накат на чисту БД', () => {
     expect(Number(gone[0]?.c)).toBe(0);
   }, 120_000);
 
-  // Е6д-8: домен статусу й рейтингу тримає БД. `app_admin` обходить RLS,
+  // Домен статусу й рейтингу тримає БД. `app_admin` обходить RLS,
   // тож відмову дає саме CHECK (23514), а не політика чи грант.
   it('product_reviews: CHECK статусу й рейтингу існують і спрацьовують', async () => {
     await startStore(dbUrl);
@@ -378,8 +378,8 @@ describe('канон міграцій: накат на чисту БД', () => {
     }
   }, 120_000);
 
-  // Е8-Р3: борги схеми, внесені в baseline на місці (виняток baseline).
-  it('борги схеми Е8-Р3: CHECK, NOT NULL, індекси, source', async () => {
+  // Борги схеми, внесені в baseline на місці (виняток baseline).
+  it('борги схеми: CHECK, NOT NULL, індекси, source', async () => {
     const checks = await queryRows(
       dbUrl,
       `select conname from pg_constraint

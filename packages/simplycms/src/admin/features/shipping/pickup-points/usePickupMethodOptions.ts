@@ -9,7 +9,7 @@ import type { SelectOption } from '../methods/SelectField';
 
 /**
  * Опції select-а способу точки: лише способи, чий провайдер везе до точки
- * (`destination === 'pickup-point'`, Е6а-12) — адресний спосіб точці не
+ * (`destination === 'pickup-point'`) — адресний спосіб точці не
  * належить, сервер однаково відмовив би `pickup_point_method_invalid`.
  */
 export function usePickupMethodOptions(): SelectOption[] {

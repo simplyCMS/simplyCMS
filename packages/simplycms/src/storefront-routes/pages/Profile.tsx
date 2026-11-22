@@ -39,7 +39,7 @@ export default function ProfilePage() {
    * `readSessionSubject`, і підставити чужий id нема куди: параметра немає.
    */
   const { data, isLoading, isError, refetch } = useQuery({
-    // 🔴 variant('overview', …), не scoped() (борг Е1а №6, Е3-12): це форма
+    // 🔴 variant('overview', …), не scoped(): це форма
     // (профіль + останні замовлення), а не FK-зріз.
     // Назва статусу в останніх замовленнях залежить від мови контенту — вона в ключі.
     queryKey: profiles.variant('overview', user?.id ?? ''),
@@ -66,7 +66,7 @@ export default function ProfilePage() {
     );
   }
 
-  // Р26: збій запиту ≠ «немає замовлень»; уже завантажені дані збій фонового
+  // Збій запиту ≠ «немає замовлень»; уже завантажені дані збій фонового
   // рефетчу не стирає.
   if (isError && !data) {
     return (

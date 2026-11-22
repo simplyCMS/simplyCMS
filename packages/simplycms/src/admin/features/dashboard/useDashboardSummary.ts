@@ -7,7 +7,7 @@ export const DASHBOARD_KEY = entityKey(ENTITY.orders).variant(
   'admin-dashboard',
 );
 
-/** Зведення дашборду одним серверним читанням (Е6г-12, `order.manage`). */
+/** Зведення дашборду одним серверним читанням (`order.manage`). */
 export function useDashboardSummary() {
   // cache-sync-ok: це читання (queryFn), а не мутація
   return useQuery({

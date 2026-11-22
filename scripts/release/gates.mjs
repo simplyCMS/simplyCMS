@@ -41,7 +41,7 @@ export const GATES = [
   // 🔴 Повний `pnpm pilot` (Gate A–D, SB, IP, CLI, TOOL, MEDIA, MAIL), а НЕ `pilot:pack`: Gate B —
   // єдиний доказ, що серверний бандл свіжого магазину СТАРТУЄ. `pilot:pack` без БД
   // його не піднімає, і дефект вклеєного `pg` (UPSTREAM:START-IP-1) сидів у
-  // 0.7.0–0.13.0 непоміченим (К3-Е7, Task 11). БД і сід — `pilot-full.mjs`
+  // 0.7.0–0.13.0 непоміченим. БД і сід — `pilot-full.mjs`
   // (`pnpm harness:up` + `db:demo`); Gate B не скорочується. Gate C пілота лишається
   // доказом межі клієнт/сервер у реальному клієнтському бандлі.
   { name: 'pilot', cmd: 'node scripts/release/pilot-full.mjs' },

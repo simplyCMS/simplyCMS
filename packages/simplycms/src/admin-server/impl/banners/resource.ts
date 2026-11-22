@@ -41,9 +41,9 @@ const scheduleDays = () =>
     .transform((d) => (d.length > 0 ? d : null));
 
 /**
- * Банери (Е6д, Task 3). Правила `refine` — з T0/T1 (`contracts`, `domain`),
+ * Банери. Правила `refine` — з T0/T1 (`contracts`, `domain`),
  * перехресні — `guardBanners`. `media`: заміна/видалення картинки стирає її
- * файл після COMMIT (Е6д-1/14).
+ * файл після COMMIT.
  */
 export const bannersOps = defineAdminResource({
   entity: ENTITY.banners,

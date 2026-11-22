@@ -32,7 +32,7 @@ export interface Discount {
   is_active: boolean;
   starts_at: Date | null;
   ends_at: Date | null;
-  /** `null` — знижка для всіх типів цін (Е6в-2). */
+  /** `null` — знижка для всіх типів цін. */
   price_type_id: string | null;
   targets: DiscountTarget[];
   conditions: DiscountCondition[];
@@ -52,7 +52,7 @@ export interface DiscountGroup {
 }
 
 /**
- * Вхід рушія знижок (Е6в-3) — контракт умов, який у К5 відкриється плагінам.
+ * Вхід рушія знижок — контракт умов, який у К5 відкриється плагінам.
  *
  * 🔴 `now` обовʼязковий і без відкату на `new Date()`: картка, кошик і чек
  * мусять рахувати на ОДНОМУ серверному часі, інакше межа акції в секунду
@@ -66,7 +66,7 @@ export interface DiscountContext {
     sectionId: string | null;
     quantity: number;
   };
-  /** Сума БАЗОВИХ цін кошика (Е6в-9). */
+  /** Сума БАЗОВИХ цін кошика. */
   cart: { total: number };
   now: Date;
 }
@@ -81,7 +81,7 @@ export interface AppliedDiscount {
 }
 
 /**
- * Чому знижка не увійшла в суму (Е6в-6). Код, а не текст: пояснення
+ * Чому знижка не увійшла в суму. Код, а не текст: пояснення
  * перекладає адмінка (i18n), домен мови не знає.
  */
 export type DiscountRejectionReason =
@@ -114,7 +114,7 @@ export interface DiscountResult {
 }
 
 /**
- * Порогова підказка (Е6в-12): «від 3 шт — 900 ₴/шт». Головне — ціна;
+ * Порогова підказка: «від 3 шт — 900 ₴/шт». Головне — ціна;
  * `percentOff` є лише тоді, коли на порозі застосовано рівно одну знижку
  * типу `percent`, бо −50 ₴, переведені у відсоток, вводять в оману.
  */

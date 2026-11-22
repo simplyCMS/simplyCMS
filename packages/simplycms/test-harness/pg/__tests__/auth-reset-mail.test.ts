@@ -1,4 +1,4 @@
-// К3-Е8, Task 11: лист скидання пароля йде через outbox і порт пошти, назва
+// Лист скидання пароля йде через outbox і порт пошти, назва
 // магазину — з профілю, мова листа — з профілю одержувача (ui_locale), база посилання — з env (Р18а).
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -54,7 +54,7 @@ describe('скидання пароля через порт пошти (Е8-Т11
        on conflict (key) do update set value = excluded.value`,
       [crypto.randomUUID(), JSON.stringify({ name: STORE })],
     );
-    // baseURL НЕ передано: база має прийти з VITE_SITE_URL (Р18а).
+    // baseURL НЕ передано: база має прийти з VITE_SITE_URL.
     auth = createAuth({
       secret: 'integration-secret-not-a-real-one',
       mailTransport: transport,

@@ -27,7 +27,7 @@ export default function DashboardPage() {
       </div>
 
       {isError && !data ? (
-        // Збій без жодних даних — не нулі (невдалий фоновий refetch дані не ховає), а помилка з повтором (Е6в F1).
+        // Збій без жодних даних — не нулі (невдалий фоновий refetch дані не ховає), а помилка з повтором.
         <div role="alert" className="space-y-4 py-8 text-center">
           <p className="text-destructive">{t('admin.dashboard.loadError')}</p>
           <Button variant="outline" onClick={() => refetch()}>

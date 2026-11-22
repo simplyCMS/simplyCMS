@@ -1,4 +1,4 @@
-// Спільна БД контуру `simplycms/commerce` (К3-Е5б, Task 1): канон міграцій +
+// Спільна БД контуру `simplycms/commerce`: канон міграцій +
 // демо-сід + негативна доставка + фікстури `./commerce`. Реєструє хуки
 // `beforeAll`/`afterAll` у describe, що її кличе, і віддає id, прочитані з БД.
 import { join } from 'node:path';

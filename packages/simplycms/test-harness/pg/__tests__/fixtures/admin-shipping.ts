@@ -1,4 +1,4 @@
-// БД і сід харнес-тестів адмінки доставки (Е6а, Task 4): канон → app_runtime →
+// БД і сід харнес-тестів адмінки доставки: канон → app_runtime →
 // afterAll із closeDbPool() ПЕРШИМ. Канон доставки не везе — сід свій у кожному тесті.
 import pg from 'pg';
 import { afterAll, beforeAll } from 'vitest';
@@ -34,7 +34,7 @@ const next = () => ++seq;
 export const rows = (url: string, sql: string, p: unknown[] = []) =>
   H.queryRows(url, sql, p) as Promise<Record<string, unknown>[]>;
 
-/** Матчер доменної відмови для `rejects.toMatchObject` (409, К3-13). */
+/** Матчер доменної відмови для `rejects.toMatchObject` (409). */
 export const conflict = (kind: string, constraint?: string) => ({
   name: 'AdminConflictError',
   kind,
@@ -118,7 +118,7 @@ export const seedReservedItem = async (
   );
 };
 
-/** Стан доставки способу: точки, їхні рядки залишку й тарифи (Review Focus 1). */
+/** Стан доставки способу: точки, їхні рядки залишку й тарифи. */
 export const snapshotShipping = async (url: string, methodId: string) => ({
   method: await rows(
     url,

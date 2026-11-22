@@ -77,7 +77,7 @@ describe('formatPrice', () => {
   });
 });
 
-describe('normalizeMoneyInput (Task 4, Review Focus 4)', () => {
+describe('normalizeMoneyInput', () => {
   it.each([
     ['12,50', '12.50'],
     ['1 200,5', '1200.5'],
@@ -88,7 +88,7 @@ describe('normalizeMoneyInput (Task 4, Review Focus 4)', () => {
   });
 });
 
-describe('isMoney (Task 4, Review Focus 4)', () => {
+describe('isMoney', () => {
   it.each([
     ['0', true],
     ['12.50', true],

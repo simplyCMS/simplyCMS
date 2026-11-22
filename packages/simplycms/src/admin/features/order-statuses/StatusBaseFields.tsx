@@ -63,7 +63,7 @@ export function StatusBaseFields({ idBase, base, set, editing }: Props) {
           id={`${idBase}-default`}
           checked={base.isDefault}
           onCheckedChange={(checked) => set({ isDefault: checked })}
-          // К3-15: зняти дефолт без призначення нового не можна — нуль дефолтів заборонений.
+          // Зняти дефолт без призначення нового не можна — нуль дефолтів заборонений.
           disabled={!!editing?.isDefault}
         />
       </div>

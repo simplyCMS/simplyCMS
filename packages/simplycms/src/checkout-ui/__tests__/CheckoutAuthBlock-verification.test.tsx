@@ -8,7 +8,7 @@ import {
   fireEvent,
 } from '@testing-library/react';
 
-// Р30: зі SMTP signUp повертає `token: null` — чекаут не вважає покупця
+// Зі SMTP signUp повертає `token: null` — чекаут не вважає покупця
 // залогованим; вхід непідтвердженого має власне повідомлення.
 
 const h = vi.hoisted(() => ({
@@ -35,7 +35,7 @@ const CONTACTS = { phone: null, email: null };
 const type = (id: string, value: string) =>
   fireEvent.change(document.getElementById(id)!, { target: { value } });
 
-describe('CheckoutAuthBlock: підтвердження пошти (Р30)', () => {
+describe('CheckoutAuthBlock: підтвердження пошти', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(cleanup);
 

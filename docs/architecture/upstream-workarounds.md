@@ -27,7 +27,7 @@ Renovate/Dependabot, ручний бамп у `package.json` чи
    було видно, що перевірку зроблено, а не пропущено.
 
 **Маркер у коді.** Кожне місце обходу позначається коментарем
-`UPSTREAM:<ID>` (напр. `// UPSTREAM:TSDB-1 — див. docs/architecture/upstream-workarounds.md`).
+`UPSTREAM:<ID>` (напр. коментар `// UPSTREAM:TSDB-1` з відсиланням до цього файла).
 Повний перелік місць обходу — `git grep -n "UPSTREAM:TSDB-1"`. Запис без
 маркерів у коді або маркер без запису — дефект реєстру.
 
@@ -81,13 +81,13 @@ write-back на кожному шляху хендлера. `{ refetch: false }`
 return-значеннями хендлерів (TanStack DB 1.0).
 
 **Ціна, що лишилась — M2 (ordered-source repair, з коду бібліотеки, НЕ
-виміряно).** `@tanstack/db` 1.0.0-rc.1.2 `src/query/live/ordered-source-loader.ts`
+виміряно).** `@tanstack/db` 1.0.0-rc.1.2, модуль `ordered-source-loader.ts` завантажувача живих запитів
 (`loadOrderedPrefixRepair` ~471, запит із `refetch: true` ~1100): після
 порушення впорядкованості (оптимістичне видалення чи відкат) упорядкований
 живий запит перечитує префікс. Eager-колекції цієї ціни не мають.
 
 **Наш обхід.**
-- Е3-15′ (К3-Е3): сегмент `'list'` — виключно колекціям `admin-data`
+- Сегмент `'list'` — виключно колекціям `admin-data`
   (`collectionKey()`; `entityKey()` без `list()`); правило
   `eslint-rules/no-collection-key-outside-admin-data.mjs` і кейс
   `bareListSegment` у `eslint-rules/query-key-from-entity.mjs`.
@@ -108,7 +108,7 @@ return-значеннями хендлерів (TanStack DB 1.0).
   проходить фейковими таймерами. При бампі: якщо опція зʼявилась — задати малий `gcTime` і прибрати таймери.
 
 **Коли виправлять.** Навіть якщо бібліотека перестане писати в чужі ключі під
-префіксом, Е3-15′ НЕ прибирати: розділення ключів колекцій і вітрини —
+префіксом, це правило НЕ прибирати: розділення ключів колекцій і вітрини —
 правильна гігієна, бо форма рядка адмінки й вітрини різна. Якщо повернеться
 перезапит після запису, `expectNoRefetch` почервоніє — тоді оновити запис.
 
@@ -119,7 +119,7 @@ return-значеннями хендлерів (TanStack DB 1.0).
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/start-server-core` (обробник server functions) |
-| Знайдено на | 1.169.39 (2026-10-11, К3-Е6д-2) |
+| Знайдено на | 1.169.39 (2026-10-11) |
 | Перевірено на версії | 1.169.45 — 2026-11-04: предикат форми `includes(…)` + `await request.formData()` без лімітів (`server-functions-handler.js:118-123`), `handlerType` за нормалізованим `url.pathname` (`createStartHandler.js:326-333,382`), тип — `start-client-core` 1.170.39 (`createMiddleware.d.ts:177`); 1.169.39 — 2026-10-12 (А4-R): `server-functions-handler.js` для multipart безумовно `await request.formData()`, лімітів немає; request middleware виконується ДО обробника і отримує `handlerType` (`'serverFn'` за НОРМАЛІЗОВАНИМ `url.pathname`, `createStartHandler.js:286,328,404-409`), тип контексту — `RequestServerOptions.handlerType` (`start-client-core` 1.170.34) |
 | Статус апстріму | не повідомлено; ліміти тіла — відповідальність хоста/проксі, Start їх не надає |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (предикат форми `includes(…)` + `formData()`, `TSS_SERVER_FN_BASE`) |
@@ -185,7 +185,7 @@ chunked-тіло там без стелі — привід переглянут�
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/router-core` (серіалізатор SSR/RPC TanStack Start) |
-| Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, live:smoke К3-Е3) |
+| Знайдено на | `@tanstack/router-core` 1.168.15 / `@tanstack/start-client-core` 1.167.17 (2026-09-24, `live:smoke`) |
 | Перевірено на версії | `router-core` 1.171.39 / `start-client-core` 1.170.39 / `start-server-core` 1.169.45 — 2026-11-04: `ShallowErrorPlugin` у `seroval-plugins.ssr.js` досі в дефолтному списку, `createServerFnErrorResponse` бере плагіни з `getSerovalPlugins(...)` (наші адаптери першими), розтяжка зелена; `@tanstack/router-core` 1.171.34 / `@tanstack/start-client-core` 1.170.34 / `@tanstack/start-server-core` 1.169.39 — 2026-10-04 (бамп XSS GHSA-qx66-fv34-fjm8): `ShallowErrorPlugin` без змін (parse — лише `message`), контрольний кейс тесту «без адаптера» зелений; адаптери Start і далі йдуть ПЕРЕД дефолтними плагінами (`getSerovalPlugins` у `start-client-core` і `server-functions-handler`) |
 | Статус апстріму | не повідомлено; ймовірно, свідомий дизайн (не протікати серверні поля), а не дефект |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`ShallowErrorPlugin` досі серіалізує лише `message`) |
@@ -195,7 +195,7 @@ chunked-тіло там без стелі — привід переглянут�
 «такий slug уже зайнятий» показувався технічним текстом; відмову за правом на
 клієнті неможливо відрізнити від будь-якої іншої помилки.
 
-**Корінь.** `src/ssr/serializer/ShallowErrorPlugin.ts` (тег `$TSR/Error`):
+**Корінь.** `ShallowErrorPlugin` (серіалізатор SSR `@tanstack/router-core`, тег `$TSR/Error`):
 `test: value instanceof Error`, parse — лише `{ message }`, deserialize —
 `new Error(message)`.
 З router-core 1.171 `defaultSerovalPlugins` експортується лише субшляхом
@@ -225,7 +225,7 @@ seroval бере перший плагін, чий `test()` збігся. Мар
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/react-start` (`@tanstack/start-server-core` обробник, `@tanstack/start-plugin-core` генерований резолвер) |
-| Знайдено на | `@tanstack/react-start` 1.168.60 (start-server-core 1.169.39, start-plugin-core 1.171.49), М1 Task 9 |
+| Знайдено на | `@tanstack/react-start` 1.168.60 (start-server-core 1.169.39, start-plugin-core 1.171.49) |
 | Перевірено на версії | `react-start` 1.168.60 (ті самі) — 2026-10-18; `react-start` 1.169.4 / `start-server-core` 1.169.45 / `start-plugin-core` 1.171.55 — 2026-11-04: `start-compiler/server-fn-resolver-module.js` кидає `Error('Server function info not found for ' + id)`, `handleServerAction` (`server-functions-handler.js`, `getServerFnById` на рядку ~104) кличе резолвер до свого `try` (~116); статус лишився 500, але механізм відповіді інший (див. «Механізм») |
 | Статус апстріму | не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (текст помилки резолвера; `getServerFnById` раніше за `try` у `handleServerAction`) |
@@ -291,7 +291,7 @@ not found for <id>» у проді ховає НАША маска (`maskUnexpect
 
 **Симптом.** Помилка поза роутером (`loadLocaleSet` у `withStorefrontNormalize` при мертвій БД) віддається німим JSON
 без `Internal server error [ref …]`; Start лише `console.error(error)` без id, тож рядок у лозі не зіставити з відповіддю
-(Р23 порушено).
+(прод-маскування помилок порушено).
 
 **Наш обхід.** `withEntryErrorMask` (`packages/simplycms/src/server-guard/entry-mask.ts`, підключено в `src/server.ts`
 всередині `withSecurityHeaders`): HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect) — далі в Start (його предикат
@@ -313,7 +313,7 @@ functions), статус ≥ 500 зберігається. Маркери `UPSTR
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/start-plugin-core` (import-protection плагін; `@tanstack/react-start`) |
-| Знайдено на | `start-plugin-core` 1.171.49 / `react-start` 1.168.60 (2026-10-11, К3-Е7 Task 11: `pnpm pilot` Gate B). Проміжні версії між 1.167.35 (без дефекту) і 1.171.49 не бісектовано; у реліз потрапило з XSS-бампом 24e2836a (0.7.0) |
+| Знайдено на | `start-plugin-core` 1.171.49 / `react-start` 1.168.60 (2026-10-11, `pnpm pilot` Gate B). Проміжні версії між 1.167.35 (без дефекту) і 1.171.49 не бісектовано; у реліз потрапило з XSS-бампом 24e2836a (0.7.0) |
 | Перевірено на версії | `start-plugin-core` 1.171.49 — 2026-10-11; 1.171.55 — 2026-11-04 (розтяжка зелена: `resolveAgainstImporter` без `kind`, передумова тримається) |
 | Статус апстріму | не повідомлено (рішення власника) |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (`resolveAgainstImporter` без `kind` і `return passThroughResult`) |
@@ -371,15 +371,14 @@ Gate SB і доктор-перевірка залишаються.
 коректність: дані приходять правильні, але кожна наступна сторінка
 перечитує всі попередні (на 0.8.6 — мовчки не довантажувала взагалі).
 
-**Корінь.** `@tanstack/db` 0.11.3
-`src/query/live/ordered-source-loader.ts` (≈133–144, 232–265): без
+**Корінь.** `@tanstack/db` 0.11.3, модуль
+`ordered-source-loader.ts` (шлях завантаження префікса та сторінки): без
 індексу завантажувач іде шляхом `loadPrefix(offset + limit)`, з індексом —
 `loadPage` з курсором і `offset`.
 
 **Наш обхід.** Індекс сортування (`autoIndex: 'eager'`,
 `defaultIndexType: BTreeIndex`) ставить єдина фабрика
-`onDemandCollectionOptions` (`packages/simplycms/src/admin-data/`, рішення
-Е3-16 → Е3-17): сторінки йдуть `{ limit, offset }`, без попередження.
+`onDemandCollectionOptions` (`packages/simplycms/src/admin-data/`): сторінки йдуть `{ limit, offset }`, без попередження.
 
 **Перевірка виправлення.**
 `packages/simplycms/src/admin-data/__tests__/on-demand-contract.test.tsx`,
@@ -406,7 +405,7 @@ Gate SB і доктор-перевірка залишаються.
 **Симптом.** Offset-пагінація з on-demand колекції вічно вантажила б
 першу сторінку, якщо брати результат `parseLoadSubsetOptions` як є.
 
-**Корінь.** `src/query/expression-helpers.ts:499-522` повертає рівно
+**Корінь.** модуль `expression-helpers.ts` бібліотеки повертає рівно
 `{ filters, sorts, limit }` — без `offset` і `cursor`, хоча
 `skills/db-core/collection-setup/references/query-adapter.md:264` того ж
 пакета обіцяє `{ filters, sorts, limit, offset }`. Там же (:269) `or`
@@ -438,7 +437,7 @@ Gate SB і доктор-перевірка залишаються.
 
 **Симптом / корінь.** Тип є в `@tanstack/db`, але `query-db-collection`
 його не реекспортує (`dist/*.d.ts`). Прямої залежності на `@tanstack/db` ми
-свідомо не маємо (К3-10′: дві peer-залежності, не три).
+свідомо не маємо (дві peer-залежності, не три).
 
 **Наш обхід.** Тип береться з `@tanstack/react-db` у
 `admin-data/subset-payload.ts`.
@@ -453,7 +452,7 @@ Gate SB і доктор-перевірка залишаються.
 | Поле | Значення |
 |---|---|
 | Бібліотека | `drizzle-orm` |
-| Знайдено на | 0.45.2, Етап B 2026-10-05 (раніше ховалось під DZOD-1) |
+| Знайдено на | 0.45.2, 2026-10-05 (раніше ховалось під DZOD-1) |
 | Перевірено на версії | 0.45.4 — 2026-11-04 (розтяжка `tests/upstream-tripwires.test.ts` зелена, `as never` лишається потрібним); 0.45.3 — 2026-10-05: відтворено (прибрати `as never` → TS2345 «not assignable to `SelectedFields`»), не виправлено |
 | Статус апстріму | не повідомлено |
 | Розтяжка: немає | це типова помилка TS2345, яку дає лише компіляція без `as never`; сторож — `pnpm typecheck` після зняття кастів |
@@ -494,7 +493,7 @@ typecheck` і `build:packages` зелені.
 | Поле | Значення |
 |---|---|
 | Бібліотека | `drizzle-orm` |
-| Знайдено на | 0.45.3 (К3-Е6д, 2026-10-11): колонковий грант INSERT на `product_reviews` дав `42501` |
+| Знайдено на | 0.45.3 (2026-10-11): колонковий грант INSERT на `product_reviews` дав `42501` |
 | Перевірено на версії | 0.45.3 — 2026-10-11; 0.45.4 — 2026-11-04 (розтяжка зелена) |
 | Статус апстріму | не дефект, а дизайн білдера; не повідомлено |
 | Розтяжка | `tests/upstream-tripwires.test.ts` (SQL `insert().values()` для таблиці з DEFAULT-колонкою) |
@@ -533,7 +532,7 @@ values ($1, default, …)` для всіх колонок таблиці. Том
 
 Корінь — НЕ в `typescript-eslint`: TS 7.0 (GA 2026-07-08) свідомо вийшов **без
 програмного API**; Microsoft обіцяє новий і **інший** API в 7.1, а до того радить
-ставити TS 6 поруч ([реліз 7.0, § «Running side-by-side with TypeScript 6.0»](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)).
+ставити TS 6 поруч ([реліз 7.0, розділ про side-by-side з TypeScript 6.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)).
 Тому ж чекають `vue-tsc`, шаблони Angular, Svelte, Astro, ts-jest, ts-morph.
 
 **Стан апстріму (дослідження 2026-10-05).**
@@ -732,13 +731,13 @@ RLS менше місяця; Prisma — без RLS.
 | Поле | Значення |
 |---|---|
 | Бібліотека | Garage (`dxflrs/garage`, S3-сумісне сховище стенду й прогону пакування) |
-| Знайдено на | `v2.4.1` (2026-10-12, К3-Е8 Task 8: живий зонд — два `PUT` одного ключа з `If-None-Match: *` дали `200` і `200`, друге тіло перезаписало перше) |
+| Знайдено на | `v2.4.1` (2026-10-12, живий зонд — два `PUT` одного ключа з `If-None-Match: *` дали `200` і `200`, друге тіло перезаписало перше) |
 | Перевірено на версії | `v2.4.1` — 2026-10-12 |
 | Статус апстріму | не повідомлено (рішення власника) |
 | Розтяжка: немає | поведінка серверна (образ Docker), не текст встановленого модуля; сторож — живий зонд у `packages/simplycms/test-harness/storage/s3.contract.test.ts` (червоніє, коли Garage почне повертати `412`) |
 
 **Симптом.** Контракт `MediaStorageDriver.put` вимагає «зайнятий ключ → `MediaKeyCollisionError`, без перезапису»
-(іммутабельні обʼєкти, Е2-8). Умовний `PUT` з `If-None-Match: *` мав би дати це атомарно (`412`), але Garage заголовок
+(іммутабельні обʼєкти). Умовний `PUT` з `If-None-Match: *` мав би дати це атомарно (`412`), але Garage заголовок
 ігнорує й мовчки перезаписує.
 
 **Наш обхід.** `s3Driver.put` (`storage/s3.ts`) спершу робить `HEAD`: `200` → колізія. Це **best-effort**, не атомарність:
@@ -780,7 +779,7 @@ Schema у CI, інструкція деплою пілота).
 | ID | Бібліотека · версія | На що спираємося | Де в коді | Що зламається, якщо зміниться | Тест-сторож |
 |---|---|---|---|---|---|
 | DRZ-1 | `drizzle-orm` 0.45.3 + `pg` 8.23.1 (перевірено 2026-11-04 на 0.45.4 — розтяжка зелена; 2026-10-05: рантайм без змін; на 1.0.0-rc.4 — теж без змін, спайк 2026-10-04) | Помилка драйвера — у `.cause` (`DrizzleQueryError`), з полями `code` і `constraint` (`pg-protocol`) | `db/pg-errors.ts` — ЄДИНЕ місце розбору `.cause` (`pgErrorInfo`; на ньому `toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation`); споживачі (`admin-server` run.ts, `addressing`, `operations`, `storefront/loaders/reviews-write.ts`) кличуть `simplycms/db` | Конфлікти 23505/23503 перестануть мапитись у 409 — власник магазину знову побачить SQL-текст; гонка двох подач відгуку віддасть сирий 23505 замість `review/already-submitted` | `db/__tests__/pg-errors.test.ts` + `impl/__tests__/run.test.ts` + `operations/__tests__/execute.test.ts` + харнес `admin-catalog.test.ts` (дубль slug, товар у замовленні) + харнес `review-photos.test.ts` (гонка подач); розтяжка `tests/upstream-tripwires.test.ts` |
-| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) і 1.169.45 (2026-11-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `dist/esm/server-functions-handler.js:33`; 1.169.39: `dist/esm/server-functions-handler.js:48`, `src/server-functions-handler.ts:119`; 1.169.45: `dist/esm/server-functions-handler.js:123`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
+| START-1 | `@tanstack/start-server-core` 1.167; перевірено на 1.169.39 (2026-10-04) і 1.169.45 (2026-11-04) — без змін | serverFn з `FormData` — тіло повністю буферизоване `await request.formData()` ДО хендлера (1.167: `server-functions-handler.js` у `dist/esm`; 1.169.39: `server-functions-handler.js` у `dist/esm`; 1.169.45: `dist/esm/server-functions-handler.js:123`) | `admin-server/impl/media/operations.ts` (розбір файлу всередині `runAdmin`) | Якщо стане потоковим — завантаження триматиме зʼєднання пулу на передачу файлу | розтяжка `tests/upstream-tripwires.test.ts`; решта — рев'ю при апгрейді Start |
 
 ---
 
@@ -788,10 +787,9 @@ Schema у CI, інструкція деплою пілота).
 
 ### DZOD-1 · (ЗАКРИТО 2026-10-05) `.pick()` і refinements drizzle-zod не типізуються для генеричної таблиці
 
-**Висновок.** Замінено власним генератором `columnsToZod` (Етап B, спека
-`2026-10-04-deps-security-tooling-design.md`, 7б): `buildResourceSchemas` більше
+**Висновок.** Замінено власним генератором `columnsToZod` (спека «deps-security-tooling-design», розділ 7б; знесено 2026-11-21, текст — `git show a967ab1e`): `buildResourceSchemas` більше
 не імпортує `drizzle-zod`, `SafePick` (знесено) і касти `.pick(... as never)`/refine-функції
-прибрано (коміти Етапу B). `drizzle-orm/zod` 1.0.0-rc.4 DZOD-1 не лікував (13
+прибрано. `drizzle-orm/zod` 1.0.0-rc.4 DZOD-1 не лікував (13
 помилок без кастів), тож чекати апстрім не довелось. Рантайм-еквівалентність
 з drizzle-zod стереже постійний гейт `columns-to-zod-parity.test.ts` з
 мутаційним контролем; `drizzle-zod` лишився **devDependency** лише як еталон
@@ -818,7 +816,7 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/db` (транзакції колекцій) |
-| Знайдено на | 0.8.6 (2026-09-23, К3-Е3, фікс-захід C) |
+| Знайдено на | 0.8.6 (2026-09-23) |
 | Перевірено на версії | 0.8.6 — 2026-09-23 |
 | Статус апстріму | не повідомлено |
 
@@ -828,12 +826,11 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 полів `kind`/`constraint` і без `cause` — `adminErrorKey` нічого не впізнає.
 
 **Корінь.** Помилка serverFn доходить у клієнт ПЛОСКИМ обʼєктом (seroval
-не відновлює клас — К3-13), а `src/transactions.ts` у `commit()` робить
+не відновлює клас), а `transactions.ts` бібліотеки у `commit()` робить
 `error instanceof Error ? error : new Error(String(error))` — поля плаского
 обʼєкта втрачаються.
 
-**Наш обхід.** `packages/simplycms/src/admin-data/normalize-thrown.ts`
-(`normalizeThrown`) — у кожному `onInsert`/`onUpdate`/`onDelete`
+**Наш обхід.** `normalizeThrown` — у кожному `onInsert`/`onUpdate`/`onDelete`
 спільних `handlers.ts` помилка serverFn перетворюється на справжній `Error`
 із тими самими полями ДО того, як потрапить у транзакцію; `adminErrorKey`
 додатково розгортає `.cause` (друга лінія, сама дефект не лікує).
@@ -854,12 +851,12 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 (`writeUpsert`/`writeInsert`/`writeBatch`…) обгорнуті `startSyncIfIdle()`: фабрика
 `withCollectionSyncConfigFactory` у `node_modules/@tanstack/query-db-collection/src/query.ts:3506-3520`
 перед кожним викликом утиліти стартує sync, якщо колекція ще в `idle`. Оптимістичні `insert`/`update`/`delete`
-самі кличуть `_sync.startSync()` (`@tanstack/db` 0.11.3, `src/collection/mutations.ts:303`, `:395`, `:589`).
+самі кличуть `_sync.startSync()` (`@tanstack/db` 0.11.3, модуль `mutations.ts` колекцій).
 Зондами на колекції без синку: `writeUpsert`, `insert`, `writeBatch` більше не кидають
 `SyncNotInitializedError`. Обхід `await collection.preload()` у `useProductSave.create` і `useStock.save`
 прибрано, маркери прибрано. Доказ дискримінативності: на коміті `492f35fd` (1.2.11) без `preload()`
 `useProductSave.test.tsx` і `useStock.test.tsx` червоніють (`SyncNotInitializedError: Collection must be in
-'ready' state…`), на 1.3.4 — зелені. `waitFor` у тестах черги лишено — причина ширша (Е3-19: серіалізація
+'ready' state…`), на 1.3.4 — зелені. `waitFor` у тестах черги лишено — причина ширша (серіалізація
 самої черги). Eager-`preload()` довідника розділів у роут-лоадері `/admin/products` лишається як прогрів, а не
 обхід.
 
@@ -870,7 +867,7 @@ drizzle-zod, лише в тесті, тому без маркера). При м�
 | Поле | Значення |
 |---|---|
 | Бібліотека | `@tanstack/query-db-collection` (ручні sync-хелпери `createWriteUtils`) |
-| Знайдено на | 1.2.11 (2026-09-23, К3-Е3 Tasks 6/8) |
+| Знайдено на | 1.2.11 (2026-09-23) |
 | Перевірено на версії | 1.2.11 — 2026-09-23 |
 | Статус апстріму | не повідомлено |
 
@@ -885,17 +882,16 @@ be in 'ready' state for manual sync operations. Sync not initialized yet.`
 (`productsCollection`/`productModificationsCollection`) у колекцію, яка на
 сторінці картки товару могла не отримати жодної власної підписки
 `useLiveQuery` (підписана лише `stockCollection`, під яку й побудований
-хук). І `usePropertyValues` (Task 10, автозбереження): колекції значень
+хук). І `usePropertyValues` (автозбереження): колекції значень
 властивостей ПІДПИСАНІ безумовно, але старт синку від `useLiveQuery`
 асинхронний — перший `saveScalar` одразу після монтування хука встигає
 раніше, ніж сформується sync-контекст.
 
-**Корінь.** `createWriteUtils` (`src/manual-sync.ts:236-242` пакета) кличе
+**Корінь.** `createWriteUtils` (модуль `manual-sync.ts` пакета) кличе
 `ensureContext()`, який кидає `SyncNotInitializedError`
-(`src/errors.ts:48-53`), якщо `SyncContext` для колекції ще не створено.
+(модуль `errors.ts` пакета), якщо `SyncContext` для колекції ще не створено.
 Контекст зʼявляється лише коли колекція РЕАЛЬНО почала синк — перша
-підписка (`useLiveQuery`) або явний `preload()`. `syncMode: 'on-demand'`
-(Е3-17) сам по собі синку не запускає: простий `useCollection()` лише
+підписка (`useLiveQuery`) або явний `preload()`. `syncMode: 'on-demand'` сам по собі синку не запускає: простий `useCollection()` лише
 дістає інстанс з реєстру `admin-data`, без підписки.
 
 **Наш обхід.** `await collection.preload()` ПЕРЕД будь-якою мутацією
@@ -907,7 +903,7 @@ be in 'ready' state for manual sync operations. Sync not initialized yet.`
 пакета), повторний виклик безпечний. Для `usePropertyValues` (безумовна
 підписка, без явного `preload()`) — тести черги чекають ready-стану
 (`waitFor`) ПЕРЕД першою мутацією, щоб гонка старту синку не змішувалась із
-гонкою самої черги (Е3-19). Маркери —
+гонкою самої черги. Маркери —
 `git grep -n "UPSTREAM:TSDB-B1"`.
 
 **Перевірка виправлення.** Прибрати `await products.preload()` з
@@ -919,7 +915,7 @@ be in 'ready' state for manual sync operations. Sync not initialized yet.`
 **Коли виправлять.** Прибрати точкові `preload()`-виклики в
 `useProductSave.create` і `useStock.save`, коли `syncMode: 'on-demand'`
 (або `writeUpsert`) сам гарантує готовий контекст до першого ручного
-запису. `waitFor` у тестах черги Task 10 можна лишити — там причина ширша
-за цей дефект (Е3-19: серіалізація самої черги).
+запису. `waitFor` у тестах черги можна лишити — там причина ширша
+за цей дефект (серіалізація самої черги).
 
 </details>

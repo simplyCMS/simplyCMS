@@ -50,7 +50,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('StorageMaintenanceCard (Е6д-20)', () => {
+describe('StorageMaintenanceCard', () => {
   it('показує лічильник і хвости з помилкою', async () => {
     mocks.listMediaErasures.mockResolvedValue([TAIL]);
     render(<StorageMaintenanceCard />, { wrapper: makeWrapper(client) });

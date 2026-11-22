@@ -72,7 +72,7 @@
   всю таблицю, бо «активність» — правило показу, а не право доступу. Кожен
   публічний запит несе предикат явно (`is_active = true`, `has_page = true`).
   Забутий предикат не падає — він виводить чернетки у вітрину.
-- 🔴 **Ціни — лише видів глядача (Р29).** Публічні лоадери з `product_prices`
+- 🔴 **Ціни — лише видів глядача.** Публічні лоадери з `product_prices`
   (`loadProduct`, `loadProductList`, `loadCatalogProducts`/`loadCatalogProductsWhere`, `loadPropertyOption`,
   `loadHomePageData`/`loadHomeProducts`/`loadSectionProducts`) приймають
   `ViewerPriceTypes` і фільтрують ціни в SQL (`visibleToViewer`,
@@ -93,7 +93,7 @@
   запиті ВСІ колонки таблиці (відсутні значення — як `default`), тож колонковий грант
   INSERT дав би `42501`: вставку звужує політика RLS `WITH CHECK`, грант лишається
   табличним. Колонковий грант — для UPDATE. Приклад — `product_reviews` для `app_user`
-  (К3-Е6д-7, Е6д-23; `0002_grants.sql`): `SELECT, INSERT, DELETE` табличні +
+  (`0002_grants.sql`): `SELECT, INSERT, DELETE` табличні +
   `UPDATE (rating, title, content, images, status, updated_at)`; політика
   `product_reviews_insert_own` — `WITH CHECK (user_id = актор AND status = 'pending' AND
   admin_comment IS NULL)`, `product_reviews_update_own` — `USING (user_id = актор) WITH
@@ -133,7 +133,21 @@
   (`defineAdminResource` — фабрика операцій з інваріантами; публічна поверхня
   `index.ts` — лише топ-рівневі `createServerFn`, нутрощі — bare-субшлях `./impl`)
   і колекціях **`simplycms/admin-data`** (TanStack DB; колекції без `schema`).
-- Шару `supabase-js` більше немає (К3-Е7): адмінка пишеться на колекціях
+- **Режими колекцій.** Eager (повне завантаження) — невеликі довідники: розділи,
+  типи цін, статуси замовлень, способи й зони доставки, точки видачі, категорії
+  покупців, групи знижок, знижки, правила категорій, банери. On-demand (предикат
+  спускається в серверний subset, порція — серверним `limit`) — товари та їхні
+  сателіти (модифікації, ціни, значення властивостей, залишки), властивості
+  розділів, їхні опції й призначення, тарифи доставки, замовлення й позиції.
+  Покупці й відгуки — не колекції: keyset-список через serverFn. On-demand колекція заводиться лише
+  через `onDemandCollectionOptions` (`admin-data/on-demand-options.ts`):
+  `syncMode` і індекс сортування руками в окремому файлі не пишуться (стереже
+  `on-demand-factory-only.test.ts`).
+- **Одна копія TanStack DB.** `@tanstack/react-db` і `@tanstack/query-db-collection` —
+  peer-залежності ядра з вузьким діапазоном; окремого peer на `@tanstack/db` немає.
+  Розсинхрон версій дає дві копії `@tanstack/db` і тихо зламані колекції —
+  стереже `tests/tanstack-db-single-instance.test.ts`.
+- Шару `supabase-js` немає: адмінка пишеться на колекціях
   `admin-data`/операціях `admin-server`, поточний перелік — `packages/simplycms/src/admin-data/collections/`.
   Ні вітрина, ні адмінка `@supabase/*` не імпортують (ратчет `no-supabase-import`).
 - Серверний subset (`admin-server/impl/subset*.ts`) — allowlist колонок ресурсу:
@@ -143,9 +157,8 @@
   `Date` (переживає межу serverFn як `Date`, доводить `tests/admin-subset-wire.test.ts`).
   Пагінація на рівних мітках часу — `live:smoke`, `admin-lists-pagination.mjs`.
 - Після мутації адмінки — два шляхи за типом сторінки. Сторінки на `useQuery` +
-  serverFn (одиничний рядок чи короткий список: налаштування, теми, плагіни —
-  К3-Е6б, Е6б-19) пишуть відповідь сервера в кеш через `setQueryData` (write-back,
-  К3-7): операція вже повернула актуальний стан, і повторний запит його лише
+  serverFn (одиничний рядок чи короткий список: налаштування, теми, плагіни)
+  пишуть відповідь сервера в кеш через `setQueryData` (write-back): операція вже повернула актуальний стан, і повторний запит його лише
   продублював би. `invalidate` відповідних ключів (§4) — для колекцій `admin-data`
   і для споживачів вітрини, чиї дані мутація зачепила.
 
@@ -178,8 +191,8 @@
   таблиць: `.key` — стабільний префікс для інвалідації, `.deps` — повний список
   читаних таблиць (саме звідси інвалідація бере, що скидати).
 - **`SESSION_KEY`** — похідний/сесійний стан, що не належить жодній таблиці.
-- **`priceViewKey(key, view)`** (`simplycms/react-query`) — публічний запит із цінами
-  (Р29): сегмент 0 — з реєстру, як і раніше, сегмент 1 — вид цін глядача (`'guest'`
+- **`priceViewKey(key, view)`** (`simplycms/react-query`) — публічний запит із цінами:
+  сегмент 0 — з реєстру, як і раніше, сегмент 1 — вид цін глядача (`'guest'`
   або id виду з середовища цін — останній успішно прочитаний, невдалий фоновий перезапит
   його не міняє; `'unresolved'` — покупець, чий вид клієнту не відомий (збій середовища
   без жодного успішного читання): 🔴 НІКОЛИ не `'guest'`, бо serverFn фільтрує за видом
@@ -201,7 +214,7 @@
 
 Стережуть: `eslint-rules/query-key-from-entity.mjs` (зона — `core/`, `*-ui/`,
 `react-query/`, `storefront-routes/`, `admin-data/`, `admin/` пакета ядра; адмінку
-додано в К3-Е7, охоплення — `tests/eslint-admin-zones.test.ts`), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
+охоплено, охоплення — `tests/eslint-admin-zones.test.ts`), `eslint-rules/no-collection-key-outside-admin-data.mjs`,
 тест парності `schema/__tests__/entity-parity.test.ts` (реєстр ↔ схема),
 `admin-data/__tests__/collection-key-storefront-isolation.test.ts`.
 
@@ -275,7 +288,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
 - Журнал і snapshot Drizzle — окремо, у `packages/simplycms/drizzle/` (подвійна
   бухгалтерія навмисна, комітяться обидві теки; нумерація в них своя). Schema-тулінг
   (`drizzle/`, `drizzle.config.ts`, `seed-migrations/`) живе на рівні ПАКЕТА, не в
-  `src/schema/`. `drizzle/**` вручну не правиться НІКОЛИ: до `1.0.0-rc.1` це одна
+  `packages/simplycms/src/schema/`. `drizzle/**` вручну не правиться НІКОЛИ: до `1.0.0-rc.1` це одна
   міграція `0000_init`, яку цілком перегенеровує `pnpm db:rebaseline`
   (`scripts/rebaseline-drizzle.mjs`: прибирає недетерміновані `when` журналу й `id`
   знімка, тож два прогони поспіль дають нульовий диф — стереже
@@ -284,7 +297,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
 - Копію канону для магазину везе шаблон скаффолдера
   (`template/db/migrations/`, `pnpm template:sync`); `simplycms db:diff` у
   магазині докочує з неї нове поверх baseline.
-- 🔴 Накат — лише `applyMigrations` із `simplycms/migrate` (Е8-Р2): одна реалізація
+- 🔴 Накат — лише `applyMigrations` із `simplycms/migrate`: одна реалізація
   для проду, харнесу `test:schema` і `pnpm db:demo`. Журнал
   `public.simplycms_migrations` тримає імʼя й sha256 (після CRLF→LF) кожного
   накоченого файлу; змінений накочений файл — `MigrationChecksumError` до будь-якого
@@ -297,7 +310,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
   `begin`/`commit` у файлі відкидаються ще до накату
   (`MigrationTransactionControlError`); індекс на великій таблиці — окреме рішення,
   а не тихий провал.
-- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (М2б, Р23).** Міграція `0003` тримає лише рядки без
+- 🔴 **Сід: `0003_seed.sql` + `bootstrapStore` (Р23 майстер-плану).** Міграція `0003` тримає лише рядки без
   тексту мовою магазину (`stock_management`, `cache_generations`, тема). Мову й довідники з текстом —
   статуси замовлень, вид ціни, категорію покупця, профіль магазину, основну зону доставки — вставляє
   `bootstrapStore` (`simplycms/migrate`) на порожній `languages` в основній мові магазину; тексти
@@ -334,7 +347,7 @@ pnpm db:diff <name>       # drizzle-kit generate → packages/simplycms/migratio
 - Не читай секрети й `MEDIA_ROOT` на модуль-рівні — лише в рантаймі (контракт
   серверного env, `docs/development/ENVIRONMENT.md`).
 
-## 9. Rich HTML: санітизація (Тема 9)
+## 9. Rich HTML: санітизація
 
 Колонки з розміткою rich-text редакторів — `product_reviews.content` (редактор
 відгуків, профіль `review`) і `description` у `products`, `sections`,
@@ -383,7 +396,7 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 `test-harness/pg/__tests__/html-sanitization.test.ts` (обидва рубежі проти БД) і
 крок `review-xss` у `pnpm live:smoke`.
 
-## 10. Помилки валідації адмін-serverFn (Тема 12)
+## 10. Помилки валідації адмін-serverFn
 
 Відмова Zod на межі адмін-serverFn — НЕ сирий JSON у тості, а типізована доменна
 помилка, яку клієнт розкладає по полях форми.
@@ -393,12 +406,12 @@ em s u code ul ol li a`. `content`: те саме + `h1-h3 blockquote pre hr img
 `AdminNotFoundError`, `CodedError`); усі класи (крім `AuthzError` з `auth/authz.ts`) і чистий
 throw-хелпер `stateConflict` живуть у цьому T0-файлі, бо їх кидають і `admin-server`, і T2-модулі
 (`addressing`), і чиста логіка T1 (`domain/translations`), а залежність T2 від `admin-server` заборонена;
-серверним лишається мапінг кодів PG — `simplycms/db/pg-errors` (`toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation` на ОДНОМУ розборі `.cause`, UPSTREAM:DRZ-1). Нові члени родини (М1): `VersionMismatchError` (412), `SourceChangedError` і `InUseError` (409); їхні поля (число, словник хешів) переходять межу крізь `DomainErrorFieldValue`.
-`AdminNotFoundError` (Р26): «рядка немає», без полів;
+серверним лишається мапінг кодів PG — `simplycms/db/pg-errors` (`toAdminConflict`, `isUniqueViolation`, `isForeignKeyViolation` на ОДНОМУ розборі `.cause`, UPSTREAM:DRZ-1). Нові члени родини: `VersionMismatchError` (412), `SourceChangedError` і `InUseError` (409); їхні поля (число, словник хешів) переходять межу крізь `DomainErrorFieldValue`.
+`AdminNotFoundError`: «рядка немає», без полів;
 клієнт розпізнає її через `isNotFoundError` за `name`, тож картка відрізняє справжнє
 «не знайдено» від збою запиту. `CodedError`: `message` — машинний код (`media/*`,
 `avatar/*`, `review/*`), який клієнт мапить в i18n; звичайний `Error(<код>)` у проді
-маскує Р23, тож код, що мапиться на клієнті, кидають лише через `CodedError`.
+маскується, тож код, що мапиться на клієнті, кидають лише через `CodedError`.
 Payload — `issues: { path: (string|number)[], code, params? }[]`, пропущені крізь
 БІЛИЙ СПИСОК `sanitizeValidationIssues` (T0): коди — `VALIDATION_ISSUE_CODES`
 (коди Zod + `invalid_decimal`, невідомий → `custom`), `params` — лише властивості
@@ -428,7 +441,7 @@ middleware доходить лише рядок — відновлення issue
 
 **Свідомо НЕ загорнуті валідатори поза `admin-server`** (їхні помилки далі йдуть
 як `Error(JSON)`; перелік у тому ж гарді — новий файл із `.validator(` без запису
-червоний): `themes/server` і `plugins/server` — bootstrap-синхронізація, не
+червоний): `packages/simplycms/src/themes/server` і `packages/simplycms/src/plugins/server` — bootstrap-синхронізація, не
 форми адмінки; `plugin-sdk/server` — зовнішній контракт plugin-sdk (плагін
 отримує звичайний `Error`, форма полів тут не передбачена); вітрина й кабінет
 (`core/lib/*`, `storefront-routes/server/*`) — не адмін-форми.
@@ -464,7 +477,7 @@ precision/scale колонки: `numeric(10,2)` — необовʼязковий
 `runAdminTransactions` (`admin-server/impl/run.ts`; `runAdmin` іде крізь неї): доменна
 помилка, що вилетіла зсередини операції (з транзакції чи з коду між транзакціями),
 отримує `AdminConflictError` → 409, `ValidationError` → 400 ДО повторного `throw`
-(К3-13 тримається: сервер бере статус із відповіді в момент catch, а catch межі ще в
+(інваріант: сервер бере статус із відповіді в момент catch, а catch межі ще в
 handler). `stateConflict`, `fieldIssue` і `toAdminConflict` лише кидають/повертають
 помилку без побічного ефекту — тож ядро можна кликати поза HTTP-запитом (сід, порти,
 MCP-сервер магазину), де справжній `setResponseStatus` сам кидає «No StartEvent
@@ -484,36 +497,36 @@ parsed))`; ядро приймає вже розібраний вхід і `Acto
 валідує сам через `validateAdminInput` без статусу; `removeIn` — без `prepare`, як і `remove`, захищене
 видалення лишається за іменованими операціями), ядра `saveProductPrices`, `saveStock`,
 `saveDiscount`, `changeOrderStatus`, `assignCustomerCategory`, `setCustomerBan`,
-`deleteCustomer`, `setReviewsStatus` (масова модерація, Е6д-7/Е6д-23: без актора, як
+`deleteCustomer`, `setReviewsStatus` (масова модерація: без актора, як
 `setCustomerBan`; вхід `{ items: [{ id, updatedAt }], status }` — модератор рішає проти
 ПОБАЧЕНОЇ версії: під `FOR UPDATE` версія кожного рядка (`isoVersion`, мілісекунди)
 порівнюється з `updatedAt`, розбіжність → 409 `review_changed` на весь пакет, неіснуючий id →
 409 `review_not_found`, часткового запису в обох випадках немає; сід кличе його під
 `withActor(app_admin)` з версіями, прочитаними SQL-ом) і `deleteReview` (повертає `discard` для
-двофазного стирання, Е6д-14). Ядро, якому потрібен актор, отримує `CoreActor`
+двофазного стирання). Ядро, якому потрібен актор, отримує `CoreActor`
 (`admin-server/impl/core-actor.ts`) — дискримінант `{ kind: 'admin', userId } | { kind:
 'system' }`, а не `string | null`: для `system` автора дії (`changed_by`) немає і перевірки
 «не я» теж, як в автоправил. Операція передає актора з гранта ролі (`actorOfGrant`).
 
-**Опція `media` фабрики (Е6д-1).** `defineAdminResource({ …, media: { entityType,
+**Опція `media` фабрики.** `defineAdminResource({ …, media: { entityType,
 columns } })` (`admin-server/impl/resource-media.ts`, `resource-write-media.ts`) робить
 медіа-колонки ресурсу частиною його інваріантів, а не кодом у кожному ресурсі. Порядок у
 транзакції insert/update/remove: лок → знімок старих рядків (`SELECT … WHERE id = ANY($ids)
 ORDER BY id FOR UPDATE`, ОДИН раз; на insert знімка немає) → guard (бачить знімок; у банерів
-зливає знімок із патчем, Е6д-2) → перевірка НОВИХ референсів → запис → `eraseMediaRows`
-заміненого чи видаленого (лише рядки `media`) → після COMMIT `completeMediaErasures` (Е6д-14,
-`storage.md`). Новий референс перевіряється, лише якщо він непорожній і відрізняється від
+зливає знімок із патчем) → перевірка НОВИХ референсів → запис → `eraseMediaRows`
+заміненого чи видаленого (лише рядки `media`) → після COMMIT `completeMediaErasures`
+(`storage.md`). Новий референс перевіряється, лише якщо він непорожній і відрізняється від
 знімка: це рядок `media` з `entity_type = cfg.entityType AND entity_id = <id рядка>` під
 `FOR SHARE`, інакше 409 `media_ref_invalid`. Стирається лише референс, що задовольняє ту саму
 умову — чужий файл фабрика не стирає ніколи; незмінений `data:`/`https:` референс (демо) не
 перевіряється. `ImageUpload` файл при прибиранні з форми не стирає, а `id` нового рядка форма
 генерує НАПЕРЕД: «прибрав картинку → скасував форму» лишає старий файл живим, новий — орфаном
-`media` з `entity_id` рядка; такого сироту прибирає sweep неприв'язаних медіа (Е6д-22,
-`storage.md`). Опцію мають банери, `sections`, `products`, `property_options` і
-`product_modifications` (К3-Е6д-1); значення колонки може бути рядком або `jsonb`-масивом
+`media` з `entity_id` рядка; такого сироту прибирає sweep неприв'язаних медіа
+(`storage.md`). Опцію мають банери, `sections`, `products`, `property_options` і
+`product_modifications`; значення колонки може бути рядком або `jsonb`-масивом
 референсів (`normalizeMediaRefs`).
 
-**Опція `cascadeMedia` фабрики (Е6д-19).** `defineAdminResource({ …, cascadeMedia: [{ fk,
+**Опція `cascadeMedia` фабрики.** `defineAdminResource({ …, cascadeMedia: [{ fk,
 column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
 `resource-write-remove.ts`) — дочірні таблиці, рядки яких FK `ON DELETE CASCADE` знищує
 разом із рядком ресурсу і які несуть медіа. `remove`/`removeIn`: `FOR UPDATE` батьків
@@ -530,7 +543,7 @@ column, entityType }] })` (`admin-server/impl/resource-cascade-media.ts`,
 `useServerFieldErrors`), поле показує `errors[field].message`; нового серверного
 валідатора без `adminInput` не пишемо.
 
-**Прецедент: зайнятий email — помилка поля (К3-Е6г, Е6г-1).** Унікальність, яку
+**Прецедент: зайнятий email — помилка поля.** Унікальність, яку
 форма може виправити, — це `ValidationError`, а не 409 «дубль»: тост без поля не каже,
 що саме міняти. Код `taken` — у закритому переліку `VALIDATION_ISSUE_CODES`, повідомлення —
 `admin.validation.taken`. `updateCustomerContacts` нормалізує email
@@ -543,7 +556,7 @@ email в іншому регістрі — не конфлікт, записує
 яку виправляє користувач у формі, повторює цей прецедент (код у переліку + ключ
 повідомлення), а не додає окремий state-код.
 
-## 11. Знімок доставки в замовленні (К3-Е6а)
+## 11. Знімок доставки в замовленні
 
 - Спосіб доставки — **провайдер + режим ціни**. Провайдер (`shipping_methods.provider`,
   `core:address` | `core:pickup`) каже, куди везти, і незмінний після створення
@@ -563,7 +576,7 @@ email в іншому регістрі — не конфлікт, записує
   → зона визначається наново (`resolveShippingZone`) і записується. Виняток `carrier`: ціна від зони не залежить, тож перерахунок записану зону не чіпає
   (навіть неактивну чи `NULL`), `shipping_rate_id` лишається `NULL`. Призначення замовлення
   адмінка не міняє (ресурс `orders` — `writable: []`), тож записаної зони досить.
-- 🔴 **Зона доставки (К3-Е8, Д1–Д4).** Зона не залежить від тексту: `shipping_zones.cities`/`regions`
+- 🔴 **Зона доставки.** Зона не залежить від тексту: `shipping_zones.cities`/`regions`
   зносено, місто з адреси покупця на вибір зони не впливає. Єдина функція `resolveShippingZone`
   (`simplycms/domain/shipping`): кур'єр (`core:address`) → основна зона; самовивіз → `pickup_points.zone_id`
   точки, `NULL` → основна, неактивна зона точки → відмова. Рівно одна основна зона — інваріант БД, а не
@@ -595,7 +608,7 @@ email в іншому регістрі — не конфлікт, записує
   (крок `admin-shipping.mjs`). Негативний контроль `shippingData: {}` у `createOrder`
   валить крок прогону.
 
-## 12. Профіль магазину й кеш процесу `simplycms/site` (К3-Е6б)
+## 12. Профіль магазину й кеш процесу `simplycms/site`
 
 - Профіль — рядок `system_settings['store_profile']` (jsonb `StoreProfile`,
   `simplycms/contracts/store-profile`). Розбір **поблажливий** —
@@ -619,9 +632,9 @@ email в іншому регістрі — не конфлікт, записує
   покоління, COMMIT піднімає атомарно з даними. Процесного `invalidate()` немає —
   він скидав би кеш лише в одному процесі. Запис кешу несе покоління, прочитане ДО
   `load`: читання, що стартувало до мутації й завершилось після, лягає під старим
-  поколінням, і наступний `get` його перечитує (Е6б-9); повільне читання
+  поколінням, і наступний `get` його перечитує; повільне читання
   старішого покоління не перезаписує свіжіше. Клієнт адмінки додатково кличе
-  `router.invalidate()`: лоадер `_storefront` має `staleTime` 5 хв (Е6б-22).
+  `router.invalidate()`: лоадер `_storefront` має `staleTime` 5 хв.
 - 🔴 **Покоління читаються ОДНИМ запитом на HTTP-запит.** Магазин загортає fetch-handler
   у `withRequestContext` (`simplycms/site/request-context`, `AsyncLocalStorage`);
   `readGenerations()` мемоізує проміс у контексті запиту, тож три кеші дають один
@@ -636,15 +649,15 @@ email в іншому регістрі — не конфлікт, записує
   вітрина побачить після TTL.
 - Вшиті теми знає СЕРВЕР: демо-магазин монорепо `src/server.ts` кличе
   `declareBuiltThemes(Object.keys(config.themes))` на рівні модуля; без декларації
-  активація відмовляє `theme_not_built` (fail-closed, Е6б-8).
+  активація відмовляє `theme_not_built` (fail-closed).
 - Гейти: юніт `createReadCache` (детермінована гонка «читання в польоті +
   зміна покоління»), `request-context.test.ts` (один запит поколінь на HTTP-запит),
   харнес `cache-generations.test.ts` («дві репліки» на окремих графах модулів), харнес `readStoreProfile` на відсутньому й зіпсованому рядку і
   операцій під локами `store-profile`/`site-theme`, `live:smoke` (крок
   `admin-system.mjs` на прогрітому кеші) — єдиний доказ, що адмін-serverFn і
-  вітринний serverFn ділять один екземпляр модуля (Е6б-23).
+  вітринний serverFn ділять один екземпляр модуля.
 
-## 13. Ціноутворення, знижки й локи конфігурації (К3-Е6в)
+## 13. Ціноутворення, знижки й локи конфігурації
 
 - 🔴 **Одне ядро ціни.** Картки вітрини, кошик, чекаут, редагування позицій
   замовлення й діагностика ціни в адмінці рахують ОДНИМ ядром `simplycms/commerce`:
@@ -655,10 +668,10 @@ email в іншому регістрі — не конфлікт, записує
   оформлення (`'not_purchasable'`, якщо хоч один рядок недоступний). Суми й пороги
   — цілими центами (`toCents`). Другої формули ціни (на клієнті, в адмінці чи в
   підказці порогу) бути не може: підказка «від 3 шт — …» проганяє той самий рушій
-  на гіпотетичному контексті (Е6в-12).
+  на гіпотетичному контексті.
 - **Ліс знижок** читає `loadDiscountRules` ОДНИМ SQL-виразом (CTE + `json_agg`):
   знижка з цілями й умовами — один знімок навіть у READ COMMITTED. Межа «БД →
-  домен» — `parseDiscountRules`, порядково fail-closed (Е6в-25): пошкоджений рядок
+  домен» — `parseDiscountRules`, порядково fail-closed: пошкоджений рядок
   виключається з розрахунку з причиною `discount_invalid`, розбір не кидає.
   `buildDiscountForest` будує дерево від коренів: вимкнена група падає РАЗОМ із
   піддеревом (діти не піднімаються в корені), `includeInactive` — лише діагностика.
@@ -672,7 +685,7 @@ email в іншому регістрі — не конфлікт, записує
   гостьовий: база до гідрації — за типом ціни гостя тим самим `resolvePriceTypes`
   (`loadGuestPriceTypes`), що й `loadPricingContext`; так само `offers` Product
   JSON-LD (`head/product-offers.ts`, типи гостя їдуть у лоадері сторінки товару).
-  Персональний тип і знижки SSR не рахує (К3-Е6в-1).
+  Персональний тип і знижки SSR не рахує.
 - 🔴 **Локи конфігурації — `advisoryXactLock(db, key)`** (`simplycms/db`, ЄДИНА
   реалізація SQL: `pg_advisory_xact_lock(hashtextextended(key, 0))`;
   `lockCatalogTarget` адмінки — її виклик). Лок береться ПЕРШИМ запитом
@@ -682,12 +695,12 @@ email в іншому регістрі — не конфлікт, записує
   запис правил; `customer-category:<userId>` — стан покупця в одній транзакції:
   категорія (ручна й автоправила), контакти, бан, видалення; першим у порядку
   `customer-category` → `admin-roles`; `admin-roles` — будь-яка зміна «хто адмін»
-  і все, що від цього залежить (К3-Е6г, Е6г-4, Е6г-19): `setAdminRole`,
+  і все, що від цього залежить: `setAdminRole`,
   `setCustomerBan`, `deleteCustomer`, випуск invite власника магазину (`issueAdminInvite`, лише токен) і видача
-  ролі після прийняття (`grantAdminRole`, Р19). Ключ
+  ролі після прийняття (`grantAdminRole`). Ключ
   `LOCK_KEYS.adminRoles` беруть і `auth` (invite), і адмінка напряму з реєстру. Перевірки «не адмін», «не я», «не
   останній адмін» і «не забанений» виконуються лише під ним.
-- 🔴 **Ключі замків — ОДИН реєстр `simplycms/db/lock-keys`** (`LOCK_KEYS`, М1): ключі
+- 🔴 **Ключі замків — ОДИН реєстр `simplycms/db/lock-keys`** (`LOCK_KEYS`): ключі
   `admin-roles`, `customer-config`, `discount-config`, `shipping-config`, `site-theme`,
   `store-profile`, `price-type-default`, `languages-set`, префікси
   `customer-category:`, `stock:`, `prices:`, `mod-default:` і ключ накату
@@ -721,7 +734,7 @@ email в іншому регістрі — не конфлікт, записує
   існують, — під обома). Нова операція, якій потрібні обидва, бере їх у цьому
   порядку; зворотний порядок — дедлок (Postgres розірве одну транзакцію, `40P01`).
 - 🔴 **Порядок локів покупця: `customer-category:<userId>` → `admin-roles`.**
-  Правило (Е6г-22): операція, яка в одній транзакції пише більше одного ресурсу
+  Правило: операція, яка в одній транзакції пише більше одного ресурсу
   графа покупця (`users`, `profiles`, `user_category_history`, `user_roles`,
   `sessions`) або тримає лок рядка `users`/`profiles` під час іншого запису, ПЕРШИМ
   запитом бере `customer-category:<userId>`. Так працюють адмін-операції покупця
@@ -747,19 +760,19 @@ email в іншому регістрі — не конфлікт, записує
   в самого BA є вікно, яке advisory-лок адмін-операції не бачить. Закриття — на
   стороні БД або в колбеку, не в хуку: (1) тригер `sessions_refuse_banned`
   (`BEFORE INSERT ON sessions`, функція `refuse_banned_session()`, ручний файл
-  `0004_functions.sql`, Е6г-14): `SELECT banned_at FROM users WHERE id = NEW.user_id
+  `0004_functions.sql`): `SELECT banned_at FROM users WHERE id = NEW.user_id
   FOR SHARE` — БЕЗУМОВНО за `id` (умова `banned_at IS NULL` у `WHERE` ламала б
   `FOR SHARE` у READ COMMITTED), значення перевіряється ПІСЛЯ читання; хук
   `createSessionBanHook` лишається і дає чистий код `BANNED` у звичайному випадку,
   а в гонці клієнт отримує загальну помилку створення сесії; (2) guard у
-  `sendResetPassword` (`auth/reset-guard.ts`, Е6г-18): BA вставляє
+  `sendResetPassword` (`auth/reset-guard.ts`): BA вставляє
   `reset-password:<token>` окремим запитом ПЕРЕД викликом колбека, тому колбек
   безумовно читає `email` користувача `FOR SHARE` і, якщо рядка немає чи email
   розійшовся зі знімком BA, видаляє токен і не шле листа (назовні винятку немає: BA і
   так відповідає однаково). Новий випадок цього класу закривається так само —
   `FOR SHARE` у точці запису, а не ще одна перевірка перед нею.
 - 🔴 **Invite власника магазину і бан: лок закриває одне, `FOR SHARE` — інше.**
-  `grantAdminRole` (видача ролі ПІСЛЯ прийняття запрошення, Р19; одна
+  `grantAdminRole` (видача ролі ПІСЛЯ прийняття запрошення; одна
   транзакція `app_admin`) бере `admin-roles`, потім
   `select banned_at from users where id = $1 for share` (`issueAdminInvite` теж
   бере обидва, але лише щоб забанений не отримав токена — роль він не видає). Лок закриває порядок
@@ -769,7 +782,7 @@ email в іншому регістрі — не конфлікт, записує
   Одне не замінює другого. CLI `owner:invite` на `banned` друкує «спершу
   розблокуйте покупця».
 - 🔴 **Межа узгодженості розрахунків поверх кількох агрегатів** (канон для ВСІХ
-  таких розрахунків, не лише знижок; рішення Е6в-8 ред.3): Узгодженість
+  таких розрахунків, не лише знижок; рішення власника): Узгодженість
   гарантується в межах агрегата, що пишеться ОДНІЄЮ транзакцією (знижка з цілями й
   умовами — один SQL-знімок). Між незалежними агрегатами (категорія покупця, вид
   ціни, ціни товарів, правила знижок), які змінюються окремими операціями,
@@ -781,26 +794,25 @@ email в іншому регістрі — не конфлікт, записує
   REPEATABLE READ для чекауту відхилено: `40001` у записуваному шляху.
 - Автоправила категорій: після COMMIT оформлення `placeOrderFor` кличе
   `applyCategoryRules` в ОКРЕМІЙ транзакції `withStoreOperatorDb` у `try/catch`:
-  збій правил не ламає замовлення (Е6в-19). Скасування замовлення категорію не
+  збій правил не ламає замовлення. Скасування замовлення категорію не
   перераховує. `category_id`/`category_locked` профілю змінює лише `app_admin`
-  (колонковий грант `app_user`, Е6в-24).
+  (колонковий грант `app_user`).
 - Гейти: харнес `test:schema` (атомарність `saveDiscount`, локи детерміновано
   хелперами `holdAdvisoryLock`/`stillPending`, видалення категорії з історією,
   правила після оформлення), юніти рушія й підказок, `live:smoke` (крок
   `admin-discounts.mjs`: поріг у картці, кошику й `order_items`, вимкнений батько
   стримує дитину, автоправило змінює ціну).
 
-## 14. Покупці: роль, бан, видалення (К3-Е6г)
+## 14. Покупці: роль, бан, видалення
 
 Канон операцій адмінки над акаунтом покупця: `setAdminRole`, `setCustomerBan`,
 `updateCustomerContacts`, `deleteCustomer` (`admin-server/impl/customers/*`) і зведення
 `dashboardSummary`. Читання покупців — не колекція `admin-data`, а серверні `listCustomers`
 (keyset `(created_at desc, id desc)`, сторінка 50, `useInfiniteQuery`) і `getCustomerCard`:
 база — `users LEFT JOIN profiles`, тож власник магазину, створений CLI `owner:invite` без
-`profiles`, у списку є, а його статистика — `null` («—»). Спека —
-[`2026-10-07-customers-dashboard-design.md`](../superpowers/specs/2026-10-07-customers-dashboard-design.md).
+`profiles`, у списку є, а його статистика — `null` («—»). Рішення — ADR-0021 і ADR-0042 (`docs/adr/`).
 
-- 🔴 **Бан живе в хуку Better Auth і в БД (Е6г-13, Е6г-14).** `setCustomerBan`
+- 🔴 **Бан живе в хуку Better Auth і в БД.** `setCustomerBan`
   одним рядком транзакції під `admin-roles` ставить `users.banned_at`/`ban_reason` і
   `DELETE FROM sessions` — вікна, де забанений має живу сесію, немає. Нову сесію
   відсікають два шари: хук `session.create.before` кидає
@@ -810,11 +822,11 @@ email в іншому регістрі — не конфлікт, записує
   окремими транзакціями»). Скидання пароля забаненого проходить, але сесії не створює:
   вхід відмовляє з `BANNED` (вітрина показує `auth.login.banned`/`bannedContacts`).
   Відкрита вкладка забаненого після перезавантаження — гостьова, `/admin` для нього
-  редіректить на `/auth` (guard не змінюється, Е6г-3). Взаємовиключність «адмін ↔
+  редіректить на `/auth` (guard не змінюється). Взаємовиключність «адмін ↔
   бан» тримається з обох боків під одним локом: бан адміна → 409
-  `customer_is_admin`, роль забаненому → 409 `admin_role_banned` (Е6г-11). Бан
+  `customer_is_admin`, роль забаненому → 409 `admin_role_banned`. Бан
   блокує ОБЛІКОВИЙ ЗАПИС, а не особу: гостьове оформлення замовлення він не зупиняє.
-- 🔴 **Порядок `deleteCustomer` (Е6г-15) — одна транзакція `runAdmin`, не
+- 🔴 **Порядок `deleteCustomer` — одна транзакція `runAdmin`, не
   `runAdminTransactions`:** `customer-category:<id>` → `admin-roles` →
   `users`/`profiles` `FOR UPDATE` → перевірки (існує, не я, не адмін, введений email
   збігається без регістру) → ref аватара читається ДО знеособлення → знеособлення
@@ -822,35 +834,34 @@ email в іншому регістрі — не конфлікт, записує
   `revokeUserVerifications` → `DELETE users` (каскад решти графа) → `eraseMediaRows`
   аватара (прив'язка `avatar/<userId>`) і фото кожного відгуку покупця (прив'язка
   `review/<id>`) — лише рядки `media`; ядро повертає `discard`, а операція стирає файли
-  ПІСЛЯ COMMIT (`completeMediaErasures`, Е6д-14 — переписує початкову семантику Е6г-15). Рядок
+  ПІСЛЯ COMMIT (`completeMediaErasures`). Рядок
   `media` переживає каскад, бо `uploaded_by` має `SET NULL`. Збій транзакції лишає все на
   місці й файлів не чіпає; збій `driver.delete` після COMMIT видалення НЕ відкочує —
   лишається орфан-файл без рядка, битих референсів нуль (хвіст у outbox `media_erasures`
-  добиває повтор; роздача орфана закрита перевіркою рядка, Е6д-21 — `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
+  добиває повтор; роздача орфана закрита перевіркою рядка — `storage.md`). Окремої транзакції для рядків аватара немає: інакше роль,
   видана між перевіркою й стиранням, стерла б аватар нового адміна при відмові видалення.
-- 🔴 **Реєстр ПД `orders` (Е6г-7)** — `commerce/order-privacy.ts`:
+- 🔴 **Реєстр ПД `orders`** — `commerce/order-privacy.ts`:
   `ORDER_COLUMN_PRIVACY: { readonly [K in keyof Order]: 'personal' | 'operational' }`.
   Нова drizzle-колонка без запису червонить `typecheck`; харнес звіряє реєстр з
   `information_schema`. `personal` стираються (`NULL`): імʼя, email, телефон, адреса,
   місто, нотатки, дані отримувача, `userId`, посилання на збережені адреси/отримувачів,
   `accessToken`; `shippingData` — частково (нижче). `operational` (номер, суми, статус,
   точка видачі, дати) лишаються. Знеособлюються ЛИШЕ замовлення з `user_id` покупця.
-- **Знімок доставки після стирання (Е6г-10).** Адресна доставка: `destination` стає
+- **Знімок доставки після стирання.** Адресна доставка: `destination` стає
   `{ kind: 'address', city: null, address: null }`; точка видачі (`kind: 'pickup-point'`)
   і зіпсований `{}` знеособлення не змінює. Контракт `ShippingSnapshot.city` — `string |
   null`, а `null` допускає лише ЧИТАЛЬНА сторона (три читачі показують «Не вказано»):
   запис знімка (`prepareCheckout`/`placeOrder`, `order-items/totals.ts`) будує
   `destination` з непорожнім `city`, тест «чекаут відхиляє порожнє місто» це стереже.
-- **Стерте замовлення не редагується (Е6г-16).** `lockEditableOrder` відмовляє позиціям
+- **Стерте замовлення не редагується.** `lockEditableOrder` відмовляє позиціям
   409 `order_personal_data_erased` (поруч з `order_cancelled_final`): перерахунок
   доставки читав би `orders.delivery_city = NULL` (місто обов'язкове для адресної доставки)
   і дав би `shipping_unavailable`.
-  Зміна статусу й скасування дозволені. `loadOrderDetail` фільтра стертих НЕ має
-  (Е6г-17): стерте замовлення недосяжне за побудовою (`user_id NULL`, `access_token
+  Зміна статусу й скасування дозволені. `loadOrderDetail` фільтра стертих НЕ має: стерте замовлення недосяжне за побудовою (`user_id NULL`, `access_token
   NULL`), доступ вирішує RLS-роль. Адмінка показує «Видалений покупець» (картка,
   список замовлень, останні замовлення дашборду), вітрина — «Колишній покупець»
   у відгуку (`reviews.formerCustomer`).
-- **`revokeUserVerifications(db, { userId, email })` (Е6г-2).** Видаляє
+- **`revokeUserVerifications(db, { userId, email })`.** Видаляє
   `verifications` з `identifier LIKE 'reset-password:%' AND value = userId` та рядок
   `owner-invite:<lower(email)>`. Кличуть зміна email (зі СТАРИМ email) і видалення.
 - **FK-граф `users`.** Каскадом зникають `accounts`, `sessions`, `profiles`, `user_roles`,
@@ -860,14 +871,14 @@ email в іншому регістрі — не конфлікт, записує
   доводить спільний `findOrphans` (`test-harness/pg/__tests__/fixtures/orphans.ts`) і
   живий прогін.
 - 🔴 **Межі.** (1) Гостьове замовлення — не акаунт: замовлення без `user_id`, навіть з
-  тим самим email, видалення не знеособлює (борг К3-Е6г-1). (2) Бан не зупиняє
+  тим самим email, видалення не знеособлює (відомий борг). (2) Бан не зупиняє
   гостьове оформлення. (3) Тимчасового бану й ролей персоналу немає: бан безстроковий,
   роль одна — `admin`; операції `customer.delete` і `user.role.assign` розділені під
   це наперед.
 - **Дашборд.** `dashboardSummary` (`order.manage`): нові замовлення, виручка за 7/30
   днів від серверного `now()` (скасовані не рахуються, `status_id NULL` рахуються),
   10 останніх; слот `admin.dashboard.stats` отримує рівно `AdminDashboardStats`. Фільтр
-  замовлень живе в URL (`/admin/orders?status=<uuid>`, Е6г-5).
+  замовлень живе в URL (`/admin/orders?status=<uuid>`).
 - Гейти: харнес `test:schema` (`admin-customer-*`, `user-graph`, реєстр ПД, `baseline`
   з тригером і allowlist `functions-allowlist`), юніти, `live:smoke` (крок
   `admin-customers.mjs`: контакти й email, закріплена категорія проти автоправила, видача
@@ -875,7 +886,7 @@ email в іншому регістрі — не конфлікт, записує
   знеособленням, дашборд = прямий SQL; негативні контролі — без `delete from sessions`
   у бані і без `eraseOrderPersonalData` у видаленні).
 
-## 15. Мультимовність: агрегат товару й порядок замків (М1)
+## 15. Мультимовність: агрегат товару й порядок замків
 
 Переклади, реєстри адрес, проєкція й читання вітрини — [`translations.md`](./translations.md);
 реєстр операцій, виконавець і HTTP API — [`operations-api.md`](./operations-api.md). Тут — те, що
@@ -920,7 +931,7 @@ email в іншому регістрі — не конфлікт, записує
   `catalog-projection-order.test.ts` (3)–(5). Сигнали: (1), (3) — 40P01; (4) і (5)
   KEY SHARE — зі строгою передумовою кейсу (`settles`) тест падає «другий учасник завершився до відпускання
   T0» (учасник став у чергу — причина дедлоку), без неї — 40P01.
-- **Значення властивостей (Р18):** форму тримає БД — складені FK `(property_id, value_kind)` і
+- **Значення властивостей:** форму тримає БД — складені FK `(property_id, value_kind)` і
   `(property_id, option_id)`, CHECK «рівно одна колонка за `value_kind`», частковий UNIQUE скалярних
   значень. Команда читає властивості `FOR KEY SHARE` у своїй транзакції (`loadKnownProperties`) — той
   самий замок, який візьме складений FK значення: паралельне видалення властивості або чекає на
@@ -931,9 +942,9 @@ email в іншому регістрі — не конфлікт, записує
 - **Видалення мови** (`languages.remove`) мапить будь-який 23503 навколо СВОГО DELETE у 409
   `language_in_use` локально — за таблицею помилки цього не розпізнати (І2).
 
-## 16. Облік залишку замовлення — по позиції (К3-Е5)
+## 16. Облік залишку замовлення — по позиції
 
-З К3-Е5 облік замовлення живе в `simplycms/inventory` (`reserveOrderStock`,
+Облік замовлення живе в `simplycms/inventory` (`reserveOrderStock`,
 `releaseOrderStock`), а фактично списане пишеться В ПОЗИЦІЮ:
 `order_items.stock_point_id` (точка списання) і `order_items.stock_reserved`
 (скільки реально знято; 0 — цілі без обліку). Скасування повертає рівно
@@ -941,7 +952,7 @@ email в іншому регістрі — не конфлікт, записує
 повторне повернення бачить 0. Тумблер `decrease_on_order` на поверненні не
 читається. Дві свідомі межі:
 
-- **Замовлення, оформлені до К3-Е5, нічого не повертають.** Колонки
+- **Замовлення, оформлені до цього обліку, нічого не повертають.** Колонки
   приземлені правкою baseline, тож у таких рядків `stock_reserved = 0`;
   колишній fallback (точка з `orders.shipping_data.stock_point_id` або
   повторний резолв) прибрано — він давав фантомний залишок там, де облік був
@@ -952,3 +963,45 @@ email в іншому регістрі — не конфлікт, записує
   каскадом, і повертати кількість нікуди: вона не повертається, факт
   пишеться в `console.warn` (`[simplycms/inventory] … not returned`).
   Деактивована точка залишок отримує назад (кейс I1 `order-stock.test.ts`).
+
+## 17. Контент: банери й відгуки
+
+- **Права розділені.** Банери — операція `banner.manage`, модерація відгуків —
+  `review.moderate` (`auth/authz.ts`). Спільного «content.manage» немає свідомо:
+  це різні обовʼязки, і спільне право довелося б розщеплювати в ролях.
+- **Валідація банера — лише на сервері ресурсу** (`admin-server/impl/banners/`):
+  CHECK-обмежень на ці правила в БД немає. Поля — zod ресурсу: `placement` з
+  переліку, кнопка `{ text, url, target, variant }`, `schedule_time_*` — `HH:MM`,
+  `schedule_days` ⊂ 0…6, колір накладки — через `isSafeCssColor`. Міжпольові правила
+  (`section_id` обовʼязковий тоді й лише тоді, коли `placement = 'section'`;
+  `date_from ≤ date_to`) — у `guard.ts`. Предикати кнопки й розкладу спільні з
+  вітриною (`domain/banner.ts`, колір — `domain/css-value.ts`).
+- **Модерація відгуків.** Лічильник очікування — окремий запит `countPendingReviews`,
+  не похідний від відфільтрованого списку (інакше бейдж залежить від фільтра).
+  Список — keyset `(created_at desc, id desc)`. `setReviewsStatus` приймає 1…100 пар
+  `{ id, updatedAt }`: модератор схвалює ПОБАЧЕНУ версію, розбіжність хоч одного
+  рядка — 409 `review_changed` на весь набір; переходи між статусами вільні; `adminComment` пишеться лише тоді, коли його передано.
+  `admin_comment` — внутрішня примітка: у payload вітрини не потрапляє (лоадер
+  відгуків вибирає явний список колонок). Фото відгуку покупця стираються разом з
+  акаунтом (`docs/architecture/storage.md`).
+
+## 18. Пошта: порт, outbox, листи
+
+- **Порт — server-only `simplycms/mail`**, драйвер вибирає `resolveDriverEnv`
+  (`simplycms/env`): `SMTP_URL` + `MAIL_FROM` → `smtp`; частково задано → помилка
+  старту з іменем змінної; нічого → `log`, у проді — з одним попередженням на старті
+  (`doctor --production` називає це помилкою). Драйвер `log` у `NODE_ENV=production`
+  друкує лише «Кому / Тема / тип», без тіла: посилання скидання пароля — секрет.
+- **Outbox `mail_outbox`.** Лист ставиться в чергу (`scheduleMail`) у тій самій
+  транзакції, що бізнес-подія (оформлене замовлення), або одразу, якщо подію
+  ініціює Better Auth (скидання пароля, запрошення, підтвердження email). Доставка
+  (`deliverMail`) — після COMMIT; успішні рядки видаляються. Невдалі видно в
+  налаштуваннях адмінки з кнопкою «Повторити» (`retryMail`, право `settings.manage`).
+  Скидання пароля доставляється `void deliverMail(…)` без `await`: затримка SMTP
+  інакше дає перебір користувачів за часом відповіді.
+- **Листи:** скидання пароля, запрошення, підтвердження email, лист покупцю й лист
+  власнику про замовлення. Порожній `email` профілю магазину → лист власнику
+  пропускається, `doctor --online` і `status` попереджають.
+- **Підтвердження email.** Зі SMTP `requireEmailVerification` увімкнено; прийняття
+  запрошення й скидання пароля підтверджують email. Умова категорії покупця
+  `email_domain` порівнює точний домен або суфікс `.<домен>`, а не підрядок.

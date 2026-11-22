@@ -1,4 +1,4 @@
-// `readStoreFacts` (К3-Е8, Task 21): факти про магазин з рантайм-підключення —
+// `readStoreFacts`: факти про магазин з рантайм-підключення —
 // той самий канал `SET LOCAL ROLE app_admin`, що й у журналу.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { applyMigrations, readStoreFacts } from 'simplycms/migrate';

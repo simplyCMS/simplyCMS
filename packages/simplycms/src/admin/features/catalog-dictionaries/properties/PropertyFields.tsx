@@ -23,7 +23,7 @@ interface Props {
   readonly idPrefix: string;
   /**
    * `true` — створення: тип обирається. `false` — редагування: тип лише
-   * текстом із поясненням (Е4-5, insertOnly), контролу немає.
+   * текстом із поясненням (insertOnly), контролу немає.
    */
   readonly typeEditable: boolean;
 }

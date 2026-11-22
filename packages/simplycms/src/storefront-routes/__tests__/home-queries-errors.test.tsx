@@ -20,7 +20,7 @@ vi.mock(
 afterEach(cleanup);
 
 /**
- * Task 0.1: помилка шару даних не повинна ковтатись — хук має перейти в
+ * Помилка шару даних не повинна ковтатись — хук має перейти в
  * isError, а не віддати isSuccess з порожнім масивом.
  *
  * 🔴 Джерело помилки тепер СЕРВЕРНА функція, а не PostgREST-відповідь із
@@ -39,7 +39,7 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+// Вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
 vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
   useViewerPriceKey: () => 'guest',
 }));

@@ -16,7 +16,7 @@ import { StatusesTable } from '../features/order-statuses/StatusesTable';
 import { useOrderStatusesPage } from '../features/order-statuses/useOrderStatusesPage';
 
 /**
- * Довідник статусів замовлень (Е1б, переписано в Е5 під незмінний `code`).
+ * Довідник статусів замовлень (`code` незмінний).
  * Сторінка лише складає частини; стан і мутації — `useOrderStatusesPage`.
  */
 export default function OrderStatuses() {

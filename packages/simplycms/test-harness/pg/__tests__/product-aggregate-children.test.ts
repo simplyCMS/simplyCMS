@@ -1,4 +1,4 @@
-// М1 Task 12 (І21 модифікації, Р5, Р14, Р18): модифікації й значення властивостей
+// І21 модифікації: модифікації й значення властивостей
 // агрегата товару та тонкі команди цін і залишків проти живого Postgres.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -25,7 +25,7 @@ import {
   saveDescription,
 } from './fixtures/product-aggregate';
 
-describe('агрегат товару: модифікації, значення, ціни й залишки (Task 12)', () => {
+describe('агрегат товару: модифікації, значення, ціни й залишки', () => {
   const db = useAddressingDb('simplycms_product_children');
   const rejects = (p: Promise<unknown>) =>
     p.then(
@@ -393,7 +393,7 @@ describe('агрегат товару: модифікації, значення,
       expect(rows).toHaveLength(3);
     });
 
-    // Звірку `kind` ↔ `property_type` тримає складений FK (І6, рішення архітектора Task 17):
+    // Звірку `kind` ↔ `property_type` тримає складений FK (І6, рішення архітектора):
     // його 23503 команда перекладає в помилку поля `kind` за ІМЕНЕМ обмеження.
     it('kind ≠ property_type → validation на kind (складений FK)', async () => {
       const { id, version: v } = await create({ uk: { name: 'Кабель' } });
@@ -413,7 +413,7 @@ describe('агрегат товару: модифікації, значення,
         }),
       );
       expect(err).toBeInstanceOf(ValidationError);
-      // Шлях і код — ті самі, що давала звірка в коді до Task 17 (`invalid_value`).
+      // Шлях і код — ті самі, що давала звірка в коді раніше (`invalid_value`).
       expect((err as ValidationError).issues).toEqual([
         {
           path: ['propertyValues', 'upsert', 0, 'kind'],
@@ -423,7 +423,7 @@ describe('агрегат товару: модифікації, значення,
       expect(await version(id)).toBe(v);
     });
 
-    // A1 (архітектор, Task 17 fix-1): рання перевірка існування властивості бере рядок
+    // Рання перевірка існування властивості бере рядок
     // `FOR KEY SHARE`, тож видалення властивості, що почалося раніше, команда чекає й після
     // його коміту дає помилку `propertyId`, а не хибну `kind` складеного FK.
     it('гонка: властивість видаляють паралельно → помилка propertyId, не kind', async () => {

@@ -2,7 +2,7 @@
 // (vitest.config: environment 'node' — без директиви renderHook упаде на
 // document is not defined; патерн — як у on-demand-contract.test.tsx)
 /**
- * Контракт повного зрізу on-demand колекції (Е4-9, ред.2 — аудит Codex,
+ * Контракт повного зрізу on-demand колекції (за аудитом Codex,
  * знахідка 6). Сторінка списку властивостей читає on-demand колекцію
  * `section_properties` БЕЗ `where` (повний зріз, `orderBy name`), а картка —
  * зріз `where id = X`. `on-demand-contract.test.tsx` покриває фільтр,
@@ -15,12 +15,12 @@
  * переданим subset (filters/sorts/limit/offset), а не ігнорує його — інакше
  * повний зріз і зріз картки були б неперевірними (стаб віддавав би все
  * будь-кому). insert/update стаби змінюють той самий масив, як справжній
- * сервер. Червоне тут = бібліотека поводиться не так, як припускає Е4-9.
+ * сервер. Червоне тут = бібліотека поводиться не так, як припускає ця схема.
  *
  * 🔴 Кожен кейс тримає ЖИВУ підписку (useLiveQuery) на час запису: без
  * живого спостерігача драфт on-demand колекції лишається видимим до
  * наступного sync-коміту (@tanstack/db 0.8.6, collection/state.js:686-745);
- * сторінки завжди підписані — тест відтворює їхню форму (Е4-13).
+ * сторінки завжди підписані — тест відтворює їхню форму.
  */
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { act, renderHook, waitFor, cleanup } from '@testing-library/react';
@@ -177,7 +177,7 @@ function setup() {
 
 const names = (rows: readonly { name: string }[]) => rows.map((r) => r.name);
 
-describe('повний зріз on-demand колекції (Е4-9)', () => {
+describe('повний зріз on-demand колекції', () => {
   it('useLiveQuery без where над on-demand колекцією отримує ВЕСЬ довідник', async () => {
     const { wrapper, useFullSlice } = setup();
     const { result } = renderHook(useFullSlice, { wrapper });

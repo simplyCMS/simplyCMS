@@ -40,7 +40,7 @@ export async function prepareStore({ storeDir, tarballDir, env, skipBuild }) {
   step('Скіли: симлінки на node_modules/simplycms/skills');
   linkScratchSkills(storeDir);
 
-  // FAQ-контур (ПК7): з шаблону плагін знято, а монорепо його монтує — без
+  // FAQ-контур (FAQ не в шаблоні): з шаблону плагін знято, а монорепо його монтує — без
   // довстановлення Gate A побачив би різні множини route-id. Чому окремим
   // кроком, а не оверлеєм — install-faq.mjs.
   step('FAQ-контур: simplycms add @simplycms/plugin-faq --plugin + монтування');

@@ -1,6 +1,6 @@
 // Медіа-референс і його резолв у URL — тір T1, без IO.
 //
-// 🔴 У БД лежить РЕФЕРЕНС, а не URL (рішення Е2-1): рядок каже, ЩО це за
+// 🔴 У БД лежить РЕФЕРЕНС, а не URL: рядок каже, ЩО це за
 // зображення, а не ЗВІДКИ його роздають. Інакше зміна драйвера сховища
 // вимагала б переписати всі збережені рядки, а зовнішньо хостовані картинки
 // й плейсхолдери сіду не мали б куди подітись.
@@ -12,7 +12,7 @@
 /** Референс на зображення: storage key АБО зовнішній/вбудований URL. */
 export type MediaRef = string;
 
-/** База URL роздачі драйвера `local-fs` (роут `/media/$`, Task 4). */
+/** База URL роздачі драйвера `local-fs` (роут `/media/$`). */
 export const MEDIA_URL_BASE = '/media';
 
 /**
@@ -21,7 +21,7 @@ export const MEDIA_URL_BASE = '/media';
  * підставляє в атрибут `accept`. Без цього рядок `accept` дублювався б у
  * кожному компоненті завантаження — третя копія того самого правила.
  *
- * 🔴 SVG відсутній свідомо (рішення Е2-10): він несе скрипти.
+ * 🔴 SVG відсутній свідомо: він несе скрипти.
  */
 export const ACCEPTED_IMAGE_MIME = [
   'image/png',
@@ -56,19 +56,19 @@ export const MEDIA_ENTITY_TYPES = [
 export type MediaEntityType = (typeof MEDIA_ENTITY_TYPES)[number];
 
 /**
- * Фото відгуку покупця (Е6д-5, КАНОН).
+ * Фото відгуку покупця (КАНОН).
  *
  * 🔴 `'review'` свідомо НЕ в `MEDIA_ENTITY_TYPES`: той список — allowlist
  * адмінського `uploadMedia`, а сценарію «адмін вантажить фото відгуку» немає.
  * Пише їх лише подача відгуку (`submitReviewWithImages`), як `'avatar'` —
  * лише заміна аватара. Кількість і розмір КОЖНОГО файлу звіряються ДО
  * першого запису; сумарну стелю тіла запиту тримає `MAX_REQUEST_BODY_BYTES`
- * (К3-Е6д-2, `runtime/body-limit`).
+ * (`runtime, body-limit`).
  */
 export const REVIEW_MEDIA_ENTITY = 'review';
 
 /**
- * Власник файлу логотипа (К3-Е6д-3). Логотип один на магазин і не має рядка-
+ * Власник файлу логотипа. Логотип один на магазин і не має рядка-
  * носія, тож `entity_id` фіксований: двофазне стирання (`eraseMediaRows`)
  * вимагає власника, а сервер сам підставляє цей uuid при upload `store_logo`,
  * не довіряючи клієнту.
@@ -76,7 +76,7 @@ export const REVIEW_MEDIA_ENTITY = 'review';
 export const STORE_LOGO_OWNER_ID = '00000000-0000-4000-8000-00000000106f';
 
 /**
- * Типи власника, чиї файли роздаються з `private, no-cache` (Е6д-21): їхня
+ * Типи власника, чиї файли роздаються з `private, no-cache`: їхня
  * видимість залежить від глядача (відгук на модерації видно лише автору й
  * адміну; аватар — персональні дані), тож спільний/CDN-кеш з `immutable`
  * зберіг би файл для того, кому його вже не можна показувати.
@@ -122,7 +122,7 @@ export const PAYLOAD_TOO_LARGE_CODE = 'request/payload-too-large';
 export const LENGTH_REQUIRED_CODE = 'request/length-required';
 
 /**
- * Стеля тіла будь-якого POST на server function (К3-Е6д-2). Виводиться з
+ * Стеля тіла будь-якого POST на server function. Виводиться з
  * найбільшого легітимного запиту — подачі відгуку з 5 фото — а не літералом,
  * тож зміна лімітів вище автоматично зсуває стелю. Не менша за одиночне
  * завантаження медіа й аватар (тест це стереже).
@@ -198,7 +198,7 @@ export function normalizeMediaRefs(value: unknown): string[] {
  */
 export const MEDIA_COLUMNS = [
   // М1: фото товару — рядок на зображення (jsonb `images` товару й модифікації
-  // знесено в Task 17); власник файлу завжди товар (`entityType: 'product'`), і для
+  // знесено); власник файлу завжди товар (`entityType: 'product'`), і для
   // зображення модифікації теж.
   {
     table: 'product_images',
@@ -268,7 +268,7 @@ export const MEDIA_COLUMNS = [
 
 /**
  * Гілка референсу поза `MEDIA_COLUMNS`: логотип лежить у
- * `system_settings.value->>'logo'`, а не в колонці (Е6д-22). `findMediaReferences`
+ * `system_settings.value->>'logo'`, а не в колонці. `findMediaReferences`
  * перевіряє її окремо; гейт `media-sweep-coverage` рахує її поруч із колонками.
  */
 export const LOGO_MEDIA_REFERENCE = {
@@ -278,7 +278,7 @@ export const LOGO_MEDIA_REFERENCE = {
 } as const;
 
 /**
- * Мінімальний вік рядка `media`, з якого sweep сміє його стерти (Е6д-22):
+ * Мінімальний вік рядка `media`, з якого sweep сміє його стерти:
  * молодший файл міг бути щойно завантажений і ще не привʼязаний формою.
  */
 export const MEDIA_SWEEP_MIN_AGE_HOURS = 24;

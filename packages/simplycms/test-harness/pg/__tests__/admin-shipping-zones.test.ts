@@ -1,7 +1,7 @@
-// Е6а, Task 4 (Е6а-12, Е6а-20): зони доставки — рівно одна дефолтна, і вона
+// Зони доставки — рівно одна дефолтна, і вона
 // завжди активна. Шапка — патерн admin-catalog-dictionaries.test.ts (операції
 // напряму з `simplycms/admin-server/impl`, requireGrant мокається модульно);
-// лок доводиться хелперами Е4-12 (`holdAdvisoryLock`/`stillPending`).
+// лок доводиться хелперами (`holdAdvisoryLock`/`stillPending`).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SYSTEM_SEED_IDS } from 'simplycms/schema';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
@@ -24,7 +24,7 @@ import {
 
 const state = (constraint: string) => F.conflict('state', constraint);
 
-describe('admin: доставка — зони (Е6а, Task 4)', () => {
+describe('admin: доставка — зони', () => {
   const db = F.useShippingAdminDb('simplycms_admin_shipping_zones');
   const url = () => db.url();
   let DEFAULT = '';
@@ -109,7 +109,7 @@ describe('admin: доставка — зони (Е6а, Task 4)', () => {
     ).toEqual([{ zone_id: DEFAULT }]);
   });
 
-  it('setDefault стоїть, поки зовнішній тримає LOCK_KEYS.shippingConfig (holdAdvisoryLock/stillPending Е4-12)', async () => {
+  it('setDefault стоїть, поки зовнішній тримає LOCK_KEYS.shippingConfig (holdAdvisoryLock/stillPending)', async () => {
     const target = await F.seedZone(url());
     const lock = await holdAdvisoryLock(url(), 'shipping-config');
     try {

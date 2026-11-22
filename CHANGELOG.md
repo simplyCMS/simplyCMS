@@ -520,10 +520,8 @@
 `simplycms update` без `--to` її не перетинає. `1.0.0-rc.1` із заморожуванням baseline — після хвилі
 мультимовності даних.
 К3-Е8 (частини А і Б): готовність до пілоту й агентний супровід магазину — спеки
-[А](docs/superpowers/specs/2026-10-12-pilot-readiness-design.md) і
-[Б](docs/superpowers/specs/2026-10-12-shop-agent-toolkit-design.md) (розділ «Амендмент (план,
-2026-10-12)»); план
-[`2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md`](docs/superpowers/plans/2026-10-12-k3-e8-pilot-readiness-agent-toolkit.md).
+«pilot-readiness-design» (А) і «shop-agent-toolkit-design» (Б) (розділ «Амендмент (план,
+2026-10-12)»); план «k3-e8-pilot-readiness-agent-toolkit» (знесено 2026-11-21, текст — `git show a967ab1e`).
 З 1.0 діє чесний semver: злам коду магазину, тем чи плагінів піднімає мажорну версію.
 
 ### 🔴 BREAKING для магазинів
@@ -684,15 +682,11 @@ serverFn (прямий код лоадера), не маскується в payl
 ## [0.14.0] — 2026-10-12
 
 К3-Е6д: контент — банери й відгуки на серверному шарі (спека
-[`2026-10-10-content-banners-reviews-design.md`](docs/superpowers/specs/2026-10-10-content-banners-reviews-design.md);
-план
-[`2026-10-10-v2-k3-e6d-content.md`](docs/superpowers/plans/2026-10-10-v2-k3-e6d-content.md)).
+«content-banners-reviews-design»; план «v2-k3-e6d-content» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
 К3-Е7: повний знос Supabase (спека
-[`2026-10-11-v2-k3-e7-supabase-removal-design.md`](docs/superpowers/specs/2026-10-11-v2-k3-e7-supabase-removal-design.md);
-план
-[`2026-10-11-v2-k3-e7-supabase-removal.md`](docs/superpowers/plans/2026-10-11-v2-k3-e7-supabase-removal.md)).
+«v2-k3-e7-supabase-removal-design»; план «v2-k3-e7-supabase-removal» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Легасі на `supabase-js` — 0.
 
 ### 🔴 BREAKING для магазинів
@@ -771,7 +765,7 @@ serverFn (прямий код лоадера), не маскується в payl
   «sanitize-html на сервері» (оверлей `scripts/pilot-pack/sanitize-probe.sql`), релізний гейт
   `pilot` (`scripts/release/pilot-full.mjs`), розтяжка `UPSTREAM:START-IP-1`.
 - Доробка К3-Е6д-1…9 (план
-  [`2026-10-11-v2-k3-e6d-finish.md`](docs/superpowers/plans/2026-10-11-v2-k3-e6d-finish.md)):
+  «v2-k3-e6d-finish» (знесено 2026-11-21, текст — `git show a967ab1e`)):
   - outbox `media_erasures` з `completeMediaErasures`/`scheduleMediaErasures`/
     `retryMediaErasures`, хвости й повтор у налаштуваннях адмінки, помічник
     `withPublishedRollback` (Е6д-20);
@@ -830,7 +824,7 @@ serverFn (прямий код лоадера), не маскується в payl
 ## [0.13.0] — 2026-10-10
 
 Вітринний стенд `pnpm db:showcase` (план
-[`2026-10-08-showcase-seed.md`](docs/superpowers/plans/2026-10-08-showcase-seed.md)):
+«showcase-seed» (знесено 2026-11-21, текст — `git show a967ab1e`)):
 локальна база з живими даними для ручного тесту вітрини й адмінки. Тулінг монорепо, не
 продукт: у магазин не їде, у `packages/simplycms/src` слова «showcase» немає.
 
@@ -867,9 +861,7 @@ serverFn (прямий код лоадера), не маскується в payl
 ## [0.12.0] — 2026-10-08
 
 К3-Е6г: покупці й дашборд на серверному шарі (спека
-[`2026-10-07-customers-dashboard-design.md`](docs/superpowers/specs/2026-10-07-customers-dashboard-design.md);
-план
-[`2026-10-07-v2-k3-e6g-customers-dashboard.md`](docs/superpowers/plans/2026-10-07-v2-k3-e6g-customers-dashboard.md)).
+«customers-dashboard-design»; план «v2-k3-e6g-customers-dashboard» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
 ### 🔴 BREAKING для магазинів
@@ -913,9 +905,7 @@ serverFn (прямий код лоадера), не маскується в payl
 
 К3-Е6в: знижки й категорії покупців — одна ціна на картці, у кошику й у чеку
 (спека
-[`2026-10-07-discounts-customer-categories-design.md`](docs/superpowers/specs/2026-10-07-discounts-customer-categories-design.md);
-план
-[`2026-10-07-v2-k3-e6v-discounts-categories.md`](docs/superpowers/plans/2026-10-07-v2-k3-e6v-discounts-categories.md)).
+«discounts-customer-categories-design»; план «v2-k3-e6v-discounts-categories» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
 ### 🔴 BREAKING для магазинів
@@ -991,9 +981,7 @@ serverFn (прямий код лоадера), не маскується в payl
 
 К3-Е6б: профіль магазину й система (налаштування, теми, плагіни) на серверному
 шарі (спека
-[`2026-10-06-store-profile-system-design.md`](docs/superpowers/specs/2026-10-06-store-profile-system-design.md);
-план
-[`2026-10-06-v2-k3-e6b-store-profile-system.md`](docs/superpowers/plans/2026-10-06-v2-k3-e6b-store-profile-system.md)).
+«store-profile-system-design»; план «v2-k3-e6b-store-profile-system» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
 ### 🔴 BREAKING для магазинів
@@ -1050,9 +1038,7 @@ serverFn (прямий код лоадера), не маскується в payl
 ## [0.9.0] — 2026-10-06
 
 К3-Е6а: доставка «провайдер + режим ціни» на серверному шарі адмінки (спека
-[`2026-10-06-commerce-providers-design.md`](docs/superpowers/specs/2026-10-06-commerce-providers-design.md),
-частина 1; план
-[`2026-10-06-v2-k3-e6a-shipping-providers.md`](docs/superpowers/plans/2026-10-06-v2-k3-e6a-shipping-providers.md)).
+«commerce-providers-design», частина 1; план «v2-k3-e6a-shipping-providers» (знесено 2026-11-21, текст — `git show a967ab1e`)).
 Магазинів на SimplyCMS немає — без зворотної сумісності.
 
 ### 🔴 BREAKING для магазинів
@@ -1103,7 +1089,7 @@ serverFn (прямий код лоадера), не маскується в payl
 ## [0.8.0] — 2026-10-05
 
 Захід оновлень залежностей, безпеки й тулінгу (спека
-[`2026-10-04-deps-security-tooling-design.md`](docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md))
+«deps-security-tooling-design» (знесено 2026-11-21, текст — `git show a967ab1e`))
 плюс трек «Стандарти індустрії» (CSRF, санітизація HTML, помилки валідації).
 Магазинів на SimplyCMS немає — без зворотної сумісності, шимів немає.
 
@@ -1263,9 +1249,8 @@ serverFn (прямий код лоадера), не маскується в payl
 Три етапи треку **V2-К3** одним релізом: **Е4 — довідники каталогу**, **Е5 —
 замовлення**, **Е5б — редагування позицій замовлення**. Плани, рішення й
 факти виконання:
-[`2026-10-03-v2-k3-e4-catalog-dictionaries.md`](docs/superpowers/plans/2026-10-03-v2-k3-e4-catalog-dictionaries.md),
-[`2026-10-04-v2-k3-e5-orders.md`](docs/superpowers/plans/2026-10-04-v2-k3-e5-orders.md),
-[`2026-10-04-v2-k3-e5b-order-items-edit.md`](docs/superpowers/plans/2026-10-04-v2-k3-e5b-order-items-edit.md).
+плани «v2-k3-e4-catalog-dictionaries», «v2-k3-e5-orders»,
+«v2-k3-e5b-order-items-edit» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 **Breaking для магазинів на `0.6.0`** (0.x, D5 — без шимів): змінюється
 baseline міграцій (базу магазину перестворити, напр. `pnpm db:demo`), частина
 `simplycms/storefront/loaders` переїхала в нову теку `simplycms/commerce`.
@@ -1354,7 +1339,7 @@ API `simplycms/commerce`.
 
 Етап **V2-К3-Е3 — каталог адмінки on-demand.** План, рішення Е3-1…Е3-20 і
 факти виконання:
-[`docs/superpowers/plans/2026-09-23-v2-k3-e3-catalog-on-demand.md`](docs/superpowers/plans/2026-09-23-v2-k3-e3-catalog-on-demand.md).
+план «v2-k3-e3-catalog-on-demand» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 **Breaking для магазинів на `0.5.0`** (0.x, D5 — без шимів): змінюються
 ключі кешу (`entityKey().list()`), host-файл `src/start.ts` і baseline
 міграцій. Нових пакетів немає — мерж публікує ті самі пʼять.
@@ -1433,7 +1418,7 @@ API `simplycms/commerce`.
 ## [0.5.0] — 2026-09-16
 
 Етап **V2-К3-Е2 — порт сховища файлів** (PR #49). План:
-[`docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md`](docs/superpowers/plans/2026-09-13-v2-k3-e2-storage-minimum.md).
+план «v2-k3-e2-storage-minimum» (знесено 2026-11-21, текст — `git show a967ab1e`).
 Нових пакетів немає.
 
 ### Додано
@@ -1470,7 +1455,7 @@ API `simplycms/commerce`.
 
 Контур **0.4.1 — «Supabase зі шляху вітрини»** (трек V2, після К1′б). План і
 межі:
-[`docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md`](docs/superpowers/plans/2026-08-24-v2-supabase-severance-041.md).
+план «v2-supabase-severance-041» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 **Breaking для будь-якого магазину на `0.4.0`** (0.x, D5 — без шимів):
 міняється контракт `.env`, зникає субшлях `simplycms/data-supabase` і два
 db-скрипти. Нових пакетів не зʼявляється — мерж у `main` публікує ті самі
@@ -1530,7 +1515,7 @@ db-скрипти. Нових пакетів не зʼявляється — м�
   скіл `code-review`, prompt-и) і публіковані README приведені до стану
   після severance; `supabase db push` замінено на реальний psql-накат.
 - `CLAUDE.md`, [`test-contours.md`](docs/architecture/test-contours.md)
-  (банери DECOMMISSIONED), [`v2-state-map.md`](docs/tasks/v2-state-map.md)
+  (банери DECOMMISSIONED), «v2-state-map» (знесено, текст — `git show cd266ee6`)
   (§2.1 — результат ОКРЕМОГО живого прогону саме під контракт 0.4.1) і
   [роадмап](docs/tasks/platform-roadmap.md) (борги 0.4.1-1…11, зокрема три
   дефекти безпеки, які цей контур **не** закриває).
@@ -1575,7 +1560,7 @@ SupabaseClient`; мертвий `simplycms/data-supabase` прибрано з de
 редизайну за референсом і трек К0.
 
 Фаза 3 роадмапу — Plugin SDK v1. План і межі:
-[`docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md`](docs/superpowers/plans/2026-08-14-phase3-plugin-sdk.md).
+план «phase3-plugin-sdk» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 Мерж у `main` опублікує ДВА нові пакети (`@simplycms/plugin-sdk`,
 `@simplycms/plugin-faq`) — введення пакета є релізним рішенням у момент мержу.
 
@@ -1627,7 +1612,7 @@ SupabaseClient`; мертвий `simplycms/data-supabase` прибрано з de
 ---
 
 Фаза 4 роадмапу — Теми як пакети + маркетплейс-індекс. План і межі:
-[`docs/superpowers/plans/2026-08-14-phase4-themes-as-packages.md`](docs/superpowers/plans/2026-08-14-phase4-themes-as-packages.md).
+план «phase4-themes-as-packages» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 Мерж у `main` опублікує НОВИЙ пакет (`@simplycms/theme-solarstore`) —
 введення пакета є релізним рішенням у момент мержу (той самий шлях, що
 `@simplycms/plugin-sdk`/`@simplycms/plugin-faq` вище й `@simplycms/cli`
@@ -1676,7 +1661,7 @@ SupabaseClient`; мертвий `simplycms/data-supabase` прибрано з de
 
 Інкремент Б.2 треку C — шліфування механізму клонування дизайну після
 лайв-тесту. Задача і межі:
-[`docs/tasks/redesign-mechanism-b2.md`](docs/tasks/redesign-mechanism-b2.md).
+«redesign-mechanism-b2» (знесено, текст — `git show 3ae867e8`).
 Скіл `redesign-from-reference` їде в tarball `create-simplycms-store`
 (`pnpm template:sync`), тож зміни нижче видно авторам магазинів.
 
@@ -1720,8 +1705,7 @@ SupabaseClient`; мертвий `simplycms/data-supabase` прибрано з de
   компонентів дістали обовʼязкову секцію `## Motion`.
 
 Трек К0 — консолідація пакетів 26 → 5 + доставка агентних скілів. Спека
-[`2026-08-20-package-consolidation-design.md`](docs/superpowers/specs/2026-08-20-package-consolidation-design.md),
-[план](docs/superpowers/plans/2026-08-20-package-consolidation.md).
+«package-consolidation-design», план «package-consolidation» (знесено 2026-11-21, текст — `git show a967ab1e`).
 🔴 **Breaking для будь-якого магазину, зібраного на `0.3.x`** (0.x, D5 — без
 шимів): 22 пакети ядра зникають як окремі імена, їхній код доїжджає
 субшляхами одного пакета. Мерж у `main` публікує НОВИЙ unscoped пакет

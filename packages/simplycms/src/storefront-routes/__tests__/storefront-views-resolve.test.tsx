@@ -5,7 +5,7 @@ import { render, cleanup } from '@testing-library/react';
 import type { ThemeModule, ThemeViews } from 'simplycms/themes/types';
 
 /**
- * Резолв view сторінки вітрини (контракт тем v3, Фаза 3, Step 3).
+ * Резолв view сторінки вітрини.
  *
  * Негативний контроль механізму: тема БЕЗ `views` нічого не змінює, тема з
  * `views.<Name>` підміняє канонічний view цілком, а заявка на ІНШУ сторінку

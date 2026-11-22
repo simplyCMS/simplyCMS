@@ -7,7 +7,7 @@ import { TestI18nProvider, ukT } from '../../../../../../test-harness/i18n';
 
 afterEach(cleanup);
 
-describe('OrderDeliveryCard — знеособлена адреса (Е6г-7)', () => {
+describe('OrderDeliveryCard — знеособлена адреса', () => {
   it('знімок адресної доставки з city/address = null → «Не вказано», без «null»', () => {
     const { container } = render(
       <TestI18nProvider>

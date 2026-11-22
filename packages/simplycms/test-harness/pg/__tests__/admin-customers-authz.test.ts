@@ -1,4 +1,4 @@
-// К3-Е6г (фінальне рев'ю, M1): негативна авторизація операцій покупців і
+// Негативна авторизація операцій покупців і
 // дашборду — покупець через РЕАЛЬНИЙ `resolveGrant` отримує AuthzError, а
 // пишучі нічого не записують. Пін імені операції ловить підміну права.
 import { describe, expect, it, vi } from 'vitest';
@@ -26,7 +26,7 @@ import {
   updateCustomerContactsOp,
 } from 'simplycms/admin-server/impl';
 
-describe('admin: покупець не викликає операції покупців і дашборду (Е6г, M1)', () => {
+describe('admin: покупець не викликає операції покупців і дашборду', () => {
   const db = F.useCustomersDb('simplycms_admin_cust_authz');
   const url = () => db.url();
   /** Знімок усього, що пишуть операції покупців. */

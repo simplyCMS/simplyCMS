@@ -1,5 +1,5 @@
-// К3-Е5б Task 3: редагування позицій поруч із покупцем і локами (Е5б-8,
-// Е5б-7′) — скасування кабінетом після правок повертає рівно актуальний
+// Редагування позицій поруч із покупцем і локами:
+// скасування кабінетом після правок повертає рівно актуальний
 // облік; операція стоїть САМЕ на локу замовлення; проєкція без
 // `access_token`; не-адмін не проходить.
 import { describe, expect, it, vi } from 'vitest';
@@ -19,11 +19,11 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { requireGrant, resolveGrant, AuthzError } from 'simplycms/auth';
 
-describe('admin: редагування позицій, покупець і локи (К3-Е5б, Task 3)', () => {
+describe('admin: редагування позицій, покупець і локи', () => {
   const f = useOrderItemsEditDb('simplycms_e5b_locks');
   const { ids } = f;
 
-  it('редагування → cancelOwnOrder покупцем повертає рівно актуальні stock_reserved (Review Focus 2)', async () => {
+  it('редагування → cancelOwnOrder покупцем повертає рівно актуальні stock_reserved', async () => {
     const initial = await f.stock(ids.panel);
     const o = await f.place(
       [
@@ -57,7 +57,7 @@ describe('admin: редагування позицій, покупець і ло
     ['update', -2],
     ['remove', 1],
   ] as const)(
-    '(лок) %s: поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point (Review Focus 4)',
+    '(лок) %s: поки рядок замовлення зайнятий holdOrderRowLock — операція стоїть на `select … from "orders" … for update` і не тримає локів order_items/stock_by_pickup_point',
     async (kind, stockDelta) => {
       const o = await f.place([
         { productId: ids.panel, quantity: 1 },

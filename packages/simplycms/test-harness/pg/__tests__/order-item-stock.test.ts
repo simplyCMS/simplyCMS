@@ -1,4 +1,4 @@
-// К3-Е5б, Task 2 (Е5б-7′): дельта залишку по ОДНІЙ позиції оформленого
+// Дельта залишку по ОДНІЙ позиції оформленого
 // замовлення. Єдина правда — лічильник `order_items.stock_reserved`, а не
 // наявність `stock_point_id`. Кожен кейс асертить і лічильник, і ТОЧНИЙ
 // залишок після зміни кількості та після скасування.
@@ -14,7 +14,7 @@ import {
 import { orderItems } from 'simplycms/schema';
 import { useOrderItemStockDb } from './fixtures/order-item-stock';
 
-describe('дельта залишку по позиції замовлення (Е5б-7′)', () => {
+describe('дельта залишку по позиції замовлення', () => {
   const f = useOrderItemStockDb('simplycms_order_item_stock');
   const { ids } = f;
   // Тумблер — спільний стан БД: кожен кейс стартує з увімкненого, тож
@@ -142,7 +142,7 @@ describe('дельта залишку по позиції замовлення (
     expect(await f.stock(ids.panel)).toBe(10);
   });
 
-  it('🔴 точка задана, stock_reserved = 0 (рядка залишку не було) → рядок залишку завели → ЗМЕНШЕННЯ кількості НЕ повертає нічого; скасування теж (Е5б-7′)', async () => {
+  it('🔴 точка задана, stock_reserved = 0 (рядка залишку не було) → рядок залишку завели → ЗМЕНШЕННЯ кількості НЕ повертає нічого; скасування теж', async () => {
     await f.untrack(ids.inverter);
     const orderId = await f.order([{ productId: ids.inverter, quantity: 3 }]);
     const itemId = await f.itemOf(orderId, ids.inverter);

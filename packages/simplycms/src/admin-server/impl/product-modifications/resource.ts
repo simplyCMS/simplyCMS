@@ -11,7 +11,7 @@ import { lockAggregateRoots } from '../products/aggregate/lock-order';
 import { deleteModifications } from './delete';
 
 /**
- * ЛИШЕ ЧИТАННЯ колекцій і видалення (М1, Task 17): модифікацію створює й править — разом
+ * ЛИШЕ ЧИТАННЯ колекцій і видалення: модифікацію створює й править — разом
  * з `isDefault` і порядком — команда агрегата `products.saveDescription` (рядок без перекладу
  * основної мови й поточного токена не комітиться, І4, І16; версія агрегата піднімається).
  * Окремих операцій дефолту й порядку немає: вони йшли повз корінь агрегата і не піднімали
@@ -30,7 +30,7 @@ export const productModificationsOps = defineAdminResource({
   sortable: ['sortOrder', 'name'],
   defaultOrder: { column: 'sortOrder', direction: 'asc' },
   touch: 'updatedAt',
-  // М1 (Task 16): назва модифікації для колекцій — з перекладу основної мови (INNER JOIN).
+  // Назва модифікації для колекцій — з перекладу основної мови (INNER JOIN).
   readModel: {
     translations: productModificationTranslations,
     owner: productModificationTranslations.modificationId,
@@ -48,9 +48,9 @@ export const productModificationsOps = defineAdminResource({
     'createdAt',
     'updatedAt',
   ],
-  // М1 (Task 12): фото модифікації (`product_images.modification_id`) каскадно
+  // Фото модифікації (`product_images.modification_id`) каскадно
   // зникають; їхні файли належать товару, а не модифікації.
-  // М1: каскад фото модифікації серіалізується з командами агрегата товару: корені —
+  // Каскад фото модифікації серіалізується з командами агрегата товару: корені —
   // тим самим замком кореня агрегата (спільний `languages-set` -> NO KEY UPDATE за id).
   lockOnRemove: async (db, ids) => {
     if (ids.length === 0) return;
@@ -64,7 +64,7 @@ export const productModificationsOps = defineAdminResource({
       'no key update',
     );
   },
-  // М1 (Task 14): DELETE — лише єдиним видалячем модифікацій (`FOR UPDATE` за id).
+  // DELETE — лише єдиним видалячем модифікацій (`FOR UPDATE` за id).
   deleteRows: (db, ids) => deleteModifications(db, { ids }),
   cascadeMedia: [
     {

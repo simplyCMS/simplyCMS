@@ -15,7 +15,7 @@ type Schema = Record<string, ThemeSettingDefinition>;
 
 /**
  * Схема налаштувань — у МОДУЛІ теми (контракт v2), а модуль живе лише в
- * браузері: сервер схеми не знає (Е6б-16). Тема без модуля у збірці — форма
+ * браузері: сервер схеми не знає. Тема без модуля у збірці — форма
  * порожня («немає налаштувань»), а не падіння сторінки. `null` — ще вантажимо.
  */
 function useThemeSchema(name: string | undefined): Schema | null {
@@ -39,7 +39,7 @@ function useThemeSchema(name: string | undefined): Schema | null {
   return schema && schema.name === name ? schema.value : null;
 }
 
-/** Сторінка налаштувань теми (Е6б-16): `saveThemeSettings` + write-back. */
+/** Сторінка налаштувань теми: `saveThemeSettings` + write-back. */
 export default function ThemeSettingsPage() {
   const t = useT();
   const { themeId } = useParams({ strict: false }) as { themeId: string };

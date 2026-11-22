@@ -6,7 +6,7 @@ import { defineOperation } from 'simplycms/operations';
 import { profiles } from 'simplycms/schema';
 import type { CoreActor } from 'simplycms/auth';
 
-// Мова інтерфейсу адмінки в профілі (М2а Д7, І45). Лише власний рядок: `userId` береться з
+// Мова інтерфейсу адмінки в профілі (Д7, І45). Лише власний рядок: `userId` береться з
 // актора, а не з входу, тож чужий профіль недосяжний за побудовою. Для ролі user запис
 // дозволяє колонковий грант `ui_locale` (0002_grants) і RLS `profiles_update_own`.
 // Читання мови — не операція: `beforeLoad` `/admin` бере її разом із сесією (§19.6).

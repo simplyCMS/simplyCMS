@@ -1,4 +1,4 @@
-// К3-Е8, Task 10 (Е8-Р10): outbox пошти `mail_outbox` проти живої БД.
+// outbox пошти `mail_outbox` проти живої БД.
 // Транспорт — фейк: Mailpit тут не потрібен, доводимо чергу, а не SMTP.
 import { sql } from 'drizzle-orm';
 import {
@@ -43,7 +43,7 @@ const msg = (to: string): MailMessage => ({
 
 type Row = { id: string; attempts: number; last_error: string | null };
 
-describe('outbox пошти mail_outbox (Е8-Р10)', () => {
+describe('outbox пошти mail_outbox', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_e8_mail_outbox');
   let dbUrl = '';

@@ -5,7 +5,7 @@ import { GROUP_OPERATORS } from '../discount-labels';
 /** Службове значення select-а батька для кореневого рівня (`NULL`). */
 export const ROOT_GROUP = '__root__';
 
-/** Значення форми групи. Дати — рядки `datetime-local` (Е6в-22). */
+/** Значення форми групи. Дати — рядки `datetime-local`. */
 export const discountGroupFormSchema = z
   .object({
     name: z.string().trim().min(1).max(200),

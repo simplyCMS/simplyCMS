@@ -13,7 +13,7 @@ type S3Config = Extract<MediaEnv, { driver: 's3' }>;
 /**
  * Скільки разів `aws4fetch` повторює запит на 5xx/429/збій мережі. Дефолт
  * бібліотеки — 10 повторів з подвоєнням паузи: збій S3 тримав би запит
- * роздачі хвилинами, а нам треба швидкий 503 (Е8-Р14).
+ * роздачі хвилинами, а нам треба швидкий 503.
  */
 const RETRIES = 2;
 
@@ -84,7 +84,7 @@ export function s3Driver(cfg: S3Config): MediaStorageDriver {
     async delete(key) {
       const res = await aws().fetch(urlFor(key), { method: 'DELETE' });
       await drain(res);
-      // 🔴 404 = успіх: видалення ідемпотентне (рішення Е2-7), інакше повтор
+      // 🔴 404 = успіх: видалення ідемпотентне, інакше повтор
       // outbox стирання по вже стертому ключу падав би вічно.
       if (!res.ok && res.status !== 404) throw fail('DELETE', res.status);
     },

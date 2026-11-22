@@ -33,8 +33,8 @@ const empty = (parentId: string | undefined): DiscountGroupFormInput => ({
 
 /**
  * Стан картки групи знижок: insert/update — фабрика через колекцію
- * (guard циклу й пари дат — на сервері, Е6в-17). Незмінена дата в patch не
- * потрапляє зовсім: сервер лишає вихідний момент (Е6в-22 ред.2).
+ * (guard циклу й пари дат — на сервері). Незмінена дата в patch не
+ * потрапляє зовсім: сервер лишає вихідний момент.
  */
 export function useDiscountGroupCard(
   groupId: string | undefined,

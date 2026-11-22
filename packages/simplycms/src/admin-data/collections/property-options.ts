@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { PropertyOption } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { PropertyOption } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertPropertyOptions,
   listPropertyOptions,
@@ -15,8 +15,8 @@ import { toSubsetPayload } from '../subset-payload';
 
 /**
  * Довідник опцій характеристик — зріз по `propertyId` для multiselect/
- * скалярних значень товару й модифікації (Е3-1). Запис — Е4 (Task 5)
- * через канон `persistenceHandlers`; on-demand лишається (Е4-9).
+ * скалярних значень товару й модифікації. Запис
+ * через канон `persistenceHandlers`; on-demand лишається.
  */
 function create(queryClient: QueryClient) {
   // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.

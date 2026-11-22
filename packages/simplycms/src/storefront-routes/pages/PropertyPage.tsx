@@ -62,7 +62,7 @@ export default function PropertyPage({
         }
       : undefined;
 
-  // Вид цін глядача — сегмент ключа (Р29): товари сторінки несуть його прайс.
+  // Вид цін глядача — сегмент ключа: товари сторінки несуть його прайс.
   const view = useViewerPriceKey();
   const locale = useContentLocale();
   const { data, isLoading } = useQuery({
@@ -84,7 +84,7 @@ export default function PropertyPage({
         },
       }),
     enabled: !!propertySlug && !!optionSlug && view !== null,
-    // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
+    // Дані лоадера — лише поки він рахував цього глядача.
     initialData: useSeedableInitialData(initialData),
   });
 
@@ -93,7 +93,7 @@ export default function PropertyPage({
   const optionLoading = isLoading;
   const productsLoading = isLoading;
 
-  // Ціни — тим самим `priceForCard`, що каталог і головна (Е6в-11). До
+  // Ціни — тим самим `priceForCard`, що каталог і головна. До
   // середовища картки лишаються без ціни, як і в серверному HTML; збій
   // середовища — помилка з «Повторити» замість сітки (F1).
   const products = useMemo(() => {

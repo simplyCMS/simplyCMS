@@ -29,7 +29,7 @@ import { runAdmin } from './run';
 export { pickColumns };
 
 /**
- * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки (К3-4′). serverFn НЕ створює:
+ * Фабрика ОПЕРАЦІЙ і схем ресурсу адмінки. serverFn НЕ створює:
  * компілятор Start вимагає топ-рівневих const (а fast-path нетоплевел
  * виклик мовчки пропускає) — обгортки пише Task-модуль сутності явно.
  *
@@ -61,7 +61,7 @@ export function defineAdminResource<
       config.insertOnly,
       config.omit,
     );
-  // Е5-7: явна проєкція для SELECT і RETURNING (без omit — усі колонки,
+  // Явна проєкція для SELECT і RETURNING (без omit — усі колонки,
   // тобто той самий набір, що `select()`/`returning()` без аргументу).
   const picked = pickColumns(config.table, config.omit ?? []);
   /** Тип рядка, що бачить споживач: без прихованих колонок. */
@@ -82,10 +82,10 @@ export function defineAdminResource<
   };
 
   /**
-   * Спільна склейка К3-13 — `runAdmin`: перший рубіж → роль від субʼєкта
+   * Спільна склейка — `runAdmin`: перший рубіж → роль від субʼєкта
    * → транзакція → мапінг конфліктів БД у 409. 🔴 Фабрика обслуговує ЛИШЕ admin-поверхню: scope 'own' тут
    * структурно непідтримуваний (немає owner-колонки) — `runAdmin` сам
-   * кидає fail-loud, 'own'-ресурси (orders/profiles у Е4+) пишуться
+   * кидає fail-loud, 'own'-ресурси (orders/profiles) пишуться
    * іменованими операціями, які scope ЧЕСНО звужують.
    */
   const run = <Out>(fn: (db: ActorDb, grant: RequestGrant) => Promise<Out>) =>
@@ -124,9 +124,9 @@ export function defineAdminResource<
     updateSchema,
     removeSchema,
     subsetSchema: subsetInputSchema,
-    /** Е6д-19: які каскадні медіа стирає `remove` — для гейта класу. */
+    /** Які каскадні медіа стирає `remove` — для гейта класу. */
     cascadeMedia: cascadeCoverage(config.table, config.cascadeMedia ?? []),
-    /** Серверна межа сторінки (Е5-12); `undefined` — без межі. Публічна для тесту Е5-14. */
+    /** Серверна межа сторінки; `undefined` — без межі. Публічна для тесту. */
     get maxLimit(): number | undefined {
       return maxLimit;
     },
@@ -134,10 +134,10 @@ export function defineAdminResource<
     list: async ({ data }: { data: SubsetPayload }) =>
       run((db) => listIn(db, data.subset ?? {})),
     // Ядро читання в транзакції викликача: його кличе операція-список фабрики команд
-    // перекладного агрегата (`translatable/list.ts`, М2б Р19) без другого `runAdmin`.
+    // перекладного агрегата (`translatable/list.ts`, Р19 майстер-плану) без другого `runAdmin`.
     listIn,
 
-    // Е6а-16: lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а
+    // Lock → guard → запис (`resource-write-ops.ts`). Явні ключі, а
     // не spread: spread знімає readonly з getter-а `maxLimit` у типі.
     insert: write.insert,
     update: write.update,

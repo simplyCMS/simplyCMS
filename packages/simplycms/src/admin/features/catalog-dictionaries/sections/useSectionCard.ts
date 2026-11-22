@@ -30,7 +30,7 @@ const EMPTY: SectionFormInput = {
 
 /**
  * Стан картки розділу: рядок із живої колекції, форма, збереження й
- * видалення. Для нового розділу id генерується НАПЕРЕД (Е0/Е4-10):
+ * видалення. Для нового розділу id генерується НАПЕРЕД:
  * `ImageUpload` привʼязує файл до `entityId`, ще до першого збереження.
  */
 export function useSectionCard(sectionId: string | undefined) {

@@ -30,12 +30,12 @@ export interface PreparedCheckout {
   items: NewOrderItem[];
   subtotal: number;
   shippingCost: number;
-  /** Режим ціни способу — їде в квоту, щоб підсумок не показав `carrier` як «Безкоштовно» (Е6а-18). */
+  /** Режим ціни способу — їде в квоту, щоб підсумок не показав `carrier` як «Безкоштовно». */
   shippingPricing: ShippingPricing;
   /** Зона й тариф, що дали ціну доставки, — їх пише замовлення (А2: `rateId` лише для `rates`). */
   shippingZoneId: string | null;
   shippingRateId: string | null;
-  /** Знімок доставки для `orders.shipping_data` (Е6а-8). */
+  /** Знімок доставки для `orders.shipping_data`. */
   shippingSnapshot: NewShippingSnapshot;
   /**
    * 🔴 Рахується ТУТ, а не в обох викликачах (рев'ю I1): `total` — число під
@@ -87,7 +87,7 @@ export async function prepareCheckout(
 
   // Перевірка доставки — ДО ціноутворення (пріоритет відмов «доставка →
   // точка → товар» незмінний); тариф — після, бо залежить від `subtotal`.
-  // Обидві функції — `simplycms/commerce`, спільні з адмінкою (К3-Е5б).
+  // Обидві функції — `simplycms/commerce`, спільні з адмінкою.
   const choice = await validateShippingChoice(db, {
     methodId: input.shippingMethodId,
     deliveryCity: input.deliveryCity,
@@ -100,7 +100,7 @@ export async function prepareCheckout(
   if (items === 'not_purchasable')
     return { ok: false, reason: 'not_purchasable' };
 
-  // 🔴 Суми — цілими центами (Е6в-9), як і квота кошика (`quote-cart.ts`):
+  // 🔴 Суми — цілими центами, як і квота кошика (`quote-cart.ts`):
   // float-сума `0.1 + 0.2` дала б 0.30000000000000004, і квота кошика з
   // квотою оформлення розійшлися б на копійку — а з ними й поріг тарифу
   // «безкоштовно від» до і після вибору способу доставки.

@@ -53,7 +53,7 @@ export async function loadProfile(
     last_name: row.last_name,
     email: row.email,
     phone: row.phone,
-    // 🔴 У колонці лежить РЕФЕРЕНС, не URL (рішення Е2-1) — резолв робить
+    // 🔴 У колонці лежить РЕФЕРЕНС, не URL — резолв робить
     // читання, бо саме воно знає базу роздачі. Зовнішні адреси й
     // плейсхолдери сіду функція повертає незмінними.
     avatar_url: resolveMediaUrl(row.avatar_url),

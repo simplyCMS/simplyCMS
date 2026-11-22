@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react';
 
 /**
- * Р30: з підтвердженням пошти `signUp` повертає `token: null` — сторінка
+ * З підтвердженням пошти `signUp` повертає `token: null` — сторінка
  * показує «перевірте пошту» і не веде як залогованого; вхід непідтвердженого
  * (код `EMAIL_NOT_VERIFIED`) має власне повідомлення.
  */
@@ -57,7 +57,7 @@ const renderAuth = () =>
     </TestI18nProvider>,
   );
 
-describe('Auth: підтвердження пошти (Р30)', () => {
+describe('Auth: підтвердження пошти', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     h.loading = false;

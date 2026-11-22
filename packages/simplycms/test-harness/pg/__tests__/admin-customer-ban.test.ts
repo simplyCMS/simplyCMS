@@ -1,4 +1,4 @@
-// К3-Е6г, Task 5 (Е6г-4, Е6г-13): бан покупця з картки. Лок `admin-roles`
+// Бан покупця з картки. Лок `admin-roles`
 // доводиться детерміновано (holdAdvisoryLock/stillPending).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
@@ -16,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { setCustomerBanOp } from 'simplycms/admin-server/impl';
 
-describe('admin: бан покупця (Е6г-4/13)', () => {
+describe('admin: бан покупця', () => {
   const db = F.useCustomersDb('simplycms_admin_ban');
   const url = () => db.url();
 
@@ -105,7 +105,7 @@ describe('admin: бан покупця (Е6г-4/13)', () => {
       );
   });
 
-  it('стоїть, поки зовнішній тримає customer-category:<id> (Е6г-22)', async () => {
+  it('стоїть, поки зовнішній тримає customer-category:<id>', async () => {
     const id = await F.seedCustomer(url());
     const lock = await holdAdvisoryLock(url(), `customer-category:${id}`);
     try {

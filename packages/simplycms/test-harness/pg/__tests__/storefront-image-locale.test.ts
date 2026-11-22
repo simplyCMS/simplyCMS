@@ -1,4 +1,4 @@
-// М1 Task 17б проти живого Postgres: вітрина показує фото товару й модифікації мовою
+// Проти живого Postgres: вітрина показує фото товару й модифікації мовою
 // сторінки — перевизначення файлу (`product_image_translations.storage_key`) і alt мови,
 // fallback alt основної з ознакою мови з ДАНИХ, порожній alt без жодного перекладу. Один
 // читач (`productGallerySql`/`modificationGallerySql` → `toGallery`) для сторінки, галереї
@@ -30,7 +30,7 @@ import { EN, UK } from './fixtures/text-locale';
 
 const url = (key: string) => resolveMediaUrl(key)!;
 
-describe('фото товару мовою сторінки (Task 17б)', () => {
+describe('фото товару мовою сторінки', () => {
   const db = useAddressingDb('simplycms_image_locale');
   const sectionId = randomUUID();
   let cable: { id: string; paths: Record<string, string> };

@@ -1,4 +1,4 @@
-// К3-Е6г, Task 4 (Е6г-3): «наступний запит». Ролі НЕ лежать у токені сесії —
+// «наступний запит». Ролі НЕ лежать у токені сесії —
 // після зняття ролі та сама cookie вже не дає admin.access, guard не змінюється.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
@@ -18,7 +18,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 import { setAdminRoleOp } from 'simplycms/admin-server/impl';
 
-describe('admin: зняття ролі діє з наступного запиту (Е6г-3)', () => {
+describe('admin: зняття ролі діє з наступного запиту', () => {
   const db = F.useCustomersDb('simplycms_admin_roles_session');
   const cookies: Record<string, string> = {};
   const ids: Record<string, string> = {};

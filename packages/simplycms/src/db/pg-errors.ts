@@ -62,7 +62,7 @@ export function isCheckViolation(error: unknown, constraint?: string): boolean {
 }
 
 /**
- * Часткові UNIQUE «одна поточна адреса/токен на мову» (М1, Task 14): їх порушує лише
+ * Часткові UNIQUE «одна поточна адреса/токен на мову»: їх порушує лише
  * паралельна вставка того самого поточного запису (`languages.fill` під KEY SHARE не
  * чекає команду), а не зайняте значення — тож це «паралельна зміна, повторіть», а не
  * `path_taken`/`slug_taken` (ті — лише для UNIQUE самого шляху/slug).

@@ -1,4 +1,4 @@
-// Фікстури харнесу ресурсу банерів (К3-Е6д, Task 3): БД + допоміжні виклики
+// Фікстури харнесу ресурсу банерів: БД + допоміжні виклики
 // над РЕАЛЬНИМ `bannersOps` і сід розділів.
 import { expect } from 'vitest';
 import { bannersOps } from 'simplycms/admin-server/impl';
@@ -15,7 +15,7 @@ export const BTN = {
 
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
-/** Файл і рядок `media` банера: новий референс мусить належати своєму банеру (Е6д-1). */
+/** Файл і рядок `media` банера: новий референс мусить належати своєму банеру. */
 const uploadFor = async (entityId: string) =>
   (
     await withActor({ role: 'app_admin' }, (tx) =>

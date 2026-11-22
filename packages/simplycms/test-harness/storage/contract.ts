@@ -1,4 +1,4 @@
-// Спільний контрактний набір драйверів сховища (К3-Е8, Task 8).
+// Спільний контрактний набір драйверів сховища.
 //
 // 🔴 Один набір на всі драйвери: контракт `MediaStorageDriver` — це поведінка,
 // а не форма інтерфейсу. Драйвер, що проходить типи, але перезаписує зайнятий
@@ -62,7 +62,7 @@ export function runDriverContract(
         }
       }));
 
-    it('delete відсутнього — УСПІХ (ідемпотентність, рішення Е2-7)', () =>
+    it('delete відсутнього — УСПІХ (ідемпотентність)', () =>
       withDriver(async (driver) => {
         const key = mediaKey('image/png');
         await expect(driver.delete(key)).resolves.toBeUndefined();

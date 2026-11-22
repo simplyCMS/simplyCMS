@@ -33,7 +33,7 @@ export default definePlugin({
   displayName: 'Hello World',
   version: '0.1.0',
   engines: { simplycms: '>=0.3.0' },
-  // Метадані реєстру — англійською (конвенція Р6 плану Фази 3: показуються
+  // Метадані реєстру — англійською (показуються
   // з БД-рядка, а не з каталогу повідомлень).
   description:
     'Demo plugin: a dashboard widget proving the plugin contour works.',

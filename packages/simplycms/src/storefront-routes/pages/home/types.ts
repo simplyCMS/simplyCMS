@@ -13,7 +13,7 @@ export interface HomeProduct {
   short_description_lang?: string | null;
   stock_status: string;
   section: { slug: string } | null;
-  /** Розділ — ціль знижок `section` для `priceForCard` (Е6в-11). */
+  /** Розділ — ціль знижок `section` для `priceForCard`. */
   section_id: string | null;
   /** Ціна за дефолтним типом — серверний HTML до середовища. */
   price: number | null;

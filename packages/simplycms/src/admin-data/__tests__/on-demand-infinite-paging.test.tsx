@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Е3-17, п.4: «Показати ще» кілька разів у `useLiveInfiniteQuery` + ререндер
+ * «Показати ще» кілька разів у `useLiveInfiniteQuery` + ререндер
  * не губить сторінки і не перезапитує вже видимі. Раніше це перевіряло, що
  * `gcTime: 0` фабрики не заважає сторінкам; обхід знято (2026-10-05),
  * тест лишається регресом на пагінацію.
@@ -29,7 +29,7 @@ const SEED: Row[] = Array.from({ length: 6 }, (_, i) => ({
   order: i,
 }));
 
-describe('Е3-17 (4): useLiveInfiniteQuery — сторінки переживають ререндер', () => {
+describe('useLiveInfiniteQuery — сторінки переживають ререндер', () => {
   it('сторінки не губляться на ререндер, повторних запитів на видимі сторінки немає', async () => {
     const queryClient = new QueryClient();
     const calls: unknown[] = [];

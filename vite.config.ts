@@ -67,7 +67,7 @@ export default ({ mode }: { mode: string }) => {
           import.meta.dirname,
           'packages/simplycms-theme-solarstore/src',
         ),
-        // Unscoped-флагман (К0): base-prefix, як і решта — @rollup/plugin-alias
+        // Unscoped-флагман: base-prefix, як і решта — @rollup/plugin-alias
         // матчить `simplycms` та `simplycms/<sub>`, але не `simplycms-*`.
         simplycms: resolve(import.meta.dirname, 'packages/simplycms/src'),
         '@themes': resolve(import.meta.dirname, 'themes'),

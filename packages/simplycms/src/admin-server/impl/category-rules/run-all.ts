@@ -4,7 +4,7 @@ import { applyCategoryRules } from 'simplycms/commerce';
 import type { ActorDb } from 'simplycms/db';
 import { runAdminTransactions } from '../run';
 
-/** Розмір порції keyset-обходу профілів (Е6в-19). */
+/** Розмір порції keyset-обходу профілів. */
 export const CATEGORY_RULES_BATCH = 100;
 
 type ProfileRef = { id: string; userId: string };
@@ -20,7 +20,7 @@ function profilePage(db: ActorDb, after: string | null): Promise<ProfileRef[]> {
 }
 
 /**
- * «Запустити всі правила» (Е6в-19): keyset по `profiles.id` порціями по 100,
+ * «Запустити всі правила»: keyset по `profiles.id` порціями по 100,
  * КОЖЕН покупець — у власній транзакції (`applyCategoryRules` бере його лок
  * першим запитом). Одна довга транзакція тримала б тисячі рядкових локів і
  * блокувала б оформлення замовлень на весь прогін.

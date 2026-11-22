@@ -1,7 +1,7 @@
-// simplycms add <pkg> (--plugin | --theme): build-time-встановлення зі спеки
-// §4.2 — pnpm add → якірний запис у simplycms.config.ts → нагадування про
-// rebuild. Тип обовʼязковий: автодетекції у v1 немає (§3). `--copy` (Фаза 4,
-// Р5) — друга гілка установки теми зі спеки §17.4; сценарій — add-copy.mjs.
+// simplycms add <pkg> (--plugin | --theme): build-time-встановлення
+// (`docs/architecture/cli.md`) — pnpm add → якірний запис у simplycms.config.ts → нагадування про
+// rebuild. Тип обовʼязковий: автодетекції у v1 немає. `--copy` — друга гілка
+// установки теми; сценарій — add-copy.mjs.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Р29: глядач публічного лоадера з цінами — лише з серверної сесії, а
+ * Глядач публічного лоадера з цінами — лише з серверної сесії, а
  * персоналізована відповідь залогіненому — `private, no-store`, щоб спільний
  * кеш перед магазином не віддав гуртовий прайс наступному відвідувачу.
  * Сам фільтр видів на живому Postgres доводить харнес
@@ -42,7 +42,7 @@ beforeEach(() => {
   commerce.loadViewerPriceTypes.mockClear();
 });
 
-describe('withViewerDb (Р29)', () => {
+describe('withViewerDb', () => {
   it('гість: публічна транзакція, види гостя, без private', async () => {
     server.subject = null;
     const seen = await withViewerDb(async (tx, viewer) => ({ tx, viewer }));

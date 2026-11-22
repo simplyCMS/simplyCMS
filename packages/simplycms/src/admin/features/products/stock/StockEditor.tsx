@@ -24,9 +24,9 @@ interface Props {
 }
 
 /**
- * Ручний облік залишків (Task 8, Step 2) — розмітка легасі
+ * Ручний облік залишків — розмітка легасі
  * `StockByPointManager.tsx`: одна точка видачі → один інпут, кілька — таблиця.
- * Шар даних — `useStock` (`saveStock`, Е3-3), не автозбереження.
+ * Шар даних — `useStock` (`saveStock`), не автозбереження.
  */
 export function StockEditor({
   productId,

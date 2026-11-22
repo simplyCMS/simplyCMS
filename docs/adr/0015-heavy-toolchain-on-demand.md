@@ -12,12 +12,12 @@ Spec: `docs/architecture/cli.md` § «theme:conformance»
 
 ## Why
 - Рішення власника 2026-08-18: `docs/architecture/cli.md`.
-- Те саме для Playwright: «Playwright у шаблоні: НЕ додається» і команда `pnpm add -D playwright && pnpm exec playwright install chromium` (файл задачі «redesign-from-reference-skill», розділ «1.2 Вирішені відкриті питання ресерчу (§6) — дефолти цієї задачі»; знесено 2026-11-21, текст — `git show 3feeb440`).
+- Те саме для Playwright: «Playwright у шаблоні: НЕ додається» і команда `pnpm add -D playwright && pnpm exec playwright install chromium` (файл задачі «redesign-from-reference-skill», розділ «1.2 Вирішені відкриті питання ресерчу (§6) — дефолти цієї задачі»; знесено 2026-11-21, текст — `git show 3ae867e8`).
 - Підказка в коді: `JSDOM_HINT = 'pnpm add -D jsdom'` (`packages/cli/src/theme-conformance-dom.mjs`).
 - Шаблон не має залежності: `git grep jsdom` у `packages/create-simplycms-store` знаходить лише тести теми (`@vitest-environment jsdom`), не `package.json`.
 
 ## Rejected
-- Важкий браузер у кожен магазин — у джерелі названо причину «важкий браузер у кожен магазин — ні» (файл задачі «redesign-from-reference-skill», розділ «1.2 Вирішені відкриті питання ресерчу (§6) — дефолти цієї задачі»; знесено 2026-11-21, текст — `git show 3feeb440`).
+- Важкий браузер у кожен магазин — у джерелі названо причину «важкий браузер у кожен магазин — ні» (файл задачі «redesign-from-reference-skill», розділ «1.2 Вирішені відкриті питання ресерчу (§6) — дефолти цієї задачі»; знесено 2026-11-21, текст — `git show 3ae867e8`).
 - Мовчазний обхід без пакета — заборонено: команда виходить кодом 1 (`docs/architecture/cli.md`).
 
 ## Consequences

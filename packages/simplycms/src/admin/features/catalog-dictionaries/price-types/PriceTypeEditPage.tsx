@@ -12,7 +12,7 @@ import { PriceTypeFields } from './PriceTypeFields';
 import { usePriceTypeCard } from './usePriceTypeCard';
 
 /**
- * Картка типу ціни (Е4, Task 6): `new` або id з URL. Рядок — жива
+ * Картка типу ціни: `new` або id з URL. Рядок — жива
  * колекція, стан і двофазне збереження — `usePriceTypeCard`.
  */
 export default function PriceTypeEditPage() {

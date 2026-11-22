@@ -12,7 +12,7 @@ import {
   type Operation,
 } from '../authz';
 
-// Перший рубіж моделі безпеки B5″ — типізований authz (Task 7, В2-К1а).
+// Перший рубіж моделі безпеки B5″ — типізований authz.
 //
 // 🔴 Матриця асертиться не «чи є ключ», а ПОВЕДІНКОЮ на кожному з трьох
 // субʼєктів: анонім, покупець, адмін. Тест, що переказував би структуру
@@ -60,7 +60,7 @@ describe('authz: матриця «роль × операція»', () => {
   });
 });
 
-describe('authz: order.manage (Е5-8)', () => {
+describe('authz: order.manage', () => {
   it('адмін змінює замовлення з scope any; покупцю й аноніму — AuthzError', () => {
     expect(requireOperation(ADMIN, 'order.manage')).toBe('any');
     expect(() => requireOperation(USER, 'order.manage')).toThrow(AuthzError);
@@ -70,7 +70,7 @@ describe('authz: order.manage (Е5-8)', () => {
   });
 });
 
-describe('authz: shipping.manage (Е6а-11)', () => {
+describe('authz: shipping.manage', () => {
   it('адмін керує доставкою з scope any; покупцю й аноніму — AuthzError', () => {
     expect(requireOperation(ADMIN, 'shipping.manage')).toBe('any');
     expect(() => requireOperation(USER, 'shipping.manage')).toThrow(AuthzError);
@@ -88,7 +88,7 @@ describe('authz: banner.manage (Е6д)', () => {
   });
 });
 
-describe('authz: settings.manage (Е6б-13)', () => {
+describe('authz: settings.manage', () => {
   it('адмін керує профілем, складом, темами й плагінами з scope any; покупцю й аноніму — AuthzError', () => {
     expect(requireOperation(ADMIN, 'settings.manage')).toBe('any');
     expect(() => requireOperation(USER, 'settings.manage')).toThrow(AuthzError);
@@ -101,7 +101,7 @@ describe.each([
   'discount.manage',
   'customer.manage',
   'customer.delete',
-] as const)('authz: %s (Е6в-14, Е6г)', (operation) => {
+] as const)('authz: %s', (operation) => {
   it('адмін з scope any; покупцю й аноніму — AuthzError', () => {
     expect(requireOperation(ADMIN, operation)).toBe('any');
     expect(can(USER, operation)).toBe(false);

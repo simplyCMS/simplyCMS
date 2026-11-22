@@ -1,4 +1,4 @@
-/** Категорії покупців і автоправила (Е6в, Task 9). */
+/** Категорії покупців і автоправила. */
 export const messages = {
   'admin.customerCategories.categories.makeDefault': 'Зробити дефолтною',
   'admin.customerCategories.categories.defaultSet':

@@ -139,7 +139,7 @@ describe('порт даних плагіна проти живого Postgres', 
       config: {},
     });
 
-    // Е6б-13: право дає матриця (`settings.manage`) — покупцю `AuthzError`.
+    // Право дає матриця (`settings.manage`) — покупцю `AuthzError`.
     vi.mocked(requireGrant).mockImplementationOnce(async (operation) => {
       const subject = { userId: null, roles: ['user'] as const };
       const scope = resolveGrant(subject, operation);

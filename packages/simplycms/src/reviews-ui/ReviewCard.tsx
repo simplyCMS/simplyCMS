@@ -11,7 +11,7 @@ import type { ProductReview } from 'simplycms/core/hooks/useProductReviews';
 interface ReviewCardProps {
   review: ProductReview;
   onDelete?: (id: string) => void;
-  /** Правка власного відгуку (Е6д-23). */
+  /** Правка власного відгуку. */
   onEdit?: (review: ProductReview) => void;
 }
 
@@ -24,7 +24,7 @@ export function ReviewCard({ review, onDelete, onEdit }: ReviewCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const anonymousAuthor = t('reviews.anonymousAuthor');
-  // `user_id === null` — автора видалено, відгук лишився (Е6г): «колишній
+  // `user_id === null` — автора видалено, відгук лишився: «колишній
   // покупець», а не «Анонім», бо відгук колись мав автора.
   const displayName =
     review.user_id === null

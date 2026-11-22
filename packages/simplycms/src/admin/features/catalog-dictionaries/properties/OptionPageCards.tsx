@@ -10,7 +10,7 @@ import type { OptionFormInput, OptionFormValues } from './option-form-schema';
 
 interface Props {
   readonly form: UseFormReturn<OptionFormInput, unknown, OptionFormValues>;
-  /** id рядка або згенерований НАПЕРЕД id нової опції (Е4-10). */
+  /** id рядка або згенерований НАПЕРЕД id нової опції. */
   readonly entityId: string;
 }
 

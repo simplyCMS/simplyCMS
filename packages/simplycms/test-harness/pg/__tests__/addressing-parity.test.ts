@@ -1,4 +1,4 @@
-// М1 Task 5 (І22 на реальних генераторах): `createPathsForEntity` і
+// І22 на реальних генераторах: `createPathsForEntity` і
 // `createTokensForEntity` на однакових base і однаковій картині зайнятих
 // дають однакові slug-и, включно з `-2`/`-3`. `domain/slugs/__tests__/parity.test.ts`
 // доводить лише тотожність бареля; тут — що обидва реєстри справді кличуть її

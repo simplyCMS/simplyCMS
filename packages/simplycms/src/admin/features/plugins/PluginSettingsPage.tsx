@@ -28,7 +28,7 @@ function readSettingsSchema(name: string | undefined) {
   return module?.definition?.settings;
 }
 
-/** Сторінка налаштувань плагіна (Е6б-17): конфіг через `pluginConfigWrite`. */
+/** Сторінка налаштувань плагіна: конфіг через `pluginConfigWrite`. */
 export default function PluginSettingsPage() {
   const t = useT();
   const { pluginId } = useParams({ strict: false }) as { pluginId: string };

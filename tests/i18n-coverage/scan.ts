@@ -45,7 +45,7 @@ function pluginPackageRoots(): string[] {
 }
 
 /**
- * Теми теж дискавляться, і з ДВОХ коренів (Фаза 4): локальні `themes/<name>`
+ * Теми теж дискавляться, і з ДВОХ коренів: локальні `themes/<name>`
  * (форма copy-in і еталон `default`) та референс-пакети
  * `packages/simplycms-theme-<name>/src`. Поіменний список тут уже одного
  * разу ставав пасткою — нова тема мовчки лишалася б поза сканом.
@@ -61,7 +61,7 @@ function themeRoots(): string[] {
 
 export const SCANNED_ROOTS = [
   'src',
-  // К0: тіри ядра — теки флагмана. Перелічені саме теки, а не
+  // Тіри ядра — теки флагмана. Перелічені саме теки, а не
   // `packages/simplycms/src` цілком: core-каталоги
   // (`src/i18n/catalogs/**`) — кирилиця за побудовою, і суцільний корінь
   // вимагав би перекладу від перекладу (той самий аргумент, що для
@@ -78,7 +78,7 @@ export const SCANNED_ROOTS = [
   'packages/simplycms/src/themes',
   'packages/simplycms/src/plugins',
   'packages/simplycms/src/plugin-sdk',
-  // Е8-Т11: листи ядра — тексти лише з каталогу `mail.*`, не з літералів.
+  // Листи ядра — тексти лише з каталогу `mail.*`, не з літералів.
   'packages/simplycms/src/mail',
   'packages/simplycms/src/auth',
   // 🔴 Роут-теки ядра, а не лише `src/*`. До 2026-08-21 їх не сканував НІХТО:
@@ -86,7 +86,7 @@ export const SCANNED_ROOTS = [
   // тільки `JSXText` і три атрибути — властивість обʼєкта `meta: [{ title }]`
   // для неї невидима. Через це `<title>`/`<meta description>` кожної сторінки
   // вітрини (найпомітніша SEO-поверхня) лишались поза будь-яким гейтом.
-  // Відтоді (Е6б-10) рядки `head()` перекладаються через `storefrontHead`/
+  // Відтоді рядки `head()` перекладаються через `storefrontHead`/
   // `homeHead` (`simplycms/storefront-routes/head/head`): локаль магазину
   // приходить кореневим лоадером host-а в `matches`.
   'packages/simplycms/routes',

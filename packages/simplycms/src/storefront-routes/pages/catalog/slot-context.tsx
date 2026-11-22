@@ -1,4 +1,4 @@
-// Прив'язки slot-компонентів каталогу (контракт тем v3, Фаза 4).
+// Прив'язки slot-компонентів каталогу.
 
 import { createContext, useContext, type ReactNode } from 'react';
 import type { CatalogFiltersProps } from '../../views/slots/CatalogFilters';

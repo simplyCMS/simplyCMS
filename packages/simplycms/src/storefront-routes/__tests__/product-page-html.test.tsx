@@ -18,7 +18,7 @@ import type { ProductDetailProduct } from '../pages/product-detail/types';
 import { TestEngineProvider } from './engine-stub';
 
 /**
- * Review Focus 5 (майстер §7) на ВІДРЕНДЕРЕНОМУ HTML сторінки товару: справжній
+ * Перевірка (майстер §7) на ВІДРЕНДЕРЕНОМУ HTML сторінки товару: справжній
  * роутер (лоадер, `head()`, `rewrite` мови), справжній контейнер сторінки; з
  * підміненого лише серверний вхід у БД (`getProduct`), бо рендер тут без Postgres.
  * Те, що показує пошуковик і читач, доводиться розміткою, а не станом функцій.
@@ -328,7 +328,7 @@ async function ssr(url: string): Promise<string> {
   return renderToString(<RouterProvider router={router} />);
 }
 
-describe('сторінка товару: відрендерений HTML (Review Focus 5)', () => {
+describe('сторінка товару: відрендерений HTML', () => {
   it('/en/x неперекладеного: noindex, canonical на /x, текст uk у lang="uk", інтерфейс en', async () => {
     const html = await ssr('/en/x');
     expect(html).toContain('<html lang="en"');

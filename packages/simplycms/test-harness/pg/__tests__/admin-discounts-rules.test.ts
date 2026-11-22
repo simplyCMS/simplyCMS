@@ -1,4 +1,4 @@
-// К3-Е6в, Task 5 (Е6в-14, Е6в-16): `saveDiscount` у ціноутворенні, дати,
+// `saveDiscount` у ціноутворенні, дати,
 // права й перевірка категорій умови. Шапка — патерн admin-shipping.test.ts:
 // grant рахує СПРАВЖНЯ матриця (кейс не-адміна доводить `discount.manage`).
 import { describe, expect, it, vi } from 'vitest';
@@ -33,7 +33,7 @@ import {
 
 const EMPTY = { discount: [], targets: [], conditions: [] };
 
-describe('admin: знижки — ціни, дати, права (Е6в, Task 5)', () => {
+describe('admin: знижки — ціни, дати, права', () => {
   const db = F.useDiscountsAdminDb('simplycms_admin_discounts_rules', {
     commerce: true,
   });
@@ -109,7 +109,7 @@ describe('admin: знижки — ціни, дати, права (Е6в, Task 5)
     expect(await F.snapshotGroups(url(), [group, newGroup])).toEqual(before);
   });
 
-  it('ред.2: saveDiscount з user_category in [неіснуючий id] → discount_condition_category_missing; нічого не записано', async () => {
+  it('saveDiscount з user_category in [неіснуючий id] → discount_condition_category_missing; нічого не записано', async () => {
     const existing = await F.seedCategory(url());
     const input = F.discountInput(await F.seedGroup(url()), {
       conditions: [

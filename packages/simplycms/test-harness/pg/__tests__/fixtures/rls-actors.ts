@@ -1,5 +1,4 @@
-// Фікстурні актори й мінімальні дані для поведінкового гейта RLS
-// (Task 5, план В2-К1а).
+// Фікстурні актори й мінімальні дані для поведінкового гейта RLS.
 //
 // 🔴 Це НЕ сід магазину (`0003_seed.sql`) — власні рядки тесту. Сід описує
 // чистий магазин і мусить лишатись мінімальним; матриця ж потребує рівно
@@ -80,7 +79,7 @@ export const SEED_STATEMENTS: string[] = [
      (gen_random_uuid(), '${PRODUCT}', '${USER_B}', 5, 'approved'),
      (gen_random_uuid(), '${PRODUCT}', '${USER_A}', 4, 'pending')`,
   // 🔴 Нижче — перехресні рядки для решти RLS-таблиць. Додано 2026-08-23 після
-  // знахідки рев'ю (лінза test-honesty, борг К1а-9): матриця екзаменувала лише
+  // знахідки рев'ю (лінза test-honesty): матриця екзаменувала лише
   // частину захищених таблиць, і підміна предиката `user_roles_select_own` на
   // `true` лишала ВЕСЬ гейт зеленим. Структурна перевірка (ACL + текст
   // предиката) поведінку не доводить — кожна захищена таблиця мусить мати
@@ -90,7 +89,7 @@ export const SEED_STATEMENTS: string[] = [
      (gen_random_uuid(), '${USER_B}', '${PRODUCT}')`,
   // `::uuid` обовʼязковий: у формі `select … union all select …` Postgres
   // виводить тип із літерала (text), а не з цільової колонки, як у `values`.
-  // `to_category_name` — знімок назви (Е6в-2): вставка пише його сама.
+  // `to_category_name` — знімок назви: вставка пише його сама.
   `insert into public.user_category_history (id, user_id, to_category_id, to_category_name, source)
      select gen_random_uuid(), '${USER_A}'::uuid, ${SEED_CATEGORY}, ${SEED_CATEGORY_NAME}, 'manual'
      union all

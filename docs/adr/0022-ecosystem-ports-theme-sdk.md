@@ -17,7 +17,7 @@ Spec: `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md` §2
 - «Це остання можливість змінити контракти дешево — до першого стороннього пакета»
   (`docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md` § «2. Зафіксовані рішення (B1–B12»).
 - Порти для тем приземлюються як `simplycms/theme-sdk` — амендмент 2026-08-20, ПК5
-  (`docs/superpowers/specs/2026-08-20-package-consolidation-design.md` § «2. Рішення (ПК1–ПК12»).
+  (спека «package-consolidation-design», розділ «2. Рішення (ПК1–ПК12»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Без порту тема мала легальний прямий доступ до БД; B9 цей доступ знімає
   (`docs/superpowers/specs/2026-08-18-marketplace-platform-design.md` § «8.2. Чесність щодо тем (найгостріше місце»).
 
@@ -29,6 +29,6 @@ Spec: `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md` §2
 - Порт плагіна вже бекенд-нейтральний: `PluginTablePort` у `packages/simplycms/src/plugin-sdk/usePluginTable.ts`.
 - Клієнта БД тема вже не має: `@supabase/*` заборонено ратчетом (`docs/architecture/themes.md` § «1. Роль і межі»).
 - Стан на 2026-11-21: `simplycms/theme-sdk` у коді ще немає (`packages/simplycms/src/` без теки `theme-sdk`).
-  Його створює К5 (`docs/superpowers/specs/2026-08-20-package-consolidation-design.md` § «3. Цільова структура»).
+  Його створює К5 (спека «package-consolidation-design», розділ «3. Цільова структура»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Межа довіри теми (eslint-зона, як у плагіна) — окреме рішення разом із `theme-sdk`, не недогляд
   (`docs/architecture/themes.md` § «8. Чого свідомо немає (v1»).

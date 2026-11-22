@@ -114,7 +114,7 @@ describe('SectionPropertyAssignmentsPanel', () => {
     );
     const dialog = screen.getByTestId('add-dialog');
     expect(dialog.getAttribute('data-applies-to')).toBe('modification');
-    // Review Focus 3: «Бренд» уже призначено для товарів — для модифікацій його немає.
+    // «Бренд» уже призначено для товарів — для модифікацій його немає.
     expect(within(dialog).queryByText('pick:Бренд')).toBeNull();
     fireEvent.click(within(dialog).getByText('pick:Колір'));
     await waitFor(() =>

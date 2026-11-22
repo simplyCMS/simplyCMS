@@ -9,7 +9,7 @@ import { ENTITY, entityKey } from 'simplycms/contracts/entities';
 const KEY = entityKey(ENTITY.mediaErasures).all();
 
 /**
- * Хвости стирання файлів (Е6д-20): одиничний список — `useQuery`, не колекція
+ * Хвости стирання файлів: одиничний список — `useQuery`, не колекція
  * `admin-data`. Повтор інвалідує список, а не пише в кеш: після нього треба
  * побачити, що саме лишилось, і це знає лише сервер.
  */

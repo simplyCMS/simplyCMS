@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// К3-Е6д-1 для картки товару й діалогу модифікації: прибрана з форми картинка
+// Для картки товару й діалогу модифікації: прибрана з форми картинка
 // не стирає файл у браузері — це робить сервер після успішного збереження.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/react';

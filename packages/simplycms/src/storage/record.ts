@@ -14,14 +14,14 @@ export interface WriteMediaInput {
   readonly mime: MediaMime;
   /** До чого належить файл: `product` / `banner` / `section` / `avatar` / … */
   readonly entityType: string;
-  /** Власник обовʼязковий (К3-Е6д-3): без нього файл не стерти двофазно. */
+  /** Власник обовʼязковий: без нього файл не стерти двофазно. */
   readonly entityId: string;
   readonly uploadedBy: string | null;
 }
 
 export interface MediaRecord {
   readonly id: string;
-  /** Те, що лягає в колонку сутності (рішення Е2-1). */
+  /** Те, що лягає в колонку сутності. */
   readonly ref: string;
   readonly sizeBytes: number;
   readonly mime: MediaMime;
@@ -42,13 +42,13 @@ export interface MediaRecord {
  * НЕ рахує байти, яких ніхто не адресує), а sweep орфанів — К4.
  *
  * 🔴 `id` передається ЯВНО: `DEFAULT gen_random_uuid()` знято на всіх
- * таблицях Категорії A (К3-Е0), тож вставка без `id` дала б `23502`.
+ * таблицях Категорії A, тож вставка без `id` дала б `23502`.
  *
  * 🔴 Дзеркального прибирання всередині НЕМАЄ, і це не пропуск: якщо
  * `driver.put` кидає, обʼєкт не опублікований (тимчасовий файл прибирає
  * `finally` драйвера), а рядок відкочує транзакція викликача. Прибирати
  * нічого. Уже ОПУБЛІКОВАНИЙ файл при подальшому збої викликач прибирає через
- * outbox: `scheduleMediaErasures` + `completeMediaErasures` (Е6д-20б).
+ * outbox: `scheduleMediaErasures` + `completeMediaErasures`.
  */
 export async function writeMedia(
   db: ActorDb,
@@ -74,23 +74,23 @@ export async function writeMedia(
   return { id, ref, sizeBytes, mime: input.mime };
 }
 
-/** Власник файлу: рядок `media` з цим `entity_type` і `entity_id` (Е6д-16). */
+/** Власник файлу: рядок `media` з цим `entity_type` і `entity_id`. */
 export interface MediaOwner {
   readonly entityType: string;
   readonly entityId: string;
 }
 
 /**
- * Перша фаза двофазного стирання (Е6д-14, КАНОН): видалити РЯДКИ `media`
+ * Перша фаза двофазного стирання (КАНОН): видалити РЯДКИ `media`
  * власника в транзакції викликача й повернути ключі, які справді видалено.
- * Рядок outbox `media_erasures` ставиться тут же (Е6д-20) — відкат прибирає
+ * Рядок outbox `media_erasures` ставиться тут же — відкат прибирає
  * обидва. Файли стирає викликач ПІСЛЯ COMMIT: `completeMediaErasures(keys)`.
  *
  * 🔴 Чому файл не стирається в транзакції: для кількох файлів обрив
  * `driver.delete` другого відкотив би обидва референси, а перший файл уже зник
  * би — битий референс. Тут найгірший наслідок — орфан-файл, який тримає outbox.
  *
- * 🔴 Умова власника обовʼязкова (Е6д-16), перевантаження без неї немає:
+ * 🔴 Умова власника обовʼязкова, перевантаження без неї немає:
  * стирання йде за `storage_key`, тож підсунутий чужий ключ (аватар, банер
  * іншого запису) без цієї умови стер би чужий файл. Ключ без рядка власника —
  * чужий, `data:`/`https:`, уже стертий — тихо ігнорується й у результат не

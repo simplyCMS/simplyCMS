@@ -9,8 +9,8 @@ import {
 const names = (list: ReadonlyArray<readonly [string, string]>) =>
   list.map(([name]) => name);
 
-describe('securityHeaders (Р27)', () => {
-  it('перелік дослівно з рішення Р27', () => {
+describe('securityHeaders', () => {
+  it('перелік заголовків дослівно', () => {
     expect(Object.fromEntries(SECURITY_HEADERS)).toEqual({
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',

@@ -14,7 +14,7 @@ import {
 
 /**
  * Conformance-прогін канонічних `CatalogView` і `CatalogSectionView` на
- * фікстурах (контракт тем v3, Фаза 4, Step 2) — до появи kit-а Фази 6.
+ * фікстурах — до появи kit-а.
  *
  * 🔴 Це водночас ДОКАЗ чистоти обох view: провайдер тут рівно один — i18n.
  * Ні клієнта БД, ні QueryClient, ні EngineContext немає, тож будь-який
@@ -30,7 +30,7 @@ import { CatalogView } from '../views/CatalogView';
 import { CatalogSectionView } from '../views/CatalogSectionView';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
-/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit Фази 6. */
+/** Стаб реквізиту: тільки маркер — рівно те, що шукатиме kit. */
 function requisiteStub(name: string) {
   return function RequisiteStub() {
     return <div data-simplycms-requisite={name} />;

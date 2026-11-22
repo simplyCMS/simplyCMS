@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// Е5б Task 8 (C): гварди конфігу фабрики — `touch` не може бути прихованою
+// Гварди конфігу фабрики — `touch` не може бути прихованою
 // колонкою (тип), `maxLimit` — лише додатне ціле (fail-loud на старті).
 vi.mock('simplycms/auth', async (orig) => ({
   ...(await orig()),

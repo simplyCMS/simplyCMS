@@ -20,7 +20,7 @@ type Rec = Record<string, unknown>;
 
 /**
  * Рантайм-рубіж конфігу: тип звужує колонки до writable, а `text` — лише тут.
- * jsonb-масив референсів як `media` не підтримується (М1, Task 17): єдиний такий носій
+ * jsonb-масив референсів як `media` не підтримується: єдиний такий носій
  * (`products.images`) знесено, а семантику диффу масиву без споживача ніщо не перевіряло б.
  * Повертати — разом із ресурсом-споживачем і тестом. Каскад jsonb (`cascadeMedia` фото
  * відгуків) — окремий шлях і лишається.
@@ -35,7 +35,7 @@ export function assertMediaColumns(table: Table, media: ResourceMedia) {
   return media;
 }
 
-/** Insert media-ресурсу (Е6д-1): нові референси — після guard, до запису. */
+/** Insert media-ресурсу: нові референси — після guard, до запису. */
 export const assertInsertRefs = (
   db: ActorDb,
   media: ResourceMedia,
@@ -47,14 +47,14 @@ export const assertInsertRefs = (
     rows.map((next) => ({ id: String(next.id), next })),
   );
 
-/** Друга фаза Е6д-14: файли — ПІСЛЯ COMMIT; `completeMediaErasures` не кидає. */
+/** Друга фаза: файли — ПІСЛЯ COMMIT; `completeMediaErasures` не кидає. */
 export async function discardAll(keys: readonly string[]): Promise<void> {
   await completeMediaErasures(keys);
 }
 
 /**
  * 🔴 Колектор `discard` обовʼязковий для db-варіантів media-ресурсу (і
- * `removeIn` ресурсу з `cascadeMedia`, Е6д-19): без
+ * `removeIn` ресурсу з `cascadeMedia`): без
  * нього ключі стертих рядків `media` загубились би, а файли мовчки лишились
  * орфанами (сід, порт). Помилка програміста, не користувача.
  */
@@ -80,10 +80,10 @@ export interface MediaWriteDeps<Insert, Patch> {
 }
 
 /**
- * Update media-ресурсу (Е6д-1, КАНОН порядку): lock → знімок → guard (з
- * `before`, Е6д-2) → перевірка нових референсів → запис → стирання рядків
+ * Update media-ресурсу (КАНОН порядку): lock → знімок → guard (з
+ * `before`) → перевірка нових референсів → запис → стирання рядків
  * `media` заміненого. Ключі стертих рядків — у `discard`: файли стирає
- * викликач ПІСЛЯ COMMIT (Е6д-14).
+ * викликач ПІСЛЯ COMMIT.
  */
 export async function updateWithMedia<Insert, Patch>(
   db: ActorDb,
@@ -126,7 +126,7 @@ export async function updateWithMedia<Insert, Patch>(
 }
 
 /**
- * Remove media-ресурсу (Е6д-1): знімок → DELETE → стирання рядків `media`
+ * Remove media-ресурсу: знімок → DELETE → стирання рядків `media`
  * видаленого. Без guard — як і чинний `remove` фабрики; неіснуючий id просто
  * не потрапляє ні в знімок, ні в лічильник.
  */

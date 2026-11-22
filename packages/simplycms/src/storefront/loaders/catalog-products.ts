@@ -56,7 +56,7 @@ import { pageVisible } from './product-visibility';
  * 🔴 Запити послідовні й по `inArray`: транзакція живе на одному зʼєднанні,
  * тож `Promise.all` дав би лише уявний паралелізм (див. `./products`).
  *
- * 🔴 Ціни — лише видів `viewer` (Р29, `withViewerDb`).
+ * 🔴 Ціни — лише видів `viewer` (`withViewerDb`).
  */
 export async function loadCatalogProducts(
   db: ActorDb,

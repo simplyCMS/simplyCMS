@@ -19,7 +19,7 @@ import {
 
 /** Адреса магазину для Better Auth і вітрини під час локального запуску. */
 export const SHOWCASE_SITE_URL = 'http://localhost:3000';
-/** Власник демо-бази (створює наповнення, Task 6). Лише локалка. */
+/** Власник демо-бази (створює наповнення). Лише локалка. */
 export const SHOWCASE_OWNER_EMAIL = 'owner@showcase.test';
 /** 🔴 Фіксований пароль ЛИШЕ для локального стенда; друкується в консоль. */
 export const SHOWCASE_OWNER_PASSWORD = 'showcase-owner-2026';

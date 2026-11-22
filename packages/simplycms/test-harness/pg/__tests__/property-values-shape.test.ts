@@ -1,4 +1,4 @@
-// М1 Task 17 (І5–І8, Р18): форму значення властивості тримає БД, а не команда.
+// І5–І8: форму значення властивості тримає БД, а не команда.
 //  • І6 — складений FK `(property_id, value_kind) → section_properties(id, property_type)`
 //    і CHECK «рівно одна колонка за `value_kind`»;
 //  • І7 — складений FK `(property_id, option_id) → property_options(property_id, id)`;

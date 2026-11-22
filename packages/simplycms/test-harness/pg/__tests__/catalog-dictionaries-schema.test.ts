@@ -1,4 +1,4 @@
-// Е4-1, Е4-6: правка baseline довідників каталогу.
+// Правка baseline довідників каталогу.
 //  - FK цін за типом ціни — ON DELETE RESTRICT (тип із цінами не зникає разом
 //    із цінами мовчки);
 //  - slug властивості унікальний ГЛОБАЛЬНО (вітрина шукає властивість лише за
@@ -25,7 +25,7 @@ const PT_FREE = 'e4010000-0000-4000-8000-000000000004';
 const PRODUCT = 'e4010000-0000-4000-8000-000000000005';
 const PRICE = 'e4010000-0000-4000-8000-000000000006';
 
-describe('довідники каталогу: інваріанти baseline (Е4-1, Е4-6)', () => {
+describe('довідники каталогу: інваріанти baseline', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_catalog_dictionaries');
   let dbUrl = '';

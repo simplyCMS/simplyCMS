@@ -11,7 +11,7 @@ import {
 import { inspectAgentFiles } from '../packages/cli/src/agent-files.mjs';
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
-// Керований блок AGENTS.md (Б §3.3, Е8-Р5): одна функція для синку шаблону й update.
+// Керований блок AGENTS.md: одна функція для синку шаблону й update.
 const INTRO = readFileSync('packages/simplycms/agent/intro.md', 'utf8');
 const BLOCK = renderManagedBlock(INTRO);
 const OWNER_HEAD = '# Мій магазин\n\nМої правила до блоку.\n\n';

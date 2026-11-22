@@ -5,9 +5,9 @@ import { productHead, type ProductHeadInput } from '../head/product';
 import { cl, ui } from '../../../test-harness/locale';
 
 /**
- * F9 фінального рев'ю К3-Е6в: `offers` JSON-LD — ГОСТЬОВА ціна (тип з
+ * `offers` JSON-LD — ГОСТЬОВА ціна (тип з
  * `loadGuestPriceTypes` + `resolvePrice`), а не «перша ціна без модифікації»
- * будь-якого типу. Знижки в JSON-LD не застосовуються (К3-Е6в-1).
+ * будь-якого типу. Знижки в JSON-LD не застосовуються.
  */
 const PROFILE: StorefrontProfile = {
   name: 'Крамниця',

@@ -21,13 +21,13 @@ interface Props {
 }
 
 /**
- * Панель значень властивостей (Task 10, Step 3) — один компонент замість
+ * Панель значень властивостей — один компонент замість
  * легасі `AllProductProperties`/`ProductPropertyValues`:
  * - простий товар: `target='product', appliesTo='all'`;
  * - товар з модифікаціями: `target='product', appliesTo='product'`;
  * - модифікація: `target='modification', appliesTo='modification'`.
  *
- * Рендериться СИБЛІНГОМ форми картки/діалогу, ПОЗА `<form>` (Е3-18 п.1);
+ * Рендериться СИБЛІНГОМ форми картки/діалогу, ПОЗА `<form>`;
  * зміни йдуть у чернетку картки (`usePropertyValues`) і зберігаються її кнопкою.
  */
 export function PropertyValuesPanel({

@@ -3,7 +3,7 @@ import type { ActorDb } from './with-actor';
 
 /**
  * Транзакційний advisory-lock за рядковим ключем — ЄДИНА SQL-реалізація
- * (Е6в-15 ред.2). `lockCatalogTarget` адмінки й локи `commerce`
+ *. `lockCatalogTarget` адмінки й локи `commerce`
  * (`customerCategoryLock`) кличуть саме її: два різні хешування одного
  * ключа означали б два різні локи, тобто жодного серіалізування.
  *

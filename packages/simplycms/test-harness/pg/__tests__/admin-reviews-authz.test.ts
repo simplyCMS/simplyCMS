@@ -1,4 +1,4 @@
-// К3-Е6д, Task 6: покупець через РЕАЛЬНИЙ `resolveGrant` отримує AuthzError на
+// Покупець через РЕАЛЬНИЙ `resolveGrant` отримує AuthzError на
 // кожній операції модерації; БД і файли незмінні.
 import { describe, expect, it, vi } from 'vitest';
 import { AuthzError, requireGrant } from 'simplycms/auth';
@@ -21,7 +21,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: покупець не модерує відгуки (Е6д-7)', () => {
+describe('admin: покупець не модерує відгуки', () => {
   const d = useReviewsDb('simplycms_e6d_rv_authz');
   const { f } = d;
 

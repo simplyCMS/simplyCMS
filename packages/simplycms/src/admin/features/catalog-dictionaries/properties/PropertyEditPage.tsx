@@ -15,8 +15,8 @@ import { hasOptions } from './property-form-schema';
 import { usePropertyCard } from './usePropertyCard';
 
 /**
- * Картка властивості (Е4, Task 8): зріз on-demand колекції `where id`.
- * Тип незмінний (Е4-5) — показаний текстом, update його не несе. Блок
+ * Картка властивості: зріз on-demand колекції `where id`.
+ * Тип незмінний — показаний текстом, update його не несе. Блок
  * опцій — лише для `select`/`multiselect`. Створення — діалогом у списку,
  * тож `new` у цьому роуті немає.
  */

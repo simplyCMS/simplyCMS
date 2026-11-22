@@ -35,7 +35,7 @@
       "@plugins/*": ["./packages/create-simplycms-store/template/plugins/*"]
     }
   },
-  // 🔴 `vite.config.ts` шаблону — у програмі: трек T поклав у нього
+  // 🔴 `vite.config.ts` шаблону — у програмі: перехід збірки на tsdown поклав у нього
   // типізований виклик декларації межі, а поза `include` він не типізувався
   // НІДЕ (кореневий tsconfig шаблон виключає) — та сама діра, що колись у
   // `routes.ts`. Пару в `template/tsconfig.json` стереже

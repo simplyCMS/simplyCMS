@@ -4,7 +4,7 @@ import { themes } from 'simplycms/schema';
 import type { JsonValue, Theme } from 'simplycms/schema/types';
 import { runAdmin } from '../run';
 
-/** Рядок теми для адмінки (Е6б-15/16). Без службових дат — UI їх не показує. */
+/** Рядок теми для адмінки. Без службових дат — UI їх не показує. */
 export type ThemeRow = {
   id: Theme['id'];
   name: Theme['name'];

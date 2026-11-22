@@ -1,5 +1,5 @@
 /**
- * Ратчет проти повернення `@supabase/*` (К3-Е7, Р2): шар Supabase знесено,
+ * Ратчет проти повернення `@supabase/*`: шар Supabase знесено,
  * БД — лише через `simplycms/db`.
  *
  * 🔴 Власне правило з власним імʼям плагіна (`simplycms-supabase`), а не
@@ -31,7 +31,7 @@ export default {
     schema: [],
     messages: {
       supabaseImport:
-        'Supabase знесено в К3-Е7: `@supabase/*` не імпортується. ' +
+        'Supabase знесено (ADR-0043): `@supabase/*` не імпортується. ' +
         'Доступ до БД — лише через simplycms/db (withActor).',
     },
   },

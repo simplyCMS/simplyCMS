@@ -1,12 +1,12 @@
-// Фінальне рев'ю К3-Е6в, F9: `offers` Product JSON-LD сторінки товару —
+// `offers` Product JSON-LD сторінки товару —
 // ГОСТЬОВА ціна наскрізь: лоадер сторінки (`loadProduct`) віддає типи ціни
 // гостя (`loadGuestPriceTypes`), `productHead` рахує `resolvePrice` — і ціна
 // дорівнює тій, що гість бачить після гідрації (квота кошика). Знижки в
-// JSON-LD не йдуть (К3-Е6в-1).
+// JSON-LD не йдуть.
 import { describe, expect, it } from 'vitest';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 import { loadProduct, quoteCartFor } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем.
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { productHead } from 'simplycms/storefront-routes/head/product';
 import * as F from './fixtures/commerce';
@@ -39,7 +39,7 @@ const matches = [
   },
 ];
 
-describe('JSON-LD offers сторінки товару — гостьова ціна (F9)', () => {
+describe('JSON-LD offers сторінки товару — гостьова ціна', () => {
   const db = useCommerceDb('simplycms_product_jsonld_offers');
 
   const offersOf = async (slug: string, userId: string | null = null) => {
@@ -78,11 +78,11 @@ describe('JSON-LD offers сторінки товару — гостьова ці
     }
   });
 
-  it('Р29: покупець гуртової категорії — offers усе одно гостьова ціна', async () => {
+  it('покупець гуртової категорії — offers усе одно гостьова ціна', async () => {
     const slug = 'stantsiya-nakopychennya-10kwh';
     const guest = await guestBase(F.STATION_10KWH);
     expect(guest).not.toBe(F.WHOLESALE_STATION_PRICE);
-    // Гуртовий вид у payload покупця Є (Р29) — але розмітка для пошуковика
+    // Гуртовий вид у payload покупця Є — але розмітка для пошуковика
     // одна для всіх і рахується гостьовими видами.
     expect((await offersOf(slug, db.wholesale))?.price).toBe(guest);
   });

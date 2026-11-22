@@ -1,4 +1,4 @@
-// Запит вибірки товарів каталогу (контракт тем v3, Фаза 4).
+// Запит вибірки товарів каталогу.
 
 import { useQuery } from '@tanstack/react-query';
 import { AGGREGATE } from 'simplycms/contracts/entities';
@@ -29,8 +29,8 @@ import { getCatalogProducts } from '../../server/catalog';
  * інвалідація `['products']` не побачила б мутацію `product_prices` чи
  * `stock_by_pickup_point`. Розрізнення «усі товари» / «товари розділу»
  * лишається хвостовим сегментом ПІСЛЯ спільного префіксу агрегату — інакше
- * інвалідація по `AGGREGATE.catalogProducts.key` (Е1б) проминула б звужену
- * вибірку. Вид цін глядача — сегмент 1 (Р29, `priceViewKey`): префікс агрегату
+ * інвалідація по `AGGREGATE.catalogProducts.key` проминула б звужену
+ * вибірку. Вид цін глядача — сегмент 1 (`priceViewKey`): префікс агрегату
  * він не ламає.
  */
 export function useCatalogProductsQuery(sectionId: string | null | undefined) {

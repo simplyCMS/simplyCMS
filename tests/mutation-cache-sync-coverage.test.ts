@@ -5,7 +5,7 @@ import { sourceFiles } from '../packages/simplycms/test-harness/pg/insert-scan';
 import { MUTATION_CACHE_SYNC_RATCHET } from '../eslint.config.mjs';
 
 /**
- * Повнота ратчету `mutation-cache-sync` (борг Е3 з `test-contours.md` §12):
+ * Повнота ратчету `mutation-cache-sync` (борг з `test-contours.md` §12):
  * кожен файл `src/admin/**`, що імпортує serverFn чи колекції адмінки,
  * мусить бути в зоні правила `simplycms-cache-sync/mutation-cache-sync` —
  * або під `admin/features/**` (у зоні за побудовою), або в

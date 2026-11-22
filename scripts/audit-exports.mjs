@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Consumed-subpath аудит exports (Task 1.2).
+ * Consumed-subpath аудит exports.
  *
  * У монорепо workspace-аліаси (`tsconfig.json` paths, `vite.config.ts`
  * `resolve.alias`) резолвлять БУДЬ-ЯКИЙ subpath пакета напряму на файл у
@@ -54,7 +54,7 @@ export function runAudit(input = {}) {
   const stale = [];
 
   for (const specifier of specifiers) {
-    // Дві гілки імені ядра: scoped-сателіт і unscoped-флагман (К0).
+    // Дві гілки імені ядра: scoped-сателіт і unscoped-флагман.
     const match = /^(@simplycms\/[a-zA-Z0-9_-]+|simplycms)\/(.+)$/.exec(
       specifier,
     );
@@ -64,7 +64,7 @@ export function runAudit(input = {}) {
 
     if (!info) {
       // 🔴 Імʼя в просторі ядра, якому не відповідає жоден workspace-пакет —
-      // це РОЗРИВ, а не «поза скоупом». Після К0 живих імен рівно пʼять, тож
+      // це РОЗРИВ, а не «поза скоупом». Живих імен рівно пʼять, тож
       // `@simplycms/<щось-інше>` означає одне з двох: специфікатор злитого
       // пакета (`@simplycms/runtime`, `@simplycms/objects`, …) або одрук.
       // До 2026-08-21 такі рядки мовчки лягали в інформаційний кошик, і

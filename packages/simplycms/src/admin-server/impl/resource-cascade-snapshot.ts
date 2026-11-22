@@ -7,7 +7,7 @@ import { idOf, type ResourceCascadeMedia } from './resource-cascade-media';
 import { columnRefs } from './resource-media';
 
 // Знімок медіа дочірніх рядків до `DELETE` батька й стирання їхніх рядків `media`
-// після (Е6д-19). Опис опції `cascadeMedia` і її перевірка — `resource-cascade-media.ts`.
+// після. Опис опції `cascadeMedia` і її перевірка — `resource-cascade-media.ts`.
 
 type ChildRefs = { entityType: string; id: string; refs: string[] };
 
@@ -80,8 +80,8 @@ export async function snapshotCascadeMedia(
 }
 
 /**
- * Стирання рядків `media` дочірніх записів, видалених каскадом (Е6д-14):
- * окремий `eraseMediaRows` на рядок з його власником (Е6д-16) — чужий ключ,
+ * Стирання рядків `media` дочірніх записів, видалених каскадом:
+ * окремий `eraseMediaRows` на рядок з його власником — чужий ключ,
  * вписаний у колонку, сховище тихо пропускає. Повертає ключі для
  * `completeMediaErasures` ПІСЛЯ COMMIT.
  */

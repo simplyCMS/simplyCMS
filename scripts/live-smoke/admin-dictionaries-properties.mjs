@@ -1,5 +1,5 @@
 /**
- * Властивість і опція кроку довідників (К3-Е4): створення в адмінці й
+ * Властивість і опція кроку довідників: створення в адмінці й
  * сторінка властивості на вітрині. Виніс із `./admin-dictionaries.mjs` —
  * канон 150 рядків.
  */
@@ -11,7 +11,7 @@ const OPT = { slug: 'live-dict-opt', name: 'Жива опція Е4' };
 
 /**
  * `/admin/properties` → діалог: тип `select`, `hasPage`, `isFilterable` →
- * картка (контролу типу немає, Е4-5) → опція. Повертає рядок властивості.
+ * картка (контролу типу немає) → опція. Повертає рядок властивості.
  */
 export async function createPropertyWithOption({ page, base, dbUrl, check }) {
   await page.goto(`${base}/admin/properties`, { waitUntil: 'networkidle' });
@@ -41,7 +41,7 @@ export async function createPropertyWithOption({ page, base, dbUrl, check }) {
   const addOption = page.getByRole('button', { name: 'Додати опцію' });
   await addOption.waitFor({ timeout: 10_000 });
   check(
-    'адмін: картка властивості без контролу типу (Е4-5)',
+    'адмін: картка властивості без контролу типу',
     (await expectCount(page.locator('#property-type'), 0)) &&
       (await expectSome(page.getByText('Тип властивості'))),
     '#property-type відсутній, тип — текстом',

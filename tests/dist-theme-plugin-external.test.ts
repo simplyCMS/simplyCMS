@@ -3,7 +3,7 @@ import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Гейт «ядро зовнішнє в dist референс-теми й референс-плагіна» (рішення
-// архітектора №156, Task 18 п. 11).
+// архітектора №156).
 //
 // 🔴 Чому це інваріант: контекст запиту ядра (`site/request-context`,
 // `AsyncLocalStorage`) мусить бути ОДНИМ на процес магазину. Тема чи плагін, у

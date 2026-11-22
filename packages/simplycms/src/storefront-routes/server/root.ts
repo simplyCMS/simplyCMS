@@ -5,7 +5,7 @@ import {
 } from 'simplycms/storefront/loaders';
 
 /**
- * Дані кореня вітрини для host-а (Е6б-10): активна тема, профіль магазину й
+ * Дані кореня вітрини для host-а: активна тема, профіль магазину й
  * публічна адреса сайту. Host доповнює їх локаллю і віддає як
  * `StorefrontRootData` (`simplycms/storefront-routes/head/head`).
  *

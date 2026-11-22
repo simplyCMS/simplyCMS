@@ -1,4 +1,4 @@
-// К3-Е6д, Task 4 (Е6д-20/20а/20б): outbox стирання `media_erasures` проти
+// outbox стирання `media_erasures` проти
 // живої БД. Фейк-драйвер падає на ключах `failOn`; «після COMMIT» розрізняє
 // порядок лише відкладений тригер на COMMIT.
 import { sql } from 'drizzle-orm';
@@ -45,7 +45,7 @@ type Tail = {
   last_error: string | null;
 };
 
-describe('outbox стирання медіа (Е6д-20)', () => {
+describe('outbox стирання медіа', () => {
   const d = useReviewPhotosDb('simplycms_e6d_erasures');
   const { f } = d;
 
@@ -225,7 +225,7 @@ describe('outbox стирання медіа (Е6д-20)', () => {
     });
   });
 
-  it('🔴 службова транзакція не приписує дію людині: app.user_id порожній (Е6д-20а)', async () => {
+  it('🔴 службова транзакція не приписує дію людині: app.user_id порожній', async () => {
     await f.rows(`create table if not exists public.e6d_actor_log (uid text)`);
     await f.rows(
       `create or replace function public.e6d_actor_log() returns trigger
@@ -275,7 +275,7 @@ describe('outbox стирання медіа (Е6д-20)', () => {
     expect((await tails())[0]!.attempts).toBe(1);
   });
 
-  it('🔴 Е6д-20б: подача відгуку падає на COMMIT, прибирання падає → outbox має ключ', async () => {
+  it('🔴: подача відгуку падає на COMMIT, прибирання падає → outbox має ключ', async () => {
     const userId = await d.seedUser('Автор');
     const before = d.diskKeys();
     const unblock = await blockCommitOn(
@@ -304,7 +304,7 @@ describe('outbox стирання медіа (Е6д-20)', () => {
     expect((await tails()).map((t) => t.storage_key)).toEqual(published);
   });
 
-  it('🔴 Е6д-20б: адмінський uploadMedia падає на COMMIT, прибирання падає → outbox має ключ', async () => {
+  it('🔴: адмінський uploadMedia падає на COMMIT, прибирання падає → outbox має ключ', async () => {
     const before = d.diskKeys();
     const unblock = await blockCommitOn((q) => f.rows(q), 'media', 'insert');
     vi.spyOn(d.getMediaDriver(), 'delete').mockRejectedValue(new Error('disk'));

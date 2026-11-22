@@ -157,7 +157,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('ключ і скидання прайсу глядача (Р29)', () => {
+describe('ключ і скидання прайсу глядача', () => {
   it('гість: сегмент 1 ключа — "guest" у всіх шести запитах з цінами', async () => {
     mount();
     await waitFor(() => expect(priced()).toHaveLength(6));

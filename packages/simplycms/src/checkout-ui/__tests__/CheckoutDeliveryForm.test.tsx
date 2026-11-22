@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // Довідник — керований з тесту: порожній (стан демо-магазину без доставки до
-// К2-Е0: форма мовчала, submit лишався активним) або один pickup з однією
+// Форма мовчала, submit лишався активним) або один pickup з однією
 // точкою (стан покупного демо: точку треба обрати самому — ще одна «стіна»).
 const directory = vi.hoisted(() => ({
   methods: [] as unknown[],
@@ -127,7 +127,7 @@ describe('CheckoutDeliveryForm', () => {
     expect(onChange).toHaveBeenCalledWith('pickupPointId', '');
   });
 
-  // Е6а-9: самовивіз визначає провайдер, а не `code` — довільний код способу
+  // Самовивіз визначає провайдер, а не `code` — довільний код способу
   // з провайдером `core:pickup` усе одно показує вибір точки.
   it('спосіб core:pickup з довільним code показує вибір точки', () => {
     directory.methods = [{ ...PICKUP, code: 'my-warehouse' }];
@@ -143,7 +143,7 @@ describe('CheckoutDeliveryForm', () => {
     expect(screen.queryByLabelText(/Оберіть пункт самовивозу/)).toBeNull();
   });
 
-  // Е6а-4: carrier не «Безкоштовно» — вартість визначить перевізник.
+  // Carrier не «Безкоштовно» — вартість визначить перевізник.
   it('режим carrier показує «За тарифами перевізника» замість суми', () => {
     directory.methods = [{ ...PICKUP, provider: 'core:address' }];
     directory.pickupPoints = [];

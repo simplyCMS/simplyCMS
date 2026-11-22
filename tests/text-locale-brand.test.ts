@@ -8,7 +8,7 @@ import {
 import { cl } from '../packages/simplycms/test-harness/locale';
 
 /**
- * М1 Task 16 (m6): `TextLocale` — брендований тип. Літерал `{ locale, primary }` не
+ * `TextLocale` — брендований тип. Літерал `{ locale, primary }` не
  * компілюється; значення виробляють лише межі (`resolveTextLocale`, `requirePublishedTextLocale`,
  * адмін-читачі) через `checkedTextLocale`. Доказ — typecheck: зайвий `@ts-expect-error` теж падає.
  */

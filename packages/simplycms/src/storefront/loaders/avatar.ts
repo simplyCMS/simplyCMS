@@ -19,7 +19,7 @@ export interface AvatarBytes {
   readonly mime: MediaMime;
 }
 
-/** Власник файлу аватара: рядок `media` `avatar/<userId>` (Е6д-16). */
+/** Власник файлу аватара: рядок `media` `avatar/<userId>`. */
 const avatarOwner = (userId: string): MediaOwner => ({
   entityType: 'avatar',
   entityId: userId,
@@ -50,7 +50,7 @@ async function currentAvatarRef(
  * (`requireSessionUserId`), у харнесі — від сіду; прийнятий від КЛІЄНТА
  * переписав би чужий профіль, тож ця межа лишається в serverFn.
  *
- * Відкат опублікованого файлу — `withPublishedRollback` (Е6д-20б).
+ * Відкат опублікованого файлу — `withPublishedRollback`.
  */
 export async function replaceAvatar(
   userId: string,
@@ -64,7 +64,7 @@ export async function replaceAvatar(
       ),
     options.discardWith ?? options.driver,
   );
-  // Другу фазу (файл старого аватара) — ПІСЛЯ COMMIT (Е6д-14); не кидає.
+  // Другу фазу (файл старого аватара) — ПІСЛЯ COMMIT; не кидає.
   await completeMediaErasures(erased, options.driver);
   return { ref };
 }
@@ -73,7 +73,7 @@ export async function replaceAvatar(
  * Кроки заміни ВСЕРЕДИНІ транзакції. Модуль-приватна навмисно (`replaceAvatar`).
  *
  * 🔴 Транзакція стирає лише РЯДОК старого аватара (+ outbox); його ФАЙЛ стирає
- * `replaceAvatar` після COMMIT (Е6д-14), тож відмова транзакції файлу не чіпає.
+ * `replaceAvatar` після COMMIT, тож відмова транзакції файлу не чіпає.
  *
  * 🔴 Старий рядок прибирається через `operator`: `app_user` не має гранта
  * `DELETE` на `media` (`0002_grants.sql:120`) — саме відсутність права
@@ -117,7 +117,7 @@ async function replaceAvatarFor(
   // транзакції (`escalation.ts`), а не окреме зʼєднання, тож рядкові локи
   // `users`/`profiles` (FK-`KEY SHARE` і UPDATE вище) тут власні й самі себе не
   // блокують. Ескалація має лише стерти рядки `media`: чіпати `users`/`profiles`
-  // під `app_admin` не слід (data-layer.md §13, Е6г-22; борг К3-Е6г-8).
+  // під `app_admin` не слід (data-layer.md §13).
   const erased = previous
     ? await operator((tx) =>
         eraseMediaRows(tx, [previous], avatarOwner(userId)),
@@ -129,7 +129,7 @@ async function replaceAvatarFor(
 
 /**
  * Прибрати аватар. Ідемпотентна: без аватара — no-op. Повертає ключі, чиї
- * файли викликач стирає `completeMediaErasures` ПІСЛЯ COMMIT (Е6д-14).
+ * файли викликач стирає `completeMediaErasures` ПІСЛЯ COMMIT.
  */
 export async function clearAvatarFor(
   db: ActorDb,

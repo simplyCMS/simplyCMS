@@ -8,7 +8,7 @@ import { TestEngineProvider } from './engine-stub';
 import OrderSuccess from '../pages/OrderSuccess';
 import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
-// К3-Е5-1 (Е5б-15): після зняття `?token` з URL гість не сміє отримати
+// Після зняття `?token` з URL гість не сміє отримати
 // «не знайдено». URL — зовнішній стор: `navigate` справді міняє search, а
 // `useSearch` перерендерює сторінку, як у браузері.
 const h = vi.hoisted(() => {
@@ -105,7 +105,7 @@ const tokenCalls = () =>
     (c) => (c[0] as { data: { token: string | null } }).data.token,
   );
 
-describe('OrderSuccess гостя — токен захоплюється один раз (К3-Е5-1)', () => {
+describe('OrderSuccess гостя — токен захоплюється один раз', () => {
   it('після зняття токена з URL замовлення лишається; запиту з token: null немає', async () => {
     renderPage();
     await screen.findByText('SC-0001');

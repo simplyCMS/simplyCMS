@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // (vitest.config: environment 'node' — патерн on-demand-contract.test.tsx)
 /**
- * Колекція замовлень лише на ЧИТАННЯ (Е5-10): `insert` кидає, а повернений
- * `changeOrderStatus` рядок, записаний write-back-ом (К3-7), доходить і до
+ * Колекція замовлень лише на ЧИТАННЯ: `insert` кидає, а повернений
+ * `changeOrderStatus` рядок, записаний write-back-ом, доходить і до
  * зрізу картки, і до сторінки списку — БЕЗ перезапиту: сервер-стаб
  * навмисно лишається зі старим статусом, тож новий статус у зрізах може
  * прийти лише з write-back.
@@ -27,7 +27,7 @@ vi.mock('simplycms/admin-server', async () => {
   });
 });
 
-describe('колекції замовлень (Е5-10): лише читання і write-back', () => {
+describe('колекції замовлень: лише читання і write-back', () => {
   it('collection.insert на orders кидає (колекція лише на читання)', () => {
     const { orders } = setup();
     expect(() => orders.insert(makeOrder(9, SAME))).toThrow();

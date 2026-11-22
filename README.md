@@ -2,7 +2,7 @@
 
 Open-source e-commerce CMS built with TanStack Start, React, PostgreSQL, Better Auth, and shadcn/ui.
 
-**Ядро постачається пʼятьма npm-пакетами** (трек К0): unscoped фреймворк
+**Ядро постачається пʼятьма npm-пакетами**: unscoped фреймворк
 `simplycms` — увесь двигун одним пакетом, шар береться субшляхом
 (`simplycms/ui`, `simplycms/plugin-sdk`, `simplycms/contracts/views`, …) —
 плюс сателіти [`@simplycms/cli`](https://www.npmjs.com/package/@simplycms/cli),
@@ -12,7 +12,7 @@ Open-source e-commerce CMS built with TanStack Start, React, PostgreSQL, Better 
 Версія в усіх пʼятьох одна.
 🔴 У [реєстрі](https://www.npmjs.com/search?q=%40simplycms) поки лежить
 ПОПЕРЕДНЯ топологія (`@simplycms/*@0.3.0`, 25 пакетів) — нова їде з мержем
-гілки К0, після чого 22 злиті імені отримають `npm deprecate`.
+гілки консолідації пакетів, після чого 22 злиті імені отримають `npm deprecate`.
 
 ## Vision: e-commerce platform
 
@@ -29,13 +29,13 @@ SimplyCMS розвивається в OpenCart-подібну платформу
 
 | | Стан |
 |---|---|
-| Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу К0) |
+| Ядро в npm-пакетах | ✅ пʼять пакетів синхронної версії (в реєстрі — попередні 25 до мержу консолідації) |
 | Магазин збирається з npm без монорепо | ✅ перевірено автоматичним пілотом (`pnpm pilot:pack`) |
 | Production-запуск | ✅ `pnpm build && node scripts/start.mjs` (накат міграцій + `execve`) |
 | `create-simplycms-store` | ✅ у npm-реєстрі — `pnpm create simplycms-store` |
 | CLI `simplycms` (`@simplycms/cli`) | ✅ `doctor` / `add` / `create plugin/theme` / `update` / `db:diff` |
-| Плагіни як npm-пакети (Plugin SDK) | ✅ Фаза 3: `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
-| Теми як npm-пакети | ✅ Фаза 4: `@simplycms/theme-solarstore` + copy-in + маркетплейс-контракт |
+| Плагіни як npm-пакети (Plugin SDK) | ✅ `simplycms/plugin-sdk` + референс `@simplycms/plugin-faq` |
+| Теми як npm-пакети | ✅ `@simplycms/theme-solarstore` + copy-in + маркетплейс-контракт |
 
 Обидві половини обіцянки закриті: магазин створюється скаффолдером, а
 обслуговується CLI — діагностика, встановлення плагінів/тем, оновлення ядра з
@@ -100,8 +100,8 @@ pnpm simplycms db:diff --write   # донести нові міграції яд
 Ядро працює поверх чистого PostgreSQL 17 (Drizzle) з автентифікацією на Better
 Auth; файли — через порт `simplycms/storage`. Обов'язкових env-ключів рівно три:
 `DATABASE_URL`, `BETTER_AUTH_SECRET` і `VITE_SITE_URL`; опційні йдуть групами драйверів
-за правилом «все або нічого» (`simplycms/env`). Схема ядра — 40
-таблиць із RLS; канон міграцій лежить у
+за правилом «все або нічого» (`simplycms/env`). Таблиці схеми ядра — під
+RLS; канон міграцій лежить у
 [`packages/simplycms/migrations/`](packages/simplycms/migrations/).
 
 ## Розробка самого ядра

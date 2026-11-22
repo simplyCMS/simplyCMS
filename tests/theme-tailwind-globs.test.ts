@@ -19,7 +19,7 @@ const TAILWIND_CONFIG = join(
 );
 
 /**
- * Глоби `content` шаблонного `tailwind.config.ts` — доказ Р7 (Фаза 4).
+ * Глоби `content` шаблонного `tailwind.config.ts`.
  *
  * 🔴 Навіщо окремий тест, якщо є Gate D пілота. Маркер solarstore у Gate D
  * зеленіє через СТАРИЙ глоб на `@simplycms`-scope, бо референс-тема живе

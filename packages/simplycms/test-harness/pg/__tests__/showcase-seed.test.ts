@@ -1,4 +1,4 @@
-// Гейт С-8 (а, в, г, д, е) і Review Focus 3: сід вітрини на чистій демо-базі.
+// Гейт С-8 (а, в, г, д, е) і доказ роздачі зображень: сід вітрини на чистій демо-базі.
 //
 // 🔴 Сід кличеться як модуль (`scripts/showcase/run.mts` реекспортує
 // `seedShowcase`, імпорт команду не стартує) на унікальній базі з власною
@@ -72,7 +72,7 @@ describe('сід вітрини: гейт С-8', () => {
     expect(statuses.map((r) => r.code).sort()).toEqual(Q.ALL_STATUSES);
   });
 
-  it('Review Focus 3: файл кожного зображення лежить за ref у MEDIA_ROOT, це PNG, роздача — 200', async () => {
+  it('файл кожного зображення лежить за ref у MEDIA_ROOT, це PNG, роздача — 200', async () => {
     const refs = (await s.rows<{ ref: string }>(Q.PRODUCT_IMAGE_REFS)).map(
       (r) => r.ref,
     );

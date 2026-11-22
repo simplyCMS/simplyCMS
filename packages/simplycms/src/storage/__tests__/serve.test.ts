@@ -78,7 +78,7 @@ describe('serveMedia', () => {
     expect(response.status).toBe(404);
   });
 
-  // Е8-Р14: збій драйвера (мережа S3) ≠ «файла немає». 404 кешували б CDN і
+  // Збій драйвера (мережа S3) ≠ «файла немає». 404 кешували б CDN і
   // браузер; 503 + один лог з ключем дає оператору причину.
   it('виняток driver.open → 503, один console.error з ключем, без секретів', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -153,7 +153,7 @@ describe('serveMedia', () => {
     expect(body).not.toContain('etc/passwd');
   });
 
-  // Е6д-21: рядок `media` і видимість перевіряє `lookup`, а не роут.
+  // Рядок `media` і видимість перевіряє `lookup`, а не роут.
   it.each(['missing', 'hidden'] as const)(
     "вердикт '%s' → 404 і драйвер не відкривали",
     async (v) => {

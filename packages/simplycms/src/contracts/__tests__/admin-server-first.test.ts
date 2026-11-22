@@ -12,7 +12,7 @@ const toSnake = (s: string) =>
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
     .toLowerCase();
 
-describe('реєстр server-first винятків (К3-2)', () => {
+describe('реєстр server-first винятків', () => {
   const collections = readdirSync(
     join(import.meta.dirname, '../../admin-data/collections'),
   ).map(toSnake);

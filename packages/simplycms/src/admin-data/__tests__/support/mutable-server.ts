@@ -1,5 +1,5 @@
 /**
- * «Сервер зі змінним станом» для тестів колекцій адмінки (Task 4).
+ * «Сервер зі змінним станом» для тестів колекцій адмінки.
  * 🔴 Причина: будь-який наступний list (ремаунт після `staleTime`, явний
  * `utils.refetch()`, ordered-source repair M2 — TSDB-1) має бачити записане,
  * інакше статичний стаб (`mockResolvedValueOnce`, константний SEED) «відкотив»
@@ -107,7 +107,7 @@ export function applySubset<R extends { id: string }>(
       const c = cmp(val(a, x.field), val(b, x.field));
       if (c !== 0) return x.direction === 'desc' ? -c : c;
     }
-    return cmp(a.id, b.id); // тай-брейкер сервера (Е3-8)
+    return cmp(a.id, b.id); // тай-брейкер сервера
   });
   const off = s?.offset ?? 0;
   return out.slice(off, off + Math.min(s?.limit ?? maxLimit, maxLimit));

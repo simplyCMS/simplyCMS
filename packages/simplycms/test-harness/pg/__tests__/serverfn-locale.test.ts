@@ -1,4 +1,4 @@
-// М1 Task 16 (фікс-раунд 1, I1/I2): ланка «serverFn → resolveTextLocale → лоадер» на справжніх
+// Ланка «serverFn → resolveTextLocale → лоадер» на справжніх
 // хендлерах проти живого Postgres. `createServerFn` замінено тотожним білдером (валідатор
 // виконується, RPC немає), `resolveTextLocale` НЕ мокається: мова входу реально доходить до
 // лоадера, а чернеткова/невідома мова — ні.
@@ -60,7 +60,7 @@ type Named = { id: string; name: string };
 const nameOf = (rows: Named[], id: string) =>
   rows.find((r) => r.id === id)?.name;
 
-describe('serverFn вітрини: мова входу доходить до лоадера (Task 16, I1/I2)', () => {
+describe('serverFn вітрини: мова входу доходить до лоадера', () => {
   const db = useCommerceDb('simplycms_serverfn_locale');
   const product = randomUUID();
   const SECTION_SLUG = 'sonyachni-paneli';
@@ -214,7 +214,7 @@ describe('serverFn вітрини: мова входу доходить до л�
     });
   });
 
-  describe('недовірена мова входу (I2)', () => {
+  describe('недовірена мова входу', () => {
     it('resolveTextLocale: published → вона ж; draft, невідома, undefined → основна', async () => {
       expect(await resolveTextLocale('en')).toEqual({
         locale: 'en',

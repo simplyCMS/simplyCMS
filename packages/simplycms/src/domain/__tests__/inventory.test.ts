@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 // 🔴 Бере специфікатором `simplycms/domain/inventory`, а НЕ `../inventory`
-// (Е3-5): відносна форма тут ЗБІГАЄТЬСЯ рядком із забороною тір-зони
+//: відносна форма тут ЗБІГАЄТЬСЯ рядком із забороною тір-зони
 // `src/domain` на новий сервер-онлі T2 `simplycms/inventory` (обліку
 // залишків) — `no-restricted-imports` матчить рядок специфікатора, а не
 // резолвлений шлях, і не розрізняє домен-модуль `domain/inventory.ts` від
@@ -14,7 +14,7 @@ import {
 } from 'simplycms/domain/inventory';
 import type { ProductAvailabilityInput } from 'simplycms/domain/inventory';
 
-describe('isPurchasable — статус є джерелом правди (К2-Е0, Е0-3)', () => {
+describe('isPurchasable — статус є джерелом правди', () => {
   it('in_stock — доступний навіть без жодного рядка залишків', () => {
     expect(isPurchasable('in_stock')).toBe(true);
   });

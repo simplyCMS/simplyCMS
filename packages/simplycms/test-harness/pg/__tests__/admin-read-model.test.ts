@@ -1,6 +1,6 @@
-// М1 Task 16 (фікс-раунд 1, A1–A3): колекції адмінки товару й модифікації читають НАЗВУ з
+// Колекції адмінки товару й модифікації читають НАЗВУ з
 // перекладу основної мови (read-model фабрики ресурсу). Сортування й пошук за `name` ідуть
-// через JOIN. Task 17: текстових колонок у базі немає; INNER JOIN спирається на І4 (рядок
+// через JOIN.: текстових колонок у базі немає; INNER JOIN спирається на І4 (рядок
 // основної мови обов'язковий — тригер), мініатюра — обчислене поле `mainImage` (перше фото
 // галереї агрегата в порядку вітрини).
 import { randomUUID } from 'node:crypto';
@@ -23,7 +23,7 @@ import { useAddressingDb } from './fixtures/addressing-db';
 import { create, saveDescription } from './fixtures/product-aggregate';
 import { insertProductGraphAt } from './fixtures/product-graph';
 
-describe('read-model колекцій адмінки: назва з перекладу основної мови (Task 16)', () => {
+describe('read-model колекцій адмінки: назва з перекладу основної мови', () => {
   const db = useAddressingDb('simplycms_admin_read_model');
   const section = randomUUID();
   const list = (subset: object) =>

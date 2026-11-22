@@ -14,7 +14,7 @@ import { columnsToZod } from '../columns-to-zod';
 import type { SchemaMode } from '../columns-to-zod';
 
 // «Заморожений намір» (без drizzle-zod): ключові твердження на колонках
-// РЕАЛЬНИХ таблиць ядра — лишаються, коли еталон піде з залежностей (Task 13).
+// РЕАЛЬНИХ таблиць ядра — лишаються, коли еталон піде з залежностей.
 const col = (t: Table, mode: SchemaMode, key: string): z.ZodType =>
   columnsToZod(t, mode)[key]!;
 const ok = (s: z.ZodType, v: unknown) => s.safeParse(v).success;

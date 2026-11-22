@@ -2,7 +2,7 @@ import { createCollection } from '@tanstack/react-db';
 import { queryCollectionOptions } from '@tanstack/query-db-collection';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { DiscountGroup } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { DiscountGroup } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertDiscountGroups,
   listDiscountGroups,
@@ -66,7 +66,7 @@ function create(queryClient: QueryClient) {
 
 /**
  * Каскад БД видалив знижки піддерева — прибираємо їх із колекції знижок
- * write-back-ом (без мережі, К3-7), рядки беремо з неї ж за `groupId`.
+ * write-back-ом (без мережі), рядки беремо з неї ж за `groupId`.
  * Колекція ще не завантажена — write-back неможливий, але й осиротілих
  * рядків у ній немає; інвалідація скасовує запит, що летить, і позначає зріз застарілим.
  */

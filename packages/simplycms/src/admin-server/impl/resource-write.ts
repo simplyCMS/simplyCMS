@@ -15,16 +15,16 @@ import {
 /**
  * Запис фабрики ресурсу (`resource.ts`): insert/update/remove над уже
  * розпарсеним входом. Винесено з `resource.ts` без зміни поведінки
- * (К3-Е5-3, розпил до ≤150 рядків). Тип рядка називає фабрика
+ * (розпил до ≤150 рядків). Тип рядка називає фабрика
  * (`as Row[]`) — тут масиви `unknown[]`, той самий рантайм-результат
  * `… RETURNING`.
  */
 export interface ResourceWriteContext {
   entity: string;
   table: Table;
-  /** Е5-7: явна проєкція RETURNING (усі колонки, крім `omit`). */
+  /** Явна проєкція RETURNING (усі колонки, крім `omit`). */
   picked: Record<string, Column>;
-  /** Колонка, яку update ставить у `new Date()` (Е3-9). */
+  /** Колонка, яку update ставить у `new Date()`. */
   touch?: string;
   /** Тема 9: колонки з розміткою → профіль санітизатора. */
   richHtml?: RichHtmlColumns;
@@ -61,7 +61,7 @@ export async function updateResourceRows(
   // 🔴 Явна анотація масиву, а не «evolving array» `[]`: під
   // `tsc -p tsconfig.dts.json` (emitDeclarationOnly, build:packages) TS
   // звужує елемент до `never` ще ДО першого `push` (TS2345), а кореневий
-  // `pnpm typecheck` цієї розбіжності не бачить (знахідка Е3 Task 8).
+  // `pnpm typecheck` цієї розбіжності не бачить.
   const out: unknown[] = [];
   for (const { id, patch } of parsed) {
     // 🔴 `db.update(table)` з генеричною таблицею не звужує `.returning()`
@@ -108,7 +108,7 @@ export async function removeResourceRows(
   const rows = await db
     .delete(table)
     .where(inArray(id, ids))
-    // Е5-7: для лічильника досить id — прихована колонка не читається.
+    // Для лічильника досить id — прихована колонка не читається.
     .returning({ id });
   return { count: rows.length };
 }

@@ -1,4 +1,4 @@
-// Showcase Task 2 (С-2, С-15): db-варіанти операцій фабрики ресурсів
+// Showcase (С-2, С-15): db-варіанти операцій фабрики ресурсів
 // (`insertIn`/`updateIn`/`removeIn`) працюють поза HTTP-запитом — у транзакції
 // викликача під `withActor({ role: 'app_admin' })`, без `requireGrant`. Інваріанти
 // фабрики (strip readonly, lock → guard) мусять триматися так само, як в операції.
@@ -35,7 +35,7 @@ const section = () => ({
   name: `Розділ ${n}`,
 });
 
-describe('фабрика ресурсів: db-варіанти поза запитом (showcase Task 2)', () => {
+describe('фабрика ресурсів: db-варіанти поза запитом', () => {
   const db = F.useShippingAdminDb('simplycms_admin_resource_in');
   const url = () => db.url();
   const sectionRow = async (id: string) =>

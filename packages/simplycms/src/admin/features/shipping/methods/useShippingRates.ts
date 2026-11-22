@@ -13,7 +13,7 @@ import type { ShippingRateFormValues } from './shipping-rate-form-schema';
 const num = (s: string) => s || null;
 
 /**
- * Тарифи способу (Е6а-1): on-demand зріз `methodId` + зони для вибору.
+ * Тарифи способу: on-demand зріз `methodId` + зони для вибору.
  * Запис — через колекцію; `zoneId` лише в insert (`insertOnly`), перенос
  * тарифу в іншу зону — це новий тариф.
  */

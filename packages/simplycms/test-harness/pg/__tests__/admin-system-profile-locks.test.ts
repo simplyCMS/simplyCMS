@@ -1,4 +1,4 @@
-// К3-Е6б, Е6б-24: лок `store-profile` у saveStoreProfileOp — детерміновано
+// Лок `store-profile` у saveStoreProfileOp — детерміновано
 // (`holdAdvisoryLock`/`stillPending` + черга локу), а не випадковою гонкою.
 // Без локу два збереження з різними новими логотипами читають той самий
 // «попередній», і програшний новий логотип лишається сиротою в `media`.
@@ -19,7 +19,7 @@ import { saveStoreProfileOp } from 'simplycms/admin-server/impl';
 
 const LOCK = 'store-profile';
 
-describe('admin: лок профілю магазину (Е6б-24)', () => {
+describe('admin: лок профілю магазину', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system_profile_locks');
   const url = () => db.url();
   const logo = () => F.seedMedia(url(), db.root());

@@ -81,11 +81,11 @@ describe('conditionsMatch — текстові поля (=, contains)', () => {
     expect(match('=', 'corp.example.com')).toBe(true);
     expect(match('=', 'example.com')).toBe(false);
     expect(match('contains', 'example.com')).toBe(true);
-    // Р30: не підрядок — лише домен або піддомен.
+    // Не підрядок — лише домен або піддомен.
     expect(match('contains', 'example')).toBe(false);
   });
 
-  it('email_domain contains: домен і піддомен — так, схожі чужі домени — ні (Р30)', () => {
+  it('email_domain contains: домен і піддомен — так, схожі чужі домени — ні', () => {
     const match = (emailDomain: string | null) =>
       conditionsMatch(
         conditions([
@@ -115,7 +115,7 @@ describe('conditionsMatch — текстові поля (=, contains)', () => {
   });
 });
 
-describe('conditionsMatch — auth_provider (Е6в-19)', () => {
+describe('conditionsMatch — auth_provider', () => {
   const google = conditions([
     { field: 'auth_provider', operator: '=', value: 'google' },
   ]);
@@ -133,7 +133,7 @@ describe('conditionsMatch — auth_provider (Е6в-19)', () => {
   );
 });
 
-describe('conditionsMatch — режими any/all і порожнє правило (Е6в-19)', () => {
+describe('conditionsMatch — режими any/all і порожнє правило', () => {
   const stats = { ...baseStats, totalPurchases: 500, ordersCount: 3 };
   const oneOfTwo: CategoryRuleCondition[] = [
     { field: 'total_purchases', operator: '>=', value: '100' },
@@ -152,7 +152,7 @@ describe('conditionsMatch — режими any/all і порожнє прави�
     expect(conditionsMatch(conditions(oneOfTwo, 'any'), baseStats)).toBe(false);
   });
 
-  it('ред.2: порожнє правило (rules: []) → false в обох режимах (fail-closed)', () => {
+  it('порожнє правило (rules: []) → false в обох режимах (fail-closed)', () => {
     expect(conditionsMatch(conditions([], 'all'), stats)).toBe(false);
     expect(conditionsMatch(conditions([], 'any'), stats)).toBe(false);
   });

@@ -4,8 +4,6 @@
 > Це посібник «як зробити»; механізм, межі й те, як усе це верифікується, —
 > [`../architecture/themes.md`](../architecture/themes.md) (джерело правди).
 > Команди CLI детально — [`../architecture/cli.md`](../architecture/cli.md).
-> Написано за підсумками Фази 4 (2026-08-14); розділ 3.5 (перевизначення
-> view) — за підсумками треку A, контракт тем v3 (2026-08-18).
 
 ## 1. Три речі, які треба знати до всього іншого
 
@@ -42,7 +40,7 @@ pnpm build            # набір тем — build-time
 залогіненого адміна** — тобто тема зʼявиться в `/admin/themes` не одразу
 після деплою, а після першого візиту адміна. Це нормально.
 
-🔴 **Tailwind-глоби для сторонніх тем.** Магазини, створені після Фази 4,
+🔴 **Tailwind-глоби для сторонніх тем.** Магазини, створені чинним скаффолдером,
 уже сканують `node_modules/simplycms-theme-*/dist` і
 `node_modules/@*/simplycms-theme-*/dist`. Якщо магазин старіший — додай у
 `content` свого `tailwind.config.ts` два рядки:
@@ -63,7 +61,7 @@ pnpm build            # набір тем — build-time
 pnpm simplycms add @vendor/simplycms-theme-aurora --theme --copy
 ```
 
-Shadcn-модель: сирці теми копіюються в `themes/aurora/` магазину, пакет
+Shadcn-модель: сирці теми копіюються в `themes/<slug>/` магазину, пакет
 знімається. Далі це ТВІЙ код — прав як хочеш, але апстрім-фіксів більше не
 буде. Обирай copy-in, коли тему плануєш суттєво перекроювати; лишай
 npm-форму, коли хочеш отримувати оновлення автора через `pnpm update`.
@@ -159,14 +157,14 @@ pnpm simplycms create theme aurora
 pnpm dev              # правки видно після перезапуску dev-сервера
 ```
 
-Команда створює `themes/aurora/` (manifest, tokens, messages, index,
+Команда створює `themes/<slug>/` (manifest, tokens, messages, index,
 components/Header, components/Footer, README) і дописує ключ у конфіг.
 Build-кроку в локальної теми немає — це найшвидший dev-loop: редагуй
 `tokens.ts`/компоненти й дивись результат. README скаффолда веде далі.
 
 ### 3.2 Контракт модуля (те, що перевіряється)
 
-`src/index.ts` (у пакетній формі) чи `index.ts` (у локальній) робить
+`index.ts` у теці `src` (пакетна форма) чи в корені теки (локальна) робить
 default-export обʼєкта:
 
 ```ts
@@ -332,7 +330,7 @@ pnpm simplycms theme:conformance aurora    # рендер заявлених vie
 | Що | Вимога |
 |---|---|
 | Імʼя пакета | базове імʼя починається з `simplycms-theme-` (`simplycms-theme-aurora` або `@vendor/simplycms-theme-aurora`) |
-| Entry | `src/index.ts`, default-export `ThemeModule`; `exports` лише `"."` |
+| Entry | `index.ts` у теці `src`, default-export `ThemeModule`; `exports` лише `"."` |
 | `files` | `dist` **і `src`** — без `src` у tarball-і не працюватиме copy-in (§2.2) |
 | Збірка | tsdown, ESM; 🔴 **класи мають лишатися літералами в dist-JS** — саме dist сканують Tailwind-глоби магазину; динамічна склейка імен класів = зникнення стилів |
 | Залежності | `simplycms` — **peerDependencies** (не dependencies: інакше в магазині зʼявиться другий інстанс React-контекстів на кшталт `EngineProvider`); `react`, `@tanstack/react-query`, `@tanstack/react-router`, іконки — теж peers |

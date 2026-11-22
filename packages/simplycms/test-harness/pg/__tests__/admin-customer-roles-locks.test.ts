@@ -1,4 +1,4 @@
-// К3-Е6г, Task 4 (Е6г-4): лок `admin-roles` для ролі адміна. Доводиться
+// Лок `admin-roles` для ролі адміна. Доводиться
 // детерміновано (holdAdvisoryLock/stillPending), не Promise.all-гонкою.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
@@ -16,7 +16,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { setAdminRoleOp } from 'simplycms/admin-server/impl';
 
-describe('admin: роль адміна під локом admin-roles (Е6г-4)', () => {
+describe('admin: роль адміна під локом admin-roles', () => {
   const db = F.useCustomersDb('simplycms_admin_roles_locks');
   const url = () => db.url();
   const LOCK = 'admin-roles';

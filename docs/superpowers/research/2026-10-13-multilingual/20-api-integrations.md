@@ -80,12 +80,12 @@
   Це продуктове/безпекове рішення власника, не дослідження.
 - **CSRF**: `csrfMiddleware` відкидає будь-який POST/PUT/PATCH/DELETE без `Sec-Fetch-Site: same-origin` /
   `Origin` / `Referer` — для server-функцій і server routes; виняток тільки `CSRF_EXEMPT_PREFIXES = ['/api/auth/']`
-  (`runtime/csrf.ts:12`, `docs/architecture/rendering-and-routing.md:50-65`). Для API з Bearer-токеном
+  (`runtime/csrf.ts:12`, `docs/architecture/rendering-and-routing.md`). Для API з Bearer-токеном
   потрібен свідомий виняток-префікс (наприклад `/api/v1/`) з власною автентифікацією — тобто **зміна ядра**,
   а не конфіг магазину. Дерево роутів збирає `routes.ts` (virtual routes), змонтований лише `src/routes/my/`
   (`AGENTS.md`), тож API-роути постачає пакет ядра.
 - Статус відповіді ставить **тільки межа** (`run.ts`, `validation.ts`), ядра статус не чіпають і тому
-  викликаються поза HTTP (`docs/architecture/data-layer.md:420-431`; коментар `core-actor.ts` називає
+  викликаються поза HTTP (`docs/architecture/data-layer.md`; коментар `core-actor.ts` називає
   «майбутній MCP-сервер магазину»). `CoreActor = {kind:'admin',userId} | {kind:'system'}` (`core-actor.ts`)
   — готова ідентичність для CLI/MCP/імпорту.
 
@@ -96,7 +96,7 @@
 - Імпорт/експорт каталогу: немає (є `db:demo`, `db:showcase` — сід через ядра).
 - Ідемпотентність: ключів `Idempotency-Key` немає; є лише «ідемпотентний delete» драйвера сховища та лічильник у `inventory/order-stock.ts`.
 - Версіонування рядків: немає `version`/`etag`; оптимістичного блокування немає. `updated_at` — `Date` (мс), у PG
-  `timestamptz` має мікросекунди, тож порівняння як ETag було б нестабільним **[з кодової конвенції `mode:'date'`, `data-layer.md §6`; саме
+  `timestamptz` має мікросекунди, тож порівняння як ETag було б нестабільним **[з кодової конвенції `mode:'date'`, `docs/architecture/data-layer.md` §6; саме
   втрату µs у драйвері не перевіряв]**.
 - Версіонування API: немає. Адреса серверної функції має вигляд `/_serverFn/<id>` (`test-contours.md:1022`) і не є публічним контрактом: документація TanStack призначає їх для самого застосунку [підтв.].
 - Два заплановані треки: «MCP-сервер магазину» — поза скоупом v2 (`2026-08-19-backend-contract-v2-design.md:390-392`) і
@@ -207,7 +207,7 @@
 - `values: { attrCode: [ {locale, scope, data} ] }`; локалізований атрибут — по одному значенню на локаль (`scope: null`), скопований — на канал, обидва — на пару [підтв.].
 - PATCH: «Any data in non specified properties will be left untouched»; пари `locale/scope` зливаються — відправлений `fr_FR` заміняє лише французьке,
   `en_US` лишається; стерти значення — той самий запис із `"data": null` [підтв.]. **Це найдетальніша семантика часткового оновлення однієї локалі.**
-- Колекції: PATCH до 100 елементів на запит, рядок JSON-lines ≤1 000 000 символів, відповідь по рядках [підтв.: `rest-api/responses.md`]; ліміт 100 запитів/с на інстанс (`good-practices.md`).
+- Колекції: PATCH до 100 елементів на запит, рядок JSON-lines ≤1 000 000 символів, відповідь по рядках [підтв.: rest-api/responses.md]; ліміт 100 запитів/с на інстанс (good-practices.md).
 - Фільтри: `updated` (`>`, `SINCE LAST N DAYS`…), `locales=en_US,fr_FR` для обмеження повернених локалей, `search_locale`; `IN` по ідентифікаторах ≤100 [підтв.].
 - Застарілості перекладу в прочитаних сторінках немає; є completeness по локалі/каналу [підтв. як фільтр].
 - Є офіційний Akeneo MCP Server (читання/зміна товарів, атрибутів, довідників; у прикладах `localeCode/localeValue`, `locale/data` — дзеркало REST) [підтв.].
@@ -268,7 +268,7 @@
   `language_id = getLanguageId(config('config_language'))` — тобто **обмін заповнює лише одну (основну) мову**, інші заповнюють вручну (рядки ~1304-1420 `admin/model/extension/exchange1c.php`) [підтв., GitHub].
 - **WooCommerce (`sgtpep/woocommerce-1c`).** GUID — у `postmeta` ключ `_wc1c_guid`; пошук `wc1c_post_id_by_meta('_wc1c_guid', $guid)`; той самий ключ і на замовленнях
   (`update_post_meta($order, '_wc1c_guid', $document['Ид'])`) [підтв., GitHub]. Мультимовності (WPML/Polylang) модуль не стосується — не знайдено.
-- **1С-Бітрікс.** Протокол розроблено спільно 1С і 1С-Бітрікс (v8.1c.ru/edi/edi_stnd/131). Що GUID лежить у `XML_ID` елемента інфоблоку — [не підтв. першоджерелом]; внутрішній документ `docs/tasks/seo-ssr-faceted-navigation.md:65` лише згадує, що значення властивості у ЧПУ-фільтрі — `XML_ID` (з 1С — UUID).
+- **1С-Бітрікс.** Протокол розроблено спільно 1С і 1С-Бітрікс (v8.1c.ru/edi/edi_stnd/131). Що GUID лежить у `XML_ID` елемента інфоблоку — [не підтв. першоджерелом]; внутрішній документ `docs/tasks/seo-ssr-faceted-navigation.md` лише згадує, що значення властивості у ЧПУ-фільтрі — `XML_ID` (з 1С — UUID).
 
 Висновок: **усі** поширені модулі мають зовнішній ключ окремо (мапінг-таблиця або мета), бо їхня PK — автоінкремент; у нас id задає викликач, і мапінг не потрібен — рішення власника
 «GUID = id» знімає цілий клас помилок розсинхрону (`product_to_1c` без запису → дубль товару). І **усі** модулі обміну заповнюють одну мову — це підтверджує вимогу «завантаження однією мовою».
@@ -346,7 +346,7 @@
    взагалі відсутній (тільки `Наименование`), тож його створює адаптер **один раз** (при створенні) і далі не чіпає. Зміна slug — окрема операція (`changeSlug`-подібна) з опцією `redirect=true`.
 2. **Історія slug** — таблиця `slug_redirects(locale, old_slug, entity_type, entity_id, created_at)` з унікальністю `(entity_type, locale, old_slug)`; вона нейтральна до A/B/D, але в B/D локалізований
    slug робить ключем `(locale, slug)` — отже історія природно «по локалі». Адитивна (нова таблиця + 301-гілка в роуті), **не потрібна до заморозки**.
-3. **Колізії slug** між перекладеним slug товару A і базовим slug товару B вже розібрано у `00-draft-pattern-A.md §4.1`; для API це означає, що валідація унікальності slug мусить бути
+3. **Колізії slug** між перекладеним slug товару A і базовим slug товару B вже розібрано у `00-draft-pattern-A.md` §4, п. 1; для API це означає, що валідація унікальності slug мусить бути
    єдиною серверною (не лише `unique` констрейнт), і її помилка — типізована (409 `slug_taken`).
 4. **Пошуковий індекс**: перейменування = подія «перебудувати документ(и) сутності»; ключ `(entity_type, entity_id, locale)` дозволяє перебудувати лише змінені локалі. Для A/B/D це однаково, якщо
    зміна проходить через єдину точку запису (ядро), а не прямим SQL — аргумент проти «імпорт прямим SQL повз ядро».
@@ -362,7 +362,7 @@
 ### 6.1. Які таблиці мають `id`, що задає викликач
 
 Усі доменні таблиці `schema.ts` (37 `pgTable` без Better Auth) мають `id: uuid().primaryKey().notNull()` **без** `DEFAULT` [з коду, awk по `schema.ts`; рядок `id:` кожної таблиці], а чинний
-контракт — `docs/architecture/data-layer.md §5` і `schema/README.md:12-18`: у 41 таблиці «Категорії A» дефолту немає, пропущений id дає `23502`, гейт `explicit-ids.test.ts` дискаверить усі INSERT. Виняток —
+контракт — `docs/architecture/data-layer.md` §5 і `schema/README.md:12-18`: у 41 таблиці «Категорії A» дефолту немає, пропущений id дає `23502`, гейт `explicit-ids.test.ts` дискаверить усі INSERT. Виняток —
 чотири таблиці Better Auth (`users`, `sessions`, `accounts`, `verifications`) з `DEFAULT gen_random_uuid()` (`0001_init.sql:551-593`).
 
 Для сутностей, що синхронізуються з обліковою системою:
@@ -483,9 +483,9 @@
    його, а гейт `explicit-ids`, `ENTITY`-парність, фабрика й колекції TanStack DB мають бути вирішені один раз. Змінювати конвенцію після того, як плагіни почнуть її копіювати, дорожче.
 2. **Рішення «id = GUID 1С» для модифікацій** (§3.3): якщо правило `id = ИдХарактеристики` не годиться для реальної бази, потрібен інший механізм (UUID v5). Дані ще не створені — зараз дешево,
    після пілоту id стануть частиною зовнішніх посилань.
-3. **Мова/ключ `slug` у переклади** (розгляд — `00-draft-pattern-A.md §4.1`): унікальність slug між базою й перекладами — це не DDL-дрібниця, а інваріант, що міняє ключі URL; після публікації
+3. **Мова/ключ `slug` у переклади** (розгляд — `00-draft-pattern-A.md` §4, п. 1): унікальність slug між базою й перекладами — це не DDL-дрібниця, а інваріант, що міняє ключі URL; після публікації
    адрес із SEO виправляти дорого (301 і історія slug пом'якшують).
-4. **Джерело мови за замовчуванням** (`languages.is_default` vs `VITE_LOCALE`, `00-draft-pattern-A.md §4.3`): для API це параметр «яку мову вважати базовою при записі без `locale`». Якщо два джерела —
+4. **Джерело мови за замовчуванням** (`languages.is_default` vs `VITE_LOCALE`, `00-draft-pattern-A.md` §4, п. 3): для API це параметр «яку мову вважати базовою при записі без `locale`». Якщо два джерела —
    інтеграція отримає неоднозначність.
 
 ### 9.2. Можна додати адитивно пізніше (нова міграція, без переробки даних)
@@ -502,7 +502,7 @@
 | Токени інтеграцій (`api_tokens`) | нова таблиця + гілка в `resolveRequestGrant` | рішення про `@better-auth/api-key` проти власної таблиці — власнику; CSRF-виняток — зміна ядра |
 | Вебхуки вихідні | нові таблиці `webhook_endpoints`, `webhook_deliveries` (+ outbox за зразком `mail_outbox`) | поточні вебхуки лише вхідні (платежі) |
 | Keyset-пагінація | код, не схема; потрібні індекси `(updated_at, id)` на синхронізованих таблицях | індекси — адитивні |
-| `orders.locale` | описано у `00-draft-pattern-A.md §4.4` | бекфіл точний лише поки мова магазину не змінювалась |
+| `orders.locale` | описано у `00-draft-pattern-A.md` §4, п. 4 | бекфіл точний лише поки мова магазину не змінювалась |
 
 ### 9.3. Рекомендований мінімум шару API (поза схемою)
 
@@ -527,8 +527,8 @@
 ## 11. Джерела
 
 **Код і документи SimplyCMS (знімок `cd2d18d5`):** `packages/simplycms/src/admin-server/{index.ts,impl/run.ts,impl/resource.ts,impl/resource-schemas.ts,impl/resource-write.ts,impl/resource-write-ops.ts,impl/subset-schema.ts,impl/validation.ts,impl/errors.ts,impl/core-actor.ts}`,
-`src/auth/{authz.ts,authz-request.ts,session.ts,instance.ts}`, `src/runtime/csrf.ts`, `src/contracts/{entities.ts,ports/index.ts}`, `src/plugin-sdk/server/index.ts`, `src/schema/{schema.ts,README.md}`, `src/domain/product-path.ts`,
-`docs/architecture/{data-layer.md §5,§6, rendering-and-routing.md,plugins.md}`, `docs/superpowers/specs/{2026-08-19-backend-contract-v2-design.md,2026-08-25-storefront-search-design.md,2026-10-12-shop-agent-toolkit-design.md,2026-10-06-commerce-providers-design.md}`,
+`src/auth/{authz.ts,authz-request.ts,session.ts,instance.ts}`, `csrf.ts` у теці runtime, `src/contracts/{entities.ts,ports/index.ts}`, `index.ts` у `plugin-sdk/server`, `src/schema/{schema.ts,README.md}`, `product-path.ts` у теці domain,
+`docs/architecture/data-layer.md` §5, §6, `docs/architecture/rendering-and-routing.md`, `docs/architecture/plugins.md`, `docs/superpowers/specs/2026-08-19-backend-contract-v2-design.md`, `docs/superpowers/specs/2026-08-25-storefront-search-design.md`, спеки «shop-agent-toolkit-design» і «commerce-providers-design» (ADR-0040, `docs/architecture/cli.md` §3; знесено 2026-11-21, текст — `git show a967ab1e`),
 `docs/superpowers/research/2026-10-13-multilingual/{00-draft-pattern-A.md,01-owner-requirements.md,10-name-matching-sweep.md}`.
 
 **commercetools:** https://docs.commercetools.com/api/types (LocalizedString) · https://docs.commercetools.com/api/general-concepts (key, version, limit/offset, Import API) ·
@@ -548,9 +548,9 @@ https://shopify.dev/changelog/storefront-api-incontext-directive-supports-langua
 https://github.com/akeneo/pim-api-docs/blob/master/content/rest-api/responses.md (ліміти 100) · `.../rest-api/good-practices.md` · `.../mcp/overview.md`, `.../mcp/use-cases.md`
 
 **Sylius:** https://github.com/Sylius/Sylius/tree/2.3/src/Sylius/Bundle/ApiBundle/Resources/config/api_platform (`properties/Product.xml`, `resources/admin/ProductTranslation.xml`, `serialization/Product.xml`),
-`src/Sylius/Bundle/ApiBundle/Controller/GetProductBySlugAction.php`, `.../OpenApi/Documentation/AcceptLanguageHeaderDocumentationModifier.php`
+`GetProductBySlugAction.php` (Sylius), `.../OpenApi/Documentation/AcceptLanguageHeaderDocumentationModifier.php`
 
-**Shopware:** https://github.com/shopware/docs — `guides/development/integrations-api/request-headers.md`, `.../flows/create-product.md`, `concepts/framework/translations/plain-vs-translated-fields.md`, `resources/references/adr/2022-03-29-specify-priority-of-translations-in-dal-write-payloads.md`
+**Shopware:** https://github.com/shopware/docs — guides/development/integrations-api/request-headers.md, `.../flows/create-product.md`, concepts/framework/translations/plain-vs-translated-fields.md, resources/references/adr/2022-03-29-specify-priority-of-translations-in-dal-write-payloads.md
 
 **Payload:** https://payloadcms.com/docs/configuration/localization
 

@@ -33,7 +33,7 @@ interface Branch {
 }
 
 /**
- * ЄДИНЕ джерело гілок референсу (Е6д-22): `findMediaReferences` і вибір
+ * ЄДИНЕ джерело гілок референсу: `findMediaReferences` і вибір
  * кандидатів sweep (`mediaReferenceExists`) будують запити з цього опису, тож
  * логотип чи нова медіа-колонка не можуть потрапити в одне й випасти з іншого.
  * jsonb → членство `col ? key`, text → рівність; логотип — окрема гілка.
@@ -85,7 +85,7 @@ export function mediaReferenceExists(key: SQL): SQL {
 }
 
 /**
- * Усі місця, де референс `key` лежить у даних (Е6д-22): джерело для
+ * Усі місця, де референс `key` лежить у даних: джерело для
  * страховки sweep і для інваріанта сідів.
  */
 export async function findMediaReferences(

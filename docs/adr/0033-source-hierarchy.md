@@ -15,8 +15,8 @@ Spec: `AGENTS.md`
 - `.github/workflows/` і `.github/ISSUE_TEMPLATE/` лишаються.
 
 ## Why
-- Модель MetaHub дала ту саму ієрархію і прибрала застарілі копії (`docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md` § «Тема 8а · Правила й Copilot-артефакти за моделлю MetaHub ✅»).
-- Рідкісне й довге йде в `docs/` і скіли, щоб файли, що вантажаться в кожну сесію, лишались короткими (`docs/superpowers/specs/2026-10-04-deps-security-tooling-design.md` § «Тема 8а · Правила й Copilot-артефакти за моделлю MetaHub ✅»).
+- Модель MetaHub дала ту саму ієрархію і прибрала застарілі копії (спека «deps-security-tooling-design», розділ «Тема 8а · Правила й Copilot-артефакти за моделлю MetaHub ✅»; знесено 2026-11-21, текст — `git show a967ab1e`).
+- Рідкісне й довге йде в `docs/` і скіли, щоб файли, що вантажаться в кожну сесію, лишались короткими (спека «deps-security-tooling-design», розділ «Тема 8а · Правила й Copilot-артефакти за моделлю MetaHub ✅»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Стан у коді: правило записано в `AGENTS.md` § «SimplyCMS»; у `.github` лишились лише `ISSUE_TEMPLATE` і `workflows`.
 
 ## Rejected

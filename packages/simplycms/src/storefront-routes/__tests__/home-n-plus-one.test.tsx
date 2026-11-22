@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { HomeProduct, HomeSection } from '../pages/home/types';
 
 /**
- * Task 0.2: секційні каруселі головної не роблять власних клієнтських
+ * Секційні каруселі головної не роблять власних клієнтських
  * запитів — товари приходять із SSR-лоадера.
  *
  * 🔴 Гард стоїть на МІСЦІ ІНТЕГРАЦІЇ: рендериться компонент роуту
@@ -51,7 +51,7 @@ vi.mock('simplycms/storefront-routes/server/home', () => ({
   },
 }));
 
-// Р29: вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
+// Вид цін глядача — гість (без AuthProvider сесія вічно «в дорозі»).
 vi.mock('simplycms/core/hooks/useViewerPriceKey', () => ({
   useViewerPriceKey: () => 'guest',
 }));

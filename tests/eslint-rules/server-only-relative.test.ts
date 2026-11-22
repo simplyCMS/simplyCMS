@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import { beforeAll, describe, expect, it } from 'vitest';
 import rule from '../../eslint-rules/server-only-relative.mjs';
 
-// Фікстури правила server-only-relative (трек T). Шлях файла — частина
+// Фікстури правила server-only-relative. Шлях файла — частина
 // вхідних даних правила: воно резолвить специфікатор ВІДНОСНО імпортера і
 // класифікує обидва кінці за деклараціями `contracts/server-only.ts`.
 
@@ -26,7 +26,7 @@ const lint = (code: string, file: string) =>
     filename: resolve(REPO, 'packages/simplycms/src', file),
   });
 
-describe('server-only-relative (трек T)', () => {
+describe('server-only-relative', () => {
   it.each([
     [
       'стаб → нутрощі',

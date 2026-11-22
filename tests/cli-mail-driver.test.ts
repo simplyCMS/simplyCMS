@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { checkMailDriver } from '../packages/cli/src/doctor-mail-check.mjs';
 import { scaffold } from '../packages/create-simplycms-store/src/scaffold.mjs';
 
-// doctor №14 (К3-Е8, Task 9, Е8-Р11): `nodemailer` — пряма залежність магазину в межах
+// doctor №14: `nodemailer` — пряма залежність магазину в межах
 // peer-діапазону ядра. Дзеркало №13 (`cli-pg-driver`).
 async function scaffoldStore(name: string) {
   const target = join(mkdtempSync(join(tmpdir(), 'cli-mail-')), name);

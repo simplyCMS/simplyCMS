@@ -29,7 +29,7 @@ const EMPTY: ShippingMethodFormInput = {
 
 /**
  * Стан картки способу доставки. `provider` пишеться лише в insert
- * (`insertOnly`, Е6а-7): зміна осиротила б точки й тарифи, тож у patch
+ * (`insertOnly`): зміна осиротила б точки й тарифи, тож у patch
  * update його немає.
  */
 export function useShippingMethodCard(methodId: string | undefined) {

@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { SectionPropertyAssignment } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { SectionPropertyAssignment } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertSectionPropertyAssignments,
   listSectionPropertyAssignments,
@@ -14,8 +14,8 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * Схема властивостей розділу — зріз по `sectionId` (Е3-1). Запис — Е4
- * (Task 5) через канон `persistenceHandlers`; on-demand лишається (Е4-9).
+ * Схема властивостей розділу — зріз по `sectionId`. Запис
+ * через канон `persistenceHandlers`; on-demand лишається.
  */
 function create(queryClient: QueryClient) {
   // 🔴 ref-комірка розриває self-reference TS7022 — див. handlers.ts.

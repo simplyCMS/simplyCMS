@@ -17,7 +17,7 @@ import { CartItemThumb } from './CartItemThumb';
 export interface CartItemViewProps {
   item: CartItemType;
   /**
-   * Рядок серверної квоти (Е6в-13): ціна, база, знижки. `null` — квоти ще
+   * Рядок серверної квоти: ціна, база, знижки. `null` — квоти ще
    * немає. Квоту дає T5-контейнер: `cart-ui` serverFn не імпортує.
    */
   line: CartQuoteLine | null;
@@ -41,7 +41,7 @@ export function CartItemView({
   const locale = useContentLocale();
   // Назви: з квоти, з кешу тієї ж мови або скелетон (`resolveCartItemNames`).
   const names = resolveCartItemNames(item, line, locale, failed ?? false);
-  // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`, Task 17б).
+  // Мініатюра — за тим самим правилом мови, що й назви (`resolveCartItemImage`).
   const image = resolveCartItemImage(item, line, locale, failed ?? false);
 
   return (

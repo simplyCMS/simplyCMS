@@ -6,12 +6,12 @@ import {
 } from 'simplycms/contracts/domain-errors';
 
 /**
- * Ключ повідомлення для конфлікту БД (Е3-7). Розрізняємо за полями, а не
+ * Ключ повідомлення для конфлікту БД. Розрізняємо за полями, а не
  * `instanceof`: клас `AdminConflictError` живе в server-only дереві —
  * сюди він не імпортується навіть типом, лише `DOMAIN_ERROR_NAME`
  * (T0, `contracts/domain-errors`).
  *
- * 🔴 Без розгортання `.cause` (Е3-20, закрито): до `domainErrorAdapter`
+ * 🔴 Без розгортання `.cause`: до `domainErrorAdapter`
  * помилка мала б розгортатись, бо `@tanstack/db`'s `commit()` нібито
  * замінював ПЛОСКИЙ (не-`Error`) обʼєкт на голий `Error(String(x))`.
  * Корінь був у серіалізації Start (ShallowErrorPlugin губив поля, але
@@ -29,7 +29,7 @@ type ConflictShape = {
 };
 
 /**
- * Код правила стану → ключ `admin.errors.<camelCase>` (Е5-9, Е5б-10). Повноту
+ * Код правила стану → ключ `admin.errors.<camelCase>`. Повноту
  * тримає тип: новий код у `ADMIN_STATE_CONSTRAINT` без ключа тут —
  * `pnpm typecheck` червоний.
  */
@@ -45,7 +45,7 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
     'admin.errors.orderItemNotPurchasable',
   [ADMIN_STATE_CONSTRAINT.orderAmountOutOfRange]:
     'admin.errors.orderAmountOutOfRange',
-  // Е6а-12/17/20: інваріанти доставки.
+  // Інваріанти доставки.
   [ADMIN_STATE_CONSTRAINT.shippingPricingUnsupported]:
     'admin.errors.shippingPricingUnsupported',
   [ADMIN_STATE_CONSTRAINT.shippingProviderUnknown]:
@@ -59,23 +59,23 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
   [ADMIN_STATE_CONSTRAINT.pickupPointSystem]: 'admin.errors.pickupPointSystem',
   [ADMIN_STATE_CONSTRAINT.pickupPointHasStock]:
     'admin.errors.pickupPointHasStock',
-  // М2б Р19: довідник статусів замовлень.
+  // Р19 майстер-плану: довідник статусів замовлень.
   [ADMIN_STATE_CONSTRAINT.orderStatusDefault]:
     'admin.errors.orderStatusDefault',
   [ADMIN_STATE_CONSTRAINT.orderStatusSystem]: 'admin.errors.orderStatusSystem',
-  // Е6б-14/15/17: системні налаштування.
+  // Системні налаштування.
   [ADMIN_STATE_CONSTRAINT.storeLogoInvalid]: 'admin.errors.storeLogoInvalid',
   [ADMIN_STATE_CONSTRAINT.themeNotBuilt]: 'admin.errors.themeNotBuilt',
   [ADMIN_STATE_CONSTRAINT.themeUnknown]: 'admin.errors.themeUnknown',
   [ADMIN_STATE_CONSTRAINT.pluginUnknown]: 'admin.errors.pluginUnknown',
-  // Е6в-16/17: знижки.
+  // Знижки.
   [ADMIN_STATE_CONSTRAINT.discountGroupCycle]:
     'admin.errors.discountGroupCycle',
   [ADMIN_STATE_CONSTRAINT.discountGroupDatesInvalid]:
     'admin.errors.discountGroupDatesInvalid',
   [ADMIN_STATE_CONSTRAINT.discountConditionCategoryMissing]:
     'admin.errors.discountConditionCategoryMissing',
-  // Е6в-18/19: категорії покупців і автоправила.
+  // Категорії покупців і автоправила.
   [ADMIN_STATE_CONSTRAINT.userCategoryDefault]:
     'admin.errors.userCategoryDefault',
   [ADMIN_STATE_CONSTRAINT.userCategoryHasCustomers]:
@@ -86,27 +86,27 @@ const STATE_KEYS: Readonly<Record<string, MessageKey>> = {
     'admin.errors.userCategoryInDiscount',
   [ADMIN_STATE_CONSTRAINT.categoryRuleSameCategory]:
     'admin.errors.categoryRuleSameCategory',
-  // Е6г-4/11: роль адміна.
+  // Роль адміна.
   [ADMIN_STATE_CONSTRAINT.adminRoleSelf]: 'admin.errors.adminRoleSelf',
   [ADMIN_STATE_CONSTRAINT.adminRoleLast]: 'admin.errors.adminRoleLast',
   [ADMIN_STATE_CONSTRAINT.adminRoleBanned]: 'admin.errors.adminRoleBanned',
   [ADMIN_STATE_CONSTRAINT.customerIsAdmin]: 'admin.errors.customerIsAdmin',
-  // Е6г-15/16: видалення акаунта.
+  // Видалення акаунта.
   [ADMIN_STATE_CONSTRAINT.customerNotFound]: 'admin.errors.customerNotFound',
   [ADMIN_STATE_CONSTRAINT.customerSelf]: 'admin.errors.customerSelf',
   [ADMIN_STATE_CONSTRAINT.orderPersonalDataErased]:
     'admin.errors.orderPersonalDataErased',
-  // Е6д-1: опція `media` фабрики ресурсів.
+  // Опція `media` фабрики ресурсів.
   [ADMIN_STATE_CONSTRAINT.mediaRefInvalid]: 'admin.errors.mediaRefInvalid',
-  // Е6д-7: модерація відгуків.
+  // Модерація відгуків.
   [ADMIN_STATE_CONSTRAINT.reviewNotFound]: 'admin.errors.reviewNotFound',
-  // Е6д-23: версія відгуку застаріла — сам текст належить каталогу відгуків.
+  // Версія відгуку застаріла — сам текст належить каталогу відгуків.
   [ADMIN_STATE_CONSTRAINT.reviewChanged]: 'admin.reviews.changed',
-  // М1 Task 14: паралельна зміна поточної адреси/токена — повторити.
+  // Паралельна зміна поточної адреси/токена — повторити.
   [ADMIN_STATE_CONSTRAINT.concurrentChange]: 'admin.errors.concurrentChange',
-  // Фінальне рев'ю М1 (I-2): код мови зайнятий поточною адресою.
+  // Код мови зайнятий поточною адресою.
   [ADMIN_STATE_CONSTRAINT.languageCodeTaken]: 'admin.errors.languageCodeTaken',
-  // Е6д-22: файл ще використовується.
+  // Файл ще використовується.
 } satisfies Record<AdminStateConstraint, MessageKey>;
 
 /** Повідомлення саме мережевого фейлу `fetch` у трьох основних рушіях. */
@@ -133,7 +133,7 @@ export function adminErrorKey(error: unknown): MessageKey | null {
   const e = error as ConflictShape | null | undefined;
   if (e?.name === DOMAIN_ERROR_NAME.adminConflict) {
     if (e.kind === 'reference') return 'admin.errors.conflictReference';
-    // Е5-9/Е5б-10: правило стану. Невідомий код стану — загальний ключ
+    // Правило стану. Невідомий код стану — загальний ключ
     // нижче не годиться (це не дубль), тож лише відомі коди мапляться точно.
     if (e.kind === 'state')
       // `hasOwn`, а не `?? null`: код із мережі на кшталт `toString`

@@ -8,7 +8,7 @@ import { StorageMaintenanceCard } from './StorageMaintenanceCard';
 import { StoreProfileForm } from './StoreProfileForm';
 import { useSystemSettings } from './useSystemSettings';
 
-/** Сторінка «Налаштування»: профіль магазину та облік залишків (Е6б, Task 6). */
+/** Сторінка «Налаштування»: профіль магазину та облік залишків. */
 export default function SettingsPage() {
   const t = useT();
   const { query, saveProfile, saveStock } = useSystemSettings();

@@ -1,5 +1,5 @@
 /**
- * Файли — лише через порт `simplycms/storage` за serverFn (рішення Е2-9).
+ * Файли — лише через порт `simplycms/storage` за serverFn.
  *
  * 🔴 Власне правило, а не `no-restricted-syntax`: блок із цим правилом на
  * `packages/simplycms/src/**` замістив би i18n-селектори адмінки й воронки
@@ -17,7 +17,7 @@ export default {
     messages: {
       direct:
         'Прямий виклик сховища заборонений — завантаження й видалення лише ' +
-        'через simplycms/storage за serverFn (рішення Е2-9, етап К3-Е2).',
+        'через simplycms/storage за serverFn (docs/architecture/storage.md).',
     },
   },
   create(context) {

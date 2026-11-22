@@ -9,7 +9,7 @@ import { translatableSaveTranslation } from './save-translation';
 export type { TranslatableConfig } from './config';
 
 /**
- * Фабрика команд перекладного агрегата без дочірніх колекцій (М2б, Р19): `create`, `get`,
+ * Фабрика команд перекладного агрегата без дочірніх колекцій (Р19 майстер-плану): `create`, `get`,
  * `saveDescription`, `saveTranslation`, `deleteTranslation` і `list` — id `${idPrefix}.<ім'я>`,
  * форма входу/виходу дзеркалить операції товару без товарних частин. Іменовані команди
  * сутності (`setDefault`, `reorder`, `remove`) фабрика не покриває: вони пишуться руками

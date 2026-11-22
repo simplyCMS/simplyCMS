@@ -1,5 +1,5 @@
 /**
- * Смок `inspect.mjs` у headless chromium (Фаза 2, задача §2.A/E.2, план Р3).
+ * Смок `inspect.mjs` у headless chromium.
  *
  * Детект наявності браузера — TOP-LEVEL AWAIT + реальний launch-probe (НЕ
  * async-функція всередині `skipIf` — Promise там truthy і давав би вічний
@@ -9,8 +9,7 @@
  * chromium-1194, і смок ганяється насправді.
  *
  * Друга частина файлу (контракт мапінгу) — БЕЗ browserAvailable-гейту: вона
- * має лишатись зеленою незалежно від того, чи доступний chromium (задача
- * §2, Фаза 2 Step 3 — «контракт між скриптами незалежно від skipIf»).
+ * має лишатись зеленою незалежно від того, чи доступний chromium («контракт між скриптами незалежно від skipIf»).
  */
 import { execFile, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -53,7 +52,7 @@ afterAll(async () => {
   await browser?.close();
 });
 
-describe('lib/map.mjs — контракт mapTokens незалежно від наявності браузера (Step 3)', () => {
+describe('lib/map.mjs — контракт mapTokens незалежно від наявності браузера', () => {
   it('mapTokens(sampleInspection) — валідна пропозиція без chromium', () => {
     const proposal = mapTokens(sampleInspection);
     // 2 — після Р7 інкремента Б.3 (структурований `unmapped`).
@@ -63,9 +62,9 @@ describe('lib/map.mjs — контракт mapTokens незалежно від �
     expect(proposal.tokens['font-sans']).toBeDefined();
   });
 
-  // Регресія Фази 1 (Р1b/Р2): нові поля контракту `inspection.json` — не
+  // Регресія: нові поля контракту `inspection.json` — не
   // просто присутні, а мають форму, яку реально пише `inspectPage`.
-  it('sampleInspection несе radiusDropped і sampleViewport (Р1b/Р2)', () => {
+  it('sampleInspection несе radiusDropped і sampleViewport', () => {
     expect(sampleInspection.radiusDropped).toBeGreaterThan(0);
     expect(sampleInspection.sampleViewport).toEqual({
       width: 1440,

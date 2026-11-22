@@ -1,5 +1,5 @@
-// К3-Е6г, Task 3: listCustomers (keyset, фільтри, пошук, агрегати).
-// Review Focus 5: власник без `profiles` є в списку (картка — admin-customer-card).
+// listCustomers (keyset, фільтри, пошук, агрегати).
+// Власник без `profiles` є в списку (картка — admin-customer-card).
 import { describe, expect, it, vi } from 'vitest';
 import * as F from './fixtures/customer-categories';
 import * as R from './fixtures/admin-customers-read';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
 
 import { listCustomersOp } from 'simplycms/admin-server/impl';
 
-describe('admin: читання покупців (Е6г-6)', () => {
+describe('admin: читання покупців', () => {
   const db = F.useCustomersDb('simplycms_admin_customers_read');
   const url = () => db.url();
   const list = (data: Record<string, unknown> = {}, pageSize?: number) =>

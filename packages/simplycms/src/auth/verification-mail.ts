@@ -23,7 +23,7 @@ type BoundAuth = {
 };
 
 /**
- * Усе, що Р30 додає до конфігу Better Auth: `emailVerification` (лист через
+ * Усе, що додає до конфігу Better Auth: `emailVerification` (лист через
  * outbox), хук `onPasswordReset` і місток `bind` до готового інстансу.
  *
  * Лист — швидкий запис в outbox -> доставка БЕЗ `await`, як у скиданні пароля

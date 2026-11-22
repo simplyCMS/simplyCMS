@@ -1,4 +1,4 @@
-// Підписи рядків кошика з квоти (М1, Task 16 / 17б): назви й мініатюра мовою сторінки
+// Підписи рядків кошика з квоти: назви й мініатюра мовою сторінки
 // записуються в збережені рядки під однією міткою `namesLocale`.
 import type { ProductImageViewModel } from 'simplycms/contracts/views';
 import { sameLine, type CartItem } from './cart-normalize';

@@ -41,7 +41,7 @@ function monorepoRoot() {
 }
 
 describe('cli context', () => {
-  // Топологія 5 (трек К0): ядро магазину — unscoped пакет `simplycms`,
+  // 5 пакетів: ядро магазину — unscoped пакет `simplycms`,
   // scoped лишаються тільки сателіти. Магазин, який поставив саме ядро й
   // нічого більше, мусить лишатися магазином для всіх команд CLI.
   it('coreDependencies: бачить unscoped simplycms і scoped сателітів', () => {

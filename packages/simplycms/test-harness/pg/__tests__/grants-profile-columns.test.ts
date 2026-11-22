@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6 (Е6в-24): `app_user` оновлює `profiles` лише колонковим
+// `app_user` оновлює `profiles` лише колонковим
 // грантом на виміряний список. `category_id` (визначає ціну) і
 // `category_locked` (вмикає автоправила) змінює лише `app_admin`.
 //
@@ -36,7 +36,7 @@ const VALUES: Record<string, string> = {
   updated_at: 'now()',
 };
 
-describe('Е6в-24: колонковий UPDATE profiles для app_user', () => {
+describe('колонковий UPDATE profiles для app_user', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_profile_columns');
   let dbUrl = '';

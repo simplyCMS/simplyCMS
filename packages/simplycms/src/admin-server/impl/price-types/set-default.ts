@@ -8,15 +8,15 @@ import { runAdmin } from '../run';
 export const setDefaultPriceTypeInput = z.object({ id: z.uuid() });
 
 /**
- * Advisory-ключ довідника типів цін (Е4-2). Спільний для setDefault і
+ * Advisory-ключ довідника типів цін. Спільний для setDefault і
  * remove — саме він серіалізує їх між собою.
  */
 
 /**
- * Дефолтний тип ціни рівно один (Е4-2). Вітрина й `PriceValidator` беруть
+ * Дефолтний тип ціни рівно один. Вітрина й `PriceValidator` беруть
  * дефолт як fallback для гостя, тож вікна «нуль дефолтів» бути не може.
  *
- * 🔴 Порядок (ред.2, аудит Codex, знахідка 2) — НЕ копія колишнього
+ * 🔴 Порядок (за аудитом Codex) — НЕ копія колишнього
  * `product-modifications/set-default.ts` (знесений у М1), що читав ціль до локу
  * й не перевіряв результат UPDATE:
  *  1. advisory-lock `price-type-default` — ПЕРШИЙ запит транзакції. Той

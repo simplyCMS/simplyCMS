@@ -20,7 +20,7 @@ export function OrderTotals({
 }: Props) {
   const t = useT();
   const fmt = useFormatPrice();
-  // Е6а-4: для `carrier` доставка не входить у суму — «0,00 ₴» вводив би в
+  // Для `carrier` доставка не входить у суму — «0,00 ₴» вводив би в
   // оману, тож замість числа підпис режиму, як у чекауті.
   const carrier = parseShippingSnapshot(shippingData)?.pricing === 'carrier';
   const row = (label: string, value: string, bold = false) => (

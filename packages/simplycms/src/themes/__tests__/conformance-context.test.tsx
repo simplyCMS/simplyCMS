@@ -20,7 +20,7 @@ const assertUk = (theme: Parameters<typeof assertThemeViewsConformance>[0]) =>
  * 🔴 Твердження перевіряються зсередини самого view: він кидає виняток, якщо
  * значення не те, якого чекає. Інакше «зелений assert» не відрізнити від
  * «kit просто нічого не читав» — та сама логіка, що й у решті негативного
- * контролю Р8.
+ * контролю.
  */
 const settingsSchema = {
   accent: { type: 'color', default: '#ff0000', label: 'Accent' },
@@ -87,7 +87,7 @@ function ProfileAwareCart({ slots }: CartViewModel) {
 }
 
 describe('assertThemeViewsConformance — render-контекст', () => {
-  it('view бачить профіль магазину з фікстури (Е6б-20)', async () => {
+  it('view бачить профіль магазину з фікстури', async () => {
     const theme = makeTheme({ Cart: ProfileAwareCart });
 
     await expect(assertUk(theme)).resolves.toEqual(['Cart']);

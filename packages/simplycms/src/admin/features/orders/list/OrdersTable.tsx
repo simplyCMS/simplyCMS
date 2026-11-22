@@ -70,7 +70,7 @@ export default function OrdersTable({
             </TableCell>
             <TableCell>
               {o.personalDataErasedAt ? (
-                // Знеособлене замовлення (Е6г): ім'я й контакти стерто.
+                // Знеособлене замовлення: ім'я й контакти стерто.
                 <div className="text-muted-foreground">
                   {t('admin.orders.erasedCustomer')}
                 </div>

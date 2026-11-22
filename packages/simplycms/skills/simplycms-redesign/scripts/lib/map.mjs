@@ -1,7 +1,6 @@
 /**
- * Евристики мапінгу `inspection.json` → `tokens-proposal.json` (задача
- * §2.B.1, план Р4/Р7). Чиста детерміністична логіка: без IO — його робить
- * тонкий CLI `map-tokens.mjs` (Фаза 3). Колірна частина — `color-tokens.mjs`,
+ * Евристики мапінгу `inspection.json` → `tokens-proposal.json`. Чиста детерміністична логіка: без IO — його робить
+ * тонкий CLI `map-tokens.mjs`. Колірна частина — `color-tokens.mjs`,
  * шрифтова — `fonts.mjs`; тут лише радіус і збірка фінальної форми.
  */
 import { mapColorTokens } from './color-tokens.mjs';

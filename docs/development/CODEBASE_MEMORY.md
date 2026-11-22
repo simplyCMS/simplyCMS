@@ -133,7 +133,7 @@ codebase-memory-mcp cli --quiet index_repository '{"repo_path":"<абсолют�
 
 - `*.md`/`*.mdx` — доки обслуговує інший шар;
 - білд-артефакти й генерат (`dist/`, `routeTree.gen.ts`, `.output/`, …);
-- 🔴 `.claude/worktrees/` — вкладені git-worktree агентів лежать всередині теки
+- 🔴 `.worktrees/` (і стара тека worktree у `.claude`) — вкладені git-worktree агентів лежать всередині теки
   репо; без виключення основний індекс тягнув би повну копію коду на кожен;
 - 🔴 **копії монорепо**, які синхронізує `pnpm template:sync` під тестом парності:
   `packages/create-simplycms-store/template/` і `packages/cli/host/`. Кожен

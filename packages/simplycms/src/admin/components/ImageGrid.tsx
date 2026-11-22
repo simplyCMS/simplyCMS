@@ -4,7 +4,7 @@ import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 
 interface ImageGridProps {
-  /** 🔴 РЕФЕРЕНСИ, не URL (рішення Е2-1): у URL їх переводить рендер. */
+  /** 🔴 РЕФЕРЕНСИ, не URL: у URL їх переводить рендер. */
   images: string[];
   maxImages: number;
   onMove: (from: number, to: number) => void;

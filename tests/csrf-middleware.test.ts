@@ -96,7 +96,7 @@ describe('csrfMiddleware — поведінка', () => {
   it('server route, свій Origin: міддлвара пропускає, роут відповідає РІВНО 405 Allow: GET, HEAD', async () => {
     const request = post('/api/health', { origin: BASE });
     expect(await run(csrfMiddleware, request)).toBe('next');
-    // Далі — пошук Start `handlers[method] ?? handlers.ANY` (Е6б-28).
+    // Далі — пошук Start `handlers[method] ?? handlers.ANY`.
     const handler = healthHandlers.POST ?? healthHandlers.ANY;
     const res = await handler!({ request });
     expect(res.status).toBe(405);

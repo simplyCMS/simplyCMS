@@ -44,7 +44,7 @@ export const messages = {
   'admin.settings.network.youtube': 'YouTube',
   'admin.settings.network.x': 'X',
   'admin.settings.network.viber': 'Viber',
-  // Сховище файлів: хвости стирання (Е6д-20).
+  // Сховище файлів: хвости стирання.
   'admin.settings.storage.title': 'Сховище файлів',
   'admin.settings.storage.hint':
     'Файли, які не вдалося стерти після видалення запису. Їх уже не видно на сайті',
@@ -58,7 +58,7 @@ export const messages = {
   'admin.settings.storage.sweepText':
     'Буде стерто файли, які старші за добу й ніде не використовуються. Скасувати це не можна',
   'admin.settings.storage.swept': 'Прибрано файлів: {count}',
-  // Пошта: хвости outbox (Е8-Р10).
+  // Пошта: хвости outbox.
   'admin.settings.mail.title': 'Пошта',
   'admin.settings.mail.hint':
     'Листи, які не вдалося надіслати. Тіло листа тут не показується — воно може містити посилання для входу',

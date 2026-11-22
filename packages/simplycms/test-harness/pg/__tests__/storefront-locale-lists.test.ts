@@ -1,4 +1,4 @@
-// М1 Task 16 (П7, рішення архітектора поб.1 Task 15) проти живого Postgres: лістинги, головна
+// Проти живого Postgres: лістинги, головна
 // й сторінка значення характеристики читають назву й адресу товару мовою запиту з проєкції
 // `catalog_product_texts`; неперекладене — з основної мови з ознакою `lang`.
 import { randomUUID } from 'node:crypto';
@@ -21,7 +21,7 @@ import { valueGraphSql } from './fixtures/product-graph';
 import { EN, UK } from './fixtures/text-locale';
 import { cl } from '../../locale';
 
-describe('читачі товару: лістинг, головна, значення характеристики на /en (Task 16)', () => {
+describe('читачі товару: лістинг, головна, значення характеристики на /en', () => {
   const db = useAddressingDb('simplycms_lists_locale');
   const sectionId = randomUUID();
   const property = randomUUID();
@@ -95,7 +95,7 @@ describe('читачі товару: лістинг, головна, значе�
   it('лістинг /en розділу: назва en або fallback, посилання /en/<path>', async () => {
     const list = await view((tx, v) => loadProductList(tx, v, EN, sectionId));
 
-    // Картка веде на адресу ЦІЄЇ мови, не основної (рішення архітектора, поб.1 Task 15).
+    // Картка веде на адресу ЦІЄЇ мови, не основної.
     expect(paths(cable).en).not.toBe(paths(cable).uk);
     expect(list.find((r) => r.id === cable.id)).toMatchObject({
       name: 'Cable',

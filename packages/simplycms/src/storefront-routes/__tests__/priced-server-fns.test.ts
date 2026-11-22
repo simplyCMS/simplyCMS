@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TextLocale } from 'simplycms/domain/translations';
 
 /**
- * Р29: кожен публічний serverFn вітрини, що віддає `product_prices`, іде
+ * Кожен публічний serverFn вітрини, що віддає `product_prices`, іде
  * через `withViewerDb` (глядач із сесії + `private, no-store` залогіненому) і
  * передає лоадеру САМЕ набір видів, який той дав. Повернення одного з них на
  * `withStorefrontDb` знову віддало б гостю всі прайси — і тест це ловить.
@@ -95,7 +95,7 @@ beforeEach(() => {
   for (const fn of Object.values(loaders)) fn.mockReset();
   payload.loadProductListPayload.mockReset();
   loaders.resolveTextLocale.mockResolvedValue(TEXT);
-  // Сторінка товару бере основну мову з кешу мов до транзакції (Task 17б fix-1, I1).
+  // Сторінка товару бере основну мову з кешу мов до транзакції.
   loaders.loadLocaleSet.mockResolvedValue({
     primary: 'uk',
     published: ['uk', 'en'],
@@ -111,7 +111,7 @@ beforeEach(() => {
   );
 });
 
-describe('serverFn вітрини з цінами — через withViewerDb (Р29)', () => {
+describe('serverFn вітрини з цінами — через withViewerDb', () => {
   it.each([
     [
       'getProduct',

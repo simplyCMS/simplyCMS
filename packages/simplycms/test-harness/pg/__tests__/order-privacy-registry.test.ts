@@ -1,4 +1,4 @@
-// Реєстр ПД `orders` (Е6г-7): звірка зі схемою БД і поведінка
+// Реєстр ПД `orders`: звірка зі схемою БД і поведінка
 // `eraseOrderPersonalData` (нова `personal` колонка стирається без правок).
 import { getTableColumns } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
@@ -139,7 +139,7 @@ describe('реєстр ПД orders', () => {
     expect((await row(ids[2]!)).shipping_data).toEqual({});
     expect(await row(foreign)).toEqual(foreignBefore);
 
-    // Е6г-17: `loadOrderDetail` стерте не фільтрує, але недосяжне за побудовою —
+    // `loadOrderDetail` стерте не фільтрує, але недосяжне за побудовою —
     // старий токен і колишній власник замовлення вже не бачать.
     for (const id of ids) {
       expect(await detail(id, `tok-${id}`)).toBeNull();

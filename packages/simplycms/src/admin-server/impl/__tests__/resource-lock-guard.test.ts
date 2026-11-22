@@ -3,7 +3,7 @@ import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { priceTypes } from 'simplycms/schema';
 
-// Е6а-16: guard-хук фабрики. Порядок у транзакції — lock ПЕРШИМ запитом →
+// Guard-хук фабрики. Порядок у транзакції — lock ПЕРШИМ запитом →
 // guard над УСІМ пакетом → запис; без lock/guard — колишній шлях. БД —
 // фейк, що пише журнал викликів (живий доказ — харнес admin-shipping*).
 vi.mock('simplycms/auth', async (orig) => ({
@@ -13,7 +13,7 @@ vi.mock('simplycms/auth', async (orig) => ({
     scope: 'any',
   })),
 }));
-// Е6в-15: SQL локу — справжній `advisoryXactLock` з `simplycms/db`; фейк —
+// SQL локу — справжній `advisoryXactLock` з `simplycms/db`; фейк —
 // лише транзакція (`withActor`).
 vi.mock('simplycms/db', async (orig) => ({
   ...(await orig()),
@@ -60,7 +60,7 @@ const base = {
 
 const row = (id: string) => ({ id, name: 'X', code: 'x' });
 
-describe('defineAdminResource: lock і guard (Е6а-16)', () => {
+describe('defineAdminResource: lock і guard', () => {
   it('insert: lock першим запитом → guard над усім пакетом → запис', async () => {
     const log: string[] = [];
     const sqls: SQL[] = [];

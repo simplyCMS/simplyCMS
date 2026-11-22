@@ -21,7 +21,7 @@ export const appLinks: LinkResolver = {
 
 /**
  * Конфіг вітрини — проєкція `simplycms.config.ts` на контракт ConfigProvider.
- * Назва магазину й описи — профіль у БД, URL сайту — серверний env (Е6б-11).
+ * Назва магазину й описи — профіль у БД, URL сайту — серверний env.
  */
 export const appConfig: ConfigProvider = {
   currency: config.currency,

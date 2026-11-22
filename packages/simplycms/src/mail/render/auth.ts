@@ -53,7 +53,7 @@ export function renderPasswordResetMail(
   };
 }
 
-/** Лист підтвердження пошти при реєстрації (Р30): та сама форма, що й у скиданні. */
+/** Лист підтвердження пошти при реєстрації: та сама форма, що й у скиданні. */
 export function renderEmailVerificationMail(
   input: EmailVerificationMailInput,
 ): MailMessage {

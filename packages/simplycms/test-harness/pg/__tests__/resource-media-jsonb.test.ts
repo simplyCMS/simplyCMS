@@ -1,4 +1,4 @@
-// К3-Е6д-1: медіа на jsonb-масиві референсів у фабриці — каскад видалення товару:
+// Медіа на jsonb-масиві референсів у фабриці — каскад видалення товару:
 // рядок `media` у транзакції, файл після COMMIT.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { productsOps as ops } from 'simplycms/admin-server/impl';
@@ -18,17 +18,17 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('фабрика: media на jsonb-масиві (К3-Е6д-1)', () => {
+describe('фабрика: media на jsonb-масиві', () => {
   const d = useCatalogMediaDb('simplycms_e6d_media_jsonb');
   afterEach(() => vi.restoreAllMocks());
 
-  // Запис jsonb-масиву фото через `media` фабрики мав лише товар (`products.images`, знесено
-  // в М1 Task 17: фото — рядки `product_images` команди агрегата). jsonb-гілка лишається в
+  // Запис jsonb-масиву фото через `media` фабрики мав лише товар (`products.images`, знесено;
+  // фото — рядки `product_images` команди агрегата). jsonb-гілка лишається в
   // каскаді: фото відгуків (`product_reviews.images`) стираються з видаленням товару.
   it('remove товару стирає фото товару, його модифікацій і відгуків (файли — після COMMIT)', async () => {
     const id = crypto.randomUUID();
     const own = await d.upload('product', id);
-    // Файл фото модифікації належить ТОВАРУ (власник медіа — товар, М1 Task 12).
+    // Файл фото модифікації належить ТОВАРУ (власник медіа — товар).
     const modPhoto = await d.upload('product', id, 1);
     await insertProductGraph(
       viaRows((sql) => d.f.rows(sql)),

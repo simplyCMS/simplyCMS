@@ -1,4 +1,4 @@
-// Реєстр ПД `orders` (Е6г-7): множина `personal` звіряється з НЕЗАЛЕЖНИМ
+// Реєстр ПД `orders`: множина `personal` звіряється з НЕЗАЛЕЖНИМ
 // переліком. Без нього помилкове пониження колонки до `operational` у самому
 // реєстрі лишало б усі інші тести зеленими — вони читають той самий реєстр.
 import { describe, expect, it } from 'vitest';
@@ -24,7 +24,7 @@ const EXPECTED_PERSONAL = [
 ];
 
 describe('реєстр ПД orders: перелік personal', () => {
-  it('personal-колонки реєстру = явний перелік рішення Е6г-7', () => {
+  it('personal-колонки реєстру = явний перелік рішення', () => {
     const personal = Object.entries(ORDER_COLUMN_PRIVACY)
       .filter(([, kind]) => kind === 'personal')
       .map(([key]) => key)

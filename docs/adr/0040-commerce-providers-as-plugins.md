@@ -2,7 +2,7 @@
 
 Status: accepted 2026-10-06
 Decided by: owner
-Spec: `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Частина 1 — модель доставки»
+Spec: «commerce-providers-design», розділ «Частина 1 — модель доставки» (знесено 2026-11-21, текст — `git show a967ab1e`)
 
 ## Context
 Власник хоче, щоб Нова Пошта й онлайн-оплати були лише плагінами. Платформа дає все стандартне: способи доставки й оплати, замовлення, чекаут, адмінку. Плагін доповнює це власною адмінкою, вітриною й таблицями. Спека описує пʼять патернів Medusa, Vendure і EverShop. Ключі API провайдерів не можна віддавати в браузер.
@@ -15,14 +15,14 @@ Spec: `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Ча
 5. Ключі API провайдерів вводяться в адмінці й лежать у БД зашифрованими. У браузер вони не йдуть. Env магазину лишається з трьох ключів (Ц4).
 
 ## Why
-- Власник визначив мету саме так: `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Комерційні провайдери: доставка й оплата як точки підключення плагінів — дизайн».
-- Ц1 і Ц2: `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Рішення власника».
-- Ц3 і Ц4: `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Рішення власника».
-- Спека вводить дві осі способу: провайдер («куди везти») і режим ціни («скільки коштує»): `docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Дві незалежні осі способу доставки».
+- Власник визначив мету саме так: спека «commerce-providers-design», розділ «Комерційні провайдери: доставка й оплата як точки підключення плагінів — дизайн» (знесено 2026-11-21, текст — `git show a967ab1e`).
+- Ц1 і Ц2: спека «commerce-providers-design», розділ «Рішення власника» (знесено 2026-11-21, текст — `git show a967ab1e`).
+- Ц3 і Ц4: спека «commerce-providers-design», розділ «Рішення власника» (знесено 2026-11-21, текст — `git show a967ab1e`).
+- Спека вводить дві осі способу: провайдер («куди везти») і режим ціни («скільки коштує»): спека «commerce-providers-design», розділ «Дві незалежні осі способу доставки» (знесено 2026-11-21, текст — `git show a967ab1e`).
 - У коді: `provider text not null` без default, `pricing` з default `rates` — `packages/simplycms/src/schema/schema.ts`.
 
 ## Rejected
-- Тип способу як enum із `plugin_name` у таблиці — знесено на користь `provider` (`docs/superpowers/specs/2026-10-06-commerce-providers-design.md` § «Дані»).
+- Тип способу як enum із `plugin_name` у таблиці — знесено на користь `provider` (спека «commerce-providers-design», розділ «Дані»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Розрахунок провайдером як різновид тарифу (`calculation_type = 'plugin'`) — це `pricing = 'provider'` способу (там само, рядки 112-113).
 - Інші варіанти — у джерелі не записано.
 

@@ -14,7 +14,7 @@
 
 ### 1.1 Рішення власника (спека платформи, 2026-07-30)
 
-`docs/superpowers/specs/2026-07-30-platform-architecture-design.md:33-35`:
+`docs/superpowers/specs/2026-07-30-platform-architecture-design.md`:
 
 - **D2** — «Адмінка: перевизначення сторінок не існує (модель OpenCart/WP).
   Плагіни лише **додають** сторінки».
@@ -49,7 +49,7 @@
 Спека §6:211 описує токени як «CSS variables: кольори, **типографіка**,
 радіуси…», але реалізація свідомо мапнула токени 1:1 на НАЯВНІ
 semantic-змінні shadcn («нових `--color-*` не вводимо» —
-`packages/theme-system/src/types.ts:20-21`), і типографіка **зникла між
+`types.ts` пакета theme-system), і типографіка **зникла між
 спекою і кодом без зафіксованого рішення**. Жоден документ (спека, роадмап,
 борги фаз) не називає її ні запланованою, ні відкинутою. Аналогічно поза
 контрактом лишились `--brand-*`-змінні (див. §3.2).
@@ -101,13 +101,13 @@ props-schema). Модель звірки копій — `shadcn diff` (єдин�
 ### 3.1 Типографічні токени + шрифти від теми
 
 - Шрифт зараз один на застосунок: хардкоджений `<link>` Google Fonts Inter
-  у `src/routes/__root.tsx:64-66` (синхронна копія — у шаблоні
+  у `src/routes/__root.tsx` (синхронна копія — у шаблоні
   скаффолдера і `packages/cli/host/`); `tailwind.config.ts` фіксує
   `fontFamily.sans: ['Inter', …]` буквальним рядком; `@font-face`/`next/font`
   у репо немає ніде. `font-serif` у темах — системний fallback без
   завантаження.
 - Механізм токенів — жорсткий allowlist: `TOKEN_KEYS`
-  (`packages/theme-system/src/applyTokens.ts:7-32`) + дзеркальний
+  (`applyTokens.ts` пакета theme-system) + дзеркальний
   `ThemeTokenValues` (`types.ts:27-52`, 23 кольори + `radius`); ключ поза
   списком мовчки не потрапляє в CSS.
 - Місця правок для нових токенів: `types.ts`, `applyTokens.ts` (TOKEN_KEYS),
@@ -122,15 +122,15 @@ props-schema). Модель звірки копій — `shadcn diff` (єдин�
 
 ### 3.2 `--brand-*` і `--sidebar-*`
 
-- `--brand-*`: визначені статично в `src/styles/globals.css:12-15` (лише
+- `--brand-*`: визначені статично в `src/styles/globals.css` (лише
   `:root`, без dark), спожиті трьома utility-класами `.gradient-brand*`
   (`globals.css:156-181`), які вживаються рівно тричі:
-  `packages/catalog-ui/src/CatalogLayout.tsx:61,153`,
-  `packages/cart-ui/src/CartButton.tsx:11` — **воронка покупки**. Наслідок:
+  `CatalogLayout.tsx` пакета catalog-ui,
+  `CartButton.tsx` пакета cart-ui — **воронка покупки**. Наслідок:
   перемикання теми сьогодні НЕ перефарбовує ці градієнти (лишаються кольори
   SolarStore). Рекомендоване рішення — не втягувати в контракт, а
   **розчинити** в семантичні токени (`primary`/`accent`-градієнт).
-- `--sidebar-*`: виключно адмінка (`packages/ui/src/sidebar.tsx` через
+- `--sidebar-*`: виключно адмінка (`sidebar.tsx` пакета ui через
   `AdminLayout`); адмінка темою свідомо не фарбується (admin-routes не
   монтує ThemeProvider). Лишити поза контрактом — це рішення, не прогалина.
 
@@ -140,7 +140,7 @@ props-schema). Модель звірки копій — `shadcn diff` (єдин�
   всі три `physical()`-теки в `routes.ts` мержаться на одному рівні, і за
   документацією TanStack Router (virtual file routes) дублікат шляху — це
   **помилка генератора**, а не «останній виграє». Перевірено через Context7
-  по офіційних доках (`docs/router/routing/virtual-file-routes.md`:
+  по офіційних доках (документація TanStack Router (routing/virtual-file-routes):
   «If a conflict occurs… the generator will throw an error»).
 - Архітектура при цьому готова до **override на рівні компонента сторінки**:
   роути `storefront-routes` тонкі (loader + head/SEO + прокидання пропсів;
@@ -172,7 +172,7 @@ props-schema). Модель звірки копій — `shadcn diff` (єдин�
 - `PluginSlot` на канонічних сторінках — лише `ProductDetail.tsx`
   (3 виклики) і `Checkout.tsx` (2 виклики); решта 14 сторінок без точок
   розширення.
-- Схема `themes` у БД: `packages/schema/src/schema.ts:846-863`
+- Схема `themes` у БД: `schema.ts` пакета schema
   (`name` unique, `is_active` + частково унікальний індекс, `settings`
   jsonb, RLS «Admins can manage themes»).
 

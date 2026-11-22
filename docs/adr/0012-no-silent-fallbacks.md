@@ -17,7 +17,7 @@ Spec: `docs/architecture/storage.md` § «Вибір драйвера»; `docs/a
 Перевірка, яку не можна виконати, звітується станом «не вдалося перевірити», а не пропускається.
 
 ## Why
-- Принцип помилок CLI (`docs/superpowers/specs/2026-08-13-cli-v1-design.md` § «3. Принцип помилок (наскрізний»).
+- Принцип помилок CLI (спека «cli-v1-design», розділ «3. Принцип помилок (наскрізний»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - S3: часткова група кидає `DriverEnvError` з іменами ключів, а не значень (`docs/architecture/storage.md` § «Вибір драйвера»; `packages/simplycms/src/env/resolve.ts`).
 - Міст осей: ті самі кроки для основної мови, інакше помилка «без тихого `uk`» (`docs/architecture/i18n.md` § «Мови й мовні пакети»).
 - Код: `packages/simplycms/src/i18n/ui-locale.ts` кидає помилку з переліком наявних пакетів.

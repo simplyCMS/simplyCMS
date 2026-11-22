@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import { beforeAll, describe, expect, it } from 'vitest';
 import rule from '../../eslint-rules/no-side-effect-import.mjs';
 
-// Фікстури правила no-side-effect-import (трек T).
+// Фікстури правила no-side-effect-import.
 //
 // Правило тримає обіцянку `"sideEffects": false` трьох публікованих пакетів:
 // без нього side-effect-імпорт, доданий колись усередині пакета, дозволив би
@@ -28,7 +28,7 @@ const config: Linter.Config[] = [
 const lint = (code: string) =>
   linter.verify(code, config, { filename: resolve(REPO, 'probe.ts') });
 
-describe('no-side-effect-import (трек T)', () => {
+describe('no-side-effect-import', () => {
   it.each([
     ['відносний модуль', "import './register-x';"],
     ['CSS-імпорт', "import './styles.css';"],

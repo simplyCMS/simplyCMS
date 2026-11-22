@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Бейдж «очікують» у сайдбарі (Task 9, Е6д): >0 — число, 0 — без бейджа. */
+/** Бейдж «очікують» у сайдбарі: >0 — число, 0 — без бейджа. */
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';

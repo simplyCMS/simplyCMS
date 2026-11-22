@@ -2,7 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 import type { StorefrontProfile } from 'simplycms/contracts/store-profile';
 
 /**
- * Профіль магазину для тем (Е6б-12): назва, контакти, соцмережі, логотип.
+ * Профіль магазину для тем: назва, контакти, соцмережі, логотип.
  *
  * Тема отримує логотип уже URL-ом (`logoUrl`): порту сховища вона не знає, а
  * окремий тип не дає сплутати референс із URL на рівні компіляції.

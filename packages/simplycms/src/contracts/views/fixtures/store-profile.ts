@@ -1,4 +1,4 @@
-// Фікстура профілю магазину для conformance-kit-а (Е6б-20).
+// Фікстура профілю магазину для conformance-kit-а.
 
 import type { StorefrontProfile } from '../../store-profile';
 

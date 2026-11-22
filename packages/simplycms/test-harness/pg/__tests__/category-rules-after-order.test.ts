@@ -1,4 +1,4 @@
-// К3-Е6в, Task 6 (Е6в-19, Review Focus 5): автоправила після COMMIT
+// Автоправила після COMMIT
 // замовлення. Оформлення — справжня воронка вітрини (`placeOrderFor`).
 // `applyCategoryRules` обгорнуто `vi.fn` над оригіналом: кейс збою підміняє
 // ЛИШЕ один виклик, решта кейсів ганяє справжню функцію.
@@ -20,7 +20,7 @@ import { SYSTEM_SEED_IDS } from 'simplycms/schema/seed-ids';
 
 const CANCELLED = SYSTEM_SEED_IDS.orderStatuses.cancelled;
 
-describe('автоправила після оформлення замовлення (Е6в-19)', () => {
+describe('автоправила після оформлення замовлення', () => {
   const db = F.useCustomersDb('simplycms_rules_after_order', { demo: true });
   const url = () => db.url();
   const ids = { vip: '' };
@@ -106,7 +106,7 @@ describe('автоправила після оформлення замовле�
     });
   });
 
-  it('Review Focus 5: applyCategoryRules кидає → ok: true, замовлення в БД, категорія незмінна, console.error рівно раз', async () => {
+  it('applyCategoryRules кидає → ok: true, замовлення в БД, категорія незмінна, console.error рівно раз', async () => {
     const { from, customer } = await scoped({
       type: 'all',
       rules: [{ field: 'orders_count', operator: '>=', value: '1' }],

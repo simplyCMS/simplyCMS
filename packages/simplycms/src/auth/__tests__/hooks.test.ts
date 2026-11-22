@@ -8,7 +8,7 @@ import {
 } from '../hooks';
 import type { UserProvisionPlan } from '../hooks';
 
-// Порт `handle_new_user` у TS (B3′, Task 7).
+// Порт `handle_new_user` у TS (B3′).
 
 describe('splitName: одне поле BA → пара полів profiles', () => {
   it.each([

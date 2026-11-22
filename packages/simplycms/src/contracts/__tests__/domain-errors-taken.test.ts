@@ -4,7 +4,7 @@ import {
   VALIDATION_ISSUE_CODES,
 } from '../domain-errors';
 
-// Е6г-1: `taken` — код помилки поля, який знає лише операція (зайнятий email).
+// `taken` — код помилки поля, який знає лише операція (зайнятий email).
 describe('domain-errors: код taken', () => {
   it('є в переліку кодів і проходить білий список', () => {
     expect(VALIDATION_ISSUE_CODES).toContain('taken');

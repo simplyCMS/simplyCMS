@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// М1 Task 16: картка списку НЕ-основної мови веде на адресу ЦІЄЇ мови (`/en/<path en>`), а
+// Картка списку НЕ-основної мови веде на адресу ЦІЄЇ мови (`/en/<path en>`), а
 // fallback-текст картки несе `lang` основної мови (І37). Link — справжній, з rewrite роутера.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';

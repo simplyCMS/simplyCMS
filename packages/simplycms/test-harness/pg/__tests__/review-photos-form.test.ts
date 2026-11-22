@@ -1,4 +1,4 @@
-// К3-Е6д, Task 7 (Е6д-5, Е6д-6, аудит Codex р2 M5): межа serverFn подачі —
+// Межа serverFn подачі —
 // справжній `FormData`, сесія з cookie (підмінено), відмови ДО першого запису.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { REVIEW_SUBMIT_ERROR } from 'simplycms/contracts';
@@ -42,7 +42,7 @@ const submit = submitProductReview as unknown as (a: {
   data: FormData;
 }) => Promise<{ id: string }>;
 
-describe('submitProductReview: FormData (Е6д-6)', () => {
+describe('submitProductReview: FormData', () => {
   const d = useReviewPhotosDb('simplycms_e6d_rv_form');
   const { f } = d;
   const form = (files: File[], title = 'Заголовок') => {

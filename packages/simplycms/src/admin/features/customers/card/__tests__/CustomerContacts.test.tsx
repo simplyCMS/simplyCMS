@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Картка покупця (Task 10, Е6г): перегляд, категорія, контакти, стани. */
+/** Картка покупця: перегляд, категорія, контакти, стани. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { DOMAIN_ERROR_NAME } from 'simplycms/contracts/domain-errors';

@@ -9,7 +9,7 @@ export const CUSTOMER_COUNTS_KEY = entityKey(ENTITY.userCategories).variant(
 
 /**
  * Кількість покупців за категорією. Профілі без категорії сервер уже
- * зарахував у дефолтну (Е6в-19), тож клієнт лише розкладає відповідь за id.
+ * зарахував у дефолтну, тож клієнт лише розкладає відповідь за id.
  */
 export function useCategoryCustomerCounts(): ReadonlyMap<string, number> {
   // cache-sync-ok: це читання (queryFn), а не мутація

@@ -1,7 +1,7 @@
 import { createCollection } from '@tanstack/react-db';
 import type { QueryClient } from '@tanstack/react-query';
 import { collectionKey, ENTITY } from 'simplycms/contracts/entities';
-import type { SectionProperty } from 'simplycms/schema/types'; // 🔴 type-only (К3-9′)
+import type { SectionProperty } from 'simplycms/schema/types'; // 🔴 type-only
 import {
   insertSectionProperties,
   listSectionProperties,
@@ -14,8 +14,8 @@ import { onDemandCollectionOptions } from '../on-demand-options';
 import { toSubsetPayload } from '../subset-payload';
 
 /**
- * Довідник характеристик: читання — Е3-1 (картка товару), запис — Е4
- * (Task 5) через канон `persistenceHandlers`. On-demand лишається (Е4-9):
+ * Довідник характеристик: читання — картка товару, запис
+ * через канон `persistenceHandlers`. On-demand лишається:
  * сторінка списку читає повний зріз без `where` (`orderBy name`), картка —
  * `where id`; обидва узгоджені після запису — доказ
  * `__tests__/on-demand-full-slice.test.tsx`.

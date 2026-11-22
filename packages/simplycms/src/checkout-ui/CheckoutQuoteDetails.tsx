@@ -57,7 +57,7 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
             {t('cart.summary.shipping')}
           </span>
           <span>
-            {/* Е6а-18: нуль у режимі carrier — не «Безкоштовно». */}
+            {/* Нуль у режимі carrier — не «Безкоштовно». */}
             {quote.shippingPricing === 'carrier'
               ? t('checkout.shipping.carrier')
               : formatShippingCost(
@@ -76,7 +76,7 @@ export function CheckoutQuoteDetails({ quote }: CheckoutQuoteDetailsProps) {
 
       <div className="flex justify-between font-semibold text-lg">
         <span>{t('common.total')}</span>
-        {/* Id — для live-smoke (Task 14): читає число і звіряє з `orders`. */}
+        {/* Id — для live-smoke: читає число і звіряє з `orders`. */}
         <span id="checkout-total" className="text-primary">
           {formatPrice(quote.total)}
         </span>

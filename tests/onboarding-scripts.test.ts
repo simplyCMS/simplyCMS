@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { CLI_INDEX, scaffoldFakeStore } from './lib/fake-core-store';
 
-// Скіл simplycms-onboarding (К3-Е8, Task 22): справжні запуски скриптів у дочірньому
+// Скіл simplycms-onboarding: справжні запуски скриптів у дочірньому
 // процесі з підміною fetch (`tests/lib/fake-dokploy-fetch.mjs`) — без мережі.
 const SKILL = join(
   process.cwd(),

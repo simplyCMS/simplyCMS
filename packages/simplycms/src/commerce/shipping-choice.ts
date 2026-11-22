@@ -25,7 +25,7 @@ export interface ShippingChoiceInput extends DestinationInput {
   /**
    * Зона, записана в замовленні (`orders.shipping_zone_id`). Лише адмінка:
    * перерахунок бере її, а не визначає наново. Заданий, але поза активними →
-   * зона `null` (Р6); `null`/не передано (чекаут, замовлення до релізу або зона
+   * зона `null`; `null`/не передано (чекаут, замовлення до релізу або зона
    * видалена за `SET NULL`) → зона за призначенням (Д5).
    */
   recordedZoneId?: string | null;
@@ -36,7 +36,7 @@ export interface ShippingChoice {
   method: ShippingMethodRow;
   zone: ShippingZoneRow | null;
   directory: ShippingDirectory;
-  /** Знімок для `orders.shipping_data` (Е6а-8): назва способу й пункт НА МОМЕНТ вибору. */
+  /** Знімок для `orders.shipping_data`: назва способу й пункт НА МОМЕНТ вибору. */
   snapshot: NewShippingSnapshot;
 }
 
@@ -46,7 +46,7 @@ export type ShippingChoiceRejection = Extract<
 >;
 
 /**
- * Перевірка вибору доставки БЕЗ тарифу (К3-Е5б, Е5б-2).
+ * Перевірка вибору доставки БЕЗ тарифу.
  *
  * 🔴 Рівно ті перевірки, що жили в `prepareCheckout` до переїзду, і в тому
  * самому порядку: чекаут кличе цю функцію ДО ціноутворення (пріоритет відмов
@@ -64,7 +64,7 @@ export async function validateShippingChoice(
   );
   if (!method) return 'shipping_unavailable';
 
-  // Куди везти — вирішує ПРОВАЙДЕР способу, не `code` (Е6а-9): правила
+  // Куди везти — вирішує ПРОВАЙДЕР способу, не `code`: правила
   // самовивозу й адресної доставки (точка цього способу, обов'язкове місто)
   // живуть у `resolveDestination`, тож чекаут, адмінка й UI не розходяться.
   const destination = await resolveDestination(db, method, input);

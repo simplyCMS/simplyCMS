@@ -1,4 +1,4 @@
-// Ядро `simplycms add <pkg> --theme --copy` (Фаза 4, Р5): пакет теми
+// Ядро `simplycms add <pkg> --theme --copy`: пакет теми
 // ставиться ТИМЧАСОВО, його `src/` копіюється в `themes/<key>/` магазину, і
 // пакет знімається — далі тема живе локальною текою під аліасом `@themes/*`.
 // Незворотні дії — лише після всіх валідацій; те, що вимагає вмісту пакета,
@@ -38,7 +38,7 @@ export function copyPreflight({ storeRoot, key, source }) {
 }
 
 /**
- * Форма пакета теми (конвенція Р3): код у `src/`, а `src` — у `files`, інакше
+ * Форма пакета теми: код у `src/`, а `src` — у `files`, інакше
  * copy-in копіювати нічого. Провал валить установку з відкотом.
  * @param {string} pkgDir
  * @param {string} pkg
@@ -99,7 +99,7 @@ export const pnpmRunner = (storeRoot) => (args) =>
   execFileSync('pnpm', args, { cwd: storeRoot, stdio: 'inherit' });
 
 /**
- * Сценарій copy-in у порядку Р5. Нічого не друкує — віддає звіт, тож ганяється
+ * Сценарій copy-in у визначеному порядку. Нічого не друкує — віддає звіт, тож ганяється
  * в тесті з фейковим `pnpm` без реальної установки.
  * @param {{ storeRoot: string; configPath: string; pkg: string; key: string;
  *   dryRun?: boolean; pnpm?: (args: string[]) => void }} input

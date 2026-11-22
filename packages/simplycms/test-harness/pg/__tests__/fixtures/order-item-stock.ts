@@ -1,6 +1,6 @@
-// БД харнес-тесту дельти залишку по позиції (К3-Е5б Task 2, Е5б-7′): канон +
+// БД харнес-тесту дельти залишку по позиції: канон +
 // демо-сід; оформлення — воронкою вітрини, облік — під `app_admin` після
-// `orders … FOR UPDATE` (Е5б-8). Залишок кожен тест задає сам — точні асерти.
+// `orders … FOR UPDATE`. Залишок кожен тест задає сам — точні асерти.
 import { join } from 'node:path';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll } from 'vitest';
@@ -112,7 +112,7 @@ export function useOrderItemStockDb(prefix: string) {
          from public.order_items where id = $1`,
       [orderItemId],
     );
-  /** Нова позиція так, як її вставляє операція (Е5б-8 крок 3). */
+  /** Нова позиція так, як її вставляє операція. */
   const insertItem = async (orderId: string, productId: string, qty: number) =>
     (
       await one<{ id: string }>(

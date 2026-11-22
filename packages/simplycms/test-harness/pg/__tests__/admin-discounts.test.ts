@@ -1,4 +1,4 @@
-// К3-Е6в, Task 5 (Е6в-16, Review Focus 1): атомарний `saveDiscount` проти
+// Атомарний `saveDiscount` проти
 // живої БД. Шапка — патерн admin-shipping.test.ts: операції з
 // `simplycms/admin-server/impl`, grant рахує СПРАВЖНЯ матриця.
 import { describe, expect, it, vi } from 'vitest';
@@ -22,7 +22,7 @@ const quantity = (value: unknown) => ({
   value,
 });
 
-describe('admin: знижки — атомарний запис (Е6в, Task 5)', () => {
+describe('admin: знижки — атомарний запис', () => {
   const db = F.useDiscountsAdminDb('simplycms_admin_discounts');
   const url = () => db.url();
   const save = (data: ReturnType<typeof F.discountInput>) =>

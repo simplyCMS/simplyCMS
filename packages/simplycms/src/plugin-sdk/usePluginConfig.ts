@@ -104,7 +104,7 @@ export function usePluginConfig<S extends ZodObject<ZodRawShape>>(
       } catch (error) {
         // 🔴 За `name`, а не `instanceof`: адаптер START-2
         // (`runtime/domain-error-adapter`) відновлює на клієнті звичайний
-        // `Error` з `name`, а не екземпляр `AuthzError` (Е6б-13, ред.3).
+        // `Error` з `name`, а не екземпляр `AuthzError`.
         // Відмова в праві — штатна відповідь `false`; решта летить далі.
         if (
           (error as { name?: unknown } | null)?.name === DOMAIN_ERROR_NAME.authz

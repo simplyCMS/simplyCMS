@@ -13,10 +13,10 @@ import { OrderTotals } from './OrderTotals';
 import { useOrderDetail } from './useOrderDetail';
 import { useOrderLocked } from './useOrderLocked';
 
-/** Серверний `maxLimit` позицій (Е5-12): рівно стільки — можливо, не всі. */
+/** Серверний `maxLimit` позицій: рівно стільки — можливо, не всі. */
 export const ORDER_ITEMS_MAX = 500;
 
-/** Картка замовлення (Е5, Task 7): дані — колекції, зміна статусу — `OrderStatusControl`. */
+/** Картка замовлення: дані — колекції, зміна статусу — `OrderStatusControl`. */
 export default function OrderDetailPage() {
   const t = useT();
   const locale = useUiLocale();

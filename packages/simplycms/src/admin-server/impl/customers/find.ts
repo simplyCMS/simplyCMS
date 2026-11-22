@@ -12,13 +12,13 @@ export type CustomerHit = {
   userId: string;
   email: string;
   name: string | null;
-  /** Категорія профілю; профіль без категорії — дефолтна (Е6в-19). */
+  /** Категорія профілю; профіль без категорії — дефолтна. */
   categoryName: string | null;
 };
 
 /**
  * Вузький пошук покупця за email або імʼям (`customer.manage`) — для
- * діагностики ціни (Task 10), не загальний список покупців. Значення —
+ * діагностики ціни, не загальний список покупців. Значення —
  * параметром, `ilike … escape '\'`; не більше 20 рядків, `order by email`.
  *
  * Email — `users.email` (джерело Better Auth); `accounts`/`users` доступні

@@ -84,7 +84,7 @@ export function ShippingMethodFields({ form, isNew }: Props) {
         options={SHIPPING_PRICINGS.map((p) => ({
           value: p,
           text: t(PRICING_LABEL[p]),
-          // Е6а-12: режим `provider` лише для провайдера з `supportsQuote`.
+          // Режим `provider` лише для провайдера з `supportsQuote`.
           disabled: p === 'provider' && !quote,
         }))}
       />

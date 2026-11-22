@@ -4,7 +4,7 @@ import type { AdminOrder } from 'simplycms/admin-data';
 import { parseShippingSnapshot } from 'simplycms/domain/shipping';
 
 /**
- * Доставка зі знімка `shipping_data` (Е6а-8): назва способу й пункт такі, як
+ * Доставка зі знімка `shipping_data`: назва способу й пункт такі, як
  * на момент оформлення, а не uuid точки, якої вже може не бути. Рядок
  * власний, а не `ShippingSnapshotLines` вітрини: адмінка показує підписані
  * поля, вітрина — вільний текст.
@@ -13,7 +13,7 @@ export function OrderDeliveryCard({ order }: { readonly order: AdminOrder }) {
   const t = useT();
   const snapshot = parseShippingSnapshot(order.shippingData);
   const dest = snapshot?.destination;
-  // Знеособлена адреса (Е6г-10): `kind` лишився, місто й адреса обнулені.
+  // Знеособлена адреса: `kind` лишився, місто й адреса обнулені.
   const erasedAddress = dest?.kind === 'address' && dest.city === null;
   const notSet = t('common.notSet');
   const rows: [string, string | null][] = [

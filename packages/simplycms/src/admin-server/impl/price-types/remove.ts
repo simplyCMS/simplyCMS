@@ -11,11 +11,11 @@ export const removePriceTypesInput = z
   .max(100);
 
 /**
- * 🔴 remove для ЦІЄЇ сутності — іменований (Е4-2): «не видалити
+ * 🔴 remove для ЦІЄЇ сутності — іменований: «не видалити
  * дефолтний» — доменний інваріант, який частковий індекс не покриває (він
  * забороняє ДВА дефолти, не НУЛЬ).
  *
- * 🔴 Порядок (ред.2, аудит Codex, знахідка 2) — НЕ копія
+ * 🔴 Порядок (за аудитом Codex) — НЕ копія
  * `order-statuses/remove.ts`, де advisory-локу немає:
  *  1. advisory-lock `price-type-default` — ПЕРШИЙ запит транзакції, той
  *     самий, що в `setDefaultPriceTypeOp`: конкурентний setDefault(X) або
@@ -23,11 +23,11 @@ export const removePriceTypesInput = z
  *     що X зник.
  *     Рядкові локи вже серіалізують пару з setDefault; advisory — єдиний
  *     порядок локів довідника; його доводить детермінований тест утримання
- *     локу (Е4-11, Е4-12).
+ *     локу.
  *  2. Batch `FOR UPDATE … ORDER BY id` — детермінований порядок рядкових
  *     локів. Відсутній id або дефолтний серед них — помилка й ROLLBACK
  *     усього batch-у (БД і оптимістичний стан колекції не розходяться).
- *  3. DELETE. Тип, на який посилаються ціни, дає 23503 (RESTRICT, Е4-1) —
+ *  3. DELETE. Тип, на який посилаються ціни, дає 23503 (RESTRICT) —
  *     у `AdminConflictError('reference')` його перетворює сам `runAdmin`.
  */
 export const removeManyPriceTypesOp = async ({

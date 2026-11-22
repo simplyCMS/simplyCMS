@@ -5,7 +5,7 @@ export const messages = {
   'product.sku': 'Артикул: {sku}',
   // Meta description картки без власного опису товару (`head()` роуту).
   'product.metaDescription': 'Купити {name}',
-  // Підпис мініатюри галереї: alt фото може бути порожнім (Task 17б), а кнопці потрібне ім'я.
+  // Підпис мініатюри галереї: alt фото може бути порожнім, а кнопці потрібне ім'я.
   'product.galleryThumb': 'Фото {index}',
 
   // Наявність
@@ -23,7 +23,7 @@ export const messages = {
   'product.addToCart': 'Додати в кошик',
   'product.addedToCart': 'Додано в кошик',
 
-  // Порогові підказки знижок (Е6в-12): головне — ціна на порозі; відсоток —
+  // Порогові підказки знижок: головне — ціна на порозі; відсоток —
   // вторинно й лише для однієї знижки `percent`.
   'product.discountHint.quantity': 'від {threshold} шт — {price}/шт',
   'product.discountHint.cartTotal': 'від {amount} у кошику — {price}/шт',

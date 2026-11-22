@@ -7,7 +7,7 @@ import type { CartQuote } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 
 /**
- * Квота кошика (Е6в-13, Review Focus 2): ключ містить `userId` і склад
+ * Квота кошика: ключ містить `userId` і склад
  * кошика, `staleTime: 0`, запит — лише після гідратації кошика.
  */
 const server = vi.hoisted(() => ({ quoteCart: vi.fn() }));

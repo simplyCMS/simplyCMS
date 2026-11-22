@@ -87,12 +87,12 @@
 
 ### 2.5 Створення магазину й сід
 
-- Усі канали накату йдуть через одну `applyMigrations` (`src/migrate/apply.ts:56`). Це прод-старт (`run-start.ts:67`),
+- Усі канали накату йдуть через одну `applyMigrations` (`packages/simplycms/src/migrate/apply.ts`). Це прод-старт (`run-start.ts:67`),
   `simplycms db:apply` (`cli/src/db-apply.mjs:75`), харнес (`test-harness/pg/apply.mjs:16`) і `scripts/demo-db.mjs`.
   Останній, своєю чергою, обслуговує `db:demo`, `db:showcase`, `live:smoke` і `pilot`.
 - `prod-start` не читає `simplycms.config.ts`, збірка конфіг нікуди не серіалізує, `server.mjs` бере з бандла лише
   `SERVER_FN_BASE`. CLI вже читає конфіг текстовими мітками (`cli/src/config-edit.mjs`, `doctor-checks.mjs:180`).
-- Магазин створює `create-simplycms-store` (`src/args.mjs:46-60`). `simplycms create` створює лише плагін чи тему
+- Магазин створює `create-simplycms-store` (`packages/create-simplycms-store/src/args.mjs`). `simplycms create` створює лише плагін чи тему
   (`cli/src/create.mjs:1-76`), тож майстер Р7 називав не ту команду.
 - Демо-сід (`migrations/demo/demo-seed.sql`, 433 рядки) уже читає `languages.is_default` (`:91,132`), тобто стартує
   після мови. Знести його зараз нема чим: операцій запису розділів, властивостей і доставки ще немає, а showcase
@@ -122,13 +122,13 @@
   - `0002_grants.sql`, `0003_seed.sql`, `0004_functions.sql` (кінець файлу — `CALL attach_*`);
   - гранти-фікстура, `functions-allowlist.test.ts`;
   - `TRANSLATABLE`, легасі-перелік, `CHANGELOG`.
-- **Генерати:** `0001_init.sql` і `drizzle/*` — детермінований `db:rebaseline` (`scripts/rebaseline-drizzle.mjs:85-148`), копії
+- **Генерати:** `0001_init.sql` і `drizzle/*` — детермінований `db:rebaseline` (`scripts/rebaseline-drizzle.mjs`), копії
   `template:sync`. Після злиття їх перегенеровують, а не резолвлять.
 - **Каталоги i18n адмінки** вже розбиті за сутністю (`i18n/catalogs/{uk,en}/admin/*.ts`).
 - **Машина:** 16 ядер, 29 ГБ. Реалістично 3 дерева з власним харнесом. Ресурси дерева:
   - pilot-скретч і імена БД ізольовані на дерево;
   - спільний Mailpit дає флейк, бо `smtp.contract.test.ts:35` чистить усю скриньку;
-  - `HARNESS_CONTAINER` захардкоджено (`scripts/harness-env.mjs:16`), і `.env.harness` з іншим `HARNESS_PREFIX` ігнорується без
+  - `HARNESS_CONTAINER` захардкоджено (`scripts/harness-env.mjs`), і `.env.harness` з іншим `HARNESS_PREFIX` ігнорується без
     дефолтного контейнера.
 - **Тіри:** `commerce` і `site` (читачі доставки, знижок, профілю) не мають права імпортувати `translations`
   (`eslint.tier-zones.mjs:153,156`). Прецедент ручної копії fallback — `commerce/price-cart-catalog.ts:39-41`.

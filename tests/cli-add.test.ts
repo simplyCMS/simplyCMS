@@ -105,7 +105,7 @@ describe('cli add', () => {
     expect(deriveKey('plain-pkg')).toBe('plain-pkg');
     // Scoped-конвенція референс-пакетів ядра: ключ = manifest.name = 'faq'.
     // Без цього документований flow «add @simplycms/plugin-faq → db:diff»
-    // давав би ключ 'plugin-faq' і валив лінт меж (знахідка рев'ю Фази 3).
+    // давав би ключ 'plugin-faq' і валив лінт меж.
     expect(deriveKey('@simplycms/plugin-faq')).toBe('faq');
     expect(deriveKey('@simplycms/theme-solar')).toBe('solar');
     expect(deriveKey('@acme/simplycms-plugin-wishlist', 'explicit')).toBe(
@@ -289,7 +289,7 @@ describe('cli add', () => {
   it('парсери конфігу читають реальні ключі; без якоря — null', () => {
     expect(configThemeKeys(templateConfig)).toEqual(['default']);
     expect(configThemeKeys(hostConfig)).toEqual(['default', 'solarstore']);
-    // ПК7: шаблон декларує лише hello-world — FAQ довстановлюється окремо.
+    // FAQ не в шаблоні: шаблон декларує лише hello-world — FAQ довстановлюється окремо.
     expect(configPluginNames(templateConfig)).toEqual(['hello-world']);
     expect(configThemeKeys('export default {}')).toBeNull();
     expect(configPluginNames('export default {}')).toBeNull();

@@ -8,12 +8,12 @@ import type { OrdersSearch } from './orders-search';
 import { useOrdersList } from './useOrdersList';
 
 /**
- * Список замовлень (Е5, Task 6) на on-demand колекції. Дані/пагінація —
+ * Список замовлень на on-demand колекції. Дані/пагінація —
  * `useOrdersList`; фільтр (стан у URL) і таблиця — окремі компоненти.
  */
 export default function OrdersPage() {
   const t = useT();
-  // Фільтр статусу живе в URL (Е6г-5): глибоке посилання з дашборду.
+  // Фільтр статусу живе в URL: глибоке посилання з дашборду.
   const { status: statusId } = useSearch({ strict: false }) as OrdersSearch;
   const navigate = useNavigate();
   const setStatusId = (status: string | undefined) =>

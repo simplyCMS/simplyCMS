@@ -1,8 +1,8 @@
 /**
- * Відгук із фото кроку контенту К3-Е6д (`./admin-content.mjs`): покупець
- * подає форму з PNG (Е6д-6) → рядок `pending` з одним референсом і рядком
+ * Відгук із фото кроку контенту (`./admin-content.mjs`): покупець
+ * подає форму з PNG → рядок `pending` з одним референсом і рядком
  * `media` сутності `review`; автор бачить свій відгук із фото й бейджем
- * (Е6д-17), а гість у НОВОМУ context — ні: ні в HTML, ні у відповіді
+ *, а гість у НОВОМУ context — ні: ні в HTML, ні у відповіді
  * `getProductReviews`, яка ще й `private, no-store`. Крок ловить майбутній
  * prefetch чи лоадер, що потягне відгуки в SSR або спільний кеш.
  */
@@ -85,7 +85,7 @@ export async function isolationPart({ pages, contexts, check, fx, st }) {
   const guestFns = captureServerFns(guest);
 
   // Проводка `lookupMediaForRequest` у роуті `/media/$`: файл pending-відгуку
-  // віддається автору (200), гостю без cookie — 404 (Е6д-21). Мутація
+  // віддається автору (200), гостю без cookie — 404. Мутація
   // `lookup: () => ({ personal: true })` у роуті червоніє саме тут.
   const mediaUrl = `${new URL(st.productUrl).origin}/media/${st.reviewRef}`;
   const authorStatus = (await author.request.get(mediaUrl)).status();

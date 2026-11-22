@@ -77,7 +77,7 @@ describe('parseUploadForm', () => {
   });
 
   // 🔴 Тут — лише МАПА `reason → код`, бо саму перевірку вмісту доводить
-  // юніт `inspectUpload` (Task 2 Step 5b). Дублювати там фікстури сигнатур
+  // юніт `inspectUpload`. Дублювати там фікстури сигнатур
   // означало б доводити те саме двічі й розсинхронити при зміні allowlist.
   it('reason від inspectUpload перекладається в код клієнта', async () => {
     const svg = new File(

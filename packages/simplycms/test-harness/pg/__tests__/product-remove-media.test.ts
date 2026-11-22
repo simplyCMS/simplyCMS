@@ -1,4 +1,4 @@
-// М1 Task 11: products.remove стирає файли товару ПІСЛЯ коміту (Е6д-14), як
+// products.remove стирає файли товару ПІСЛЯ коміту, як
 // старий generic remove; команда з реєстру отримує це через ctx.afterCommit.
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
@@ -37,7 +37,7 @@ describe('products.remove: файли після коміту', () => {
         }),
       )
     ).ref;
-    // Фото — рядком `product_images` командою агрегата (jsonb `images` знесено, М1).
+    // Фото — рядком `product_images` командою агрегата (jsonb `images` знесено).
     const saved = await saveDescription(id, version, {
       images: { upsert: [{ id: randomUUID(), storageKey: ref, sortOrder: 0 }] },
     });

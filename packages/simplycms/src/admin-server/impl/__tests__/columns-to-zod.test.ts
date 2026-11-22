@@ -106,7 +106,7 @@ describe('columnsToZod: nullable/optional за режимами', () => {
   });
 });
 
-describe('columnsToZod: масив (Е6а, text[])', () => {
+describe('columnsToZod: масив (text[])', () => {
   it('масив схеми базової колонки; size — точна довжина; nullable без notNull', () => {
     const arr = pgTable('arr_t', {
       tags: text('tags').array(),
@@ -123,7 +123,7 @@ describe('columnsToZod: масив (Е6а, text[])', () => {
   });
 });
 
-describe('columnsToZod: time (Е6д, banners.schedule_time_*)', () => {
+describe('columnsToZod: time (banners.schedule_time_*)', () => {
   it('голий рядок, як drizzle-zod; формат накладає refine ресурсу', () => {
     const tt = pgTable('time_t', {
       at: time('at'),

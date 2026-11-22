@@ -19,7 +19,7 @@ type SerovalPlugins = NonNullable<
 >;
 
 /**
- * Е3-20: перетинає РЕАЛЬНУ межу serverFn — той самий механізм, яким Start
+ * Перетинає РЕАЛЬНУ межу serverFn — той самий механізм, яким Start
  * (де)серіалізує відповідь server function (`server-functions-handler.ts`:
  * `toCrossJSONStream`/`toCrossJSONAsync` на сервері; `serverFnFetcher.ts`:
  * `fromCrossJSON` на клієнті) з ТИМ САМИМ порядком плагінів, який будує
@@ -91,7 +91,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
-  it('AdminConflictError kind state (Е5-9): поля переживають межу', async () => {
+  it('AdminConflictError kind state: поля переживають межу', async () => {
     const src = Object.assign(new Error('конфлікт'), {
       name: 'AdminConflictError',
       kind: 'state',
@@ -129,7 +129,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     });
   });
 
-  it('NotFoundError (Р26): name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
+  it('NotFoundError: name переживає межу — клієнт відрізняє «не знайдено» від збою', async () => {
     const src = Object.assign(new Error('знижки не існує'), {
       name: 'AdminNotFoundError',
     });
@@ -138,7 +138,7 @@ describe('domainErrorAdapter — реальна межа seroval (toCrossJSONAsy
     expect(out).toMatchObject({ name: 'AdminNotFoundError' });
   });
 
-  // М1 Task 6: нові члени родини мусять пройти межу з ПОЛЯМИ — поза закритою
+  // Нові члени родини мусять пройти межу з ПОЛЯМИ — поза закритою
   // родиною клас замаскувався б у 500 «Internal server error».
   it('VersionMismatchError: name і число currentVersion переживають межу', async () => {
     const out = await roundTrip(new VersionMismatchError(7), withAdapter);

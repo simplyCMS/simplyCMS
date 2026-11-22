@@ -1,5 +1,5 @@
-// К3-Е6г, Task 7 (Е6г-15, Review Focus 2): видалення акаунта зі
-// знеособленням замовлень. Локи й обрив — `-locks`, Е6г-16/17 — `-orders`.
+// Видалення акаунта зі
+// знеособленням замовлень. Локи й обрив — `-locks`, `-orders`.
 import { describe, expect, it, vi } from 'vitest';
 import { deleteCustomerOp } from 'simplycms/admin-server/impl';
 import { ADMIN_ID, useDeleteDb } from './fixtures/customer-delete';
@@ -15,7 +15,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: видалення акаунта покупця (Е6г-15…17)', () => {
+describe('admin: видалення акаунта покупця', () => {
   const d = useDeleteDb('simplycms_e6g_delete');
   const { f } = d;
   const call = (userId: string, confirmEmail: string, as = ADMIN_ID) => {

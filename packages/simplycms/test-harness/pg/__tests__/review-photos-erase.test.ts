@@ -1,4 +1,4 @@
-// К3-Е6д, Task 7 (Е6д-9, Е6д-14, Е6д-16): покупець видаляє власний відгук із
+// Покупець видаляє власний відгук із
 // фото — рядки `media` у транзакції, файли ПІСЛЯ COMMIT; чуже не стирається.
 import { sql } from 'drizzle-orm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -40,7 +40,7 @@ const delMine = (userId: string, reviewId: string) => {
   )({ data: { reviewId } });
 };
 
-describe('фото у відгуку: видалення покупцем (Е6д-9, Е6д-14)', () => {
+describe('фото у відгуку: видалення покупцем', () => {
   const d = useReviewPhotosDb('simplycms_e6d_rv_erase');
   const { f } = d;
   const seeded = async () => {
@@ -124,10 +124,10 @@ describe('фото у відгуку: видалення покупцем (Е6д
     expect(refs.filter((r) => d.hasFile(r))).toHaveLength(1);
   });
 
-  it('🔴 чужий ключ (аватар іншого покупця) у своєму відгуку → аватар і media цілі (Е6д-16)', async () => {
+  it('🔴 чужий ключ (аватар іншого покупця) у своєму відгуку → аватар і media цілі', async () => {
     const { userId, id, refs } = await seeded();
     const b = await d.seedBuyer({ avatar: true });
-    // `app_user` колонку `images` писати не може (Task 5) — лише адмін.
+    // `app_user` колонку `images` писати не може — лише адмін.
     await withActor({ role: 'app_admin' }, (db) =>
       db.execute(
         sql`update public.product_reviews set images = ${JSON.stringify([...refs, b.avatar])}::jsonb where id = ${id}`,

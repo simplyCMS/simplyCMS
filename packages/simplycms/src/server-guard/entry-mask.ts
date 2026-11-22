@@ -48,7 +48,7 @@ type FetchHandler<A extends unknown[]> = (
 ) => Response | Promise<Response>;
 
 /**
- * Маска винятків серверного входу (Р23 для шляху поза роутером). Ловить те, що
+ * Маска винятків серверного входу (для шляху поза роутером). Ловить те, що
  * кинув `fetch` entry:
  *  - HTTP-помилка зі статусом < 500 і кинутий `Response` (redirect) — кидаємо
  *    далі: Start відповість як задумано. Router-`notFound()` — не `Response`, а

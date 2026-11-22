@@ -12,7 +12,7 @@ import { loadDefaultUserCategoryId } from './categories';
 import { loadCustomerStats } from './customer-stats';
 
 /**
- * Advisory-ключ категорії одного покупця (Е6в-15): будь-яка зміна його
+ * Advisory-ключ категорії одного покупця: будь-яка зміна його
  * категорії — вручну (`assignCustomerCategory`) чи правилом — серіалізована
  * ним. Живе в `commerce`, бо ним користуються і вітрина, і адмінка.
  */
@@ -35,7 +35,7 @@ const categoryName = (id: string) =>
 
 /**
  * Запис переходу: `profiles.category_id` + рядок `user_category_history` зі
- * знімком назв (Е6в-2) — історія переживає видалення категорії. Викликач
+ * знімком назв — історія переживає видалення категорії. Викликач
  * тримає `customerCategoryLock` і рядок профілю `FOR UPDATE`.
  */
 export async function writeCategoryChange(
@@ -61,14 +61,14 @@ export async function writeCategoryChange(
     toCategoryName: categoryName(change.toCategoryId),
     reason: change.reason,
     ruleId: change.ruleId,
-    // Е8-Р3 (Е6г-6): джерело пишеться явно. `rule_id` після видалення правила
+    // Джерело пишеться явно. `rule_id` після видалення правила
     // стає NULL (SET NULL), а `source` лишається — історія не бреше «вручну».
     source: change.ruleId === null ? 'manual' : 'rule',
     changedBy: change.changedBy,
   });
 }
 
-/** Умови правила або `null`; розбір рядка не кидає ніколи (Е6в-25). */
+/** Умови правила або `null`; розбір рядка не кидає ніколи. */
 function safeConditions(raw: unknown) {
   try {
     return parseCategoryRuleConditions(raw);
@@ -78,11 +78,11 @@ function safeConditions(raw: unknown) {
 }
 
 /**
- * Активні правила з розібраними умовами — РЯДОК ЗА РЯДКОМ (Е6в-25: один
+ * Активні правила з розібраними умовами — РЯДОК ЗА РЯДКОМ (один
  * пошкоджений рядок правил не ламає розрахунок магазину). Правило з
  * невалідним jsonb (вписане SQL-ем в обхід Zod: ключ прототипу, порожні
  * умови, невідоме поле чи оператор) пропускається з `console.error`, решта
- * оцінюється як звичайно — fail-closed (Е6в-19 ред.2).
+ * оцінюється як звичайно — fail-closed.
  */
 async function loadActiveRules(db: ActorDb): Promise<CategoryRule[]> {
   const rows = await db
@@ -105,11 +105,11 @@ async function loadActiveRules(db: ActorDb): Promise<CategoryRule[]> {
 export type CategoryRulesOutcome = 'changed' | 'unchanged' | 'skipped';
 
 /**
- * Автоправила для одного покупця (Е6в-19) у транзакції викликача.
+ * Автоправила для одного покупця у транзакції викликача.
  *
  * 1. `customerCategoryLock(userId)` — ПЕРШИЙ запит.
  * 2. Профіль `FOR UPDATE`. Немає профілю або `category_locked` (ручне
- *    призначення, Е6в-20) → `'skipped'`.
+ *    призначення) → `'skipped'`.
  * 3. `category_id NULL` оцінюється як дефолтна категорія.
  * 4. Статистика, активні правила, рушій; перехід → профіль + історія з
  *    `rule_id` і без `changed_by`.

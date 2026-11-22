@@ -12,7 +12,7 @@ import { DiscountGroupFields } from './DiscountGroupFields';
 import { useDiscountGroupCard } from './useDiscountGroupCard';
 
 /**
- * Картка групи знижок (К3-Е6в): `new` (з `?parentId` — підгрупа) або id з
+ * Картка групи знижок: `new` (з `?parentId` — підгрупа) або id з
  * URL. Видалення групи — у дереві: діалог там показує, скільки груп і знижок
  * зникне каскадом.
  */

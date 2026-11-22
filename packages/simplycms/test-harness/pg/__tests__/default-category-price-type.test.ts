@@ -1,5 +1,5 @@
-// Фінальне рев'ю К3-Е6в, F5: тип ціни — тип КАТЕГОРІЇ покупця (Е6в-19:
-// гість і профіль з `category_id NULL` належать ДЕФОЛТНІЙ категорії); якщо
+// Тип ціни — тип КАТЕГОРІЇ покупця
+// (гість і профіль з `category_id NULL` належать ДЕФОЛТНІЙ категорії); якщо
 // в категорії типу немає — глобальний дефолтний тип. Одне правило для всього,
 // що живе з `loadPricingContext`: середовище картки, квота кошика, чек.
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -20,7 +20,7 @@ const RETAIL_TYPE = '00000003-0000-4000-8000-000000000001';
 const DEFAULT_CATEGORY = SYSTEM_SEED_IDS.customerCategoryRetail;
 const BARE_CATEGORY = 'c0000005-0000-4000-8000-000000000001';
 
-describe('тип ціни — з категорії покупця, NULL-профіль і гість — з дефолтної (F5)', () => {
+describe('тип ціни — з категорії покупця, NULL-профіль і гість — з дефолтної', () => {
   const db = useCommerceDb('simplycms_default_category_price_type');
   const users = { nullProfile: '', bare: '' };
   const seedUser = async (email: string, categoryId: string | null) => {

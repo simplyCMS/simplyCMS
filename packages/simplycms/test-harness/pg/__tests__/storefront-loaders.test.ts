@@ -1,4 +1,4 @@
-// Інтеграційний гейт шару даних вітрини (В2-К1а): лоадери проти РЕАЛЬНОЇ БД.
+// Інтеграційний гейт шару даних вітрини: лоадери проти РЕАЛЬНОЇ БД.
 //
 // 🔴 Юніт із мок-клієнтом тут не працює за побудовою. Після переходу на
 // Drizzle предикат видимості — це вже не рядок, який можна порівняти, а SQL,
@@ -24,7 +24,7 @@ import {
   loadSitemapData,
   withStorefrontDb,
 } from 'simplycms/storefront/loaders';
-// Ядро `withViewerDb` без сесії — поза публічним барелем (Р29, M1).
+// Ядро `withViewerDb` без сесії — поза публічним барелем.
 import { withViewerPricesDb } from '../../../src/storefront/loaders/viewer-prices-db';
 import { resolveHarness } from '../up.mjs';
 import {
@@ -150,7 +150,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
       text: 'До каталогу',
       url: '/catalog',
     });
-    // Другий демо-банер — home без розділу (інакше суперечить guard Task 3).
+    // Другий демо-банер — home без розділу (інакше суперечить guard).
     const sale = demo.find((b) => b.title === 'Знижки на бі-фаціальні панелі');
     expect(sale?.section_id).toBeNull();
 
@@ -205,7 +205,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(data.sectionProducts[filled!.id]).toHaveLength(PER_SECTION_LIMIT);
   });
 
-  it('головна: у banners лише розміщення home у межах розкладу (Р24)', async () => {
+  it('головна: у banners лише розміщення home у межах розкладу', async () => {
     await queryRows(
       dbUrl,
       `insert into public.banners (id, title, image_url, placement, sort_order, is_active, date_from)
@@ -223,7 +223,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
     expect(titles).not.toContain('Р24-майбутнє');
   });
 
-  it('головна: ціна картки — той самий резолв, що в каталозі (К2-Е0)', async () => {
+  it('головна: ціна картки — той самий резолв, що в каталозі', async () => {
     const { featured, panels } = await withViewerPricesDb(
       null,
       async (db, v) => {
@@ -309,7 +309,7 @@ describe('лоадери вітрини проти живого Postgres', () =>
       path: VISIBLE_PRODUCT_SLUG,
       isTranslated: true,
     });
-    // `updated_at` — Date (контракт К2-Е0): рядком він стає лише в
+    // `updated_at` — Date (контракт): рядком він стає лише в
     // `<lastmod>` через toISOString(). Регекс ФОРМАТУ драйвера тут пінив би
     // GUC кластера, а не код.
     expect(data.products[0].updated_at).toBeInstanceOf(Date);

@@ -67,7 +67,7 @@ export interface ReviewImageBytes {
 }
 
 /**
- * Подати відгук разом із фото ОДНИМ актом (Е6д-6) — дзеркало `replaceAvatar`
+ * Подати відгук разом із фото ОДНИМ актом — дзеркало `replaceAvatar`
  * (той самий канал драйвера, `discardWith` — лише для харнесу).
  *
  * 🔴 Файли публікуються до COMMIT: кожен ключ збирається одразу після
@@ -118,10 +118,10 @@ export async function submitReviewWithImages(
 
 /**
  * Видалити власний відгук; `deleted: false` — рядка немає або він чужий.
- * 🔴 `app_user` не має `DELETE` на `media` (Е6д-9, Е6д-16): рядки фото стирає
+ * 🔴 `app_user` не має `DELETE` на `media`: рядки фото стирає
  * `operator`, і лише ключі з `RETURNING images` рядка, який ЦЯ транзакція
  * видалила як власний (не з вводу клієнта); `eraseMediaRows` ще звіряє
- * власника `review/<id>`. Файли — викликач ПІСЛЯ COMMIT (Е6д-14).
+ * власника `review/<id>`. Файли — викликач ПІСЛЯ COMMIT.
  */
 export async function deleteProductReview(
   db: ActorDb,

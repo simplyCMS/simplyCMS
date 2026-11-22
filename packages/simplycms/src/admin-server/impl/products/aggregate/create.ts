@@ -35,7 +35,7 @@ const input = productBase.extend({
   /** Адреса основної мови; без неї — `slugify(name)`. Для нелатинського письма без пакета обов'язкова. */
   path: z.string().max(255).optional(),
   /**
-   * Фото — у ТІЙ САМІЙ транзакції, що й товар (агрегат пишеться однією командою, Р14): окремий
+   * Фото — у ТІЙ САМІЙ транзакції, що й товар (агрегат пишеться однією командою): окремий
    * другий крок після збою лишав би товар без фото, а повтор «Створити» з тим самим id — дубль
    * ключа. Файли вантажаться в сховище ДО команди; якщо вона впала, осиротілі рядки `media`
    * прибирає sweep. `remove` на створенні безглуздий — лише `upsert`.
@@ -59,7 +59,7 @@ export const productsCreate = defineOperation({
   }),
   async run({ db }, data) {
     // Спільний замок набору мов ПЕРШИМ: далі й валідація мов, і генератор адрес
-    // бачать один незмінний набір (Review Focus 1).
+    // бачать один незмінний набір.
     await advisoryXactLockShared(db, LOCK_KEYS.languagesSet);
     const primary = await primaryLocaleCode(db);
     const locales = await assertKnownLocales(

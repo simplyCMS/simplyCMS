@@ -32,7 +32,7 @@ interface Props {
 }
 
 /**
- * Контрол значення властивості (Task 10, Step 3) — перемикач по
+ * Контрол значення властивості — перемикач по
  * `propertyType`, розмітка легасі `ProductPropertyValues.tsx:323-449`.
  * Id контролу — `prop-<propertyId>`; `number`/`range`, `multiselect` і
  * `color` — окремі компоненти (канон 150 рядків).
@@ -66,7 +66,7 @@ export function PropertyInput({
         <Select
           value={current?.optionId ?? ''}
           onValueChange={(val) => {
-            // 🔴 `value` НЕ пишемо (Е3-13, ревізія «назва опції — одне
+            // 🔴 `value` НЕ пишемо (ревізія «назва опції — одне
             // джерело»): назву для відображення бере join `property_options`
             // (`option.name`), запис назви тут був би застарілим кешем.
             onChange({

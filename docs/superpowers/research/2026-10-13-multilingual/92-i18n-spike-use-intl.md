@@ -12,7 +12,7 @@
 ## Таблиця за пунктами «Доповнення архітектора»
 | Пункт | Наше (еталон) | use-intl | Пройшло? |
 |---|---|---|---|
-| 1. Глобал мови: 20 паралельних SSR упереміш `/en/catalog` і `/catalog` (один процес, `scripts/spike-ssr.mjs`) | n/a | кожен HTML лише своєю мовою: `<html lang>`, `<title>` («Catalog — SolarStore» / «Каталог — SolarStore»), жодних чужих рядків | OK |
+| 1. Глобал мови: 20 паралельних SSR упереміш `/en/catalog` і `/catalog` (один процес, `spike-ssr.mjs` (одноразовий скрипт спайка)) | n/a | кожен HTML лише своєю мовою: `<html lang>`, `<title>` («Catalog — SolarStore» / «Каталог — SolarStore»), жодних чужих рядків | OK |
 | 1б. Серверний «лист» іншою мовою паралельно з рендером (`spike-concurrency.test.tsx`, 20 завдань, `loadTranslator(other,['mail'])` + `renderToString`) | n/a | uk-рендер + en-лист і навпаки, без перетікання | OK |
 | 2. Негативний tsc-контроль ключа теми | `useThemeT<SolarstoreThemeKey>()`: `tt('theme.nope.key')` → TS2345 | той самий результат, бо типізація лишилась нашим generic `K`; сама бібліотека цього не дає (її типи — один глобальний `AppConfig.Messages`, трьох рівнів немає) | OK, але заслуга не бібліотеки |
 | 3. Fallback теми (uk/en → fallback → ключ як є) | `lookupMessage` | потрібен адаптер: два форматери за `has()` + повернення ключа. `translator.ts` +~45 рядків (з 38 → 67), `useThemeT.ts` +~20; `usePluginT` не чіпав (потрібні ще ~10) | OK, ціна ≈ 65-75 рядків |
@@ -40,4 +40,4 @@
 6. Жодних обходів `UPSTREAM` не знадобилось.
 
 ## Артефакти
-`/home/vsydorenko/github/simplyCMS/.claude/worktrees/spike-use-intl`: `scripts/spike-ssr.mjs`, `packages/simplycms/src/i18n/__tests__/spike-{intl,concurrency}*`. Логи smoke: `/tmp/claude-1000/smoke{,2,-base}.log`.
+`/home/vsydorenko/github/simplyCMS/.claude/worktrees/spike-use-intl`: `spike-ssr.mjs` (одноразовий скрипт спайка), `packages/simplycms/src/i18n/__tests__/spike-{intl,concurrency}*`. Логи smoke: `/tmp/claude-1000/smoke{,2,-base}.log`.

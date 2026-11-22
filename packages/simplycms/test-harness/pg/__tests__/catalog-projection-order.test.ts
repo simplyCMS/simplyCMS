@@ -1,4 +1,4 @@
-// М1 Task 14, фікс-раунди 4–5: порядок замків агрегата (`lock-order.ts`, пункти (3)–(5)).
+// Порядок замків агрегата (`lock-order.ts`, пункти (3)–(5)).
 // Кожен кейс — два з'єднання і засувка T0, що розтягує вікно між двома рядковими
 // замками одного з учасників до керованого; очікування — обидві операції ok, звірка 0.
 import { randomUUID } from 'node:crypto';
@@ -21,7 +21,7 @@ import {
   saveDescription,
 } from './fixtures/product-aggregate';
 
-describe('порядок замків агрегата: корінь -> модифікації, KEY SHARE у fill (Task 14, раунд 4)', () => {
+describe('порядок замків агрегата: корінь -> модифікації, KEY SHARE у fill', () => {
   const db = useAddressingDb('simplycms_catalog_projection_order');
   const add = (code: string) =>
     exec(languagesAdd, { id: randomUUID(), code, name: code });
@@ -147,7 +147,7 @@ describe('порядок замків агрегата: корінь -> моди
         }),
       // ОДИН виклик fill — режим адрес (мова нова): спільний set і KEY SHARE, сумісні із
       // засувкою й видаленням за id, тож мусить завершитись без черги. Виклик проєкції
-      // (ексклюзивний set) стояв би за спільним set команди за побудовою (N1) — не про це.
+      // (ексклюзивний set) стояв би за спільним set команди за побудовою — не про це.
       () => exec(languagesFill, { code: 'fi' }),
       { second: 'settles' },
     );

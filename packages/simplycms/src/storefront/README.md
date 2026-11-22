@@ -21,10 +21,10 @@ pnpm add simplycms
 | Subpath | Експорти |
 |---------|----------|
 | `simplycms/storefront`          | Реекспорт `./loaders` і `./seo` |
-| `simplycms/storefront/loaders`  | `withStorefrontDb`, `withViewerDb` (ціни лише видів глядача сесії, Р29), `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
+| `simplycms/storefront/loaders`  | `withStorefrontDb`, `withViewerDb` (ціни лише видів глядача сесії), `loadHomePageData`, `loadProduct`, `loadProductList`, `loadSections`, `loadSectionBySlug`, `loadRootSections`, `loadProperties`, `loadPropertyBySlug`, `loadPropertyOption`, `loadDefaultPriceTypeId`, `loadSectionProducts` + типи рядків і мапи колонок (`./entities/*`) |
 | `simplycms/storefront/seo`      | `buildSitemapXml(client, baseUrl)`, `buildRobotsTxt(baseUrl)` |
 
-## Як лоадери ходять у БД (В2-К1а)
+## Як лоадери ходять у БД
 
 Лоадери — **server-only** і працюють на Drizzle поверх чистого Postgres.
 Перший аргумент кожного — `ActorDb`, тобто drizzle-інстанс, прибіндований до
@@ -32,7 +32,7 @@ pnpm add simplycms
 `withStorefrontDb` (`app_user` без `userId`). Лоадери з цінами (`loadProduct`,
 `loadProductList`, `loadCatalogProducts`, `loadPropertyOption`, `loadHomePageData`,
 `loadHomeProducts`, `loadSectionProducts`) приймають обовʼязковий `viewer` —
-набір видів цін глядача (Р29) — і відкриваються лише через `withViewerDb`.
+набір видів цін глядача — і відкриваються лише через `withViewerDb`.
 Списки й добірки товару (`loadProductList`, `loadCatalogProducts`, `loadPropertyOption`,
 `loadHomePageData`, `loadHomeProducts`, `loadSectionProducts`) та оформлення
 (`quoteCartFor`, `quoteCheckoutFor`, `placeOrderFor`) приймають також `text: TextLocale`

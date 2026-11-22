@@ -1,6 +1,6 @@
 // Хелпери детермінованого доказу локів адмін-операцій (винесено з
-// admin-catalog-ops.test.ts, Е3; спільні з admin-catalog-dictionaries.test.ts,
-// Е4-12). Доказ не покладається на випадкову перемогу гонки: окремий
+// admin-catalog-ops.test.ts; спільні з admin-catalog-dictionaries.test.ts).
+// Доказ не покладається на випадкову перемогу гонки: окремий
 // pg-клієнт бере ТОЙ САМИЙ advisory-lock, що й операція
 // (`pg_advisory_xact_lock(hashtextextended(key, 0))`, `impl/catalog-lock.ts`),
 // і тримає його у ВІДКРИТІЙ транзакції — виклик операції не сміє
@@ -96,14 +96,14 @@ export const holdRowLock = async (
   };
 };
 
-/** Рядок замовлення `for update` (Е5, Task 4): кабінет покупця, друга вкладка. */
+/** Рядок замовлення `for update`: кабінет покупця, друга вкладка. */
 export const holdOrderRowLock = (dbUrl: string, orderId: string) =>
   holdRowLock(dbUrl, 'select id from public.orders where id = $1 for update', [
     orderId,
   ]);
 
 /**
- * Незакомічений insert рядка залишку на точку з ОКРЕМОГО зʼєднання (Е6а-17):
+ * Незакомічений insert рядка залишку на точку з ОКРЕМОГО зʼєднання:
  * імітує `saveStockOp`, що встиг вставити рядок після кроку (1)
  * `removePickupPointsOp` — FK тримає `FOR KEY SHARE` на рядку точки.
  * `release`/`cleanup` — ідемпотентна пара, як у `holdAdvisoryLock`.

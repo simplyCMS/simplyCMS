@@ -36,7 +36,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe('useProductReviews — ключ кешу з актором (Е6д-17)', () => {
+describe('useProductReviews — ключ кешу з актором', () => {
   it('зміна користувача перезавантажує відгуки; кеш A не показується B', async () => {
     getProductReviews.mockImplementation(async () => {
       if (auth.user?.id === 'u-a') return [review('ra', 'u-a', 'pending')];

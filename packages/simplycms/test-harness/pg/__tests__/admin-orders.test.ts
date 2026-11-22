@@ -1,9 +1,9 @@
-// Е5, Task 4: ресурси замовлень і `changeOrderStatusOp` проти живої БД.
+// Ресурси замовлень і `changeOrderStatusOp` проти живої БД.
 // Шапка — патерн admin-catalog-ops.test.ts (createTempDatabase → канон +
 // демо-сід із decrease_on_order = true → app_runtime → afterAll із
 // closeDbPool() ПЕРШИМ). Замовлення оформлюються `placeOrderFor` — тим самим
 // шляхом, що й вітрина. 🔴 Увесь файл іде під КОЛОНКОВИМ SELECT `app_admin`
-// на `orders` без `access_token` (SQL-доказ `omit`, Е5-7).
+// на `orders` без `access_token` (SQL-доказ `omit`).
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDbPool } from 'simplycms/db';
@@ -53,7 +53,7 @@ const CONFLICT = {
   constraint: 'order_cancelled_final',
 };
 
-describe('admin: замовлення (Е5, Task 4)', () => {
+describe('admin: замовлення', () => {
   let harness: { url: string; teardown: () => Promise<void> };
   const dbName = randomDbName('simplycms_admin_orders');
   let dbUrl = '';
@@ -171,7 +171,7 @@ describe('admin: замовлення (Е5, Task 4)', () => {
     });
   });
 
-  it('cancelled → будь-який: AdminConflictError state, статус і залишок без змін (Review Focus 3)', async () => {
+  it('cancelled → будь-який: AdminConflictError state, статус і залишок без змін', async () => {
     const o = await place(1);
     await change(o, CANCELLED);
     const after = await stock();

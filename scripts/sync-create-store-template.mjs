@@ -101,7 +101,7 @@ export const SYNCED_DIRS = [
   { from: SCHEMA_MIGRATIONS_DIR, to: 'db/migrations' },
   { from: 'themes/default', to: 'themes/default' },
   { from: 'plugins/hello-world', to: 'plugins/hello-world' },
-  // 🔴 Скілів тут НЕМАЄ (трек К0): вони їдуть у магазин текою `skills/`
+  // 🔴 Скілів тут НЕМАЄ: вони їдуть у магазин текою `skills/`
   // пакета `simplycms`, а `.agents/skills/` і `.claude/skills/` магазину —
   // симлінки на неї (створює скаффолдер, лагодить `simplycms update`).
   // Копія в шаблоні була б форком, що старіє мовчки при оновленні ядра.

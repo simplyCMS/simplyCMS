@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { CLI_INDEX, scaffoldFakeStore } from './lib/fake-core-store';
 
-// `simplycms deploy:record get|set` (К3-Е8, Task 21, fix 1): справжній запуск CLI.
+// `simplycms deploy:record get|set`: справжній запуск CLI.
 const roots: string[] = [];
 afterAll(() => {
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });

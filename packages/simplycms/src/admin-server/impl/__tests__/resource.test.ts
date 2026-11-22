@@ -33,10 +33,10 @@ const ops = defineAdminResource({
   readonly: ['id', 'isDefault', 'createdAt'],
 });
 
-describe('defineAdminResource (К3-4′)', () => {
+describe('defineAdminResource', () => {
   it("scope 'own' — фабрична операція кидає, а не мовчки віддає все", async () => {
     // Рев'ю р2: втрата scope нейтралізувала б resolveRequestGrant для
-    // Е3–Е6. Фабрика мусить бути admin-only fail-loud.
+    // решти ресурсів. Фабрика мусить бути admin-only fail-loud.
     const { requireGrant } = await import('simplycms/auth');
     (requireGrant as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       subject: { userId: 'u2', roles: ['user'] },
@@ -60,7 +60,7 @@ describe('defineAdminResource (К3-4′)', () => {
     expect('url' in (ops.list as object)).toBe(false);
   });
 
-  it('insertSchema — масив, id обовʼязковий (Е0), readonly зрізаються', () => {
+  it('insertSchema — масив, id обовʼязковий, readonly зрізаються', () => {
     const noId = ops.insertSchema.safeParse([{ name: 'X', code: 'x' }]);
     expect(noId.success).toBe(false);
     const withExtra = ops.insertSchema.safeParse([
@@ -88,7 +88,7 @@ describe('defineAdminResource (К3-4′)', () => {
     if (parsed.success) expect('isDefault' in parsed.data[0].patch).toBe(false);
   });
 
-  it('updateSchema: порожній patch — 400 на межі, а не "No values to set" з БД (фінальна хвиля Е1б)', () => {
+  it('updateSchema: порожній patch — 400 на межі, а не "No values to set" з БД', () => {
     // `createUpdateSchema` робить УСІ писані поля optional, тож
     // `{ id, patch: {} }` без .refine() пройшов би схему і впав би
     // синхронно на `db.update().set({})` — 500 замість 400. Той самий
@@ -113,7 +113,7 @@ describe('defineAdminResource (К3-4′)', () => {
       readonly: ['id', 'isDefault', 'createdAt'],
     });
     // 'createdAt' в ОБОХ списках → __overlappingColumns: "createdAt"
-    // (знахідка рев'ю ред.2: перетин давав клієнту право перезаписати
+    // (знахідка рев'ю: перетин давав клієнту право перезаписати
     // мітку створення, а тип мовчав).
     // @ts-expect-error — createdAt і writable, і readonly
     defineAdminResource({
@@ -162,7 +162,7 @@ describe('defineAdminResource (К3-4′)', () => {
   // ID — будь-який uuid-літерал.
   const ID = '0e300000-0000-4000-8000-0000000000aa';
 
-  it('touch: update дописує updatedAt = Date (Е3-9)', async () => {
+  it('touch: update дописує updatedAt = Date', async () => {
     const set = vi.fn(() => ({
       where: () => ({ returning: async () => [{ id: ID }] }),
     }));
@@ -194,12 +194,12 @@ describe('defineAdminResource (К3-4′)', () => {
     );
   });
 
-  // 🔴 Доказ тай-брейкера (Е3-8) — ЮНІТОМ, не харнесом (аудит 2026-09-23):
+  // 🔴 Доказ тай-брейкера — ЮНІТОМ, не харнесом (аудит 2026-09-23):
   // Postgres на малій незмінній таблиці часто повертає той самий порядок і
-  // без `id`, тож харнес-тест пагінації (Task 3) лишився б зеленим і без
+  // без `id`, тож харнес-тест пагінації лишився б зеленим і без
   // фіксу.
   it('list: id asc — ОСТАННІЙ ключ сортування, і після defaultOrder, і після sorts', async () => {
-    // 🔴 Хвіст Task 3 (передіснуюча помилка typecheck, не чіплялась Task 1):
+    // 🔴 Передіснуюча помилка typecheck:
     // мок без оголошених параметрів звужував `.mock.calls[n]` до `[]`
     // (нуль-елементний tuple) — TS2493 на індексації нижче. Rest-параметр
     // повертає тип виклику до `unknown[]`, рантайм не змінюється (той самий
@@ -250,7 +250,7 @@ describe('defineAdminResource (К3-4′)', () => {
 // m3 (рев'ю хвилі B): jsonb БЕЗ власної форми в drizzle-zod (`.$type<>()` бачить лише
 // Drizzle, не генератор Zod-схем); дефолтна схема рушія — вільний `jsonSchema` (приймає
 // `{}` як валідний JSON). `refine` звужує колонку, зберігаючи nullable/optional рушія.
-// Носій — `banners.buttons` (jsonb-масив кнопок; `products.images` знесено в М1 Task 17).
+// Носій — `banners.buttons` (jsonb-масив кнопок; `products.images` знесено).
 describe('m3: refine ресурсу — jsonb-колонку звужено до масиву', () => {
   const B_ID = '0e300000-0000-4000-8000-000000000003';
   const row = { id: B_ID, title: 'Банер', imageUrl: 'ab/banner.png' };
@@ -300,10 +300,10 @@ describe('m3: refine ресурсу — jsonb-колонку звужено до
   });
 });
 
-// Е4-5: третій список колонок — `insertOnly`. Колонка пишеться ЛИШЕ при
+// Третій список колонок — `insertOnly`. Колонка пишеться ЛИШЕ при
 // створенні рядка (insert-схема), update-схема її не бачить ні статично,
 // ні в рантаймі (strip). Перший споживач — `section_properties.property_type`.
-describe('insertOnly (Е4-5)', () => {
+describe('insertOnly', () => {
   const UUID = '0e300000-0000-4000-8000-0000000000e4';
   const ops = defineAdminResource({
     entity: ENTITY.sectionProperties,

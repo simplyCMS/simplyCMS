@@ -1,4 +1,4 @@
-// М1 Task 14, мінор-раунд (m-2): `done` пакета fill — «за предикатом `pendingFill` роботи для
+// `done` пакета fill — «за предикатом `pendingFill` роботи для
 // мови не лишилось», а `inserted` — фактично вставлені рядки. Пропущений `ON CONFLICT`
 // рядок (поточну адресу щойно вставила команда) зменшує лічильник, але не робить мову готовою.
 // Окрема база: кандидатів рівно три, жоден чужий товар не входить у пакет.
@@ -14,7 +14,7 @@ import { useAddressingDb } from './fixtures/addressing-db';
 import { latchRace } from './fixtures/latch-race';
 import { create, exec, get } from './fixtures/product-aggregate';
 
-describe('languages.fill: done за предикатом, inserted за фактом (m-2)', () => {
+describe('languages.fill: done за предикатом, inserted за фактом', () => {
   const db = useAddressingDb('simplycms_languages_fill_done');
 
   it('пакет зі пропущеним конфліктом: inserted 1, done false, наступний виклик добирає третій товар', async () => {

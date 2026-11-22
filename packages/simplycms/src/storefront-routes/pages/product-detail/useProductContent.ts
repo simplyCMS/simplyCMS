@@ -79,7 +79,7 @@ export function useProductContent({
         ? propertyValuesByModification[selectedModId]
         : [];
 
-    // Е3-13: рядок на опцію (multiselect) зводиться в один запис на
+    // Рядок на опцію (multiselect) зводиться в один запис на
     // властивість; характеристики модифікації перекривають характеристики
     // товару цілком.
     return mergePropertyValues(productProps, modProps);

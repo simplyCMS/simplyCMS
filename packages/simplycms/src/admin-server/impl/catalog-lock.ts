@@ -11,8 +11,7 @@ import { advisoryXactLock, type ActorDb } from 'simplycms/db';
  * адмінка, що блокувала б товар першим, дала б зворотний порядок і
  * дедлок 40P01. Advisory-lock у порядку рядкових локів не бере участі.
  *
- * 🔴 SQL і хешування ключа живуть в `advisoryXactLock` (`simplycms/db`,
- * Е6в-15) — тут лише виклик: той самий ключ з адмінки й з `commerce` мусить
+ * 🔴 SQL і хешування ключа живуть в `advisoryXactLock` (`simplycms/db`) — тут лише виклик: той самий ключ з адмінки й з `commerce` мусить
  * давати той самий лок.
  */
 export async function lockCatalogTarget(

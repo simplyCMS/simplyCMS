@@ -36,7 +36,7 @@ describe('entityKey: єдина форма ключів кешу', () => {
     expect(new Set(values).size).toBe(values.length);
   });
 
-  describe('collectionKey: ЄДИНИЙ легальний ужиток сегмента "list" (Е3-15′)', () => {
+  describe('collectionKey: ЄДИНИЙ легальний ужиток сегмента "list"', () => {
     it('форма — [entity, "list"], та сама, що колишній entityKey(x).list()', () => {
       expect(collectionKey(ENTITY.orderStatuses)).toEqual([
         'order_statuses',
@@ -49,7 +49,7 @@ describe('entityKey: єдина форма ключів кешу', () => {
     });
   });
 
-  describe('variant: скоуп форми, не FK-зріз (Е3-15)', () => {
+  describe('variant: скоуп форми, не FK-зріз', () => {
     it('без id — не збігається з collectionKey (колекція admin-data)', () => {
       expect(k.variant('storefront')).not.toEqual(
         collectionKey(ENTITY.orderStatuses),

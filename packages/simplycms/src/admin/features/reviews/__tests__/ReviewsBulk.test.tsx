@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** Масова модерація (Task 9, Е6д): вибір, ids/status, інвалідація, 409. */
+/** Масова модерація: вибір, ids/status, інвалідація, 409. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

@@ -2,7 +2,7 @@ import { resolveMediaUrl } from 'simplycms/domain/media';
 import { ImageIcon } from 'lucide-react';
 
 interface Props {
-  /** 🔴 Референс сховища, а не URL (Е2-1) — резолвиться тут. */
+  /** 🔴 Референс сховища, а не URL — резолвиться тут. */
   readonly reference: string | null;
   readonly alt: string;
   /** Розмір мініатюри: 40 — список розділів, 32 — таблиця опцій. */

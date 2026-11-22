@@ -9,7 +9,7 @@ import { TestI18nProvider, ukT } from '../../../test-harness/i18n';
 
 /**
  * Кнопка «Скасувати» в кабінеті покупця є лише для статусу `new`
- * (Е5-5: код береться з контракту T0, а не з рядкового літерала).
+ * (код береться з контракту T0, а не з рядкового літерала).
  */
 const { getMyOrderMock } = vi.hoisted(() => ({ getMyOrderMock: vi.fn() }));
 

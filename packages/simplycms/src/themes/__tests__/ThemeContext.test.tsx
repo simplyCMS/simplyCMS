@@ -117,7 +117,7 @@ describe('ThemeProvider — злиття default-ів зі збереженим�
   });
 });
 
-describe('ThemeProvider — нові initialThemeSettings без перезавантаження (Е6б-16)', () => {
+describe('ThemeProvider — нові initialThemeSettings без перезавантаження', () => {
   it('rerender із новими налаштуваннями оновлює useThemeSettings без remount', async () => {
     ThemeRegistry.register(THEME_NAME, () =>
       Promise.resolve({ default: makeTheme() }),

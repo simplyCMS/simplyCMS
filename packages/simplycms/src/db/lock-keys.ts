@@ -1,5 +1,5 @@
 /**
- * Реєстр ключів advisory-замків — ЄДИНЕ місце, де вони оголошені (М1, Task 2).
+ * Реєстр ключів advisory-замків — ЄДИНЕ місце, де вони оголошені.
  *
  * Чому один реєстр. Ключ рядковий замок хешує `hashtextextended(key, 0)` у 64-бітне
  * число, а ключ накату — число напряму (`pg_advisory_lock(bigint)`): простір
@@ -37,34 +37,34 @@ export const LOCK_KEYS = {
    */
   languagesSet: 'languages-set',
   /**
-   * Ролі адміна (Е6г-4, Е6г-19): `setAdminRole`, бан, видалення покупця, invite власника.
+   * Ролі адміна: `setAdminRole`, бан, видалення покупця, invite власника.
    * Порядок: `customer-category:<userId>` → `admin-roles`, зворотного не бере ніхто.
    */
   adminRoles: 'admin-roles',
   /** Префікс замка покупця (`customer-category:<userId>`): категорія й бан. */
   customerCategoryPrefix: 'customer-category:',
   /**
-   * Конфігурація покупців (Е6в-15): категорії, автоправила, setDefault і `saveDiscount` з
+   * Конфігурація покупців: категорії, автоправила, setDefault і `saveDiscount` з
    * умовою `user_category` (умова тримає id категорій у jsonb без FK, тож «категорії існують»
    * атомарне відносно видалення категорії лише під цим ключем).
    * 🔴 Глобальний порядок: `customer-config` → `discount-config` (цей ПЕРШИЙ, коли треба обидва).
    */
   customerConfig: 'customer-config',
   /**
-   * Конфігурація знижок (Е6в-15): групи, `saveDiscount`, видалення. ПЕРШИЙ запит
+   * Конфігурація знижок: групи, `saveDiscount`, видалення. ПЕРШИЙ запит
    * транзакції запису груп: серіалізує guard циклу з перевішуванням і видаленням піддерева.
    */
   discountConfig: 'discount-config',
   /**
-   * Конфігурація доставки (Е6а-12): способи, зони, точки. ПЕРШИЙ запит транзакції запису:
+   * Конфігурація доставки: способи, зони, точки. ПЕРШИЙ запит транзакції запису:
    * серіалізує інваріанти (єдина дефолтна зона, точка належить способу самовивозу).
    */
   shippingConfig: 'shipping-config',
-  /** Активна тема сайту (Е6б-15). */
+  /** Активна тема сайту. */
   siteTheme: 'site-theme',
-  /** Запис профілю магазину (Е6б). */
+  /** Запис профілю магазину. */
   storeProfile: 'store-profile',
-  /** Довідник типів цін (Е4-2): setDefault і remove. */
+  /** Довідник типів цін: setDefault і remove. */
   priceTypeDefault: 'price-type-default',
   /** Ціль залишку: `stock:<productId>:<modificationId>`. */
   stockPrefix: 'stock:',

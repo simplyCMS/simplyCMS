@@ -22,7 +22,7 @@ export const updateCustomerContactsInput = z.object({
 });
 
 /**
- * Контакти й email покупця з картки (Е6г-1, Е6г-2), `customer.manage`.
+ * Контакти й email покупця з картки, `customer.manage`.
  *
  * Одна транзакція. ПЕРШИМ запитом — `customer-category:<userId>` (як у
  * `deleteCustomer`): конкурент (автоправило чи ручна категорія) тримає
@@ -101,7 +101,7 @@ export const updateCustomerContactsOp = async ({
       });
     } catch (error) {
       // Транзакція вже зіставила 23505 у конфлікт — для email це помилка
-      // поля (Е6г-1). Зіставлення — ВСЕРЕДИНІ межі операції, щоб 400 їй
+      // поля. Зіставлення — ВСЕРЕДИНІ межі операції, щоб 400 їй
       // поставила межа (С-10), а не залишився 409 конфлікту.
       if (
         error instanceof AdminConflictError &&

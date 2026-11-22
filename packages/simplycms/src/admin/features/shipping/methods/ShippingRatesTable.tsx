@@ -18,7 +18,7 @@ import { RATE_CALC_LABEL } from './rate-calculation-types';
 import { ShippingRateDialog } from './ShippingRateDialog';
 import { useShippingRates } from './useShippingRates';
 
-/** Блок «Тарифи» картки способу (Е6а-1): рядки «зона → тариф» + діалог правки. */
+/** Блок «Тарифи» картки способу: рядки «зона → тариф» + діалог правки. */
 export function ShippingRatesTable({
   methodId,
 }: {

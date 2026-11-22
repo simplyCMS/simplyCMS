@@ -13,7 +13,7 @@ interface Props {
   readonly status: StockStatus | null;
 }
 
-/** Бейдж статусу наявності модифікації — легасі `getStatusBadge` (Task 8). */
+/** Бейдж статусу наявності модифікації — легасі `getStatusBadge`. */
 export function ModificationStatusBadge({ status }: Props) {
   const t = useT();
   if (!status) return null;

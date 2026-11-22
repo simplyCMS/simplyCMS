@@ -70,7 +70,7 @@ export async function createOrder(
     shippingRateId: input.shippingRateId,
     pickupPointId: input.pickupPointId,
     // Знімок, а не посилання: замовлення читається після перейменування чи
-    // видалення точки або способу (Е6а-8). Spread — щоб interface став JSON.
+    // видалення точки або способу. Spread — щоб interface став JSON.
     shippingData: { ...input.shippingSnapshot },
     hasDifferentRecipient: input.hasDifferentRecipient,
     recipientFirstName: input.recipientFirstName,
@@ -82,7 +82,7 @@ export async function createOrder(
   });
 
   // 🔴 Ключі позицій — ОДИН масив і для вставки, і для обліку: лічильник
-  // списаного пишеться в позицію за її `id` (Е5-4′, `StockLine.orderItemId`),
+  // списаного пишеться в позицію за її `id` (`StockLine.orderItemId`),
   // тож друга генерація id усередині вставки розвела б їх.
   const items = input.items.map((item) => ({
     ...item,

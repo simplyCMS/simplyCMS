@@ -14,9 +14,9 @@ Spec: `docs/architecture/rendering-and-routing.md` §1; `docs/architecture/data-
 - Спільного дескриптора даних для адмінки й вітрини немає (К3-4).
 
 ## Why
-- Джерело бібліотеки: «TanStack DB collections are client-side only. SSR is not implemented» (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
-- Тому колекції неможливі на вітрині, а спільний дескриптор для К2 і К3 не робиться (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
-- Реєстр не дає мовчазних відхилень від колекцій (`docs/superpowers/specs/2026-08-29-v2-k3-admin-server-layer-design.md` § «2. Рішення (К3-1 … К3-12»).
+- Джерело бібліотеки: «TanStack DB collections are client-side only. SSR is not implemented» (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show a967ab1e`).
+- Тому колекції неможливі на вітрині, а спільний дескриптор для К2 і К3 не робиться (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show a967ab1e`).
+- Реєстр не дає мовчазних відхилень від колекцій (спека «v2-k3-admin-server-layer-design», розділ «2. Рішення (К3-1 … К3-12»; знесено 2026-11-21, текст — `git show a967ab1e`).
 - Стан у коді: `ssr: false` у `packages/simplycms/routes/admin/admin.tsx`; колекції в `packages/simplycms/src/admin-data/collections`.
 
 ## Rejected

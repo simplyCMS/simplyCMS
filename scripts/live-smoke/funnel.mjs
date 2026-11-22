@@ -2,8 +2,7 @@
  * Браузерна воронка живого прогону: реєстрація → картка → кошик → чекаут →
  * СКАСУВАННЯ. Єдиний споживач Playwright; оркестрація його не імпортує.
  *
- * Реєстрація винесена в `./register.mjs` (контингент брифа Task 14: з
- * доказом М-12 «підсумок = замовлення» цей файл переріс би канон 150 рядків;
+ * Реєстрація винесена в `./register.mjs` (інакше цей файл переріс би канон 150 рядків;
  * `register` самодостатня й ні від чого тут не залежить), а селектори й
  * розбір чисел — у `./selectors.mjs`: це контракт РОЗМІТКИ, який живе своїм
  * життям від кроків сценарію.
@@ -60,7 +59,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
     `stock_status=${before.status}, очікували ${expectedAvailability}, отримали ${actualAvailability}`,
   );
 
-  // 2. Кошик і сторінки з НЕПОРОЖНІМ кошиком (гідратація — Е0-5).
+  // 2. Кошик і сторінки з НЕПОРОЖНІМ кошиком (гідратація).
   const addToCart = page.getByRole('button', { name: /Додати в кошик/ });
   await addToCart.first().click();
   for (const path of ['/', '/catalog', '/cart']) await goto(path);
@@ -79,8 +78,8 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   );
   const firstName = await page.locator(FIELD.firstName).inputValue();
   check('чекаут префілено профілем покупця', firstName === 'Тест', firstName);
-  // Демо-метод — pickup з однією точкою: метод і точку форма обирає сама
-  // (Task 11); smoke це доводить, а не клікає замість покупця.
+  // Демо-метод — pickup з однією точкою: метод і точку форма обирає сама;
+  // smoke це доводить, а не клікає замість покупця.
   const points = await activePickupPoints(dbUrl);
   const onePoint = points.length === 1 && points[0].is_system === true;
   const pointsFact = `точок ${points.length}, is_system ${points.map((p) => p.is_system).join(',')}`;
@@ -102,7 +101,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
   await page.locator(FIELD.total).waitFor();
   const totalText = await page.locator(FIELD.total).textContent();
   const displayedTotal = parseMoney(totalText);
-  // Телефон → підтвердити → `order-success`; id — SQL за номером (К3-Е5).
+  // Телефон → підтвердити → `order-success`; id — SQL за номером.
   const { orderId } = await submitCheckout({ page, base, dbUrl });
   const ordersAfter = await ordersCount(dbUrl);
   const placed = await stockSnapshot(dbUrl, PRODUCT_SLUG);
@@ -111,7 +110,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
     ordersAfter === ordersBefore + 1,
     `${ordersBefore} → ${ordersAfter}`,
   );
-  // Демо вмикає decrease_on_order (Task 7): списання — безумовне очікування.
+  // Демо вмикає decrease_on_order: списання — безумовне очікування.
   const stockFact = `${before.total} → ${placed.total}, точка ${pickedPoint}`;
   check('списання залишку', placed.total === before.total - 1, stockFact);
   const recordedTotal = await orderTotal(dbUrl, orderId);
@@ -123,7 +122,7 @@ export async function runFunnel({ page, base, dbUrl, check }) {
     `підсумок чекауту ${displayedTotal}, orders.total ${recordedTotal}`,
   );
 
-  // 4. Скасування в кабінеті → ПОВЕРНЕННЯ залишку (Р1, Task 9).
+  // 4. Скасування в кабінеті → ПОВЕРНЕННЯ залишку.
   await goto(`/profile/orders/${orderId}`);
   await page.getByRole('button', { name: 'Скасувати', exact: true }).click();
   await page.getByRole('button', { name: /Так, скасувати/ }).click();

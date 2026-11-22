@@ -2,7 +2,7 @@ import { useT } from 'simplycms/i18n';
 import { Button } from 'simplycms/ui/button';
 import type { ReviewStatus } from 'simplycms/contracts/objects';
 
-/** Серверний ліміт `setReviewsStatus` (Е6д-7). */
+/** Серверний ліміт `setReviewsStatus`. */
 export const BULK_LIMIT = 100;
 
 interface Props {

@@ -1,4 +1,4 @@
-// Вбудовані умови знижок (Е6в-4): чотири типи, зареєстровані тим самим
+// Вбудовані умови знижок: чотири типи, зареєстровані тим самим
 // контрактом `DiscountConditionDefinition`, що й майбутні умови плагінів.
 
 import { MAX_LINE_QUANTITY } from 'simplycms/contracts/cart-limits';
@@ -26,7 +26,7 @@ function compare(actual: number, operator: NumericOperator, expected: number) {
 }
 
 /**
- * Досяжні межі значення `min_quantity` для оператора (ред.4): кількість у
+ * Досяжні межі значення `min_quantity` для оператора: кількість у
  * рядку — ціле 1…`MAX_LINE_QUANTITY`, тож `> 999` і `< 1` не виконаються
  * ніколи. Така умова — мертва акція, яку адмінка не має дозволити записати.
  */
@@ -80,7 +80,7 @@ export const minOrderAmountCondition: DiscountConditionDefinition<NumericConfig>
         return null;
       return { operator, value };
     },
-    // 🔴 Центами (Е6в-9): `0.1 + 0.2 > 0.3` у JS — істина.
+    // 🔴 Центами: `0.1 + 0.2 > 0.3` у JS — істина.
     evaluate: ({ operator, value }, ctx) =>
       compare(toCents(ctx.cart.total), operator, toCents(value)),
   };

@@ -14,8 +14,8 @@ Spec: `docs/architecture/data-layer.md` §14
 4. Стерте замовлення не редагується: зміна позицій дає 409 `order_personal_data_erased`.
 
 ## Why
-- Рішення власника Г-5: `docs/superpowers/specs/2026-10-07-customers-dashboard-design.md` § «Рішення власника».
-- Порядок видалення й що саме стирається: `docs/superpowers/specs/2026-10-07-customers-dashboard-design.md` § «7. Видалення акаунта (Г-4, Г-5, Г-6».
+- Рішення власника Г-5: спека «customers-dashboard-design», розділ «Рішення власника» (знесено 2026-11-21, текст — `git show a967ab1e`).
+- Порядок видалення й що саме стирається: спека «customers-dashboard-design», розділ «7. Видалення акаунта (Г-4, Г-5, Г-6» (знесено 2026-11-21, текст — `git show a967ab1e`).
 - Реєстр ПД: тип `{ [K in keyof Order] }` — «найсильніший гейт»: `packages/simplycms/src/commerce/order-privacy.ts`.
 - Парність реєстру з реальною БД доводить `order-privacy-registry.test.ts` через `information_schema` (там само, рядки 11-13).
 - Операція `customer.delete` окрема від `customer.manage`: `packages/simplycms/src/admin-server/impl/customers/delete.ts`.

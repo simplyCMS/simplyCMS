@@ -59,7 +59,7 @@ beforeEach(() => {
   mocks.saveStockManagement.mockImplementation(async ({ data }) => data);
 });
 afterEach(() => cleanup());
-describe('Логотип у формі налаштувань (Review Focus 2, клієнт)', () => {
+describe('Логотип у формі налаштувань (клієнт)', () => {
   it('прибрати логотип у формі й не зберегти → deleteMedia НЕ викликано', async () => {
     await open();
     fireEvent.click(removeLogoButton());
@@ -69,7 +69,7 @@ describe('Логотип у формі налаштувань (Review Focus 2, �
     expect(mocks.saveStoreProfile).not.toHaveBeenCalled();
   });
 
-  it('завантажити новий логотип і піти без збереження → лишається сирота (Е6б-14)', async () => {
+  it('завантажити новий логотип і піти без збереження → лишається сирота', async () => {
     mocks.uploadMedia.mockResolvedValue({ ref: 'store_logo/new.png' });
     const view = render(<SettingsPage />, { wrapper: makeWrapper(client) });
     await screen.findByLabelText(t('admin.settings.field.name'));
@@ -82,7 +82,7 @@ describe('Логотип у формі налаштувань (Review Focus 2, �
     });
     await waitFor(() => expect(mocks.uploadMedia).toHaveBeenCalled());
     view.unmount();
-    // Новий рядок media лишився без посилання з профілю — її змітає sweep неприв'язаних медіа (Е6д-22).
+    // Новий рядок media лишився без посилання з профілю — її змітає sweep неприв'язаних медіа.
     expect(mocks.saveStoreProfile).not.toHaveBeenCalled();
   });
 });

@@ -39,7 +39,7 @@ export async function statusIdByCode(url, code) {
  * Знімок наявності товару: статус + залишок ПО КОЖНІЙ точці видачі.
  *
  * 🔴 Мапа по точках, а не сума: списання й повернення йдуть в ОДНУ
- * детерміновану точку (Е0-3: `orders.pickup_point_id` → системна → перша
+ * детерміновану точку (`orders.pickup_point_id` → системна → перша
  * активна), і «повернулось як було» — це рівність саме мап, а не сум.
  */
 export async function stockSnapshot(url, slug) {
@@ -105,7 +105,7 @@ export async function orderTotal(url, orderId) {
   return row ? Number(row.total) : null;
 }
 
-/** Активні точки видачі демо — форма, від якої залежать автовибір і Е0-3. */
+/** Активні точки видачі демо — форма, від якої залежать автовибір і. */
 export async function activePickupPoints(url) {
   return sql(
     url,
@@ -114,7 +114,7 @@ export async function activePickupPoints(url) {
   );
 }
 
-/** id замовлення за номером із `order-success` (К3-Е5, `submitCheckout`). */
+/** id замовлення за номером із `order-success` (`submitCheckout`). */
 export async function orderIdByNumber(url, orderNumber) {
   const [row] = await sql(
     url,
@@ -124,11 +124,11 @@ export async function orderIdByNumber(url, orderNumber) {
   return row?.id ?? null;
 }
 
-/** Рядок замовлення для кроку Е5: статус (код і назва) і записана сума. */
+/** Рядок замовлення для кроку: статус (код і назва) і записана сума. */
 export async function orderState(url, orderId) {
   const [row] = await sql(
     url,
-    // Назва статусу — з перекладу основної мови (колонки `name` у `order_statuses` немає, М2б).
+    // Назва статусу — з перекладу основної мови (колонки `name` у `order_statuses` немає).
     `select st.code, tr.name, o.total from public.orders o
        left join public.order_statuses st on st.id = o.status_id
        left join public.order_status_translations tr
@@ -139,7 +139,7 @@ export async function orderState(url, orderId) {
   return row ? { ...row, total: Number(row.total) } : null;
 }
 
-/** Облік по позиціях (Е5-4′): кількість, фактично списане і точка. */
+/** Облік по позиціях: кількість, фактично списане і точка. */
 export async function orderItemsStock(url, orderId) {
   return sql(
     url,

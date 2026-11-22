@@ -71,7 +71,7 @@ function loaderFiles(dir: string): string[] {
 }
 
 /**
- * Вирази галереї агрегата товару (`simplycms/translations`, М1 Task 17): читають
+ * Вирази галереї агрегата товару (`simplycms/translations`): читають
  * `product_images.storage_key` (запис реєстру `MEDIA_COLUMNS`) підзапитом, а не
  * проєкцією колонки — тож дискавер шукає і їх: `alias: productGallerySql(` у Drizzle-
  * вибірці та `${modificationGallerySql(…)} as alias` у сирому SQL.
@@ -81,7 +81,7 @@ const GALLERY_READERS = [
   'modificationGallerySql',
   'lineImageSql',
   'mainImageSql',
-  // Мініатюра SSR-списку (фінальне рев'ю М1, B M7): перше фото без агрегату галереї.
+  // Мініатюра SSR-списку перше фото без агрегату галереї.
   'productFirstImageSql',
 ];
 
@@ -89,13 +89,13 @@ const GALLERY_READERS = [
 const RESOLVED_BY: Record<string, string> = {
   'profile.ts#avatar_url': 'resolveMediaUrl',
   'reviews.ts#avatar_url': 'resolveMediaUrl',
-  // Е6д Task 5: явний список колонок замість `select()` зробив проєкцію видимою.
+  // Явний список колонок замість `select()` зробив проєкцію видимою.
   'reviews.ts#images': 'toImageList',
-  // Галерея товару мовою сторінки (М1, Task 17б): декодер з alt, а не список URL.
-  // SSR-список (B M7): лише мініатюра — тим самим декодером одного фото.
+  // Галерея товару мовою сторінки: декодер з alt, а не список URL.
+  // SSR-список: лише мініатюра — тим самим декодером одного фото.
   'products.ts#image': 'toGalleryImage',
   'entities/home-product.ts#images': 'toGallery',
-  // Мініатюра позиції кошика (Task 17б fix-1): одне фото тим самим декодером.
+  // Мініатюра позиції кошика: одне фото тим самим декодером.
   'line-images.ts#image': 'toGalleryImage',
   'entities/banner.ts#image_url': 'resolveMediaUrl',
   'entities/banner.ts#desktop_image_url': 'resolveMediaUrl',
@@ -149,16 +149,16 @@ const RAW_READS: Record<string, string> = {
     'а сховище адресується ключем, не URL',
   'reviews-write.ts#images':
     'сирий ключ для стирання, не для показу: `DELETE … RETURNING images` ' +
-    'власного відгуку йде в `eraseMediaRows` (Е6д-9, Е6д-14)',
+    'власного відгуку йде в `eraseMediaRows`',
   'reviews-edit.ts#images':
     'сирі ключі для звірки `keep` ⊆ поточних і для стирання прибраних: ' +
-    '`SELECT … FOR UPDATE` власного відгуку під правку (Е6д-23)',
+    '`SELECT … FOR UPDATE` власного відгуку під правку',
 };
 
 /**
  * Текст, по якому матчить гейт: лише КОД. Коментар із формою виклику (`alias: resolver(`)
  * інакше задовольняв гейт без виклику, а коментар із формою проєкції створював фантомний
- * сайт (Task 17б fix-2, N1). Рядкові й шаблонні літерали лишаються: SQL галереї живе в них.
+ * сайт. Рядкові й шаблонні літерали лишаються: SQL галереї живе в них.
  */
 const code = codeOnly;
 

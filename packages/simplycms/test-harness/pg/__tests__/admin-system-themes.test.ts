@@ -1,7 +1,7 @@
-// К3-Е6б, Task 3: активація теми проти живої БД (Review Focus 4; налаштування —
+// Активація теми проти живої БД (налаштування —
 // admin-system-theme-settings.test.ts).
 // Лок `site-theme` доводиться детерміновано (`holdAdvisoryLock`/`stillPending`),
-// а не випадковою перемогою гонки `Promise.all` (урок Е4: ~4 % червоних прогонів).
+// а не випадковою перемогою гонки `Promise.all` (урок: ~4 % червоних прогонів).
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { declareBuiltThemes } from 'simplycms/site';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
@@ -20,7 +20,7 @@ import { activateThemeOp } from 'simplycms/admin-server/impl';
 
 const BUILT = ['default', 'solarstore'];
 
-describe('admin: теми (Е6б, Task 3)', () => {
+describe('admin: теми', () => {
   const db = F.useSystemAdminDb('simplycms_admin_system_themes');
   const url = () => db.url();
   const active = async () =>

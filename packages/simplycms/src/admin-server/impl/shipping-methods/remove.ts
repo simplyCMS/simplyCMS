@@ -12,12 +12,12 @@ export const removeShippingMethodsInput = z
   .max(100);
 
 /**
- * Видалення способів доставки (Е6а-12, Е6а-17) — guarded batch:
+ * Видалення способів доставки — guarded batch:
  *  1. `LOCK_KEYS.shippingConfig` — ПЕРШИЙ запит (серіалізує з insert точки, що
  *     перевіряє спосіб guard-ом).
  *  2. `FOR UPDATE … ORDER BY id` — детермінований порядок рядкових локів;
  *     відсутній id — помилка й ROLLBACK усього batch-у.
- *  3. DELETE. Спосіб із точками база не видаляє (FK `RESTRICT`, Е6а-17) —
+ *  3. DELETE. Спосіб із точками база не видаляє (FK `RESTRICT`) —
  *     23503 у `AdminConflictError('reference')` перетворює `runAdmin`;
  *     точки, їхні залишки й тарифи способу лишаються недоторканими.
  */

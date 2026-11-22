@@ -22,7 +22,7 @@ import { PageSpinner } from '../PageStates';
 import { SectionRow } from './SectionRow';
 
 /**
- * Список розділів (Е4, Task 7): жива eager-колекція, сортування за
+ * Список розділів: жива eager-колекція, сортування за
  * `sortOrder`, потім за назвою. Видалення — `collection.delete` через
  * підтвердження `AlertDialog`; товари розділу лишаються з `section_id NULL`.
  */

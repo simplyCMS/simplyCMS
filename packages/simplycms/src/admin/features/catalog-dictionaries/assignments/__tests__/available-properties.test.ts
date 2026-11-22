@@ -21,7 +21,7 @@ const assign = (
   appliesTo,
 });
 
-describe('availableProperties (Review Focus 3)', () => {
+describe('availableProperties', () => {
   it('властивість, призначена для товарів, не доступна і для модифікацій', () => {
     expect(
       availableProperties([P1, P2], [assign(P1, 'product')]).map((p) => p.id),

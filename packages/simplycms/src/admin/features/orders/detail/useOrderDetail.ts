@@ -7,7 +7,7 @@ import {
 
 /**
  * Дані картки: рядок замовлення — зріз `where id`, позиції — зріз
- * `where orderId` (обидва on-demand, Е5-10). `isLoading` — доки зріз
+ * `where orderId` (обидва on-demand). `isLoading` — доки зріз
  * замовлення не готовий: порожній результат ДО цього не «не знайдено».
  */
 export function useOrderDetail(orderId: string) {

@@ -6,12 +6,12 @@ import {
   withSeoInterceptor,
 } from 'simplycms/storefront-routes/seo/interceptor';
 
-// Крос-пакетний гейт (Task 2.2): справжні білдери `simplycms/storefront`
+// Крос-пакетний гейт: справжні білдери `simplycms/storefront`
 // у зв'язці з інтерсептором серверного входу з `simplycms/storefront-routes`.
 // Транспорт SEO живе в server entry — один і той самий у dev, preview і
 // production; тест перевіряє контракт цієї пари без підняття сервера.
 //
-// 🔴 Мока клієнта БД тут більше немає (В2-К1а): рендер sitemap став чистою
+// 🔴 Мока клієнта БД тут більше немає: рендер sitemap став чистою
 // функцією від даних, а сам похід у базу — `withStorefrontDb` + Drizzle, і
 // доводиться він на живому Postgres у `pnpm test:schema`. Для контракту
 // «білдер упав → 500 без кешу» джерело падіння байдуже — важливо, що

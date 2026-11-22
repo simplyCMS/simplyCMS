@@ -1,6 +1,5 @@
 /**
- * Смок motion-капчера в headless chromium (інкремент Б.2, Фаза 1, план
- * Р1/Р4/Р6): `inspectPage` на `tests/fixtures/design-import/motion.html` дає
+ * Смок motion-капчера в headless chromium: `inspectPage` на `tests/fixtures/design-import/motion.html` дає
  * `schemaVersion: 3` і секцію `motion` з усіма чотирма каналами.
  *
  * Окремий файл, а не доважок до `design-import-inspect.test.ts` (той уже 220+

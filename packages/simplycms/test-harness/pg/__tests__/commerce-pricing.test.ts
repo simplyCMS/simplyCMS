@@ -1,4 +1,4 @@
-// `simplycms/commerce` (К3-Е5б, Task 1): рушій ціноутворення, спільний для
+// `simplycms/commerce`: рушій ціноутворення, спільний для
 // чекауту й адмінки. Числа оракула і гуртова/від-суми гілки ЗАФІКСОВАНІ на
 // СТАРОМУ рушії (`priceCheckoutItems` зі `storefront/loaders`) ДО переїзду —
 // тест доводить, що переїзд нічого не змінив, а не те, що новий код
@@ -31,7 +31,7 @@ const CART_APPLIED = {
 describe('рушій цін commerce: priceItems', () => {
   const ids = useCommerceDb('simplycms_commerce_pricing');
 
-  it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані в Step 1', async () => {
+  it('priceItems без opts дає ЗАФІКСОВАНІ до переїзду значення (price, basePrice, discountData) — оракул: очікування з checkout-flow.test.ts:~227 і явні числа демо-фікстур, записані до переїзду', async () => {
     const out = await guest((db) =>
       priceItems(
         db,

@@ -60,7 +60,7 @@ const ENV_KEYS = [
   'VITE_SITE_URL',
   'DATABASE_URL',
   'BETTER_AUTH_SECRET',
-  // Групи драйверів (К3-Е8): лише коли прогін їх задав, див. `env.mjs`.
+  // Групи драйверів: лише коли прогін їх задав, див. `env.mjs`.
   ...PILOT_GROUP_KEYS,
 ];
 

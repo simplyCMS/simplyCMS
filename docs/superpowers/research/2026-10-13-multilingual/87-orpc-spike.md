@@ -19,7 +19,7 @@
 Мінімальний Start на версіях репо (`@tanstack/react-start/plugin/vite`), `vite build` проходить. Три процедури + `whoami`, Zod 4 схеми за мотивом розділу: uuid `id` від викликача, `Date` (publishAt/createdAt/updatedAt), nullable, enum, масив, numeric-рядок, `translations: Record<'uk'|'en'|'pl', {name, description|null}>`.
 
 - (а) Клієнт: `createORPCClient(RPCLink)` + `createTanstackQueryUtils` (`orpc.sections.list.queryOptions(...)`) -- типобезпека повна. tsc ловить помилки на місці (напр. відсутні ключі локалей), `createdAt` типізовано як `Date` і в рантаймі це справді `Date` (RPCLink серіалізує Date через `meta`: `"meta":[[1,0,"createdAt"],...]`). Також `createRouterClient(router,{context})` -- виклик in-process без HTTP (для serverFn/CLI): працює, Date зберігається, анонім -> `UNAUTHORIZED 401`.
-- (б) HTTP: server route `src/routes/api/v1/$.ts` (`server.handlers.POST`) + `OpenAPIHandler` з `route({method:'POST', path:'/sections.create'})`. Працює з curl (див. п. 3).
+- (б) HTTP: server route роут `$.ts` у теці api/v1 (`server.handlers.POST`) + `OpenAPIHandler` з `route({method:'POST', path:'/sections.create'})`. Працює з curl (див. п. 3).
 - Пастка: `OpenAPILink` (типізований HTTP-клієнт) повертає `createdAt` як `string`, хоча тип каже `Date` (перевірено: `typeof = string`). Для внутрішнього клієнта брати `RPCLink`.
 - SSR: сторінка `/` рендериться (200).
 
@@ -39,7 +39,7 @@ get неіснуючого        -> 404 NOT_FOUND
 невідома операція/GET  -> 404 problem+json
 ```
 
-- problem+json НЕ нативний: oRPC віддає своє тіло `{defined,code,status,message,data}`; я зробив обгортку `toProblem` (~15 рядків у `src/orpc/handlers.ts`). Працює, але це наш код.
+- problem+json НЕ нативний: oRPC віддає своє тіло `{defined,code,status,message,data}`; я зробив обгортку `toProblem` (~15 рядків у файл `handlers.ts` у теці orpc). Працює, але це наш код.
 - Помилка валідації -> 400, але `data.issues` -- сирі issue Zod (з regex-патернами UUID тощо). Нам знадобиться власний санітайзер (як `sanitizeValidationIssues`).
 - Помилки в OpenAPI-документі не описані (лише `200`), якщо не декларувати `.errors({...})` на кожній процедурі.
 
@@ -66,7 +66,7 @@ get неіснуючого        -> 404 NOT_FOUND
 - Мейнтейнер фактично один -- ПІДТВЕРДЖЕНО (див. п. 0), попри активну розробку (2.0 beta).
 - Стан API: деякі речі в Start 1.168.60 -- `inputValidator()` у `createServerFn` вже deprecated, лишається `.validator()` (як у AGENTS.md).
 
-## 8. Альтернатива: власний реєстр команд (`src/custom/`)
+## 8. Альтернатива: власний реєстр команд (тека custom)
 
 `defineOperation({name,input,output,permission,handler})` + `execute` (суб'єкт -> право -> валідація -> handler -> валідація виходу) + HTTP-адаптер (problem+json) + `reviveDates` (аналог smart-coercion, ~12 рядків) + OpenAPI 3.1 і JSON Schema з `z.toJSONSchema({io, unrepresentable:'any', override: Date -> date-time})` + serverFn-адаптер. Перевірено curl тими самими кейсами: 401/403/409/404/400 problem+json, ISO-дата на вході, Bearer/cookie; серверна fn `/sf` у SSR-лоадері з cookie `sess_admin` -> `["shoes:true"]` (Date зберігся), анонім -> повідомлення "Потрібна автентифікація".
 

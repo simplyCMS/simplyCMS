@@ -2,7 +2,7 @@
 // (vitest.config: environment 'node' — без директиви renderHook упаде на
 // document is not defined; патерн — як у on-demand-contract.test.tsx)
 /**
- * Колекції каталогу (Task 5, Step 5): (1) push-down фільтра до
+ * Колекції каталогу: (1) push-down фільтра до
  * list-serverFn через subset-payload; (2) колекція БЕЗ `persistenceHandlers`
  * (ціни) — `insert` кидає, запис лише іменованою операцією; (3) eager
  * довідник (розділи) — preload тягне `listSections({ data: {} })` один раз.
@@ -21,7 +21,7 @@ const { listProducts, listProductPrices, listSections } = vi.hoisted(() => ({
   listProductPrices: vi.fn(async () => []),
   listSections: vi.fn(async () => []),
 }));
-// Task 5 (Е4): запис довідників. Insert-стаб повертає «серверний» рядок
+// Запис довідників. Insert-стаб повертає «серверний» рядок
 // з полем, якого оптимістичний рядок не має (`createdAt`) — так видно, що
 // в кеш ліг саме write-back, а не оптимістичний драфт.
 const SERVER_CREATED_AT = new Date('2026-10-03');
@@ -179,10 +179,10 @@ describe('колекції каталогу', () => {
         )) as never);
       const qc = new QueryClient();
       const c = getCollection(qc, def as AnyDef) as WritableCollection;
-      // 🔴 Е4-13: без живого спостерігача драфт on-demand колекції лишається
+      // 🔴 Без живого спостерігача драфт on-demand колекції лишається
       // видимим до наступного sync-коміту (@tanstack/db 0.8.6,
       // collection/state.js:686-745); сторінки завжди підписані — тест
-      // відтворює їхню форму (Е4-13).
+      // відтворює їхню форму.
       const wrapper = ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={qc}>{children}</QueryClientProvider>
       );
@@ -208,7 +208,7 @@ describe('колекції каталогу', () => {
         ).toEqual(SERVER_CREATED_AT);
       }
       // Eager і on-demand однаково: write-back — патч кешу без мережі
-      // (К3-7; на on-demand — з qdc 1.4.4, M1 TSDB-1 закрито).
+      // (на on-demand — з qdc 1.4.4, TSDB-1 закрито).
       await expectNoRefetch(list, listCalls);
     },
   );

@@ -25,7 +25,7 @@ async function ruleErrors(code: string, filePath: string): Promise<string[]> {
 const IMPORT =
   "import { collectionKey } from 'simplycms/contracts/entities';\n";
 
-describe('collectionKey — лише admin-data (Е3-15′)', () => {
+describe('collectionKey — лише admin-data', () => {
   it.each([
     ['вітрина', 'packages/simplycms/src/storefront-routes/__fixture.ts'],
     ['адмінка', 'packages/simplycms/src/admin/__fixture.ts'],

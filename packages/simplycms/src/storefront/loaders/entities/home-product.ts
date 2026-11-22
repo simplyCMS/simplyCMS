@@ -12,7 +12,7 @@ import { listLangs, listTextColumns } from '../product-list-text';
 /**
  * Мінімальний товар для карток головної. Назва, адреса й короткий опис — з проєкції
  * `catalog_product_texts` у мові запиту (П7); запит приєднує її через `textJoinOn`.
- * Фото — галерея тієї ж мови (Task 17б), тож мапа колонок — функція мови.
+ * Фото — галерея тієї ж мови, тож мапа колонок — функція мови.
  */
 export const homeProductColumns = (text: TextLocale) => ({
   id: products.id,
@@ -40,13 +40,13 @@ export interface HomeProductRow {
   stock_status: Product['stockStatus'];
   /** Slug розділу — дані картки для теми; href від нього не залежить (адреса — `slug`). */
   section: { slug: string } | null;
-  /** Розділ — ціль знижок `section` для `priceForCard` (Е6в-11). */
+  /** Розділ — ціль знижок `section` для `priceForCard`. */
   section_id: Product['sectionId'];
   /** Ціна за ДЕФОЛТНИМ типом — серверний HTML до гідрації. */
   price: number | null;
   old_price: number | null;
   /**
-   * Прайс товару — лише види цін глядача (Р29, фільтр у лоадері): базу за
+   * Прайс товару — лише види цін глядача (фільтр у лоадері): базу за
    * типом ціни покупця й знижку рахує клієнт (`priceForCard`) — та сама
    * функція, що в каталозі.
    */

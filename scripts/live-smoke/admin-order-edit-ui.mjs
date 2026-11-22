@@ -1,5 +1,5 @@
 /**
- * Дії браузера кроку редагування позицій К3-Е5б (`./admin-order-edit.mjs`)
+ * Дії браузера кроку редагування позицій (`./admin-order-edit.mjs`)
  * — окремим модулем за каноном 150 рядків. Це КОНТРАКТ РОЗМІТКИ картки
  * замовлення (`admin/features/orders/detail/**`): доступні імена — з
  * uk-каталогу, тож зміна тексту чи `aria-label` правиться тут, а не посеред
@@ -13,7 +13,7 @@ import {
 import { PRODUCT_SLUG, parseMoney } from './selectors.mjs';
 
 /**
- * Покупець оформлює замовлення товару воронки (`PRODUCT_SLUG`) — хелпери Е5
+ * Покупець оформлює замовлення товару воронки (`PRODUCT_SLUG`) — хелпери
  * у тій самій послідовності, що `admin-orders-buyer.mjs`.
  */
 export async function placeOrder({ page, base, dbUrl }) {

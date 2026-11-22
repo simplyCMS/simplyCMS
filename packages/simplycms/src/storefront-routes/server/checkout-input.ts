@@ -22,9 +22,9 @@ import { localeInput } from 'simplycms/core/lib/locale-input';
  * цінових полів немає фізично, і `z.object`, який зрізає невідомі ключі на
  * парсингу.
  *
- * Позиція кошика — ЛИШЕ ідентичність і кількість (К2-Е0, Е0-4): усе, що
+ * Позиція кошика — ЛИШЕ ідентичність і кількість: усе, що
  * приїхало б із кошика як «істина», можна підмінити в запиті (борг 0.4.1-4).
- * Схема позицій спільна з квотою кошика (`core/lib/cart-lines`, Е6в-13).
+ * Схема позицій спільна з квотою кошика (`core/lib/cart-lines`).
  */
 
 export const checkoutInputSchema = z.object({
@@ -36,7 +36,7 @@ export const checkoutInputSchema = z.object({
   deliveryCity: z.string().nullable(),
   deliveryAddress: z.string().nullable(),
   pickupPointId: z.string().uuid().nullable(),
-  // Е6а-3: до К5 онлайн-оплати немає — прямий POST не кладе її в замовлення.
+  // До К5 онлайн-оплати немає — прямий POST не кладе її в замовлення.
   paymentMethod: z.enum(['cash']),
   notes: z.string().max(5000).nullable(),
   hasDifferentRecipient: z.boolean(),
@@ -53,7 +53,7 @@ export const checkoutInputSchema = z.object({
   // 🔴 Рев'ю M-6: `quoteCheckout` анонімний і дьоргається з дебаунсом 300 мс
   // — без верхньої межі кожен виклик міг би нести довільно великий кошик.
   // Межі (`MAX_CART_LINES`, `MAX_LINE_QUANTITY`, без дублів пари) — ті самі,
-  // що в кошику й квоті кошика (Е6в-13), і накривають ОБИДВА шляхи:
+  // що в кошику й квоті кошика, і накривають ОБИДВА шляхи:
   // `placeOrder` читає ТУ САМУ схему.
   items: cartLinesSchema.min(1),
 }) satisfies z.ZodType<PlaceOrderInput>;

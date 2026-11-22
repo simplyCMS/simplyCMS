@@ -1,8 +1,6 @@
 # Маркетплейс-індекс SimplyCMS
 
-> Контракт формату запису — Фаза 4, план
-> [`2026-08-14-phase4-themes-as-packages.md`](../superpowers/plans/2026-08-14-phase4-themes-as-packages.md)
-> Р11; вимоги індексу веде спека
+> Контракт формату запису — тема як пакет ([канон тем](../architecture/themes.md)); вимоги індексу веде спека
 > [`2026-07-30-platform-architecture-design.md`](../superpowers/specs/2026-07-30-platform-architecture-design.md)
 > §13 (там лише нагадування зафіксувати їх — фіксує цей документ).
 > Машинний контракт стереже `tests/marketplace-index.test.ts` (Zod-схема).
@@ -34,12 +32,12 @@
 
 | Вимога | Деталі |
 |---|---|
-| Неймінг | Базове (unscoped) імʼя пакета починається з `simplycms-theme-`/`simplycms-plugin-` — сам пакет unscoped (`simplycms-theme-aurora`) або під будь-яким стороннім scope (`@vendor/simplycms-theme-aurora`). Виняток — референс-пакети ядра під `@simplycms/theme-<name>`/`@simplycms/plugin-<name>` (план Фази 4, Р1). |
+| Неймінг | Базове (unscoped) імʼя пакета починається з `simplycms-theme-`/`simplycms-plugin-` — сам пакет unscoped (`simplycms-theme-aurora`) або під будь-яким стороннім scope (`@vendor/simplycms-theme-aurora`). Виняток — референс-пакети ядра під `@simplycms/theme-<name>`/`@simplycms/plugin-<name>`. |
 | `license` | Валідний непорожній рядок у `package.json` (SPDX-ідентифікатор, напр. `MIT`). |
 | `engines.simplycms` | Діапазон сумісності з ядром у маніфесті (`ThemeManifest`/`PluginManifest`, полі `engines`) — окреме поле від `engines` у `package.json` Node. |
 | `description` | Англійською в `package.json` — це рядок, який бачить користувач у реєстрі/індексі, не UI-каталог i18n. |
 | Для тем — валідний `ThemeModule` | Проходить `validateThemeModule` (`simplycms/themes`) без падіння: обовʼязкова трійця `manifest` + `tokens` + `components` за контрактом v3 (`settings?`/`messages?`/`fonts?`/`views?` — опційні; тема з `views` мусить пройти ще й `simplycms theme:conformance`). |
-| Для тем — конвенція залежностей | `simplycms` — **peerDependencies**, не `dependencies` (стороння тема не в реліз-потягу ядра; дублювання в `dependencies` подвоює React-контексти на кшталт `EngineProvider`). Деталі — план Фази 4, Р3. |
+| Для тем — конвенція залежностей | `simplycms` — **peerDependencies**, не `dependencies` (стороння тема не в реліз-потягу ядра; дублювання в `dependencies` подвоює React-контексти на кшталт `EngineProvider`). |
 | `repository` | Публічне посилання на джерело (для аудиту й довіри перед додаванням). |
 
 Ці вимоги перевіряє тільки **формат запису індексу** (Zod-схема в

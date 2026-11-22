@@ -8,7 +8,7 @@ export interface NewOrderInput {
   email: string;
   phone: string;
   shippingMethodId: string;
-  /** Знімок доставки з `prepareCheckout` (Е6а-8) — пишеться в `orders.shipping_data`. */
+  /** Знімок доставки з `prepareCheckout` — пишеться в `orders.shipping_data`. */
   shippingSnapshot: NewShippingSnapshot;
   /** Зона й тариф з `prepareCheckout`: перерахунок позицій в адмінці бере їх як записані. */
   shippingZoneId: string | null;

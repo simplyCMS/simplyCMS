@@ -4,9 +4,9 @@ import { z } from 'zod';
 export const NO_ZONE = 'none';
 
 /**
- * Значення форми точки видачі. `methodId` — `insertOnly` (Е6а-12): обирається
+ * Значення форми точки видачі. `methodId` — `insertOnly`: обирається
  * лише при створенні, у patch update його немає. `workingHours`/`coordinates`
- * поза обсягом Е6а.
+ * поза обсягом.
  */
 export const pickupPointFormSchema = z.object({
   methodId: z.string().min(1),

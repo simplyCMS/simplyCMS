@@ -1,5 +1,5 @@
-// К3-Е6г, Task 4 (Е6г-19): invite власника під `admin-roles` з перевіркою бану.
-// Р19: випуск лишає лише токен, роль видає `grantAdminRole` — той самий лок і
+// invite власника під `admin-roles` з перевіркою бану.
+// Випуск лишає лише токен, роль видає `grantAdminRole` — той самий лок і
 // `FOR SHARE` стоять на видачі ролі.
 import pg from 'pg';
 import { describe, expect, it } from 'vitest';
@@ -8,7 +8,7 @@ import { withUser } from '../apply.mjs';
 import { holdAdvisoryLock, stillPending } from './fixtures/advisory-lock';
 import * as F from './fixtures/customer-categories';
 
-describe('invite власника: бан і лок (Е6г-19)', () => {
+describe('invite власника: бан і лок', () => {
   const db = F.useCustomersDb('simplycms_owner_invite_ban');
   const url = () => db.url();
   const email = () => `owner-${crypto.randomUUID().slice(0, 8)}@example.test`;

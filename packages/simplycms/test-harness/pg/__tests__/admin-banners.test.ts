@@ -1,5 +1,5 @@
-// К3-Е6д, Task 3: CRUD ресурсу банерів і поелементні правила `refine`
-// (Review Focus 5, `overlay_color`). Перехресні правила — `-guard`.
+// CRUD ресурсу банерів і поелементні правила `refine`
+// (`overlay_color`). Перехресні правила — `-guard`.
 import { describe, expect, it, vi } from 'vitest';
 import { bannersOps } from 'simplycms/admin-server/impl';
 import { BTN, useBannersDb } from './fixtures/admin-banners';
@@ -13,7 +13,7 @@ vi.mock('simplycms/auth', async (orig) => ({
   })),
 }));
 
-describe('admin: ресурс банерів (Е6д, Task 3)', () => {
+describe('admin: ресурс банерів', () => {
   const t = useBannersDb('simplycms_e6d_banners');
 
   it('мінімальний insert → OK, placement=home, section_id NULL (р4 B2)', async () => {

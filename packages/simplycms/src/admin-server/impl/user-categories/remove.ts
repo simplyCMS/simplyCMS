@@ -24,8 +24,8 @@ export const removeUserCategoriesInput = z
 
 /**
  * Умова знижки `user_category` тримає id категорій у jsonb без FK — саме тому
- * її перевіряє код (Е6в-18), а атомарність дає спільний з `saveDiscount`
- * `LOCK_KEYS.customerConfig` (Е6в-16 ред.2).
+ * її перевіряє код, а атомарність дає спільний з `saveDiscount`
+ * `LOCK_KEYS.customerConfig`.
  */
 const referencedByDiscount = (ids: string[]) =>
   sql`${discountConditions.conditionType} = 'user_category'
@@ -65,14 +65,14 @@ async function blockingReason(db: ActorDb, ids: string[]) {
 }
 
 /**
- * Видалення категорій покупців (Е6в-18) — guarded batch, явні state-коди
+ * Видалення категорій покупців — guarded batch, явні state-коди
  * замість загального «використовується»:
  *  1. `LOCK_KEYS.customerConfig` — ПЕРШИЙ запит (його ж беруть запис категорій,
  *     setDefault, запис правил і `saveDiscount` з умовою `user_category`).
  *  2. `FOR UPDATE … ORDER BY id`; відсутній id — помилка всього batch.
  *  3. Дефолтна → `user_category_default`; покупці → `_has_customers`;
  *     правила (`from`/`to`) → `_has_rules`; умова знижки → `_in_discount`.
- *  4. DELETE. Історія лишається: FK `SET NULL` + знімок назви (Е6в-2).
+ *  4. DELETE. Історія лишається: FK `SET NULL` + знімок назви.
  * FK (`profiles` NO ACTION, правила RESTRICT) — страховка позаду перевірок.
  */
 export const removeUserCategoriesOp = async ({

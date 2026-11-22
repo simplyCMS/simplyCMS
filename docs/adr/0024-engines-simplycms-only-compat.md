@@ -11,7 +11,7 @@ Spec: `docs/architecture/release-process.md` § «Версії: semver і пре
 Єдиний контракт сумісності — поле `engines.simplycms` у маніфесті плагіна чи теми (peer на `simplycms`). Окремого semver SDK немає. Версія платформи і є контрактом. Діапазон пише `coreRangeFor(version)`.
 
 ## Why
-- Рішення ПК6 і причина: друга вісь створила б матрицю «sdk↔ядро»: `docs/superpowers/specs/2026-08-20-package-consolidation-design.md` § «2. Рішення (ПК1–ПК12».
+- Рішення ПК6 і причина: друга вісь створила б матрицю «sdk↔ядро»: спека «package-consolidation-design», розділ «2. Рішення (ПК1–ПК12» (знесено 2026-11-21, текст — `git show a967ab1e`).
 - Модель WordPress і OpenCart (там же).
 - Діапазон рахує `coreRangeFor`: `packages/simplycms/src/contracts/semver/core-range.ts` і копія `packages/cli/src/core-range.mjs`; правила — `AGENTS.md` § «Архітектурні інваріанти».
 - Перевірка в `doctor`: `engines.simplycms` проти ядра, `packages/cli/src/doctor-engines.mjs`.

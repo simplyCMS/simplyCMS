@@ -1,8 +1,8 @@
 # Task: SEO / SSR storefront + Faceted Navigation (DB-driven SEO domain)
 
-> **Паралельний продуктовий трек** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)). Після Фази 0 фільтри/SEO живуть у канонічних сторінках `simplycms/storefront-routes` (spec §11) — імплементувати вже там.
+> **Паралельний продуктовий трек** роадмапу платформи ([`platform-roadmap.md`](./platform-roadmap.md)). Фільтри/SEO живуть у канонічних сторінках `simplycms/storefront-routes` (spec §11) — імплементувати вже там.
 
-> **Статус:** окрема продуктова задача. Повністю замінює та переписує колишню `migration-phase6-seo-domain-expansion.md` (видалена) і виносить «Phase 6 — DB-driven SEO» із загального міграційного документа `simplycms_tanstack_start_migration_task.md`.
+> **Статус:** окрема продуктова задача. Повністю замінює колишню задачу про розширення SEO-домену (видалена) і виносить «DB-driven SEO» із загального міграційного документа (видалений).
 >
 > **Execution note:** це кодова задача поверх вже-завершеної TanStack Start архітектури (Phases 0–7 міграції закриті; проєкт повністю Start-native, див. `CLAUDE.md`). Тут не повертаємось до framework-міграції — будуємо SEO/SSR-контур і faceted navigation поверх наявної архітектури.
 >
@@ -15,7 +15,7 @@
 Storefront працює в SSR на TanStack Start. SEO-метадані наразі генеруються вузько і з бізнес-полів, фільтри каталогу — суто клієнтські. Зафіксований стан:
 
 ### 1.1 Фільтрація каталогу — клієнтська, без URL
-- `packages/simplycms/src/storefront-routes/pages/CatalogSection.tsx:54` — стан фільтрів це суто клієнтський `useState`:
+- `packages/simplycms/src/storefront-routes/pages/CatalogSection.tsx` — стан фільтрів це суто клієнтський `useState`:
   ```ts
   const [filters, setFilters] = useState<Record<string, FilterValue>>({});
   // FilterValue = boolean | number | string[] | undefined
@@ -26,7 +26,7 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 - Фактична фільтрація — клієнтський `useMemo` (`CatalogSection.tsx:257–344`) після клієнтського re-fetch товарів через React Query.
 
 ### 1.2 Single-facet лендинги вже існують (глобальні, не секційні)
-- Роут `packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/$optionSlug.tsx` + серверна функція `getPropertyOption` (`packages/simplycms/src/storefront-routes/server/properties.ts:44-90`).
+- Роут `packages/simplycms/routes/storefront/_storefront/properties/$propertySlug/$optionSlug.tsx` + серверна функція `getPropertyOption` (`packages/simplycms/src/storefront-routes/server/properties.ts`, функція `getPropertyOption`).
 - Товари фільтруються **на сервері** через PostgREST join: `products → product_modifications!inner → modification_property_values!inner.option_id = option.id`, `is_active = true`.
 - SEO цих сторінок бідне: `head` дає лише `title`; **немає** `description`, `canonical`, JSON-LD — попри те що `property_options` має колонки `meta_title`/`meta_description` (не споживаються).
 
@@ -35,9 +35,9 @@ Storefront працює в SSR на TanStack Start. SEO-метадані нар�
 - Тільки сторінка товару (`packages/simplycms/routes/storefront/_storefront/$path.tsx`, адреса `/<path>` з реєстру `url_paths`, М1) має повний набір (canonical, hreflang, og, JSON-LD Product, один 301 нормалізації на поточну адресу). Решта роутів (`catalog/index`, `$sectionSlug/index`, `properties/*`) — **без canonical**, часто без `description`.
 - `meta_title`/`meta_description` на `products` і `sections` **не споживаються** роутами (хардкод-фолбеки).
 - `packages/simplycms/src/storefront-routes/seo/sitemap.ts` (`buildSitemapXml`): `/`, `/catalog`, `/properties`, `/catalog/$sectionSlug`, товари `/<path>` (рядок на опубліковану мову з `xhtml:link`, М1). **Не включає** жодних property/option лендингів і жодних filter-URL.
-- `packages/simplycms/src/storefront-routes/seo/robots.txt` (`buildRobotsTxt`): Allow `/`, Disallow `/admin/`, `/api/`, `/auth/callback`. **Не керує** параметрами фільтрів/сортування/пагінації.
+- `packages/simplycms/src/storefront-routes/seo/robots.ts` (`buildRobotsTxt`): Allow `/`, Disallow `/admin/`, `/api/`, `/auth/callback`. **Не керує** параметрами фільтрів/сортування/пагінації.
 - `simplycms.config.ts` `seo`: лише `siteName`, `defaultTitle`, `titleTemplate`. **Немає** `defaultDescription`, `baseUrl`, `ogImage` — потрібно для fallback-ланцюжка resolver-а.
-  > **Примітка (з К3-Е6б):** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
+  > **Примітка:** `seo` у `defineConfig` більше немає. Назва, заголовок головної, опис і логотип магазину — профіль `store_profile` у `system_settings` (`simplycms/contracts/store-profile`, редагується в адмінці); публічний URL — `VITE_SITE_URL`, який `getStorefrontRoot` (`simplycms/storefront-routes/server/root`) нормалізує й віддає як `siteUrl`. Кроки нижче, що розширювали `config.seo`, переписано під профіль.
 
 ### 1.4 Модель даних (з `simplycms/schema/types`)
 - `sections`: `id, slug, name, description, parent_id, image_url, meta_title, meta_description, ...` — є `meta_*`; **немає** `is_filterable/has_page/property_type`.
@@ -127,7 +127,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - [ ] `schema_json` — **JSONB**, не TEXT.
 
 ### Блок B — `seoResolver`
-- [ ] `packages/simplycms/src/core/lib/seoResolver.ts` — чиста функція `(entity, defaults) → SEOResult`; **без** імпортів TanStack/Next.
+- [ ] новий модуль `seoResolver` у теці `packages/simplycms/src/core/lib` — чиста функція `(entity, defaults) → SEOResult`; **без** імпортів TanStack/Next.
 - [ ] Fallback-ланцюжок (приклад для product): `title`: meta_title→name→site_title; `description`: meta_description→short_description→description→site_description; `og:image`: og_image→images[0]→site_og_image; `robots`: robots→`index, follow`; `twitter:card`: `summary_large_image`; `canonical`: canonical_url→computed-URL.
 - [ ] Підтримати entity-типи: `product | section | property | property_option | filter_landing`.
 - [ ] JSON-LD: Product (з offers) для товару; CollectionPage для секції/лендингів; override через `schema_json`.
@@ -148,7 +148,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 
 ### Блок E — Crawl-менеджмент (sitemap / robots / canonical)
 - [ ] `packages/simplycms/src/storefront-routes/seo/sitemap.ts`: додати в sitemap **indexable single-facet лендинги** (секція×опція за `is_filterable` + поріг) і property/option-сторінки за `has_page`. **Не включати** multi-facet/query-URL.
-- [ ] `packages/simplycms/src/storefront-routes/seo/robots.txt`: Disallow параметрів утиліті-фільтрів/сортування/пагінації (узгодити перелік, напр. `*?*sort=`, `*?*page=`, `*?*view=`, цінові діапазони), зберігши доступ до indexable-лендингів.
+- [ ] `packages/simplycms/src/storefront-routes/seo/robots.ts`: Disallow параметрів утиліті-фільтрів/сортування/пагінації (узгодити перелік, напр. `*?*sort=`, `*?*page=`, `*?*view=`, цінові діапазони), зберігши доступ до indexable-лендингів.
 - [ ] Додати відсутні `canonical`/`robots` на роути `catalog/index`, `catalog/$sectionSlug/index`, `properties/*` через resolver.
 
 ### Блок F — Адмінка: керування SEO та faceted-лендингами
@@ -204,7 +204,7 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - **Адмін-UX:** конструктор умови (property/value pickers), live-preview цільового URL і SERP-сніпета, список згенерованих сторінок зі статусом.
 - **Антипатерн:** не дати контент-менеджеру наплодити тисячі thin/duplicate indexable-URL — обов'язкові guard-и (попит/supply/унікальність, ліміт фасетів).
 
-Результат цього дослідження → **окрема задача** `docs/tasks/filter-seo-rules-builder.md` (поза межами поточної). Блок F покриває MVP-керування (per-option toggle + огляд лендингів); конструктор правил — наступний крок.
+Результат цього дослідження → **окрема задача** «конструктор SEO-правил фільтрів» (ще не заведена; поза межами поточної). Блок F покриває MVP-керування (per-option toggle + огляд лендингів); конструктор правил — наступний крок.
 
 ---
 
@@ -235,7 +235,6 @@ Faceted-navigation SEO — вирішена індустрією задача з
 - Консенсус: [Search Engine Journal](https://www.searchenginejournal.com/technical-seo/faceted-navigation/), [Ahrefs](https://ahrefs.com/blog/faceted-navigation/), [Aleyda Solis](https://www.aleydasolis.com/en/search-engine-optimization/ecommerce-seo-issues-how-to-fix/), [Oncrawl](https://www.oncrawl.com/technical-seo/managing-faceted-navigation-scale/), [Sitebulb](https://sitebulb.com/resources/guides/guide-to-faceted-navigation-for-seo/)
 
 ## 13. Пов'язана документація
-- `docs/tasks/simplycms_tanstack_start_migration_task.md` — загальний міграційний документ (Phase 6 винесено сюди).
-- `docs/tasks/migration-phase3-storefront-ssr-routes.md` — базова SSR-модель storefront routes.
+- Базова SSR-модель storefront routes — `docs/architecture/rendering-and-routing.md`.
 - `docs/architecture/data-layer.md` — патерни data access.
 - Код: `packages/simplycms/src/storefront-routes/pages/CatalogSection.tsx`, `.../components/catalog/FilterSidebar.tsx`, `packages/simplycms/src/storefront-routes/server/properties.ts`, `packages/simplycms/src/storefront-routes/seo/sitemap.ts`, `packages/simplycms/src/storefront-routes/seo/robots.ts`, `simplycms.config.ts`.

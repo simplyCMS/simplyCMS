@@ -1,4 +1,4 @@
-// М1 Task 7, І28 і Review Focus 3: Idempotency-Key крізь `handleApiRequest` на
+// І28: Idempotency-Key крізь `handleApiRequest` на
 // `languages.add` проти живого Postgres.
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';

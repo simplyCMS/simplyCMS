@@ -12,8 +12,8 @@ import type {
 } from './resource-schemas';
 
 /**
- * Пакет запису, який бачить guard-хук (Е6а-16): УВЕСЬ batch, не рядок.
- * `before` — знімок старого рядка під `FOR UPDATE` (Е6д-2: перехресні
+ * Пакет запису, який бачить guard-хук: УВЕСЬ batch, не рядок.
+ * `before` — знімок старого рядка під `FOR UPDATE` (перехресні
  * правила перевіряються на злитому рядку); заповнюється, коли ресурс має
  * `media`. Наявні guard-и поля не читають — воно опційне.
  */
@@ -24,7 +24,7 @@ export type ResourceGuardWrite<Insert, Patch> =
       updates: readonly { id: string; patch: Patch; before?: Insert }[];
     };
 
-/** Guard-хук (Е6а-16): відмова — `throw` (`stateConflict`), увесь пакет відкочується. */
+/** Guard-хук: відмова — `throw` (`stateConflict`), увесь пакет відкочується. */
 export type ResourceGuard<Insert, Patch> = (
   db: ActorDb,
   write: ResourceGuardWrite<Insert, Patch>,
@@ -32,8 +32,8 @@ export type ResourceGuard<Insert, Patch> = (
 
 /**
  * Конфіг фабрики `defineAdminResource` (винесено з `resource.ts` без зміни
- * типів, фінальне рев'ю Е5 п.6). Генерики: `W` — writable, `R` — readonly,
- * `I` — insertOnly (Е4-5), `O` — omit (Е5-7).
+ * типів). Генерики: `W` — writable, `R` — readonly,
+ * `I` — insertOnly, `O` — omit.
  */
 export interface AdminResourceConfigBase<
   T extends Table,
@@ -47,7 +47,7 @@ export interface AdminResourceConfigBase<
   table: T;
   operation: Operation;
   mode: 'eager' | 'on-demand';
-  // 🔴 Е5-7: прихована колонка не фільтрується й не сортується — інакше
+  // 🔴 Прихована колонка не фільтрується й не сортується — інакше
   //   subset став би оракулом її значення (напр. перебір access_token).
   // filterable — eq/gt/gte/lt/lte/in/isNull; sortable — сортування і, крім того,
   //   eq/gt/gte/lt/lte (курсор «Показати ще», див. `subset.ts`); in/isNull по
@@ -61,21 +61,21 @@ export interface AdminResourceConfigBase<
     direction: 'asc' | 'desc';
   };
   writable: readonly W[];
-  /** Е4-5: колонки, що пишуться лише при створенні (insert), а не при
+  /** Колонки, що пишуться лише при створенні (insert), а не при
    *  update — напр. тип властивості, зміна якого зламала б значення. */
   insertOnly?: readonly I[];
   readonly: readonly R[];
-  /** Е5-7: колонки, яких немає ні в SELECT/RETURNING, ні в типі рядка, ні
+  /** Колонки, яких немає ні в SELECT/RETURNING, ні в типі рядка, ні
    *  в схемах — секрети на кшталт `orders.access_token`, браузеру зайві. */
   omit?: readonly O[];
-  /** М1 (Task 16): читальна вибірка `list` з таблиці перекладів основної мови замість
+  /** Читальна вибірка `list` з таблиці перекладів основної мови замість
    *  дзеркальних колонок (`resource-read-model.ts`). Тип рядка `list` стає read-model. */
   readModel?: RM;
-  /** Е5-12: серверна межа сторінки `list` — ефективний ліміт
+  /** Серверна межа сторінки `list` — ефективний ліміт
    *  `min(subset.limit ?? maxLimit, maxLimit)`. Без неї — як раніше. */
   maxLimit?: number;
-  /** Колонка, яку фабрика ставить у new Date() на кожен update (Е3-9:
-   *  тригера updated_at у каноні немає). Прихована (`omit`) — заборонена
+  /** Колонка, яку фабрика ставить у new Date() на кожен update
+   *  (тригера updated_at у каноні немає). Прихована (`omit`) — заборонена
    *  типом: штамп писав би колонку повз видимий контракт ресурсу. */
   touch?: Exclude<ColumnName<T>, O>;
   /** m3 (рев'ю хвилі B): рефайнменти генератора схем для колонок без власної
@@ -88,30 +88,30 @@ export interface AdminResourceConfigBase<
    *  записувані колонки: розмітка в readonly/omit-колонці не має власника. */
   // `NoInfer`: ключі лише ЗВІРЯЮТЬСЯ з writable/insertOnly, а не виводять W.
   richHtml?: { readonly [K in NoInfer<W | I>]?: RichHtmlProfile };
-  /** Е6а-16: advisory-ключ (`lockCatalogTarget`) — ПЕРШИЙ запит транзакції
+  /** Advisory-ключ (`lockCatalogTarget`) — ПЕРШИЙ запит транзакції
    *  insert/update. Без нього поведінка фабрики незмінна. */
   lock?: string;
-  /** Е6а-16: інваріант запису над УСІМ пакетом insert/update — після `lock`,
+  /** Інваріант запису над УСІМ пакетом insert/update — після `lock`,
    *  до запису, у тій самій транзакції. */
   guard?: ResourceGuard<
     NoInfer<InsertPick<T, W | I> & { id: string }>,
     NoInfer<Partial<InsertPick<T, W>>>
   >;
-  /** Е6д-1: колонки-референси на файли сутності `entityType` (лише
-   *  writable `text`, К3-Е6д-1; jsonb-масиви — лише в `cascadeMedia`). Фабрика
+  /** Колонки-референси на файли сутності `entityType` (лише
+   *  writable `text`; jsonb-масиви — лише в `cascadeMedia`). Фабрика
    *  перевіряє нові референси, стирає рядки `media` заміненого/видаленого в
-   *  транзакції, а файли — після COMMIT (Е6д-14). */
+   *  транзакції, а файли — після COMMIT. */
   media?: { entityType: MediaEntityType; columns: readonly NoInfer<W>[] };
-  /** Е6д-19: дочірні таблиці, які FK `ON DELETE CASCADE` видаляє разом із
+  /** Дочірні таблиці, які FK `ON DELETE CASCADE` видаляє разом із
    *  рядком ресурсу і які несуть медіа. `remove` стирає їхні рядки `media` у
    *  тій самій транзакції, а файли — після COMMIT. Покриття звіряє гейт класу
    *  `media-cascade-coverage` з каталогом FK. */
   cascadeMedia?: readonly ResourceCascadeMedia[];
-  /** Блокування кореня агрегата ПЕРЕД видаленням (М1): `remove` не має guard-а,
+  /** Блокування кореня агрегата ПЕРЕД видаленням: `remove` не має guard-а,
    *  а каскад медіа мусить серіалізуватись з командами агрегата (`FOR NO KEY UPDATE`
    *  кореня), інакше паралельна команда додасть посилання між перевіркою і COMMIT. */
   lockOnRemove?: (db: ActorDb, ids: readonly string[]) => Promise<void>;
-  /** Власний DELETE рядків замість узагальненого (М1, Task 14): таблиця з єдиним
+  /** Власний DELETE рядків замість узагальненого: таблиця з єдиним
    *  видалячем (`product_modifications` -> `deleteModifications`) і ресурс, що мусить
    *  прибрати дочірні рядки в узгодженому порядку замків до власного DELETE. Іде після
    *  знімків медіа, тож стирання медіа не змінюється. */
@@ -123,14 +123,14 @@ export interface AdminResourceConfigBase<
 
 /**
  * 🔴 Exhaustiveness (вимога спеки): кожна колонка мусить бути рівно в
- * одному зі списків — writable, insertOnly (Е4-5), readonly або omit (Е5-7)
+ * одному зі списків — writable, insertOnly, readonly або omit
  * — інакше конфіг не типізується (фантомні поля __missingColumns /
  * __overlappingColumns називають винні колонки).
  *
  * 🔴 Перетин теж заборонений: колонка в ОБОХ списках — writable виграв би
- * мовчки (напр., createdAt став би перезаписуваним). Те саме для insertOnly
- * (Е4-5): з writable колонка стала б перезаписуваною в update, з readonly —
- * записуваною в insert. Е5-7: прихована колонка (omit) не може бути ні в
+ * мовчки (напр., createdAt став би перезаписуваним). Те саме для insertOnly:
+ * з writable колонка стала б перезаписуваною в update, з readonly —
+ * записуваною в insert. Прихована колонка (omit) не може бути ні в
  * жодному списку.
  */
 export type AdminResourceColumnGuards<

@@ -7,10 +7,10 @@ import {
 } from 'simplycms/contracts/shipping-providers';
 
 /**
- * Значення форми способу доставки (Е6а-1, Task 6). Формат коду — спільна
- * константа T1 (`PRICE_TYPE_CODE_RE`), яку перевіряє й сервер. Режим
+ * Значення форми способу доставки. Формат коду — спільна
+ * константа (`PRICE_TYPE_CODE_RE`), яку перевіряє й сервер. Режим
  * `provider` без `supportsQuote` відсікає і форма (опція disabled), і
- * refine тут, і сервер (Е6а-12) — три рівні для одного інваріанта.
+ * refine тут, і сервер — три рівні для одного інваріанта.
  */
 export const shippingMethodFormSchema = z
   .object({

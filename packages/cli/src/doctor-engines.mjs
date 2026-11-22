@@ -1,4 +1,4 @@
-// doctor №17 (Р32): `engines.simplycms` встановлених плагінів і тем проти версії ядра.
+// doctor №17: `engines.simplycms` встановлених плагінів і тем проти версії ядра.
 //
 // 🔴 Чому error саме тут, а не throw у bootstrap: магазин не цеглиться оновленням ядра —
 // bootstrap лише `console.warn`, а невідповідність видно в `doctor`/`status`. `satisfies`

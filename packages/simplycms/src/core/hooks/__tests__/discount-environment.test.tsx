@@ -7,7 +7,7 @@ import type { DiscountEnvironment } from 'simplycms/contracts';
 import { AGGREGATE } from 'simplycms/contracts/entities';
 
 /**
- * Середовище вітрини (Е6в-10): ключ із `userId` і `staleTime: 0`.
+ * Середовище вітрини: ключ із `userId` і `staleTime: 0`.
  *
  * 🔴 `userId` у ключі — лише сегмент клієнтського кешу: serverFn викликається
  * БЕЗ аргументів, актора сервер бере з сесії. Тест це й пінує.
@@ -89,7 +89,7 @@ describe('useDiscountEnvironment', () => {
     });
   });
 
-  it('F1: збій — isError без data; refetch повертає середовище', async () => {
+  it('збій — isError без data; refetch повертає середовище', async () => {
     server.getDiscountEnvironment.mockRejectedValueOnce(new Error('500'));
     const { result } = renderHook(() => useDiscountEnvironment(), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));

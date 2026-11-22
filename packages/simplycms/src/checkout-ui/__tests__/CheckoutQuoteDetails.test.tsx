@@ -31,7 +31,7 @@ const renderQuote = (q: CheckoutQuote) =>
 afterEach(cleanup);
 
 describe('CheckoutQuoteDetails — доставка', () => {
-  // Е6а-18: нуль у режимі carrier — не «Безкоштовно».
+  // Нуль у режимі carrier — не «Безкоштовно».
   it('carrier з нульовою сумою: «За тарифами перевізника»', () => {
     renderQuote(quote({ shippingPricing: 'carrier' }));
     expect(screen.getByText('За тарифами перевізника')).toBeTruthy();

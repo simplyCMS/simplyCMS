@@ -3,7 +3,7 @@ import { completeMediaErasures, scheduleMediaErasures } from './erasures';
 
 /**
  * Виконати `run`, що публікує файли ДО COMMIT, і при будь-якій відмові
- * прибрати вже опубліковані через outbox (Е6д-20б): `scheduleMediaErasures`
+ * прибрати вже опубліковані через outbox: `scheduleMediaErasures`
  * (видимий хвіст, якщо диск збоїть) + `completeMediaErasures`.
  *
  * `run` кличе `track(ref)` одразу після кожного `writeMedia` — це єдиний

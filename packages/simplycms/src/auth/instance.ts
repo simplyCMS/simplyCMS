@@ -26,9 +26,9 @@ import { isResetStillValid, type ResetGuard } from './reset-guard';
 import { createEmailVerification } from './verification-mail';
 
 /**
- * Інстанс Better Auth серверного контуру v2 (B3′, Task 7).
+ * Інстанс Better Auth серверного контуру v2 (B3′).
  *
- * 🔴 Контур підключений до `start.ts`/роутів (К1′б) — GoTrue знесено
+ * 🔴 Контур підключений до `start.ts`/роутів — GoTrue знесено
  * повністю, це ЄДИНИЙ auth-флоу магазину.
  *
  * 🔴 Плагінів — нуль (B3: CVE-поверхня). Кожен плагін BA додає роути й
@@ -51,9 +51,9 @@ export interface AuthDeps {
   readonly provisionUser?: ProvisionUser;
   /** Провізія при вході (самовідновлення профілю). За замовчуванням — запис у Postgres. */
   readonly ensureProvisioned?: EnsureProvisioned;
-  /** Чи забанений користувач (Е6г-13). За замовчуванням — читання `users.banned_at`. */
+  /** Чи забанений користувач. За замовчуванням — читання `users.banned_at`. */
   readonly isUserBanned?: IsUserBanned;
-  /** Guard скидання пароля (Е6г-18). За замовчуванням — `FOR SHARE` по `users`. */
+  /** Guard скидання пароля. За замовчуванням — `FOR SHARE` по `users`. */
   readonly resetGuard?: ResetGuard;
   readonly secret?: string;
   readonly baseURL?: string;
@@ -62,7 +62,7 @@ export interface AuthDeps {
   /** Транспорт порту пошти. За замовчуванням — `getMailTransport()` за env. */
   readonly mailTransport?: MailTransport;
   /**
-   * Вимагати підтвердження пошти (Р30). За замовчуванням — `true` лише з SMTP:
+   * Вимагати підтвердження пошти. За замовчуванням — `true` лише з SMTP:
    * з драйвером `log` лист нікуди не дійде, і реєстрація в dev ламалась би.
    */
   readonly requireEmailVerification?: boolean;
@@ -111,10 +111,10 @@ export function createAuth(deps: AuthDeps = {}) {
       }),
     emailAndPassword: {
       enabled: true,
-      // 🔴 Р30: без підтвердження пошти signUp одразу дає сесію, і чужу пошту
+      // 🔴 Без підтвердження пошти signUp одразу дає сесію, і чужу пошту
       // можна зайняти до справжнього власника (pre-hijack).
       requireEmailVerification,
-      // 🔴 Р19: скидання пароля (і прийняття запрошення — воно йде тим самим
+      // 🔴 Скидання пароля (і прийняття запрошення — воно йде тим самим
       // `resetPassword`) гасить усі сесії користувача. Без цього сесія, що
       // вже була в зловмисника, переживала б зміну пароля.
       revokeSessionsOnPasswordReset: true,
@@ -156,7 +156,7 @@ export function createAuth(deps: AuthDeps = {}) {
   return auth;
 }
 
-/** Тип готового інстансу — для сигнатур споживачів К1′б. */
+/** Тип готового інстансу — для сигнатур споживачів. */
 export type SimplyAuth = ReturnType<typeof createAuth>;
 
 let instance: SimplyAuth | undefined;

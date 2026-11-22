@@ -7,8 +7,8 @@ import { TestEngineProvider } from '../../__tests__/engine-stub';
 import * as F from './support/card-fixtures';
 
 /**
- * Усі поверхні-картки рахують ОДНИМ `priceForCard` на серверному `now`
- * (Е6в-10…Е6в-12): каталог, головна, сторінка значення характеристики й
+ * Усі поверхні-картки рахують ОДНИМ `priceForCard` на серверному `now`:
+ * каталог, головна, сторінка значення характеристики й
  * блок ціни сторінки товару.
  */
 const server = vi.hoisted(() => ({ getDiscountEnvironment: vi.fn() }));
@@ -131,7 +131,7 @@ describe.each(surfaces)('картка: %s', (_name, node) => {
   });
 });
 
-describe('тип ціни з середовища (ред.2)', () => {
+describe('тип ціни з середовища', () => {
   it('покупця перевели в «опт» — повторний mount показує оптову базу', async () => {
     server.getDiscountEnvironment
       .mockResolvedValueOnce(F.retailEnv)

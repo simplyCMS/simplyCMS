@@ -1,5 +1,5 @@
 // Рушій знижок: корені лісу із залишком, `exceeds_price` і центи
-// (Е6в-5, Е6в-9).
+//.
 import { describe, expect, it } from 'vitest';
 import type { DiscountGroup, DiscountResult } from 'simplycms/contracts';
 import { resolveDiscount } from '../discounts';
@@ -13,7 +13,7 @@ const fixed = (id: string, value: number) =>
 const roots = (...discounts: ReturnType<typeof disc>[]): DiscountGroup[] =>
   discounts.map((d, i) => group({ id: `r${i}`, priority: i, discounts: [d] }));
 
-/** Інваріанти Е6в-5 у центах: вони тримають `discount_data` чесним. */
+/** Інваріанти у центах: вони тримають `discount_data` чесним. */
 function resolveChecked(base: number, forest: DiscountGroup[]): DiscountResult {
   const res = resolveDiscount(base, forest, ctx());
   for (const a of res.appliedDiscounts)

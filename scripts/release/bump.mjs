@@ -47,7 +47,7 @@ export function assertNewerVersion(next, current) {
 /**
  * Манифести публікованих пакетів (private — не наші).
  *
- * Після К0 тека `packages/` тримає рівно пʼять пакетів: unscoped флагман
+ * Тека `packages/` тримає рівно пʼять пакетів: unscoped флагман
  * `simplycms`, три сателіти `@simplycms/*` і unscoped `create-simplycms-store`;
  * усі вони публікуються тим самим реліз-потягом і мусять мати СИНХРОННУ
  * версію, тож дискримінатор тут — лише `private`. Точний набір (не поріг)
@@ -143,7 +143,7 @@ export function bumpTo(version) {
   }
 
   bumpCoreVersionConstant(version);
-  // Version-літерали маніфестів референс-пакетів (плагіни/теми) — Р13 Фази 4.
+  // Version-літерали маніфестів референс-пакетів (плагіни/теми).
   bumpManifestVersions(version);
 
   return { updated, skipped };

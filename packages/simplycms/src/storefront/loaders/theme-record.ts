@@ -4,7 +4,7 @@ import type { JsonValue } from 'simplycms/schema/types';
 import { activeThemeCache, type ThemeRecord } from 'simplycms/site';
 import { withStorefrontDb } from './db';
 
-// Тип переїхав у `simplycms/site` (Е6б-7), щоб адмінка й вітрина ділили його
+// Тип переїхав у `simplycms/site`, щоб адмінка й вітрина ділили його
 // без імпорту `storefront`; тут лишається реекспорт для наявних споживачів.
 export type { ThemeRecord };
 

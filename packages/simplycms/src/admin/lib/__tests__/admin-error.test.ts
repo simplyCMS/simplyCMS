@@ -30,7 +30,7 @@ describe('adminErrorKey', () => {
       adminErrorKey(conflict('reference', 'order_items_product_id_fkey')),
     ).toBe('admin.errors.conflictReference');
   });
-  it('стан: скасоване замовлення — кінцеве (Е5-9)', () => {
+  it('стан: скасоване замовлення — кінцеве', () => {
     expect(adminErrorKey(conflict('state', 'order_cancelled_final'))).toBe(
       'admin.errors.orderCancelledFinal',
     );
@@ -41,7 +41,7 @@ describe('adminErrorKey', () => {
     ['order_last_item', 'admin.errors.orderLastItem'],
     ['order_item_not_purchasable', 'admin.errors.orderItemNotPurchasable'],
     ['order_amount_out_of_range', 'admin.errors.orderAmountOutOfRange'],
-  ])('стан редагування позицій (Е5б-10): %s → %s', (constraint, key) => {
+  ])('стан редагування позицій: %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
   it.each([
@@ -52,7 +52,7 @@ describe('adminErrorKey', () => {
     ['pickup_point_method_invalid', 'admin.errors.pickupPointMethodInvalid'],
     ['pickup_point_system', 'admin.errors.pickupPointSystem'],
     ['pickup_point_has_stock', 'admin.errors.pickupPointHasStock'],
-  ])('стан доставки (Е6а-12): %s → %s', (constraint, key) => {
+  ])('стан доставки: %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
   it.each([
@@ -62,7 +62,7 @@ describe('adminErrorKey', () => {
       'discount_condition_category_missing',
       'admin.errors.discountConditionCategoryMissing',
     ],
-  ])('стан знижок (Е6в-16/17): %s → %s', (constraint, key) => {
+  ])('стан знижок: %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
   it.each([
@@ -71,7 +71,7 @@ describe('adminErrorKey', () => {
     ['user_category_has_rules', 'admin.errors.userCategoryHasRules'],
     ['user_category_in_discount', 'admin.errors.userCategoryInDiscount'],
     ['category_rule_same_category', 'admin.errors.categoryRuleSameCategory'],
-  ])('стан категорій покупців (Е6в-18/19): %s → %s', (constraint, key) => {
+  ])('стан категорій покупців: %s → %s', (constraint, key) => {
     expect(adminErrorKey(conflict('state', constraint))).toBe(key);
   });
   it('невідомий код стану — null, а не «дубль»', () => {

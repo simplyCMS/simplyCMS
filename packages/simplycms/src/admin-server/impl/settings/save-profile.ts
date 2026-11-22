@@ -26,7 +26,7 @@ import { parseAdminInput } from '../validation';
 import { storeProfileInput, type StoreProfileInput } from './profile-schema';
 
 /**
- * Тип рядка `media`, яким може бути логотип (Е6б-14). `satisfies` привʼязує
+ * Тип рядка `media`, яким може бути логотип. `satisfies` привʼязує
  * літерал до allowlist T1: перейменування там зламає typecheck тут.
  */
 const STORE_LOGO = 'store_logo' satisfies MediaEntityType;
@@ -38,7 +38,7 @@ const STORE_LOGO = 'store_logo' satisfies MediaEntityType;
  */
 
 /**
- * Чи референс — рядок `media` саме логотипа: тип І власник (К3-Е6д-3), щоб
+ * Чи референс — рядок `media` саме логотипа: тип І власник, щоб
  * файл з тим самим типом, але чужим `entity_id`, не пройшов. `for share` — не
  * зникне до COMMIT.
  */
@@ -58,7 +58,7 @@ async function isStoreLogo(db: ActorDb, ref: string): Promise<boolean> {
 }
 
 /**
- * Запис профілю магазину (Е6б-14, Е6б-21). Порядок у ОДНІЙ транзакції:
+ * Запис профілю магазину. Порядок у ОДНІЙ транзакції:
  *
  * 1. Лок `store-profile` — першим запитом.
  * 2. Новий `logo` — або `null`, або `media.storage_key` з `entity_type =
@@ -67,8 +67,8 @@ async function isStoreLogo(db: ActorDb, ref: string): Promise<boolean> {
  *    а референс товару стер би чуже фото при наступній заміні.
  * 3. Upsert рядка (`id` генерує викликач — Категорія A).
  * 4. Рядок старого логотипа видаляє `eraseMediaRows` у цій же транзакції
- *    (разом із рядком outbox), файл стирає `completeMediaErasures` ПІСЛЯ COMMIT
- *    (Е6д-14): відмова COMMIT не лишає профіль із посиланням на стертий файл.
+ *    (разом із рядком outbox), файл стирає `completeMediaErasures` ПІСЛЯ COMMIT:
+ *    відмова COMMIT не лишає профіль із посиланням на стертий файл.
  *    Власник `store_logo/STORE_LOGO_OWNER_ID` звіряється самим стиранням:
  *    зіпсований ручним SQL профіль не має права стерти фото товару.
  *

@@ -1,4 +1,4 @@
-// Межа «БД → домен» правил знижок (Е6в-8): один SQL-вираз і одна функція
+// Межа «БД → домен» правил знижок: один SQL-вираз і одна функція
 // розбору. Живий накат — харнес `discount-forest`/`price-cart`.
 import { describe, expect, it, vi } from 'vitest';
 import type { ActorDb } from 'simplycms/db';
@@ -52,7 +52,7 @@ describe('parseDiscountRules', () => {
     expect(parseDiscountRules(json()).discounts[0].discount_value).toBe(12.5);
   });
 
-  describe('🔴 порядковий fail-closed (Е6в-25): розбір ніколи не кидає', () => {
+  describe('🔴 порядковий fail-closed: розбір ніколи не кидає', () => {
     const spy = () => vi.spyOn(console, 'error').mockImplementation(() => {});
 
     it.each(['abc', 'NaN'])(

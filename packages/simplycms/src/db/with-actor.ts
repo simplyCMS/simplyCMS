@@ -4,7 +4,7 @@ import { buildActorPrelude, type Actor } from './actor';
 import { getDbPool } from './client';
 
 /**
- * Транзакційна обгортка актора — ЄДИНИЙ канал до Postgres (Task 6, В2-К1а).
+ * Транзакційна обгортка актора — ЄДИНИЙ канал до Postgres.
  *
  * Форма транзакції зафіксована контрактом B5″ і повторює ту, яку незалежно
  * міряє поведінковий гейт RLS (`test-harness/pg/actors.mjs`):

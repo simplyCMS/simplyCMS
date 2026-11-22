@@ -26,13 +26,13 @@ import {
   type BannerFormValues,
 } from './banner-form-schema';
 
-/** Поля, під якими UI показує серверну помилку (КАНОН Task 3). */
+/** Поля, під якими UI показує серверну помилку. */
 const SERVER_FIELDS = ['sectionId', 'dateTo', 'scheduleTimeTo', 'buttons'];
 
 /**
  * Стан картки банера. `id` нового банера генерується НАПЕРЕД: три
  * `ImageUpload` привʼязують файли до `entityId`, а сервер звіряє, що референс
- * належить цьому рядку (Е6д-1).
+ * належить цьому рядку.
  */
 export function useBannerCard(bannerId: string | undefined) {
   const t = useT();

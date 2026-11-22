@@ -1,7 +1,7 @@
-// М1 Task 5 (К4): процедури `attach_current_address_triggers` / `…_token_…` на
+// Процедури `attach_current_address_triggers` / `…_token_…` на
 // пробних таблицях, створених у тесті. Доводить поведінку тригера БАЗИ (усі мови
 // draft/published зі знімка, disabled не вимагається, вставка мови тригер не
-// запускає), яку на реальних `products`/`product_modifications` вимкнено до Task 17.
+// запускає), яку на реальних `products`/`product_modifications` вимкнено до.
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useAddressingDb } from './fixtures/addressing-db';

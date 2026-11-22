@@ -19,15 +19,15 @@ function emailDomain(email: string): string | null {
 }
 
 /**
- * Статистика покупця для автоправил (Е6в-19) або `null`, якщо профілю немає.
+ * Статистика покупця для автоправил або `null`, якщо профілю немає.
  *
  * - Сума й кількість — замовлення покупця, крім `cancelled`. `LEFT JOIN`
  *   статусів: замовлення з `status_id NULL` РАХУЄТЬСЯ (внутрішній join тихо
  *   викинув би його, і поріг «2 замовлення» спрацьовував би пізніше).
  * - Email — `users.email` (джерело Better Auth), не копія в `profiles`; домен
- *   рахується лише для підтвердженої пошти (`users.email_verified`, Р30).
+ *   рахується лише для підтвердженої пошти (`users.email_verified`).
  * - Провайдери входу — усі `accounts.provider_id` (умова «будь-який рядок має X»).
- * - UTM — `registration_utm->>'utm_source'`/`'utm_campaign'` (ред.3): порожній
+ * - UTM — `registration_utm->>'utm_source'`/`'utm_campaign'`: порожній
  *   рядок, відсутній ключ чи не-обʼєкт → `null`.
  * - Днів від реєстрації — від `profiles.created_at` до переданого `now`.
  *
@@ -85,7 +85,7 @@ export async function loadCustomerStats(
       0,
       Math.floor((now.getTime() - profile.createdAt.getTime()) / DAY_MS),
     ),
-    // 🔴 Р30: домен непідтвердженої пошти — не доказ; інакше реєстрація на
+    // 🔴 Домен непідтвердженої пошти — не доказ; інакше реєстрація на
     // чужий корпоративний домен дарує знижки категорії.
     emailDomain: profile.emailVerified ? emailDomain(profile.email) : null,
     authProviders: providers.map((p) => p.providerId),

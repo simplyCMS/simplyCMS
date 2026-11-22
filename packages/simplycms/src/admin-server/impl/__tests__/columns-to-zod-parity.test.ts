@@ -33,8 +33,8 @@ const resources = [
 const columns = resources.flatMap((r) =>
   Object.values(getTableColumns(r.table)),
 );
-// Е6а: + `PgArray` (`banners.schedule_days`, integer[]) — десятий тип.
-// Е6д: + `PgTime` (`banners.schedule_time_from/to`) — одинадцятий.
+// + `PgArray` (`banners.schedule_days`, integer[]) — десятий тип.
+// + `PgTime` (`banners.schedule_time_from/to`) — одинадцятий.
 const TYPES = [
   'PgArray',
   'PgTime',
@@ -113,9 +113,9 @@ describe('паритет columnsToZod з drizzle-zod', () => {
       // Тема 12: виняток numeric не послаблює гейт — повернення до
       // drizzle-zod-поведінки (`z.string()`) тепер ЧЕРВОНІЄ.
       'm5 numeric: без формату': mutate('PgNumeric', () => z.string()),
-      // Е6а: схема елемента масиву — не декорація (`[1]`, `['a', 1]` у VALUES).
+      // Схема елемента масиву — не декорація (`[1]`, `['a', 1]` у VALUES).
       'm6 PgArray: items any': mutate('PgArray', () => z.array(z.any())),
-      // Е6д: формат часу в генераторі розійшовся б з drizzle-zod — гейт бачить.
+      // Формат часу в генераторі розійшовся б з drizzle-zod — гейт бачить.
       'm7 PgTime: формат': mutate('PgTime', () =>
         z.string().regex(/^\d\d:\d\d$/),
       ),

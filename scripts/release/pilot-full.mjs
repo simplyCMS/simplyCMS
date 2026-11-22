@@ -3,7 +3,7 @@
  * Гейт релізу `pilot` — повний `pnpm pilot` проти живої БД харнеса.
  *
  * 🔴 Чому не режим без БД (пакувальний): без БД Gate B (production-запуск `server.mjs` скретча) не існує,
- * а саме він ловить «бандл не стартує» (`UPSTREAM:START-IP-1`, Task 11 К3-Е7). Тому реліз сам
+ * а саме він ловить «бандл не стартує» (`UPSTREAM:START-IP-1`). Тому реліз сам
  * піднімає харнес (`pnpm harness:up`, ідемпотентно: Postgres, Garage, Mailpit), накочує канон + демо-сід на СВІЖУ БД
  * (`db:demo` дропає й створює її наново) і ганяє `pnpm pilot` з цим DSN. Gate B не скорочується.
  *
@@ -40,7 +40,7 @@ try {
 const harness = parseEnv(readFileSync(join(ROOT, '.env.harness'), 'utf8'));
 const harnessUrl = harness.PG_HARNESS_URL;
 if (!harnessUrl) throw new Error('У .env.harness немає PG_HARNESS_URL');
-// Garage і Mailpit харнесу (К3-Е8): повна група обов'язкова, неповна — помилка тут,
+// Garage і Mailpit харнесу: повна група обов'язкова, неповна — помилка тут,
 // а не тихе «без сховища й пошти» у релізному гейті. Імена `PILOT_*` — див. `env.mjs`.
 const S3 = ['ENDPOINT', 'REGION', 'BUCKET', 'ACCESS_KEY', 'SECRET_KEY'];
 const needed = [

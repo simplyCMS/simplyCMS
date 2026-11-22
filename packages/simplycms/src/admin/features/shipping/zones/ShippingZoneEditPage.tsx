@@ -19,8 +19,8 @@ import {
 import { useShippingZoneCard } from './useShippingZoneCard';
 
 /**
- * Картка зони доставки (Е6а, Task 7): `new` або id з URL. Тарифи тут не
- * редагуються (Е6а-1) — вони в картці способу.
+ * Картка зони доставки: `new` або id з URL. Тарифи тут не
+ * редагуються — вони в картці способу.
  */
 export default function ShippingZoneEditPage() {
   const t = useT();

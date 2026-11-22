@@ -23,7 +23,7 @@ export const passThrough = (data: unknown): unknown => data;
 
 /**
  * Виклик операції з serverFn: суб'єкт — з cookie поточного запиту,
- * далі виконавець. Статус ставиться ДО повторного throw (К3-13: сервер бере
+ * далі виконавець. Статус ставиться ДО повторного throw (сервер бере
  * його з відповіді в момент catch, не з полів Error).
  */
 export async function invokeFromServerFn<I, O>(

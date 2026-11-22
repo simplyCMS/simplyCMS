@@ -1,6 +1,6 @@
 # SimplyCMS як платформа: варіанти механізму поставки ядра, плагінів і тем
 
-> 🔴 **Історія, не канон (рішення 2026-07-30): Supabase знесено в К3-Е7.** Усі згадки Supabase-шару,
+> 🔴 **Історія, не канон (рішення 2026-07-30): Supabase знесено.** Усі згадки Supabase-шару,
 > `supabase/types.ts`, `supabase/migrations/` і Supabase CLI нижче — стан на момент аналізу;
 > текст навмисно не переписано. Чинний канон — `data-layer.md`, `plugins.md`, `themes.md`, `cli.md`; терміни — `docs/GLOSSARY.md`.
 > **Статус:** аналітичний документ для ухвалення напряму. Створено 2026-07-30.
@@ -46,7 +46,7 @@ route-файлами** в задану гілку URL. Експерименти 
 
 - ✅ `physical()` монтує теки **поза** `src/routes` — включно з `node_modules` і
   абсолютними шляхами. Це не хак: у апстрімі TanStack є **регресійні тест-фікстури**,
-  що монтують теки поза routesDirectory (`tests/generator/virtual-physical-inside-nested`).
+  що монтують теки поза routesDirectory (upstream-фікстура virtual-physical-inside-nested).
 - ✅ Нова сторінка, додана в пакет ядра → після `pnpm update` зʼявляється в магазині
   **без жодного нового файлу в магазині** (генератор рекурсивно сканує теку пакета).
 - ✅ Повна типізація зберігається: типи роутів пакета генеруються в `routeTree.gen.ts`
@@ -286,8 +286,8 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
 ### 3.6. Поетапність (кожен крок цінний сам по собі)
 
 - **Фаза 0 (безризикова, вже можлива):** перевести `src/routes` монорепо на
-  `routes.ts` + `physical()` до **workspace-тек** (`packages/storefront-routes`,
-  `admin-routes`). Нічого не публікуємо; перевіряємо типи/splitting/DX на реальних
+  `routes.ts` + `physical()` до **workspace-тек** (storefront-routes,
+  admin-routes). Нічого не публікуємо; перевіряємо типи/splitting/DX на реальних
   65 роутах. Заодно: замкнути плагін-контур (loadPlugins на старті), LICENSE, i18n-скелет.
 - **Фаза 1:** npm pack пілот — 1 пакет із 2-3 роутами + server fn → чистий проєкт;
   закрити відкриті ризики. Контракт теми v2 + fallbacks.
@@ -345,7 +345,7 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
 
 ### 5.1. Механіка
 
-`src/routes/admin/$.tsx` — один catch-all, який рендерить `AdminApp` з
+файл `routes/admin/$.tsx` — один catch-all, який рендерить `AdminApp` з
 `@simplycms/admin`; внутрішній роутинг адмінки — усередині пакета. Оновлення
 адмінки = `pnpm update`. Storefront лишається як зараз (форк).
 
@@ -427,7 +427,7 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
   upstream-фікстури `virtual-physical-inside-nested`; issues/PR #5808, #5421→#6252,
   #4984, #4409, #6270/#6285, #7213, #6361/#5738.
 - Payload: docs `admin/overview` («Only the importMap.js file is regenerated
-  automatically»), `plugins/build-your-own`, discussion #15972 (exact pinning),
+  automatically»), розділ plugins/build-your-own, discussion #15972 (exact pinning),
   release v3.37.0.
 - Vendure: docs plugins/migrations/updating; blog React Dashboard; issues #225, #862;
   relicense GPLv3.
@@ -440,7 +440,7 @@ shadcn-подібний індекс (JSON) над npm: пошук/вітрин�
   #7170/#790.
 - Medusa: docs plugins/create, modules/isolation, module-links, admin widgets/ui-routes,
   learn/update (breaking у minor — задокументована політика), from-v1-to-v2 (перезапис без
-  міграції); `STOREFRONT_UPDATE_GUIDE.md` («Don't use git merge»); roadmap issue #7
+  міграції); STOREFRONT_UPDATE_GUIDE.md («Don't use git merge»); roadmap issue #7
   (Webpack→Vite заради extension-моделі); issues #12687, #12585, #12303, #11637 (падіння
   адмін-розширень після npm-публікації), #4515, #8123 (обмеження injection zones).
 - Delivery: Angular `ng-update` schematics; `@next/codemod`; Strapi v4→v5 codemods;

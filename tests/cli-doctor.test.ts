@@ -105,13 +105,13 @@ describe('cli doctor (оффлайн)', () => {
       'skill-links': 'skip',
       // Ядра в node_modules ще немає — peer-діапазон pg невідомий (деталі — cli-pg-driver).
       'pg-driver': 'skip',
-      // Те саме для nodemailer (К3-Е8, №14).
+      // Те саме для nodemailer (№14).
       'mail-driver': 'skip',
-      // Без ядра драйвер пошти невідомий (Е8-Р17).
+      // Без ядра драйвер пошти невідомий.
       'mail-configured': 'skip',
-      // Те саме для підтвердження пошти (Р30, №16).
+      // Те саме для підтвердження пошти (№16).
       'email-verification': 'skip',
-      // Без ядра версія для порівняння невідома (Р32, №17).
+      // Без ядра версія для порівняння невідома (№17).
       engines: 'skip',
       // Без ядра вступу для керованого блоку немає (№18).
       'agent-files': 'skip',
@@ -339,12 +339,12 @@ describe('cli doctor (оффлайн)', () => {
     mkdirSync(join(store, 'node_modules/@acme/simplycms-theme-aurora'), {
       recursive: true,
     });
-    // 🔴 Свіжий магазин глоби Р7 уже має (шаблон, Фаза 4) — тож підказки тут
+    // 🔴 Свіжий магазин глоби уже має (шаблон) — тож підказки тут
     // бути НЕ повинно. Це і є перший асерт: інакше doctor шумів би на кожному
     // новому магазині зі сторонньою темою.
     expect(checkThemes({ storeRoot: store }).status).toBe('ok');
 
-    // Магазин, скаффолджений ДО Фази 4: `tailwind.config.ts` поза каноном
+    // Магазин, скаффолджений зі старого шаблону: `tailwind.config.ts` поза каноном
     // host/, тож `update --write` глоби не довезе — лагодиться руками, і саме
     // на це наводить підказка. Моделюємо станом без глобів.
     writeFileSync(
@@ -359,7 +359,7 @@ describe('cli doctor (оффлайн)', () => {
     expect(hint.details).toContain('simplycms-theme-*');
     expect(hint.details).not.toContain('немає ні теки');
 
-    // Референс-тема ядра підказки НЕ дає навіть без глобів Р7: її покриває
+    // Референс-тема ядра підказки НЕ дає навіть без глобів: її покриває
     // давній глоб `@simplycms/*`.
     writeFileSync(
       configPath,
@@ -374,8 +374,8 @@ describe('cli doctor (оффлайн)', () => {
     expect(checkThemes({ storeRoot: store }).status).toBe('ok');
   });
 
-  // Каркас магазину під топологію 5: роути монтуються підтеками ОДНОГО
-  // пакета, Tailwind сканує його ж. Магазин, скаффолджений до К0, тут має
+  // Каркас магазину під 5 пакетів: роути монтуються підтеками ОДНОГО
+  // пакета, Tailwind сканує його ж. Магазин, скаффолджений до консолідації пакетів, тут має
   // червоніти — інакше він мовчки збереться без роутів ядра.
   it('якірні файли: старий каркас на два route-пакети — error', async () => {
     const store = await scaffoldStore('doc-legacy-routes');
@@ -563,7 +563,7 @@ describe('cli doctor (оффлайн)', () => {
   });
 });
 
-// Е8-Р17: режим doctor — `--production` або `isProductionRuntime` ядра; від нього залежить
+// Режим doctor — `--production` або `isProductionRuntime` ядра; від нього залежить
 // лише серйозність log-драйвера пошти.
 describe('cli doctor: режим production і пошта', () => {
   const log = { driver: 'log' };
@@ -611,7 +611,7 @@ describe('cli doctor: режим production і пошта', () => {
     expect(resolveDoctorMode({ flag: false, env: {}, core: null })).toBe(false);
   });
 
-  it('Р30: --production + log → warn про підтвердження пошти; smtp і розробка → без warn', () => {
+  it('--production + log → warn про підтвердження пошти; smtp і розробка → без warn', () => {
     const prod = resolveDoctorMode({ flag: true, env: {}, core });
     const warn = checkEmailVerification({ production: prod, mail: log });
     expect(warn.status).toBe('warn');
@@ -637,7 +637,7 @@ describe('cli doctor: режим production і пошта', () => {
   });
 });
 
-// Проводка режиму в `doctor.run` (рев'ю Task 9, I1): справжній процес CLI проти
+// Проводка режиму в `doctor.run` справжній процес CLI проти
 // скаффолда з фейковим ядром у `node_modules` — перевіряє те, чого не бачать юніти
 // (`importFromStore('simplycms/env')`, `production`/`mail` у ctx, рядок режиму першим).
 // Обрано спавн, а не рефакторинг у чисту функцію: чиста збірка списку не довела б

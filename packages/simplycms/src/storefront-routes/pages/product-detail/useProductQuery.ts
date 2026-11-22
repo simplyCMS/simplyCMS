@@ -17,7 +17,7 @@ import type { ProductDetailProduct } from './types';
  * форма приєднаних гілок і фільтри живуть в одному місці, а не в двох
  * схожих запитах (клієнтський колись віддавав інше, ніж серверний).
  *
- * 🔴 Ключ несе вид цін глядача (Р29): прайс у payload залежить від сесії,
+ * 🔴 Ключ несе вид цін глядача: прайс у payload залежить від сесії,
  * і мову запиту (І36): текст товару залежить від мови. Запит йде за адресою
  * `(мова, шлях)`, а не за slug: без цього `enabled` був би хибним на сторінці
  * сутності, де параметра `productSlug` більше немає.
@@ -37,7 +37,7 @@ export function useProductQuery(
     queryFn: (): Promise<ProductDetailProduct | null> =>
       getProduct({ data: { locale, path: path as string } }),
     enabled: !!path && view !== null,
-    // Дані лоадера — лише поки він рахував цього глядача (Р29, M4).
+    // Дані лоадера — лише поки він рахував цього глядача.
     initialData: useSeedableInitialData(initialProduct),
   });
 }

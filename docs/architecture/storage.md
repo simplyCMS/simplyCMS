@@ -38,20 +38,20 @@
   (`simplycms/core/lib/profile-avatar`) для кабінету, `submitProductReview`/
   `deleteMyProductReview` (`simplycms/core/lib/review-form`) для фото відгуку:
   до 5 файлів по 5 МБ одним `FormData`-запитом разом із текстом, усі перевірені
-  ДО першого запису (Е6д-5, Е6д-6).
+  ДО першого запису.
 - Рядок `media` і файл пишуться **однією транзакцією актора** — `writeMedia(db, …)`;
   якщо транзакція впала, вже опублікований файл прибирається через outbox
-  (`scheduleMediaErasures` + `completeMediaErasures`, Е6д-20б) у `catch` ЗОВНІ
+  (`scheduleMediaErasures` + `completeMediaErasures`) у `catch` ЗОВНІ
   транзакції. Цю пару інкапсулює `withPublishedRollback(run, discardWith?)`
   (`storage/rollback.ts`): `run` викликає `track(ref)` одразу після кожного `writeMedia`,
   а помічник на відмові ставить хвіст і стирає. Ним користуються подача й правка відгуку,
   `replaceAvatar` і адмінський `uploadMedia`.
 - 🔴 **Прив'язка медіа обовʼязкова:** `uploadMedia` без `entityId` → 400 (виняток — `store_logo`,
   прив'язка якого фіксована, `STORE_LOGO_OWNER_ID`).
-- 🔴 **Видалення — двофазне (Е6д-14, КАНОН):** «транзакція видаляє лише рядки
+- 🔴 **Видалення — двофазне (КАНОН):** «транзакція видаляє лише рядки
   `media`; файли стираються ПІСЛЯ COMMIT (`completeMediaErasures`); найгірший наслідок —
   орфан-файл без рядка, битий референс неможливий». Механіка:
-  - 🔴 **Outbox `media_erasures` (Е6д-20):** `eraseMediaRows` у ТІЙ САМІЙ транзакції ставить
+  - 🔴 **Outbox `media_erasures`:** `eraseMediaRows` у ТІЙ САМІЙ транзакції ставить
     рядок на кожен ключ (відкат прибирає обидва); `completeMediaErasures(keys)` після COMMIT
     стирає файл і знімає рядок, а збій лишає рядок (`attempts`, `last_error`) і нічого не
     кидає. `driver.delete` виконується ПОЗА транзакцією: короткий крок бере хвости
@@ -60,9 +60,9 @@
     рядок або пише помилку. Опортуністично добираються до 5 хвостів старших за хвилину;
     `retryMediaErasures` (адмінка, налаштування, право `media.write`) повторює вручну,
     `listMediaErasures` показує хвости. Транзакція outbox — службова (`app_admin` без
-    `userId`, Е6д-20а). Драйвер мусить мати ідемпотентний `delete` (стерти вже стертий —
+    `userId`). Драйвер мусить мати ідемпотентний `delete` (стерти вже стертий —
     не помилка). Межа: БД недоступна саме в момент відкату → файл без рядка `media` і без
-    хвоста; роздача його не віддає (Е6д-21), а sweep (нижче) змете;
+    хвоста; роздача його не віддає, а sweep (нижче) змете;
   - `eraseMediaRows(db, refs, owner)` (`storage/record.ts`) у транзакції:
     `SELECT … WHERE storage_key = ANY($refs) AND entity_type = $owner.entityType
     AND entity_id = $owner.entityId ORDER BY storage_key FOR UPDATE` → `DELETE` →
@@ -71,23 +71,23 @@
   - ядро повертає ключі явно (`{ …, discard: string[] }`), а операція кличе
     `completeMediaErasures` кожного ключа ПІСЛЯ `runAdmin`/`runAdminTransactions`; сід — після
     своєї транзакції. Неявного after-commit хука в `withActor` **немає**;
-  - 🔴 власність ключа перевіряє сховище, а не викликач (Е6д-16): `owner`
+  - 🔴 власність ключа перевіряє сховище, а не викликач: `owner`
     обовʼязковий, перевантаження без нього немає, ключі з чужою прив'язкою тихо
     ігноруються. Прив'язки: відгук — `{ entityType: 'review', entityId: reviewId }`;
     аватар у `deleteCustomer` — `{ entityType: 'avatar', entityId: userId }`;
     фабрика `admin-data` — `{ cfg.entityType, <id рядка> }`, окремий виклик на рядок
-    (опція `media`, Е6д-1 — `data-layer.md`);
+    (опція `media` — `data-layer.md`);
   - двофазно працюють: фабрика (банери), модерація й видалення відгуків, видалення
     власного відгуку покупцем, `deleteCustomer` (аватар разом із фото відгуків),
-    видалення товару (фото його відгуків, опція `cascadeMedia`, Е6д-19).
-  - 🔴 **Каскад БД рядків `media` не бачить (Е6д-19):** рядок із медіа, який знищує FK
+    видалення товару (фото його відгуків, опція `cascadeMedia`).
+  - 🔴 **Каскад БД рядків `media` не бачить:** рядок із медіа, який знищує FK
     `ON DELETE CASCADE`, лишив би рядки `media` і файли — публічні за URL і недосяжні
     для подальших стирань. Шлях видалення батька мусить стерти їх сам: у фабриці —
     опція `cascadeMedia` (`data-layer.md`), в іменованій операції — `eraseMediaRows`
     до COMMIT. Гейт класу `test-harness/pg/__tests__/media-cascade-coverage.test.ts`
     звіряє кожну каскадну медіа-колонку з каталогу FK з покриттям або винятком із
     причиною.
-  - 🔴 **Фото товару (М1, Task 12):** `product_images.storage_key` і
+  - 🔴 **Фото товару:** `product_images.storage_key` і
     `product_image_translations.storage_key` (мовний варіант файлу) — медіа-колонки з
     прив'язкою `product` (`media.entity_id` = id ТОВАРУ, навіть для фото модифікації).
     Опція `cascadeMedia` має поле `owner` — колонку з id прив'язки, коли прив'язка — не сам
@@ -96,10 +96,10 @@
     перевіряє нові ключі (409 `media_ref_invalid`) і стирає зниклі діффом множини
     ключів товару до/після; файли — після коміту (`afterCommit` лише добирає намір,
     записаний в outbox `media_erasures`).
-  - аватар (`replaceAvatar`/`removeMyAvatar`), логотип магазину (Е6б-14) теж двофазні (К3-Е6д-3): винятків із двофазного канону немає.
+  - аватар (`replaceAvatar`/`removeMyAvatar`), логотип магазину теж двофазні: винятків із двофазного канону немає.
     `ImageUpload` файл сам не стирає, а сироту, лишену скасованою формою, прибирає sweep
     (він звіряє `findMediaReferences`, див. «Посилання на медіа»).
-- Фото відгуку (Е6д-5): `'review'` свідомо **не** в `MEDIA_ENTITY_TYPES` — той
+- Фото відгуку: `'review'` свідомо **не** в `MEDIA_ENTITY_TYPES` — той
   список є allowlist адмінського `uploadMedia`, а сценарію «адмін вантажить фото
   відгуку» немає (як і `'avatar'`, пишеться повз список). Константи —
   `REVIEW_MEDIA_ENTITY = 'review'`, `MAX_REVIEW_IMAGES = 5`,
@@ -108,14 +108,14 @@
   (`bodyLimitMiddleware`, `MAX_REQUEST_BODY_BYTES` = найбільше з доменних лімітів +
   `MULTIPART_OVERHEAD_BYTES`; відмова 413 `request/payload-too-large`, без
   `Content-Length` — 411 `request/length-required` для всього, що не JSON і для всього, що Start читає як форму; база шляху — експорт `SERVER_FN_BASE` бандла (інлайн Start);
-  К3-Е6д-2, `ENVIRONMENT.md`). Межа: UI відсікає завелике ДО відправки, тож прямий
+  `docs/development/ENVIRONMENT.md`). Межа: UI відсікає завелике ДО відправки, тож прямий
   виклик повз UI може побачити обрив зʼєднання замість 413 (`UPSTREAM:START-BODY-1`,
   `upstream-workarounds.md`).
-- Покупець видаляє власний відгук (Е6д-9): `app_user` не має `DELETE` на `media`,
+- Покупець видаляє власний відгук: `app_user` не має `DELETE` на `media`,
   тож рядки фото стирає ескалація `operator`, і лише ключі з `RETURNING images`
   рядка, який ЦЯ транзакція видалила як власний (`user_id` — із сесії), а не з вводу
   клієнта; `eraseMediaRows` ще звіряє прив'язку `review/<id>`.
-- Покупець редагує власний відгук (Е6д-23): `updateProductReviewWithImages`
+- Покупець редагує власний відгук: `updateProductReviewWithImages`
   (`storefront/loaders/reviews-edit.ts`) — FormData `id, rating, title, content, keep[],
   images[]`; `keep` мусить бути підмножиною наявних `images` (інакше 409
   `review/images-changed`), нові фото пишуться `writeMedia` у `withPublishedRollback`,
@@ -129,9 +129,8 @@
   `normalizeMediaRefs` (`simplycms/domain/media`): лише непорожні рядки, не-масив →
   `[]`. Колонки — nullable `jsonb` без CHECK форми.
 - Споживачі порту з вітрини — ратчет `tests/storage-port-consumers.test.ts`:
-  `ALLOWED` = `loaders/avatar.ts`, `loaders/reviews-write.ts` (Е6д-15: фото відгуку,
-  Д-3), `loaders/reviews-edit.ts` (Е6д-23: правка відгуку) і `media-visibility.ts`
-  (лише тип `MediaServeVerdict`, Е6д-21). Новий файл у списку — рішення з причиною.
+  `ALLOWED` = `loaders/avatar.ts`, `loaders/reviews-write.ts` (фото відгуку), `loaders/reviews-edit.ts` (правка відгуку) і `media-visibility.ts`
+  (лише тип `MediaServeVerdict`). Новий файл у списку — рішення з причиною.
 - MIME визначається **магічними байтами** (`sniffImageMime`), не розширенням і не
   `file.type`. Allowlist — png/jpeg/webp/gif/avif; **SVG не приймається** (несе
   скрипти).
@@ -149,7 +148,7 @@
   `STORAGE_DIRECT_CALL_EXEMPTIONS` порожній (новий виняток — рішення, а не звичка).
 - Не клади URL у колонку сутності — лише референс.
 - Не читай `MEDIA_ROOT` і `S3_*` сирим `process.env` — лише `resolveDriverEnv` (порожній `KEY=` від
-  Dokploy інакше став би коренем деплою, Р22). Не читай їх і на модуль-рівні — лише в рантаймі, всередині функції
+  Dokploy інакше став би коренем деплою). Не читай їх і на модуль-рівні — лише в рантаймі, всередині функції
   (контракт серверного env): інстанс драйвера створює `getMediaDriver()` при першому виклику,
   коли `server.mjs` уже наповнив `process.env`.
 - Новий драйвер проходить **контрактний набір** `packages/simplycms/test-harness/storage/contract.ts`
@@ -161,10 +160,10 @@
   Ключі Garage стенд віддає тільки йому (`harnessServicesEnv`), а не всім споживачам `.env.harness`.
 - `<img>` на вітрині: `loading="lazy"` і явні `width`/`height` або `aspect-ratio`.
 - Фото відгуку на модерації не публічне: роздача (нижче) віддає його лише автору й
-  модератору (Е6д-21), решті — 404. Адмінка показує фото картки через той самий
-  `/media` (референси з `getReviewCard` резолвить клієнтський `resolveMediaUrl`, Е6д-11).
+  модератору, решті — 404. Адмінка показує фото картки через той самий
+  `/media` (референси з `getReviewCard` резолвить клієнтський `resolveMediaUrl`).
 
-## Роздача `/media/<key>` (Е6д-21)
+## Роздача `/media/<key>`
 
 `serveMedia(ctx, { lookup })` (`storage/serve.ts`) не знає про вітрину: маршрут
 інʼєктує `lookup`, а той (`storefront/media-visibility.ts`, `lookupMediaForRequest`)
@@ -181,7 +180,7 @@
   (`PERSONAL_MEDIA_ENTITY_TYPES`: аватар, відгук) — `private, no-cache`, тож спільний кеш
   не переживає зміну видимості, а ревалідація (304) знову проходить `lookup`.
 
-## Посилання на медіа й sweep (Е6д-22)
+## Посилання на медіа й sweep
 
 Рядок `media` без посилання з жодної сутності — сирота (скасована форма, збій між
 кроками). `findMediaReferences(db, key)` і `mediaReferenceExists(key)`
@@ -215,19 +214,19 @@ COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку 
    файл, якщо його рядок `media` без посилання з колонок.
 3. Прямий виклик serverFn повз UI, що перевищує стелю тіла, може побачити обрив
    зʼєднання замість 413 (`UPSTREAM:START-BODY-1`).
-4. Chunked JSON обмежує лічильник байтів Node-раннера (1 МіБ, Р20); під іншим
+4. Chunked JSON обмежує лічильник байтів Node-раннера (1 МіБ); під іншим
    рантаймом без такого лічильника вікно відкрите (`upstream-workarounds.md`, START-BODY-1).
 5. **Колізія ключа в `s3` — best-effort** (`UPSTREAM:GARAGE-INM-1`). Garage ігнорує
    `If-None-Match: *`, тож `put` спершу робить `HEAD` (`200` → `MediaKeyCollisionError`) і лише
    потім `PUT`. Між ними інша публікація того ж ключа проскочить; ключ — свіжий UUID викликача,
    тож гонка можлива лише при повторному використанні ключа. `local-fs` гарантує виключність
    атомарно (`link`).
-6. **Збій драйвера при роздачі — 503, не 404** (Е8-Р14). `serveMedia` мапить `null` з
+6. **Збій драйвера при роздачі — 503, не 404**. `serveMedia` мапить `null` з
    `driver.open` у 404 (файла немає), а ВИНЯТОК (мережа S3, права диска) — у 503 `no-store` з
    одним `console.error` (ключ, імʼя/код помилки і її повідомлення, де облікові дані URL `scheme://user:pass@` замасковано повністю — `describeDriverError`). 404 на збій закешували б
    CDN і браузер, і оператор не побачив би причини. Дійсне для обох драйверів.
 
-## Логотип магазину — референс у jsonb (Е6б-14)
+## Логотип магазину — референс у jsonb
 
 Логотип лежить не в колонці, а в полі `logo` jsonb-значення
 `system_settings['store_profile']` (рядок `media` — `entity_type = 'store_logo'`,
@@ -242,18 +241,18 @@ COMMIT. Гейт `tests/media-sweep-coverage.test.ts` вимагає гілку 
 - старий логотип при заміні чи прибиранні двофазно стирається: `eraseMediaRows` (прив'язка
   `store_logo/STORE_LOGO_OWNER_ID`) останнім кроком транзакції, файл —
   `completeMediaErasures` після COMMIT; лок `store-profile` першим запитом не дає двом
-  паралельним збереженням лишити сироту (Е6б-24);
+  паралельним збереженням лишити сироту;
 - `ImageUpload` файл при прибиранні з форми не стирає — скасована форма чи відмова
   сервера лишають старий логотип цілим.
 
 🔴 Чесна межа: `ImageUpload` пише НОВИЙ файл і рядок `media` одразу під час
 завантаження. «Завантажив новий логотип → скасував форму» лишає рядок `store_logo` і
-файл, на які профіль не посилається, — сирота, якого змете sweep (Е6д-22) через 24 год.
+файл, на які профіль не посилається, — сирота, якого змете sweep через 24 год.
 Те саме з файлами, які живий прогін лишає в `MEDIA_ROOT` стенда після SQL-відновлення знімка.
 
 Живий доказ порту — `pnpm live:smoke` (аватар: завантаження, роздача `/media`,
 референс у БД, видалення; логотип: заміна лишає рівно один `store_logo`, старий файл
-віддає 404; контент Е6д: заміна картинки банера лишає рівно один рядок `media`
+віддає 404; контент: заміна картинки банера лишає рівно один рядок `media`
 банера, старий файл 404; відгук із фото — рядок `media` сутності `review`, картка
 адмінки віддає фото 200). Код — `packages/simplycms/src/storage/`; драйвер, запис і
 роздача — окремі модулі (`local-fs.ts`, `record.ts`, `serve.ts`).

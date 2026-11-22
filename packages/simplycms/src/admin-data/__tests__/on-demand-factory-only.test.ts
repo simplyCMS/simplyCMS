@@ -3,14 +3,14 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * Е3-17: структурний гейт фабрики. Жоден файл `admin-data/collections/**`
+ * Структурний гейт фабрики. Жоден файл `admin-data/collections/**`
  * не ставить `syncMode` НАПРЯМУ (рядок лишається лише у самій фабриці,
  * `on-demand-options.ts`) — інакше нова on-demand колекція могла б забути
  * індекс сортування (TSDB-2) та інші інваріанти фабрики.
  */
 const COLLECTIONS_DIR = resolve(import.meta.dirname, '../collections');
 
-describe('Е3-17: syncMode лише у фабриці', () => {
+describe('syncMode лише у фабриці', () => {
   it('жоден файл collections/** не містить syncMode напряму', () => {
     const offenders: string[] = [];
     for (const name of readdirSync(COLLECTIONS_DIR)) {
@@ -21,7 +21,7 @@ describe('Е3-17: syncMode лише у фабриці', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('12 on-demand колекцій ідуть через onDemandCollectionOptions (Е5: + orders, order_items; Е6а: + shipping_rates)', () => {
+  it('12 on-demand колекцій ідуть через onDemandCollectionOptions (у т. ч. orders, order_items, shipping_rates)', () => {
     let count = 0;
     for (const name of readdirSync(COLLECTIONS_DIR)) {
       if (!name.endsWith('.ts')) continue;

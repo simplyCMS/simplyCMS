@@ -1,4 +1,4 @@
-// БД, сховище й сід харнес-тестів системних налаштувань адмінки (К3-Е6б, Task 3):
+// БД, сховище й сід харнес-тестів системних налаштувань адмінки:
 // канон → app_runtime → afterAll із closeDbPool() ПЕРШИМ; `MEDIA_ROOT` — власна
 // tmp-тека файла, бо операції адмінки беруть дефолтний драйвер сховища.
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -42,7 +42,7 @@ export function useSystemAdminDb(prefix: string) {
 export const rows = (url: string, sql: string, p: unknown[] = []) =>
   H.queryRows(url, sql, p) as Promise<Record<string, unknown>[]>;
 
-/** Матчер доменної відмови правила стану (409, К3-13). */
+/** Матчер доменної відмови правила стану (409). */
 export const stateConflict = (constraint: string) => ({
   name: 'AdminConflictError',
   kind: 'state',
@@ -83,7 +83,7 @@ export async function seedMedia(
     [
       crypto.randomUUID(),
       entityType,
-      // Як `parseUploadForm`: логотип має фіксованого власника (К3-Е6д-3).
+      // Як `parseUploadForm`: логотип має фіксованого власника.
       entityType === 'store_logo' ? STORE_LOGO_OWNER_ID : crypto.randomUUID(),
       ref,
       PNG.byteLength,

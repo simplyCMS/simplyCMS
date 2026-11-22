@@ -14,11 +14,11 @@ const KEY = entityKey(ENTITY.themes).all();
 export type ThemeSettingsValues = Record<string, string | number | boolean>;
 
 /**
- * Теми адмінки (Е6б-15/16/19): короткий список — `useQuery`, не колекція.
+ * Теми адмінки: короткий список — `useQuery`, не колекція.
  * Мутації пишуть ВІДПОВІДЬ сервера в кеш (write-back): активація повертає весь
  * список, бо зміна зачіпає два рядки, і бейдж переїжджає без refetch.
  *
- * Е6б-22: після успіху — `router.invalidate()`, бо лоадер `_storefront` має
+ * Після успіху — `router.invalidate()`, бо лоадер `_storefront` має
  * staleTime 5 хв і перехід на вітрину в цій вкладці показав би стару тему.
  * Fire-and-forget (`void`): збій скидання кешу роутера не робить успішне
  * збереження помилкою для `mutateAsync`.

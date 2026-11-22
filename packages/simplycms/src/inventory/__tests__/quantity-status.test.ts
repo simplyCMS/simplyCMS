@@ -7,7 +7,7 @@ import { syncStatusWithQuantity } from '../quantity-status';
 
 const target = { productId: 'p1', modificationId: null };
 
-describe('syncStatusWithQuantity (Е3-3)', () => {
+describe('syncStatusWithQuantity', () => {
   it('сума > 0 → запит переходу в in_stock (гвард сам пропустить лише з out_of_stock)', async () => {
     await syncStatusWithQuantity({} as never, target, 3);
     expect(setTargetStatus).toHaveBeenLastCalledWith({}, target, 'in_stock');

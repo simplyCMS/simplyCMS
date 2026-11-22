@@ -5,7 +5,7 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Гейт VALUE-імпортів з `.ts`/`.tsx`-розширенням (трек T; К2-Е0, T-1, amend).
+ * Гейт VALUE-імпортів з `.ts`/`.tsx`-розширенням.
  *
  * 🔴 Загроза. Кореневий `tsconfig.json` отримав `allowImportingTsExtensions:
  * true` заради РІВНО ОДНОГО імпорту — специфікатора межі клієнт/сервер у
@@ -68,7 +68,7 @@ const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
     } else if (
       // 🔴 `ts.isImportCall` — внутрішній хелпер компілятора, у ПУБЛІЧНОМУ
       // `typescript.d.ts` його немає (є в рантаймі, TS2339 у typecheck):
-      // знахідка, успадкована з Task 1, не моя. Публічний еквівалент —
+      // знахідка, успадкована, не моя. Публічний еквівалент —
       // `CallExpression`, чий `expression` має вигляд ключового слова
       // `import` (`SyntaxKind.ImportKeyword`) — так сам компілятор різнить
       // `import('x')` від звичайного виклику функції.
@@ -87,7 +87,7 @@ const findValueTsExtensionImports = (fileName: string, text: string): Hit[] => {
 
 /**
  * Легальні випадки — лише два імпорти в кореневому `vite.config.ts`: межа
- * клієнт/сервер (мандат Task 1) і плагін збірки (К3-Е8). Будь-який ІНШИЙ value-імпорт з
+ * клієнт/сервер і плагін збірки. Будь-який ІНШИЙ value-імпорт з
  * `.ts`/`.tsx` у програмі кореневого typecheck — витік прапорця.
  */
 const ALLOWLIST: ReadonlyArray<{ file: string; specifier: string }> = [
@@ -95,7 +95,7 @@ const ALLOWLIST: ReadonlyArray<{ file: string; specifier: string }> = [
     file: 'vite.config.ts',
     specifier: './packages/simplycms/src/contracts/server-only.ts',
   },
-  // Друге легальне місце (К3-Е8): плагін ідентифікатора збірки. Конфіг Vite не
+  // Друге легальне місце: плагін ідентифікатора збірки. Конфіг Vite не
   // бачить alias-ів, тож `simplycms/vite` у корені резолвиться лише шляхом.
   {
     file: 'vite.config.ts',

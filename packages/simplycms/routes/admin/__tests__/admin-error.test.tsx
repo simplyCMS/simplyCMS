@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 /**
- * Хвіст рев'ю Task 10: `errorComponent: AdminError` роуту `/admin`
+ * Перевіряє `errorComponent: AdminError` роуту `/admin`
  * (`admin.tsx`). Доводимо, що відомий код (`InsecureContextError`)
  * рендерить перекладений рядок, а решта — `error.message` дослівно, тим
  * самим шляхом, що й кореневий `ErrorBoundary`.
@@ -45,7 +45,7 @@ import { reloadOnceForStaleChunk } from 'simplycms/runtime/stale-chunk';
 import { Route } from '../admin';
 import { TestI18nProvider } from '../../../test-harness/i18n';
 
-/** Симулює серіалізовану помилку з `beforeLoad`: лише `name`/`message` доїжджають до клієнта (К3-13). */
+/** Симулює серіалізовану помилку з `beforeLoad`: лише `name`/`message` доїжджають до клієнта. */
 function toClientError(name: string, message: string): Error {
   const error = new Error(message);
   error.name = name;

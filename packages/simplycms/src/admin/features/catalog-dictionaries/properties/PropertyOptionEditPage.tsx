@@ -10,7 +10,7 @@ import { OptionPageCards } from './OptionPageCards';
 import { usePropertyOptionCard } from './usePropertyOptionCard';
 
 /**
- * Картка опції (Е4, Task 8): `new` або id з URL. Стан, зріз опцій і
+ * Картка опції: `new` або id з URL. Стан, зріз опцій і
  * збереження — `usePropertyOptionCard`.
  */
 export default function PropertyOptionEditPage() {

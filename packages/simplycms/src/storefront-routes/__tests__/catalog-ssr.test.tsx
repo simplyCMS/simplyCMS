@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TestEngineProvider } from './engine-stub';
 
 /**
- * Task 16, Step 3: списки товарів мають бути в серверному HTML.
+ * Списки товарів мають бути в серверному HTML.
  * Рендеримо сторінки через renderToString (жодних ефектів → React Query ще
  * порожній) і перевіряємо, що назва І ЦІНА товару вже присутні в розмітці.
  */

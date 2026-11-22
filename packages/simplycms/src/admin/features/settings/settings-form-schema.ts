@@ -6,7 +6,7 @@ import {
 } from 'simplycms/contracts/store-profile';
 
 /**
- * Клієнтська схема форми профілю магазину (Е6б, Task 6). Межі — з
+ * Клієнтська схема форми профілю магазину. Межі — з
  * `STORE_PROFILE_LIMITS` (T0), ті самі, що перевіряє сервер: розбіжність
  * дала б форму, яка пропускає те, що сервер відбиває 400-ю. Поля форми —
  * рядки (порожній рядок = «не задано»); у `StoreProfile` вони йдуть як
@@ -73,7 +73,7 @@ export function toProfile(v: StoreProfileFormValues): StoreProfile {
       address: orNull(v.address),
       hours: orNull(v.hours),
     },
-    // Референс, не URL: `logo` лягає як є (Е6б-14).
+    // Референс, не URL: `logo` лягає як є.
     logo: v.logo,
     socials: v.socials,
   };

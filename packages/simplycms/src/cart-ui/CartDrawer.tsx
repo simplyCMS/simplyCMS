@@ -10,7 +10,7 @@ import { findQuoteLine, hasUnavailableItem } from './quote-line';
 
 export interface CartDrawerProps {
   /**
-   * Серверна квота кошика (Е6в-13); `null` — ще немає (скелети, а не 0).
+   * Серверна квота кошика; `null` — ще немає (скелети, а не 0).
    * `cart-ui` (T4) serverFn не імпортує: квоту дає T5-контейнер
    * (`core/components/cart/CartDrawer`).
    */

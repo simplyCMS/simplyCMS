@@ -2,11 +2,11 @@ import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { withFallback } from './read';
 import { TRANSLATABLE } from './specs';
 
-// Галерея агрегата товару (М1, Task 17): фото — рядки `product_images`, а не jsonb
+// Галерея агрегата товару: фото — рядки `product_images`, а не jsonb
 // `products.images`. ОДИН порядок для вітрини й адмінки (мініатюра списку = перше фото
 // картки), тож вираз живе в одному модулі поруч із реєстром перекладної сутності
 // `productImage` (`specs.ts`): мовний варіант файлу й alt (`product_image_translations`)
-// підключаються тут, а не в кожному читачі (Task 17б).
+// підключаються тут, а не в кожному читачі.
 /** Порядок галереї (аліас `i` — `product_images`): канон для всіх читачів, у т.ч. live-smoke. */
 export const GALLERY_ORDER = 'i.sort_order, i.created_at, i.id';
 const ORDER = sql.raw(GALLERY_ORDER);
@@ -102,7 +102,7 @@ export const lineImageSql = (
 
 /**
  * Головне фото товару — перше в галереї, `null` без фото (мініатюра списку адмінки).
- * Спільний файл без мовних перевизначень: адмінка працює основною мовою (М1).
+ * Спільний файл без мовних перевизначень: адмінка працює основною мовою.
  */
 export const mainImageSql = (owner: SQLWrapper): SQL<string | null> =>
   sql<string | null>`(select i.storage_key from public.product_images i
