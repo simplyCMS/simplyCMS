@@ -5,14 +5,16 @@ import { GATES } from '../scripts/release/gates.mjs';
 import { runChain } from '../scripts/gates.mjs';
 
 // `pnpm gates` — один ланцюг для виконавця й релізу: перелік тримає ОДИН масив
-// (`scripts/release/gates.mjs`), порядок звіряється з `AGENTS.md`, а штамп пишеться й при падінні.
+// (`scripts/release/gates.mjs`), порядок звіряється з `docs/development/TOOLING.md` § 3, а штамп пишеться й при падінні.
 const ROOT = join(import.meta.dirname, '..');
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 
-/** «Порядок гейтів» з `AGENTS.md`: `pnpm a → b → c` у бектиках (може бути в кілька рядків). */
-function agentsOrder(): string[] {
-  const text = read('AGENTS.md');
-  const start = text.indexOf('**Порядок гейтів:**');
+/** «Порядок:» з `docs/development/TOOLING.md` § 3: `pnpm a → b → c` у бектиках (може бути в кілька рядків). */
+function documentedOrder(): string[] {
+  const text = read('docs/development/TOOLING.md');
+  const section = text.indexOf('## 3. Гейти');
+  expect(section).toBeGreaterThan(-1);
+  const start = text.indexOf('Порядок:', section);
   expect(start).toBeGreaterThan(-1);
   const body = /`([^`]+)`/.exec(text.slice(start))![1]!;
   return body
@@ -21,9 +23,12 @@ function agentsOrder(): string[] {
     .map((step) => step.trim().replace(/^pnpm /, ''));
 }
 
-describe('перелік гейтів: AGENTS.md + pilot', () => {
-  it('порядок = «Порядок гейтів» з AGENTS.md, а pilot — останній', () => {
-    expect(GATES.map((gate) => gate.name)).toEqual([...agentsOrder(), 'pilot']);
+describe('перелік гейтів: TOOLING.md + pilot', () => {
+  it('порядок = «Порядок:» з TOOLING.md § 3, а pilot — останній', () => {
+    expect(GATES.map((gate) => gate.name)).toEqual([
+      ...documentedOrder(),
+      'pilot',
+    ]);
   });
 
   it('release і gates беруть ОДИН масив: ні в `gates.mjs`, ні деінде копії переліку немає', () => {
